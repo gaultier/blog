@@ -76,12 +76,12 @@ With this, believe it or not, we have enough to get started, and we will learn w
 
 ## The problem
 
-It boils down to: we have a long string looking like this: `AabcdZz`, and we
-want to merge, or remove, neighbouring letters which have opposite casing, e.g
-`Aa` would disappear while `bc` remains. Once we are finished with our example,
-it is: `bcd`.
+It boils down to: we have a string looking like this: `AabcdZz`, and we
+want to remove neighbouring letters which are the same letter and have opposite casing, e.g
+`Aa` disappears while `bc` remains. Once we are finished processing our example,
+we have: `bcd`.
 
-The final ouput is the number of results in the final string, so in this case, `3`.
+The final ouput is the number of characters in the final string, i.e, `3`.
 
 ## Working with the REPL to iteratively close in on a solution
 
@@ -103,3 +103,39 @@ sending each form to the integrated REPL), you can just write `input` and it
 will evaluate its value, in this case the string `"aAbxXBctTCz"`.
 
 
+Later, we will read our input string from a file, but for now it is simpler to
+just hard-code it.
+
+Most operations on strings in Scheme are in an immutable fashion, meaning they doe not
+modify the string, they instead return a new string which is slightly different. 
+Since the input string is quite big (around 50 000 characters), it might not be
+very efficient. Also, we do not really want to keep track of indices, this is a
+good way to do off-by-one mistakes. 
+
+Instead, since LISPs are good at handling lists (LISP stands for List Processor), let's use a list of characters instead:
+
+`(string->list input)`
+
+Note that Scheme allows a wide range of characters in identifier names,
+including `-` and `>`, so we can be very expressive in our naming. Here, the
+`string->list` function just returns a list of characters for a string.
+
+
+Now, we need to detect if two characters are the same latter, with opposite casing.
+Let's write a `char-opposite-casing?` function to do just that. It will take 2
+arguments, the letters we are inspecting, and will return a boolean. 
+For now, let's just make it always return true:
+
+`(define (char-opposite-casing? a b) #\t)`
+
+True is written `#t` and false `#\f`.
+
+We only deal with ascii, so it is safe to compare ascii codes (type `man ascii`
+in your terminal to see these). 
+
+What is the ascii code of`A`? Let's try it:
+
+`(char->integer #\A)`
+
+`char->integer` is just another function that gives the ascii code of a
+character. A character is written with the prefix `#\`, so the character `A` is `#\A`.
