@@ -72,6 +72,13 @@ So, how do you add 2 numbers? Well, `+` is just a function, so that is simply:
 Most operations in Scheme are just functions (or things that look like
 functions, such as macros, but we won't get into that).
 
+We can compose expressions in a straight-forward manner: `(* (+ 1 2) 3)`, which
+returns `9`.
+Note that using the prefix notation with s-expressions (as we call those groups
+of parentheses) removes entirely the need for a table of operator precedence,
+which is very nice. We first evaluate the inner-most form: `(+ 1 2)`, which is
+`3`, and then we evaluate the outer form: `(* 3 3)`, which is `9`.
+
 With this, believe it or not, we have enough to get started, and we will learn while doing.
 
 ## The problem
@@ -139,3 +146,31 @@ What is the ascii code of`A`? Let's try it:
 
 `char->integer` is just another function that gives the ascii code of a
 character. A character is written with the prefix `#\`, so the character `A` is `#\A`.
+
+We see it returns `65`. What about `a`?
+
+
+`(char->integer #\a)` returns `97`.
+
+So there is a difference of `32` between the same ascii letter in lowercase and
+uppercase. Peeking at `man ascii` in the terminal confirms this hunch for all
+letters of the alphabet.
+
+So, time to implement `char-opposite-casing?`! 
+
+```scheme
+(define (char-case-opposite? a b)
+  (let* ((a-code (char->integer a))
+         (b-code (char->integer b))
+         (diff (- a-code b-code)))
+    (= (* 32 32) (* diff diff))))
+```
+
+
+`let*` is used to define local bindings which are only visible in this function.
+We could have done without it but it makes the function more readable.
+
+The only hurdle is not caring
+about the sign of the difference: if the difference is `32` or `-32`, it is the
+same. We could use `abs` but I (arbitrarily) chose to implement it without
+branches, by comparing the square value (which swallows the sign)
