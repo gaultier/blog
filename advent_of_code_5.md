@@ -224,8 +224,7 @@ For now, let's just make it always return true:
 
 True is written `#t` and false `#\f`.
 
-We only deal with ascii, so it is safe to compare ascii codes (type `man ascii`
-in your terminal to see these). 
+We only deal with ascii, so it is safe to compare ascii codes. 
 
 What is the ascii code of`A`? Let's try it:
 
