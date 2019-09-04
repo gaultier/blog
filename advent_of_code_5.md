@@ -456,3 +456,177 @@ with it. Note that the input list is **not** modified:
 (display my-list) => ;; displays: (A)
 
 ```
+
+Now, let's treat the main case: we have at least an element `a` in `acc` and at
+least an element `b` in `input`. If they are the same letters of opposite casing, we
+call ourselves with the remainder of `acc` and the remainder of `input`, which
+is equivalent to 'drop' `a` and `b`. Otherwise, we add `b` to `acc`, and we call
+ourselves with the remainder of `input`, which is the equivalent of 'continuing':
+
+```scheme
+(define (chem-react acc input)
+  (match (list acc input)
+    [(_ ()) acc]
+    [(() (b . brest)) (chem-react (cons b acc) brest)]
+    [((a . arest) (b . brest)) (if (char-case-opposite-casing? a b)
+                                   (chem-react arest brest)
+                                   (chem-react (cons b acc) brest))]))
+
+
+(chem-react '() (list #\A #\a #\b)) ;; => (#\b)
+(chem-react '() (string->list "aAbxXBctTCz")) ;; => (#\z)
+```
+
+
+It works!
+
+> How do I read the input from a file?
+
+It's quite simple: we use the modules `chicken.file.posix` and `chicken.io`:
+
+```scheme
+(import chicken.file.posix
+        chicken.io)
+
+(read-line (open-input-file "/Users/pgaultier/Downloads/aoc5.txt")) ;; => a big string
+```
+
+
+
+Everything put together:
+
+```scheme
+(import matchable
+        clojurian.syntax
+        chicken.file.posix
+        chicken.io)
+
+(define (char-case-opposite-casing? a b)
+  (let* ((a-code (char->integer a))
+         (b-code (char->integer b))
+         (diff (- a-code b-code)))
+    (= (* 32 32) (* diff diff))))
+
+(define (chem-react acc input)
+  (match (list acc input)
+    [(_ ()) acc]
+    [(() (b . brest)) (chem-react (cons b acc) brest)]
+    [((a . arest) (b . brest)) (if (char-case-opposite-casing? a b)
+                                   (chem-react arest brest)
+                                   (chem-react (cons b acc) brest))]))
+
+(->> (open-input-file "/Users/pgaultier/Downloads/aoc5.txt")
+     (read-line)
+     (string->list)
+     (chem-react '())
+     (length)
+     (print))
+```
+
+Here I use the package `clojurian` (`chicken-install clojurian`) to have access
+to the `->>` macro which makes code more readable. It works like the pipe in the
+shell: instead of writing:
+
+
+```scheme
+(foo (bar "foo" (baz 1 2)))
+```
+
+We write:
+
+
+```scheme
+(->> (baz 1 2)
+     (bar "foo")
+     (foo))
+```
+
+It is not strictly required, but I like the fact that my code looks like a
+pipeline of transformations.
+
+
+> But we will get a stack overflow on a big input!
+
+Scheme has a nice requirement for all implementations: they must implement tail
+recursion, which is to say that the compiler can transform our function into an
+equivalent for-loop. So we won't get a stack overflow, and it will be quite
+efficient in terms of memory and time!
+
+
+> But we are making thousands of copies, it will be slow as hell!
+
+Let's benchmark it on the real input (50 000 characters), with `-O3` to enable optimizations!
+
+*Note: The real output of the program is not shown to avoid spoiling the final result*
+
+```sh
+$ csc aoc5.scm -o aoc5 -O3 && time ./aoc5
+./aoc5  0.01s user 0.00s system 82% cpu 0.021 total
+```
+
+
+
+It takes 21 miliseconds. Not too bad!
+
+Here is a hand-written C version which only does one allocation and uses mutations, for the input
+string:
+
+```c
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+int main() {
+    FILE* const f = fopen("/Users/pgaultier/Downloads/aoc5.txt", "r");
+    fseek(f, 0, SEEK_END);
+    size_t string_size = (size_t)ftell(f);
+    fseek(f, 0, SEEK_SET);
+
+    char* const string = calloc(string_size + 1, 1);
+
+    fread(string, 1, string_size, f);
+    fclose(f);
+
+    size_t i = 0;
+    while (i < string_size) {
+        if (abs(string[i] - string[i + 1]) == 32) {
+            memmove(string + i, string + i + 2, string_size - i - 2);
+            string_size -= 2;
+            i = i > 0 ? i - 1 : 0;
+        } else
+            i++;
+    }
+
+    printf("`%zu`\n", string_size - 1);
+}
+```
+
+Let's benchmark it on the same input:
+
+
+```sh
+$ cc -std=c99 -O3 -Weverything aoc5.c -march=native && time ./a.out
+./a.out  0.01s user 0.00s system 86% cpu 0.012 total
+```
+
+
+It took 12 miliseconds. So the scheme version is very close!
+
+*Note: I know that those are not good benchmarks. To do it correctly, you would
+need to warm up the file cache, making many runs and averaging the results, etc. 
+I did exactly that and it did not change the results.*
+
+
+I like C, but I personally find the Scheme version much more readable.
+
+
+## Conclusion
+
+That's it, we solved the fifth Advent of Code challenge in Scheme! The solution
+is under 30 lines of code, and is (hopefully) simple and readable.
+
+I hope it gave you a glance at what LISPs can do, and stay tuned for more blog
+posts about programming. I intend to post more solutions to other coding
+challenges, solved with different programming languages.
+
+
