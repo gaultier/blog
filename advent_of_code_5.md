@@ -52,7 +52,7 @@ $ chicken-install -s apropos chicken-doc
 
 I definitely recommend setting up your favorite editor to work with Scheme.
 
-## Scheme in 10 seconds
+## Scheme in 30 seconds
 
 All you need to remember is this syntax:
 
@@ -78,6 +78,43 @@ Note that using the prefix notation with s-expressions (as we call those groups
 of parentheses) removes entirely the need for a table of operator precedence,
 which is very nice. We first evaluate the inner-most form: `(+ 1 2)`, which is
 `3`, and then we evaluate the outer form: `(* 3 3)`, which is `9`.
+
+One final thing we need to learn, is how to define variables and functions. Note
+that Scheme is mostly an immutable functional language, so there is not really a
+concept of 'variable', instead we talk about 'bindings', which really are just
+aliases.
+
+Here's how to define a binding called `foo` to the value `1`:
+
+`(define foo 1)`
+
+We can read this as such: from now on, when I refer to `foo`, what I really mean
+is `1`. That's it, it's just an alias.
+
+We can check it worked by printing it with:
+
+```scheme
+(display foo)
+```
+
+Defining a function is quite the same:
+
+```scheme
+(define (compute a b) (+ a b 3))
+```
+
+This defines a function called `compute` which adds its 2 arguments to `3` and
+returns that.
+Written in a way we are used to: `a + b + 3`. It works because `+` is a function
+that takes a variable number of arguments and adds them all.
+
+Le'ts call it:
+
+`(compute 1 2)` returns `6`.
+
+Note that we do not need any `return` keyword like in most languages. Instead,
+the last s-expression is the return value of the function.
+
 
 With this, believe it or not, we have enough to get started, and we will learn while doing.
 
@@ -108,7 +145,6 @@ You can then use it like this: `(display input)`, which will print `input`.  Of
 course, if you are working in the REPL, and you should be (or in your editor,
 sending each form to the integrated REPL), you can just write `input` and it
 will evaluate its value, in this case the string `"aAbxXBctTCz"`.
-
 
 Later, we will read our input string from a file, but for now it is simpler to
 just hard-code it.
@@ -173,4 +209,5 @@ We could have done without it but it makes the function more readable.
 The only hurdle is not caring
 about the sign of the difference: if the difference is `32` or `-32`, it is the
 same. We could use `abs` but I (arbitrarily) chose to implement it without
-branches, by comparing the square value (which swallows the sign)
+branches, by comparing the squared values (which swallows the signs)
+
