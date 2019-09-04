@@ -62,7 +62,7 @@ All you need to remember is this syntax:
 ```
 
 This calls `foo` with `arg1`, `arg2`, and `arg3` as arguments. In a
-C-like language you would use: `foo(arg1, arg2, arg3)`
+C-like language you would use: `foo(arg1, arg2, arg3)`.
 
 So, how do you add 2 numbers? Well, `+` is just a function, so that is simply: 
 
@@ -79,7 +79,7 @@ We can compose expressions in a straight-forward manner:
 (* (+ 1 2) 3)
 ```
 
-, which returns `9`.
+which returns `9`.
 
 
 Note that using the prefix notation with s-expressions (as we call those groups
@@ -188,8 +188,7 @@ You can then use it like this:
 (display input)
 ```
 
-, which will print `input`.  Of
-course, if you are working in the REPL, and you should be (or in your editor,
+which will print `input`.  Of course, if you are working in the REPL, and you should be (or in your editor,
 sending each form to the integrated REPL), you can just write `input` and it
 will evaluate its value, in this case the string `"aAbxXBctTCz"`.
 
