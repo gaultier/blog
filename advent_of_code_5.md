@@ -20,7 +20,7 @@ you would do:
 $ brew install chicken
 ```
 
-and...that's pretty much it! You should now be able to enter the REPL with
+and...that's pretty much it. You should now be able to enter the REPL with
 `csi` and type something:
 
 ```sh
@@ -144,7 +144,7 @@ $ csc foo.scm -o foo && ./foo # Alternatively, compile it to an executable, and 
 
 ## The problem
 
-It boils down to: we have a string looking like this: `AabcdZz`, and we
+We have a string looking like this: `AabcdZz`, and we
 want to remove neighbouring letters which are the same letter and have opposite casing, e.g
 `Aa` disappears while `bc` remains. Once we are finished processing our example,
 we have: `bcd`.
@@ -205,7 +205,7 @@ So there is a difference of `32` between the same ascii letter in lowercase and
 uppercase. Peeking at `man ascii` in the terminal confirms this hunch for all
 letters of the alphabet.
 
-So, time to implement `char-opposite-casing?`! 
+So, time to implement `char-opposite-casing?`: 
 
 ```scheme
 (define (char-case-opposite-casing? a b)
@@ -430,9 +430,6 @@ ourselves with the remainder of `input`, which is the equivalent of 'continuing'
 (chem-react '() (string->list "aAbxXBctTCz")) ;; => (#\z)
 ```
 
-
-It works!
-
 > How do I read the input from a file?
 
 It's quite simple: we use the modules `chicken.file.posix` and `chicken.io`:
@@ -477,7 +474,7 @@ It's quite simple: we use the modules `chicken.file.posix` and `chicken.io`:
 
 Here I use the package `clojurian` (`chicken-install clojurian`) to have access
 to the `->>` macro which makes code more readable. It works like the pipe in the
-shell: instead of writing:
+shell. Instead of writing:
 
 
 ```scheme
@@ -494,7 +491,7 @@ We write:
 ```
 
 It is not strictly required, but I like the fact that my code looks like a
-pipeline of transformations.
+pipeline of immutable transformations.
 
 
 > But we will get a stack overflow on a big input!
@@ -502,14 +499,20 @@ pipeline of transformations.
 Scheme has a nice requirement for all implementations: they must implement tail
 recursion, which is to say that the compiler can transform our function into an
 equivalent for-loop. So we won't get a stack overflow, and it will be quite
-efficient in terms of memory and time!
+efficient in terms of memory and time.
 
 
 > But we are making thousands of copies, it will be slow as hell!
 
-Let's benchmark it on the real input (50 000 characters), with `-O3` to enable optimizations!
+Let's benchmark it on the real input (50 000 characters), with `-O3` to enable optimizations:
 
-*Note: The real output of the program is not shown to avoid spoiling the final result*
+*Note 1: The real output of the program is not shown to avoid spoiling the final result*
+
+
+*Note 2: This is a mediocre way to do benchmarking. A more correct way would
+be: warming up the file cache, making many runs, averaging the results, etc. 
+I did exactly that and it did not change the results in a significant manner.*
+
 
 ```sh
 $ csc aoc5.scm -o aoc5 -O3 && time ./aoc5
@@ -517,7 +520,7 @@ $ csc aoc5.scm -o aoc5 -O3 && time ./aoc5
 ```
 
 
-It takes 21 miliseconds. Not too bad!
+It takes 21 miliseconds. Not too bad.
 
 Here is a hand-written C version which only does one allocation and uses mutations, for the input
 string:
@@ -560,20 +563,11 @@ $ cc -std=c99 -O3 -Weverything aoc5.c -march=native && time ./a.out
 ./a.out  0.01s user 0.00s system 86% cpu 0.012 total
 ```
 
-
-It took 12 miliseconds. So the scheme version is very close!
-
-*Note: I know that those are not good benchmarks. To do it correctly, you would
-need to warm up the file cache, making many runs and averaging the results, etc. 
-I did exactly that and it did not change the results.*
-
-
-I like C, but I personally find the Scheme version much more readable.
-
+It took 12 miliseconds. So the scheme version is very close.
 
 ## Conclusion
 
-That's it, we solved the fifth Advent of Code challenge in Scheme! The solution
+That's it, we solved the fifth Advent of Code challenge in Scheme. The solution
 is under 30 lines of code, is (hopefully) simple and readable, and has a
 performance close to C. But more than that, I think the real value in LISP is
 interactive programming, instead of the classical write-compile-execute-repeat,
