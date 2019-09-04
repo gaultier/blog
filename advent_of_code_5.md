@@ -79,7 +79,7 @@ of parentheses) removes entirely the need for a table of operator precedence,
 which is very nice. We first evaluate the inner-most form: `(+ 1 2)`, which is
 `3`, and then we evaluate the outer form: `(* 3 3)`, which is `9`.
 
-One final thing we need to learn, is how to define variables and functions. Note
+One more thing we need to learn, is how to define variables and functions. Note
 that Scheme is mostly an immutable functional language, so there is not really a
 concept of 'variable', instead we talk about 'bindings', which really are just
 aliases.
@@ -117,6 +117,24 @@ the last s-expression is the return value of the function.
 
 
 With this, believe it or not, we have enough to get started, and we will learn while doing.
+
+
+## But how do I run my code?
+
+Just save it to a file with the `.scm` extension and run it with:
+
+`csi -s foo.scm`
+
+
+You can put that as a shebang on top of the file:
+
+`#!/usr/local/bin/csi -s`
+
+
+Another way is to compile the code to an executable and run that:
+
+`csc foo.scm -o foo && ./foo`
+
 
 ## The problem
 
@@ -195,7 +213,7 @@ letters of the alphabet.
 So, time to implement `char-opposite-casing?`! 
 
 ```scheme
-(define (char-case-opposite? a b)
+(define (char-case-opposite-casing? a b)
   (let* ((a-code (char->integer a))
          (b-code (char->integer b))
          (diff (- a-code b-code)))
@@ -209,5 +227,7 @@ We could have done without it but it makes the function more readable.
 The only hurdle is not caring
 about the sign of the difference: if the difference is `32` or `-32`, it is the
 same. We could use `abs` but I (arbitrarily) chose to implement it without
-branches, by comparing the squared values (which swallows the signs)
+branches, by comparing the squared values (which swallows the signs).
+
+Let's test our function:
 
