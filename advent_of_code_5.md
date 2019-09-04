@@ -2,8 +2,10 @@
 
 Chicken Scheme is a wonderful small and performant implementation of Scheme, a
 programming language in the family of LISPs. It's very easy to install and
-learn. I learn by doing, so let's solve an Advent of Code challenge with a tiny
-Scheme program.
+learn.
+
+I started learning Scheme very recently, and since I learn by doing, 
+let's solve an Advent of Code challenge with a tiny Scheme program.
 
 Many people have the feeling that LISPs are slow and cryptic with all those
 parentheses. I hope to show that it is in fact very approchable, easy to work
@@ -41,7 +43,8 @@ $ chicken-install -s apropos chicken-doc
 ```
 
 
-I definitely recommend setting up your favorite editor to work with Scheme.
+I definitely recommend setting up your favorite editor to work with Scheme, and
+an integrated REPL.
 
 ## Scheme in 30 seconds
 
@@ -580,5 +583,3 @@ which is much more time consuming.
 I hope it gave you a glance at what LISPs can do, and stay tuned for more blog
 posts about programming. I intend to post more solutions to other coding
 challenges, solved with a variety of programming languages.
-
-
