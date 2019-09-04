@@ -384,3 +384,75 @@ Let's go ahead and match the case of a list of one or more elements to avoid tha
 ```
 
 Here we choose to (arbitrarily) return the product of the first elements of both list.
+
+
+<hr>
+
+Back to our problem: if the second list (the input) is empty, it means we are
+finished, so we return the first list (`acc`):
+
+
+```scheme
+(define (chem-react acc input)
+  (match (list acc input)
+    [(_ ()) acc]))
+
+```
+
+Our recursion will work as follows: we look at the first element of the second
+list (`input`, which is the work to do), let's call it `b`, and the first element of the first
+list (`acc`, the work done), let's call it `a`.
+
+
+
+If `a` and `b` are the same letter of opposite casing, we 'drop' the two. Otherwise, we
+add `b` to the first list, and 'continue'. 'drop' and 'continue' are put in
+quotes because that is vocabulary from imperative languages such as C; we'll see
+in a minute how we implement it.
+
+
+If the first list is empty, this is our starting case: the only thing we can do
+is mark `b` as 'processed', i.e add it to the first list, and call ourselves
+with the remainder of `input`:
+
+
+```scheme
+(define (chem-react acc input)
+  (match (list acc input)
+    [(_ ()) acc]
+    [(() (b . brest)) (chem-react (cons b acc) brest)]))
+
+```
+
+Here we see a new function, `cons`. `cons` just adds an item to a list, and
+returns the new list.
+
+Let's try it:
+
+```scheme
+
+(define my-list (list 2 3))
+
+(cons 1 my-list) ;; => (1 2 3)
+
+```
+
+
+Let's try our function on a trivial case to trigger the new pattern:
+
+```scheme
+(chem-react '() '(#\A)) ;; => (#\A)
+```
+
+This makes sense: if we only have one character, there is not much we can do
+with it. Note that the input list is **not** modified:
+
+```scheme
+
+(define my-list (list #\A))
+
+(chem-react '() my-list)
+
+(display my-list) => ;; displays: (A)
+
+```
