@@ -228,6 +228,9 @@ about the sign of the difference: if the difference is `32` or `-32`, it is the
 same. We could use `abs` but I (arbitrarily) chose to implement it without
 branches, by comparing the squared values (which swallows the signs).
 
+
+<hr>
+
 Now let's work on the central problem: how to remove
 characters in a list, in a functional, immutable way?
 
@@ -237,8 +240,7 @@ gradually remove items until it is empty. We can view the first list as the work
 we have done, and the second list as the work to do.
 
 
-Let's first define the function. For now, it just returns the empty list, noted
-as `'()`:
+Let's first define the function. For now, it just returns the empty list:
 
 ```scheme
 (define (chem-react acc input)
@@ -276,7 +278,7 @@ So we need to treat the case of the empty list (both for the first and the
 second argument) explicitely. We could do that by using lots of `if`, but it is
 more readable to use pattern matching.
 
-Now, Scheme has a minimalistic core, so we do not get pattern matching out of
+Scheme has a minimalistic core, so we do not get pattern matching out of
 the box, but we can easily add it with the package `matchable`. Let's install
 it:
 
@@ -290,7 +292,6 @@ Now we can import it at the top of our code:
 ```scheme
 (import matchable)
 ```
-
 
 
 Let's try to match the empty list in our function, and return (as an example) a
@@ -336,7 +337,6 @@ Let's go ahead and match the case of a list of one or more elements to avoid tha
 
 Here we choose to (arbitrarily) return the product of the first elements of both list.
 
-
 <hr>
 
 Back to our problem: if the second list (the input) is empty, it means we are
@@ -353,7 +353,6 @@ finished, so we return the first list (`acc`):
 Our recursion will work as follows: we look at the first element of the second
 list (`input`, which is the work to do), let's call it `b`, and the first element of the first
 list (`acc`, the work done), let's call it `a`.
-
 
 
 If `a` and `b` are the same letter of opposite casing, we 'drop' the two. Otherwise, we
@@ -439,12 +438,11 @@ It's quite simple: we use the modules `chicken.file.posix` and `chicken.io`:
 (import chicken.file.posix
         chicken.io)
 
-(read-line (open-input-file "/Users/pgaultier/Downloads/aoc5.txt")) ;; => a big string
+(read-line (open-input-file "/Users/pgaultier/Downloads/aoc5.txt")) ;; => "a big string..."
 ```
 
 
-
-Everything put together:
+## The final solution
 
 ```scheme
 (import matchable
@@ -516,7 +514,6 @@ $ csc aoc5.scm -o aoc5 -O3 && time ./aoc5
 ```
 
 
-
 It takes 21 miliseconds. Not too bad!
 
 Here is a hand-written C version which only does one allocation and uses mutations, for the input
@@ -574,10 +571,14 @@ I like C, but I personally find the Scheme version much more readable.
 ## Conclusion
 
 That's it, we solved the fifth Advent of Code challenge in Scheme! The solution
-is under 30 lines of code, and is (hopefully) simple and readable.
+is under 30 lines of code, is (hopefully) simple and readable, and has a
+performance close to C. But more than that, I think the real value in LISP is
+interactive programming, instead of the classical write-compile-execute-repeat,
+which is much more time consuming.
+
 
 I hope it gave you a glance at what LISPs can do, and stay tuned for more blog
 posts about programming. I intend to post more solutions to other coding
-challenges, solved with different programming languages.
+challenges, solved with a variety of programming languages.
 
 
