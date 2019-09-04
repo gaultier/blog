@@ -42,6 +42,7 @@ You can try to type something:
 
 ```
 
+
 If you want to more complete setup, you can also
 install the documentation with the chicken package manager:
 
@@ -72,8 +73,15 @@ So, how do you add 2 numbers? Well, `+` is just a function, so that is simply:
 Most operations in Scheme are just functions (or things that look like
 functions, such as macros, but we won't get into that).
 
-We can compose expressions in a straight-forward manner: `(* (+ 1 2) 3)`, which
-returns `9`.
+We can compose expressions in a straight-forward manner:
+
+```scheme
+(* (+ 1 2) 3)
+```
+
+, which returns `9`.
+
+
 Note that using the prefix notation with s-expressions (as we call those groups
 of parentheses) removes entirely the need for a table of operator precedence,
 which is very nice. We first evaluate the inner-most form: `(+ 1 2)`, which is
@@ -110,7 +118,11 @@ that takes a variable number of arguments and adds them all.
 
 Le'ts call it:
 
-`(compute 1 2)` returns `6`.
+```scheme
+(compute 1 2)
+```
+
+ returns `6`.
 
 Note that we do not need any `return` keyword like in most languages. Instead,
 the last s-expression is the return value of the function.
@@ -123,17 +135,26 @@ With this, believe it or not, we have enough to get started, and we will learn w
 
 Just save it to a file with the `.scm` extension and run it with:
 
-`csi -s foo.scm`
+```sh
+csi -s foo.scm
+```
+
 
 
 You can put that as a shebang on top of the file:
 
-`#!/usr/local/bin/csi -s`
+```scheme
+#!/usr/local/bin/csi -s
+```
+
 
 
 Another way is to compile the code to an executable and run that:
 
-`csc foo.scm -o foo && ./foo`
+```sh
+csc foo.scm -o foo && ./foo
+```
+
 
 
 ## The problem
@@ -159,7 +180,13 @@ and that's enough to know for us.
 
 Strings are written like you would expect, no surprises here.
 
-You can then use it like this: `(display input)`, which will print `input`.  Of
+You can then use it like this:
+
+```scheme
+(display input)
+```
+
+, which will print `input`.  Of
 course, if you are working in the REPL, and you should be (or in your editor,
 sending each form to the integrated REPL), you can just write `input` and it
 will evaluate its value, in this case the string `"aAbxXBctTCz"`.
@@ -175,7 +202,10 @@ good way to do off-by-one mistakes.
 
 Instead, since LISPs are good at handling lists (LISP stands for List Processor), let's use a list of characters instead:
 
-`(string->list input)`
+```scheme
+(string->list input)
+```
+
 
 Note that Scheme allows a wide range of characters in identifier names,
 including `-` and `>`, so we can be very expressive in our naming. Here, the
@@ -187,7 +217,9 @@ Let's write a `char-opposite-casing?` function to do just that. It will take 2
 arguments, the letters we are inspecting, and will return a boolean. 
 For now, let's just make it always return true:
 
-`(define (char-opposite-casing? a b) #\t)`
+```scheme
+(define (char-opposite-casing? a b) #\t)
+```
 
 True is written `#t` and false `#\f`.
 
@@ -196,7 +228,9 @@ in your terminal to see these).
 
 What is the ascii code of`A`? Let's try it:
 
-`(char->integer #\A)`
+```scheme
+(char->integer #\A)
+```
 
 `char->integer` is just another function that gives the ascii code of a
 character. A character is written with the prefix `#\`, so the character `A` is `#\A`.
@@ -204,7 +238,11 @@ character. A character is written with the prefix `#\`, so the character `A` is 
 We see it returns `65`. What about `a`?
 
 
-`(char->integer #\a)` returns `97`.
+```scheme
+(char->integer #\a)
+```
+
+returns `97`
 
 So there is a difference of `32` between the same ascii letter in lowercase and
 uppercase. Peeking at `man ascii` in the terminal confirms this hunch for all
