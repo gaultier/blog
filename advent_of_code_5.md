@@ -94,7 +94,9 @@ aliases.
 
 Here's how to define a binding called `foo` to the value `1`:
 
-`(define foo 1)`
+```scheme
+(define foo 1)
+```
 
 We can read this as such: from now on, when I refer to `foo`, what I really mean
 is `1`. That's it, it's just an alias.
@@ -136,7 +138,7 @@ With this, believe it or not, we have enough to get started, and we will learn w
 Just save it to a file with the `.scm` extension and run it with:
 
 ```sh
-csi -s foo.scm
+$ csi -s foo.scm
 ```
 
 
@@ -152,7 +154,7 @@ You can put that as a shebang on top of the file:
 Another way is to compile the code to an executable and run that:
 
 ```sh
-csc foo.scm -o foo && ./foo
+$ csc foo.scm -o foo && ./foo
 ```
 
 
