@@ -19,7 +19,7 @@ $ brew install chicken
 ```
 
 and...that's pretty much it! You should now be able to enter the REPL with
-`csi`:
+`csi` and type something:
 
 ```sh
 $ csi
@@ -29,19 +29,9 @@ CHICKEN
 Version 5.1.0 (rev 8e62f718)
 macosx-unix-clang-x86-64 [ 64bit dload ptables ]
 
-#;1>
-
-```
-
-You can try to type something:
-
-```sh
 #;1> (+ 1 2)
 3
-#;2>
-
 ```
-
 
 If you want to more complete setup, you can also
 install the documentation with the chicken package manager:
@@ -64,71 +54,43 @@ All you need to remember is this syntax:
 This calls `foo` with `arg1`, `arg2`, and `arg3` as arguments. In a
 C-like language you would use: `foo(arg1, arg2, arg3)`.
 
-So, how do you add 2 numbers? Well, `+` is just a function, so that is simply: 
-
-```scheme
-(+ 1 2)
-```
-
 Most operations in Scheme are just functions (or things that look like
 functions, such as macros, but we won't get into that).
 
-We can compose expressions in a straight-forward manner:
+Let's do a quick tour Scheme:
 
 ```scheme
-(* (+ 1 2) 3)
-```
+;; + is just a function like anyother
+(+ 1 2) ;; => 3 
 
-which returns `9`.
+;; We can compose expressions in a straight-forward manner:
+(* (+ 1 2) 3) ;; => 9
+;; Note that using the prefix notation with s-expressions (as we call those groups
+;; of parentheses) removes entirely the need for a table of operator precedence,
+;; which is very nice. We first evaluate the inner-most form: `(+ 1 2)`, which is
+;; `3`, and then we evaluate the outer form: `(* 3 3)`, which is `9`.
 
-
-Note that using the prefix notation with s-expressions (as we call those groups
-of parentheses) removes entirely the need for a table of operator precedence,
-which is very nice. We first evaluate the inner-most form: `(+ 1 2)`, which is
-`3`, and then we evaluate the outer form: `(* 3 3)`, which is `9`.
-
-One more thing we need to learn, is how to define variables and functions. Note
-that Scheme is mostly an immutable functional language, so there is not really a
-concept of 'variable', instead we talk about 'bindings', which really are just
-aliases.
-
-Here's how to define a binding called `foo` to the value `1`:
-
-```scheme
+;; Variables.
+;; Scheme is mostly an immutable functional language, so there isn't really a
+;; concept of 'variable', instead we talk about 'bindings', which really are just
+;; aliases.
+;; Let's define a binding called `foo` to the value `1`:
 (define foo 1)
-```
-
-We can read this as such: from now on, when I refer to `foo`, what I really mean
-is `1`. That's it, it's just an alias.
-
-We can check it worked by printing it with:
-
-```scheme
+;; We can read this as such: from now on, when I refer to `foo`, what I really mean
+;; is `1`. It's just an alias.
+;; Let's print it:
 (display foo)
-```
 
-Defining a function is quite the same:
-
-```scheme
+;; Defining a function is quite the same:
 (define (compute a b) (+ a b 3))
+;; This defines a function called `compute` which adds its 2 arguments to `3` and
+;; returns that.
+;; It works because `+` is a function that takes a variable number of arguments and adds them all.
+;; Let's call it:
+(compute 1 2) ;; => 6
+;; Note that we do not need any `return` keyword like in most languages. Instead,
+;; the last s-expression is the return value of the function.
 ```
-
-This defines a function called `compute` which adds its 2 arguments to `3` and
-returns that.
-Written in a way we are used to: `a + b + 3`. It works because `+` is a function
-that takes a variable number of arguments and adds them all.
-
-Le'ts call it:
-
-```scheme
-(compute 1 2)
-```
-
- returns `6`.
-
-Note that we do not need any `return` keyword like in most languages. Instead,
-the last s-expression is the return value of the function.
-
 
 With this, believe it or not, we have enough to get started, and we will learn while doing.
 
@@ -142,22 +104,11 @@ $ csi -s foo.scm
 ```
 
 
-
-You can put that as a shebang on top of the file:
-
-```scheme
-#!/usr/local/bin/csi -s
-```
-
-
-
 Another way is to compile the code to an executable and run that:
 
 ```sh
 $ csc foo.scm -o foo && ./foo
 ```
-
-
 
 ## The problem
 
