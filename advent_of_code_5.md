@@ -102,12 +102,22 @@ Let's do a quick tour Scheme:
 (compute 1 2) ;; => 6
 ;; Note that we do not need any `return` keyword like in most languages. Instead,
 ;; the last s-expression is the return value of the function.
+
+;; Lists:
+;; The empty list
+'() ;; =>  () 
+
+;; A list of 3 numbers
+(list 1 2 3) ;; => (1 2 3)
+;; A list of 3 characters
+(list #\a #\b #\C) ;; => (#\a #\b #\C)
+
 ```
 
 With this, believe it or not, we have enough to get started, and we will learn while doing.
 
 
-## But how do I run my code?
+> But how do I run my code?
 
 Just save it to a file with the `.scm` extension and run it with:
 
