@@ -60,6 +60,13 @@ functions, such as macros, but we won't get into that).
 Let's do a quick tour Scheme:
 
 ```scheme
+;; Booleans:
+;; True
+#t ;;=> #t
+
+;; False
+#f ;;=> #f
+
 ;; Numbers:
 1 ;; => 1
 
@@ -91,6 +98,11 @@ Let's do a quick tour Scheme:
 ;; is `1`. It's just an alias.
 ;; Let's print it:
 (display foo)
+
+;; Scheme allows a wide range of characters in identifier names,
+;; including `-`, `>`, `?`, etc. 
+;; It means we can be very expressive in our naming
+(define my-var!-is-awesome? 3)
 
 ;; Functions:
 ;; Defining a function is quite the same:
@@ -143,42 +155,28 @@ First, let's define our input, which is a string:
 ```scheme
 (define input "aAbxXBctTCz")
 ```
-
-`define` defines a name for a value, within a module (we do not care about
-modules in our case since we will only have one file). It looks like a function,
-and that's enough to know for us.
-
-Strings are written like you would expect, no surprises here.
-
-You can then use it like this:
-
-```scheme
-(display input)
-```
-
-which will print `input`.  Of course, if you are working in the REPL, and you should be (or in your editor,
-sending each form to the integrated REPL), you can just write `input` and it
-will evaluate its value, in this case the string `"aAbxXBctTCz"`.
-
 Later, we will read our input string from a file, but for now it is simpler to
 just hard-code it.
 
 Most operations on strings in Scheme are in an immutable fashion, meaning they doe not
 modify the string, they instead return a new string which is slightly different. 
 Since the input string is quite big (around 50 000 characters), it might not be
-very efficient. Also, we do not really want to keep track of indices, this is a
+very efficient (removing a character from a string, without a sharing mechanism, is `O(n)`).
+
+Also, we do not really want to keep track of indices, this is a
 good way to do off-by-one mistakes. 
 
-Instead, since LISPs are good at handling lists (LISP stands for List Processor), let's use a list of characters instead:
+
+Lists seem more suited to this case, because removing an element is `O(1)`. 
+Also, LISPs are good at handling lists (LISP stands for List Processor), so let's use a list of characters instead:
 
 ```scheme
 (string->list input)
 ```
 
-
-Note that Scheme allows a wide range of characters in identifier names,
-including `-` and `>`, so we can be very expressive in our naming. Here, the
-`string->list` function just returns a list of characters for a string.
+Here, the
+`string->list` function just returns a list of characters for a string (in other
+languages it is usually named `split`).
 
 
 Now, we need to detect if two characters are the same latter, with opposite casing.
@@ -190,27 +188,15 @@ For now, let's just make it always return true:
 (define (char-opposite-casing? a b) #\t)
 ```
 
-True is written `#t` and false `#\f`.
-
 We only deal with ascii, so it is safe to compare ascii codes. 
 
-What is the ascii code of`A`? Let's try it:
+What is the ascii code of`A`? Let's try it by using the function `char->integer`:
 
 ```scheme
-(char->integer #\A)
+(char->integer #\A) ;; => 65
+
+(char->integer #\a) ;; => 97
 ```
-
-`char->integer` is just another function that gives the ascii code of a
-character. A character is written with the prefix `#\`, so the character `A` is `#\A`.
-
-We see it returns `65`. What about `a`?
-
-
-```scheme
-(char->integer #\a)
-```
-
-returns `97`
 
 So there is a difference of `32` between the same ascii letter in lowercase and
 uppercase. Peeking at `man ascii` in the terminal confirms this hunch for all
@@ -224,6 +210,13 @@ So, time to implement `char-opposite-casing?`!
          (b-code (char->integer b))
          (diff (- a-code b-code)))
     (= (* 32 32) (* diff diff))))
+    
+
+(char-case-opposite-casing? #\a #\A) ;; => #t
+
+(char-case-opposite-casing? #\A #\a) ;; => #t
+
+(char-case-opposite-casing? #\A #\b) ;; => #f
 ```
 
 
@@ -235,17 +228,7 @@ about the sign of the difference: if the difference is `32` or `-32`, it is the
 same. We could use `abs` but I (arbitrarily) chose to implement it without
 branches, by comparing the squared values (which swallows the signs).
 
-Let's test our function:
-
-```scheme
-(char-case-opposite-casing? #\a #\A) ;; => #t
-
-(char-case-opposite-casing? #\A #\a) ;; => #t
-
-(char-case-opposite-casing? #\A #\b) ;; => #f
-```
-
-It works as intended. Now let's work on the central problem: how to remove
+Now let's work on the central problem: how to remove
 characters in a list, in a functional, immutable way?
 
 The idea is to write a recursive function taking two arguments: an accumulator,
