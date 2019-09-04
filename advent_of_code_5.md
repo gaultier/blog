@@ -60,7 +60,18 @@ functions, such as macros, but we won't get into that).
 Let's do a quick tour Scheme:
 
 ```scheme
-;; + is just a function like anyother
+;; Numbers:
+1 ;; => 1
+
+;; Strings:
+"hello, world" ;; => "hello, world" 
+
+;; Characters:
+;; The character `a`
+#\a ;; => #\a
+
+;; Expressions:
+;; + is just a function like any other
 (+ 1 2) ;; => 3 
 
 ;; We can compose expressions in a straight-forward manner:
@@ -70,7 +81,7 @@ Let's do a quick tour Scheme:
 ;; which is very nice. We first evaluate the inner-most form: `(+ 1 2)`, which is
 ;; `3`, and then we evaluate the outer form: `(* 3 3)`, which is `9`.
 
-;; Variables.
+;; Variables:
 ;; Scheme is mostly an immutable functional language, so there isn't really a
 ;; concept of 'variable', instead we talk about 'bindings', which really are just
 ;; aliases.
@@ -81,6 +92,7 @@ Let's do a quick tour Scheme:
 ;; Let's print it:
 (display foo)
 
+;; Functions:
 ;; Defining a function is quite the same:
 (define (compute a b) (+ a b 3))
 ;; This defines a function called `compute` which adds its 2 arguments to `3` and
@@ -100,14 +112,9 @@ With this, believe it or not, we have enough to get started, and we will learn w
 Just save it to a file with the `.scm` extension and run it with:
 
 ```sh
-$ csi -s foo.scm
-```
+$ csi -s foo.scm # run it 
 
-
-Another way is to compile the code to an executable and run that:
-
-```sh
-$ csc foo.scm -o foo && ./foo
+$ csc foo.scm -o foo && ./foo # Alternatively, compile it to an executable, and run it
 ```
 
 ## The problem
