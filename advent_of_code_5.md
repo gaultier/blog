@@ -134,7 +134,7 @@ With this, believe it or not, we have enough to get started, and we will learn w
 
 > But how do I run my code?
 
-Just save it to a file with the `.scm` extension and run it with:
+Just save it to a file with the `.scm` extension and do:
 
 ```sh
 $ csi -s foo.scm # run it 
