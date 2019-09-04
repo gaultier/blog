@@ -269,3 +269,118 @@ branches, by comparing the squared values (which swallows the signs).
 
 Let's test our function:
 
+```scheme
+(char-case-opposite-casing? #\a #\A) ;; => #t
+
+(char-case-opposite-casing? #\A #\a) ;; => #t
+
+(char-case-opposite-casing? #\A #\b) ;; => #f
+```
+
+It works as intended. Now let's work on the central problem: how to remove
+characters in a list, in a functional, immutable way?
+
+The idea is to write a recursive function taking two arguments: an accumulator,
+which will be eventually the end result, and the input list, from which we
+gradually remove items until it is empty. We can view the first list as the work
+we have done, and the second list as the work to do.
+
+
+Let's first define the function. For now, it just returns the empty list, noted
+as `'()`:
+
+```scheme
+(define (chem-react acc input)
+  '()
+```
+
+
+At first, the accumulator is the empty list, so we will always call our function like
+this:
+
+```scheme
+(chem-react '() (list->chars input))
+```
+
+
+It is import to know that most list functions do not work on the empty list. For
+example, to get the first element of a list, we use the `car` function:
+
+
+```scheme
+(define my-list (list 1 2 3))
+
+(car my-list) ;; => 1
+```
+
+But it won't work on the empty list:
+
+```scheme
+(define my-list '())
+
+(car my-list) ;; => Error: (car) bad argument type: ()
+```
+
+So we need to treat the case of the empty list (both for the first and the
+second argument) explicitely. We could do that by using lots of `if`, but it is
+more readable to use pattern matching.
+
+Now, Scheme has a minimalistic core, so we do not get pattern matching out of
+the box, but we can easily add it with the package `matchable`. Let's install
+it:
+
+```sh
+$ chicken-install matchable
+```
+
+
+Now we can import it at the top of our code:
+
+```scheme
+(import matchable)
+```
+
+
+
+Let's try to match the empty list in our function, and return (as an example) a
+number, e.g `42`. We also want to match the case of both lists containing one
+element, and returning the sum of those 2 elements:
+
+```scheme
+(define (chem-react acc input)
+  (match (list acc input)
+    [(_ ()) 42]
+    [((a) (b)) (+ a b)]))
+
+(chem-react '() '()) ;; => 42
+
+(chem-react (list 2) (list 3)) ;; => 5
+```
+
+A few interesting things here: `_` allows us to match anything, so the first
+case could just be replaced by a simple check to see if the second list is
+empty. Additionally, we can bind variables to our patterns: we do that in the
+second case, binding the first element of the first list to `a`, and the fist
+element of the second list to `b`, and summing the two.
+
+
+Note that not all possible cases are covered here, and we will get a (runtime)
+error if we trigger one of them:
+
+```scheme
+(chem-react (list 1 2) (list 3)) ;; => Error: (match) "no matching pattern": ()
+```
+
+Let's go ahead and match the case of a list of one or more elements to avoid that:
+
+```scheme
+(define (chem-react acc input)
+  (match (list acc input)
+    [(_ ()) 42]
+    [((a) (b)) (+ a b)]
+    [((a . arest) (b . brest)) (* a b)]))
+
+(chem-react (list 2 3) (list 4)) ;; => 8
+```
+
+Here we choose to (arbitrarily) return the product of the first elements of both list.
