@@ -247,7 +247,7 @@ Let's first define the function. For now, it just returns the empty list:
 
 ```scheme
 (define (chem-react acc input)
-  '()
+  '())
 ```
 
 
@@ -281,6 +281,7 @@ So we need to treat the case of the empty list (both for the first and the
 second argument) explicitely. We could do that by using lots of `if`, but it is
 more readable to use pattern matching.
 
+### A small detour: pattern matching
 Scheme has a minimalistic core, so we do not get pattern matching out of
 the box, but we can easily add it with the package `matchable`. Let's install
 it:
@@ -313,7 +314,7 @@ element, and returning the sum of those 2 elements:
 ```
 
 A few interesting things here: `_` allows us to match anything, so the first
-case could just be replaced by a simple check to see if the second list is
+case is equivalent to checking if the second list is
 empty. Additionally, we can bind variables to our patterns: we do that in the
 second case, binding the first element of the first list to `a`, and the fist
 element of the second list to `b`, and summing the two.
@@ -340,9 +341,9 @@ Let's go ahead and match the case of a list of one or more elements to avoid tha
 
 Here we choose to (arbitrarily) return the product of the first elements of both list.
 
-<hr>
+### Using pattern matching to solve our problem
 
-Back to our problem: if the second list (the input) is empty, it means we are
+If the second list (the input) is empty, it means we are
 finished, so we return the first list (`acc`):
 
 
