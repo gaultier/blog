@@ -9,7 +9,7 @@
 
 # Getting started with Scheme by solving an Advent of Code 2018 challenge 
 
-I started learning Scheme very recently. Chicken Scheme is a wonderful small and
+I started learning Scheme very recently. [Chicken Scheme](http://wiki.call-cc.org/) is a wonderful small and
 performant implementation of Scheme, a programming language in the family of
 LISPs.
 Since I learn by doing, let's solve an [Advent of Code challenge](https://adventofcode.com/2018/day/5) with a tiny Scheme program.
@@ -22,7 +22,21 @@ I will not go through installing Chicken Scheme and learning the basics, because
 it was [already done better than I can](http://blog.klipse.tech/scheme/2016/09/11/scheme-tutorial-1.html)!
 
 *Most code snippets on this page are interactive thanks to [klipse](https://github.com/viebel/klipse)!*
+ 
+<!-- markdown-toc start - Don't edit this section. Run M-x markdown-toc-refresh-toc -->
+**Table of Contents**
 
+- [Getting started with Scheme by solving an Advent of Code 2018 challenge](#getting-started-with-scheme-by-solving-an-advent-of-code-2018-challenge)
+    - [The problem](#the-problem)
+    - [Working with the REPL to iteratively close in on a solution](#working-with-the-repl-to-iteratively-close-in-on-a-solution)
+        - [A small detour: pattern matching](#a-small-detour-pattern-matching)
+        - [Using pattern matching to solve our problem](#using-pattern-matching-to-solve-our-problem)
+    - [The final solution](#the-final-solution)
+    - [Conclusion](#conclusion)
+
+<!-- markdown-toc end -->
+
+ 
 ## The problem
 
 We have a string looking like this: `AabcdZZqQ`, and we
