@@ -43,8 +43,10 @@ run inside your browser!*
  
 ## The problem
 
-We have a string looking like this: `AabcdZZqQ`, and we
-want to remove neighbouring letters which are the same letter and have opposite casing, e.g
+We have a string looking like this: `AabcdZZqQ` which represents a chain of
+chemical units. Adjacent units of the same type (i.e letter) and opposite
+polarity (i.e casing) react together and disappear.
+It means we want to remove adjacent characters which are the same letter and have opposite casing, e.g
 `Aa` and `qQ` disappear while `bc` and `ZZ` remain. Once we are finished, we have: `bcdZZ`.
 
 The final ouput is the number of characters in the final string, i.e, `5`.
