@@ -8,4 +8,4 @@
 ## CV
 
 You can find my resume [online](https://gaultier.github.io/resume/resume)
-or download it as [PDF](https://github.com/gaultier/resume/blob/master/Philippe_Gaultier_resume_en.pdf).
+or download it as [PDF](https://github.com/gaultier/resume/raw/master/Philippe_Gaultier_resume_en.pdf).
