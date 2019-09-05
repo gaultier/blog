@@ -438,7 +438,8 @@ $ csc aoc5.scm -o aoc5 -O3 && time ./aoc5
 ```
 
 
-It takes 21 milliseconds. Not too bad.
+It takes 21 milliseconds. Not too bad for a garbage collected, functional,
+immutable program.
 
 Here is a hand-written C version which only does one allocation and removes
 letters in place:
