@@ -1,3 +1,11 @@
+<link rel="stylesheet" type="text/css" href="https://storage.googleapis.com/app.klipse.tech/css/codemirror.css">
+
+<script>
+    window.klipse_settings = {
+        selector_eval_scheme: '.scheme', // css selector for the html elements you want to klipsify
+    };
+</script>
+
 # Getting started with Scheme by solving an Advent of Code challenge 
 
 I started learning Scheme very recently. Chicken Scheme is a wonderful small and
@@ -9,136 +17,10 @@ Many people have the feeling that LISPs are slow and cryptic with all those
 parentheses. I hope to show that it is in fact very approchable, easy to work
 with, and even fast to run!
 
-## Installing Chicken Scheme
+I will not go through installing Chicken Scheme and learning the basics, because
+it was [already done better than I can](http://blog.klipse.tech/scheme/2016/09/11/scheme-tutorial-1.html)!
 
-There should be a package in your favorite package manager. For example on macOS
-you would do:
-
-```sh
-$ brew install chicken
-```
-
-and...that's pretty much it. You should now be able to enter the REPL with
-`csi` and type something:
-
-```sh
-$ csi
-CHICKEN
-(c) 2008-2019, The CHICKEN Team
-(c) 2000-2007, Felix L. Winkelmann
-Version 5.1.0 (rev 8e62f718)
-macosx-unix-clang-x86-64 [ 64bit dload ptables ]
-
-#;1> (+ 1 2)
-3
-```
-
-If you want to more complete setup, you can also
-install the documentation with the chicken package manager:
-
-```sh
-$ chicken-install -s apropos chicken-doc
-```
-
-
-I definitely recommend setting up your favorite editor to work with Scheme, and
-an integrated REPL.
-
-## Scheme in 30 seconds
-
-All you need to remember is this syntax:
-
-```scheme
-(foo arg1 arg2 arg3)
-```
-
-This calls `foo` with `arg1`, `arg2`, and `arg3` as arguments. In a
-C-like language you would use: `foo(arg1, arg2, arg3)`.
-
-Most operations in Scheme are just functions (or things that look like
-functions, such as macros, but we won't get into that).
-
-Let's do a quick tour Scheme:
-
-```scheme
-;; Booleans:
-;; True
-#t ;;=> #t
-
-;; False
-#f ;;=> #f
-
-;; Numbers:
-1 ;; => 1
-
-;; Strings:
-"hello, world" ;; => "hello, world" 
-
-;; Characters:
-;; The character `a`
-#\a ;; => #\a
-
-;; Expressions:
-;; + is just a function like any other
-(+ 1 2) ;; => 3 
-
-;; We can compose expressions in a straight-forward manner:
-(* (+ 1 2) 3) ;; => 9
-;; Note that using the prefix notation with s-expressions (as we call those groups
-;; of parentheses) removes entirely the need for a table of operator precedence,
-;; which is very nice. We first evaluate the inner-most form: `(+ 1 2)`, which is
-;; `3`, and then we evaluate the outer form: `(* 3 3)`, which is `9`.
-
-;; Variables:
-;; Scheme is mostly an immutable functional language, so there isn't really a
-;; concept of 'variable', instead we talk about 'bindings', which really are just
-;; aliases.
-;; Let's define a binding called `foo` to the value `1`:
-(define foo 1)
-;; We can read this as such: from now on, when I refer to `foo`, what I really mean
-;; is `1`. It's just an alias.
-;; Let's print it:
-(display foo)
-
-;; Scheme allows a wide range of characters in identifier names,
-;; including `-`, `>`, `?`, etc. 
-;; It means we can be very expressive in our naming
-(define my-var!-is-awesome? 3)
-
-;; Functions:
-;; Defining a function is quite the same:
-(define (compute a b) (+ a b 3))
-;; This defines a function called `compute` which adds its 2 arguments to `3` and
-;; returns that.
-;; It works because `+` is a function that takes a variable number of arguments and adds them all.
-;; Let's call it:
-(compute 1 2) ;; => 6
-;; Note that we do not need any `return` keyword like in most languages. Instead,
-;; the last s-expression is the return value of the function.
-
-;; Lists:
-;; The empty list
-'() ;; =>  () 
-
-;; A list of 3 numbers
-(list 1 2 3) ;; => (1 2 3)
-;; A list of 3 characters
-(list #\a #\b #\C) ;; => (#\a #\b #\C)
-
-```
-
-With this, believe it or not, we have enough to get started, and we will learn while doing.
-
-
-> But how do I run my code?
-
-Just save it to a file with the `.scm` extension and do:
-
-```sh
-$ csi -s foo.scm # run it 
-
-$ csc foo.scm -o foo && ./foo # Alternatively, compile it to an executable, and run it
-```
+*All code snippets on this page are interactive thanks to [klipse](https://github.com/viebel/klipse)!*
 
 ## The problem
 
@@ -192,9 +74,11 @@ We only deal with ascii, so it is safe to compare ascii codes to detect casing.
 What is the ascii code of`A`? Let's try it by using the function `char->integer`:
 
 ```scheme
-(char->integer #\A) ;; => 65
+(char->integer #\A) 
+```
 
-(char->integer #\a) ;; => 97
+```scheme
+(char->integer #\a)
 ```
 
 So there is a difference of `32` between the same ascii letter in lowercase and
@@ -209,13 +93,18 @@ So, time to implement `char-opposite-casing?`:
          (b-code (char->integer b))
          (diff (- a-code b-code)))
     (= (* 32 32) (* diff diff))))
-    
+```
 
-(char-case-opposite-casing? #\a #\A) ;; => #t
+```scheme    
+(char-case-opposite-casing? #\a #\A) 
+```
 
-(char-case-opposite-casing? #\A #\a) ;; => #t
+```scheme
+(char-case-opposite-casing? #\A #\a)
+```
 
-(char-case-opposite-casing? #\A #\b) ;; => #f
+```scheme
+(char-case-opposite-casing? #\A #\b)
 ```
 
 
@@ -578,3 +467,5 @@ which is much more time consuming.
 I hope it gave you a glance at what LISPs can do, and stay tuned for more blog
 posts about programming. I intend to post more solutions to other coding
 challenges, solved with a variety of programming languages.
+
+<script src="https://storage.googleapis.com/app.klipse.tech/plugin_prod/js/klipse_plugin.min.js"></script>
