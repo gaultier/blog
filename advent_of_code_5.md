@@ -487,12 +487,15 @@ acceptable amount of time.
 
 That's it, we solved the fifth Advent of Code challenge in Scheme. The solution
 is under 30 lines of code, is (hopefully) simple and readable, and has a
-performance close to C. But more than that, I think the real value in LISP is
+performance close to C, while having memory safety (I had several segfaults
+while doing the C version).
+
+But more than that, I think the real value in LISPs is
 interactive programming, instead of the classical write-compile-execute-repeat,
-which is much more time consuming.
+which is much more time consuming. It is really important to get feedback as
+early as possible, and LISPs give us that.
 
-
-I hope it gave you a glance at what LISPs can do, and stay tuned for more blog
+I hope it gave you a glance at what Scheme can do, and stay tuned for more blog
 posts about programming. I intend to post more solutions to other coding
 challenges, solved with a variety of programming languages.
 
