@@ -37,6 +37,8 @@ First, let's define our input, which is a string:
 
 ```eval-scheme
 (define input "aAbxXBctTCz")
+
+input
 ```
 
 Later, we will read our input string from a file, but for now it is simpler to
@@ -47,7 +49,7 @@ modify their arguments, they instead return a new item which is slightly differe
 
 We could work with strings, but it turns out it is simpler to work with lists
 instead in our case. We do not want to keep track of indices, risking doing off-by-one mistakes.
-Also, LISPs are good at handling lists (LISP stands for List Processor), and
+Also, LISPs are good at handling lists (LISP stands for LISt Processor), and
 we'll that we can use pattern matching to make the code very concise. I am not
 aware of pattern matching capabilities on string, so let's use lists:
 
@@ -72,7 +74,7 @@ For now, let's just make it always return true:
 
 We only deal with ascii, so it is safe to compare ascii codes to detect casing. 
 
-What is the ascii code of`A`? Let's try it by using the function `char->integer`:
+What is the ascii code of `A`? Let's try it by using the function `char->integer`:
 
 ```eval-scheme
 (char->integer #\A) 
