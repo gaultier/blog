@@ -21,9 +21,11 @@ parentheses. I hope to show that it is in fact very approchable, easy to work
 with, and even fast to run!
 
 I will not go through installing Chicken Scheme and learning the basics, because
-it was [already done better than I can](http://blog.klipse.tech/scheme/2016/09/11/scheme-tutorial-1.html)!
+it was [already done better than I can](http://blog.klipse.tech/scheme/2016/09/11/scheme-tutorial-1.html).
 
-*Most code snippets on this page are interactive thanks to [klipse](https://github.com/viebel/klipse)!*
+*Most code snippets on this page are interactive thanks to
+[klipse](https://github.com/viebel/klipse). You can modify them yourself, they
+run inside your browser!*
  
 <!-- markdown-toc start - Don't edit this section. Run M-x markdown-toc-refresh-toc -->
 **Table of Contents**
