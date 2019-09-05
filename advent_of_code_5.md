@@ -440,6 +440,31 @@ It's quite simple: we use the modules `chicken.file.posix` and `chicken.io`:
 
 ## The final solution
 
+Here I use the package `clojurian` (`chicken-install clojurian`) to have access
+to the `->>` macro which makes code more readable. It works like the pipe in the
+shell. Instead of writing:
+
+
+```scheme
+(foo (bar "foo" (baz 1 2)))
+```
+
+We write:
+
+
+```scheme
+(->> (baz 1 2)
+     (bar "foo")
+     (foo))
+```
+
+The macro reorders the functions calls to make it flat.
+It is not strictly required, but I like that my code looks like a
+pipeline of data transformations.
+
+
+The final code:
+
 ```scheme
 (import matchable
         clojurian.syntax
@@ -468,26 +493,6 @@ It's quite simple: we use the modules `chicken.file.posix` and `chicken.io`:
      (print))
 ```
 
-Here I use the package `clojurian` (`chicken-install clojurian`) to have access
-to the `->>` macro which makes code more readable. It works like the pipe in the
-shell. Instead of writing:
-
-
-```scheme
-(foo (bar "foo" (baz 1 2)))
-```
-
-We write:
-
-
-```scheme
-(->> (baz 1 2)
-     (bar "foo")
-     (foo))
-```
-
-It is not strictly required, but I like the fact that my code looks like a
-pipeline of immutable transformations.
 
 
 > But we will get a stack overflow on a big input!
@@ -505,7 +510,7 @@ Let's benchmark it on the real input (50 000 characters), with `-O3` to enable o
 *Note 1: The real output of the program is not shown to avoid spoiling the final result*
 
 
-*Note 2: This is a mediocre way to do benchmarking. A more correct way would
+*Note 2: This is a simplistic way to do benchmarking. A more correct way would
 be: warming up the file cache, making many runs, averaging the results, etc. 
 I did exactly that and it did not change the results in a significant manner.*
 
