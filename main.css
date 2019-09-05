@@ -1,0 +1,11 @@
+.wrapper {
+    width: 100%;
+}
+
+body > section {
+    width: 80%;
+}
+
+body > header {
+    width: 15%;
+}
