@@ -1,11 +1,9 @@
 # Getting started with Scheme by solving an Advent of Code challenge 
 
-Chicken Scheme is a wonderful small and performant implementation of Scheme, a
-programming language in the family of LISPs. It's very easy to install and
-learn.
-
-I started learning Scheme very recently, and since I learn by doing, 
-let's solve an Advent of Code challenge with a tiny Scheme program.
+I started learning Scheme very recently. Chicken Scheme is a wonderful small and
+performant implementation of Scheme, a programming language in the family of
+LISPs.
+Since I learn by doing, let's solve an Advent of Code challenge with a tiny Scheme program.
 
 Many people have the feeling that LISPs are slow and cryptic with all those
 parentheses. I hope to show that it is in fact very approchable, easy to work
@@ -144,12 +142,11 @@ $ csc foo.scm -o foo && ./foo # Alternatively, compile it to an executable, and 
 
 ## The problem
 
-We have a string looking like this: `AabcdZz`, and we
+We have a string looking like this: `AabcdZZqQ`, and we
 want to remove neighbouring letters which are the same letter and have opposite casing, e.g
-`Aa` disappears while `bc` remains. Once we are finished processing our example,
-we have: `bcd`.
+`Aa` and `qQ` disappear while `bc` and `ZZ` remain. Once we are finished, we have: `bcdZZ`.
 
-The final ouput is the number of characters in the final string, i.e, `3`.
+The final ouput is the number of characters in the final string, i.e, `5`.
 
 ## Working with the REPL to iteratively close in on a solution
 
@@ -158,20 +155,19 @@ First, let's define our input, which is a string:
 ```scheme
 (define input "aAbxXBctTCz")
 ```
+
 Later, we will read our input string from a file, but for now it is simpler to
 just hard-code it.
 
-Most operations on strings in Scheme are in an immutable fashion, meaning they doe not
-modify the string, they instead return a new string which is slightly different. 
-Since the input string is quite big (around 50 000 characters), it might not be
-very efficient (removing a character from a string, without a sharing mechanism, is `O(n)`).
+Most functions in Scheme are immutable, meaning they do not
+modify their arguments, they instead return a new item which is slightly different. 
 
-Also, we do not really want to keep track of indices, this is a
-good way to do off-by-one mistakes. 
+We could work with strings, but it turns out it is simpler to work with lists
+instead in our case. We do not want to keep track of indices, risking doing off-by-one mistakes.
+Also, LISPs are good at handling lists (LISP stands for List Processor), and
+we'll that we can use pattern matching to make the code very concise. I am not
+aware of pattern matching capabilities on string, so let's use lists:
 
-
-Lists seem more suited to this case, because removing an element is `O(1)`. 
-Also, LISPs are good at handling lists (LISP stands for List Processor), so let's use a list of characters instead:
 
 ```scheme
 (string->list input)
@@ -191,7 +187,7 @@ For now, let's just make it always return true:
 (define (char-opposite-casing? a b) #\t)
 ```
 
-We only deal with ascii, so it is safe to compare ascii codes. 
+We only deal with ascii, so it is safe to compare ascii codes to detect casing. 
 
 What is the ascii code of`A`? Let's try it by using the function `char->integer`:
 
@@ -224,21 +220,24 @@ So, time to implement `char-opposite-casing?`:
 
 
 `let*` is used to define local bindings which are only visible in this function.
+It evaluates each binding in order which means we can define `diff` in terms of
+`a` and `b` (contrary to `let`).
+
 We could have done without it but it makes the function more readable.
 
 The only hurdle is not caring
 about the sign of the difference: if the difference is `32` or `-32`, it is the
-same. We could use `abs` but I (arbitrarily) chose to implement it without
+same. We could compare the absolute value, but I (arbitrarily) chose to implement it without
 branches, by comparing the squared values (which swallows the signs).
-
 
 <hr>
 
 Now let's work on the central problem: how to remove
 characters in a list, in a functional, immutable way?
 
-The idea is to write a recursive function taking two arguments: an accumulator,
-which will be eventually the end result, and the input list, from which we
+The idea is to write a recursive function taking two arguments: an accumulator
+(let's call it `acc` from now on),
+which will be eventually the end result, and the input list (`input`), from which we
 gradually remove items until it is empty. We can view the first list as the work
 we have done, and the second list as the work to do.
 
@@ -259,8 +258,8 @@ this:
 ```
 
 
-It is import to know that most list functions do not work on the empty list. For
-example, to get the first element of a list, we use the `car` function:
+It is import to know that most list functions do not work on the empty list in
+Chicken Scheme. For example, to get the first element of a list, we use the `car` function:
 
 
 ```scheme
