@@ -77,6 +77,8 @@ What is the ascii code of`A`? Let's try it by using the function `char->integer`
 (char->integer #\A) 
 ```
 
+
+What about `a`?
 ```scheme
 (char->integer #\a)
 ```
@@ -95,13 +97,18 @@ So, time to implement `char-opposite-casing?`:
     (= (* 32 32) (* diff diff))))
 ```
 
+Let's try it with `a` and `A`:
 ```scheme    
 (char-case-opposite-casing? #\a #\A) 
 ```
 
+
+And flipped:
 ```scheme
 (char-case-opposite-casing? #\A #\a)
 ```
+
+And `A` and `b`:
 
 ```scheme
 (char-case-opposite-casing? #\A #\b)
@@ -143,7 +150,7 @@ At first, the accumulator is the empty list, so we will always call our function
 this:
 
 ```scheme
-(chem-react '() (list->chars input))
+(chem-react '() (string->list input))
 ```
 
 
@@ -155,7 +162,7 @@ Chicken Scheme. For example, to get the first element of a list, we use the `car
 (define my-list (list 1 2 3))
 
 ;; Note that this doest **not** mutate `my-list`
-(car my-list) ;; => 1
+(car my-list)
 ```
 
 But it won't work on the empty list:
@@ -163,7 +170,7 @@ But it won't work on the empty list:
 ```scheme
 (define my-list '())
 
-(car my-list) ;; => Error: (car) bad argument type: ()
+(car my-list)
 ```
 
 So we need to treat the case of the empty list (both for the first and the
@@ -273,7 +280,7 @@ returns the new list with the added item:
 (define my-list (list 2 3))
 
 ;; Note: `my-list` is **not** modified
-(cons 1 my-list) ;; => (1 2 3)
+(cons 1 my-list) 
 
 ```
 
