@@ -7,12 +7,12 @@
     };
 </script>
 
-# Getting started with Scheme by solving an Advent of Code challenge 
+# Getting started with Scheme by solving an Advent of Code 2018 challenge 
 
 I started learning Scheme very recently. Chicken Scheme is a wonderful small and
 performant implementation of Scheme, a programming language in the family of
 LISPs.
-Since I learn by doing, let's solve an Advent of Code challenge with a tiny Scheme program.
+Since I learn by doing, let's solve an [Advent of Code challenge](https://adventofcode.com/2018/day/5) with a tiny Scheme program.
 
 Many people have the feeling that LISPs are slow and cryptic with all those
 parentheses. I hope to show that it is in fact very approchable, easy to work
