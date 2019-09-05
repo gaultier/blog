@@ -463,7 +463,8 @@ $ cc -std=c99 -O3 -Weverything aoc5.c -march=native && time ./a.out
 ./a.out  0.01s user 0.00s system 86% cpu 0.012 total
 ```
 
-It took 12 miliseconds. So the scheme version is very close.
+It took 12 miliseconds. So the scheme version is very close, and takes an
+acceptable amount of time.
 
 ## Conclusion
 
