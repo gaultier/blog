@@ -265,6 +265,7 @@ Chicken Scheme. For example, to get the first element of a list, we use the `car
 ```scheme
 (define my-list (list 1 2 3))
 
+;; Note that this doest **not** mutate `my-list`
 (car my-list) ;; => 1
 ```
 
@@ -278,12 +279,13 @@ But it won't work on the empty list:
 
 So we need to treat the case of the empty list (both for the first and the
 second argument) explicitely. We could do that by using lots of `if`, but it is
-more readable to use pattern matching.
+more readable and concise to use pattern matching.
 
 ### A small detour: pattern matching
+
 Scheme has a minimalistic core, so we do not get pattern matching out of
 the box, but we can easily add it with the package `matchable`. Let's install
-it:
+it in the terminal:
 
 ```sh
 $ chicken-install matchable
@@ -294,6 +296,9 @@ Now we can import it at the top of our code:
 
 ```scheme
 (import matchable)
+
+;; At this point we can refer to any function in this module `matchable`.
+;; No need to prefix them either with `matchable`.
 ```
 
 
@@ -320,13 +325,13 @@ element of the second list to `b`, and summing the two.
 
 
 Note that not all possible cases are covered here, and we will get a (runtime)
-error if we trigger one of them:
+error if we trigger one of them, for example with a list containing several numbers:
 
 ```scheme
 (chem-react (list 1 2) (list 3)) ;; => Error: (match) "no matching pattern": ()
 ```
 
-Let's go ahead and match the case of a list of one or more elements to avoid that:
+Let's go ahead and match the case of a list of one or more elements (`(a . arest)`) to avoid that:
 
 ```scheme
 (define (chem-react acc input)
@@ -338,7 +343,8 @@ Let's go ahead and match the case of a list of one or more elements to avoid tha
 (chem-react (list 2 3) (list 4)) ;; => 8
 ```
 
-Here we choose to (arbitrarily) return the product of the first elements of both list.
+Here we choose to (arbitrarily) return the product of the first elements of both
+list, to show that pattern matching is also a way to do destructuring.
 
 ### Using pattern matching to solve our problem
 
@@ -361,13 +367,29 @@ list (`acc`, the work done), let's call it `a`.
 If `a` and `b` are the same letter of opposite casing, we 'drop' the two. Otherwise, we
 add `b` to the first list, and 'continue'. 'drop' and 'continue' are put in
 quotes because that is vocabulary from imperative languages such as C; we'll see
-in a minute how we implement it.
+in a minute how we implement it in a functional way.
 
 
 If the first list is empty, this is our starting case: the only thing we can do
 is mark `b` as 'processed', i.e add it to the first list, and call ourselves
-with the remainder of `input`:
+with the remainder of `input`. Indeed, we can only work with two characters, so
+if we only have one, we cannot do much.
 
+It's time to learn about a new function: `cons`. `cons` just adds an item to a list, and
+returns the new list with the added item:
+
+
+```scheme
+
+(define my-list (list 2 3))
+
+;; Note: `my-list` is **not** modified
+(cons 1 my-list) ;; => (1 2 3)
+
+```
+
+
+We can now use `cons` to implement the new case:
 
 ```scheme
 (define (chem-react acc input)
@@ -375,40 +397,14 @@ with the remainder of `input`:
     [(_ ()) acc]
     [(() (b . brest)) (chem-react (cons b acc) brest)]))
 
-```
 
-Here we see a new function, `cons`. `cons` just adds an item to a list, and
-returns the new list.
-
-Let's try it:
-
-```scheme
-
-(define my-list (list 2 3))
-
-(cons 1 my-list) ;; => (1 2 3)
-
-```
-
-
-Let's try our function on a trivial case to trigger the new pattern:
-
-```scheme
 (chem-react '() '(#\A)) ;; => (#\A)
 ```
 
-This makes sense: if we only have one character, there is not much we can do
-with it. Note that the input list is **not** modified:
 
-```scheme
+This new pattern is required for the recursion to
+work, but it also covers the trivial case of an input string of only one character.
 
-(define my-list (list #\A))
-
-(chem-react '() my-list)
-
-(display my-list) => ;; displays: (A)
-
-```
 
 Now, let's treat the main case: we have at least an element `a` in `acc` and at
 least an element `b` in `input`. If they are the same letters of opposite casing, we
