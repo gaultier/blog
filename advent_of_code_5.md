@@ -9,7 +9,7 @@
 
 # Getting started with Scheme by solving an Advent of Code 2018 challenge 
 
-I started learning Scheme very recently. [Chicken Scheme](http://wiki.call-cc.org/) is a wonderful small and
+I started learning [Scheme](https://en.wikipedia.org/wiki/Scheme_(programming_language)) very recently. [Chicken Scheme](http://wiki.call-cc.org/) is a wonderful small and
 performant implementation of Scheme, a programming language in the family of
 LISPs.
 Since I learn by doing, let's solve the [Advent of Code 2018 day 5 challenge](https://adventofcode.com/2018/day/5) with a tiny Scheme program.
