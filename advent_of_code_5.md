@@ -86,9 +86,9 @@ For now, let's just make it always return true:
 (define (char-opposite-casing? a b) #\t)
 ```
 
-We only deal with ascii, so it is safe to compare ascii codes to detect casing. 
+We only deal with ASCII, so it is safe to compare ASCII codes to detect casing. 
 
-What is the ascii code of `A`? Let's try it by using the function `char->integer`:
+What is the ASCII code of `A`? Let's try it by using the function `char->integer`:
 
 ```eval-scheme
 (char->integer #\A) 
@@ -100,7 +100,7 @@ What about `a`?
 (char->integer #\a)
 ```
 
-So there is a difference of `32` between the same ascii letter in lowercase and
+So there is a difference of `32` between the same ASCII letter in lowercase and
 uppercase. Peeking at `man ascii` in the terminal confirms this hunch for all
 letters of the alphabet.
 
@@ -191,12 +191,12 @@ But it won't work on the empty list:
 ```
 
 So we need to treat the case of the empty list (both for the first and the
-second argument) explicitely. We could do that by using lots of `if`, but it is
+second argument) explicitly. We could do that by using lots of `if`, but it is
 more readable and concise to use pattern matching.
 
 ### A small detour: pattern matching
 
-Scheme has a minimalistic core, so we do not get pattern matching out of
+Scheme has a minimalist core, so we do not get pattern matching out of
 the box, but we can easily add it with the package `matchable`. Let's install
 it in the terminal:
 
@@ -434,7 +434,7 @@ $ csc aoc5.scm -o aoc5 -O3 && time ./aoc5
 ```
 
 
-It takes 21 miliseconds. Not too bad.
+It takes 21 milliseconds. Not too bad.
 
 Here is a hand-written C version which only does one allocation and uses mutations, for the input
 string:
@@ -477,7 +477,7 @@ $ cc -std=c99 -O3 -Weverything aoc5.c -march=native && time ./a.out
 ./a.out  0.01s user 0.00s system 86% cpu 0.012 total
 ```
 
-It took 12 miliseconds. So the scheme version is very close, and takes an
+It took 12 milliseconds. So the scheme version is very close, and takes an
 acceptable amount of time.
 
 ## Conclusion
