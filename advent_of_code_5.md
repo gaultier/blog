@@ -371,7 +371,7 @@ We write:
      (foo))
 ```
 
-The macro reorders the functions calls to make it flat.
+The macro reorders the functions calls to make it flat and avoid nesting.
 It is not strictly required, but I like that my code looks like a
 pipeline of data transformations.
 
