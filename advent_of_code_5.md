@@ -438,8 +438,9 @@ $ csc aoc5.scm -o aoc5 -O3 && time ./aoc5
 
 It takes 21 milliseconds. Not too bad.
 
-Here is a hand-written C version which only does one allocation and uses mutations, for the input
-string:
+Here is a hand-written C version which only does one allocation and removes
+letters in place:
+
 
 ```c
 #include <stdio.h>
