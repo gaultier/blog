@@ -2,7 +2,7 @@
 
 <script>
     window.klipse_settings = {
-        selector_eval_scheme: '.eval-scheme', // css selector for the html elements you want to klipsify
+        selector_eval_scheme: '.language-eval-scheme', // css selector for the html elements you want to klipsify
     };
 </script>
 
