@@ -2,7 +2,7 @@
 
 <script>
     window.klipse_settings = {
-        selector_eval_scheme: '.scheme', // css selector for the html elements you want to klipsify
+        selector_eval_scheme: '.eval-scheme', // css selector for the html elements you want to klipsify
     };
 </script>
 
@@ -20,7 +20,7 @@ with, and even fast to run!
 I will not go through installing Chicken Scheme and learning the basics, because
 it was [already done better than I can](http://blog.klipse.tech/scheme/2016/09/11/scheme-tutorial-1.html)!
 
-*All code snippets on this page are interactive thanks to [klipse](https://github.com/viebel/klipse)!*
+*Most code snippets on this page are interactive thanks to [klipse](https://github.com/viebel/klipse)!*
 
 ## The problem
 
@@ -34,7 +34,7 @@ The final ouput is the number of characters in the final string, i.e, `5`.
 
 First, let's define our input, which is a string: 
 
-```scheme
+```eval-scheme
 (define input "aAbxXBctTCz")
 ```
 
@@ -51,7 +51,7 @@ we'll that we can use pattern matching to make the code very concise. I am not
 aware of pattern matching capabilities on string, so let's use lists:
 
 
-```scheme
+```eval-scheme
 (string->list input)
 ```
 
@@ -65,7 +65,7 @@ Let's write a `char-opposite-casing?` function to do just that. It will take 2
 arguments, the letters we are inspecting, and will return a boolean. 
 For now, let's just make it always return true:
 
-```scheme
+```eval-scheme
 (define (char-opposite-casing? a b) #\t)
 ```
 
@@ -73,13 +73,13 @@ We only deal with ascii, so it is safe to compare ascii codes to detect casing.
 
 What is the ascii code of`A`? Let's try it by using the function `char->integer`:
 
-```scheme
+```eval-scheme
 (char->integer #\A) 
 ```
 
 
 What about `a`?
-```scheme
+```eval-scheme
 (char->integer #\a)
 ```
 
@@ -89,7 +89,7 @@ letters of the alphabet.
 
 So, time to implement `char-opposite-casing?`: 
 
-```scheme
+```eval-scheme
 (define (char-case-opposite-casing? a b)
   (let* ((a-code (char->integer a))
          (b-code (char->integer b))
@@ -98,19 +98,19 @@ So, time to implement `char-opposite-casing?`:
 ```
 
 Let's try it with `a` and `A`:
-```scheme    
+```eval-scheme    
 (char-case-opposite-casing? #\a #\A) 
 ```
 
 
 And flipped:
-```scheme
+```eval-scheme
 (char-case-opposite-casing? #\A #\a)
 ```
 
 And `A` and `b`:
 
-```scheme
+```eval-scheme
 (char-case-opposite-casing? #\A #\b)
 ```
 
@@ -140,7 +140,7 @@ we have done, and the second list as the work to do.
 
 Let's first define the function. For now, it just returns the empty list:
 
-```scheme
+```eval-scheme
 (define (chem-react acc input)
   '())
 ```
@@ -149,7 +149,7 @@ Let's first define the function. For now, it just returns the empty list:
 At first, the accumulator is the empty list, so we will always call our function like
 this:
 
-```scheme
+```eval-scheme
 (chem-react '() (string->list input))
 ```
 
@@ -158,7 +158,7 @@ It is import to know that most list functions do not work on the empty list in
 Chicken Scheme. For example, to get the first element of a list, we use the `car` function:
 
 
-```scheme
+```eval-scheme
 (define my-list (list 1 2 3))
 
 ;; Note that this doest **not** mutate `my-list`
@@ -167,7 +167,7 @@ Chicken Scheme. For example, to get the first element of a list, we use the `car
 
 But it won't work on the empty list:
 
-```scheme
+```eval-scheme
 (define my-list '())
 
 (car my-list)
@@ -275,7 +275,7 @@ It's time to learn about a new function: `cons`. `cons` just adds an item to a l
 returns the new list with the added item:
 
 
-```scheme
+```eval-scheme
 
 (define my-list (list 2 3))
 
