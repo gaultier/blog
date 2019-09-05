@@ -143,7 +143,7 @@ about the sign of the difference: if the difference is `32` or `-32`, it is the
 same. We could compare the absolute value, but I (arbitrarily) chose to implement it without
 branches, by comparing the squared values (which swallows the signs).
 
-<hr>
+---
 
 Now let's work on the central problem: how to remove
 characters in a list, in a functional, immutable way?
