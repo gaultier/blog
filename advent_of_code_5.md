@@ -458,6 +458,9 @@ int main() {
     fread(string, 1, string_size, f);
     fclose(f);
 
+    while (string[string_size - 1] == '\n' || string[string_size - 1] == ' ')
+        string_size--;
+
     size_t i = 0;
     while (i < string_size) {
         if (abs(string[i] - string[i + 1]) == 32) {
@@ -468,7 +471,7 @@ int main() {
             i++;
     }
 
-    printf("`%zu`\n", string_size - 1);
+    printf("`%zu`\n", string_size);
 }
 ```
 
