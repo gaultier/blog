@@ -2,10 +2,11 @@
     width: 100%;
 }
 
-body > section {
+.wrapper > section {
     width: 80%;
 }
 
-body > header {
+.wrapper > header,
+.wrapper > footer {
     width: 15%;
 }
