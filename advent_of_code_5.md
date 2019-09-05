@@ -412,8 +412,8 @@ The final code:
 
 > But we will get a stack overflow on a big input!
 
-Scheme has a nice requirement for all implementations: they must implement tail
-recursion, which is to say that the compiler can transform our function into an
+Scheme has a nice requirement for all implementations: they must implement
+tail-call optimization, which is to say that the compiler can transform our function into an
 equivalent for-loop. So we won't get a stack overflow, and it will be quite
 efficient in terms of memory and time.
 
