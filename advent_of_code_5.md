@@ -436,7 +436,7 @@ int main() {
     size_t string_size = (size_t)ftell(f);
     fseek(f, 0, SEEK_SET);
 
-    char* const string = calloc(string_size + 1, 1);
+    char* const string = calloc(string_size, 1);
 
     fread(string, 1, string_size, f);
     fclose(f);
