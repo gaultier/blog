@@ -345,6 +345,32 @@ ourselves with the remainder of `input`, which is the equivalent of 'continuing'
 (chem-react '() (string->list "aAbxXBctTCz")) ;; => (#\z)
 ```
 
+
+But wait a minute...Doesn't it look familiar? Yes, what we are doing here is a
+fold (sometimes called reduce)!
+
+Let's replace our custom recursion by `fold`. `chem-react` becomes the reduction
+function. It becomes simpler because `fold` will not call it on the empty list,
+so we only need to patter match `acc` (which is the empty list at the beginning): 
+
+```scheme
+
+(define (chem-react acc x)
+  (match acc
+    [() (cons x acc)]
+    [(a . arest) (if (char-case-opposite-casing? a x)
+                     arest
+                     (cons x acc))]))
+
+
+(foldl chem-react '() input) ;; => (#\z)
+```
+
+My experience writing code in a LISP is that I usually find a solution that is
+relatively big, and I start replacing parts of it with standard functions such
+as `fold` and it ends up very small.
+
+
 > How do I read the input from a file?
 
 It's quite simple: we use the modules `chicken.file.posix` and `chicken.io`:
@@ -396,18 +422,17 @@ The final code:
          (diff (- a-code b-code)))
     (= (* 32 32) (* diff diff))))
 
-(define (chem-react acc input)
-  (match (list acc input)
-    [(_ ()) acc]
-    [(() (b . brest)) (chem-react (cons b acc) brest)]
-    [((a . arest) (b . brest)) (if (char-case-opposite-casing? a b)
-                                   (chem-react arest brest)
-                                   (chem-react (cons b acc) brest))]))
+(define (chem-react acc x)
+  (match acc
+    [() (cons x acc)]
+    [(a . arest) (if (char-case-opposite-casing? a x)
+                     arest
+                     (cons x acc))]))
 
 (->> (open-input-file "/Users/pgaultier/Downloads/aoc5.txt")
      (read-line)
      (string->list)
-     (chem-react '())
+     (foldl chem-react '())
      (length)
      (print))
 ```
