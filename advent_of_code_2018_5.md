@@ -516,6 +516,12 @@ $ cc -std=c99 -O3 -Weverything aoc5.c -march=native && time ./a.out
 It took 12 milliseconds. So the scheme version is very close, and takes an
 acceptable amount of time.
 
+> Can't we use strings and not lists?
+
+Yes, of course. However we need to be careful about how strings are implemented
+and what we we do with those. Most runtimes (e.g the JVM) use immutable strings,
+meaning we could end up allocating thousands of big strings, and being quite slow.
+
 ## Conclusion
 
 That's it, we solved the fifth Advent of Code challenge in Scheme. The solution
