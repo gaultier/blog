@@ -1,11 +1,4 @@
-<link rel="stylesheet" type="text/css" href="https://storage.googleapis.com/app.klipse.tech/css/codemirror.css">
 <link rel="stylesheet" type="text/css" href="main.css">
-
-<script>
-    window.klipse_settings = {
-        selector_eval_scheme: '.language-eval-scheme', // css selector for the html elements you want to klipsify
-    };
-</script>
 
 # Getting started with Scheme by solving an Advent of Code 2018 challenge 
 
@@ -23,10 +16,7 @@ with, and even fast to run!
 I will not go through installing Chicken Scheme and learning the basics, because
 it was [already done better than I can](http://blog.klipse.tech/scheme/2016/09/11/scheme-tutorial-1.html).
 
-*Most code snippets on this page are interactive thanks to
-[klipse](https://github.com/viebel/klipse). You can modify them yourself, they
-run inside your browser!*
- 
+
 <!-- markdown-toc start - Don't edit this section. Run M-x markdown-toc-refresh-toc -->
 **Table of Contents**
 
@@ -55,7 +45,7 @@ The final ouput is the number of characters in the final string, i.e, `5`.
 
 First, let's define our input, which is a string: 
 
-```eval-scheme
+```scheme
 (define input "aAbxXBctTCz")
 
 input
@@ -74,7 +64,7 @@ we'll that we can use pattern matching to make the code very concise. I am not
 aware of pattern matching capabilities on string, so let's use lists:
 
 
-```eval-scheme
+```scheme
 (string->list input)
 ```
 
@@ -88,7 +78,7 @@ Let's write a `char-opposite-casing?` function to do just that. It will take 2
 arguments, the letters we are inspecting, and will return a boolean. 
 For now, let's just make it always return true:
 
-```eval-scheme
+```scheme
 (define (char-opposite-casing? a b) #\t)
 ```
 
@@ -96,13 +86,13 @@ We only deal with ASCII, so it is safe to compare ASCII codes to detect casing.
 
 What is the ASCII code of `A`? Let's try it by using the function `char->integer`:
 
-```eval-scheme
+```scheme
 (char->integer #\A) 
 ```
 
 
 What about `a`?
-```eval-scheme
+```scheme
 (char->integer #\a)
 ```
 
@@ -112,7 +102,7 @@ letters of the alphabet.
 
 So, time to implement `char-opposite-casing?`: 
 
-```eval-scheme
+```scheme
 (define (char-case-opposite-casing? a b)
   (let* ((a-code (char->integer a))
          (b-code (char->integer b))
@@ -121,19 +111,19 @@ So, time to implement `char-opposite-casing?`:
 ```
 
 Let's try it with `a` and `A`:
-```eval-scheme    
+```scheme
 (char-case-opposite-casing? #\a #\A) 
 ```
 
 
 And flipped:
-```eval-scheme
+```scheme
 (char-case-opposite-casing? #\A #\a)
 ```
 
 And `A` and `b`:
 
-```eval-scheme
+```scheme
 (char-case-opposite-casing? #\A #\b)
 ```
 
@@ -163,7 +153,7 @@ we have done, and the second list as the work to do.
 
 Let's first define the function. For now, it just returns the empty list:
 
-```eval-scheme
+```scheme
 (define (chem-react acc input)
   '())
 ```
@@ -172,7 +162,7 @@ Let's first define the function. For now, it just returns the empty list:
 At first, the accumulator is the empty list, so we will always call our function like
 this:
 
-```eval-scheme
+```scheme
 (chem-react '() (string->list input))
 ```
 
@@ -181,7 +171,7 @@ It is import to know that most list functions do not work on the empty list in
 Chicken Scheme. For example, to get the first element of a list, we use the `car` function:
 
 
-```eval-scheme
+```scheme
 (define my-list (list 1 2 3))
 
 ;; Note that this doest **not** mutate `my-list`
@@ -190,7 +180,7 @@ Chicken Scheme. For example, to get the first element of a list, we use the `car
 
 But it won't work on the empty list:
 
-```eval-scheme
+```scheme
 (define my-list '())
 
 (car my-list)
@@ -298,7 +288,7 @@ It's time to learn about a new function: `cons`. `cons` just adds an item to a l
 returns the new list with the added item:
 
 
-```eval-scheme
+```scheme
 
 (define my-list (list 2 3))
 
@@ -538,4 +528,7 @@ I hope it gave you a glance at what Scheme can do, and stay tuned for more blog
 posts about programming. I intend to post more solutions to other coding
 challenges, solved with a variety of programming languages.
 
-<script src="https://storage.googleapis.com/app.klipse.tech/plugin_prod/js/klipse_plugin.min.js"></script>
+
+## CHANGELOG
+
+- Mon Sep  7 20:40:57 CEST 2020: Removed klipse and all javascript
