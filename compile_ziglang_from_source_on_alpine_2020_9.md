@@ -1,4 +1,4 @@
-# How to compile LLVM, Clang, LLD, and Ziglang from source on Alpine
+# How to compile LLVM, Clang, LLD, and Ziglang from source on Alpine Linux
 
 [Ziglang](https://ziglang.org), or `Zig` for short, is an ambitious programming language addressing important flaws of mainstream languages such as failing to handle memory allocation failures or forgetting to handle an error condition in general.
 It is also fast moving so for most, the latest (HEAD) version will be needed, and most package managers will not have it, so we will compile it from source.
@@ -35,3 +35,10 @@ Note that those instructions should work just the same on any Unix system. Feel 
     # nproc is Linux only but you can set the number of threads manually
     make -j$(nproc)
     sudo make install
+
+
+You will now have a `zig` executable in the PATH as well as the zig standard library. You can verify you have now the latest version by doing:
+
+    zig version
+    0.6.0+749417a
+
