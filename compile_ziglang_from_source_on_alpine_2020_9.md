@@ -1,3 +1,4 @@
+<article>
 # How to compile LLVM, Clang, LLD, and Ziglang from source on Alpine Linux
 
 [Ziglang](https://ziglang.org), or `Zig` for short, is an ambitious programming language addressing important flaws of mainstream languages such as failing to handle memory allocation failures or forgetting to handle an error condition in general.
@@ -41,4 +42,7 @@ You will now have a `zig` executable in the PATH as well as the zig standard lib
 
     zig version
     0.6.0+749417a
+
+</article>
+<link rel="stylesheet" type="text/css" href="main.css">
 

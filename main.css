@@ -1,12 +1,25 @@
-.wrapper {
-    width: 100%;
+body {
+    font: 300 21px Lato, 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    color: #e5e9f0;
+    background-color: #3b4252;
+    margin: 0;
 }
 
-.wrapper > section {
-    width: 80%;
+article {
+    padding: 1.5rem;
+    max-width: 85%;
+    min-width: 200px;
+    margin: 0 auto;
+    background-color: #4c566a;
 }
 
-.wrapper > header,
-.wrapper > footer {
-    width: 15%;
+pre {
+    padding: 1rem;
+    background-color: #2e3440;
+    border-radius: 2%;
+    white-space: pre-wrap;
+}
+
+code {
+    line-height: 2;
 }
