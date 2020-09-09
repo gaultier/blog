@@ -7,7 +7,7 @@ Since the official Zig compiler is (currently) written in C++ and using the LLVM
 
 I find it more reliable to compile LLVM, Clang, LLD, and Zig from source and that is what we will do here. I have found that the official LLVM and Zig instructions differed somewhat, were presenting too many options, and I wanted to have one place to centralize them for my future self.
 
-Incidentally, if you are a poor C++ developer trying to compile LLVM from source, without having ever heard of Zig, well you have stumbled on the right page, you can simply skip the final block about Zig.
+Incidentally, if you are a lost C++ developer trying to compile LLVM from source, without having ever heard of Zig, well you have stumbled on the right page, you can simply skip the final block about Zig.
 
 Note that those instructions should work just the same on any Unix system. Feel free to pick the directories you want when cloning the git repositories.
 
