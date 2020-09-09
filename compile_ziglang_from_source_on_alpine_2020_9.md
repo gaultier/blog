@@ -1,6 +1,6 @@
 # How to compile LLVM, Clang, LLD, and Ziglang from source on Alpine
 
-[Ziglang]()https://ziglang.org), or `Zig` for short, is an ambitious programming language addressing important flaws of mainstream languages such as failing to handle memory allocation failures or forgetting to handle an error condition in general.
+[Ziglang](https://ziglang.org), or `Zig` for short, is an ambitious programming language addressing important flaws of mainstream languages such as failing to handle memory allocation failures or forgetting to handle an error condition in general.
 It is also fast moving so for most, the latest (HEAD) version will be needed, and most package managers will not have it, so we will compile it from source.
 
 Since the official Zig compiler is (currently) written in C++ and using the LLVM libraries at a specific version, we will need them as well, and once again, some package managers will not have the exact version you want (10.0.0). 
