@@ -23,3 +23,16 @@ pre {
 code {
     line-height: 2;
 }
+
+a {
+    color: #d8dee9;
+}
+
+nav {
+    padding: .2rem;
+    background-color: #d8dee9;
+}
+
+nav > a {
+    color: #4c566a;
+}

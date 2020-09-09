@@ -1,3 +1,6 @@
+<nav>
+<a href="/">All articles</a>
+</nav>
 <article>
 # How to compile LLVM, Clang, LLD, and Ziglang from source on Alpine Linux
 
