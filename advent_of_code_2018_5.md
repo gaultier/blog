@@ -45,11 +45,9 @@ The final ouput is the number of characters in the final string, i.e, `5`.
 
 First, let's define our input, which is a string: 
 
-```scheme
-(define input "aAbxXBctTCz")
+    (define input "aAbxXBctTCz")
 
-input
-```
+    input
 
 Later, we will read our input string from a file, but for now it is simpler to
 just hard-code it.
@@ -64,9 +62,7 @@ we'll that we can use pattern matching to make the code very concise. I am not
 aware of pattern matching capabilities on string, so let's use lists:
 
 
-```scheme
-(string->list input)
-```
+    (string->list input)
 
 Here, the
 `string->list` function just returns a list of characters for a string (in other
@@ -78,23 +74,18 @@ Let's write a `char-opposite-casing?` function to do just that. It will take 2
 arguments, the letters we are inspecting, and will return a boolean. 
 For now, let's just make it always return true:
 
-```scheme
-(define (char-opposite-casing? a b) #\t)
-```
+    (define (char-opposite-casing? a b) #\t)
 
 We only deal with ASCII, so it is safe to compare ASCII codes to detect casing. 
 
 What is the ASCII code of `A`? Let's try it by using the function `char->integer`:
 
-```scheme
-(char->integer #\A) 
-```
+    (char->integer #\A) 
 
 
 What about `a`?
-```scheme
-(char->integer #\a)
-```
+
+    (char->integer #\a)
 
 So there is a difference of `32` between the same ASCII letter in lowercase and
 uppercase. Peeking at `man ascii` in the terminal confirms this hunch for all
@@ -102,30 +93,24 @@ letters of the alphabet.
 
 So, time to implement `char-opposite-casing?`: 
 
-```scheme
-(define (char-case-opposite-casing? a b)
-  (let* ((a-code (char->integer a))
-         (b-code (char->integer b))
-         (diff (- a-code b-code)))
-    (= (* 32 32) (* diff diff))))
-```
+    (define (char-case-opposite-casing? a b)
+      (let* ((a-code (char->integer a))
+             (b-code (char->integer b))
+             (diff (- a-code b-code)))
+        (= (* 32 32) (* diff diff))))
 
 Let's try it with `a` and `A`:
-```scheme
-(char-case-opposite-casing? #\a #\A) 
-```
+
+    (char-case-opposite-casing? #\a #\A) 
 
 
 And flipped:
-```scheme
-(char-case-opposite-casing? #\A #\a)
-```
+
+    (char-case-opposite-casing? #\A #\a)
 
 And `A` and `b`:
 
-```scheme
-(char-case-opposite-casing? #\A #\b)
-```
+    (char-case-opposite-casing? #\A #\b)
 
 
 `let*` is used to define local bindings which are only visible in this function.
@@ -153,38 +138,30 @@ we have done, and the second list as the work to do.
 
 Let's first define the function. For now, it just returns the empty list:
 
-```scheme
-(define (chem-react acc input)
-  '())
-```
+    (define (chem-react acc input)
+      '())
 
 
 At first, the accumulator is the empty list, so we will always call our function like
 this:
 
-```scheme
-(chem-react '() (string->list input))
-```
+    (chem-react '() (string->list input))
 
 
 It is import to know that most list functions do not work on the empty list in
 Chicken Scheme. For example, to get the first element of a list, we use the `car` function:
 
 
-```scheme
-(define my-list (list 1 2 3))
+    (define my-list (list 1 2 3))
 
-;; Note that this doest **not** mutate `my-list`
-(car my-list)
-```
+    ;; Note that this doest **not** mutate `my-list`
+    (car my-list)
 
 But it won't work on the empty list:
 
-```scheme
-(define my-list '())
+    (define my-list '())
 
-(car my-list)
-```
+    (car my-list)
 
 So we need to treat the case of the empty list (both for the first and the
 second argument) explicitly. We could do that by using lots of `if`, but it is
@@ -196,35 +173,29 @@ Scheme has a minimalist core, so we do not get pattern matching out of
 the box, but we can easily add it with the package `matchable`. Let's install
 it in the terminal:
 
-```sh
-$ chicken-install matchable
-```
+    $ chicken-install matchable
 
 
 Now we can import it at the top of our code:
 
-```scheme
-(import matchable)
+    (import matchable)
 
-;; At this point we can refer to any function in this module `matchable`.
-;; No need to prefix them either with `matchable`.
-```
+    ;; At this point we can refer to any function in this module `matchable`.
+    ;; No need to prefix them either with `matchable`.
 
 
 Let's try to match the empty list in our function, and return (as an example) a
 number, e.g `42`. We also want to match the case of both lists containing one
 element, and returning the sum of those 2 elements:
 
-```scheme
-(define (chem-react acc input)
-  (match (list acc input)
-    [(_ ()) 42]
-    [((a) (b)) (+ a b)]))
+    (define (chem-react acc input)
+      (match (list acc input)
+        [(_ ()) 42]
+        [((a) (b)) (+ a b)]))
 
-(chem-react '() '()) ;; => 42
+    (chem-react '() '()) ;; => 42
 
-(chem-react (list 2) (list 3)) ;; => 5
-```
+    (chem-react (list 2) (list 3)) ;; => 5
 
 A few interesting things here: `_` allows us to match anything, so the first
 case is equivalent to checking if the second list is
@@ -236,21 +207,17 @@ element of the second list to `b`, and summing the two.
 Note that not all possible cases are covered here, and we will get a (runtime)
 error if we trigger one of them, for example with a list containing several numbers:
 
-```scheme
-(chem-react (list 1 2) (list 3)) ;; => Error: (match) "no matching pattern": ()
-```
+    (chem-react (list 1 2) (list 3)) ;; => Error: (match) "no matching pattern": ()
 
 Let's go ahead and match the case of a list of one or more elements (`(a . arest)`) to avoid that:
 
-```scheme
-(define (chem-react acc input)
-  (match (list acc input)
-    [(_ ()) 42]
-    [((a) (b)) (+ a b)]
-    [((a . arest) (b . brest)) (* a b)]))
+    (define (chem-react acc input)
+      (match (list acc input)
+        [(_ ()) 42]
+        [((a) (b)) (+ a b)]
+        [((a . arest) (b . brest)) (* a b)]))
 
-(chem-react (list 2 3) (list 4)) ;; => 8
-```
+    (chem-react (list 2 3) (list 4)) ;; => 8
 
 Here we choose to (arbitrarily) return the product of the first elements of both
 list, to show that pattern matching is also a way to do destructuring.
@@ -261,12 +228,10 @@ If the second list (the input) is empty, it means we are
 finished, so we return the first list (`acc`):
 
 
-```scheme
-(define (chem-react acc input)
-  (match (list acc input)
-    [(_ ()) acc]))
+    (define (chem-react acc input)
+      (match (list acc input)
+        [(_ ()) acc]))
 
-```
 
 Our recursion will work as follows: we look at the first element of the second
 list (`input`, which is the work to do), let's call it `b`, and the first element of the first
@@ -288,27 +253,23 @@ It's time to learn about a new function: `cons`. `cons` just adds an item to a l
 returns the new list with the added item:
 
 
-```scheme
 
-(define my-list (list 2 3))
+    (define my-list (list 2 3))
 
-;; Note: `my-list` is **not** modified
-(cons 1 my-list) 
+    ;; Note: `my-list` is **not** modified
+    (cons 1 my-list) 
 
-```
 
 
 We can now use `cons` to implement the new case:
 
-```scheme
-(define (chem-react acc input)
-  (match (list acc input)
-    [(_ ()) acc]
-    [(() (b . brest)) (chem-react (cons b acc) brest)]))
+    (define (chem-react acc input)
+      (match (list acc input)
+        [(_ ()) acc]
+        [(() (b . brest)) (chem-react (cons b acc) brest)]))
 
 
-(chem-react '() '(#\A)) ;; => (#\A)
-```
+    (chem-react '() '(#\A)) ;; => (#\A)
 
 
 This new pattern is required for the recursion to
@@ -321,19 +282,17 @@ call ourselves with the remainder of `acc` and the remainder of `input`, which
 is equivalent to 'drop' `a` and `b`. Otherwise, we add `b` to `acc`, and we call
 ourselves with the remainder of `input`, which is the equivalent of 'continuing':
 
-```scheme
-(define (chem-react acc input)
-  (match (list acc input)
-    [(_ ()) acc]
-    [(() (b . brest)) (chem-react (cons b acc) brest)]
-    [((a . arest) (b . brest)) (if (char-case-opposite-casing? a b)
-                                   (chem-react arest brest)
-                                   (chem-react (cons b acc) brest))]))
+    (define (chem-react acc input)
+      (match (list acc input)
+        [(_ ()) acc]
+        [(() (b . brest)) (chem-react (cons b acc) brest)]
+        [((a . arest) (b . brest)) (if (char-case-opposite-casing? a b)
+                                       (chem-react arest brest)
+                                       (chem-react (cons b acc) brest))]))
 
 
-(chem-react '() (list #\A #\a #\b)) ;; => (#\b)
-(chem-react '() (string->list "aAbxXBctTCz")) ;; => (#\z)
-```
+    (chem-react '() (list #\A #\a #\b)) ;; => (#\b)
+    (chem-react '() (string->list "aAbxXBctTCz")) ;; => (#\z)
 
 
 But wait a minute...Doesn't it look familiar? Yes, what we are doing here is a
@@ -343,18 +302,16 @@ Let's replace our custom recursion by `fold`. `chem-react` becomes the reduction
 function. It becomes simpler because `fold` will not call it on the empty list,
 so we only need to patter match `acc` (which is the empty list at the beginning): 
 
-```scheme
 
-(define (chem-react acc x)
-  (match acc
-    [() (cons x acc)]
-    [(a . arest) (if (char-case-opposite-casing? a x)
-                     arest
-                     (cons x acc))]))
+    (define (chem-react acc x)
+      (match acc
+        [() (cons x acc)]
+        [(a . arest) (if (char-case-opposite-casing? a x)
+                         arest
+                         (cons x acc))]))
 
 
-(foldl chem-react '() input) ;; => (#\z)
-```
+    (foldl chem-react '() input) ;; => (#\z)
 
 My experience writing code in a LISP is that I usually find a solution that is
 relatively big, and I start replacing parts of it with standard functions such
@@ -365,12 +322,10 @@ as `fold` and it ends up very small.
 
 It's quite simple: we use the modules `chicken.file.posix` and `chicken.io`:
 
-```scheme
-(import chicken.file.posix
-        chicken.io)
+    (import chicken.file.posix
+            chicken.io)
 
-(read-line (open-input-file "/Users/pgaultier/Downloads/aoc5.txt")) ;; => "a big string..."
-```
+    (read-line (open-input-file "/Users/pgaultier/Downloads/aoc5.txt")) ;; => "a big string..."
 
 
 ## The final solution
@@ -380,18 +335,14 @@ to the `->>` macro which makes code more readable. It works like the pipe in the
 shell. Instead of writing:
 
 
-```scheme
-(foo (bar "foo" (baz 1 2)))
-```
+    (foo (bar "foo" (baz 1 2)))
 
 We write:
 
 
-```scheme
-(->> (baz 1 2)
-     (bar "foo")
-     (foo))
-```
+    (->> (baz 1 2)
+         (bar "foo")
+         (foo))
 
 The macro reorders the functions calls to make it flat and avoid nesting.
 It is not strictly required, but I like that my code looks like a
@@ -400,32 +351,30 @@ pipeline of data transformations.
 
 The final code:
 
-```scheme
-(import matchable
-        clojurian.syntax
-        chicken.file.posix
-        chicken.io)
+    (import matchable
+            clojurian.syntax
+            chicken.file.posix
+            chicken.io)
 
-(define (char-case-opposite-casing? a b)
-  (let* ((a-code (char->integer a))
-         (b-code (char->integer b))
-         (diff (- a-code b-code)))
-    (= (* 32 32) (* diff diff))))
+    (define (char-case-opposite-casing? a b)
+      (let* ((a-code (char->integer a))
+             (b-code (char->integer b))
+             (diff (- a-code b-code)))
+        (= (* 32 32) (* diff diff))))
 
-(define (chem-react acc x)
-  (match acc
-    [() (cons x acc)]
-    [(a . arest) (if (char-case-opposite-casing? a x)
-                     arest
-                     (cons x acc))]))
+    (define (chem-react acc x)
+      (match acc
+        [() (cons x acc)]
+        [(a . arest) (if (char-case-opposite-casing? a x)
+                         arest
+                         (cons x acc))]))
 
-(->> (open-input-file "/Users/pgaultier/Downloads/aoc5.txt")
-     (read-line)
-     (string->list)
-     (foldl chem-react '())
-     (length)
-     (print))
-```
+    (->> (open-input-file "/Users/pgaultier/Downloads/aoc5.txt")
+         (read-line)
+         (string->list)
+         (foldl chem-react '())
+         (length)
+         (print))
 
 
 
@@ -449,10 +398,8 @@ be: warming up the file cache, making many runs, averaging the results, etc.
 I did exactly that and it did not change the results in a significant manner.*
 
 
-```sh
-$ csc aoc5.scm -o aoc5 -O3 && time ./aoc5
-./aoc5  0.01s user 0.00s system 82% cpu 0.021 total
-```
+    $ csc aoc5.scm -o aoc5 -O3 && time ./aoc5
+    ./aoc5  0.01s user 0.00s system 82% cpu 0.021 total
 
 
 It takes 21 milliseconds. Not too bad for a garbage collected, functional,
@@ -462,46 +409,42 @@ Here is a hand-written C version which only does one allocation and removes
 letters in place:
 
 
-```c
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+    #include <stdio.h>
+    #include <stdlib.h>
+    #include <string.h>
 
-int main() {
-    FILE* const f = fopen("/Users/pgaultier/Downloads/aoc5.txt", "r");
-    fseek(f, 0, SEEK_END);
-    size_t string_size = (size_t)ftell(f);
-    fseek(f, 0, SEEK_SET);
+    int main() {
+        FILE* const f = fopen("/Users/pgaultier/Downloads/aoc5.txt", "r");
+        fseek(f, 0, SEEK_END);
+        size_t string_size = (size_t)ftell(f);
+        fseek(f, 0, SEEK_SET);
 
-    char* const string = calloc(string_size, 1);
+        char* const string = calloc(string_size, 1);
 
-    fread(string, 1, string_size, f);
-    fclose(f);
+        fread(string, 1, string_size, f);
+        fclose(f);
 
-    while (string[string_size - 1] == '\n' || string[string_size - 1] == ' ')
-        string_size--;
+        while (string[string_size - 1] == '\n' || string[string_size - 1] == ' ')
+            string_size--;
 
-    size_t i = 0;
-    while (i < string_size) {
-        if (abs(string[i] - string[i + 1]) == 32) {
-            memmove(string + i, string + i + 2, string_size - i - 2);
-            string_size -= 2;
-            i = i > 0 ? i - 1 : 0;
-        } else
-            i++;
+        size_t i = 0;
+        while (i < string_size) {
+            if (abs(string[i] - string[i + 1]) == 32) {
+                memmove(string + i, string + i + 2, string_size - i - 2);
+                string_size -= 2;
+                i = i > 0 ? i - 1 : 0;
+            } else
+                i++;
+        }
+
+        printf("`%zu`\n", string_size);
     }
-
-    printf("`%zu`\n", string_size);
-}
-```
 
 Let's benchmark it on the same input:
 
 
-```sh
-$ cc -std=c99 -O3 -Weverything aoc5.c -march=native && time ./a.out
-./a.out  0.01s user 0.00s system 86% cpu 0.012 total
-```
+    $ cc -std=c99 -O3 -Weverything aoc5.c -march=native && time ./a.out
+    ./a.out  0.01s user 0.00s system 86% cpu 0.012 total
 
 It took 12 milliseconds. So the scheme version is very close, and takes an
 acceptable amount of time.
