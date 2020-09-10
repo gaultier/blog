@@ -1,3 +1,4 @@
+<link rel="stylesheet" type="text/css" href="main.css">
 <a href="/blog">All articles</a>
 
 # Getting started with Scheme by solving an Advent of Code 2018 challenge 
@@ -475,5 +476,3 @@ challenges, solved with a variety of programming languages.
 ## CHANGELOG
 
 - Mon Sep  7 20:40:57 CEST 2020: Removed klipse and all javascript
-
-<link rel="stylesheet" type="text/css" href="main.css">

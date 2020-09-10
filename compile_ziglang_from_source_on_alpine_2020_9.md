@@ -1,3 +1,4 @@
+<link rel="stylesheet" type="text/css" href="main.css">
 <a href="/blog">All articles</a>
 
 # How to compile LLVM, Clang, LLD, and Ziglang from source on Alpine Linux
@@ -44,6 +45,4 @@ You will now have a `zig` executable in the PATH as well as the zig standard lib
 
     zig version
     0.6.0+749417a
-
-<link rel="stylesheet" type="text/css" href="main.css">
 
