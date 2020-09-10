@@ -1,26 +1,26 @@
 body {
+    background-color: #eceff4;
+    color: #2e3440;
     font-family: monospace, sans-serif;
     font-size: 1.1rem;
-    color: #2e3440; /*#e5e9f0;*/
-    background-color: #eceff4; /* #3b4252; */
     margin: 2rem;
 }
 
 pre {
-    padding: 1rem;
+    background-color: #d8dee9;
     font-size: 1.2rem;
-    background-color: #d8dee9; /*#2e3440;*/
+    padding: 1rem;
     white-space: pre-wrap;
 }
 
 code {
+    background-color: #d8dee9;
     line-height: 1.6;
-    background-color: #d8dee9; /*#2e3440;*/
 }
 
 
 blockquote {
-    padding: .1rem;
-    padding-left: .5rem;
     color: #4c566a;
+    padding-left: .5rem;
+    padding: .1rem;
 }
