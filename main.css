@@ -18,6 +18,7 @@ code {
     line-height: 1.6;
 }
 
-a {
-    color: ##4c566a;/*#d8dee9;*/
+
+blockquote {
+    background-color: #d8dee9;
 }
