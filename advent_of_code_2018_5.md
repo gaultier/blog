@@ -1,4 +1,4 @@
-<a href="/">All articles</a>
+<a href="/blog">All articles</a>
 
 # Getting started with Scheme by solving an Advent of Code 2018 challenge 
 

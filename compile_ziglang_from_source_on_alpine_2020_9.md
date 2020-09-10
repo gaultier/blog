@@ -1,4 +1,4 @@
-<a href="/">All articles</a>
+<a href="/blog">All articles</a>
 
 # How to compile LLVM, Clang, LLD, and Ziglang from source on Alpine Linux
 
