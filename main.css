@@ -1,41 +1,23 @@
 body {
     font-family: monospace, sans-serif;
     font-size: 1.1rem;
-    color: #e5e9f0;
-    background-color: #3b4252;
+    color: #2e3440; /*#e5e9f0;*/
+    background-color: #eceff4; /* #3b4252; */
     margin: 2rem;
-}
-
-article {
-    padding: 1.5rem;
-    max-width: 85%;
-    min-width: 200px;
-    margin: 0 auto;
-    background-color: #4c566a;
 }
 
 pre {
     padding: 1rem;
     font-size: 1.2rem;
-    background-color: #2e3440;
+    background-color: #d8dee9; /*#2e3440;*/
     border-radius: 2%;
     white-space: pre-wrap;
 }
 
 code {
-    line-height: 2;
+    line-height: 1.6;
 }
 
 a {
-    color: #d8dee9;
-}
-
-nav {
-    padding: .2rem;
-    background-color: #d8dee9;
-}
-
-nav > a {
-    color: #4c566a;
-    text-decoration: none;
+    color: ##4c566a;/*#d8dee9;*/
 }
