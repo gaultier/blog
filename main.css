@@ -16,9 +16,13 @@ pre {
 
 code {
     line-height: 1.6;
+    background-color: #d8dee9; /*#2e3440;*/
 }
 
 
 blockquote {
-    background-color: #d8dee9;
+    background-color: #3b4252;
+    padding: .1rem;
+    padding-left: .5rem;
+    color: #eceff4;
 }
