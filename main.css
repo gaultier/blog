@@ -1,13 +1,11 @@
 body {
     color: #2e3440;
     font-family: monospace, sans-serif;
-    font-size: 1.1rem;
     margin: 2rem;
 }
 
 pre {
     background-color: #d8dee9;
-    font-size: 1.2rem;
     padding: 1rem;
     white-space: pre-wrap;
 }
