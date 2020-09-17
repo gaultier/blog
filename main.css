@@ -5,13 +5,13 @@ body {
 }
 
 pre {
-    background-color: #d8dee9;
+    background-color: rgb(247, 247, 247);
     padding: 1rem;
     white-space: pre-wrap;
 }
 
 code {
-    background-color: #d8dee9;
+    background-color: rgb(247, 247, 247);
     line-height: 1.6;
 }
 
