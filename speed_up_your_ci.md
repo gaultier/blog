@@ -25,6 +25,16 @@ In no particular order:
 - On the same vein: don't install shell autocompletions. Same thing. Again, on Alpine they are not part of the main package. E.g: `cmake` and `cmake-bash-completion`.
 - Don't install aggregate packages (or meta-packages)! Those are for convenience only when developping. E.g: `build-base` on Alpine is a meta-package gathering `make`, `file`, `gcc`, etc. It will bring lots of things you do not need. Cherry-pick only what you really need and stay away from those packages.
 - Learn how Docker image layers work: avoid doing `RUN rm archive.tar`, since it simply creates a new layer without removing the file from the previous layer. Prefer: `RUN curl -sSL --retry 5 foo.com/archive.tar && tar -xf archive.tar && rm archive.tar` which will not add the tar archive to the Docker image.
+- Use multi-stage Docker builds. It is old advice at this point but it bears repeating.
+- Only copy files you need from a previous stage instead of globbing wildly, thus defeating the purpose of multi-stages.
+- Distinguish between the development and the release variant of packages. For example: on Ubuntu, when using the SDL2 library, it comes in two flavors: `libsdl2-dev` and `libsdl2-2.0`. The former is the development variant which you only need when building code that needs the headers and the libraries of the SDL2, while the latter is only useful with software needing the dynamic libraries at runtime. The development packages are usually bigger in size. You can astutely use multi-stage Docker builds to have first a build stage using the development packages, and then a final stage which only has the non-development packages. In CI, you almost never need both variants installed at the same time.
+
+
+## Be lazy: Don't do things you don't need to do
+
+- Some features you are not using are enabled by default. Be explicit instead of relying on obscure, ever changing defaults. Example: `CGO_ENABLED=0 go build ...` because it is (at the time of writing) enabled by default. The gradle build system also has the annoying habit to run stuff behind your back. Use `gradle foo -x baz` to run `foo` and not `baz`.
+- Don't run tests from your dependencies. This can happen if you are using git submodules or vendoring dependencies in some way. You usually always want to build them, but not run the tests for them. Again, `gradle` is the culprit here. If you are storing your git submodules in a `submodules/` directory for example, you can run only your project tests with: `gradle test -x submodules:test`.
+- 
 
 
 
