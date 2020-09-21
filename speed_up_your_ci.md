@@ -35,8 +35,8 @@ In no particular order:
 ## Be lazy: Don't do things you don't need to do
 
 - Some features you are not using are enabled by default. Be explicit instead of relying on obscure, ever changing defaults. Example: `CGO_ENABLED=0 go build ...` because it is (at the time of writing) enabled by default. The gradle build system also has the annoying habit to run stuff behind your back. Use `gradle foo -x baz` to run `foo` and not `baz`.
-- Don't run tests from your dependencies. This can happen if you are using git submodules or vendoring dependencies in some way. You usually always want to build them, but not run their tests. Again, `gradle` is the culprit here. If you are storing your git submodules in a `submodules/` directory for example, you can run only your project tests with: `gradle test -x submodules:test`.
-- Disable the generation of reports files. They usualy come in the form of HTML or XML form, and once again, `gradle` gets out of his way to clutter your filesystem with those. Of debatable usefulness locally, they are downright wasteful in CI. And it takes some precious time, too! Disable it with: 
+- Don't run tests from your dependencies. This can happen if you are using git submodules or vendoring dependencies in some way. You generally always want to build them, but not run their tests. Again, `gradle` is the culprit here. If you are storing your git submodules in a `submodules/` directory for example, you can run only your project tests with: `gradle test -x submodules:test`.
+- Disable the generation of reports files. They frequently come in the form of HTML or XML form, and once again, `gradle` gets out of his way to clutter your filesystem with those. Of debatable usefulness locally, they are downright wasteful in CI. And it takes some precious time, too! Disable it with: 
      tasks.withType<Test> {
          useJUnitPlatform()
          reports.html.isEnabled = false
