@@ -3,8 +3,9 @@
 
 ## Articles
 
-- [Getting started with Scheme by solving an Advent of Code 2018 challenge](https://gaultier.github.io/blog/advent_of_code_2018_5)
-- [How to compile LLVM, Clang, LLD, and Ziglang from source on Alpine Linux](https://gaultier.github.io/blog/compile_ziglang_from_source_on_alpine_2020_9)
+- Thu Sep 5 11:45:48 2019 +0200: [Getting started with Scheme by solving an Advent of Code 2018 challenge](https://gaultier.github.io/blog/advent_of_code_2018_5)
+- Mon Sep 7 20:49:20 2020 +0200: [How to compile LLVM, Clang, LLD, and Ziglang from source on Alpine Linux](https://gaultier.github.io/blog/compile_ziglang_from_source_on_alpine_2020_9)
+- Mon Sep 21 08:37:07 2020 +0200: [Adventures in CI land, or how to speed up your CI](https://gaultier.github.io/blog/speed_up_your_ci.html)
 
 ## About me
 
