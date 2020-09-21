@@ -46,8 +46,10 @@ In no particular order:
 - Don't build the static and dynamic variants of the same library (in C or C++). You probably only want one, preferrably the static one. Otherwise, you are doing twice the work!
 - Fetch statically built binaries instead of building them from source. Go, and sometimes Rust, are great for this. As long as the OS and the architecture are the same, of course. E.g: you can simply fetch `kubectl` which is a Go static binary instead of installing lots of Kubernetes packages, if you simply need to talk to a Kubernetes cluster. Naturally, the same goes for single file, dependency-less script: shell, awk, python, lua, perl, and ruby, assuming the interpreter is the right one. But this case is rarer and you might as well vendor the script at this point.
 - Groom your 'ignore' files. `.gitignore` is the mainstream one, but were you aware Docker has the mechanism in the form of a `.dockerignore` file? My advice: whitelist the files you need, e.g:
+    ```
     **/*
     !**/*.js
+    ```
   This can have a huge impact on performance since Docker will copy all the files inside the Docker context directory inside the container (or virtual machine on macOS) and it can be a lot. You don't want to copy artifact, images, and so on each time which your image does not need.
 - Use an empty Docker context if possible: you sometimes want to build an image which does not need any local files. In that case you can completely bypass copying any files into the image with the command: `docker build . -f - < Dockerfile`.
 - Don't update the package manager cache: you typically need to start your Dockerfile by updating the package manager cache, otherwise it will complain the dependencies you want to install are not found. E.g: `RUN apk update && apk add curl` or `RUN apt update -y && apt install --no-install-recommends -y curl`. But did you know it is not always required? You can simply do: `RUN apk --no-cache add curl` when you know the package exists and you can bypass the cache.
