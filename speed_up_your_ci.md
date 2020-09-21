@@ -65,7 +65,7 @@ In no particular order:
 - Avoid network accesses: you should minimize the amount of things you are downloading from external sources in your CI because it is both slow and a source of flakyness. Some tools will unfortunately always try to 'call home' even if all of your dependencies are present. You should disable this behavior explicitely, e.g with Gradle: `gradle build --offline`.
 - In some rare cases, you will be bottlenecked on a slow running script. Consider using a faster interpreter: for shell scripts, there is `ash` and `dash` which are said to be much faster than `bash`. For `awk` there is `gawk` and `mawk`. For Lua there is `LuaJIT`.
 - Avoid building inside Docker if you can. Building locally, and then copying the artifacts into the image, is always faster. It only works under certain constraints, of course:
-    * same OS and architecture, and linking statically, or
+    * same OS and architecture, or
     * a portable artifact format such as `jar`, and not using native dependencies, or
     * your toolchain supports cross-compilation
 
