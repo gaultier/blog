@@ -50,7 +50,7 @@ In no particular order:
     **/*
     !**/*.js
     ```
-  This can have a huge impact on performance since Docker will copy all the files inside the Docker context directory inside the container (or virtual machine on macOS) and it can be a lot. You don't want to copy artifact, images, and so on each time which your image does not need.
+  This can have a huge impact on performance since Docker will copy all the files inside the Docker context directory inside the container (or virtual machine on macOS) and it can be a lot. You don't want to copy build artifacts, images, and so on each time which your image does not need.
 - Use an empty Docker context if possible: you sometimes want to build an image which does not need any local files. In that case you can completely bypass copying any files into the image with the command: `docker build . -f - < Dockerfile`.
 - Don't update the package manager cache: you typically need to start your Dockerfile by updating the package manager cache, otherwise it will complain the dependencies you want to install are not found. E.g: `RUN apk update && apk add curl` or `RUN apt update -y && apt install --no-install-recommends -y curl`. But did you know it is not always required? You can simply do: `RUN apk --no-cache add curl` when you know the package exists and you can bypass the cache.
 - Silence the tools: most command line applications accept the `-q` flag which reduces their verbosity. Most of their output is likely to be useless, some CI systems will struggle storing big pipeline logs, and you might be bottlenecked on stdout! Also, it will simplify troubleshooting *your* build if it is not swamped in thousands of unrelated logs.
