@@ -4,6 +4,10 @@ body {
     margin: 2rem;
 }
 
+li {
+    margin-bottom: 1rem;
+}
+
 pre {
     background-color: rgb(247, 247, 247);
     padding: 1rem;
