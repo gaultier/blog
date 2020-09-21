@@ -9,6 +9,8 @@ But this needs not be. I have compiled here a lengthy list of various ways you c
 
 And finally, I hope you will realize this endeavour is not unlike optimizing a program: it requires some time and dedication but you will get tremendous results. Also, almost incidentally, it will be more secure and easier to audit.
 
+Lastly, remember to measure and profile your changes. If a change has made no improvements, it should be reverted.
+
 *This article assumes you are running a POSIX system. Windows developers, this is not the article you are looking for.*
 
 ## Reduce the size of everything
