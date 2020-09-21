@@ -29,6 +29,7 @@ In no particular order:
 - Only copy files you need from a previous stage instead of globbing wildly, thus defeating the purpose of multi-stages.
 - Distinguish between the development and the release variant of packages. For example: on Ubuntu, when using the SDL2 library, it comes in two flavors: `libsdl2-dev` and `libsdl2-2.0`. The former is the development variant which you only need when building code that needs the headers and the libraries of the SDL2, while the latter is only useful with software needing the dynamic libraries at runtime. The development packages are usually bigger in size. You can astutely use multi-stage Docker builds to have first a build stage using the development packages, and then a final stage which only has the non-development packages. In CI, you almost never need both variants installed at the same time.
 - Opt-out of 'recommended' packages. Aptitude on Debian/Ubuntu is the culprit here: `apt-get install foo` will install much more than `foo`. It will also install recommended packages that most of the time are completely unrelated. Always use `apt-get install --no-install-recommends foo`.
+- Don't create unnecessary files: you use use heredoc and shell pipelines to avoid creating intermediary files.
 
 
 ## Be lazy: Don't do things you don't need to do
@@ -58,7 +59,6 @@ In no particular order:
 - Use `sed` to quickly edit big files in place. E.g: you want to insert a line at the top of a javascript file to skip linter warnings. Instead of doing: `printf '/* eslint-disable */\n\n' | cat - foo.js > foo_tmp && mv foo_tmp foo.js`, which involves reading the whole file, copying it, and renaming it, we can do: `sed  -i '1s#^#/* eslint-disable */ #' foo.js` whch is much simpler.
 - Favor static linking and LTO. This will simplify much of your pipeline because you'll have to deal with fewer files, ideally one statically built executable.
 - Use only one Gitlab CI job. That is because the startup time of a job is very high, in the minutes. You can achieve task parallelism with other means such as `parallel` or `make -j`.
-
 - Parallelize all the things! Some tools do not run tasks in parallel by default, e.g `make` and `gradle`. Make sure you are always using a CI instance with multiple cores and are passing `--parallel` to Gradle and `-j$(nproc)` to make. In rare instances you might have to tweak the exact level of parallelism to your particular task. Also, `parallel` is great for parallelizing tasks.
 - Avoid network accesses: you should minimize the amount of things you are downloading from external sources in your CI because it is both slow and a source of flakyness. Some tools will unfortunately always try to 'call home' even if are your dependencies are present. You should disable this behavior explicitely, e.g with Gradle: `gradle build --offline`.
 - In some rare cases, you will be bottlenecked on a slow running script. Consider using a faster interpreter: for shell scripts, there is `ash` and `dash` which are said to be much faster than `bash`. For `awk` there is `gawk` and `mawk`. For Lua there is `LuaJIT`.
