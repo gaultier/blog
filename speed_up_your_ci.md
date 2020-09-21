@@ -62,3 +62,11 @@ In no particular order:
 - Parallelize all the things! Some tools do not run tasks in parallel by default, e.g `make` and `gradle`. Make sure you are always using a CI instance with multiple cores and are passing `--parallel` to Gradle and `-j$(nproc)` to make. In rare instances you might have to tweak the exact level of parallelism to your particular task. Also, `parallel` is great for parallelizing tasks.
 - Avoid network accesses: you should minimize the amount of things you are downloading from external sources in your CI because it is both slow and a source of flakyness. Some tools will unfortunately always try to 'call home' even if are your dependencies are present. You should disable this behavior explicitely, e.g with Gradle: `gradle build --offline`.
 - In some rare cases, you will be bottlenecked on a slow running script. Consider using a faster interpreter: for shell scripts, there is `ash` and `dash` which are said to be much faster than `bash`. For `awk` there is `gawk` and `mawk`. For Lua there is `LuaJIT`.
+- Avoid building inside Docker if you can. Building locally, and then copying the artifacts into the image, is always faster. It only works under certain constraints, of course: same OS, architecture, and a portable artifact format such as `jar`. This, or your toolchain supports cross-compilation.
+
+## A note on security
+
+- Always use https
+- Checksum files you fetched from third-parties with `shasum`.
+- Favor official package repositories, docker images, and third-parties over those of individuals.
+- Never bypass certificate checks (such as `curl -k`)
