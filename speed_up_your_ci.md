@@ -13,7 +13,7 @@ And finally, I hope you will realize this endeavour is not unlike optimizing a p
 
 ## Reduce the size of everything
 
-Almost certainly, your CI pipeline has to download 'something', be it a base docker image, a virtual machine image, some packages, maybe some company wide scripts. The thing is, you are downloading those every time it runs, every day of the year. Even a small size reduction can yield big speed ups. Remember, the network is usually the bottleneck. 
+Almost certainly, your CI pipeline has to download 'something', be it a base docker image, a virtual machine image, some packages, maybe a few company wide scripts. The thing is, you are downloading those every time it runs, 24/7, every day of the year. Even a small size reduction can yield big speed ups. Remember, the network is usually the bottleneck. 
 
 In no particular order: 
 
