@@ -75,3 +75,17 @@ In no particular order:
 - Checksum files you fetched from third-parties with `shasum`.
 - Favor official package repositories, docker images, and third-parties over those of individuals.
 - Never bypass certificate checks (such as `curl -k`)
+
+## I am a DevOps Engineer, what can I do?
+
+Most of the above rules can be automated with a script, assuming the definition of a CI pipeline is in a text format (e.g Gitlab CI). I would suggest starting here, and teaching developers about these simple tips than really make a difference.
+
+I would also suggest considering adding strict firewall rules inside CI pipelines, and making sure the setup/teardown of CI runners is very fast. Additionally, I would do everything the situation where no CI runner is available, preventing developers from working and deploying.
+
+Finally, I would recommend leading by example with the pipelines for the tools made by DevOps Engineers in your organization.
+
+## Closing words
+
+I wish you well on your journey towards a fast, realiable and simple CI pipeline. 
+I noticed in my numerous projects with different tech stacks that some are friendlier than others towards CI pipelines than others (I am looking at you, Gradle!). If you have the luxury of choosing your technical stack, do consider how it will play out with your pipeline. I believe this is a much more important factor than discussing whether $LANG has semicolons or not because I am convinced it can completely decide the outcome of your project.
+
