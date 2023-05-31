@@ -17,14 +17,12 @@ blockquote {
 }
 
 pre {
-    /* background-color: rgb(247, 247, 247); */
-    /* padding: 1rem; */
+    padding: 0.5 rem;
     white-space: pre-wrap;
     border: 1px solid grey;
 }
 
 code {
-    background-color: rgb(247, 247, 247);
     line-height: 1.6;
 }
 
