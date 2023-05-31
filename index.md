@@ -10,7 +10,7 @@
 
 ## About me
 
-I am a french Software Engineer from France living in Bavaria, Germany. By day, I work in a Fintech company, and by night I write some fun projects in C and Ziglang. Have a look [there](https://github.com/gaultier).
+I am a french Software Engineer from France living in Bavaria, Germany. By day, I work in a Fintech company, and by night I write some fun projects in C, Rust, Odin and Ziglang. Have a look [there](https://github.com/gaultier).
 
 
 ## CV
