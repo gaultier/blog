@@ -13,6 +13,7 @@ pre {
     background-color: rgb(247, 247, 247);
     padding: 1rem;
     white-space: pre-wrap;
+    border: 1px solid grey;
 }
 
 code {

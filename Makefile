@@ -3,4 +3,4 @@ all:
     
 
 %.html: %.md
-	sundown $< > $@
+	cmark $< > $@
