@@ -3,4 +3,4 @@ all:
     
 
 %.html: %.md
-	cmark $< > $@
+	cmark --unsafe $< > $@
