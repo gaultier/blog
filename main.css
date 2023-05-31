@@ -9,6 +9,13 @@ li {
     margin-bottom: 1rem;
 }
 
+blockquote {
+  padding: 1rem;
+  border-bottom: 1px solid gray;
+  border-top: 1px solid gray;
+  margin: 2rem 0;
+}
+
 pre {
     /* background-color: rgb(247, 247, 247); */
     /* padding: 1rem; */
