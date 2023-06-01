@@ -35,3 +35,16 @@ blockquote {
     padding-left: .5rem;
     padding: .1rem;
 }
+
+td, th {
+    border: 1px solid black;
+    padding: 0.5rem
+}
+
+th {
+    background: rgb(247, 247, 247);
+}
+
+table {
+    margin-left: 2rem;
+}
