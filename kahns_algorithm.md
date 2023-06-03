@@ -51,3 +51,23 @@ Angela
 Jane
 Ellen
 ```
+
+And `tsort` also detects cycles, for example if we add the line: `Ellen Zoe` at the end of `people.txt`, we get:
+
+```sh
+$ tsort < people.txt
+Bella
+Miranda
+tsort: -: input contains a loop:
+tsort: Jane
+tsort: Ellen
+tsort: Zoe
+Jane
+tsort: -: input contains a loop:
+tsort: Angela
+tsort: Ellen
+tsort: Zoe
+Angela
+Ellen
+Zoe
+```
