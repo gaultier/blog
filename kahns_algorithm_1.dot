@@ -7,7 +7,8 @@ digraph {
   engineer_3[label="Zoe, Software Engineer"];
 
 
-  ceo -> cfo -> cto;
+  cto-> ceo;
+  cfo -> ceo;
   engineer_1 -> cto;
   engineer_2 -> cto;
   engineer_3 -> cto;
