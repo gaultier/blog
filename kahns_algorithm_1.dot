@@ -1,0 +1,15 @@
+digraph {
+  ceo[label="Ellen, CEO"];
+  cfo[label="Jane, CFO"];
+  cto[label="Angela, CTO"];
+  engineer_1[label="Bella, Software Engineer"];
+  engineer_2[label="Miranda, Software Engineer"];
+  engineer_3[label="Zoe, Software Engineer"];
+
+
+  ceo -> cfo -> cto;
+  engineer_1 -> cto;
+  engineer_2 -> cto;
+  engineer_3 -> cto;
+  engineer_3 -> cfo;
+}
