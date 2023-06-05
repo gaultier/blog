@@ -265,20 +265,13 @@ function hasNodeNoIncomingEdge(adjacencyMatrix, nodes, nodeIndex) {
 }
 ```
 
-Then, using this helper, we can define a second helper to initially collect all the nodes with no incoming edge:
+Then, using this helper, we can define a second helper to initially collect all the nodes with no incoming edge (`Line 2` in the algorithm):
 
 ```js
 function getNodesWithNoIncomingEdge(adjacencyMatrix, nodes) {
-  const result = [];
-
-  for (column = 0; column < nodes.length; column += 1) {
-    if (hasNodeNoIncomingEdge(adjacencyMatrix, nodes, column)) {
-      const node = nodes[column];
-      result.push(node);
-    }
-  }
-
-  return result;
+  return nodes.filter((_, i) =>
+    hasNodeNoIncomingEdge(adjacencyMatrix, nodes, i)
+  );
 }
 ```
 

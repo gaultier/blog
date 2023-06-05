@@ -24,16 +24,9 @@ function hasNodeNoIncomingEdge(adjacencyMatrix, nodes, nodeIndex) {
 }
 
 function getNodesWithNoIncomingEdge(adjacencyMatrix, nodes) {
-  const result = [];
-
-  for (column = 0; column < nodes.length; column += 1) {
-    if (hasNodeNoIncomingEdge(adjacencyMatrix, nodes, column)) {
-      const node = nodes[column];
-      result.push(node);
-    }
-  }
-
-  return result;
+  return nodes.filter((_, i) =>
+    hasNodeNoIncomingEdge(adjacencyMatrix, nodes, i)
+  );
 }
 
 console.log(hasNodeNoIncomingEdge(adjacencyMatrix, nodes, 0));
