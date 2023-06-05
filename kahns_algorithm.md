@@ -418,11 +418,7 @@ const adjacencyMatrix = [
 
 const nodes = ["Angela", "Bella", "Ellen", "Jane", "Miranda", "Zoe"];
 
-const employeesTopologicallySorted = topologicalSort(
-  structuredClone(adjacencyMatrix),
-  nodes,
-);
-
+const employeesTopologicallySorted = topologicalSort(structuredClone(adjacencyMatrix), nodes);
 ```
 
 And we get an error as expected:
