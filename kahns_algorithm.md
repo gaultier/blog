@@ -63,7 +63,7 @@ And that's called a topological sort.
 A big benefit is that we hit three birds with one stone:
 - We detect cycles
 - We have the nodes in an convenient order to insert them in the database
-- Since the algorithm for the topological sort takes as input an adjacency matrix (more on this later), we can easily detect the invalid case of a node having more than one outgoing edge (i.e. more than one manager).
+- Since the algorithm for the topological sort takes as input an adjacency matrix (more on this later), we can easily detect the invalid case of a node having more than one outgoing edge (i.e. more than one manager, i.e. multiple roots).
 
 From now one, I will use the graph of employees (where `Zoe` has two managers) as example since that's a possible input to our API and we need to detect this case.
 
@@ -75,7 +75,7 @@ From Wikipedia:
 
 That's a mouthful but it's not too hard. 
 
-A good command line utility that's already on your (Unix) machine is `tsort`, which takes a list of edges as input, and outputs a topological sort. Here is the input in a text file (`people.txt`):
+A useful command line utility that's already on your (Unix) machine is `tsort`, which takes a list of edges as input, and outputs a topological sort. Here is the input in a text file (`people.txt`):
 
 ```
 Jane Ellen
@@ -126,7 +126,7 @@ Zoe
 
 So, how can we implement something like `tsort` for our problem at hand? That's where [Kahn's algorithm](https://en.wikipedia.org/wiki/Topological_sorting#Kahn's_algorithm) comes in to do exactly that: find cycles in the graph and output a topological sort.
 
-*Note that that's not the only solution and there ways to detect cycles without creating a topological sort, but this algorithm seems relatively unknown and does not come up often on the Internet, so let's discover how it works and implement it. I promise, it's not complex.*
+*Note that that's not the only solution and there are ways to detect cycles without creating a topological sort, but this algorithm seems relatively unknown and does not come up often on the Internet, so let's discover how it works and implement it. I promise, it's not complex.*
 
 ## How to store the graph in memory
 
@@ -168,17 +168,17 @@ The full adjacency matrix for the employee graph in the example above looks like
 
 The way to read this table is:
 
-- For a given row, all the `1` indicate outgoing edges
-- For a given column, all the `1` indicate incoming edges
+- For a given row, all the `1`'s indicate outgoing edges
+- For a given column, all the `1`'s indicate incoming edges
 - If there is a `1` on the diagonal, it means there is an edge going out of a node and going to the same node.
 
-There are a lot of zeroes in this table, in the case of a Directed Acyclic Graph (DAG), which is our case. Some may think this is horribly inefficient, which it is, but it really depends on number of nodes, i.e. the number of employees in the organization. 
+There are a lot of zeroes in this table. Some may think this is horribly inefficient, which it is, but it really depends on number of nodes, i.e. the number of employees in the organization. 
 But note that this adjacency matrix is a concept, it shows what information is present, but not how it is stored.
 
 For this article, we will store it the naive way, in a 2D array. Here are two optimization ideas I considered but have not had time to experiment with:
 
 - Make this a bitarray. We are already only storing zeroes and ones, so it maps perfectly to this format.
-- Since there are a ton of zeroes (in the valid case, a regular employee's row only has one `1` and the CEO's row is only zeroes), it is very compressible. An easy way would be to use run-length encoding, meaning, instead of `0 0 0 0`, we just store the number of times the number occurs: `4 0`. Easy to implement, easy to understand. Its efficiency depends on the situation but we expect few outgoing edges (an employee reports to one, or a few, managers, not to 100+), so a row would compress well, just a few bytes. And this size would be constant, whatever the size of the organization (i.e. number of employees) is.
+- Since there are a ton of zeroes (in the valid case, a regular employee's row only has one `1` and the CEO's row is only zeroes), it is very compressible. An easy way would be to use run-length encoding, meaning, instead of `0 0 0 0`, we just store the number of times the number occurs: `4 0`. Easy to implement, easy to understand. A row compresses to just a few bytes. And this size would be constant, whatever the size of the organization (i.e. number of employees) is.
 
 Wikipedia lists others if you are interested, it's a well-known problem.
 
@@ -187,8 +187,7 @@ Alright, now that we know how our graph is represented, on to the algorithm.
 
 ## Kahn's algorithm
 
-
-Kahn's algorithm operates on 'the set of all nodes with no incoming edge', and mutates the graph (in our case the adjacency matrix), by removing one edge at a time, until there are no more edges, and builds a list of nodes in the right order. 
+[Kahn's algorithm](https://en.wikipedia.org/wiki/Topological_sorting#Kahn's_algorithm) keeps track of nodes with no incoming edge, and mutates the graph (in our case the adjacency matrix), by removing one edge at a time, until there are no more edges, and builds a list of nodes in the right order, which is the output.
 
 Here's the pseudo-code:
 
@@ -239,7 +238,7 @@ We know loop to `Line 7` and handle the node `Angela` since `Jane` is taken care
 Note that this algorithm is not capable by itself to point out which cycle there was exactly, only that there was one. That's because we mutated the graph by removing edges. If this information was important, we could keep track of which edges we removed in order, and re-add them back, or perhaps apply the algorithm to a copy of the graph (the adjacency matrix is trivial to clone).
 
 
-This algorithm is loose concerning the order of some operations, for example, picking a node with no incoming edge, or in which order the nodes in `S` are stored. That gives room for an implementation to use certain datastructures or orders that are faster, but in some cases we want the order to be always the same to solve ties in the stable way and to be reproducible. In order to do that, we simply use the alphabetical order. So in our example above, at `Line 5`, we picked `Zoe` out of `[Zoe, Bella, Miranda]`. Using this method, we would keep the working set `S` sorted alphabetically and pick `Bella` out of `[Bella, Miranda, Zoe]`.
+This algorithm is loose concerning the order of some operations, for example, picking a node with no incoming edge, or in which order the nodes in `S` are stored. That gives room for an implementation to use certain data structures or orders that are faster, but in some cases we want the order to be always the same to solve ties in the stable way and to be reproducible. In order to do that, we simply use the alphabetical order. So in our example above, at `Line 5`, we picked `Zoe` out of `[Zoe, Bella, Miranda]`. Using this method, we would keep the working set `S` sorted alphabetically and pick `Bella` out of `[Bella, Miranda, Zoe]`.
 
 
 ## Implementation
@@ -267,10 +266,10 @@ const nodes = ["Angela", "Bella", "Ellen", "Jane", "Miranda", "Zoe"];
 We need a helper function to check if a node has no incoming edge (`Line 9` in the algorithm):
 
 ```js
-function hasNodeNoIncomingEdge(adjacencyMatrix, nodes, nodeIndex) {
+function hasNodeNoIncomingEdge(adjacencyMatrix, nodeIndex) {
   const column = nodeIndex;
 
-  for (let row = 0; row < nodes.length; row += 1) {
+  for (let row = 0; row < adjacencyMatrix.length; row += 1) {
     const cell = adjacencyMatrix[row][column];
  of employees:
     if (cell != 0) {
@@ -286,7 +285,7 @@ Then, using this helper, we can define a second helper to initially collect all 
 
 ```js
 function getNodesWithNoIncomingEdge(adjacencyMatrix, nodes) {
-  return nodes.filter((_, i) => hasNodeNoIncomingEdge(adjacencyMatrix, nodes, i));
+  return nodes.filter((_, i) => hasNodeNoIncomingEdge(adjacencyMatrix, i));
 }
 ```
 

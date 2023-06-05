@@ -1,7 +1,7 @@
 const adjacencyMatrix = [
   [0, 0, 1, 0, 0, 0],
   [1, 0, 0, 0, 0, 0],
-  [0, 0, 0, 0, 0, 1],
+  [0, 0, 0, 0, 0, 0],
   [0, 0, 1, 0, 0, 0],
   [1, 0, 0, 0, 0, 0],
   [0, 0, 0, 1, 0, 0],
@@ -9,10 +9,10 @@ const adjacencyMatrix = [
 
 const nodes = ["Angela", "Bella", "Ellen", "Jane", "Miranda", "Zoe"];
 
-function hasNodeNoIncomingEdge(adjacencyMatrix, nodes, nodeIndex) {
+function hasNodeNoIncomingEdge(adjacencyMatrix, nodeIndex) {
   const column = nodeIndex;
 
-  for (let row = 0; row < nodes.length; row += 1) {
+  for (let row = 0; row < adjacencyMatrix.length; row += 1) {
     const cell = adjacencyMatrix[row][column];
 
     if (cell != 0) {
@@ -24,7 +24,7 @@ function hasNodeNoIncomingEdge(adjacencyMatrix, nodes, nodeIndex) {
 }
 
 function getNodesWithNoIncomingEdge(adjacencyMatrix, nodes) {
-  return nodes.filter((_, i) => hasNodeNoIncomingEdge(adjacencyMatrix, nodes, i));
+  return nodes.filter((_, i) => hasNodeNoIncomingEdge(adjacencyMatrix, i));
 }
 
 function graphHasEdges(adjacencyMatrix) {
