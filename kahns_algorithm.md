@@ -244,7 +244,7 @@ const adjacencyMatrix = [
   [1, 0, 0, 1, 0, 0],
 ];
 
-const nodes = ["Angela", "Bella", "Ellen", "Miranda", "Zoe"];
+const nodes = ["Angela", "Bella", "Ellen", "Jane", "Miranda", "Zoe"];
 ```
 
 First, we need a helper function to check if a node has no incoming edge (`Line 9` in the algorithm):
