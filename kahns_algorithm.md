@@ -278,31 +278,13 @@ The graph would now, to the algorithm, look like:
 
 And here are the next steps in images:
 
-![Employee hierarchy](kahns_algorithm_2_3.svg)
-
-<hr>
-
-![Employee hierarchy](kahns_algorithm_2_4.svg)
-
-<hr>
-
-![Employee hierarchy](kahns_algorithm_2_5.svg)
-
-<hr>
-
-![Employee hierarchy](kahns_algorithm_2_6.svg)
-
-<hr>
-
-![Employee hierarchy](kahns_algorithm_2_7.svg)
-
-<hr>
-
-![Employee hierarchy](kahns_algorithm_2_8.svg)
-
-<hr>
-
-![Employee hierarchy](kahns_algorithm_2_9.svg)
+1. ![Employee hierarchy](kahns_algorithm_2_3.svg)
+1. ![Employee hierarchy](kahns_algorithm_2_4.svg)
+1. ![Employee hierarchy](kahns_algorithm_2_5.svg)
+1. ![Employee hierarchy](kahns_algorithm_2_6.svg)
+1. ![Employee hierarchy](kahns_algorithm_2_7.svg)
+1. ![Employee hierarchy](kahns_algorithm_2_8.svg)
+1. ![Employee hierarchy](kahns_algorithm_2_9.svg)
 
 <hr>
 
