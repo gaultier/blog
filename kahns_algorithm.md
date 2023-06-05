@@ -336,7 +336,7 @@ function topologicalSort(adjacencyMatrix) {
 
       adjacencyMatrix[nodeIndex][mIndex] = 0;
 
-      if (hasNodeNoIncomingEdge(adjacencyMatrix, nodes, mIndex)) {
+      if (hasNodeNoIncomingEdge(adjacencyMatrix, mIndex)) {
         const m = nodes[mIndex];
         S.push(m);
       }
