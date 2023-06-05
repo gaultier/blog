@@ -14,7 +14,7 @@ window.addEventListener("load", (event) => {
 - [The database](#the-database)
 - [Topological sort](#topological-sort)
 - [How to store the graph in memory](#how-to-store-the-graph-in-memory)
-- [Kahn's algorithm](#kahn-s-algorithm)
+- [Kahn's algorithm](#kahn-algorithm)
 - [Implementation](#implementation)
   - [Helpers](#helpers)
   - [The algorithm](#the-algorithm)
