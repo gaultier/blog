@@ -276,6 +276,8 @@ The graph would now, to the algorithm, look like:
 
 ![Employee hierarchy](kahns_algorithm_2_2.svg)
 
+<hr>
+
 And here are the next steps in images:
 
 1. ![Employee hierarchy](kahns_algorithm_2_3.svg)
