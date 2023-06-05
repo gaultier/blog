@@ -511,6 +511,6 @@ We can also do this with hairy recursive Common Table Expression (CTE) but I'll 
 
 Graphs and algorithms operating on them do not have to be complicated. Using an adjacency matrix and Kahn's algorithm, we can achieve a lot with little and it remains simple.
 
-There are many ways to optimize the code in this article; the point was not to write the most efficient code, but to showcase in the clearest, simplest way possible, to detect cycles and store a graph/tree in memory and in a database. 
+There are many ways to optimize the code in this article; the point was not to write the most efficient code, but to showcase in the clearest, simplest way possible to detect cycles and store a graph/tree in memory and in a database. 
 
 If you want to play with the code here and try to make it faster, go at it!
