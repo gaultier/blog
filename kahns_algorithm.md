@@ -383,7 +383,7 @@ for (let i = employeesTopologicallySorted.length - 2; i >= 0; i -= 1) {
   const managerIndex = adjacencyMatrix[employeeIndex].indexOf(1);
   const manager = nodes[managerIndex];
   console.log(
-    `INSERT INTO people SELECT "${employee}", rowid FROM people WHERE name = "${manager}" LIMIT 1`,
+    `INSERT INTO people SELECT "${employee}", rowid FROM people WHERE name = "${manager}" LIMIT 1;`,
   );
 }
 ```
@@ -391,10 +391,10 @@ for (let i = employeesTopologicallySorted.length - 2; i >= 0; i -= 1) {
 Which outputs:
 
 ```sql
-INSERT INTO people VALUES("Ellen", NULL)
-INSERT INTO people SELECT "Angela", rowid FROM people WHERE name = "Ellen" LIMIT 1
-INSERT INTO people SELECT "Bella", rowid FROM people WHERE name = "Angela" LIMIT 1
-INSERT INTO people SELECT "Miranda", rowid FROM people WHERE name = "Angela" LIMIT 1
-INSERT INTO people SELECT "Jane", rowid FROM people WHERE name = "Ellen" LIMIT 1
-INSERT INTO people SELECT "Zoe", rowid FROM people WHERE name = "Jane" LIMIT 1
+INSERT INTO people VALUES("Ellen", NULL);
+INSERT INTO people SELECT "Angela", rowid FROM people WHERE name = "Ellen" LIMIT 1;
+INSERT INTO people SELECT "Bella", rowid FROM people WHERE name = "Angela" LIMIT 1;
+INSERT INTO people SELECT "Miranda", rowid FROM people WHERE name = "Angela" LIMIT 1;
+INSERT INTO people SELECT "Jane", rowid FROM people WHERE name = "Ellen" LIMIT 1;
+INSERT INTO people SELECT "Zoe", rowid FROM people WHERE name = "Jane" LIMIT 1;
 ```

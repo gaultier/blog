@@ -85,6 +85,6 @@ for (let i = employeesTopologicallySorted.length - 2; i >= 0; i -= 1) {
   const managerIndex = adjacencyMatrix[employeeIndex].indexOf(1);
   const manager = nodes[managerIndex];
   console.log(
-    `INSERT INTO people SELECT "${employee}", rowid FROM people WHERE name = "${manager}" LIMIT 1`,
+    `INSERT INTO people SELECT "${employee}", rowid FROM people WHERE name = "${manager}" LIMIT 1;`,
   );
 }
