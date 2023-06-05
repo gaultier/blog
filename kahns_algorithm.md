@@ -27,6 +27,8 @@ window.addEventListener("load", (event) => {
 
 ## Introduction 
 
+> If you spot an error, please open a [Github issue](https://github.com/gaultier/blog)!
+
 Graphs are everywhere in Software Engineering, or so we are told by Computer Science teachers and interviewers. But sometimes, they do show up in real problems.
 
 Not too long ago, I was tasked to create a Web API to create and update a company's hierarchy of employee, and display that on a web page. Basically, who reports to whom.
@@ -56,6 +58,7 @@ It opens the door to various invalid inputs: links that form a graph (an employe
 
  
 ![Invalid employee hierarchy](kahns_algorithm_1_invalid.svg)
+
 
 ## The database
 
