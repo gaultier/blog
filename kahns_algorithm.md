@@ -9,6 +9,23 @@ window.addEventListener("load", (event) => {
 
 # Cycle detection in graphs does not have to be hard: A lesser known, simple way with Kahn's algorithm
 
+**Table of Contents**
+- [Introduction](#introduction)
+- [The database](#the-database)
+- [Topological sort](#topological-sort)
+- [How to store the graph in memory](#how-to-store-the-graph-in-memory)
+- [Kahn's algorithm](#kahn-s-algorithm)
+- [Implementation](#implementation)
+  - [Helpers](#helpers)
+  - [The algorithm](#the-algorithm)
+  - [Inserting entries in the database](#inserting-entries-in-the-database)
+  - [Detecting cycles](#detecting-cycles)
+  - [Detecting multiple roots](#detecting-multiple-roots)
+- [Playing with the database](#playing-with-the-database)
+- [Closing thoughts](#closing-thoughts)
+
+## Introduction 
+
 Graphs are everywhere in Software Engineering, or so we are told by Computer Science teachers and interviewers.
 
 Not too long ago, I was tasked to create a Web API to create and update a company's hierarchy of employee, and display that on a web page. Basically, who reports to whom.
@@ -39,7 +56,7 @@ It opens the door to various invalid inputs: links that form a graph (an employe
  
 ![Invalid employee hierarchy](kahns_algorithm_1_invalid.png)
 
-## SQL 
+## The database
 
 So how do we store all of those people in the database?
 
