@@ -23,6 +23,7 @@ window.addEventListener("load", (event) => {
   - [Detecting multiple roots](#detecting-multiple-roots)
 - [Playing with the database](#playing-with-the-database)
 - [Closing thoughts](#closing-thoughts)
+- [Addendum: the full code](#addendum-the-full-code)
 
 ## Introduction 
 
