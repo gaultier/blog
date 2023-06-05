@@ -12,4 +12,5 @@ digraph {
   engineer_1 -> cto;
   engineer_2 -> cto;
   accountant_1 -> cfo;
+  accountant_1 -> cto[label="Forbidden", fontcolor="red", color="red"];
 }

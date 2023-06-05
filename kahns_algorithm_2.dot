@@ -4,13 +4,13 @@ digraph {
   cto[label="Angela, CTO"];
   engineer_1[label="Bella, Software Engineer"];
   engineer_2[label="Miranda, Software Engineer"];
-  engineer_3[label="Zoe, Software Engineer"];
+  accountant_1[label="Zoe, Accountant"];
 
 
   cto-> ceo;
   cfo -> ceo;
   engineer_1 -> cto;
   engineer_2 -> cto;
-  engineer_3 -> cto;
-  engineer_3 -> cfo[style="dotted", label="Removed", color="gray", fontcolor="grey"];
+  accountant_1 -> cfo[style="dotted", label="Removed", color="gray", fontcolor="grey"];
+  accountant_1 -> cto;
 }

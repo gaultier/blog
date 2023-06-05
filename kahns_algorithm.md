@@ -13,14 +13,19 @@ Graphs are everywhere in Software Engineering, or so we are told by Computer Sci
 
 Not too long ago, I was tasked to create a Web API to create and update a company's hierarchy of employee, and display that on a web page. Basically, who reports to whom.
 
-In the simple case, it's a tree, when an employee reports to exactly one manager. But there are more complex cases of companies where an employee reports to multiple managers and that creates a graph.
+In the simple case, it's a tree, when an employee reports to exactly one manager.
 
 ![Employee hierarchy](kahns_algorithm_1.png)
 
 Here's the graph of employees in an organization. An employee reports to one or more managers, and this forms a graph. The root of the graph is the CEO since they report to no one and so there have no incoming edge:
 An arrow (or 'edge') between two nodes means `<source> reports to <destination>`, for example: `Jane the CFO reports to Ellen the CEO`.
 
-In our problem, cycles are forbidden and we have to detect them and reject such graphs.
+ But since this is an API that receives a list of `employee -> supervisor` links, in any order, it's easy for the user to submit a links that form a graph, (an employee has multiple supervisors), multiple roots (e.g. multiple CEOs) or with cycles.
+
+ We have to detect such faulty inputs and reject them, such as this one:
+
+ 
+![Invalid employee hierarchy](kahns_algorithm_1_invalid.png)
 
 ## SQL 
 
@@ -44,13 +49,21 @@ And to save `Jane, CFO` in the database:
 INSERT INTO people VALUES('Jane, CFO', 1)
 ```
 
-assuming `Ellen, CEO`, Jane's boss, has the id `1`.
+Where `Ellen, CEO`, Jane's boss, which we just inserted before, has the id `1`.
 
 Immediately, we notice that to insert an employee, their manager needs to already by in the database, by virtue of the self-referential foreign key `manager BIGINT REFERENCES people`.
 
 So we need a way to sort the big list of `employee -> manager` links (or 'edges' in graph parlance), to insert them in the right order. First we insert the CEO, who reports to no one. Then we insert the employees directly reporting to the CEO. Then the employees reporting to those. Etc.
 
 And that's called a topological sort.
+
+A big benefit is that we hit two birds with one stone:
+- We detect cycles
+- We have the nodes in an convenient order to insert them in the database
+
+And to prevent an employee from having more than one manager, we rely on database constraints (an employee has a unique name, and only one manager).
+
+From now one, I will use the graph of employees (where `Zoe` has two managers) as example since that's a possible input to our API and we need to detect this case.
 
 ## Topological sort
 
@@ -253,7 +266,7 @@ First, we need a helper function to check if a node has no incoming edge (`Line 
 function hasNodeNoIncomingEdge(adjacencyMatrix, nodes, nodeIndex) {
   const column = nodeIndex;
 
-  for (row = 0; row < nodes.length; row += 1) {
+  for (let row = 0; row < nodes.length; row += 1) {
     const cell = adjacencyMatrix[row][column];
 
     if (cell != 0) {
@@ -286,3 +299,66 @@ And it outputs:
 ```js
 [ 'Bella', 'Miranda', 'Zoe' ]
 ```
+
+We need one final helper, to determine if the graph has edges (`Line 12`), which is straightforward:
+
+```js
+function graphHasEdges(adjacencyMatrix) {
+  for (let row = 0; row < adjacencyMatrix.length; row += 1) {
+    for (let column = 0; column < adjacencyMatrix.length; column += 1) {
+      if (adjacencyMatrix[row][column] == 1) return true;
+    }
+  }
+
+  return false;
+}
+```
+
+
+And we are finally ready to implement the algorithm:
+
+```js
+function topologicalSort(adjacencyMatrix) {
+  const L = [];
+  const S = getNodesWithNoIncomingEdge(adjacencyMatrix, nodes);
+
+  while (S.length > 0) {
+    const node = S.pop();
+    L.push(node);
+    const nodeIndex = nodes.indexOf(node);
+
+    for (let mIndex = 0; mIndex < nodes.length; mIndex++) {
+      const hasEdgeFromNtoM = adjacencyMatrix[nodeIndex][mIndex];
+      if (!hasEdgeFromNtoM) continue;
+
+      adjacencyMatrix[nodeIndex][mIndex] = 0;
+
+      if (hasNodeNoIncomingEdge(adjacencyMatrix, nodes, mIndex)) {
+        const m = nodes[mIndex];
+        S.push(m);
+      }
+    }
+  }
+
+  if (graphHasEdges(adjacencyMatrix)) {
+    throw new Error("Graph has at least one cycle");
+  }
+
+  return L;
+}
+```
+
+
+Let's try it:
+
+```js
+console.log(topologicalSort(adjacencyMatrix, nodes));
+```
+
+We get:
+
+```js
+[ 'Zoe', 'Jane', 'Miranda', 'Bella', 'Angela', 'Ellen' ]
+```
+
+Interestingly, it is not the same order as `tsort`, but it is indeed a valid topological ordering. That's because there are ties between some nodes. But in our specific case, we just want a valid insertion order in the database, and so this is enough for us.

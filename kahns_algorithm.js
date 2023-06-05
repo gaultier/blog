@@ -12,7 +12,7 @@ const nodes = ["Angela", "Bella", "Ellen", "Jane", "Miranda", "Zoe"];
 function hasNodeNoIncomingEdge(adjacencyMatrix, nodes, nodeIndex) {
   const column = nodeIndex;
 
-  for (row = 0; row < nodes.length; row += 1) {
+  for (let row = 0; row < nodes.length; row += 1) {
     const cell = adjacencyMatrix[row][column];
 
     if (cell != 0) {
@@ -30,8 +30,8 @@ function getNodesWithNoIncomingEdge(adjacencyMatrix, nodes) {
 }
 
 function graphHasEdges(adjacencyMatrix) {
-  for (row = 0; row < adjacencyMatrix.length; row += 1) {
-    for (column = 0; column < adjacencyMatrix.length; column += 1) {
+  for (let row = 0; row < adjacencyMatrix.length; row += 1) {
+    for (let column = 0; column < adjacencyMatrix.length; column += 1) {
       if (adjacencyMatrix[row][column] == 1) return true;
     }
   }
@@ -48,7 +48,7 @@ function topologicalSort(adjacencyMatrix) {
     L.push(node);
     const nodeIndex = nodes.indexOf(node);
 
-    for (mIndex = 0; mIndex < nodes.length; mIndex++) {
+    for (let mIndex = 0; mIndex < nodes.length; mIndex++) {
       const hasEdgeFromNtoM = adjacencyMatrix[nodeIndex][mIndex];
       if (!hasEdgeFromNtoM) continue;
 
@@ -68,4 +68,27 @@ function topologicalSort(adjacencyMatrix) {
   return L;
 }
 
-console.log(topologicalSort(adjacencyMatrix, nodes));
+const employeesTopologicallySorted = topologicalSort(
+  structuredClone(adjacencyMatrix),
+  nodes,
+);
+console.log(employeesTopologicallySorted);
+
+const root =
+  employeesTopologicallySorted[employeesTopologicallySorted.length - 1];
+console.log(`INSERT INTO people VALUES("${root}", NULL)`);
+
+for (let i = employeesTopologicallySorted.length - 2; i >= 0; i -= 1) {
+  const employee = employeesTopologicallySorted[i];
+
+  const outgoingEdges = adjacencyMatrix[i];
+  for (let j = 0; j < outgoingEdges.length; j += 1) {
+    const outgoingEdge = outgoingEdges[j];
+    if (outgoingEdge != 1) continue;
+
+    const manager = nodes[j];
+    console.log(
+      `INSERT INTO people SELECT "${employee}", rowid FROM people WHERE name = ${manager} LIMIT 1`,
+    );
+  }
+}
