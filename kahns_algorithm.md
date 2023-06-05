@@ -57,11 +57,10 @@ So we need a way to sort the big list of `employee -> manager` links (or 'edges'
 
 And that's called a topological sort.
 
-A big benefit is that we hit two birds with one stone:
+A big benefit is that we hit three birds with one stone:
 - We detect cycles
 - We have the nodes in an convenient order to insert them in the database
-
-And to prevent an employee from having more than one manager, we rely on database constraints (an employee has a unique name, and only one manager).
+- Since the algorithm for the topological sort takes as input an adjacency matrix (more on this later), we can easily detect the invalid case of a node having more than one outgoing edge (i.e. more than one manager).
 
 From now one, I will use the graph of employees (where `Zoe` has two managers) as example since that's a possible input to our API and we need to detect this case.
 
@@ -176,7 +175,7 @@ But note that this adjacency matrix is a concept, it shows what information is p
 For this article, we will store it the naive way, in a 2D array. Here are two optimization ideas I considered but have not had time to experiment with:
 
 - Make this a bitarray. We are already only storing zeroes and ones, so it maps perfectly to this format.
-- Since there are a ton of zeroes, it is very compressable. An easy way would be to use run-length encoding, meaning, instead of `0 0 0 0`, we just store the number of times the number occurs: `4 0`. Easy to implement, easy to understand. Its efficiency depends on the situation but we expect few outgoing edges (an employee reports to one, or a few, managers, not to 100+), so a row would compress well, probably just a few bytes.
+- Since there are a ton of zeroes (in the valid case, a regular employee's row only has one `1` and the CEO's row is only zeroes), it is very compressible. An easy way would be to use run-length encoding, meaning, instead of `0 0 0 0`, we just store the number of times the number occurs: `4 0`. Easy to implement, easy to understand. Its efficiency depends on the situation but we expect few outgoing edges (an employee reports to one, or a few, managers, not to 100+), so a row would compress well, just a few bytes. And this size would be constant, whatever the size of the organization (i.e. number of employees) is.
 
 Wikipedia lists others if you are interested, it's a well-known problem.
 
@@ -245,7 +244,7 @@ This algorithm is loose concerning the order of some operations, for example, pi
 I implemented this at the time in `Go`, but I will use for this article the lingua franca of the 2010s, Javascript.
 
 
-First, we define our adjacency matrix and the list of nodes. This is the naive format. We would get the nodes and edges in some format, for example JSON, in the API, and build the adjacency matrix, which is trivial.
+First, we define our adjacency matrix and the list of nodes. This is the naive format. We would get the nodes and edges in some format, for example JSON, in the API, and build the adjacency matrix, which is trivial. Let's take the very first example, the (valid) tree  of employees:
 
 ```js
 const adjacencyMatrix = [
@@ -254,7 +253,7 @@ const adjacencyMatrix = [
   [0, 0, 0, 0, 0, 0],
   [0, 0, 1, 0, 0, 0],
   [1, 0, 0, 0, 0, 0],
-  [1, 0, 0, 1, 0, 0],
+  [0, 0, 0, 1, 0, 0],
 ];
 
 const nodes = ["Angela", "Bella", "Ellen", "Jane", "Miranda", "Zoe"];
@@ -268,7 +267,7 @@ function hasNodeNoIncomingEdge(adjacencyMatrix, nodes, nodeIndex) {
 
   for (let row = 0; row < nodes.length; row += 1) {
     const cell = adjacencyMatrix[row][column];
-
+ of employees:
     if (cell != 0) {
       return false;
     }
@@ -361,4 +360,41 @@ We get:
 [ 'Zoe', 'Jane', 'Miranda', 'Bella', 'Angela', 'Ellen' ]
 ```
 
-Interestingly, it is not the same order as `tsort`, but it is indeed a valid topological ordering. That's because there are ties between some nodes. But in our specific case, we just want a valid insertion order in the database, and so this is enough for us.
+Interestingly, it is not the same order as `tsort`, but it is indeed a valid topological ordering. That's because there are ties between some nodes. In other words, the sort is not stable in our implementation. 
+
+But in our specific case, we just want a valid insertion order in the database, and so this is enough for us.
+
+Now, we can produce the SQL code to insert our entries. We handle the special case of the root first, and then we go through the topolically sorted list of employees in reverse order, and insert each one:
+
+```js
+const employeesTopologicallySorted = topologicalSort(
+  structuredClone(adjacencyMatrix),
+  nodes,
+);
+
+const root =
+  employeesTopologicallySorted[employeesTopologicallySorted.length - 1];
+console.log(`INSERT INTO people VALUES("${root}", NULL)`);
+
+for (let i = employeesTopologicallySorted.length - 2; i >= 0; i -= 1) {
+  const employee = employeesTopologicallySorted[i];
+  const employeeIndex = nodes.indexOf(employee);
+
+  const managerIndex = adjacencyMatrix[employeeIndex].indexOf(1);
+  const manager = nodes[managerIndex];
+  console.log(
+    `INSERT INTO people SELECT "${employee}", rowid FROM people WHERE name = "${manager}" LIMIT 1`,
+  );
+}
+```
+
+Which outputs:
+
+```sql
+INSERT INTO people VALUES("Ellen", NULL)
+INSERT INTO people SELECT "Angela", rowid FROM people WHERE name = "Ellen" LIMIT 1
+INSERT INTO people SELECT "Bella", rowid FROM people WHERE name = "Angela" LIMIT 1
+INSERT INTO people SELECT "Miranda", rowid FROM people WHERE name = "Angela" LIMIT 1
+INSERT INTO people SELECT "Jane", rowid FROM people WHERE name = "Ellen" LIMIT 1
+INSERT INTO people SELECT "Zoe", rowid FROM people WHERE name = "Jane" LIMIT 1
+```

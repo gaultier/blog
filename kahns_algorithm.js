@@ -4,7 +4,7 @@ const adjacencyMatrix = [
   [0, 0, 0, 0, 0, 0],
   [0, 0, 1, 0, 0, 0],
   [1, 0, 0, 0, 0, 0],
-  [1, 0, 0, 1, 0, 0],
+  [0, 0, 0, 1, 0, 0],
 ];
 
 const nodes = ["Angela", "Bella", "Ellen", "Jane", "Miranda", "Zoe"];
@@ -80,15 +80,11 @@ console.log(`INSERT INTO people VALUES("${root}", NULL)`);
 
 for (let i = employeesTopologicallySorted.length - 2; i >= 0; i -= 1) {
   const employee = employeesTopologicallySorted[i];
+  const employeeIndex = nodes.indexOf(employee);
 
-  const outgoingEdges = adjacencyMatrix[i];
-  for (let j = 0; j < outgoingEdges.length; j += 1) {
-    const outgoingEdge = outgoingEdges[j];
-    if (outgoingEdge != 1) continue;
-
-    const manager = nodes[j];
-    console.log(
-      `INSERT INTO people SELECT "${employee}", rowid FROM people WHERE name = ${manager} LIMIT 1`,
-    );
-  }
+  const managerIndex = adjacencyMatrix[employeeIndex].indexOf(1);
+  const manager = nodes[managerIndex];
+  console.log(
+    `INSERT INTO people SELECT "${employee}", rowid FROM people WHERE name = "${manager}" LIMIT 1`,
+  );
 }
