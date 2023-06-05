@@ -13,9 +13,9 @@ In the simple case, it's a tree, when an employee reports to exactly one manager
 Here's the graph of employees in an organization. An employee reports to one or more managers, and this forms a graph. The root of the graph is the CEO since they report to no one and so there have no incoming edge:
 An arrow (or 'edge') between two nodes means `<source> reports to <destination>`, for example: `Jane the CFO reports to Ellen the CEO`.
 
-And that opens a big can of worms:
-- We now need to detect cycles since those are not valid hierarchy (according to the business rules at the time)
-- We need to store this hierarchy in a database, and a simply way is to use a simple table (I used SQLite for this project, but any SQL database can do the same):
+## SQL 
+
+So how do we store all of those people in the database?
 
 ```sql
 CREATE TABLE IF NOT EXISTS people(name TEXT NOT NULL UNIQUE, manager BIGINT REFERENCES people)
@@ -23,13 +23,31 @@ CREATE TABLE IF NOT EXISTS people(name TEXT NOT NULL UNIQUE, manager BIGINT REFE
 
 Each employee has a optional reference to a manager. 
 
-To insert an employee, their manager needs to already by in the database, by virtue of the self-referential foreign key `manager BIGINT REFERENCES people`.
+For example, to save `Ellen, CEO` inside the database, we do:
+
+```sql
+INSERT INTO people VALUES('Ellen, CEO', NULL)
+```
+
+And to save `Jane, CFO` in the database:
+
+```sql
+INSERT INTO people VALUES('Jane, CFO', 1)
+```
+
+assuming `Ellen, CEO`, Jane's boss, has the id `1`.
+
+Immediately, we notice that to insert an employee, their manager needs to already by in the database, by virtue of the self-referential foreign key `manager BIGINT REFERENCES people`.
 
 So we need a way to sort the big list of `employee -> manager` links (or 'edges' in graph parlance), to insert them in the right order. First we insert the CEO, who reports to no one. Then we insert the employees directly reporting to the CEO. Then the employees reporting to those. Etc.
 
 And that's called a topological sort.
 
-> From Wikipedia: A topological sort or topological ordering of a directed graph is a linear ordering of its vertices such that for every directed edge uv from vertex u to vertex v, u comes before v in the ordering. For instance, the vertices of the graph may represent tasks to be performed, and the edges may represent constraints that one task must be performed before another; in this application, a topological ordering is just a valid sequence for the tasks
+## Topological sort
+
+From Wikipedia:
+
+> A topological sort or topological ordering of a directed graph is a linear ordering of its vertices such that for every directed edge uv from vertex u to vertex v, u comes before v in the ordering. For instance, the vertices of the graph may represent tasks to be performed, and the edges may represent constraints that one task must be performed before another; in this application, a topological ordering is just a valid sequence for the tasks
 
 That's a mouthful but it's not too hard. 
 
@@ -82,6 +100,6 @@ Ellen
 Zoe
 ```
 
-So, how can we implement something like `tsort`? That's where Kahn's algorithm comes in to do exactly that: find cycles in the graph and make a topological sort.
+So, how can we implement something like `tsort` for our problem at hand? That's where Kahn's algorithm comes in to do exactly that: find cycles in the graph and output a topological sort.
 
-*Note that that's not the only solution and there ways to detect cycles without creating a topological sort, but this algorithm seem relatively unknown and does not come up often on the Internet, so let's discover how it works and implement it. I promise, it's not complex.*
+*Note that that's not the only solution and there ways to detect cycles without creating a topological sort, but this algorithm seems relatively unknown and does not come up often on the Internet, so let's discover how it works and implement it. I promise, it's not complex.*
