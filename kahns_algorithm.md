@@ -7,6 +7,8 @@ window.addEventListener("load", (event) => {
 });
 </script>
 
+<a href="/blog">All articles</a>
+
 # Cycle detection in graphs does not have to be hard: A lesser known, simple way with Kahn's algorithm
 
 **Table of Contents**
