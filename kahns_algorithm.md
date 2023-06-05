@@ -232,7 +232,7 @@ This algorithm is loose concerning the order of some operations, for example, pi
 I implemented this at the time in `Go`, but I will use for this article the lingua franca of the 2010s, Javascript.
 
 
-First, we define our adjacency matrix and the list of nodes. We would get the nodes and edges in some format, for example JSON, in the API, and build the adjacency matrix, which is trivial.
+First, we define our adjacency matrix and the list of nodes. This is the naive format. We would get the nodes and edges in some format, for example JSON, in the API, and build the adjacency matrix, which is trivial.
 
 ```js
 const adjacencyMatrix = [
@@ -247,25 +247,32 @@ const adjacencyMatrix = [
 const nodes = ["Angela", "Bella", "Ellen", "Miranda", "Zoe"];
 ```
 
-First, we need a helper function to initially collect the nodes with no incoming edge:
+First, we need a helper function to check if a node has no incoming edge (`Line 9` in the algorithm):
+
+```js
+function hasNodeNoIncomingEdge(adjacencyMatrix, nodes, nodeIndex) {
+  const column = nodeIndex;
+
+  for (row = 0; row < nodes.length; row += 1) {
+    const cell = adjacencyMatrix[row][column];
+
+    if (cell != 0) {
+      return false;
+    }
+  }
+
+  return true;
+}
+```
+
+Then, using this helper, we can define a second helper to initially collect all the nodes with no incoming edge:
 
 ```js
 function getNodesWithNoIncomingEdge(adjacencyMatrix, nodes) {
   const result = [];
 
   for (column = 0; column < nodes.length; column += 1) {
-    let columnHasOnlyZeroes = true;
-
-    for (row = 0; row < nodes.length; row += 1) {
-      const cell = adjacencyMatrix[row][column];
-
-      if (cell != 0) {
-        columnHasOnlyZeroes = false;
-        break;
-      }
-    }
-
-    if (columnHasOnlyZeroes) {
+    if (hasNodeNoIncomingEdge(adjacencyMatrix, nodes, column)) {
       const node = nodes[column];
       result.push(node);
     }
@@ -274,8 +281,6 @@ function getNodesWithNoIncomingEdge(adjacencyMatrix, nodes) {
   return result;
 }
 ```
-
-This is the naive version of inspecting each column, and only collecting this column's node if there are only zeroes in the column. There are slightly faster ways of doing this, for example using row order, but that will do. We would anyway use a more optimized format for the adjacency matrix if we were concerned about performance which would change the implementation here.
 
 We can try it:
 
@@ -288,14 +293,3 @@ And it outputs:
 ```js
 [ 'Bella', 'Miranda', 'Zoe' ]
 ```
-
-
-We need another helper function to check if a node has no other incoming edge:
-
-```js
-
-```
-
-We will only use arrays, for `L` and `S`, so adding a node is `Array.push()` and removing a node is `Array.pop()`.
-
-
