@@ -35,7 +35,7 @@ In the simple case, it's a tree, when an employee reports to exactly one manager
 
 ![Employee hierarchy](kahns_algorithm_1.svg)
 
-Here's the tree of employees in an organization. An employee reports to a manager, and this forms a tree. The root of the graph is the CEO since they report to no one and so they have no outgoing edge.
+Here's the tree of employees in an organization. An employee reports to a manager, and this forms a tree. The root is the CEO since they report to no one and so they have no outgoing edge.
 
 An arrow (or 'edge') between two nodes means `<source> reports to <destination>`, for example: `Jane the CFO reports to Ellen the CEO`.
 
