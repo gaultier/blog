@@ -17,7 +17,8 @@ In the simple case, it's a tree, when an employee reports to exactly one manager
 
 ![Employee hierarchy](kahns_algorithm_1.png)
 
-Here's the graph of employees in an organization. An employee reports to one or more managers, and this forms a graph. The root of the graph is the CEO since they report to no one and so there have no incoming edge:
+Here's the tree of employees in an organization. An employee reports to one manager, and this forms a tree. The root of the graph is the CEO since they report to no one and so there have no incoming edge.
+
 An arrow (or 'edge') between two nodes means `<source> reports to <destination>`, for example: `Jane the CFO reports to Ellen the CEO`.
 
  But since this is an API that receives a list of `employee -> supervisor` links, in any order, it's easy for the user to submit a links that form a graph, (an employee has multiple supervisors), multiple roots (e.g. multiple CEOs) or with cycles.
