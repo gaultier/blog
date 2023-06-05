@@ -1,0 +1,17 @@
+digraph {
+  ceo[label="Ellen, CEO"];
+  ceo_2[label="Kelly, CEO", color="red", fontcolor="red"];
+  cfo[label="Jane, CFO"];
+  cto[label="Angela, CTO"];
+  engineer_1[label="Bella, Software Engineer"];
+  engineer_2[label="Miranda, Software Engineer"];
+  accountant_1[label="Zoe, Accountant"];
+
+
+  cto-> ceo;
+  cfo -> ceo;
+  cto-> ceo_2[label="Forbidden", color="red", fontcolor="red"];
+  engineer_1 -> cto;
+  engineer_2 -> cto;
+  accountant_1 -> cfo;
+}

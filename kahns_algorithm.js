@@ -84,10 +84,7 @@ function hasMultipleRoots(adjacencyMatrix) {
 }
 
 console.log(hasMultipleRoots(adjacencyMatrix));
-const employeesTopologicallySorted = topologicalSort(
-  structuredClone(adjacencyMatrix),
-  nodes,
-);
+const employeesTopologicallySorted = topologicalSort(structuredClone(adjacencyMatrix), nodes);
 console.log(employeesTopologicallySorted);
 
 const root = employeesTopologicallySorted[employeesTopologicallySorted.length - 1];

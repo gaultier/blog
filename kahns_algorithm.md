@@ -319,7 +319,7 @@ function graphHasEdges(adjacencyMatrix) {
 
 ### The algorithm
 
-We are finally ready to implement the algorithm:
+We are finally ready to implement the algorithm. It's a straigthforward, line by line, translation of the pseudo-code:
 
 ```js
 function topologicalSort(adjacencyMatrix) {
@@ -365,19 +365,18 @@ We get:
 [ 'Zoe', 'Jane', 'Miranda', 'Bella', 'Angela', 'Ellen' ]
 ```
 
-Interestingly, it is not the same order as `tsort`, but it is indeed a valid topological ordering. That's because there are ties between some nodes. In other words, the sort is not stable in our implementation. 
+Interestingly, it is not the same order as `tsort`, but it is indeed a valid topological ordering. That's because there are ties between some nodes and we do not resolve those ties the exact same way `tsort` does.
 
-But in our specific case, we just want a valid insertion order in the database, and so this is enough for us.
+But in our specific case, we just want a valid insertion order in the database, and so this is enough.
 
 ### Inserting entries in the database
 
-Now, we can produce the SQL code to insert our entries. We handle the special case of the root first, and then we go through the topolically sorted list of employees in reverse order, and insert each one:
+Now, we can produce the SQL code to insert our entries. We operate on a clone of the adjacency matrix for convenience because we later need to know what is the outgoing edge for a given node.
+
+We handle the special case of the root first, which is the last element, and then we go through the topologically sorted list of employees in reverse order, and insert each one:
 
 ```js
-const employeesTopologicallySorted = topologicalSort(
-  structuredClone(adjacencyMatrix),
-  nodes,
-);
+const employeesTopologicallySorted = topologicalSort(structuredClone(adjacencyMatrix), nodes)
 
 const root = employeesTopologicallySorted[employeesTopologicallySorted.length - 1];
 console.log(`INSERT INTO people VALUES("${root}", NULL)`);
@@ -510,6 +509,8 @@ We can also do this with hairy recursive Common Table Expression (CTE) but I'll 
 
 ## Closing thoughts
 
-Graphs and algorithms operating on them do not have to be complicated. Using a adjacency matrix and Kahn's algorithm, we can achieve a lot with little. 
+Graphs and algorithms operating on them do not have to be complicated. Using a adjacency matrix and Kahn's algorithm, we can achieve a lot with little and it remains simple.
 
-There are many ways to optimize the code in this article; the point was not to write the most efficient code, but to showcase in the clearest, simplest way possible, how to detect cycles and store a graph/tree in memory and in a database.
+There are many ways to optimize the code in this article; the point was not to write the most efficient code, but to showcase in the clearest, simplest way possible, how to detect cycles and store a graph/tree in memory and in a database. 
+
+If you want to play with the code here and try to make it faster, go at it!
