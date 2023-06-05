@@ -52,7 +52,7 @@ function topologicalSort(adjacencyMatrix) {
 
       adjacencyMatrix[nodeIndex][mIndex] = 0;
 
-      if (hasNodeNoIncomingEdge(adjacencyMatrix, nodes, mIndex)) {
+      if (hasNodeNoIncomingEdge(adjacencyMatrix, mIndex)) {
         const m = nodes[mIndex];
         S.push(m);
       }
@@ -100,4 +100,3 @@ for (let i = employeesTopologicallySorted.length - 2; i >= 0; i -= 1) {
     `INSERT INTO people SELECT "${employee}", rowid FROM people WHERE name = "${manager}" LIMIT 1;`,
   );
 }
-// with recursive works_for(n) as (values (5) union select rowid from people, works_for where people.manager = works_for.n) select rowid, name from people where people.rowid IN works_for;
