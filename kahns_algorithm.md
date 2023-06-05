@@ -37,6 +37,9 @@ CREATE TABLE IF NOT EXISTS people(name TEXT NOT NULL UNIQUE, manager BIGINT REFE
 
 Each employee has a optional reference to a manager. 
 
+
+> This is not a novel idea, actually this is one of the examples in the official [SQLite documentation](https://www.sqlite.org/lang_with.html).
+
 For example, to save `Ellen, CEO` inside the database, we do:
 
 ```sql
@@ -258,8 +261,10 @@ const adjacencyMatrix = [
 
 const nodes = ["Angela", "Bella", "Ellen", "Jane", "Miranda", "Zoe"];
 ```
+ 
+### Helpers
 
-First, we need a helper function to check if a node has no incoming edge (`Line 9` in the algorithm):
+We need a helper function to check if a node has no incoming edge (`Line 9` in the algorithm):
 
 ```js
 function hasNodeNoIncomingEdge(adjacencyMatrix, nodes, nodeIndex) {
@@ -312,7 +317,9 @@ function graphHasEdges(adjacencyMatrix) {
 ```
 
 
-And we are finally ready to implement the algorithm:
+### The algorithm
+
+We are finally ready to implement the algorithm:
 
 ```js
 function topologicalSort(adjacencyMatrix) {
@@ -324,7 +331,7 @@ function topologicalSort(adjacencyMatrix) {
     L.push(node);
     const nodeIndex = nodes.indexOf(node);
 
-    for (let mIndex = 0; mIndex < nodes.length; mIndex++) {
+    for (let mIndex = 0; mIndex < nodes.length; mIndex += 1) {
       const hasEdgeFromNtoM = adjacencyMatrix[nodeIndex][mIndex];
       if (!hasEdgeFromNtoM) continue;
 
@@ -362,6 +369,8 @@ Interestingly, it is not the same order as `tsort`, but it is indeed a valid top
 
 But in our specific case, we just want a valid insertion order in the database, and so this is enough for us.
 
+### Inserting entries in the database
+
 Now, we can produce the SQL code to insert our entries. We handle the special case of the root first, and then we go through the topolically sorted list of employees in reverse order, and insert each one:
 
 ```js
@@ -395,3 +404,74 @@ INSERT INTO people SELECT "Miranda", rowid FROM people WHERE name = "Angela" LIM
 INSERT INTO people SELECT "Jane", rowid FROM people WHERE name = "Ellen" LIMIT 1;
 INSERT INTO people SELECT "Zoe", rowid FROM people WHERE name = "Jane" LIMIT 1;
 ```
+
+
+### Detecting multiple roots
+
+
+One thing that topological sorting does not do for us is to detect the case of multiple roots in the graph, for example:
+
+
+![Employee hierarchy with multiple roots](kahns_algorithm_3.png)
+
+To do this, we simply scan the adjacency matrix and verify that there is only one row with only zeroes, that is, only one node that hos no outgoing edges:
+
+```js
+function hasMultipleRoots(adjacencyMatrix) {
+  let countOfRowsWithOnlyZeroes = 0;
+
+  for (let row = 0; row < adjacencyMatrix.length; row += 1) {
+    let rowHasOnlyZeroes = true;
+    for (let column = 0; column < adjacencyMatrix.length; column += 1) {
+      if (adjacencyMatrix[row][column] != 0) {
+        rowHasOnlyZeroes = false;
+        break;
+      }
+    }
+    if (rowHasOnlyZeroes) countOfRowsWithOnlyZeroes += 1;
+  }
+
+  return countOfRowsWithOnlyZeroes > 1;
+}
+```
+
+Let's try it with our invalid example from above:
+
+```js
+const adjacencyMatrix = [
+  [0, 0, 1, 0, 0, 0, 0],
+  [1, 0, 0, 0, 0, 0, 0],
+  [0, 0, 0, 0, 0, 0, 0],
+  [0, 0, 1, 0, 0, 0, 0],
+  [1, 0, 0, 0, 0, 0, 0],
+  [0, 0, 0, 1, 0, 0, 0],
+  [0, 0, 0, 0, 0, 0, 0],
+];
+
+const nodes = ["Angela", "Bella", "Ellen", "Jane", "Miranda", "Zoe", "Kelly"];
+
+
+console.log(hasMultipleRoots(adjacencyMatrix));
+```
+
+And we get: `true`. With our previous (valid) example, we get: `false`.
+
+## Playing with the database
+
+We can query each employee along with their manager name so:
+
+```sql
+SELECT a.name as employee_name, COALESCE(b.name, '') as manager_name FROM people a LEFT JOIN people b ON a.manager = b.rowid;
+```
+
+To query the manager (N+1) and the manager's manager (N+2) of an employee:
+
+```sql
+SELECT COALESCE(n_plus_1.name, ''), COALESCE(n_plus_2.name, '')
+FROM people employee
+LEFT JOIN people n_plus_1 ON employee.manager = n_plus_1.rowid
+LEFT JOIN people n_plus_2 ON n_plus_1.manager = n_plus_2.rowid
+WHERE employee.name = ?
+```
+
+We can also do this with hairy recursive Common Table Expression (CTE) but I'll leave that to the reader.

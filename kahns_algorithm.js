@@ -46,7 +46,7 @@ function topologicalSort(adjacencyMatrix) {
     L.push(node);
     const nodeIndex = nodes.indexOf(node);
 
-    for (let mIndex = 0; mIndex < nodes.length; mIndex++) {
+    for (let mIndex = 0; mIndex < nodes.length; mIndex += 1) {
       const hasEdgeFromNtoM = adjacencyMatrix[nodeIndex][mIndex];
       if (!hasEdgeFromNtoM) continue;
 
@@ -66,6 +66,24 @@ function topologicalSort(adjacencyMatrix) {
   return L;
 }
 
+function hasMultipleRoots(adjacencyMatrix) {
+  let countOfRowsWithOnlyZeroes = 0;
+
+  for (let row = 0; row < adjacencyMatrix.length; row += 1) {
+    let rowHasOnlyZeroes = true;
+    for (let column = 0; column < adjacencyMatrix.length; column += 1) {
+      if (adjacencyMatrix[row][column] != 0) {
+        rowHasOnlyZeroes = false;
+        break;
+      }
+    }
+    if (rowHasOnlyZeroes) countOfRowsWithOnlyZeroes += 1;
+  }
+
+  return countOfRowsWithOnlyZeroes > 1;
+}
+
+console.log(hasMultipleRoots(adjacencyMatrix));
 const employeesTopologicallySorted = topologicalSort(
   structuredClone(adjacencyMatrix),
   nodes,
@@ -85,3 +103,4 @@ for (let i = employeesTopologicallySorted.length - 2; i >= 0; i -= 1) {
     `INSERT INTO people SELECT "${employee}", rowid FROM people WHERE name = "${manager}" LIMIT 1;`,
   );
 }
+// with recursive works_for(n) as (values (5) union select rowid from people, works_for where people.manager = works_for.n) select rowid, name from people where people.rowid IN works_for;
