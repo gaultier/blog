@@ -1,4 +1,11 @@
 <link rel="stylesheet" type="text/css" href="main.css">
+<link rel="stylesheet" href="https://unpkg.com/@highlightjs/cdn-assets@11.8.0/styles/default.min.css">
+<script src="https://unpkg.com/@highlightjs/cdn-assets@11.8.0/highlight.min.js"></script>
+<script>
+window.addEventListener("load", (event) => {
+  hljs.highlightAll();
+});
+</script>
 
 # A lesser known, simple way to find cycles in a graph: Kahn's algorithm
 
@@ -190,11 +197,11 @@ Here's the pseudo-code:
 
 And in plain english:
 
-`Line 1`: The result of this algorithm is the list of nodes in the desired order (topological). It starts empty, and we add nodes one-by one during the algorithm.
+`Line 1`: The result of this algorithm is the list of nodes in the desired order (topological). It starts empty, and we add nodes one-by one during the algorithm. We can simply use an array in our implementation.
 
-`Line 2`: We first collect all nodes with no incoming edge. In terms of adjacency matrix, it means picking a column with only zeroes. The algorithm calls it a set, but we are free in our implementation to use whatever data structure we see fit. It just means a given node appears at most once in it. In our example, this set is: `[Zoe, Bella, Miranda]`. During the algorithm course, we will add further nodes to this set. Note that this is a working set, not the final result.
+`Line 2`: We first collect all nodes with no incoming edge. In terms of adjacency matrix, it means picking columns with only zeroes. The algorithm calls it a set, but we are free in our implementation to use whatever data structure we see fit. It just means a given node appears at most once in it. In our example, this set is: `[Zoe, Bella, Miranda]`. During the algorithm course, we will add further nodes to this set. Note that this is a working set, not the final result. Also, the order does not matter.
 
-`Line 4`: Self-explanatory, we continue until the working set is empty.
+`Line 4`: Self-explanatory, we continue until the working set is empty and there is no more work to do.
 
 `Line 5`: We first pick a node with no incoming edge (it does not matter which one). For example, `Zoe`, and remove it from `S`. `S` is now: `[Bella, Miranda]`.
 
@@ -213,6 +220,82 @@ At this point, the graph looks like this:
 We know loop to `Line 7` and handle the node `Angela` since `Jane` is taken care of.
 
 
-`Line 12-15`: One the loop at `Line 4` is finished, we inspect our graph. If there are no more edges, we are done. If there is still an edge, it means there was a cycle in the graph, and we return an error.
+`Line 12-15`: Once the loop at `Line 4` is finished, we inspect our graph. If there are no more edges, we are done. If there is still an edge, it means there was a cycle in the graph, and we return an error.
 Note that this algorithm is not capable by itself to point out which cycle there was exactly, only that there was one. That's because we mutated the graph by removing edges. If this information was important, we could keep track of which edges we removed in order, and re-add them back, or perhaps apply the algorithm to a copy of the graph (the adjacency matrix is trivial to clone).
+
+
+This algorithm is loose concerning the order of some operations, for example, picking a node with no incoming edge, or in which order the nodes in `S` are stored. That gives room for an implementation to use certain datastructures or orders that are faster, but in some cases we want the order to be always the same to solve ties in the stable way and to be reproducible. In order to do that, we simply use the alphabetical order. So in our example above, at `Line 5`, we picked `Zoe` out of `[Zoe, Bella, Miranda]`. Using this method, we would keep the working set `S` sorted alphabetically and pick `Bella` out of `[Bella, Miranda, Zoe]`.
+
+
+## Implementation
+
+I implemented this at the time in `Go`, but I will use for this article the lingua franca of the 2010s, Javascript.
+
+
+First, we define our adjacency matrix and the list of nodes. We would get the nodes and edges in some format, for example JSON, in the API, and build the adjacency matrix, which is trivial.
+
+```js
+const adjacencyMatrix = [
+  [0, 0, 1, 0, 0, 0],
+  [1, 0, 0, 0, 0, 0],
+  [0, 0, 0, 0, 0, 0],
+  [0, 0, 1, 0, 0, 0],
+  [1, 0, 0, 0, 0, 0],
+  [1, 0, 0, 1, 0, 0],
+];
+
+const nodes = ["Angela", "Bella", "Ellen", "Miranda", "Zoe"];
+```
+
+First, we need a helper function to initially collect the nodes with no incoming edge:
+
+```js
+function getNodesWithNoIncomingEdge(adjacencyMatrix, nodes) {
+  const result = [];
+
+  for (column = 0; column < nodes.length; column += 1) {
+    let columnHasOnlyZeroes = true;
+
+    for (row = 0; row < nodes.length; row += 1) {
+      const cell = adjacencyMatrix[row][column];
+
+      if (cell != 0) {
+        columnHasOnlyZeroes = false;
+        break;
+      }
+    }
+
+    if (columnHasOnlyZeroes) {
+      const node = nodes[column];
+      result.push(node);
+    }
+  }
+
+  return result;
+}
+```
+
+This is the naive version of inspecting each column, and only collecting this column's node if there are only zeroes in the column. There are slightly faster ways of doing this, for example using row order, but that will do. We would anyway use a more optimized format for the adjacency matrix if we were concerned about performance which would change the implementation here.
+
+We can try it:
+
+```js
+console.log(getNodesWithNoIncomingEdge(adjacencyMatrix, nodes));
+```
+
+And it outputs: 
+
+```js
+[ 'Bella', 'Miranda', 'Zoe' ]
+```
+
+
+We need another helper function to check if a node has no other incoming edge:
+
+```js
+
+```
+
+We will only use arrays, for `L` and `S`, so adding a node is `Array.push()` and removing a node is `Array.pop()`.
+
 
