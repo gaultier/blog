@@ -48,4 +48,6 @@ th {
 
 table {
     margin-left: 2rem;
+    border: 0;
+    border-collapse: collapse;
 }
