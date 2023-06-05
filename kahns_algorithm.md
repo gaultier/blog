@@ -275,6 +275,8 @@ This algorithm is loose concerning the order of some operations, for example, pi
 
 I implemented this at the time in `Go`, but I will use for this article the lingua franca of the 2010s, Javascript.
 
+*I don't write Javascript these days, I stopped many years ago, so apologies in advance if I am not using all the bells and whistles of 'Modern Javascript', or if the code is not quite idiomatic.*
+
 
 First, we define our adjacency matrix and the list of nodes. This is the naive format. We would get the nodes and edges in some format, for example JSON, in the API, and build the adjacency matrix, which is trivial. Let's take the very first example, the (valid) tree  of employees:
 
