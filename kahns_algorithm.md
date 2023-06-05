@@ -21,9 +21,20 @@ Here's the tree of employees in an organization. An employee reports to a manage
 
 An arrow (or 'edge') between two nodes means `<source> reports to <destination>`, for example: `Jane the CFO reports to Ellen the CEO`.
 
- But since this is an API that receives a list of `employee -> manager` links, in any order, it's easy for the user to submit links that form a graph (an employee has multiple managers), multiple roots (e.g. multiple CEOs) or cycles.
+ But here is the twist: our API receives a list of `employee -> manager` links, in any order:
 
- We have to detect such faulty inputs and reject them, such as this one:
+ ```
+Jane -> Ellen
+Angela -> Ellen
+Zoe -> Jane
+Zoe -> Angela
+Bella -> Angela
+Miranda -> Angela
+ ```
+
+It opens the door to various invalid inputs: links that form a graph (an employee has multiple managers), multiple roots (e.g. multiple CEOs) or cycles.
+
+ We have to detect those and reject them, such as this one:
 
  
 ![Invalid employee hierarchy](kahns_algorithm_1_invalid.png)
