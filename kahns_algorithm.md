@@ -383,7 +383,7 @@ But in our specific case, we just want a valid insertion order in the database, 
 
 Now, we can produce the SQL code to insert our entries. We operate on a clone of the adjacency matrix for convenience because we later need to know what is the outgoing edge for a given node.
 
-We handle the special case of the root first, which is the last element, and then we go through the topologically sorted list of employees in reverse order, and insert each one:
+We handle the special case of the root first, which is the last element, and then we go through the topologically sorted list of employees in reverse order, and insert each one. We use a one liner to get the manager's id by name when inserting to avoid many round trips to the database:
 
 ```js
 const employeesTopologicallySorted = topologicalSort(structuredClone(adjacencyMatrix), nodes)
