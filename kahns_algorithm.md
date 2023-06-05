@@ -7,7 +7,7 @@ window.addEventListener("load", (event) => {
 });
 </script>
 
-# A lesser known, simple way to find cycles in a graph: Kahn's algorithm
+# Cycle detection in graphs does not have to be hard: A lesser known, simple way with Kahn's algorithm
 
 Graphs are everywhere in Software Engineering, or so we are told by Computer Science teachers and interviewers.
 
@@ -271,7 +271,6 @@ function hasNodeNoIncomingEdge(adjacencyMatrix, nodeIndex) {
 
   for (let row = 0; row < adjacencyMatrix.length; row += 1) {
     const cell = adjacencyMatrix[row][column];
- of employees:
     if (cell != 0) {
       return false;
     }
