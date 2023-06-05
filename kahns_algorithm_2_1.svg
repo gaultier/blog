@@ -66,7 +66,7 @@
 <!-- accountant_1 -->
 <g id="node6" class="node">
 <title>accountant_1</title>
-<ellipse fill="none" stroke="black" cx="85.79" cy="-178" rx="85.59" ry="18"/>
+<ellipse fill="turquoise" stroke="black" cx="85.79" cy="-178" rx="85.59" ry="18"/>
 <text text-anchor="middle" x="85.79" y="-174.3" font-family="Times,serif" font-size="14.00">Zoe, Accountant</text>
 </g>
 <!-- accountant_1&#45;&gt;cfo -->

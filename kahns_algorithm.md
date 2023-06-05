@@ -272,6 +272,11 @@ The graph is now:
 
 We are now done with the `Line 7` for loop, so go back to `Line 5` and pick this time `Bella`. Etc.
 
+The graph would now, to the algorithm, look like:
+
+![Employee hierarchy](kahns_algorithm_2_2.svg)
+
+
 `Line 12-15`: Once the loop at `Line 4` is finished, we inspect our graph. If there are no more edges, we are done. If there is still an edge, it means there was a cycle in the graph, and we return an error.
 Note that this algorithm is not capable by itself to point out which cycle there was exactly, only that there was one. That's because we mutated the graph by removing edges. If this information was important, we could keep track of which edges we removed in order, and re-add them back, or perhaps apply the algorithm to a copy of the graph (the adjacency matrix is trivial to clone).
 

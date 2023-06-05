@@ -4,7 +4,7 @@ digraph {
   cto[label="Angela, CTO"];
   engineer_1[label="Bella, Software Engineer"];
   engineer_2[label="Miranda, Software Engineer"];
-  accountant_1[label="Zoe, Accountant"];
+  accountant_1[label="Zoe, Accountant", fillcolor="turquoise", style="filled"];
 
 
   cto-> ceo;
