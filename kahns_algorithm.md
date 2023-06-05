@@ -405,6 +405,38 @@ INSERT INTO people SELECT "Jane", rowid FROM people WHERE name = "Ellen" LIMIT 1
 INSERT INTO people SELECT "Zoe", rowid FROM people WHERE name = "Jane" LIMIT 1;
 ```
 
+### Detecting cycles
+
+As we said, we get that for free, so let's check our implementation against the invalid example from the beginning of the article where we add the edge `Ellen -> Zoe` to create a cycle:
+
+```js
+const adjacencyMatrix = [
+  [0, 0, 1, 0, 0, 0],
+  [1, 0, 0, 0, 0, 0],
+  [0, 0, 0, 0, 0, 1], // => We change the last element of this row (Ellen's row, Zoe's column) from 0 to 1.
+  [0, 0, 1, 0, 0, 0],
+  [1, 0, 0, 0, 0, 0],
+  [0, 0, 0, 1, 0, 0],
+];
+
+const nodes = ["Angela", "Bella", "Ellen", "Jane", "Miranda", "Zoe"];
+
+const employeesTopologicallySorted = topologicalSort(
+  structuredClone(adjacencyMatrix),
+  nodes,
+);
+
+```
+
+And we get an error as expected:
+
+```sh
+/home/pg/my-code/blog/kahns_algorithm.js:63
+    throw new Error("Graph has at least one cycle");
+    ^
+
+Error: Graph has at least one cycle
+```
 
 ### Detecting multiple roots
 
@@ -475,3 +507,9 @@ WHERE employee.name = ?
 ```
 
 We can also do this with hairy recursive Common Table Expression (CTE) but I'll leave that to the reader.
+
+## Closing thoughts
+
+Graphs and algorithms operating on them do not have to be complicated. Using a adjacency matrix and Kahn's algorithm, we can achieve a lot with little. 
+
+There are many ways to optimize the code in this article; the point was not to write the most efficient code, but to showcase in the clearest, simplest way possible, how to detect cycles and store a graph/tree in memory and in a database.
