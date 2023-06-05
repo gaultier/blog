@@ -88,7 +88,7 @@ Miranda Angela
 
 > `tsort` uses a simple way of defining each edge `A -> B` on its own line with the syntax: `A B`. The order of the lines does not matter.
 
-and here's the tsort output:
+And here's the `tsort` output:
 
 ```sh
 $ tsort < people.txt
@@ -100,7 +100,7 @@ Jane
 Ellen
 ```
 
-The first 3 elements are the ones with no incoming edge, the Software Engineers, since no one reports to them. Then come their repective managers, Angela and Jane. Finally comes their manager, `Ellen`.
+The first 3 elements are the ones with no incoming edge, the Software Engineers, since no one reports to them. Then come their respective managers, Angela and Jane. Finally comes their manager, `Ellen`.
 
 So to insert all those people in our `people` SQL table, we go through that list in reverse order: We can first insert `Ellen`, then `Jane`, etc, until we finally insert `Bella`.
 
@@ -209,7 +209,7 @@ Here's the pseudo-code:
 15│     return L   (a topologically sorted order)
 ```
 
-And in plain english:
+And in plain English:
 
 `Line 1`: The result of this algorithm is the list of nodes in the desired order (topological). It starts empty, and we add nodes one-by one during the algorithm. We can simply use an array in our implementation.
 
@@ -318,7 +318,7 @@ function graphHasEdges(adjacencyMatrix) {
 
 ### The algorithm
 
-We are finally ready to implement the algorithm. It's a straigthforward, line by line, translation of the pseudo-code:
+We are finally ready to implement the algorithm. It's a straightforward, line by line, translation of the pseudo-code:
 
 ```js
 function topologicalSort(adjacencyMatrix) {
