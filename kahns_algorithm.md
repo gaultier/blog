@@ -21,7 +21,7 @@ Here's the tree of employees in an organization. An employee reports to one mana
 
 An arrow (or 'edge') between two nodes means `<source> reports to <destination>`, for example: `Jane the CFO reports to Ellen the CEO`.
 
- But since this is an API that receives a list of `employee -> manager` links, in any order, it's easy for the user to submit links that form a graph (an employee has multiple managers), multiple roots (e.g. multiple CEOs) or with cycles.
+ But since this is an API that receives a list of `employee -> manager` links, in any order, it's easy for the user to submit links that form a graph (an employee has multiple managers), multiple roots (e.g. multiple CEOs) or cycles.
 
  We have to detect such faulty inputs and reject them, such as this one:
 
