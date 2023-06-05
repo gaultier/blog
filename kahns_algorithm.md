@@ -33,7 +33,7 @@ Not too long ago, I was tasked to create a Web API to create and update a compan
 
 In the simple case, it's a tree, when an employee reports to exactly one manager.
 
-![Employee hierarchy](kahns_algorithm_1.png)
+![Employee hierarchy](kahns_algorithm_1.svg)
 
 Here's the tree of employees in an organization. An employee reports to a manager, and this forms a tree. The root of the graph is the CEO since they report to no one and so they have no outgoing edge.
 
@@ -55,7 +55,7 @@ It opens the door to various invalid inputs: links that form a graph (an employe
  We have to detect those and reject them, such as this one:
 
  
-![Invalid employee hierarchy](kahns_algorithm_1_invalid.png)
+![Invalid employee hierarchy](kahns_algorithm_1_invalid.svg)
 
 ## The database
 
@@ -257,7 +257,7 @@ And in plain English:
 
 At this point, the graph looks like this:
 
-![Employee hierarchy](kahns_algorithm_2.png)
+![Employee hierarchy](kahns_algorithm_2.svg)
 
 `Line 9`: If `Jane` does not have another incoming edge, we add it to the set of all nodes with no incoming edge. That's the case here, so `S` now looks like: `[Bella, Miranda, Jane]`.
 
@@ -436,7 +436,7 @@ INSERT INTO people SELECT "Zoe", rowid FROM people WHERE name = "Jane" LIMIT 1;
 
 As we said earlier, we get that for free, so let's check our implementation against this invalid example:
 
-![Employee hierarchy with cycle](kahns_algorithm_4.png)
+![Employee hierarchy with cycle](kahns_algorithm_4.svg)
 
 We add the edge `Ellen -> Zoe` to create a cycle:
 
@@ -471,7 +471,7 @@ Error: Graph has at least one cycle
 One thing that topological sorting does not do for us is to detect the case of multiple roots in the graph, for example:
 
 
-![Employee hierarchy with multiple roots](kahns_algorithm_3.png)
+![Employee hierarchy with multiple roots](kahns_algorithm_3.svg)
 
 To do this, we simply scan the adjacency matrix and verify that there is only one row with only zeroes, that is, only one node that has no outgoing edges:
 
