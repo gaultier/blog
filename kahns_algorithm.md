@@ -281,9 +281,7 @@ Then, using this helper, we can define a second helper to initially collect all 
 
 ```js
 function getNodesWithNoIncomingEdge(adjacencyMatrix, nodes) {
-  return nodes.filter((_, i) =>
-    hasNodeNoIncomingEdge(adjacencyMatrix, nodes, i)
-  );
+  return nodes.filter((_, i) => hasNodeNoIncomingEdge(adjacencyMatrix, nodes, i));
 }
 ```
 
@@ -372,8 +370,7 @@ const employeesTopologicallySorted = topologicalSort(
   nodes,
 );
 
-const root =
-  employeesTopologicallySorted[employeesTopologicallySorted.length - 1];
+const root = employeesTopologicallySorted[employeesTopologicallySorted.length - 1];
 console.log(`INSERT INTO people VALUES("${root}", NULL)`);
 
 for (let i = employeesTopologicallySorted.length - 2; i >= 0; i -= 1) {
