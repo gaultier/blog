@@ -416,7 +416,11 @@ INSERT INTO people SELECT "Zoe", rowid FROM people WHERE name = "Jane" LIMIT 1;
 
 ### Detecting cycles
 
-As we said, we get that for free, so let's check our implementation against the invalid example from the beginning of the article where we add the edge `Ellen -> Zoe` to create a cycle:
+As we said earlier, we get that for free, so let's check our implementation against this invalid example:
+
+![Employee hierarchy with cycle](kahns_algorithm_4.png)
+
+We add the edge `Ellen -> Zoe` to create a cycle:
 
 ```js
 const adjacencyMatrix = [
