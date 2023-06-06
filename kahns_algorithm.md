@@ -304,7 +304,7 @@ This algorithm is loose concerning the order of some operations, for example, pi
 
 ## Implementation
 
-I implemented this at the time in `Go`, but I will use for this article the lingua franca of the 2010s, Javascript.
+I implemented this at the time in Go, but I will use for this article the lingua franca of the 2010s, Javascript.
 
 *I don't write Javascript these days, I stopped many years ago, so apologies in advance if I am not using all the bells and whistles of 'Modern Javascript', or if the code is not quite idiomatic.*
 
