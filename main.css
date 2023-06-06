@@ -1,12 +1,12 @@
 body {
     color: #2e3440;
     font-family: monospace, sans-serif;
-    margin: 2rem;
+    margin: 1rem;
     margin-bottom: 5rem;
 }
 
 li {
-    margin-bottom: 1rem;
+    margin-bottom: 0.5rem;
 }
 
 blockquote {
