@@ -59,3 +59,11 @@ img {
 li > img {
     vertical-align: text-top;
 }
+
+hr {
+    width: 50%;
+    margin: auto;
+    display: block;
+    margin-top: 2rem;
+    margin-bottom: 2rem;
+}
