@@ -14,10 +14,14 @@
 
 I am a Senior Software Engineer from France living in Bavaria, Germany. By day, I work for a Fintech company, and by night I write some fun projects in C, Rust, Odin and Zig. I like to work on low-level systems.
 
+In my free time, I like running, lifting weights, gardening, and the outdoors.
+
 Get in touch:
 
 - [Linkedin](https://www.linkedin.com/in/philippegaultier/)
 - [Github](https://github.com/gaultier)
+
+
 
 ## CV
 
@@ -26,11 +30,15 @@ or download it as [PDF](https://github.com/gaultier/resume/raw/master/Philippe_G
 
 ## License
 
+This blog is [open-source](https://github.com/gaultier/blog)!
+
 The content of this blog as well as the code snippets are under the [BSD-3 License](https://en.wikipedia.org/wiki/BSD_licenses) which I also usually use for all my personal projects. It's basically free for every use but you have to mention me as the original author.
+
+
 
 ## Support
 
 
-If you liked an article and you want to support me, with whatever amount you want and can:
+If you liked an article and you want to support me, with whatever amount you want and can afford:
 
 ![Paypal](paypal.png)
