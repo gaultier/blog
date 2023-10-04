@@ -23,3 +23,14 @@ Get in touch:
 
 You can find my resume [online](https://gaultier.github.io/resume/resume)
 or download it as [PDF](https://github.com/gaultier/resume/raw/master/Philippe_Gaultier_resume_en.pdf).
+
+## License
+
+The content of this blog as well as the code snippets are under the [BSD-3 License](https://en.wikipedia.org/wiki/BSD_licenses) which I also usually use for all my personal projects. It's basically free for every use but you have to mention me as the original author.
+
+## Support
+
+
+If you liked an article and you want to support me, with whatever amount you want and can:
+
+![Paypal](paypal.png)
