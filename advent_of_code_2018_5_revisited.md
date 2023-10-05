@@ -93,7 +93,7 @@ print(remaining_count)
 
 The easy case is when there is no need to merge: `current` simply becomes `next` (and `next` is incremented at the end of the loop iteration).
 
-The 'hard' case is merging: we set the two tombstones, decrement the count, and now we are in a pickle: `current` needs to go backwards, but we do not know to where. There might be an arbitrary number of zeroes preceding the character `current` points to:
+The 'hard' case is merging: we set the two tombstones, decrement the count, and now we are in a pickle: `current` needs to go backwards, but we do not know to where. There might be an arbitrary number of zeroes preceding the character `current` points to: the data on the left of `next` is sparse, the data on the right of `next` is not.
 
 ```
 [...] 0 0 A 0 0 0 0 B 0 0 0 0 C D E F [...]
