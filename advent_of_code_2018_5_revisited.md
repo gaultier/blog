@@ -11,9 +11,18 @@ window.addEventListener("load", (event) => {
 
 # Optimizing a past solution for Advent of Code 2018 challenge  in assembly
 
-A few days ago I was tweaking the appearance of this blog and I stumbled upon my [first article](/blog/advent_of_code_2018_5) which is about solving a simple problem from Advent of Code. I'll let you read the first paragraph to get to know the problem and come back here.
+A few days ago I was tweaking the appearance of this blog and I stumbled upon my [first article](/blog/advent_of_code_2018_5) which is about solving a simple problem from Advent of Code. Here it is again:
 
-Immediately, I thought I could do better: 
+> We have a string looking like this: `AabcdZZqQ` which represents a chain of
+> chemical units. Adjacent units of the same type (i.e letter) and opposite
+> polarity (i.e casing) react together and disappear.
+> It means we want to remove adjacent characters which are the same letter and have opposite casing, e.g
+> `Aa` and `qQ` disappear while `bc` and `ZZ` remain. Once we are finished, we have: `bcdZZ`.
+> 
+> The final ouput is the number of characters in the final string, i.e, `5`.
+
+
+Immediately, I thought I could do better than my past self: 
 - In the Lisp solution, there are lots of allocations and the code is not straightforward.
 - In the Lisp solution, we use multiple external dependencies, which usually turn out to be problematic in the long run.
 - In the C solution, there is no allocation apart from the input but we do a lot of unnecessary work.
