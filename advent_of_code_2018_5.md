@@ -410,36 +410,47 @@ Here is a hand-written C version which only does one allocation and removes
 letters in place:
 
 
-    #include <stdio.h>
-    #include <stdlib.h>
-    #include <string.h>
+```c
+#include <errno.h>
+#include <fcntl.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/stat.h>
+#include <unistd.h>
 
-    int main() {
-        FILE* const f = fopen("/Users/pgaultier/Downloads/aoc5.txt", "r");
-        fseek(f, 0, SEEK_END);
-        size_t string_size = (size_t)ftell(f);
-        fseek(f, 0, SEEK_SET);
+int main() {
+  int fd = open("/home/pg/Downloads/aoc2020_5.txt", O_RDONLY);
+  if (fd == -1)
+    return errno;
 
-        char* const string = calloc(string_size, 1);
+  struct stat st = {0};
+  if (stat("/home/pg/Downloads/aoc2020_5.txt", &st) == -1)
+    return errno;
 
-        fread(string, 1, string_size, f);
-        fclose(f);
+  int64_t input_len = st.st_size;
+  char *const input = calloc(input_len, 1);
 
-        while (string[string_size - 1] == '\n' || string[string_size - 1] == ' ')
-            string_size--;
+  if (read(fd, input, input_len) != input_len)
+    return errno;
 
-        size_t i = 0;
-        while (i < string_size) {
-            if (abs(string[i] - string[i + 1]) == 32) {
-                memmove(string + i, string + i + 2, string_size - i - 2);
-                string_size -= 2;
-                i = i > 0 ? i - 1 : 0;
-            } else
-                i++;
-        }
+  while (input[input_len - 1] == '\n' || input[input_len - 1] == ' ')
+    input_len--;
 
-        printf("`%zu`\n", string_size);
-    }
+  int64_t i = 0;
+  while (i < input_len) {
+    if (abs(input[i] - input[i + 1]) == 32) {
+      memmove(input + i, input + i + 2, input_len - i - 2);
+      input_len -= 2;
+      i = i > 0 ? i - 1 : 0;
+    } else
+      i++;
+  }
+
+  printf("`%zu`\n", input_len);
+}
+```
 
 Let's benchmark it on the same input:
 
