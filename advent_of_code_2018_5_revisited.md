@@ -23,6 +23,7 @@ Immediately, I thought I could do better:
 
 This coincided with me listening to an interview from the VLC developers saying there wrote hundred of thousand of lines of (multi platform!) Assembly code by hand in their new AV1 decoder. I thought that was intriguing, who still writes assembly by hand in 2023? Well these guys are no idiots so I should try it as well.
 
+---
 
 I came up with a new algorithm, which on paper does less work. It's one linear pass on the input, and does not allocate.
 
@@ -69,8 +70,8 @@ print(remaining_count)
 
 The easy case is when there is no need to merge: `current` simply becomes `next` (and `next` is incremented at the end of the loop iteration).
 
-The 'hard' case is merging: we set the two tombstones, decrement the count, and now we are in a pickle: `current` needs to go backwards, but we do not know to where. There might be a number of zeroes preceding the character `current` points to. So we have to do a backwards search for the first non zero character.
-We could memoize this location, but it basically comes down to the Scheme solution, having an output array of the same size as the input.
+The 'hard' case is merging: we set the two tombstones, decrement the count, and now we are in a pickle: `current` needs to go backwards, but we do not know to where. There might be an arbitrary number of zeroes preceding the character `current` points to. So we have to do a backwards search to find the first non zero character.
+We could memoize this location, but that would basically come down to the Scheme solution, having an output array of the same size as the input.
 
 Astute readers might have noticed a potential issue with the backwards search: We may underflow the `input` and go out of bounds! To avoid that, we could clamp `current`, but the branch misprediction is costly (an earlier implementation of mine did this), and we can simplify the code as well as improve the performance by simply prefixing the `input` with a non-zero value that has no chance of being merged with the rest oof the input, say, `1`. 
 
