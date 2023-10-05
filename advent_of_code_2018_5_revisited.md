@@ -15,7 +15,7 @@ A few days ago I was tweaking the appearance of this blog and I stumbled upon my
 
 Immediately, I thought I could do better: 
 - In the Lisp solution, there are lots of allocations and the code is not straightforward.
-- In the Lisp solution, we use multiple external dependencies, which are always are problem.
+- In the Lisp solution, we use multiple external dependencies, which usually turn out to be problematic in the long run.
 - In the C solution, there is no allocation apart from the input but we do a lot of unnecessary work.
 - In the C solution, we use `abs(x) == 32` which we could avoid by doing `x*x == 32*32`.
 
