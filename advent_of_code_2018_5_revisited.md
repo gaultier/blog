@@ -318,7 +318,7 @@ static solve:function
 
 ## Benchmarking
 
-So, did it work? Is it fast? Let's compare the old C solution with our new Assembly one:
+So, did it work? Is it fast? Let's compare the old C solution (also embedding the input data for a fair comparison) with our new Assembly one:
 
 ```sh
 $  hyperfine --warmup 3 -S sh ./aoc2018_5 ./aoc2018_5-c 
