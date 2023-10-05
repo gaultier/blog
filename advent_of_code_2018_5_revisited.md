@@ -34,6 +34,20 @@ This coincided with me listening to an interview from the VLC developers saying 
 
 ---
 
+**Table of Contents**
+-   [Optimizing a solution for Advent of Code 2018 challenge in
+    assembly](#optimizing-a-solution-for-advent-of-code-2018-challenge-in-assembly)
+    -   [The new solution](#the-new-solution)
+    -   [The x86_64 implementation](#the-x86_64-implementation)
+    -   [Benchmarking](#benchmarking)
+    -   [Learnings](#learnings)
+    -   [Appendix: The full code](#appendix-the-full-code)
+        -   [The old C implementation](#the-old-c-implementation)
+        -   [The x64 implementation](#the-x64-implementation)
+---
+
+## The new solution
+
 I came up with a new algorithm, which on paper does less work. It's one linear pass on the input, and does not allocate.
 
 Since the result we care about is the number of remaining characters, we simply keep track of the count as we sift through the input.
