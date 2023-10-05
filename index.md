@@ -9,7 +9,7 @@
 - Sep 21 2020: [Adventures in CI land, or how to speed up your CI](/blog/speed_up_your_ci.html)
 - May 31 2023: [Learn x86-64 assembly by writing a GUI from scratch](/blog/x11_x64.html)
 - June 5 2023: [Cycle detection in graphs does not have to be hard: A lesser known, simple way with Kahn's algorithm](/blog/kahns_algorithm.html)
-- October 5 2023: [Optimizing a solution for Advent of Code 2018 challenge  in assembly](/blog/advent_of_code_2018_5_revisited.html)
+- October 5 2023: [Optimizing an Advent of Code solution in assembly](/blog/advent_of_code_2018_5_revisited.html)
 
 ## About me
 

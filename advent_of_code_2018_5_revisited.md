@@ -9,7 +9,7 @@ window.addEventListener("load", (event) => {
 </script>
 <a href="/blog">All articles</a>
 
-# Optimizing a solution for Advent of Code 2018 challenge  in assembly
+# Optimizing an Advent of Code solution in assembly
 
 A few days ago I was tweaking the appearance of this blog and I stumbled upon my [first article](/blog/advent_of_code_2018_5) which is about solving a simple problem from Advent of Code. Here it is again:
 
