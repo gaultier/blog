@@ -21,21 +21,21 @@ Immediately, I thought I could do better:
 This coincided with me listening to an interview from the VLC developers saying there wrote hundred of thousand of lines of (multi platform!) Assembly code by hand in their new AV1 decoder. I thought that was intriguing, who still writes assembly by hand in 2023? Well these guys are no idiots so I should try it as well.
 
 
-I came up with a new algorithm, which on paper does less work. It's one linear pass on the input.
+I came up with a new algorithm, which on paper does less work. It's one linear pass on the input, and does not allocate.
 
-Since the result we care about is the number of remaining characters, we simply maintain the count as we sift through the input.
+Since the result we care about is the number of remaining characters, we simply keep track of the count as we sift through the input.
 
 We maintain two pointers, `current` and `next`, which we compare to decide whether we should merge the characters they point to. 'Merging' means setting the two characters to `0` (it's basically a tombstone) and decrementing the count.
 
 `next` is always incremented by one in each loop iteration, that's the easy one.
 
-`current` is always pointing to a character before `current`, but not always directly because they may be tombstones, i.e. zeroes, in-between.
+`current` is always pointing to a character before `current`, but not always directly adjacent, because there may be tombstones, i.e. zeroes, in-between.
 
 
 In pseudo-code:
 
 ```
-remaining_count = len(input).
+remaining_count = len(input)
 end = input + len(input)
 current = &input[0]
 next = &input[1]
