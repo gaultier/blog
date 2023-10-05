@@ -345,7 +345,7 @@ Yes, indeed, almost twice as fast!
 - There is no need to reach for esoteric, vendor specific instructions (such as SIMD or Intel string opcodes) to go fast and even beat a C implementation that does a bit more work than necessary.
 - Doing less work is the most important thing when optimizing.
 - At the same time, doing a bit of work instead of memoizing can be fast(er), even though it seems counter-intuitive, due to memory latency and cache misses.
-- Having a clear idea in pseudo-code of the solution will simplify the implementation in any language
+- Having a clear idea in pseudo-code of the solution will simplify the implementation in any language.
 
 ## Appendix: The full code
 
