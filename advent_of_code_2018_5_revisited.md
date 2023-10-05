@@ -107,7 +107,7 @@ The 'hard' case is merging: we set the two tombstones, decrement the count, and 
 So we have to do a backwards search to find the first non zero character.
 We could memoize this location, but that would basically come down to the Scheme solution, having an output array of the same size as the input.
 
-Astute readers might have noticed a potential issue with the backwards search: We may underflow the `input` and go out of bounds! To avoid that, we could clamp `current`, but the branch misprediction is costly (an earlier implementation of mine did this and that was almost twice as slow!), and we can simplify the code as well as improve the performance by simply prefixing the `input` with a non-zero value that has no chance of being merged with the rest oof the input, say, `1`. 
+Astute readers might have noticed a potential issue with the backwards search: We may underflow the `input` and go out of bounds! To avoid that, we could clamp `current`, but the branch misprediction is costly (an earlier implementation of mine did this and that was almost twice as slow!), and we can simplify the code as well as improve the performance by simply prefixing the `input` with a non-zero value that has no chance of being merged with the rest of the input, say, `1`. 
 
 Let's implement it in x86_64 assembly!
 
