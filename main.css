@@ -66,3 +66,7 @@ hr {
     margin-bottom: 3rem;
     color: rgb(247,247,247);
 }
+
+h1, h2, h3, h4, h5, h6 {
+    margin: 3rem 0 1rem 0;
+}
