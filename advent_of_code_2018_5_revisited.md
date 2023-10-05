@@ -44,6 +44,7 @@ This coincided with me listening to an interview from the VLC developers saying 
     -   [Appendix: The full code](#appendix-the-full-code)
         -   [The old C implementation](#the-old-c-implementation)
         -   [The x64 implementation](#the-x64-implementation)
+
 ---
 
 ## The new solution
