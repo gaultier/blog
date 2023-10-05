@@ -9,7 +9,7 @@ window.addEventListener("load", (event) => {
 </script>
 <a href="/blog">All articles</a>
 
-# Optimizing a past solution for Advent of Code 2018 challenge  in assembly
+# Optimizing a solution for Advent of Code 2018 challenge  in assembly
 
 A few days ago I was tweaking the appearance of this blog and I stumbled upon my [first article](/blog/advent_of_code_2018_5) which is about solving a simple problem from Advent of Code. Here it is again:
 
@@ -346,6 +346,7 @@ Yes, indeed, almost twice as fast!
 - Doing less work is the most important thing when optimizing.
 - At the same time, doing a bit of work instead of memoizing can be fast(er), even though it seems counter-intuitive, due to memory latency and cache misses.
 - Having a clear idea in pseudo-code of the solution will simplify the implementation in any language.
+- Naive assembly is very fast (your CPU is crazy fast when you do not abuse it with badly written interpreted languages, seriously!), but a good compiler will emit better assembly than you if you write C or similar. Unless you are an expert like the VLC guys.
 
 ## Appendix: The full code
 
