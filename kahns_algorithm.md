@@ -27,9 +27,10 @@ window.addEventListener("load", (event) => {
 - [Closing thoughts](#closing-thoughts)
 - [Addendum: the full code](#addendum-the-full-code)
 
+*If you spot an error, please open a [Github issue](https://github.com/gaultier/blog)!*
+
 ## Introduction 
 
-> If you spot an error, please open a [Github issue](https://github.com/gaultier/blog)!
 
 Graphs are everywhere in Software Engineering, or so we are told by Computer Science teachers and interviewers. But sometimes, they do show up in real problems.
 

@@ -13,7 +13,12 @@ blockquote {
   padding: 1rem;
   border-bottom: 1px solid gray;
   border-top: 1px solid gray;
-  margin: 2rem 0;
+  margin: auto;
+  margin-top: 3rem;
+  margin-bottom: 3rem;
+  max-width: 80%;
+  color: #4c566a;
+  padding: .1rem;
 }
 
 pre {
@@ -28,14 +33,6 @@ code {
     background: rgb(247, 247, 247) !important;
     line-height: 1.6;
     padding: 0 !important;
-}
-
-
-blockquote {
-    color: #4c566a;
-    padding-left: .5rem;
-    padding: .1rem;
-    margin: 3rem 0;
 }
 
 td, th {
@@ -62,7 +59,7 @@ li > img {
 }
 
 hr {
-    width: 50%;
+    width: 30%;
     margin: auto;
     display: block;
     margin-top: 3rem;
