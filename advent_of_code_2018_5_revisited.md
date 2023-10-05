@@ -1,4 +1,12 @@
 <link rel="stylesheet" type="text/css" href="main.css">
+<link rel="stylesheet" href="https://unpkg.com/@highlightjs/cdn-assets@11.8.0/styles/default.min.css">
+<script src="https://unpkg.com/@highlightjs/cdn-assets@11.8.0/highlight.min.js"></script>
+<script src="https://unpkg.com/@highlightjs/cdn-assets@11.8.0/languages/x86asm.min.js"></script>
+<script>
+window.addEventListener("load", (event) => {
+  hljs.highlightAll();
+});
+</script>
 <a href="/blog">All articles</a>
 
 # Optimizing a past solution for Advent of Code 2018 challenge  in assembly
@@ -124,5 +132,83 @@ $ ./aoc2020_5
 
 which outputs nothing for now, of course.
 
+We will need to print the `remaining_count` to `stdout` at the end so we add a function to do so:
+
+```x86asm
+write_int_to_stdout:
+static write_int:function
+	push rbp
+	mov rbp, rsp
+
+	sub rsp, 32
+
+	%define ARG0 rdi
+	%define N rax
+	%define BUF rsi
+	%define BUF_LEN r10
+	%define BUF_END r9
+
+	lea BUF, [rsp+32]
+	mov BUF_LEN, 0
+	lea BUF_END, [rsp]
+	mov N, ARG0
+
+	.loop:
+		mov rcx, 10 ; Divisor.
+		mov rdx, 0 ; Reset rem.
+		div rcx ; rax /= rcx
+
+		add rdx, '0' ; Convert to ascii.
+
+		; *(end--) = rem
+		dec BUF_END
+		mov [BUF_END], dl
+		
+		inc BUF_LEN
+
+		cmp N, 0
+		jnz .loop
+
+	mov rax, SYSCALL_WRITE
+	mov rdi, 1
+	mov rsi, BUF_END
+	mov rdx, BUF_LEN
+	syscall
 
 
+	%undef ARG0
+	%undef N
+	%undef BUF
+	%undef BUF_LEN
+	%undef BUF_END
+
+	add rsp, 32
+	pop rbp
+	ret
+```
+
+I am trying a new style of writing assembly which I saw notably the Go developers use: Since the biggest problem is that we have no named variables, we leverage the macro system from `nasm` to name the registers we work with in a human readable fashion.
+
+
+Our `solve` function can now return a dummy number and we can print it out by passing the return value (in `rax`) of `solve` as the first argument (in `rdi`) of `write_int_to_stdout`:
+
+```x86asm
+solve:
+static solve:function
+  push rbp
+  mov rbp, rsp
+
+  mov rax, 123
+
+  pop rbp
+  ret
+
+global _start
+_start:
+  call solve
+
+  mov rdi, rax
+  call write_int_to_stdout
+
+  call exit
+```
