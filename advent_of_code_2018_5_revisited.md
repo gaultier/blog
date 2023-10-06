@@ -347,7 +347,8 @@ static solve:function
 So, did it work? Is it fast? Let's compare the old C solution (also embedding the input data for a fair comparison) with our new Assembly one:
 
 ```sh
-$  hyperfine --warmup 3 -S sh ./aoc2018_5 ./aoc2018_5-c 
+$ clang -Ofast -g3 -march=native aoc2018_5.c -o aoc2018_5-c
+$ hyperfine --warmup 3 -S sh ./aoc2018_5 ./aoc2018_5-c
 Benchmark 1: ./aoc2018_5
   Time (mean ± σ):       2.8 ms ±   1.4 ms    [User: 2.5 ms, System: 0.2 ms]
   Range (min … max):     1.1 ms …   5.4 ms    1736 runs
