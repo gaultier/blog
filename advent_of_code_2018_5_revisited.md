@@ -348,18 +348,19 @@ So, did it work? Is it fast? Let's compare the old C solution (also embedding th
 
 ```sh
 $ clang -Ofast -g3 -march=native aoc2018_5.c -o aoc2018_5-c
-$ hyperfine --warmup 3 -S sh ./aoc2018_5 ./aoc2018_5-c
+$ hyperfine --warmup 3 --shell=none ./aoc2018_5 ./aoc2018_5-c
+
 Benchmark 1: ./aoc2018_5
-  Time (mean ± σ):       2.8 ms ±   1.4 ms    [User: 2.5 ms, System: 0.2 ms]
-  Range (min … max):     1.1 ms …   5.4 ms    1736 runs
+  Time (mean ± σ):       2.7 ms ±   1.0 ms    [User: 2.4 ms, System: 0.1 ms]
+  Range (min … max):     1.2 ms …   4.6 ms    1174 runs
  
 Benchmark 2: ./aoc2018_5-c
-  Time (mean ± σ):       5.5 ms ±   1.8 ms    [User: 5.3 ms, System: 0.2 ms]
-  Range (min … max):     4.0 ms …  12.7 ms    267 runs
+  Time (mean ± σ):       5.3 ms ±   1.4 ms    [User: 5.0 ms, System: 0.2 ms]
+  Range (min … max):     4.1 ms …  10.4 ms    442 runs
  
 Summary
   './aoc2018_5' ran
-    1.95 ± 1.16 times faster than './aoc2018_5-c'
+    1.95 ± 0.86 times faster than './aoc2018_5-c'
 ```
 
 Yes, indeed, almost twice as fast!
