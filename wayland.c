@@ -110,7 +110,7 @@ static uint16_t buf_read_u16(char **buf, uint64_t *buf_size) {
 static void buf_read_n(char **buf, uint64_t *buf_size, char *dst, uint64_t n) {
   assert(*buf_size >= n);
 
-    memcpy(dst, *buf, n);
+  memcpy(dst, *buf, n);
 
   *buf += n;
   *buf_size -= n;
@@ -144,7 +144,9 @@ static void wayland_handle_message(char **msg, uint64_t *msg_len) {
 
   uint16_t announced_size = buf_read_u16(msg, msg_len);
   assert(roundup_32(announced_size) <= announced_size);
-  assert(announced_size <= *msg_len);
+
+  uint32_t header_size = sizeof(object_id)+sizeof(opcode)+sizeof(announced_size);
+  assert(announced_size <= header_size+ *msg_len);
   printf("[D001] msg_len=%lu announced_size=%u\n", *msg_len, announced_size);
 
   if (object_id == 2 && opcode == wayland_registry_event_global) {
@@ -157,6 +159,7 @@ static void wayland_handle_message(char **msg, uint64_t *msg_len) {
     assert(padded_interface_len <= cstring_len(interface));
 
     buf_read_n(msg, msg_len, interface, padded_interface_len);
+    assert(interface[interface_len] == 0);
 
     uint32_t version = buf_read_u32(msg, msg_len);
 
