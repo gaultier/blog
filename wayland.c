@@ -1,5 +1,6 @@
 #include <assert.h>
 #include <errno.h>
+#include <fcntl.h>
 #include <inttypes.h>
 #include <poll.h>
 #include <stdint.h>
@@ -18,6 +19,17 @@ uint32_t wayland_current_id = 1;
 uint32_t wayland_display_object_id = 1;
 
 uint16_t wayland_registry_event_global = 0;
+
+static void set_socket_non_blocking(int fd) {
+  int flags = fcntl(fd, F_GETFD, 0);
+  if (flags == -1)
+    exit(errno);
+
+  flags |= O_NONBLOCK;
+
+  if (fcntl(fd, F_SETFD, flags) == -1)
+    exit(errno);
+}
 
 static int wayland_display_connect() {
   char *xdg_runtime_dir = getenv("XDG_RUNTIME_DIR");
@@ -48,6 +60,8 @@ static int wayland_display_connect() {
   int fd = socket(AF_UNIX, SOCK_STREAM, 0);
   if (fd == -1)
     exit(errno);
+
+  set_socket_non_blocking(fd);
 
   struct sockaddr_un addr = {.sun_family = AF_UNIX,
                              .sun_path = "/run/user/1000/wayland-1"};
@@ -96,7 +110,8 @@ static uint16_t buf_read_u16(char **buf, uint64_t *buf_size) {
 static void buf_read_n(char **buf, uint64_t *buf_size, char *dst, uint64_t n) {
   assert(*buf_size >= n);
 
-  memcpy(dst, *buf, n);
+    memcpy(dst, *buf, n);
+
   *buf += n;
   *buf_size -= n;
 }
@@ -120,7 +135,7 @@ static void wayland_send_get_registry(int fd) {
 }
 
 static void wayland_handle_message(char **msg, uint64_t *msg_len) {
-  assert(*msg_len > 8);
+  assert(*msg_len >= 8);
 
   uint32_t object_id = buf_read_u32(msg, msg_len);
   assert(object_id <= wayland_current_id);
@@ -128,7 +143,9 @@ static void wayland_handle_message(char **msg, uint64_t *msg_len) {
   uint16_t opcode = buf_read_u16(msg, msg_len);
 
   uint16_t announced_size = buf_read_u16(msg, msg_len);
+  assert(roundup_32(announced_size) <= announced_size);
   assert(announced_size <= *msg_len);
+  printf("[D001] msg_len=%lu announced_size=%u\n", *msg_len, announced_size);
 
   if (object_id == 2 && opcode == wayland_registry_event_global) {
     uint32_t name = buf_read_u32(msg, msg_len);
@@ -145,6 +162,12 @@ static void wayland_handle_message(char **msg, uint64_t *msg_len) {
 
     printf("wl_registry: name=%u interface=%.*s version=%u\n", name,
            interface_len, interface, version);
+
+    assert(announced_size == sizeof(object_id) + sizeof(announced_size) +
+                                 sizeof(opcode) + sizeof(name) +
+                                 sizeof(interface_len) + padded_interface_len +
+                                 sizeof(version));
+
     return;
   }
   assert(0 && "todo");
@@ -165,7 +188,7 @@ int main() {
     assert(poll_fd.revents & POLLIN);
 
     char read_buf[4096] = "";
-    int64_t read_bytes = read(fd, read_buf, sizeof(read_buf));
+    int64_t read_bytes = recv(fd, read_buf, sizeof(read_buf), MSG_DONTWAIT);
     if (read_bytes == -1)
       exit(errno);
 
