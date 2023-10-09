@@ -14,6 +14,8 @@
 uint32_t wayland_current_id = 1;
 uint32_t wayland_display_object_id = 1;
 
+uint16_t wayland_registry_event_global = 0;
+
 static int wayland_display_connect() {
   char *xdg_runtime_dir = getenv("XDG_RUNTIME_DIR");
   if (xdg_runtime_dir == NULL)
@@ -68,6 +70,34 @@ static void buf_write_u16(char *buf, uint64_t *buf_size, uint64_t buf_cap,
   *buf_size += sizeof(x);
 }
 
+static uint32_t buf_read_u32(char **buf, uint64_t *buf_size) {
+  assert(*buf_size >= sizeof(uint32_t));
+
+  uint32_t res = *(uint32_t *)(*buf);
+  *buf += sizeof(res);
+  *buf_size -= sizeof(res);
+
+  return res;
+}
+
+static uint16_t buf_read_u16(char **buf, uint64_t *buf_size) {
+  assert(*buf_size >= sizeof(uint16_t));
+
+  uint16_t res = *(uint16_t *)(*buf);
+  *buf += sizeof(res);
+  *buf_size -= sizeof(res);
+
+  return res;
+}
+
+static void buf_read_n(char **buf, uint64_t *buf_size, char *dst, uint64_t n) {
+  assert(*buf_size >= n);
+
+  memcpy(dst, *buf, n);
+  *buf += n;
+  *buf_size -= n;
+}
+
 static void wayland_send_get_registry(int fd) {
   uint64_t msg_size = 0;
   char msg[128] = "";
@@ -84,6 +114,31 @@ static void wayland_send_get_registry(int fd) {
 
   if ((int64_t)msg_size != write(fd, msg, msg_size))
     exit(errno);
+}
+
+static void wayland_handle_message(char *msg, uint64_t msg_len) {
+  assert(msg_len > 8);
+
+  uint32_t object_id = buf_read_u32(&msg, &msg_len);
+  assert(object_id <= wayland_current_id);
+
+  uint16_t opcode = buf_read_u16(&msg, &msg_len);
+
+  uint16_t announced_size = buf_read_u16(&msg, &msg_len);
+  assert(announced_size <= msg_len);
+
+  if (object_id == 2 && opcode == wayland_registry_event_global) {
+    uint32_t name = buf_read_u32(&msg, &msg_len);
+
+    uint32_t interface_len = buf_read_u32(&msg, &msg_len);
+
+    char interface[512] = "";
+    assert(interface_len <= cstring_len(interface));
+    buf_read_n(&msg, &msg_len, interface, interface_len);
+
+    uint32_t version = buf_read_u32(&msg, &msg_len);
+  }
+  assert(0 && "todo");
 }
 
 int main() {
@@ -104,5 +159,7 @@ int main() {
     int64_t msg_len = read(fd, msg, sizeof(msg));
     if (msg_len == -1)
       exit(errno);
+
+    wayland_handle_message(msg, msg_len);
   }
 }
