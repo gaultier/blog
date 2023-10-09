@@ -3,6 +3,7 @@
 #include <inttypes.h>
 #include <poll.h>
 #include <stdint.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/socket.h>
@@ -10,6 +11,8 @@
 #include <unistd.h>
 
 #define cstring_len(s) (sizeof(s) - 1)
+
+#define roundup_32(n) (((n) + 3) & -4)
 
 uint32_t wayland_current_id = 1;
 uint32_t wayland_display_object_id = 1;
@@ -116,27 +119,33 @@ static void wayland_send_get_registry(int fd) {
     exit(errno);
 }
 
-static void wayland_handle_message(char *msg, uint64_t msg_len) {
-  assert(msg_len > 8);
+static void wayland_handle_message(char **msg, uint64_t *msg_len) {
+  assert(*msg_len > 8);
 
-  uint32_t object_id = buf_read_u32(&msg, &msg_len);
+  uint32_t object_id = buf_read_u32(msg, msg_len);
   assert(object_id <= wayland_current_id);
 
-  uint16_t opcode = buf_read_u16(&msg, &msg_len);
+  uint16_t opcode = buf_read_u16(msg, msg_len);
 
-  uint16_t announced_size = buf_read_u16(&msg, &msg_len);
-  assert(announced_size <= msg_len);
+  uint16_t announced_size = buf_read_u16(msg, msg_len);
+  assert(announced_size <= *msg_len);
 
   if (object_id == 2 && opcode == wayland_registry_event_global) {
-    uint32_t name = buf_read_u32(&msg, &msg_len);
+    uint32_t name = buf_read_u32(msg, msg_len);
 
-    uint32_t interface_len = buf_read_u32(&msg, &msg_len);
+    uint32_t interface_len = buf_read_u32(msg, msg_len);
+    uint32_t padded_interface_len = roundup_32(interface_len);
 
     char interface[512] = "";
-    assert(interface_len <= cstring_len(interface));
-    buf_read_n(&msg, &msg_len, interface, interface_len);
+    assert(padded_interface_len <= cstring_len(interface));
 
-    uint32_t version = buf_read_u32(&msg, &msg_len);
+    buf_read_n(msg, msg_len, interface, padded_interface_len);
+
+    uint32_t version = buf_read_u32(msg, msg_len);
+
+    printf("wl_registry: name=%u interface=%.*s version=%u\n", name,
+           interface_len, interface, version);
+    return;
   }
   assert(0 && "todo");
 }
@@ -155,11 +164,15 @@ int main() {
     assert(res == 1);
     assert(poll_fd.revents & POLLIN);
 
-    char msg[4096] = "";
-    int64_t msg_len = read(fd, msg, sizeof(msg));
-    if (msg_len == -1)
+    char read_buf[4096] = "";
+    int64_t read_bytes = read(fd, read_buf, sizeof(read_buf));
+    if (read_bytes == -1)
       exit(errno);
 
-    wayland_handle_message(msg, msg_len);
+    char *msg = read_buf;
+    uint64_t msg_len = (uint64_t)read_bytes;
+
+    while (msg_len > 0)
+      wayland_handle_message(&msg, &msg_len);
   }
 }
