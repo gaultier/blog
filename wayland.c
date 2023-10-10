@@ -8,6 +8,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/mman.h>
 #include <sys/socket.h>
 #include <sys/un.h>
 #include <unistd.h>
@@ -26,9 +27,16 @@ typedef struct state_t state_t;
 struct state_t {
   uint32_t wl_registry;
   uint32_t wl_shm;
+  uint32_t wl_shm_pool;
   uint32_t xdg_wm_base;
   uint32_t wl_compositor;
   uint32_t wl_surface;
+  uint32_t stride;
+  uint64_t w;
+  uint64_t h;
+  uint64_t shm_pool_size;
+  int shm_fd;
+  uint8_t *shm_pool_data;
 };
 
 static void set_socket_non_blocking(int fd) {
@@ -223,6 +231,24 @@ static uint32_t wayland_wl_compositor_create_surface(int fd, state_t *state) {
   return wayland_current_id;
 }
 
+static int create_shared_memory_file(uint64_t size) {
+  char name[256] = "";
+  arc4random_buf(name, cstring_len(name));
+  for (uint64_t i = 0; i < cstring_len(name); i++) {
+    if (name[i] == 0)
+      name[i] = '.';
+  }
+
+  int fd = shm_open(name, O_RDWR | O_EXCL | O_CREAT, 0600);
+  if (fd == -1)
+    exit(errno);
+
+  if (ftruncate(fd, size) == -1)
+    exit(errno);
+
+  return fd;
+}
+
 static void wayland_handle_message(int fd, state_t *state, char **msg,
                                    uint64_t *msg_len) {
   assert(*msg_len >= 8);
@@ -282,6 +308,12 @@ static void wayland_handle_message(int fd, state_t *state, char **msg,
       state->wl_surface = wayland_wl_compositor_create_surface(fd, state);
     }
 
+    char wl_shm_pool_interface[] = "wl_shm_pool";
+    if (strcmp(wl_shm_pool_interface, interface) == 0) {
+      state->wl_shm_pool = wayland_send_bind_object_to_registry(
+          fd, state->wl_registry, name, interface, interface_len, version);
+    }
+
     return;
   } else if (object_id == state->wl_shm &&
              opcode == wayland_shm_pool_event_format) {
@@ -296,7 +328,19 @@ static void wayland_handle_message(int fd, state_t *state, char **msg,
 int main() {
   int fd = wayland_display_connect();
 
-  state_t state = {.wl_registry = wayland_send_get_registry(fd)};
+  state_t state = {
+      .wl_registry = wayland_send_get_registry(fd),
+      .w = 800,
+      .h = 600,
+      .stride = 4,
+  };
+
+  // Single buffering.
+  state.shm_pool_size = state.h * state.w * state.stride;
+  state.shm_fd = create_shared_memory_file(state.shm_pool_size);
+  state.shm_pool_data = mmap(NULL, state.shm_pool_size, PROT_READ | PROT_WRITE,
+                             MAP_SHARED, state.shm_fd, 0);
+  assert(state.shm_pool_data != NULL);
 
   while (1) {
     struct pollfd poll_fd = {.fd = fd, .events = POLLIN};
