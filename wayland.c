@@ -20,11 +20,12 @@ uint32_t wayland_current_id = 1;
 uint32_t wayland_display_object_id = 1;
 
 uint16_t wayland_registry_event_global = 0;
+uint16_t wayland_shm_pool_event_format = 0;
 
 typedef struct state_t state_t;
 struct state_t {
   uint32_t registry;
-  uint32_t xdg_wm_base;
+  uint32_t wl_shm;
 };
 
 static void set_socket_non_blocking(int fd) {
@@ -101,7 +102,7 @@ static void buf_write_string(char *buf, uint64_t *buf_size, uint64_t buf_cap,
   assert(*buf_size + src_len <= buf_cap);
 
   buf_write_u32(buf, buf_size, buf_cap, src_len);
-  memcpy(buf+*buf_size, src, roundup_4(src_len));
+  memcpy(buf + *buf_size, src, roundup_4(src_len));
   *buf_size += roundup_4(src_len);
 }
 
@@ -209,7 +210,7 @@ static void wayland_handle_message(int fd, state_t *state, char **msg,
       sizeof(object_id) + sizeof(opcode) + sizeof(announced_size);
   assert(announced_size <= header_size + *msg_len);
 
-  if (object_id == 2 && opcode == wayland_registry_event_global) {
+  if (object_id == state->registry && opcode == wayland_registry_event_global) {
     uint32_t name = buf_read_u32(msg, msg_len);
 
     uint32_t interface_len = buf_read_u32(msg, msg_len);
@@ -231,13 +232,15 @@ static void wayland_handle_message(int fd, state_t *state, char **msg,
                                  sizeof(interface_len) + padded_interface_len +
                                  sizeof(version));
 
-    char xdg_wm_base_interface[] = "wl_shm";
-    if (strcmp(xdg_wm_base_interface, interface) == 0) {
-      state->xdg_wm_base = wayland_send_bind_object_to_registry(
+    char wl_shm_interface[] = "wl_shm";
+    if (strcmp(wl_shm_interface, interface) == 0) {
+      state->wl_shm = wayland_send_bind_object_to_registry(
           fd, state->registry, name, interface, interface_len, version);
     }
 
     return;
+  } else if (object_id == state->wl_shm &&
+             opcode == wayland_shm_pool_event_format) {
   }
   assert(0 && "todo");
 }
