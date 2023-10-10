@@ -469,8 +469,8 @@ static uint32_t wayland_xdg_surface_get_toplevel(int fd, state_t *state) {
   if ((int64_t)msg_size != send(fd, msg, msg_size, MSG_DONTWAIT))
     exit(errno);
 
-  printf("-> xdg_surface@%u.get_toplevel: xdg_toplevel=%u\n", state->xdg_surface,
-         wayland_current_id);
+  printf("-> xdg_surface@%u.get_toplevel: xdg_toplevel=%u\n",
+         state->xdg_surface, wayland_current_id);
 
   return wayland_current_id;
 }
@@ -567,16 +567,16 @@ static void wayland_handle_message(int fd, state_t *state, char **msg,
           fd, state->wl_registry, name, interface, interface_len, version);
 
       state->wl_surface = wayland_wl_compositor_create_surface(fd, state);
+    }
+
+    if (state->xdg_wm_base != 0 && state->wl_surface != 0 &&
+         state->xdg_surface == 0) {
+      state->xdg_surface = wayland_xdg_wm_base_get_xdg_surface(fd, state);
+      state->xdg_toplevel = wayland_xdg_surface_get_toplevel(fd, state);
 
       wayland_wl_surface_damage_buffer(fd, state);
       wayland_wl_surface_attach(fd, state);
       wayland_wl_surface_commit(fd, state);
-    }
-
-    if (state->xdg_wm_base != 0 && state->wl_surface != 0 &&
-        state->wl_buffer == 0 && state->xdg_surface == 0) {
-      state->xdg_surface = wayland_xdg_wm_base_get_xdg_surface(fd, state);
-      state->xdg_toplevel = wayland_xdg_surface_get_toplevel(fd, state);
     }
 
     return;
