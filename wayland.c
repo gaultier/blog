@@ -153,7 +153,7 @@ static void buf_read_n(char **buf, uint64_t *buf_size, char *dst, uint64_t n) {
   *buf_size -= n;
 }
 
-static uint32_t wayland_get_registry(int fd) {
+static uint32_t wayland_wl_display_get_registry(int fd) {
   uint64_t msg_size = 0;
   char msg[128] = "";
   buf_write_u32(msg, &msg_size, sizeof(msg), wayland_display_object_id);
@@ -173,12 +173,13 @@ static uint32_t wayland_get_registry(int fd) {
   if ((int64_t)msg_size != send(fd, msg, msg_size, MSG_DONTWAIT))
     exit(errno);
 
-  printf("wl_display@%u.get_registry: wl_registry=%u\n", wayland_display_object_id, wayland_current_id);
+  printf("wl_display@%u.get_registry: wl_registry=%u\n",
+         wayland_display_object_id, wayland_current_id);
 
   return wayland_current_id;
 }
 
-static uint32_t wayland_registry_bind(int fd, uint32_t registry, uint32_t name,
+static uint32_t wayland_wl_registry_bind(int fd, uint32_t registry, uint32_t name,
                                       char *interface, uint32_t interface_len,
                                       uint32_t version) {
   uint64_t msg_size = 0;
@@ -233,6 +234,7 @@ static uint32_t wayland_wl_compositor_create_surface(int fd, state_t *state) {
 
   if ((int64_t)msg_size != send(fd, msg, msg_size, MSG_DONTWAIT))
     exit(errno);
+      state->xdg_toplevel = wayland_xdg_surface_get_toplevel(fd, state);
 
   return wayland_current_id;
 }
@@ -514,7 +516,7 @@ static void wayland_handle_message(int fd, state_t *state, char **msg,
 
     char wl_shm_interface[] = "wl_shm";
     if (strcmp(wl_shm_interface, interface) == 0) {
-      state->wl_shm = wayland_registry_bind(fd, state->wl_registry, name,
+      state->wl_shm = wayland_wl_registry_bind(fd, state->wl_registry, name,
                                             interface, interface_len, version);
       state->wl_shm_pool = wayland_wl_shm_create_pool(fd, state);
       state->wl_buffer = wayland_shm_pool_create_buffer(fd, state);
@@ -533,13 +535,13 @@ static void wayland_handle_message(int fd, state_t *state, char **msg,
 
     char xdg_wm_base_interface[] = "xdg_wm_base";
     if (strcmp(xdg_wm_base_interface, interface) == 0) {
-      state->xdg_wm_base = wayland_registry_bind(
+      state->xdg_wm_base = wayland_wl_registry_bind(
           fd, state->wl_registry, name, interface, interface_len, version);
     }
 
     char wl_compositor_interface[] = "wl_compositor";
     if (strcmp(wl_compositor_interface, interface) == 0) {
-      state->wl_compositor = wayland_registry_bind(
+      state->wl_compositor = wayland_wl_registry_bind(
           fd, state->wl_registry, name, interface, interface_len, version);
 
       state->wl_surface = wayland_wl_compositor_create_surface(fd, state);
@@ -592,7 +594,7 @@ int main() {
   int fd = wayland_display_connect();
 
   state_t state = {
-      .wl_registry = wayland_get_registry(fd),
+      .wl_registry = wayland_wl_display_get_registry(fd),
       .w = 800,
       .h = 600,
       .stride = 800 * 4,
