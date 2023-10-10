@@ -32,9 +32,9 @@ struct state_t {
   uint32_t wl_compositor;
   uint32_t wl_surface;
   uint32_t stride;
-  uint64_t w;
-  uint64_t h;
-  uint64_t shm_pool_size;
+  uint32_t w;
+  uint32_t h;
+  uint32_t shm_pool_size;
   int shm_fd;
   uint8_t *shm_pool_data;
 };
@@ -232,10 +232,10 @@ static uint32_t wayland_wl_compositor_create_surface(int fd, state_t *state) {
 }
 
 static int create_shared_memory_file(uint64_t size) {
-  char name[256] = "";
-  arc4random_buf(name, cstring_len(name));
-  for (uint64_t i = 0; i < cstring_len(name); i++) {
-    if (name[i] == 0)
+  char name[255] = "/";
+  arc4random_buf(name + 1, cstring_len(name) - 1);
+  for (uint64_t i = 1; i < cstring_len(name); i++) {
+    if (name[i] == 0 || name[i]=='/')
       name[i] = '.';
   }
 
@@ -243,10 +243,43 @@ static int create_shared_memory_file(uint64_t size) {
   if (fd == -1)
     exit(errno);
 
+  shm_unlink(name);
+
   if (ftruncate(fd, size) == -1)
     exit(errno);
 
   return fd;
+}
+
+static uint32_t wayland_wl_shm_create_pool(int fd, state_t *state) {
+  assert(state->shm_pool_data != NULL);
+  assert(state->shm_pool_size > 0);
+
+  uint64_t msg_size = 0;
+  char msg[128] = "";
+  buf_write_u32(msg, &msg_size, sizeof(msg), state->wl_shm);
+
+  uint16_t wl_shm_create_pool_opcode = 0;
+  buf_write_u16(msg, &msg_size, sizeof(msg), wl_shm_create_pool_opcode);
+
+  uint16_t msg_announced_size =
+      sizeof(wayland_display_object_id) + sizeof(wl_shm_create_pool_opcode) +
+      sizeof(uint16_t) + sizeof(wayland_current_id) + sizeof(state->shm_fd) +
+      sizeof(state->shm_pool_size);
+
+  assert(roundup_4(msg_announced_size) == msg_announced_size);
+  buf_write_u16(msg, &msg_size, sizeof(msg), msg_announced_size);
+
+  wayland_current_id++;
+  buf_write_u32(msg, &msg_size, sizeof(msg), wayland_current_id);
+
+  buf_write_u32(msg, &msg_size, sizeof(msg), state->shm_fd);
+  buf_write_u32(msg, &msg_size, sizeof(msg), state->shm_pool_size);
+
+  if ((int64_t)msg_size != send(fd, msg, msg_size, MSG_DONTWAIT))
+    exit(errno);
+
+  return wayland_current_id;
 }
 
 static void wayland_handle_message(int fd, state_t *state, char **msg,
@@ -292,6 +325,7 @@ static void wayland_handle_message(int fd, state_t *state, char **msg,
     if (strcmp(wl_shm_interface, interface) == 0) {
       state->wl_shm = wayland_send_bind_object_to_registry(
           fd, state->wl_registry, name, interface, interface_len, version);
+      state->wl_shm_pool = wayland_wl_shm_create_pool(fd, state);
     }
 
     char xdg_wm_base_interface[] = "xdg_wm_base";
@@ -306,12 +340,6 @@ static void wayland_handle_message(int fd, state_t *state, char **msg,
           fd, state->wl_registry, name, interface, interface_len, version);
 
       state->wl_surface = wayland_wl_compositor_create_surface(fd, state);
-    }
-
-    char wl_shm_pool_interface[] = "wl_shm_pool";
-    if (strcmp(wl_shm_pool_interface, interface) == 0) {
-      state->wl_shm_pool = wayland_send_bind_object_to_registry(
-          fd, state->wl_registry, name, interface, interface_len, version);
     }
 
     return;
