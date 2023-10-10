@@ -495,11 +495,11 @@ int main() {
       .wl_registry = wayland_send_get_registry(fd),
       .w = 800,
       .h = 600,
-      .stride = 4,
+      .stride = 800 * 4,
   };
 
   // Single buffering.
-  state.shm_pool_size = state.h * state.w * state.stride;
+  state.shm_pool_size = state.h *  state.stride;
   create_shared_memory_file(state.shm_pool_size, &state);
 
   while (1) {
