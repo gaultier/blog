@@ -241,6 +241,10 @@ static void wayland_handle_message(int fd, state_t *state, char **msg,
     return;
   } else if (object_id == state->wl_shm &&
              opcode == wayland_shm_pool_event_format) {
+
+    uint32_t format = buf_read_u32(msg, msg_len);
+    printf("wl_shm: format=%#x\n", format);
+    return;
   }
   assert(0 && "todo");
 }
