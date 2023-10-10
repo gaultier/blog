@@ -1,4 +1,3 @@
-#include <asm-generic/errno-base.h>
 #include <assert.h>
 #include <errno.h>
 #include <fcntl.h>
@@ -261,10 +260,10 @@ static uint32_t wayland_wl_shm_create_pool(int fd, state_t *state) {
   uint16_t wl_shm_create_pool_opcode = 0;
   buf_write_u16(msg, &msg_size, sizeof(msg), wl_shm_create_pool_opcode);
 
-  uint16_t msg_announced_size =
-      sizeof(state->wl_shm) + sizeof(wl_shm_create_pool_opcode) +
-      sizeof(uint16_t) + sizeof(wayland_current_id) + sizeof(state->shm_fd) +
-      sizeof(state->shm_pool_size);
+  uint16_t msg_announced_size = sizeof(state->wl_shm) +
+                                sizeof(wl_shm_create_pool_opcode) +
+                                sizeof(uint16_t) + sizeof(wayland_current_id) +
+                                sizeof(state->shm_pool_size);
 
   assert(roundup_4(msg_announced_size) == msg_announced_size);
   buf_write_u16(msg, &msg_size, sizeof(msg), msg_announced_size);
@@ -272,12 +271,30 @@ static uint32_t wayland_wl_shm_create_pool(int fd, state_t *state) {
   wayland_current_id++;
   buf_write_u32(msg, &msg_size, sizeof(msg), wayland_current_id);
 
-  buf_write_u32(msg, &msg_size, sizeof(msg), state->shm_fd);
   buf_write_u32(msg, &msg_size, sizeof(msg), state->shm_pool_size);
 
   assert(roundup_4(msg_size) == msg_size);
 
-  if ((int64_t)msg_size != send(fd, msg, msg_size, MSG_DONTWAIT))
+  // Send the file descriptor as ancillary data.
+  char buf[CMSG_SPACE(sizeof(state->shm_fd))] = "";
+
+  struct iovec io = {.iov_base = msg, .iov_len = msg_size};
+  struct msghdr socket_msg = {
+      .msg_iov = &io,
+      .msg_iovlen = 1,
+      .msg_control = buf,
+      .msg_controllen = sizeof(buf),
+  };
+
+  struct cmsghdr *cmsg = CMSG_FIRSTHDR(&socket_msg);
+  cmsg->cmsg_level = SOL_SOCKET;
+  cmsg->cmsg_type = SCM_RIGHTS;
+  cmsg->cmsg_len = CMSG_LEN(sizeof(state->shm_fd));
+
+  *((int *)CMSG_DATA(cmsg)) = state->shm_fd;
+  socket_msg.msg_controllen = CMSG_SPACE(sizeof(state->shm_fd));
+
+  if (sendmsg(fd, &socket_msg, MSG_DONTWAIT) == -1)
     exit(errno);
 
   return wayland_current_id;
