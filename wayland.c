@@ -24,6 +24,7 @@ uint16_t wayland_wl_display_event_delete_id = 1;
 uint16_t wayland_wl_registry_event_global = 0;
 uint16_t wayland_shm_pool_event_format = 0;
 uint16_t wayland_wl_buffer_event_release = 0;
+uint16_t wayland_xdg_wm_base_event_ping = 0;
 
 typedef struct state_t state_t;
 struct state_t {
@@ -263,6 +264,30 @@ static void create_shared_memory_file(uint64_t size, state_t *state) {
       mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
   assert(state->shm_pool_data != NULL);
   state->shm_fd = fd;
+}
+
+static void wayland_xdg_wm_base_pong(int fd, state_t *state, uint32_t ping) {
+  assert(state->xdg_wm_base > 0);
+  assert(state->wl_surface > 0);
+
+  uint64_t msg_size = 0;
+  char msg[128] = "";
+  buf_write_u32(msg, &msg_size, sizeof(msg), state->xdg_wm_base);
+
+  uint16_t opcode = 2;
+  buf_write_u16(msg, &msg_size, sizeof(msg), opcode);
+
+  uint16_t msg_announced_size = sizeof(state->xdg_wm_base) + sizeof(opcode) +
+                                sizeof(uint16_t) + sizeof(ping);
+  assert(roundup_4(msg_announced_size) == msg_announced_size);
+  buf_write_u16(msg, &msg_size, sizeof(msg), msg_announced_size);
+
+  buf_write_u32(msg, &msg_size, sizeof(msg), ping);
+
+  if ((int64_t)msg_size != send(fd, msg, msg_size, MSG_DONTWAIT))
+    exit(errno);
+
+  printf("-> xdg_wm_base@%u.pong: ping=%u\n", state->xdg_wm_base, ping);
 }
 
 static uint32_t wayland_wl_shm_create_pool(int fd, state_t *state) {
@@ -570,7 +595,7 @@ static void wayland_handle_message(int fd, state_t *state, char **msg,
     }
 
     if (state->xdg_wm_base != 0 && state->wl_surface != 0 &&
-         state->xdg_surface == 0) {
+        state->xdg_surface == 0) {
       state->xdg_surface = wayland_xdg_wm_base_get_xdg_surface(fd, state);
       state->xdg_toplevel = wayland_xdg_surface_get_toplevel(fd, state);
 
@@ -605,6 +630,13 @@ static void wayland_handle_message(int fd, state_t *state, char **msg,
     uint32_t id = buf_read_u32(msg, msg_len);
     printf("<- wl_display@%u.delete_id: id=%u\n", wayland_display_object_id,
            id);
+    return;
+  } else if (object_id == state->xdg_wm_base &&
+             opcode == wayland_xdg_wm_base_event_ping) {
+    uint32_t ping = buf_read_u32(msg, msg_len);
+    printf("<- xdg_wm_base@%u.ping: ping=%u\n", state->xdg_wm_base, ping);
+    wayland_xdg_wm_base_pong(fd, state, ping);
+
     return;
   }
 
