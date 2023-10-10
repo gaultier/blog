@@ -346,7 +346,6 @@ static void wayland_handle_message(int fd, state_t *state, char **msg,
       state->wl_shm_pool = wayland_wl_shm_create_pool(fd, state);
     }
 
-#if 0
     char xdg_wm_base_interface[] = "xdg_wm_base";
     if (strcmp(xdg_wm_base_interface, interface) == 0) {
       state->xdg_wm_base = wayland_send_bind_object_to_registry(
@@ -360,7 +359,6 @@ static void wayland_handle_message(int fd, state_t *state, char **msg,
 
       state->wl_surface = wayland_wl_compositor_create_surface(fd, state);
     }
-#endif
 
     return;
   } else if (object_id == wayland_display_object_id && opcode == 0) {
