@@ -101,7 +101,7 @@ static void buf_write_string(char *buf, uint64_t *buf_size, uint64_t buf_cap,
   assert(*buf_size + src_len <= buf_cap);
 
   buf_write_u32(buf, buf_size, buf_cap, src_len);
-  memcpy(buf, src, roundup_4(src_len));
+  memcpy(buf+*buf_size, src, roundup_4(src_len));
   *buf_size += roundup_4(src_len);
 }
 
@@ -147,6 +147,7 @@ static uint32_t wayland_send_get_registry(int fd) {
   uint16_t msg_announced_size = sizeof(wayland_display_object_id) +
                                 sizeof(display_get_registry_opcode) +
                                 sizeof(uint16_t) + sizeof(wayland_current_id);
+  assert(roundup_4(msg_announced_size) == msg_announced_size);
   buf_write_u16(msg, &msg_size, sizeof(msg), msg_announced_size);
 
   wayland_current_id++;
@@ -172,8 +173,9 @@ static uint32_t wayland_send_bind_object_to_registry(int fd, uint32_t registry,
 
   uint16_t msg_announced_size =
       sizeof(registry) + sizeof(display_bind_registry_opcode) +
-      sizeof(uint16_t) + sizeof(name) + sizeof(interface_len) + interface_len +
-      sizeof(version) + sizeof(wayland_current_id);
+      sizeof(uint16_t) + sizeof(name) + sizeof(interface_len) +
+      roundup_4(interface_len) + sizeof(version) + sizeof(wayland_current_id);
+  assert(roundup_4(msg_announced_size) == msg_announced_size);
   buf_write_u16(msg, &msg_size, sizeof(msg), msg_announced_size);
 
   buf_write_u32(msg, &msg_size, sizeof(msg), name);
