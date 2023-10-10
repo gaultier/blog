@@ -1,3 +1,4 @@
+#include <asm-generic/errno-base.h>
 #include <assert.h>
 #include <errno.h>
 #include <fcntl.h>
@@ -36,7 +37,6 @@ struct state_t {
   uint32_t h;
   uint32_t shm_pool_size;
   int shm_fd;
-  uint8_t *shm_pool_data;
 };
 
 static void set_socket_non_blocking(int fd) {
@@ -216,7 +216,7 @@ static uint32_t wayland_wl_compositor_create_surface(int fd, state_t *state) {
   buf_write_u16(msg, &msg_size, sizeof(msg),
                 wl_compositor_create_surface_opcode);
 
-  uint16_t msg_announced_size = sizeof(wayland_display_object_id) +
+  uint16_t msg_announced_size = sizeof(state->wl_compositor) +
                                 sizeof(wl_compositor_create_surface_opcode) +
                                 sizeof(uint16_t) + sizeof(wayland_current_id);
   assert(roundup_4(msg_announced_size) == msg_announced_size);
@@ -235,7 +235,7 @@ static int create_shared_memory_file(uint64_t size) {
   char name[255] = "/";
   arc4random_buf(name + 1, cstring_len(name) - 1);
   for (uint64_t i = 1; i < cstring_len(name); i++) {
-    if (name[i] == 0 || name[i]=='/')
+    if (name[i] == 0 || name[i] == '/')
       name[i] = '.';
   }
 
@@ -252,7 +252,6 @@ static int create_shared_memory_file(uint64_t size) {
 }
 
 static uint32_t wayland_wl_shm_create_pool(int fd, state_t *state) {
-  assert(state->shm_pool_data != NULL);
   assert(state->shm_pool_size > 0);
 
   uint64_t msg_size = 0;
@@ -263,7 +262,7 @@ static uint32_t wayland_wl_shm_create_pool(int fd, state_t *state) {
   buf_write_u16(msg, &msg_size, sizeof(msg), wl_shm_create_pool_opcode);
 
   uint16_t msg_announced_size =
-      sizeof(wayland_display_object_id) + sizeof(wl_shm_create_pool_opcode) +
+      sizeof(state->wl_shm) + sizeof(wl_shm_create_pool_opcode) +
       sizeof(uint16_t) + sizeof(wayland_current_id) + sizeof(state->shm_fd) +
       sizeof(state->shm_pool_size);
 
@@ -275,6 +274,8 @@ static uint32_t wayland_wl_shm_create_pool(int fd, state_t *state) {
 
   buf_write_u32(msg, &msg_size, sizeof(msg), state->shm_fd);
   buf_write_u32(msg, &msg_size, sizeof(msg), state->shm_pool_size);
+
+  assert(roundup_4(msg_size) == msg_size);
 
   if ((int64_t)msg_size != send(fd, msg, msg_size, MSG_DONTWAIT))
     exit(errno);
@@ -328,6 +329,7 @@ static void wayland_handle_message(int fd, state_t *state, char **msg,
       state->wl_shm_pool = wayland_wl_shm_create_pool(fd, state);
     }
 
+#if 0
     char xdg_wm_base_interface[] = "xdg_wm_base";
     if (strcmp(xdg_wm_base_interface, interface) == 0) {
       state->xdg_wm_base = wayland_send_bind_object_to_registry(
@@ -341,8 +343,19 @@ static void wayland_handle_message(int fd, state_t *state, char **msg,
 
       state->wl_surface = wayland_wl_compositor_create_surface(fd, state);
     }
+#endif
 
     return;
+  } else if (object_id == wayland_display_object_id && opcode == 0) {
+    uint32_t target_object_id = buf_read_u32(msg, msg_len);
+    uint32_t code = buf_read_u32(msg, msg_len);
+    char error[512] = "";
+    uint32_t error_len = buf_read_u32(msg, msg_len);
+    buf_read_n(msg, msg_len, error, roundup_4(error_len));
+
+    fprintf(stderr, "fatal error: target_object_id=%u code=%u error=%s\n",
+            target_object_id, code, error);
+    exit(EINVAL);
   } else if (object_id == state->wl_shm &&
              opcode == wayland_shm_pool_event_format) {
 
@@ -350,6 +363,8 @@ static void wayland_handle_message(int fd, state_t *state, char **msg,
     printf("wl_shm: format=%#x\n", format);
     return;
   }
+  fprintf(stderr, "object_id=%u opcode=%u msg_len=%lu\n", object_id, opcode,
+          *msg_len);
   assert(0 && "todo");
 }
 
@@ -366,9 +381,6 @@ int main() {
   // Single buffering.
   state.shm_pool_size = state.h * state.w * state.stride;
   state.shm_fd = create_shared_memory_file(state.shm_pool_size);
-  state.shm_pool_data = mmap(NULL, state.shm_pool_size, PROT_READ | PROT_WRITE,
-                             MAP_SHARED, state.shm_fd, 0);
-  assert(state.shm_pool_data != NULL);
 
   while (1) {
     struct pollfd poll_fd = {.fd = fd, .events = POLLIN};
