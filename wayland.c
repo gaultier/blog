@@ -3,6 +3,7 @@
 #include <fcntl.h>
 #include <inttypes.h>
 #include <poll.h>
+#include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -13,12 +14,18 @@
 
 #define cstring_len(s) (sizeof(s) - 1)
 
-#define roundup_32(n) (((n) + 3) & -4)
+#define roundup_4(n) (((n) + 3) & -4)
 
 uint32_t wayland_current_id = 1;
 uint32_t wayland_display_object_id = 1;
 
 uint16_t wayland_registry_event_global = 0;
+
+typedef struct state_t state_t;
+struct state_t {
+  uint32_t registry;
+  uint32_t xdg_wm_base;
+};
 
 static void set_socket_non_blocking(int fd) {
   int flags = fcntl(fd, F_GETFD, 0);
@@ -74,6 +81,7 @@ static int wayland_display_connect() {
 static void buf_write_u32(char *buf, uint64_t *buf_size, uint64_t buf_cap,
                           uint32_t x) {
   assert(*buf_size + sizeof(x) <= buf_cap);
+  assert(((size_t)buf + *buf_size) % sizeof(x) == 0);
 
   *(uint32_t *)(buf + *buf_size) = x;
   *buf_size += sizeof(x);
@@ -82,13 +90,24 @@ static void buf_write_u32(char *buf, uint64_t *buf_size, uint64_t buf_cap,
 static void buf_write_u16(char *buf, uint64_t *buf_size, uint64_t buf_cap,
                           uint16_t x) {
   assert(*buf_size + sizeof(x) <= buf_cap);
+  assert(((size_t)buf + *buf_size) % sizeof(x) == 0);
 
   *(uint16_t *)(buf + *buf_size) = x;
   *buf_size += sizeof(x);
 }
 
+static void buf_write_string(char *buf, uint64_t *buf_size, uint64_t buf_cap,
+                             char *src, uint32_t src_len) {
+  assert(*buf_size + src_len <= buf_cap);
+
+  buf_write_u32(buf, buf_size, buf_cap, src_len);
+  memcpy(buf, src, roundup_4(src_len));
+  *buf_size += roundup_4(src_len);
+}
+
 static uint32_t buf_read_u32(char **buf, uint64_t *buf_size) {
   assert(*buf_size >= sizeof(uint32_t));
+  assert((size_t)*buf % sizeof(uint32_t) == 0);
 
   uint32_t res = *(uint32_t *)(*buf);
   *buf += sizeof(res);
@@ -99,6 +118,7 @@ static uint32_t buf_read_u32(char **buf, uint64_t *buf_size) {
 
 static uint16_t buf_read_u16(char **buf, uint64_t *buf_size) {
   assert(*buf_size >= sizeof(uint16_t));
+  assert((size_t)*buf % sizeof(uint16_t) == 0);
 
   uint16_t res = *(uint16_t *)(*buf);
   *buf += sizeof(res);
@@ -116,7 +136,7 @@ static void buf_read_n(char **buf, uint64_t *buf_size, char *dst, uint64_t n) {
   *buf_size -= n;
 }
 
-static void wayland_send_get_registry(int fd) {
+static uint32_t wayland_send_get_registry(int fd) {
   uint64_t msg_size = 0;
   char msg[128] = "";
   buf_write_u32(msg, &msg_size, sizeof(msg), wayland_display_object_id);
@@ -124,7 +144,9 @@ static void wayland_send_get_registry(int fd) {
   uint16_t display_get_registry_opcode = 1;
   buf_write_u16(msg, &msg_size, sizeof(msg), display_get_registry_opcode);
 
-  uint16_t msg_announced_size = 12;
+  uint16_t msg_announced_size = sizeof(wayland_display_object_id) +
+                                sizeof(display_get_registry_opcode) +
+                                sizeof(uint16_t) + sizeof(wayland_current_id);
   buf_write_u16(msg, &msg_size, sizeof(msg), msg_announced_size);
 
   wayland_current_id++;
@@ -132,9 +154,45 @@ static void wayland_send_get_registry(int fd) {
 
   if ((int64_t)msg_size != write(fd, msg, msg_size))
     exit(errno);
+
+  return wayland_current_id;
 }
 
-static void wayland_handle_message(char **msg, uint64_t *msg_len) {
+static uint32_t wayland_send_bind_object_to_registry(int fd, uint32_t registry,
+                                                     uint32_t name,
+                                                     char *interface,
+                                                     uint32_t interface_len,
+                                                     uint32_t version) {
+  uint64_t msg_size = 0;
+  char msg[512] = "";
+  buf_write_u32(msg, &msg_size, sizeof(msg), registry);
+
+  uint16_t display_bind_registry_opcode = 0;
+  buf_write_u16(msg, &msg_size, sizeof(msg), display_bind_registry_opcode);
+
+  uint16_t msg_announced_size =
+      sizeof(registry) + sizeof(display_bind_registry_opcode) +
+      sizeof(uint16_t) + sizeof(name) + sizeof(interface_len) + interface_len +
+      sizeof(version) + sizeof(wayland_current_id);
+  buf_write_u16(msg, &msg_size, sizeof(msg), msg_announced_size);
+
+  buf_write_u32(msg, &msg_size, sizeof(msg), name);
+  buf_write_string(msg, &msg_size, sizeof(msg), interface, interface_len);
+  buf_write_u32(msg, &msg_size, sizeof(msg), version);
+
+  wayland_current_id++;
+  buf_write_u32(msg, &msg_size, sizeof(msg), wayland_current_id);
+
+  assert(msg_size == roundup_4(msg_size));
+
+  if ((int64_t)msg_size != write(fd, msg, msg_size))
+    exit(errno);
+
+  return wayland_current_id;
+}
+
+static void wayland_handle_message(int fd, state_t *state, char **msg,
+                                   uint64_t *msg_len) {
   assert(*msg_len >= 8);
 
   uint32_t object_id = buf_read_u32(msg, msg_len);
@@ -143,17 +201,17 @@ static void wayland_handle_message(char **msg, uint64_t *msg_len) {
   uint16_t opcode = buf_read_u16(msg, msg_len);
 
   uint16_t announced_size = buf_read_u16(msg, msg_len);
-  assert(roundup_32(announced_size) <= announced_size);
+  assert(roundup_4(announced_size) <= announced_size);
 
-  uint32_t header_size = sizeof(object_id)+sizeof(opcode)+sizeof(announced_size);
-  assert(announced_size <= header_size+ *msg_len);
-  printf("[D001] msg_len=%lu announced_size=%u\n", *msg_len, announced_size);
+  uint32_t header_size =
+      sizeof(object_id) + sizeof(opcode) + sizeof(announced_size);
+  assert(announced_size <= header_size + *msg_len);
 
   if (object_id == 2 && opcode == wayland_registry_event_global) {
     uint32_t name = buf_read_u32(msg, msg_len);
 
     uint32_t interface_len = buf_read_u32(msg, msg_len);
-    uint32_t padded_interface_len = roundup_32(interface_len);
+    uint32_t padded_interface_len = roundup_4(interface_len);
 
     char interface[512] = "";
     assert(padded_interface_len <= cstring_len(interface));
@@ -171,6 +229,12 @@ static void wayland_handle_message(char **msg, uint64_t *msg_len) {
                                  sizeof(interface_len) + padded_interface_len +
                                  sizeof(version));
 
+    char xdg_wm_base_interface[] = "wl_shm";
+    if (strcmp(xdg_wm_base_interface, interface) == 0) {
+      state->xdg_wm_base = wayland_send_bind_object_to_registry(
+          fd, state->registry, name, interface, interface_len, version);
+    }
+
     return;
   }
   assert(0 && "todo");
@@ -179,7 +243,7 @@ static void wayland_handle_message(char **msg, uint64_t *msg_len) {
 int main() {
   int fd = wayland_display_connect();
 
-  wayland_send_get_registry(fd);
+  state_t state = {.registry = wayland_send_get_registry(fd)};
 
   while (1) {
     struct pollfd poll_fd = {.fd = fd, .events = POLLIN};
@@ -199,6 +263,6 @@ int main() {
     uint64_t msg_len = (uint64_t)read_bytes;
 
     while (msg_len > 0)
-      wayland_handle_message(&msg, &msg_len);
+      wayland_handle_message(fd, &state, &msg, &msg_len);
   }
 }
