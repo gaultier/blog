@@ -28,6 +28,14 @@ uint16_t wayland_xdg_wm_base_event_ping = 0;
 uint16_t wayland_xdg_toplevel_event_configure = 0;
 uint16_t wayland_xdg_surface_event_configure = 0;
 
+typedef enum state_state_t state_state_t;
+enum state_state_t {
+  STATE_NONE,
+  STATE_SURFACE_SETUP,
+  STATE_SURFACE_ACKED_CONFIGURE,
+  STATE_SURFACE_ATTACHED,
+};
+
 typedef struct state_t state_t;
 struct state_t {
   uint32_t wl_registry;
@@ -45,6 +53,8 @@ struct state_t {
   uint32_t shm_pool_size;
   int shm_fd;
   uint8_t *shm_pool_data;
+
+  state_state_t state;
 };
 
 static void set_socket_non_blocking(int fd) {
@@ -340,6 +350,8 @@ static void wayland_xdg_surface_ack_configure(int fd, state_t *state,
 
   printf("-> xdg_surface@%u.ack_configure: configure=%u\n", state->xdg_surface,
          configure);
+
+  state->state = STATE_SURFACE_ACKED_CONFIGURE;
 }
 
 static uint32_t wayland_wl_shm_create_pool(int fd, state_t *state) {
@@ -733,9 +745,30 @@ int main() {
       state.xdg_surface = wayland_xdg_wm_base_get_xdg_surface(fd, &state);
       state.xdg_toplevel = wayland_xdg_surface_get_toplevel(fd, &state);
       wayland_wl_surface_commit(fd, &state);
+    }
 
-      // state.wl_shm_pool = wayland_wl_shm_create_pool(fd, &state);
-      // state.wl_buffer = wayland_shm_pool_create_buffer(fd, &state);
+    if (state.state == STATE_SURFACE_ACKED_CONFIGURE) {
+      assert(state.wl_surface != 0);
+      assert(state.xdg_surface != 0);
+      assert(state.xdg_toplevel != 0);
+
+      state.wl_shm_pool = wayland_wl_shm_create_pool(fd, &state);
+      state.wl_buffer = wayland_shm_pool_create_buffer(fd, &state);
+
+      uint32_t *pixels = (uint32_t *)state.shm_pool_data;
+      for (int y = 0; y < state.h; ++y) {
+        for (int x = 0; x < state.w; ++x) {
+          if ((x + y / 8 * 8) % 16 < 8) {
+            pixels[y * state.w + x] = 0xFF666666;
+          } else {
+            pixels[y * state.w + x] = 0xFFEEEEEE;
+          }
+        }
+      }
+      wayland_wl_surface_attach(fd, &state);
+      wayland_wl_surface_commit(fd, &state);
+
+      state.state = STATE_SURFACE_ATTACHED;
     }
   }
 }
