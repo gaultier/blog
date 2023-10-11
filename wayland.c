@@ -29,7 +29,9 @@ static const uint16_t wayland_xdg_wm_base_event_ping = 0;
 static const uint16_t wayland_xdg_toplevel_event_configure = 0;
 static const uint16_t wayland_xdg_toplevel_event_close = 1;
 static const uint16_t wayland_xdg_surface_event_configure = 0;
-static const uint32_t xrgb8888_channels = 4;
+static const uint32_t color_channels = 4;
+static const uint32_t wayland_format_argb8888 = 0;
+static const uint32_t wayland_format_xrgb8888 = 1;
 
 typedef enum state_state_t state_state_t;
 enum state_state_t {
@@ -430,7 +432,7 @@ static uint32_t wayland_shm_pool_create_buffer(int fd, state_t *state) {
 
   buf_write_u32(msg, &msg_size, sizeof(msg), state->stride);
 
-  uint32_t format = 1; // xrgb8888
+  uint32_t format = wayland_format_argb8888;
   buf_write_u32(msg, &msg_size, sizeof(msg), format);
 
   if ((int64_t)msg_size != send(fd, msg, msg_size, MSG_DONTWAIT))
@@ -684,7 +686,7 @@ int main() {
       .wl_registry = wayland_wl_display_get_registry(fd),
       .w = 800,
       .h = 600,
-      .stride = 800 * xrgb8888_channels,
+      .stride = 800 * color_channels,
   };
 
   // Single buffering.
@@ -734,15 +736,11 @@ int main() {
       if (state.wl_buffer == 0)
         state.wl_buffer = wayland_shm_pool_create_buffer(fd, &state);
 
-
       uint32_t *pixels = (uint32_t *)state.shm_pool_data;
       for (uint32_t y = 0; y < state.h; ++y) {
         for (uint32_t x = 0; x < state.w; ++x) {
-          if ((x + y / 8 * 8) % 16 < 8) {
-            pixels[y * state.w + x] = 0xFF666666;
-          } else {
-            pixels[y * state.w + x] = 0xFFEEEEEE;
-          }
+          pixels[y * state.w + x] =
+              (uint32_t)((float)0xFFFFFFFF * (float)x / (float)state.w);
         }
       }
       wayland_wl_surface_attach(fd, &state);
