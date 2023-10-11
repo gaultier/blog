@@ -5,7 +5,6 @@
 #include <poll.h>
 #include <stddef.h>
 #include <stdint.h>
-#include <unistd.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -18,17 +17,16 @@
 
 #define roundup_4(n) (((n) + 3) & -4)
 
-uint32_t wayland_current_id = 1;
-uint32_t wayland_display_object_id = 1;
-
-uint16_t wayland_wl_display_event_delete_id = 1;
-uint16_t wayland_wl_registry_event_global = 0;
-uint16_t wayland_shm_pool_event_format = 0;
-uint16_t wayland_wl_buffer_event_release = 0;
-uint16_t wayland_xdg_wm_base_event_ping = 0;
-uint16_t wayland_xdg_toplevel_event_configure = 0;
-uint16_t wayland_xdg_toplevel_event_close = 1;
-uint16_t wayland_xdg_surface_event_configure = 0;
+static uint32_t wayland_current_id = 1;
+static const uint32_t wayland_display_object_id = 1;
+static const uint16_t wayland_wl_display_event_delete_id = 1;
+static const uint16_t wayland_wl_registry_event_global = 0;
+static const uint16_t wayland_shm_pool_event_format = 0;
+static const uint16_t wayland_wl_buffer_event_release = 0;
+static const uint16_t wayland_xdg_wm_base_event_ping = 0;
+static const uint16_t wayland_xdg_toplevel_event_configure = 0;
+static const uint16_t wayland_xdg_toplevel_event_close = 1;
+static const uint16_t wayland_xdg_surface_event_configure = 0;
 
 typedef enum state_state_t state_state_t;
 enum state_state_t {
@@ -259,10 +257,8 @@ static uint32_t wayland_wl_compositor_create_surface(int fd, state_t *state) {
 
 static void create_shared_memory_file(uint64_t size, state_t *state) {
   char name[255] = "/";
-  arc4random_buf(name + 1, cstring_len(name) - 1);
   for (uint64_t i = 1; i < cstring_len(name); i++) {
-    if (name[i] == 0 || name[i] == '/')
-      name[i] = '.';
+    name[i] = arc4random_uniform(25) + 'a';
   }
 
   int fd = shm_open(name, O_RDWR | O_EXCL | O_CREAT, 0600);
@@ -302,31 +298,6 @@ static void wayland_xdg_wm_base_pong(int fd, state_t *state, uint32_t ping) {
     exit(errno);
 
   printf("-> xdg_wm_base@%u.pong: ping=%u\n", state->xdg_wm_base, ping);
-}
-
-static void wayland_xdg_toplevel_ack_configure(int fd, state_t *state,
-                                               uint32_t configure) {
-  assert(state->xdg_toplevel > 0);
-
-  uint64_t msg_size = 0;
-  char msg[128] = "";
-  buf_write_u32(msg, &msg_size, sizeof(msg), state->xdg_toplevel);
-
-  uint16_t opcode = 4;
-  buf_write_u16(msg, &msg_size, sizeof(msg), opcode);
-
-  uint16_t msg_announced_size = sizeof(state->xdg_toplevel) + sizeof(opcode) +
-                                sizeof(uint16_t) + sizeof(configure);
-  assert(roundup_4(msg_announced_size) == msg_announced_size);
-  buf_write_u16(msg, &msg_size, sizeof(msg), msg_announced_size);
-
-  buf_write_u32(msg, &msg_size, sizeof(msg), configure);
-
-  if ((int64_t)msg_size != send(fd, msg, msg_size, MSG_DONTWAIT))
-    exit(errno);
-
-  printf("-> xdg_toplevel@%u.ack_configure: configure=%u\n",
-         state->xdg_toplevel, configure);
 }
 
 static void wayland_xdg_surface_ack_configure(int fd, state_t *state,
@@ -762,8 +733,8 @@ int main() {
       state.wl_buffer = wayland_shm_pool_create_buffer(fd, &state);
 
       uint32_t *pixels = (uint32_t *)state.shm_pool_data;
-      for (int y = 0; y < state.h; ++y) {
-        for (int x = 0; x < state.w; ++x) {
+      for (uint32_t y = 0; y < state.h; ++y) {
+        for (uint32_t x = 0; x < state.w; ++x) {
           if ((x + y / 8 * 8) % 16 < 8) {
             pixels[y * state.w + x] = 0xFF666666;
           } else {
