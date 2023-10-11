@@ -1,3 +1,4 @@
+#define _POSIX_C_SOURCE 200112L
 #include <assert.h>
 #include <errno.h>
 #include <fcntl.h>
@@ -10,6 +11,7 @@
 #include <string.h>
 #include <sys/mman.h>
 #include <sys/socket.h>
+#include <sys/time.h>
 #include <sys/un.h>
 #include <unistd.h>
 
@@ -258,7 +260,7 @@ static uint32_t wayland_wl_compositor_create_surface(int fd, state_t *state) {
 static void create_shared_memory_file(uint64_t size, state_t *state) {
   char name[255] = "/";
   for (uint64_t i = 1; i < cstring_len(name); i++) {
-    name[i] = arc4random_uniform(25) + 'a';
+    name[i] = ((double)rand()) / (double)RAND_MAX * 26 + 'a';
   }
 
   int fd = shm_open(name, O_RDWR | O_EXCL | O_CREAT, 0600);
@@ -682,6 +684,11 @@ static void wayland_handle_message(int fd, state_t *state, char **msg,
 }
 
 int main() {
+  struct timeval tv = {0};
+  assert(gettimeofday(&tv, NULL) != -1);
+
+  srand(tv.tv_sec * 1000 * 1000 + tv.tv_usec);
+
   int fd = wayland_display_connect();
 
   state_t state = {
