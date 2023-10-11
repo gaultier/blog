@@ -15,6 +15,8 @@
 #include <sys/un.h>
 #include <unistd.h>
 
+#include "wayland-logo.h"
+
 #define cstring_len(s) (sizeof(s) - 1)
 
 #define roundup_4(n) (((n) + 3) & -4)
@@ -655,9 +657,9 @@ int main() {
 
   state_t state = {
       .wl_registry = wayland_wl_display_get_registry(fd),
-      .w = 800,
-      .h = 600,
-      .stride = 800 * color_channels,
+      .w = 117,
+      .h = 150,
+      .stride = 117 * color_channels,
   };
 
   // Single buffering.
@@ -706,11 +708,12 @@ int main() {
         state.wl_buffer = wayland_shm_pool_create_buffer(fd, &state);
 
       uint32_t *pixels = (uint32_t *)state.shm_pool_data;
-      for (uint32_t y = 0; y < state.h; ++y) {
-        for (uint32_t x = 0; x < state.w; ++x) {
-          pixels[y * state.w + x] =
-              (uint32_t)((float)0xFFFFFFFF * (float)x / (float)state.w);
-        }
+      for (uint32_t i = 0; i < state.w * state.h; i++) {
+        uint8_t a = 0;
+        uint8_t r = wayland_logo[i * 3 + 0];
+        uint8_t g = wayland_logo[i * 3 + 1];
+        uint8_t b = wayland_logo[i * 3 + 2];
+        pixels[i] = (a << 24) | (r << 16) | (g << 8) | b;
       }
       wayland_wl_surface_attach(fd, &state);
       wayland_wl_surface_commit(fd, &state);
