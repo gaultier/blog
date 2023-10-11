@@ -276,7 +276,7 @@ static void wayland_xdg_wm_base_pong(int fd, state_t *state, uint32_t ping) {
   char msg[128] = "";
   buf_write_u32(msg, &msg_size, sizeof(msg), state->xdg_wm_base);
 
-  uint16_t opcode = 2;
+  uint16_t opcode = 3;
   buf_write_u16(msg, &msg_size, sizeof(msg), opcode);
 
   uint16_t msg_announced_size = sizeof(state->xdg_wm_base) + sizeof(opcode) +
@@ -604,8 +604,8 @@ static void wayland_handle_message(int fd, state_t *state, char **msg,
 
     uint32_t version = buf_read_u32(msg, msg_len);
 
-    printf("<- wl_registry@%u.global: name=%u interface=%.*s version=%u\n",state->wl_registry, name,
-           interface_len, interface, version);
+    printf("<- wl_registry@%u.global: name=%u interface=%.*s version=%u\n",
+           state->wl_registry, name, interface_len, interface, version);
 
     assert(announced_size == sizeof(object_id) + sizeof(announced_size) +
                                  sizeof(opcode) + sizeof(name) +
