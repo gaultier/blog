@@ -36,7 +36,6 @@ static const uint32_t wayland_format_xrgb8888 = 1;
 typedef enum state_state_t state_state_t;
 enum state_state_t {
   STATE_NONE,
-  STATE_SURFACE_SETUP,
   STATE_SURFACE_ACKED_CONFIGURE,
   STATE_SURFACE_ATTACHED,
 };
@@ -722,8 +721,6 @@ int main() {
       state.xdg_surface = wayland_xdg_wm_base_get_xdg_surface(fd, &state);
       state.xdg_toplevel = wayland_xdg_surface_get_toplevel(fd, &state);
       wayland_wl_surface_commit(fd, &state);
-
-      state.state = STATE_SURFACE_SETUP;
     }
 
     if (state.state == STATE_SURFACE_ACKED_CONFIGURE) {
