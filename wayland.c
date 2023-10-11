@@ -729,21 +729,11 @@ int main() {
       assert(state.xdg_surface != 0);
       assert(state.xdg_toplevel != 0);
 
-      state.wl_shm_pool = wayland_wl_shm_create_pool(fd, &state);
-      state.wl_buffer = wayland_shm_pool_create_buffer(fd, &state);
+      if (state.wl_shm_pool == 0)
+        state.wl_shm_pool = wayland_wl_shm_create_pool(fd, &state);
+      if (state.wl_buffer == 0)
+        state.wl_buffer = wayland_shm_pool_create_buffer(fd, &state);
 
-      // TODO: Delete pool here!
-      // xdg_surface@7.configure(205261)
-      //  -> xdg_surface@7.ack_configure(205261)
-      //  -> wl_shm@4.create_pool(new id wl_shm_pool@9, fd 5, 1228800)
-      //  -> wl_shm_pool@9.create_buffer(new id wl_buffer@10, 0, 640, 480, 2560,
-      //  1)
-      //  -> wl_shm_pool@9.destroy() => TODO
-      //  -> wl_surface@3.attach(wl_buffer@10, 0, 0)
-      //  -> wl_surface@3.commit()
-      // wl_display@1.delete_id(9) => TODO
-      // wl_buffer@10.release() => TODO
-      //  -> wl_buffer@10.destroy() => TODO
 
       uint32_t *pixels = (uint32_t *)state.shm_pool_data;
       for (uint32_t y = 0; y < state.h; ++y) {
