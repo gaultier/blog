@@ -29,6 +29,7 @@ static const uint16_t wayland_xdg_wm_base_event_ping = 0;
 static const uint16_t wayland_xdg_toplevel_event_configure = 0;
 static const uint16_t wayland_xdg_toplevel_event_close = 1;
 static const uint16_t wayland_xdg_surface_event_configure = 0;
+static const uint32_t xrgb8888_channels = 4;
 
 typedef enum state_state_t state_state_t;
 enum state_state_t {
@@ -683,7 +684,7 @@ int main() {
       .wl_registry = wayland_wl_display_get_registry(fd),
       .w = 800,
       .h = 600,
-      .stride = 800 * 4,
+      .stride = 800 * xrgb8888_channels,
   };
 
   // Single buffering.
