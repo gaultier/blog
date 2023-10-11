@@ -473,34 +473,6 @@ static void wayland_wl_surface_attach(int fd, state_t *state) {
          state->wl_buffer);
 }
 
-static void wayland_wl_surface_damage_buffer(int fd, state_t *state) {
-  assert(state->wl_surface > 0);
-  assert(state->wl_buffer > 0);
-
-  uint64_t msg_size = 0;
-  char msg[128] = "";
-  buf_write_u32(msg, &msg_size, sizeof(msg), state->wl_surface);
-
-  uint16_t opcode = 9;
-  buf_write_u16(msg, &msg_size, sizeof(msg), opcode);
-
-  uint16_t msg_announced_size = sizeof(state->wl_surface) + sizeof(opcode) +
-                                sizeof(uint16_t) + sizeof(uint32_t) * 4;
-  assert(roundup_4(msg_announced_size) == msg_announced_size);
-  buf_write_u16(msg, &msg_size, sizeof(msg), msg_announced_size);
-
-  uint32_t x = 0, y = 0;
-  buf_write_u32(msg, &msg_size, sizeof(msg), x);
-  buf_write_u32(msg, &msg_size, sizeof(msg), y);
-  buf_write_u32(msg, &msg_size, sizeof(msg), state->w);
-  buf_write_u32(msg, &msg_size, sizeof(msg), state->h);
-
-  if ((int64_t)msg_size != send(fd, msg, msg_size, MSG_DONTWAIT))
-    exit(errno);
-
-  printf("-> wl_surface@%u.damage_buffer: \n", state->wl_surface);
-}
-
 static uint32_t wayland_xdg_surface_get_toplevel(int fd, state_t *state) {
   assert(state->xdg_surface > 0);
 
