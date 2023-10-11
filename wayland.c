@@ -59,17 +59,6 @@ struct state_t {
   state_state_t state;
 };
 
-static void set_socket_non_blocking(int fd) {
-  int flags = fcntl(fd, F_GETFD, 0);
-  if (flags == -1)
-    exit(errno);
-
-  flags |= O_NONBLOCK;
-
-  if (fcntl(fd, F_SETFD, flags) == -1)
-    exit(errno);
-}
-
 static int wayland_display_connect() {
   char *xdg_runtime_dir = getenv("XDG_RUNTIME_DIR");
   if (xdg_runtime_dir == NULL)
@@ -99,8 +88,6 @@ static int wayland_display_connect() {
   int fd = socket(AF_UNIX, SOCK_STREAM, 0);
   if (fd == -1)
     exit(errno);
-
-  set_socket_non_blocking(fd);
 
   struct sockaddr_un addr = {.sun_family = AF_UNIX,
                              .sun_path = "/run/user/1000/wayland-1"};
