@@ -5,6 +5,7 @@
 #include <poll.h>
 #include <stddef.h>
 #include <stdint.h>
+#include <unistd.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -700,10 +701,9 @@ static void wayland_handle_message(int fd, state_t *state, char **msg,
     return;
   } else if (object_id == state->xdg_toplevel &&
              opcode == wayland_xdg_toplevel_event_close) {
-    printf("<- xdg_toplevel@%u.close\n",
-           state->xdg_toplevel);
-       exit(0);
-   }
+    printf("<- xdg_toplevel@%u.close\n", state->xdg_toplevel);
+    exit(0);
+  }
 
   fprintf(stderr, "object_id=%u opcode=%u msg_len=%lu\n", object_id, opcode,
           *msg_len);
