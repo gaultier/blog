@@ -26,6 +26,7 @@ uint16_t wayland_shm_pool_event_format = 0;
 uint16_t wayland_wl_buffer_event_release = 0;
 uint16_t wayland_xdg_wm_base_event_ping = 0;
 uint16_t wayland_xdg_toplevel_event_configure = 0;
+uint16_t wayland_xdg_toplevel_event_close = 1;
 uint16_t wayland_xdg_surface_event_configure = 0;
 
 typedef enum state_state_t state_state_t;
@@ -697,7 +698,12 @@ static void wayland_handle_message(int fd, state_t *state, char **msg,
     wayland_xdg_surface_ack_configure(fd, state, configure);
 
     return;
-  }
+  } else if (object_id == state->xdg_toplevel &&
+             opcode == wayland_xdg_toplevel_event_close) {
+    printf("<- xdg_toplevel@%u.close\n",
+           state->xdg_toplevel);
+       exit(0);
+   }
 
   fprintf(stderr, "object_id=%u opcode=%u msg_len=%lu\n", object_id, opcode,
           *msg_len);
