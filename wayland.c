@@ -604,7 +604,7 @@ static void wayland_handle_message(int fd, state_t *state, char **msg,
 
     uint32_t version = buf_read_u32(msg, msg_len);
 
-    printf("<- wl_registry: name=%u interface=%.*s version=%u\n", name,
+    printf("<- wl_registry@%u.global: name=%u interface=%.*s version=%u\n",state->wl_registry, name,
            interface_len, interface, version);
 
     assert(announced_size == sizeof(object_id) + sizeof(announced_size) +
@@ -628,32 +628,6 @@ static void wayland_handle_message(int fd, state_t *state, char **msg,
     if (strcmp(wl_compositor_interface, interface) == 0) {
       state->wl_compositor = wayland_wl_registry_bind(
           fd, state->wl_registry, name, interface, interface_len, version);
-
-      state->wl_surface = wayland_wl_compositor_create_surface(fd, state);
-      wayland_wl_surface_commit(fd, state);
-    }
-
-    if (state->xdg_wm_base != 0 && state->wl_surface != 0 &&
-        state->xdg_surface == 0 && state->xdg_toplevel == 0) {
-      state->xdg_surface = wayland_xdg_wm_base_get_xdg_surface(fd, state);
-      state->xdg_toplevel = wayland_xdg_surface_get_toplevel(fd, state);
-
-      state->wl_shm_pool = wayland_wl_shm_create_pool(fd, state);
-      state->wl_buffer = wayland_shm_pool_create_buffer(fd, state);
-
-      //      uint32_t *pixels = (uint32_t *)state->shm_pool_data;
-      //      for (int y = 0; y < state->h; ++y) {
-      //        for (int x = 0; x < state->w; ++x) {
-      //          if ((x + y / 8 * 8) % 16 < 8) {
-      //            pixels[y * state->w + x] = 0xFF666666;
-      //          } else {
-      //            pixels[y * state->w + x] = 0xFFEEEEEE;
-      //          }
-      //        }
-      //      }
-      // wayland_wl_surface_damage_buffer(fd, state);
-      // wayland_wl_surface_attach(fd, state);
-      //      wayland_wl_surface_commit(fd, state);
     }
 
     return;
@@ -751,5 +725,17 @@ int main() {
 
     while (msg_len > 0)
       wayland_handle_message(fd, &state, &msg, &msg_len);
+
+    if (state.wl_compositor != 0 && state.wl_shm != 0 &&
+        state.xdg_wm_base != 0 &&
+        state.wl_surface == 0) { // Bind phase complete, need to create surface.
+      state.wl_surface = wayland_wl_compositor_create_surface(fd, &state);
+      state.xdg_surface = wayland_xdg_wm_base_get_xdg_surface(fd, &state);
+      state.xdg_toplevel = wayland_xdg_surface_get_toplevel(fd, &state);
+      wayland_wl_surface_commit(fd, &state);
+
+      // state.wl_shm_pool = wayland_wl_shm_create_pool(fd, &state);
+      // state.wl_buffer = wayland_shm_pool_create_buffer(fd, &state);
+    }
   }
 }
