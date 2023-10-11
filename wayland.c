@@ -355,6 +355,7 @@ static uint32_t wayland_wl_shm_create_pool(int fd, state_t *state) {
   assert(roundup_4(msg_size) == msg_size);
 
   // Send the file descriptor as ancillary data.
+  // UNIX monstrosities ahead.
   char buf[CMSG_SPACE(sizeof(state->shm_fd))] = "";
 
   struct iovec io = {.iov_base = msg, .iov_len = msg_size};
@@ -657,7 +658,7 @@ static void wayland_handle_message(int fd, state_t *state, char **msg,
     uint32_t h = buf_read_u32(msg, msg_len);
     uint32_t len = buf_read_u32(msg, msg_len);
     char buf[256] = "";
-    assert(len <= 256);
+    assert(len <= sizeof(buf));
     buf_read_n(msg, msg_len, buf, len);
 
     printf("<- xdg_toplevel@%u.configure: w=%u h=%u states[%u]\n",
