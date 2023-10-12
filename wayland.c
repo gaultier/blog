@@ -346,7 +346,7 @@ static uint32_t wayland_wl_shm_create_pool(int fd, state_t *state) {
   assert(roundup_4(msg_size) == msg_size);
 
   // Send the file descriptor as ancillary data.
-  // UNIX monstrosities ahead.
+  // UNIX/Macros monstrosities ahead.
   char buf[CMSG_SPACE(sizeof(state->shm_fd))] = "";
 
   struct iovec io = {.iov_base = msg, .iov_len = msg_size};
