@@ -33,7 +33,6 @@ static const uint16_t wayland_xdg_toplevel_event_configure = 0;
 static const uint16_t wayland_xdg_toplevel_event_close = 1;
 static const uint16_t wayland_xdg_surface_event_configure = 0;
 static const uint32_t wayland_format_argb8888 = 0;
-static const uint32_t wayland_format_xrgb8888 = 1;
 static const uint32_t color_channels = 4;
 
 typedef enum state_state_t state_state_t;
