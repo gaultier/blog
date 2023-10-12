@@ -43,7 +43,7 @@ static const uint16_t wayland_wl_shm_pool_create_buffer_opcode = 0;
 static const uint16_t wayland_wl_surface_attach_opcode = 1;
 static const uint16_t wayland_xdg_surface_get_toplevel_opcode = 1;
 static const uint16_t wayland_wl_surface_commit_opcode = 6;
-static const uint32_t wayland_format_argb8888 = 0;
+static const uint32_t wayland_format_xrgb8888 = 1;
 static const uint32_t wayland_header_size = 8;
 static const uint32_t color_channels = 4;
 
@@ -439,7 +439,7 @@ static uint32_t wayland_wl_shm_pool_create_buffer(int fd, state_t *state) {
 
   buf_write_u32(msg, &msg_size, sizeof(msg), state->stride);
 
-  uint32_t format = 1;
+  uint32_t format = wayland_format_xrgb8888;
   buf_write_u32(msg, &msg_size, sizeof(msg), format);
 
   if ((int64_t)msg_size != send(fd, msg, msg_size, MSG_DONTWAIT))
