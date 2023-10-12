@@ -19,7 +19,7 @@ Here is what we are working towards:
 
 ![Result](wayland-screenshot-tiled.png)
 
-We display the Wayland logo with some transparency in its own window. It's not quite Visual Studio yet, I know, but it's a good fundation for more in future articles, perhaps.
+We display the Wayland logo with some transparency in its own window (we can see my mountain wallpaper in the background due to the transparency). It's not quite Visual Studio yet, I know, but it's a good fundation for more in future articles, perhaps.
 
 Why not in assembly again you ask? Well, the Wayland protocol has some peculiarities that necessitate the use of the C standard library to make it work reliably on different platforms (Linux, FreeBSD, etc): namely, sending a file descriptor over a UNIX socket. Maybe it could be done in assembly, but it would be much more tedious. Also, the Wayland protocol is completely asynchronous by nature, whereas the X11 protocol was more of a request-(maybe) response chatter, and as such, we have to keep track of some state in our program, and C makes it easier.
 
