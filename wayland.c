@@ -33,6 +33,7 @@ static const uint16_t wayland_xdg_toplevel_event_configure = 0;
 static const uint16_t wayland_xdg_toplevel_event_close = 1;
 static const uint16_t wayland_xdg_surface_event_configure = 0;
 static const uint32_t wayland_format_argb8888 = 0;
+static const uint32_t wayland_header_size = 8;
 static const uint32_t color_channels = 4;
 
 typedef enum state_state_t state_state_t;
@@ -167,9 +168,8 @@ static uint32_t wayland_wl_display_get_registry(int fd) {
   uint16_t display_get_registry_opcode = 1;
   buf_write_u16(msg, &msg_size, sizeof(msg), display_get_registry_opcode);
 
-  uint16_t msg_announced_size = sizeof(wayland_display_object_id) +
-                                sizeof(display_get_registry_opcode) +
-                                sizeof(uint16_t) + sizeof(wayland_current_id);
+  uint16_t msg_announced_size =
+      wayland_header_size + sizeof(wayland_current_id);
   assert(roundup_4(msg_announced_size) == msg_announced_size);
   buf_write_u16(msg, &msg_size, sizeof(msg), msg_announced_size);
 
@@ -197,8 +197,7 @@ static uint32_t wayland_wl_registry_bind(int fd, uint32_t registry,
   buf_write_u16(msg, &msg_size, sizeof(msg), display_bind_registry_opcode);
 
   uint16_t msg_announced_size =
-      sizeof(registry) + sizeof(display_bind_registry_opcode) +
-      sizeof(uint16_t) + sizeof(name) + sizeof(interface_len) +
+      wayland_header_size + sizeof(name) + sizeof(interface_len) +
       roundup_4(interface_len) + sizeof(version) + sizeof(wayland_current_id);
   assert(roundup_4(msg_announced_size) == msg_announced_size);
   buf_write_u16(msg, &msg_size, sizeof(msg), msg_announced_size);
@@ -231,8 +230,8 @@ static uint32_t wayland_wl_compositor_create_surface(int fd, state_t *state) {
   uint16_t opcode = 0;
   buf_write_u16(msg, &msg_size, sizeof(msg), opcode);
 
-  uint16_t msg_announced_size = sizeof(state->wl_compositor) + sizeof(opcode) +
-                                sizeof(uint16_t) + sizeof(wayland_current_id);
+  uint16_t msg_announced_size =
+      wayland_header_size + sizeof(wayland_current_id);
   assert(roundup_4(msg_announced_size) == msg_announced_size);
   buf_write_u16(msg, &msg_size, sizeof(msg), msg_announced_size);
 
@@ -280,8 +279,7 @@ static void wayland_xdg_wm_base_pong(int fd, state_t *state, uint32_t ping) {
   uint16_t opcode = 3;
   buf_write_u16(msg, &msg_size, sizeof(msg), opcode);
 
-  uint16_t msg_announced_size = sizeof(state->xdg_wm_base) + sizeof(opcode) +
-                                sizeof(uint16_t) + sizeof(ping);
+  uint16_t msg_announced_size = wayland_header_size + sizeof(ping);
   assert(roundup_4(msg_announced_size) == msg_announced_size);
   buf_write_u16(msg, &msg_size, sizeof(msg), msg_announced_size);
 
@@ -304,8 +302,7 @@ static void wayland_xdg_surface_ack_configure(int fd, state_t *state,
   uint16_t opcode = 4;
   buf_write_u16(msg, &msg_size, sizeof(msg), opcode);
 
-  uint16_t msg_announced_size = sizeof(state->xdg_surface) + sizeof(opcode) +
-                                sizeof(uint16_t) + sizeof(configure);
+  uint16_t msg_announced_size = wayland_header_size + sizeof(configure);
   assert(roundup_4(msg_announced_size) == msg_announced_size);
   buf_write_u16(msg, &msg_size, sizeof(msg), msg_announced_size);
 
@@ -330,9 +327,8 @@ static uint32_t wayland_wl_shm_create_pool(int fd, state_t *state) {
   uint16_t wl_shm_create_pool_opcode = 0;
   buf_write_u16(msg, &msg_size, sizeof(msg), wl_shm_create_pool_opcode);
 
-  uint16_t msg_announced_size = sizeof(state->wl_shm) +
-                                sizeof(wl_shm_create_pool_opcode) +
-                                sizeof(uint16_t) + sizeof(wayland_current_id) +
+  uint16_t msg_announced_size = wayland_header_size +
+                                sizeof(wayland_current_id) +
                                 sizeof(state->shm_pool_size);
 
   assert(roundup_4(msg_announced_size) == msg_announced_size);
@@ -385,8 +381,8 @@ static uint32_t wayland_xdg_wm_base_get_xdg_surface(int fd, state_t *state) {
   uint16_t opcode = 2;
   buf_write_u16(msg, &msg_size, sizeof(msg), opcode);
 
-  uint16_t msg_announced_size = sizeof(state->xdg_wm_base) + sizeof(opcode) +
-                                sizeof(uint16_t) + sizeof(wayland_current_id) +
+  uint16_t msg_announced_size = wayland_header_size +
+                                sizeof(wayland_current_id) +
                                 sizeof(state->wl_surface);
   assert(roundup_4(msg_announced_size) == msg_announced_size);
   buf_write_u16(msg, &msg_size, sizeof(msg), msg_announced_size);
@@ -415,9 +411,8 @@ static uint32_t wayland_shm_pool_create_buffer(int fd, state_t *state) {
   uint16_t opcode = 0;
   buf_write_u16(msg, &msg_size, sizeof(msg), opcode);
 
-  uint16_t msg_announced_size = sizeof(state->wl_shm_pool) + sizeof(opcode) +
-                                sizeof(uint16_t) + sizeof(wayland_current_id) +
-                                sizeof(uint32_t) * 5;
+  uint16_t msg_announced_size =
+      wayland_header_size + sizeof(wayland_current_id) + sizeof(uint32_t) * 5;
   assert(roundup_4(msg_announced_size) == msg_announced_size);
   buf_write_u16(msg, &msg_size, sizeof(msg), msg_announced_size);
 
@@ -456,9 +451,8 @@ static void wayland_wl_surface_attach(int fd, state_t *state) {
   uint16_t opcode = 1;
   buf_write_u16(msg, &msg_size, sizeof(msg), opcode);
 
-  uint16_t msg_announced_size = sizeof(state->wl_surface) + sizeof(opcode) +
-                                sizeof(uint16_t) + sizeof(state->wl_buffer) +
-                                sizeof(uint32_t) * 2;
+  uint16_t msg_announced_size =
+      wayland_header_size + sizeof(state->wl_buffer) + sizeof(uint32_t) * 2;
   assert(roundup_4(msg_announced_size) == msg_announced_size);
   buf_write_u16(msg, &msg_size, sizeof(msg), msg_announced_size);
 
@@ -485,9 +479,8 @@ static uint32_t wayland_xdg_surface_get_toplevel(int fd, state_t *state) {
   uint16_t xdg_surface_get_toplevel_opcode = 1;
   buf_write_u16(msg, &msg_size, sizeof(msg), xdg_surface_get_toplevel_opcode);
 
-  uint16_t msg_announced_size = sizeof(state->xdg_surface) +
-                                sizeof(xdg_surface_get_toplevel_opcode) +
-                                sizeof(uint16_t) + sizeof(wayland_current_id);
+  uint16_t msg_announced_size =
+      wayland_header_size + sizeof(wayland_current_id);
   assert(roundup_4(msg_announced_size) == msg_announced_size);
   buf_write_u16(msg, &msg_size, sizeof(msg), msg_announced_size);
 
@@ -513,8 +506,7 @@ static void wayland_wl_surface_commit(int fd, state_t *state) {
   uint16_t opcode = 6;
   buf_write_u16(msg, &msg_size, sizeof(msg), opcode);
 
-  uint16_t msg_announced_size =
-      sizeof(state->wl_surface) + sizeof(opcode) + sizeof(uint16_t);
+  uint16_t msg_announced_size = wayland_header_size;
   assert(roundup_4(msg_announced_size) == msg_announced_size);
   buf_write_u16(msg, &msg_size, sizeof(msg), msg_announced_size);
 
