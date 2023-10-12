@@ -146,3 +146,123 @@ static int wayland_display_connect() {
   return fd;
 }
 ```
+
+
+In Wayland, there is no connection setup to do, such as sending some special messages, so there is nothing more to do.
+
+## Creating a registry
+
+Now, to do anything useful, we want to create a registry: it is an object that allows us to query at runtime the capabilities of the compositor.
+
+In Wayland, to create an object, we simply send the right message with an id of our own. Ids should be unique so we simply increment a number each time we want to create a new resource. After this is done, we will remember this number to be able to refer to it in later messages:
+
+This is coincidentally our first message we send, so let's briefly go over the structure of a Wayland message. It is basically a RPC mechanism. All bytes are in the host endianness so there is nothing special to do about it:
+
+- 4 bytes containing the id of the resource ('object') we want to call a method on
+- 2 bytes containing the opcode of the method we want to call
+- 2 bytes containing the size of the message
+- Depending on the method, arguments in their wire format follow
+
+The object id is `1`, which is the singleton `wl_display` that already exists.
+The method is: `get_registry(u32 new_id)` whose opcode we listed before.
+The sole argument takes 4 bytes and is this incremental number we keep track of client-side.
+It does not necessarily have to be incremental, but that's what `libwayland` does and also it's the easiest. 
+
+For convenience and efficiency, we craft the message on the stack and do not allocate dynamic memory.
+
+
+We first introduce a few utility functions to read and write parts of messages:
+
+```c
+static void buf_write_u32(char *buf, uint64_t *buf_size, uint64_t buf_cap,
+                          uint32_t x) {
+  assert(*buf_size + sizeof(x) <= buf_cap);
+  assert(((size_t)buf + *buf_size) % sizeof(x) == 0);
+
+  *(uint32_t *)(buf + *buf_size) = x;
+  *buf_size += sizeof(x);
+}
+
+static void buf_write_u16(char *buf, uint64_t *buf_size, uint64_t buf_cap,
+                          uint16_t x) {
+  assert(*buf_size + sizeof(x) <= buf_cap);
+  assert(((size_t)buf + *buf_size) % sizeof(x) == 0);
+
+  *(uint16_t *)(buf + *buf_size) = x;
+  *buf_size += sizeof(x);
+}
+
+static void buf_write_string(char *buf, uint64_t *buf_size, uint64_t buf_cap,
+                             char *src, uint32_t src_len) {
+  assert(*buf_size + src_len <= buf_cap);
+
+  buf_write_u32(buf, buf_size, buf_cap, src_len);
+  memcpy(buf + *buf_size, src, roundup_4(src_len));
+  *buf_size += roundup_4(src_len);
+}
+
+static uint32_t buf_read_u32(char **buf, uint64_t *buf_size) {
+  assert(*buf_size >= sizeof(uint32_t));
+  assert((size_t)*buf % sizeof(uint32_t) == 0);
+
+  uint32_t res = *(uint32_t *)(*buf);
+  *buf += sizeof(res);
+  *buf_size -= sizeof(res);
+
+  return res;
+}
+
+static uint16_t buf_read_u16(char **buf, uint64_t *buf_size) {
+  assert(*buf_size >= sizeof(uint16_t));
+  assert((size_t)*buf % sizeof(uint16_t) == 0);
+
+  uint16_t res = *(uint16_t *)(*buf);
+  *buf += sizeof(res);
+  *buf_size -= sizeof(res);
+
+  return res;
+}
+
+static void buf_read_n(char **buf, uint64_t *buf_size, char *dst, uint64_t n) {
+  assert(*buf_size >= n);
+
+  memcpy(dst, *buf, n);
+
+  *buf += n;
+  *buf_size -= n;
+}
+```
+
+And we finally can send our first message:
+
+```c
+static uint32_t wayland_wl_display_get_registry(int fd) {
+  uint64_t msg_size = 0;
+  char msg[128] = "";
+  buf_write_u32(msg, &msg_size, sizeof(msg), wayland_display_object_id);
+
+  buf_write_u16(msg, &msg_size, sizeof(msg),
+                wayland_wl_display_get_registry_opcode);
+
+  uint16_t msg_announced_size =
+      wayland_header_size + sizeof(wayland_current_id);
+  assert(roundup_4(msg_announced_size) == msg_announced_size);
+  buf_write_u16(msg, &msg_size, sizeof(msg), msg_announced_size);
+
+  wayland_current_id++;
+  buf_write_u32(msg, &msg_size, sizeof(msg), wayland_current_id);
+
+  if ((int64_t)msg_size != send(fd, msg, msg_size, MSG_DONTWAIT))
+    exit(errno);
+
+  printf("-> wl_display@%u.get_registry: wl_registry=%u\n",
+         wayland_display_object_id, wayland_current_id);
+
+  return wayland_current_id;
+}
+```
+
+
+And by calling it, we have created our very first Wayland resource!
+
+
