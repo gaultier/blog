@@ -650,7 +650,6 @@ static void wayland_handle_message(int fd, state_t *state, char **msg,
 int main() {
   struct timeval tv = {0};
   assert(gettimeofday(&tv, NULL) != -1);
-
   srand(tv.tv_sec * 1000 * 1000 + tv.tv_usec);
 
   int fd = wayland_display_connect();
@@ -698,6 +697,7 @@ int main() {
     }
 
     if (state.state == STATE_SURFACE_ACKED_CONFIGURE) {
+      // Render a frame.
       assert(state.wl_surface != 0);
       assert(state.xdg_surface != 0);
       assert(state.xdg_toplevel != 0);
@@ -706,6 +706,9 @@ int main() {
         state.wl_shm_pool = wayland_wl_shm_create_pool(fd, &state);
       if (state.wl_buffer == 0)
         state.wl_buffer = wayland_shm_pool_create_buffer(fd, &state);
+
+      assert(state.shm_pool_data != 0);
+      assert(state.shm_pool_size != 0);
 
       uint32_t *pixels = (uint32_t *)state.shm_pool_data;
       for (uint32_t i = 0; i < state.w * state.h; i++) {
