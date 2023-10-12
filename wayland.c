@@ -439,7 +439,7 @@ static uint32_t wayland_wl_shm_pool_create_buffer(int fd, state_t *state) {
 
   buf_write_u32(msg, &msg_size, sizeof(msg), state->stride);
 
-  uint32_t format = wayland_format_argb8888;
+  uint32_t format = 1;
   buf_write_u32(msg, &msg_size, sizeof(msg), format);
 
   if ((int64_t)msg_size != send(fd, msg, msg_size, MSG_DONTWAIT))

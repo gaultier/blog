@@ -17,9 +17,9 @@ window.addEventListener("load", (event) => {
 Here is what we are working towards:
 
 
-![Result](wayland-screenshot-tiled.png)
+![Result](wayland-screenshot-tiled1.png)
 
-We display the Wayland logo with some transparency in its own window (we can see my mountain wallpaper in the background due to the transparency). It's not quite Visual Studio yet, I know, but it's a good fundation for more in future articles, perhaps.
+We display the Wayland logo in its own window (we can see the mountain wallpaper in the background since we use a fixed size buffer). It's not quite Visual Studio yet, I know, but it's a good fundation for more in future articles, perhaps.
 
 Why not in assembly again you ask? Well, the Wayland protocol has some peculiarities that necessitate the use of some C standard library macros to make it work reliably on different platforms (Linux, FreeBSD, etc): namely, sending a file descriptor over a UNIX socket. Maybe it could be done in assembly, but it would be much more tedious. Also, the Wayland protocol is completely asynchronous by nature, whereas the X11 protocol was more of a request-(maybe) response chatter, and as such, we have to keep track of some state in our program, and C makes it easier.
 
@@ -36,12 +36,13 @@ Not much: We'll use C99 so any C compiler of the last 20 years will do. Having a
 
 Note that I have only run it on Linux; it should work (meaning: compile and run) on other platforms running Wayland such as FreeBSD, it's just that I have not tried.
 
+*Note that the code in this article has not been written in the most robust way, it simply exits when things are not how they should be for example. So, not production ready, but still a good learnign resource and a good fundation for more.*
 
 ## Wayland basics
 
 Wayland is a protocol specification for GUI applications (and more), in short. We will write the client side, while the server side is a compositor which understands our protocol. If you have a Wayland desktop right now, a Wayland compositor is already running so there is nothing to do.
 
-Much like X11, a client opens a UNIX socket, sends some commands in a specific format (different from the X11 protocol), to open a window and the server can also send messages to notify the client to resize the window, that there is some keyboard input, etc. It's important to note that contrary to X11, in Wayland, the client only has access to its own window.
+Much like X11, a client opens a UNIX socket, sends some commands in a specific format (which are different from the X11 ones), to open a window and the server can also send messages to notify the client to resize the window, that there is some keyboard input, etc. It's important to note that contrary to X11, in Wayland, the client only has access to its own window.
 
 It is also interesting to note that Wayland is quite a limited protocol and any GUI will have to use extension protocols.
 
