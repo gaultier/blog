@@ -455,7 +455,7 @@ static void wayland_handle_message(int fd, state_t *state, char **msg,
 
 ### Reacting to events: binding interfaces
 
-At this point we have sent one message to the compositor: `wl_display@1.get_registry()` thanks to `wayland_wl_display_get_registry`.
+At this point we have sent one message to the compositor: `wl_display@1.get_registry()` thanks to our C function `wayland_wl_display_get_registry`.
 The compositor responds with a series of events, listing the available global objects, such as shared memory support, extension protocols, etc.
 
 Each event contains the interface name, which is a string. Now, in the Wayland protocol, the string length gets padded to a multiple of four, so we have read those padding bytes as well.
