@@ -55,7 +55,7 @@ Now, we will not do any of this: we will instead write our own serialization and
 There are many advantages:
 - No need to link to external libraries: no build system complexities, no dynamic linking issues, and so on.
 - We do not have to use the callback system that `libwayland` requires.
-- We can use the polling mechanism we wish to listen to incoming messages: `poll`, `select`, `epoll`, `io_uring`, `kqueue` on some systems, etc. Here, we will use `poll` for simplicity but the world is your oyster.
+- We can use the polling mechanism we wish to listen to incoming messages: blocking, `poll`, `select`, `epoll`, `io_uring`, `kqueue` on some systems, etc. Here, we will use blocking calls for simplicity but the world is your oyster.
 - Easy troubleshooting: 100% of the code is our own.
 - No XML
 - The protocols we will use are stable so the numeric values on the wire should not change underneath us, but in the event they do, we simply have to fix them in our code and compile again.
@@ -266,3 +266,101 @@ static uint32_t wayland_wl_display_get_registry(int fd) {
 And by calling it, we have created our very first Wayland resource!
 
 
+## Shared memory: the frame buffer
+
+To avoid drawing  a frame in our application, and having to send all of the bytes over the socket to the compositor, there is smarter approach: the buffer should be shared between the two processes, so that no copying is required.
+
+We need to synchronize the access between the two so that presenting the frame does not happen while we are still drawing it, and Wayland has that built-in.
+
+First, we need to create this buffer. We are going to make it easier for us by using a fixed size. Wayland is going to send us 'resize' events, which we will acknowledge but without changing a thing. This is done here just to simplify a bit the article, obviously in a real application, you would resize the buffer.
+
+First, we introduce a struct that will hold all of the client-side state so that we remember which resources have created so far. We also need a super simple state machine for later to track whether the surface (i.e. the 'frame' data) should be drawn to, as mentioned:
+
+```c
+typedef enum state_state_t state_state_t;
+enum state_state_t {
+  STATE_NONE,
+  STATE_SURFACE_ACKED_CONFIGURE,
+  STATE_SURFACE_ATTACHED,
+};
+
+typedef struct state_t state_t;
+struct state_t {
+  uint32_t wl_registry;
+  uint32_t wl_shm;
+  uint32_t wl_shm_pool;
+  uint32_t wl_buffer;
+  uint32_t xdg_wm_base;
+  uint32_t xdg_surface;
+  uint32_t wl_compositor;
+  uint32_t wl_surface;
+  uint32_t xdg_toplevel;
+  uint32_t stride;
+  uint32_t w;
+  uint32_t h;
+  uint32_t shm_pool_size;
+  int shm_fd;
+  uint8_t *shm_pool_data;
+
+  state_state_t state;
+};
+```
+
+We use it so in `main()`:
+
+
+```c
+  state_t state = {
+      .wl_registry = wayland_wl_display_get_registry(fd),
+      .w = 117,
+      .h = 150,
+      .stride = 117 * color_channels,
+  };
+
+  // Single buffering.
+  state.shm_pool_size = state.h * state.stride;
+```
+
+The window is a rectangle, of width `w` and height `h`. We will use the color format `xrgb` which is 4 color channels, each taking one bytes, so 4 bytes per pixel. This is one of the two formats that is guaranteed to be supported by the compositor per the specification. The stride counts how many bytes is a horizontal row: `w * 4`.
+
+And so, our buffer size for the frame is : `w * h * 4`. We use single buffering again for simplicity and also because we want to display a static image. 
+
+We could choose to use double or even triple buffering, thus respectively doubling or tripling the buffer size. The compositor is none the wiser - we would simply keep a counter client-side that increments each time we render a frame (and wraps around back to 0 when reaching the number of buffers), and we would draw in the right location of this big buffer (i.e. at an offset). All the Wayland calls would still remain the same.
+
+Alright, time to really create this buffer, and not only keep track of its size:
+
+```c
+static void create_shared_memory_file(uint64_t size, state_t *state) {
+  char name[255] = "/";
+  for (uint64_t i = 1; i < cstring_len(name); i++) {
+    name[i] = ((double)rand()) / (double)RAND_MAX * 26 + 'a';
+  }
+
+  int fd = shm_open(name, O_RDWR | O_EXCL | O_CREAT, 0600);
+  if (fd == -1)
+    exit(errno);
+
+  if (ftruncate(fd, size) == -1)
+    exit(errno);
+
+  state->shm_pool_data =
+      mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+  assert(state->shm_pool_data != NULL);
+  state->shm_fd = fd;
+}
+```
+
+We use `shm_open(3)` to create a POSIX shared memory object, so that we later can send the corresponding file descriptor to the compositor so that the latter also has access to it.
+
+We alternatively could use `memfd_create(2)` which spares us from crafting a unique path but this is Linux specific.
+
+We craft a unique, random path to avoid clashes with other running applications.
+
+We then resize with `ftruncate` and memory map this file with `mmap(2)`, effectively allocating memory, with the `MAP_SHARED` flag to allow the compositor to also read this memory.
+
+Alright, we now have some memory to draw our frame to, but the compositor does not know of it yet. Let's tackle that now.
+
+## Chatting with the compositor
+
+
+We are going to exchange messages back and forth over the socket with the compositor. Let's use the venerable `poll(2)`.

@@ -3,7 +3,6 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <inttypes.h>
-#include <poll.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -190,7 +189,7 @@ static uint32_t wayland_wl_display_get_registry(int fd) {
   wayland_current_id++;
   buf_write_u32(msg, &msg_size, sizeof(msg), wayland_current_id);
 
-  if ((int64_t)msg_size != send(fd, msg, msg_size, MSG_DONTWAIT))
+  if ((int64_t)msg_size != send(fd, msg, msg_size, 0))
     exit(errno);
 
   printf("-> wl_display@%u.get_registry: wl_registry=%u\n",
@@ -224,7 +223,7 @@ static uint32_t wayland_wl_registry_bind(int fd, uint32_t registry,
 
   assert(msg_size == roundup_4(msg_size));
 
-  if ((int64_t)msg_size != send(fd, msg, msg_size, MSG_DONTWAIT))
+  if ((int64_t)msg_size != send(fd, msg, msg_size, 0))
     exit(errno);
 
   printf("-> wl_registry@%u.bind: name=%u interface=%.*s version=%u\n",
@@ -251,7 +250,7 @@ static uint32_t wayland_wl_compositor_create_surface(int fd, state_t *state) {
   wayland_current_id++;
   buf_write_u32(msg, &msg_size, sizeof(msg), wayland_current_id);
 
-  if ((int64_t)msg_size != send(fd, msg, msg_size, MSG_DONTWAIT))
+  if ((int64_t)msg_size != send(fd, msg, msg_size, 0))
     exit(errno);
 
   printf("-> wl_compositor@%u.create_surface: wl_surface=%u\n",
@@ -269,8 +268,6 @@ static void create_shared_memory_file(uint64_t size, state_t *state) {
   int fd = shm_open(name, O_RDWR | O_EXCL | O_CREAT, 0600);
   if (fd == -1)
     exit(errno);
-
-  shm_unlink(name);
 
   if (ftruncate(fd, size) == -1)
     exit(errno);
@@ -297,7 +294,7 @@ static void wayland_xdg_wm_base_pong(int fd, state_t *state, uint32_t ping) {
 
   buf_write_u32(msg, &msg_size, sizeof(msg), ping);
 
-  if ((int64_t)msg_size != send(fd, msg, msg_size, MSG_DONTWAIT))
+  if ((int64_t)msg_size != send(fd, msg, msg_size, 0))
     exit(errno);
 
   printf("-> xdg_wm_base@%u.pong: ping=%u\n", state->xdg_wm_base, ping);
@@ -320,7 +317,7 @@ static void wayland_xdg_surface_ack_configure(int fd, state_t *state,
 
   buf_write_u32(msg, &msg_size, sizeof(msg), configure);
 
-  if ((int64_t)msg_size != send(fd, msg, msg_size, MSG_DONTWAIT))
+  if ((int64_t)msg_size != send(fd, msg, msg_size, 0))
     exit(errno);
 
   printf("-> xdg_surface@%u.ack_configure: configure=%u\n", state->xdg_surface,
@@ -372,7 +369,7 @@ static uint32_t wayland_wl_shm_create_pool(int fd, state_t *state) {
   *((int *)CMSG_DATA(cmsg)) = state->shm_fd;
   socket_msg.msg_controllen = CMSG_SPACE(sizeof(state->shm_fd));
 
-  if (sendmsg(fd, &socket_msg, MSG_DONTWAIT) == -1)
+  if (sendmsg(fd, &socket_msg, 0) == -1)
     exit(errno);
 
   printf("-> wl_shm@%u.create_pool: wl_shm_pool=%u\n", state->wl_shm,
@@ -403,7 +400,7 @@ static uint32_t wayland_xdg_wm_base_get_xdg_surface(int fd, state_t *state) {
 
   buf_write_u32(msg, &msg_size, sizeof(msg), state->wl_surface);
 
-  if ((int64_t)msg_size != send(fd, msg, msg_size, MSG_DONTWAIT))
+  if ((int64_t)msg_size != send(fd, msg, msg_size, 0))
     exit(errno);
 
   printf("-> xdg_wm_base@%u.get_xdg_surface: xdg_surface=%u wl_surface=%u\n",
@@ -442,7 +439,7 @@ static uint32_t wayland_wl_shm_pool_create_buffer(int fd, state_t *state) {
   uint32_t format = wayland_format_xrgb8888;
   buf_write_u32(msg, &msg_size, sizeof(msg), format);
 
-  if ((int64_t)msg_size != send(fd, msg, msg_size, MSG_DONTWAIT))
+  if ((int64_t)msg_size != send(fd, msg, msg_size, 0))
     exit(errno);
 
   printf("-> wl_shm_pool@%u.create_buffer: wl_buffer=%u\n", state->wl_shm_pool,
@@ -472,7 +469,7 @@ static void wayland_wl_surface_attach(int fd, state_t *state) {
   buf_write_u32(msg, &msg_size, sizeof(msg), x);
   buf_write_u32(msg, &msg_size, sizeof(msg), y);
 
-  if ((int64_t)msg_size != send(fd, msg, msg_size, MSG_DONTWAIT))
+  if ((int64_t)msg_size != send(fd, msg, msg_size, 0))
     exit(errno);
 
   printf("-> wl_surface@%u.attach: wl_buffer=%u\n", state->wl_surface,
@@ -497,7 +494,7 @@ static uint32_t wayland_xdg_surface_get_toplevel(int fd, state_t *state) {
   wayland_current_id++;
   buf_write_u32(msg, &msg_size, sizeof(msg), wayland_current_id);
 
-  if ((int64_t)msg_size != send(fd, msg, msg_size, MSG_DONTWAIT))
+  if ((int64_t)msg_size != send(fd, msg, msg_size, 0))
     exit(errno);
 
   printf("-> xdg_surface@%u.get_toplevel: xdg_toplevel=%u\n",
@@ -519,7 +516,7 @@ static void wayland_wl_surface_commit(int fd, state_t *state) {
   assert(roundup_4(msg_announced_size) == msg_announced_size);
   buf_write_u16(msg, &msg_size, sizeof(msg), msg_announced_size);
 
-  if ((int64_t)msg_size != send(fd, msg, msg_size, MSG_DONTWAIT))
+  if ((int64_t)msg_size != send(fd, msg, msg_size, 0))
     exit(errno);
 
   printf("-> wl_surface@%u.commit: \n", state->wl_surface);
@@ -667,16 +664,8 @@ int main() {
   create_shared_memory_file(state.shm_pool_size, &state);
 
   while (1) {
-    struct pollfd poll_fd = {.fd = fd, .events = POLLIN};
-    int res = poll(&poll_fd, 1, -1);
-    if (res == -1)
-      exit(errno);
-
-    assert(res == 1);
-    assert(poll_fd.revents & POLLIN);
-
     char read_buf[4096] = "";
-    int64_t read_bytes = recv(fd, read_buf, sizeof(read_buf), MSG_DONTWAIT);
+    int64_t read_bytes = recv(fd, read_buf, sizeof(read_buf), 0);
     if (read_bytes == -1)
       exit(errno);
 
