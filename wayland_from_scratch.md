@@ -84,6 +84,7 @@ static const uint16_t wayland_wl_shm_pool_create_buffer_opcode = 0;
 static const uint16_t wayland_wl_surface_attach_opcode = 1;
 static const uint16_t wayland_xdg_surface_get_toplevel_opcode = 1;
 static const uint16_t wayland_wl_surface_commit_opcode = 6;
+static const uint16_t wayland_wl_display_error_event = 0;
 static const uint32_t wayland_format_xrgb8888 = 1;
 static const uint32_t wayland_header_size = 8;
 static const uint32_t color_channels = 4;
@@ -102,9 +103,13 @@ To craft the socket path, we follow these simple steps:
 - Otherwise, attempt to connect to `$XDG_RUNTIME_DIR/wayland-0`
 - Otherwise, fail
 
-Here goes:
+Here goes, along with two utility macros we'll use everywhere:
 
 ```c
+#define cstring_len(s) (sizeof(s) - 1)
+
+#define roundup_4(n) (((n) + 3) & -4)
+
 static int wayland_display_connect() {
   char *xdg_runtime_dir = getenv("XDG_RUNTIME_DIR");
   if (xdg_runtime_dir == NULL)
@@ -420,3 +425,69 @@ static void wayland_handle_message(int fd, state_t *state, char **msg,
   // Following: Lots of `if (opcode == ...) {... } else if (opcode = ...) { ... } [...]`
 }
 ```
+
+
+Remember, at that point we have sent one message to the compositor: `wl_display@1.get_registry()` thanks to `wayland_wl_display_get_registry`.
+The compositor responds with a series of events, listing the available global objects, such as shared memory support, extension protocols, etc.
+
+Each event contains the interface name, which is a string. Now, in the Wayland protocol, the string length gets padded to a multiple of four, so we have read those padding bytes as well.
+
+
+If we see a global object that we are interested in, we create one of this type, and record the new id in our `state` structure for later use. While we're at it, we also handle error events. If the compositor does not like our messages, it will complain with some useful error messages in there:
+
+```c
+  if (object_id == state->wl_registry &&
+      opcode == wayland_wl_registry_event_global) {
+    uint32_t name = buf_read_u32(msg, msg_len);
+
+    uint32_t interface_len = buf_read_u32(msg, msg_len);
+    uint32_t padded_interface_len = roundup_4(interface_len);
+
+    char interface[512] = "";
+    assert(padded_interface_len <= cstring_len(interface));
+
+    buf_read_n(msg, msg_len, interface, padded_interface_len);
+    assert(interface[interface_len] == 0);
+
+    uint32_t version = buf_read_u32(msg, msg_len);
+
+    printf("<- wl_registry@%u.global: name=%u interface=%.*s version=%u\n",
+           state->wl_registry, name, interface_len, interface, version);
+
+    assert(announced_size == sizeof(object_id) + sizeof(announced_size) +
+                                 sizeof(opcode) + sizeof(name) +
+                                 sizeof(interface_len) + padded_interface_len +
+                                 sizeof(version));
+
+    char wl_shm_interface[] = "wl_shm";
+    if (strcmp(wl_shm_interface, interface) == 0) {
+      state->wl_shm = wayland_wl_registry_bind(
+          fd, state->wl_registry, name, interface, interface_len, version);
+    }
+
+    char xdg_wm_base_interface[] = "xdg_wm_base";
+    if (strcmp(xdg_wm_base_interface, interface) == 0) {
+      state->xdg_wm_base = wayland_wl_registry_bind(
+          fd, state->wl_registry, name, interface, interface_len, version);
+    }
+
+    char wl_compositor_interface[] = "wl_compositor";
+    if (strcmp(wl_compositor_interface, interface) == 0) {
+      state->wl_compositor = wayland_wl_registry_bind(
+          fd, state->wl_registry, name, interface, interface_len, version);
+    }
+
+    return;
+  } else if (object_id == wayland_display_object_id && opcode == wayland_wl_display_error_event) {
+    uint32_t target_object_id = buf_read_u32(msg, msg_len);
+    uint32_t code = buf_read_u32(msg, msg_len);
+    char error[512] = "";
+    uint32_t error_len = buf_read_u32(msg, msg_len);
+    buf_read_n(msg, msg_len, error, roundup_4(error_len));
+
+    fprintf(stderr, "fatal error: target_object_id=%u code=%u error=%s\n",
+            target_object_id, code, error);
+    exit(EINVAL);
+  }
+```
+

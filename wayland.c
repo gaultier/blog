@@ -42,6 +42,7 @@ static const uint16_t wayland_wl_shm_pool_create_buffer_opcode = 0;
 static const uint16_t wayland_wl_surface_attach_opcode = 1;
 static const uint16_t wayland_xdg_surface_get_toplevel_opcode = 1;
 static const uint16_t wayland_wl_surface_commit_opcode = 6;
+static const uint16_t wayland_wl_display_error_event=0;
 static const uint32_t wayland_format_xrgb8888 = 1;
 static const uint32_t wayland_header_size = 8;
 static const uint32_t color_channels = 4;
@@ -582,7 +583,7 @@ static void wayland_handle_message(int fd, state_t *state, char **msg,
     }
 
     return;
-  } else if (object_id == wayland_display_object_id && opcode == 0) {
+  } else if (object_id == wayland_display_object_id && opcode == wayland_wl_display_error_event) {
     uint32_t target_object_id = buf_read_u32(msg, msg_len);
     uint32_t code = buf_read_u32(msg, msg_len);
     char error[512] = "";
