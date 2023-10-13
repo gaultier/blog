@@ -81,7 +81,7 @@ There are many advantages:
 - We can use the I/O mechanism we wish to listen to incoming messages: blocking, `poll`, `select`, `epoll`, `io_uring`, `kqueue` on some systems, etc. Here, we will use blocking calls for simplicity but the world is your oyster.
 - Easy troubleshooting: 100% of the code is our own.
 - No XML
-- The protocols we will use are stable so the numeric values on the wire should not change underneath us, but in the event they do, we simply have to fix them in our code and compile again.
+- The protocols we will use are stable so the numeric values on the wire should not change underneath us, but in the unlikely event they do, we simply have to fix them in our code and compile again.
 
 
 So at this point you might be thinking: this is going to be so much work! Well, not really. Here are **all** of the Wayland protocol numeric values we will need, including the extension protocols:
