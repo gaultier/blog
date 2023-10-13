@@ -563,21 +563,23 @@ if (object_id == state->xdg_surface &&
   } 
 ```
 
-### Rendering a frame
+### Rendering a frame: the red rectangle
 
 Once the configure/ack configure step has been completed, we can render a frame.
 
 To do so, we need to create two final entities: a shared memory pool (`wl_shm_pool`) and a `wl_buffer` if they do not exist yet.
 
-Finally, we fiddle with the pixel data anyway we want, remembering the color format we picked (XRGB), attach the buffer to the surface, and commit the surface.
+Finally, we fiddle with the pixel data anyway we want, remembering the color format we picked (XRGB8888), attach the buffer to the surface, and commit the surface.
 
 This acts as synchronization mechanism between the client and the compositor to avoid presenting a half-rendered frame. To sum up:
 
 1. The `ack_configure` event signals us that we can start rendering the frame
 1. We render the frame client-side by setting the pixel data to whatever we want
 1. We send `attach` + `commit` messages to notify the compositor that the frame is ready to be presented
+1. We advance our state machine to avoid writing to the frame data while the compositor is presenting it
 
 
+So let's show a red rectangle as a warm-up. The alpha component is completely ignored as far as I can tell in this color format:
 
 ```c
     if (state.state == STATE_SURFACE_ACKED_CONFIGURE) {
@@ -596,11 +598,10 @@ This acts as synchronization mechanism between the client and the compositor to 
 
       uint32_t *pixels = (uint32_t *)state.shm_pool_data;
       for (uint32_t i = 0; i < state.w * state.h; i++) {
-        uint8_t a = 0;
-        uint8_t r = wayland_logo[i * 3 + 0];
-        uint8_t g = wayland_logo[i * 3 + 1];
-        uint8_t b = wayland_logo[i * 3 + 2];
-        pixels[i] = (a << 24) | (r << 16) | (g << 8) | b;
+        uint8_t r = 0xff;
+        uint8_t g = 0;
+        uint8_t b = 0;
+        pixels[i] = (r << 16) | (g << 8) | b;
       }
       wayland_wl_surface_attach(fd, &state);
       wayland_wl_surface_commit(fd, &state);
@@ -608,4 +609,34 @@ This acts as synchronization mechanism between the client and the compositor to 
       state.state = STATE_SURFACE_ATTACHED;
     }
 
+```
+
+### Rendering a frame: The Wayland logo
+
+Let's render something more interesting. We download the [Wayland logo](https://wayland.freedesktop.org/wayland.png), but we do not want to have to deal with a complicated format like PNG (because we then have to uncompress the image data with `zlib` or similar).
+
+We thus convert it offline to a simpler image format, PPM6, and then embed the raw pixel data in our code as an byte array, skipping over the first 15 bytes which are metadata:
+
+```shell
+$ file wayland.png
+wayland.png: PNG image data, 117 x 150, 8-bit/color RGBA, non-interlaced
+$ convert wayland.png wayland.ppm
+$ file wayland.ppm
+wayland.ppm: Netpbm image data, size = 117 x 150, rawbits, pixmap
+$ xxd -s +15 -i wayland.ppm  > wayland-logo.h
+```
+
+The image is in the `RGB` format (3 bytes per pixel), which we have to convert to the `XRGB` format (4 bytes per pixel). Our frame rendering loop becomes:
+
+```c
+#include "wayland-logo.h"
+
+[...]
+
+      for (uint32_t i = 0; i < state.w * state.h; i++) {
+        uint8_t r = wayland_logo[i * 3 + 0];
+        uint8_t g = wayland_logo[i * 3 + 1];
+        uint8_t b = wayland_logo[i * 3 + 2];
+        pixels[i] = (r << 16) | (g << 8) | b;
+      }
 ```

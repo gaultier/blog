@@ -700,11 +700,10 @@ int main() {
 
       uint32_t *pixels = (uint32_t *)state.shm_pool_data;
       for (uint32_t i = 0; i < state.w * state.h; i++) {
-        uint8_t a = 0;
         uint8_t r = wayland_logo[i * 3 + 0];
         uint8_t g = wayland_logo[i * 3 + 1];
         uint8_t b = wayland_logo[i * 3 + 2];
-        pixels[i] = (a << 24) | (r << 16) | (g << 8) | b;
+        pixels[i] = (r << 16) | (g << 8) | b;
       }
       wayland_wl_surface_attach(fd, &state);
       wayland_wl_surface_commit(fd, &state);
