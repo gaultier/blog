@@ -29,6 +29,28 @@ Now, if you want to follow along and translate the C snippets into assembly, go 
 > If you spot an error, please open a [Github issue](https://github.com/gaultier/blog)!
 
 **Table of Contents**
+-   [Learn Wayland by writing a GUI from
+    scratch](#learn-wayland-by-writing-a-gui-from-scratch)
+    -   [What do we need?](#what-do-we-need)
+    -   [Wayland basics](#wayland-basics)
+    -   [Opening a socket](#opening-a-socket)
+    -   [Creating a registry](#creating-a-registry)
+    -   [Shared memory: the frame
+        buffer](#shared-memory-the-frame-buffer)
+    -   [Chatting with the compositor](#chatting-with-the-compositor)
+        -   [Reacting to events: binding
+            interfaces](#reacting-to-events-binding-interfaces)
+        -   [Using the interfaces we
+            created](#using-the-interfaces-we-created)
+        -   [Reacting to events:
+            ping/pong](#reacting-to-events-pingpong)
+        -   [Reacting to events: configure/ACK
+            configure](#reacting-to-events-configureack-configure)
+        -   [Rendering a frame: the red
+            rectangle](#rendering-a-frame-the-red-rectangle)
+        -   [Rendering a frame: The Wayland
+            logo](#rendering-a-frame-the-wayland-logo)
+    -   [Addendum: the full code](#addendum-the-full-code)
 
 ## What do we need?
 

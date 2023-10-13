@@ -10,6 +10,7 @@
 - May 31 2023: [Learn x86-64 assembly by writing a GUI from scratch](/blog/x11_x64.html)
 - June 5 2023: [Cycle detection in graphs does not have to be hard: A lesser known, simple way with Kahn's algorithm](/blog/kahns_algorithm.html)
 - October 5 2023: [Optimizing an Advent of Code solution in assembly](/blog/advent_of_code_2018_5_revisited.html)
+- October 13 2023: [Learn Wayland by writing a GUI from scratch](/blog/wayland_from_scratch.html)
 
 ## About me
 
