@@ -534,8 +534,7 @@ We can now call methods on the new interfaces to create more entities we will ne
 
 The last two being entities from extension protocols, which is inconsequential in our implementation since we do not link against any libraries. This is just the same logic as the other messages and events from the core protocol.
 
-Once we have done that, the surface is setup, and we commit it, the signal the compositor to atomically apply the changes to the surface. 
-Once this is done.
+Once we have done that, the surface is setup, and we commit it, to signal to the compositor to atomically apply the changes to the surface. 
 
 ```c
 
