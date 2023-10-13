@@ -392,7 +392,7 @@ We alternatively could use `memfd_create(2)` which spares us from crafting a uni
 
 We craft a unique, random path to avoid clashes with other running applications.
 
-Right after, we removed the file on the filesystem with `shm_unlink` to not leave any traces when the program finishes. Note that the file descriptor remains valid since our process still has the file open (there is a reference counting mechanism in the kernel behind the scenes).
+Right after, we remove the file on the filesystem with `shm_unlink` to not leave any traces when the program finishes. Note that the file descriptor remains valid since our process still has the file open (there is a reference counting mechanism in the kernel behind the scenes).
 
 We then resize with `ftruncate` and memory map this file with `mmap(2)`, effectively allocating memory, with the `MAP_SHARED` flag to allow the compositor to also read this memory.
 
