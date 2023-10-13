@@ -269,6 +269,8 @@ static uint32_t wayland_wl_display_get_registry(int fd) {
 
 And by calling it, we have created our very first Wayland resource!
 
+*From this point on, the utility functions to send Wayland messages (`wayland_*`) will not be included in the code snippets for brevity (but you will find all of the code at the end!), just because they all are similar to the one above.*
+
 
 ## Shared memory: the frame buffer
 
@@ -369,6 +371,8 @@ We craft a unique, random path to avoid clashes with other running applications.
 Right after, we removed the file on the filesystem with `shm_unlink` to not leave any traces when the program finishes. Note that the file descriptor remains valid since our process still has the file open (there is a reference counting mechanism in the kernel behind the scenes).
 
 We then resize with `ftruncate` and memory map this file with `mmap(2)`, effectively allocating memory, with the `MAP_SHARED` flag to allow the compositor to also read this memory.
+
+Later, we will send the file descriptor over the UNIX domain socket as ancillary data to the compositor.
 
 Alright, we now have some memory to draw our frame to, but the compositor does not know of it yet. Let's tackle that now.
 
@@ -575,7 +579,7 @@ This acts as synchronization mechanism between the client and the compositor to 
 
 1. The `ack_configure` event signals us that we can start rendering the frame
 1. We render the frame client-side by setting the pixel data to whatever we want
-1. We send `attach` + `commit` messages to notify the compositor that the frame is ready to be presented
+1. We send the `attach` + `commit` messages to notify the compositor that the frame is ready to be presented
 1. We advance our state machine to avoid writing to the frame data while the compositor is presenting it
 
 
