@@ -602,6 +602,8 @@ static void wayland_handle_message(int fd, state_t *state, char **msg,
   } else if (object_id == state->wl_buffer &&
              opcode == wayland_wl_buffer_event_release) {
     // No-op, for now.
+
+    printf("<- xdg_wl_buffer@%u.release\n", state->wl_buffer);
     return;
   } else if (object_id == state->xdg_wm_base &&
              opcode == wayland_xdg_wm_base_event_ping) {
