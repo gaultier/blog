@@ -615,6 +615,10 @@ So let's show a red rectangle as a warm-up. The alpha component is completely ig
 
 ```
 
+Result:
+
+![Result, red](wayland-screenshot-red.png)
+
 ### Rendering a frame: The Wayland logo
 
 Let's render something more interesting. We download the [Wayland logo](https://wayland.freedesktop.org/wayland.png), but we do not want to have to deal with a complicated format like PNG (because we then have to uncompress the image data with `zlib` or similar).
