@@ -369,7 +369,7 @@ Yes, indeed, almost twice as fast!
 ## Learnings
 
 - Assembly can absolutely be written by hand, although with (much) more effort and a harder time troubleshooting what goes wrong.
-- Most tools (`gdb`, profilers, etc) expect that the assembly they consume came from a C source file and will be confused when it's not the case.
+- Some tools (profilers, reverse-engineering tools) expect that the assembly they consume came from a C source file and will be confused when it's not the case.
 - There is no need to reach for esoteric, vendor specific instructions (such as SIMD or Intel string opcodes) to go fast and even beat a C implementation that does a bit more work than necessary.
 - Doing less work is the most important thing when optimizing.
 - At the same time, doing a bit of work instead of memoizing can be fast(er), even though it seems counter-intuitive, due to memory latency and cache misses.
