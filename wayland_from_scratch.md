@@ -354,7 +354,8 @@ The window is a rectangle, of width `w` and height `h`. We will use the color fo
 
 And so, our buffer size for the frame is : `w * h * 4`. We use single buffering again for simplicity and also because we want to display a static image. 
 
-We could choose to use double or even triple buffering, thus respectively doubling or tripling the buffer size. The compositor is none the wiser - we would simply keep a counter client-side that increments each time we render a frame (and wraps around back to 0 when reaching the number of buffers), and we would draw in the right location of this big buffer (i.e. at an offset). All the Wayland calls would still remain the same.
+We could choose to use double or even triple buffering, thus respectively doubling or tripling the buffer size. The compositor is none the wiser - we would simply keep a counter client-side that increments each time we render a frame (and wraps around back to 0 when reaching the number of buffers), we would draw in the right location of this big buffer (i.e. at an offset), and attach the right part of the buffer to the surface. 
+All the Wayland calls would remain the same.
 
 Alright, time to really create this buffer, and not only keep track of its size:
 
