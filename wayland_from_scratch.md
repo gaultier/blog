@@ -371,7 +371,7 @@ Alright, we now have some memory to draw our frame to, but the compositor does n
 ## Chatting with the compositor
 
 
-We are going to exchange messages back and forth over the socket with the compositor. Let's use plain old blocking calls in `main` like it's the 70's:
+We are going to exchange messages back and forth over the socket with the compositor. Let's use plain old blocking calls in `main` like it's the 70's. We read as much as we can from the socket:
 
 ```c
   while (1) {
@@ -389,7 +389,11 @@ We are going to exchange messages back and forth over the socket with the compos
   }
 ```
 
-And `wayland_handle_message` reads the header part of every message as described in the beginning, and reacts to known opcodes:
+The read buffer very likely now contains a sequence of various messages, which we parse and handle with
+`wayland_handle_message` eagerly until the end of the buffer.
+This might break if a message is spanning two different read buffers - a ring buffer would be more approriate to handle this case gracefully, but again, for this article this is fine.
+
+`wayland_handle_message` reads the header part of every message as described in the beginning, and reacts to known opcodes and objects:
 
 
 ```c
