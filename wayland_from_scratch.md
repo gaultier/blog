@@ -50,6 +50,7 @@ Now, if you want to follow along and translate the C snippets into assembly, go 
             rectangle](#rendering-a-frame-the-red-rectangle)
         -   [Rendering a frame: The Wayland
             logo](#rendering-a-frame-the-wayland-logo)
+    -   [The end](#the-end)
     -   [Addendum: the full code](#addendum-the-full-code)
 
 ## What do we need?
