@@ -195,7 +195,7 @@ The method is: `get_registry(u32 new_id)` whose opcode we listed before.
 The sole argument takes 4 bytes and is this incremental number we keep track of client-side.
 It does not necessarily have to be incremental, but that's what `libwayland` does and also it's the easiest. 
 
-For convenience and efficiency, we craft the message on the stack and do not allocate dynamic memory.
+For convenience and efficiency, we always craft the message on the stack and do not allocate dynamic memory.
 
 
 We first introduce a few utility functions to read and write parts of messages:
