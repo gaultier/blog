@@ -679,6 +679,17 @@ Tiled: ![Result, tiled](wayland-screenshot-tiled1.png)
 Floating: ![Result, floating](wayland-screenshot-floating.png)
 
 
+## The end
+
+It was not that much work to go from zero to a working GUI application, albeit simplistic.
+
+Compared to X11, it was a bit more work, but not that much. The barrier of entry is higher but the concepts and architecture are more sound, it seems to me.
+
+The setup is a bit tedious but once this is done, you are in practice going to spend all of your time in the frame rendering code, and perhaps add support for a few additional events (we do not yet support keyboard or mouse events, for example).
+
+As for the next steps, I would like to draw some text, and react to user input events. Maybe even port something like [microui](https://github.com/rxi/microui), which only needs a few drawing routines, to our application.
+
+
 ## Addendum: the full code
 
 *Do not forget to generate `wayland-logo.h` with the commands above!*
