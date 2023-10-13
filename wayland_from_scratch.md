@@ -297,7 +297,7 @@ And by calling it, we have created our very first Wayland resource!
 
 ## Shared memory: the frame buffer
 
-To avoid drawing  a frame in our application, and having to send all of the bytes over the socket to the compositor, there is smarter approach: the buffer should be shared between the two processes, so that no copying is required.
+To avoid drawing  a frame in our application, and having to send all of the bytes over the socket to the compositor, there is a smarter approach: the buffer should be shared between the two processes, so that no copying is required.
 
 We need to synchronize the access between the two so that presenting the frame does not happen while we are still drawing it, and Wayland has that built-in.
 
