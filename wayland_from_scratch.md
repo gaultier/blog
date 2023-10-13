@@ -682,7 +682,7 @@ Floating: ![Result, floating](wayland-screenshot-floating.png)
 
 ## The end
 
-It was not that much work to go from zero to a working GUI application, albeit simplistic.
+It was not that much work to go from zero to a working GUI application, albeit a simplistic one.
 
 Compared to X11, it was a bit more work, but not that much. The barrier of entry is higher but the concepts and architecture are more sound, it seems to me.
 
