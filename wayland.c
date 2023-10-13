@@ -324,8 +324,6 @@ static void wayland_xdg_surface_ack_configure(int fd, state_t *state,
 
   printf("-> xdg_surface@%u.ack_configure: configure=%u\n", state->xdg_surface,
          configure);
-
-  state->state = STATE_SURFACE_ACKED_CONFIGURE;
 }
 
 static uint32_t wayland_wl_shm_create_pool(int fd, state_t *state) {
@@ -631,6 +629,7 @@ static void wayland_handle_message(int fd, state_t *state, char **msg,
     printf("<- xdg_surface@%u.configure: configure=%u\n", state->xdg_surface,
            configure);
     wayland_xdg_surface_ack_configure(fd, state, configure);
+    state->state = STATE_SURFACE_ACKED_CONFIGURE;
 
     return;
   } else if (object_id == state->xdg_toplevel &&

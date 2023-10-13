@@ -491,51 +491,121 @@ If we see a global object that we are interested in, we create one of this type,
   }
 ```
 
-
-And binding (i.e.: creating) an interface to the registry is pretty similar to creating a new registry:
-
-```c
-
-static uint32_t wayland_wl_registry_bind(int fd, uint32_t registry,
-                                         uint32_t name, char *interface,
-                                         uint32_t interface_len,
-                                         uint32_t version) {
-  uint64_t msg_size = 0;
-  char msg[512] = "";
-  buf_write_u32(msg, &msg_size, sizeof(msg), registry);
-
-  buf_write_u16(msg, &msg_size, sizeof(msg), wayland_wl_registry_bind_opcode);
-
-  uint16_t msg_announced_size =
-      wayland_header_size + sizeof(name) + sizeof(interface_len) +
-      roundup_4(interface_len) + sizeof(version) + sizeof(wayland_current_id);
-  assert(roundup_4(msg_announced_size) == msg_announced_size);
-  buf_write_u16(msg, &msg_size, sizeof(msg), msg_announced_size);
-
-  buf_write_u32(msg, &msg_size, sizeof(msg), name);
-  buf_write_string(msg, &msg_size, sizeof(msg), interface, interface_len);
-  buf_write_u32(msg, &msg_size, sizeof(msg), version);
-
-  wayland_current_id++;
-  buf_write_u32(msg, &msg_size, sizeof(msg), wayland_current_id);
-
-  assert(msg_size == roundup_4(msg_size));
-
-  if ((int64_t)msg_size != send(fd, msg, msg_size, 0))
-    exit(errno);
-
-  printf("-> wl_registry@%u.bind: name=%u interface=%.*s version=%u\n",
-         registry, name, interface_len, interface, version);
-
-  return wayland_current_id;
-}
-```
-
 Remember: Since the Wayland protocol is a kind of RPC, we need to create the objects first before calling remote methods on them.
 
 In terms of robustness, we do not have guarantees that every feature (i.e.: interface) we need in our application will be supported by the compositor. It could be a good idea to bail if the interfaces we require are not present.
 
 
-### Reacting to events: color formats
+### Using the interfaces we created
 
-We have registered 3 different interfaces, and 
+We can now call methods on the new interfaces to create more entities we will need, namely:
+
+- A `wl_surface`
+- A `xdg_surface`
+- A `xdg_toplevel`
+
+The last two being entities from extension protocols, which is inconsequential in our implementation since we do not link against any libraries. This is just the same logic as the other messages and events from the core protocol.
+
+Once we have done that, the surface is setup, and we commit it, the signal the compositor to atomically apply the changes to the surface. 
+Once this is done.
+
+```c
+
+    while (msg_len > 0)
+      wayland_handle_message(fd, &state, &msg, &msg_len);
+
+    if (state.wl_compositor != 0 && state.wl_shm != 0 &&
+        state.xdg_wm_base != 0 &&
+        state.wl_surface == 0) { // Bind phase complete, need to create surface.
+      assert(state.state == STATE_NONE);
+
+      state.wl_surface = wayland_wl_compositor_create_surface(fd, &state);
+      state.xdg_surface = wayland_xdg_wm_base_get_xdg_surface(fd, &state);
+      state.xdg_toplevel = wayland_xdg_surface_get_toplevel(fd, &state);
+      wayland_wl_surface_commit(fd, &state);
+    }
+  }
+```
+
+### Reacting to events: ping/pong
+
+For some entities, the Wayland compositor will send us a ping message and expect a pong back to ensure our application is responsive and not deadlocked or frozen.
+
+We just have to add one more `if` to the long list of `if` to handle each event from the compositor:
+
+```c
+if (object_id == state->xdg_wm_base &&
+             opcode == wayland_xdg_wm_base_event_ping) {
+    uint32_t ping = buf_read_u32(msg, msg_len);
+    printf("<- xdg_wm_base@%u.ping: ping=%u\n", state->xdg_wm_base, ping);
+    wayland_xdg_wm_base_pong(fd, state, ping);
+
+    return;
+  }
+```
+
+### Reacting to events: configure/ACK configure
+
+Akin to the previous ping/pong mechanism, we receive a `configure` event for the `xdg_surface` and we reply with a `ack_configure` message.
+
+This is an important milestone since from that point on, we can start rendering our frame! We thus advance our little state machine:
+
+```c
+if (object_id == state->xdg_surface &&
+             opcode == wayland_xdg_surface_event_configure) {
+    uint32_t configure = buf_read_u32(msg, msg_len);
+    printf("<- xdg_surface@%u.configure: configure=%u\n", state->xdg_surface,
+           configure);
+    wayland_xdg_surface_ack_configure(fd, state, configure);
+    state->state = STATE_SURFACE_ACKED_CONFIGURE;
+
+    return;
+  } 
+```
+
+### Rendering a frame
+
+Once the configure/ack configure step has been completed, we can render a frame.
+
+To do so, we need to create two final entities: a shared memory pool (`wl_shm_pool`) and a `wl_buffer` if they do not exist yet.
+
+Finally, we fiddle with the pixel data anyway we want, remembering the color format we picked (XRGB), attach the buffer to the surface, and commit the surface.
+
+This acts as synchronization mechanism between the client and the compositor to avoid presenting a half-rendered frame. To sum up:
+
+1. The `ack_configure` event signals us that we can start rendering the frame
+1. We render the frame client-side by setting the pixel data to whatever we want
+1. We send `attach` + `commit` messages to notify the compositor that the frame is ready to be presented
+
+
+
+```c
+    if (state.state == STATE_SURFACE_ACKED_CONFIGURE) {
+      // Render a frame.
+      assert(state.wl_surface != 0);
+      assert(state.xdg_surface != 0);
+      assert(state.xdg_toplevel != 0);
+
+      if (state.wl_shm_pool == 0)
+        state.wl_shm_pool = wayland_wl_shm_create_pool(fd, &state);
+      if (state.wl_buffer == 0)
+        state.wl_buffer = wayland_wl_shm_pool_create_buffer(fd, &state);
+
+      assert(state.shm_pool_data != 0);
+      assert(state.shm_pool_size != 0);
+
+      uint32_t *pixels = (uint32_t *)state.shm_pool_data;
+      for (uint32_t i = 0; i < state.w * state.h; i++) {
+        uint8_t a = 0;
+        uint8_t r = wayland_logo[i * 3 + 0];
+        uint8_t g = wayland_logo[i * 3 + 1];
+        uint8_t b = wayland_logo[i * 3 + 2];
+        pixels[i] = (a << 24) | (r << 16) | (g << 8) | b;
+      }
+      wayland_wl_surface_attach(fd, &state);
+      wayland_wl_surface_commit(fd, &state);
+
+      state.state = STATE_SURFACE_ATTACHED;
+    }
+
+```
