@@ -363,4 +363,47 @@ Alright, we now have some memory to draw our frame to, but the compositor does n
 ## Chatting with the compositor
 
 
-We are going to exchange messages back and forth over the socket with the compositor. Let's use the venerable `poll(2)`.
+We are going to exchange messages back and forth over the socket with the compositor. Let's use plain old blocking calls in `main` like it's the 70's:
+
+```c
+  while (1) {
+    char read_buf[4096] = "";
+    int64_t read_bytes = recv(fd, read_buf, sizeof(read_buf), 0);
+    if (read_bytes == -1)
+      exit(errno);
+
+    char *msg = read_buf;
+    uint64_t msg_len = (uint64_t)read_bytes;
+
+    while (msg_len > 0)
+      wayland_handle_message(fd, &state, &msg, &msg_len);
+    }
+  }
+```
+
+And `wayland_handle_message` reads the header part of every message as described in the beginning, and reacts to known opcodes:
+
+
+```c
+static void wayland_handle_message(int fd, state_t *state, char **msg,
+                                   uint64_t *msg_len) {
+  assert(*msg_len >= 8);
+
+  uint32_t object_id = buf_read_u32(msg, msg_len);
+  assert(object_id <= wayland_current_id);
+
+  uint16_t opcode = buf_read_u16(msg, msg_len);
+
+  uint16_t announced_size = buf_read_u16(msg, msg_len);
+  assert(roundup_4(announced_size) <= announced_size);
+
+  uint32_t header_size =
+      sizeof(object_id) + sizeof(opcode) + sizeof(announced_size);
+  assert(announced_size <= header_size + *msg_len);
+
+  if (object_id == state->wl_registry &&
+      opcode == wayland_wl_registry_event_global) {
+      // TODO
+  }
+}
+```
