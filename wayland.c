@@ -269,6 +269,8 @@ static void create_shared_memory_file(uint64_t size, state_t *state) {
   if (fd == -1)
     exit(errno);
 
+  assert(shm_unlink(name) != -1);
+
   if (ftruncate(fd, size) == -1)
     exit(errno);
 

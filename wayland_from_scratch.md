@@ -340,6 +340,8 @@ static void create_shared_memory_file(uint64_t size, state_t *state) {
   if (fd == -1)
     exit(errno);
 
+  assert(shm_unlink(name) != -1);
+
   if (ftruncate(fd, size) == -1)
     exit(errno);
 
@@ -350,11 +352,17 @@ static void create_shared_memory_file(uint64_t size, state_t *state) {
 }
 ```
 
-We use `shm_open(3)` to create a POSIX shared memory object, so that we later can send the corresponding file descriptor to the compositor so that the latter also has access to it.
+We use `shm_open(3)` to create a POSIX shared memory object, so that we later can send the corresponding file descriptor to the compositor so that the latter also has access to it. The flags mean:
+
+- `O_RDWR`: Read-write.
+- `O_CREAT`: If the file does not exist, create it.
+- `O_EXCL`: Return an error if the shared memory object with this name already exists (we do not want that another running instance of the application gets by mistake the same memory buffer).
 
 We alternatively could use `memfd_create(2)` which spares us from crafting a unique path but this is Linux specific.
 
 We craft a unique, random path to avoid clashes with other running applications.
+
+Right after, we removed the file on the filesystem with `shm_unlink` to not leave any traces when the program finishes. Note that the file descriptor remains valid since our process still has the file open (there is a reference counting mechanism in the kernel behind the scenes).
 
 We then resize with `ftruncate` and memory map this file with `mmap(2)`, effectively allocating memory, with the `MAP_SHARED` flag to allow the compositor to also read this memory.
 
@@ -405,5 +413,6 @@ static void wayland_handle_message(int fd, state_t *state, char **msg,
       opcode == wayland_wl_registry_event_global) {
       // TODO
   }
+  // Following: Lots of `if (opcode == ...) {... } else if (opcode = ...) { ... } [...]`
 }
 ```
