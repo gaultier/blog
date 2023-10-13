@@ -181,7 +181,7 @@ In Wayland, there is no connection setup to do, such as sending some special mes
 
 Now, to do anything useful, we want to create a registry: it is an object that allows us to query at runtime the capabilities of the compositor.
 
-In Wayland, to create an object, we simply send the right message with an id of our own. Ids should be unique so we simply increment a number each time we want to create a new resource. After this is done, we will remember this number to be able to refer to it in later messages:
+In Wayland, to create an object, we simply send the right message followed by an id of our own. Ids should be unique so we simply increment a number each time we want to create a new resource. After this is done, we will remember this number to be able to refer to it in later messages:
 
 This is coincidentally our first message we send, so let's briefly go over the structure of a Wayland message. It is basically a RPC mechanism. All bytes are in the host endianness so there is nothing special to do about it:
 
