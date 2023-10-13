@@ -299,7 +299,7 @@ And by calling it, we have created our very first Wayland resource!
 
 To avoid drawing  a frame in our application, and having to send all of the bytes over the socket to the compositor, there is a smarter approach: the buffer should be shared between the two processes, so that no copying is required.
 
-We need to synchronize the access between the two so that presenting the frame does not happen while we are still drawing it, and Wayland has that built-in.
+We need to synchronize the access between the two so that presenting the frame does not happen while we are still drawing it, and Wayland has us covered here.
 
 First, we need to create this buffer. We are going to make it easier for us by using a fixed size. Wayland is going to send us 'resize' events, which we will acknowledge but without changing a thing. This is done here just to simplify a bit the article, obviously in a real application, you would resize the buffer.
 
