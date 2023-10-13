@@ -558,7 +558,7 @@ Once we have done that, the surface is setup, and we commit it, to signal to the
 
 For some entities, the Wayland compositor will send us a ping message and expect a pong back to ensure our application is responsive and not deadlocked or frozen.
 
-We just have to add one more `if` to the long list of `if` to handle each event from the compositor:
+We just have to add one more `if` to the long list of `if`s to handle each event from the compositor:
 
 ```c
 if (object_id == state->xdg_wm_base &&
@@ -657,7 +657,7 @@ wayland.ppm: Netpbm image data, size = 117 x 150, rawbits, pixmap
 $ xxd -s +15 -i wayland.ppm  > wayland-logo.h
 ```
 
-The image is in the `RGB` format (3 bytes per pixel), which we have to convert to the `XRGB` format (4 bytes per pixel). Our frame rendering loop becomes:
+The image is now in the `RGB` format (3 bytes per pixel), which we have to convert to the `XRGB` format (4 bytes per pixel). Our frame rendering loop becomes:
 
 ```c
 #include "wayland-logo.h"
