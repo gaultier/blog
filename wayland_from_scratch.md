@@ -185,9 +185,9 @@ In Wayland, to create an object, we simply send the right message followed by an
 
 This is coincidentally our first message we send, so let's briefly go over the structure of a Wayland message. It is basically a RPC mechanism. All bytes are in the host endianness so there is nothing special to do about it:
 
-- 4 bytes containing the id of the resource ('object') we want to call a method on
-- 2 bytes containing the opcode of the method we want to call
-- 2 bytes containing the size of the message
+- 4 bytes: The id of the resource ('object') we want to call a method on
+- 2 bytes: The opcode of the method we want to call
+- 2 bytes: The size of the message
 - Depending on the method, arguments in their wire format follow
 
 The object id is `1`, which is the singleton `wl_display` that already exists.
