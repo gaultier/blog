@@ -350,7 +350,7 @@ We use it so in `main()`:
   state.shm_pool_size = state.h * state.stride;
 ```
 
-The window is a rectangle, of width `w` and height `h`. We will use the color format `xrgb8888` which is 4 color channels, each taking one bytes, so 4 bytes per pixel. This is one of the two formats that is guaranteed to be supported by the compositor per the specification. The stride counts how many bytes is a horizontal row: `w * 4`.
+The window is a rectangle, of width `w` and height `h`. We will use the color format `xrgb8888` which is 4 color channels, each taking one bytes, so 4 bytes per pixel. This is one of the two formats that is guaranteed to be supported by the compositor per the specification. The stride counts how many bytes a horizontal row takes: `w * 4`.
 
 And so, our buffer size for the frame is : `w * h * 4`. We use single buffering again for simplicity and also because we want to display a static image. 
 
