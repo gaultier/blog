@@ -190,7 +190,7 @@ This is coincidentally our first message we send, so let's briefly go over the s
 - 2 bytes: The size of the message
 - Depending on the method, arguments in their wire format follow
 
-The object id is `1`, which is the singleton `wl_display` that already exists.
+The object id in this case is `1`, which is the singleton `wl_display` that already exists.
 The method is: `get_registry(u32 new_id)` whose opcode we listed before.
 The sole argument takes 4 bytes and is this incremental number we keep track of client-side.
 It does not necessarily have to be incremental, but that's what `libwayland` does and also it's the easiest. 
