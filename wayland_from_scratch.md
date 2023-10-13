@@ -65,7 +65,6 @@ So at this point you might be thinking: this is going to be so much work! Well, 
 
 ```c
 static const uint32_t wayland_display_object_id = 1;
-static const uint16_t wayland_wl_display_event_delete_id = 1;
 static const uint16_t wayland_wl_registry_event_global = 0;
 static const uint16_t wayland_shm_pool_event_format = 0;
 static const uint16_t wayland_wl_buffer_event_release = 0;
@@ -426,8 +425,9 @@ static void wayland_handle_message(int fd, state_t *state, char **msg,
 }
 ```
 
+### Reacting to events: binding interfaces
 
-Remember, at that point we have sent one message to the compositor: `wl_display@1.get_registry()` thanks to `wayland_wl_display_get_registry`.
+At this point we have sent one message to the compositor: `wl_display@1.get_registry()` thanks to `wayland_wl_display_get_registry`.
 The compositor responds with a series of events, listing the available global objects, such as shared memory support, extension protocols, etc.
 
 Each event contains the interface name, which is a string. Now, in the Wayland protocol, the string length gets padded to a multiple of four, so we have read those padding bytes as well.
@@ -491,3 +491,51 @@ If we see a global object that we are interested in, we create one of this type,
   }
 ```
 
+
+And binding (i.e.: creating) an interface to the registry is pretty similar to creating a new registry:
+
+```c
+
+static uint32_t wayland_wl_registry_bind(int fd, uint32_t registry,
+                                         uint32_t name, char *interface,
+                                         uint32_t interface_len,
+                                         uint32_t version) {
+  uint64_t msg_size = 0;
+  char msg[512] = "";
+  buf_write_u32(msg, &msg_size, sizeof(msg), registry);
+
+  buf_write_u16(msg, &msg_size, sizeof(msg), wayland_wl_registry_bind_opcode);
+
+  uint16_t msg_announced_size =
+      wayland_header_size + sizeof(name) + sizeof(interface_len) +
+      roundup_4(interface_len) + sizeof(version) + sizeof(wayland_current_id);
+  assert(roundup_4(msg_announced_size) == msg_announced_size);
+  buf_write_u16(msg, &msg_size, sizeof(msg), msg_announced_size);
+
+  buf_write_u32(msg, &msg_size, sizeof(msg), name);
+  buf_write_string(msg, &msg_size, sizeof(msg), interface, interface_len);
+  buf_write_u32(msg, &msg_size, sizeof(msg), version);
+
+  wayland_current_id++;
+  buf_write_u32(msg, &msg_size, sizeof(msg), wayland_current_id);
+
+  assert(msg_size == roundup_4(msg_size));
+
+  if ((int64_t)msg_size != send(fd, msg, msg_size, 0))
+    exit(errno);
+
+  printf("-> wl_registry@%u.bind: name=%u interface=%.*s version=%u\n",
+         registry, name, interface_len, interface, version);
+
+  return wayland_current_id;
+}
+```
+
+Remember: Since the Wayland protocol is a kind of RPC, we need to create the objects first before calling remote methods on them.
+
+In terms of robustness, we do not have guarantees that every feature (i.e.: interface) we need in our application will be supported by the compositor. It could be a good idea to bail if the interfaces we require are not present.
+
+
+### Reacting to events: color formats
+
+We have registered 3 different interfaces, and 

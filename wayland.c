@@ -23,7 +23,6 @@
 static uint32_t wayland_current_id = 1;
 
 static const uint32_t wayland_display_object_id = 1;
-static const uint16_t wayland_wl_display_event_delete_id = 1;
 static const uint16_t wayland_wl_registry_event_global = 0;
 static const uint16_t wayland_shm_pool_event_format = 0;
 static const uint16_t wayland_wl_buffer_event_release = 0;
@@ -42,7 +41,7 @@ static const uint16_t wayland_wl_shm_pool_create_buffer_opcode = 0;
 static const uint16_t wayland_wl_surface_attach_opcode = 1;
 static const uint16_t wayland_xdg_surface_get_toplevel_opcode = 1;
 static const uint16_t wayland_wl_surface_commit_opcode = 6;
-static const uint16_t wayland_wl_display_error_event=0;
+static const uint16_t wayland_wl_display_error_event = 0;
 static const uint32_t wayland_format_xrgb8888 = 1;
 static const uint32_t wayland_header_size = 8;
 static const uint32_t color_channels = 4;
@@ -583,7 +582,8 @@ static void wayland_handle_message(int fd, state_t *state, char **msg,
     }
 
     return;
-  } else if (object_id == wayland_display_object_id && opcode == wayland_wl_display_error_event) {
+  } else if (object_id == wayland_display_object_id &&
+             opcode == wayland_wl_display_error_event) {
     uint32_t target_object_id = buf_read_u32(msg, msg_len);
     uint32_t code = buf_read_u32(msg, msg_len);
     char error[512] = "";
@@ -602,12 +602,6 @@ static void wayland_handle_message(int fd, state_t *state, char **msg,
   } else if (object_id == state->wl_buffer &&
              opcode == wayland_wl_buffer_event_release) {
     // No-op, for now.
-    return;
-  } else if (object_id == wayland_display_object_id &&
-             opcode == wayland_wl_display_event_delete_id) {
-    uint32_t id = buf_read_u32(msg, msg_len);
-    printf("<- wl_display@%u.delete_id: id=%u\n", wayland_display_object_id,
-           id);
     return;
   } else if (object_id == state->xdg_wm_base &&
              opcode == wayland_xdg_wm_base_event_ping) {
