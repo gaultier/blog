@@ -686,7 +686,9 @@ It was not that much work to go from zero to a working GUI application, albeit a
 
 Compared to X11, it was a bit more work, but not that much. The barrier of entry is higher but the concepts and architecture are more sound, it seems to me.
 
-The setup is a bit tedious but once this is done, we are in practice going to spend all of our time in the frame rendering code, and perhaps add support for a few additional events (we do not yet support keyboard or mouse events, for example, or animations, which would require us to notify the compositor that a region was 'damaged' meaning modified, and needs re-rendering). Wayland thus really goes out of the way once the initial skaffolding is done.
+The setup is a bit tedious but once this is done, we are in practice going to spend all of our time in the frame rendering code, and perhaps add support for a few additional events (we do not yet support keyboard or mouse events, for example, or animations, which would require us to notify the compositor that a region was 'damaged' meaning modified, and needs re-rendering). 
+
+Thus, I have the feeling that Wayland really goes out of the way once the initial skaffolding is done.
 
 As for the next steps, I would like to draw some text, and react to user input events. Maybe even port something like [microui](https://github.com/rxi/microui), which only needs a few drawing routines, to our application.
 
