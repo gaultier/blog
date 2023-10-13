@@ -695,7 +695,7 @@ As for the next steps, I would like to draw some text, and react to user input e
 
 ## Addendum: the full code
 
-*Do not forget to generate `wayland-logo.h` with the commands above!*
+*Do not forget to generate `wayland-logo.h` with the aforementioned commands!*
 
 Compile with: `cc -std=c99 wayland.c -Ofast`.
 
