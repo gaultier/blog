@@ -303,7 +303,7 @@ We need to synchronize the access between the two so that presenting the frame d
 
 First, we need to create this buffer. We are going to make it easier for us by using a fixed size. Wayland is going to send us 'resize' events, whenever the window size changes, which we will acknowledge and ignore. This is done here just to simplify a bit the article, obviously in a real application, you would resize the buffer.
 
-First, we introduce a struct that will hold all of the client-side state so that we remember which resources have created so far. We also need a super simple state machine for later to track whether the surface (i.e. the 'frame' data) should be drawn to, as mentioned:
+First, we introduce a struct that will hold all of the client-side state so that we remember which resources we have created so far. We also need a super simple state machine for later to track whether the surface (i.e. the 'frame' data) should be drawn to, as mentioned:
 
 ```c
 typedef enum state_state_t state_state_t;
