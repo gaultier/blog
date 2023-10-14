@@ -59,7 +59,7 @@ Not much: We'll use C99 so any C compiler of the last 20 years will do. Having a
 
 Note that I have only run it on Linux; it should work (meaning: compile and run) on other platforms running Wayland such as FreeBSD, it's just that I have not tried.
 
-*Note that the code in this article has not been written in the most robust way, it simply exits when things are not how they should be for example. So, not production ready, but still a good learnign resource and a good fundation for more.*
+*Note that the code in this article has not been written in the most robust way, it simply exits when things are not how they should be for example. So, not production ready, but still a good learning resource and a good foundation for more.*
 
 ## Wayland basics
 
@@ -688,7 +688,7 @@ Compared to X11, it was a bit more work, but not that much. The barrier of entry
 
 The setup is a bit tedious but once this is done, we are in practice going to spend all of our time in the frame rendering code, and perhaps add support for a few additional events (we do not yet support keyboard or mouse events, for example, or animations, which would require us to notify the compositor that a region was 'damaged' meaning modified, and needs re-rendering). 
 
-Thus, I have the feeling that Wayland really goes out of the way once the initial skaffolding is done.
+Thus, I have the feeling that Wayland really goes out of the way once the initial scaffolding is done.
 
 As for the next steps, I would like to draw some text, and react to user input events. Maybe even port something like [microui](https://github.com/rxi/microui), which only needs a few drawing routines, to our application.
 
