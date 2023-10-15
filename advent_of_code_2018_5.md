@@ -11,14 +11,13 @@ I encourage you to check out [Advent of
 Code](https://adventofcode.com/2018/about) and try to solve the challenges yourself.
 
 Many people have the feeling that LISPs are slow and cryptic with all those
-parentheses. I hope to show that it is in fact very approchable, easy to work
+parentheses. I hope to show that it is in fact very approachable, easy to work
 with, and even fast to run!
 
 I will not go through installing Chicken Scheme and learning the basics, because
 it was [already done better than I can](http://blog.klipse.tech/scheme/2016/09/11/scheme-tutorial-1.html).
 
 
-<!-- markdown-toc start - Don't edit this section. Run M-x markdown-toc-refresh-toc -->
 **Table of Contents**
 
 - [Getting started with Scheme by solving an Advent of Code 2018 challenge](#getting-started-with-scheme-by-solving-an-advent-of-code-2018-challenge)
@@ -29,8 +28,6 @@ it was [already done better than I can](http://blog.klipse.tech/scheme/2016/09/1
     - [The final solution](#the-final-solution)
     - [Conclusion](#conclusion)
 
-<!-- markdown-toc end -->
-
  
 ## The problem
 
@@ -40,7 +37,7 @@ polarity (i.e casing) react together and disappear.
 It means we want to remove adjacent characters which are the same letter and have opposite casing, e.g
 `Aa` and `qQ` disappear while `bc` and `ZZ` remain. Once we are finished, we have: `bcdZZ`.
 
-The final ouput is the number of characters in the final string, i.e, `5`.
+The final output is the number of characters in the final string, i.e, `5`.
 
 ## Working with the REPL to iteratively close in on a solution
 

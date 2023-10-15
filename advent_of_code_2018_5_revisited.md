@@ -34,7 +34,7 @@ A few days ago I was tweaking the appearance of this blog and I stumbled upon my
 > It means we want to remove adjacent characters which are the same letter and have opposite casing, e.g
 > `Aa` and `qQ` disappear while `bc` and `ZZ` remain. Once we are finished, we have: `bcdZZ`.
 > 
-> The final ouput is the number of characters in the final string, i.e, `5`.
+> The final output is the number of characters in the final string, i.e, `5`.
 
 
 Immediately, I thought I could do better than my past self: 
@@ -53,7 +53,7 @@ I came up with a new algorithm, which on paper does less work. It's one linear p
 
 Since the result we care about is the number of remaining characters, we simply keep track of the count as we sift through the input.
 
-We maintain two pointers, `current` and `next`, which we compare to decide whether we should merge the characters they point to. 'Merging' means setting the two characters to `0` (it's basically a tombstone) and decrementing the count.
+We maintain two pointers, `current` and `next`, which we compare to decide whether we should merge the characters they point to. 'Merging' means setting the two characters to `0` (it's basically a tombstone) and lower the count.
 
 `next` is always incremented by one in each loop iteration, that's the easy one.
 
@@ -94,7 +94,7 @@ print(remaining_count)
 
 The easy case is when there is no need to merge: `current` simply becomes `next` (and `next` is incremented at the end of the loop iteration).
 
-The 'hard' case is merging: we set the two tombstones, decrement the count, and now we are in a pickle: `current` needs to go backwards, but we do not know to where. There might be an arbitrary number of zeroes preceding the character `current` points to: the data on the left of `next` is sparse, the data on the right of `next` is not.
+The 'hard' case is merging: we set the two tombstones, lower the count, and now we are in a pickle: `current` needs to go backwards, but we do not know to where. There might be an arbitrary number of zeroes preceding the character `current` points to: the data on the left of `next` is sparse, the data on the right of `next` is not.
 
 ```
 [...] 0 0 A 0 0 0 0 B 0 0 0 0 C D E F [...]
@@ -169,7 +169,7 @@ $ nasm -f elf64 -g aoc2018_5.asm && ld.lld aoc2018_5.o -static -g -o aoc2018_5
 $ ./aoc2020_5
 ```
 
-which outputs nothing for now, of course.
+Which outputs nothing for now, of course.
 
 ---
 
@@ -259,7 +259,7 @@ _start:
 
 We now can focus on implementing `solve`. It's a one to one translation of the pseudo-code. We just have to judiciously choose which registers to use based on the x64 System V ABI to avoid bookkeeping work of saving and restoring registers. For example, we use `rax` to store `remaining_count` since this will be the return value, so that we do not have to do anything special at the end of the function.
 
-Another pitfall to be aware of is that since we are dealing with ascii characters, we could use the 8 bit form of the registers. However, some opcode such as `imul` are not usable with these. We have to use the 16, 32, or 64 bit form. This does not compile:
+Another pitfall to be aware of is that since we are dealing with ASCII characters, we could use the 8 bit form of the registers. However, some opcode such as `imul` are not usable with these. We have to use the 16, 32, or 64 bit form. This does not compile:
 
 ```x86asm
   mov dl, 2

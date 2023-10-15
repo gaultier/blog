@@ -12,14 +12,14 @@ window.addEventListener("load", (event) => {
 
 # Learn Wayland by writing a GUI from scratch
 
-[Wayland](https://wayland.freedesktop.org/) is all the rage those days. Distributions left and right switch to it, many readers of my previous article on [writing a X11 GUI from scratch in x86_64 assembly](/blog/x11_x64.html) asked for a follow-up article about Wayland, and I now run Waland on my desktop. So here we go, let's write a (very simple) GUI program with Wayland, without any libraries, this time in C. 
+[Wayland](https://wayland.freedesktop.org/) is all the rage those days. Distributions left and right switch to it, many readers of my previous article on [writing a X11 GUI from scratch in x86_64 assembly](/blog/x11_x64.html) asked for a follow-up article about Wayland, and I now run Wayland on my desktop. So here we go, let's write a (very simple) GUI program with Wayland, without any libraries, this time in C. 
 
 Here is what we are working towards:
 
 
 ![Result](wayland-screenshot-tiled1.png)
 
-We display the Wayland logo in its own window (we can see the mountain wallpaper in the background since we use a fixed size buffer). It's not quite Visual Studio yet, I know, but it's a good fundation for more in future articles, perhaps.
+We display the Wayland logo in its own window (we can see the mountain wallpaper in the background since we use a fixed size buffer). It's not quite Visual Studio yet, I know, but it's a good foundation for more in future articles, perhaps.
 
 Why not in assembly again you ask? Well, the Wayland protocol has some peculiarities that necessitate the use of some C standard library macros to make it work reliably on different platforms (Linux, FreeBSD, etc): namely, sending a file descriptor over a UNIX socket. Maybe it could be done in assembly, but it would be much more tedious. Also, the Wayland protocol is completely asynchronous by nature, whereas the X11 protocol was more of a request-(maybe) response chatter, and as such, we have to keep track of some state in our program, and C makes it easier.
 
