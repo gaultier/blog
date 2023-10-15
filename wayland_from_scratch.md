@@ -28,7 +28,7 @@ Now, if you want to follow along and translate the C snippets into assembly, go 
 
 > If you spot an error, please open a [Github issue](https://github.com/gaultier/blog)!
 
-*This article has been discussed on [Hacker News](https://news.ycombinator.com/item?id=37876896) and [Lobsters](https://gaultier.github.io/blog/wayland_from_scratch.html).*
+*This article has been discussed on [Hacker News](https://news.ycombinator.com/item?id=37876896) and [Lobsters](https://lobste.rs/s/385e2w/learn_wayland_by_writing_gui_from_scratch).*
 
 **Table of Contents**
 -   [Learn Wayland by writing a GUI from
