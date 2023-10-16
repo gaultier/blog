@@ -643,6 +643,42 @@ static void wayland_handle_message(int fd, state_t *state, char **msg,
   assert(0 && "todo");
 }
 
+#define LETTER_WIDTH 5
+#define LETTER_HEIGHT 12
+uint8_t letter_i[LETTER_HEIGHT * LETTER_WIDTH] = {
+    // clang-format off
+    1, 1, 1, 1, 1,
+    1, 1, 1, 1, 1,
+    0, 0, 1, 0, 0,
+    0, 0, 1, 0, 0,
+    0, 0, 1, 0, 0,
+    0, 0, 1, 0, 0,
+    0, 0, 1, 0, 0,
+    0, 0, 1, 0, 0,
+    0, 0, 1, 0, 0,
+    0, 0, 1, 0, 0,
+    1, 1, 1, 1, 1,
+    1, 1, 1, 1, 1,
+    // clang-format on
+};
+
+static void draw_background(uint32_t *pixels, uint64_t size) {
+  for (uint64_t i = 0; i < size; i++)
+    pixels[i] = 0xffaabb;
+}
+
+static void draw_letter_i(uint32_t *pixels, uint64_t w, uint64_t x,
+                          uint64_t y) {
+
+  pixels += w * y + x;
+  for (uint64_t i = 0; i < LETTER_HEIGHT; i++) {
+    for (uint64_t j = 0; j < LETTER_WIDTH; j++) {
+      if (letter_i[LETTER_WIDTH * i + j])
+        pixels[w * i + j] = 0xff0000;
+    }
+  }
+}
+
 int main() {
   struct timeval tv = {0};
   assert(gettimeofday(&tv, NULL) != -1);
@@ -699,12 +735,9 @@ int main() {
       assert(state.shm_pool_size != 0);
 
       uint32_t *pixels = (uint32_t *)state.shm_pool_data;
-      for (uint32_t i = 0; i < state.w * state.h; i++) {
-        uint8_t r = wayland_logo[i * 3 + 0];
-        uint8_t g = wayland_logo[i * 3 + 1];
-        uint8_t b = wayland_logo[i * 3 + 2];
-        pixels[i] = (r << 16) | (g << 8) | b;
-      }
+      draw_background(pixels, (uint64_t)state.w * (uint64_t)state.h);
+      draw_letter_i(pixels, state.w, (state.w - LETTER_WIDTH) / 2,
+                    (state.h - LETTER_HEIGHT) / 2);
       wayland_wl_surface_attach(fd, &state);
       wayland_wl_surface_commit(fd, &state);
 
