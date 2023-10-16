@@ -645,35 +645,84 @@ static void wayland_handle_message(int fd, state_t *state, char **msg,
 
 #define LETTER_WIDTH 5
 #define LETTER_HEIGHT 12
-uint8_t letter_i[LETTER_HEIGHT * LETTER_WIDTH] = {
+uint8_t letter_h[LETTER_HEIGHT * LETTER_WIDTH] = {
+    // clang-format off
+    1, 1, 0, 1, 1,
+    1, 1, 0, 1, 1,
+    1, 1, 0, 1, 1,
+    1, 1, 0, 1, 1,
+    1, 1, 1, 1, 1,
+    1, 1, 1, 1, 1,
+    1, 1, 0, 1, 1,
+    1, 1, 0, 1, 1,
+    1, 1, 0, 1, 1,
+    1, 1, 0, 1, 1,
+    1, 1, 0, 1, 1,
+    1, 1, 0, 1, 1,
+    // clang-format on
+};
+uint8_t letter_e[LETTER_HEIGHT * LETTER_WIDTH] = {
     // clang-format off
     1, 1, 1, 1, 1,
     1, 1, 1, 1, 1,
-    0, 0, 1, 0, 0,
-    0, 0, 1, 0, 0,
-    0, 0, 1, 0, 0,
-    0, 0, 1, 0, 0,
-    0, 0, 1, 0, 0,
-    0, 0, 1, 0, 0,
-    0, 0, 1, 0, 0,
-    0, 0, 1, 0, 0,
+    1, 1, 0, 0, 0,
+    1, 1, 0, 0, 0,
+    1, 1, 1, 1, 1,
+    1, 1, 1, 1, 1,
+    1, 1, 0, 0, 0,
+    1, 1, 0, 0, 0,
+    1, 1, 0, 0, 0,
+    1, 1, 0, 0, 0,
     1, 1, 1, 1, 1,
     1, 1, 1, 1, 1,
     // clang-format on
 };
+uint8_t letter_l[LETTER_HEIGHT * LETTER_WIDTH] = {
+    // clang-format off
+    1, 1, 0, 0, 0,
+    1, 1, 0, 0, 0,
+    1, 1, 0, 0, 0,
+    1, 1, 0, 0, 0,
+    1, 1, 0, 0, 0,
+    1, 1, 0, 0, 0,
+    1, 1, 0, 0, 0,
+    1, 1, 0, 0, 0,
+    1, 1, 0, 0, 0,
+    1, 1, 0, 0, 0,
+    1, 1, 1, 1, 1,
+    1, 1, 1, 1, 1,
+    // clang-format on
+};
+uint8_t letter_o[LETTER_HEIGHT * LETTER_WIDTH] = {
+    // clang-format off
+    1, 1, 1, 1, 1,
+    1, 1, 1, 1, 1,
+    1, 1, 0, 1, 1,
+    1, 1, 0, 1, 1,
+    1, 1, 0, 1, 1,
+    1, 1, 0, 1, 1,
+    1, 1, 0, 1, 1,
+    1, 1, 0, 1, 1,
+    1, 1, 0, 1, 1,
+    1, 1, 0, 1, 1,
+    1, 1, 1, 1, 1,
+    1, 1, 1, 1, 1,
+    // clang-format on
+};
+#define LETTER_PADDING 3
 
 static void draw_background(uint32_t *pixels, uint64_t size) {
   for (uint64_t i = 0; i < size; i++)
     pixels[i] = 0xffaabb;
 }
 
-static void draw_letter_i(uint32_t *pixels, uint64_t w, uint64_t x,
-                          uint64_t y) {
+static void draw_letter(uint32_t *pixels, uint64_t w, uint64_t x, uint64_t y,
+                        uint8_t *letter) {
 
   pixels += w * y + x;
   for (uint64_t i = 0; i < LETTER_HEIGHT; i++) {
     for (uint64_t j = 0; j < LETTER_WIDTH; j++) {
-      if (letter_i[LETTER_WIDTH * i + j])
+      if (letter[LETTER_WIDTH * i + j])
         pixels[w * i + j] = 0xff0000;
     }
   }
@@ -736,8 +785,25 @@ int main() {
 
       uint32_t *pixels = (uint32_t *)state.shm_pool_data;
       draw_background(pixels, (uint64_t)state.w * (uint64_t)state.h);
-      draw_letter_i(pixels, state.w, (state.w - LETTER_WIDTH) / 2,
-                    (state.h - LETTER_HEIGHT) / 2);
+
+      uint64_t x = 30;
+      uint64_t y = 50;
+
+      draw_letter(pixels, state.w, x, y, letter_h);
+      x += LETTER_WIDTH + LETTER_PADDING;
+
+      draw_letter(pixels, state.w, x, y, letter_e);
+      x += LETTER_WIDTH + LETTER_PADDING;
+
+      draw_letter(pixels, state.w, x, y, letter_l);
+      x += LETTER_WIDTH + LETTER_PADDING;
+
+      draw_letter(pixels, state.w, x, y, letter_l);
+      x += LETTER_WIDTH + LETTER_PADDING;
+
+      draw_letter(pixels, state.w, x, y, letter_o);
+      x += LETTER_WIDTH + LETTER_PADDING;
+
       wayland_wl_surface_attach(fd, &state);
       wayland_wl_surface_commit(fd, &state);
 
