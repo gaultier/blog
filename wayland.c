@@ -14,6 +14,7 @@
 #include <sys/un.h>
 #include <unistd.h>
 
+#include "font_atlas.h"
 #include "wayland-logo.h"
 
 #define cstring_len(s) (sizeof(s) - 1)
@@ -643,73 +644,9 @@ static void wayland_handle_message(int fd, state_t *state, char **msg,
   assert(0 && "todo");
 }
 
-#define LETTER_WIDTH 5
-#define LETTER_HEIGHT 12
-uint8_t letter_h[LETTER_HEIGHT * LETTER_WIDTH] = {
-    // clang-format off
-    1, 1, 0, 1, 1,
-    1, 1, 0, 1, 1,
-    1, 1, 0, 1, 1,
-    1, 1, 0, 1, 1,
-    1, 1, 1, 1, 1,
-    1, 1, 1, 1, 1,
-    1, 1, 0, 1, 1,
-    1, 1, 0, 1, 1,
-    1, 1, 0, 1, 1,
-    1, 1, 0, 1, 1,
-    1, 1, 0, 1, 1,
-    1, 1, 0, 1, 1,
-    // clang-format on
-};
-uint8_t letter_e[LETTER_HEIGHT * LETTER_WIDTH] = {
-    // clang-format off
-    1, 1, 1, 1, 1,
-    1, 1, 1, 1, 1,
-    1, 1, 0, 0, 0,
-    1, 1, 0, 0, 0,
-    1, 1, 1, 1, 1,
-    1, 1, 1, 1, 1,
-    1, 1, 0, 0, 0,
-    1, 1, 0, 0, 0,
-    1, 1, 0, 0, 0,
-    1, 1, 0, 0, 0,
-    1, 1, 1, 1, 1,
-    1, 1, 1, 1, 1,
-    // clang-format on
-};
-uint8_t letter_l[LETTER_HEIGHT * LETTER_WIDTH] = {
-    // clang-format off
-    1, 1, 0, 0, 0,
-    1, 1, 0, 0, 0,
-    1, 1, 0, 0, 0,
-    1, 1, 0, 0, 0,
-    1, 1, 0, 0, 0,
-    1, 1, 0, 0, 0,
-    1, 1, 0, 0, 0,
-    1, 1, 0, 0, 0,
-    1, 1, 0, 0, 0,
-    1, 1, 0, 0, 0,
-    1, 1, 1, 1, 1,
-    1, 1, 1, 1, 1,
-    // clang-format on
-};
-uint8_t letter_o[LETTER_HEIGHT * LETTER_WIDTH] = {
-    // clang-format off
-    1, 1, 1, 1, 1,
-    1, 1, 1, 1, 1,
-    1, 1, 0, 1, 1,
-    1, 1, 0, 1, 1,
-    1, 1, 0, 1, 1,
-    1, 1, 0, 1, 1,
-    1, 1, 0, 1, 1,
-    1, 1, 0, 1, 1,
-    1, 1, 0, 1, 1,
-    1, 1, 0, 1, 1,
-    1, 1, 1, 1, 1,
-    1, 1, 1, 1, 1,
-    // clang-format on
-};
-#define LETTER_PADDING 3
+#define LETTER_CELL_WIDTH 32
+#define LETTER_CELL_HEIGHT 32
+#define LETTER_ROW_COUNT 16
 
 static void draw_background(uint32_t *pixels, uint64_t size) {
   for (uint64_t i = 0; i < size; i++)
@@ -717,13 +654,21 @@ static void draw_background(uint32_t *pixels, uint64_t size) {
 }
 
 static void draw_letter(uint32_t *pixels, uint64_t w, uint64_t x, uint64_t y,
-                        uint8_t *letter) {
+                        uint32_t letter_index) {
 
   pixels += w * y + x;
-  for (uint64_t i = 0; i < LETTER_HEIGHT; i++) {
-    for (uint64_t j = 0; j < LETTER_WIDTH; j++) {
-      if (letter[LETTER_WIDTH * i + j])
-        pixels[w * i + j] = 0xff0000;
+  uint8_t *letter_data =
+      &font_atlas[letter_index * LETTER_CELL_WIDTH * LETTER_CELL_HEIGHT * 3];
+
+  for (uint64_t i = 0; i < LETTER_CELL_HEIGHT; i++) {
+    for (uint64_t j = 0; j < LETTER_CELL_WIDTH; j++) {
+      uint64_t letter_data_offset = LETTER_CELL_WIDTH * i + j;
+      assert(letter_data_offset < LETTER_CELL_WIDTH * LETTER_CELL_HEIGHT);
+
+      uint8_t r = letter_data[letter_data_offset * 3 + 0];
+      uint8_t g = letter_data[letter_data_offset * 3 + 1];
+      uint8_t b = letter_data[letter_data_offset * 3 + 2];
+      pixels[w * i + j] = (r << 16) | (g << 8) | b;
     }
   }
 }
@@ -737,9 +682,9 @@ int main() {
 
   state_t state = {
       .wl_registry = wayland_wl_display_get_registry(fd),
-      .w = 117,
-      .h = 150,
-      .stride = 117 * color_channels,
+      .w = 800,
+      .h = 600,
+      .stride = 800 * color_channels,
   };
 
   // Single buffering.
@@ -789,20 +734,10 @@ int main() {
       uint64_t x = 30;
       uint64_t y = 50;
 
-      draw_letter(pixels, state.w, x, y, letter_h);
-      x += LETTER_WIDTH + LETTER_PADDING;
-
-      draw_letter(pixels, state.w, x, y, letter_e);
-      x += LETTER_WIDTH + LETTER_PADDING;
-
-      draw_letter(pixels, state.w, x, y, letter_l);
-      x += LETTER_WIDTH + LETTER_PADDING;
-
-      draw_letter(pixels, state.w, x, y, letter_l);
-      x += LETTER_WIDTH + LETTER_PADDING;
-
-      draw_letter(pixels, state.w, x, y, letter_o);
-      x += LETTER_WIDTH + LETTER_PADDING;
+      uint64_t letter_index = 0xd0a;
+      /* uint64_t letter_index = 1; */
+      draw_letter(pixels, state.w, x, y, letter_index);
+      x += LETTER_CELL_WIDTH;
 
       wayland_wl_surface_attach(fd, &state);
       wayland_wl_surface_commit(fd, &state);
