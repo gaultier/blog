@@ -685,7 +685,7 @@ Tiled: ![Result, tiled](wayland-screenshot-tiled1.png)
 Floating: ![Result, floating](wayland-screenshot-floating.png)
 
 
-*Note: We handle the absolute minimum set of events coming from the compositor to make it work in a simple way. If your particular compositor sends more events, they will have to be read (and possibly ignored). Since the Wayland protocol uses a Tag-Length-Value (TLV) encoding, one can simply skip over <length> bytes if the opcode is unknown. But some events will demand a reply (e.g. ping/pong)!*
+*Note: We handle the absolute minimum set of events coming from the compositor to make it work in a simple way. If your particular compositor sends more events, they will have to be read (and possibly ignored). Since the Wayland protocol uses a Tag-Length-Value (TLV) encoding, one can simply skip over `<length>` bytes if the opcode is unknown. But some events will demand a reply (e.g. ping/pong)!*
 
 ## The end
 
