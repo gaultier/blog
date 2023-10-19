@@ -425,7 +425,7 @@ We are going to exchange messages back and forth over the socket with the compos
 
 The read buffer very likely now contains a sequence of various messages, which we parse and handle with
 `wayland_handle_message` eagerly until the end of the buffer.
-This might break if a message is spanning two different read buffers - a ring buffer would be more approriate to handle this case gracefully, but again, for this article this is fine.
+This might break if a message is spanning two different read buffers - a ring buffer would be more appropriate to handle this case gracefully, but again, for this article this is fine.
 
 `wayland_handle_message` reads the header part of every message as described in the beginning, and reacts to known opcodes and objects:
 
