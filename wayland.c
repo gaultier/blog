@@ -653,23 +653,33 @@ static void draw_background(uint32_t *pixels, uint64_t size) {
     pixels[i] = 0xffaabb;
 }
 
-static void draw_letter(uint32_t *pixels, uint64_t w, uint64_t x, uint64_t y,
-                        uint32_t letter_index) {
+static void draw_letter(uint32_t *pixels, uint64_t window_width,
+                        uint64_t window_x, uint64_t window_y,
+                        uint64_t letter_index) {
 
-  pixels += w * y + x;
-  uint8_t *letter_data =
-      &font_atlas[letter_index * LETTER_CELL_WIDTH * LETTER_CELL_HEIGHT * 3];
+  pixels += window_width * window_y + window_x;
+
+  uint64_t full_rows_count = letter_index / LETTER_ROW_COUNT;
+  uint64_t remaining_x_offset =
+      (letter_index % LETTER_ROW_COUNT) * LETTER_CELL_WIDTH;
+  uint64_t letter_data_start_offset =
+      (full_rows_count * LETTER_CELL_HEIGHT * LETTER_CELL_WIDTH *
+           LETTER_ROW_COUNT +
+       remaining_x_offset) *
+      3;
+
+  uint8_t *letter = &font_atlas[letter_data_start_offset];
 
   for (uint64_t i = 0; i < LETTER_CELL_HEIGHT; i++) {
     for (uint64_t j = 0; j < LETTER_CELL_WIDTH; j++) {
-      uint64_t letter_data_offset = LETTER_CELL_WIDTH * i + j;
-      assert(letter_data_offset < LETTER_CELL_WIDTH * LETTER_CELL_HEIGHT);
+      assert(letter <= font_atlas + font_atlas_len - 3);
 
-      uint8_t r = letter_data[letter_data_offset * 3 + 0];
-      uint8_t g = letter_data[letter_data_offset * 3 + 1];
-      uint8_t b = letter_data[letter_data_offset * 3 + 2];
-      pixels[w * i + j] = (r << 16) | (g << 8) | b;
+      uint8_t r = *(letter++);
+      uint8_t g = *(letter++);
+      uint8_t b = *(letter++);
+      pixels[window_width * i + j] = (r << 16) | (g << 8) | b;
     }
+    letter += LETTER_CELL_WIDTH * (LETTER_ROW_COUNT - 1) * 3;
   }
 }
 
@@ -734,9 +744,7 @@ int main() {
       uint64_t x = 30;
       uint64_t y = 50;
 
-      uint64_t letter_index = 0xd0a;
-      /* uint64_t letter_index = 1; */
-      draw_letter(pixels, state.w, x, y, letter_index);
+      draw_letter(pixels, state.w, x, y, 4 * LETTER_ROW_COUNT + 8);
       x += LETTER_CELL_WIDTH;
 
       wayland_wl_surface_attach(fd, &state);
