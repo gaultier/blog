@@ -653,34 +653,36 @@ static void draw_background(uint32_t *pixels, uint64_t size) {
     pixels[i] = 0xffaabb;
 }
 
-static void draw_letter(uint32_t *pixels, uint64_t window_width,
-                        uint64_t window_x, uint64_t window_y,
-                        uint64_t letter_index, uint32_t font_color) {
+static void draw_letter(uint32_t *dst, uint64_t window_width, uint64_t dst_x,
+                        uint64_t dst_y, uint64_t letter_index,
+                        uint32_t font_color) {
 
-  pixels += window_width * window_y + window_x;
+  dst += window_width * dst_y + dst_x;
 
-  uint64_t full_rows_count = letter_index / LETTER_ROW_COUNT;
-  uint64_t remaining_x_offset =
+  uint64_t src_channels = 3;
+
+  uint64_t src_full_rows_count = letter_index / LETTER_ROW_COUNT;
+  uint64_t src_remaining_x_offset =
       (letter_index % LETTER_ROW_COUNT) * LETTER_CELL_WIDTH;
-  uint64_t letter_data_start_offset =
-      (full_rows_count * LETTER_CELL_HEIGHT * LETTER_CELL_WIDTH *
-           LETTER_ROW_COUNT +
-       remaining_x_offset) *
-      3;
+  uint64_t src_offset = (src_full_rows_count * LETTER_CELL_HEIGHT *
+                             LETTER_CELL_WIDTH * LETTER_ROW_COUNT +
+                         src_remaining_x_offset) *
+                        src_channels;
 
-  uint8_t *letter = &font_atlas[letter_data_start_offset];
+  uint8_t *src = &font_atlas[src_offset];
 
-  for (uint64_t i = 0; i < LETTER_CELL_HEIGHT; i++) {
-    for (uint64_t j = 0; j < LETTER_CELL_WIDTH; j++) {
-      assert(letter <= font_atlas + font_atlas_len - 3);
+  for (uint64_t src_y = 0; src_y < LETTER_CELL_HEIGHT; src_y++) {
+    for (uint64_t src_x = 0; src_x < LETTER_CELL_WIDTH; src_x++) {
+      assert(src <= font_atlas + font_atlas_len - src_channels);
+      uint8_t *src_rgb =
+          &src[(src_y * LETTER_CELL_WIDTH * LETTER_ROW_COUNT +src_x)* src_channels];
 
-      uint8_t r = *(letter++);
-      uint8_t g = *(letter++);
-      uint8_t b = *(letter++);
-      if (r && g && b)
-        pixels[window_width * i + j] = font_color;
+      uint8_t r = src_rgb[0];
+      uint8_t g = src_rgb[1];
+      uint8_t b = src_rgb[2];
+      if (r || g || b)
+        dst[window_width * src_y + src_x] = font_color;
     }
-    letter += LETTER_CELL_WIDTH * (LETTER_ROW_COUNT - 1) * 3;
   }
 }
 
@@ -745,8 +747,11 @@ int main() {
       uint64_t x = 30;
       uint64_t y = 50;
 
-      draw_letter(pixels, state.w, x, y, 4 * LETTER_ROW_COUNT + 8, 0x0000ff);
-      x += LETTER_CELL_WIDTH;
+      const char text[] = "Hello, world!";
+      for (uint64_t i = 0; i < cstring_len(text); i++) {
+        draw_letter(pixels, state.w, x, y, text[i], 0x0000ff);
+        x += (float)LETTER_CELL_WIDTH * 0.5;
+      }
 
       wayland_wl_surface_attach(fd, &state);
       wayland_wl_surface_commit(fd, &state);
