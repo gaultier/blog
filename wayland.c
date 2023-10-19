@@ -655,7 +655,7 @@ static void draw_background(uint32_t *pixels, uint64_t size) {
 
 static void draw_letter(uint32_t *pixels, uint64_t window_width,
                         uint64_t window_x, uint64_t window_y,
-                        uint64_t letter_index) {
+                        uint64_t letter_index, uint32_t font_color) {
 
   pixels += window_width * window_y + window_x;
 
@@ -677,7 +677,8 @@ static void draw_letter(uint32_t *pixels, uint64_t window_width,
       uint8_t r = *(letter++);
       uint8_t g = *(letter++);
       uint8_t b = *(letter++);
-      pixels[window_width * i + j] = (r << 16) | (g << 8) | b;
+      if (r && g && b)
+        pixels[window_width * i + j] = font_color;
     }
     letter += LETTER_CELL_WIDTH * (LETTER_ROW_COUNT - 1) * 3;
   }
@@ -744,7 +745,7 @@ int main() {
       uint64_t x = 30;
       uint64_t y = 50;
 
-      draw_letter(pixels, state.w, x, y, 4 * LETTER_ROW_COUNT + 8);
+      draw_letter(pixels, state.w, x, y, 4 * LETTER_ROW_COUNT + 8, 0x0000ff);
       x += LETTER_CELL_WIDTH;
 
       wayland_wl_surface_attach(fd, &state);
