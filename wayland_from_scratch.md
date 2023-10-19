@@ -657,7 +657,10 @@ $ convert wayland.png wayland.ppm
 $ file wayland.ppm
 wayland.ppm: Netpbm image data, size = 117 x 150, rawbits, pixmap
 $ xxd -s +15 -i wayland.ppm  > wayland-logo.h
+$ sed -i 's/wayland_ppm/wayland_logo/g' wayland-logo.h
 ```
+
+*The resulting C array created by `xxd` will be named after the input file i.e. `wayland_ppm`. We rename it with the last command to something more human-readable.*
 
 The image is now in the `RGB` format (3 bytes per pixel), which we have to convert to the `XRGB` format (4 bytes per pixel). Our frame rendering loop becomes:
 
