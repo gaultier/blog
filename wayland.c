@@ -674,12 +674,13 @@ static void draw_letter(uint32_t *dst, uint64_t window_width, uint64_t dst_x,
   for (uint64_t src_y = 0; src_y < LETTER_CELL_HEIGHT; src_y++) {
     for (uint64_t src_x = 0; src_x < LETTER_CELL_WIDTH; src_x++) {
       assert(src <= font_atlas + font_atlas_len - src_channels);
-      uint8_t *src_rgb =
-          &src[(src_y * LETTER_CELL_WIDTH * LETTER_ROW_COUNT +src_x)* src_channels];
+      uint8_t *src_pixel =
+          &src[(src_y * LETTER_CELL_WIDTH * LETTER_ROW_COUNT + src_x) *
+               src_channels];
 
-      uint8_t r = src_rgb[0];
-      uint8_t g = src_rgb[1];
-      uint8_t b = src_rgb[2];
+      uint8_t r = src_pixel[0];
+      uint8_t g = src_pixel[1];
+      uint8_t b = src_pixel[2];
       if (r || g || b)
         dst[window_width * src_y + src_x] = font_color;
     }
