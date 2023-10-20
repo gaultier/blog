@@ -49,6 +49,8 @@ static const uint32_t wayland_format_xrgb8888 = 1;
 static const uint32_t wayland_header_size = 8;
 static const uint32_t color_channels = 4;
 
+static const float font_spacing = 0.4;
+
 typedef enum state_state_t state_state_t;
 enum state_state_t {
   STATE_NONE,
@@ -726,7 +728,7 @@ static void renderer_draw_text(uint32_t *dst, uint64_t window_width,
 
   for (uint64_t i = 0; i < text_len; i++) {
     renderer_draw_letter(dst, window_width, dst_x, dst_y, text[i]);
-    dst_x += (uint64_t)ceilf((float)LETTER_CELL_WIDTH * 0.4);
+    dst_x += LETTER_CELL_WIDTH * font_spacing;
   }
 }
 
@@ -742,7 +744,6 @@ static void renderer_draw_rect(uint32_t *dst, uint64_t window_width,
     }
   }
 }
-
 
 int main() {
   struct timeval tv = {0};
@@ -819,8 +820,9 @@ int main() {
       renderer_draw_text(pixels, state.w, dst_x, dst_y, text,
                          (uint64_t)cstring_len(text));
 
-      renderer_draw_rect(pixels, state.w, dst_x + 200, dst_y, LETTER_CELL_WIDTH,
-                         LETTER_CELL_HEIGHT, 0x00ff00);
+      renderer_draw_rect(pixels, state.w,
+                         state.w-LETTER_CELL_WIDTH, dst_y,
+                         LETTER_CELL_WIDTH, LETTER_CELL_HEIGHT, 0x00ff00);
 
       wayland_wl_surface_attach(fd, &state);
       wayland_wl_surface_commit(fd, &state);
