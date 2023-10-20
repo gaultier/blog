@@ -688,12 +688,25 @@ static void draw_letter(uint32_t *dst, uint64_t window_width, uint64_t dst_x,
   }
 }
 
-static void draw_text(uint32_t *dst, uint64_t window_width, uint64_t *dst_x,
-                      uint64_t *dst_y, char *text, uint64_t text_len) {
+static void draw_text(uint32_t *dst, uint64_t window_width, uint64_t dst_x,
+                      uint64_t dst_y, char *text, uint64_t text_len) {
 
   for (uint64_t i = 0; i < text_len; i++) {
-    draw_letter(dst, window_width, *dst_x, *dst_y, text[i]);
-    *dst_x += LETTER_CELL_WIDTH * 0.4;
+    draw_letter(dst, window_width, dst_x, dst_y, text[i]);
+    dst_x += LETTER_CELL_WIDTH * 0.4;
+  }
+}
+
+static void draw_rect(uint32_t *dst, uint64_t window_width, uint64_t dst_x,
+                      uint64_t dst_y, uint64_t rect_w, uint64_t rect_h,
+                      uint32_t color_rgb) {
+
+  dst += window_width * dst_y + dst_x;
+
+  for (uint64_t src_y = 0; src_y < rect_h; src_y++) {
+    for (uint64_t src_x = 0; src_x < rect_w; src_x++) {
+      dst[window_width * src_y + src_x] = color_rgb;
+    }
   }
 }
 
@@ -766,8 +779,10 @@ int main() {
       uint64_t dst_x = 30;
       uint64_t dst_y = state.h - LETTER_CELL_HEIGHT;
       char text[] = "Hello, world!";
-      draw_text(pixels, state.w, &dst_x, &dst_y, text,
+      draw_text(pixels, state.w, dst_x, dst_y, text,
                 (uint64_t)cstring_len(text));
+
+      draw_rect(pixels, state.w, dst_x + 200, dst_y, LETTER_CELL_WIDTH, LETTER_CELL_HEIGHT, 0x00ff00);
 
       wayland_wl_surface_attach(fd, &state);
       wayland_wl_surface_commit(fd, &state);
