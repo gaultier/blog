@@ -648,14 +648,14 @@ static void wayland_handle_message(int fd, state_t *state, char **msg,
 #define LETTER_CELL_HEIGHT 32
 #define LETTER_ROW_COUNT 16
 
-static void draw_background(uint32_t *pixels, uint64_t size) {
+static void draw_background(uint32_t *pixels, uint64_t size,
+                            uint32_t color_rgb) {
   for (uint64_t i = 0; i < size; i++)
-    pixels[i] = 0xffaabb;
+    pixels[i] = color_rgb;
 }
 
 static void draw_letter(uint32_t *dst, uint64_t window_width, uint64_t dst_x,
-                        uint64_t dst_y, uint64_t letter_index,
-                        uint32_t font_color) {
+                        uint64_t dst_y, uint64_t letter_index) {
 
   dst += window_width * dst_y + dst_x;
 
@@ -682,8 +682,18 @@ static void draw_letter(uint32_t *dst, uint64_t window_width, uint64_t dst_x,
       uint8_t g = src_pixel[1];
       uint8_t b = src_pixel[2];
       if (r || g || b)
-        dst[window_width * src_y + src_x] = font_color;
+        dst[window_width * src_y + src_x] =
+            ((uint32_t)r << 16) | ((uint32_t)g << 8) | (uint32_t)b;
     }
+  }
+}
+
+static void draw_text(uint32_t *dst, uint64_t window_width, uint64_t *dst_x,
+                      uint64_t *dst_y, char *text, uint64_t text_len) {
+
+  for (uint64_t i = 0; i < text_len; i++) {
+    draw_letter(dst, window_width, *dst_x, *dst_y, text[i]);
+    *dst_x += LETTER_CELL_WIDTH * 0.4;
   }
 }
 
@@ -696,9 +706,9 @@ int main() {
 
   state_t state = {
       .wl_registry = wayland_wl_display_get_registry(fd),
-      .w = 800,
-      .h = 600,
-      .stride = 800 * color_channels,
+      .w = LETTER_CELL_WIDTH * LETTER_ROW_COUNT,
+      .h = LETTER_CELL_HEIGHT * (LETTER_ROW_COUNT + 1),
+      .stride = LETTER_CELL_WIDTH * LETTER_ROW_COUNT * color_channels,
   };
 
   // Single buffering.
@@ -743,16 +753,21 @@ int main() {
       assert(state.shm_pool_size != 0);
 
       uint32_t *pixels = (uint32_t *)state.shm_pool_data;
-      draw_background(pixels, (uint64_t)state.w * (uint64_t)state.h);
+      draw_background(pixels, (uint64_t)state.w * (uint64_t)state.h, 0x000000);
 
-      uint64_t x = 30;
-      uint64_t y = 50;
-
-      const char text[] = "Hello, world!";
-      for (uint64_t i = 0; i < cstring_len(text); i++) {
-        draw_letter(pixels, state.w, x, y, text[i], 0x0000ff);
-        x += (float)LETTER_CELL_WIDTH * 0.5;
+      /* const char text[] = "Hello, world!"; */
+      for (uint64_t y = 0; y < LETTER_ROW_COUNT; y++) {
+        for (uint64_t x = 0; x < LETTER_ROW_COUNT; x++) {
+          draw_letter(pixels, state.w, x * LETTER_CELL_WIDTH,
+                      y * LETTER_CELL_HEIGHT, y * LETTER_ROW_COUNT + x);
+        }
       }
+
+      uint64_t dst_x = 30;
+      uint64_t dst_y = state.h - LETTER_CELL_HEIGHT;
+      char text[] = "Hello, world!";
+      draw_text(pixels, state.w, &dst_x, &dst_y, text,
+                (uint64_t)cstring_len(text));
 
       wayland_wl_surface_attach(fd, &state);
       wayland_wl_surface_commit(fd, &state);
