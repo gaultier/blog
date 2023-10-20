@@ -3,6 +3,7 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <inttypes.h>
+#include <math.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -16,6 +17,8 @@
 
 #include "font_atlas.h"
 #include "wayland-logo.h"
+
+#include "microui.h"
 
 #define cstring_len(s) (sizeof(s) - 1)
 
@@ -689,18 +692,19 @@ static void renderer_draw_letter(uint32_t *dst, uint64_t window_width,
   }
 }
 
-static void renderer_text(uint32_t *dst, uint64_t window_width, uint64_t dst_x,
-                          uint64_t dst_y, char *text, uint64_t text_len) {
+static void renderer_draw_text(uint32_t *dst, uint64_t window_width,
+                               uint64_t dst_x, uint64_t dst_y, char *text,
+                               uint64_t text_len) {
 
   for (uint64_t i = 0; i < text_len; i++) {
     renderer_draw_letter(dst, window_width, dst_x, dst_y, text[i]);
-    dst_x += LETTER_CELL_WIDTH * 0.4;
+    dst_x += (uint64_t)ceilf((float)LETTER_CELL_WIDTH * 0.4);
   }
 }
 
-static void renderer_rect(uint32_t *dst, uint64_t window_width, uint64_t dst_x,
-                          uint64_t dst_y, uint64_t rect_w, uint64_t rect_h,
-                          uint32_t color_rgb) {
+static void renderer_draw_rect(uint32_t *dst, uint64_t window_width,
+                               uint64_t dst_x, uint64_t dst_y, uint64_t rect_w,
+                               uint64_t rect_h, uint32_t color_rgb) {
 
   dst += window_width * dst_y + dst_x;
 
@@ -710,6 +714,20 @@ static void renderer_rect(uint32_t *dst, uint64_t window_width, uint64_t dst_x,
     }
   }
 }
+
+static int get_text_width(mu_Font font, const char *text, int len) {
+  len = (len == -1 ? strlen(text) : len);
+  return (int)ceilf((float)len * (float)LETTER_CELL_WIDTH * 0.4);
+}
+
+static int get_text_height(mu_Font font) { return LETTER_CELL_HEIGHT; }
+
+static int icon_to_letter[MU_ICON_MAX] = {
+    [MU_ICON_CLOSE] = 'x',
+    [MU_ICON_CHECK] = 252,
+    [MU_ICON_COLLAPSED] = 16,
+    [MU_ICON_EXPANDED] = 31,
+};
 
 int main() {
   struct timeval tv = {0};
@@ -728,6 +746,11 @@ int main() {
   // Single buffering.
   state.shm_pool_size = state.h * state.stride;
   create_shared_memory_file(state.shm_pool_size, &state);
+
+  mu_Context ctx = {0};
+  mu_init(&ctx);
+  ctx.text_width = get_text_width;
+  ctx.text_height = get_text_height;
 
   while (1) {
     char read_buf[4096] = "";
@@ -767,25 +790,62 @@ int main() {
       assert(state.shm_pool_size != 0);
 
       uint32_t *pixels = (uint32_t *)state.shm_pool_data;
+
+      mu_begin(&ctx);
+      if (mu_begin_window(&ctx, "My Window", mu_rect(0, 0, state.w, state.h))) {
+        mu_layout_row(&ctx, 2, (int[]){120, -1}, 0);
+
+        mu_label(&ctx, "First:");
+        if (mu_button(&ctx, "Button1")) {
+          printf("Button1 pressed\n");
+        }
+
+        mu_label(&ctx, "Second:");
+        if (mu_button(&ctx, "Button2")) {
+          mu_open_popup(&ctx, "My Popup");
+        }
+
+        if (mu_begin_popup(&ctx, "My Popup")) {
+          mu_label(&ctx, "Hello world!");
+          mu_end_popup(&ctx);
+        }
+
+        mu_end_window(&ctx);
+      }
+      mu_end(&ctx);
+
       renderer_clear(pixels, (uint64_t)state.w * (uint64_t)state.h, 0x000000);
 
-      /* const char text[] = "Hello, world!"; */
-      for (uint64_t y = 0; y < LETTER_ROW_COUNT; y++) {
-        for (uint64_t x = 0; x < LETTER_ROW_COUNT; x++) {
-          renderer_draw_letter(pixels, state.w, x * LETTER_CELL_WIDTH,
-                               y * LETTER_CELL_HEIGHT,
-                               y * LETTER_ROW_COUNT + x);
+      mu_Command *cmd = NULL;
+      while (mu_next_command(&ctx, &cmd)) {
+        switch (cmd->type) {
+        case MU_COMMAND_TEXT:
+          renderer_draw_text(pixels, state.w, cmd->text.pos.x, cmd->text.pos.y,
+                             cmd->text.str, strlen(cmd->text.str));
+          break;
+        case MU_COMMAND_RECT: {
+          uint32_t color = (((uint32_t)(cmd->rect.color.a)) << 24) |
+                           (((uint32_t)(cmd->rect.color.r)) << 16) |
+                           (((uint32_t)(cmd->rect.color.g)) << 8) |
+                           (((uint32_t)(cmd->rect.color.b)) << 0);
+          renderer_draw_rect(pixels, state.w, (uint64_t)cmd->rect.rect.x,
+                             (uint64_t)cmd->rect.rect.y,
+                             (uint64_t)cmd->rect.rect.w,
+                             (uint64_t)cmd->rect.rect.h, color);
+        } break;
+        case MU_COMMAND_ICON: {
+          uint32_t color = (((uint32_t)(cmd->rect.color.a)) << 24) |
+                           (((uint32_t)(cmd->rect.color.r)) << 16) |
+                           (((uint32_t)(cmd->rect.color.g)) << 8) |
+                           (((uint32_t)(cmd->rect.color.b)) << 0);
+          renderer_draw_letter(pixels, state.w, (uint64_t)cmd->rect.rect.x,
+                               (uint64_t)cmd->rect.rect.y,
+                               icon_to_letter[ cmd->icon.id ]);
+        } break;
+        case MU_COMMAND_CLIP: /*renderer_set_clip_rect(cmd->clip.rect);*/
+          break;
         }
       }
-
-      uint64_t dst_x = 30;
-      uint64_t dst_y = state.h - LETTER_CELL_HEIGHT;
-      char text[] = "Hello, world!";
-      renderer_text(pixels, state.w, dst_x, dst_y, text,
-                    (uint64_t)cstring_len(text));
-
-      renderer_rect(pixels, state.w, dst_x + 200, dst_y, LETTER_CELL_WIDTH,
-                    LETTER_CELL_HEIGHT, 0x00ff00);
 
       wayland_wl_surface_attach(fd, &state);
       wayland_wl_surface_commit(fd, &state);
