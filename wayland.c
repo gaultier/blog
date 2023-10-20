@@ -44,6 +44,7 @@ static const uint16_t wayland_wl_surface_attach_opcode = 1;
 static const uint16_t wayland_xdg_surface_get_toplevel_opcode = 1;
 static const uint16_t wayland_wl_surface_commit_opcode = 6;
 static const uint16_t wayland_wl_display_error_event = 0;
+static const uint16_t wayland_wl_display_delete_id_event = 1;
 static const uint32_t wayland_format_xrgb8888 = 1;
 static const uint32_t wayland_header_size = 8;
 static const uint32_t color_channels = 4;
@@ -62,6 +63,7 @@ struct state_t {
   uint32_t wl_registry;
   uint32_t wl_shm;
   uint32_t wl_shm_pool;
+  uint32_t old_wl_buffer;
   uint32_t wl_buffer;
   uint32_t xdg_wm_base;
   uint32_t xdg_surface;
@@ -452,12 +454,12 @@ static uint32_t wayland_wl_shm_pool_create_buffer(int fd, state_t *state) {
   return wayland_current_id;
 }
 
-static void wayland_wl_buffer_destroy(int fd, state_t *state) {
-  assert(state->wl_buffer > 0);
+static void wayland_wl_buffer_destroy(int fd, uint32_t wl_buffer) {
+  assert(wl_buffer > 0);
 
   uint64_t msg_size = 0;
   char msg[128] = "";
-  buf_write_u32(msg, &msg_size, sizeof(msg), state->wl_shm_pool);
+  buf_write_u32(msg, &msg_size, sizeof(msg), wl_buffer);
 
   buf_write_u16(msg, &msg_size, sizeof(msg), wayland_wl_buffer_destroy_opcode);
 
@@ -468,7 +470,7 @@ static void wayland_wl_buffer_destroy(int fd, state_t *state) {
   if ((int64_t)msg_size != send(fd, msg, msg_size, 0))
     exit(errno);
 
-  printf("-> wl_buffer@%u.destroy\n", state->wl_buffer);
+  fprintf(stderr, "-> wl_buffer@%u.destroy\n", wl_buffer);
 }
 
 static void wayland_wl_surface_attach(int fd, state_t *state) {
@@ -495,8 +497,8 @@ static void wayland_wl_surface_attach(int fd, state_t *state) {
   if ((int64_t)msg_size != send(fd, msg, msg_size, 0))
     exit(errno);
 
-  printf("-> wl_surface@%u.attach: wl_buffer=%u\n", state->wl_surface,
-         state->wl_buffer);
+  fprintf(stderr, "-> wl_surface@%u.attach: wl_buffer=%u\n", state->wl_surface,
+          state->wl_buffer);
 }
 
 static uint32_t wayland_xdg_surface_get_toplevel(int fd, state_t *state) {
@@ -520,8 +522,8 @@ static uint32_t wayland_xdg_surface_get_toplevel(int fd, state_t *state) {
   if ((int64_t)msg_size != send(fd, msg, msg_size, 0))
     exit(errno);
 
-  printf("-> xdg_surface@%u.get_toplevel: xdg_toplevel=%u\n",
-         state->xdg_surface, wayland_current_id);
+  fprintf(stderr, "-> xdg_surface@%u.get_toplevel: xdg_toplevel=%u\n",
+          state->xdg_surface, wayland_current_id);
 
   return wayland_current_id;
 }
@@ -542,7 +544,7 @@ static void wayland_wl_surface_commit(int fd, state_t *state) {
   if ((int64_t)msg_size != send(fd, msg, msg_size, 0))
     exit(errno);
 
-  printf("-> wl_surface@%u.commit: \n", state->wl_surface);
+  fprintf(stderr, "-> wl_surface@%u.commit: \n", state->wl_surface);
 }
 
 static void wayland_handle_message(int fd, state_t *state, char **msg,
@@ -576,8 +578,9 @@ static void wayland_handle_message(int fd, state_t *state, char **msg,
 
     uint32_t version = buf_read_u32(msg, msg_len);
 
-    printf("<- wl_registry@%u.global: name=%u interface=%.*s version=%u\n",
-           state->wl_registry, name, interface_len, interface, version);
+    fprintf(stderr,
+            "<- wl_registry@%u.global: name=%u interface=%.*s version=%u\n",
+            state->wl_registry, name, interface_len, interface, version);
 
     assert(announced_size == sizeof(object_id) + sizeof(announced_size) +
                                  sizeof(opcode) + sizeof(name) +
@@ -614,15 +617,21 @@ static void wayland_handle_message(int fd, state_t *state, char **msg,
     fprintf(stderr, "fatal error: target_object_id=%u code=%u error=%s\n",
             target_object_id, code, error);
     exit(EINVAL);
+  } else if (object_id == wayland_display_object_id &&
+             opcode == wayland_wl_display_delete_id_event) {
+    uint32_t id = buf_read_u32(msg, msg_len);
+    printf("<- wl_display@1:delete_id: id=%u\n", id);
+    return;
+
   } else if (object_id == state->wl_shm &&
              opcode == wayland_shm_pool_event_format) {
 
     uint32_t format = buf_read_u32(msg, msg_len);
-    printf("<- wl_shm: format=%#x\n", format);
+    printf("<- wl_shm@%u: format=%#x\n", state->wl_shm, format);
     return;
-  } else if (object_id == state->wl_buffer &&
+  } else if ((object_id == state->wl_buffer ||
+              object_id == state->old_wl_buffer) &&
              opcode == wayland_wl_buffer_event_release) {
-    state->wl_buffer = 0;
 
     printf("<- xdg_wl_buffer@%u.release\n", state->wl_buffer);
     return;
@@ -645,14 +654,17 @@ static void wayland_handle_message(int fd, state_t *state, char **msg,
     printf("<- xdg_toplevel@%u.configure: w=%u h=%u states[%u]\n",
            state->xdg_toplevel, w, h, len);
 
-    if (w && h) { // Resize.
+    if (w && h && (w != state->w || h != state->h)) { // Resize.
       state->w = w;
       state->h = h;
       state->stride = w * color_channels;
 
       assert(state->h * state->stride <= state->shm_pool_size);
-      if (state->wl_buffer)
-        wayland_wl_buffer_destroy(fd, state);
+      if (state->wl_buffer) {
+        wayland_wl_buffer_destroy(fd, state->wl_buffer);
+        state->old_wl_buffer = state->wl_buffer;
+        state->wl_buffer = wayland_wl_shm_pool_create_buffer(fd, state);
+      }
     }
 
     return;
@@ -794,8 +806,9 @@ int main() {
 
       if (state.wl_shm_pool == 0)
         state.wl_shm_pool = wayland_wl_shm_create_pool(fd, &state);
-      if (state.wl_buffer == 0)
+      if (state.wl_buffer == 0) {
         state.wl_buffer = wayland_wl_shm_pool_create_buffer(fd, &state);
+      }
 
       assert(state.shm_pool_data != 0);
       assert(state.shm_pool_size != 0);
