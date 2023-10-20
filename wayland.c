@@ -649,13 +649,14 @@ static void wayland_handle_message(int fd, state_t *state, char **msg,
 #define LETTER_ROW_COUNT 16
 
 static void renderer_clear(uint32_t *pixels, uint64_t size,
-                            uint32_t color_rgb) {
+                           uint32_t color_rgb) {
   for (uint64_t i = 0; i < size; i++)
     pixels[i] = color_rgb;
 }
 
-static void renderer_draw_letter(uint32_t *dst, uint64_t window_width, uint64_t dst_x,
-                        uint64_t dst_y, uint64_t letter_index) {
+static void renderer_draw_letter(uint32_t *dst, uint64_t window_width,
+                                 uint64_t dst_x, uint64_t dst_y,
+                                 uint64_t letter_index) {
 
   dst += window_width * dst_y + dst_x;
 
@@ -689,7 +690,7 @@ static void renderer_draw_letter(uint32_t *dst, uint64_t window_width, uint64_t 
 }
 
 static void renderer_text(uint32_t *dst, uint64_t window_width, uint64_t dst_x,
-                      uint64_t dst_y, char *text, uint64_t text_len) {
+                          uint64_t dst_y, char *text, uint64_t text_len) {
 
   for (uint64_t i = 0; i < text_len; i++) {
     renderer_draw_letter(dst, window_width, dst_x, dst_y, text[i]);
@@ -698,8 +699,8 @@ static void renderer_text(uint32_t *dst, uint64_t window_width, uint64_t dst_x,
 }
 
 static void renderer_rect(uint32_t *dst, uint64_t window_width, uint64_t dst_x,
-                      uint64_t dst_y, uint64_t rect_w, uint64_t rect_h,
-                      uint32_t color_rgb) {
+                          uint64_t dst_y, uint64_t rect_w, uint64_t rect_h,
+                          uint32_t color_rgb) {
 
   dst += window_width * dst_y + dst_x;
 
@@ -772,7 +773,8 @@ int main() {
       for (uint64_t y = 0; y < LETTER_ROW_COUNT; y++) {
         for (uint64_t x = 0; x < LETTER_ROW_COUNT; x++) {
           renderer_draw_letter(pixels, state.w, x * LETTER_CELL_WIDTH,
-                      y * LETTER_CELL_HEIGHT, y * LETTER_ROW_COUNT + x);
+                               y * LETTER_CELL_HEIGHT,
+                               y * LETTER_ROW_COUNT + x);
         }
       }
 
@@ -780,10 +782,10 @@ int main() {
       uint64_t dst_y = state.h - LETTER_CELL_HEIGHT;
       char text[] = "Hello, world!";
       renderer_text(pixels, state.w, dst_x, dst_y, text,
-                (uint64_t)cstring_len(text));
+                    (uint64_t)cstring_len(text));
 
       renderer_rect(pixels, state.w, dst_x + 200, dst_y, LETTER_CELL_WIDTH,
-                LETTER_CELL_HEIGHT, 0x00ff00);
+                    LETTER_CELL_HEIGHT, 0x00ff00);
 
       wayland_wl_surface_attach(fd, &state);
       wayland_wl_surface_commit(fd, &state);
