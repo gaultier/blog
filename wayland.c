@@ -32,6 +32,7 @@ static const uint16_t wayland_wl_seat_event_capabilities = 0;
 static const uint16_t wayland_wl_seat_event_capabilities_pointer = 1;
 static const uint16_t wayland_wl_seat_event_capabilities_keyboard = 2;
 static const uint16_t wayland_wl_seat_event_name = 1;
+static const uint16_t wayland_wl_seat_get_pointer_opcode = 0;
 static const uint16_t wayland_wl_display_get_registry_opcode = 1;
 static const uint16_t wayland_wl_registry_bind_opcode = 0;
 static const uint16_t wayland_wl_compositor_create_surface_opcode = 0;
@@ -552,6 +553,32 @@ static void wayland_wl_surface_commit(int fd, state_t *state) {
   fprintf(stderr, "-> wl_surface@%u.commit: \n", state->wl_surface);
 }
 
+static uint32_t wayland_wl_seat_get_pointer(int fd, uint32_t wl_seat) {
+  assert(wl_seat > 0);
+
+  uint64_t msg_size = 0;
+  char msg[128] = "";
+  buf_write_u32(msg, &msg_size, sizeof(msg), wl_seat);
+
+  buf_write_u16(msg, &msg_size, sizeof(msg),
+                wayland_wl_seat_get_pointer_opcode);
+
+  uint16_t msg_announced_size =
+      wayland_header_size + sizeof(wayland_current_id);
+  assert(roundup_4(msg_announced_size) == msg_announced_size);
+  buf_write_u16(msg, &msg_size, sizeof(msg), msg_announced_size);
+
+  wayland_current_id++;
+  buf_write_u32(msg, &msg_size, sizeof(msg), wayland_current_id);
+
+  if ((int64_t)msg_size != send(fd, msg, msg_size, 0))
+    exit(errno);
+
+  fprintf(stderr, "-> wl_seat@%u.get_pointer: %u\n", wl_seat, wayland_current_id);
+
+  return wayland_current_id;
+}
+
 static void wayland_handle_message(int fd, state_t *state, char **msg,
                                    uint64_t *msg_len) {
   assert(*msg_len >= 8);
@@ -708,7 +735,10 @@ static void wayland_handle_message(int fd, state_t *state, char **msg,
     uint32_t capabilities = buf_read_u32(msg, msg_len);
     fprintf(stderr, "<- wl_seat@%u.capabilities: capabilities=%u\n",
             state->wl_seat, capabilities);
-    assert(capabilities==(wayland_wl_seat_event_capabilities_pointer|wayland_wl_seat_event_capabilities_keyboard));
+    assert(capabilities == (wayland_wl_seat_event_capabilities_pointer |
+                            wayland_wl_seat_event_capabilities_keyboard));
+
+    wayland_wl_seat_get_pointer(fd, state->wl_seat);
   } else {
 
     fprintf(stderr, "object_id=%u opcode=%u msg_len=%lu\n", object_id, opcode,
