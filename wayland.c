@@ -92,6 +92,7 @@ struct state_t {
 
   float pointer_x;
   float pointer_y;
+  uint32_t pointer_button_state;
 
   entity_t *entities;
   uint64_t entities_len;
@@ -833,7 +834,9 @@ static void wayland_handle_message(int fd, state_t *state, char **msg,
             "<- wl_pointer@%u.button: serial=%u time=%u button=%u state=%u\n",
             state->wl_seat, serial, time, button, button_state);
 
-    if (button_state) {
+    state->pointer_button_state = button_state;
+
+    if (state->pointer_button_state) {
       state->entities[state->entities_len++] = (entity_t){
           .x = state->pointer_x / (float)state->w,
           .y = state->pointer_y / (float)state->h,
@@ -843,6 +846,7 @@ static void wayland_handle_message(int fd, state_t *state, char **msg,
               state->entities[state->entities_len - 1].x,
               state->entities[state->entities_len - 1].y);
     }
+
   } else if (object_id == state->wl_pointer &&
              opcode == wayland_wl_pointer_event_motion) {
     uint32_t time = buf_read_u32(msg, msg_len);
@@ -855,6 +859,16 @@ static void wayland_handle_message(int fd, state_t *state, char **msg,
     state->pointer_x = wayland_fixed_to_double(surface_x);
     state->pointer_y = wayland_fixed_to_double(surface_y);
 
+    if (state->pointer_button_state) {
+      state->entities[state->entities_len++] = (entity_t){
+          .x = state->pointer_x / (float)state->w,
+          .y = state->pointer_y / (float)state->h,
+      };
+
+      fprintf(stderr, "new entity %lu: x=%f y=%f\n", state->entities_len,
+              state->entities[state->entities_len - 1].x,
+              state->entities[state->entities_len - 1].y);
+    }
   } else if (object_id == state->wl_pointer &&
              opcode == wayland_wl_pointer_event_frame) {
 
