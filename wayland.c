@@ -28,6 +28,7 @@ static const uint16_t wayland_xdg_wm_base_event_ping = 0;
 static const uint16_t wayland_xdg_toplevel_event_configure = 0;
 static const uint16_t wayland_xdg_toplevel_event_close = 1;
 static const uint16_t wayland_xdg_surface_event_configure = 0;
+static const uint16_t wayland_wl_seat_event_capabilities = 0;
 static const uint16_t wayland_wl_seat_event_name = 1;
 static const uint16_t wayland_wl_display_get_registry_opcode = 1;
 static const uint16_t wayland_wl_registry_bind_opcode = 0;
@@ -700,6 +701,10 @@ static void wayland_handle_message(int fd, state_t *state, char **msg,
 
     fprintf(stderr, "<- wl_seat@%u.name: name=%.*s\n", state->wl_seat, buf_len,
             buf);
+  } else if (object_id == state->wl_seat &&
+             opcode == wayland_wl_seat_event_capabilities) {
+    uint32_t capabilities = buf_read_u32(msg, msg_len);
+    fprintf(stderr, "<- wl_seat@%u.capabilities: capabilities=%u\n", state->wl_seat, capabilities);
   } else {
 
     fprintf(stderr, "object_id=%u opcode=%u msg_len=%lu\n", object_id, opcode,
