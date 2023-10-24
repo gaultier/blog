@@ -28,6 +28,7 @@ static const uint16_t wayland_xdg_wm_base_event_ping = 0;
 static const uint16_t wayland_xdg_toplevel_event_configure = 0;
 static const uint16_t wayland_xdg_toplevel_event_close = 1;
 static const uint16_t wayland_xdg_surface_event_configure = 0;
+static const uint16_t wayland_wl_seat_event_name = 1;
 static const uint16_t wayland_wl_display_get_registry_opcode = 1;
 static const uint16_t wayland_wl_registry_bind_opcode = 0;
 static const uint16_t wayland_wl_compositor_create_surface_opcode = 0;
@@ -63,6 +64,7 @@ struct state_t {
   uint32_t xdg_wm_base;
   uint32_t xdg_surface;
   uint32_t wl_compositor;
+  uint32_t wl_seat;
   uint32_t wl_surface;
   uint32_t xdg_toplevel;
   uint32_t stride;
@@ -227,8 +229,11 @@ static uint32_t wayland_wl_registry_bind(int fd, uint32_t registry,
   if ((int64_t)msg_size != send(fd, msg, msg_size, 0))
     exit(errno);
 
-  fprintf(stderr, "-> wl_registry@%u.bind: name=%u interface=%.*s version=%u\n",
-          registry, name, interface_len, interface, version);
+  fprintf(stderr,
+          "-> wl_registry@%u.bind: name=%u interface=%.*s version=%u "
+          "wayland_current_id=%u\n",
+          registry, name, interface_len, interface, version,
+          wayland_current_id);
 
   return wayland_current_id;
 }
@@ -586,23 +591,36 @@ static void wayland_handle_message(int fd, state_t *state, char **msg,
 
     char wl_shm_interface[] = "wl_shm";
     if (strcmp(wl_shm_interface, interface) == 0) {
+      assert(state->wl_shm == 0);
+
       state->wl_shm = wayland_wl_registry_bind(
           fd, state->wl_registry, name, interface, interface_len, version);
     }
 
     char xdg_wm_base_interface[] = "xdg_wm_base";
     if (strcmp(xdg_wm_base_interface, interface) == 0) {
+      assert(state->xdg_wm_base == 0);
+
       state->xdg_wm_base = wayland_wl_registry_bind(
           fd, state->wl_registry, name, interface, interface_len, version);
     }
 
     char wl_compositor_interface[] = "wl_compositor";
     if (strcmp(wl_compositor_interface, interface) == 0) {
+      assert(state->wl_compositor == 0);
+
       state->wl_compositor = wayland_wl_registry_bind(
           fd, state->wl_registry, name, interface, interface_len, version);
     }
 
-    return;
+    char wl_seat_interface[] = "wl_seat";
+    if (strcmp(wl_seat_interface, interface) == 0) {
+      assert(state->wl_seat == 0);
+
+      state->wl_seat = wayland_wl_registry_bind(
+          fd, state->wl_registry, name, interface, interface_len, version);
+    }
+
   } else if (object_id == wayland_display_object_id &&
              opcode == wayland_wl_display_error_event) {
     uint32_t target_object_id = buf_read_u32(msg, msg_len);
@@ -618,20 +636,17 @@ static void wayland_handle_message(int fd, state_t *state, char **msg,
              opcode == wayland_wl_display_delete_id_event) {
     uint32_t id = buf_read_u32(msg, msg_len);
     fprintf(stderr, "<- wl_display@1:delete_id: id=%u\n", id);
-    return;
 
   } else if (object_id == state->wl_shm &&
              opcode == wayland_shm_pool_event_format) {
 
     uint32_t format = buf_read_u32(msg, msg_len);
     fprintf(stderr, "<- wl_shm@%u: format=%#x\n", state->wl_shm, format);
-    return;
   } else if ((object_id == state->wl_buffer ||
               object_id == state->old_wl_buffer) &&
              opcode == wayland_wl_buffer_event_release) {
 
     fprintf(stderr, "<- xdg_wl_buffer@%u.release\n", state->wl_buffer);
-    return;
   } else if (object_id == state->xdg_wm_base &&
              opcode == wayland_xdg_wm_base_event_ping) {
     uint32_t ping = buf_read_u32(msg, msg_len);
@@ -639,7 +654,6 @@ static void wayland_handle_message(int fd, state_t *state, char **msg,
             ping);
     wayland_xdg_wm_base_pong(fd, state, ping);
 
-    return;
   } else if (object_id == state->xdg_toplevel &&
              opcode == wayland_xdg_toplevel_event_configure) {
     uint32_t w = buf_read_u32(msg, msg_len);
@@ -665,7 +679,6 @@ static void wayland_handle_message(int fd, state_t *state, char **msg,
       }
     }
 
-    return;
   } else if (object_id == state->xdg_surface &&
              opcode == wayland_xdg_surface_event_configure) {
     uint32_t configure = buf_read_u32(msg, msg_len);
@@ -674,16 +687,25 @@ static void wayland_handle_message(int fd, state_t *state, char **msg,
     wayland_xdg_surface_ack_configure(fd, state, configure);
     state->state = STATE_SURFACE_ACKED_CONFIGURE;
 
-    return;
   } else if (object_id == state->xdg_toplevel &&
              opcode == wayland_xdg_toplevel_event_close) {
     fprintf(stderr, "<- xdg_toplevel@%u.close\n", state->xdg_toplevel);
     exit(0);
-  }
+  } else if (object_id == state->wl_seat &&
+             opcode == wayland_wl_seat_event_name) {
+    uint32_t buf_len = buf_read_u32(msg, msg_len);
+    char buf[256] = "";
+    assert(buf_len <= sizeof(buf));
+    buf_read_n(msg, msg_len, buf, roundup_4(buf_len));
 
-  fprintf(stderr, "object_id=%u opcode=%u msg_len=%lu\n", object_id, opcode,
-          *msg_len);
-  assert(0 && "todo");
+    fprintf(stderr, "<- wl_seat@%u.name: name=%.*s\n", state->wl_seat, buf_len,
+            buf);
+  } else {
+
+    fprintf(stderr, "object_id=%u opcode=%u msg_len=%lu\n", object_id, opcode,
+            *msg_len);
+    assert(0 && "todo");
+  }
 }
 
 static void renderer_clear(uint32_t *pixels, uint64_t size,
@@ -716,7 +738,7 @@ int main() {
       .wl_registry = wayland_wl_display_get_registry(fd),
       .w = 800,
       .h = 600,
-      .stride = 800* color_channels,
+      .stride = 800 * color_channels,
   };
 
   // Single buffering.
