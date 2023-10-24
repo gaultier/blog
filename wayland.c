@@ -35,6 +35,7 @@ static const uint16_t wayland_wl_seat_event_name = 1;
 static const uint16_t wayland_wl_pointer_event_enter = 0;
 static const uint16_t wayland_wl_pointer_event_leave = 1;
 static const uint16_t wayland_wl_pointer_event_motion = 2;
+static const uint16_t wayland_wl_pointer_event_button = 3;
 static const uint16_t wayland_wl_pointer_event_frame = 5;
 static const uint16_t wayland_wl_seat_get_pointer_opcode = 0;
 static const uint16_t wayland_wl_display_get_registry_opcode = 1;
@@ -767,9 +768,18 @@ static void wayland_handle_message(int fd, state_t *state, char **msg,
     uint32_t serial = buf_read_u32(msg, msg_len);
     uint32_t surface = buf_read_u32(msg, msg_len);
 
-    fprintf(stderr,
-            "<- wl_pointer@%u.leave: serial=%u surface=%u\n",
+    fprintf(stderr, "<- wl_pointer@%u.leave: serial=%u surface=%u\n",
             state->wl_seat, serial, surface);
+  } else if (object_id == state->wl_pointer &&
+             opcode == wayland_wl_pointer_event_button) {
+    uint32_t serial = buf_read_u32(msg, msg_len);
+    uint32_t time = buf_read_u32(msg, msg_len);
+    uint32_t button = buf_read_u32(msg, msg_len);
+    uint32_t button_state = buf_read_u32(msg, msg_len);
+
+    fprintf(stderr,
+            "<- wl_pointer@%u.button: serial=%u time=%u button=%u state=%u\n",
+            state->wl_seat, serial, time, button, button_state);
   } else if (object_id == state->wl_pointer &&
              opcode == wayland_wl_pointer_event_motion) {
     uint32_t time = buf_read_u32(msg, msg_len);
