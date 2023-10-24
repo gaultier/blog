@@ -460,8 +460,8 @@ static uint32_t wayland_wl_shm_pool_create_buffer(int fd, state_t *state,
   if ((int64_t)msg_size != send(fd, msg, msg_size, 0))
     exit(errno);
 
-  fprintf(stderr, "-> wl_shm_pool@%u.create_buffer: wl_buffer=%u\n",
-          state->wl_shm_pool, wayland_current_id);
+  fprintf(stderr, "-> wl_shm_pool@%u.create_buffer: wl_buffer=%u offset=%u w=%u h=%u stride=%u\n",
+          state->wl_shm_pool, wayland_current_id, offset,state->w,state->h,state->stride);
 
   return wayland_current_id;
 }
@@ -782,6 +782,7 @@ static void wayland_handle_message(int fd, state_t *state, char **msg,
     fprintf(stderr,
             "<- wl_pointer@%u.motion: time=%u surface_x=%u surface_y=%u\n",
             state->wl_seat, time, surface_x, surface_y);
+
   } else if (object_id == state->wl_pointer &&
              opcode == wayland_wl_pointer_event_frame) {
 
@@ -815,6 +816,14 @@ static void renderer_draw_rect(uint32_t *dst, uint64_t window_width,
       dst[window_width * src_y + src_x] = color_rgb;
     }
   }
+}
+
+static uint8_t get_next_buffer_index(state_t *state) {
+  return (state->current_buffer_idx + 1) % 2;
+}
+
+static uint32_t *get_render_buffer(state_t *state) {
+  return (uint32_t *)&state->shm_pool_data[state->current_buffer_idx];
 }
 
 int main() {
@@ -870,16 +879,16 @@ int main() {
       assert(state.shm_pool_data != 0);
       assert(state.shm_pool_size != 0);
 
-      state.current_buffer_idx = (state.current_buffer_idx + 1) % 2;
+      state.current_buffer_idx = get_next_buffer_index(&state);
       uint32_t offset = state.stride * state.h * state.current_buffer_idx;
-      uint32_t wl_buffer = wayland_wl_shm_pool_create_buffer(fd, &state, offset);
+      uint32_t wl_buffer =
+          wayland_wl_shm_pool_create_buffer(fd, &state, offset);
 
-      uint32_t *pixels = (uint32_t *)(state.shm_pool_data + offset);
+      renderer_clear(get_render_buffer(&state),
+                     (uint64_t)state.w * (uint64_t)state.h, 0x000000);
 
-      renderer_clear(pixels, (uint64_t)state.w * (uint64_t)state.h, 0x000000);
-
-      renderer_draw_rect(pixels, state.w, state.w / 2, state.h / 2, 20, 30,
-                         0x00ff00);
+      renderer_draw_rect(get_render_buffer(&state), state.w, state.w / 2,
+                         state.h / 2, 60, 60, 0xfefefe);
 
       wayland_wl_surface_attach(fd, state.wl_surface, wl_buffer, 0, 0);
       wayland_wl_surface_commit(fd, &state);
