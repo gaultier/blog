@@ -32,6 +32,8 @@ static const uint16_t wayland_wl_seat_event_capabilities = 0;
 static const uint16_t wayland_wl_seat_event_capabilities_pointer = 1;
 static const uint16_t wayland_wl_seat_event_capabilities_keyboard = 2;
 static const uint16_t wayland_wl_seat_event_name = 1;
+static const uint16_t wayland_wl_pointer_event_enter = 0;
+static const uint16_t wayland_wl_pointer_event_leave = 1;
 static const uint16_t wayland_wl_seat_get_pointer_opcode = 0;
 static const uint16_t wayland_wl_display_get_registry_opcode = 1;
 static const uint16_t wayland_wl_registry_bind_opcode = 0;
@@ -69,6 +71,7 @@ struct state_t {
   uint32_t xdg_surface;
   uint32_t wl_compositor;
   uint32_t wl_seat;
+  uint32_t wl_pointer;
   uint32_t wl_surface;
   uint32_t xdg_toplevel;
   uint32_t stride;
@@ -574,7 +577,8 @@ static uint32_t wayland_wl_seat_get_pointer(int fd, uint32_t wl_seat) {
   if ((int64_t)msg_size != send(fd, msg, msg_size, 0))
     exit(errno);
 
-  fprintf(stderr, "-> wl_seat@%u.get_pointer: %u\n", wl_seat, wayland_current_id);
+  fprintf(stderr, "-> wl_seat@%u.get_pointer: %u\n", wl_seat,
+          wayland_current_id);
 
   return wayland_current_id;
 }
@@ -582,6 +586,7 @@ static uint32_t wayland_wl_seat_get_pointer(int fd, uint32_t wl_seat) {
 static void wayland_handle_message(int fd, state_t *state, char **msg,
                                    uint64_t *msg_len) {
   assert(*msg_len >= 8);
+  uint64_t start_msg_len = *msg_len;
 
   uint32_t object_id = buf_read_u32(msg, msg_len);
   assert(object_id <= wayland_current_id);
@@ -738,13 +743,33 @@ static void wayland_handle_message(int fd, state_t *state, char **msg,
     assert(capabilities == (wayland_wl_seat_event_capabilities_pointer |
                             wayland_wl_seat_event_capabilities_keyboard));
 
-    wayland_wl_seat_get_pointer(fd, state->wl_seat);
+    state->wl_pointer = wayland_wl_seat_get_pointer(fd, state->wl_seat);
+  } else if (object_id == state->wl_pointer &&
+             opcode == wayland_wl_pointer_event_enter) {
+    uint32_t serial = buf_read_u32(msg, msg_len);
+    uint32_t surface = buf_read_u32(msg, msg_len);
+    uint32_t x = buf_read_u32(msg, msg_len);
+    uint32_t y = buf_read_u32(msg, msg_len);
+    uint32_t id = 0;
+
+    uint64_t parsed_bytes = start_msg_len - *msg_len;
+    uint64_t remaining = announced_size - parsed_bytes;
+    if (remaining > 0)
+      id = buf_read_u32(msg, msg_len);
+
+    fprintf(stderr,
+            "<- wl_pointer@%u.enter: serial=%u surface=%u x=%u y=%u id=%u\n",
+            state->wl_seat, serial, surface, x, y, id);
   } else {
 
     fprintf(stderr, "object_id=%u opcode=%u msg_len=%lu\n", object_id, opcode,
             *msg_len);
     assert(0 && "todo");
   }
+
+  uint64_t parsed_bytes = start_msg_len - *msg_len;
+  uint64_t remaining = announced_size - parsed_bytes;
+  assert(remaining == 0);
 }
 
 static void renderer_clear(uint32_t *pixels, uint64_t size,
