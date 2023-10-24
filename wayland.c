@@ -14,9 +14,6 @@
 #include <sys/un.h>
 #include <unistd.h>
 
-#include "font_atlas.h"
-#include "wayland-logo.h"
-
 #define cstring_len(s) (sizeof(s) - 1)
 
 #define roundup_4(n) (((n) + 3) & -4)
@@ -48,8 +45,6 @@ static const uint16_t wayland_wl_display_delete_id_event = 1;
 static const uint32_t wayland_format_xrgb8888 = 1;
 static const uint32_t wayland_header_size = 8;
 static const uint32_t color_channels = 4;
-
-static const float font_spacing = 0.35;
 
 typedef enum state_state_t state_state_t;
 enum state_state_t {
@@ -691,59 +686,10 @@ static void wayland_handle_message(int fd, state_t *state, char **msg,
   assert(0 && "todo");
 }
 
-#define LETTER_CELL_WIDTH 32
-#define LETTER_CELL_HEIGHT 32
-#define LETTER_ROW_COUNT 16
-
 static void renderer_clear(uint32_t *pixels, uint64_t size,
                            uint32_t color_rgb) {
   for (uint64_t i = 0; i < size; i++)
     pixels[i] = color_rgb;
-}
-
-static void renderer_draw_letter(uint32_t *dst, uint64_t window_width,
-                                 uint64_t dst_x, uint64_t dst_y,
-                                 uint64_t letter_index) {
-
-  dst += window_width * dst_y + dst_x;
-
-  uint64_t src_channels = 3;
-
-  uint64_t src_full_rows_count = letter_index / LETTER_ROW_COUNT;
-  uint64_t src_remaining_x_offset =
-      (letter_index % LETTER_ROW_COUNT) * LETTER_CELL_WIDTH;
-  uint64_t src_offset = (src_full_rows_count * LETTER_CELL_HEIGHT *
-                             LETTER_CELL_WIDTH * LETTER_ROW_COUNT +
-                         src_remaining_x_offset) *
-                        src_channels;
-
-  uint8_t *src = &font_atlas[src_offset];
-
-  for (uint64_t src_y = 0; src_y < LETTER_CELL_HEIGHT; src_y++) {
-    for (uint64_t src_x = 0; src_x < LETTER_CELL_WIDTH; src_x++) {
-      assert(src <= font_atlas + font_atlas_len - src_channels);
-      uint8_t *src_pixel =
-          &src[(src_y * LETTER_CELL_WIDTH * LETTER_ROW_COUNT + src_x) *
-               src_channels];
-
-      uint8_t r = src_pixel[0];
-      uint8_t g = src_pixel[1];
-      uint8_t b = src_pixel[2];
-      if (r || g || b)
-        dst[window_width * src_y + src_x] =
-            ((uint32_t)r << 16) | ((uint32_t)g << 8) | (uint32_t)b;
-    }
-  }
-}
-
-static void renderer_draw_text(uint32_t *dst, uint64_t window_width,
-                               uint64_t dst_x, uint64_t dst_y, char *text,
-                               uint64_t text_len) {
-
-  for (uint64_t i = 0; i < text_len; i++) {
-    renderer_draw_letter(dst, window_width, dst_x, dst_y, text[i]);
-    dst_x += LETTER_CELL_WIDTH * font_spacing;
-  }
 }
 
 static void renderer_draw_rect(uint32_t *dst, uint64_t window_width,
@@ -768,9 +714,9 @@ int main() {
 
   state_t state = {
       .wl_registry = wayland_wl_display_get_registry(fd),
-      .w = LETTER_CELL_WIDTH * LETTER_ROW_COUNT,
-      .h = LETTER_CELL_HEIGHT * (LETTER_ROW_COUNT + 1),
-      .stride = LETTER_CELL_WIDTH * LETTER_ROW_COUNT * color_channels,
+      .w = 800,
+      .h = 600,
+      .stride = 800* color_channels,
   };
 
   // Single buffering.
@@ -821,22 +767,8 @@ int main() {
 
       renderer_clear(pixels, (uint64_t)state.w * (uint64_t)state.h, 0x000000);
 
-      for (uint64_t y = 0; y < LETTER_ROW_COUNT; y++) {
-        for (uint64_t x = 0; x < LETTER_ROW_COUNT; x++) {
-          renderer_draw_letter(pixels, state.w, x * LETTER_CELL_WIDTH,
-                               y * LETTER_CELL_HEIGHT,
-                               y * LETTER_ROW_COUNT + x);
-        }
-      }
-
-      uint64_t dst_x = 30;
-      uint64_t dst_y = state.h - LETTER_CELL_HEIGHT;
-      char text[] = "Hello, world!";
-      renderer_draw_text(pixels, state.w, dst_x, dst_y, text,
-                         (uint64_t)cstring_len(text));
-
-      renderer_draw_rect(pixels, state.w, state.w - LETTER_CELL_WIDTH, dst_y,
-                         LETTER_CELL_WIDTH, LETTER_CELL_HEIGHT, 0x00ff00);
+      renderer_draw_rect(pixels, state.w, state.w / 2, state.h / 2, 20, 30,
+                         0x00ff00);
 
       wayland_wl_surface_attach(fd, &state);
       wayland_wl_surface_commit(fd, &state);
