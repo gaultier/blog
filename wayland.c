@@ -3,7 +3,6 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <inttypes.h>
-#include <poll.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -840,10 +839,6 @@ static void wayland_handle_message(int fd, state_t *state, char **msg,
           .y = state->pointer_y / (float)state->h,
       };
 
-      wayland_wl_surface_damage_buffer(fd, state->wl_surface,
-                                       (uint32_t)state->pointer_x,
-                                       (uint32_t)state->pointer_y, 1, 1);
-
       fprintf(stderr, "new entity %lu: x=%f y=%f\n", state->entities_len,
               state->entities[state->entities_len - 1].x,
               state->entities[state->entities_len - 1].y);
@@ -897,6 +892,8 @@ static void renderer_draw_rect(volatile uint32_t *dst, uint64_t window_width,
 }
 
 static void render_frame(int fd, state_t *state) {
+  fprintf(stderr, "render_frame\n");
+
   assert(state->wl_surface != 0);
   assert(state->xdg_surface != 0);
   assert(state->xdg_toplevel != 0);
@@ -922,6 +919,8 @@ static void render_frame(int fd, state_t *state) {
   }
 
   wayland_wl_surface_attach(fd, state->wl_surface, wl_buffer);
+  wayland_wl_surface_damage_buffer(fd, state->wl_surface, 0, 0, INT32_MAX,
+                                   INT32_MAX);
   wayland_wl_surface_commit(fd, state);
 
   state->old_wl_buffers[state->old_wl_buffers_len] = wl_buffer;
@@ -950,23 +949,16 @@ int main() {
   create_shared_memory_file(state.shm_pool_size, &state);
 
   while (1) {
-    struct pollfd pollfd = {.fd = fd, .events = POLLIN};
-    int res = poll(&pollfd, 1, 33);
-    if (res == -1)
+    char read_buf[4096] = "";
+    int64_t read_bytes = recv(fd, read_buf, sizeof(read_buf), 0);
+    if (read_bytes == -1)
       exit(errno);
 
-    if (res == 1) {
-      char read_buf[4096] = "";
-      int64_t read_bytes = recv(fd, read_buf, sizeof(read_buf), 0);
-      if (read_bytes == -1)
-        exit(errno);
+    char *msg = read_buf;
+    uint64_t msg_len = (uint64_t)read_bytes;
 
-      char *msg = read_buf;
-      uint64_t msg_len = (uint64_t)read_bytes;
-
-      while (msg_len > 0)
-        wayland_handle_message(fd, &state, &msg, &msg_len);
-    }
+    while (msg_len > 0)
+      wayland_handle_message(fd, &state, &msg, &msg_len);
 
     if (state.wl_compositor != 0 && state.wl_shm != 0 &&
         state.xdg_wm_base != 0 &&
