@@ -15,16 +15,12 @@
 #include <sys/un.h>
 #include <unistd.h>
 
-#ifndef WITH_LOG
+static bool log_enabled = false;
 #define LOG(msg, ...)                                                          \
   do {                                                                         \
+    if (log_enabled)                                                           \
+      fprintf(stderr, msg, __VA_ARGS__);                                       \
   } while (0)
-#else
-#define LOG(msg, ...)                                                          \
-  do {                                                                         \
-    fprintf(stderr, msg, __VA_ARGS__);                                         \
-  } while (0)
-#endif
 
 #define cstring_len(s) (sizeof(s) - 1)
 
@@ -991,9 +987,15 @@ static void wayland_handle_message(int fd, state_t *state, char **msg,
 }
 
 int main() {
+
   struct timeval tv = {0};
   assert(gettimeofday(&tv, NULL) != -1);
   srand(tv.tv_sec * 1000 * 1000 + tv.tv_usec);
+
+  char *wayland_debug_env_var = getenv("WAYLAND_DEBUG");
+  if (wayland_debug_env_var != NULL &&
+      strcmp(wayland_debug_env_var, "1") == 0)
+    log_enabled = true;
 
   int fd = wayland_display_connect();
 
