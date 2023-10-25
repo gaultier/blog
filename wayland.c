@@ -1003,6 +1003,8 @@ int main() {
       .h = 600,
       .stride = 800 * color_channels,
       .entities = malloc(sizeof(entity_t) * 3440 * 1440),
+      .pointer_x=-1,
+      .pointer_y=-1,
   };
 
   // Single buffering.
