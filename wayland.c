@@ -763,9 +763,7 @@ static void wayland_handle_message(int fd, state_t *state, char **msg,
   uint16_t announced_size = buf_read_u16(msg, msg_len);
   assert(roundup_4(announced_size) <= announced_size);
 
-  uint32_t header_size =
-      sizeof(object_id) + sizeof(opcode) + sizeof(announced_size);
-  assert(announced_size <= header_size + *msg_len);
+  assert(roundup_4(announced_size) <= wayland_header_size + *msg_len);
 
   if (object_id == state->wl_registry &&
       opcode == wayland_wl_registry_event_global) {
@@ -879,7 +877,8 @@ static void wayland_handle_message(int fd, state_t *state, char **msg,
     LOG("<- xdg_surface@%u.configure: configure=%u\n", state->xdg_surface,
         configure);
     wayland_xdg_surface_ack_configure(fd, state, configure);
-   if (state->state==STATE_NONE) state->state = STATE_SURFACE_SURFACE_SETUP;
+    if (state->state == STATE_NONE)
+      state->state = STATE_SURFACE_SURFACE_SETUP;
 
   } else if (object_id == state->xdg_toplevel &&
              opcode == wayland_xdg_toplevel_event_close) {
@@ -1012,7 +1011,7 @@ int main() {
   create_shared_memory_file(state.shm_pool_size, &state);
 
   while (1) {
-    char read_buf[4096] = "";
+    char read_buf[8192] = "";
     int64_t read_bytes = recv(fd, read_buf, sizeof(read_buf), 0);
     if (read_bytes == -1)
       exit(errno);
