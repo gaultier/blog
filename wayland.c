@@ -834,7 +834,7 @@ static void wayland_handle_message(int fd, state_t *state, char **msg,
   } else if (object_id == wayland_display_object_id &&
              opcode == wayland_wl_display_delete_id_event) {
     uint32_t id = buf_read_u32(msg, msg_len);
-    LOG("<- wl_display@1:delete_id: id=%u\n", id);
+    LOG("<- wl_display@1.delete_id: id=%u\n", id);
 
   } else if (object_id == state->wl_shm &&
              opcode == wayland_shm_pool_event_format) {
@@ -1003,8 +1003,8 @@ int main() {
       .h = 600,
       .stride = 800 * color_channels,
       .entities = malloc(sizeof(entity_t) * 3440 * 1440),
-      .pointer_x=-1,
-      .pointer_y=-1,
+      .pointer_x = -1,
+      .pointer_y = -1,
   };
 
   // Single buffering.
