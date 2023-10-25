@@ -15,6 +15,18 @@
 #include <sys/un.h>
 #include <unistd.h>
 
+#ifndef WITH_LOG
+#define LOG(msg, ...)                                                          \
+  do {                                                                         \
+  } while (0)
+#else
+#define LOG(msg, ...)                                                          \
+  do {                                                                         \
+    fprintf(stderr, msg, __VA_ARGS__);
+}
+while (0)
+#endif
+
 #define cstring_len(s) (sizeof(s) - 1)
 
 #define roundup_4(n) (((n) + 3) & -4)
@@ -242,7 +254,7 @@ static uint32_t wayland_wl_display_get_registry(int fd) {
   if ((int64_t)msg_size != send(fd, msg, msg_size, 0))
     exit(errno);
 
-  fprintf(stderr, "-> wl_display@%u.get_registry: wl_registry=%u\n",
+  LOG( "-> wl_display@%u.get_registry: wl_registry=%u\n",
           wayland_display_object_id, wayland_current_id);
 
   return wayland_current_id;
@@ -276,7 +288,7 @@ static uint32_t wayland_wl_registry_bind(int fd, uint32_t registry,
   if ((int64_t)msg_size != send(fd, msg, msg_size, 0))
     exit(errno);
 
-  fprintf(stderr,
+  LOG(
           "-> wl_registry@%u.bind: name=%u interface=%.*s version=%u "
           "wayland_current_id=%u\n",
           registry, name, interface_len, interface, version,
@@ -306,7 +318,7 @@ static uint32_t wayland_wl_compositor_create_surface(int fd, state_t *state) {
   if ((int64_t)msg_size != send(fd, msg, msg_size, 0))
     exit(errno);
 
-  fprintf(stderr, "-> wl_compositor@%u.create_surface: wl_surface=%u\n",
+  LOG( "-> wl_compositor@%u.create_surface: wl_surface=%u\n",
           state->wl_compositor, wayland_current_id);
 
   return wayland_current_id;
@@ -352,7 +364,7 @@ static void wayland_xdg_wm_base_pong(int fd, state_t *state, uint32_t ping) {
   if ((int64_t)msg_size != send(fd, msg, msg_size, 0))
     exit(errno);
 
-  fprintf(stderr, "-> xdg_wm_base@%u.pong: ping=%u\n", state->xdg_wm_base,
+  LOG( "-> xdg_wm_base@%u.pong: ping=%u\n", state->xdg_wm_base,
           ping);
 }
 
@@ -376,7 +388,7 @@ static void wayland_xdg_surface_ack_configure(int fd, state_t *state,
   if ((int64_t)msg_size != send(fd, msg, msg_size, 0))
     exit(errno);
 
-  fprintf(stderr, "-> xdg_surface@%u.ack_configure: configure=%u\n",
+  LOG( "-> xdg_surface@%u.ack_configure: configure=%u\n",
           state->xdg_surface, configure);
 }
 
@@ -426,7 +438,7 @@ static uint32_t wayland_wl_shm_create_pool(int fd, state_t *state) {
   if (sendmsg(fd, &socket_msg, 0) == -1)
     exit(errno);
 
-  fprintf(stderr, "-> wl_shm@%u.create_pool: wl_shm_pool=%u\n", state->wl_shm,
+  LOG( "-> wl_shm@%u.create_pool: wl_shm_pool=%u\n", state->wl_shm,
           wayland_current_id);
 
   return wayland_current_id;
@@ -457,7 +469,7 @@ static uint32_t wayland_xdg_wm_base_get_xdg_surface(int fd, state_t *state) {
   if ((int64_t)msg_size != send(fd, msg, msg_size, 0))
     exit(errno);
 
-  fprintf(stderr,
+  LOG(
           "-> xdg_wm_base@%u.get_xdg_surface: xdg_surface=%u wl_surface=%u\n",
           state->xdg_wm_base, wayland_current_id, state->wl_surface);
 
@@ -497,7 +509,7 @@ static uint32_t wayland_wl_shm_pool_create_buffer(int fd, state_t *state) {
   if ((int64_t)msg_size != send(fd, msg, msg_size, 0))
     exit(errno);
 
-  fprintf(stderr, "-> wl_shm_pool@%u.create_buffer: wl_buffer=%u\n",
+  LOG( "-> wl_shm_pool@%u.create_buffer: wl_buffer=%u\n",
           state->wl_shm_pool, wayland_current_id);
 
   return wayland_current_id;
@@ -519,7 +531,7 @@ static void wayland_wl_buffer_destroy(int fd, uint32_t wl_buffer) {
   if ((int64_t)msg_size != send(fd, msg, msg_size, 0))
     exit(errno);
 
-  fprintf(stderr, "-> wl_buffer@%u.destroy\n", wl_buffer);
+  LOG( "-> wl_buffer@%u.destroy\n", wl_buffer);
 }
 
 static void wayland_wl_surface_attach(int fd, uint32_t wl_surface,
@@ -545,7 +557,7 @@ static void wayland_wl_surface_attach(int fd, uint32_t wl_surface,
   if ((int64_t)msg_size != send(fd, msg, msg_size, 0))
     exit(errno);
 
-  fprintf(stderr, "-> wl_surface@%u.attach: wl_buffer=%u\n", wl_surface,
+  LOG( "-> wl_surface@%u.attach: wl_buffer=%u\n", wl_surface,
           wl_buffer);
 }
 
@@ -570,7 +582,7 @@ static uint32_t wayland_xdg_surface_get_toplevel(int fd, state_t *state) {
   if ((int64_t)msg_size != send(fd, msg, msg_size, 0))
     exit(errno);
 
-  fprintf(stderr, "-> xdg_surface@%u.get_toplevel: xdg_toplevel=%u\n",
+  LOG( "-> xdg_surface@%u.get_toplevel: xdg_toplevel=%u\n",
           state->xdg_surface, wayland_current_id);
 
   return wayland_current_id;
@@ -592,7 +604,7 @@ static void wayland_wl_surface_commit(int fd, state_t *state) {
   if ((int64_t)msg_size != send(fd, msg, msg_size, 0))
     exit(errno);
 
-  fprintf(stderr, "-> wl_surface@%u.commit: \n", state->wl_surface);
+  LOG( "-> wl_surface@%u.commit: \n", state->wl_surface);
 }
 
 static void wayland_wl_surface_damage_buffer(int fd, uint32_t wl_surface,
@@ -617,7 +629,7 @@ static void wayland_wl_surface_damage_buffer(int fd, uint32_t wl_surface,
   if ((int64_t)msg_size != send(fd, msg, msg_size, 0))
     exit(errno);
 
-  fprintf(stderr, "-> wl_surface@%u.damage_buffer: x=%u y=%u w=%u h=%u\n",
+  LOG( "-> wl_surface@%u.damage_buffer: x=%u y=%u w=%u h=%u\n",
           wl_surface, x, y, w, h);
 }
 
@@ -642,7 +654,7 @@ static uint32_t wayland_wl_seat_get_pointer(int fd, uint32_t wl_seat) {
   if ((int64_t)msg_size != send(fd, msg, msg_size, 0))
     exit(errno);
 
-  fprintf(stderr, "-> wl_seat@%u.get_pointer: %u\n", wl_seat,
+  LOG( "-> wl_seat@%u.get_pointer: %u\n", wl_seat,
           wayland_current_id);
 
   return wayland_current_id;
@@ -680,7 +692,7 @@ static void wayland_handle_message(int fd, state_t *state, char **msg,
 
     uint32_t version = buf_read_u32(msg, msg_len);
 
-    fprintf(stderr,
+    LOG(
             "<- wl_registry@%u.global: name=%u interface=%.*s version=%u\n",
             state->wl_registry, name, interface_len, interface, version);
 
@@ -729,27 +741,27 @@ static void wayland_handle_message(int fd, state_t *state, char **msg,
     uint32_t error_len = buf_read_u32(msg, msg_len);
     buf_read_n(msg, msg_len, error, roundup_4(error_len));
 
-    fprintf(stderr, "fatal error: target_object_id=%u code=%u error=%s\n",
+    LOG( "fatal error: target_object_id=%u code=%u error=%s\n",
             target_object_id, code, error);
     exit(EINVAL);
   } else if (object_id == wayland_display_object_id &&
              opcode == wayland_wl_display_delete_id_event) {
     uint32_t id = buf_read_u32(msg, msg_len);
-    fprintf(stderr, "<- wl_display@1:delete_id: id=%u\n", id);
+    LOG( "<- wl_display@1:delete_id: id=%u\n", id);
 
   } else if (object_id == state->wl_shm &&
              opcode == wayland_shm_pool_event_format) {
 
     uint32_t format = buf_read_u32(msg, msg_len);
-    fprintf(stderr, "<- wl_shm@%u: format=%#x\n", state->wl_shm, format);
+    LOG( "<- wl_shm@%u: format=%#x\n", state->wl_shm, format);
   } else if (is_old_buffer(state, object_id) &&
              opcode == wayland_wl_buffer_event_release) {
 
-    fprintf(stderr, "<- xdg_wl_buffer@%u.release\n", object_id);
+    LOG( "<- xdg_wl_buffer@%u.release\n", object_id);
   } else if (object_id == state->xdg_wm_base &&
              opcode == wayland_xdg_wm_base_event_ping) {
     uint32_t ping = buf_read_u32(msg, msg_len);
-    fprintf(stderr, "<- xdg_wm_base@%u.ping: ping=%u\n", state->xdg_wm_base,
+    LOG( "<- xdg_wm_base@%u.ping: ping=%u\n", state->xdg_wm_base,
             ping);
     wayland_xdg_wm_base_pong(fd, state, ping);
 
@@ -762,7 +774,7 @@ static void wayland_handle_message(int fd, state_t *state, char **msg,
     assert(len <= sizeof(buf));
     buf_read_n(msg, msg_len, buf, len);
 
-    fprintf(stderr, "<- xdg_toplevel@%u.configure: w=%u h=%u states[%u]\n",
+    LOG( "<- xdg_toplevel@%u.configure: w=%u h=%u states[%u]\n",
             state->xdg_toplevel, w, h, len);
 
     if (w && h && (w != state->w || h != state->h)) { // Resize.
@@ -776,14 +788,14 @@ static void wayland_handle_message(int fd, state_t *state, char **msg,
   } else if (object_id == state->xdg_surface &&
              opcode == wayland_xdg_surface_event_configure) {
     uint32_t configure = buf_read_u32(msg, msg_len);
-    fprintf(stderr, "<- xdg_surface@%u.configure: configure=%u\n",
+    LOG( "<- xdg_surface@%u.configure: configure=%u\n",
             state->xdg_surface, configure);
     wayland_xdg_surface_ack_configure(fd, state, configure);
     state->state = STATE_SURFACE_ACKED_CONFIGURE;
 
   } else if (object_id == state->xdg_toplevel &&
              opcode == wayland_xdg_toplevel_event_close) {
-    fprintf(stderr, "<- xdg_toplevel@%u.close\n", state->xdg_toplevel);
+    LOG( "<- xdg_toplevel@%u.close\n", state->xdg_toplevel);
     exit(0);
   } else if (object_id == state->wl_seat &&
              opcode == wayland_wl_seat_event_name) {
@@ -792,12 +804,12 @@ static void wayland_handle_message(int fd, state_t *state, char **msg,
     assert(buf_len <= sizeof(buf));
     buf_read_n(msg, msg_len, buf, roundup_4(buf_len));
 
-    fprintf(stderr, "<- wl_seat@%u.name: name=%.*s\n", state->wl_seat, buf_len,
+    LOG( "<- wl_seat@%u.name: name=%.*s\n", state->wl_seat, buf_len,
             buf);
   } else if (object_id == state->wl_seat &&
              opcode == wayland_wl_seat_event_capabilities) {
     uint32_t capabilities = buf_read_u32(msg, msg_len);
-    fprintf(stderr, "<- wl_seat@%u.capabilities: capabilities=%u\n",
+    LOG( "<- wl_seat@%u.capabilities: capabilities=%u\n",
             state->wl_seat, capabilities);
     assert(capabilities == (wayland_wl_seat_event_capabilities_pointer |
                             wayland_wl_seat_event_capabilities_keyboard));
@@ -816,7 +828,7 @@ static void wayland_handle_message(int fd, state_t *state, char **msg,
     if (remaining > 0)
       id = buf_read_u32(msg, msg_len);
 
-    fprintf(stderr,
+    LOG(
             "<- wl_pointer@%u.enter: serial=%u surface=%u x=%u y=%u id=%u\n",
             state->wl_seat, serial, surface, x, y, id);
   } else if (object_id == state->wl_pointer &&
@@ -824,7 +836,7 @@ static void wayland_handle_message(int fd, state_t *state, char **msg,
     uint32_t serial = buf_read_u32(msg, msg_len);
     uint32_t surface = buf_read_u32(msg, msg_len);
 
-    fprintf(stderr, "<- wl_pointer@%u.leave: serial=%u surface=%u\n",
+    LOG( "<- wl_pointer@%u.leave: serial=%u surface=%u\n",
             state->wl_seat, serial, surface);
   } else if (object_id == state->wl_pointer &&
              opcode == wayland_wl_pointer_event_button) {
@@ -833,7 +845,7 @@ static void wayland_handle_message(int fd, state_t *state, char **msg,
     uint32_t button = buf_read_u32(msg, msg_len);
     uint32_t button_state = buf_read_u32(msg, msg_len);
 
-    fprintf(stderr,
+    LOG(
             "<- wl_pointer@%u.button: serial=%u time=%u button=%u state=%u\n",
             state->wl_seat, serial, time, button, button_state);
 
@@ -846,7 +858,7 @@ static void wayland_handle_message(int fd, state_t *state, char **msg,
           .y = clamp(0, state->pointer_y / (float)state->h, 1),
       };
 
-      fprintf(stderr, "new entity %lu: x=%f y=%f\n", state->entities_len,
+      LOG( "new entity %lu: x=%f y=%f\n", state->entities_len,
               state->entities[state->entities_len - 1].x,
               state->entities[state->entities_len - 1].y);
     }
@@ -857,7 +869,7 @@ static void wayland_handle_message(int fd, state_t *state, char **msg,
     uint32_t surface_x = buf_read_u32(msg, msg_len);
     uint32_t surface_y = buf_read_u32(msg, msg_len);
 
-    fprintf(stderr,
+    LOG(
             "<- wl_pointer@%u.motion: time=%u surface_x=%u surface_y=%u\n",
             state->wl_seat, time, surface_x, surface_y);
     state->pointer_x = wayland_fixed_to_double(surface_x);
@@ -869,18 +881,18 @@ static void wayland_handle_message(int fd, state_t *state, char **msg,
           .y = clamp(0, state->pointer_y / (float)state->h, 1),
       };
 
-      fprintf(stderr, "new entity %lu: x=%f y=%f\n", state->entities_len,
+      LOG( "new entity %lu: x=%f y=%f\n", state->entities_len,
               state->entities[state->entities_len - 1].x,
               state->entities[state->entities_len - 1].y);
     }
   } else if (object_id == state->wl_pointer &&
              opcode == wayland_wl_pointer_event_frame) {
 
-    fprintf(stderr, "<- wl_pointer@%u.frame\n", state->wl_seat);
+    LOG( "<- wl_pointer@%u.frame\n", state->wl_seat);
     wayland_wl_surface_commit(fd, state);
   } else {
 
-    fprintf(stderr, "object_id=%u opcode=%u msg_len=%lu\n", object_id, opcode,
+    LOG( "object_id=%u opcode=%u msg_len=%lu\n", object_id, opcode,
             *msg_len);
     assert(0 && "todo");
   }
@@ -919,7 +931,7 @@ static void renderer_draw_rect(volatile uint32_t *dst, uint64_t window_w,
 }
 
 static void render_frame(int fd, state_t *state) {
-  fprintf(stderr, "render_frame\n");
+  LOG( "render_frame\n");
 
   assert(state->wl_surface != 0);
   assert(state->xdg_surface != 0);
