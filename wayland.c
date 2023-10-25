@@ -19,6 +19,9 @@
 
 #define roundup_4(n) (((n) + 3) & -4)
 
+#define clamp(lower, x, upper)                                                 \
+  ((x) >= (lower) ? ((x) <= (upper) ? (x) : (upper)) : (lower))
+
 static uint32_t wayland_current_id = 1;
 
 static const uint32_t wayland_display_object_id = 1;
@@ -836,10 +839,11 @@ static void wayland_handle_message(int fd, state_t *state, char **msg,
 
     state->pointer_button_state = button_state;
 
-    if (state->pointer_button_state) {
+    if (state->pointer_button_state && state->pointer_x >= 0 &&
+        state->pointer_y >= 0) {
       state->entities[state->entities_len++] = (entity_t){
-          .x = state->pointer_x / (float)state->w,
-          .y = state->pointer_y / (float)state->h,
+          .x = clamp(0, state->pointer_x / (float)state->w, 1),
+          .y = clamp(0, state->pointer_y / (float)state->h, 1),
       };
 
       fprintf(stderr, "new entity %lu: x=%f y=%f\n", state->entities_len,
@@ -859,10 +863,10 @@ static void wayland_handle_message(int fd, state_t *state, char **msg,
     state->pointer_x = wayland_fixed_to_double(surface_x);
     state->pointer_y = wayland_fixed_to_double(surface_y);
 
-    if (state->pointer_button_state) {
+    if (state->pointer_button_state && surface_x >= 0 && surface_y >= 0) {
       state->entities[state->entities_len++] = (entity_t){
-          .x = state->pointer_x / (float)state->w,
-          .y = state->pointer_y / (float)state->h,
+          .x = clamp(0, state->pointer_x / (float)state->w, 1),
+          .y = clamp(0, state->pointer_y / (float)state->h, 1),
       };
 
       fprintf(stderr, "new entity %lu: x=%f y=%f\n", state->entities_len,
@@ -892,15 +896,24 @@ static void renderer_clear(volatile uint32_t *pixels, uint64_t size,
     pixels[i] = color_rgb;
 }
 
-static void renderer_draw_rect(volatile uint32_t *dst, uint64_t window_width,
-                               uint64_t dst_x, uint64_t dst_y, uint64_t rect_w,
-                               uint64_t rect_h, uint32_t color_rgb) {
+static void renderer_draw_rect(volatile uint32_t *dst, uint64_t window_w,
+                               uint64_t window_h, uint64_t dst_x,
+                               uint64_t dst_y, uint64_t rect_w, uint64_t rect_h,
+                               uint32_t color_rgb) {
 
-  dst += window_width * dst_y + dst_x;
+  uint64_t dst_len = window_w * window_h;
 
   for (uint64_t src_y = 0; src_y < rect_h; src_y++) {
     for (uint64_t src_x = 0; src_x < rect_w; src_x++) {
-      dst[window_width * src_y + src_x] = color_rgb;
+      uint64_t x = dst_x + src_x;
+      uint64_t y = dst_y + src_y;
+      if (x >= window_w || y >= window_h)
+        continue;
+
+      uint64_t pos = window_w * y + x;
+      assert(pos < dst_len);
+
+      dst[pos] = color_rgb;
     }
   }
 }
@@ -927,9 +940,15 @@ static void render_frame(int fd, state_t *state) {
 
   for (uint64_t i = 0; i < state->entities_len; i++) {
     entity_t entity = state->entities[i];
+    assert(entity.x >= 0);
+    assert(entity.y >= 0);
+
     uint32_t x = state->w * entity.x;
     uint32_t y = state->h * entity.y;
-    renderer_draw_rect(pixels, state->w, x, y, 1, 1, 0x00ff00);
+
+    assert(state->w * state->h * sizeof(uint32_t) < state->shm_pool_size);
+
+    renderer_draw_rect(pixels, state->w, state->h, x, y, 10, 10, 0x00ff00);
   }
 
   wayland_wl_surface_attach(fd, state->wl_surface, wl_buffer);
