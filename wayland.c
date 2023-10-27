@@ -1,4 +1,5 @@
 #define _POSIX_C_SOURCE 200112L
+#define _XOPEN_SOURCE 500
 #include <assert.h>
 #include <errno.h>
 #include <fcntl.h>
@@ -157,12 +158,10 @@ static int wayland_display_connect() {
 
     memcpy(addr.sun_path + socket_path_len, wayland_display_default,
            wayland_display_default_len);
-    socket_path_len += wayland_display_default_len;
   } else {
     uint64_t wayland_display_len = strlen(wayland_display);
     memcpy(addr.sun_path + socket_path_len, wayland_display,
            wayland_display_len);
-    socket_path_len += wayland_display_len;
   }
 
   int fd = socket(AF_UNIX, SOCK_STREAM, 0);
@@ -732,7 +731,9 @@ static void render_frame(int fd, state_t *state) {
     uint32_t x = state->w * entity.x;
     uint32_t y = state->h * entity.y;
 
-    assert(state->w * state->h * sizeof(uint32_t) < state->shm_pool_size);
+    assert((uint64_t)state->w * (uint64_t)state->h *
+               (uint64_t)sizeof(uint32_t) <
+           (uint64_t)state->shm_pool_size);
     renderer_draw_rect(pixels, state->w, state->h, x, y, 10, 10, 0x00ff00);
   }
 
@@ -993,8 +994,7 @@ int main() {
   srand(tv.tv_sec * 1000 * 1000 + tv.tv_usec);
 
   char *wayland_debug_env_var = getenv("WAYLAND_DEBUG");
-  if (wayland_debug_env_var != NULL &&
-      strcmp(wayland_debug_env_var, "1") == 0)
+  if (wayland_debug_env_var != NULL && strcmp(wayland_debug_env_var, "1") == 0)
     log_enabled = true;
 
   int fd = wayland_display_connect();
