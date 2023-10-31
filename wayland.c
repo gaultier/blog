@@ -921,10 +921,6 @@ static void wayland_handle_message(int fd, state_t *state, char **msg,
     LOG("<- wl_pointer@%u.enter: serial=%u surface=%u x=%u y=%u id=%u\n",
         state->wl_seat, serial, surface, x, y, id);
 
-    store_old_id(state->old_wl_callbacks, &state->old_wl_callbacks_len,
-                 state->wl_callback);
-    state->wl_callback = wayland_wl_surface_frame(fd, state->wl_surface);
-
   } else if (object_id == state->wl_pointer &&
              opcode == wayland_wl_pointer_event_leave) {
     uint32_t serial = buf_read_u32(msg, msg_len);
@@ -956,10 +952,6 @@ static void wayland_handle_message(int fd, state_t *state, char **msg,
           state->entities[state->entities_len - 1].x,
           state->entities[state->entities_len - 1].y);
     }
-
-    store_old_id(state->old_wl_callbacks, &state->old_wl_callbacks_len,
-                 state->wl_callback);
-    state->wl_callback = wayland_wl_surface_frame(fd, state->wl_surface);
   } else if (object_id == state->wl_pointer &&
              opcode == wayland_wl_pointer_event_motion) {
     uint32_t time = buf_read_u32(msg, msg_len);
@@ -981,9 +973,6 @@ static void wayland_handle_message(int fd, state_t *state, char **msg,
           state->entities[state->entities_len - 1].x,
           state->entities[state->entities_len - 1].y);
     }
-    store_old_id(state->old_wl_callbacks, &state->old_wl_callbacks_len,
-                 state->wl_callback);
-    state->wl_callback = wayland_wl_surface_frame(fd, state->wl_surface);
   } else if (object_id == state->wl_pointer &&
              opcode == wayland_wl_pointer_event_frame) {
 
@@ -994,7 +983,8 @@ static void wayland_handle_message(int fd, state_t *state, char **msg,
     state->wl_callback = wayland_wl_surface_frame(fd, state->wl_surface);
 
     wayland_wl_surface_commit(fd, state);
-  } else if ((object_id == state->wl_callback||is_old_id(state->old_wl_callbacks,object_id)) &&
+  } else if ((object_id == state->wl_callback ||
+              is_old_id(state->old_wl_callbacks, object_id)) &&
              opcode == wayland_wl_callback_done_event) {
     uint32_t callback_data = buf_read_u32(msg, msg_len);
     LOG("<- wl_callback@%u.done: callback_data=%u\n", object_id, callback_data);
@@ -1062,7 +1052,6 @@ int main() {
     }
 
     if (state.state == STATE_SURFACE_SURFACE_SETUP) {
-      state.wl_callback = wayland_wl_surface_frame(fd, state.wl_surface);
       render_frame(fd, &state);
 
       state.state = STATE_SURFACE_FIRST_FRAME_RENDERED;
