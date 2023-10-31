@@ -88,6 +88,7 @@ struct state_t {
   uint32_t wl_shm;
   uint32_t wl_shm_pool;
   uint32_t old_wl_buffers[64];
+  uint32_t old_wl_callbacks[64];
   uint32_t xdg_wm_base;
   uint32_t xdg_surface;
   uint32_t wl_compositor;
@@ -111,6 +112,7 @@ struct state_t {
   uint64_t entities_len;
 
   uint8_t old_wl_buffers_len;
+  uint8_t old_wl_callbacks_len;
   state_state_t state;
 };
 
@@ -125,9 +127,9 @@ static inline double wayland_fixed_to_double(uint32_t f) {
   return u.d - (3LL << 43);
 }
 
-static bool is_old_buffer(state_t *state, uint32_t buffer) {
+static bool is_old_id(uint32_t *old_ids, uint32_t id) {
   for (uint64_t i = 0; i < 64; i++) {
-    if (buffer == state->old_wl_buffers[i]) {
+    if (id == old_ids[i]) {
       return true;
     }
   }
@@ -710,8 +712,6 @@ static void render_frame(int fd, state_t *state) {
   if (state->wl_shm_pool == 0)
     state->wl_shm_pool = wayland_wl_shm_create_pool(fd, state);
 
-  state->wl_callback = wayland_wl_surface_frame(fd, state->wl_surface);
-
   uint32_t wl_buffer = wayland_wl_shm_pool_create_buffer(fd, state);
 
   assert(state->shm_pool_data != 0);
@@ -837,7 +837,7 @@ static void wayland_handle_message(int fd, state_t *state, char **msg,
 
     uint32_t format = buf_read_u32(msg, msg_len);
     LOG("<- wl_shm@%u: format=%#x\n", state->wl_shm, format);
-  } else if (is_old_buffer(state, object_id) &&
+  } else if (is_old_id(state->old_wl_buffers, object_id) &&
              opcode == wayland_wl_buffer_event_release) {
 
     LOG("<- xdg_wl_buffer@%u.release\n", object_id);
@@ -941,6 +941,10 @@ static void wayland_handle_message(int fd, state_t *state, char **msg,
       LOG("new entity %lu: x=%f y=%f\n", state->entities_len,
           state->entities[state->entities_len - 1].x,
           state->entities[state->entities_len - 1].y);
+
+      state->old_wl_callbacks[state->old_wl_callbacks_len] = state->wl_callback;
+      state->old_wl_callbacks_len = (state->old_wl_callbacks_len + 1) % 64;
+      state->wl_callback = wayland_wl_surface_frame(fd, state->wl_surface);
     }
 
   } else if (object_id == state->wl_pointer &&
@@ -963,13 +967,23 @@ static void wayland_handle_message(int fd, state_t *state, char **msg,
       LOG("new entity %lu: x=%f y=%f\n", state->entities_len,
           state->entities[state->entities_len - 1].x,
           state->entities[state->entities_len - 1].y);
+
+      state->old_wl_callbacks[state->old_wl_callbacks_len] = state->wl_callback;
+      state->old_wl_callbacks_len = (state->old_wl_callbacks_len + 1) % 64;
+      state->wl_callback = wayland_wl_surface_frame(fd, state->wl_surface);
     }
   } else if (object_id == state->wl_pointer &&
              opcode == wayland_wl_pointer_event_frame) {
 
     LOG("<- wl_pointer@%u.frame\n", state->wl_seat);
+
+    state->old_wl_callbacks[state->old_wl_callbacks_len] = state->wl_callback;
+    state->old_wl_callbacks_len = (state->old_wl_callbacks_len + 1) % 64;
+    state->wl_callback = wayland_wl_surface_frame(fd, state->wl_surface);
+
     wayland_wl_surface_commit(fd, state);
-  } else if (object_id == state->wl_callback &&
+  } else if ((object_id == state->wl_callback ||
+              is_old_id(state->old_wl_callbacks, object_id)) &&
              opcode == wayland_wl_callback_done_event) {
     uint32_t callback_data = buf_read_u32(msg, msg_len);
     LOG("<- wl_callback@%u.done: callback_data=%u\n", object_id, callback_data);
