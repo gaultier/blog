@@ -1,5 +1,4 @@
 #define _POSIX_C_SOURCE 200112L
-#define _XOPEN_SOURCE 500
 #include <assert.h>
 #include <errno.h>
 #include <fcntl.h>
@@ -721,7 +720,7 @@ static void render_frame(int fd, state_t *state) {
 
   volatile uint32_t *pixels = (uint32_t *)state->shm_pool_data;
 
-  renderer_clear(pixels, (uint64_t)state->w * (uint64_t)state->h, 0x000000);
+  renderer_clear(pixels, (uint64_t)state->w * (uint64_t)state->h, 0xffccbc);
 
   for (uint64_t i = 0; i < state->entities_len; i++) {
     entity_t entity = state->entities[i];
@@ -734,7 +733,7 @@ static void render_frame(int fd, state_t *state) {
     assert((uint64_t)state->w * (uint64_t)state->h *
                (uint64_t)sizeof(uint32_t) <
            (uint64_t)state->shm_pool_size);
-    renderer_draw_rect(pixels, state->w, state->h, x, y, 10, 10, 0x00ff00);
+    renderer_draw_rect(pixels, state->w, state->h, x, y, 10, 10, 0x81d4fa);
   }
 
   wayland_wl_surface_attach(fd, state->wl_surface, wl_buffer);
