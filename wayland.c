@@ -100,6 +100,7 @@ struct state_t {
   uint32_t w;
   uint32_t h;
   uint32_t shm_pool_size;
+  bool stop_requesting_new_frames;
   int shm_fd;
   volatile uint8_t *shm_pool_data;
 
@@ -710,8 +711,6 @@ static void render_frame(int fd, state_t *state) {
   if (state->wl_shm_pool == 0)
     state->wl_shm_pool = wayland_wl_shm_create_pool(fd, state);
 
-  state->wl_callback = wayland_wl_surface_frame(fd, state->wl_surface);
-
   uint32_t wl_buffer = wayland_wl_shm_pool_create_buffer(fd, state);
 
   assert(state->shm_pool_data != 0);
@@ -912,6 +911,10 @@ static void wayland_handle_message(int fd, state_t *state, char **msg,
 
     LOG("<- wl_pointer@%u.enter: serial=%u surface=%u x=%u y=%u id=%u\n",
         state->wl_seat, serial, surface, x, y, id);
+
+    state->stop_requesting_new_frames = false;
+    state->wl_callback = wayland_wl_surface_frame(fd, state->wl_surface);
+
   } else if (object_id == state->wl_pointer &&
              opcode == wayland_wl_pointer_event_leave) {
     uint32_t serial = buf_read_u32(msg, msg_len);
@@ -919,6 +922,8 @@ static void wayland_handle_message(int fd, state_t *state, char **msg,
 
     LOG("<- wl_pointer@%u.leave: serial=%u surface=%u\n", state->wl_seat,
         serial, surface);
+
+    state->stop_requesting_new_frames = true;
   } else if (object_id == state->wl_pointer &&
              opcode == wayland_wl_pointer_event_button) {
     uint32_t serial = buf_read_u32(msg, msg_len);
@@ -943,6 +948,7 @@ static void wayland_handle_message(int fd, state_t *state, char **msg,
           state->entities[state->entities_len - 1].y);
     }
 
+    state->wl_callback = wayland_wl_surface_frame(fd, state->wl_surface);
   } else if (object_id == state->wl_pointer &&
              opcode == wayland_wl_pointer_event_motion) {
     uint32_t time = buf_read_u32(msg, msg_len);
@@ -964,11 +970,13 @@ static void wayland_handle_message(int fd, state_t *state, char **msg,
           state->entities[state->entities_len - 1].x,
           state->entities[state->entities_len - 1].y);
     }
+    state->wl_callback = wayland_wl_surface_frame(fd, state->wl_surface);
   } else if (object_id == state->wl_pointer &&
              opcode == wayland_wl_pointer_event_frame) {
 
     LOG("<- wl_pointer@%u.frame\n", state->wl_seat);
     wayland_wl_surface_commit(fd, state);
+    state->wl_callback = wayland_wl_surface_frame(fd, state->wl_surface);
   } else if (object_id == state->wl_callback &&
              opcode == wayland_wl_callback_done_event) {
     uint32_t callback_data = buf_read_u32(msg, msg_len);
@@ -1037,7 +1045,10 @@ int main() {
     }
 
     if (state.state == STATE_SURFACE_SURFACE_SETUP) {
-      render_frame(fd, &state);
+      if (!state.stop_requesting_new_frames)
+        state.wl_callback = wayland_wl_surface_frame(fd, state.wl_surface);
+      render_frame(fd,&state);
+
       state.state = STATE_SURFACE_FIRST_FRAME_RENDERED;
     }
   }
