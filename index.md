@@ -31,20 +31,29 @@ In terms of implementation this is pretty subpar C++ code in retrospect - I went
 Part of this project was also to add a VR mode to an existing 3D application written in C; that was quite a big codebase and I did indeed add this mode; however it never worked quite right, there was some constant stuttering which might have been due to loss of precision in floating point calculations. 
 Overall a ton of fun.
 
+---
+
 [lox-ocaml](https://github.com/gaultier/lox-ocaml) is the first compiler and interpreter I wrote while following along the excellent [Crafting Interpreters](http://craftinginterpreters.com/the-lox-language.html). The first part of the book is a Java implementation which I wanted to avoid and thus went with OCaml which I anyway wanted to dig deep on. It fit because it remains a garbage collected language like Java and has support for imperative code if I needed to follow closely the official code. It went really well, I had a blast and OCaml is pretty nice; however I will never understand why it pushes the developer to use linked list and it is so hard to use dynamic arrays instead. The ecosystem and tooling is a bit split in half but overall it was a great experience.
+
+---
 
 [kotlin-rs](https://github.com/gaultier/kotlin-rs) is a Kotlin compiler written in Rust and my first attempt at it. It is not finished but can still compile Kotlin functions, expressions and statements to JVM bytecode and run that.
 This was my first compiler project on my own, I chose Kotlin because I was working with Kotlin at the time and was suffering from the excruciatingly slow official compiler at the time (it improved somewhat since). It allowed me to skip the language design part and focus on the implementation.
 I think it still holds up to this day although I would definitely change how the AST is modeled and avoid having each node being a `Box<T>` (see below on another take on the subject). One big topic I did not tackle was generating Stack Map Frames which are a JVM concept to verify bytecode in linear time before running it.
 
+---
+
 [microkt](https://github.com/gaultier/microkt) is my second take on a Kotlin compiler, this time written in C and targeting x86_64 (no JVM). I think it is nice to have the luxury to revisit a past project in a different language and reevaluating past choices. I got about equally as far as the `kotlin-rs` in terms of language support and stopped while implementing the Garbage Collector which is an can of worms by itself. The reason I stopped is that I noticed I was being regularly stopped in my tracks by bugs in the generated x86_64 assembly code, notably due to 'move with zero extend' issues and register allocation. I thus decided to dig deep on this subject before returning to the compiler which I never did because I got two kids right after.
 The implementation still holds, however I would definitely revist the assembly generation part as mentioned and use a structured representation instead of a textual one (no one wants to do string programming).
+
+---
 
 [My C monorepo](https://github.com/gaultier/c) is a big mix a small and big programs all written in C. The most noteworthy are:
 - `torrent`: A bittorrent client. It works well but only handles one file and is probably a nest of security vulnerabilities now that I think of it
 - `crash-reporter`: A crash reporter for macOS x86_64. It gives a full stacktrace at any point in the program. It does so by parsing the DWARF information embedded in the  mach-o executable format.
 - `clone-gitlab-api`: A small CLI that downloads all projects from a Gitlab instance. Especially useful since my employer at the time had all projects hosted on a private Gitlab instance and there was no search feature. So I figured that the easiest way is to fetch the list of all projects, clone them locally and use grep on them. I worked great! This is conceptually `curl` + `parallel` + `git clone/pull`. I also later wrote [something similar](https://github.com/gaultier/gitlab-events) to poll Gitlab for notifications to watch repository changes. Yeah Gitlab is/was pretty limited in functionality.
 
+---
 
 [micro-kotlin](https://github.com/gaultier/micro-kotlin): The third (and last?) take on a Kotlin compiler, in C. It goes much further than the two previous attempts both in terms of language support and in terms of implementation:
 - Expressions, statements, control flow, and functions (including recursion) are implemented
@@ -57,8 +66,6 @@ The implementation still holds, however I would definitely revist the assembly g
 - Some support for function inlining is supported (inlining the body of a called function)
 - All allocations are done with an arena allocator and there is support for a memory dump with stacktraces
 - It's only 10k lines of code and the final stripped executable is 145 Kib!
-
-
 
 
 ## CV
