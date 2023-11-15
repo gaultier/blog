@@ -68,6 +68,8 @@ The implementation still holds, however I would definitely revist the assembly g
 - It's only 10k lines of code and the final stripped executable is 145 Kib!
 
 
+I think my most noteworthy projects are compilers both because I tend to be attracted to that domain and also because small CLI tools are less interesting. Compilers for real programming languages are hard!
+
 ## CV
 
 You can find my resume [online](https://gaultier.github.io/resume/resume)
