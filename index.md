@@ -61,7 +61,7 @@ The implementation still holds, however I would definitely revist the assembly g
 - It implements type constraints in the type checker to infer which function the user intended to call (and the rules in Kotlin for that are so very complex). That's one of the thorniest topics in Kotlin due to the language trying to have every programming language feature under the sun, namely: type inference, function overloading, default parameters, generics, implicit callers (`it` and such), variadic functions, object inheritance with method overriding, etc.
 - It explores the class path so that external libraries can be use including the Java and Kotlin standard libraries
 - Some Java/Kotlin interop is supported (mostly, calling Java functions from Kotlin)
-- It understands .jmod, .class, .jar files, even with compression
+- It parses and understands .jmod, .class, .jar files, even with zlib compression
 - Out-of-order definitions of functions and variables are supported
 - Some support for function inlining is supported (inlining the body of a called function)
 - All allocations are done with an arena allocator and there is support for a memory dump with stacktraces
