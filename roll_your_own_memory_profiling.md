@@ -47,6 +47,8 @@ I will showcase this approach with C code using an arena allocator. The full cod
 
 > The original pprof written in Perl is not to be confused with the rewritten [pprof](https://github.com/google/pprof) in Go which offers a superset of the features of the original but based on a completely different and incompatible file format (protobuf)!
 
+## The text format
+
 Here is the text format we want to generate:
 
 ```
@@ -124,36 +126,85 @@ Dumping heap profile to /tmp/heapprof.0001.heap (Exiting, 11 bytes in use)
 *This is just an example to showcase the format, we will from this point on use our own code to generate this text format.*
 
 ```
-heap profile:      7:  6815744 [     7:  6815744] @ heapprofile
-     3:  3145728 [     3:  3145728] @ 0x55bdebf31165 0x55bdebf3118e 0x55bdebf311b0 0x7f0296b69a90 0x7f0296b69b49 0x55bdebf31085
-     3:  3145728 [     3:  3145728] @ 0x55bdebf31184 0x55bdebf311b0 0x7f0296b69a90 0x7f0296b69b49 0x55bdebf31085
-     1:   524288 [     1:   524288] @ 0x55bdebf31165 0x55bdebf311c4 0x7f0296b69a90 0x7f0296b69b49 0x55bdebf31085
+heap profile:      5:       11 [     5:       11] @ heapprofile
+     2:        4 [     2:        4] @ 0x558e804cc165 0x558e804cc18e 0x558e804cc1b0 0x7f452a4daa90 0x7f452a4dab49 0x558e804cc085
+     2:        4 [     2:        4] @ 0x558e804cc184 0x558e804cc1b0 0x7f452a4daa90 0x7f452a4dab49 0x558e804cc085
+     1:        3 [     1:        3] @ 0x558e804cc165 0x558e804cc1c4 0x7f452a4daa90 0x7f452a4dab49 0x558e804cc085
 
 MAPPED_LIBRARIES:
-55bdebf30000-55bdebf31000 r--p 00000000 00:00 182326      /tmp/a.out
-55bdebf31000-55bdebf32000 r-xp 00001000 00:00 182326      /tmp/a.out
-55bdebf32000-55bdebf33000 r--p 00002000 00:00 182326      /tmp/a.out
-55bdebf33000-55bdebf34000 r--p 00002000 00:00 182326      /tmp/a.out
-55bdebf34000-55bdebf35000 rw-p 00003000 00:00 182326      /tmp/a.out
-55bdeceb8000-55bdeddb8000 rw-p 00000000 00:00 0           [heap]
-7f029644d000-7f02967a1000 rw-p 00000000 00:00 0           
-7f02967a1000-7f02967a4000 r--p 00000000 00:00 678524      /usr/lib/x86_64-linux-gnu/liblzma.so.5.4.1
-7f02967a4000-7f02967c5000 r-xp 00003000 00:00 678524      /usr/lib/x86_64-linux-gnu/liblzma.so.5.4.1
-7f02967c5000-7f02967d1000 r--p 00024000 00:00 678524      /usr/lib/x86_64-linux-gnu/liblzma.so.5.4.1
-7f02967d1000-7f02967d2000 r--p 00030000 00:00 678524      /usr/lib/x86_64-linux-gnu/liblzma.so.5.4.1
-7f02967d2000-7f02967d3000 rw-p 00031000 00:00 678524      /usr/lib/x86_64-linux-gnu/liblzma.so.5.4.1
-7f02967d3000-7f02967e1000 r--p 00000000 00:00 668348      /usr/lib/x86_64-linux-gnu/libm.so.6
-7f02967e1000-7f029685f000 r-xp 0000e000 00:00 668348      /usr/lib/x86_64-linux-gnu/libm.so.6
-7f029685f000-7f02968ba000 r--p 0008c000 00:00 668348      /usr/lib/x86_64-linux-gnu/libm.so.6
-7f02968ba000-7f02968bb000 r--p 000e6000 00:00 668348      /usr/lib/x86_64-linux-gnu/libm.so.6
-7f02968bb000-7f02968bc000 rw-p 000e7000 00:00 668348      /usr/lib/x86_64-linux-gnu/libm.so.6
-7ffc8f542000-7ffc8f563000 rw-p 00000000 00:00 0           [stack]
-7ffc8f599000-7ffc8f59d000 r--p 00000000 00:00 0           [vvar]
-7ffc8f59d000-7ffc8f59f000 r-xp 00000000 00:00 0           [vdso]
+558e804cb000-558e804cc000 r--p 00000000 00:00 183128      /tmp/a.out
+558e804cc000-558e804cd000 r-xp 00001000 00:00 183128      /tmp/a.out
+558e804cd000-558e804ce000 r--p 00002000 00:00 183128      /tmp/a.out
+558e804ce000-558e804cf000 r--p 00002000 00:00 183128      /tmp/a.out
+558e804cf000-558e804d0000 rw-p 00003000 00:00 183128      /tmp/a.out
+558e814b7000-558e81db8000 rw-p 00000000 00:00 0           [heap]
+7f4529e7e000-7f452a112000 rw-p 00000000 00:00 0           
+7f452a112000-7f452a115000 r--p 00000000 00:00 678524      /usr/lib/x86_64-linux-gnu/liblzma.so.5.4.1
+7f452a115000-7f452a136000 r-xp 00003000 00:00 678524      /usr/lib/x86_64-linux-gnu/liblzma.so.5.4.1
+7f452a136000-7f452a142000 r--p 00024000 00:00 678524      /usr/lib/x86_64-linux-gnu/liblzma.so.5.4.1
+7f452a142000-7f452a143000 r--p 00030000 00:00 678524      /usr/lib/x86_64-linux-gnu/liblzma.so.5.4.1
+7f452a143000-7f452a144000 rw-p 00031000 00:00 678524      /usr/lib/x86_64-linux-gnu/liblzma.so.5.4.1
+7f452a144000-7f452a152000 r--p 00000000 00:00 668348      /usr/lib/x86_64-linux-gnu/libm.so.6
+7f452a152000-7f452a1d0000 r-xp 0000e000 00:00 668348      /usr/lib/x86_64-linux-gnu/libm.so.6
+7f452a1d0000-7f452a22b000 r--p 0008c000 00:00 668348      /usr/lib/x86_64-linux-gnu/libm.so.6
+7f452a22b000-7f452a22c000 r--p 000e6000 00:00 668348      /usr/lib/x86_64-linux-gnu/libm.so.6
+7f452a22c000-7f452a22d000 rw-p 000e7000 00:00 668348      /usr/lib/x86_64-linux-gnu/libm.so.6
+7f452a22d000-7f452a22f000 rw-p 00000000 00:00 0           
+7f452a22f000-7f452a2cb000 r--p 00000000 00:00 678806      /usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.32
+7f452a2cb000-7f452a3fc000 r-xp 0009c000 00:00 678806      /usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.32
+7f452a3fc000-7f452a489000 r--p 001cd000 00:00 678806      /usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.32
+7f452a489000-7f452a494000 r--p 0025a000 00:00 678806      /usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.32
+7f452a494000-7f452a497000 rw-p 00265000 00:00 678806      /usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.32
+7f452a497000-7f452a49b000 rw-p 00000000 00:00 0           
+7f452a49b000-7f452a49e000 r--p 00000000 00:00 702044      /usr/lib/x86_64-linux-gnu/libunwind.so.8.0.1
+7f452a49e000-7f452a4a8000 r-xp 00003000 00:00 702044      /usr/lib/x86_64-linux-gnu/libunwind.so.8.0.1
+7f452a4a8000-7f452a4ab000 r--p 0000d000 00:00 702044      /usr/lib/x86_64-linux-gnu/libunwind.so.8.0.1
+7f452a4ab000-7f452a4ac000 r--p 0000f000 00:00 702044      /usr/lib/x86_64-linux-gnu/libunwind.so.8.0.1
+7f452a4ac000-7f452a4ad000 rw-p 00010000 00:00 702044      /usr/lib/x86_64-linux-gnu/libunwind.so.8.0.1
+7f452a4ad000-7f452a4b7000 rw-p 00000000 00:00 0           
+7f452a4b7000-7f452a4d9000 r--p 00000000 00:00 668342      /usr/lib/x86_64-linux-gnu/libc.so.6
+7f452a4d9000-7f452a651000 r-xp 00022000 00:00 668342      /usr/lib/x86_64-linux-gnu/libc.so.6
+7f452a651000-7f452a6a9000 r--p 0019a000 00:00 668342      /usr/lib/x86_64-linux-gnu/libc.so.6
+7f452a6a9000-7f452a6ad000 r--p 001f1000 00:00 668342      /usr/lib/x86_64-linux-gnu/libc.so.6
+7f452a6ad000-7f452a6af000 rw-p 001f5000 00:00 668342      /usr/lib/x86_64-linux-gnu/libc.so.6
+7f452a6af000-7f452a6bc000 rw-p 00000000 00:00 0           
+7f452a6bc000-7f452a6bf000 r--p 00000000 00:00 677590      /usr/lib/x86_64-linux-gnu/libgcc_s.so.1
+7f452a6bf000-7f452a6da000 r-xp 00003000 00:00 677590      /usr/lib/x86_64-linux-gnu/libgcc_s.so.1
+7f452a6da000-7f452a6de000 r--p 0001e000 00:00 677590      /usr/lib/x86_64-linux-gnu/libgcc_s.so.1
+7f452a6de000-7f452a6df000 r--p 00021000 00:00 677590      /usr/lib/x86_64-linux-gnu/libgcc_s.so.1
+7f452a6df000-7f452a6e0000 rw-p 00022000 00:00 677590      /usr/lib/x86_64-linux-gnu/libgcc_s.so.1
+7f452a6e0000-7f452a6f3000 r--p 00000000 00:00 182678      /usr/lib/x86_64-linux-gnu/libtcmalloc.so.4.5.9
+7f452a6f3000-7f452a719000 r-xp 00013000 00:00 182678      /usr/lib/x86_64-linux-gnu/libtcmalloc.so.4.5.9
+7f452a719000-7f452a729000 r--p 00039000 00:00 182678      /usr/lib/x86_64-linux-gnu/libtcmalloc.so.4.5.9
+7f452a729000-7f452a72a000 r--p 00048000 00:00 182678      /usr/lib/x86_64-linux-gnu/libtcmalloc.so.4.5.9
+7f452a72a000-7f452a72b000 rw-p 00049000 00:00 182678      /usr/lib/x86_64-linux-gnu/libtcmalloc.so.4.5.9
+7f452a72b000-7f452a8e1000 rw-p 00000000 00:00 0           
+7f452a8e4000-7f452a8f8000 rw-p 00000000 00:00 0           
+7f452a8f8000-7f452a8f9000 r--p 00000000 00:00 668336      /usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2
+7f452a8f9000-7f452a921000 r-xp 00001000 00:00 668336      /usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2
+7f452a921000-7f452a92b000 r--p 00029000 00:00 668336      /usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2
+7f452a92b000-7f452a92d000 r--p 00033000 00:00 668336      /usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2
+7f452a92d000-7f452a92f000 rw-p 00035000 00:00 668336      /usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2
+7fff91a4d000-7fff91a6e000 rw-p 00000000 00:00 0           [stack]
+7fff91b3f000-7fff91b43000 r--p 00000000 00:00 0           [vvar]
+7fff91b43000-7fff91b45000 r-xp 00000000 00:00 0           [vdso]
 ffffffffff600000-ffffffffff601000 --xp 00000000 00:00 0           [vsyscall]
 ```
+
+We see that at the end of the program, we have (looking at the first line):
+- 5 objects in use
+- 11 bytes in use
+- 5 objects allocated in total
+- 11 bytes allocated in total
+
+Since we never freed any memory, the `in use` counters are the same as the `space` counters.
 
 We have 3 unique call stacks that allocate, in the same order as they appear in the text file (although order does not matter for `pprof`):
 - `b` <- `a` <- `main`
 - `a` <- `main`
 - `b` <- `main`
+
+Since our program is a Position Independant Executable (PIE), the loader picks a random address for where to load our program in virtual memory. Consequently, addresses collected from within our program have this offset added to them. Thankfully, the `MAPPED_LIBRARIES` section lists address ranges (the first column of each line in that section) for each library that gets loaded. 
+
+As such, `pprof` only needs to find for each address the relevant range, subtract the start of the range from this address, and it has the real address in our executable. It then runs `addr2line` or similar to get the code location. 
+
