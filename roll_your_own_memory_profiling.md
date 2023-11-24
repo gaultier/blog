@@ -27,9 +27,13 @@ What to do? Mainstream allocators such as `tcmalloc` and `jemalloc` can provide 
 Well, it turns out that this can all be achieved very simply without adding dependencies to your application, in ~100 lines of code (including lots of comments). I'll show one way and then explore other possibilities. And here are the results we are working towards:
 
 ![1](mem_prof1.png)
-![2](mem_prof2.png)
-![3](mem_prof3.png)
 *Profiling the memory usage of my [micro-kotlin](https://github.com/gaultier/micro-kotlin) project.*
+
+![2](mem_prof2.png)
+*Showing which lines of code are allocating in a function.*
+
+![3](mem_prof3.png)
+*A flamegraph based on the previous data.*
 
 
 The only requirement to make it all work is to be able to run a bit of code on each allocation.
