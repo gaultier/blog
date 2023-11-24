@@ -97,7 +97,7 @@ Very importantly, multiple allocation records with the same stack must be merged
 
 The text file ends with a trailer which is crucial for symbolication (to transform memory addresses into source code locations), which on Linux is trivial to get: This is just a copy of the file `/proc/self/maps`. It lists of the loaded libraries and at which address they are.
 
-I have not implemented it myself but a quick lookup shows that the other major operating systems have a similar capability, named differently:
+I have not implemented it myself but a quick internet search shows that the other major operating systems have a similar capability, named differently:
 - Windows: `VirtualQuery`
 - macOS: `mach_vm_region_info`
 - FreeBSD: `procstat_getvmmap` 
