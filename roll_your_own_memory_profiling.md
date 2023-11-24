@@ -331,3 +331,20 @@ int main(){
   arena_t arena = arena_new(1 << 22, &mem_profile);
 }
 ```
+
+Now, in `arena_alloc`, if there is a non-NULL memory profile, we record the allocation just before returning the freshly allocated pointer:
+
+```c
+static void *arena_alloc(arena_t *a, size_t size, size_t align, size_t count) {
+  [...]
+
+  if (a->profile) {
+    mem_profile_record_alloc(a->profile, count, offset);
+  }
+
+  return (void *)res;
+}
+```
+
+
+We now have to implement `mem_profile_record_alloc` and exporting the profile to the text format, and we are done.
