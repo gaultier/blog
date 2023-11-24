@@ -532,7 +532,7 @@ $ pprof --web ./a.out heap.profile
 
 And we see in our browser:
 
-<img src="mem_prof.svg" alt="Initial profile" style="height: 45rem; width: 100%;">
+![Initial profile](mem_prof4.png)
 
 And we can even generate a flamegraph for it leveraging the great [OG flamegraph project](https://github.com/brendangregg/FlameGraph):
 
