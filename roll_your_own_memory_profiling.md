@@ -529,16 +529,19 @@ $ pprof --collapsed ./a.out heap.profile | flamegraph.pl > out.svg
 
 `pprof` (the Perl one) is not the only way to get this information. 
 
-It turns out that your browser comes with a built-in profiler and a nice one to use at that! And it has support for native allocations, stack traces and so forth. Another possibility is the new `pprof` (the Go one). They all have more features than the original `pprof`.
+It turns out that your browser comes with a built-in profiler and a nice one to use at that! And it has support for native allocations, stack traces and so forth. Another possibility is the new `pprof` (the Go one). They all have more features than the original `pprof` that are really handy, most notably:
+
+- A built-in interactive flamegraph feature
+- Tracking the time at which an allocation happened, which can then be used to produce a flamechart representing allocations over time (for example to observe a memory leak increasing the memory usage over time, and discover where it comes from)
 
  To make use of these, our application needs to generate the information we gathered in the format the profiler expects, just like we did with `pprof`.
 
 - Chrome expects a [JSON file](https://docs.google.com/document/d/1CvAClvFfyA5R-PhYUmn5OOQtYMH4h6I0nSsKchNAySU/preview), which I did not experiment with yet
-- Firefox expects a [different JSON file](https://github.com/firefox-devtools/profiler/blob/main/docs-developer/processed-profile-format.md). I experimented with it but dropped this avenue because of several frustrating aspects:
-  * It is very JS centric so much of the profile has to be filled with `null` values since they are expected for JS
-  * All fields must be provided even if empty, including arrays. Failing to do so throws an obscure exception in the profiler that has to be tracked in the debugger looking at the minified JS profiler code which is not fun. The consequence is that most of the profiler is made of length arrays only containing `null` values.
-  * Memory traces are supported but it seems like a CPU trace is required for each memory trace which makes the profile even bigger, and not really what I am interested in.
-- The new `pprof` (the Go versin) expects a relatively simple protobuf file, gzipped, but that means adding code generation and a library dependency
+- Firefox expects a [different JSON file](https://github.com/firefox-devtools/profiler/blob/main/docs-developer/processed-profile-format.md). A good starting point is [https://github.com/mstange/samply](https://github.com/mstange/samply). I experimented with it but dropped this avenue because of several frustrating aspects:
+  * It is very JS centric so much of the profile has to be filled with `null` values or explicitly saying that the each sample is not for JS
+  * All fields must be provided even if empty, including arrays. Failing to do so throws an obscure exception in the profiler, that has to be tracked in the browser debugger, which shows the minified JS profiler code, which is not fun (yes, the profiler is written mostly/entirely in JS). The consequence is that most of the profile file is made of lengthy arrays only containing `null` values. Thus, most of the code to generate it is boilerplate noise.
+  * Memory traces are supported but it seems that a CPU trace is required for each memory trace which makes the profile even bigger, and harder to generate. Only providing memory samples shows nothing in the graphs.
+- The new `pprof` (the Go version) expects a relatively simple protobuf file, gzipped, but that means adding code generation and a library dependency. I use it when writing Go quite often and it is helpful.
 
 From the two, 
 
@@ -546,6 +549,4 @@ From the two,
 
 I like that one of the most common memory profilers uses a very simple text format that anyone can generate, and that's it's stand-alone. It's very UNIXy!
 
-Nonetheless, I will in the future explore it, because the original `pprof` lacks two things that I think I quite important, and that the new `pprof` does out of the box:
-- A built-in interactive flamegraph feature
-- Tracking the time at which an allocation happened, which can then be used to produce a flamechart representing allocations over time (for example to observe a memory leak increasing the memory usage over time, and discover where it comes from)
+Nonetheless, I will in the future explore the other aforementioned profilers and I do not think it should be much work either. After all, it's been [done before](https://technology.riotgames.com/news/profiling-real-world-performance-league)!
