@@ -480,7 +480,7 @@ static void mem_profile_write(mem_profile_t *profile, FILE *out) {
 }
 ```
 
-And we're done! Let's try it with our initial example (bumping the size of the allocations a bit because pprof ignores tiny allocations for readability):
+And we're done! Let's try it with our initial example (bumping the size of the allocations a bit because pprof ignores tiny allocations for readability - although this is configurable):
 
 ```c
 void b(int n, arena_t *arena) {
