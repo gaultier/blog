@@ -543,10 +543,10 @@ It turns out that your browser comes with a built-in profiler and a nice one to 
   * Memory traces are supported but it seems that a CPU trace is required for each memory trace which makes the profile even bigger, and harder to generate. Only providing memory samples shows nothing in the graphs.
 - The new `pprof` (the Go version) expects a relatively simple protobuf file, gzipped, but that means adding code generation and a library dependency. I use it when writing Go quite often and it is helpful.
 
-From the two, 
-
 ## Conlusion
 
 I like that one of the most common memory profilers uses a very simple text format that anyone can generate, and that's it's stand-alone. It's very UNIXy!
 
-Nonetheless, I will in the future explore the other aforementioned profilers and I do not think it should be much work either. After all, it's been [done before](https://technology.riotgames.com/news/profiling-real-world-performance-league)!
+Nonetheless, I will in the future explore the other aforementioned profilers (probably the Chrome one) and I do not think it should be much work either. It's nice to leverage the existing browser to avoid having to install a profiler.
+
+After all, it's been [done before](https://technology.riotgames.com/news/profiling-real-world-performance-league)!
