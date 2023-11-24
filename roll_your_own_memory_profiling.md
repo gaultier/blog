@@ -29,7 +29,7 @@ Well, it turns out that this can all be achieved very simply without adding depe
 ![1](mem_prof1.png)
 ![2](mem_prof2.png)
 ![3](mem_prof3.png)
-*Profiling the memory usage of my [micro-kotlin](https://github.com/gaultier/micro-kotlin/blob/pprof-original/str.h#L320) project.*
+*Profiling the memory usage of my [micro-kotlin](https://github.com/gaultier/micro-kotlin) project.*
 
 
 The only requirement to make it all work is to be able to run a bit of code on each allocation.
