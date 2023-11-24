@@ -239,8 +239,14 @@ Let's start with a very simple arena (directly based on [https://nullprogram.com
 
 ```c
 #define _GNU_SOURCE
-#include <sys/mman.h>
+#include <stdint.h>
+#include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+#include <sys/mman.h>
+#include <fcntl.h>
+#include <unistd.h>
+
 
 typedef struct {
   u8 *start;
@@ -280,7 +286,7 @@ typedef struct {
   uint64_t in_use_space, in_use_objects, alloc_space, alloc_objects;
   uint64_t *call_stack;
   uint64_t call_stack_len;
-} mem_record;
+} mem_record_t;
 ```
 
 Then, the profile, which contains the 4 counters as a sum and an array of records. 
@@ -288,15 +294,15 @@ Then, the profile, which contains the 4 counters as a sum and an array of record
 An arena now has an (optional) pointer to a memory profile:
 
 ```c
-typedef struct mem_profile mem_profile;
+typedef struct mem_profile_t mem_profile_t;
 typedef struct {
   uint8_t *start;
   uint8_t *end;
-  mem_profile* profile;
+  mem_profile_t* profile;
 } arena_t;
 
-struct mem_profile {
-  mem_record *records;
+struct mem_profile_t {
+  mem_record_t *records;
   uint64_t records_len;
   uint64_t records_cap;
   uint64_t in_use_space, in_use_objects, alloc_space, alloc_objects;
@@ -348,3 +354,182 @@ static void *arena_alloc(arena_t *a, size_t size, size_t align, size_t count) {
 
 
 We now have to implement `mem_profile_record_alloc` and exporting the profile to the text format, and we are done.
+
+
+When recording an allocation, we need to capture the call stack, so we walk the stack upwards until we reach a frame address that is 0 or does not have the alignement of a pointer (8); at which point we know not to dereference it and go further:
+
+```c
+static uint8_t record_call_stack(uint64_t *dst, uint64_t cap) {
+  uintptr_t *rbp = __builtin_frame_address(0);
+
+  uint64_t len = 0;
+
+  while (rbp != 0 && ((uint64_t)rbp & 7) == 0 && *rbp != 0) {
+    const uintptr_t rip = *(rbp + 1);
+    rbp = (uintptr_t *)*rbp;
+
+    // `rip` points to the return instruction in the caller, once this call is
+    // done. But: We want the location of the call i.e. the `call xxx`
+    // instruction, so we subtract one byte to point inside it, which is not
+    // quite 'at' it, but good enough.
+    dst[len++] = rip - 1;
+
+    if (len >= cap)
+      return len;
+  }
+  return len;
+}
+```
+
+Now we can record the allocation proper, upserting the new record into our existing list of records, trying to find an existing record with the same call stack.
+That part is important to avoid having a huge profile and that's why pprof made this design decision.
+
+The code is slightly length because we need to roll our own arrays here in this minimal example, but in a real application you'd have your own array structure and helper functions, most likely:
+
+```c
+static void mem_profile_record_alloc(mem_profile_t *profile,
+                                     uint64_t objects_count,
+                                     uint64_t bytes_count) {
+  // Record the call stack by stack walking.
+  uint64_t call_stack[64] = {0};
+  uint64_t call_stack_len =
+      record_call_stack(call_stack, sizeof(call_stack) / sizeof(call_stack[0]));
+
+  // Update the sums.
+  profile->alloc_objects += objects_count;
+  profile->alloc_space += bytes_count;
+  profile->in_use_objects += objects_count;
+  profile->in_use_space += bytes_count;
+
+  // Upsert the record.
+  for (uint64_t i = 0; i < profile->records_len; i++) {
+    mem_record_t *r = &profile->records[i];
+
+    if (r->call_stack_len == call_stack_len &&
+        memcmp(r->call_stack, call_stack, call_stack_len * sizeof(uint64_t)) ==
+            0) {
+      // Found an existing record, update it.
+      r->alloc_objects += objects_count;
+      r->alloc_space += bytes_count;
+      r->in_use_objects += objects_count;
+      r->in_use_space += bytes_count;
+      return;
+    }
+  }
+
+  // Not found, insert a new record.
+  mem_record_t record = {
+      .alloc_objects = objects_count,
+      .alloc_space = bytes_count,
+      .in_use_objects = objects_count,
+      .in_use_space = bytes_count,
+  };
+  record.call_stack = arena_alloc(&profile->arena, sizeof(uint64_t),
+                                  _Alignof(uint64_t), call_stack_len);
+  memcpy(record.call_stack, call_stack, call_stack_len * sizeof(uint64_t));
+  record.call_stack_len = call_stack_len;
+
+  if (profile->records_len >= profile->records_cap) {
+    uint64_t new_cap = profile->records_cap * 2;
+    // Grow the array.
+    mem_record_t *new_records = arena_alloc(
+        &profile->arena, sizeof(mem_record_t), _Alignof(mem_record_t), new_cap);
+    memcpy(new_records, profile->records,
+           profile->records_len * sizeof(mem_record_t));
+    profile->records_cap = new_cap;
+    profile->records = new_records;
+  }
+  profile->records[profile->records_len++] = record;
+}
+
+```
+
+
+Finally, we can dump this profile in the pprof textual representation:
+
+```
+static void mem_profile_write(mem_profile_t *profile, FILE *out) {
+  fprintf(out, "heap profile: %lu: %lu [     %lu:    %lu] @ heapprofile\n",
+          profile->in_use_objects, profile->in_use_space,
+          profile->alloc_objects, profile->alloc_space);
+
+  for (uint64_t i = 0; i < profile->records_len; i++) {
+    mem_record_t r = profile->records[i];
+
+    fprintf(out, "%lu: %lu [%lu: %lu] @ ", r.in_use_objects, r.in_use_space,
+            r.alloc_objects, r.alloc_space);
+
+    for (uint64_t j = 0; j < r.call_stack_len; j++) {
+      fprintf(out, "%#lx ", r.call_stack[j]);
+    }
+    fputc('\n', out);
+  }
+
+  fputs("\nMAPPED_LIBRARIES:\n", out);
+
+  static uint8_t mem[4096] = {0};
+  int fd = open("/proc/self/maps", O_RDONLY);
+  assert(fd != -1);
+  ssize_t read_bytes = read(fd, mem, sizeof(mem));
+  assert(read_bytes != -1);
+  close(fd);
+
+  fwrite(mem, 1, read_bytes, out);
+
+  fflush(out);
+}
+```
+
+And we're done! Let's try it with our initial example (bumping the size of the allocations a bit because pprof ignores tiny allocations for readability):
+
+```c
+void b(int n, arena_t *arena) {
+  arena_alloc(arena, sizeof(int), _Alignof(int), n);
+}
+
+void a(int n, arena_t *arena) {
+  arena_alloc(arena, sizeof(int), _Alignof(int), n);
+  b(n, arena);
+}
+
+int main() {
+  [...]
+
+  arena_t arena = arena_new(1 << 28, &mem_profile);
+
+  for (int i = 0; i < 2; i++)
+    a(2 * 1024 * 1024, &arena);
+
+  b(3 * 1024 * 1024, &arena);
+
+  mem_profile_write(&mem_profile, stderr);
+}
+```
+
+```sh
+$ cc -g3 example.c
+$ ./a.out 2> heap.profile
+$ pprof --web ./a.out heap.profile
+```
+
+And we see in our browser:
+
+<img src="mem_prof.svg" alt="Initial profile" style="height: 45rem; width: 100%;">
+
+And we can even generate a flamegraph for it leveraging the great [OG flamegraph project](https://github.com/brendangregg/FlameGraph):
+
+```sh
+$ pprof --collapsed ./a.out heap.profile | flamegraph.pl > out.svg
+```
+
+![Flamegraph](mem_prof_flamegraph.svg)
+
+## Conlusion
+
+I like that one of the most common memory profilers uses a very simple text format that anyone can generate, and that's it's stand-alone. It's very UNIXy!
+
+It's somewhat unfortunate that the Go version of pprof consumes a gzipped protobuf format because that's a lot more work to generate (code generation, one additional dependency, compression, etc).
+
+Nonetheless, I will in the future explore it, because the original pprof lacks two things that I think I quite important, and that the new pprof does out of the box:
+- A built-in interactive flamegraph feature
+- Tracking the time at which an allocation happened, which can then be used to produce a flamechart representing allocations over time (for example to observe a memory leak increasing the memory usage over time, and discover where it comes from)
