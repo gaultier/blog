@@ -541,7 +541,7 @@ It turns out that your browser comes with a built-in profiler and a nice one to 
   * It is very JS-centric so much of the profile has to be filled with `null` values or explicitly saying that the each sample is not for JS
   * All fields must be provided even if empty, including arrays. Failing to do so throws an obscure exception in the profiler, that has to be tracked in the browser debugger, which shows the minified JS profiler code, which is not fun (yes, the profiler is written mostly/entirely in JS). The consequence is that most of the profile file is made of lengthy arrays only containing `null` values. Thus, most of the code to generate it is boilerplate noise.
   * Memory traces are supported but it seems that a CPU trace is required for each memory trace which makes the profile even bigger, and harder to generate. Only providing memory samples shows nothing in the graphs.
-- The new `pprof` (the Go version) expects a relatively simple protobuf file, gzipped, but that means adding code generation and a library dependency. I use it when writing Go quite often and it is helpful.
+- The new `pprof` (the Go version) expects a relatively [simple protobuf file](https://github.com/google/pprof/tree/4ca4178f5c7ab3f10300f07dab7422ead8dc17bc/proto), gzipped, but that means adding code generation and a library dependency. I use it when writing Go quite often and it is helpful.
 
 ## Conclusion
 
