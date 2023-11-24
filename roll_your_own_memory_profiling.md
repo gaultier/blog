@@ -372,7 +372,9 @@ static void *arena_alloc(arena_t *a, size_t size, size_t align, size_t count) {
 We now have to implement `mem_profile_record_alloc` and exporting the profile to the text format, and we are done.
 
 
-When recording an allocation, we need to capture the call stack, so we walk the stack upwards until we reach a frame address that is 0 or does not have the alignement of a pointer (8); at which point we know not to dereference it and go further. This will break if we disable frame pointers when compiling (`-fomit-frame-pointer`) which is in my opinion always a bad idea. There are other ways to get a call stack fortunately but they all are more involved and potentially slower. Note that this approach probably only works on x86_64, no idea how ARM does that. Here is a [deep dive](https://hacks.mozilla.org/2022/06/everything-is-broken-shipping-rust-minidump-at-mozilla/) on getting a stack trace in different environments.
+When recording an allocation, we need to capture the call stack, so we walk the stack upwards until we reach a frame address that is 0 or does not have the alignement of a pointer (8); at which point we know not to dereference it and go further.
+
+This will break if we disable frame pointers when compiling (`-fomit-frame-pointer`) which is in my opinion always a bad idea. There are other ways to get a call stack fortunately but they all are more involved and potentially slower. Note that this approach probably only works on x86_64, no idea how ARM does that. Here is a [deep dive](https://hacks.mozilla.org/2022/06/everything-is-broken-shipping-rust-minidump-at-mozilla/) on getting a stack trace in different environments.
 
 ```c
 static uint8_t record_call_stack(uint64_t *dst, uint64_t cap) {
