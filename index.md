@@ -87,4 +87,4 @@ The content of this blog as well as the code snippets are under the [BSD-3 Licen
 ## Support
 
 
-If you liked an article and you want to support me, with whatever amount you want and can afford: [Paypal](https://paypal.me/philigaultier?country.x=DE&locale.x=en_US)
+If you liked an article and you want to support me, and can afford it: [Paypal](https://paypal.me/philigaultier?country.x=DE&locale.x=en_US)
