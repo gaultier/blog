@@ -1,3 +1,7 @@
+img {
+    margin: 1rem;
+}
+
 body {
     color: #2e3440;
     font-family: monospace, sans-serif;
@@ -23,15 +27,17 @@ blockquote {
 }
 
 pre {
-    background: rgb(247, 247, 247) !important;
+    background: rgb(255,250,240) !important;
     padding: 0.5rem;
     white-space: pre-wrap;
     border: 1px solid grey;
     margin-bottom: 0;
+    min-width: 30%;
 }
 
 code {
-    background: rgb(247, 247, 247) !important;
+    font-size: 1rem;
+    background: rgb(255,250,240) !important;
     line-height: 1.6;
     padding: 0 !important;
 }
@@ -42,32 +48,7 @@ td, th {
 }
 
 th {
-    background: rgb(247, 247, 247);
-}
-
-table {
-    margin-left: 2rem;
-    border: 0;
-    border-collapse: collapse;
-}
-
-img {
-    margin: 1rem auto;
-    display: block;
-    max-width: 90%;
-}
-
-li > img {
-    vertical-align: text-top;
-}
-
-hr {
-    width: 30%;
-    margin: auto;
-    display: block;
-    margin-top: 3rem;
-    margin-bottom: 3rem;
-    color: rgb(247,247,247);
+    background: rgb(255,250,240);
 }
 
 h1, h2, h3, h4, h5, h6 {

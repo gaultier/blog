@@ -24,11 +24,13 @@ Say that you are using a programming language where memory is manually managed, 
 
 What to do?
 
-Well, it turns out that this can all be achieved very simply without adding dependencies to your application, in ~100 lines of code (with lots of comments). I'll show one way and then explore other possibilities. And here are the results we are working towards:
+Well, it turns out that this can all be achieved very simply without adding dependencies to your application, in ~100 lines of code (including lots of comments). I'll show one way and then explore other possibilities. And here are the results we are working towards:
 
 ![1](mem_prof1.png)
 ![2](mem_prof2.png)
 ![3](mem_prof3.png)
+
+The only requirement to make it all work is to be able to run a bit of code on each allocation.
 
 Another good reason to do this, is when the standard `malloc` comes with some form of memory profiling which is not suitable for your needs and you want something different/better/the same on every platform.
 
@@ -86,12 +88,18 @@ When we free an array of N elements of type `Foo`:
 - `in use bytes` decrements by `N * sizeof(Foo)`
 
 These 4 dimensions are really useful to spot memory leaks (`in use objects` and `in use bytes` increase over time), peak memory usage (`space bytes`), whether we are doing many small allocations versus a few big allocations, etc.
+Pprof also supports sampling and we could supply a sampling rate here optionally but we want to track each and every allocation so we do not bother with that.
 
 Each entry (i.e. line) ends with the call stack which is a space-separated list of addresses. We'll see that it is easy to get that information without resorting to external libraries such as `libunwind` by simply walking the stack, a topic I touched on in a previous [article](/blog/x11_x64.html#a-stack-primer).
 
 Very importantly, multiple allocation records with the same stack must be merged together into one, summing their values. In that sense, each line conceptually an entry in a hashmap where the key is the call stack (the part of the right of the `@` character) and the value is a 4-tuple: `(u64, u64, u64, u64)` (the part on the left of the `@` character).
 
-The text file ends with a trailer which is crucial for symbolication (to transform memory addresses into source code locations), which (at least on Linux, other systems must be able to do the same but I have not investigated them) is trivial to get: This is just a copy of the file `/proc/self/maps`. It lists of the loaded libraries and at which address they are.
+The text file ends with a trailer which is crucial for symbolication (to transform memory addresses into source code locations), which on Linux is trivial to get: This is just a copy of the file `/proc/self/maps`. It lists of the loaded libraries and at which address they are.
+
+I have not implemented it myself but a quick lookup shows that the other major operating systems have a similar capability, named differently:
+- Windows: `VirtualQuery`
+- macOS: `mach_vm_region_info`
+- FreeBSD: `procstat_getvmmap` 
 
 
 Here is a small example:
@@ -208,3 +216,118 @@ Since our program is a Position Independant Executable (PIE), the loader picks a
 
 As such, `pprof` only needs to find for each address the relevant range, subtract the start of the range from this address, and it has the real address in our executable. It then runs `addr2line` or similar to get the code location. 
 
+
+Finally we can use `pprof` to extract human-readable information from this text file:
+
+```sh
+$ pprof --text ./a.out ./heapprof.0001.heap
+Using local file ./a.out.
+Using local file /tmp/heapprof.0001.heap.
+Total: 0.0 MB
+     0.0  63.6%  63.6%      0.0  63.6% b
+     0.0  36.4% 100.0%      0.0  72.7% a
+     0.0   0.0% 100.0%      0.0 100.0% __libc_start_call_main
+     0.0   0.0% 100.0%      0.0 100.0% __libc_start_main_impl
+     0.0   0.0% 100.0%      0.0 100.0% _start
+     0.0   0.0% 100.0%      0.0 100.0% main
+```
+
+## Generating a pprof profile
+
+Let's start with a very simple arena (directly based on [https://nullprogram.com/blog/2023/09/27/](https://nullprogram.com/blog/2023/09/27/)) and show how it is used:
+
+
+```c
+#define _GNU_SOURCE
+#include <sys/mman.h>
+#include <stdlib.h>
+
+typedef struct {
+  u8 *start;
+  u8 *end;
+} arena_t;
+
+static void * arena_alloc(arena_t *a, size_t size, size_t align, size_t count) {
+  pg_assert(a->start <= a->end);
+  pg_assert(align == 1 || align == 2 || align == 4 || align == 8);
+
+  size_t available = a->end - a->start;
+  size_t padding = -(size_t)a->start & (align - 1);
+
+  size_t offset = padding + size * count;
+  if (available < offset) {
+    fprintf(stderr,
+            "Out of memory: available=%lu "
+            "allocation_size=%lu\n",
+            available, offset);
+    abort();
+  }
+
+  uint8_t *res = a->start + padding;
+
+  a->start += offset;
+
+  return (void *)res;
+}
+```
+
+Now, we are ready to add memory profiling to our simple allocator. 
+
+First, we model a record with the 4 counters and the call stack:
+
+```c
+typedef struct {
+  uint64_t in_use_space, in_use_objects, alloc_space, alloc_objects;
+  uint64_t *call_stack;
+  uint64_t call_stack_len;
+} mem_record;
+```
+
+Then, the profile, which contains the 4 counters as a sum and an array of records. 
+
+An arena now has an (optional) pointer to a memory profile:
+
+```c
+typedef struct mem_profile mem_profile;
+typedef struct {
+  uint8_t *start;
+  uint8_t *end;
+  mem_profile* profile;
+} arena_t;
+
+struct mem_profile {
+  mem_record *records;
+  uint64_t records_len;
+  uint64_t records_cap;
+  uint64_t in_use_space, in_use_objects, alloc_space, alloc_objects;
+  arena_t arena;
+};
+```
+
+Note that the memory profile needs to allocate to store this metadata and as such needs an arena. Which makes these two structures cyclic! 
+
+The way we solve it is: 
+1. We create an small arena dedicated to the memory profiling and this arena does *not* have a memory profile attached (otherwise we would end up in a infinite recursion, and we are not interested in profiling the memory usage of the memory profiler)
+2. We create the memory profile using this arena
+3. We create the main arena for our program to use and attach the profile to it
+
+```c
+static arena_t arena_new(uint64_t cap, mem_profile_t *profile) {
+  uint8_t *mem = mmap(NULL, cap, PROT_READ | PROT_WRITE,
+                      MAP_ANONYMOUS | MAP_PRIVATE, -1, 0);
+
+  arena_t arena = {
+      .profile = profile,
+      .start = mem,
+      .end = mem + cap,
+  };
+  return arena;
+}
+
+int main(){
+  arena_t mem_profile_arena = arena_new(1 << 16, NULL);
+  mem_profile_t mem_profile = {.arena = mem_profile_arena};
+
+  arena_t arena = arena_new(1 << 22, &mem_profile);
+}
+```
