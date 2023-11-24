@@ -1,6 +1,6 @@
 <link rel="stylesheet" type="text/css" href="main.css">
 
-# Alternative technical articles you won't find elsewhere
+# Alternative and unusual technical articles, sometimes
 
 - Sep 5 2019: [Getting started with Scheme by solving an Advent of Code 2018 challenge](/blog/advent_of_code_2018_5)
 - Sep 7 2020: [How to compile LLVM, Clang, LLD, and Ziglang from source on Alpine Linux](/blog/compile_ziglang_from_source_on_alpine_2020_9)
