@@ -43,11 +43,11 @@ Here is the plan:
 
 1. Each time there is an allocation in our program, we record information about it in an array.
 2. At the end of the program (or upon receiving a signal, a special TCP packet, whatever), we dump the information in the (original) [pprof](https://github.com/gperftools/gperftools) format, which is basically just a text file with one line per allocation (more details on that in a bit).
-3. We can then use the (original) pprof which is just a [giant Perl script](https://github.com/gperftools/gperftools/blob/master/src/pprof) which will extract interesting information and most importantly symbolize (meaning: transform memory addresses into line/column/function/file information).
+3. We can then use the (original) `pprof` which is just a [giant Perl script](https://github.com/gperftools/gperftools/blob/master/src/pprof) which will extract interesting information and most importantly symbolize (meaning: transform memory addresses into line/column/function/file information).
 
-I will showcase this approach with C code using an arena allocator. The full code can be found in my project [micro-kotlin](https://github.com/gaultier/micro-kotlin/blob/pprof-original/str.h#L320). But this can be done in any language since the pprof text format is so simple! Also, using arenas, we do not bother to free anything so the memory profiling part is even simpler.
+I will showcase this approach with C code using an arena allocator. The full code can be found in my project [micro-kotlin](https://github.com/gaultier/micro-kotlin/blob/pprof-original/str.h#L320). But this can be done in any language since the `pprof` text format is so simple! Also, using arenas, we do not bother to free anything so the memory profiling part is even simpler.
 
-> The original pprof written in Perl is not to be confused with the rewritten [pprof](https://github.com/google/pprof) in Go which offers a superset of the features of the original but based on a completely different and incompatible file format (protobuf)!
+> The original `pprof` written in Perl is not to be confused with the rewritten [pprof](https://github.com/google/pprof) in Go which offers a superset of the features of the original but based on a completely different and incompatible file format (protobuf)!
 
 ## The text format
 
@@ -64,7 +64,7 @@ MAPPED_LIBRARIES:
 
 ```
 
-The first line is a header identifying that this is a heap profile (contrary to a CPU profile which pprof can also analyze, which uses a different, binary, format) and gives for each of the four fields we will record, their sum. 
+The first line is a header identifying that this is a heap profile (contrary to a CPU profile which `pprof` can also analyze, which uses a different, binary, format) and gives for each of the four fields we will record, their sum. 
 
 Then comes one line per entry. Each entry has these four fields that the header just gave us a sum of:
 - `in use objects`: How many objects are 'live' i.e. in use on the heap at the time of the allocation. Allocating increases its value, freeing decreases it.
@@ -233,7 +233,7 @@ Total: 0.0 MB
      0.0   0.0% 100.0%      0.0 100.0% main
 ```
 
-## Generating a pprof profile
+## Generating a `pprof` profile
 
 Let's start with a very simple arena (directly based on [https://nullprogram.com/blog/2023/09/27/](https://nullprogram.com/blog/2023/09/27/)) and show how it is used:
 
@@ -357,7 +357,7 @@ static void *arena_alloc(arena_t *a, size_t size, size_t align, size_t count) {
 We now have to implement `mem_profile_record_alloc` and exporting the profile to the text format, and we are done.
 
 
-When recording an allocation, we need to capture the call stack, so we walk the stack upwards until we reach a frame address that is 0 or does not have the alignement of a pointer (8); at which point we know not to dereference it and go further. This will break if we disable frame pointers when compiling (`-fomit-frame-pointer`) which is in my opinion always a bad idea. There are other ways to get a call stack fortunately but they all are more involved and potentially slower. Here is a [deep dive](https://hacks.mozilla.org/2022/06/everything-is-broken-shipping-rust-minidump-at-mozilla/) on getting a stack trace in different environments.
+When recording an allocation, we need to capture the call stack, so we walk the stack upwards until we reach a frame address that is 0 or does not have the alignement of a pointer (8); at which point we know not to dereference it and go further. This will break if we disable frame pointers when compiling (`-fomit-frame-pointer`) which is in my opinion always a bad idea. There are other ways to get a call stack fortunately but they all are more involved and potentially slower. Note that this approach probably only works on x86_64, no idea how ARM does that. Here is a [deep dive](https://hacks.mozilla.org/2022/06/everything-is-broken-shipping-rust-minidump-at-mozilla/) on getting a stack trace in different environments.
 
 ```c
 static uint8_t record_call_stack(uint64_t *dst, uint64_t cap) {
@@ -383,7 +383,7 @@ static uint8_t record_call_stack(uint64_t *dst, uint64_t cap) {
 ```
 
 Now we can record the allocation proper, upserting the new record into our existing list of records, trying to find an existing record with the same call stack.
-That part is important to avoid having a huge profile and that's why pprof made this design decision.
+That part is important to avoid having a huge profile and that's why `pprof` made this design decision.
 
 The code is slightly length because we need to roll our own arrays here in this minimal example, but in a real application you'd have your own array structure and helper functions, most likely:
 
@@ -446,7 +446,7 @@ static void mem_profile_record_alloc(mem_profile_t *profile,
 ```
 
 
-Finally, we can dump this profile in the pprof textual representation:
+Finally, we can dump this profile in the `pprof` textual representation:
 
 ```
 static void mem_profile_write(mem_profile_t *profile, FILE *out) {
@@ -481,7 +481,7 @@ static void mem_profile_write(mem_profile_t *profile, FILE *out) {
 }
 ```
 
-And we're done! Let's try it with our initial example (bumping the size of the allocations a bit because pprof ignores tiny allocations for readability - although this is configurable):
+And we're done! Let's try it with our initial example (bumping the size of the allocations a bit because `pprof` ignores tiny allocations for readability - although this is configurable):
 
 ```c
 void b(int n, arena_t *arena) {
