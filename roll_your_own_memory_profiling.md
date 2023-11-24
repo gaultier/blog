@@ -10,13 +10,13 @@ window.addEventListener("load", (event) => {
 
 <a href="/blog">All articles</a>
 
-# Roll your own memory profiling
+# Roll your own memory profiling: it's actually not hard
 
-*Or: An exploration of the `pprof` format.*
+*Or: An exploration of the `pprof` memory profiler and its textual format for fun an profit.*
 
 Say that you are using a programming language where memory is manually managed, and you have decided to use a custom allocator for one reason or another, for example an arena allocator, and are wondering:
 
-- How do I track every allocation, recording how many bytes were allocated and what was the call stack at that time
+- How do I track every allocation, recording how many bytes were allocated and what was the call stack at that time?
 - How much memory is my program using, and what is the peak use?
 - How much memory does my program free? Is it all of it (are there leaks)?
 - Which line of code in my function is allocating, and how much?
@@ -32,7 +32,7 @@ Well, it turns out that this can all be achieved very simply without adding depe
 
 The only requirement to make it all work is to be able to run a bit of code on each allocation.
 
-Another good reason to do this, is when the standard `malloc` comes with some form of memory profiling which is not suitable for your needs and you want something different/better/the same on every platform.
+Another good reason to do this, is when the system's `malloc` comes with some form of memory profiling which is not suitable for your needs and you want something different/better/the same on every platform.
 
 >  If you spot an error, please open a [Github issue](https://github.com/gaultier/blog)!
 
@@ -64,10 +64,11 @@ MAPPED_LIBRARIES:
 
 ```
 
-The first line is a header identifying that this is a heap profile (in opposition to a CPU profile which pprof can also analyze) and gives for each of the four fields we will record, their sum. 
-Then comes one line per entry. Each entry has these four fields that the header gave a sum of:
-- `in use objects`: How many objects are 'live' i.e. in use on the heap at the time of exporting this heap profile. Allocating increases its value, freeing decreases it.
-- `in use bytes`: How many bytes are 'live' i.e. in use on the heap at the time of exporting this heap profile. Allocating increases its value, freeing decreases it.
+The first line is a header identifying that this is a heap profile (contrary to a CPU profile which pprof can also analyze, which uses a different, binary, format) and gives for each of the four fields we will record, their sum. 
+
+Then comes one line per entry. Each entry has these four fields that the header just gave us a sum of:
+- `in use objects`: How many objects are 'live' i.e. in use on the heap at the time of the allocation. Allocating increases its value, freeing decreases it.
+- `in use bytes`: How many bytes are 'live' i.e. in use on the heap at the time of the allocation. Allocating increases its value, freeing decreases it.
 - `space objects`: How many objects have been allocated since the start of the program. It is not affected by freeing memory, it only increases.
 - `space bytes`: How many bytes have been allocated since the start of the program. It is not affected by freeing memory, it only increases.
 
