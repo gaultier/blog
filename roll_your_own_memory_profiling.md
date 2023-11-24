@@ -545,12 +545,12 @@ It turns out that your browser comes with a built-in profiler and a nice one to 
 
  To make use of these, our application needs to generate the information we gathered in the format the profiler expects, just like we did with `pprof`.
 
-- Chrome expects a [JSON file](https://docs.google.com/document/d/1CvAClvFfyA5R-PhYUmn5OOQtYMH4h6I0nSsKchNAySU/preview), which I did not experiment with yet
+- Chrome expects a [JSON file](https://docs.google.com/document/d/1CvAClvFfyA5R-PhYUmn5OOQtYMH4h6I0nSsKchNAySU/preview), which I did not experiment with yet.
 - Firefox expects a [different JSON file](https://github.com/firefox-devtools/profiler/blob/main/docs-developer/processed-profile-format.md). A good starting point is [https://github.com/mstange/samply](https://github.com/mstange/samply). I experimented with it but dropped this avenue because of several frustrating aspects:
-  * It is very JS-centric so much of the profile has to be filled with `null` values or explicitly saying that the each sample is not for JS
+  * It is very JS-centric so much of the profile has to be filled with `null` values or explicitly saying that the each sample is not for JS.
   * All fields must be provided even if empty, including arrays. Failing to do so throws an obscure exception in the profiler, that has to be tracked in the browser debugger, which shows the minified JS profiler code, which is not fun (yes, the profiler is written mostly/entirely in JS). The consequence is that most of the profile file is made of lengthy arrays only containing `null` values. Thus, most of the code to generate it is boilerplate noise.
   * Memory traces are supported but it seems that a CPU trace is required for each memory trace which makes the profile even bigger, and harder to generate. Only providing memory samples shows nothing in the graphs.
-- The new `pprof` (the Go version) expects a relatively [simple protobuf file](https://github.com/google/pprof/tree/4ca4178f5c7ab3f10300f07dab7422ead8dc17bc/proto), gzipped, but that means adding code generation and a library dependency. I use it when writing Go quite often and it is helpful. It also supports adding labels to samples, for example we could label the allocations coming from different arenas differently to be able to distinguish them in the same profile.
+- The new `pprof` (the Go version) expects a relatively simple gzipped [protobuf file](https://github.com/google/pprof/tree/4ca4178f5c7ab3f10300f07dab7422ead8dc17bc/proto), but that means adding code generation and a library dependency. I use this tool when writing Go quite often and it is helpful. It also supports adding labels to samples, for example we could label the allocations coming from different arenas differently to be able to distinguish them in the same profile.
 
 ## Conclusion
 
