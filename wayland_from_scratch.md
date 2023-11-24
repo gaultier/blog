@@ -700,6 +700,9 @@ Thus, I have the feeling that Wayland really goes out of the way once the initia
 As for the next steps, I would like to draw some text, and react to user input events. Maybe even port something like [microui](https://github.com/rxi/microui), which only needs a few drawing routines, to our application.
 
 
+> If you liked this article and you want to support me, and can afford it: [Paypal](https://paypal.me/philigaultier?country.x=DE&locale.x=en_US)
+
+
 ## Addendum: the full code
 
 *Do not forget to generate `wayland-logo.h` with the aforementioned commands!*

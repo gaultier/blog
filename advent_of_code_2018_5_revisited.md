@@ -376,6 +376,9 @@ Yes, indeed, almost twice as fast!
 - Having a clear idea in pseudo-code of the solution will simplify the implementation in any language.
 - Naive assembly is very fast (your CPU is crazy fast when you do not abuse it with badly written interpreted languages, seriously!), but a good compiler will emit better assembly than you if you write C or similar. Unless you are an expert like the VLC guys.
 
+
+> If you liked this article and you want to support me, and can afford it: [Paypal](https://paypal.me/philigaultier?country.x=DE&locale.x=en_US)
+
 ## Appendix: The full code
 
 ### The old C implementation
