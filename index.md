@@ -9,6 +9,7 @@
 - June 5 2023: [Cycle detection in graphs does not have to be hard: A lesser known, simple way with Kahn's algorithm](/blog/kahns_algorithm.html)
 - October 5 2023: [Optimizing an Advent of Code solution in assembly](/blog/advent_of_code_2018_5_revisited.html)
 - October 13 2023: [Learn Wayland by writing a GUI from scratch](/blog/wayland_from_scratch.html)
+- November 24 2023: [Roll your own memory profiling: it's actually not hard](/blog/roll_your_own_memory_profiling.html)
 
 ## About me
 

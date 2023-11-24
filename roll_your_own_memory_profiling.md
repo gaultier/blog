@@ -22,7 +22,7 @@ Say that you are using a programming language where memory is manually managed, 
 - Which line of code in my function is allocating, and how much?
 - I want a flamegraph showing allocations by function
 
-What to do?
+What to do? Mainstream allocators such as `tcmalloc` and `jemalloc` can provide us this information but we have lost this ability by using our own!
 
 Well, it turns out that this can all be achieved very simply without adding dependencies to your application, in ~100 lines of code (including lots of comments). I'll show one way and then explore other possibilities. And here are the results we are working towards:
 
