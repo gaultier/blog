@@ -12,7 +12,7 @@ window.addEventListener("load", (event) => {
 
 # Roll your own memory profiling: it's actually not hard
 
-*Or: An exploration of the `pprof` memory profiler and its textual format for fun an profit.*
+*Or: An exploration of the [pprof](https://github.com/gperftools/gperftools) memory profiler and its textual format for fun an profit.*
 
 Say that you are using a programming language where memory is manually managed, and you have decided to use a custom allocator for one reason or another, for example an arena allocator, and are wondering:
 
