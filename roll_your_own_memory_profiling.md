@@ -42,7 +42,7 @@ Another good reason to do this, is when the system's `malloc` comes with some fo
 Here is the plan: 
 
 1. Each time there is an allocation in our program, we record information about it in an array
-2. At the end of the program (or upon receiving a signal, a special tcp packet, whatever), we dump the information in the (original) [pprof](https://github.com/gperftools/gperftools) format, which is basically just a text file with one line per allocation (more details on that in a bit)
+2. At the end of the program (or upon receiving a signal, a special TCP packet, whatever), we dump the information in the (original) [pprof](https://github.com/gperftools/gperftools) format, which is basically just a text file with one line per allocation (more details on that in a bit)
 3. We can then use the (original) pprof which is just a [giant Perl script](https://github.com/gperftools/gperftools/blob/master/src/pprof) which will extract interesting information and most importantly symbolize (meaning: transform memory addresses into line/column/function/file information)
 
 I will showcase this approach with C code using an arena allocator. The full code can be found in my project [micro-kotlin](https://github.com/gaultier/micro-kotlin/blob/pprof-original/str.h#L320). But this can be done in any language since the pprof text format is so simple!
@@ -538,15 +538,15 @@ It turns out that your browser comes with a built-in profiler and a nice one to 
 
 - Chrome expects a [JSON file](https://docs.google.com/document/d/1CvAClvFfyA5R-PhYUmn5OOQtYMH4h6I0nSsKchNAySU/preview), which I did not experiment with yet
 - Firefox expects a [different JSON file](https://github.com/firefox-devtools/profiler/blob/main/docs-developer/processed-profile-format.md). A good starting point is [https://github.com/mstange/samply](https://github.com/mstange/samply). I experimented with it but dropped this avenue because of several frustrating aspects:
-  * It is very JS centric so much of the profile has to be filled with `null` values or explicitly saying that the each sample is not for JS
+  * It is very JS-centric so much of the profile has to be filled with `null` values or explicitly saying that the each sample is not for JS
   * All fields must be provided even if empty, including arrays. Failing to do so throws an obscure exception in the profiler, that has to be tracked in the browser debugger, which shows the minified JS profiler code, which is not fun (yes, the profiler is written mostly/entirely in JS). The consequence is that most of the profile file is made of lengthy arrays only containing `null` values. Thus, most of the code to generate it is boilerplate noise.
   * Memory traces are supported but it seems that a CPU trace is required for each memory trace which makes the profile even bigger, and harder to generate. Only providing memory samples shows nothing in the graphs.
 - The new `pprof` (the Go version) expects a relatively simple protobuf file, gzipped, but that means adding code generation and a library dependency. I use it when writing Go quite often and it is helpful.
 
-## Conlusion
+## Conclusion
 
 I like that one of the most common memory profilers uses a very simple text format that anyone can generate, and that's it's stand-alone. It's very UNIXy!
 
-Nonetheless, I will in the future explore the other aforementioned profilers (probably the Chrome one) and I do not think it should be much work either. It's nice to leverage the existing browser to avoid having to install a profiler.
+Nonetheless, I will in the future explore the other aforementioned profilers (probably the Chrome one because it seems the most straightforward) and I do not think it should be much additional work. It's nice to leverage the existing browser to avoid having to install a profiler.
 
 After all, it's been [done before](https://technology.riotgames.com/news/profiling-real-world-performance-league)!
