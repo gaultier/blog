@@ -314,9 +314,9 @@ struct mem_profile_t {
 Note that the memory profile needs to allocate to store this metadata and as such needs an arena. Which makes these two structures cyclic! 
 
 The way we solve it is: 
-1. We create an small arena dedicated to the memory profiling and this arena does *not* have a memory profile attached (otherwise we would end up in a infinite recursion, and we are not interested in profiling the memory usage of the memory profiler)
-2. We create the memory profile using this arena
-3. We create the main arena for our program to use and attach the profile to it
+1. We create an small arena dedicated to the memory profiling and this arena does *not* have a memory profile attached (otherwise we would end up in a infinite recursion, and we are not interested in profiling the memory usage of the memory profiler anyway; its memory usage is capped by the size of its dedicated arena).
+2. We create the memory profile using this arena.
+3. We create the main arena for our program to use and attach the profile to it.
 
 ```c
 static arena_t arena_new(uint64_t cap, mem_profile_t *profile) {
@@ -357,7 +357,7 @@ static void *arena_alloc(arena_t *a, size_t size, size_t align, size_t count) {
 We now have to implement `mem_profile_record_alloc` and exporting the profile to the text format, and we are done.
 
 
-When recording an allocation, we need to capture the call stack, so we walk the stack upwards until we reach a frame address that is 0 or does not have the alignement of a pointer (8); at which point we know not to dereference it and go further:
+When recording an allocation, we need to capture the call stack, so we walk the stack upwards until we reach a frame address that is 0 or does not have the alignement of a pointer (8); at which point we know not to dereference it and go further. This will break if we disable frame pointers when compiling (`-fomit-frame-pointer`) which is in my opinion always a bad idea. There are other ways to get a call stack fortunately but they all are more involved and potentially slower. Here is a [deep dive](https://hacks.mozilla.org/2022/06/everything-is-broken-shipping-rust-minidump-at-mozilla/) on getting a stack trace in different environments.
 
 ```c
 static uint8_t record_call_stack(uint64_t *dst, uint64_t cap) {
@@ -418,7 +418,7 @@ static void mem_profile_record_alloc(mem_profile_t *profile,
     }
   }
 
-  // Not found, insert a new record.
+  // Not found, insert a new record
   mem_record_t record = {
       .alloc_objects = objects_count,
       .alloc_space = bytes_count,
@@ -525,6 +525,13 @@ $ pprof --collapsed ./a.out heap.profile | flamegraph.pl > out.svg
 
 ![Flamegraph](mem_prof_flamegraph.svg)
 
+
+## Variations
+
+- Memory profiling could be enabled in a CLI program with a command line flag; if it is disabled we do not create a memory profile nor an arena for it
+- Sampling could be easily added to `mem_profile_record_alloc` to only record some records, say 1%
+- The current maximum call stack depth is 64, for brevity in the context of this article. We can store a bigger one by having a dynamically sized array or storing each address in a more compact format, e.g. varint instead of a fixed 8 bytes
+
 ## Alternatives
 
 `pprof` (the Perl one) is not the only way to get this information. 
@@ -541,7 +548,7 @@ It turns out that your browser comes with a built-in profiler and a nice one to 
   * It is very JS-centric so much of the profile has to be filled with `null` values or explicitly saying that the each sample is not for JS
   * All fields must be provided even if empty, including arrays. Failing to do so throws an obscure exception in the profiler, that has to be tracked in the browser debugger, which shows the minified JS profiler code, which is not fun (yes, the profiler is written mostly/entirely in JS). The consequence is that most of the profile file is made of lengthy arrays only containing `null` values. Thus, most of the code to generate it is boilerplate noise.
   * Memory traces are supported but it seems that a CPU trace is required for each memory trace which makes the profile even bigger, and harder to generate. Only providing memory samples shows nothing in the graphs.
-- The new `pprof` (the Go version) expects a relatively [simple protobuf file](https://github.com/google/pprof/tree/4ca4178f5c7ab3f10300f07dab7422ead8dc17bc/proto), gzipped, but that means adding code generation and a library dependency. I use it when writing Go quite often and it is helpful.
+- The new `pprof` (the Go version) expects a relatively [simple protobuf file](https://github.com/google/pprof/tree/4ca4178f5c7ab3f10300f07dab7422ead8dc17bc/proto), gzipped, but that means adding code generation and a library dependency. I use it when writing Go quite often and it is helpful. It also supports adding labels to samples, for example we could label the allocations coming from different arenas differently to be able to distinguish them in the same profile.
 
 ## Conclusion
 
