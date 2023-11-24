@@ -89,7 +89,7 @@ When we free an array of N elements of type `Foo`:
 - `in use bytes` decrements by `N * sizeof(Foo)`
 
 These 4 dimensions are really useful to spot memory leaks (`in use objects` and `in use bytes` increase over time), peak memory usage (`space bytes`), whether we are doing many small allocations versus a few big allocations, etc.
-Pprof also supports sampling and we could supply a sampling rate here optionally but we want to track each and every allocation so we do not bother with that.
+`pprof` also supports sampling and we could supply a sampling rate here optionally but we want to track each and every allocation so we do not bother with that.
 
 Each entry (i.e. line) ends with the call stack which is a space-separated list of addresses. We'll see that it is easy to get that information without resorting to external libraries such as `libunwind` by simply walking the stack, a topic I touched on in a previous [article](/blog/x11_x64.html#a-stack-primer).
 
@@ -213,7 +213,7 @@ We have 3 unique call stacks that allocate, in the same order as they appear in 
 - `a` <- `main`
 - `b` <- `main`
 
-Since our program is a Position Independant Executable (PIE), the loader picks a random address for where to load our program in virtual memory. Consequently, addresses collected from within our program have this offset added to them. Thankfully, the `MAPPED_LIBRARIES` section lists address ranges (the first column of each line in that section) for each library that gets loaded. 
+Since our program is a Position Independant Executable (PIE), the loader picks a random address for where to load our program in virtual memory. Consequently, addresses collected from within our program have this offset added to them and this offset is different every run. Thankfully, the `MAPPED_LIBRARIES` section lists address ranges (the first column of each line in that section) for each library that gets loaded. 
 
 As such, `pprof` only needs to find for each address the relevant range, subtract the start of the range from this address, and it has the real address in our executable. It then runs `addr2line` or similar to get the code location. 
 
