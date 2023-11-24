@@ -41,11 +41,11 @@ Another good reason to do this, is when the system's `malloc` comes with some fo
 
 Here is the plan: 
 
-1. Each time there is an allocation in our program, we record information about it in an array
-2. At the end of the program (or upon receiving a signal, a special TCP packet, whatever), we dump the information in the (original) [pprof](https://github.com/gperftools/gperftools) format, which is basically just a text file with one line per allocation (more details on that in a bit)
-3. We can then use the (original) pprof which is just a [giant Perl script](https://github.com/gperftools/gperftools/blob/master/src/pprof) which will extract interesting information and most importantly symbolize (meaning: transform memory addresses into line/column/function/file information)
+1. Each time there is an allocation in our program, we record information about it in an array.
+2. At the end of the program (or upon receiving a signal, a special TCP packet, whatever), we dump the information in the (original) [pprof](https://github.com/gperftools/gperftools) format, which is basically just a text file with one line per allocation (more details on that in a bit).
+3. We can then use the (original) pprof which is just a [giant Perl script](https://github.com/gperftools/gperftools/blob/master/src/pprof) which will extract interesting information and most importantly symbolize (meaning: transform memory addresses into line/column/function/file information).
 
-I will showcase this approach with C code using an arena allocator. The full code can be found in my project [micro-kotlin](https://github.com/gaultier/micro-kotlin/blob/pprof-original/str.h#L320). But this can be done in any language since the pprof text format is so simple!
+I will showcase this approach with C code using an arena allocator. The full code can be found in my project [micro-kotlin](https://github.com/gaultier/micro-kotlin/blob/pprof-original/str.h#L320). But this can be done in any language since the pprof text format is so simple! Also, using arenas, we do not bother to free anything so the memory profiling part is even simpler.
 
 > The original pprof written in Perl is not to be confused with the rewritten [pprof](https://github.com/google/pprof) in Go which offers a superset of the features of the original but based on a completely different and incompatible file format (protobuf)!
 
