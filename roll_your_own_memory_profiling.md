@@ -528,7 +528,7 @@ $ pprof --collapsed ./a.out heap.profile | flamegraph.pl > out.svg
 
 ## Variations and limitations
 
-- Memory profiling could be enabled in a CLI program with a command line flag; if it is disabled we do not create a memory profile nor an arena for it
+- For this article we always do memory profiling; but it does not have to be this way. Memory profiling could be enabled in a CLI program with a command line flag; if it is disabled we do not create a memory profile nor an arena for it. Or, it could be enabled dynamically, after a given amount of time, etc.
 - Sampling could be easily added to `mem_profile_record_alloc` to only record some records, say 1%
 - The current maximum call stack depth is 64, for brevity in the context of this article. We can store a bigger one by having a dynamically sized array or storing each address in a more compact format, e.g. varint instead of a fixed 8 bytes
 - Stack traces won't work across library calls that are compiled without frame pointers. To which I'd say: It's likely easier to compile all of the code you depend on with the build flags you require than try to come up with alternative ways to walk the stack. Your mileage may vary.
