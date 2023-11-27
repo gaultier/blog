@@ -22,6 +22,18 @@ Get in touch:
 - [Linkedin](https://www.linkedin.com/in/philippegaultier/)
 - [Github](https://github.com/gaultier)
 
+## I am grateful
+
+I often am frustrated with the state of the software industry; however there is software out there that I am deeply grateful for.
+
+- Address Sanitizer/Thread Sanitizer. How many projects can revolutionize the way an established industry writes and considers native programming languages and impacts the development of new programming languages, such as Rust and Go? And how many projects are very helpful for beginners and experts alike? Any respectable C or C++ programmer should test every new line of code under these sanitizers, numerous bugs will be caught and your understanding of the standard and undefined behaviour will be greatly improved. Finally, its benefits compound nicely with fuzzing and automated testing.
+- Swaywm. A simple and snappy tiling window manager. Using one of these has completely changed the way I interact with a computer.
+- C. Simple, fast and timeless and I enjoy it greatly.
+- Make. Ubiquitous, straightforward, useful in many diverse situations. This blog uses it!
+- Vim/Neovim. Another timeless, minimal, fast program that's great for code and prose alike and that respects your computer by requiring very minimal resources. This blog was entirely written inside Neovim!
+- ZFS. The last filesystem you'll need. Reliable and is built on the right concepts. It feels like Git for the filesystem.
+- Wine/Proton. What a technical feat, and a massive reverse engineering effort, to make Windows applications work on Linux without the application even noticing.
+
 
 ## Portfolio
 
