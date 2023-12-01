@@ -142,6 +142,7 @@ data = system("cat in.txt")
 is_digit(c) = c eq "0" || c eq "1" || c eq "2" || c eq "3" || c eq "4" || c eq "5" || c eq "6" || c eq "7" || c eq "8" || c eq "9"
 
 sum = 0
+
 do for [line in data] {
   len = strlen(line)
 
@@ -171,7 +172,6 @@ do for [line in data] {
   }
   num = first . last + 0
   sum = sum + num
-  system("echo " . sum . " >> out.dat")
 }
 
 print(sum)
