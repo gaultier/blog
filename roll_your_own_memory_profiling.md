@@ -578,7 +578,7 @@ Nonetheless, I will in the future explore the other aforementioned profilers (pr
 After all, it's been [done before](https://technology.riotgames.com/news/profiling-real-world-performance-league)!
 
 
-> If you liked this article and you want to support me, and can afford it: [Paypal](https://paypal.me/philigaultier?country.x=DE&locale.x=en_US)
+> If you liked this article and you want to support me, and can afford it: [Donate](https://paypal.me/philigaultier?country.x=DE&locale.x=en_US)
 
 
 ## Addendum: the full code

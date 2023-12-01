@@ -578,7 +578,7 @@ There are many ways to optimize the code in this article; the point was not to w
 If you want to play with the code here and try to make it faster, go at it!
 
 
-> If you liked this article and you want to support me, and can afford it: [Paypal](https://paypal.me/philigaultier?country.x=DE&locale.x=en_US)
+> If you liked this article and you want to support me, and can afford it: [Donate](https://paypal.me/philigaultier?country.x=DE&locale.x=en_US)
 
 ## Addendum: the full code
 

@@ -131,7 +131,7 @@ Everything points to the fact that Gnuplot expects it's input data in some pre-a
 I'll investigate Julia and perhaps R in the future, which are in the same niche of science/data visualization but are a full programming language and plentyful tooling.
 
 
-> If you liked this article and you want to support me, and can afford it: [Paypal](https://paypal.me/philigaultier?country.x=DE&locale.x=en_US)
+> If you liked this article and you want to support me, and can afford it: [Donate](https://paypal.me/philigaultier?country.x=DE&locale.x=en_US)
 
 ## Addendum: The full code
 
