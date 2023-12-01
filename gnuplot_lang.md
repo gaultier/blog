@@ -72,7 +72,7 @@ We then set `first` to the first digit character we find:
 do for [line in data] {
   len = strlen(line)
 
-  first=""
+  first= ""
 
   do for [i = 1:len] {
     c = line[i:i]
@@ -146,7 +146,7 @@ sum = 0
 do for [line in data] {
   len = strlen(line)
 
-  first=""
+  first= ""
 
   do for [i = 1:len] {
     c = line[i:i]
