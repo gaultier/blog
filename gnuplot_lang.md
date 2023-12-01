@@ -125,7 +125,7 @@ It's weird because the language also has very modern constructs that some mainst
 
 Awk, Lua or Perl are honestly better in every way, to pick relatively simple, dynamic languages that people usually reach to for Unixy text transformations. And these will have better tooling, such as a debugger. Heck, even shell scripting is probably easier and more straightforward, and that's a low bar.
 
-Everything points to the fact that Gnuplot expects it's input data in some prearranged tabular form, and just wants to plot it, not transform it. That means that another (real) programming language is expected to do prior work and Gnuplot is at the end of the data pipeline as a 'dumb' visualization tool. I can also see how the limited language can still be useful for Physicists or Mathematicians to write numerical,pure functions e.g. `f(x) = x*2 + 1`.
+Everything points to the fact that Gnuplot expects it's input data in some prearranged tabular form, and just wants to plot it, not transform it. That means that another (real) programming language is expected to do prior work and Gnuplot is at the end of the data pipeline as a 'dumb' visualization tool. I can also see how the limited language can still be useful for Physicists or Mathematicians to write simple numerical, pure functions e.g. `f(x) = x*2 + 1`.
 
 
 I'll investigate Julia and perhaps R in the future, which are in the same niche of science/data visualization but are a full programming language and plentiful tooling.
