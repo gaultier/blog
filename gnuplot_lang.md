@@ -128,7 +128,7 @@ Awk, Lua or Perl are honestly better in every way, to pick relatively simple, dy
 Everything points to the fact that Gnuplot expects it's input data in some prearranged tabular form, and just wants to plot it, not transform it. That means that another (real) programming language is expected to do prior work and Gnuplot is at the end of the data pipeline as a 'dumb' visualization tool. I can also see how the limited language can still be useful for Physicists or Mathematicians to write simple numerical, pure functions e.g. `f(x) = x*2 + 1`.
 
 
-I'll investigate Julia and perhaps R in the future, which are in the same niche of science/data visualization but are a full programming language and plentiful tooling.
+I'll investigate Julia and perhaps R in the future, which are in the same niche of science/data visualization but are full programming languages with plentiful tooling.
 
 
 > If you liked this article and you want to support me, and can afford it: [Donate](https://paypal.me/philigaultier?country.x=DE&locale.x=en_US)
