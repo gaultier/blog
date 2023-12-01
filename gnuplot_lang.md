@@ -56,9 +56,9 @@ We then iterate over each character in the line with a for-range loop, isolating
 sum = 0
 
 do for [line in data] {
-  len=strlen(line)
+  len = strlen(line)
 
-  do for [i=1:len] {
+  do for [i = 1:len] {
     c = line[i:i]
   }
 }
@@ -70,11 +70,11 @@ We then set `first` to the first digit character we find:
 
 ```gnuplot
 do for [line in data] {
-  len=strlen(line)
+  len = strlen(line)
 
   first=""
 
-  do for [i=1:len] {
+  do for [i = 1:len] {
     c = line[i:i]
     if (is_digit(c)) {
       if (first eq "") {
@@ -91,7 +91,7 @@ We do the same for the last character, iterating in reverse order:
 ```gnuplot
   last = ""
 
-  do for [i=len:1:-1] {
+  do for [i = len:1:-1] {
     c = line[i:i]
     if (is_digit(c)) {
       if (last eq "") {
@@ -143,11 +143,11 @@ is_digit(c) = c eq "0" || c eq "1" || c eq "2" || c eq "3" || c eq "4" || c eq "
 
 sum = 0
 do for [line in data] {
-  len=strlen(line)
+  len = strlen(line)
 
   first=""
 
-  do for [i=1:len] {
+  do for [i = 1:len] {
     c = line[i:i]
     if (is_digit(c)) {
       if (first eq "") {
@@ -160,7 +160,7 @@ do for [line in data] {
 
   last = ""
 
-  do for [i=len:1:-1] {
+  do for [i = len:1:-1] {
     c = line[i:i]
     if (is_digit(c)) {
       if (last eq "") {
