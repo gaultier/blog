@@ -10,7 +10,7 @@
 - October 5 2023: [Optimizing an Advent of Code solution in assembly](/blog/advent_of_code_2018_5_revisited.html)
 - October 13 2023: [Learn Wayland by writing a GUI from scratch](/blog/wayland_from_scratch.html)
 - November 24 2023: [Roll your own memory profiling: it's actually not hard](/blog/roll_your_own_memory_profiling.html)
-- December 1 2023: [Solving a problem with Gnuplot, the programming language (not the plotting software)](/blog/gnuplot_lang.html)
+- December 1 2023: [Solving a problem with Gnuplot, the programming language (not the plotting software!)](/blog/gnuplot_lang.html)
 
 ## About me
 

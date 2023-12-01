@@ -2,7 +2,7 @@
 
 <a href="/blog">All articles</a>
 
-# Solving a problem with Gnuplot, the programming language (not the plotting software)
+# Solving a problem with Gnuplot, the programming language (not the plotting software!)
 
 *Is it any good? Can you solve real problems with it?*
 
