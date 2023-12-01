@@ -20,7 +20,7 @@ The software engineering advice that I heard a long time ago and left a mark on 
 
 So Gnuplot is definitely worth of a spot in a Software Engineer's toolbox.
 
-However, few know that Gnuplot is actually a Turing complete programming language. It is similar in syntax to Perl or Awk. So I scratched an itch and solved a [problem](https://adventofcode.com/2023/day/1) with it.
+However, few know that Gnuplot is actually also Turing complete programming language. It is similar in syntax to Perl or Awk. So I scratched an itch and solved a [problem](https://adventofcode.com/2023/day/1) with it.
 
 **Table of Contents**
 - [The problem](#the-problem)
@@ -131,6 +131,7 @@ Everything points to the fact that Gnuplot expects it's input data in some pre-a
 I'll investigate Julia and perhaps R in the future, which are in the same niche of science/data visualization but are a full programming language and plentyful tooling.
 
 
+> If you liked this article and you want to support me, and can afford it: [Paypal](https://paypal.me/philigaultier?country.x=DE&locale.x=en_US)
 
 ## Addendum: The full code
 
