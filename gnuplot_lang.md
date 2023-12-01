@@ -29,7 +29,7 @@ However, few know that Gnuplot is actually also Turing complete programming lang
 
 ## The problem
  
-In short, we get a text file where each line contains random ascii characters. For each line, we must find the first and last digit characters, combine them into an number and at the end output the sum of all these numbers.
+In short, we get a text file where each line contains random ASCII characters. For each line, we must find the first and last digit characters, combine them into an number and at the end output the sum of all these numbers.
 
 
 The way we read the data into a variable is through a shell command:
@@ -38,7 +38,7 @@ The way we read the data into a variable is through a shell command:
 data = system("cat in.txt")
 ```
 
-Gnuplot has the `plot` command to turn input data into a plot, but nothing built-in to read input data into a variable, it seems. No matter, `system` which spawns a commmand in a subshell does the trick.
+Gnuplot has the `plot` command to turn input data into a plot, but nothing built-in to read input data into a variable, it seems. No matter, `system` which spawns a command in a subshell does the trick.
 
 Since we need to check whether a character is a string, let's define our own little function for it. Yes, Gnuplot has user defined functions! The unfortunate limitation is that the body has to be an expression:
 
@@ -118,17 +118,17 @@ print(sum)
 
 ## Closing thoughts
 
-Pretty straightforward, isn'it? Well, no. The language is weirdly restrictive, for example `sum += num` does not parse. `for` and `while` loops cannot for some reason be used interchangeably due to the weird `do` prefix for for-loops. Very few builtin functions are available.
+Pretty straightforward, isn't it? Well, no. The language is weirdly restrictive, for example `sum += num` does not parse. `for` and `while` loops cannot for some reason be used interchangeably due to the weird `do` prefix for for-loops. Very few builtin functions are available.
 There does not seem to be basic data structures such as arrays and maps. Every variable is global. And so on.
 
 It's weird because the language also has very modern constructs that some mainstream languages still do not have, like the slicing syntax.
 
-Awk, Lua or Perl are honestly better in every way, to pick relatively simple, dynamic languages that people usually reach to for Unixy text transformations. And these wo will have better tooling, such as a debugger. Heck, even shell scripting is probably easier and more straightforward, and that's a low bar.
+Awk, Lua or Perl are honestly better in every way, to pick relatively simple, dynamic languages that people usually reach to for Unixy text transformations. And these will have better tooling, such as a debugger. Heck, even shell scripting is probably easier and more straightforward, and that's a low bar.
 
-Everything points to the fact that Gnuplot expects it's input data in some pre-arranged tabular form, and just wants to plot it, not transform it. That means that another (real) programming language is expected to do prior work and Gnuplot is at the end of the data pipeline as a 'dumb' visualization tool. I can also see how the limited language can still be useful for Physicists or Mathematicians to write numerical,pure functions e.g. `f(x) = x*2 + 1`.
+Everything points to the fact that Gnuplot expects it's input data in some prearranged tabular form, and just wants to plot it, not transform it. That means that another (real) programming language is expected to do prior work and Gnuplot is at the end of the data pipeline as a 'dumb' visualization tool. I can also see how the limited language can still be useful for Physicists or Mathematicians to write numerical,pure functions e.g. `f(x) = x*2 + 1`.
 
 
-I'll investigate Julia and perhaps R in the future, which are in the same niche of science/data visualization but are a full programming language and plentyful tooling.
+I'll investigate Julia and perhaps R in the future, which are in the same niche of science/data visualization but are a full programming language and plentiful tooling.
 
 
 > If you liked this article and you want to support me, and can afford it: [Donate](https://paypal.me/philigaultier?country.x=DE&locale.x=en_US)
