@@ -35,7 +35,7 @@ In short, we get a text file where each line contains random ascii characters. F
 The way we read the data into a variable is through a shell command:
 
 ```
-data = system("cat 1a.txt")
+data = system("cat in.txt")
 ```
 
 Gnuplot has the `plot` command to turn input data into a plot, but nothing built-in to read input data into a variable, it seems. No matter, `system` which spawns a commmand in a subshell does the trick.
@@ -137,7 +137,7 @@ I'll investigate Julia and perhaps R in the future, which are in the same niche 
 Run with `gnuplot my_file.dem`.
 
 ```gnuplot
-data = system("cat 1a.txt")
+data = system("cat in.txt")
 
 is_digit(c) = c eq "0" || c eq "1" || c eq "2" || c eq "3" || c eq "4" || c eq "5" || c eq "6" || c eq "7" || c eq "8" || c eq "9"
 
