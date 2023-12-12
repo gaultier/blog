@@ -8,7 +8,7 @@
 
 <div class="body">
 
-<section class="articles">
+<div class="articles">
 
 ### Articles
 
@@ -22,7 +22,7 @@
 - <span class="date">November 24 2023</span> [Roll your own memory profiling: it's actually not hard](/blog/roll_your_own_memory_profiling.html)
 - <span class="date">December 1 2023</span> [Solving a problem with Gnuplot, the programming language (not the plotting software!)](/blog/gnuplot_lang.html)
 
-</section>
+</div>
 
 ## About me
 
