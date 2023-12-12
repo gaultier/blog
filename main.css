@@ -7,6 +7,15 @@
   align-items: center;
 }
 
+#me {
+  border-radius: 231px;
+  border: 15px;
+  padding: .5rem;
+  max-width: 8rem;
+  margin: 0;
+  margin-right: 1rem;
+}
+
 .body {
   margin: .5rem;
 }
@@ -38,6 +47,9 @@
 #name {
   font-weight: bolder;
   font-size: 1.5rem;
+  display: inline-flex;
+  align-items: center;
+  margin: 0;
 }
 
 img {
