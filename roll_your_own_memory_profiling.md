@@ -794,10 +794,4 @@ int main() {
   mem_profile_write(&mem_profile, stderr);
 }
 ```
-
-## Support
-
-
-If you liked an article and you want to support me, and can afford it: [Donate](https://paypal.me/philigaultier?country.x=DE&locale.x=en_US)
-
 </div>
