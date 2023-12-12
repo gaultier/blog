@@ -11,7 +11,7 @@
   border-radius: 231px;
   border: 15px;
   padding: .5rem;
-  max-width: 7rem;
+  max-width: 6rem;
   margin: 0;
   margin-right: 1rem;
 }
@@ -78,7 +78,7 @@ hr {
 body {
     margin: 0;
     font-family: monospace, sans-serif;
-    font-size: 1.2rem;
+    font-size: 1.1rem;
     margin-bottom: 5rem;
 }
 
@@ -99,7 +99,7 @@ blockquote {
 }
 
 pre {
-    background: rgb(255,250,240) !important;
+    background: #FFF3E0 !important;
     padding: 0.5rem;
     white-space: pre-wrap;
     border: 1px solid grey;
@@ -109,7 +109,7 @@ pre {
 
 code {
     font-size: 1.2rem;
-    background: rgb(255,250,240) !important;
+    background: #FFF3E0 !important;
     line-height: 1.6;
     padding: 0 !important;
 }
