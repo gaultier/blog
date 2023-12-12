@@ -7,7 +7,7 @@
 
 <body>
 <header id="banner">
-    <p id="name"><img id="me" src="me.jpeg">Philippe Gaultier</p>
+    <a id="name" href="/blog"><img id="me" src="me.jpeg"></img> Philippe Gaultier</a>
 
 - [Linkedin](https://www.linkedin.com/in/philippegaultier/)
 - [Github](https://github.com/gaultier)

@@ -1,4 +1,13 @@
 <link rel="stylesheet" type="text/css" href="main.css">
+
+<header id="banner">
+    <a id="name" href="/blog"><img id="me" src="me.jpeg"></img> Philippe Gaultier</a>
+
+- [Linkedin](https://www.linkedin.com/in/philippegaultier/)
+- [Github](https://github.com/gaultier)
+</header>
+<div class="body">
+
 <a href="/blog">All articles</a>
 
 # Getting started with Scheme by solving an Advent of Code 2018 challenge 
@@ -484,3 +493,5 @@ challenges, solved with a variety of programming languages.
 ## CHANGELOG
 
 - Mon Sep  7 20:40:57 CEST 2020: Removed klipse and all javascript
+
+<div class="body">

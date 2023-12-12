@@ -11,7 +11,7 @@
   border-radius: 231px;
   border: 15px;
   padding: .5rem;
-  max-width: 8rem;
+  max-width: 7rem;
   margin: 0;
   margin-right: 1rem;
 }
@@ -50,6 +50,15 @@
   display: inline-flex;
   align-items: center;
   margin: 0;
+  text-decoration: none;
+  color: black;
+  border-radius: 8px;
+  border: 15px;
+}
+
+#name:hover {
+  text-decoration: none;
+  background-color: #FFA726;
 }
 
 img {
@@ -68,7 +77,6 @@ hr {
 
 body {
     margin: 0;
-    color: #2e3440;
     font-family: monospace, sans-serif;
     font-size: 1.2rem;
     margin-bottom: 5rem;
