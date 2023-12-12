@@ -1,16 +1,35 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
 <link rel="stylesheet" type="text/css" href="main.css">
+</head>
 
-# Alternative and unusual technical articles, sometimes
+<body>
+<header id="banner">
+    <p id="name">Philippe Gaultier</p>
 
-- Sep 5 2019: [Getting started with Scheme by solving an Advent of Code 2018 challenge](/blog/advent_of_code_2018_5)
-- Sep 7 2020: [How to compile LLVM, Clang, LLD, and Ziglang from source on Alpine Linux](/blog/compile_ziglang_from_source_on_alpine_2020_9)
-- Sep 21 2020: [Adventures in CI land, or how to speed up your CI](/blog/speed_up_your_ci.html)
-- May 31 2023: [Learn x86-64 assembly by writing a GUI from scratch](/blog/x11_x64.html)
-- June 5 2023: [Cycle detection in graphs does not have to be hard: A lesser known, simple way with Kahn's algorithm](/blog/kahns_algorithm.html)
-- October 5 2023: [Optimizing an Advent of Code solution in assembly](/blog/advent_of_code_2018_5_revisited.html)
-- October 13 2023: [Learn Wayland by writing a GUI from scratch](/blog/wayland_from_scratch.html)
-- November 24 2023: [Roll your own memory profiling: it's actually not hard](/blog/roll_your_own_memory_profiling.html)
-- December 1 2023: [Solving a problem with Gnuplot, the programming language (not the plotting software!)](/blog/gnuplot_lang.html)
+- [Linkedin](https://www.linkedin.com/in/philippegaultier/)
+- [Github](https://github.com/gaultier)
+</header>
+
+<div class="body">
+
+<section class="articles">
+
+### Articles
+
+- <span class="date">Sep 5 2019</span> [Getting started with Scheme by solving an Advent of Code 2018 challenge](/blog/advent_of_code_2018_5)
+- <span class="date">Sep 7 2020</span> [How to compile LLVM, Clang, LLD, and Ziglang from source on Alpine Linux](/blog/compile_ziglang_from_source_on_alpine_2020_9)
+- <span class="date">Sep 21 2020</span> [Adventures in CI land, or how to speed up your CI](/blog/speed_up_your_ci.html)
+- <span class="date">May 31 2023</span> [Learn x86-64 assembly by writing a GUI from scratch](/blog/x11_x64.html)
+- <span class="date">June 5 2023</span> [Cycle detection in graphs does not have to be hard: A lesser known, simple way with Kahn's algorithm](/blog/kahns_algorithm.html)
+- <span class="date">October 5 2023</span> [Optimizing an Advent of Code solution in assembly](/blog/advent_of_code_2018_5_revisited.html)
+- <span class="date">October 13 2023</span> [Learn Wayland by writing a GUI from scratch](/blog/wayland_from_scratch.html)
+- <span class="date">November 24 2023</span> [Roll your own memory profiling: it's actually not hard](/blog/roll_your_own_memory_profiling.html)
+- <span class="date">December 1 2023</span> [Solving a problem with Gnuplot, the programming language (not the plotting software!)](/blog/gnuplot_lang.html)
+
+</section>
 
 ## About me
 
@@ -20,8 +39,6 @@ In my free time, I like running, lifting weights, gardening, and the outdoors.
 
 Get in touch:
 
-- [Linkedin](https://www.linkedin.com/in/philippegaultier/)
-- [Github](https://github.com/gaultier)
 
 ## I am grateful
 
@@ -101,3 +118,7 @@ The content of this blog as well as the code snippets are under the [BSD-3 Licen
 
 
 If you liked an article and you want to support me, and can afford it: [Donate](https://paypal.me/philigaultier?country.x=DE&locale.x=en_US)
+
+</div>
+</body>
+</hmtl>

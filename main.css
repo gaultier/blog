@@ -1,3 +1,45 @@
+#banner {
+  background-color: #FB8C00;
+  padding: .5rem 2rem;
+  display: inline-flex;
+  width: 100%;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.body {
+  margin: .5rem;
+}
+
+.articles > ul {
+  list-style: none;
+}
+
+.articles > ul > li > a {
+  text-decoration: none;
+  color: #E65100;
+  font-weight: bold;
+}
+
+.date {
+  color: #9E9E9E;
+}
+
+#banner > ul {
+  flex-grow: 1;
+  max-width: 10rem;
+  /* list-style: none; */
+}
+
+#banner > ul :nth-child(2) {
+  /* list-style-image: url("github-mark.png"); */
+}
+
+#name {
+  font-weight: bolder;
+  font-size: 1.5rem;
+}
+
 img {
   margin: auto;
   display: block;
@@ -13,10 +55,10 @@ hr {
 }
 
 body {
+    margin: 0;
     color: #2e3440;
     font-family: monospace, sans-serif;
     font-size: 1.2rem;
-    margin: 1.5rem;
     margin-bottom: 5rem;
 }
 
