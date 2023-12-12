@@ -1,11 +1,4 @@
-<!DOCTYPE html>
-<html>
-<head>
-<meta charset="utf-8">
 <link rel="stylesheet" type="text/css" href="main.css">
-</head>
-
-<body>
 <header id="banner">
     <a id="name" href="/blog"><img id="me" src="me.jpeg"></img> Philippe Gaultier</a>
 
@@ -115,5 +108,3 @@ The content of this blog as well as the code snippets are under the [BSD-3 Licen
 
 
 </div>
-</body>
-</hmtl>
