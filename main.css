@@ -1,3 +1,4 @@
+
 #banner {
   background-color: #FB8C00;
   padding: .5rem 2rem;
@@ -31,6 +32,8 @@
 }
 
 .date {
+  padding-left: .2rem;
+  padding-right: .2rem;
   color: #9E9E9E;
 }
 

@@ -13,20 +13,21 @@
 
 <div class="body">
 
-<div class="articles">
 
 ### Articles
 
-- <span class="date">Sep 5 2019</span> [Getting started with Scheme by solving an Advent of Code 2018 challenge](/blog/advent_of_code_2018_5.html)
-- <span class="date">Sep 7 2020</span> [How to compile LLVM, Clang, LLD, and Ziglang from source on Alpine Linux](/blog/compile_ziglang_from_source_on_alpine_2020_9.html)
-- <span class="date">Sep 21 2020</span> [Adventures in CI land, or how to speed up your CI](/blog/speed_up_your_ci.html)
-- <span class="date">May 31 2023</span> [Learn x86-64 assembly by writing a GUI from scratch](/blog/x11_x64.html)
-- <span class="date">June 5 2023</span> [Cycle detection in graphs does not have to be hard: A lesser known, simple way with Kahn's algorithm](/blog/kahns_algorithm.html)
-- <span class="date">October 5 2023</span> [Optimizing an Advent of Code solution in assembly](/blog/advent_of_code_2018_5_revisited.html)
-- <span class="date">October 13 2023</span> [Learn Wayland by writing a GUI from scratch](/blog/wayland_from_scratch.html)
-- <span class="date">November 24 2023</span> [Roll your own memory profiling: it's actually not hard](/blog/roll_your_own_memory_profiling.html)
-- <span class="date">December 1 2023</span> [Solving a problem with Gnuplot, the programming language (not the plotting software!)](/blog/gnuplot_lang.html)
-
+<div class="articles">
+<ul>
+<li><a href="/blog/advent_of_code_2018_5.html"><span class="date">Sep 5 2019</span>Getting started with Scheme by solving an Advent of Code 2018 challenge</a></li>
+<li><a href="/blog/compile_ziglang_from_source_on_alpine_2020_9.html"><span class="date">Sep 7 2020</span>How to compile LLVM, Clang, LLD, and Ziglang from source on Alpine Linux</a></li>
+<li><a href="/blog/speed_up_your_ci.html"><span class="date">Sep 21 2020</span>Adventures in CI land, or how to speed up your CI</a></li>
+<li><a href="/blog/x11_x64.html"><span class="date">May 31 2023</span>Learn x86-64 assembly by writing a GUI from scratch</a></li>
+<li><a href="/blog/kahns_algorithm.html"><span class="date">June 5 2023</span>Cycle detection in graphs does not have to be hard: A lesser known, simple way with Kahn's algorithm</a></li>
+<li><a href="/blog/advent_of_code_2018_5_revisited.html"><span class="date">October 5 2023</span>Optimizing an Advent of Code solution in assembly</a></li>
+<li><a href="/blog/wayland_from_scratch.html"><span class="date">October 13 2023</span>Learn Wayland by writing a GUI from scratch</a></li>
+<li><a href="/blog/roll_your_own_memory_profiling.html"><span class="date">November 24 2023</span>Roll your own memory profiling: it's actually not hard</a></li>
+<li><a href="/blog/gnuplot_lang.html"><span class="date">December 1 2023</span>Solving a problem with Gnuplot, the programming language (not the plotting software!)</a></li>
+</ul
 </div>
 
 ## About me
