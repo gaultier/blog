@@ -8,12 +8,12 @@ window.addEventListener("load", (event) => {
 });
 </script>
 
-<header id="banner">
+<div id="banner">
     <a id="name" href="/blog"><img id="me" src="me.jpeg"></img> Philippe Gaultier</a>
 
 - [Linkedin](https://www.linkedin.com/in/philippegaultier/)
 - [Github](https://github.com/gaultier)
-</header>
+</div>
 <div class="body">
 
 # Optimizing an Advent of Code solution in assembly
