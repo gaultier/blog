@@ -1,6 +1,12 @@
 <link rel="stylesheet" type="text/css" href="main.css">
 
-<a href="/blog">All articles</a>
+<header id="banner">
+    <a id="name" href="/blog"><img id="me" src="me.jpeg"></img> Philippe Gaultier</a>
+
+- [Linkedin](https://www.linkedin.com/in/philippegaultier/)
+- [Github](https://github.com/gaultier)
+</header>
+<div class="body">
 
 # Solving a problem with Gnuplot, the programming language (not the plotting software!)
 
@@ -177,3 +183,5 @@ do for [line in data] {
 
 print(sum)
 ```
+
+</div>

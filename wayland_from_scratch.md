@@ -7,7 +7,13 @@ window.addEventListener("load", (event) => {
 });
 </script>
 
-<a href="/blog">All articles</a>
+<header id="banner">
+    <a id="name" href="/blog"><img id="me" src="me.jpeg"></img> Philippe Gaultier</a>
+
+- [Linkedin](https://www.linkedin.com/in/philippegaultier/)
+- [Github](https://github.com/gaultier)
+</header>
+<div class="body">
 
 # Learn Wayland by writing a GUI from scratch
 
@@ -1425,3 +1431,6 @@ int main() {
 }
 
 ```
+
+
+</div>

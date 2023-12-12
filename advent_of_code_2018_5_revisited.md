@@ -7,7 +7,14 @@ window.addEventListener("load", (event) => {
   hljs.highlightAll();
 });
 </script>
-<a href="/blog">All articles</a>
+
+<header id="banner">
+    <a id="name" href="/blog"><img id="me" src="me.jpeg"></img> Philippe Gaultier</a>
+
+- [Linkedin](https://www.linkedin.com/in/philippegaultier/)
+- [Github](https://github.com/gaultier)
+</header>
+<div class="body">
 
 # Optimizing an Advent of Code solution in assembly
 
@@ -1235,3 +1242,5 @@ _start:
 
   call exit
 ```
+
+</div>

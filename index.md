@@ -19,8 +19,8 @@
 
 ### Articles
 
-- <span class="date">Sep 5 2019</span> [Getting started with Scheme by solving an Advent of Code 2018 challenge](/blog/advent_of_code_2018_5)
-- <span class="date">Sep 7 2020</span> [How to compile LLVM, Clang, LLD, and Ziglang from source on Alpine Linux](/blog/compile_ziglang_from_source_on_alpine_2020_9)
+- <span class="date">Sep 5 2019</span> [Getting started with Scheme by solving an Advent of Code 2018 challenge](/blog/advent_of_code_2018_5.html)
+- <span class="date">Sep 7 2020</span> [How to compile LLVM, Clang, LLD, and Ziglang from source on Alpine Linux](/blog/compile_ziglang_from_source_on_alpine_2020_9.html)
 - <span class="date">Sep 21 2020</span> [Adventures in CI land, or how to speed up your CI](/blog/speed_up_your_ci.html)
 - <span class="date">May 31 2023</span> [Learn x86-64 assembly by writing a GUI from scratch](/blog/x11_x64.html)
 - <span class="date">June 5 2023</span> [Cycle detection in graphs does not have to be hard: A lesser known, simple way with Kahn's algorithm](/blog/kahns_algorithm.html)
@@ -113,11 +113,6 @@ This blog is [open-source](https://github.com/gaultier/blog)!
 The content of this blog as well as the code snippets are under the [BSD-3 License](https://en.wikipedia.org/wiki/BSD_licenses) which I also usually use for all my personal projects. It's basically free for every use but you have to mention me as the original author.
 
 
-
-## Support
-
-
-If you liked an article and you want to support me, and can afford it: [Donate](https://paypal.me/philigaultier?country.x=DE&locale.x=en_US)
 
 </div>
 </body>

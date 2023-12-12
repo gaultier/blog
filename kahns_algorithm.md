@@ -7,7 +7,13 @@ window.addEventListener("load", (event) => {
 });
 </script>
 
-<a href="/blog">All articles</a>
+<header id="banner">
+    <a id="name" href="/blog"><img id="me" src="me.jpeg"></img> Philippe Gaultier</a>
+
+- [Linkedin](https://www.linkedin.com/in/philippegaultier/)
+- [Github](https://github.com/gaultier)
+</header>
+<div class="body">
 
 # Cycle detection in graphs does not have to be hard: A lesser known, simple way with Kahn's algorithm
 
@@ -686,3 +692,5 @@ for (let i = employeesTopologicallySorted.length - 2; i >= 0; i -= 1) {
   );
 }
 ```
+
+</div>

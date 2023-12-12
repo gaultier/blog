@@ -1,4 +1,11 @@
 <link rel="stylesheet" type="text/css" href="main.css">
+<link rel="stylesheet" href="https://unpkg.com/@highlightjs/cdn-assets@11.8.0/styles/default.min.css">
+<script src="https://unpkg.com/@highlightjs/cdn-assets@11.8.0/highlight.min.js"></script>
+<script>
+window.addEventListener("load", (event) => {
+  hljs.highlightAll();
+});
+</script>
 
 <header id="banner">
     <a id="name" href="/blog"><img id="me" src="me.jpeg"></img> Philippe Gaultier</a>
@@ -7,8 +14,6 @@
 - [Github](https://github.com/gaultier)
 </header>
 <div class="body">
-
-<a href="/blog">All articles</a>
 
 # Getting started with Scheme by solving an Advent of Code 2018 challenge 
 
@@ -489,9 +494,5 @@ I hope it gave you a glance at what Scheme can do, and stay tuned for more blog
 posts about programming. I intend to post more solutions to other coding
 challenges, solved with a variety of programming languages.
 
-
-## CHANGELOG
-
-- Mon Sep  7 20:40:57 CEST 2020: Removed klipse and all javascript
 
 <div class="body">

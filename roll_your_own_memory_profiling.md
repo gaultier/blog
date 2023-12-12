@@ -7,7 +7,14 @@ window.addEventListener("load", (event) => {
 });
 </script>
 
-<a href="/blog">All articles</a>
+
+<header id="banner">
+    <a id="name" href="/blog"><img id="me" src="me.jpeg"></img> Philippe Gaultier</a>
+
+- [Linkedin](https://www.linkedin.com/in/philippegaultier/)
+- [Github](https://github.com/gaultier)
+</header>
+<div class="body">
 
 # Roll your own memory profiling: it's actually not hard
 
@@ -787,3 +794,10 @@ int main() {
   mem_profile_write(&mem_profile, stderr);
 }
 ```
+
+## Support
+
+
+If you liked an article and you want to support me, and can afford it: [Donate](https://paypal.me/philigaultier?country.x=DE&locale.x=en_US)
+
+</div>
