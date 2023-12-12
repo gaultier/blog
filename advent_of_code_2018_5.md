@@ -1,6 +1,7 @@
 <link rel="stylesheet" type="text/css" href="main.css">
 <link rel="stylesheet" href="https://unpkg.com/@highlightjs/cdn-assets@11.8.0/styles/default.min.css">
 <script src="https://unpkg.com/@highlightjs/cdn-assets@11.8.0/highlight.min.js"></script>
+<script src="https://unpkg.com/@highlightjs/cdn-assets@11.8.0/languages/scheme.min.js"></script>
 <script>
 window.addEventListener("load", (event) => {
   hljs.highlightAll();
