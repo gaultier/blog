@@ -8,6 +8,7 @@
       <li>
         <a href="https://github.com/gaultier">Github</a>
       </li>
+    </ul>
 </div>
 
 <div class="body">

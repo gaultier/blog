@@ -8,10 +8,15 @@ window.addEventListener("load", (event) => {
 </script>
 
 <div id="banner">
-    <a id="name" href="/blog"><img id="me" src="me.jpeg"></img> Philippe Gaultier</a>
-
-- [Linkedin](https://www.linkedin.com/in/philippegaultier/)
-- [Github](https://github.com/gaultier)
+    <a id="name" href="/blog"><img id="me" src="me.jpeg"/> Philippe Gaultier </a>
+    <ul>
+      <li>
+      <a href="https://www.linkedin.com/in/philippegaultier/">LinkedIn</a>
+      </li>
+      <li>
+        <a href="https://github.com/gaultier">Github</a>
+      </li>
+    </ul>
 </div>
 <div class="body">
 

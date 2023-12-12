@@ -8,12 +8,18 @@ window.addEventListener("load", (event) => {
 </script>
 
 <div id="banner">
-    <a id="name" href="/blog"><img id="me" src="me.jpeg"></img> Philippe Gaultier</a>
-
-- [Linkedin](https://www.linkedin.com/in/philippegaultier/)
-- [Github](https://github.com/gaultier)
+    <a id="name" href="/blog"><img id="me" src="me.jpeg"/> Philippe Gaultier </a>
+    <ul>
+      <li>
+      <a href="https://www.linkedin.com/in/philippegaultier/">LinkedIn</a>
+      </li>
+      <li>
+        <a href="https://github.com/gaultier">Github</a>
+      </li>
+    </ul>
 </div>
 <div class="body">
+
 
 # Getting started with Scheme by solving an Advent of Code 2018 challenge 
 
@@ -494,5 +500,6 @@ I hope it gave you a glance at what Scheme can do, and stay tuned for more blog
 posts about programming. I intend to post more solutions to other coding
 challenges, solved with a variety of programming languages.
 
+> If you liked this article and you want to support me, and can afford it: [Donate](https://paypal.me/philigaultier?country.x=DE&locale.x=en_US)
 
-<div class="body">
+</div>
