@@ -1,0 +1,399 @@
+<link rel="stylesheet" type="text/css" href="main.css">
+<link rel="stylesheet" href="https://unpkg.com/@highlightjs/cdn-assets@11.8.0/styles/default.min.css">
+<script src="https://unpkg.com/@highlightjs/cdn-assets@11.8.0/highlight.min.js"></script>
+<script src="https://unpkg.com/@highlightjs/cdn-assets@11.8.0/languages/scheme.min.js"></script>
+<script>
+window.addEventListener("load", (event) => {
+  hljs.highlightAll();
+});
+</script>
+<div id="banner">
+    <a id="name" href="/blog"><img id="me" src="me.jpeg"/> Philippe Gaultier </a>
+    <ul>
+      <li>
+      <a href="https://www.linkedin.com/in/philippegaultier/">LinkedIn</a>
+      </li>
+      <li>
+        <a href="https://github.com/gaultier">Github</a>
+      </li>
+    </ul>
+</div>
+<div class="body">
+<h1>Getting started with Scheme by solving an Advent of Code 2018 challenge</h1>
+<p>I started learning <a href="https://en.wikipedia.org/wiki/Scheme_(programming_language)">Scheme</a> very recently. <a href="http://wiki.call-cc.org/">Chicken Scheme</a> is a wonderful small and
+performant implementation of Scheme, a programming language in the family of
+LISPs.
+Since I learn by doing, let's solve the <a href="https://adventofcode.com/2018/day/5">Advent of Code 2018 day 5 challenge</a> with a tiny Scheme program.
+I encourage you to check out <a href="https://adventofcode.com/2018/about">Advent of
+Code</a> and try to solve the challenges yourself.</p>
+<p>Many people have the feeling that LISPs are slow and cryptic with all those
+parentheses. I hope to show that it is in fact very approachable, easy to work
+with, and even fast to run!</p>
+<p>I will not go through installing Chicken Scheme and learning the basics, because
+it was <a href="http://blog.klipse.tech/scheme/2016/09/11/scheme-tutorial-1.html">already done better than I can</a>.</p>
+<p><strong>Table of Contents</strong></p>
+<ul>
+<li><a href="#getting-started-with-scheme-by-solving-an-advent-of-code-2018-challenge">Getting started with Scheme by solving an Advent of Code 2018 challenge</a>
+<ul>
+<li><a href="#the-problem">The problem</a></li>
+<li><a href="#working-with-the-repl-to-iteratively-close-in-on-a-solution">Working with the REPL to iteratively close in on a solution</a>
+<ul>
+<li><a href="#a-small-detour-pattern-matching">A small detour: pattern matching</a></li>
+<li><a href="#using-pattern-matching-to-solve-our-problem">Using pattern matching to solve our problem</a></li>
+</ul>
+</li>
+<li><a href="#the-final-solution">The final solution</a></li>
+<li><a href="#conclusion">Conclusion</a></li>
+</ul>
+</li>
+</ul>
+<h2>The problem</h2>
+<p>We have a string looking like this: <code>AabcdZZqQ</code> which represents a chain of
+chemical units. Adjacent units of the same type (i.e letter) and opposite
+polarity (i.e casing) react together and disappear.
+It means we want to remove adjacent characters which are the same letter and have opposite casing, e.g
+<code>Aa</code> and <code>qQ</code> disappear while <code>bc</code> and <code>ZZ</code> remain. Once we are finished, we have: <code>bcdZZ</code>.</p>
+<p>The final output is the number of characters in the final string, i.e, <code>5</code>.</p>
+<h2>Working with the REPL to iteratively close in on a solution</h2>
+<p>First, let's define our input, which is a string:</p>
+<pre><code class="language-scheme">(define input &quot;aAbxXBctTCz&quot;)
+</code></pre>
+<p>Later, we will read our input string from a file, but for now it is simpler to
+just hard-code it.</p>
+<p>Most functions in Scheme are immutable, meaning they do not
+modify their arguments, they instead return a new item which is slightly different.</p>
+<p>We could work with strings, but it turns out it is simpler to work with lists
+instead in our case. We do not want to keep track of indices, risking doing off-by-one mistakes.
+Also, LISPs are good at handling lists (LISP stands for LISt Processor), and
+we'll that we can use pattern matching to make the code very concise. I am not
+aware of pattern matching capabilities on string, so let's use lists:</p>
+<pre><code class="language-scheme">(string-&gt;list input)
+</code></pre>
+<p>Here, the
+<code>string-&gt;list</code> function just returns a list of characters for a string (in other
+languages it is usually named <code>split</code>).</p>
+<p>Now, we need to detect if two characters are the same latter, with opposite casing.
+Let's write a <code>char-opposite-casing?</code> function to do just that. It will take 2
+arguments, the letters we are inspecting, and will return a boolean.
+For now, let's just make it always return true:</p>
+<pre><code class="language-scheme">(define (char-opposite-casing? a b) #\t)
+</code></pre>
+<p>We only deal with ASCII, so it is safe to compare ASCII codes to detect casing.</p>
+<p>What is the ASCII code of <code>A</code>? Let's try it by using the function <code>char-&gt;integer</code>:</p>
+<pre><code class="language-scheme">(char-&gt;integer #\A) 
+</code></pre>
+<p>What about <code>a</code>?</p>
+<pre><code class="language-scheme">(char-&gt;integer #\a)
+</code></pre>
+<p>So there is a difference of <code>32</code> between the same ASCII letter in lowercase and
+uppercase. Peeking at <code>man ascii</code> in the terminal confirms this hunch for all
+letters of the alphabet.</p>
+<p>So, time to implement <code>char-opposite-casing?</code>:</p>
+<pre><code class="language-scheme">(define (char-case-opposite-casing? a b)
+  (let* ((a-code (char-&gt;integer a))
+         (b-code (char-&gt;integer b))
+         (diff (- a-code b-code)))
+    (= (* 32 32) (* diff diff))))
+</code></pre>
+<p>Let's try it with <code>a</code> and <code>A</code>:</p>
+<pre><code class="language-scheme">(char-case-opposite-casing? #\a #\A) 
+</code></pre>
+<p>And flipped:</p>
+<pre><code class="language-scheme">(char-case-opposite-casing? #\A #\a)
+</code></pre>
+<p>And <code>A</code> and <code>b</code>:</p>
+<pre><code class="language-scheme">(char-case-opposite-casing? #\A #\b)
+</code></pre>
+<p><code>let*</code> is used to define local bindings which are only visible in this function.
+It evaluates each binding in order which means we can define <code>diff</code> in terms of
+<code>a</code> and <code>b</code> (contrary to <code>let</code>).</p>
+<p>We could have done without it but it makes the function more readable.</p>
+<p>The only hurdle is not caring
+about the sign of the difference: if the difference is <code>32</code> or <code>-32</code>, it is the
+same. We could compare the absolute value, but I (arbitrarily) chose to implement it without
+branches, by comparing the squared values (which swallows the signs).</p>
+<hr />
+<p>Now let's work on the central problem: how to remove
+characters in a list, in a functional, immutable way?</p>
+<p>The idea is to write a recursive function taking two arguments: an accumulator
+(let's call it <code>acc</code> from now on),
+which will be eventually the end result, and the input list (<code>input</code>), from which we
+gradually remove items until it is empty. We can view the first list as the work
+we have done, and the second list as the work to do.</p>
+<p>Let's first define the function. For now, it just returns the empty list:</p>
+<pre><code class="language-scheme">(define (chem-react acc input)
+  '())
+</code></pre>
+<p>At first, the accumulator is the empty list, so we will always call our function like
+this:</p>
+<pre><code class="language-scheme">(chem-react '() (string-&gt;list input))
+</code></pre>
+<p>It is import to know that most list functions do not work on the empty list in
+Chicken Scheme. For example, to get the first element of a list, we use the <code>car</code> function:</p>
+<pre><code class="language-scheme">(define my-list (list 1 2 3))
+
+;; Note that this doest **not** mutate `my-list`
+(car my-list)
+</code></pre>
+<p>But it won't work on the empty list:</p>
+<pre><code class="language-scheme">(define my-list '())
+
+(car my-list)
+</code></pre>
+<p>So we need to treat the case of the empty list (both for the first and the
+second argument) explicitly. We could do that by using lots of <code>if</code>, but it is
+more readable and concise to use pattern matching.</p>
+<h3>A small detour: pattern matching</h3>
+<p>Scheme has a minimalist core, so we do not get pattern matching out of
+the box, but we can easily add it with the package <code>matchable</code>. Let's install
+it in the terminal:</p>
+<pre><code class="language-sh">$ chicken-install matchable
+</code></pre>
+<p>Now we can import it at the top of our code:</p>
+<pre><code class="language-scheme">(import matchable)
+
+;; At this point we can refer to any function in this module `matchable`.
+;; No need to prefix them either with `matchable`.
+</code></pre>
+<p>Let's try to match the empty list in our function, and return (as an example) a
+number, e.g <code>42</code>. We also want to match the case of both lists containing one
+element, and returning the sum of those 2 elements:</p>
+<pre><code class="language-scheme">(define (chem-react acc input)
+  (match (list acc input)
+    [(_ ()) 42]
+    [((a) (b)) (+ a b)]))
+
+(chem-react '() '()) ;; =&gt; 42
+
+(chem-react (list 2) (list 3)) ;; =&gt; 5
+</code></pre>
+<p>A few interesting things here: <code>_</code> allows us to match anything, so the first
+case is equivalent to checking if the second list is
+empty. Additionally, we can bind variables to our patterns: we do that in the
+second case, binding the first element of the first list to <code>a</code>, and the fist
+element of the second list to <code>b</code>, and summing the two.</p>
+<p>Note that not all possible cases are covered here, and we will get a (runtime)
+error if we trigger one of them, for example with a list containing several numbers:</p>
+<pre><code class="language-scheme">(chem-react (list 1 2) (list 3)) ;; =&gt; Error: (match) &quot;no matching pattern&quot;: ()
+</code></pre>
+<p>Let's go ahead and match the case of a list of one or more elements (<code>(a . arest)</code>) to avoid that:</p>
+<pre><code class="language-scheme">(define (chem-react acc input)
+  (match (list acc input)
+    [(_ ()) 42]
+    [((a) (b)) (+ a b)]
+    [((a . arest) (b . brest)) (* a b)]))
+
+(chem-react (list 2 3) (list 4)) ;; =&gt; 8
+</code></pre>
+<p>Here we choose to (arbitrarily) return the product of the first elements of both
+list, to show that pattern matching is also a way to do destructuring.</p>
+<h3>Using pattern matching to solve our problem</h3>
+<p>If the second list (the input) is empty, it means we are
+finished, so we return the first list (<code>acc</code>):</p>
+<pre><code class="language-scheme">(define (chem-react acc input)
+  (match (list acc input)
+    [(_ ()) acc]))
+</code></pre>
+<p>Our recursion will work as follows: we look at the first element of the second
+list (<code>input</code>, which is the work to do), let's call it <code>b</code>, and the first element of the first
+list (<code>acc</code>, the work done), let's call it <code>a</code>.</p>
+<p>If <code>a</code> and <code>b</code> are the same letter of opposite casing, we 'drop' the two. Otherwise, we
+add <code>b</code> to the first list, and 'continue'. 'drop' and 'continue' are put in
+quotes because that is vocabulary from imperative languages such as C; we'll see
+in a minute how we implement it in a functional way.</p>
+<p>If the first list is empty, this is our starting case: the only thing we can do
+is mark <code>b</code> as 'processed', i.e add it to the first list, and call ourselves
+with the remainder of <code>input</code>. Indeed, we can only work with two characters, so
+if we only have one, we cannot do much.</p>
+<p>It's time to learn about a new function: <code>cons</code>. <code>cons</code> just adds an item to a list, and
+returns the new list with the added item:</p>
+<pre><code class="language-scheme">(define my-list (list 2 3))
+
+;; Note: `my-list` is **not** modified
+(cons 1 my-list) 
+</code></pre>
+<p>We can now use <code>cons</code> to implement the new case:</p>
+<pre><code class="language-scheme">(define (chem-react acc input)
+  (match (list acc input)
+    [(_ ()) acc]
+    [(() (b . brest)) (chem-react (cons b acc) brest)]))
+
+
+(chem-react '() '(#\A)) ;; =&gt; (#\A)
+</code></pre>
+<p>This new pattern is required for the recursion to
+work, but it also covers the trivial case of an input string of only one character.</p>
+<p>Now, let's treat the main case: we have at least an element <code>a</code> in <code>acc</code> and at
+least an element <code>b</code> in <code>input</code>. If they are the same letters of opposite casing, we
+call ourselves with the remainder of <code>acc</code> and the remainder of <code>input</code>, which
+is equivalent to 'drop' <code>a</code> and <code>b</code>. Otherwise, we add <code>b</code> to <code>acc</code>, and we call
+ourselves with the remainder of <code>input</code>, which is the equivalent of 'continuing':</p>
+<pre><code class="language-scheme">(define (chem-react acc input)
+  (match (list acc input)
+    [(_ ()) acc]
+    [(() (b . brest)) (chem-react (cons b acc) brest)]
+    [((a . arest) (b . brest)) (if (char-case-opposite-casing? a b)
+                                   (chem-react arest brest)
+                                   (chem-react (cons b acc) brest))]))
+
+
+(chem-react '() (list #\A #\a #\b)) ;; =&gt; (#\b)
+(chem-react '() (string-&gt;list &quot;aAbxXBctTCz&quot;)) ;; =&gt; (#\z)
+</code></pre>
+<p>But wait a minute...Doesn't it look familiar? Yes, what we are doing here is a
+fold (sometimes called reduce)!</p>
+<p>Let's replace our custom recursion by <code>fold</code>. <code>chem-react</code> becomes the reduction
+function. It becomes simpler because <code>fold</code> will not call it on the empty list,
+so we only need to patter match <code>acc</code> (which is the empty list at the beginning):</p>
+<pre><code class="language-scheme">(define (chem-react acc x)
+  (match acc
+    [() (cons x acc)]
+    [(a . arest) (if (char-case-opposite-casing? a x)
+                     arest
+                     (cons x acc))]))
+
+
+(foldl chem-react '() input) ;; =&gt; (#\z)
+</code></pre>
+<p>My experience writing code in a LISP is that I usually find a solution that is
+relatively big, and I start replacing parts of it with standard functions such
+as <code>fold</code> and it ends up very small.</p>
+<blockquote>
+<p>How do I read the input from a file?</p>
+</blockquote>
+<p>It's quite simple: we use the modules <code>chicken.file.posix</code> and <code>chicken.io</code>:</p>
+<pre><code class="language-scheme">(import chicken.file.posix
+        chicken.io)
+
+(read-line (open-input-file &quot;/Users/pgaultier/Downloads/aoc5.txt&quot;)) ;; =&gt; &quot;a big string...&quot;
+</code></pre>
+<h2>The final solution</h2>
+<p>Here I use the package <code>clojurian</code> (<code>chicken-install clojurian</code>) to have access
+to the <code>-&gt;&gt;</code> macro which makes code more readable. It works like the pipe in the
+shell. Instead of writing:</p>
+<pre><code class="language-scheme">(foo (bar &quot;foo&quot; (baz 1 2)))
+</code></pre>
+<p>We write:</p>
+<pre><code class="language-scheme">(-&gt;&gt; (baz 1 2)
+     (bar &quot;foo&quot;)
+     (foo))
+</code></pre>
+<p>The macro reorders the functions calls to make it flat and avoid nesting.
+It is not strictly required, but I like that my code looks like a
+pipeline of data transformations.</p>
+<p>The final code:</p>
+<pre><code class="language-scheme">(import matchable
+        clojurian.syntax
+        chicken.file.posix
+        chicken.io)
+
+(define (char-case-opposite-casing? a b)
+  (let* ((a-code (char-&gt;integer a))
+         (b-code (char-&gt;integer b))
+         (diff (- a-code b-code)))
+    (= (* 32 32) (* diff diff))))
+
+(define (chem-react acc x)
+  (match acc
+    [() (cons x acc)]
+    [(a . arest) (if (char-case-opposite-casing? a x)
+                     arest
+                     (cons x acc))]))
+
+(-&gt;&gt; (open-input-file &quot;/Users/pgaultier/Downloads/aoc5.txt&quot;)
+     (read-line)
+     (string-&gt;list)
+     (foldl chem-react '())
+     (length)
+     (print))
+</code></pre>
+<blockquote>
+<p>But we will get a stack overflow on a big input!</p>
+</blockquote>
+<p>Scheme has a nice requirement for all implementations: they must implement
+tail-call optimization, which is to say that the compiler can transform our function into an
+equivalent for-loop. So we won't get a stack overflow, and it will be quite
+efficient in terms of memory and time.</p>
+<blockquote>
+<p>But we are making thousands of copies, it will be slow as hell!</p>
+</blockquote>
+<p>Let's benchmark it on the real input (50 000 characters), with <code>-O3</code> to enable optimizations:</p>
+<p><em>Note 1: The real output of the program is not shown to avoid spoiling the final result</em></p>
+<p><em>Note 2: This is a simplistic way to do benchmarking. A more correct way would
+be: warming up the file cache, making many runs, averaging the results, etc.
+I did exactly that and it did not change the results in a significant manner.</em></p>
+<pre><code class="language-sh">$ csc aoc5.scm -o aoc5 -O3 &amp;&amp; time ./aoc5
+./aoc5  0.01s user 0.00s system 82% cpu 0.021 total
+</code></pre>
+<p>It takes 21 milliseconds. Not too bad for a garbage collected, functional,
+immutable program.</p>
+<p>Here is a hand-written C version which only does one allocation and removes
+letters in place:</p>
+<pre><code class="language-c">#include &lt;errno.h&gt;
+#include &lt;fcntl.h&gt;
+#include &lt;stdint.h&gt;
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;string.h&gt;
+#include &lt;sys/stat.h&gt;
+#include &lt;unistd.h&gt;
+
+int main() {
+  int fd = open(&quot;/home/pg/Downloads/aoc2020_5.txt&quot;, O_RDONLY);
+  if (fd == -1)
+    return errno;
+
+  struct stat st = {0};
+  if (stat(&quot;/home/pg/Downloads/aoc2020_5.txt&quot;, &amp;st) == -1)
+    return errno;
+
+  int64_t input_len = st.st_size;
+  char *const input = calloc(input_len, 1);
+
+  if (read(fd, input, input_len) != input_len)
+    return errno;
+
+  while (input[input_len - 1] == '\n' || input[input_len - 1] == ' ')
+    input_len--;
+
+  int64_t i = 0;
+  while (i &lt; input_len) {
+    if (abs(input[i] - input[i + 1]) == 32) {
+      memmove(input + i, input + i + 2, input_len - i - 2);
+      input_len -= 2;
+      i = i &gt; 0 ? i - 1 : 0;
+    } else
+      i++;
+  }
+
+  printf(&quot;`%zu`\n&quot;, input_len);
+}
+</code></pre>
+<p>Let's benchmark it on the same input:</p>
+<pre><code class="language-sh">$ cc -std=c99 -O3 -Weverything aoc5.c -march=native &amp;&amp; time ./a.out
+./a.out  0.01s user 0.00s system 86% cpu 0.012 total
+</code></pre>
+<p>It took 12 milliseconds. So the scheme version is very close, and takes an
+acceptable amount of time.</p>
+<blockquote>
+<p>Can't we use strings and not lists?</p>
+</blockquote>
+<p>Yes, of course. However we need to be careful about how strings are implemented
+and what we we do with those. Most runtimes (e.g the JVM) use immutable strings,
+meaning we could end up allocating thousands of big strings, and being quite slow.</p>
+<h2>Conclusion</h2>
+<p>That's it, we solved the fifth Advent of Code challenge in Scheme. The solution
+is under 30 lines of code, is (hopefully) simple and readable, and has a
+performance close to C, while having memory safety (I had several segfaults
+while doing the C version).</p>
+<p>But more than that, I think the real value in LISPs is
+interactive programming, instead of the classical write-compile-execute-repeat,
+which is much more time consuming. It is really important to get feedback as
+early as possible, and LISPs give us that.</p>
+<p>I hope it gave you a glance at what Scheme can do, and stay tuned for more blog
+posts about programming. I intend to post more solutions to other coding
+challenges, solved with a variety of programming languages.</p>
+<blockquote>
+<p>If you liked this article and you want to support me, and can afford it: <a href="https://paypal.me/philigaultier?country.x=DE&amp;locale.x=en_US">Donate</a></p>
+</blockquote>
+</div>
