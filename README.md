@@ -4,7 +4,7 @@ https://gaultier.github.io/blog/
 ## Quickstart
 
 ```
-apt install parallel cmark
+apt install parallel cmark graphviz
 make
 ```
 
