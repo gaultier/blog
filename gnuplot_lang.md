@@ -1,4 +1,11 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<link rel="shortcut icon" type="image/ico" href="/blog/favicon.ico"/>
 <link rel="stylesheet" type="text/css" href="main.css">
+</head>
+<body>
 
 <div id="banner">
     <a id="name" href="/blog"><img id="me" src="me.jpeg"/> Philippe Gaultier </a>
@@ -190,3 +197,5 @@ print(sum)
 ```
 
 </div>
+</body>
+</html>

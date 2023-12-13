@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="utf-8">
-<link rel="shortcut icon" type="image/ico" href="favicon.ico"/>
+<link rel="shortcut icon" type="image/ico" href="/blog/favicon.ico"/>
 <link rel="stylesheet" type="text/css" href="main.css">
 </head>
 <body>

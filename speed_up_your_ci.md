@@ -1,4 +1,11 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<link rel="shortcut icon" type="image/ico" href="/blog/favicon.ico"/>
 <link rel="stylesheet" type="text/css" href="main.css">
+</head>
+<body>
 
 <div id="banner">
     <a id="name" href="/blog"><img id="me" src="me.jpeg"/> Philippe Gaultier </a>
@@ -109,3 +116,5 @@ I noticed in my numerous projects with different tech stacks that some are frien
 > If you liked this article and you want to support me, and can afford it: [Donate](https://paypal.me/philigaultier?country.x=DE&locale.x=en_US)
 
 </div>
+</body>
+</html>

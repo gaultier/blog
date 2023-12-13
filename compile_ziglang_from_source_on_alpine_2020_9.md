@@ -1,3 +1,8 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<link rel="shortcut icon" type="image/ico" href="/blog/favicon.ico"/>
 <link rel="stylesheet" type="text/css" href="main.css">
 <link rel="stylesheet" href="https://unpkg.com/@highlightjs/cdn-assets@11.8.0/styles/default.min.css">
 <script src="https://unpkg.com/@highlightjs/cdn-assets@11.8.0/highlight.min.js"></script>
@@ -6,6 +11,8 @@ window.addEventListener("load", (event) => {
   hljs.highlightAll();
 });
 </script>
+</head>
+<body>
 
 <div id="banner">
     <a id="name" href="/blog"><img id="me" src="me.jpeg"/> Philippe Gaultier </a>
@@ -72,3 +79,5 @@ $ zig version
 > If you liked this article and you want to support me, and can afford it: [Donate](https://paypal.me/philigaultier?country.x=DE&locale.x=en_US)
 
 </div>
+</body>
+</html>
