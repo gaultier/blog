@@ -95,7 +95,7 @@ The implementation still holds, however I would definitely revist the assembly g
 - Out-of-order definitions of functions and variables are supported
 - Some support for function inlining is supported (inlining the body of a called function)
 - All allocations are done with an arena allocator and there is support for a memory dump with stacktraces
-- It's only 10k lines of code and the final stripped executable is 145 Kib!
+- It's only 10k lines of code, it ony needs ~ 10 MiB of memory to compile real programs, and the final stripped executable for the compiler is ~180 Kib!
 
 
 I think my most noteworthy projects are compilers both because I tend to be attracted to that domain and also because small CLI tools are less interesting. Compilers for real programming languages are hard!
