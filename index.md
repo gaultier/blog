@@ -36,7 +36,7 @@ I am a Senior Software Engineer from France living in Bavaria, Germany. By day, 
 
 In my free time, I like running, lifting weights, gardening, and the outdoors.
 
-Get in touch:
+Get in touch, send me an email!
 
 
 ## I am grateful
