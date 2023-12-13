@@ -1,3 +1,4 @@
+<link rel="shortcut icon" type="image/ico" href="favicon.ico"/>
 <link rel="stylesheet" type="text/css" href="main.css">
 <div id="banner">
     <a id="name" href="/blog"><img id="me" src="me.jpeg"/> Philippe Gaultier </a>
