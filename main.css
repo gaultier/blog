@@ -1,6 +1,5 @@
 #banner {
   background-color: #FB8C00;
-  padding: .5rem 2rem;
   display: inline-flex;
   width: 100%;
   justify-content: space-between;
@@ -9,6 +8,7 @@
 
 #banner > ul {
   list-style: none;
+  padding: 0 1rem 0 .5rem;
 }
 
 #banner > ul > li > a:hover {
@@ -53,16 +53,6 @@
   color: #9E9E9E;
 }
 
-#banner > ul {
-  flex-grow: 1;
-  max-width: 10rem;
-  /* list-style: none; */
-}
-
-#banner > ul :nth-child(2) {
-  /* list-style-image: url("github-mark.png"); */
-}
-
 #name {
   font-weight: bolder;
   display: inline-flex;
@@ -72,7 +62,7 @@
   color: black;
   border-radius: 8px;
   border: 15px;
-  padding: 0 .2rem;
+  padding: 0 .5rem;
 }
 
 #name:hover {

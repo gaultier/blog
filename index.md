@@ -1,5 +1,11 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
 <link rel="shortcut icon" type="image/ico" href="favicon.ico"/>
 <link rel="stylesheet" type="text/css" href="main.css">
+</head>
+<body>
 <div id="banner">
     <a id="name" href="/blog"><img id="me" src="me.jpeg"/> Philippe Gaultier </a>
     <ul>
@@ -114,3 +120,5 @@ The content of this blog as well as the code snippets are under the [BSD-3 Licen
 
 
 </div>
+</body>
+</html>
