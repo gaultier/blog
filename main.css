@@ -7,6 +7,21 @@
   align-items: center;
 }
 
+#banner > ul {
+  list-style: none;
+}
+
+#banner > ul > li > a:hover {
+  background-color: #FFA726;
+}
+
+#banner > ul > li > a {
+  text-decoration: none;
+  padding: .2rem;
+  border-radius: 8px;
+  border: 15px;
+}
+
 #me {
   border-radius: 231px;
   border: 15px;
@@ -57,7 +72,6 @@
 }
 
 #name:hover {
-  text-decoration: none;
   background-color: #FFA726;
 }
 

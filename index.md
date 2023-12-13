@@ -53,7 +53,7 @@ I often am frustrated with the state of the software industry; however there is 
 
 ## Portfolio
 
-*In chronological order, which is roughly the ascending order of technical difficulty:*
+*In chronological order, which is also roughly the ascending order of technical difficulty:*
 
 [Prototype using the Oculus Rift](https://github.com/gaultier/Simulation_Stars_OpenGL): This was my second internship and the first time I owned a project from start to finish. This was a blast and possibly the most fun I had in all my career. This is back in 2014 and the first version of the Oculus Rift was all the hype back then. The goal of the project in the astronomy/CERN lab I was at was to explore how to teach kids about the solar system and astronomy by having them put the Oculus Rift on and experiment it for themselves, flying through the stars. It was great! I got to learn about OpenGL, SDL and multiplying specific 4x4 matrices together to slightly move the camera for each eye so that the VR effect happens and your brain is tricked.
 In terms of implementation this is pretty subpar C++ code in retrospect - I went all in on OOP and trying to use every C++ feature under the sun. But it worked, kind of, each star was a cube because I ran out of time.
