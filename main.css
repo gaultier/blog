@@ -69,6 +69,7 @@
   color: black;
   border-radius: 8px;
   border: 15px;
+  padding: .2rem;
 }
 
 #name:hover {
