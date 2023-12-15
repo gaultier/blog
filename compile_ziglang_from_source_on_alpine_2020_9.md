@@ -33,6 +33,8 @@ window.addEventListener("load", (event) => {
 
 # How to compile LLVM, Clang, LLD, and Ziglang from source on Alpine Linux
 
+*This article is now outdated but remains for historical reasons.*
+
 [Ziglang](https://ziglang.org), or `Zig` for short, is an ambitious programming language addressing important flaws of mainstream languages such as failing to handle memory allocation failures or forgetting to handle an error condition in general.
 
 It is also fast moving so for most, the latest (HEAD) version will be needed, and most package managers will not have it, so we will compile it from source.
