@@ -4,7 +4,7 @@ https://gaultier.github.io/blog/
 ## Quickstart
 
 ```
-apt install parallel cmark graphviz
+apt install parallel cmark graphviz golang
 make
 ```
 
