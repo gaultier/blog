@@ -4,7 +4,7 @@
 
      <title>Philippe Gaultier's blog</title>
      <link href="https://gaultier.github.io/blog"/>
-     <updated>2023-12-15T11:38:44Z</updated>
+     <updated>2023-12-15T11:40:58Z</updated>
      <author>
        <name>Philippe Gaultier</name>
      </author>
@@ -1726,7 +1726,7 @@ $ sudo make install
        <title>This blog now has an Atom feed, and yours should probably too</title>
        <link href="/blog/feed.html"/>
        <id>urn:uuid:1f4df7db-eea8-5ef0-ae92-1038111f5dc9</id>
-       <updated>2023-12-15T11:38:44Z</updated>
+       <updated>2023-12-15T11:40:57Z</updated>
 <content type="html">
       <![CDATA[
 			<!DOCTYPE html>
@@ -1762,10 +1762,10 @@ window.addEventListener("load", (event) => {
 <div class="body">
 <h1>This blog now has an Atom feed, and yours should probably too</h1>
 <p><em>Find it <a href="https://gaultier.github.io/blog/feed.xml">here</a> or in the header on the top right-hand corner.</em></p>
-<p>Imagine a world where you can see the content of each website you like inside the app of your choosing, be notified whenever the website has something new, and all of which is implemented with an open standard. Well that was most of the web some years ago and this blog now does all of that.</p>
+<p>Imagine a world where you can see the content of each website you like inside the app of your choosing, read the articles offline and save them on disk for later, be notified whenever the website has something new, and all of which is implemented with an open standard. Well that was most of the web some years ago and this blog now does all of that.</p>
 <p><img src="feed.png" alt="This feed inside the open-source app NewsFlash (https://flathub.org/apps/io.gitlab.news_flash.NewsFlash)" /></p>
 <p>And it's not hard! The only thing we need is to serve a <code>feed.xml</code> file that lists articles with some metadata such as 'updated at' and a UUID to be able to uniquely identify an article. This XML file is an <a href="https://en.wikipedia.org/wiki/Atom_(web_standard)">Atom feed</a> which has a nice <a href="https://datatracker.ietf.org/doc/html/rfc4287">RFC</a>.</p>
-<p>I implemented that in under an hour, skimming at the RFC and examples. It's a bit hacky but it works. And the script to do so is <a href="https://github.com/gaultier/blog/blob/master/feed.go">here</a>. And you can do too! Again, it's not hard. Here goes:</p>
+<p>I implemented that in under an hour, skimming at the RFC and examples. It's a bit hacky but it works. The script to do so is <a href="https://github.com/gaultier/blog/blob/master/feed.go">here</a>. And you can do too! Again, it's not hard. Here goes:</p>
 <ul>
 <li>We pick a UUID for our feed. I just generated one and sticked it as a constant in the script.</li>
 <li>The 'updated at' field for the feed is just <code>time.Now()</code>. It's not exactly accurate, it should probably be the most recent <code>mtime</code> across articles but it's good enough.</li>
