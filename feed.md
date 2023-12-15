@@ -28,7 +28,9 @@ window.addEventListener("load", (event) => {
 </div>
 <div class="body">
 
-# This blog now has an Atom feed
+# This blog now has an [Atom feed](https://en.wikipedia.org/wiki/Atom_(web_standard))
+
+*Find it [here](https://gaultier.github.io/blog/feed.xml) or in the header on the top right-hand corner.*
 
 Imagine a world where you can see the content of each website you like inside the app of your choosing, be notified whenever the website has something new, and all of which is implemented with an open standard. Well that was most of the web some years ago and this blog now does all of that. 
 
