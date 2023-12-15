@@ -10,13 +10,13 @@
     <a id="name" href="/blog"><img id="me" src="me.jpeg"/> Philippe Gaultier </a>
     <ul>
       <li>
+      <a href="/blog/feed.xml">Feed</a>
+      </li>
+      <li>
       <a href="https://www.linkedin.com/in/philippegaultier/">LinkedIn</a>
       </li>
       <li>
         <a href="https://github.com/gaultier">Github</a>
-      </li>
-      <li>
-      <a href="/blog/feed.xml">Feed</a>
       </li>
     </ul>
 </div>

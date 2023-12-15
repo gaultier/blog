@@ -19,6 +19,9 @@ window.addEventListener("load", (event) => {
     <a id="name" href="/blog"><img id="me" src="me.jpeg"/> Philippe Gaultier </a>
     <ul>
       <li>
+      <a href="/blog/feed.xml">Feed</a>
+      </li>
+      <li>
       <a href="https://www.linkedin.com/in/philippegaultier/">LinkedIn</a>
       </li>
       <li>
@@ -46,7 +49,7 @@ I implemented that in under an hour, skimming at the RFC and examples, and the s
 - For each article (`*.html`) file in the directory, we add an entry (`<entry>`) in the XML document with:
   * The link to the article, that's just the filename in my case.
   * The 'updated at' field, which is just the `mtime` of the file locally
-  * A UUID. Here I went with UUIDv5 which is simply the sha1 of the article in the UUID format. It's nitfy because it means that the script is stateless and idempotent. If the article is later updated, the UUID is changed and so will appear as unread in the feed reader application. Although, I am not sure what's the convention here. Maybe the UUID in the instance should remain stable? In that case, I will simply move to hashing the file name instead.
+  * A UUID. Here I went with UUIDv5 which is simply the sha1 of the file name in the UUID format. It's nitfy because it means that the script is stateless and idempotent. If the article is later updated, the UUID remains the same (but the `updated at` will still hint at the update).
   * The content, as HTML, simply embedded as is inside the document
 
 And...that's it really. Enjoy reading these articles in your favorite app!

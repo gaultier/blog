@@ -4,7 +4,7 @@
 
      <title>Philippe Gaultier's blog</title>
      <link href="https://gaultier.github.io/blog"/>
-     <updated>2023-12-15T11:28:23Z</updated>
+     <updated>2023-12-15T11:36:17Z</updated>
      <author>
        <name>Philippe Gaultier</name>
      </author>
@@ -13,8 +13,8 @@
      <entry>
        <title>Getting started with Scheme by solving an Advent of Code 2018 challenge</title>
        <link href="/blog/advent_of_code_2018_5.html"/>
-       <id>urn:uuid:9ede178f-5037-510b-bd01-338ad561dabe</id>
-       <updated>2023-12-13T16:35:16Z</updated>
+       <id>urn:uuid:b3c0c1c1-e36f-51fd-9356-99f8686e7329</id>
+       <updated>2023-12-15T11:33:55Z</updated>
 <content type="html">
       <![CDATA[
 			<!DOCTYPE html>
@@ -36,6 +36,9 @@ window.addEventListener("load", (event) => {
 <div id="banner">
     <a id="name" href="/blog"><img id="me" src="me.jpeg"/> Philippe Gaultier </a>
     <ul>
+      <li>
+      <a href="/blog/feed.xml">Feed</a>
+      </li>
       <li>
       <a href="https://www.linkedin.com/in/philippegaultier/">LinkedIn</a>
       </li>
@@ -433,7 +436,7 @@ challenges, solved with a variety of programming languages.</p>
      <entry>
        <title>Optimizing an Advent of Code solution in assembly</title>
        <link href="/blog/advent_of_code_2018_5_revisited.html"/>
-       <id>urn:uuid:593eef33-5aa9-5220-ac5a-e4e249b7ed7a</id>
+       <id>urn:uuid:371c9129-162e-5d69-af73-c3263a2f7e47</id>
        <updated>2023-12-13T16:37:47Z</updated>
 <content type="html">
       <![CDATA[
@@ -1638,8 +1641,8 @@ _start:
      <entry>
        <title>How to compile LLVM, Clang, LLD, and Ziglang from source on Alpine Linux</title>
        <link href="/blog/compile_ziglang_from_source_on_alpine_2020_9.html"/>
-       <id>urn:uuid:b38815ce-0d48-5f0e-a1b6-1b9a4eb7220d</id>
-       <updated>2023-12-13T16:36:20Z</updated>
+       <id>urn:uuid:6cccb673-c083-550b-a1c8-d7a27819f1c7</id>
+       <updated>2023-12-15T11:33:55Z</updated>
 <content type="html">
       <![CDATA[
 			<!DOCTYPE html>
@@ -1660,6 +1663,9 @@ window.addEventListener("load", (event) => {
 <div id="banner">
     <a id="name" href="/blog"><img id="me" src="me.jpeg"/> Philippe Gaultier </a>
     <ul>
+      <li>
+      <a href="/blog/feed.xml">Feed</a>
+      </li>
       <li>
       <a href="https://www.linkedin.com/in/philippegaultier/">LinkedIn</a>
       </li>
@@ -1719,8 +1725,8 @@ $ sudo make install
      <entry>
        <title>This blog now has an Atom feed</title>
        <link href="/blog/feed.html"/>
-       <id>urn:uuid:a4452ed3-755a-51fd-9a41-91b39ab0e703</id>
-       <updated>2023-12-15T11:28:23Z</updated>
+       <id>urn:uuid:1f4df7db-eea8-5ef0-ae92-1038111f5dc9</id>
+       <updated>2023-12-15T11:36:16Z</updated>
 <content type="html">
       <![CDATA[
 			<!DOCTYPE html>
@@ -1743,6 +1749,9 @@ window.addEventListener("load", (event) => {
     <a id="name" href="/blog"><img id="me" src="me.jpeg"/> Philippe Gaultier </a>
     <ul>
       <li>
+      <a href="/blog/feed.xml">Feed</a>
+      </li>
+      <li>
       <a href="https://www.linkedin.com/in/philippegaultier/">LinkedIn</a>
       </li>
       <li>
@@ -1764,7 +1773,7 @@ window.addEventListener("load", (event) => {
 <ul>
 <li>The link to the article, that's just the filename in my case.</li>
 <li>The 'updated at' field, which is just the <code>mtime</code> of the file locally</li>
-<li>A UUID. Here I went with UUIDv5 which is simply the sha1 of the article in the UUID format. It's nitfy because it means that the script is stateless and idempotent. If the article is later updated, the UUID is changed and so will appear as unread in the feed reader application. Although, I am not sure what's the convention here. Maybe the UUID in the instance should remain stable? In that case, I will simply move to hashing the file name instead.</li>
+<li>A UUID. Here I went with UUIDv5 which is simply the sha1 of the file name in the UUID format. It's nitfy because it means that the script is stateless and idempotent. If the article is later updated, the UUID remains the same (but the <code>updated at</code> will still hint at the update).</li>
 <li>The content, as HTML, simply embedded as is inside the document</li>
 </ul>
 </li>
@@ -1781,8 +1790,8 @@ window.addEventListener("load", (event) => {
      <entry>
        <title>Solving a problem with Gnuplot, the programming language (not the plotting software!)</title>
        <link href="/blog/gnuplot_lang.html"/>
-       <id>urn:uuid:5d1e43a6-0bc2-503b-a946-887d59c85d36</id>
-       <updated>2023-12-13T16:39:34Z</updated>
+       <id>urn:uuid:f2d9c4e3-5c3d-57ab-8083-0f56daf1f41e</id>
+       <updated>2023-12-15T11:33:55Z</updated>
 <content type="html">
       <![CDATA[
 			<!DOCTYPE html>
@@ -1796,6 +1805,9 @@ window.addEventListener("load", (event) => {
 <div id="banner">
     <a id="name" href="/blog"><img id="me" src="me.jpeg"/> Philippe Gaultier </a>
     <ul>
+      <li>
+      <a href="/blog/feed.xml">Feed</a>
+      </li>
       <li>
       <a href="https://www.linkedin.com/in/philippegaultier/">LinkedIn</a>
       </li>
@@ -1945,8 +1957,8 @@ print(sum)
      <entry>
        <title>Cycle detection in graphs does not have to be hard: A lesser known, simple way with Kahn's algorithm</title>
        <link href="/blog/kahns_algorithm.html"/>
-       <id>urn:uuid:e4bfe983-dc6c-56da-8173-f18738a10daa</id>
-       <updated>2023-12-13T16:37:26Z</updated>
+       <id>urn:uuid:665ef523-5c28-5dad-8582-587bfea27205</id>
+       <updated>2023-12-15T11:33:55Z</updated>
 <content type="html">
       <![CDATA[
 			<!DOCTYPE html>
@@ -1967,6 +1979,9 @@ window.addEventListener("load", (event) => {
 <div id="banner">
     <a id="name" href="/blog"><img id="me" src="me.jpeg"/> Philippe Gaultier </a>
     <ul>
+      <li>
+      <a href="/blog/feed.xml">Feed</a>
+      </li>
       <li>
       <a href="https://www.linkedin.com/in/philippegaultier/">LinkedIn</a>
       </li>
@@ -2493,8 +2508,8 @@ for (let i = employeesTopologicallySorted.length - 2; i &gt;= 0; i -= 1) {
      <entry>
        <title>Roll your own memory profiling: it's actually not hard</title>
        <link href="/blog/roll_your_own_memory_profiling.html"/>
-       <id>urn:uuid:b737c96b-b3a9-5b1b-894c-89ec10188c09</id>
-       <updated>2023-12-13T16:39:07Z</updated>
+       <id>urn:uuid:5344c109-864c-5db2-97a9-24834e053169</id>
+       <updated>2023-12-15T11:33:55Z</updated>
 <content type="html">
       <![CDATA[
 			<!DOCTYPE html>
@@ -2515,6 +2530,9 @@ window.addEventListener("load", (event) => {
 <div id="banner">
     <a id="name" href="/blog"><img id="me" src="me.jpeg"/> Philippe Gaultier </a>
     <ul>
+      <li>
+      <a href="/blog/feed.xml">Feed</a>
+      </li>
       <li>
       <a href="https://www.linkedin.com/in/philippegaultier/">LinkedIn</a>
       </li>
@@ -3238,8 +3256,8 @@ int main() {
      <entry>
        <title>Adventures in CI land, or how to speed up your CI</title>
        <link href="/blog/speed_up_your_ci.html"/>
-       <id>urn:uuid:04efa270-a0de-55ad-bdec-8239466ce236</id>
-       <updated>2023-12-13T16:36:40Z</updated>
+       <id>urn:uuid:4663e8ea-73ab-56ef-9dc5-8dbb4743d84a</id>
+       <updated>2023-12-15T11:33:55Z</updated>
 <content type="html">
       <![CDATA[
 			<!DOCTYPE html>
@@ -3253,6 +3271,9 @@ int main() {
 <div id="banner">
     <a id="name" href="/blog"><img id="me" src="me.jpeg"/> Philippe Gaultier </a>
     <ul>
+      <li>
+      <a href="/blog/feed.xml">Feed</a>
+      </li>
       <li>
       <a href="https://www.linkedin.com/in/philippegaultier/">LinkedIn</a>
       </li>
@@ -3352,8 +3373,8 @@ This can have a huge impact on performance since Docker will copy all the files 
      <entry>
        <title>Learn Wayland by writing a GUI from scratch</title>
        <link href="/blog/wayland_from_scratch.html"/>
-       <id>urn:uuid:29422ee3-3d53-5544-b408-cdf4ce0dd2b5</id>
-       <updated>2023-12-13T16:38:23Z</updated>
+       <id>urn:uuid:6b96e587-14ff-53a9-a142-d20e9c53d970</id>
+       <updated>2023-12-15T11:33:55Z</updated>
 <content type="html">
       <![CDATA[
 			<!DOCTYPE html>
@@ -3374,6 +3395,9 @@ window.addEventListener("load", (event) => {
 <div id="banner">
     <a id="name" href="/blog"><img id="me" src="me.jpeg"/> Philippe Gaultier </a>
     <ul>
+      <li>
+      <a href="/blog/feed.xml">Feed</a>
+      </li>
       <li>
       <a href="https://www.linkedin.com/in/philippegaultier/">LinkedIn</a>
       </li>
@@ -4675,8 +4699,8 @@ int main() {
      <entry>
        <title>Learn x86-64 assembly by writing a GUI from scratch</title>
        <link href="/blog/x11_x64.html"/>
-       <id>urn:uuid:6b577911-9f3e-5e66-89ea-e369c5fc03d3</id>
-       <updated>2023-12-13T16:37:08Z</updated>
+       <id>urn:uuid:fa923100-dd66-531e-bdab-8eed3527960f</id>
+       <updated>2023-12-15T11:33:55Z</updated>
 <content type="html">
       <![CDATA[
 			<!DOCTYPE html>
@@ -4698,6 +4722,9 @@ window.addEventListener("load", (event) => {
 <div id="banner">
     <a id="name" href="/blog"><img id="me" src="me.jpeg"/> Philippe Gaultier </a>
     <ul>
+      <li>
+      <a href="/blog/feed.xml">Feed</a>
+      </li>
       <li>
       <a href="https://www.linkedin.com/in/philippegaultier/">LinkedIn</a>
       </li>

@@ -66,7 +66,7 @@ func main() {
 		}
 		title := string(content)[h1StartIndex+4 : h1EndIndex]
 
-		entryUuid := uuid.NewSHA1(feedUuid, content)
+		entryUuid := uuid.NewSHA1(feedUuid, []byte(e.Name()))
 		out.WriteString(fmt.Sprintf(
 			`
      <entry>

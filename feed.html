@@ -18,6 +18,9 @@ window.addEventListener("load", (event) => {
     <a id="name" href="/blog"><img id="me" src="me.jpeg"/> Philippe Gaultier </a>
     <ul>
       <li>
+      <a href="/blog/feed.xml">Feed</a>
+      </li>
+      <li>
       <a href="https://www.linkedin.com/in/philippegaultier/">LinkedIn</a>
       </li>
       <li>
@@ -39,7 +42,7 @@ window.addEventListener("load", (event) => {
 <ul>
 <li>The link to the article, that's just the filename in my case.</li>
 <li>The 'updated at' field, which is just the <code>mtime</code> of the file locally</li>
-<li>A UUID. Here I went with UUIDv5 which is simply the sha1 of the article in the UUID format. It's nitfy because it means that the script is stateless and idempotent. If the article is later updated, the UUID is changed and so will appear as unread in the feed reader application. Although, I am not sure what's the convention here. Maybe the UUID in the instance should remain stable? In that case, I will simply move to hashing the file name instead.</li>
+<li>A UUID. Here I went with UUIDv5 which is simply the sha1 of the file name in the UUID format. It's nitfy because it means that the script is stateless and idempotent. If the article is later updated, the UUID remains the same (but the <code>updated at</code> will still hint at the update).</li>
 <li>The content, as HTML, simply embedded as is inside the document</li>
 </ul>
 </li>
