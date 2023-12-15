@@ -131,7 +131,11 @@ th {
     background: rgb(255,250,240);
 }
 
-h1, h2, h3, h4, h5, h6 {
+h1 {
+    margin: 3rem 0 3rem 0;
+}
+
+h2, h3, h4, h5, h6 {
     margin: 3rem 0 1rem 0;
 }
 
