@@ -119,7 +119,7 @@ code {
     font-size: 1.2rem;
     background: #FFF3E0 !important;
     line-height: 1.6;
-    padding: 0 !important;
+    padding: 0 .2rem !important;
 }
 
 td, th {
