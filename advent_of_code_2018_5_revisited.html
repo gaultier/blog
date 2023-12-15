@@ -63,7 +63,7 @@ It means we want to remove adjacent characters which are the same letter and hav
 <li>In the C solution, there is no allocation apart from the input but we do a lot of unnecessary work.</li>
 <li>In the C solution, we use <code>abs(x) == 32</code> which we could avoid by doing <code>x*x == 32*32</code>.</li>
 </ul>
-<p>This coincided with me listening to an interview from the VLC developers saying there wrote hundred of thousand of lines of (multi platform!) Assembly code by hand in their new AV1 decoder. I thought that was intriguing, who still writes assembly by hand in 2023? Well these guys are no idiots so I should try it as well.</p>
+<p>This coincided with me listening to an interview from the VLC developers saying they wrote hundred of thousand of lines of (multi platform!) Assembly code by hand in their new AV1 decoder. I thought that was intriguing, who still writes assembly by hand in 2023? Well these guys are no idiots so I should try it as well.</p>
 <h2>The new solution</h2>
 <p>I came up with a new algorithm, which on paper does less work. It's one linear pass on the input, and does not allocate.</p>
 <p>Since the result we care about is the number of remaining characters, we simply keep track of the count as we sift through the input.</p>
