@@ -31,7 +31,7 @@ window.addEventListener("load", (event) => {
 </div>
 <div class="body">
 
-# This blog now has an Atom feed
+# This blog now has an Atom feed, and yours should probably too
 
 *Find it [here](https://gaultier.github.io/blog/feed.xml) or in the header on the top right-hand corner.*
 
@@ -42,7 +42,7 @@ Imagine a world where you can see the content of each website you like inside th
 
 And it's not hard! The only thing we need is to serve a `feed.xml` file that lists articles with some metadata such as 'updated at' and a UUID to be able to uniquely identify an article. This XML file is an [Atom feed](https://en.wikipedia.org/wiki/Atom_(web_standard)) which has a nice [RFC](https://datatracker.ietf.org/doc/html/rfc4287).
 
-I implemented that in under an hour, skimming at the RFC and examples, and the script to do so is [here](https://github.com/gaultier/blog/blob/master/feed.go). And you can do too! Again, it's not hard. Here goes:
+I implemented that in under an hour, skimming at the RFC and examples. It's a bit hacky but it works. And the script to do so is [here](https://github.com/gaultier/blog/blob/master/feed.go). And you can do too! Again, it's not hard. Here goes:
 
 - We pick a UUID for our feed. I just generated one and sticked it as a constant in the script.
 - The 'updated at' field for the feed is just `time.Now()`. It's not exactly accurate, it should probably be the most recent `mtime` across articles but it's good enough.
