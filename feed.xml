@@ -1,0 +1,20 @@
+ <?xml version="1.0" encoding="utf-8"?>
+   <feed xmlns="http://www.w3.org/2005/Atom">
+
+     <title>Philippe Gaultier's blog</title>
+     <link href="https://gaultier.github.io/blog"/>
+     <updated>2023-12-15T00:00:00Z</updated>
+     <author>
+       <name>Philippe Gaultier</name>
+     </author>
+     <id>urn:uuid:60a76c80-d399-11d9-b93C-0003939e0af6</id>
+
+     <entry>
+       <title>Solving a problem with Gnuplot, the programming language (not the plotting software!)</title>
+       <link href="https://gaultier.github.io/blog/gnuplot_lang.html"/>
+       <id>urn:uuid:1225c695-cfb8-4ebb-aaaa-80da344efa6a</id>
+       <updated>2023-12-15T00:00:00Z</updated>
+       <summary>Is it any good? Can you solve real problems with it?</summary>
+     </entry>
+
+   </feed>
