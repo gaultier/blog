@@ -1,6 +1,7 @@
 all:
 	ls *.md | parallel 'make {/.}.html'
 	ls *.dot | parallel 'make {/.}.svg'
+	go run feed.go > feed.xml
     
 
 %.svg: %.dot
