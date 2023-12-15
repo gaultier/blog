@@ -38,7 +38,7 @@ window.addEventListener("load", (event) => {
 Imagine a world where you can see the content of each website you like inside the app of your choosing, be notified whenever the website has something new, and all of which is implemented with an open standard. Well that was most of the web some years ago and this blog now does all of that. 
 
 
-![feed.png](This feed inside the open-source app NewsFlash (https://flathub.org/apps/io.gitlab.news_flash.NewsFlash))
+![This feed inside the open-source app NewsFlash (https://flathub.org/apps/io.gitlab.news_flash.NewsFlash)](feed.png)
 
 And it's not hard! The only thing we need is to serve a `feed.xml` file that lists articles with some metadata such as 'updated at' and a UUID to be able to uniquely identify an article. This XML file is an [Atom feed](https://en.wikipedia.org/wiki/Atom_(web_standard)) which has a nice [RFC](https://datatracker.ietf.org/doc/html/rfc4287).
 
