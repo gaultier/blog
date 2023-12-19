@@ -59,7 +59,7 @@ Eventually, the company got acquired for 8 digits by a Swiss bank.
 
 I knew I did not want to stay in Switzerland, and found a job as a Software Engineer in Munich, Germany, at a FinTech company. This time not the stock market kind but the online payments kind. Think Paypal or the now defunct Wirecard (but we were honest and law abiding, and they were not).
 
-I joined to kick start the effort of transforming our web applications from server-side rendered HTML with a tiny bit of JavaScript to fully dynamic single page applications (SPA) in Typescript. At the time, SPAs were all the rage, and it is true that C++ back-ends with a slow and complex deployment process are not a great fit to a fast growing company. Still, looking back, I am not sure if static HTML does not cover 90% of the use cases.
+I joined to kick start the effort of transforming web applications from server-side rendered HTML with a tiny bit of JavaScript to fully dynamic single page applications (SPA) in Typescript. At the time, SPAs were all the rage, and it is true that C++ back-ends with a slow and complex deployment process are not a great fit to a fast growing company. Still, looking back, I am not sure if static HTML does not cover 90% of the use cases.
 
 I then moved to the back-end, working for a time in a full-stack manner, and then spear-heading the company-wide effort to move to the cloud and Kubernetes, thus I morphed into a DevOps person, migrating without any downtimes numerous applications. Without the customers even noticing! 
 I also trained and helped other teams to adopt Kubernetes and the cloud, conducted very many interviews that resulted in hiring a number of very fine folks that I still hold dear to my heart to this day.
