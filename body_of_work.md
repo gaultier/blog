@@ -80,16 +80,16 @@ Finally, I helped move the observability stack the company used to Datadog (by c
 
 I also had a short stint as a team manager, but after 2 months I decided this was not for me and stepped down. I am a Software Engineer and practitioner at heart.
 
-I look fondly on all these achievements, achieving business targets with a variety of tech stacks and cloud services, helping fundamentally transform the company from a slow moving, datacenter based software stack, where developers sometimes wait for weeks for one deployment to happen, and a new project is a herculean effort of synchronizing every team; to a fast-moving, cloud based, self-service and event-oriented architecture, where each team is autonomous, gets a real-time stream of events containing all the information they need, and has nigh complete control and visibility on the whole lifecycle of their application.
+I look fondly on all these achievements, achieving business targets with a variety of tech stacks and cloud services, majorly contributing to fundamentally transform the company from a slow moving, datacenter based software stack, where developers sometimes wait for weeks for one deployment to happen, and a new project is a herculean effort of synchronizing every team; to a fast-moving, cloud based, self-service and event-oriented architecture, where each team is autonomous, gets a real-time stream of events containing all the information they need, and has nigh complete control and visibility on the whole lifecycle of their application.
 
 ---
 
 ## Senior Software Engineer Giesecke+Devrient, Munich, Germany; 2023-present
 
-After 6+ years in my job, I decided I was ready for the next challenge and joined my current company to help productionize a innovative Central Bank Digital Currency project (similar to a cryptocurrency, but backed by a sovereign state, using the state's currency, and not fraudulent). The most interesting feature, technically and product wise, is offline payments (card to card) with a focus on privacy. 
+After 6+ years in my job, I decided I was ready for the next challenge and joined my current company to help productionize an innovative Central Bank Digital Currency project (similar to a cryptocurrency, but backed by a sovereign state, using the state's currency, and with all the high standards one expects from regulated financial institutions). The most interesting feature, technically and product wise, is offline payments (card to card) with a focus on privacy. 
 
 My first focus has been making the product more reliable and fast, relentlessly optimizing the performance and memory usage to ensure that an entire nation can use this suite of applications 24/7, surviving network disruptions, datacenter disasters, etc; while adding crucial business features such as non-repudiation of payments.
 
-My second focus has been security: going through regular threat analysis exercises with the team, adding scanning of dependencies and docker images to every project in order to find vulnerabilities or insecure code patterns, fuzzing for wire protocol encoding/decoding, and kick-starting the effort to rewrite code to memory-safe languages.
+My second focus has been security: going through regular threat analysis exercises with the team, adding scanning of dependencies and docker images to every project in order to find vulnerabilities or insecure code patterns, fuzzing the wire protocol encoding/decoding code, and kick-starting the effort to rewrite some code to memory-safe languages.
 
 
