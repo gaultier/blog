@@ -64,7 +64,7 @@ func main() {
 		updatedAt := lines[0]
 		publishedAt := lines[len(lines)-2]
 
-		content, err := os.ReadFile(htmlFileName)
+		content, err := os.ReadFile(markdownFileName)
 		if err != nil {
 			panic(err)
 		}
@@ -72,7 +72,7 @@ func main() {
 
 		titleStartIndex := strings.Index(string(content), "# ")
 		if titleStartIndex == -1 {
-			panic(fmt.Sprintf("Failed to find `#` in %s", e.Name()))
+			panic(fmt.Sprintf("Failed to find `# ` in %s", e.Name()))
 		}
 		titleEndIndex := strings.Index(string(content), "\n")
 		if titleEndIndex == -1 {
