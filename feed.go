@@ -58,8 +58,8 @@ func main() {
 		if len(lines) == 0 {
 			panic("No lines: " + gitOutStr)
 		}
-		publishedAt := lines[0]
-		updatedAt := lines[len(lines)-2]
+		updatedAt := lines[0]
+		publishedAt := lines[len(lines)-2]
 
 		content, err := os.ReadFile(e.Name())
 		if err != nil {
