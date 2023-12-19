@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"os/exec"
 	"strings"
 	"time"
 
@@ -45,15 +46,25 @@ func main() {
 			continue
 		}
 
+		markdownFileName := strings.TrimSuffix(e.Name(), "html") + "md"
+
+		gitCmd := exec.Command("git", "log", "--follow", "--format=%ad", "--date", "iso-strict", "--", markdownFileName)
+		gitOut, err := gitCmd.Output()
+		if err != nil {
+			panic(err)
+		}
+		gitOutStr := string(gitOut)
+		lines := strings.Split(gitOutStr, "\n")
+		if len(lines) == 0 {
+			panic("No lines: " + gitOutStr)
+		}
+		publishedAt := lines[0]
+		updatedAt := lines[len(lines)-2]
+
 		content, err := os.ReadFile(e.Name())
 		if err != nil {
 			panic(err)
 		}
-		stat, err := os.Stat(e.Name())
-		if err != nil {
-			panic(err)
-		}
-		updatedAt := stat.ModTime().UTC().Format(time.RFC3339)
 		link := "/blog/" + e.Name()
 
 		h1StartIndex := strings.Index(string(content), "<h1>")
@@ -74,13 +85,9 @@ func main() {
        <link href="%s"/>
        <id>urn:uuid:%s</id>
        <updated>%s</updated>
-<content type="html">
-      <![CDATA[
-			%s
-]]>
-    </content>
+			 <published>%s</published>
      </entry>
-`, title, link, entryUuid, updatedAt, content))
+`, title, link, entryUuid, updatedAt, publishedAt))
 
 	}
 	out.WriteString("</feed>")

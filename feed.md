@@ -48,9 +48,9 @@ I implemented that in under an hour, skimming at the RFC and examples. It's a bi
 - The 'updated at' field for the feed is just `time.Now()`. It's not exactly accurate, it should probably be the most recent `mtime` across articles but it's good enough.
 - For each article (`*.html`) file in the directory, we add an entry (`<entry>`) in the XML document with:
   * The link to the article, that's just the filename in my case.
-  * The 'updated at' field, which is just the `mtime` of the file locally
+  * The 'updated at' field, which is ~~just the `mtime` of the file locally~~ is queried from git
+  * The 'published at' field, which is ~~just the `ctime` of the file locally~~ is queried from git
   * A UUID. Here I went with UUIDv5 which is simply the sha1 of the file name in the UUID format. It's nitfy because it means that the script is stateless and idempotent. If the article is later updated, the UUID remains the same (but the `updated at` will still hint at the update).
-  * The content, as HTML, simply embedded as is inside the document
 
 And...that's it really. Enjoy reading these articles in your favorite app!
 
