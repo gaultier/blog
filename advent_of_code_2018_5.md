@@ -6,7 +6,6 @@
 <link rel="stylesheet" type="text/css" href="main.css">
 <link rel="stylesheet" href="https://unpkg.com/@highlightjs/cdn-assets@11.8.0/styles/default.min.css">
 <script src="https://unpkg.com/@highlightjs/cdn-assets@11.8.0/highlight.min.js"></script>
-<script src="https://unpkg.com/@highlightjs/cdn-assets@11.8.0/languages/scheme.min.js"></script>
 <script>
 window.addEventListener("load", (event) => {
   hljs.highlightAll();
@@ -566,6 +565,7 @@ challenges, solved with a variety of programming languages.
 
 > If you liked this article and you want to support me, and can afford it: [Donate](https://paypal.me/philigaultier?country.x=DE&locale.x=en_US)
 
+<script src="https://unpkg.com/@highlightjs/cdn-assets@11.8.0/languages/scheme.min.js"></script>
 </div>
 </body>
 </html>
