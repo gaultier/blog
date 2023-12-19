@@ -1,6 +1,6 @@
 # Body of work
 
-I am here recounting chronologically what I have achieved in my career until now. I have a sub par memory so it's great for me to look back on that, and may it also hopefully serve as an interesting insight for recruiters and the like of the kind of work I enjoy and am good at.
+I am here recounting chronologically what I have achieved in my career until now. I have a sub par memory so it's great for me to look back on that, and may it also hopefully serve as an interesting insight for fellow practitioners and recruiters into the kind of work I enjoy and am experienced with.
 
 ##  Crédit Mutuel (Bank), Strasbourg, France; 2013
 
