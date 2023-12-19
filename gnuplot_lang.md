@@ -1,28 +1,3 @@
-<!DOCTYPE html>
-<html>
-<head>
-<meta charset="utf-8">
-<link rel="shortcut icon" type="image/ico" href="/blog/favicon.ico"/>
-<link rel="stylesheet" type="text/css" href="main.css">
-</head>
-<body>
-
-<div id="banner">
-    <a id="name" href="/blog"><img id="me" src="me.jpeg"/> Philippe Gaultier </a>
-    <ul>
-      <li>
-      <a href="/blog/feed.xml">Feed</a>
-      </li>
-      <li>
-      <a href="https://www.linkedin.com/in/philippegaultier/">LinkedIn</a>
-      </li>
-      <li>
-        <a href="https://github.com/gaultier">Github</a>
-      </li>
-    </ul>
-</div>
-<div class="body">
-
 # Solving a problem with Gnuplot, the programming language (not the plotting software!)
 
 *Is it any good? Can you solve real problems with it?*
@@ -198,7 +173,3 @@ do for [line in data] {
 
 print(sum)
 ```
-
-</div>
-</body>
-</html>

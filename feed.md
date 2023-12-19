@@ -1,35 +1,3 @@
-<!DOCTYPE html>
-<html>
-<head>
-<meta charset="utf-8">
-<link rel="shortcut icon" type="image/ico" href="/blog/favicon.ico"/>
-<link rel="stylesheet" type="text/css" href="main.css">
-<link rel="stylesheet" href="https://unpkg.com/@highlightjs/cdn-assets@11.8.0/styles/default.min.css">
-<script src="https://unpkg.com/@highlightjs/cdn-assets@11.8.0/highlight.min.js"></script>
-<script>
-window.addEventListener("load", (event) => {
-  hljs.highlightAll();
-});
-</script>
-</head>
-<body>
-
-<div id="banner">
-    <a id="name" href="/blog"><img id="me" src="me.jpeg"/> Philippe Gaultier </a>
-    <ul>
-      <li>
-      <a href="/blog/feed.xml">Feed</a>
-      </li>
-      <li>
-      <a href="https://www.linkedin.com/in/philippegaultier/">LinkedIn</a>
-      </li>
-      <li>
-        <a href="https://github.com/gaultier">Github</a>
-      </li>
-    </ul>
-</div>
-<div class="body">
-
 # This blog now has an Atom feed, and yours should probably too
 
 *Find it [here](https://gaultier.github.io/blog/feed.xml) or in the header on the top right-hand corner.*
@@ -52,7 +20,3 @@ I implemented that in under an hour, skimming at the RFC and examples. It's a bi
   * A UUID. Here I went with UUIDv5 which is simply the sha1 of the file name in the UUID format. It's nitfy because it means that the script is stateless and idempotent. If the article is later updated, the UUID remains the same (but the `updated at` will still hint at the update).
 
 And...that's it really. Enjoy reading these articles in your favorite app!
-
-</div>
-</body>
-</html>

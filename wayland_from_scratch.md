@@ -1,35 +1,3 @@
-<!DOCTYPE html>
-<html>
-<head>
-<meta charset="utf-8">
-<link rel="shortcut icon" type="image/ico" href="/blog/favicon.ico"/>
-<link rel="stylesheet" type="text/css" href="main.css">
-<link rel="stylesheet" href="https://unpkg.com/@highlightjs/cdn-assets@11.8.0/styles/default.min.css">
-<script src="https://unpkg.com/@highlightjs/cdn-assets@11.8.0/highlight.min.js"></script>
-<script>
-window.addEventListener("load", (event) => {
-  hljs.highlightAll();
-});
-</script>
-</head>
-<body>
-
-<div id="banner">
-    <a id="name" href="/blog"><img id="me" src="me.jpeg"/> Philippe Gaultier </a>
-    <ul>
-      <li>
-      <a href="/blog/feed.xml">Feed</a>
-      </li>
-      <li>
-      <a href="https://www.linkedin.com/in/philippegaultier/">LinkedIn</a>
-      </li>
-      <li>
-        <a href="https://github.com/gaultier">Github</a>
-      </li>
-    </ul>
-</div>
-<div class="body">
-
 # Learn Wayland by writing a GUI from scratch
 
 [Wayland](https://wayland.freedesktop.org/) is all the rage those days. Distributions left and right switch to it, many readers of my previous article on [writing a X11 GUI from scratch in x86_64 assembly](/blog/x11_x64.html) asked for a follow-up article about Wayland, and I now run Wayland on my desktop. So here we go, let's write a (very simple) GUI program with Wayland, without any libraries, this time in C. 
@@ -1446,8 +1414,3 @@ int main() {
 }
 
 ```
-
-
-</div>
-</body>
-</html>

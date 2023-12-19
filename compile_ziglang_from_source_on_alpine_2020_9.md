@@ -1,36 +1,3 @@
-<!DOCTYPE html>
-<html>
-<head>
-<meta charset="utf-8">
-<link rel="shortcut icon" type="image/ico" href="/blog/favicon.ico"/>
-<link rel="stylesheet" type="text/css" href="main.css">
-<link rel="stylesheet" href="https://unpkg.com/@highlightjs/cdn-assets@11.8.0/styles/default.min.css">
-<script src="https://unpkg.com/@highlightjs/cdn-assets@11.8.0/highlight.min.js"></script>
-<script>
-window.addEventListener("load", (event) => {
-  hljs.highlightAll();
-});
-</script>
-</head>
-<body>
-
-<div id="banner">
-    <a id="name" href="/blog"><img id="me" src="me.jpeg"/> Philippe Gaultier </a>
-    <ul>
-      <li>
-      <a href="/blog/feed.xml">Feed</a>
-      </li>
-      <li>
-      <a href="https://www.linkedin.com/in/philippegaultier/">LinkedIn</a>
-      </li>
-      <li>
-        <a href="https://github.com/gaultier">Github</a>
-      </li>
-    </ul>
-</div>
-<div class="body">
-
-
 # How to compile LLVM, Clang, LLD, and Ziglang from source on Alpine Linux
 
 *This article is now outdated but remains for historical reasons.*
@@ -80,9 +47,3 @@ You will now have a `zig` executable in the PATH as well as the zig standard lib
 $ zig version
 0.6.0+749417a
 ```
-
-> If you liked this article and you want to support me, and can afford it: [Donate](https://paypal.me/philigaultier?country.x=DE&locale.x=en_US)
-
-</div>
-</body>
-</html>

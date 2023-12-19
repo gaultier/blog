@@ -1,36 +1,3 @@
-<!DOCTYPE html>
-<html>
-<head>
-<meta charset="utf-8">
-<link rel="shortcut icon" type="image/ico" href="/blog/favicon.ico"/>
-<link rel="stylesheet" type="text/css" href="main.css">
-<link rel="stylesheet" href="https://unpkg.com/@highlightjs/cdn-assets@11.8.0/styles/default.min.css">
-<script src="https://unpkg.com/@highlightjs/cdn-assets@11.8.0/highlight.min.js"></script>
-<script>
-window.addEventListener("load", (event) => {
-  hljs.highlightAll();
-});
-</script>
-</head>
-<body>
-
-<div id="banner">
-    <a id="name" href="/blog"><img id="me" src="me.jpeg"/> Philippe Gaultier </a>
-    <ul>
-      <li>
-      <a href="/blog/feed.xml">Feed</a>
-      </li>
-      <li>
-      <a href="https://www.linkedin.com/in/philippegaultier/">LinkedIn</a>
-      </li>
-      <li>
-        <a href="https://github.com/gaultier">Github</a>
-      </li>
-    </ul>
-</div>
-<div class="body">
-
-
 # Cycle detection in graphs does not have to be hard: A lesser known, simple way with Kahn's algorithm
 
 **Table of Contents**
@@ -708,5 +675,3 @@ for (let i = employeesTopologicallySorted.length - 2; i >= 0; i -= 1) {
   );
 }
 ```
-
-</div>

@@ -1,29 +1,3 @@
-<!DOCTYPE html>
-<html>
-<head>
-<meta charset="utf-8">
-<link rel="shortcut icon" type="image/ico" href="/blog/favicon.ico"/>
-<link rel="stylesheet" type="text/css" href="main.css">
-</head>
-<body>
-
-<div id="banner">
-    <a id="name" href="/blog"><img id="me" src="me.jpeg"/> Philippe Gaultier </a>
-    <ul>
-      <li>
-      <a href="/blog/feed.xml">Feed</a>
-      </li>
-      <li>
-      <a href="https://www.linkedin.com/in/philippegaultier/">LinkedIn</a>
-      </li>
-      <li>
-        <a href="https://github.com/gaultier">Github</a>
-      </li>
-    </ul>
-</div>
-<div class="body">
-
-
 # Adventures in CI land, or how to speed up your CI
 
 Every project has a Continuous Integration (CI) pipeline and every one of them complains its CI is too slow. It is more important than you might think; this can be the root cause of many problems, including lackluster productivity, low morale, high barrier of entry for newcomers, and overall suboptimal quality.
@@ -114,10 +88,3 @@ Finally, I would recommend leading by example with the pipelines for the tools m
 I wish you well on your journey towards a fast, reliable and simple CI pipeline. 
 
 I noticed in my numerous projects with different tech stacks that some are friendlier than others towards CI pipelines than others (I am looking at you, Gradle!). If you have the luxury of choosing your technical stack, do consider how it will play out with your pipeline. I believe this is a much more important factor than discussing whether $LANG has semicolons or not because I am convinced it can completely decide the outcome of your project.
-
-
-> If you liked this article and you want to support me, and can afford it: [Donate](https://paypal.me/philigaultier?country.x=DE&locale.x=en_US)
-
-</div>
-</body>
-</html>
