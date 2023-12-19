@@ -62,7 +62,10 @@ func main() {
 			panic("No lines: " + gitOutStr)
 		}
 		updatedAt := lines[0]
-		publishedAt := lines[len(lines)-2]
+		publishedAt := lines[len(lines)-1]
+		if len(lines) > 1 {
+			publishedAt = lines[len(lines)-2]
+		}
 
 		content, err := os.ReadFile(markdownFileName)
 		if err != nil {

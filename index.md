@@ -1,28 +1,3 @@
-<!DOCTYPE html>
-<html>
-<head>
-<meta charset="utf-8">
-<link rel="shortcut icon" type="image/ico" href="/blog/favicon.ico"/>
-<link rel="stylesheet" type="text/css" href="main.css">
-</head>
-<body>
-<div id="banner">
-    <a id="name" href="/blog"><img id="me" src="me.jpeg"/> Philippe Gaultier </a>
-    <ul>
-      <li>
-      <a href="/blog/feed.xml">Feed</a>
-      </li>
-      <li>
-      <a href="https://www.linkedin.com/in/philippegaultier/">LinkedIn</a>
-      </li>
-      <li>
-        <a href="https://github.com/gaultier">Github</a>
-      </li>
-    </ul>
-</div>
-
-<div class="body">
-
 <div class="articles">
 
 ## Articles
@@ -121,8 +96,3 @@ This blog is [open-source](https://github.com/gaultier/blog)!
 
 The content of this blog as well as the code snippets are under the [BSD-3 License](https://en.wikipedia.org/wiki/BSD_licenses) which I also usually use for all my personal projects. It's basically free for every use but you have to mention me as the original author.
 
-
-
-</div>
-</body>
-</html>
