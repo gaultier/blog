@@ -7,5 +7,7 @@ all:
 %.svg: %.dot
 	dot -T svg $< -o $@
 
-%.html: %.md
-	cmark --unsafe $< > $@
+%.html: %.md header.html footer.html
+	cat header.html > $@
+	cmark --unsafe $< >> $@
+	cat footer.html >> $@

@@ -41,14 +41,15 @@ func main() {
 	`, baseUrl, now, feedUuidStr))
 
 	for _, e := range entries {
-		if !strings.HasSuffix(e.Name(), ".html") {
+		if !strings.HasSuffix(e.Name(), ".md") {
 			continue
 		}
-		if e.Name() == "README.html" || e.Name() == "index.html" {
+		markdownFileName := e.Name()
+		if e.Name() == "README.md" || e.Name() == "index.md" {
 			continue
 		}
 
-		markdownFileName := strings.TrimSuffix(e.Name(), "html") + "md"
+		htmlFileName := strings.TrimSuffix(e.Name(), "md") + "html"
 
 		gitCmd := exec.Command("git", "log", "--follow", "--format=%ad", "--date", "iso-strict", "--", markdownFileName)
 		gitOut, err := gitCmd.Output()
@@ -63,23 +64,23 @@ func main() {
 		updatedAt := lines[0]
 		publishedAt := lines[len(lines)-2]
 
-		content, err := os.ReadFile(e.Name())
+		content, err := os.ReadFile(htmlFileName)
 		if err != nil {
 			panic(err)
 		}
-		link := baseUrl + e.Name()
+		link := baseUrl + htmlFileName
 
-		h1StartIndex := strings.Index(string(content), "<h1>")
-		if h1StartIndex == -1 {
-			panic(fmt.Sprintf("Failed to find <h1> in %s", e.Name()))
+		titleStartIndex := strings.Index(string(content), "# ")
+		if titleStartIndex == -1 {
+			panic(fmt.Sprintf("Failed to find `#` in %s", e.Name()))
 		}
-		h1EndIndex := strings.Index(string(content), "</h1>")
-		if h1EndIndex == -1 {
-			panic(fmt.Sprintf("Failed to find </h1> in %s", e.Name()))
+		titleEndIndex := strings.Index(string(content), "\n")
+		if titleEndIndex == -1 {
+			panic(fmt.Sprintf("Failed to find title end in %s", e.Name()))
 		}
-		title := string(content)[h1StartIndex+4 : h1EndIndex]
+		title := string(content)[titleStartIndex+len("# ") : titleEndIndex]
 
-		entryUuid := uuid.NewSHA1(feedUuid, []byte(e.Name()))
+		entryUuid := uuid.NewSHA1(feedUuid, []byte(htmlFileName))
 		out.WriteString(fmt.Sprintf(
 			`
      <entry>
