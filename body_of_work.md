@@ -32,7 +32,7 @@ My major performance stepping stone was moving from rendering everything in the 
 
 I used OpenGL and C++ for the first project, and C for the second one since the existing codebase was in C.
 
-3D, VR, extending an existing codebase, starting a new project from scratch with 'carte blanche': I learned a ton! And my adviser, fellow coworkers exploring this space (notably trying to do the same with a different VR headset, the Sony Morpheus), and I even got to publish a paper based on our work, that got submitted: [Immersive-3D visualization of astronomical data](cnrs.pdf), [link](https://arxiv.org/abs/1607.08874).
+3D, VR, extending an existing codebase, starting a new project from scratch with 'carte blanche': I learned a ton! And my adviser, fellow coworkers exploring this space (notably trying to do the same with a different VR headset, the Sony Morpheus), and I even got to publish a paper based on our work, that got submitted: [Immersive-3D visualization of astronomical data](cnrs.pdf), [link 1](https://ui.adsabs.harvard.edu/abs/2015ASPC..495..125S/abstract), [link 2](http://aspbooks.org/custom/publications/paper/495-0125.html).
 
 
 Finally, I on-boarded my successor on the codebase and the build system and helped them troubleshoot some cross-platform issues.
