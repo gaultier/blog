@@ -10,6 +10,8 @@ import (
 	"github.com/google/uuid"
 )
 
+const baseUrl string = "https://gaultier.github.io/blog/"
+
 const feedUuidStr string = `9c065c53-31bc-4049-a795-936802a6b1df`
 
 func main() {
@@ -30,13 +32,13 @@ func main() {
    <feed xmlns="http://www.w3.org/2005/Atom">
 
      <title>Philippe Gaultier's blog</title>
-     <link href="https://gaultier.github.io/blog"/>
+     <link href="%s"/>
      <updated>%s</updated>
      <author>
        <name>Philippe Gaultier</name>
      </author>
      <id>urn:uuid:%s</id>
-	`, now, feedUuidStr))
+	`, baseUrl, now, feedUuidStr))
 
 	for _, e := range entries {
 		if !strings.HasSuffix(e.Name(), ".html") {
@@ -65,7 +67,7 @@ func main() {
 		if err != nil {
 			panic(err)
 		}
-		link := "/blog/" + e.Name()
+		link := baseUrl + e.Name()
 
 		h1StartIndex := strings.Index(string(content), "<h1>")
 		if h1StartIndex == -1 {
