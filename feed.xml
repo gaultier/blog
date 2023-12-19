@@ -4,14 +4,14 @@
 
      <title>Philippe Gaultier's blog</title>
      <link href="https://gaultier.github.io/blog/"/>
-     <updated>2023-12-19T12:57:27Z</updated>
+     <updated>2023-12-19T13:00:27Z</updated>
      <author>
        <name>Philippe Gaultier</name>
      </author>
      <id>urn:uuid:9c065c53-31bc-4049-a795-936802a6b1df</id>
 	
      <entry>
-       <title>Getting started with Scheme by solving an Advent of Code 2018 challenge </title>
+       <title>Getting started with Scheme by solving an Advent of Code 2018 challenge</title>
        <link href="https://gaultier.github.io/blog/advent_of_code_2018_5.html"/>
        <id>urn:uuid:b3c0c1c1-e36f-51fd-9356-99f8686e7329</id>
        <updated>2023-12-19T13:51:40+01:00</updated>

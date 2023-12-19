@@ -78,7 +78,7 @@ func main() {
 		if titleEndIndex == -1 {
 			panic(fmt.Sprintf("Failed to find title end in %s", e.Name()))
 		}
-		title := string(content)[titleStartIndex+len("# ") : titleEndIndex]
+		title := strings.TrimSpace(string(content)[titleStartIndex+len("# ") : titleEndIndex])
 
 		entryUuid := uuid.NewSHA1(feedUuid, []byte(htmlFileName))
 		out.WriteString(fmt.Sprintf(
