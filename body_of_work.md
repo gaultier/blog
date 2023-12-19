@@ -15,7 +15,7 @@ The team insisted (although not unanimously) that I write *new* COBOL code for t
 All in all, that was a very interesting social experience and a great insight on how business and developers think and (try to) evolve, and how to attempt to change the tech stack of an existing running application, which is a challenge any company wil face at a moment or another. And how we engineers have a professional duty to keep learning and adapting to this changing world.
 
 
-## CRNS Intern Software Engineer experimenting with Oculus Rift (VR) CNRS, Strasbourg, France; 2014
+## CRNS Intern Software Engineer experimenting with the Oculus Rift (VR) CNRS, Strasbourg, France; 2014
 
 My second internship (10 weeks), and perhaps the project I loved the most. This took place at an astronomy lab, I had the incredible privilege to have my office in the old library that was probably a few centuries old, filled with old books; the building was this 19th century observatory with a big park with beehouses... This will never be topped.
 
