@@ -55,6 +55,8 @@ I also contributed to modernizing the codebase to C++11 and improving the build 
 
 Eventually, the company got acquired for 8 digits by a Swiss bank.
 
+---
+
 ## Back-end Software Engineer & DevOps PPRO, Munich, Germany; 2017-2023
 
 I knew I did not want to stay in Switzerland, and found a job as a Software Engineer in Munich, Germany, at a FinTech company. This time not the stock market kind but the online payments kind. Think Paypal or the now defunct Wirecard (but we were honest and law abiding, and they were not).
@@ -80,6 +82,7 @@ I also had a short stint as a team manager, but after 2 months I decided this wa
 
 I look fondly on all these achievements, achieving business targets with a variety of tech stacks and cloud services, helping fundamentally transform the company from a slow moving, datacenter based software stack, where developers sometimes wait for weeks for one deployment to happen, and a new project is a herculean effort of synchronizing every team; to a fast-moving, cloud based, self-service and event-oriented architecture, where each team is autonomous, gets a real-time stream of events containing all the information they need, and has nigh complete control and visibility on the whole lifecycle of their application.
 
+---
 
 ## Senior Software Engineer Giesecke+Devrient, Munich, Germany; 2023-present
 
