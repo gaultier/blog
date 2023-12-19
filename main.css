@@ -9,6 +9,11 @@
 #banner > ul {
   list-style: none;
   padding: 0 1rem 0 .5rem;
+  display: inline-flex;
+}
+
+#banner > ul > li {
+  padding: 0 .5rem;
 }
 
 #banner > ul > li > a:hover {
