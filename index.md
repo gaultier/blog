@@ -19,7 +19,7 @@
 
 I am a Senior Software Engineer from France living in Bavaria, Germany. By day, I work for a Fintech company, and by night I write some fun projects in C, Rust, Odin, Zig, and Assembly. I like to work on low-level systems.
 
-In my free time, I like running, lifting weights, gardening, and the outdoors.
+In my free time, I like running, lifting weights, playing music, gardening, and the outdoors.
 
 Get in touch, send me an email!
 
@@ -85,7 +85,7 @@ The implementation still holds, however I would definitely revist the assembly g
 
 I think my most noteworthy projects are compilers both because I tend to be attracted to that domain and also because small CLI tools are less interesting. Compilers for real programming languages are hard!
 
-## CV
+## Resume
 
 You can find my resume [online](https://gaultier.github.io/resume/resume)
 or download it as [PDF](https://github.com/gaultier/resume/raw/master/Philippe_Gaultier_resume_en.pdf).
