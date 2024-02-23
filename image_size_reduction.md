@@ -45,7 +45,7 @@ commit 2e126f55a77e75e182ea18b36fb535a0e37793e4 (HEAD -> master, origin/master, 
 
 Eye-balling it, every image was on average halved. Not bad, for no visible difference!
 
-Initially, I wanted to use the new hotness: AVIF. Here's an example using the `heinc` tool on the original image:
+Initially, I wanted to use the new hotness: AVIF. Here's an example using the `avifenc` tool on the original image:
 
 ```sh
 $ avifenc feed.png feed.avif
