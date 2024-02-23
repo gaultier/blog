@@ -12,6 +12,7 @@
 - <span class="date">November 24 2023</span> [Roll your own memory profiling: it's actually not hard](/blog/roll_your_own_memory_profiling.html)
 - <span class="date">December 1 2023</span> [Solving a problem with Gnuplot, the programming language (not the plotting software!)](/blog/gnuplot_lang.html)
 - <span class="date">December 15 2023</span> [This blog now has an Atom feed, and yours should probably too](/blog/feed.html)
+- <span class="date">February 23 2023</span> [Quick and easy PNG image size reduction](/blog/image_size_reduction.html)
 
 </div>
 
