@@ -4,7 +4,7 @@
 
      <title>Philippe Gaultier's blog</title>
      <link href="https://gaultier.github.io/blog/"/>
-     <updated>2024-01-05T12:00:39Z</updated>
+     <updated>2024-02-23T10:27:27Z</updated>
      <author>
        <name>Philippe Gaultier</name>
      </author>
@@ -56,6 +56,14 @@
        <id>urn:uuid:f2d9c4e3-5c3d-57ab-8083-0f56daf1f41e</id>
        <updated>2023-12-19T13:56:33+01:00</updated>
 			 <published>2023-12-01T15:15:26+01:00</published>
+     </entry>
+
+     <entry>
+       <title>Quick and easy PNG image size reduction</title>
+       <link href="https://gaultier.github.io/blog/image_size_reduction.html"/>
+       <id>urn:uuid:1cd73d67-ad32-5cdc-93a7-f4046d7cd4a5</id>
+       <updated></updated>
+			 <published></published>
      </entry>
 
      <entry>

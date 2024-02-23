@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<link rel="shortcut icon" type="image/ico" href="/blog/favicon.ico"/>
+<link rel="stylesheet" type="text/css" href="main.css">
+<link rel="stylesheet" href="https://unpkg.com/@highlightjs/cdn-assets@11.8.0/styles/default.min.css">
+<script src="https://unpkg.com/@highlightjs/cdn-assets@11.8.0/highlight.min.js"></script>
+<script>
+window.addEventListener("load", (event) => {
+  hljs.highlightAll();
+});
+</script>
+</head>
+<body>
+
+<div id="banner">
+    <a id="name" href="/blog"><img id="me" src="me.jpeg"/> Philippe Gaultier </a>
+    <ul>
+      <li>
+      <a href="/blog/body_of_work.html">Body of work</a>
+      </li>
+      <li>
+        <a href="https://github.com/gaultier/resume/raw/master/Philippe_Gaultier_resume_en.pdf">Resume</a>
+      </li>
+      <li>
+      <a href="https://www.linkedin.com/in/philippegaultier/">LinkedIn</a>
+      </li>
+      <li>
+        <a href="https://github.com/gaultier">Github</a>
+      </li>
+      <li>
+      <a href="/blog/feed.xml">Feed</a>
+      </li>
+    </ul>
+</div>
+<div class="body">
+
+<h1>Quick and easy PNG image size reduction</h1>
+<p>I seredenpitously noticed that my blog had somewhat big PNG images. But these are just very simple screenshots. There surely must be a way to reduce their size, without affecting their size or legibility?
+Well yes, let's quantize them!
+What? Quant-what?</p>
+<p>Quoting Wikipedia:</p>
+<blockquote>
+<p>Quantization, involved in image processing, is a lossy compression technique achieved by compressing a range of values to a single quantum (discrete) value. When the number of discrete symbols in a given stream is reduced, the stream becomes more compressible. For example, reducing the number of colors required to represent a digital image makes it possible to reduce its file size</p>
+</blockquote>
+<p>In other words, by picking the right color palette for an image, we can reduce its size without the human eye noticing. For example, an image which has multiple red variants, all very close, are a prime candidate to be converted to the same red color (perhaps the average value) so long as the human eye does not see the difference. Since PNG images use compression, it will compress better.</p>
+<p>At least, that's my layman understanding.</p>
+<p>Fortunately there is an open-source command line tool that is very easy to use and works great: https://github.com/kornelski/pngquant . So  go give them a star and come back!</p>
+<p>I simply ran the tool on all images to convert them in place in parallel:</p>
+<pre><code class="language-sh">$ ls *.png | parallel 'pngquant {} -o {}.tmp &amp;&amp; mv {}.tmp {}'
+</code></pre>
+<p>It finished instantly, and here is the result:</p>
+<pre><code class="language-sh">$ git show 2e126f55a77e75e182ea18b36fb535a0e37793e4 --compact-summary
+commit 2e126f55a77e75e182ea18b36fb535a0e37793e4 (HEAD -&gt; master, origin/master, origin/HEAD)
+Author: Philippe Gaultier &lt;philippe.gaultier@gi-de.com&gt;
+Date:   Fri Feb 23 10:54:52 2024 +0100
+
+    use pgnquant to shrink images
+
+ feed.png                        | Bin 167641 -&gt; 63272 bytes
+ gnuplot.png                     | Bin 4594 -&gt; 3316 bytes
+ mem_prof1.png                   | Bin 157587 -&gt; 59201 bytes
+ mem_prof2.png                   | Bin 209046 -&gt; 81028 bytes
+ mem_prof3.png                   | Bin 75019 -&gt; 27259 bytes
+ mem_prof4.png                   | Bin 50964 -&gt; 21345 bytes
+ wayland-screenshot-floating.png | Bin 54620 -&gt; 19272 bytes
+ wayland-screenshot-red.png      | Bin 101047 -&gt; 45230 bytes
+ wayland-screenshot-tiled.png    | Bin 188549 -&gt; 107573 bytes
+ wayland-screenshot-tiled1.png   | Bin 505994 -&gt; 170804 bytes
+ x11_x64_black_window.png        | Bin 32977 -&gt; 16898 bytes
+ x11_x64_final.png               | Bin 47985 -&gt; 16650 bytes
+ 12 files changed, 0 insertions(+), 0 deletions(-)
+</code></pre>
+<p>Eye-balling it, every image was on average halved. Not bad, for no visible difference!</p>
+<p>Initially, I wanted to use the new hotness: AVIF. Here's an example using the <code>heinc</code> tool on the original image:</p>
+<pre><code class="language-sh">$ avifenc feed.png feed.avif
+$ stat -c '%n %s' feed.{png,avif}
+feed.png 167641
+feed.avif 36034
+</code></pre>
+<p>That's almost a x5 reduction in size! However this format is not yet well supported by all browsers. It's recommended to still serve a PNG as fallback, which is a bit too complex for this blog. Still, this format is very promising so I thought I should mention it.</p>
+<p>So as of now, all PNG images on this blog are much lighter! Not too bad for 10m of work.</p>
+
+<blockquote>
+  <p>If you liked this article and you want to support me, and can afford it: <a href="https://paypal.me/philigaultier?country.x=DE&locale.x=en_US">Donate</a></p>
+</blockquote>
+
+</div>
+</body>
+</html>
