@@ -25,8 +25,6 @@ It finished instantly, and here is the result:
 ```sh
 $ git show 2e126f55a77e75e182ea18b36fb535a0e37793e4 --compact-summary
 commit 2e126f55a77e75e182ea18b36fb535a0e37793e4 (HEAD -> master, origin/master, origin/HEAD)
-Author: Philippe Gaultier <philippe.gaultier@gi-de.com>
-Date:   Fri Feb 23 10:54:52 2024 +0100
 
     use pgnquant to shrink images
 
