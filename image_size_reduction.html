@@ -46,7 +46,7 @@ What? Quant-what?</p>
 </blockquote>
 <p>In other words, by picking the right color palette for an image, we can reduce its size without the human eye noticing. For example, an image which has multiple red variants, all very close, are a prime candidate to be converted to the same red color (perhaps the average value) so long as the human eye does not see the difference. Since PNG images use compression, it will compress better.</p>
 <p>At least, that's my layman understanding.</p>
-<p>Fortunately there is an open-source command line tool that is very easy to use and works great: https://github.com/kornelski/pngquant . So  go give them a star and come back!</p>
+<p>Fortunately there is an open-source <a href="https://github.com/kornelski/pngquant">command line tool</a> that is very easy to use and works great. So go give them a star and come back!</p>
 <p>I simply ran the tool on all images to convert them in place in parallel:</p>
 <pre><code class="language-sh">$ ls *.png | parallel 'pngquant {} -o {}.tmp &amp;&amp; mv {}.tmp {}'
 </code></pre>

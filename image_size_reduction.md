@@ -12,7 +12,7 @@ In other words, by picking the right color palette for an image, we can reduce i
 
 At least, that's my layman understanding.
 
-Fortunately there is an open-source command line tool that is very easy to use and works great: https://github.com/kornelski/pngquant . So  go give them a star and come back!
+Fortunately there is an open-source [command line tool](https://github.com/kornelski/pngquant) that is very easy to use and works great. So go give them a star and come back!
 
 I simply ran the tool on all images to convert them in place in parallel:
 
