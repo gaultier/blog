@@ -71,7 +71,7 @@ commit 2e126f55a77e75e182ea18b36fb535a0e37793e4 (HEAD -&gt; master, origin/maste
  12 files changed, 0 insertions(+), 0 deletions(-)
 </code></pre>
 <p>Eye-balling it, every image was on average halved. Not bad, for no visible difference!</p>
-<p>Initially, I wanted to use the new hotness: AVIF. Here's an example using the <code>heinc</code> tool on the original image:</p>
+<p>Initially, I wanted to use the new hotness: AVIF. Here's an example using the <code>avifenc</code> tool on the original image:</p>
 <pre><code class="language-sh">$ avifenc feed.png feed.avif
 $ stat -c '%n %s' feed.{png,avif}
 feed.png 167641
