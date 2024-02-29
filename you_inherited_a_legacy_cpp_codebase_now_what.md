@@ -155,5 +155,50 @@ Here are some ways to go about it:
 And the bonus for doing all of this, is not that you sped up at zero cost the build time by a factor of 5, is that if your boss is a tiny bit technical, they'll love seeing PRs deleting thousands of lines of code. And your coworkers as well.
 
 
-## 
+## Linters
+
+Don't go overboard with linter rules, add a few basic ones, incorporate them in the development lifecycle, incrementally tweak the rules and fix the issue that pop up, and move on. Don't try to enable all rules, it's just a rabbit hole of diminishing returns. I have used `clang-tidy` and `cppcheck` in the past, they can be helpful, but also incredibly slow and noisy, so be warned. Having no linter is not an option though.
+
+## Code formatting
+
+Wait for the appropriate moment whe no branches are opened (otherwise people will have horrendous merge conflicts), pick a code style at random, do a one time formatting of the entire codebase (no exceptions), typically with `clang-format`, commit the configuration, done. Don't waste any bit of saliva arguing about the actual code formatting. It only exists to make diffs smaller and avoid arguments, so do not argue about it!
+
+## Sanitizers
+
+Same as linters, it can be a rabbit hole, unfortunately it's absolutely required to spot real, production affecting, hard to detect, bugs and to be able to fix them. `-fsanitize=address,undefined` is a good baseline. They usually do not have false positives so if something gets detected, go fix it. Run the tests with it so that issues get detected there as well. I even heard of people running the production code with some sanitizers enabled, so if your performance budget can allow it, it could be a good idea.
+
+If the compiler you (have to) use to ship the production code does not support sanitizers, you can at least use clang or such when developing and running tests. That's when the work you did on the build system comes in handy, it should be relatively easy to use different compilers.
+
+One thing is for sure: even in the best codebase in the world, with the best coding practices and developers, the second you enable the sanitizers, you absolutely will uncover horrifying bugs and memory leaks that went undetected for years. So do it. Unfortunately fixing these can require a lot of work and refactorings so you might have to tweak the options of each sanitizer.
+
+One last thing: ideally, all third-party dependencies should also be compiled with the sanitizers enabled when running tests, to spot [issues](https://github.com/rxi/microui/pull/67) in them as well.
+
+## Add a CI pipeline
+
+As Bryan Cantrill once said (quoting from memory), 'I am convinced most firmware just comes out of the home directory of a developer's laptop'. Setting up a CI is quick, free, and automates all the good things we have set up so far (linters, code formatting, tests, etc). And that way we can produce in a pristine environment the production binaries, on every change. If you're not doing this already as a developer, I don't think you really have entered the 21st century yet. 
+
+Cherry on the cake: most CI systems allow for running the steps on a matrix of different platforms! So you can demonstratebly check that the list of supported platforms is not just theory, it is real.
+
+Typically the pipeline just looks like `make all test lint fmt`  so it's not rocket science. Just make sure that issues that get reported by the tools (linters, sanitizers, etc) actually fail the pipeline, otherwise no one will notice and fix them.
+
+
+## Incremental code improvements
+
+Well that's known territory so I won't say much here. Just that lots of code can often be dramatically simplified.
+
+I remember iteratively simplifying a complicated class that manually allocated and (sometimes) deallocated memory, was meant to handle generic things, and so on. All the class did, as it turned out, was allocate a pointer, later check whether the pointer was null or not, and...that's it. Yeah that's a boolean in my book. True/false, nothing more to it.
+
+I feel that's the step that's the hardest to timebox because each round of simplification opens new avenues to simplify further. Use your best judgement here and stay on the conservative side. Focus on tangible goals such as security, correctness and performance, and stray away from subjective criteria such as 'clean code'.
+
+In my experience, upgrading the C++ standard in use in the project can at times help with code simplifications, for example to replace code that manually increments iterators by a `for (auto x : items)` loop, but remember it's just a means to an end, not an end in itself. If all you need is `std::clamp`, just write it yourself.
+
+## Rewrite in a memory safe language?
+
+I am doing this right now at work, and that deserves an article of its own. Lots of gotchas there as well. Only do this with a very, very compelling reason.
+
+
+## Addendum: Dependency management
+
+There's a hotly debated topic that I have
+
 
