@@ -124,7 +124,7 @@ I have done all of the above in the past and that works but building directly on
 
 ## Get the tests passing on your machine
 
-First, if there no tests, I am sorry. This is going to be really difficult to do any change at all. So go write some tests before doing any change to the code, make them pass, and come back. The easiest way is to capture inputs and outputs of the program running in the real world and write end-to-end tests based on that, the more varied the better. It will ensure there no regressions when making changes, not that the behavior was correct in the first place, but again, better than nothing.
+First, if there are no tests, I am sorry. This is going to be really difficult to do any change at all. So go write some tests before doing any change to the code, make them pass, and come back. The easiest way is to capture inputs and outputs of the program running in the real world and write end-to-end tests based on that, the more varied the better. It will ensure there are no regressions when making changes, not that the behavior was correct in the first place, but again, better than nothing.
 
 So, now you have a test suite. If some tests fail, disable them for now. Make them pass, even if the whole test suite takes hours to run. We'll worry about that later.
 
