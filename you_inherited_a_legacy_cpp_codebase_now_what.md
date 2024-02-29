@@ -210,6 +210,7 @@ On Fedora: `sudo dnf [whatever, I never used Fedora :D ]`
 ```
 
 Etc. I have done it myself. And I think this is a terrible idea. Here's why:
+
 - The installation instructions, as we've seen above, are OS and distribution dependent. Worse, they're dependent on the version of the distribution. I remember a project that took months to move from Ubuntu 20.04 to Ubuntu 22.04, because they ship different versions of the packages (if they ship the same packages at all), and so upgrading the distribution also means upgrading the 100 dependencies of your project at the same time. Obviously that's a very bad idea. You want to upgrade one dependency at a time, ideally.
 - There's always a third-party dependency that has no package and you have to build it from source anyway.
 - The packages are never built with the flags you want. Fedora and Ubuntu have debated for years whether to build packaged with the frame pointer enabled (they finally do since very recently). Remember the section about sanitizers? How are you going to get dependencies with sanitizer enabled? It's not going to happen. But ther are way more examples: LTO, `-march`, debug information, etc. Or they were built with a different C++ compiler version from the one you are using and they broke the C++ ABI between the two.
@@ -228,6 +229,7 @@ I mean, if you have a situation where they work for you, that's great, it's defi
 
 
 So what do I recommend? Well, the good old git submodules and compiling from source approach. It's cumbersome, yes, but also:
+
 - It's simple, dead simple
 - It's better than manually vendored because of git
 - You know exactly, down to the commit, which version of the dependency is in use
