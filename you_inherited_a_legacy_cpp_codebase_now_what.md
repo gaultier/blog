@@ -240,8 +240,6 @@ There's a hotly debated topic that I have so far carefully avoided and that's de
 ```
 On Ubuntu 20.04: `sudo apt install [100 lines of packages]`
 
-On Fedora: `sudo dnf [whatever, I never used Fedora :D ]`
-
 On macOS: `brew install [100 lines of packages named slightly differently]`
 
 On another Linux: well you're out of luck buddy. I guess you have to pick a mainstream distribution and reinstall your OS ¯\_(ツ)_/¯
