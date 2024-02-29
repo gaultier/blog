@@ -182,7 +182,7 @@ And the bonus for doing all of this, is not only that you sped up the build time
 
 ## Linters
 
-Don't go overboard with linter rules, add a few basic ones, incorporate them in the development life cycle, incrementally tweak the rules and fix the issues that pop up, and move on. Don't try to enable all the rules, it's just a rabbit hole of diminishing returns. I have used `clang-tidy` and `cppcheck` in the past, they can be helpful, but also incredibly slow and noisy, so be warned. Having no linter is not an option though.
+Don't go overboard with linter rules, add a few basic ones, incorporate them in the development life cycle, incrementally tweak the rules and fix the issues that pop up, and move on. Don't try to enable all the rules, it's just a rabbit hole of diminishing returns. I have used `clang-tidy` and `cppcheck` in the past, they can be helpful, but also incredibly slow and noisy, so be warned. Having no linter is not an option though. The first time you run the linter, it'll catch so many real issues that you'll wonder why the compiler is not detecting anything even with all the warnings on.
 
 ## Code formatting
 

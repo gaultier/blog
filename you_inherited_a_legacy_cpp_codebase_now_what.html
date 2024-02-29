@@ -391,7 +391,9 @@ rules and fix the issues that pop up, and move on. Don’t try to enable
 all the rules, it’s just a rabbit hole of diminishing returns. I have
 used <code>clang-tidy</code> and <code>cppcheck</code> in the past, they
 can be helpful, but also incredibly slow and noisy, so be warned. Having
-no linter is not an option though.</p>
+no linter is not an option though. The first time you run the linter,
+it’ll catch so many real issues that you’ll wonder why the compiler is
+not detecting anything even with all the warnings on.</p>
 <h2 id="code-formatting">Code formatting</h2>
 <p>Wait for the appropriate moment where no branches are active
 (otherwise people will have horrendous merge conflicts), pick a code
