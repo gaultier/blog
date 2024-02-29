@@ -12,7 +12,7 @@ Well, fear not, because I have experience this many times in numerous places (th
 
 So join me on a recollection of what worked for me and what one should absolutely avoid.
 
-And to be fair to C++, I do not hate it (per se), it just happens to be one of these languages that people abuse and invariably leads to a horryfying mess and poor C++ is just the victim here and the C++ committee will fix it in C++45, worry not, by adding `std::cmake` to the standard library and you'll see how it's absolutely a game changer, and - Ok let's go back to the topic at hand.
+And to be fair to C++, I do not hate it (per se), it just happens to be one of these languages that people abuse and invariably leads to a horrifying mess and poor C++ is just the victim here and the C++ committee will fix it in C++45, worry not, by adding `std::cmake` to the standard library and you'll see how it's absolutely a game changer, and - Ok let's go back to the topic at hand.
 
 So here's an overview of the steps to take:
 
@@ -38,7 +38,7 @@ All of this only means: explain in layman terms the problem with a few simple fa
 - Hey boss, the last hire took 3 weeks to get the code building on his machine and make his first contribution. Wouldn't it be nice if, with minimal effort, we could make that a few minutes?
 - Hey boss, I put quickly together a simple fuzzing setup ('inputting random data in the app like a monkey and seeing what happens'), and it manages to crash the app 253 times within a few seconds. I wonder what would happen if people try to do that in production with our app?
 - Hey boss, the last few urgent bug fixes took several people and 2 weeks to be deployed in production because the app can only be built by this one build server with this ancient operating system that has not been supported for 8 years (FreeBSD 9, for the curious) and it kept failing. Oh by the way whenever this server dies we have no way to deploy anymore, like at all. Wouldn't it be nice to be able to build our app on any cheap cloud instance?
-- Hey boss, we had a cryptic bug in production affecting users, it tooks weeks to figure out and fix, and it turns out if was due to undefined behavior ('a problem in the code that's very hard to notice') corrupting data, and when I run this industry standard linter ('a program that finds issues in the code') on our code, it detects the issue instantly. We should run that tool every time we make a change!
+- Hey boss, we had a cryptic bug in production affecting users, it took weeks to figure out and fix, and it turns out if was due to undefined behavior ('a problem in the code that's very hard to notice') corrupting data, and when I run this industry standard linter ('a program that finds issues in the code') on our code, it detects the issue instantly. We should run that tool every time we make a change!
 - Hey boss, the yearly audit is coming up and the last one took 7 months to pass because the auditor was not happy with what they saw. I have ideas to make that smoother.
 - Hey boss, there is a security vulnerability in the news right now about being able to decrypt encrypted data and stealing secrets, I think we might be affected, but I don't know for sure because the cryptography library we use has been vendored ('copy-pasted') by hand with some changes on top that were never reviewed by anyone. We should clean that up and setup something so that we get alerted automatically if there is a vulnerability that affects us.
 
@@ -55,7 +55,7 @@ Ok, let's say that now you have buy-in from everyone that matters, let's go over
 - Every change is small and incremental. The app works before and works after. Tests pass, linters are happy, nothing was bypassed to apply the change (exceptions do happen but that's what they are, exceptional)
 - If an urgent bug fix has to be made, it can be done as usual, nothing is blocked
 - Every change is a measurable improvement and can be explained and demoed to non experts
-- If the whole effort has to be suspended or stopped altogether (because of priorities shifting, budget reasons, etc), it's still a net gain overall compared to before starting it (and that gain is in some form *measureable*)
+- If the whole effort has to be suspended or stopped altogether (because of priorities shifting, budget reasons, etc), it's still a net gain overall compared to before starting it (and that gain is in some form *measurable*)
 
 In my experience, with this approach, you keep everyone happy and can do the improvements that you really need to do.
 
@@ -65,11 +65,11 @@ Alright, let's get down to business now!
 
 You'd be amazed at how many C++ codebase in the wild that are a core part of a successful product earning millions and they basically do not compile. Well, if all the stars are aligned they do. But that's not what I'm talking about. I'm talking about reliably, consistently building on all platforms you support. No fuss, no 'I finally got it building after 3 weeks of hair-pulling' (this brings back some memories). It just works(tm).
 
-A small aparte here. I used to be really into Karate. We are talking about 3, 4 training sessions a week, etc. And I distincly remember one of my teachers telling me (picture a wise Asian sifu - actualy my teacher was a bald white guy kind of looking like Steve Ballmer):
+A small aparte here. I used to be really into Karate. We are talking about 3, 4 training sessions a week, etc. And I distinctly remember one of my teachers telling me (picture a wise Asian sifu - actually my teacher was a bald white guy kind of looking like Steve Ballmer):
 
 > You do not yet master this move. Sometimes you do and sometimes you don't, so you don't. When eating with a spoon, do you miss your mouth one of five times?
 
-And I carried that with me as a Software Engineer. 'The new feature works' means it works everytime. Not one out of five times. And so the build is the same.
+And I carried that with me as a Software Engineer. 'The new feature works' means it works every time. Not one out of five times. And so the build is the same.
 
 
 ### Write down the platforms you support
@@ -118,7 +118,7 @@ Here some folks would recommend documenting the project layout, the architecture
 Emphasis on 'low hanging'. No change of the build system, no heroic efforts (I keep repeating that in this article but this is so important).
 
 Again, in a typical C++ project, you'd be amazed at how much work the build system is doing without having to do it at all. Try these ideas below and measure if that helps or not:
-- Building and running tests *of your dependencies*. In a project which was using `unittest++` as a test framework, built as a cmake subproject, I discovered that the default behavior was to build the tests of the test framework, and run them, every time! That's crazy. Usually there is a CMake variable or such to opt-out of this.
+- Building and running tests *of your dependencies*. In a project which was using `unittest++` as a test framework, built as a CMake subproject, I discovered that the default behavior was to build the tests of the test framework, and run them, every time! That's crazy. Usually there is a CMake variable or such to opt-out of this.
 - Building and running example programs *of your dependencies*. Same thing as above, the culprit that time was `mbedtls`. Again, setting a CMake variable to opt-out of that solved it.
 - Building and running the tests of your project by default when it's being included as a subproject of another parent project. Yeah the default behavior we just laughed at in our dependencies? It turns out we're doing the same to other projects! I am no CMake expert but it seems that there is no standard way to exclude tests in a build. So I recommend adding a build variable called `MYPROJECT_TEST` unset by default and only build and run tests when it is set. Typically only developers working on the project directly will set it. Same with examples, generating documentation, etc.
 - Building all of a third-party dependency when you only need a small part of it: `mbedtls` comes to mind as a good citizen here since it exposes many compile-time flags to toggle lots of parts you might not need. Beware of the defaults, and only build what you need!
@@ -132,7 +132,7 @@ Once that's done, here are a few things to additionally try, although the gains 
 - LTO: off/on/thin
 - Split debug information
 - Make vs Ninja
-- The type of filesystem in use, and tweaking its settings
+- The type of file system in use, and tweaking its settings
 
 Once the iteration cycle feels ok, the code gets to go under the microscope. If the build takes ages, it's not realistic to want to modify the code.
 
@@ -146,9 +146,9 @@ Dad, I see dead lines of code.
 I have seen 30%, sometimes more, of a codebase, being completely dead code. That's lines of code you pay for every time you compile, you want to make a refactoring, etc. So let's rip them out.
 
 Here are some ways to go about it:
-- The compiler has a bunch of `-Wunused-xxx` warnings, e.g. `-Wunused-function`. They catch some stuff, but not all. Every single instance of these warnings should be addressed. Usually it's as easy as deleting the code, rebuilding and re-running the tests, done. In rare cases it's a symptom of a bug where the wrong function was called. So I'd be somewhat relucant to fully automate this step. But if you're confident in your test suite, go for it.
+- The compiler has a bunch of `-Wunused-xxx` warnings, e.g. `-Wunused-function`. They catch some stuff, but not all. Every single instance of these warnings should be addressed. Usually it's as easy as deleting the code, rebuilding and re-running the tests, done. In rare cases it's a symptom of a bug where the wrong function was called. So I'd be somewhat reluctant to fully automate this step. But if you're confident in your test suite, go for it.
 - Linters can find unused functions or class fields, e.g. `cppcheck`. In my experience there are quite a lot of false positives especially regarding virtual functions in the case of inheritance, but the upside is that these tools absolutely find unused things that the compilers did not notice. So, a good excuse for adding a linter to your arsenal if not to the CI (more on that later).
-- I have seen more exotic techniques were the linker is instructed to put each function in its own section and print everytime a section is removed because it's detected to be unused at link time, but that results in so much noise e.g. about standard library functions being unused, that I have not found that really practical. Others inspect the generated assembly and compare which functions are present there with the source code, but that does not work for virtual functions. So, maybe worth a shot, depending on your case?
+- I have seen more exotic techniques were the linker is instructed to put each function in its own section and print every time a section is removed because it's detected to be unused at link time, but that results in so much noise e.g. about standard library functions being unused, that I have not found that really practical. Others inspect the generated assembly and compare which functions are present there with the source code, but that does not work for virtual functions. So, maybe worth a shot, depending on your case?
 - Remember the list of supported platforms? Yeah, time to put it to use to kill all the code for unsupported platforms. Code trying to support ancient versions of Solaris on a project that exclusively ran on FreeBSD?  Out of the window it goes. Code trying to provide its own random number generator because maybe the platform we run on does not have one (of course it turned out that was never the case)? To the bin. Hundred of lines of code in case POSIX 2001 is not supported, when we only run on modern Linux and macOS? Nuke it. Checking if the host CPU is big-endian and swapping bytes if it is? Ciao. That code introduced years ago for a hypothetical feature that never came? Hasta la vista.
 
 
@@ -157,11 +157,11 @@ And the bonus for doing all of this, is not that you sped up at zero cost the bu
 
 ## Linters
 
-Don't go overboard with linter rules, add a few basic ones, incorporate them in the development lifecycle, incrementally tweak the rules and fix the issue that pop up, and move on. Don't try to enable all rules, it's just a rabbit hole of diminishing returns. I have used `clang-tidy` and `cppcheck` in the past, they can be helpful, but also incredibly slow and noisy, so be warned. Having no linter is not an option though.
+Don't go overboard with linter rules, add a few basic ones, incorporate them in the development life cycle, incrementally tweak the rules and fix the issue that pop up, and move on. Don't try to enable all rules, it's just a rabbit hole of diminishing returns. I have used `clang-tidy` and `cppcheck` in the past, they can be helpful, but also incredibly slow and noisy, so be warned. Having no linter is not an option though.
 
 ## Code formatting
 
-Wait for the appropriate moment whe no branches are opened (otherwise people will have horrendous merge conflicts), pick a code style at random, do a one time formatting of the entire codebase (no exceptions), typically with `clang-format`, commit the configuration, done. Don't waste any bit of saliva arguing about the actual code formatting. It only exists to make diffs smaller and avoid arguments, so do not argue about it!
+Wait for the appropriate moment where no branches are opened (otherwise people will have horrendous merge conflicts), pick a code style at random, do a one time formatting of the entire codebase (no exceptions), typically with `clang-format`, commit the configuration, done. Don't waste any bit of saliva arguing about the actual code formatting. It only exists to make diffs smaller and avoid arguments, so do not argue about it!
 
 ## Sanitizers
 
@@ -177,7 +177,7 @@ One last thing: ideally, all third-party dependencies should also be compiled wi
 
 As Bryan Cantrill once said (quoting from memory), 'I am convinced most firmware just comes out of the home directory of a developer's laptop'. Setting up a CI is quick, free, and automates all the good things we have set up so far (linters, code formatting, tests, etc). And that way we can produce in a pristine environment the production binaries, on every change. If you're not doing this already as a developer, I don't think you really have entered the 21st century yet. 
 
-Cherry on the cake: most CI systems allow for running the steps on a matrix of different platforms! So you can demonstratebly check that the list of supported platforms is not just theory, it is real.
+Cherry on the cake: most CI systems allow for running the steps on a matrix of different platforms! So you can demonstrably check that the list of supported platforms is not just theory, it is real.
 
 Typically the pipeline just looks like `make all test lint fmt`  so it's not rocket science. Just make sure that issues that get reported by the tools (linters, sanitizers, etc) actually fail the pipeline, otherwise no one will notice and fix them.
 
@@ -188,7 +188,7 @@ Well that's known territory so I won't say much here. Just that lots of code can
 
 I remember iteratively simplifying a complicated class that manually allocated and (sometimes) deallocated memory, was meant to handle generic things, and so on. All the class did, as it turned out, was allocate a pointer, later check whether the pointer was null or not, and...that's it. Yeah that's a boolean in my book. True/false, nothing more to it.
 
-I feel that's the step that's the hardest to timebox because each round of simplification opens new avenues to simplify further. Use your best judgement here and stay on the conservative side. Focus on tangible goals such as security, correctness and performance, and stray away from subjective criteria such as 'clean code'.
+I feel that's the step that's the hardest to timebox because each round of simplification opens new avenues to simplify further. Use your best judgment here and stay on the conservative side. Focus on tangible goals such as security, correctness and performance, and stray away from subjective criteria such as 'clean code'.
 
 In my experience, upgrading the C++ standard in use in the project can at times help with code simplifications, for example to replace code that manually increments iterators by a `for (auto x : items)` loop, but remember it's just a means to an end, not an end in itself. If all you need is `std::clamp`, just write it yourself.
 
@@ -197,11 +197,19 @@ In my experience, upgrading the C++ standard in use in the project can at times 
 I am doing this right now at work, and that deserves an article of its own. Lots of gotchas there as well. Only do this with a very, very compelling reason.
 
 
+## Conclusion
+
+Well, there you have it. A tangible, step-by-step plan to get of of the hole that's a complex legacy C++ codebase. I just finished going through that at work on a project, and it's become much more bearable to work on it now. I have seen coworkers, who previously would not have come within a 10 mile radius of the codebase, now make meaningful contributions. So it feels great.
+
+There are important topics that I wanted to mention but in the end did not, such as fuzzing, dependency scanning for vulnerabilities, etc. Maybe for the next article!
+
+If you go through this on a project, and you found this article helpful, shoot me an email! It's nice to know that it helped someone.
+
 ## Addendum: Dependency management
 
 *This section is very subjective, it's just my strong, biased opinion.*
 
-There's a hotly debated topic that I have so far carefull avoided and that's dependency management. So in short, in C++ there's none. Most people resort to using the system package manager, it's easy to notice because their README looks like this:
+There's a hotly debated topic that I have so far careful avoided and that's dependency management. So in short, in C++ there's none. Most people resort to using the system package manager, it's easy to notice because their README looks like this:
 
 ```
 On Ubuntu 20.04: `sudo apt install [100 lines of packages]`
@@ -213,11 +221,11 @@ Etc. I have done it myself. And I think this is a terrible idea. Here's why:
 
 - The installation instructions, as we've seen above, are OS and distribution dependent. Worse, they're dependent on the version of the distribution. I remember a project that took months to move from Ubuntu 20.04 to Ubuntu 22.04, because they ship different versions of the packages (if they ship the same packages at all), and so upgrading the distribution also means upgrading the 100 dependencies of your project at the same time. Obviously that's a very bad idea. You want to upgrade one dependency at a time, ideally.
 - There's always a third-party dependency that has no package and you have to build it from source anyway.
-- The packages are never built with the flags you want. Fedora and Ubuntu have debated for years whether to build packaged with the frame pointer enabled (they finally do since very recently). Remember the section about sanitizers? How are you going to get dependencies with sanitizer enabled? It's not going to happen. But ther are way more examples: LTO, `-march`, debug information, etc. Or they were built with a different C++ compiler version from the one you are using and they broke the C++ ABI between the two.
+- The packages are never built with the flags you want. Fedora and Ubuntu have debated for years whether to build packaged with the frame pointer enabled (they finally do since very recently). Remember the section about sanitizers? How are you going to get dependencies with sanitizer enabled? It's not going to happen. But there are way more examples: LTO, `-march`, debug information, etc. Or they were built with a different C++ compiler version from the one you are using and they broke the C++ ABI between the two.
 - You want to easily see the source of the dependency when auditing, developing, debugging, etc, *for the version you are currently using*.
 - You want to be able to patch a dependency easily if you encounter a bug, and rebuild easily without having to change the build system extensively
 - You never get the exact same version of a package across systems, e.g. when developer Alice is on macOS, Bob on Ubuntu and the production system on FreeBSD. So you have weird discrepancies you cannot reproduce and that's annoying.
-- Corrolary of the point above: You don't know exactly which version(s) you are using across sytems and it's hard to produce a Bill of Material (BOM) in an automated fashion, which is required (or going to be required very soon? Anyway it's a good idea to have it) in some fields.
+- Corollary of the point above: You don't know exactly which version(s) you are using across systems and it's hard to produce a Bill of Material (BOM) in an automated fashion, which is required (or going to be required very soon? Anyway it's a good idea to have it) in some fields.
 - The packages sometimes do not have the version of the library you need (static or dynamic)
 
 So you're thinking, I know, I will use those fancy new package managers for C++, Conan, vcpkg and the like! Well, not so fast:
@@ -242,5 +250,5 @@ So what do I recommend? Well, the good old git submodules and compiling from sou
 
 Compiling each dependency in each submodule can be as simple as `add_subdirectory` with CMake, or `git submodule foreach make` by hand. Example in the wild: Neovim.
 
-Of course, if your dependency graph visualised in Graphviz looks like a Rorschach test, it is not easily doable, but it might be still possible, using a build system like Buck2, which does hybrid local-remote builds, and reuses build artifacts between builds from different users. 
+Of course, if your dependency graph visualized in Graphviz looks like a Rorschach test, it is not easily doable, but it might be still possible, using a build system like Buck2, which does hybrid local-remote builds, and reuses build artifacts between builds from different users. 
 If you look at the landscape of package managers for compiled languages (Go, Rust, etc), all of them that I know of compile from source. It's the same approach, minus git, plus the automation.
