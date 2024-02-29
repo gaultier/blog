@@ -73,7 +73,7 @@ And here's what to avoid, again totally, super duper fictional, never-really-hap
 
 - We are not using the latest C++ standard, we should halt all work for 2 weeks to upgrade, also I have no idea if something will break because we have no tests
 - I am going to change a lot of things in the project on a separate branch and work on it for months. It's definitely getting merged at some point! (*narrator's voice:* it wasn't)
-- We are going to rewrite the project from scratch, it should take a few week tops
+- We are going to rewrite the project from scratch, it should take a few weeks tops
 - We are going to improve the codebase, but no idea when it will be done or even what we are going to do exactly
 
 
