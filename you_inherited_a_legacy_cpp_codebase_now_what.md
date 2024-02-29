@@ -177,7 +177,7 @@ Here are some ways to go about it:
 - Remember the list of supported platforms? Yeah, time to put it to use to kill all the code for unsupported platforms. Code trying to support ancient versions of Solaris on a project that exclusively ran on FreeBSD?  Out of the window it goes. Code trying to provide its own random number generator because maybe the platform we run on does not have one (of course it turned out that was never the case)? To the bin. Hundred of lines of code in case POSIX 2001 is not supported, when we only run on modern Linux and macOS? Nuke it. Checking if the host CPU is big-endian and swapping bytes if it is? Ciao (when was the last time you shipped code for a big-endian CPU? And if yes, how are you finding IBM?). That code introduced years ago for a hypothetical feature that never came? Hasta la vista.
 
 
-And the bonus for doing all of this, is not that you sped up at zero cost the build time by a factor of 5, is that if your boss is a tiny bit technical, they'll love seeing PRs deleting thousands of lines of code. And your coworkers as well.
+And the bonus for doing all of this, is not only that you sped up the build time by a factor of 5 with zero downside, is that, if your boss is a tiny bit technical, they'll love seeing PRs deleting thousands of lines of code. And your coworkers as well.
 
 
 ## Linters
