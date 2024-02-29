@@ -238,5 +238,7 @@ So what do I recommend? Well, the good old git submodules and compiling from sou
 - Fetching the dependencies is secure and the remote source is in git. No one is changing that sneakily.
 - It works recursively (i.e.: transitively, for the dependencies of your dependencies)
 
-Compiling each dependency in each submodule can be as simple as `add_subdirectory` with CMake, or `git submodule foreach make` by hand. 
+Compiling each dependency in each submodule can be as simple as `add_subdirectory` with CMake, or `git submodule foreach make` by hand. Example in the wild: Neovim.
 
+Of course, if your dependency graph visualised in Graphviz looks like a Rorschach test, it is not easily doable, but it might be still possible, using a build system like Buck2, which does hybrid local-remote builds, and reuses build artifacts between builds from different users. 
+If you look at the landscape of package managers for compiled languages (Go, Rust, etc), all of them that I know of compile from source. It's the same approach, minus git, plus the automation.
