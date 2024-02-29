@@ -220,7 +220,7 @@ In my experience, upgrading the C++ standard in use in the project can at times 
 
 ## Rewrite in a memory safe language?
 
-I am doing this right now at work, and that deserves an article of its own. Lots of gotchas there as well. Only do this with a very, very compelling reason.
+I am doing this right now at work, and that deserves an article of its own. Lots of gotchas there as well. Only do this with a compelling reason.
 
 
 ## Conclusion

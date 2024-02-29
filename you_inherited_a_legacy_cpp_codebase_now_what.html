@@ -194,7 +194,7 @@ Each sanitizer also has options so it could be useful to inspect them if your pr
 <p>I feel that's the step that's the hardest to timebox because each round of simplification opens new avenues to simplify further. Use your best judgment here and stay on the conservative side. Focus on tangible goals such as security, correctness and performance, and stray away from subjective criteria such as 'clean code'.</p>
 <p>In my experience, upgrading the C++ standard in use in the project can at times help with code simplifications, for example to replace code that manually increments iterators by a <code>for (auto x : items)</code> loop, but remember it's just a means to an end, not an end in itself. If all you need is <code>std::clamp</code>, just write it yourself.</p>
 <h2>Rewrite in a memory safe language?</h2>
-<p>I am doing this right now at work, and that deserves an article of its own. Lots of gotchas there as well. Only do this with a very, very compelling reason.</p>
+<p>I am doing this right now at work, and that deserves an article of its own. Lots of gotchas there as well. Only do this with a compelling reason.</p>
 <h2>Conclusion</h2>
 <p>Well, there you have it. A tangible, step-by-step plan to get of of the hole that's a complex legacy C++ codebase. I just finished going through that at work on a project, and it's become much more bearable to work on it now. I have seen coworkers, who previously would not have come within a 10 mile radius of the codebase, now make meaningful contributions. So it feels great.</p>
 <p>There are important topics that I wanted to mention but in the end did not, such as fuzzing, dependency scanning for vulnerabilities, etc. Maybe for the next article!</p>
