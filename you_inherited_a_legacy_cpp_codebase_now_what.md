@@ -76,7 +76,6 @@ And here's what to avoid, again totally, super duper fictional, never-really-hap
 - We are going to rewrite the project from scratch, it should take a few week tops
 - We are going to improve the codebase, but no idea when it will be done or even what we are going to do exactly
 
----
 
 Ok, let's say that now you have buy-in from everyone that matters, let's go over the process:
 - Every change is small and incremental. The app works before and works after. Tests pass, linters are happy, nothing was bypassed to apply the change (exceptions do happen but that's what they are, exceptional)
