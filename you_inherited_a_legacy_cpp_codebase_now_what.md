@@ -23,6 +23,8 @@ So here's an overview of the steps to take:
 5. If you can, contemplate rewrite some parts in a memory safe language
 
 
+The overarching goal is exerting the least amount of effort to get the project in an acceptable state in terms of security, developer experience, correctness, and performance. It's crucial to always keep that in mind. It's not about 'clean code', using the new hotness language features, etc.
+
 Ok, let's dive in!
 
 ## Yeah, it builds!
@@ -74,4 +76,28 @@ Ideally it's one command to build and one for testing. At first it's fine if it'
 The goal is to have a non C++ expert be able to build the code and run the tests without having to ask you anything. 
 
 
-Here some folks would recommend documenting the project layout, the architecture, etc. Since the next step is going to rip out most of it, I'd say don't waste your time now.
+Here some folks would recommend documenting the project layout, the architecture, etc. Since the next step is going to rip out most of it, I'd say don't waste your time now, do that at the end.
+
+
+## Find low hanging fruits to speed up the build and tests
+
+Emphasis on 'low hanging'. No change of the build system, no heroic efforts (I keep repeating that in this article but this is so important. Software engineering needs to be a sustainable practice, not something you burn out of after a few months).
+
+Again, in a typical C++ project, you'd be amazed at how much work the build system is doing without having to do it at all. Try these ideas below and measure if that helps or not:
+- Building and running tests *of your dependencies*. In a project which was using `unittest++` as a test framework, built as a cmake subproject, I discovered that the default behavior was to build the tests of the test framework, and run them, every time! That's crazy. Usually there is a CMake variable or such to opt-out of this.
+- Building and running example programs *of your dependencies*. Same thing as above, the culprit that time was `mbedtls`. Again, setting a CMake variable to opt-out of that solved it.
+- Building and running the tests of your project by default when it's being included as a subproject of another parent project. Yeah the default behavior we just laughed at in our dependencies? It turns out we're doing the same to other projects! I am no CMake expert but it seems that there is no standard way to exclude tests in a build. So I recommend adding a build variable called `MYPROJECT_TEST` unset by default and only build and run tests when it is set. Typically only developers working on the project directly will set it. Same with examples, generating documentation, etc.
+- Building all of a third-party dependency when you only need a small part of it: `mbedtls` comes to mind as a good citizen here since it exposes many compile-time flags to toggle lots of parts you might not need. Beware of the defaults, and only build what you need!
+- Wrong dependencies listed for a target leading to rebuilding the world when it does not have to: most build systems have a way to output the dependency graph from their point of view and that can really help diagnose these issues. Nothing feels worse than waiting for minutes or hours for a rebuild when you deep inside now it should have only rebuilt a few files.
+- Experiment with a faster linker: `mold` is one that can dropped in and really help at no cost. However that really depends on how many libraries are being linked, whether that's a bottleneck overall, etc. 
+- Experiment with a different compiler, if you can: I have seen projects where clang is twice as fast as gcc, and others where there is no difference. 
+
+
+Once that's done, here are a few things to additionally try, although the gains are typically much smaller or sometimes negative:
+
+- LTO: off/on/thin
+- Split debug information
+- Make vs Ninja
+- The type of filesystem in use, and tweaking its settings
+
+
