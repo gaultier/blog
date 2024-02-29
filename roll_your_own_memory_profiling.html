@@ -133,29 +133,47 @@ MAPPED_LIBRARIES:
 which uses a different, binary, format) and gives for each of the four
 fields we will record, their sum.</p>
 <p>Then comes one line per entry. Each entry has these four fields that
-the header just gave us a sum of: - <code>in use objects</code>: How
-many objects are ‘live’ i.e. in use on the heap at the time of the
-allocation. Allocating increases its value, freeing decreases it. -
-<code>in use bytes</code>: How many bytes are ‘live’ i.e. in use on the
-heap at the time of the allocation. Allocating increases its value,
-freeing decreases it. - <code>space objects</code>: How many objects
-have been allocated since the start of the program. It is not affected
-by freeing memory, it only increases. - <code>space bytes</code>: How
-many bytes have been allocated since the start of the program. It is not
-affected by freeing memory, it only increases.</p>
-<p>So when we allocate an object e.g. <code>new(Foo)</code> in C++: -
-<code>in use objects</code> and <code>space objects</code> increment by
-1 - <code>in use bytes</code> and <code>space bytes</code> increment by
-<code>sizeof(Foo)</code></p>
-<p>When we allocate an array of N elements of type <code>Foo</code>: -
-<code>in use objects</code> and <code>space objects</code> increment by
-N - <code>in use bytes</code> and <code>space bytes</code> increment by
-<code>N * sizeof(Foo)</code></p>
-<p>When we free an object: - <code>in use objects</code> decrements by 1
-- <code>in use bytes</code> decrements by <code>sizeof(Foo)</code></p>
-<p>When we free an array of N elements of type <code>Foo</code>: -
-<code>in use objects</code> decrements by N - <code>in use bytes</code>
-decrements by <code>N * sizeof(Foo)</code></p>
+the header just gave us a sum of:</p>
+<ul>
+<li><code>in use objects</code>: How many objects are ‘live’ i.e. in use
+on the heap at the time of the allocation. Allocating increases its
+value, freeing decreases it.</li>
+<li><code>in use bytes</code>: How many bytes are ‘live’ i.e. in use on
+the heap at the time of the allocation. Allocating increases its value,
+freeing decreases it.</li>
+<li><code>space objects</code>: How many objects have been allocated
+since the start of the program. It is not affected by freeing memory, it
+only increases.</li>
+<li><code>space bytes</code>: How many bytes have been allocated since
+the start of the program. It is not affected by freeing memory, it only
+increases.</li>
+</ul>
+<p>So when we allocate an object e.g. <code>new(Foo)</code> in C++:</p>
+<ul>
+<li><code>in use objects</code> and <code>space objects</code> increment
+by 1</li>
+<li><code>in use bytes</code> and <code>space bytes</code> increment by
+<code>sizeof(Foo)</code></li>
+</ul>
+<p>When we allocate an array of N elements of type <code>Foo</code>:</p>
+<ul>
+<li><code>in use objects</code> and <code>space objects</code> increment
+by N</li>
+<li><code>in use bytes</code> and <code>space bytes</code> increment by
+<code>N * sizeof(Foo)</code></li>
+</ul>
+<p>When we free an object:</p>
+<ul>
+<li><code>in use objects</code> decrements by 1</li>
+<li><code>in use bytes</code> decrements by
+<code>sizeof(Foo)</code></li>
+</ul>
+<p>When we free an array of N elements of type <code>Foo</code>:</p>
+<ul>
+<li><code>in use objects</code> decrements by N</li>
+<li><code>in use bytes</code> decrements by
+<code>N * sizeof(Foo)</code></li>
+</ul>
 <p>These 4 dimensions are really useful to spot memory leaks
 (<code>in use objects</code> and <code>in use bytes</code> increase over
 time), peak memory usage (<code>space bytes</code>), whether we are
@@ -273,8 +291,13 @@ MAPPED_LIBRARIES:
 7fff91b43000-7fff91b45000 r-xp 00000000 00:00 0           [vdso]
 ffffffffff600000-ffffffffff601000 --xp 00000000 00:00 0           [vsyscall]</code></pre>
 <p>We see that at the end of the program, we have (looking at the first
-line): - 5 objects in use - 11 bytes in use - 5 objects allocated in
-total - 11 bytes allocated in total</p>
+line):</p>
+<ul>
+<li>5 objects in use</li>
+<li>11 bytes in use</li>
+<li>5 objects allocated in total</li>
+<li>11 bytes allocated in total</li>
+</ul>
 <p>Since we never freed any memory, the <code>in use</code> counters are
 the same as the <code>space</code> counters.</p>
 <p>We have 3 unique call stacks that allocate, in the same order as they

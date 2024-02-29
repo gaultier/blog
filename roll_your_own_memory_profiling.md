@@ -70,24 +70,29 @@ MAPPED_LIBRARIES:
 The first line is a header identifying that this is a heap profile (contrary to a CPU profile which `pprof` can also analyze, which uses a different, binary, format) and gives for each of the four fields we will record, their sum. 
 
 Then comes one line per entry. Each entry has these four fields that the header just gave us a sum of:
+
 - `in use objects`: How many objects are 'live' i.e. in use on the heap at the time of the allocation. Allocating increases its value, freeing decreases it.
 - `in use bytes`: How many bytes are 'live' i.e. in use on the heap at the time of the allocation. Allocating increases its value, freeing decreases it.
 - `space objects`: How many objects have been allocated since the start of the program. It is not affected by freeing memory, it only increases.
 - `space bytes`: How many bytes have been allocated since the start of the program. It is not affected by freeing memory, it only increases.
 
 So when we allocate an object e.g. `new(Foo)` in C++:
+
 - `in use objects` and `space objects` increment by 1 
 - `in use bytes` and `space bytes` increment by `sizeof(Foo)`
 
 When we allocate an array of N elements of type `Foo`:
+
 - `in use objects` and `space objects` increment by N
 - `in use bytes` and `space bytes` increment by `N * sizeof(Foo)`
 
 When we free an object:
+
 - `in use objects` decrements by 1 
 - `in use bytes` decrements by `sizeof(Foo)`
 
 When we free an array of N elements of type `Foo`:
+
 - `in use objects` decrements by N 
 - `in use bytes` decrements by `N * sizeof(Foo)`
 
@@ -204,6 +209,7 @@ ffffffffff600000-ffffffffff601000 --xp 00000000 00:00 0           [vsyscall]
 ```
 
 We see that at the end of the program, we have (looking at the first line):
+
 - 5 objects in use
 - 11 bytes in use
 - 5 objects allocated in total

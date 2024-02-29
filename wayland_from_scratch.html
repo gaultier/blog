@@ -133,18 +133,23 @@ compiled and linked to a GUI application.</p>
 <p>Now, we will not do any of this: we will instead write our own
 serialization and deserialization functions, which is really not a lot
 of work as you will see.</p>
-<p>There are many advantages: - No need to link to external libraries:
-no build system complexities, no dynamic linking issues, and so on. - We
-do not have to use the callback system that <code>libwayland</code>
-requires. - We can use the I/O mechanism we wish to listen to incoming
-messages: blocking, <code>poll</code>, <code>select</code>,
-<code>epoll</code>, <code>io_uring</code>, <code>kqueue</code> on some
-systems, etc. Here, we will use blocking calls for simplicity but the
-world is your oyster. - Easy troubleshooting: 100% of the code is our
-own. - No XML - The protocols we will use are stable so the numeric
-values on the wire should not change underneath us, but in the unlikely
-event they do, we simply have to fix them in our code and compile
-again.</p>
+<p>There are many advantages:</p>
+<ul>
+<li>No need to link to external libraries: no build system complexities,
+no dynamic linking issues, and so on.</li>
+<li>We do not have to use the callback system that
+<code>libwayland</code> requires.</li>
+<li>We can use the I/O mechanism we wish to listen to incoming messages:
+blocking, <code>poll</code>, <code>select</code>, <code>epoll</code>,
+<code>io_uring</code>, <code>kqueue</code> on some systems, etc. Here,
+we will use blocking calls for simplicity but the world is your
+oyster.</li>
+<li>Easy troubleshooting: 100% of the code is our own.</li>
+<li>No XML</li>
+<li>The protocols we will use are stable so the numeric values on the
+wire should not change underneath us, but in the unlikely event they do,
+we simply have to fix them in our code and compile again.</li>
+</ul>
 <p>So at this point you might be thinking: this is going to be so much
 work! Well, not really. Here are <strong>all</strong> of the Wayland
 protocol numeric values we will need, including the extension

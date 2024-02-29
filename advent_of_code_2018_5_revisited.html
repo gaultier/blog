@@ -70,14 +70,17 @@ remain. Once we are finished, we have: <code>bcdZZ</code>.</p>
 <p>The final output is the number of characters in the final string,
 i.e, <code>5</code>.</p>
 </blockquote>
-<p>Immediately, I thought I could do better than my past self: - In the
-Lisp solution, there are lots of allocations and the code is not
-straightforward. - In the Lisp solution, we use multiple external
-dependencies, which usually turn out to be problematic in the long run.
-- In the C solution, there is no allocation apart from the input but we
-do a lot of unnecessary work. - In the C solution, we use
-<code>abs(x) == 32</code> which we could avoid by doing
-<code>x*x == 32*32</code>.</p>
+<p>Immediately, I thought I could do better than my past self:</p>
+<ul>
+<li>In the Lisp solution, there are lots of allocations and the code is
+not straightforward.</li>
+<li>In the Lisp solution, we use multiple external dependencies, which
+usually turn out to be problematic in the long run.</li>
+<li>In the C solution, there is no allocation apart from the input but
+we do a lot of unnecessary work.</li>
+<li>In the C solution, we use <code>abs(x) == 32</code> which we could
+avoid by doing <code>x*x == 32*32</code>.</li>
+</ul>
 <p>This coincided with me listening to an interview from the VLC
 developers saying they wrote hundred of thousand of lines of (multi
 platform!) Assembly code by hand in their new AV1 decoder. I thought

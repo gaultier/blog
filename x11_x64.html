@@ -609,13 +609,17 @@ print_hello:
 <p>Now, try to do <code>sub rsp, 5</code> in <code>print_hello</code>,
 and your program <em>may</em> crash. There is no guarantee, that’s what
 makes it hard to track down.</p>
-<p>My advice is: - Always use the standard function prologs and epilogs
-- Always increment/decrement <code>rsp</code> by (a multiple of) 16 -
-Address items on the stack relative to <code>rsp</code>,
-i.e. <code>mov BYTE [rsp + 4], 'o'</code> - If you have to decrement
-<code>rsp</code> by a value that’s unknown at compile time (similar to
-how <code>alloca()</code> works in C), you can <code>and rsp, -16</code>
-to 16 bytes align it.</p>
+<p>My advice is:</p>
+<ul>
+<li>Always use the standard function prologs and epilogs</li>
+<li>Always increment/decrement <code>rsp</code> by (a multiple of)
+16</li>
+<li>Address items on the stack relative to <code>rsp</code>,
+i.e. <code>mov BYTE [rsp + 4], 'o'</code></li>
+<li>If you have to decrement <code>rsp</code> by a value that’s unknown
+at compile time (similar to how <code>alloca()</code> works in C), you
+can <code>and rsp, -16</code> to 16 bytes align it.</li>
+</ul>
 <p>And you’ll be safe.</p>
 <p>The last point is interesting, see for yourself:</p>
 <pre class="shell"><code>(gdb) p -100 &amp; -16

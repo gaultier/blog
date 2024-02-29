@@ -78,6 +78,7 @@ And here's what to avoid, again totally, super duper fictional, never-really-hap
 
 
 Ok, let's say that now you have buy-in from everyone that matters, let's go over the process:
+
 - Every change is small and incremental. The app works before and works after. Tests pass, linters are happy, nothing was bypassed to apply the change (exceptions do happen but that's what they are, exceptional)
 - If an urgent bug fix has to be made, it can be done as usual, nothing is blocked
 - Every change is a measurable improvement and can be explained and demoed to non experts
@@ -144,6 +145,7 @@ Here some folks would recommend documenting the project layout, the architecture
 Emphasis on 'low hanging'. No change of the build system, no heroic efforts (I keep repeating that in this article but this is so important).
 
 Again, in a typical C++ project, you'd be amazed at how much work the build system is doing without having to do it at all. Try these ideas below and measure if that helps or not:
+
 - Building and running tests *of your dependencies*. In a project which was using `unittest++` as a test framework, built as a CMake subproject, I discovered that the default behavior was to build the tests of the test framework, and run them, every time! That's crazy. Usually there is a CMake variable or such to opt-out of this.
 - Building and running example programs *of your dependencies*. Same thing as above, the culprit that time was `mbedtls`. Again, setting a CMake variable to opt-out of that solved it.
 - Building and running the tests of your project by default when it's being included as a subproject of another parent project. Yeah the default behavior we just laughed at in our dependencies? It turns out we're doing the same to other projects! I am no CMake expert but it seems that there is no standard way to exclude tests in a build. So I recommend adding a build variable called `MYPROJECT_TEST` unset by default and only build and run tests when it is set. Typically only developers working on the project directly will set it. Same with examples, generating documentation, etc.
@@ -172,6 +174,7 @@ Dad, I see dead lines of code.
 I have seen 30%, sometimes more, of a codebase, being completely dead code. That's lines of code you pay for every time you compile, you want to make a refactoring, etc. So let's rip them out.
 
 Here are some ways to go about it:
+
 - The compiler has a bunch of `-Wunused-xxx` warnings, e.g. `-Wunused-function`. They catch some stuff, but not everything. Every single instance of these warnings should be addressed. Usually it's as easy as deleting the code, rebuilding and re-running the tests, done. In rare cases it's a symptom of a bug where the wrong function was called. So I'd be somewhat reluctant to fully automate this step. But if you're confident in your test suite, go for it.
 - Linters can find unused functions or class fields, e.g. `cppcheck`. In my experience there are quite a lot of false positives especially regarding virtual functions in the case of inheritance, but the upside is that these tools absolutely find unused things that the compilers did not notice. So, a good excuse for adding a linter to your arsenal, if not to the CI (more on that later).
 - I have seen more exotic techniques were the linker is instructed to put each function in its own section and print every time a section is removed because it's detected to be unused at link time, but that results in so much noise e.g. about standard library functions being unused, that I have not found that really practical. Others inspect the generated assembly and compare which functions are present there with the source code, but that does not work for virtual functions. So, maybe worth a shot, depending on your case?
@@ -258,6 +261,7 @@ Etc. I have done it myself. And I think this is a terrible idea. Here's why:
 - The packages sometimes do not have the version of the library you need (static or dynamic)
 
 So you're thinking, I know, I will use those fancy new package managers for C++, Conan, vcpkg and the like! Well, not so fast:
+
 - They require external dependencies so your CI becomes more complex and slower (e.g. figuring out which exact version of Python they require, which surely will be different from the version of Python your project requires)
 - They do not have all versions of a package. Example: [Conan and mbedtls](https://conan.io/center/recipes/mbedtls), it jumps from version `2.16.12` to `2.23.0`. What happened to the versions in between? Are they flawed and should not be used? Who knows! Security vulnerabilities are not listed anyways for the versions available! Of course I had a project in the past where I had to use version `2.17`...
 - They might not support some operating systems or architectures you care about (FreeBSD, ARM, etc)

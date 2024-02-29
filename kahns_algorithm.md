@@ -87,6 +87,7 @@ So we need a way to sort the big list of `employee -> manager` links (or 'edges'
 And that's called a topological sort.
 
 A big benefit is that we hit three birds with one stone:
+
 - We detect cycles
 - We have the nodes in an convenient order to insert them in the database
 - Since the algorithm for the topological sort takes as input an adjacency matrix (more on this later), we can easily detect the invalid case of a node having more than one outgoing edge (i.e. more than one manager, i.e. multiple roots).

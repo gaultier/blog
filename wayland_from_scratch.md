@@ -65,6 +65,7 @@ The same goes for extension protocols: they simply are one XML file that is turn
 Now, we will not do any of this: we will instead write our own serialization and deserialization functions, which is really not a lot of work as you will see.
 
 There are many advantages:
+
 - No need to link to external libraries: no build system complexities, no dynamic linking issues, and so on.
 - We do not have to use the callback system that `libwayland` requires.
 - We can use the I/O mechanism we wish to listen to incoming messages: blocking, `poll`, `select`, `epoll`, `io_uring`, `kqueue` on some systems, etc. Here, we will use blocking calls for simplicity but the world is your oyster.

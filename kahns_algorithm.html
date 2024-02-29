@@ -129,12 +129,16 @@ parlance), to insert them in the right order. First we insert the CEO,
 who reports to no one. Then we insert the employees directly reporting
 to the CEO. Then the employees reporting to those. Etc.</p>
 <p>And that’s called a topological sort.</p>
-<p>A big benefit is that we hit three birds with one stone: - We detect
-cycles - We have the nodes in an convenient order to insert them in the
-database - Since the algorithm for the topological sort takes as input
-an adjacency matrix (more on this later), we can easily detect the
-invalid case of a node having more than one outgoing edge (i.e. more
-than one manager, i.e. multiple roots).</p>
+<p>A big benefit is that we hit three birds with one stone:</p>
+<ul>
+<li>We detect cycles</li>
+<li>We have the nodes in an convenient order to insert them in the
+database</li>
+<li>Since the algorithm for the topological sort takes as input an
+adjacency matrix (more on this later), we can easily detect the invalid
+case of a node having more than one outgoing edge (i.e. more than one
+manager, i.e. multiple roots).</li>
+</ul>
 <p>From now one, I will use the graph of employees (where
 <code>Zoe</code> has two managers) as example since that’s a possible
 input to our API and we need to detect this case.</p>
