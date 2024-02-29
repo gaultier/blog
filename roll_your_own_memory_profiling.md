@@ -31,15 +31,14 @@ Another good reason to do this, is when the system's `malloc` comes with some fo
 >  If you spot an error, please open a [Github issue](https://github.com/gaultier/blog)!
 
 **Table of Contents**
--   [Roll your own memory profiling: it's actually not
-    hard](#roll-your-own-memory-profiling-its-actually-not-hard)
-    -   [Pprof](#pprof)
-    -   [The text format](#the-text-format)
-    -   [Generating a `pprof` profile](#generating-a-pprof-profile)
-    -   [Variations and limitations](#variations-and-limitations)
-    -   [Alternatives](#alternatives)
-    -   [Conclusion](#conclusion)
-    -   [Addendum: the full code](#addendum-the-full-code)
+
+-   [Pprof](#pprof)
+-   [The text format](#the-text-format)
+-   [Generating a `pprof` profile](#generating-a-pprof-profile)
+-   [Variations and limitations](#variations-and-limitations)
+-   [Alternatives](#alternatives)
+-   [Conclusion](#conclusion)
+-   [Addendum: the full code](#addendum-the-full-code)
 
 ## Pprof
 

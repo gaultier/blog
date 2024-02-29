@@ -1,6 +1,7 @@
 # Cycle detection in graphs does not have to be hard: A lesser known, simple way with Kahn's algorithm
 
 **Table of Contents**
+
 - [Introduction](#introduction)
 - [The database](#the-database)
 - [Topological sort](#topological-sort)

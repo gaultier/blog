@@ -9,5 +9,5 @@ all:
 
 %.html: %.md header.html footer.html
 	cat header.html > $@
-	cmark --unsafe $< >> $@
+	pandoc --toc $< >> $@
 	cat footer.html >> $@

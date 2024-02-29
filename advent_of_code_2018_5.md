@@ -17,13 +17,12 @@ it was [already done better than I can](http://blog.klipse.tech/scheme/2016/09/1
 
 **Table of Contents**
 
-- [Getting started with Scheme by solving an Advent of Code 2018 challenge](#getting-started-with-scheme-by-solving-an-advent-of-code-2018-challenge)
-    - [The problem](#the-problem)
-    - [Working with the REPL to iteratively close in on a solution](#working-with-the-repl-to-iteratively-close-in-on-a-solution)
-        - [A small detour: pattern matching](#a-small-detour-pattern-matching)
-        - [Using pattern matching to solve our problem](#using-pattern-matching-to-solve-our-problem)
-    - [The final solution](#the-final-solution)
-    - [Conclusion](#conclusion)
+- [The problem](#the-problem)
+- [Working with the REPL to iteratively close in on a solution](#working-with-the-repl-to-iteratively-close-in-on-a-solution)
+    - [A small detour: pattern matching](#a-small-detour-pattern-matching)
+    - [Using pattern matching to solve our problem](#using-pattern-matching-to-solve-our-problem)
+- [The final solution](#the-final-solution)
+- [Conclusion](#conclusion)
 
  
 ## The problem

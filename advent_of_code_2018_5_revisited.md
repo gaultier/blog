@@ -1,15 +1,14 @@
 # Optimizing an Advent of Code solution in assembly
 
 **Table of Contents**
--   [Optimizing a solution for Advent of Code 2018 challenge in
-    assembly](#optimizing-a-solution-for-advent-of-code-2018-challenge-in-assembly)
-    -   [The new solution](#the-new-solution)
-    -   [The x86_64 implementation](#the-x86_64-implementation)
-    -   [Benchmarking](#benchmarking)
-    -   [Learnings](#learnings)
-    -   [Appendix: The full code](#appendix-the-full-code)
-        -   [The old C implementation](#the-old-c-implementation)
-        -   [The x64 implementation](#the-x64-implementation)
+
+-   [The new solution](#the-new-solution)
+-   [The x86_64 implementation](#the-x86_64-implementation)
+-   [Benchmarking](#benchmarking)
+-   [Learnings](#learnings)
+-   [Appendix: The full code](#appendix-the-full-code)
+    -   [The old C implementation](#the-old-c-implementation)
+    -   [The x64 implementation](#the-x64-implementation)
 
 *If you spot an error, please open a [Github issue](https://github.com/gaultier/blog)!*
 
