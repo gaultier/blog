@@ -12,7 +12,7 @@ Well, fear not, because I have experience this many times in numerous places (th
 
 So join me on a recollection of what worked for me and what one should absolutely avoid.
 
-And to be fair to C++, I do not hate it (per se), it just happens to be one of these languages that people abuse and invariably leads to a horrifying mess and poor C++ is just the victim here and the C++ committee will fix it in C++45, worry not, by adding `std::cmake` to the standard library and you'll see how it's absolutely a game changer, and - Ok let's go back to the topic at hand.
+And to be fair to C++, I do not hate it (per se), it just happens to be one of these languages that people abuse and invariably leads to a horrifying mess and poor C++ is just the victim here and the C++ committee will fix it in C++45, worry not, by adding `std::cmake` to the standard library and you'll see how it's absolutely a game changer, and - Ahem, ok let's go back to the topic at hand.
 
 So here's an overview of the steps to take:
 
