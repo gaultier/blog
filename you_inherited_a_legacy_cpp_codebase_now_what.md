@@ -182,11 +182,11 @@ And the bonus for doing all of this, is not only that you sped up the build time
 
 ## Linters
 
-Don't go overboard with linter rules, add a few basic ones, incorporate them in the development life cycle, incrementally tweak the rules and fix the issue that pop up, and move on. Don't try to enable all rules, it's just a rabbit hole of diminishing returns. I have used `clang-tidy` and `cppcheck` in the past, they can be helpful, but also incredibly slow and noisy, so be warned. Having no linter is not an option though.
+Don't go overboard with linter rules, add a few basic ones, incorporate them in the development life cycle, incrementally tweak the rules and fix the issues that pop up, and move on. Don't try to enable all the rules, it's just a rabbit hole of diminishing returns. I have used `clang-tidy` and `cppcheck` in the past, they can be helpful, but also incredibly slow and noisy, so be warned. Having no linter is not an option though.
 
 ## Code formatting
 
-Wait for the appropriate moment where no branches are opened (otherwise people will have horrendous merge conflicts), pick a code style at random, do a one time formatting of the entire codebase (no exceptions), typically with `clang-format`, commit the configuration, done. Don't waste any bit of saliva arguing about the actual code formatting. It only exists to make diffs smaller and avoid arguments, so do not argue about it!
+Wait for the appropriate moment where no branches are active (otherwise people will have horrendous merge conflicts), pick a code style at random, do a one time formatting of the entire codebase (no exceptions), typically with `clang-format`, commit the configuration, done. Don't waste any bit of saliva arguing about the actual code formatting. It only exists to make diffs smaller and avoid arguments, so do not argue about it!
 
 ## Sanitizers
 
@@ -194,7 +194,8 @@ Same as linters, it can be a rabbit hole, unfortunately it's absolutely required
 
 If the compiler you (have to) use to ship the production code does not support sanitizers, you can at least use clang or such when developing and running tests. That's when the work you did on the build system comes in handy, it should be relatively easy to use different compilers.
 
-One thing is for sure: even in the best codebase in the world, with the best coding practices and developers, the second you enable the sanitizers, you absolutely will uncover horrifying bugs and memory leaks that went undetected for years. So do it. Unfortunately fixing these can require a lot of work and refactorings so you might have to tweak the options of each sanitizer.
+One thing is for sure: even in the best codebase in the world, with the best coding practices and developers, the second you enable the sanitizers, you absolutely will uncover horrifying bugs and memory leaks that went undetected for years. So do it. Be warned that fixing these can require a lot of work and refactorings. 
+Each sanitizer also has options so it could be useful to inspect them if your project is a special snowflake.
 
 One last thing: ideally, all third-party dependencies should also be compiled with the sanitizers enabled when running tests, to spot [issues](https://github.com/rxi/microui/pull/67) in them as well.
 
