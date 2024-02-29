@@ -13,7 +13,7 @@
 - <span class="date">December 1 2023</span> [Solving a problem with Gnuplot, the programming language (not the plotting software!)](/blog/gnuplot_lang.html)
 - <span class="date">December 15 2023</span> [This blog now has an Atom feed, and yours should probably too](/blog/feed.html)
 - <span class="date">February 23 2023</span> [Quick and easy PNG image size reduction](/blog/image_size_reduction.html)
-- <span class="date">February 29 2023</span> [You inherited a legacy C++ codebase, now what?](/blog/you_inherited_a_legacy_cpp_codebase_now_what.html)
+- <span class="date">February 29 2023</span> [You've just inherited a legacy C++ codebase, now what?](/blog/you_inherited_a_legacy_cpp_codebase_now_what.html)
 
 </div>
 

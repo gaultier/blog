@@ -36,10 +36,10 @@ window.addEventListener("load", (event) => {
 </div>
 <div class="body">
 
-<h1>You inherited a legacy C++ codebase, now what?</h1>
-<p>You minded your own business, and out of nowhere something fell on your lap. Maybe you started a new job, or perhaps changed teams, or someone experienced just left.</p>
+<h1>You've just inherited a legacy C++ codebase, now what?</h1>
+<p>You were minding your own business, and out of nowhere something fell on your lap. Maybe you started a new job, or perhaps changed teams, or someone experienced just left.</p>
 <p>And now you are responsible for a C++ codebase. It's big, complex, idiosyncratic; you stare too long at it and it breaks in various interesting ways. In a word, legacy.</p>
-<p>But somehow bugs still need to be fixed, the odd feature to be added. In short, you can't just ignore it or better yet nuke it out of existence. It matters. Well not to you per se, but to someone who's paying your salary. So, it matters to you.</p>
+<p>But somehow bugs still need to be fixed, the odd feature to be added. In short, you can't just ignore it or better yet nuke it out of existence. It matters. At least to someone who's paying your salary. So, it matters to you.</p>
 <p>What do you do now?</p>
 <p>Well, fear not, because I have experience this many times in numerous places (the snarky folks in the back will mutter: what C++ codebase isn't exactly like I described above), and there is a way out, that's not overly painful and will make you able to actually fix the bugs, add features, and, one can dream, even rewrite it some day.</p>
 <p>So join me on a recollection of what worked for me and what one should absolutely avoid.</p>
@@ -197,7 +197,7 @@ Each sanitizer also has options so it could be useful to inspect them if your pr
 <h2>Rewrite in a memory safe language?</h2>
 <p>I am doing this right now at work, and that deserves an article of its own. Lots of gotchas there as well. Only do this with a compelling reason.</p>
 <h2>Conclusion</h2>
-<p>Well, there you have it. A tangible, step-by-step plan to get of of the hole that's a complex legacy C++ codebase. I just finished going through that at work on a project, and it's become much more bearable to work on it now. I have seen coworkers, who previously would not have come within a 10 mile radius of the codebase, now make meaningful contributions. So it feels great.</p>
+<p>Well, there you have it. A tangible, step-by-step plan to get out of the finicky situation that's a complex legacy C++ codebase. I have just finished going through that at work on a project, and it's become much more bearable to work on it now. I have seen coworkers, who previously would not have come within a 10 mile radius of the codebase, now make meaningful contributions. So it feels great.</p>
 <p>There are important topics that I wanted to mention but in the end did not, such as fuzzing, dependency scanning for vulnerabilities, etc. Maybe for the next article!</p>
 <p>If you go through this on a project, and you found this article helpful, shoot me an email! It's nice to know that it helped someone.</p>
 <h2>Addendum: Dependency management</h2>
@@ -206,6 +206,8 @@ Each sanitizer also has options so it could be useful to inspect them if your pr
 <pre><code>On Ubuntu 20.04: `sudo apt install [100 lines of packages]`
 
 On Fedora: `sudo dnf [whatever, I never used Fedora :D ]`
+
+On macOS: `brew install [100 lines of packages named slightly differently]`
 </code></pre>
 <p>Etc. I have done it myself. And I think this is a terrible idea. Here's why:</p>
 <ul>
@@ -220,26 +222,27 @@ On Fedora: `sudo dnf [whatever, I never used Fedora :D ]`
 </ul>
 <p>So you're thinking, I know, I will use those fancy new package managers for C++, Conan, vcpkg and the like! Well, not so fast:</p>
 <ul>
-<li>They require external dependencies so your CI becomes more complex and slower</li>
-<li>They do not have all versions of a package. Example: <a href="https://conan.io/center/recipes/mbedtls">Conan and mbedtls</a>, it jumps from version <code>2.16.12</code> to <code>2.23.0</code>. What happened to the versions in between? Are they flawed and should not be used? Who knows! Security vulnerabilities are not listed anyways for the versions available! Of course I had a project in the past where I had to use version <code>2.17</code> or something...</li>
+<li>They require external dependencies so your CI becomes more complex and slower (e.g. figuring out which exact version of Python they require, which surely will be different from the version of Python your project requires)</li>
+<li>They do not have all versions of a package. Example: <a href="https://conan.io/center/recipes/mbedtls">Conan and mbedtls</a>, it jumps from version <code>2.16.12</code> to <code>2.23.0</code>. What happened to the versions in between? Are they flawed and should not be used? Who knows! Security vulnerabilities are not listed anyways for the versions available! Of course I had a project in the past where I had to use version <code>2.17</code>...</li>
 <li>They might not support some operating systems or architectures you care about (FreeBSD, ARM, etc)</li>
 </ul>
 <p>I mean, if you have a situation where they work for you, that's great, it's definitely an improvement over using system packages in my mind. It's just that I never encountered (so far) a project where I could make use of them - there was always some blocker.</p>
 <p>So what do I recommend? Well, the good old git submodules and compiling from source approach. It's cumbersome, yes, but also:</p>
 <ul>
-<li>It's simple, dead simple</li>
-<li>It's better than manually vendored because of git</li>
+<li>It's dead simple</li>
+<li>It's better than manually vendoring because git has the history and the diff functionalities</li>
 <li>You know exactly, down to the commit, which version of the dependency is in use</li>
-<li>Upgrading the version of a single dependency is trivial</li>
+<li>Upgrading the version of a single dependency is trivial, just run <code>git checkout</code></li>
 <li>It works on every platform</li>
 <li>You get to choose exactly the compilation flags, compiler, etc to build all the dependencies. And you can even tailor it per dependency!</li>
 <li>Developers know it already even if they have no C++ experience</li>
 <li>Fetching the dependencies is secure and the remote source is in git. No one is changing that sneakily.</li>
 <li>It works recursively (i.e.: transitively, for the dependencies of your dependencies)</li>
 </ul>
-<p>Compiling each dependency in each submodule can be as simple as <code>add_subdirectory</code> with CMake, or <code>git submodule foreach make</code> by hand. Example in the wild: Neovim.</p>
-<p>Of course, if your dependency graph visualized in Graphviz looks like a Rorschach test, it is not easily doable, but it might be still possible, using a build system like Buck2, which does hybrid local-remote builds, and reuses build artifacts between builds from different users.
-If you look at the landscape of package managers for compiled languages (Go, Rust, etc), all of them that I know of compile from source. It's the same approach, minus git, plus the automation.</p>
+<p>Compiling each dependency in each submodule can be as simple as <code>add_subdirectory</code> with CMake, or <code>git submodule foreach make</code> by hand.</p>
+<p>If submodules are really not an option, an alternative is to still compile from source but do it by hand, with one script, that fetches each dependency and builds it. Example in the wild: Neovim.</p>
+<p>Of course, if your dependency graph visualized in Graphviz looks like a Rorschach test and has to build thousands of dependencies, it is not easily doable, but it might be still possible, using a build system like Buck2, which does hybrid local-remote builds, and reuses build artifacts between builds from different users.</p>
+<p>If you look at the landscape of package managers for compiled languages (Go, Rust, etc), all of them that I know of compile from source. It's the same approach, minus git, plus the automation.</p>
 
 <blockquote>
   <p>If you liked this article and you want to support me, and can afford it: <a href="https://paypal.me/philigaultier?country.x=DE&locale.x=en_US">Donate</a></p>

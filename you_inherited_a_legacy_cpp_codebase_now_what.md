@@ -1,10 +1,10 @@
-# You inherited a legacy C++ codebase, now what?
+# You've just inherited a legacy C++ codebase, now what?
 
-You minded your own business, and out of nowhere something fell on your lap. Maybe you started a new job, or perhaps changed teams, or someone experienced just left.
+You were minding your own business, and out of nowhere something fell on your lap. Maybe you started a new job, or perhaps changed teams, or someone experienced just left.
 
 And now you are responsible for a C++ codebase. It's big, complex, idiosyncratic; you stare too long at it and it breaks in various interesting ways. In a word, legacy. 
 
-But somehow bugs still need to be fixed, the odd feature to be added. In short, you can't just ignore it or better yet nuke it out of existence. It matters. Well not to you per se, but to someone who's paying your salary. So, it matters to you. 
+But somehow bugs still need to be fixed, the odd feature to be added. In short, you can't just ignore it or better yet nuke it out of existence. It matters. At least to someone who's paying your salary. So, it matters to you. 
 
 What do you do now? 
 
@@ -227,7 +227,7 @@ I am doing this right now at work, and that deserves an article of its own. Lots
 
 ## Conclusion
 
-Well, there you have it. A tangible, step-by-step plan to get of of the hole that's a complex legacy C++ codebase. I just finished going through that at work on a project, and it's become much more bearable to work on it now. I have seen coworkers, who previously would not have come within a 10 mile radius of the codebase, now make meaningful contributions. So it feels great.
+Well, there you have it. A tangible, step-by-step plan to get out of the finicky situation that's a complex legacy C++ codebase. I have just finished going through that at work on a project, and it's become much more bearable to work on it now. I have seen coworkers, who previously would not have come within a 10 mile radius of the codebase, now make meaningful contributions. So it feels great.
 
 There are important topics that I wanted to mention but in the end did not, such as fuzzing, dependency scanning for vulnerabilities, etc. Maybe for the next article!
 
@@ -243,6 +243,8 @@ There's a hotly debated topic that I have so far careful avoided and that's depe
 On Ubuntu 20.04: `sudo apt install [100 lines of packages]`
 
 On Fedora: `sudo dnf [whatever, I never used Fedora :D ]`
+
+On macOS: `brew install [100 lines of packages named slightly differently]`
 ```
 
 Etc. I have done it myself. And I think this is a terrible idea. Here's why:
@@ -257,8 +259,8 @@ Etc. I have done it myself. And I think this is a terrible idea. Here's why:
 - The packages sometimes do not have the version of the library you need (static or dynamic)
 
 So you're thinking, I know, I will use those fancy new package managers for C++, Conan, vcpkg and the like! Well, not so fast:
-- They require external dependencies so your CI becomes more complex and slower
-- They do not have all versions of a package. Example: [Conan and mbedtls](https://conan.io/center/recipes/mbedtls), it jumps from version `2.16.12` to `2.23.0`. What happened to the versions in between? Are they flawed and should not be used? Who knows! Security vulnerabilities are not listed anyways for the versions available! Of course I had a project in the past where I had to use version `2.17` or something...
+- They require external dependencies so your CI becomes more complex and slower (e.g. figuring out which exact version of Python they require, which surely will be different from the version of Python your project requires)
+- They do not have all versions of a package. Example: [Conan and mbedtls](https://conan.io/center/recipes/mbedtls), it jumps from version `2.16.12` to `2.23.0`. What happened to the versions in between? Are they flawed and should not be used? Who knows! Security vulnerabilities are not listed anyways for the versions available! Of course I had a project in the past where I had to use version `2.17`...
 - They might not support some operating systems or architectures you care about (FreeBSD, ARM, etc)
 
 I mean, if you have a situation where they work for you, that's great, it's definitely an improvement over using system packages in my mind. It's just that I never encountered (so far) a project where I could make use of them - there was always some blocker.
@@ -266,17 +268,20 @@ I mean, if you have a situation where they work for you, that's great, it's defi
 
 So what do I recommend? Well, the good old git submodules and compiling from source approach. It's cumbersome, yes, but also:
 
-- It's simple, dead simple
-- It's better than manually vendored because of git
+- It's dead simple
+- It's better than manually vendoring because git has the history and the diff functionalities
 - You know exactly, down to the commit, which version of the dependency is in use
-- Upgrading the version of a single dependency is trivial
+- Upgrading the version of a single dependency is trivial, just run `git checkout`
 - It works on every platform
 - You get to choose exactly the compilation flags, compiler, etc to build all the dependencies. And you can even tailor it per dependency!
 - Developers know it already even if they have no C++ experience
 - Fetching the dependencies is secure and the remote source is in git. No one is changing that sneakily.
 - It works recursively (i.e.: transitively, for the dependencies of your dependencies)
 
-Compiling each dependency in each submodule can be as simple as `add_subdirectory` with CMake, or `git submodule foreach make` by hand. Example in the wild: Neovim.
+Compiling each dependency in each submodule can be as simple as `add_subdirectory` with CMake, or `git submodule foreach make` by hand. 
 
-Of course, if your dependency graph visualized in Graphviz looks like a Rorschach test, it is not easily doable, but it might be still possible, using a build system like Buck2, which does hybrid local-remote builds, and reuses build artifacts between builds from different users. 
+If submodules are really not an option, an alternative is to still compile from source but do it by hand, with one script, that fetches each dependency and builds it. Example in the wild: Neovim.
+
+Of course, if your dependency graph visualized in Graphviz looks like a Rorschach test and has to build thousands of dependencies, it is not easily doable, but it might be still possible, using a build system like Buck2, which does hybrid local-remote builds, and reuses build artifacts between builds from different users. 
+
 If you look at the landscape of package managers for compiled languages (Go, Rust, etc), all of them that I know of compile from source. It's the same approach, minus git, plus the automation.
