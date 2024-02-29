@@ -231,7 +231,7 @@ I am doing this right now at work, and that deserves an article of its own. Lots
 
 Well, there you have it. A tangible, step-by-step plan to get out of the finicky situation that's a complex legacy C++ codebase. I have just finished going through that at work on a project, and it's become much more bearable to work on it now. I have seen coworkers, who previously would not have come within a 10 mile radius of the codebase, now make meaningful contributions. So it feels great.
 
-There are important topics that I wanted to mention but in the end did not, such as fuzzing, dependency scanning for vulnerabilities, etc. Maybe for the next article!
+There are important topics that I wanted to mention but in the end did not, such as the absolute necessity of being able to run the code in a debugger locally, fuzzing, dependency scanning for vulnerabilities, etc. Maybe for the next article!
 
 If you go through this on a project, and you found this article helpful, shoot me an email! It's nice to know that it helped someone.
 
