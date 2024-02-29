@@ -27,6 +27,20 @@ The overarching goal is exerting the least amount of effort to get the project i
 
 Ok, let's dive in!
 
+## Get buy-in
+
+You thought I was going to compare the different sanitizers, compile flags, or build systems? No sir, before we do any work, we talk to people. Crazy, right?
+
+Software engineering needs to be a sustainable practice, not something you burn out of after a few months or years. We cannot do this after hours, on a death march, or even, alone! We need to convince people to support this effort, have them understand what we are doing, and why. And that encompasses everyone: your boss, your coworkers, even non-technical folks. 
+
+All of this only means: explain in layman terms the problem with a few simple facts, the proposed solution, and a timebox. Simple right? For example (to quote South Park: *All characters and events in this show—even those based on real people—are entirely fictional*):
+- Hey boss,, the last hire took 3 weeks to get the code building on his machine and make his first contribution. Wouldn't it be nice if, with minimal effort, we could make that a few minutes?
+- Hey boss, I put quickly together a simple fuzzing setup ('fuzzing is just inputting random data in the app like a monkey and see what happens'), and it manages to crashe the app 253 times within a few seconds. I wonder what would happen if people try to do that in production with our app?
+- Hey boss, the last few urgent bug fixes took several people and 2 weeks to be deployed in production because the app can only be built by this one build server with this ancient operating system that is has not been supported for 8 years (FreeBSD 9, for the curious) and it kept failing. Oh by the way whenever this server dies we have no way to deploy anymore, like at all. Wouldn't it be nice to be able to build our app on any cheap cloud instance?
+- Hey boss, we had a cryptic bug in production affecting users, it tooks weeks to figure out and fix, and it turns out if was due to undefined behavior ('a problem in the code that's very hard to notice'), and when I run this industry standard linter ('a program that finds issues in the code'), it detects the issue instantly. We should run that tool every time we make a change!
+- Hey boss, the yearly audit is coming up and the last one took 7 months to pass because the auditor was not happy with what they saw, I have ideas to make that smoother.
+
+
 ## Yeah, it builds!
 
 You'd be amazed at how many C++ codebase in the wild that are a core part of a successful product earning millions and they basically do not compile. Well, if all the stars are aligned they do. But that's not what I'm talking about. I'm talking about reliably, consistently building on all platforms you support. No fuss, no 'I finally got it building after 3 weeks of hair-pulling' (this brings back some memories). It just works(tm).
@@ -81,7 +95,7 @@ Here some folks would recommend documenting the project layout, the architecture
 
 ## Find low hanging fruits to speed up the build and tests
 
-Emphasis on 'low hanging'. No change of the build system, no heroic efforts (I keep repeating that in this article but this is so important. Software engineering needs to be a sustainable practice, not something you burn out of after a few months).
+Emphasis on 'low hanging'. No change of the build system, no heroic efforts (I keep repeating that in this article but this is so important).
 
 Again, in a typical C++ project, you'd be amazed at how much work the build system is doing without having to do it at all. Try these ideas below and measure if that helps or not:
 - Building and running tests *of your dependencies*. In a project which was using `unittest++` as a test framework, built as a cmake subproject, I discovered that the default behavior was to build the tests of the test framework, and run them, every time! That's crazy. Usually there is a CMake variable or such to opt-out of this.
