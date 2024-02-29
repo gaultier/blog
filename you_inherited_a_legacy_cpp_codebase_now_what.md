@@ -27,6 +27,8 @@ The overarching goal is exerting the least amount of effort to get the project i
 
 Ok, let's dive in!
 
+*By the way, everything here applies to a pure C codebase or a mixed C and C++ codebase, so if that's you, keep reading!*
+
 **Table of contents**
 -   [You inherited a legacy C++ codebase, now
     what?](#you-inherited-a-legacy-c-codebase-now-what)
