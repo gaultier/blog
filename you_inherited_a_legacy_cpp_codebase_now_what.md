@@ -199,6 +199,44 @@ I am doing this right now at work, and that deserves an article of its own. Lots
 
 ## Addendum: Dependency management
 
-There's a hotly debated topic that I have
+*This section is very subjective, it's just my strong, biased opinion.*
 
+There's a hotly debated topic that I have so far carefull avoided and that's dependency management. So in short, in C++ there's none. Most people resort to using the system package manager, it's easy to notice because their README looks like this:
+
+```
+On Ubuntu 20.04: `sudo apt install [100 lines of packages]`
+
+On Fedora: `sudo dnf [whatever, I never used Fedora :D ]`
+```
+
+Etc. I have done it myself. And I think this is a terrible idea. Here's why:
+- The installation instructions, as we've seen above, are OS and distribution dependent. Worse, they're dependent on the version of the distribution. I remember a project that took months to move from Ubuntu 20.04 to Ubuntu 22.04, because they ship different versions of the packages (if they ship the same packages at all), and so upgrading the distribution also means upgrading the 100 dependencies of your project at the same time. Obviously that's a very bad idea. You want to upgrade one dependency at a time, ideally.
+- There's always a third-party dependency that has no package and you have to build it from source anyway.
+- The packages are never built with the flags you want. Fedora and Ubuntu have debated for years whether to build packaged with the frame pointer enabled (they finally do since very recently). Remember the section about sanitizers? How are you going to get dependencies with sanitizer enabled? It's not going to happen. But ther are way more examples: LTO, `-march`, debug information, etc. Or they were built with a different C++ compiler version from the one you are using and they broke the C++ ABI between the two.
+- You want to easily see the source of the dependency when auditing, developing, debugging, etc, *for the version you are currently using*.
+- You want to be able to patch a dependency easily if you encounter a bug, and rebuild easily without having to change the build system extensively
+- You never get the exact same version of a package across systems, e.g. when developer Alice is on macOS, Bob on Ubuntu and the production system on FreeBSD. So you have weird discrepancies you cannot reproduce and that's annoying.
+- Corrolary of the point above: You don't know exactly which version(s) you are using across sytems and it's hard to produce a Bill of Material (BOM) in an automated fashion, which is required (or going to be required very soon? Anyway it's a good idea to have it) in some fields.
+- The packages sometimes do not have the version of the library you need (static or dynamic)
+
+So you're thinking, I know, I will use those fancy new package managers for C++, Conan, vcpkg and the like! Well, not so fast:
+- They require external dependencies so your CI becomes more complex and slower
+- They do not have all versions of a package. Example: [Conan and mbedtls](https://conan.io/center/recipes/mbedtls), it jumps from version `2.16.12` to `2.23.0`. What happened to the versions in between? Are they flawed and should not be used? Who knows! Security vulnerabilities are not listed anyways for the versions available! Of course I had a project in the past where I had to use version `2.17` or something...
+- They might not support some operating systems or architectures you care about (FreeBSD, ARM, etc)
+
+I mean, if you have a situation where they work for you, that's great, it's definitely an improvement over using system packages in my mind. It's just that I never encountered (so far) a project where I could make use of them - there was always some blocker.
+
+
+So what do I recommend? Well, the good old git submodules and compiling from source approach. It's cumbersome, yes, but also:
+- It's simple, dead simple
+- It's better than manually vendored because of git
+- You know exactly, down to the commit, which version of the dependency is in use
+- Upgrading the version of a single dependency is trivial
+- It works on every platform
+- You get to choose exactly the compilation flags, compiler, etc to build all the dependencies. And you can even tailor it per dependency!
+- Developers know it already even if they have no C++ experience
+- Fetching the dependencies is secure and the remote source is in git. No one is changing that sneakily.
+- It works recursively (i.e.: transitively, for the dependencies of your dependencies)
+
+Compiling each dependency in each submodule can be as simple as `add_subdirectory` with CMake, or `git submodule foreach make` by hand. 
 
