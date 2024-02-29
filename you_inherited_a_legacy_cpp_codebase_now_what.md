@@ -31,15 +31,35 @@ Ok, let's dive in!
 
 You thought I was going to compare the different sanitizers, compile flags, or build systems? No sir, before we do any work, we talk to people. Crazy, right?
 
-Software engineering needs to be a sustainable practice, not something you burn out of after a few months or years. We cannot do this after hours, on a death march, or even, alone! We need to convince people to support this effort, have them understand what we are doing, and why. And that encompasses everyone: your boss, your coworkers, even non-technical folks. 
+Software engineering needs to be a sustainable practice, not something you burn out of after a few months or years. We cannot do this after hours, on a death march, or even, alone! We need to convince people to support this effort, have them understand what we are doing, and why. And that encompasses everyone: your boss, your coworkers, even non-technical folks. And who knows, maybe you'll go on vacation and return to see that people are continuing this effort when you're out of office.
 
 All of this only means: explain in layman terms the problem with a few simple facts, the proposed solution, and a timebox. Simple right? For example (to quote South Park: *All characters and events in this show—even those based on real people—are entirely fictional*):
-- Hey boss,, the last hire took 3 weeks to get the code building on his machine and make his first contribution. Wouldn't it be nice if, with minimal effort, we could make that a few minutes?
-- Hey boss, I put quickly together a simple fuzzing setup ('fuzzing is just inputting random data in the app like a monkey and see what happens'), and it manages to crashe the app 253 times within a few seconds. I wonder what would happen if people try to do that in production with our app?
-- Hey boss, the last few urgent bug fixes took several people and 2 weeks to be deployed in production because the app can only be built by this one build server with this ancient operating system that is has not been supported for 8 years (FreeBSD 9, for the curious) and it kept failing. Oh by the way whenever this server dies we have no way to deploy anymore, like at all. Wouldn't it be nice to be able to build our app on any cheap cloud instance?
-- Hey boss, we had a cryptic bug in production affecting users, it tooks weeks to figure out and fix, and it turns out if was due to undefined behavior ('a problem in the code that's very hard to notice'), and when I run this industry standard linter ('a program that finds issues in the code'), it detects the issue instantly. We should run that tool every time we make a change!
-- Hey boss, the yearly audit is coming up and the last one took 7 months to pass because the auditor was not happy with what they saw, I have ideas to make that smoother.
 
+- Hey boss, the last hire took 3 weeks to get the code building on his machine and make his first contribution. Wouldn't it be nice if, with minimal effort, we could make that a few minutes?
+- Hey boss, I put quickly together a simple fuzzing setup ('inputting random data in the app like a monkey and seeing what happens'), and it manages to crash the app 253 times within a few seconds. I wonder what would happen if people try to do that in production with our app?
+- Hey boss, the last few urgent bug fixes took several people and 2 weeks to be deployed in production because the app can only be built by this one build server with this ancient operating system that has not been supported for 8 years (FreeBSD 9, for the curious) and it kept failing. Oh by the way whenever this server dies we have no way to deploy anymore, like at all. Wouldn't it be nice to be able to build our app on any cheap cloud instance?
+- Hey boss, we had a cryptic bug in production affecting users, it tooks weeks to figure out and fix, and it turns out if was due to undefined behavior ('a problem in the code that's very hard to notice') corrupting data, and when I run this industry standard linter ('a program that finds issues in the code') on our code, it detects the issue instantly. We should run that tool every time we make a change!
+- Hey boss, the yearly audit is coming up and the last one took 7 months to pass because the auditor was not happy with what they saw. I have ideas to make that smoother.
+- Hey boss, there is a security vulnerability in the news right now about being able to decrypt encrypted data and stealing secrets, I think we might be affected, but I don't know for sure because the cryptography library we use has been vendored ('copy-pasted') by hand with some changes on top that were never reviewed by anyone. We should clean that up and setup something so that we get alerted automatically if there is a vulnerability that affects us.
+
+And here's what to avoid, again totally, super duper fictional, never-really-happened-to-me examples:
+
+- We are not using the latest C++ standard, we should halt all work for 2 weeks to upgrade, also I have no idea if something will break because we have no tests
+- I am going to change a lot of things in the project on a separate branch and work on it for months. It's definitely getting merged at some point! (*narrator's voice:* it wasn't)
+- We are going to rewrite the project from scratch, it should take a few week tops
+- We are going to improve the codebase, but no idea when it will be done or even what we are going to do exactly
+
+---
+
+Ok, let's say that now you have buy-in from everyone that matters, let's go over the process:
+- Every change is small and incremental. The app works before and works after. Tests pass, linters are happy, nothing was bypassed to apply the change (exceptions do happen but that's what they are, exceptional)
+- If an urgent bug fix has to be made, it can be done as usual, nothing is blocked
+- Every change is a measurable improvement and can be explained and demoed to non experts
+- If the whole effort has to be suspended or stopped altogether (because of priorities shifting, budget reasons, etc), it's still a net gain overall compared to before starting it (and that gain is in some form *measureable*)
+
+In my experience, with this approach, you keep everyone happy and can do the improvements that you really need to do.
+
+Alright, let's get down to business now!
 
 ## Yeah, it builds!
 
@@ -114,7 +134,7 @@ Once that's done, here are a few things to additionally try, although the gains 
 - Make vs Ninja
 - The type of filesystem in use, and tweaking its settings
 
-Once the iteration cycle feels ok, the code gets to go under the microscope.
+Once the iteration cycle feels ok, the code gets to go under the microscope. If the build takes ages, it's not realistic to want to modify the code.
 
 
 ## Remove all unnecessary code
@@ -135,4 +155,5 @@ Here are some ways to go about it:
 And the bonus for doing all of this, is not that you sped up at zero cost the build time by a factor of 5, is that if your boss is a tiny bit technical, they'll love seeing PRs deleting thousands of lines of code. And your coworkers as well.
 
 
+## 
 
