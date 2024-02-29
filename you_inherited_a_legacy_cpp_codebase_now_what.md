@@ -32,8 +32,7 @@ Ok, let's dive in!
     what?](#you-inherited-a-legacy-c-codebase-now-what)
     -   [Get buy-in](#get-buy-in)
     -   [Yeah, it builds!](#yeah-it-builds)
-        -   [Write down the platforms you
-            support](#write-down-the-platforms-you-support)
+    -   [Write down the platforms you support](#write-down-the-platforms-you-support)
     -   [Get the build working on your
         machine](#get-the-build-working-on-your-machine)
     -   [Get the tests passing on your
@@ -98,7 +97,7 @@ A small aparte here. I used to be really into Karate. We are talking about 3, 4 
 And I carried that with me as a Software Engineer. 'The new feature works' means it works every time. Not one out of five times. And so the build is the same.
 
 
-### Write down the platforms you support
+## Write down the platforms you support
 
 This is so important and not many projects do it. Write in the README (you do have a README, right?). It's just a list of `<architecture>-<operating-system>` pair, e.g. `x86_64-linux` or `aarch64-darwin`, that your codebase officially supports. This is crucial for getting the build working on every one of them but also and we'll see later, removing cruft for platforms you do *not* support.
 

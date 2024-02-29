@@ -60,12 +60,8 @@ window.addEventListener("load", (event) => {
 what?</a>
 <ul>
 <li><a href="#get-buy-in">Get buy-in</a></li>
-<li><a href="#yeah-it-builds">Yeah, it builds!</a>
-<ul>
-<li><a href="#write-down-the-platforms-you-support">Write down the platforms you
-support</a></li>
-</ul>
-</li>
+<li><a href="#yeah-it-builds">Yeah, it builds!</a></li>
+<li><a href="#write-down-the-platforms-you-support">Write down the platforms you support</a></li>
 <li><a href="#get-the-build-working-on-your-machine">Get the build working on your
 machine</a></li>
 <li><a href="#get-the-tests-passing-on-your-machine">Get the tests passing on your
@@ -123,7 +119,7 @@ management</a></li>
 <p>You do not yet master this move. Sometimes you do and sometimes you don't, so you don't. When eating with a spoon, do you miss your mouth one of five times?</p>
 </blockquote>
 <p>And I carried that with me as a Software Engineer. 'The new feature works' means it works every time. Not one out of five times. And so the build is the same.</p>
-<h3>Write down the platforms you support</h3>
+<h2>Write down the platforms you support</h2>
 <p>This is so important and not many projects do it. Write in the README (you do have a README, right?). It's just a list of <code>&lt;architecture&gt;-&lt;operating-system&gt;</code> pair, e.g. <code>x86_64-linux</code> or <code>aarch64-darwin</code>, that your codebase officially supports. This is crucial for getting the build working on every one of them but also and we'll see later, removing cruft for platforms you do <em>not</em> support.</p>
 <p>If you want to get fancy, you can even write down which version of the architecture such as ARMV6 vs ARMv7, etc.</p>
 <p>That helps answer important questions such as:</p>
