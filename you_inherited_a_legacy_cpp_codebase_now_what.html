@@ -54,6 +54,40 @@ window.addEventListener("load", (event) => {
 </ol>
 <p>The overarching goal is exerting the least amount of effort to get the project in an acceptable state in terms of security, developer experience, correctness, and performance. It's crucial to always keep that in mind. It's not about 'clean code', using the new hotness language features, etc.</p>
 <p>Ok, let's dive in!</p>
+<p><strong>Table of contents</strong></p>
+<ul>
+<li><a href="#you-inherited-a-legacy-c-codebase-now-what">You inherited a legacy C++ codebase, now
+what?</a>
+<ul>
+<li><a href="#get-buy-in">Get buy-in</a></li>
+<li><a href="#yeah-it-builds">Yeah, it builds!</a>
+<ul>
+<li><a href="#write-down-the-platforms-you-support">Write down the platforms you
+support</a></li>
+</ul>
+</li>
+<li><a href="#get-the-build-working-on-your-machine">Get the build working on your
+machine</a></li>
+<li><a href="#get-the-tests-passing-on-your-machine">Get the tests passing on your
+machine</a></li>
+<li><a href="#write-down-in-the-readme-how-to-build-and-test-the-application">Write down in the README how to build and test the
+application</a></li>
+<li><a href="#find-low-hanging-fruits-to-speed-up-the-build-and-tests">Find low hanging fruits to speed up the build and
+tests</a></li>
+<li><a href="#remove-all-unnecessary-code">Remove all unnecessary code</a></li>
+<li><a href="#linters">Linters</a></li>
+<li><a href="#code-formatting">Code formatting</a></li>
+<li><a href="#sanitizers">Sanitizers</a></li>
+<li><a href="#add-a-ci-pipeline">Add a CI pipeline</a></li>
+<li><a href="#incremental-code-improvements">Incremental code improvements</a></li>
+<li><a href="#rewrite-in-a-memory-safe-language">Rewrite in a memory safe
+language?</a></li>
+<li><a href="#conclusion">Conclusion</a></li>
+<li><a href="#addendum-dependency-management">Addendum: Dependency
+management</a></li>
+</ul>
+</li>
+</ul>
 <h2>Get buy-in</h2>
 <p>You thought I was going to compare the different sanitizers, compile flags, or build systems? No sir, before we do any work, we talk to people. Crazy, right?</p>
 <p>Software engineering needs to be a sustainable practice, not something you burn out of after a few months or years. We cannot do this after hours, on a death march, or even, alone! We need to convince people to support this effort, have them understand what we are doing, and why. And that encompasses everyone: your boss, your coworkers, even non-technical folks. And who knows, maybe you'll go on vacation and return to see that people are continuing this effort when you're out of office.</p>
