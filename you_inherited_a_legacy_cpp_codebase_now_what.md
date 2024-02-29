@@ -235,7 +235,7 @@ If you go through this on a project, and you found this article helpful, shoot m
 
 *This section is very subjective, it's just my strong, biased opinion.*
 
-There's a hotly debated topic that I have so far careful avoided and that's dependency management. So in short, in C++ there's none. Most people resort to using the system package manager, it's easy to notice because their README looks like this:
+There's a hotly debated topic that I have so far carefully avoided and that's dependency management. So in short, in C++ there's none. Most people resort to using the system package manager, it's easy to notice because their README looks like this:
 
 ```
 On Ubuntu 20.04: `sudo apt install [100 lines of packages]`
