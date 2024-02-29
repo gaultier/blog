@@ -242,7 +242,7 @@ On Ubuntu 20.04: `sudo apt install [100 lines of packages]`
 
 On macOS: `brew install [100 lines of packages named slightly differently]`
 
-Any other: well you're out of luck buddy. I guess you have to pick a mainstream OS and reinstall ¯\_(ツ)_/¯
+Any other: well you're out of luck buddy. I guess you'll have to pick a mainstream OS and reinstall ¯\_(ツ)_/¯
 ```
 
 Etc. I have done it myself. And I think this is a terrible idea. Here's why:
