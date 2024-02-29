@@ -4,7 +4,7 @@
 
      <title>Philippe Gaultier's blog</title>
      <link href="https://gaultier.github.io/blog/"/>
-     <updated>2024-02-29T13:33:53Z</updated>
+     <updated>2024-02-29T13:35:50Z</updated>
      <author>
        <name>Philippe Gaultier</name>
      </author>
@@ -14,7 +14,7 @@
        <title>Getting started with Scheme by solving an Advent of Code 2018 challenge</title>
        <link href="https://gaultier.github.io/blog/advent_of_code_2018_5.html"/>
        <id>urn:uuid:b3c0c1c1-e36f-51fd-9356-99f8686e7329</id>
-       <updated>2023-12-19T13:51:40+01:00</updated>
+       <updated>2024-02-29T14:34:45+01:00</updated>
 			 <published>2019-09-04T08:41:29+02:00</published>
      </entry>
 
@@ -22,7 +22,7 @@
        <title>Optimizing an Advent of Code solution in assembly</title>
        <link href="https://gaultier.github.io/blog/advent_of_code_2018_5_revisited.html"/>
        <id>urn:uuid:371c9129-162e-5d69-af73-c3263a2f7e47</id>
-       <updated>2023-12-19T13:56:33+01:00</updated>
+       <updated>2024-02-29T14:34:45+01:00</updated>
 			 <published>2023-10-05T15:39:43+02:00</published>
      </entry>
 
@@ -54,7 +54,7 @@
        <title>Solving a problem with Gnuplot, the programming language (not the plotting software!)</title>
        <link href="https://gaultier.github.io/blog/gnuplot_lang.html"/>
        <id>urn:uuid:f2d9c4e3-5c3d-57ab-8083-0f56daf1f41e</id>
-       <updated>2023-12-19T13:56:33+01:00</updated>
+       <updated>2024-02-29T14:34:45+01:00</updated>
 			 <published>2023-12-01T15:15:26+01:00</published>
      </entry>
 
@@ -70,7 +70,7 @@
        <title>Cycle detection in graphs does not have to be hard: A lesser known, simple way with Kahn's algorithm</title>
        <link href="https://gaultier.github.io/blog/kahns_algorithm.html"/>
        <id>urn:uuid:665ef523-5c28-5dad-8582-587bfea27205</id>
-       <updated>2023-12-19T13:56:33+01:00</updated>
+       <updated>2024-02-29T14:34:45+01:00</updated>
 			 <published>2023-06-03T09:20:51+02:00</published>
      </entry>
 
@@ -78,7 +78,7 @@
        <title>Roll your own memory profiling: it's actually not hard</title>
        <link href="https://gaultier.github.io/blog/roll_your_own_memory_profiling.html"/>
        <id>urn:uuid:5344c109-864c-5db2-97a9-24834e053169</id>
-       <updated>2023-12-19T13:56:33+01:00</updated>
+       <updated>2024-02-29T14:34:45+01:00</updated>
 			 <published>2023-11-23T11:26:11+01:00</published>
      </entry>
 
@@ -94,7 +94,7 @@
        <title>Learn Wayland by writing a GUI from scratch</title>
        <link href="https://gaultier.github.io/blog/wayland_from_scratch.html"/>
        <id>urn:uuid:6b96e587-14ff-53a9-a142-d20e9c53d970</id>
-       <updated>2023-12-19T13:56:33+01:00</updated>
+       <updated>2024-02-29T14:34:45+01:00</updated>
 			 <published>2023-10-12T13:19:53+02:00</published>
      </entry>
 
@@ -102,7 +102,7 @@
        <title>Learn x86-64 assembly by writing a GUI from scratch</title>
        <link href="https://gaultier.github.io/blog/x11_x64.html"/>
        <id>urn:uuid:fa923100-dd66-531e-bdab-8eed3527960f</id>
-       <updated>2023-12-19T13:56:33+01:00</updated>
+       <updated>2024-02-29T14:34:45+01:00</updated>
 			 <published>2023-05-31T14:24:11+02:00</published>
      </entry>
 
@@ -110,7 +110,7 @@
        <title>You've just inherited a legacy C++ codebase, now what?</title>
        <link href="https://gaultier.github.io/blog/you_inherited_a_legacy_cpp_codebase_now_what.html"/>
        <id>urn:uuid:b9c26cf9-cb85-5ca9-b52f-5cdd535a3b84</id>
-       <updated>2024-02-29T14:18:32+01:00</updated>
+       <updated>2024-02-29T14:34:45+01:00</updated>
 			 <published>2024-02-29T09:30:30+01:00</published>
      </entry>
 </feed>

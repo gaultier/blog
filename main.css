@@ -91,7 +91,7 @@ hr {
 body {
     margin: 0;
     font-family: monospace, sans-serif;
-    font-size: 1.1rem;
+    font-size: 1.3rem;
     margin-bottom: 5rem;
 }
 
@@ -121,7 +121,7 @@ pre {
 }
 
 code {
-    font-size: 1.2rem;
+    font-size: 1.3rem;
     background: #FFF3E0 !important;
     line-height: 1.6;
     padding: 0 .2rem !important;
