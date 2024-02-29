@@ -109,13 +109,15 @@ Dad, I see dead lines of code.
 
 (Get the reference? Well, ok then.)
 
-I have seen 30%, sometimes more, of a codebase, being completely dead. That's lines of code you pay for every time you compile, you want to make a refactoring, etc. So let's rip them out.
+I have seen 30%, sometimes more, of a codebase, being completely dead code. That's lines of code you pay for every time you compile, you want to make a refactoring, etc. So let's rip them out.
 
 Here are some ways to go about it:
 - The compiler has a bunch of `-Wunused-xxx` warnings, e.g. `-Wunused-function`. They catch some stuff, but not all. Every single instance of these warnings should be addressed. Usually it's as easy as deleting the code, rebuilding and re-running the tests, done. In rare cases it's a symptom of a bug where the wrong function was called. So I'd be somewhat relucant to fully automate this step. But if you're confident in your test suite, go for it.
 - Linters can find unused functions or class fields, e.g. `cppcheck`. In my experience there are quite a lot of false positives especially regarding virtual functions in the case of inheritance, but the upside is that these tools absolutely find unused things that the compilers did not notice. So, a good excuse for adding a linter to your arsenal if not to the CI (more on that later).
 - I have seen more exotic techniques were the linker is instructed to put each function in its own section and print everytime a section is removed because it's detected to be unused at link time, but that results in so much noise e.g. about standard library functions being unused, that I have not found that really practical. Others inspect the generated assembly and compare which functions are present there with the source code, but that does not work for virtual functions. So, maybe worth a shot, depending on your case?
-- Remember the list of supported platforms? Yeah, time to put it to use to kill all the code for unsupported platforms. Code trying to support ancient versions of Solaris on a project that exclusively ran on FreeBSD?  Out of the window it goes. Code trying to provide its own random number generator because maybe the platform we run on does not have one (of course it turned out that was never the case)? To the bin. Hundred of lines of code in case POSIX 2001 is not supported, when we only run on modern Linux and macOS? Nuke it.
+- Remember the list of supported platforms? Yeah, time to put it to use to kill all the code for unsupported platforms. Code trying to support ancient versions of Solaris on a project that exclusively ran on FreeBSD?  Out of the window it goes. Code trying to provide its own random number generator because maybe the platform we run on does not have one (of course it turned out that was never the case)? To the bin. Hundred of lines of code in case POSIX 2001 is not supported, when we only run on modern Linux and macOS? Nuke it. Checking if the host CPU is big-endian and swapping bytes if it is? Ciao. That code introduced years ago for a hypothetical feature that never came? Hasta la vista.
+
+
 
 
 
