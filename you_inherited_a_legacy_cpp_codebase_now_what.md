@@ -96,7 +96,7 @@ A small aparte here. I used to be really into Karate. We are talking 3, 4 traini
 
 > You do not yet master this move. Sometimes you do and sometimes you don't, so you don't. When eating with a spoon, do you miss your mouth one out of five times?
 
-And I carried that with me as a Software Engineer. 'The new feature works' means it works every time. Not one out of five times. And so the build is the same.
+And I carried that with me as a Software Engineer. 'The new feature works' means it works every time. Not four out of five times. And so the build is the same.
 
 
 ## Write down the platforms you support
