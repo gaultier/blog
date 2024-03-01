@@ -9,5 +9,6 @@ all:
 
 %.html: %.md header.html footer.html
 	cat header.html > $@
+	printf '<p id="publication_date">Published on %s.</p>' $$(git log --format='%as' --reverse -- $< | head -n1)  >> $@
 	pandoc --toc $< >> $@
 	cat footer.html >> $@
