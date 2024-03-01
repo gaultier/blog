@@ -1,3 +1,7 @@
+p {
+  padding: .5rem;
+}
+
 #banner {
   background-color: #FB8C00;
   display: inline-flex;
@@ -96,7 +100,7 @@ body {
 }
 
 li {
-    margin-bottom: 0.5rem;
+    padding: 0.5rem;
 }
 
 blockquote {
