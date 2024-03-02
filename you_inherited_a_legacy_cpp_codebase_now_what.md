@@ -1,5 +1,7 @@
 # You've just inherited a legacy C++ codebase, now what?
 
+*This article was discussed on [Hacker News](https://news.ycombinator.com/item?id=39549486), [Lobster.rs](https://lobste.rs/s/lf8b9r/you_ve_just_inherited_legacy_c_codebase) and [Reddit](https://old.reddit.com/r/programming/comments/1b3143w/youve_just_inherited_a_legacy_c_codebase_now_what/).*
+
 You were minding your own business, and out of nowhere something fell on your lap. Maybe you started a new job, or perhaps changed teams, or someone experienced just left.
 
 And now you are responsible for a C++ codebase. It's big, complex, idiosyncratic; you stare too long at it and it breaks in various interesting ways. In a word, legacy. 
