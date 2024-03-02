@@ -1,6 +1,6 @@
 # You've just inherited a legacy C++ codebase, now what?
 
-*This article was discussed on [Hacker News](https://news.ycombinator.com/item?id=39549486), [Lobster.rs](https://lobste.rs/s/lf8b9r/you_ve_just_inherited_legacy_c_codebase) and [Reddit](https://old.reddit.com/r/programming/comments/1b3143w/youve_just_inherited_a_legacy_c_codebase_now_what/).*
+*This article was discussed on [Hacker News](https://news.ycombinator.com/item?id=39549486), [Lobster.rs](https://lobste.rs/s/lf8b9r/you_ve_just_inherited_legacy_c_codebase) and [Reddit](https://old.reddit.com/r/programming/comments/1b3143w/youve_just_inherited_a_legacy_c_codebase_now_what/). I've got great suggestions from the comments, see the addendum!*
 
 You were minding your own business, and out of nowhere something fell on your lap. Maybe you started a new job, or perhaps changed teams, or someone experienced just left.
 
@@ -54,6 +54,7 @@ Ok, let's dive in!
 -   [Conclusion](#conclusion)
 -   [Addendum: Dependency
     management](#addendum-dependency-management)
+-   [Addendum: suggestions from readers](#addendum-suggestions-from-readers)
 
 ## Get buy-in
 
@@ -286,3 +287,19 @@ If submodules are really not an option, an alternative is to still compile from 
 Of course, if your dependency graph visualized in Graphviz looks like a Rorschach test and has to build thousands of dependencies, it is not easily doable, but it might be still possible, using a build system like Buck2, which does hybrid local-remote builds, and reuses build artifacts between builds from different users. 
 
 If you look at the landscape of package managers for compiled languages (Go, Rust, etc), all of them that I know of compile from source. It's the same approach, minus git, plus the automation.
+
+## Addendum: suggestions from readers
+
+I've gathered here some great ideas and feedback from readers (sometimes it's the almagamation of multiple comments from different people, and I am paraphrasing from memory so sorry if it's not completely accurate):
+
+- *You should put more emphasis on tests (expanding the test suite, the code coverage, etc) - but also: a test suite in C++ is only worth anything when running it under sanitizers, otherwise you get lured into a false sense of safety.* 100% agree. Modifying complex foreign code without tests is just not possible in my opinion. And yes, sanitizers will catch so many issues in the tests that you should even consider running your tests suite multiple time in CI with different sanitizers enabled.
+- *vcpkg is a good dependency manager for C++ that solves all of your woes.* I've never got the chance to use it so I'll add it to my toolbox to experiment with. If it matches the requirements I listed, as well as enabling cross-compilation, then yes it's absolutely a win over git submodules.
+- *Nix can serve as a good dependency manager for C++.* I must admit that I was beaten into submission by Nix's complexity and slowness. Maybe in a few years when it has matured?
+- *You should not invest so much time in refactoring a legacy codebase if all you are going to do is one bug fix a year.* Somewhat agree, but it really is a judgement call. In my experience it's never one and only one bug fix, whatever management says. And all the good things such as removing dead code, sanitizers etc will both be valuable even for the odd bug fix and also lead to noticing more bugs and fixing them. As one replier put it: *If you are going to own a codebase, then own it for real.* 
+- *It's very risky to remove code, in general you never know for sure if it's being used or not, and if someone relies on this exact behavior in the wild.* That's true, that's why I advocate for removing code that is never called using static analysis tools, so that you know *for sure*. But yes, when in doubt, don't. My pet peeve here are virtual methods that are very resistant to static analysis (since the whole point is to pick which exact method to call at runtime), these usually cannot be as easily removed. Also, talk to your sales people, your product managers, heck even your users if you can. Most of the time you ask them whether a given feature or platform is in use or not, you get a swift yes or no reply, and you know how to proceed. We engineers sometimes forget that a 15 minute talk with people can simplify  so much technical work.
+- *Stick all your code in a LLM and start asking it questions*: As a anti LLM person, I must admit that this idea never crossed my mind. However I think it might not be such a bad idea if you can do that in a legally safe way and take everything with a grain a salt. I'm genuinely curious to see what answers it comes up with!
+- *There are tools that analyze the code and produce diagrams, class relationships etc to get an overview of the code*: I never used these tools but that's a good idea and I will definitely try one in the future
+- *Step 0 should be to add the code in a source control system if that's not the case already*: For sure. I was lucky enough to never encounter that, but heck yeah, even the worst source control system is better than no source control system at all. And I say this after having had to use Visual Source Safe, the one where modifying a file means acquiring an exclusive lock on it that you have to release manually.
+- *Setting up a CI should be step 1*: Fair point, I can totally see this perspective. I am quicker locally, but fair.
+- *Don't be a code beauty queen, just do the fixes you need*: Amen.
+- *If you can drop a platform that's barely used to reduce the combinatorial complexity, and that enables you to do major simplifications, go for it*: Absolutely. Talk to your sales people and stakeholders and try to convince them. In my case it was ancient FreeBSD versions long out of support, I think we used the security angle to convince everyone to drop them.
