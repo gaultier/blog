@@ -21,7 +21,7 @@
 
 I am a Senior Software Engineer from France living in Bavaria, Germany. By day, I work for a Fintech company, and by night I write some fun projects in C, Rust, Odin, Zig, and Assembly. I like to work on low-level systems.
 
-In my free time, I like running, lifting weights, playing music, gardening, and the outdoors.
+In my free time, I run, lift weights, play music, and garden.
 
 Get in touch, send me an email!
 

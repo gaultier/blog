@@ -68,6 +68,8 @@ I also trained and helped other teams to adopt Kubernetes and the cloud, conduct
 
 I then again spear-headed a new transformation: Adopting the JVM, seen as more fitting to 'micro'-services than C++, more specifically Kotlin.
 
+One Kotlin application I worked on was an internal (soft) real-time ledger application for accounting and compliance purposes using the Cassandra database and then Postgres. 
+
 After deploying several production Kotlin services, I moved to the payment platform team where I led a brand new transformation (again!): Moving from batch services running at night (and usually being troubleshooted during the day), to a real time event based architecture using Kafka (and then later Kinesis).
 
 My work focused on writing from scratch the main producer of these events in Go: a bridge from a traditional RDBMS, to Kafka; as well as educating consumers on this new way of writing software. Challenges were plentiful: Events had to be first manually added to the existing C++ payment software, tracking down each location that mutated data and storing the right event in the database, without breaking the crucial payment flows. Then, our bridge would poll multiple such databases in multiple datacenters, (the databases being of course different RDBMS, versions, and OSes!), exporting (i.e. producing) in a live fashion these events to Kafka, 24/7/365. 
@@ -90,6 +92,6 @@ After 6+ years in my job, I decided I was ready for the next challenge and joine
 
 My first focus has been making the product more reliable and fast, relentlessly optimizing the performance and memory usage to ensure that an entire nation can use this suite of applications 24/7, surviving network disruptions, datacenter disasters, etc; while adding crucial business features such as non-repudiation of payments.
 
-My second focus has been security: going through regular threat analysis exercises with the team, adding scanning of dependencies and docker images to every project in order to find vulnerabilities or insecure code patterns, fuzzing the wire protocol encoding/decoding code, and kick-starting the effort to rewrite some code to memory-safe languages.
+My second focus has been security: going through regular threat analysis exercises with the team, adding scanning of dependencies and docker images to every project in order to find vulnerabilities or insecure code patterns, fuzzing, etc.
 
-
+Indeed, I inherited a C++ codebase where the original author moved on, which was a central part of the company's offering. After investing some time to get it up to modern standards, I convinced stakeholders and developers alike to incrementally rewrite it in a memory-safe language (Rust). I led this effort by mentoring fellow developers, doing the work, and presenting demos of the progress to stakeholders.
