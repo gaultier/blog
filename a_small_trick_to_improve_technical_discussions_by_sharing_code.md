@@ -5,7 +5,9 @@ This is a big title for a small trick that I've been using daily for years now, 
 Whenever there is a technical discussion, a bug hunt, or any disagreement about the codebase, I think it really helps to look at existing code to anchor the debate in reality and make it concrete.
 
 Copy pasting code, taking screenshots, or screen sharing may work at times but I have found a low-tech solution that's superior: Sharing a link to a region of code in the codebase. It's shorter, easier, and can be used in chats, documentation and PRs. 
-It works for any code, be it existing code on the main branch, or experimental code on a branch.
+It works for any code, be it existing code on the main branch, or experimental code on a branch:
+
+![Link in Github's web UI](git_web_ui_link.png)
 
 Every web UI of every Version Control System (VCS) worth its salt has that feature, let's take Github for example: [https://github.com/gaultier/micro-kotlin/blob/master/class_file.h#L773-L775](https://github.com/gaultier/micro-kotlin/blob/master/class_file.h#L773-L775)
 
