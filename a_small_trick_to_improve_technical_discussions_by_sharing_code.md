@@ -1,10 +1,11 @@
-# Communicate by sharing code
+# A small trick to improve technical discussions by sharing code
 
 This is a grandiloquent title for a small trick that I've been using daily for years now, in every place I've worked at. 
 
 Whenever there is a technical discussion, I think it really helps to look at existing code to anchor the debate in reality and make it concrete.
 
 Screen sharing may work at times but I have found a low-tech solution: Share a link to a region of code in the codebase. It's easy and can be used in documentation and PRs as well. 
+It works for existing code on the main branch, and it works for experimental code on a branch.
 
 Every Version Control System (VCS) web UI worth its salt has that feature, let's take Github for example: [https://github.com/gaultier/micro-kotlin/blob/master/class_file.h#L773-L775](https://github.com/gaultier/micro-kotlin/blob/master/class_file.h#L773-L775)
 

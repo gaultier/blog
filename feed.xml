@@ -4,12 +4,20 @@
 
      <title>Philippe Gaultier's blog</title>
      <link href="https://gaultier.github.io/blog/"/>
-     <updated>2024-03-03T07:46:32Z</updated>
+     <updated>2024-03-07T10:14:02Z</updated>
      <author>
        <name>Philippe Gaultier</name>
      </author>
      <id>urn:uuid:9c065c53-31bc-4049-a795-936802a6b1df</id>
 	
+     <entry>
+       <title>A small trick to improve technical discussions by sharing code</title>
+       <link href="https://gaultier.github.io/blog/a_small_trick_to_improve_technical_discussions_by_sharing_code.html"/>
+       <id>urn:uuid:ec2664b2-2153-5f24-a222-21f87171b57b</id>
+       <updated></updated>
+			 <published></published>
+     </entry>
+
      <entry>
        <title>Getting started with Scheme by solving an Advent of Code 2018 challenge</title>
        <link href="https://gaultier.github.io/blog/advent_of_code_2018_5.html"/>
@@ -30,7 +38,7 @@
        <title>Body of work</title>
        <link href="https://gaultier.github.io/blog/body_of_work.html"/>
        <id>urn:uuid:b6ce21d7-32d4-5b52-a4f3-435887fe9ba4</id>
-       <updated>2023-12-19T17:33:24+01:00</updated>
+       <updated>2024-03-03T08:47:01+01:00</updated>
 			 <published>2023-12-19T14:27:40+01:00</published>
      </entry>
 
