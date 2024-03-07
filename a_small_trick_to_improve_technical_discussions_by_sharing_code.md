@@ -4,8 +4,8 @@ This is a big title for a small trick that I've been using daily for years now, 
 
 Whenever there is a technical discussion, I think it really helps to look at existing code to anchor the debate in reality and make it concrete.
 
-Screen sharing may work at times but I have found a low-tech solution: Sharing a link to a region of code in the codebase. It's easy and can be used in documentation and PRs as well. 
-It works for existing code on the main branch, and for experimental code on a branch.
+Copy pasting code, taking screenshots, or screen sharing may work at times but I have found a low-tech solution that's superior: Sharing a link to a region of code in the codebase. It's shorter, easier, and can be used in chats, documentation and PRs. 
+It works for any code, be it existing code on the main branch, or experimental code on a branch.
 
 Every web UI of every Version Control System (VCS) worth its salt has that feature, let's take Github for example: [https://github.com/gaultier/micro-kotlin/blob/master/class_file.h#L773-L775](https://github.com/gaultier/micro-kotlin/blob/master/class_file.h#L773-L775)
 
@@ -31,7 +31,7 @@ end,
 
 We pass a callback to `nvim_create_user_command` which will be called when we invoke the command. For now it does nothing but we are going to implement it in a second.
 
-`arg` is an object containing for our purposes the line start and line end numbers:
+`arg` is an object containing for our purposes the start and end line numbers:
 
 ```lua
   local line_start = arg.line1
@@ -47,7 +47,7 @@ And we also need to get the path to the current file:
 
 *From this point on explanations are git specific, but I'm sure other VCSes have similar features.*
 
-Note that since the current directory might be one or several directories deep relative to the root of the git repository, e.g. `src/`, we need to fix this path, because the git web UI expects a path from the root of the git repository.
+Note that since the current directory might be one or several directories deep relative to the root of the git repository, we need to fix this path, because the git web UI expects a path from the root of the git repository.
 
 The easiest way to do so is using `git ls-files`, e.g. if we are in `./src/` and the file is `main.c`, `git ls-files main.c` returns `./src/main.c`. That's very handy to avoid any complex path manipulations. 
 
@@ -108,10 +108,11 @@ Finally we stick the result in the system clipboard, and we can even open the ur
   os.execute('xdg-open "' .. url .. '"')
 ```
 
-And that's it, just 25 lines of Lua, and easy to extend to support more hosting providers (just inspect the hostname).
-
 We can now map the command to our favorite keystroke, for me space + x, for both normal mode (`n`) and visual mode (`v`):
 
 ```lua
 vim.keymap.set({'v', 'n'}, '<leader>x', ':GitWebUiUrlCopy<CR>')
 ```
+
+And that's it, just 25 lines of Lua, and easy to extend to support more hosting providers (just inspect the hostname). 
+

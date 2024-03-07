@@ -45,10 +45,11 @@ years now, in every place I’ve worked at.</p>
 <p>Whenever there is a technical discussion, I think it really helps to
 look at existing code to anchor the debate in reality and make it
 concrete.</p>
-<p>Screen sharing may work at times but I have found a low-tech
-solution: Sharing a link to a region of code in the codebase. It’s easy
-and can be used in documentation and PRs as well. It works for existing
-code on the main branch, and for experimental code on a branch.</p>
+<p>Copy pasting code, taking screenshots, or screen sharing may work at
+times but I have found a low-tech solution that’s superior: Sharing a
+link to a region of code in the codebase. It’s shorter, easier, and can
+be used in chats, documentation and PRs. It works for any code, be it
+existing code on the main branch, or experimental code on a branch.</p>
 <p>Every web UI of every Version Control System (VCS) worth its salt has
 that feature, let’s take Github for example: <a
 href="https://github.com/gaultier/micro-kotlin/blob/master/class_file.h#L773-L775">https://github.com/gaultier/micro-kotlin/blob/master/class_file.h#L773-L775</a></p>
@@ -86,8 +87,8 @@ command</li>
 <p>We pass a callback to <code>nvim_create_user_command</code> which
 will be called when we invoke the command. For now it does nothing but
 we are going to implement it in a second.</p>
-<p><code>arg</code> is an object containing for our purposes the line
-start and line end numbers:</p>
+<p><code>arg</code> is an object containing for our purposes the start
+and end line numbers:</p>
 <div class="sourceCode" id="cb2"><pre
 class="sourceCode lua"><code class="sourceCode lua"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>  <span class="kw">local</span> line_start <span class="op">=</span> arg<span class="op">.</span>line1</span>
 <span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>  <span class="co">-- End is exclusive hence the `+ 1`.</span></span>
@@ -98,9 +99,9 @@ class="sourceCode lua"><code class="sourceCode lua"><span id="cb3-1"><a href="#c
 <p><em>From this point on explanations are git specific, but I’m sure
 other VCSes have similar features.</em></p>
 <p>Note that since the current directory might be one or several
-directories deep relative to the root of the git repository,
-e.g. <code>src/</code>, we need to fix this path, because the git web UI
-expects a path from the root of the git repository.</p>
+directories deep relative to the root of the git repository, we need to
+fix this path, because the git web UI expects a path from the root of
+the git repository.</p>
 <p>The easiest way to do so is using <code>git ls-files</code>, e.g. if
 we are in <code>./src/</code> and the file is <code>main.c</code>,
 <code>git ls-files main.c</code> returns <code>./src/main.c</code>.
@@ -155,13 +156,13 @@ macOS it’ll be <code>open</code>):</p>
 <div class="sourceCode" id="cb10"><pre
 class="sourceCode lua"><code class="sourceCode lua"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>  vim<span class="op">.</span>fn<span class="op">.</span>setreg<span class="op">(</span><span class="st">&#39;+&#39;</span><span class="op">,</span> url<span class="op">)</span></span>
 <span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">os.execute</span><span class="op">(</span><span class="st">&#39;xdg-open &quot;&#39;</span> <span class="op">..</span> url <span class="op">..</span> <span class="st">&#39;&quot;&#39;</span><span class="op">)</span></span></code></pre></div>
-<p>And that’s it, just 25 lines of Lua, and easy to extend to support
-more hosting providers (just inspect the hostname).</p>
 <p>We can now map the command to our favorite keystroke, for me space +
 x, for both normal mode (<code>n</code>) and visual mode
 (<code>v</code>):</p>
 <div class="sourceCode" id="cb11"><pre
 class="sourceCode lua"><code class="sourceCode lua"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>vim<span class="op">.</span>keymap<span class="op">.</span>set<span class="op">({</span><span class="st">&#39;v&#39;</span><span class="op">,</span> <span class="st">&#39;n&#39;</span><span class="op">},</span> <span class="st">&#39;&lt;leader&gt;x&#39;</span><span class="op">,</span> <span class="st">&#39;:GitWebUiUrlCopy&lt;CR&gt;&#39;</span><span class="op">)</span></span></code></pre></div>
+<p>And that’s it, just 25 lines of Lua, and easy to extend to support
+more hosting providers (just inspect the hostname).</p>
 
 <blockquote>
   <p>If you liked this article and you want to support me, and can afford it: <a href="https://paypal.me/philigaultier?country.x=DE&locale.x=en_US">Donate</a></p>
