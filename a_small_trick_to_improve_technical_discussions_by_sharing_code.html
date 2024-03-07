@@ -46,22 +46,21 @@ years now, in every place I’ve worked at.</p>
 look at existing code to anchor the debate in reality and make it
 concrete.</p>
 <p>Screen sharing may work at times but I have found a low-tech
-solution: Share a link to a region of code in the codebase. It’s easy
+solution: Sharing a link to a region of code in the codebase. It’s easy
 and can be used in documentation and PRs as well. It works for existing
-code on the main branch, and it works for experimental code on a
-branch.</p>
-<p>Every Version Control System (VCS) web UI worth its salt has that
-feature, let’s take Github for example: <a
+code on the main branch, and for experimental code on a branch.</p>
+<p>Every web UI of every Version Control System (VCS) worth its salt has
+that feature, let’s take Github for example: <a
 href="https://github.com/gaultier/micro-kotlin/blob/master/class_file.h#L773-L775">https://github.com/gaultier/micro-kotlin/blob/master/class_file.h#L773-L775</a></p>
-<p>The hurdle is that every hosting provider has its own URL shape to do
-so and that’s not always documented, so there is a tiny bit of
+<p>The hurdle is that every hosting provider has its own URL ‘shape’ and
+it’s not always documented, so there is a tiny bit of
 reverse-engineering involved. Compare the previous URL with this one: <a
 href="https://gitlab.com/philigaultier/jvm-bytecode/-/blob/master/class_file.h?ref_type=heads#L125-127">https://gitlab.com/philigaultier/jvm-bytecode/-/blob/master/class_file.h?ref_type=heads#L125-127</a>.
 It’s slightly different.</p>
-<p>So to make it easy to share a link to some code with coworkers, I’ve
+<p>So to make it easy to share a link to code with coworkers, I’ve
 written a tiny script to craft the URL for me, inside my editor. I
 select a few lines, hit a keystroke, and the URL is now in the clipboard
-for me to paste it anywhere.</p>
+for me to paste anywhere.</p>
 <p>Since I use Neovim and Lua, this is what I’ll cover, but I’m sure any
 editor can do that. Now that I think of it, there should be an existing
 extension for this? Back when I started using this trick I remember
@@ -74,7 +73,7 @@ functionality and later map it to a keystroke:</p>
 <div class="sourceCode" id="cb1"><pre
 class="sourceCode lua"><code class="sourceCode lua"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>vim<span class="op">.</span>api<span class="op">.</span>nvim_create_user_command<span class="op">(</span><span class="st">&#39;GitWebUiUrlCopy&#39;</span><span class="op">,</span> <span class="kw">function</span><span class="op">(</span>arg<span class="op">)</span></span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="kw">end</span><span class="op">,</span></span>
-<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="op">{</span>force<span class="op">=</span><span class="kw">true</span><span class="op">,</span> range<span class="op">=</span><span class="kw">true</span><span class="op">,</span> nargs<span class="op">=</span><span class="dv">0</span><span class="op">,</span> bang<span class="op">=</span><span class="kw">true</span><span class="op">,</span> desc<span class="op">=</span><span class="st">&#39;Copy to clipboard a URL to a git webui for the current line&#39;</span><span class="op">})</span></span></code></pre></div>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="op">{</span>force<span class="op">=</span><span class="kw">true</span><span class="op">,</span> range<span class="op">=</span><span class="kw">true</span><span class="op">,</span> nargs<span class="op">=</span><span class="dv">0</span><span class="op">,</span> desc<span class="op">=</span><span class="st">&#39;Copy to clipboard a URL to a git webui for the current line&#39;</span><span class="op">})</span></span></code></pre></div>
 <ul>
 <li><code>force=true</code> overrides any previous definition which is
 handy when iterating over the implementation</li>

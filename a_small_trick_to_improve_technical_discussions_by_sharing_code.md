@@ -4,14 +4,14 @@ This is a big title for a small trick that I've been using daily for years now, 
 
 Whenever there is a technical discussion, I think it really helps to look at existing code to anchor the debate in reality and make it concrete.
 
-Screen sharing may work at times but I have found a low-tech solution: Share a link to a region of code in the codebase. It's easy and can be used in documentation and PRs as well. 
-It works for existing code on the main branch, and it works for experimental code on a branch.
+Screen sharing may work at times but I have found a low-tech solution: Sharing a link to a region of code in the codebase. It's easy and can be used in documentation and PRs as well. 
+It works for existing code on the main branch, and for experimental code on a branch.
 
-Every Version Control System (VCS) web UI worth its salt has that feature, let's take Github for example: [https://github.com/gaultier/micro-kotlin/blob/master/class_file.h#L773-L775](https://github.com/gaultier/micro-kotlin/blob/master/class_file.h#L773-L775)
+Every web UI of every Version Control System (VCS) worth its salt has that feature, let's take Github for example: [https://github.com/gaultier/micro-kotlin/blob/master/class_file.h#L773-L775](https://github.com/gaultier/micro-kotlin/blob/master/class_file.h#L773-L775)
 
-The hurdle is that every hosting provider has its own URL shape to do so and that's not always documented, so there is a tiny bit of reverse-engineering involved. Compare the previous URL with this one: [https://gitlab.com/philigaultier/jvm-bytecode/-/blob/master/class_file.h?ref_type=heads#L125-127](https://gitlab.com/philigaultier/jvm-bytecode/-/blob/master/class_file.h?ref_type=heads#L125-127). It's slightly different.
+The hurdle is that every hosting provider has its own URL 'shape' and it's not always documented, so there is a tiny bit of reverse-engineering involved. Compare the previous URL with this one: [https://gitlab.com/philigaultier/jvm-bytecode/-/blob/master/class_file.h?ref_type=heads#L125-127](https://gitlab.com/philigaultier/jvm-bytecode/-/blob/master/class_file.h?ref_type=heads#L125-127). It's slightly different.
 
-So to make it easy to share a link to some code with coworkers, I've written a tiny script to craft the URL for me, inside my editor. I select a few lines, hit a keystroke, and the URL is now in the clipboard for me to paste it anywhere.
+So to make it easy to share a link to code with coworkers, I've written a tiny script to craft the URL for me, inside my editor. I select a few lines, hit a keystroke, and the URL is now in the clipboard for me to paste anywhere.
 
 Since I use Neovim and Lua, this is what I'll cover, but I'm sure any editor can do that. Now that I think of it, there should be an existing extension for this? Back when I started using this trick I remember searching for one and finding nothing.
 
@@ -22,7 +22,7 @@ So first thing first we need to create a user command to invoke this functionali
 ```lua
 vim.api.nvim_create_user_command('GitWebUiUrlCopy', function(arg)
 end,
-{force=true, range=true, nargs=0, bang=true, desc='Copy to clipboard a URL to a git webui for the current line'})
+{force=true, range=true, nargs=0, desc='Copy to clipboard a URL to a git webui for the current line'})
 ```
 
 - `force=true` overrides any previous definition which is handy when iterating over the implementation
