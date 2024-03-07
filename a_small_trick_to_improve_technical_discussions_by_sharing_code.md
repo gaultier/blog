@@ -1,6 +1,6 @@
 # A small trick to improve technical discussions by sharing code
 
-This is a grandiloquent title for a small trick that I've been using daily for years now, in every place I've worked at. 
+This is a big title for a small trick that I've been using daily for years now, in every place I've worked at. 
 
 Whenever there is a technical discussion, I think it really helps to look at existing code to anchor the debate in reality and make it concrete.
 
