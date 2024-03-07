@@ -35,8 +35,7 @@ We pass a callback to `nvim_create_user_command` which will be called when we in
 
 ```lua
   local line_start = arg.line1
-  -- End is exclusive hence the `+ 1`.
-  local line_end = arg.line2 + 1
+  local line_end = arg.line2
 ```
 
 And we also need to get the path to the current file:
@@ -79,7 +78,7 @@ In the past, I just used the current branch name, however since this is a moving
 Now, we can craft the URL by first extracting the interesting parts of the git remote URL and then tacking on at the end all the URL parameters precising the location.
 I assume the git remote URL is a `ssh` URL here, again it's easy to tweak to also handle `https` URL. Also note that this is the part that's hosting provider specific.
 
-Since I am mainly using Azure DevOps (ADO) at the moment this is what I'll show. In ADO, the remote URL looks like this:
+Since I am mainly using Azure DevOps (ADO) and Github at the moment this is what I'll show. In ADO, the git remote URL looks like this:
 
 ```
 git@ssh.<hostname>:v3/<organization>/<directory>/<project>
@@ -91,10 +90,48 @@ And the final URL looks like:
 https://<hostname>/<organization>/<directory>/_git/<project>?<params>
 ```
 
-We use a Lua pattern to do that using `string.gmatch`. It weirdly returns an iterator yielding only one result containing our matches, we use a `for` loop to do so (perhaps there is an easier way in Lua?):
+In Github, the git remote URL looks like this:
+
+```
+git@github.com:<username>/<project>.git
+```
+
+And the final URL looks like this:
+
+```
+https://github.com/<username>/<project>/blob/<commit_id>/<file_path>?<params>
+```
+
+We inspect the git remote url to know in which case we are:
 
 ```lua
   local url = ''
+  if string.match(git_origin, 'github') then
+    -- Handle Github
+  elseif string.match(git_origin, 'azure.com') then
+    -- End is exclusive in that case hence the `+ 1`.
+    line_end = line_end + 1
+
+    -- Handle ADO
+  else
+    print('hosting provider not supported')
+  end
+```
+
+We use a Lua pattern to extract the components from the git remote URL using `string.gmatch`. It weirdly returns an iterator yielding only one result containing our matches, we use a `for` loop to do so (perhaps there is an easier way in Lua?):
+
+Here's for Github:
+
+```lua
+    for host, user, project in string.gmatch(git_origin, 'git@([^:]+):([^/]+)/([^/]+)%.git') do
+      url = 'https://' .. host .. '/' .. user .. '/' .. project .. '/blob/' .. git_commit .. '/' .. file_path_relative_to_git_root .. '#l' .. line_start .. '-l' .. line_end
+      break
+    end
+```
+
+And here's for ADO:
+
+```lua
   for host, org, dir, project in string.gmatch(git_origin, 'git@ssh%.([^:]+):v3/([^/]+)/([^/]+)/([^\n]+)') do
     url = 'https://' .. host .. '/' .. org .. '/' .. dir .. '/_git/' .. project .. '?lineStartColumn=1&lineStyle=plain&_a=contents&version=GC' .. git_commit .. '&path=' .. file_path_relative_to_git_root .. '&line=' .. line_start .. '&lineEnd=' .. line_end
     break
@@ -114,5 +151,50 @@ We can now map the command to our favorite keystroke, for me space + x, for both
 vim.keymap.set({'v', 'n'}, '<leader>x', ':GitWebUiUrlCopy<CR>')
 ```
 
-And that's it, just 25 lines of Lua, and easy to extend to support more hosting providers (just inspect the hostname). 
+And that's it, just 40 lines of Lua, and easy to extend to support even more hosting providers.
 
+
+## Addendum: the full code
+
+```lua
+vim.keymap.set({'v', 'n'}, '<leader>x', ':GitWebUiUrlCopy<CR>')
+vim.api.nvim_create_user_command('GitWebUiUrlCopy', function(arg)
+  local file_path = vim.fn.expand('%:p')
+  local line_start = arg.line1
+  local line_end = arg.line2
+
+  local cmd_handle = io.popen('git ls-files ' .. file_path)
+  local file_path_relative_to_git_root = cmd_handle:read('*a')
+  cmd_handle.close()
+
+  local cmd_handle = io.popen('git remote get-url origin')
+  local git_origin = cmd_handle:read('*a')
+  cmd_handle.close()
+
+  local cmd_handle = io.popen('git rev-parse HEAD')
+  local git_commit = cmd_handle:read('*a')
+  cmd_handle.close()
+
+  local url = ''
+  if string.match(git_origin, 'github') then
+    for host, user, project in string.gmatch(git_origin, 'git@([^:]+):([^/]+)/([^/]+)%.git') do
+      url = 'https://' .. host .. '/' .. user .. '/' .. project .. '/blob/' .. git_commit .. '/' .. file_path_relative_to_git_root .. '#L' .. line_start .. '-L' .. line_end
+      break
+    end
+  elseif string.match(git_origin, 'azure.com') then
+    -- End is exclusive in that case hence the `+ 1`.
+    line_end = line_end + 1
+
+    for host, org, dir, project in string.gmatch(git_origin, 'git@ssh%.([^:]+):v3/([^/]+)/([^/]+)/([^\n]+)') do
+      url = 'https://' .. host .. '/' .. org .. '/' .. dir .. '/_git/' .. project .. '?lineStartColumn=1&lineStyle=plain&_a=contents&version=GC' .. git_commit .. '&path=' .. file_path_relative_to_git_root .. '&line=' .. line_start .. '&lineEnd=' .. line_end
+      break
+    end
+  else
+    print('Hosting provider not supported')
+  end
+
+  vim.fn.setreg('+', url)
+  os.execute('xdg-open "' .. url .. '"')
+end,
+{force=true, range=true, nargs=0, desc='Copy to clipboard a URL to a git webui for the current line'})
+```
