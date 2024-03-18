@@ -58,7 +58,10 @@ There are many ways in Neovim to call out to a command in a subprocess, here's o
   local cmd_handle = io.popen('git ls-files ' .. file_path)
   local file_path_relative_to_git_root = cmd_handle:read('*a')
   cmd_handle.close()
+  file_path_relative_to_git_root = string.gsub(file_path_relative_to_git_root, "%s+$", "")
 ```
+
+We need to right-trim the output which contains a trailing newline.
 
 We also need to get the git URL of the remote (assuming there is only one, but it's easy to expand the logic to handle multiple):
 
@@ -66,6 +69,7 @@ We also need to get the git URL of the remote (assuming there is only one, but i
   local cmd_handle = io.popen('git remote get-url origin')
   local git_origin = cmd_handle:read('*a')
   cmd_handle.close()
+  git_origin = string.gsub(git_origin, "%s+$", "")
 ```
 
 And the last bit of information we need is to get the current commit.
@@ -75,6 +79,7 @@ In the past, I just used the current branch name, however since this is a moving
   local cmd_handle = io.popen('git rev-parse HEAD')
   local git_commit = cmd_handle:read('*a')
   cmd_handle.close()
+  git_commit = string.gsub(git_commit, "%s+$", "")
 ```
 
 Now, we can craft the URL by first extracting the interesting parts of the git remote URL and then tacking on at the end all the URL parameters precising the location.
@@ -168,14 +173,17 @@ vim.api.nvim_create_user_command('GitWebUiUrlCopy', function(arg)
   local cmd_handle = io.popen('git ls-files ' .. file_path)
   local file_path_relative_to_git_root = cmd_handle:read('*a')
   cmd_handle.close()
+  file_path_relative_to_git_root = string.gsub(file_path_relative_to_git_root, "%s+$", "")
 
   local cmd_handle = io.popen('git remote get-url origin')
   local git_origin = cmd_handle:read('*a')
   cmd_handle.close()
+  git_origin = string.gsub(git_origin, "%s+$", "")
 
   local cmd_handle = io.popen('git rev-parse HEAD')
   local git_commit = cmd_handle:read('*a')
   cmd_handle.close()
+  git_commit = string.gsub(git_commit, "%s+$", "")
 
   local url = ''
   if string.match(git_origin, 'github') then
