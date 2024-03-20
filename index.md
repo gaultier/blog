@@ -38,6 +38,7 @@ I often am frustrated with the state of the software industry; however there is 
 - Vim/Neovim. Another timeless, minimal, fast program that's great for code and prose alike and that respects your computer by requiring very minimal resources. This blog was entirely written inside Neovim!
 - ZFS. The last filesystem you'll need. Reliable and is built on the right concepts. It feels like Git for the filesystem.
 - Wine/Proton. What a technical feat, and a massive reverse engineering effort, to make Windows applications work on Linux without the application even noticing.
+- Rust. Because it catches all my mistakes at compile time and I wish all compilers wouldtoo.
 
 
 ## Portfolio
