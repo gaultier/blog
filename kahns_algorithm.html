@@ -493,8 +493,8 @@ setting the cell on the row <code>Zoe</code> and column
 <code>Jane</code> to <code>0</code>.</p>
 <p>At this point, the graph looks like this:</p>
 <figure>
-<img src="kahns_algorithm_2.svg" alt="Employee hierarchy" />
-<figcaption aria-hidden="true">Employee hierarchy</figcaption>
+<img src="kahns_algorithm_2.svg" alt="Employee hierarchy, step 1" />
+<figcaption aria-hidden="true">Employee hierarchy, step 1</figcaption>
 </figure>
 <p><code>Line 9</code>: If <code>Jane</code> does not have another
 incoming edge, we add it to the set of all nodes with no incoming edge.
@@ -508,49 +508,49 @@ We check whether the node <code>Angela</code> has incoming edges. It
 does, so we do <strong>not</strong> add it to <code>S</code>.</p>
 <p>The graph is now:</p>
 <figure>
-<img src="kahns_algorithm_2_1.svg" alt="Employee hierarchy" />
-<figcaption aria-hidden="true">Employee hierarchy</figcaption>
+<img src="kahns_algorithm_2_1.svg" alt="Employee hierarchy, step 2" />
+<figcaption aria-hidden="true">Employee hierarchy, step 2</figcaption>
 </figure>
 <p>We are now done with the <code>Line 7</code> for loop, so go back to
 <code>Line 5</code> and pick this time <code>Bella</code>. And so
 on.</p>
 <p>The graph would now, to the algorithm, look like:</p>
 <figure>
-<img src="kahns_algorithm_2_2.svg" alt="Employee hierarchy" />
-<figcaption aria-hidden="true">Employee hierarchy</figcaption>
+<img src="kahns_algorithm_2_2.svg" alt="Employee hierarchy, step 3" />
+<figcaption aria-hidden="true">Employee hierarchy, step 3</figcaption>
 </figure>
 <hr />
 <p>And here are the next steps in images:</p>
-<ol type="1">
+<ul>
 <li><figure>
-<img src="kahns_algorithm_2_3.svg" alt="Employee hierarchy" />
-<figcaption aria-hidden="true">Employee hierarchy</figcaption>
+<img src="kahns_algorithm_2_3.svg" alt="Employee hierarchy, step 4" />
+<figcaption aria-hidden="true">Employee hierarchy, step 4</figcaption>
 </figure></li>
 <li><figure>
-<img src="kahns_algorithm_2_4.svg" alt="Employee hierarchy" />
-<figcaption aria-hidden="true">Employee hierarchy</figcaption>
+<img src="kahns_algorithm_2_4.svg" alt="Employee hierarchy, step 5" />
+<figcaption aria-hidden="true">Employee hierarchy, step 5</figcaption>
 </figure></li>
 <li><figure>
-<img src="kahns_algorithm_2_5.svg" alt="Employee hierarchy" />
-<figcaption aria-hidden="true">Employee hierarchy</figcaption>
+<img src="kahns_algorithm_2_5.svg" alt="Employee hierarchy, step 6" />
+<figcaption aria-hidden="true">Employee hierarchy, step 6</figcaption>
 </figure></li>
 <li><figure>
-<img src="kahns_algorithm_2_6.svg" alt="Employee hierarchy" />
-<figcaption aria-hidden="true">Employee hierarchy</figcaption>
+<img src="kahns_algorithm_2_6.svg" alt="Employee hierarchy, step 7" />
+<figcaption aria-hidden="true">Employee hierarchy, step 7</figcaption>
 </figure></li>
 <li><figure>
-<img src="kahns_algorithm_2_7.svg" alt="Employee hierarchy" />
-<figcaption aria-hidden="true">Employee hierarchy</figcaption>
+<img src="kahns_algorithm_2_7.svg" alt="Employee hierarchy, step 8" />
+<figcaption aria-hidden="true">Employee hierarchy, step 8</figcaption>
 </figure></li>
 <li><figure>
-<img src="kahns_algorithm_2_8.svg" alt="Employee hierarchy" />
-<figcaption aria-hidden="true">Employee hierarchy</figcaption>
+<img src="kahns_algorithm_2_8.svg" alt="Employee hierarchy, step 9" />
+<figcaption aria-hidden="true">Employee hierarchy, step 9</figcaption>
 </figure></li>
 <li><figure>
-<img src="kahns_algorithm_2_9.svg" alt="Employee hierarchy" />
-<figcaption aria-hidden="true">Employee hierarchy</figcaption>
+<img src="kahns_algorithm_2_9.svg" alt="Employee hierarchy, step 10" />
+<figcaption aria-hidden="true">Employee hierarchy, step 10</figcaption>
 </figure></li>
-</ol>
+</ul>
 <hr />
 <p><code>Line 12-15</code>: Once the loop at <code>Line 4</code> is
 finished, we inspect our graph. If there are no more edges, we are done.

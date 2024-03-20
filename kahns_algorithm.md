@@ -254,7 +254,7 @@ And in plain English:
 
 At this point, the graph looks like this:
 
-![Employee hierarchy](kahns_algorithm_2.svg)
+![Employee hierarchy, step 1](kahns_algorithm_2.svg)
 
 `Line 9`: If `Jane` does not have another incoming edge, we add it to the set of all nodes with no incoming edge. That's the case here, so `S` now looks like: `[Bella, Miranda, Jane]`.
 
@@ -265,25 +265,25 @@ We know loop to `Line 7` and handle the node `Angela` since `Jane` is taken care
 
 The graph is now:
 
-![Employee hierarchy](kahns_algorithm_2_1.svg)
+![Employee hierarchy, step 2](kahns_algorithm_2_1.svg)
 
 We are now done with the `Line 7` for loop, so go back to `Line 5` and pick this time `Bella`. And so on.
 
 The graph would now, to the algorithm, look like:
 
-![Employee hierarchy](kahns_algorithm_2_2.svg)
+![Employee hierarchy, step 3](kahns_algorithm_2_2.svg)
 
 ---
 
 And here are the next steps in images:
 
-1. ![Employee hierarchy](kahns_algorithm_2_3.svg)
-1. ![Employee hierarchy](kahns_algorithm_2_4.svg)
-1. ![Employee hierarchy](kahns_algorithm_2_5.svg)
-1. ![Employee hierarchy](kahns_algorithm_2_6.svg)
-1. ![Employee hierarchy](kahns_algorithm_2_7.svg)
-1. ![Employee hierarchy](kahns_algorithm_2_8.svg)
-1. ![Employee hierarchy](kahns_algorithm_2_9.svg)
+- ![Employee hierarchy, step 4](kahns_algorithm_2_3.svg)
+- ![Employee hierarchy, step 5](kahns_algorithm_2_4.svg)
+- ![Employee hierarchy, step 6](kahns_algorithm_2_5.svg)
+- ![Employee hierarchy, step 7](kahns_algorithm_2_6.svg)
+- ![Employee hierarchy, step 8](kahns_algorithm_2_7.svg)
+- ![Employee hierarchy, step 9](kahns_algorithm_2_8.svg)
+- ![Employee hierarchy, step 10](kahns_algorithm_2_9.svg)
 
 ---
 
