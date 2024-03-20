@@ -182,15 +182,15 @@ Since there is an edge from `Zoe` to `Angela`, i.e. from the node `5` to the nod
 The full adjacency matrix for the employee graph in the example above looks like:
 
 <table>
-  <tbody>
-    <tr> <th></th>        <th>Angela</th>  <th>Bella</th>  <th>Ellen</th> <th>Jane</th>  <th>Miranda</th> <th>Zoe</th>  </tr>
-    <tr> <td>Angela</td>  <td>0</td>       <td>0</td>      <td>1</td>     <td>0</td>     <td>0</td>       <td>0</td>    </tr>
-    <tr> <td>Bella</td>   <td>1</td>       <td>0</td>      <td>0</td>     <td>0</td>     <td>0</td>       <td>0</td>    </tr>
-    <tr> <td>Ellen</td>   <td>0</td>       <td>0</td>      <td>0</td>     <td>0</td>     <td>0</td>       <td>0</td>    </tr>
-    <tr> <td>Jane</td>    <td>0</td>       <td>0</td>      <td>1</td>     <td>0</td>     <td>0</td>       <td>0</td>    </tr>
-    <tr> <td>Miranda</td> <td>1</td>       <td>0</td>      <td>0</td>     <td>0</td>     <td>0</td>       <td>0</td>    </tr>
-    <tr> <td>Zoe</td>     <td>1</td>       <td>0</td>      <td>0</td>     <td>1</td>     <td>0</td>       <td>0</td>    </tr>
-  </tbody>
+ <tbody>
+ <tr> <th></th> <th>Angela</th> <th>Bella</th> <th>Ellen</th> <th>Jane</th> <th>Miranda</th> <th>Zoe</th> </tr>
+ <tr> <td>Angela</td> <td>0</td> <td>0</td> <td>1</td> <td>0</td> <td>0</td> <td>0</td> </tr>
+ <tr> <td>Bella</td> <td>1</td> <td>0</td> <td>0</td> <td>0</td> <td>0</td> <td>0</td> </tr>
+ <tr> <td>Ellen</td> <td>0</td> <td>0</td> <td>0</td> <td>0</td> <td>0</td> <td>0</td> </tr>
+ <tr> <td>Jane</td> <td>0</td> <td>0</td> <td>1</td> <td>0</td> <td>0</td> <td>0</td> </tr>
+ <tr> <td>Miranda</td> <td>1</td> <td>0</td> <td>0</td> <td>0</td> <td>0</td> <td>0</td> </tr>
+ <tr> <td>Zoe</td> <td>1</td> <td>0</td> <td>0</td> <td>1</td> <td>0</td> <td>0</td> </tr>
+ </tbody>
 </table>
 
 The way to read this table is:
