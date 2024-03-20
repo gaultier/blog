@@ -68,8 +68,8 @@ examples. It’s a bit hacky but it works. The script to do so is <a
 href="https://github.com/gaultier/blog/blob/master/feed.go">here</a>.
 And you can do too! Again, it’s not hard. Here goes:</p>
 <ul>
-<li>We pick a UUID for our feed. I just generated one and sticked it as
-a constant in the script.</li>
+<li>We pick a UUID for our feed. I just generated one and stuck it as a
+constant in the script.</li>
 <li>The ‘updated at’ field for the feed is just <code>time.Now()</code>.
 It’s not exactly accurate, it should probably be the most recent
 <code>mtime</code> across articles but it’s good enough.</li>
@@ -82,7 +82,7 @@ the file locally</s> queried from git</li>
 <li>The ‘published at’ field, which is <s>just the <code>ctime</code> of
 the file locally</s> queried from git</li>
 <li>A UUID. Here I went with UUIDv5 which is simply the sha1 of the file
-name in the UUID format. It’s nitfy because it means that the script is
+name in the UUID format. It’s nifty because it means that the script is
 stateless and idempotent. If the article is later updated, the UUID
 remains the same (but the <code>updated at</code> will still hint at the
 update).</li>

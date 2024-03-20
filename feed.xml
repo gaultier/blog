@@ -4,7 +4,7 @@
 
      <title>Philippe Gaultier's blog</title>
      <link href="https://gaultier.github.io/blog/"/>
-     <updated>2024-03-20T07:03:38Z</updated>
+     <updated>2024-03-20T07:06:40Z</updated>
      <author>
        <name>Philippe Gaultier</name>
      </author>
@@ -54,7 +54,7 @@
        <title>This blog now has an Atom feed, and yours should probably too</title>
        <link href="https://gaultier.github.io/blog/feed.html"/>
        <id>urn:uuid:1f4df7db-eea8-5ef0-ae92-1038111f5dc9</id>
-       <updated>2023-12-19T13:56:33+01:00</updated>
+       <updated>2024-03-20T08:06:30+01:00</updated>
 			 <published>2023-12-15T12:23:43+01:00</published>
      </entry>
 
@@ -78,7 +78,7 @@
        <title>Cycle detection in graphs does not have to be hard: A lesser known, simple way with Kahn's algorithm</title>
        <link href="https://gaultier.github.io/blog/kahns_algorithm.html"/>
        <id>urn:uuid:665ef523-5c28-5dad-8582-587bfea27205</id>
-       <updated>2024-03-20T07:49:56+01:00</updated>
+       <updated>2024-03-20T08:04:08+01:00</updated>
 			 <published>2023-06-03T09:20:51+02:00</published>
      </entry>
 
