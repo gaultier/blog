@@ -218,6 +218,7 @@ We see that at the end of the program, we have (looking at the first line):
 Since we never freed any memory, the `in use` counters are the same as the `space` counters.
 
 We have 3 unique call stacks that allocate, in the same order as they appear in the text file (although order does not matter for `pprof`):
+
 - `b` <- `a` <- `main`
 - `a` <- `main`
 - `b` <- `main`
