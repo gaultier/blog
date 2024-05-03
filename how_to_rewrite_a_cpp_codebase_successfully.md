@@ -322,6 +322,113 @@ which feels right at home for Go developers. Still, it's more work than you'd ha
 In Zig or Odin, I would probably have used arenas to avoid that.
 
 
+More perniciously, it's easy to introduce memory unsafety at the FFI boundary. Here is a real bug I introduced, can you spot it? I elided all the error handling to make it easier to spot:
+
+```rust
+#[repr(C)]
+struct BarC {
+    x: ByteSliceView,
+}
+
+#[no_mangle]
+unsafe extern "C" fn bar_parse(input: *const u8, input_len: usize, bar_c: &mut BarC) {
+    let input: &[u8] = unsafe { std::slice::from_raw_parts(input, input_len) };
+
+    let bar: Bar = Bar {
+        x: [input[0], input[1]],
+    };
+
+    *bar_c = BarC {
+        x: ByteSliceView {
+            ptr: bar.x.as_ptr(),
+            len: bar.x.len(),
+        },
+    };
+}
+```
+
+`clippy` did not notice anything. `address-sanitizer` did not notice anything. However, both `miri` and `valgrind` did, and fuzzing crashed (which was not easy to troubleshoot but at least pinpointed to a problem).
+
+So...found it? Still nothing? Well, let's be good developers and add a test for it:
+
+```rust
+#[test]
+fn bar() {
+    // This mimicks how C/C++ code would call our function.
+    let mut bar_c = MaybeUninit::<BarC>::uninit();
+    let input = [0, 1, 2];
+    unsafe {
+        bar_parse(
+            input.as_ptr(),
+            input.len(),
+            bar_c.as_mut_ptr().as_mut().unwrap(),
+        );
+    }
+
+    let bar_c = unsafe { bar_c.assume_init_ref() };
+    let x: &[u8] = (&bar_c.x).into();
+    assert_eq!(x, [0, 1].as_slice());
+}
+```
+
+If you're lucky, `cargo test` would fail, but in my case it passed and so the bug was undetected for some time. That's because we introduce undefined behavior and as such how or if it manifests is hard to tell.
+
+Let's run the test with Miri:
+
+```
+running 1 test
+test api::tests::bar ... error: Undefined Behavior: out-of-bounds pointer use: alloc195648 has been freed, so this pointer is dangling
+    --> src/tlv.rs:321:18
+     |
+321  |         unsafe { &*core::ptr::slice_from_raw_parts(item.ptr, item.len) }
+     |                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ out-of-bounds pointer use: alloc195648 has been freed, so this pointer is dangling
+     |
+     = help: this indicates a bug in the program: it performed an invalid operation, and caused Undefined Behavior
+     = help: see https://doc.rust-lang.org/nightly/reference/behavior-considered-undefined.html for further information
+help: alloc195648 was allocated here:
+    --> src/api.rs:1396:9
+     |
+1396 |     let bar: Bar = Bar {
+     |         ^^^
+help: alloc195648 was deallocated here:
+    --> src/api.rs:1406:1
+     |
+1406 | }
+```
+
+
+Miri is great, I tell you.
+
+The issue here is that we essentially return a pointer to local variable (`x`) from inside the function, so the pointer is dangling.
+
+Alternatively we can call our function from C/C++ and run that under valgrind:
+
+```c
+int main() {
+  BarC bar{};
+  const uint8_t input[] = {0, 1, 2, 3};
+  bar_parse(input, sizeof(input), &bar);
+  assert(bar.x.ptr[0] == 0);
+  assert(bar.x.ptr[1] == 1);
+}
+```
+
+And I get:
+
+```
+==805913== Conditional jump or move depends on uninitialised value(s)
+==805913==    at 0x127C34: main (src/example.cpp:13)
+==805913== 
+==805913== Conditional jump or move depends on uninitialised value(s)
+==805913==    at 0x127C69: main (src/example.cpp:14)
+```
+
+Which is not very informative, but better than nothing. `Miri`'s output is much more actionable.
+
+So in conclusion, Rust's FFI capabilities work but are tedious are error-prone in my opinion, and so require extra care and testing with Miri/fuzzing.
+
+
+
 
 
 
