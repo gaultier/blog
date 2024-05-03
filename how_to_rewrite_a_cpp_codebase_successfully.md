@@ -107,10 +107,104 @@ Here are a few additional tips I recommend doing:
 
 - Port the code comments from the old code to the new code if they make sense and add value
 - If you can use automated tools (search and replace, or tools operating at the AST level) to change every call site to use the new implementation, it'll make your reviewers very happy, and save you hours and hours of debugging because of a copy-paste mistake
+- Since Rust and C++ basically only can communicate through a C API (I am aware of experimental projects to make them talk directly but we did not use those), it means that each Rust function must be accompanied by a corresponding C function signature, so that C++ can call it as a C function. I recommend automating this process with [cbindgen](https://github.com/mozilla/cbindgen). I have encountered some limitations with it but it's very useful, especially to keep the implementation (in Rust) and the API (in C) in sync, or if your teammates are not comfortable with C. I added the call to `cbindgen` to CMake so that rebuilding the C++ project would automatically run `cbindgen`.
 - When rewriting a function/class, port the tests for this function/class to the new implementation to avoid reducing the code coverage each time
 - Make the old and the new test suites fast so that the iteration time is shorty
 - When a divergence is detected (a difference in output or side effects between the old and the new implementation), observe with tests or within the debugger the output of the old implementation (that's where the Git tag comes handy) in detail so that you can correct the new implementation. Some people even develop big test suites verifying that the output of the old and the new implementation are exactly the same.
 - Since it's a bug-for-bug rewrite, *what* the new implementation does may seem weird or unnecessarily convulated. However, *how* it does it should be up to the best software engineering standards, that means tests, fuzzing, documentation, etc.
 
 Finally, there is one hidden advantage of doing an incremental rewrite. A from-scratch rewrite is all or nothing, if it does not fully complete and replace the old implementation, it's useless and waste. However, an incremental rewrite is immediately useful, may be pause and continued a number of times, and even if the funding gets cut short and it never fully completes, it's still a clear improvement over the starting point.
+
+
+## Fuzzing
+
+I am a fan a fuzzing, it's great. Almost every time I fuzz some code, I find an corner case I did not think about, especially when doing parsing.
+
+I added fuzzing to the project so that every new Rust function is fuzzed. I initially used [AFL](https://rust-fuzz.github.io/book/afl.html) but then turned to [cargo-fuzz](https://rust-fuzz.github.io/book/cargo-fuzz.html), and I'll explain why.
+
+Fuzzing is only useful if code coverage is [high](https://blog.trailofbits.com/2024/03/01/toward-more-effective-curl-fuzzing/). The worst that can happen is to dedicate serious time to setup fuzzing, to only discover at the end that the same few branches are always taken during fuzzing.
+
+Coverage can only be improved if developers can easily see exactly which branches are being executed during fuzzing. And I could not find an easy way with AFL to get a hold on that data.
+
+Using `cargo-fuzz` and various LLVM tools, I wrote a small shell script to visualize exactly which branches are taken during fuzzing as well as the code coverage in percents for each file and for the project as a whole (right now it's at around 90%).
+
+To get to a high coverage, the quality of the corpus data is paramount, since fuzzing works by doing small mutations of this corpus and observing which branches are taken as a result.
+
+I realized that the existing tests in C++ had lots of useful data in them, e.g.:
+
+```c++
+const std::vector<char> input = {0x32, 0x01, 0x49, ...}; // <= This is the interesting data.
+assert(foo(input) == ...);
+```
+
+So I had the idea of extracting all the `input = ...` data from the tests to build a good fuzzing corpus. My first go at it was a poor man's quick and dirty C++ lexer. It worked but it was clunky. Right after I finished it, I thought: why don't I use `tree-sitter` to properly parse C++? 
+
+And so I did, and it turned out great, just 300 lines of Rust walking through each `TestXXX.cpp` file in the repository and using tree-sitter to extract each pattern. I used the query language of tree-sitter to do so: 
+
+```rust
+let query = tree_sitter::Query::new(
+    tree_sitter_cpp::language(),
+    "(initializer_list (number_literal)+) @capture",
+)
+```
+
+The tree-sitter website thankfully has a playground where I could experiment and tweak the query and see the results live.
+
+
+As time went on and more and more C++ tests were migrated to Rust tests, it was very easy to extend this small Rust program that builds the corpus data, to also scan the Rust tests!
+
+A typical Rust test would look like this:
+
+
+```rust
+const INPUT: [u8; 4] = [0x01, 0x02, 0x03, 0x04]; // <= This is the interesting data.
+assert_eq!(foo(&INPUT), ...);
+```
+
+And the query to extract the interesting data would be:
+
+```rust
+let query = tree_sitter::Query::new(
+    tree_sitter_rust::language(),
+    // TODO: Maybe make this query more specific with:
+    // `(let_declaration value: (array_expression (integer_literal)+)) @capture`.
+    // But in a few cases, the byte array is defined with `const`, not `let`.
+    "(array_expression (integer_literal)+) @capture",
+)
+```
+
+However I discovered that not all data was successfully extracted. What about this code:
+
+```rust
+const BAR : u8 = 0x42;
+const INPUT: [u8; 4] = [BAR, 0x02, 0x03, 0x04]; // <= This is the interesting data.
+assert_eq!(foo(&INPUT), ...);
+```
+
+We have a constant `BAR` which trips up tree-sitter, because it only see a literal and does not know its value.
+
+The way I solved this issue was to do two passes: once to collect all constants along with their values in a map, and then a second pass to find all arrays in tests:
+
+```rust
+let query = tree_sitter::Query::new(
+    tree_sitter_rust::language(),
+    "(const_item value: (integer_literal)) @capture ",
+)
+```
+
+So that we can then resolve the literals to their numeric value.
+
+I am pretty happy with how this turned out, scanning all C++ and Rust files to find interesting test data in them to build the corpus. I think this was key to move from the initial 20% code coverage with fuzzing (using a few hard-coded corpus files) to 90%.
+
+Also, it means the corpus gets better each time we had a test (be it in C++ or Rust).
+
+Does it mean that the corpus will grow to an extreme size? Well, worry not, because LLVM comes with a fuzzing corpus minimizer:
+
+```
+# Minimize the fuzzing corpus (in place).
+cargo +nightly fuzz cmin [...]
+```
+
+For each file in the corpus, it feeds it as input to our code, observes which branches are taken, and if a new set of branches is taken, this file remains (or perhaps gets minimized even more, not sure how smart this tool is). Otherwise it is deemed a duplicate and is trimmed.
+
 
