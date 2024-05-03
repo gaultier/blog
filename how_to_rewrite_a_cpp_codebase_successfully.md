@@ -115,7 +115,6 @@ Here are a few additional tips I recommend doing:
 
 Finally, there is one hidden advantage of doing an incremental rewrite. A from-scratch rewrite is all or nothing, if it does not fully complete and replace the old implementation, it's useless and waste. However, an incremental rewrite is immediately useful, may be pause and continued a number of times, and even if the funding gets cut short and it never fully completes, it's still a clear improvement over the starting point.
 
-
 ## Fuzzing
 
 I am a fan a fuzzing, it's great. Almost every time I fuzz some code, I find an corner case I did not think about, especially when doing parsing.
@@ -428,7 +427,188 @@ Which is not very informative, but better than nothing. `Miri`'s output is much 
 So in conclusion, Rust's FFI capabilities work but are tedious are error-prone in my opinion, and so require extra care and testing with Miri/fuzzing, with high code coverage of the FFI functions. It's not enough to only test the pure (non FFI) Rust code.
 
 
+## Cross-compilation
+
+Rust has great cross-compilation support; C++ not so much. Nonetheless I managed to coerced CMake into cross-compiling to every platform we support from my Linux laptop. After using Docker for more than 10 years I am firmly against using Docker for that, it's just clunky and slow.
 
 
+That way, I can even cross-compile tests and example programs in C or C++ using the library and run them inside `qemu` to make sure all platforms work as expected.
 
+I took inspiration from the CMake code in the Android project, which has to cross-compile for many architectures. Did you know that Android supports x86, x86_64, arm (32 bits), aarch64 (arm 64), and more? 
+
+In short, you instruct CMake to cross-compile by supplying on the command-line the variables `CMAKE_SYSTEM_PROCESSOR` and `CMAKE_SYSTEM_NAME`, which are the equivalent of `GOARCH` and `GOOS` if you are familiar with Go. E.g.: `cmake .build -S src -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_SYSTEM_NAME=Linux -DCMAKE_SYSTEM_PROCESSOR=arm`.
+
+On the Rust side, you tell `cargo` to cross-compile by supplying the `--target` command-line argument, e.g.: `--target=x86_64-unknown-linux-musl`. This works by virtue of installing the pre-compiled toolchain for this platform with `rustup` first:
+
+```sh
+$ rustup target add x86_64-unknown-linux-musl
+```
+
+So now we have to convert in CMake `CMAKE_SYSTEM_ARCHITECTURE` and `CMAKE_SYSTEM_NAME` into a target triple that clang and cargo can understand. Of course you have to do all the hard work yourself. This is complicated by lots of factors like Apple using the architecture name `arm64` instead of `aarch64`, iOS peculiarities, soft vs hard float, arm having multiple variants (v6, v7, v8, etc), and so on. Your mileage may vary.
+
+
+Here it is in all its glory:
+
+```cmake
+# We need to craft the target triple to make it work when cross-compiling.
+# NOTE: If an architecture supports both soft-float and hard-float, we pick hard-float (`hf`).
+# since we do not target any real hardware with soft-float.
+# Linux has two main libcs, glibc (the default) and musl (opt-in with `FMW_LIBC_MUSL=1`), useful for Alpine.
+if (CMAKE_SYSTEM_NAME STREQUAL "Linux" AND CMAKE_SYSTEM_PROCESSOR STREQUAL "x86_64" AND NOT DEFINED FMW_LIBC_MUSL)
+    set(TARGET_TRIPLE "x86_64-unknown-linux-gnu")
+elseif (CMAKE_SYSTEM_NAME STREQUAL "Linux" AND CMAKE_SYSTEM_PROCESSOR STREQUAL "x86_64" AND "${FMW_LIBC_MUSL}" EQUAL 1)
+    set(TARGET_TRIPLE "x86_64-unknown-linux-musl")
+elseif (CMAKE_SYSTEM_NAME STREQUAL "Linux" AND CMAKE_SYSTEM_PROCESSOR STREQUAL "arm" AND NOT DEFINED FMW_LIBC_MUSL)
+    set(TARGET_TRIPLE "arm-unknown-linux-gnueabihf")
+elseif (CMAKE_SYSTEM_NAME STREQUAL "Linux" AND CMAKE_SYSTEM_PROCESSOR STREQUAL "arm" AND "${FMW_LIBC_MUSL}" EQUAL 1)
+    set(TARGET_TRIPLE "arm-unknown-linux-musleabihf")
+elseif (CMAKE_SYSTEM_NAME STREQUAL "Linux" AND CMAKE_SYSTEM_PROCESSOR STREQUAL "aarch64" AND NOT DEFINED FMW_LIBC_MUSL)
+    set(TARGET_TRIPLE "aarch64-unknown-linux-gnu")
+elseif (CMAKE_SYSTEM_NAME STREQUAL "Linux" AND CMAKE_SYSTEM_PROCESSOR STREQUAL "aarch64" AND "${FMW_LIBC_MUSL}" EQUAL 1)
+    set(TARGET_TRIPLE "aarch64-unknown-linux-musl")
+elseif (CMAKE_SYSTEM_NAME STREQUAL "Linux" AND CMAKE_SYSTEM_PROCESSOR STREQUAL "armv7")
+    set(TARGET_TRIPLE "armv7-unknown-linux-gnueabihf")
+elseif (CMAKE_SYSTEM_NAME STREQUAL "Darwin" AND CMAKE_SYSTEM_PROCESSOR STREQUAL "aarch64")
+    set(TARGET_TRIPLE "aarch64-apple-darwin")
+elseif (CMAKE_SYSTEM_NAME STREQUAL "Darwin" AND CMAKE_SYSTEM_PROCESSOR STREQUAL "arm64")
+    set(TARGET_TRIPLE "aarch64-apple-darwin")
+elseif (CMAKE_SYSTEM_NAME STREQUAL "Darwin" AND CMAKE_SYSTEM_PROCESSOR STREQUAL "x86_64")
+    set(TARGET_TRIPLE "x86_64-apple-darwin")
+elseif (CMAKE_SYSTEM_NAME STREQUAL "iOS" AND CMAKE_SYSTEM_PROCESSOR STREQUAL "x86_64")
+    set(TARGET_TRIPLE "x86_64-apple-ios")
+    execute_process(COMMAND xcrun --sdk iphonesimulator --show-sdk-path OUTPUT_VARIABLE CMAKE_OSX_SYSROOT)
+    string(REPLACE "\n" "" CMAKE_OSX_SYSROOT ${CMAKE_OSX_SYSROOT})
+elseif (CMAKE_SYSTEM_NAME STREQUAL "iOS" AND CMAKE_SYSTEM_PROCESSOR STREQUAL "aarch64")
+    set(TARGET_TRIPLE "aarch64-apple-ios")
+    execute_process(COMMAND xcrun --sdk iphoneos --show-sdk-path OUTPUT_VARIABLE CMAKE_OSX_SYSROOT)
+    string(REPLACE "\n" "" CMAKE_OSX_SYSROOT ${CMAKE_OSX_SYSROOT})
+elseif (CMAKE_SYSTEM_NAME STREQUAL "iOS" AND CMAKE_SYSTEM_PROCESSOR STREQUAL "arm64")
+    set(TARGET_TRIPLE "aarch64-apple-ios")
+    execute_process(COMMAND xcrun --sdk iphoneos --show-sdk-path OUTPUT_VARIABLE CMAKE_OSX_SYSROOT)
+    string(REPLACE "\n" "" CMAKE_OSX_SYSROOT ${CMAKE_OSX_SYSROOT})
+elseif (CMAKE_SYSTEM_NAME STREQUAL "Android" AND CMAKE_SYSTEM_PROCESSOR STREQUAL "arm")
+    set(TARGET_TRIPLE "arm-linux-androideabi")
+elseif (CMAKE_SYSTEM_NAME STREQUAL "Android" AND CMAKE_SYSTEM_PROCESSOR STREQUAL "armv7")
+    set(TARGET_TRIPLE "armv7-linux-androideabi")
+elseif (CMAKE_SYSTEM_NAME STREQUAL "Android" AND CMAKE_SYSTEM_PROCESSOR STREQUAL "armv7-a")
+    set(TARGET_TRIPLE "armv7-linux-androideabi")
+elseif (CMAKE_SYSTEM_NAME STREQUAL "Android" AND CMAKE_SYSTEM_PROCESSOR STREQUAL "aarch64")
+    set(TARGET_TRIPLE "aarch64-linux-android")
+elseif (CMAKE_SYSTEM_NAME STREQUAL "Android" AND CMAKE_SYSTEM_PROCESSOR STREQUAL "i686")
+    set(TARGET_TRIPLE "i686-linux-android")
+elseif (CMAKE_SYSTEM_NAME STREQUAL "Android" AND CMAKE_SYSTEM_PROCESSOR STREQUAL "x86_64")
+    set(TARGET_TRIPLE "x86_64-linux-android")
+else()
+    message(FATAL_ERROR "Invalid OS/Architecture, not supported: CMAKE_SYSTEM_NAME=${CMAKE_SYSTEM_NAME} CMAKE_SYSTEM_PROCESSOR=${CMAKE_SYSTEM_PROCESSOR}")
+endif()
+
+message(STATUS "Target triple: ${TARGET_TRIPLE}")
+
+# If we are cross compiling manually (e.g to Linux arm), `CMAKE_C_COMPILER_TARGET` and `CMAKE_CXX_COMPILER_TARGET` are unset and we need to set them manually.
+# But if we are cross compiling through a separate build system e.g. to Android or iOS, they will set these variables and we should not override them.
+if ( NOT DEFINED CMAKE_C_COMPILER_TARGET )
+   set(CMAKE_C_COMPILER_TARGET ${TARGET_TRIPLE})
+endif()
+if ( NOT DEFINED CMAKE_CXX_COMPILER_TARGET )
+   set(CMAKE_CXX_COMPILER_TARGET ${TARGET_TRIPLE})
+endif()
+```
+
+There was a lot of trial and error.
+
+
+Finally, I wrote a Lua script to cross-compile for every platform we support to make sure I did not break anything. I resorted to using the Zig toolchain (not the language) to be able to statically link to musl or build for iOS. This is very useful also if you have several compile-time feature flags and want to build in different configurations for all platforms:
+
+```lua
+local android_sdk = arg[1]
+if android_sdk == nil or android_sdk == "" then
+  print("Missing Android SDK as argv[1] e.g. '~/Android/Sdk/ndk/21.4.7075529'.")
+  os.exit(1)
+end
+
+local build_root = arg[2]
+if build_root == nil then
+  build_root = "/tmp/"
+end
+
+local rustup_targets = {
+  "aarch64-apple-darwin",
+  "aarch64-linux-android",
+  "aarch64-unknown-linux-gnu",
+  "aarch64-unknown-linux-musl",
+  "arm-linux-androideabi",
+  "arm-unknown-linux-gnueabihf",
+  "arm-unknown-linux-musleabihf",
+  "armv7-linux-androideabi",
+  "armv7-unknown-linux-gnueabi",
+  "armv7-unknown-linux-gnueabihf",
+  "armv7-unknown-linux-musleabi",
+  "armv7-unknown-linux-musleabihf",
+  "i686-linux-android",
+  "x86_64-apple-darwin",
+  "x86_64-linux-android",
+  "x86_64-unknown-linux-gnu",
+  "x86_64-unknown-linux-musl",
+}
+
+for i = 1,#rustup_targets do
+  local target = rustup_targets[i]
+  os.execute("rustup target install " .. target)
+end
+
+
+local targets = {
+  {os="Linux", arch="x86_64", cc="clang", cxx="clang++", cmakeArgs=""},
+  {os="Linux", arch="aarch64", cc="clang", cxx="clang++", cmakeArgs=""},
+  {os="Linux", arch="arm", cc="clang", cxx="clang++", cmakeArgs=""},
+  {os="Linux", arch="armv7", cc="clang", cxx="clang++", cmakeArgs=""},
+  {os="Linux", arch="arm", cc="zig", cxx="zig", cmakeArgs="-DCMAKE_C_COMPILER_ARG1=cc -DCMAKE_CXX_COMPILER_ARG1=c++ -DFMW_LIBC_MUSL=1 -DCMAKE_C_COMPILER_TARGET=arm-linux-musleabihf -DCMAKE_CXX_COMPILER_TARGET=arm-linux-musleabihf"},
+  {os="Linux", arch="aarch64", cc="zig", cxx="zig", cmakeArgs="-DCMAKE_C_COMPILER_ARG1=cc -DCMAKE_CXX_COMPILER_ARG1=c++ -DFMW_LIBC_MUSL=1 -DCMAKE_C_COMPILER_TARGET=aarch64-linux-musl -DCMAKE_CXX_COMPILER_TARGET=aarch64-linux-musl"},
+  {os="Linux", arch="x86_64", cc="zig", cxx="zig", cmakeArgs="-DCMAKE_C_COMPILER_ARG1=cc -DCMAKE_CXX_COMPILER_ARG1=c++ -DFMW_LIBC_MUSL=1 -DCMAKE_C_COMPILER_TARGET=x86_64-linux-musl -DCMAKE_CXX_COMPILER_TARGET=x86_64-linux-musl"},
+  {os="Darwin", arch="x86_64", cc="zig", cxx="zig", cmakeArgs="-DCMAKE_C_COMPILER_ARG1=cc -DCMAKE_CXX_COMPILER_ARG1=c++ -DFMW_LIBC_MUSL=1 -DCMAKE_C_COMPILER_TARGET=x86_64-macos-none -DCMAKE_CXX_COMPILER_TARGET=x86_64-macos-none"},
+  {os="Darwin", arch="arm64", cc="zig", cxx="zig", cmakeArgs="-DCMAKE_C_COMPILER_ARG1=cc -DCMAKE_CXX_COMPILER_ARG1=c++ -DFMW_LIBC_MUSL=1 -DCMAKE_C_COMPILER_TARGET=aarch64-macos-none -DCMAKE_CXX_COMPILER_TARGET=aarch64-macos-none"},
+  {os="Android", arch="armv7-a", cc="clang", cxx="clang++", cmakeArgs="-DCMAKE_ANDROID_NDK='" .. android_sdk .. "'"},
+  {os="Android", arch="aarch64", cc="clang", cxx="clang++", cmakeArgs="-DCMAKE_ANDROID_NDK='" .. android_sdk .. "'"},
+  {os="Android", arch="i686", cc="clang", cxx="clang++", cmakeArgs="-DCMAKE_ANDROID_NDK='" .. android_sdk .. "'"},
+  {os="Android", arch="x86_64", cc="clang", cxx="clang++", cmakeArgs="-DCMAKE_ANDROID_NDK='" .. android_sdk .. "'"},
+}
+
+for i = 1,#targets do
+  local target = targets[i]
+  local build_dir = ".build-" .. target.os .. "-" .. target.arch .. "-" .. target.cc .. "-" .. target.cxx .. "-" .. target.cmakeArgs
+  build_dir = string.gsub(build_dir, "%s+", "_")
+  build_dir = string.gsub(build_dir, "^./+", "_")
+  build_dir = build_root .. "/" .. build_dir
+  print(build_dir)
+
+  local cmd_handle = io.popen("command -v llvm-ar")
+  local llvm_ar = cmd_handle:read('*a')
+  cmd_handle:close()
+  llvm_ar = string.gsub(llvm_ar, "%s+$", "")
+
+  local cmd_handle = io.popen("command -v llvm-ranlib")
+  local llvm_ranlib = cmd_handle:read('*a')
+  cmd_handle:close()
+  llvm_ranlib = string.gsub(llvm_ranlib, "%s+$", "")
+
+  local build_cmd = "cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo -B '" .. build_dir .. "' -DCMAKE_AR=" .. llvm_ar .. " -DCMAKE_RANLIB=" .. llvm_ranlib .. " -DCMAKE_SYSTEM_NAME=" .. target.os .. " -DCMAKE_SYSTEM_PROCESSOR=" .. target.arch .. " -DCMAKE_C_COMPILER=" .. target.cc .. " -DCMAKE_CXX_COMPILER=" .. target.cxx .. " " ..  target.cmakeArgs .. " -S src/. -G Ninja"
+  print(build_cmd)
+  os.execute(build_cmd)
+
+  -- Work-around for getting rid of mbedtls linker flags specific to Apple's LLVM fork that are actually not needed.
+  if target.os == "Darwin" then
+    os.execute("sed -i '" .. build_dir .. "/CMakeFiles/rules.ninja' -e 's/ -no_warning_for_no_symbols -c//g'")
+  end
+
+  os.execute("ninja -C '" .. build_dir .. "'")
+end
+
+print("find '" .. build_root .. "'/.build* -name example -type f -exec file ';'")
+os.execute("find '" .. build_root .. "'/.build* -name example -type f -exec file {} ';'")
+```
+
+
+I look forward to only having Rust code and deleting all of this convoluted stuff. 
+
+That's something that people do not mention enough when saying that modern C++ is good enough and secure enough. Well, first I disagree with this statement, but more broadly, the C++ toolchain to cross-compile sucks. You only have clang that can cross-compile in theory but in practice you have to resort to the Zig toolchain to automate cross-compiling the standard library etc.
 
