@@ -72,7 +72,7 @@ After all, the goal is also to gain additional developers, and stop being the on
 I also seriously considered Go, but after doing a prototype, I was doubtful the many limitations of CGO would allow us to achieve the rewrite.
 
 
-## Preparing to introduce the new language
+## Preparations to introduce the new language
 
 Once I reached this point, I created a Git tag `last-before-rust` (spoiler alert!). The commit right after introduced the first lines of code in the new language.
 
@@ -514,7 +514,9 @@ if ( NOT DEFINED CMAKE_CXX_COMPILER_TARGET )
 endif()
 ```
 
-There was a lot of trial and error.
+There was a lot of trial and error. 
+
+Also, gcc is not directly supported for cross-compilation in this approach (although it can be made to work) because gcc does not support a `--target` option like clang does, since it's not a cross-compiler. You have to download the variant you need e.g. `gcc-9-i686-linux-gnu` to compile for x86, and set `CMAKE_C_COMPILER` and `CMAKE_CXX_COMPILER` to `gcc-9-i686-linux-gnu`. However, in that case you are not setting `CMAKE_SYSTEM_NAME` and `CMAKE_SYSTEM_PROCESSOR` since it's in theory not cross-compiling, so `cargo` will not have its `--target` option filled, so it won't work for the Rust code. I advise sticking with clang in this setup.
 
 
 Finally, I wrote a Lua script to cross-compile for every platform we support to make sure I did not break anything. I resorted to using the Zig toolchain (not the language) to be able to statically link to musl or build for iOS. This is very useful also if you have several compile-time feature flags and want to build in different configurations for all platforms:
