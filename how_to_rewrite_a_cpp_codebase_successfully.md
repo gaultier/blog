@@ -371,7 +371,7 @@ fn bar() {
 }
 ```
 
-If you're lucky, `cargo test` would fail, but in my case it passed and so the bug was undetected for some time. That's because we introduce undefined behavior and as such how or if it manifests is hard to tell.
+If you're lucky, `cargo test` would fail at the last assertion saying that the value is not what we expected, but in my case it passed every time, and so the bug was undetected for some time. That's because we unknowingly introduced undefined behavior, and as such, how or if it manifests is impossible to tell.
 
 Let's run the test with Miri:
 
@@ -425,9 +425,7 @@ And I get:
 
 Which is not very informative, but better than nothing. `Miri`'s output is much more actionable.
 
-So in conclusion, Rust's FFI capabilities work but are tedious are error-prone in my opinion, and so require extra care and testing with Miri/fuzzing.
-
-
+So in conclusion, Rust's FFI capabilities work but are tedious are error-prone in my opinion, and so require extra care and testing with Miri/fuzzing, with high code coverage of the FFI functions. It's not enough to only test the pure (non FFI) Rust code.
 
 
 
