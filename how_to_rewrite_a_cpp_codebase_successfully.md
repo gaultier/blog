@@ -60,6 +60,17 @@ Here I think the way to go is showing the naked truth and staying very factual, 
 Essentially, it's a matter of genuinely presenting the alternative of rewriting being cheaper in terms of time and effort compared to improving the project with pure C++. If your teammates and boss are rationale, it should be a straightforward decision.
 
 
+After the problematic situation has been presented, I think at least 3 different solutions should be presented and compared (including sticking with pure C++), and seriously consider each option.
+
+Ideally, if time permits, a small prototype for the preferred solution should be done, to confirm or infirm early that it can work, and to eliminate doubts. It's a much more compelling argument to say: "Of course it will work, here is prototype I made!" compared to "I hope it will work, but who knows, oh well I guess we'll see...".
+
+
+After much debate, we settled on Rust as the new programming language being introduced into the codebase. It's important to note that I am not a Rust diehard fan. I appreciate the language but it's not a perfect language, it has issues, it's just that it solves all the issues we have in this project, especially considering the big focus on security (since we deal with payments),  the relative similarity with the company tech stack (Go), and the willingness of the team to learn it and review code in it.
+
+After all, the goal is also to gain additional developers, and stop being the only person who can even touch this code.
+
+I also seriously considered Go, but after doing a prototype, I was doubtful the many limitations of CGO would allow us to achieve the rewrite.
+
 
 ## Preparing to introduce the new language
 
@@ -69,4 +80,37 @@ This proved invaluable, because when rewriting the legacy code, I found tens of 
 
 Every time such a bug appeared, I switched to this Git tag, and tried to reproduce the bug. Almost every time, the bug was already present before the rewrite. That's a very important information (for me, it was a relief!) for solving the bug, and also for stakeholders. That's the difference in their eye between: We are improving the product by fixing long existing bugs; or: we are introducing new bugs with our risky changes and we should maybe stop the effort completely because it's harming the product.
 
-Stakeholder support is a big deal.
+Stakeholder support is a really big deal. Be prepared to repeat many many times the decision process that led to the rewrite to your boss, your boss's boss, the odd product manager who's not technical, the salesperson supporting the external customers, etc. It's important to nail the elevator's pitch.
+
+## Incremental rewrite
+
+Along with stakeholder buy-in, the most important point in the article is that only an **incremental** rewrite can succeed, in my opinion. Rewriting from scratch is bound to fail, I think. At least I have never seen it succeed, and have seen it fail many times.
+
+What does it mean, very pragmatically? Well it's just a few rules of thumb:
+
+- A small component is picked to be rewritting, the smallest, the better. Ideally it is as small as one function, or one class.
+- The new implementation is written in the same Git (or whatever CVS you use) repository as the existing code, alongside it. It's a 'bug for bug' implementation which means it does the exact same thing as the old implementation, even if the old seems sometimes non-sensical.
+- Tests for the new implementation are written and pass (so that we know the new implementation is likely correct)
+- Each call site calling the function/class is switched to using the new implementation. After each replacement, the test suite is run and passes (so that we know that nothing broke at the scale of the project; a kind of regression testing). The change is committed. That way is something breaks, we know exactly which change is the culprit.
+- A small PR is opened, reviewed and merged. Since our changes are anyways incremental, it's up to us to decide that the current diff is of the right size for a PR. We can make the PR as big or small as we want. We can even make a PR with only the new implementation that's not yet used at all.
+- Once the old function/class is not used anymore by any code, it can be 'garbage-collected' i.e. safely removed. This can even be its own PR depending on the size.
+- Rinse and repeat until all of the old code has been replaced
+
+There are of course thornier cases which we'll explore in more detail later, but that's the gist of it. What's crucial is that each commit on the main branch builds and runs fine. At not point the codebase is every broken, does not build, or is in an unknown state.
+
+
+It's actually not much different from the way I do a refactor in a codebase with just one programming language.
+
+What's very important to avoid are big PRs that are thousands lines long and nobody wants to review them, or long running branches that effectively create a multiverse inside the codebase. It's the same as regular software development, really.
+
+Here are a few additional tips I recommend doing:
+
+- Port the code comments from the old code to the new code if they make sense and add value
+- If you can use automated tools (search and replace, or tools operating at the AST level) to change every call site to use the new implementation, it'll make your reviewers very happy, and save you hours and hours of debugging because of a copy-paste mistake
+- When rewriting a function/class, port the tests for this function/class to the new implementation to avoid reducing the code coverage each time
+- Make the old and the new test suites fast so that the iteration time is shorty
+- When a divergence is detected (a difference in output or side effects between the old and the new implementation), observe with tests or within the debugger the output of the old implementation (that's where the Git tag comes handy) in detail so that you can correct the new implementation. Some people even develop big test suites verifying that the output of the old and the new implementation are exactly the same.
+- Since it's a bug-for-bug rewrite, *what* the new implementation does may seem weird or unnecessarily convulated. However, *how* it does it should be up to the best software engineering standards, that means tests, fuzzing, documentation, etc.
+
+Finally, there is one hidden advantage of doing an incremental rewrite. A from-scratch rewrite is all or nothing, if it does not fully complete and replace the old implementation, it's useless and waste. However, an incremental rewrite is immediately useful, may be pause and continued a number of times, and even if the funding gets cut short and it never fully completes, it's still a clear improvement over the starting point.
+
