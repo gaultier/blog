@@ -194,9 +194,9 @@ let query = tree_sitter::Query::new(
 
 So that we can then resolve the literals to their numeric value.
 
-I am pretty happy with how this turned out, scanning all C++ and Rust files to find interesting test data in them to build the corpus. I think this was key to move from the initial 20% code coverage with fuzzing (using a few hard-coded corpus files) to 90%.
+I am pretty happy with how this turned out, scanning all C++ and Rust files to find interesting test data in them to build the corpus. I think this was key to move from the initial 20% code coverage with fuzzing (using a few hard-coded corpus files) to 90%. It's fast too.
 
-Also, it means the corpus gets better each time we had a test (be it in C++ or Rust).
+Also, it means the corpus gets better each time we had a test (be it in C++ or Rust), for free.
 
 Does it mean that the corpus will grow to an extreme size? Well, worry not, because LLVM comes with a fuzzing corpus minimizer:
 
@@ -206,5 +206,124 @@ cargo +nightly fuzz cmin [...]
 ```
 
 For each file in the corpus, it feeds it as input to our code, observes which branches are taken, and if a new set of branches is taken, this file remains (or perhaps gets minimized even more, not sure how smart this tool is). Otherwise it is deemed a duplicate and is trimmed.
+
+So:
+
+1. We generate the corpus with our program
+2. Minimize it
+3. Run the fuzzing for however long we wish. It runs in CI for every commit and developers can also run it locally.
+4. When fuzzing is complete, we print the code coverage statistics
+
+
+##  Memory management and unsafety
+
+Writing Rust has been a joy, even for more junior developers in the team. Pure Rust code was pretty much 100% correct on the first try.
+
+However we had to use `unsafe {}` blocks in the FFI layer. We segregated all the FFI code to one file, and converted the C FFI structs to Rust idiomatic structs as soon as possible, so that the bulk of the Rust code can be idiomatic and safe.
+
+But that means this FFI code is the most likely part of the Rust code to have bugs. To get some confidence in its correctness, we write Rust tests using the C FFI functions (as if we were a C consumer of the library) running under [Miri](https://github.com/rust-lang/miri) which acts as valgrind essentially, simulating a CPU and checking that our code is memory safe. Tests run perhaps 5 to 10 times as slow as without Miri but this has proven invaluable since it detected many bugs ranging from alignment issues to memory leaks and use-after-free issues.
+
+We run tests under Miri in CI to make sure each commit is reasonably safe.
+
+So beware: introducing Rust to a C or C++ codebase may actually introduce new memory safety issues in the FFI code.
+
+Thankfully it's much shorter and simpler than the rest of the codebase.
+
+## C FFI in Rust is cumbersome
+
+The root cause for all these issues is that the C API that C++ and Rust use to call each other is very limited in its expresiveness w.r.t ownership, as well as many Rust types not being marked `#[repr(C)]`, even types you would expect to, such as `Option`, `Vec` or `&[u8]`. That means that you have to define your own equivalent types:
+
+```rust
+#[repr(C)]
+// An option type that can be used from C
+pub struct OptionC<T> {
+    pub has_value: bool,
+    pub value: T,
+}
+
+
+#[repr(C)]
+// Akin to `&[u8]`, for C.
+pub struct ByteSliceView {
+    pub ptr: *const u8,
+    pub len: usize,
+}
+
+/// Owning Array i.e. `Vec<T>` in Rust or `std::vector<T>` in C++.
+#[repr(C)]
+pub struct OwningArrayC<T> {
+    pub data: *mut T,
+    pub len: usize,
+    pub cap: usize,
+}
+
+/// # Safety
+/// Only call from C.
+#[no_mangle]
+pub extern "C" fn FMW_RUST_make_owning_array_u8(len: usize) -> OwningArrayC<u8> {
+    vec![0; len].into()
+}
+
+```
+
+Apparently, Rust developers do not want to commit to a particular ABI for these types, to avoid missing out on some future optimizations. So it means that every Rust struct now needs the equivalent "FFI friendly" struct along with conversion functions (usually implemented as `Into` for convenience):
+
+```
+struct Foo<'a> {
+    x: Option<usize>,
+    y: &'a [u8],
+    z: Vec<u8>,
+}
+
+
+#[repr(C)]
+struct FooC {
+    x: OptionC<usize>,
+    y: ByteSliceView,
+    z: OwningArrayC<u8>,
+}
+```
+
+Which is cumbersome but still fine, especially since Rust has powerful macros. However, since Rust also does not have great idiomatic support for custom allocators, we stuck with the standard memory allocator, which meant that each struct with heap-allocated fields had to have a deallocation function:
+
+```
+#[no_mangle]
+pub extern "C" fn foo_free(foo: &FooC) {
+    ...
+}
+```
+
+And the C or C++ calling code would have to do:
+
+```c++
+FooC foo{};
+if (foo_parse(&foo, bytes) == SUCCESS) {
+    // do something with foo...
+    ...
+
+    foo_free(foo);
+}
+```
+
+To simplify this, I introduced a `defer` [construct](https://www.gingerbill.org/article/2015/08/19/defer-in-cpp/) (thanks Gingerbill!):
+
+```c++
+FooC foo{};
+defer({foo_free(foo);});
+
+if (foo_parse(&foo, bytes) == SUCCESS) {
+    // do something with foo...
+    ...
+}
+```
+
+which feels right at home for Go developers. Still, it's more work than you'd have to do in pure idiomatic Rust or C++ code (or even C code with arenas for that matter).
+
+In Zig or Odin, I would probably have used arenas to avoid that.
+
+
+
+
+
 
 
