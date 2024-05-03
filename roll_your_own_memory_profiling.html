@@ -303,9 +303,12 @@ line):</p>
 the same as the <code>space</code> counters.</p>
 <p>We have 3 unique call stacks that allocate, in the same order as they
 appear in the text file (although order does not matter for
-<code>pprof</code>): - <code>b</code> &lt;- <code>a</code> &lt;-
-<code>main</code> - <code>a</code> &lt;- <code>main</code> -
-<code>b</code> &lt;- <code>main</code></p>
+<code>pprof</code>):</p>
+<ul>
+<li><code>b</code> &lt;- <code>a</code> &lt;- <code>main</code></li>
+<li><code>a</code> &lt;- <code>main</code></li>
+<li><code>b</code> &lt;- <code>main</code></li>
+</ul>
 <p>Since our program is a Position Independant Executable (PIE), the
 loader picks a random address for where to load our program in virtual
 memory. Consequently, addresses collected from within our program have
