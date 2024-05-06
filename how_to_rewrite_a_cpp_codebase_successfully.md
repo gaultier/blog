@@ -426,7 +426,7 @@ fn bar() {
 }
 ```
 
-If you're lucky, `cargo test` would fail at the last assertion saying that the value is not what we expected, but in my case it passed every time, and so the bug was undetected for a while. That's because we unknowingly introduced undefined behavior, and as such, how or if it manifests is impossible to tell.
+If you're lucky, `cargo test` would fail at the last assertion saying that the value is not what we expected, but in my case it passed every time, and so the bug stayed undetected for a while. That's because we unknowingly introduced undefined behavior, and as such, how or if it manifests is impossible to tell.
 
 Let's run the test with Miri:
 
