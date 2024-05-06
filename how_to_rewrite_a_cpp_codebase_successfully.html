@@ -311,14 +311,14 @@ automatically run <code>cbindgen</code>.</li>
 function/class to the new implementation to avoid reducing the code
 coverage each time</li>
 <li>Make the old and the new test suites fast so that the iteration time
-is shorty</li>
+is short</li>
 <li>When a divergence is detected (a difference in output or side
 effects between the old and the new implementation), observe with tests
 or within the debugger the output of the old implementation (that’s
-where the Git tag comes handy) in detail so that you can correct the new
-implementation. Some people even develop big test suites verifying that
-the output of the old and the new implementation are exactly the
-same.</li>
+where the initial Git tag comes handy) in detail so that you can correct
+the new implementation. Some people even develop big test suites
+verifying that the output of the old and the new implementation are
+exactly the same.</li>
 <li>Since it’s a bug-for-bug rewrite, <em>what</em> the new
 implementation does may seem weird or unnecessarily convulated. However,
 <em>how</em> it does it should be up to the best software engineering
