@@ -767,13 +767,14 @@ would be a breaking change for clients.</p>
 Nonetheless I managed to coerced CMake into cross-compiling to every
 platform we support from my Linux laptop. After using Docker for more
 than 10 years I am firmly against using Docker for that, it’s just
-clunky and slow.</p>
+clunky and slow and not a good fit.</p>
 <p>That way, I can even cross-compile tests and example programs in C or
 C++ using the library and run them inside <code>qemu</code> to make sure
 all platforms work as expected.</p>
 <p>I took inspiration from the CMake code in the Android project, which
 has to cross-compile for many architectures. Did you know that Android
-supports x86, x86_64, arm (32 bits), aarch64 (arm 64), and more?</p>
+supports x86 (which is 32 bits), x86_64, arm (which is 32 bits), aarch64
+(sometimes called arm64), and more?</p>
 <p>In short, you instruct CMake to cross-compile by supplying on the
 command-line the variables <code>CMAKE_SYSTEM_PROCESSOR</code> and
 <code>CMAKE_SYSTEM_NAME</code>, which are the equivalent of

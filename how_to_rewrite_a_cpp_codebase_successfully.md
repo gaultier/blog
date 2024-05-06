@@ -553,12 +553,12 @@ However that means more work and more functions in the API.
 
 ## Cross-compilation
 
-Rust has great cross-compilation support; C++ not so much. Nonetheless I managed to coerced CMake into cross-compiling to every platform we support from my Linux laptop. After using Docker for more than 10 years I am firmly against using Docker for that, it's just clunky and slow.
+Rust has great cross-compilation support; C++ not so much. Nonetheless I managed to coerced CMake into cross-compiling to every platform we support from my Linux laptop. After using Docker for more than 10 years I am firmly against using Docker for that, it's just clunky and slow and not a good fit.
 
 
 That way, I can even cross-compile tests and example programs in C or C++ using the library and run them inside `qemu` to make sure all platforms work as expected.
 
-I took inspiration from the CMake code in the Android project, which has to cross-compile for many architectures. Did you know that Android supports x86, x86_64, arm (32 bits), aarch64 (arm 64), and more? 
+I took inspiration from the CMake code in the Android project, which has to cross-compile for many architectures. Did you know that Android supports x86 (which is 32 bits), x86_64, arm (which is 32 bits), aarch64 (sometimes called arm64), and more? 
 
 In short, you instruct CMake to cross-compile by supplying on the command-line the variables `CMAKE_SYSTEM_PROCESSOR` and `CMAKE_SYSTEM_NAME`, which are the equivalent of `GOARCH` and `GOOS` if you are familiar with Go. E.g.: `cmake .build -S src -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_SYSTEM_NAME=Linux -DCMAKE_SYSTEM_PROCESSOR=arm`.
 
