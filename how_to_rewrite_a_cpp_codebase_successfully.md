@@ -764,3 +764,5 @@ CMake/Make/Ninja proved surprinsingly difficult for developers not accustomed to
 
 So, I hope this article alleviated your concerns about rewriting your C++ codebase. It can absolutely be done, just pick the right programming language for you and your context, do it incrementally, don't overpromise, establish a rough roadmap with milestones, regularly show progress to stakeholders (even if it's just you, it helps staying motived!), and make sure the team is on-board and enjoying the process.
 
+You know, like any other software project!
+
