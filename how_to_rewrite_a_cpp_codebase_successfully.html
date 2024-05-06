@@ -895,7 +895,7 @@ Zig toolchain (not the language) to be able to statically link with musl
 or cross-compile from Linux to iOS which I could not achieve with pure
 clang. However this is only my local setup, we do not use the Zig
 toolchain when building the production artifacts (e.g. the iOS build is
-done in a macOS virtual machine).</p>
+done in a macOS virtual machine, not from a Linux machine).</p>
 <p>This is very useful also if you have several compile-time feature
 flags and want to build in different configurations for all platforms,
 e.g. enable/disable logs at compile time:</p>
@@ -984,7 +984,7 @@ class="sourceCode lua"><code class="sourceCode lua"><span id="cb24-1"><a href="#
 <span id="cb24-82"><a href="#cb24-82" aria-hidden="true" tabindex="-1"></a><span class="cf">end</span></span></code></pre></div>
 <p>I look forward to only having Rust code and deleting all of this
 convoluted stuff.</p>
-<p>That’s something that people do not mention enough when saying that
+<p>That’s something that people do not mention often when saying that
 modern C++ is good enough and secure enough. Well, first I disagree with
 this statement, but more broadly, the C++ toolchain to cross-compile
 sucks. You only have clang that can cross-compile in theory but in
@@ -1016,7 +1016,7 @@ really justified here, and the problem was solved.</p>
 people would write a lot more of them. Built-in support for tests is
 expected in 2024 by developers. I don’t think one single C++ test was
 written during this rewrite, now that I think of it.</p>
-<p>Everyone was really happy with the tooling, even though having to
+<p>Everyone was really satisfied with the tooling, even though having to
 first do <code>rustup target add ...</code> before cross-compiling
 tripped up a few people, since in Go that’s done automatically behind
 the scenes (I think one difference is that Go compiles everything from
@@ -1046,7 +1046,7 @@ overpromise, establish a rough roadmap with milestones, regularly show
 progress to stakeholders (even if it’s just you, it helps staying
 motived!), and make sure the team is on-board and enjoying the
 process.</p>
-<p>You know, like any other software project!</p>
+<p>You know, like any other software project, really!</p>
 
 <blockquote>
   <p>If you liked this article and you want to support me, and can afford it: <a href="https://paypal.me/philigaultier?country.x=DE&locale.x=en_US">Donate</a></p>

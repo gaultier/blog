@@ -645,7 +645,7 @@ There was a lot of trial and error as you can guess.
 Also, gcc is not directly supported for cross-compilation in this approach because gcc does not support a `--target` option like clang does, since it's not a cross-compiler. You have to download the variant you need e.g. `gcc-9-i686-linux-gnu` to compile for x86, and set `CMAKE_C_COMPILER` and `CMAKE_CXX_COMPILER` to `gcc-9-i686-linux-gnu`. However, in that case you are not setting `CMAKE_SYSTEM_NAME` and `CMAKE_SYSTEM_PROCESSOR` since it's in theory not cross-compiling, so `cargo` will not have its `--target` option filled, so it won't work for the Rust code. I advise sticking with clang in this setup. Still, when not cross-compiling, gcc works fine.
 
 
-Finally, I wrote a Lua script to cross-compile for every platform we support to make sure I did not break anything. I resorted to using the Zig toolchain (not the language) to be able to statically link with musl or cross-compile from Linux to iOS which I could not achieve with pure clang. However this is only my local setup, we do not use the Zig toolchain when building the production artifacts (e.g. the iOS build is done in a macOS virtual machine).
+Finally, I wrote a Lua script to cross-compile for every platform we support to make sure I did not break anything. I resorted to using the Zig toolchain (not the language) to be able to statically link with musl or cross-compile from Linux to iOS which I could not achieve with pure clang. However this is only my local setup, we do not use the Zig toolchain when building the production artifacts (e.g. the iOS build is done in a macOS virtual machine, not from a Linux machine).
 
 This is very useful also if you have several compile-time feature flags and want to build in different configurations for all platforms, e.g. enable/disable logs at compile time:
 
@@ -738,7 +738,7 @@ end
 
 I look forward to only having Rust code and deleting all of this convoluted stuff. 
 
-That's something that people do not mention enough when saying that modern C++ is good enough and secure enough. Well, first I disagree with this statement, but more broadly, the C++ toolchain to cross-compile sucks. You only have clang that can cross-compile in theory but in practice you have to resort to the Zig toolchain to automate cross-compiling the standard library etc.
+That's something that people do not mention often when saying that modern C++ is good enough and secure enough. Well, first I disagree with this statement, but more broadly, the C++ toolchain to cross-compile sucks. You only have clang that can cross-compile in theory but in practice you have to resort to the Zig toolchain to automate cross-compiling the standard library etc.
 
 Also, developers not deeply familiar with either C or C++ do not want to touch all this CMake/Autotools with a ten-foot pole. And I understand them. Stockholm syndrom notwithstanding, these are pretty slow, convoluted, niche programming languages and no one wants to actively learn and use them unless they have to.
 
@@ -754,7 +754,7 @@ Developers who learned Rust are overall very happy with it and did not have too 
 Adding unit tests was trivial in Rust compared to C++ and as a result people would write a lot more of them. Built-in support for tests is expected in 2024 by developers. I don't think one single C++ test was written during this rewrite, now that I think of it.
 
 
-Everyone was really happy with the tooling, even though having to first do `rustup target add ...` before cross-compiling tripped up a few people, since in Go that's done automatically behind the scenes (I think one difference is that Go compiles everything from source and so does not need to downloed pre-compiled blobs?). 
+Everyone was really satisfied with the tooling, even though having to first do `rustup target add ...` before cross-compiling tripped up a few people, since in Go that's done automatically behind the scenes (I think one difference is that Go compiles everything from source and so does not need to downloed pre-compiled blobs?). 
 
 Everyone also had an easy time with their text editor/IDE, Rust is ubiquitous enough now that every editor will have support for it.
 
@@ -766,5 +766,5 @@ CMake/Make/Ninja proved surprinsingly difficult for developers not accustomed to
 
 So, I hope this article alleviated your concerns about rewriting your C++ codebase. It can absolutely be done, just pick the right programming language for you and your context, do it incrementally, don't overpromise, establish a rough roadmap with milestones, regularly show progress to stakeholders (even if it's just you, it helps staying motived!), and make sure the team is on-board and enjoying the process.
 
-You know, like any other software project!
+You know, like any other software project, really!
 
