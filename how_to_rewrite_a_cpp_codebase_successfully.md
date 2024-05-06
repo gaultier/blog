@@ -542,12 +542,12 @@ Depending on the existing code style, it might be hard to ensure that the C/C++ 
 
 One possible solution (which I did not implement but considered) is making FFI structures a simple opaque pointer (or 'handle') so that the caller has to use FFI functions to allocate and free this structure. That also means implementing getter/setters for certain fields since the structures are now opaque. It maximizes the ABI compatibility, since the caller cannot rely on a given struct size, alignement, or fields.
 
-However that means more work and more functions in the API.
+However that entails more work and more functions in the API.
 
 `libcurl` is an example of such an approach, `libuv` is an example of a library which did not do this initially, but plans to move to this approach in future versions, which would be a breaking change for clients.
 
 
-So to summarize, Miri is so essential that I don't know whether it's viable to write Rust code with lots of FFI (and thus lots of unsafe blocks) without it. If Miri did not exist, I would seriously consider using only arenas.
+So to summarize, Miri is so essential that I don't know whether it's viable to write Rust code with lots of FFI (and thus lots of unsafe blocks) without it. If Miri did not exist, I would seriously consider using only arenas or reconsidering the use of Rust.
 
 ## Cross-compilation
 
