@@ -107,7 +107,7 @@ Along with stakeholder buy-in, the most important point in the article is that o
 What does it mean, very pragmatically? Well it's just a few rules of thumb:
 
 - A small component is picked to be rewritting, the smallest, the better. Ideally it is as small as one function, or one class.
-- The new implementation is written in the same Git (or whatever CVS you use) repository as the existing code, alongside it. It's a 'bug for bug' implementation which means it does the exact same thing as the old implementation, even if the old seems sometimes non-sensical.
+- The new implementation is written in the same Git (or whatever CVS you use) repository as the existing code, alongside it. It's a 'bug for bug' implementation which means it does the exact same thing as the old implementation, even if the old seems sometimes non-sensical. In some cases, what the old code tries to do is so broken and insecure, that we have to do something different in the new code, but that should be rare.
 - Tests for the new implementation are written and pass (so that we know the new implementation is likely correct)
 - Each call site calling the function/class is switched to using the new implementation. After each replacement, the test suite is run and passes (so that we know that nothing broke at the scale of the project; a kind of regression testing). The change is committed. That way is something breaks, we know exactly which change is the culprit.
 - A small PR is opened, reviewed and merged. Since our changes are anyways incremental, it's up to us to decide that the current diff is of the right size for a PR. We can make the PR as big or small as we want. We can even make a PR with only the new implementation that's not yet used at all.

@@ -213,7 +213,7 @@ feels confident working on this project alone.</p>
 introduce the new language</h2>
 <p>Before adding the first line of code in the new language, I created a
 Git tag <code>last-before-rust</code>. The commit right after introduced
-the code in Rust.</p>
+some code in Rust.</p>
 <p>This proved invaluable, because when rewriting the legacy code, I
 found tens of bugs lying around, and I think that’s very typical. Also,
 this rewriting effort requires time, during which other team members or
@@ -226,6 +226,13 @@ difference in their eye between: We are improving the product by fixing
 long existing bugs; or: we are introducing new bugs with our risky
 changes and we should maybe stop the effort completely because it’s
 harming the product.</p>
+<p>Also, I think the first commit introducing the new code should add
+dummy code and focus on making the build system and CI work seamlessly
+on every supported platform. This is not appealing work but it’s
+necessary. Also, having instructions in the README explaining a bit what
+each tool does (<code>cargo</code>, <code>rustup</code>,
+<code>clippy</code>, etc) is very valuable and will ease beginners into
+contributing in the new language.</p>
 <h2 id="incremental-rewrite">Incremental rewrite</h2>
 <p>Along with stakeholder buy-in, the most important point in the
 article is that only an <strong>incremental</strong> rewrite can
@@ -240,7 +247,10 @@ better. Ideally it is as small as one function, or one class.</li>
 <li>The new implementation is written in the same Git (or whatever CVS
 you use) repository as the existing code, alongside it. It’s a ‘bug for
 bug’ implementation which means it does the exact same thing as the old
-implementation, even if the old seems sometimes non-sensical.</li>
+implementation, even if the old seems sometimes non-sensical. In some
+cases, what the old code tries to do is so broken and insecure, that we
+have to do something different in the new code, but that should be
+rare.</li>
 <li>Tests for the new implementation are written and pass (so that we
 know the new implementation is likely correct)</li>
 <li>Each call site calling the function/class is switched to using the
