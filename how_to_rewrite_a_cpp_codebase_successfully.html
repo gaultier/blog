@@ -334,6 +334,10 @@ implementation does may seem weird or unnecessarily convulated but shall
 be kept (at least as a first pass). However, <em>how</em> it does it in
 the new code should be up to the best software engineering standards,
 that means tests, fuzzing, documentation, etc.</li>
+<li>Thread lightly, what can tank the project is being to bold when
+rewriting code and by doing so, introducing bugs or subtly changing the
+behavior which will cause breakage down the line. It’s better to be
+conservative here.</li>
 </ul>
 <p>Finally, there is one hidden advantage of doing an incremental
 rewrite. A from-scratch rewrite is all or nothing, if it does not fully
