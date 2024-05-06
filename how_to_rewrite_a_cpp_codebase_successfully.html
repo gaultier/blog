@@ -54,21 +54,23 @@ original developers, they were understaffed and it was written as a
 prototype (the famous case of the prototype which becomes the production
 code).</li>
 <li>No hiring of C++ developers is planned or at least in the current
-budget</li>
+budget (also because that’s the only C++ project we have and we have
+many other projects to maintain and extend)</li>
 </ul>
-<p>So it was apparent to me that sticking with C++ was a dead end. In
-the end it’s a conflict of values and priorities: C++ values many things
-that are not that important in this project, such as performance above
-all; and it does not give any guarantees about things that are crucial
-to us, such as memory and temporal safety (special mention to integer
-under/overflows).</p>
+<p>So it was apparent to me that sticking with C++ was a dead end. It’s
+simply a conflict of values and priorities: C++ values many things that
+are not that important in this project, such as performance above all;
+and it does not give any guarantees about things that are crucial to us,
+such as memory and temporal safety (special mention to integer
+under/overflows. Have fun reviewing every single instance of arithmetic
+operations to check if it can under/overflow).</p>
 <p>We bought a race car but what we needed was a family-friendly 5
 seater, that’s our mistake.</p>
 <p>The only solution would be to train everyone in the team on C++ and
 dedicate a significant amount of time rewriting the most problematic
 parts of the codebase to perhaps reach a good enough state, and even
-then, we have little confidence our code is robust against nation-state
-attacks.</p>
+then, we’d have little confidence our code is robust against
+nation-state attacks.</p>
 <p>It’s a judgement call in the end, but that seemed to be more effort
 than ‘simply’ introducing a new language and doing a rewrite.</p>
 <p>I don’t actually like the term ‘rewrite’. Folks on the internet will
@@ -173,9 +175,9 @@ collective.</p>
 <p>Ideally, if time permits, a small prototype for the preferred
 solution should be done, to confirm or infirm early that it can work,
 and to eliminate doubts. It’s a much more compelling argument to say:
-“Of course it will work, here is prototype I made!” compared to “I hope
-it will work, but who knows, oh well I guess we’ll see in 3
-months…”.</p>
+“Of course it will work, here is prototype I made, let’s look at it
+together!” compared to “I hope it will work, but who knows, oh well I
+guess we’ll see 3 months in…”.</p>
 <p>After much debate, we settled on Rust as the new programming language
 being introduced into the codebase. It’s important to note that I am not
 a Rust diehard fan. I appreciate the language but it’s not perfect (see
@@ -197,7 +199,8 @@ concurrenctly, the JVM one and the Go one.</p>
 software always takes longer than expected and unexpected hurdles happen
 all the time. Here, showing the progress through regular demos (weekly
 or biweekly is a good frequence) is great for stakeholders especially
-non-technical ones.</p>
+non-technical ones. And it can potentially motivate fellow developers to
+also learn the new language and help you out.</p>
 <p>Addtionally, showing how long-standing issues in the old code get
 automatically solved by the new code, e.g. memory leaks, or fuzzing
 crashes in one function, are a great sign for stakeholders of the
@@ -228,11 +231,11 @@ difference in their eye between: We are improving the product by fixing
 long existing bugs; or: we are introducing new bugs with our risky
 changes and we should maybe stop the effort completely because it’s
 harming the product.</p>
-<p>Also, I think the first commit introducing the new code should add
-dummy code and focus on making the build system and CI work seamlessly
-on every supported platform. This is not appealing work but it’s
-necessary. Also, having instructions in the README explaining a bit what
-each tool does (<code>cargo</code>, <code>rustup</code>,
+<p>Furthermore, I think the first commit introducing the new code should
+add dummy code and focus on making the build system and CI work
+seamlessly on every supported platform. This is not appealing work but
+it’s necessary. Also, having instructions in the README explaining a bit
+what each tool does (<code>cargo</code>, <code>rustup</code>,
 <code>clippy</code>, etc) is very valuable and will ease beginners into
 contributing in the new language.</p>
 <h2 id="incremental-rewrite">Incremental rewrite</h2>
@@ -244,7 +247,7 @@ times.</p>
 <p>What does it mean, very pragmatically? Well it’s just a few rules of
 thumb:</p>
 <ul>
-<li>A small component is picked to be rewritting, the smallest, the
+<li>A small component is picked to be rewritten, the smallest, the
 better. Ideally it is as small as one function, or one class.</li>
 <li>The new implementation is written in the same Git (or whatever CVS
 you use) repository as the existing code, alongside it. It’s a ‘bug for

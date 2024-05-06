@@ -5,13 +5,13 @@ I recently wrote about [inheriting a legacy C++ codebase](/blog/you_inherited_a_
 - No one in the team but me is able - or feels confident enough - to make a change in this codebase
 - This is a crucial project for the company and will live for years if not decades
 - The code is pretty bad on all the criteria we care about: correctness, maintainability, security, you name it. I don't blame the original developers, they were understaffed and it was written as a prototype (the famous case of the prototype which becomes the production code).
-- No hiring of C++ developers is planned or at least in the current budget
+- No hiring of C++ developers is planned or at least in the current budget (also because that's the only C++ project we have and we have many other projects to maintain and extend)
 
-So it was apparent to me that sticking with C++ was a dead end. In the end it's a conflict of values and priorities: C++ values many things that are not that important in this project, such as performance above all; and it does not give any guarantees about things that are crucial to us, such as memory and temporal safety (special mention to integer under/overflows). 
+So it was apparent to me that sticking with C++ was a dead end. It's simply a conflict of values and priorities: C++ values many things that are not that important in this project, such as performance above all; and it does not give any guarantees about things that are crucial to us, such as memory and temporal safety (special mention to integer under/overflows. Have fun reviewing every single instance of arithmetic operations to check if it can under/overflow). 
 
 We bought a race car but what we needed was a family-friendly 5 seater, that's our mistake.
 
-The only solution would be to train everyone in the team on C++ and dedicate a significant amount of time rewriting the most problematic parts of the codebase to perhaps reach a good enough state, and even then, we have little confidence our code is robust against nation-state attacks.
+The only solution would be to train everyone in the team on C++ and dedicate a significant amount of time rewriting the most problematic parts of the codebase to perhaps reach a good enough state, and even then, we'd have little confidence our code is robust against nation-state attacks.
 
 It's a judgement call in the end, but that seemed to be more effort than 'simply' introducing a new language and doing a rewrite.
 
@@ -71,7 +71,7 @@ We use at my dayjob basically a RFC process to introduce a major change. That's 
 
 After the problematic situation has been presented, I think at least 3 different solutions should be presented and compared (including sticking with pure C++), and seriously consider each option. I find it important here to be as little emotionally invested as possible even if one option is your favorite, and to be ready to work for possibly months on your least favorite option, if it happens to be chosen by the collective.
 
-Ideally, if time permits, a small prototype for the preferred solution should be done, to confirm or infirm early that it can work, and to eliminate doubts. It's a much more compelling argument to say: "Of course it will work, here is prototype I made!" compared to "I hope it will work, but who knows, oh well I guess we'll see in 3 months...".
+Ideally, if time permits, a small prototype for the preferred solution should be done, to confirm or infirm early that it can work, and to eliminate doubts. It's a much more compelling argument to say: "Of course it will work, here is prototype I made, let's look at it together!" compared to "I hope it will work, but who knows, oh well I guess we'll see 3 months in...".
 
 
 After much debate, we settled on Rust as the new programming language being introduced into the codebase. It's important to note that I am not a Rust diehard fan. I appreciate the language but it's not perfect (see the FFI section later), it has issues, it's just that it solves all the issues we have in this project, especially considering the big focus on security (since we deal with payments),  the relative similarity with the company tech stack (Go), and the willingness of the team to learn it and review code in it.
@@ -82,7 +82,7 @@ I also seriously considered Go, but after doing a prototype, I was doubtful the 
 
 ## Keeping buy-in
 
-Keeping buy-in after initially getting it is not a given, since software always takes longer than expected and unexpected hurdles happen all the time. Here, showing the progress through regular demos (weekly or biweekly is a good frequence) is great for stakeholders especially non-technical ones.
+Keeping buy-in after initially getting it is not a given, since software always takes longer than expected and unexpected hurdles happen all the time. Here, showing the progress through regular demos (weekly or biweekly is a good frequence) is great for stakeholders especially non-technical ones. And it can potentially motivate fellow developers to also learn the new language and help you out.
 
 Addtionally, showing how long-standing issues in the old code get automatically solved by the new code, e.g. memory leaks, or fuzzing crashes in one function, are a great sign for stakeholders of the quality improving and the value of the on-going effort.
 
@@ -100,7 +100,7 @@ This proved invaluable, because when rewriting the legacy code, I found tens of 
 Every time such a bug appeared, I switched to this Git tag, and tried to reproduce the bug. Almost every time, the bug was already present before the rewrite. That's a very important information (for me, it was a relief!) for solving the bug, and also for stakeholders. That's the difference in their eye between: We are improving the product by fixing long existing bugs; or: we are introducing new bugs with our risky changes and we should maybe stop the effort completely because it's harming the product.
 
 
-Also, I think the first commit introducing the new code should add dummy code and focus on making the build system and CI work seamlessly on every supported platform. This is not appealing work but it's necessary. Also, having instructions in the README explaining a bit what each tool does (`cargo`, `rustup`, `clippy`, etc) is very valuable and will ease beginners into contributing in the new language.
+Furthermore, I think the first commit introducing the new code should add dummy code and focus on making the build system and CI work seamlessly on every supported platform. This is not appealing work but it's necessary. Also, having instructions in the README explaining a bit what each tool does (`cargo`, `rustup`, `clippy`, etc) is very valuable and will ease beginners into contributing in the new language.
 
 ## Incremental rewrite
 
@@ -108,7 +108,7 @@ Along with stakeholder buy-in, the most important point in the article is that o
 
 What does it mean, very pragmatically? Well it's just a few rules of thumb:
 
-- A small component is picked to be rewritting, the smallest, the better. Ideally it is as small as one function, or one class.
+- A small component is picked to be rewritten, the smallest, the better. Ideally it is as small as one function, or one class.
 - The new implementation is written in the same Git (or whatever CVS you use) repository as the existing code, alongside it. It's a 'bug for bug' implementation which means it does the exact same thing as the old implementation, even if the old seems sometimes non-sensical. In some cases, what the old code tries to do is so broken and insecure, that we have to do something different in the new code, but that should be rare.
 - Tests for the new implementation are written and pass (so that we know the new implementation is likely correct)
 - Each call site calling the function/class is switched to using the new implementation. After each replacement, the test suite is run and passes (so that we know that nothing broke at the scale of the project; a kind of regression testing). The change is committed. That way is something breaks, we know exactly which change is the culprit.
