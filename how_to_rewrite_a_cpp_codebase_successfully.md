@@ -551,7 +551,7 @@ So to summarize, Miri is so essential that I don't know whether it's viable to w
 
 ## Cross-compilation
 
-Rust has great cross-compilation support; C++ not so much. Nonetheless I managed to coerced CMake into cross-compiling to every platform we support from my Linux laptop. After using Docker for more than 10 years I am firmly against using Docker for that, it's just clunky and slow and not a good fit.
+Rust has great cross-compilation support; C++ not so much. Nonetheless I managed to coerced CMake into cross-compiling to every platform we support from my Linux laptop. After using Docker for more than 10 years I am firmly against using Docker for that, it's just clunky and slow and not a good fit. Also we already have to cross-compile to the mobile platforms anyway so why not make that work for all platforms?
 
 
 That way, I can even cross-compile tests and example programs in C or C++ using the library and run them inside `qemu` to make sure all platforms work as expected.

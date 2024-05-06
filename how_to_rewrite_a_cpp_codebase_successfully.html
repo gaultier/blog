@@ -779,7 +779,9 @@ using only arenas or reconsidering the use of Rust.</p>
 Nonetheless I managed to coerced CMake into cross-compiling to every
 platform we support from my Linux laptop. After using Docker for more
 than 10 years I am firmly against using Docker for that, it’s just
-clunky and slow and not a good fit.</p>
+clunky and slow and not a good fit. Also we already have to
+cross-compile to the mobile platforms anyway so why not make that work
+for all platforms?</p>
 <p>That way, I can even cross-compile tests and example programs in C or
 C++ using the library and run them inside <code>qemu</code> to make sure
 all platforms work as expected.</p>
