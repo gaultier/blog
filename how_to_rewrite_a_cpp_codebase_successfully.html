@@ -281,10 +281,15 @@ regular software development, really.</p>
 <p>Here are a few additional tips I recommend doing:</p>
 <ul>
 <li>Starting from the leaves of the call graph is much easier than from
-the root. Mapping out at the start from a high-level what are the
+the root. For example, if <code>foo</code> calls <code>bar</code> which
+calls <code>baz</code>, first rewriting <code>baz</code> then
+<code>bar</code> then <code>foo</code> is straightforward, but the
+reverse is usually not true.</li>
+<li>Thus, mapping out at the start from a high-level what are the
 existing components and which component calls out to which other
 component is invaluable in that regard, but also for establishing a
-rough roadmap.</li>
+rough roadmap for the rewrite, and reporting on the progress (“3
+components have been rewritten, 2 left to do!”).</li>
 <li>Port the code comments from the old code to the new code if they
 make sense and add value</li>
 <li>If you can use automated tools (search and replace, or tools
