@@ -545,7 +545,7 @@ if (foo.bar == nullptr) {
 free_foo(&foo);
 ```
 
-This is undefined behavior if the array is of size 1, since the Rust allocator will free a pointer allocated by the C allocator, and address sanitizer catches it:
+This is undefined behavior if the array is of size 1, since in that case the Rust allocator will free a pointer allocated by the C allocator, and address sanitizer catches it:
 
 ```
 SUMMARY: AddressSanitizer: alloc-dealloc-mismatch /home/runner/work/llvm-project/llvm-project/final/llvm-project/compiler-rt/lib/asan/asan_malloc_linux.cpp:52:3 in free

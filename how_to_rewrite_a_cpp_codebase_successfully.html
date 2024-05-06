@@ -581,7 +581,7 @@ class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb11-1"><a href="#
 <span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
 <p>To simplify this, I introduced a <code>defer</code> <a
 href="https://www.gingerbill.org/article/2015/08/19/defer-in-cpp/">construct</a>
-(thanks Gingerbill!):</p>
+to C++ (thanks Gingerbill!):</p>
 <div class="sourceCode" id="cb12"><pre
 class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>FooC foo<span class="op">{};</span></span>
 <span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>defer<span class="op">({</span>foo_free<span class="op">(</span>foo<span class="op">);});</span></span>
@@ -766,9 +766,9 @@ class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb19-1"><a href="#
 <span id="cb19-7"><a href="#cb19-7" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
 <span id="cb19-8"><a href="#cb19-8" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb19-9"><a href="#cb19-9" aria-hidden="true" tabindex="-1"></a>free_foo<span class="op">(&amp;</span>foo<span class="op">);</span></span></code></pre></div>
-<p>This is undefined behavior if the array is of size 1, since the Rust
-allocator will free a pointer allocated by the C allocator, and address
-sanitizer catches it:</p>
+<p>This is undefined behavior if the array is of size 1, since in that
+case the Rust allocator will free a pointer allocated by the C
+allocator, and address sanitizer catches it:</p>
 <pre><code>SUMMARY: AddressSanitizer: alloc-dealloc-mismatch /home/runner/work/llvm-project/llvm-project/final/llvm-project/compiler-rt/lib/asan/asan_malloc_linux.cpp:52:3 in free</code></pre>
 <p>However, it is only detected with sanitizers on and if a test (or
 fuzzing) triggers this case. Or by Miri if a Rust test covers this
