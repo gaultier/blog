@@ -762,3 +762,7 @@ As expected, developers migrating C++ code to Rust code had a breeze with the Ru
 
 CMake/Make/Ninja proved surprinsingly difficult for developers not accustomed to them, but I mentioned that already. I think half of my time during this rewrite was actually spent coercing all the various build systems (Bazel/Xcode/CMake/cargo/Go) on the various platforms into working well together. If there is no one in the team who's really familiar with build systems, I think this is going to be a real challenge.
 
+So, I hope this article alleviated your concerns about rewriting your C++ codebase. It can absolutely be done, just do it incrementally, don't overpromise, establish a rough roadmap with milestones, regularly show progress to stakeholders (even if it's just you, it helps staying motived!), and make sure the team is on-board and enjoying the process.
+
+And pick the right tool for the job!
+
