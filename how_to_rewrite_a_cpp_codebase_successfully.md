@@ -129,15 +129,15 @@ Here are a few additional tips I recommend doing:
 - Thus, mapping out at the start from a high-level what are the existing components and which component calls out to which other component is invaluable in that regard, but also for establishing a rough roadmap for the rewrite, and reporting on the progress ("3 components have been rewritten, 2 left to do!").
 - Port the code comments from the old code to the new code if they make sense and add value. In my experience, a few are knowledge gems and should be kept, and most are completely useless noise.
 - If you can use automated tools (search and replace, or tools operating at the AST level) to change every call site to use the new implementation, it'll make your reviewers very happy, and save you hours and hours of debugging because of a copy-paste mistake
-- Since Rust and C++ can basically only communicate through a C API (I am aware of experimental projects to make them talk directly but we did not use those), it means that each Rust function must be accompanied by a corresponding C function signature, so that C++ can call it as a C function. I recommend automating this process with [cbindgen](https://github.com/mozilla/cbindgen). I have encountered some limitations with it but it's very useful, especially to keep the implementation (in Rust) and the API (in C) in sync, or if your teammates are not comfortable with C. 
+- Since Rust and C++ can basically only communicate through a C API (I am aware of experimental projects to make them talk directly but we did not use those - we ultimately want 100% Rust code exposing a C API, just like the old C++ did), it means that each Rust function must be accompanied by a corresponding C function signature, so that C++ can call it as a C function. I recommend automating this process with [cbindgen](https://github.com/mozilla/cbindgen). I have encountered some limitations with it but it's very useful, especially to keep the implementation (in Rust) and the API (in C) in sync, or if your teammates are not comfortable with C. 
 - Automate when you can, for example I added the `cbindgen` code generation step to CMake so that rebuilding the C++ project would automatically run `cbindgen` as well as `cargo build` for the right target in the right mode (debug or release) for the right platforms (`--target=...`). DevUX matters!
 - When rewriting a function/class, port the tests for this function/class to the new implementation to avoid reducing the code coverage each time
 - Make the old and the new test suites fast so that the iteration time is short
 - When a divergence is detected (a difference in output or side effects between the old and the new implementation), observe with tests or within the debugger the output of the old implementation (that's where the initial Git tag comes handy, and working with small commits) in detail so that you can correct the new implementation. Some people even develop big test suites verifying that the output of the old and the new implementation are exactly the same.
 - Since it's a bug-for-bug rewrite, *what* the new implementation does may seem weird or unnecessarily convulated but shall be kept (at least as a first pass). However, *how* it does it in the new code should be up to the best software engineering standards, that means tests, fuzzing, documentation, etc.
-- Thread lightly, what can tank the project is being to bold when rewriting code and by doing so, introducing bugs or subtly changing the behavior which will cause breakage down the line. It's better to be conservative here.
+- Thread lightly, what can tank the project is being too bold when rewriting code and by doing so, introducing bugs or subtly changing the behavior which will cause breakage down the line. It's better to be conservative here.
 
-Finally, there is one hidden advantage of doing an incremental rewrite. A from-scratch rewrite is all or nothing, if it does not fully complete and replace the old implementation, it's useless and wasteful. However, an incremental rewrite is immediately useful, may be pause and continued a number of times, and even if the funding gets cut short and it never fully completes, it's still a clear improvement over the starting point.
+Finally, there is one hidden advantage of doing an incremental rewrite. A from-scratch rewrite is all or nothing, if it does not fully complete and replace the old implementation, it's useless and wasteful. However, an incremental rewrite is immediately useful, may be paused and continued a number of times, and even if the funding gets cut short and it never fully completes, it's still a clear improvement over the starting point.
 
 ## Fuzzing
 
@@ -257,7 +257,7 @@ So beware: introducing Rust to a C or C++ codebase may actually introduce new me
 Thankfully that's a better situation to be in than to have to inspect all of the codebase when a memory issue is detected.
 
 
-## C FFI in Rust is cumbersome
+## C FFI in Rust is cumbersome and error-prone
 
 The root cause for all these issues is that the C API that C++ and Rust use to call each other is very limited in its expresiveness w.r.t ownership, as well as many Rust types not being marked `#[repr(C)]`, even types you would expect to, such as `Option`, `Vec` or `&[u8]`. That means that you have to define your own equivalent types:
 
@@ -352,7 +352,7 @@ Still, it's more work than what you'd have to do in pure idiomatic Rust or C++ c
 In Zig or Odin, I would probably have used arenas to avoid that, or a general allocator with `defer`.
 
 
-## An example of a real bug at the FFI boundary
+### An example of a real bug at the FFI boundary
 
 More perniciously, it's easy to introduce memory unsafety at the FFI boundary. Here is a real bug I introduced, can you spot it? I elided all the error handling to make it easier to spot:
 
@@ -460,7 +460,7 @@ Which is not very informative, but better than nothing. `Miri`'s output is much 
 So in conclusion, Rust's FFI capabilities work but are tedious are error-prone in my opinion, and so require extra care and testing with Miri/fuzzing, with high code coverage of the FFI functions. It's not enough to only test the pure (non FFI) Rust code.
 
 
-## Another example of a real bug at the FFI boundary
+### Another example of a real bug at the FFI boundary
 
 When I started this rewrite, I was under the impression that the Rust standard library uses the C memory allocator (basically, `malloc`) under the covers when it needs to allocate some memory.
 

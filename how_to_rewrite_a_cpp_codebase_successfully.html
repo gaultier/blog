@@ -304,9 +304,10 @@ implementation, it’ll make your reviewers very happy, and save you hours
 and hours of debugging because of a copy-paste mistake</li>
 <li>Since Rust and C++ can basically only communicate through a C API (I
 am aware of experimental projects to make them talk directly but we did
-not use those), it means that each Rust function must be accompanied by
-a corresponding C function signature, so that C++ can call it as a C
-function. I recommend automating this process with <a
+not use those - we ultimately want 100% Rust code exposing a C API, just
+like the old C++ did), it means that each Rust function must be
+accompanied by a corresponding C function signature, so that C++ can
+call it as a C function. I recommend automating this process with <a
 href="https://github.com/mozilla/cbindgen">cbindgen</a>. I have
 encountered some limitations with it but it’s very useful, especially to
 keep the implementation (in Rust) and the API (in C) in sync, or if your
@@ -334,7 +335,7 @@ implementation does may seem weird or unnecessarily convulated but shall
 be kept (at least as a first pass). However, <em>how</em> it does it in
 the new code should be up to the best software engineering standards,
 that means tests, fuzzing, documentation, etc.</li>
-<li>Thread lightly, what can tank the project is being to bold when
+<li>Thread lightly, what can tank the project is being too bold when
 rewriting code and by doing so, introducing bugs or subtly changing the
 behavior which will cause breakage down the line. It’s better to be
 conservative here.</li>
@@ -342,7 +343,7 @@ conservative here.</li>
 <p>Finally, there is one hidden advantage of doing an incremental
 rewrite. A from-scratch rewrite is all or nothing, if it does not fully
 complete and replace the old implementation, it’s useless and wasteful.
-However, an incremental rewrite is immediately useful, may be pause and
+However, an incremental rewrite is immediately useful, may be paused and
 continued a number of times, and even if the funding gets cut short and
 it never fully completes, it’s still a clear improvement over the
 starting point.</p>
@@ -480,7 +481,8 @@ introduce new memory safety issues, usually all located in the FFI
 code.</p>
 <p>Thankfully that’s a better situation to be in than to have to inspect
 all of the codebase when a memory issue is detected.</p>
-<h2 id="c-ffi-in-rust-is-cumbersome">C FFI in Rust is cumbersome</h2>
+<h2 id="c-ffi-in-rust-is-cumbersome-and-error-prone">C FFI in Rust is
+cumbersome and error-prone</h2>
 <p>The root cause for all these issues is that the C API that C++ and
 Rust use to call each other is very limited in its expresiveness w.r.t
 ownership, as well as many Rust types not being marked
@@ -572,8 +574,8 @@ calls to new/delete.</p>
 Rust or C++ code (or even C code with arenas for that matter).</p>
 <p>In Zig or Odin, I would probably have used arenas to avoid that, or a
 general allocator with <code>defer</code>.</p>
-<h2 id="an-example-of-a-real-bug-at-the-ffi-boundary">An example of a
-real bug at the FFI boundary</h2>
+<h3 id="an-example-of-a-real-bug-at-the-ffi-boundary">An example of a
+real bug at the FFI boundary</h3>
 <p>More perniciously, it’s easy to introduce memory unsafety at the FFI
 boundary. Here is a real bug I introduced, can you spot it? I elided all
 the error handling to make it easier to spot:</p>
@@ -672,8 +674,8 @@ valgrind:</p>
 error-prone in my opinion, and so require extra care and testing with
 Miri/fuzzing, with high code coverage of the FFI functions. It’s not
 enough to only test the pure (non FFI) Rust code.</p>
-<h2 id="another-example-of-a-real-bug-at-the-ffi-boundary">Another
-example of a real bug at the FFI boundary</h2>
+<h3 id="another-example-of-a-real-bug-at-the-ffi-boundary">Another
+example of a real bug at the FFI boundary</h3>
 <p>When I started this rewrite, I was under the impression that the Rust
 standard library uses the C memory allocator (basically,
 <code>malloc</code>) under the covers when it needs to allocate some
