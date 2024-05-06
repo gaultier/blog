@@ -7,7 +7,9 @@ I recently wrote about [inheriting a legacy C++ codebase](/blog/you_inherited_a_
 - The code is pretty bad on all the criteria we care about: correctness, maintainability, security, you name it. I don't blame the original developers, they were understaffed and it was written as a prototype (the famous case of the prototype which becomes the production code).
 - No hiring of C++ developers is planned or at least in the current budget
 
-So it was apparent that sticking with C++ was a dead end. The only solution would be to train everyone in the team on C++ and dedicate a significant amount of time rewriting the most problematic parts of the codebase to perhaps reach a good enough state. It's a judgement call in the end, but that seemed to be more effort than 'simply' introducing a new language and doing a rewrite.
+So it was apparent to me that sticking with C++ was a dead end. The only solution would be to train everyone in the team on C++ and dedicate a significant amount of time rewriting the most problematic parts of the codebase to perhaps reach a good enough state, and even then, we have little confidence our code is robust against nation-state attacks.
+
+It's a judgement call in the end, but that seemed to be more effort than 'simply' introducing a new language and doing a rewrite.
 
 I don't actually like the term 'rewrite'. Folks on the internet will eagerly repeat that rewrites are a bad idea, will indubtedly fail, and are a sign of hubris and naivity. I have experienced such rewrites, from scratch, and yes that does not end well.
 
@@ -20,18 +22,20 @@ So join me on this journey, here's the guide to rewrite a C++ codebase successfu
 
 ## The project
 
-This project is a library that exposes a C API but the implementation is C++, and it vendors C libraries (e.g. mbedtls). The final artifacts are a `libfoo.a` static library and a `libfoo.h` C header. It is used to talk to applets on a [smart card](https://en.wikipedia.org/wiki/Smart_card) like your credit card, ID, passport or driving license (yes, smart cards are nowadays everywhere - you probably carry several on you right now), since they use a ~~bizzarre~~ interesting communication protocol. The library also implements a home-grown protocol on top of the well-specified smart card protocol, encryption, and business logic.
+This project is a library that exposes a C API but the implementation is C++, and it vendors C libraries (e.g. mbedtls) which we build from source. The final artifacts are a `libfoo.a` static library and a `libfoo.h` C header. It is used to talk to applets on a [smart card](https://en.wikipedia.org/wiki/Smart_card) like your credit card, ID, passport or driving license (yes, smart cards are nowadays everywhere - you probably carry several on you right now), since they use a ~~bizzarre~~ interesting communication protocol. The library also implements a home-grown protocol on top of the well-specified smart card protocol, encryption, and business logic.
+
+It is meant to be part of an user-facing application running on smartphones and Point of Sales terminals, as well as in servers running in a datacenter or in the cloud.
 
 This library is used in:
 
 - Android applications, through JNI
-- Go back-end services running in the Kubernetes, through CGO
+- Go back-end services running in Kubernetes, through CGO
 - iOS applications, through Swift FFI
 - C and C++ applications running on very small 32 bits ARM boards similar to the first Raspberry Pi
 
 Additionally, developers are using macOS (x64 and arm64) and Linux so the library needs to build and run on these platforms.
 
-Since external customers also integrate their applications with our library and we do not control these environments, we also need to work with either the glibc and the musl C libraries, as well a clang and gcc, and expose a C89-ish API, to maximize compatibility.
+Since external customers also integrate their applications with our library and we do not control these environments, and because some developer machines and servers use glibc and others musl,  we also need to work with either the glibc and the musl C libraries, as well as clang and gcc, and expose a C89-ish API, to maximize compatibility.
 
 Alright, now that the stage is set, let's go through the steps of rewriting this project.
 
