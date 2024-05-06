@@ -552,7 +552,11 @@ That way, I can even cross-compile tests and example programs in C or C++ using 
 
 I took inspiration from the CMake code in the Android project, which has to cross-compile for many architectures. Did you know that Android supports x86 (which is 32 bits), x86_64, arm (which is 32 bits), aarch64 (sometimes called arm64), and more? 
 
-In short, you instruct CMake to cross-compile by supplying on the command-line the variables `CMAKE_SYSTEM_PROCESSOR` and `CMAKE_SYSTEM_NAME`, which are the equivalent of `GOARCH` and `GOOS` if you are familiar with Go. E.g.: `cmake -B .build -S src -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_SYSTEM_NAME=Linux -DCMAKE_SYSTEM_PROCESSOR=arm`.
+In short, you instruct CMake to cross-compile by supplying on the command-line the variables `CMAKE_SYSTEM_PROCESSOR` and `CMAKE_SYSTEM_NAME`, which are the equivalent of `GOARCH` and `GOOS` if you are familiar with Go. E.g.: 
+
+```sh
+$ cmake -B .build -S src -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_SYSTEM_NAME=Linux -DCMAKE_SYSTEM_PROCESSOR=arm
+```
 
 On the Rust side, you tell `cargo` to cross-compile by supplying the `--target` command-line argument, e.g.: `--target=x86_64-unknown-linux-musl`. This works by virtue of installing the pre-compiled toolchain for this platform with `rustup` first:
 
@@ -560,7 +564,7 @@ On the Rust side, you tell `cargo` to cross-compile by supplying the `--target` 
 $ rustup target add x86_64-unknown-linux-musl
 ```
 
-So now we have to convert in CMake `CMAKE_SYSTEM_ARCHITECTURE` and `CMAKE_SYSTEM_NAME` into a target triple that clang and cargo can understand. Of course you have to do all the hard work yourself. This is complicated by lots of factors like Apple using the architecture name `arm64` instead of `aarch64`, iOS peculiarities, soft vs hard float, arm having multiple variants (v6, v7, v8, etc), and so on. Your mileage may vary.
+So now we have to convert in CMake `CMAKE_SYSTEM_ARCHITECTURE` and `CMAKE_SYSTEM_NAME` into a target triple that clang and cargo can understand. Of course you have to do all the hard work yourself. This is complicated by lots of factors like Apple using the architecture name `arm64` instead of `aarch64`, iOS peculiarities, soft vs hard float, arm having multiple variants (v6, v7, v8, etc), and so on. Your mileage may vary. We opt-in into using musl with a CMake command line option, on Linux.
 
 
 Here it is in all its glory:
@@ -630,12 +634,14 @@ if ( NOT DEFINED CMAKE_CXX_COMPILER_TARGET )
 endif()
 ```
 
-There was a lot of trial and error. 
+There was a lot of trial and error as you can guess. 
 
-Also, gcc is not directly supported for cross-compilation in this approach (although it can be made to work) because gcc does not support a `--target` option like clang does, since it's not a cross-compiler. You have to download the variant you need e.g. `gcc-9-i686-linux-gnu` to compile for x86, and set `CMAKE_C_COMPILER` and `CMAKE_CXX_COMPILER` to `gcc-9-i686-linux-gnu`. However, in that case you are not setting `CMAKE_SYSTEM_NAME` and `CMAKE_SYSTEM_PROCESSOR` since it's in theory not cross-compiling, so `cargo` will not have its `--target` option filled, so it won't work for the Rust code. I advise sticking with clang in this setup.
+Also, gcc is not directly supported for cross-compilation in this approach because gcc does not support a `--target` option like clang does, since it's not a cross-compiler. You have to download the variant you need e.g. `gcc-9-i686-linux-gnu` to compile for x86, and set `CMAKE_C_COMPILER` and `CMAKE_CXX_COMPILER` to `gcc-9-i686-linux-gnu`. However, in that case you are not setting `CMAKE_SYSTEM_NAME` and `CMAKE_SYSTEM_PROCESSOR` since it's in theory not cross-compiling, so `cargo` will not have its `--target` option filled, so it won't work for the Rust code. I advise sticking with clang in this setup. Still, when not cross-compiling, gcc works fine.
 
 
-Finally, I wrote a Lua script to cross-compile for every platform we support to make sure I did not break anything. I resorted to using the Zig toolchain (not the language) to be able to statically link to musl or build for iOS. This is very useful also if you have several compile-time feature flags and want to build in different configurations for all platforms:
+Finally, I wrote a Lua script to cross-compile for every platform we support to make sure I did not break anything. I resorted to using the Zig toolchain (not the language) to be able to statically link with musl or cross-compile from Linux to iOS which I could not achieve with pure clang. However this is only my local setup, we do not use the Zig toolchain when building the production artifacts (e.g. the iOS build is done in a macOS virtual machine).
+
+This is very useful also if you have several compile-time feature flags and want to build in different configurations for all platforms, e.g. enable/disable logs at compile time:
 
 ```lua
 local android_sdk = arg[1]
@@ -721,12 +727,28 @@ for i = 1,#targets do
   os.execute("ninja -C '" .. build_dir .. "'")
 end
 
-print("find '" .. build_root .. "'/.build* -name example -type f -exec file ';'")
-os.execute("find '" .. build_root .. "'/.build* -name example -type f -exec file {} ';'")
 ```
 
 
 I look forward to only having Rust code and deleting all of this convoluted stuff. 
 
 That's something that people do not mention enough when saying that modern C++ is good enough and secure enough. Well, first I disagree with this statement, but more broadly, the C++ toolchain to cross-compile sucks. You only have clang that can cross-compile in theory but in practice you have to resort to the Zig toolchain to automate cross-compiling the standard library etc.
+
+Also, developers not deeply familiar with either C or C++ do not want to touch all this CMake/Autotools with a ten-foot pole. And I understand them. Stockhold syndrom notwithstanding, these are pretty mediocre, slow, convoluted, niche programming languages. Once you are used to simply typing `go build` or `cargo build`, you really start to ask yourself if those weird things are worth anyone's time.
+
+
+## Conclusion
+
+The rewrite is not yet fully done, but we have already more Rust code than C++ code, and it's moving along nicely, at our own pace (it's not by far the only project we have on our lap). Once all C++ code is removed, we will do a final pass to remove the CMake stuff and build directly via `cargo`. We'll see if that work when integrating with other build systems e.g. Bazel for Android or Xcode for iOS.
+
+Developers who learned Rust are overall very happy with it and did not have too many fights with the borrow checker, with one notable exception of trying to migrate a C struct that uses an intrusive linked list (ah, the dreaded linked list v. borrow checker!). My suggestion was to simply use a `Vec` in Rust since the linked list was not really justified here, and the problem was solved.
+
+
+Everyone was really happy with the tooling, even though having to first do `rustup target add ...` before cross-compiling tripped a few people, since in Go that's done automatically behind the scenes (I think Go compiles everything from source?).
+
+All the tooling we need to scanning dependencies for vulnerabilities, linting, etc was present and polished. Shoutout to `osv-scanner` from Google, which allowed us to scan both the Rust and C++ dependencies in the same project (and it evens supports Go).
+
+As expected, developers migrating C++ code to Rust code had a breeze with the Rust code and almost every time asked for assistance when dealing with the C++ code. C++ is just too complex a language for most developers, especially compared to its alternatives.
+
+CMake/Make/Ninja proved surprinsingly difficult for developers not accustomed to them, but I mentioned that already. I think half of my time during this rewrite was actually spent coercing all the various build systems on the various platforms into working well together.
 
