@@ -446,15 +446,23 @@ So in conclusion, Rust's FFI capabilities work but are tedious are error-prone i
 
 When I started this rewrite, I was under the impression that the Rust standard library uses the C memory allocator (basically, `malloc`) under the covers when it needs to allocate some memory.
 
-However, I quickly discovered that it is not (anymore?) the case, it uses its own allocator - at least on Linux where there is no C library shipping with the kernel. As Bryan Cantrill once said: glibc, it's just, like, your opinion dude. Meaning, glibc is just one option, among many. So the Rust standard library cannot assume one C library on every Linux system, like it would be on macOS or the BSDs or Illumos. All of that to say: it implements its own memory allocator.
+However, I quickly discovered that it is not (anymore?) the case, it uses its own allocator - at least on Linux where there is no C library shipping with the kernel.
+Miri again is the MVP here since it detected the issue of mixing the C and Rust allocations which prompted this section.
+
+As Bryan Cantrill once said: "glibc, it's just, like, your opinion dude". Meaning, glibc is just one option, among many. So the Rust standard library cannot expect a given C library on every Linux system, like it would be on macOS or the BSDs or Illumos. All of that to say: it implements its own memory allocator.
 
 The consequence of this, is that allocating memory on the C/C++ side (since `new` in C++ just calls `malloc` under the hood), and freeing it on the Rust side, is undefined behavior: it amounts to freeing a pointer that was never allocated. And vice-versa.
 
 That has dire consequences since most memory allocators do not detect this in Release mode. You might free completely unrelated memory leading to use-after-free later, or corrupt the memory allocator structures. It's bad.
 
-So I recommend sticking to one 'side' , be it C/C++ or Rust, of the FFI boundary, to allocate and free all the memory. Rust has an edge here since the long-term goal is to have 100% of Rust so it will have to allocate all the memory anyway in the end.
+So I recommend sticking to one 'side' , be it C/C++ or Rust, of the FFI boundary, to allocate and free all the memory using in FFI structures. Rust has an edge here since the long-term goal is to have 100% of Rust so it will have to allocate all the memory anyway in the end.
 
-Miri again is the MVP here since it detected the issue of mixing the C and Rust allocations which prompted this section.
+Depending on the existing code style, it might be hard to ensure that the C/C++ allocator is not used at all for structures used in FFI, due to abstractions and hidden memory allocations. 
+
+One possible solution (which I did not implement but considered) is making FFI structures a simple opaque pointer (or 'handle') so that the caller has to use FFI functions to allocate and free this structure. That also means implementing getter/setters for certain fields since the structures are now opaque. It maximizes the ABI compatibility, since the caller cannot rely on a given struct size, alignement, or fields.
+However that means more work and more functions in the API.
+
+`libcurl` is an example of such an approach, `libuv` is an example of a library which did not do this initially, but plans to move to this approach in future versions.
 
 ## Cross-compilation
 
