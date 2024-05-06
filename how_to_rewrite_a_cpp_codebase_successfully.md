@@ -543,6 +543,8 @@ However that means more work and more functions in the API.
 `libcurl` is an example of such an approach, `libuv` is an example of a library which did not do this initially, but plans to move to this approach in future versions, which would be a breaking change for clients.
 
 
+So to summarize, Miri is so essential that I don't know whether it's viable to write Rust code with lots of FFI (and thus lots of unsafe blocks) without it. If Miri did not exist, I would seriously consider using only arenas.
+
 ## Cross-compilation
 
 Rust has great cross-compilation support; C++ not so much. Nonetheless I managed to coerced CMake into cross-compiling to every platform we support from my Linux laptop. After using Docker for more than 10 years I am firmly against using Docker for that, it's just clunky and slow and not a good fit.
@@ -744,11 +746,11 @@ The rewrite is not yet fully done, but we have already more Rust code than C++ c
 Developers who learned Rust are overall very happy with it and did not have too many fights with the borrow checker, with one notable exception of trying to migrate a C struct that uses an intrusive linked list (ah, the dreaded linked list v. borrow checker!). My suggestion was to simply use a `Vec` in Rust since the linked list was not really justified here, and the problem was solved.
 
 
-Everyone was really happy with the tooling, even though having to first do `rustup target add ...` before cross-compiling tripped a few people, since in Go that's done automatically behind the scenes (I think Go compiles everything from source?).
+Everyone was really happy with the tooling, even though having to first do `rustup target add ...` before cross-compiling tripped a few people, since in Go that's done automatically behind the scenes (I think Go compiles everything from source?). Everyone had an easy time with their text editor/IDE, Rust is ubiquitous enough now that every editor will have support for it.
 
 All the tooling we need to scanning dependencies for vulnerabilities, linting, etc was present and polished. Shoutout to `osv-scanner` from Google, which allowed us to scan both the Rust and C++ dependencies in the same project (and it evens supports Go).
 
 As expected, developers migrating C++ code to Rust code had a breeze with the Rust code and almost every time asked for assistance when dealing with the C++ code. C++ is just too complex a language for most developers, especially compared to its alternatives.
 
-CMake/Make/Ninja proved surprinsingly difficult for developers not accustomed to them, but I mentioned that already. I think half of my time during this rewrite was actually spent coercing all the various build systems on the various platforms into working well together.
+CMake/Make/Ninja proved surprinsingly difficult for developers not accustomed to them, but I mentioned that already. I think half of my time during this rewrite was actually spent coercing all the various build systems (Bazel/Xcode/CMake/cargo/Go) on the various platforms into working well together. If there is no one in the team who's really familiar with build systems, I think this is going to be a real challenge.
 
