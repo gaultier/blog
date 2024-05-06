@@ -363,6 +363,10 @@ that means tests, fuzzing, documentation, etc.</li>
 rewriting code and by doing so, introducing bugs or subtly changing the
 behavior which will cause breakage down the line. It’s better to be
 conservative here.</li>
+<li>Pick a prefix for all struct and functions in the C API exposed by
+the Rust code, even if it’s just <code>RUST_xxx</code>, so that they are
+immediately identifiable and greppable. Just like <code>libcurl</code>
+has the prefix <code>curl_xxx</code>.</li>
 </ul>
 <p>Finally, there is one hidden advantage of doing an incremental
 rewrite. A from-scratch rewrite is all or nothing, if it does not fully
