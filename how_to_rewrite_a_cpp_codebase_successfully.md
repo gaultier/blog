@@ -91,12 +91,14 @@ That applies also to teammates, who might be unsure the new programming language
 
 ## Preparations to introduce the new language
 
-Before adding the first line of code in the new language, I created a Git tag `last-before-rust`. The commit right after introduced the code in Rust.
+Before adding the first line of code in the new language, I created a Git tag `last-before-rust`. The commit right after introduced some code in Rust.
 
 This proved invaluable, because when rewriting the legacy code, I found tens of bugs lying around, and I think that's very typical. Also, this rewriting effort requires time, during which other team members or external customers may report bugs they just found.
 
 Every time such a bug appeared, I switched to this Git tag, and tried to reproduce the bug. Almost every time, the bug was already present before the rewrite. That's a very important information (for me, it was a relief!) for solving the bug, and also for stakeholders. That's the difference in their eye between: We are improving the product by fixing long existing bugs; or: we are introducing new bugs with our risky changes and we should maybe stop the effort completely because it's harming the product.
 
+
+Also, I think the first commit introducing the new code should add dummy code and focus on making the build system and CI work seamlessly on every supported platform. This is not appealing work but it's necessary. Also, having instructions in the README explaining a bit what each tool does (`cargo`, `rustup`, `clippy`, etc) is very valuable and will ease beginners into contributing in the new language.
 
 ## Incremental rewrite
 
