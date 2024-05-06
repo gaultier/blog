@@ -167,5 +167,6 @@ p:has(img):has(em) {
 }
 
 #donate {
+  margin-top: 8rem;
   text-align: center;
 }
