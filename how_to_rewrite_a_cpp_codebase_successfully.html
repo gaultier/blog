@@ -60,8 +60,10 @@ budget</li>
 the end it’s a conflict of values and priorities: C++ values many things
 that are not that important in this project, such as performance above
 all; and it does not give any guarantees about things that are crucial
-to us, such as memory and temporal safety. We bought a race car but what
-we needed was a fanily-friendly 5 seater.</p>
+to us, such as memory and temporal safety (special mention to integer
+under/overflows).</p>
+<p>We bought a race car but what we needed was a family-friendly 5
+seater, that’s our mistake.</p>
 <p>The only solution would be to train everyone in the team on C++ and
 dedicate a significant amount of time rewriting the most problematic
 parts of the codebase to perhaps reach a good enough state, and even
@@ -977,31 +979,38 @@ practice you have to resort to the Zig toolchain to automate
 cross-compiling the standard library etc.</p>
 <p>Also, developers not deeply familiar with either C or C++ do not want
 to touch all this CMake/Autotools with a ten-foot pole. And I understand
-them. Stockhold syndrom notwithstanding, these are pretty mediocre,
-slow, convoluted, niche programming languages. Once you are used to
-simply typing <code>go build</code> or <code>cargo build</code>, you
-really start to ask yourself if those weird things are worth anyone’s
-time.</p>
+them. Stockholm syndrom notwithstanding, these are pretty slow,
+convoluted, niche programming languages and no one wants to actively
+learn and use them unless they have to.</p>
+<p>Once you are used to simply typing <code>go build</code> or
+<code>cargo build</code>, you really start to ask yourself if those
+weird things are worth anyone’s time.</p>
 <h2 id="conclusion">Conclusion</h2>
 <p>The rewrite is not yet fully done, but we have already more Rust code
 than C++ code, and it’s moving along nicely, at our own pace (it’s not
 by far the only project we have on our lap). Once all C++ code is
 removed, we will do a final pass to remove the CMake stuff and build
-directly via <code>cargo</code>. We’ll see if that work when integrating
-with other build systems e.g. Bazel for Android or Xcode for iOS.</p>
+directly via <code>cargo</code>. We’ll see if that works when
+integrating with other build systems e.g. Bazel for Android or Xcode for
+iOS.</p>
 <p>Developers who learned Rust are overall very happy with it and did
 not have too many fights with the borrow checker, with one notable
-exception of trying to migrate a C struct that uses an intrusive linked
+exception of trying to migrate a C struct that used an intrusive linked
 list (ah, the dreaded linked list v. borrow checker!). My suggestion was
 to simply use a <code>Vec</code> in Rust since the linked list was not
 really justified here, and the problem was solved.</p>
+<p>Adding unit tests was trivial in Rust compared to C++ and as a result
+people would write a lot more of them. Built-in support for tests is
+expected in 2024 by developers. I don’t think one single C++ test was
+written during this rewrite, now that I think of it.</p>
 <p>Everyone was really happy with the tooling, even though having to
 first do <code>rustup target add ...</code> before cross-compiling
-tripped a few people, since in Go that’s done automatically behind the
-scenes (I think Go compiles everything from source?). Everyone had an
-easy time with their text editor/IDE, Rust is ubiquitous enough now that
-every editor will have support for it.</p>
-<p>All the tooling we need to scanning dependencies for vulnerabilities,
+tripped up a few people, since in Go that’s done automatically behind
+the scenes (I think one difference is that Go compiles everything from
+source and so does not need to downloed pre-compiled blobs?).</p>
+<p>Everyone also had an easy time with their text editor/IDE, Rust is
+ubiquitous enough now that every editor will have support for it.</p>
+<p>All the tooling we needed to scan dependencies for vulnerabilities,
 linting, etc was present and polished. Shoutout to
 <code>osv-scanner</code> from Google, which allowed us to scan both the
 Rust and C++ dependencies in the same project (and it evens supports
