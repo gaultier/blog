@@ -76,7 +76,7 @@ After much debate, we settled on Rust as the new programming language being intr
 
 After all, the goal is also to gain additional developers, and stop being the only person who can even touch this code.
 
-I also seriously considered Go, but after doing a prototype, I was doubtful the many limitations of CGO would allow us to achieve the rewrite. Other teammates also had concerns on how the performance would look like on low-end Android and Linux devices, especially 32 bits, having essentially two garbage collectors running concurrenctly, the JVM one and the Go one.
+I also seriously considered Go, but after doing a prototype, I was doubtful the many limitations of CGO would allow us to achieve the rewrite. Other teammates also had concerns on how the performance and battery usage would look like on low-end Android and Linux devices, especially 32 bits, having essentially two garbage collectors running concurrenctly, the JVM one and the Go one.
 
 ## Keeping buy-in
 
