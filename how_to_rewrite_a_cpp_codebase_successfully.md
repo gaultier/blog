@@ -65,7 +65,7 @@ Essentially, it's a matter of genuinely presenting the alternative of rewriting 
 
 We use at my dayjob basically a RFC process to introduce a major change. That's great because it forces the person pushing for a change to document the current issues, the possible solutions, and allowing for a rational discussion to take place in the team. And documenting the whole process in a shared document (that allows comments) is very valuable because when people ask about it months later, you can just share the link to it.
 
-After the problematic situation has been presented, I think at least 3 different solutions should be presented and compared (including sticking with pure C++), and seriously consider each option.
+After the problematic situation has been presented, I think at least 3 different solutions should be presented and compared (including sticking with pure C++), and seriously consider each option. I find it important here to be as little emotionally invested as possible even if one option is your favorite, and to be ready to work for possibly months on your least favorite option, if it happens to be chosen by the colective.
 
 Ideally, if time permits, a small prototype for the preferred solution should be done, to confirm or infirm early that it can work, and to eliminate doubts. It's a much more compelling argument to say: "Of course it will work, here is prototype I made!" compared to "I hope it will work, but who knows, oh well I guess we'll see...".
 
