@@ -55,8 +55,8 @@ It's a big investment in time and thus money we are talking about, it can only w
 
 Here I think the way to go is showing the naked truth and staying very factual, in terms managers and non-technical people can understand. This is roughly what I presented:
 
-- The bus factor for this project is 1
-- Tool X shows that there are memory leaks at the rate of Y MiB/hour which means the application using our library will be OOM killed after around Z hours.
+- The bus factor for this project is 1 (me)
+- Tool X shows that there are memory leaks at the rate of Y MiB/hour which means the application using our library will be OOM killed after around Z minutes/hours.
 - Quick and dirty fuzzing manages to make the library crash 133 times in 10 seconds
 - Linter X detects hundreds of real issues we need to fix
 - All of these points make it really likely a hacker can exploit our library to gain Remote Code Execution (RCE) or steal secrets
