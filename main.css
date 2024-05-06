@@ -165,3 +165,7 @@ h2, h3, h4, h5, h6 {
 p:has(img):has(em) {
   padding-bottom: 2.5rem;
 }
+
+#donate {
+  text-align: center;
+}
