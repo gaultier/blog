@@ -655,9 +655,9 @@ class="sourceCode rust"><code class="sourceCode rust"><span id="cb14-1"><a href=
 <span id="cb14-17"><a href="#cb14-17" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
 <p>If you’re lucky, <code>cargo test</code> would fail at the last
 assertion saying that the value is not what we expected, but in my case
-it passed every time, and so the bug was undetected for some time.
-That’s because we unknowingly introduced undefined behavior, and as
-such, how or if it manifests is impossible to tell.</p>
+it passed every time, and so the bug was undetected for a while. That’s
+because we unknowingly introduced undefined behavior, and as such, how
+or if it manifests is impossible to tell.</p>
 <p>Let’s run the test with Miri:</p>
 <pre><code>running 1 test
 test api::tests::bar ... error: Undefined Behavior: out-of-bounds pointer use: alloc195648 has been freed, so this pointer is dangling
