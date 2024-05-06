@@ -455,14 +455,87 @@ The consequence of this, is that allocating memory on the C/C++ side (since `new
 
 That has dire consequences since most memory allocators do not detect this in Release mode. You might free completely unrelated memory leading to use-after-free later, or corrupt the memory allocator structures. It's bad.
 
+
+Here's a simplified example of code that triggered this issue:
+
+
+```rust
+#[repr(C)]
+pub struct Foo {
+    foo: u8,
+    bar: *mut usize,
+}
+
+#[no_mangle]
+pub extern "C" fn parse_foo(in_bytes: *const u8, in_bytes_len: usize, foo: &mut Foo) {
+    let in_bytes: &[u8] = unsafe { &*core::ptr::slice_from_raw_parts(in_bytes, in_bytes_len) };
+
+    // Parse `foo` from `in_bytes` but `bar` is sometimes not present in the payload.
+    // In that case it is set manually by the calling code.
+    *foo = Foo {
+        foo: in_bytes[0],
+        bar: if in_bytes_len == 1 {
+            core::ptr::null_mut()
+        } else {
+            let x = Box::new(in_bytes[1] as usize);
+            Box::into_raw(x)
+        },
+    }
+}
+
+#[no_mangle]
+pub extern "C" fn free_foo(foo: &mut Foo) {
+    if !foo.bar.is_null() {
+        unsafe {
+            let _ = Box::from_raw(foo.bar);
+        }
+    }
+}
+```
+
+And the calling code:
+
+```c++
+Foo foo{};
+
+const uint8_t data[] = { 1 };
+parse_foo(data, sizeof(data), &foo);
+if (foo.bar == nullptr) {
+  foo.bar = new size_t{99999};
+}
+
+free_foo(&foo);
+```
+
+This is undefined behavior if the array is of size 1, since the Rust allocator will free a pointer allocated by the C allocator, and address sanitizer catches it:
+
+```
+SUMMARY: AddressSanitizer: alloc-dealloc-mismatch /home/runner/work/llvm-project/llvm-project/final/llvm-project/compiler-rt/lib/asan/asan_malloc_linux.cpp:52:3 in free
+```
+
+However, it is only detected with sanitizers on and if a test (or fuzzing) triggers this case.
+
+---
+
 So I recommend sticking to one 'side' , be it C/C++ or Rust, of the FFI boundary, to allocate and free all the memory using in FFI structures. Rust has an edge here since the long-term goal is to have 100% of Rust so it will have to allocate all the memory anyway in the end.
+
+For example:
+
+```rust
+#[no_mangle]
+pub extern "C" fn make_owning_array_u8(len: usize) -> OwningArrayC<u8> {
+    vec![0; len].into()
+}
+```
 
 Depending on the existing code style, it might be hard to ensure that the C/C++ allocator is not used at all for structures used in FFI, due to abstractions and hidden memory allocations. 
 
 One possible solution (which I did not implement but considered) is making FFI structures a simple opaque pointer (or 'handle') so that the caller has to use FFI functions to allocate and free this structure. That also means implementing getter/setters for certain fields since the structures are now opaque. It maximizes the ABI compatibility, since the caller cannot rely on a given struct size, alignement, or fields.
+
 However that means more work and more functions in the API.
 
-`libcurl` is an example of such an approach, `libuv` is an example of a library which did not do this initially, but plans to move to this approach in future versions.
+`libcurl` is an example of such an approach, `libuv` is an example of a library which did not do this initially, but plans to move to this approach in future versions, which would be a breaking change for clients.
+
 
 ## Cross-compilation
 
