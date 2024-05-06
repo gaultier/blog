@@ -523,7 +523,7 @@ class="sourceCode rust"><code class="sourceCode rust"><span id="cb8-1"><a href="
 for these types, to avoid missing out on some future optimizations. So
 it means that every Rust struct now needs the equivalent “FFI friendly”
 struct along with conversion functions (usually implemented as
-<code>Into</code> for convenience):</p>
+<code>.into()</code> for convenience):</p>
 <pre><code>struct Foo&lt;&#39;a&gt; {
     x: Option&lt;usize&gt;,
     y: &amp;&#39;a [u8],
@@ -680,40 +680,40 @@ example of a real bug at the FFI boundary</h3>
 standard library uses the C memory allocator (basically,
 <code>malloc</code>) under the covers when it needs to allocate some
 memory.</p>
-<p>However, I quickly discovered that it is not (anymore?) the case, it
-uses its own allocator - at least on Linux where there is no C library
-shipping with the kernel. Miri again is the MVP here since it detected
-the issue of mixing the C and Rust allocations which prompted this
-section.</p>
+<p>However, I quickly discovered that it is not (anymore?) the case,
+Rust uses its own allocator - at least on Linux where there is no C
+library shipping with the kernel. Miri again is the MVP here since it
+detected the issue of mixing the C and Rust allocations which prompted
+this section.</p>
 <p>As Bryan Cantrill once said: “glibc on Linux, it’s just, like, your
 opinion dude”. Meaning, glibc is just one option, among many, since
 Linux is just the kernel and does not ship with a libC. So the Rust
 standard library cannot expect a given C library on every Linux system,
-like it would be on macOS or the BSDs or Illumos. All of that to say: it
-implements its own memory allocator.</p>
+like it would be on macOS or the BSDs or Illumos. All of that to say:
+Rust implements its own memory allocator.</p>
 <p>The consequence of this, is that allocating memory on the C/C++ side,
 and freeing it on the Rust side, is undefined behavior: it amounts to
 freeing a pointer that was never allocated by this allocator. And
 vice-versa, allocating a pointer from Rust and freeing it from C.</p>
 <p>That has dire consequences since most memory allocators do not detect
-this in Release mode. You might free completely unrelated memory leading
+this in release mode. You might free completely unrelated memory leading
 to use-after-free later, or corrupt the memory allocator structures.
 It’s bad.</p>
 <p>Here’s a simplified example of code that triggered this issue:</p>
 <div class="sourceCode" id="cb18"><pre
 class="sourceCode rust"><code class="sourceCode rust"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="at">#[</span>repr<span class="at">(</span>C<span class="at">)]</span></span>
-<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">struct</span> Foo <span class="op">{</span></span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">struct</span> FooC <span class="op">{</span></span>
 <span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a>    foo<span class="op">:</span> <span class="dt">u8</span><span class="op">,</span></span>
 <span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a>    bar<span class="op">:</span> <span class="op">*</span><span class="kw">mut</span> <span class="dt">usize</span><span class="op">,</span></span>
 <span id="cb18-5"><a href="#cb18-5" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
 <span id="cb18-6"><a href="#cb18-6" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb18-7"><a href="#cb18-7" aria-hidden="true" tabindex="-1"></a><span class="at">#[</span>no_mangle<span class="at">]</span></span>
-<span id="cb18-8"><a href="#cb18-8" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">extern</span> <span class="st">&quot;C&quot;</span> <span class="kw">fn</span> parse_foo(in_bytes<span class="op">:</span> <span class="op">*</span><span class="kw">const</span> <span class="dt">u8</span><span class="op">,</span> in_bytes_len<span class="op">:</span> <span class="dt">usize</span><span class="op">,</span> foo<span class="op">:</span> <span class="op">&amp;</span><span class="kw">mut</span> Foo) <span class="op">{</span></span>
+<span id="cb18-8"><a href="#cb18-8" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">extern</span> <span class="st">&quot;C&quot;</span> <span class="kw">fn</span> parse_foo(in_bytes<span class="op">:</span> <span class="op">*</span><span class="kw">const</span> <span class="dt">u8</span><span class="op">,</span> in_bytes_len<span class="op">:</span> <span class="dt">usize</span><span class="op">,</span> foo<span class="op">:</span> <span class="op">&amp;</span><span class="kw">mut</span> FooC) <span class="op">{</span></span>
 <span id="cb18-9"><a href="#cb18-9" aria-hidden="true" tabindex="-1"></a>    <span class="kw">let</span> in_bytes<span class="op">:</span> <span class="op">&amp;</span>[<span class="dt">u8</span>] <span class="op">=</span> <span class="kw">unsafe</span> <span class="op">{</span> <span class="op">&amp;*</span><span class="pp">core::ptr::</span>slice_from_raw_parts(in_bytes<span class="op">,</span> in_bytes_len) <span class="op">};</span></span>
 <span id="cb18-10"><a href="#cb18-10" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb18-11"><a href="#cb18-11" aria-hidden="true" tabindex="-1"></a>    <span class="co">// Parse `foo` from `in_bytes` but `bar` is sometimes not present in the payload.</span></span>
 <span id="cb18-12"><a href="#cb18-12" aria-hidden="true" tabindex="-1"></a>    <span class="co">// In that case it is set manually by the calling code.</span></span>
-<span id="cb18-13"><a href="#cb18-13" aria-hidden="true" tabindex="-1"></a>    <span class="op">*</span>foo <span class="op">=</span> Foo <span class="op">{</span></span>
+<span id="cb18-13"><a href="#cb18-13" aria-hidden="true" tabindex="-1"></a>    <span class="op">*</span>foo <span class="op">=</span> FooC <span class="op">{</span></span>
 <span id="cb18-14"><a href="#cb18-14" aria-hidden="true" tabindex="-1"></a>        foo<span class="op">:</span> in_bytes[<span class="dv">0</span>]<span class="op">,</span></span>
 <span id="cb18-15"><a href="#cb18-15" aria-hidden="true" tabindex="-1"></a>        bar<span class="op">:</span> <span class="cf">if</span> in_bytes_len <span class="op">==</span> <span class="dv">1</span> <span class="op">{</span></span>
 <span id="cb18-16"><a href="#cb18-16" aria-hidden="true" tabindex="-1"></a>            <span class="pp">core::ptr::</span>null_mut()</span>
@@ -725,7 +725,7 @@ class="sourceCode rust"><code class="sourceCode rust"><span id="cb18-1"><a href=
 <span id="cb18-22"><a href="#cb18-22" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
 <span id="cb18-23"><a href="#cb18-23" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb18-24"><a href="#cb18-24" aria-hidden="true" tabindex="-1"></a><span class="at">#[</span>no_mangle<span class="at">]</span></span>
-<span id="cb18-25"><a href="#cb18-25" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">extern</span> <span class="st">&quot;C&quot;</span> <span class="kw">fn</span> free_foo(foo<span class="op">:</span> <span class="op">&amp;</span><span class="kw">mut</span> Foo) <span class="op">{</span></span>
+<span id="cb18-25"><a href="#cb18-25" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">extern</span> <span class="st">&quot;C&quot;</span> <span class="kw">fn</span> free_foo(foo<span class="op">:</span> <span class="op">&amp;</span><span class="kw">mut</span> FooC) <span class="op">{</span></span>
 <span id="cb18-26"><a href="#cb18-26" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> <span class="op">!</span>foo<span class="op">.</span>bar<span class="op">.</span>is_null() <span class="op">{</span></span>
 <span id="cb18-27"><a href="#cb18-27" aria-hidden="true" tabindex="-1"></a>        <span class="kw">unsafe</span> <span class="op">{</span></span>
 <span id="cb18-28"><a href="#cb18-28" aria-hidden="true" tabindex="-1"></a>            <span class="kw">let</span> _ <span class="op">=</span> <span class="dt">Box</span><span class="pp">::</span>from_raw(foo<span class="op">.</span>bar)<span class="op">;</span></span>
@@ -734,7 +734,7 @@ class="sourceCode rust"><code class="sourceCode rust"><span id="cb18-1"><a href=
 <span id="cb18-31"><a href="#cb18-31" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
 <p>And the calling code:</p>
 <div class="sourceCode" id="cb19"><pre
-class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a>Foo foo<span class="op">{};</span></span>
+class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a>FooC foo<span class="op">{};</span></span>
 <span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a><span class="at">const</span> <span class="dt">uint8_t</span> data<span class="op">[]</span> <span class="op">=</span> <span class="op">{</span> <span class="dv">1</span> <span class="op">};</span></span>
 <span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a>parse_foo<span class="op">(</span>data<span class="op">,</span> <span class="kw">sizeof</span><span class="op">(</span>data<span class="op">),</span> <span class="op">&amp;</span>foo<span class="op">);</span></span>
@@ -751,7 +751,7 @@ sanitizer catches it:</p>
 fuzzing) triggers this case. Or by Miri if a Rust test covers this
 function.</p>
 <hr />
-<p>So I recommend sticking to one ‘side’ , be it C/C++ or Rust, of the
+<p>So I recommend sticking to one ‘side’, be it C/C++ or Rust, of the
 FFI boundary, to allocate and free all the memory using in FFI
 structures. Rust has an edge here since the long-term goal is to have
 100% of Rust so it will have to allocate all the memory anyway in the

@@ -294,7 +294,7 @@ pub extern "C" fn FMW_RUST_make_owning_array_u8(len: usize) -> OwningArrayC<u8> 
 
 ```
 
-Apparently, Rust developers do not want to commit to a particular ABI for these types, to avoid missing out on some future optimizations. So it means that every Rust struct now needs the equivalent "FFI friendly" struct along with conversion functions (usually implemented as `Into` for convenience):
+Apparently, Rust developers do not want to commit to a particular ABI for these types, to avoid missing out on some future optimizations. So it means that every Rust struct now needs the equivalent "FFI friendly" struct along with conversion functions (usually implemented as `.into()` for convenience):
 
 ```
 struct Foo<'a> {
@@ -464,14 +464,14 @@ So in conclusion, Rust's FFI capabilities work but are tedious are error-prone i
 
 When I started this rewrite, I was under the impression that the Rust standard library uses the C memory allocator (basically, `malloc`) under the covers when it needs to allocate some memory.
 
-However, I quickly discovered that it is not (anymore?) the case, it uses its own allocator - at least on Linux where there is no C library shipping with the kernel.
+However, I quickly discovered that it is not (anymore?) the case, Rust uses its own allocator - at least on Linux where there is no C library shipping with the kernel.
 Miri again is the MVP here since it detected the issue of mixing the C and Rust allocations which prompted this section.
 
-As Bryan Cantrill once said: "glibc on Linux, it's just, like, your opinion dude". Meaning, glibc is just one option, among many, since Linux is just the kernel and does not ship with a libC. So the Rust standard library cannot expect a given C library on every Linux system, like it would be on macOS or the BSDs or Illumos. All of that to say: it implements its own memory allocator.
+As Bryan Cantrill once said: "glibc on Linux, it's just, like, your opinion dude". Meaning, glibc is just one option, among many, since Linux is just the kernel and does not ship with a libC. So the Rust standard library cannot expect a given C library on every Linux system, like it would be on macOS or the BSDs or Illumos. All of that to say: Rust implements its own memory allocator.
 
 The consequence of this, is that allocating memory on the C/C++ side, and freeing it on the Rust side, is undefined behavior: it amounts to freeing a pointer that was never allocated by this allocator. And vice-versa, allocating a pointer from Rust and freeing it from C.
 
-That has dire consequences since most memory allocators do not detect this in Release mode. You might free completely unrelated memory leading to use-after-free later, or corrupt the memory allocator structures. It's bad.
+That has dire consequences since most memory allocators do not detect this in release mode. You might free completely unrelated memory leading to use-after-free later, or corrupt the memory allocator structures. It's bad.
 
 
 Here's a simplified example of code that triggered this issue:
@@ -479,18 +479,18 @@ Here's a simplified example of code that triggered this issue:
 
 ```rust
 #[repr(C)]
-pub struct Foo {
+pub struct FooC {
     foo: u8,
     bar: *mut usize,
 }
 
 #[no_mangle]
-pub extern "C" fn parse_foo(in_bytes: *const u8, in_bytes_len: usize, foo: &mut Foo) {
+pub extern "C" fn parse_foo(in_bytes: *const u8, in_bytes_len: usize, foo: &mut FooC) {
     let in_bytes: &[u8] = unsafe { &*core::ptr::slice_from_raw_parts(in_bytes, in_bytes_len) };
 
     // Parse `foo` from `in_bytes` but `bar` is sometimes not present in the payload.
     // In that case it is set manually by the calling code.
-    *foo = Foo {
+    *foo = FooC {
         foo: in_bytes[0],
         bar: if in_bytes_len == 1 {
             core::ptr::null_mut()
@@ -502,7 +502,7 @@ pub extern "C" fn parse_foo(in_bytes: *const u8, in_bytes_len: usize, foo: &mut 
 }
 
 #[no_mangle]
-pub extern "C" fn free_foo(foo: &mut Foo) {
+pub extern "C" fn free_foo(foo: &mut FooC) {
     if !foo.bar.is_null() {
         unsafe {
             let _ = Box::from_raw(foo.bar);
@@ -514,7 +514,7 @@ pub extern "C" fn free_foo(foo: &mut Foo) {
 And the calling code:
 
 ```c++
-Foo foo{};
+FooC foo{};
 
 const uint8_t data[] = { 1 };
 parse_foo(data, sizeof(data), &foo);
@@ -535,7 +535,7 @@ However, it is only detected with sanitizers on and if a test (or fuzzing) trigg
 
 ---
 
-So I recommend sticking to one 'side' , be it C/C++ or Rust, of the FFI boundary, to allocate and free all the memory using in FFI structures. Rust has an edge here since the long-term goal is to have 100% of Rust so it will have to allocate all the memory anyway in the end.
+So I recommend sticking to one 'side', be it C/C++ or Rust, of the FFI boundary, to allocate and free all the memory using in FFI structures. Rust has an edge here since the long-term goal is to have 100% of Rust so it will have to allocate all the memory anyway in the end.
 
 
 Depending on the existing code style, it might be hard to ensure that the C/C++ allocator is not used at all for structures used in FFI, due to abstractions and hidden memory allocations. 
