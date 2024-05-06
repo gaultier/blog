@@ -353,7 +353,7 @@ if (foo_parse(&foo, bytes) == SUCCESS) {
 }
 ```
 
-To simplify this, I introduced a `defer` [construct](https://www.gingerbill.org/article/2015/08/19/defer-in-cpp/) (thanks Gingerbill!):
+To simplify this, I introduced a `defer` [construct](https://www.gingerbill.org/article/2015/08/19/defer-in-cpp/) to C++ (thanks Gingerbill!):
 
 ```c++
 FooC foo{};
