@@ -13,9 +13,9 @@ We bought a race car but what we needed was a family-friendly 5 seater, that's o
 
 The only solution would be to train everyone in the team on C++ and dedicate a significant amount of time rewriting the most problematic parts of the codebase to perhaps reach a good enough state, and even then, we'd have little confidence our code is robust against nation-state attacks.
 
-It's a judgement call in the end, but that seemed to be more effort than 'simply' introducing a new language and doing a rewrite.
+It's a judgment call in the end, but that seemed to be more effort than 'simply' introducing a new language and doing a rewrite.
 
-I don't actually like the term 'rewrite'. Folks on the internet will eagerly repeat that rewrites are a bad idea, will indubtedly fail, and are a sign of hubris and naivity. I have experienced such rewrites, from scratch, and yes that does not end well.
+I don't actually like the term 'rewrite'. Folks on the internet will eagerly repeat that rewrites are a bad idea, will undoubtedly fail, and are a sign of hubris and naivety. I have experienced such rewrites, from scratch, and yes that does not end well.
 
 However, I claim, because I've done it, and many others before me, that an **incremental** rewrite can be successful, and is absolutely worth it. It's all about how it is being done, so here's how I proceeded and I hope it can be applied in other cases, and people find it useful.
 
@@ -67,24 +67,24 @@ Here I think the way to go is showing the naked truth and staying very factual, 
 
 Essentially, it's a matter of genuinely presenting the alternative of rewriting being cheaper in terms of time and effort compared to improving the project with pure C++. If your teammates and boss are reality-based, it should be a straightforward decision.
 
-We use at my dayjob basically a RFC process to introduce a major change. That's great because it forces the person pushing for a change to document the current issues, the possible solutions, and allowing for a rational discussion to take place in the team. And documenting the whole process in a shared document (that allows comments) is very valuable because when people ask about it months later, you can just share the link to it.
+We use at my day job basically a RFC process to introduce a major change. That's great because it forces the person pushing for a change to document the current issues, the possible solutions, and allowing for a rational discussion to take place in the team. And documenting the whole process in a shared document (that allows comments) is very valuable because when people ask about it months later, you can just share the link to it.
 
 After the problematic situation has been presented, I think at least 3 different solutions should be presented and compared (including sticking with pure C++), and seriously consider each option. I find it important here to be as little emotionally invested as possible even if one option is your favorite, and to be ready to work for possibly months on your least favorite option, if it happens to be chosen by the collective.
 
 Ideally, if time permits, a small prototype for the preferred solution should be done, to confirm or infirm early that it can work, and to eliminate doubts. It's a much more compelling argument to say: "Of course it will work, here is prototype I made, let's look at it together!" compared to "I hope it will work, but who knows, oh well I guess we'll see 3 months in...".
 
 
-After much debate, we settled on Rust as the new programming language being introduced into the codebase. It's important to note that I am not a Rust diehard fan. I appreciate the language but it's not perfect (see the FFI section later), it has issues, it's just that it solves all the issues we have in this project, especially considering the big focus on security (since we deal with payments),  the relative similarity with the company tech stack (Go), and the willingness of the team to learn it and review code in it.
+After much debate, we settled on Rust as the new programming language being introduced into the codebase. It's important to note that I am not a Rust die hard fan. I appreciate the language but it's not perfect (see the FFI section later), it has issues, it's just that it solves all the issues we have in this project, especially considering the big focus on security (since we deal with payments),  the relative similarity with the company tech stack (Go), and the willingness of the team to learn it and review code in it.
 
 After all, the goal is also to gain additional developers, and stop being the only person who can even touch this code.
 
-I also seriously considered Go, but after doing a prototype, I was doubtful the many limitations of CGO would allow us to achieve the rewrite. Other teammates also had concerns on how the performance and battery usage would look like on low-end Android and Linux devices, especially 32 bits, having essentially two garbage collectors running concurrenctly, the JVM one and the Go one.
+I also seriously considered Go, but after doing a prototype, I was doubtful the many limitations of CGO would allow us to achieve the rewrite. Other teammates also had concerns on how the performance and battery usage would look like on low-end Android and Linux devices, especially 32 bits, having essentially two garbage collectors running concurrently, the JVM one and the Go one.
 
 ## Keeping buy-in
 
-Keeping buy-in after initially getting it is not a given, since software always takes longer than expected and unexpected hurdles happen all the time. Here, showing the progress through regular demos (weekly or biweekly is a good frequence) is great for stakeholders especially non-technical ones. And it can potentially motivate fellow developers to also learn the new language and help you out.
+Keeping buy-in after initially getting it is not a given, since software always takes longer than expected and unexpected hurdles happen all the time. Here, showing the progress through regular demos (weekly or biweekly is a good frequency) is great for stakeholders especially non-technical ones. And it can potentially motivate fellow developers to also learn the new language and help you out.
 
-Addtionally, showing how long-standing issues in the old code get automatically solved by the new code, e.g. memory leaks, or fuzzing crashes in one function, are a great sign for stakeholders of the quality improving and the value of the on-going effort.
+Additionally, showing how long-standing issues in the old code get automatically solved by the new code, e.g. memory leaks, or fuzzing crashes in one function, are a great sign for stakeholders of the quality improving and the value of the on-going effort.
 
 Be prepared to repeat many many times the decision process that led to the rewrite to your boss, your boss's boss, the odd product manager who's not technical, the salesperson supporting the external customers, etc. It's important to nail the elevator's pitch.
 
@@ -134,7 +134,7 @@ Here are a few additional tips I recommend doing:
 - When rewriting a function/class, port the tests for this function/class to the new implementation to avoid reducing the code coverage each time
 - Make the old and the new test suites fast so that the iteration time is short
 - When a divergence is detected (a difference in output or side effects between the old and the new implementation), observe with tests or within the debugger the output of the old implementation (that's where the initial Git tag comes handy, and working with small commits) in detail so that you can correct the new implementation. Some people even develop big test suites verifying that the output of the old and the new implementation are exactly the same.
-- Since it's a bug-for-bug rewrite, *what* the new implementation does may seem weird or unnecessarily convulated but shall be kept (at least as a first pass). However, *how* it does it in the new code should be up to the best software engineering standards, that means tests, fuzzing, documentation, etc.
+- Since it's a bug-for-bug rewrite, *what* the new implementation does may seem weird or unnecessarily convoluted but shall be kept (at least as a first pass). However, *how* it does it in the new code should be up to the best software engineering standards, that means tests, fuzzing, documentation, etc.
 - Thread lightly, what can tank the project is being too bold when rewriting code and by doing so, introducing bugs or subtly changing the behavior which will cause breakage down the line. It's better to be conservative here.
 
 Finally, there is one hidden advantage of doing an incremental rewrite. A from-scratch rewrite is all or nothing, if it does not fully complete and replace the old implementation, it's useless and wasteful. However, an incremental rewrite is immediately useful, may be paused and continued a number of times, and even if the funding gets cut short and it never fully completes, it's still a clear improvement over the starting point.
@@ -259,7 +259,7 @@ Thankfully that's a better situation to be in than to have to inspect all of the
 
 ## C FFI in Rust is cumbersome and error-prone
 
-The root cause for all these issues is that the C API that C++ and Rust use to call each other is very limited in its expresiveness w.r.t ownership, as well as many Rust types not being marked `#[repr(C)]`, even types you would expect to, such as `Option`, `Vec` or `&[u8]`. That means that you have to define your own equivalent types:
+The root cause for all these issues is that the C API that C++ and Rust use to call each other is very limited in its expressiveness w.r.t ownership, as well as many Rust types not being marked `#[repr(C)]`, even types you would expect to, such as `Option`, `Vec` or `&[u8]`. That means that you have to define your own equivalent types:
 
 ```rust
 #[repr(C)]
@@ -345,7 +345,7 @@ if (foo_parse(&foo, bytes) == SUCCESS) {
 }
 ```
 
-which feels right at home for Go developers, and is an improvement over the style in use in the old C++ code where it was fully manual calls to new/delete. 
+Which feels right at home for Go developers, and is an improvement over the style in use in the old C++ code where it was fully manual calls to new/delete. 
 
 Still, it's more work than what you'd have to do in pure idiomatic Rust or C++ code (or even C code with arenas for that matter).
 
@@ -540,7 +540,7 @@ So I recommend sticking to one 'side', be it C/C++ or Rust, of the FFI boundary,
 
 Depending on the existing code style, it might be hard to ensure that the C/C++ allocator is not used at all for structures used in FFI, due to abstractions and hidden memory allocations. 
 
-One possible solution (which I did not implement but considered) is making FFI structures a simple opaque pointer (or 'handle') so that the caller has to use FFI functions to allocate and free this structure. That also means implementing getter/setters for certain fields since the structures are now opaque. It maximizes the ABI compatibility, since the caller cannot rely on a given struct size, alignement, or fields.
+One possible solution (which I did not implement but considered) is making FFI structures a simple opaque pointer (or 'handle') so that the caller has to use FFI functions to allocate and free this structure. That also means implementing getter/setters for certain fields since the structures are now opaque. It maximizes the ABI compatibility, since the caller cannot rely on a given struct size, alignment, or fields.
 
 However that entails more work and more functions in the API.
 
@@ -740,7 +740,7 @@ I look forward to only having Rust code and deleting all of this convoluted stuf
 
 That's something that people do not mention often when saying that modern C++ is good enough and secure enough. Well, first I disagree with this statement, but more broadly, the C++ toolchain to cross-compile sucks. You only have clang that can cross-compile in theory but in practice you have to resort to the Zig toolchain to automate cross-compiling the standard library etc.
 
-Also, developers not deeply familiar with either C or C++ do not want to touch all this CMake/Autotools with a ten-foot pole. And I understand them. Stockholm syndrom notwithstanding, these are pretty slow, convoluted, niche programming languages and no one wants to actively learn and use them unless they have to.
+Also, developers not deeply familiar with either C or C++ do not want to touch all this CMake/Autotools with a ten-foot pole. And I understand them. Stockholm syndrome notwithstanding, these are pretty slow, convoluted, niche programming languages and no one wants to actively learn and use them unless they have to.
 
 Once you are used to simply typing `go build` or `cargo build`, you really start to ask yourself if those weird things are worth anyone's time.
 
@@ -754,17 +754,17 @@ Developers who learned Rust are overall very happy with it and did not have too 
 Adding unit tests was trivial in Rust compared to C++ and as a result people would write a lot more of them. Built-in support for tests is expected in 2024 by developers. I don't think one single C++ test was written during this rewrite, now that I think of it.
 
 
-Everyone was really satisfied with the tooling, even though having to first do `rustup target add ...` before cross-compiling tripped up a few people, since in Go that's done automatically behind the scenes (I think one difference is that Go compiles everything from source and so does not need to downloed pre-compiled blobs?). 
+Everyone was really satisfied with the tooling, even though having to first do `rustup target add ...` before cross-compiling tripped up a few people, since in Go that's done automatically behind the scenes (I think one difference is that Go compiles everything from source and so does not need to download pre-compiled blobs?). 
 
 Everyone also had an easy time with their text editor/IDE, Rust is ubiquitous enough now that every editor will have support for it.
 
-All the tooling we needed to scan dependencies for vulnerabilities, linting, etc was present and polished. Shoutout to `osv-scanner` from Google, which allowed us to scan both the Rust and C++ dependencies in the same project (and it evens supports Go).
+All the tooling we needed to scan dependencies for vulnerabilities, linting, etc was present and polished. Shootout to `osv-scanner` from Google, which allowed us to scan both the Rust and C++ dependencies in the same project (and it evens supports Go).
 
 As expected, developers migrating C++ code to Rust code had a breeze with the Rust code and almost every time asked for assistance when dealing with the C++ code. C++ is just too complex a language for most developers, especially compared to its alternatives.
 
-CMake/Make/Ninja proved surprinsingly difficult for developers not accustomed to them, but I mentioned that already. I think half of my time during this rewrite was actually spent coercing all the various build systems (Bazel/Xcode/CMake/cargo/Go) on the various platforms into working well together. If there is no one in the team who's really familiar with build systems, I think this is going to be a real challenge.
+CMake/Make/Ninja proved surprisingly difficult for developers not accustomed to them, but I mentioned that already. I think half of my time during this rewrite was actually spent coercing all the various build systems (Bazel/Xcode/CMake/cargo/Go) on the various platforms into working well together. If there is no one in the team who's really familiar with build systems, I think this is going to be a real challenge.
 
-So, I hope this article alleviated your concerns about rewriting your C++ codebase. It can absolutely be done, just pick the right programming language for you and your context, do it incrementally, don't overpromise, establish a rough roadmap with milestones, regularly show progress to stakeholders (even if it's just you, it helps staying motived!), and make sure the team is on-board and enjoying the process.
+So, I hope this article alleviated your concerns about rewriting your C++ codebase. It can absolutely be done, just pick the right programming language for you and your context, do it incrementally, don't overpromise, establish a rough roadmap with milestones, regularly show progress to stakeholders (even if it's just you, it helps staying motivated!), and make sure the team is on-board and enjoying the process.
 
 You know, like any other software project, really!
 
