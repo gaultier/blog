@@ -86,7 +86,7 @@ Addtionally, showing how long-standing issues in the old code get automatically 
 
 Be prepared to repeat many many times the decision process that led to the rewrite to your boss, your boss's boss, the odd product manager who's not technical, the salesperson supporting the external customers, etc. It's important to nail the elevator's pitch.
 
-That applies also to teammates, who might be unsure the new programming language 'carries its weight'. It helps regularly asking them how they feel about the language, the on-going-effort, the roadmap, etc. Also, pairing with them, so that ideally, everyone in the team feels confident working on this project alone.
+That applies also to teammates, who might be unsure the new programming language 'carries its weight'. It helps to regularly ask them how they feel about the language, the on-going-effort, the roadmap, etc. Also, pairing with them, so that ideally, everyone in the team feels confident working on this project alone.
 
 
 ## Preparations to introduce the new language
