@@ -567,7 +567,7 @@ However that entails more work and more functions in the API.
 `libcurl` is an example of such an approach, `libuv` is an example of a library which did not do this initially, but plans to move to this approach in future versions, which would be a breaking change for clients.
 
 
-So to summarize, Miri is so essential that I don't know whether it's viable to write Rust code with lots of FFI (and thus lots of unsafe blocks) without it. If Miri did not exist, I would seriously consider using only arenas or reconsidering the use of Rust.
+So to summarize, Miri is so essential that I don't know whether it's viable to write Rust code with lots of FFI (and thus lots of unsafe blocks) without it. If Miri did not exist, I would seriously consider using only arenas or reconsider the use of Rust.
 
 ## Cross-compilation
 
