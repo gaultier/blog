@@ -465,7 +465,7 @@ Miri again is the MVP here since it detected the issue of mixing the C and Rust 
 
 As Bryan Cantrill once said: "glibc on Linux, it's just, like, your opinion dude". Meaning, glibc is just one option, among many, since Linux is just the kernel and does not ship with a libC. So the Rust standard library cannot expect a given C library on every Linux system, like it would be on macOS or the BSDs or Illumos. All of that to say: it implements its own memory allocator.
 
-The consequence of this, is that allocating memory on the C/C++ side (since `new` in C++ just calls `malloc` under the hood), and freeing it on the Rust side, is undefined behavior: it amounts to freeing a pointer that was never allocated. And vice-versa.
+The consequence of this, is that allocating memory on the C/C++ side (since `new` in C++ just calls `malloc` under the hood), and freeing it on the Rust side, is undefined behavior: it amounts to freeing a pointer that was never allocated by this allocator. And vice-versa, allocating a pointer from Rust and freeing it from C.
 
 That has dire consequences since most memory allocators do not detect this in Release mode. You might free completely unrelated memory leading to use-after-free later, or corrupt the memory allocator structures. It's bad.
 
