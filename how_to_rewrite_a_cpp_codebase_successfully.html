@@ -258,11 +258,11 @@ have to do something different in the new code, but that should be
 rare.</li>
 <li>Tests for the new implementation are written and pass (so that we
 know the new implementation is likely correct)</li>
-<li>Each call site calling the function/class is switched to using the
-new implementation. After each replacement, the test suite is run and
-passes (so that we know that nothing broke at the scale of the project;
-a kind of regression testing). The change is committed. That way is
-something breaks, we know exactly which change is the culprit.</li>
+<li>Each site calling the function/class is switched to using the new
+implementation. After each replacement, the test suite is run and passes
+(so that we know that nothing broke at the scale of the project; a kind
+of regression testing). The change is committed. That way is something
+breaks, we know exactly which change is the culprit.</li>
 <li>A small PR is opened, reviewed and merged. Since our changes are
 anyways incremental, it’s up to us to decide that the current diff is of
 the right size for a PR. We can make the PR as big or small as we want.
@@ -273,10 +273,10 @@ be ‘garbage-collected’ i.e. safely removed. This can even be its own PR
 depending on the size.</li>
 <li>Rinse and repeat until all of the old code has been replaced</li>
 </ul>
-<p>There are of course thornier cases which we’ll explore in more detail
-later, but that’s the gist of it. What’s crucial is that each commit on
-the main branch builds and runs fine. At not point the codebase is every
-broken, does not build, or is in an unknown state.</p>
+<p>There are of course thornier cases, but that’s the gist of it. What’s
+crucial is that each commit on the main branch builds and runs fine. At
+not point the codebase is ever broken, does not build, or is in an
+unknown state.</p>
 <p>It’s actually not much different from the way I do a refactor in a
 codebase with just one programming language.</p>
 <p>What’s very important to avoid are big PRs that are thousands lines
@@ -296,12 +296,13 @@ component is invaluable in that regard, but also for establishing a
 rough roadmap for the rewrite, and reporting on the progress (“3
 components have been rewritten, 2 left to do!”).</li>
 <li>Port the code comments from the old code to the new code if they
-make sense and add value</li>
+make sense and add value. In my experience, a few are knowledge gems and
+should be kept, and most are completely useless noise.</li>
 <li>If you can use automated tools (search and replace, or tools
 operating at the AST level) to change every call site to use the new
 implementation, it’ll make your reviewers very happy, and save you hours
 and hours of debugging because of a copy-paste mistake</li>
-<li>Since Rust and C++ basically only can communicate through a C API (I
+<li>Since Rust and C++ can basically only communicate through a C API (I
 am aware of experimental projects to make them talk directly but we did
 not use those), it means that each Rust function must be accompanied by
 a corresponding C function signature, so that C++ can call it as a C
