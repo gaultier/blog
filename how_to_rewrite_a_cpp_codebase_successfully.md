@@ -156,7 +156,7 @@ const std::vector<char> input = {0x32, 0x01, 0x49, ...}; // <= This is the inter
 assert(foo(input) == ...);
 ```
 
-So I had the idea of extracting all the `input = ...` data from the tests to build a good fuzzing corpus. My first go at it was a poor man's quick and dirty C++ lexer. It worked but it was clunky. Right after I finished it, I thought: why don't I use `tree-sitter` to properly parse C++? 
+So I had the idea of extracting all the `input = ...` data from the tests to build a good fuzzing corpus. My first go at it was a hand-written quick and dirty C++ lexer. It worked but it was clunky. Right after I finished it, I thought: why don't I use `tree-sitter` to properly parse C++? 
 
 And so I did, and it turned out great, just 300 lines of Rust walking through each `TestXXX.cpp` file in the repository and using tree-sitter to extract each pattern. I used the query language of tree-sitter to do so: 
 
@@ -200,7 +200,7 @@ const INPUT: [u8; 4] = [BAR, 0x02, 0x03, 0x04]; // <= This is the interesting da
 assert_eq!(foo(&INPUT), ...);
 ```
 
-We have a constant `BAR` which trips up tree-sitter, because it only see a literal and does not know its value.
+We have a constant `BAR` which trips up tree-sitter, because it only see a literal (i.e. 3 letters: 'B', 'A' and 'R') and does not know its value.
 
 The way I solved this issue was to do two passes: once to collect all constants along with their values in a map, and then a second pass to find all arrays in tests:
 
@@ -212,6 +212,8 @@ let query = tree_sitter::Query::new(
 ```
 
 So that we can then resolve the literals to their numeric value.
+
+That's how I implemented a compiler for the Kotlin programming language in the past and it worked great. Maybe there are more advanced approaches but this one is dead-simple and fast so it's good enough for us.
 
 I am pretty happy with how this turned out, scanning all C++ and Rust files to find interesting test data in them to build the corpus. I think this was key to move from the initial 20% code coverage with fuzzing (using a few hard-coded corpus files) to 90%. It's fast too.
 
@@ -233,6 +235,8 @@ So:
 3. Run the fuzzing for however long we wish. It runs in CI for every commit and developers can also run it locally.
 4. When fuzzing is complete, we print the code coverage statistics
 
+
+Finally, we still have the option to add manually crafted files to this corpus if we wish. For example after hitting a bug in the wild, and fixing it, we can add a reproducer file to the corpus as a kind of regression test.
 
 ##  Pure Rust vs interop (FFI)
 
@@ -304,7 +308,7 @@ struct FooC {
 }
 ```
 
-Which is cumbersome but still fine, especially since Rust has powerful macros. However, since Rust also does not have great idiomatic support for custom allocators, we stuck with the standard memory allocator, which meant that each struct with heap-allocated fields had to have a deallocation function:
+Which is cumbersome but still fine, especially since Rust has powerful macros (which I investigated using but did not eventually). However, since Rust also does not have great idiomatic support for custom allocators, we stuck with the standard memory allocator, which meant that each struct with heap-allocated fields has to have a deallocation function:
 
 ```
 #[no_mangle]
@@ -459,7 +463,7 @@ When I started this rewrite, I was under the impression that the Rust standard l
 However, I quickly discovered that it is not (anymore?) the case, it uses its own allocator - at least on Linux where there is no C library shipping with the kernel.
 Miri again is the MVP here since it detected the issue of mixing the C and Rust allocations which prompted this section.
 
-As Bryan Cantrill once said: "glibc, it's just, like, your opinion dude". Meaning, glibc is just one option, among many. So the Rust standard library cannot expect a given C library on every Linux system, like it would be on macOS or the BSDs or Illumos. All of that to say: it implements its own memory allocator.
+As Bryan Cantrill once said: "glibc on Linux, it's just, like, your opinion dude". Meaning, glibc is just one option, among many, since Linux is just the kernel and does not ship with a libC. So the Rust standard library cannot expect a given C library on every Linux system, like it would be on macOS or the BSDs or Illumos. All of that to say: it implements its own memory allocator.
 
 The consequence of this, is that allocating memory on the C/C++ side (since `new` in C++ just calls `malloc` under the hood), and freeing it on the Rust side, is undefined behavior: it amounts to freeing a pointer that was never allocated. And vice-versa.
 

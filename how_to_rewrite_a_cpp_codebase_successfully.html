@@ -364,9 +364,9 @@ class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb1-1"><a href="#c
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="ot">assert</span><span class="op">(</span>foo<span class="op">(</span>input<span class="op">)</span> <span class="op">==</span> <span class="op">...);</span></span></code></pre></div>
 <p>So I had the idea of extracting all the <code>input = ...</code> data
 from the tests to build a good fuzzing corpus. My first go at it was a
-poor man’s quick and dirty C++ lexer. It worked but it was clunky. Right
-after I finished it, I thought: why don’t I use <code>tree-sitter</code>
-to properly parse C++?</p>
+hand-written quick and dirty C++ lexer. It worked but it was clunky.
+Right after I finished it, I thought: why don’t I use
+<code>tree-sitter</code> to properly parse C++?</p>
 <p>And so I did, and it turned out great, just 300 lines of Rust walking
 through each <code>TestXXX.cpp</code> file in the repository and using
 tree-sitter to extract each pattern. I used the query language of
@@ -401,7 +401,8 @@ class="sourceCode rust"><code class="sourceCode rust"><span id="cb5-1"><a href="
 <span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> INPUT<span class="op">:</span> [<span class="dt">u8</span><span class="op">;</span> <span class="dv">4</span>] <span class="op">=</span> [BAR<span class="op">,</span> <span class="dv">0x02</span><span class="op">,</span> <span class="dv">0x03</span><span class="op">,</span> <span class="dv">0x04</span>]<span class="op">;</span> <span class="co">// &lt;= This is the interesting data.</span></span>
 <span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="pp">assert_eq!</span>(foo(<span class="op">&amp;</span>INPUT)<span class="op">,</span> <span class="op">...</span>)<span class="op">;</span></span></code></pre></div>
 <p>We have a constant <code>BAR</code> which trips up tree-sitter,
-because it only see a literal and does not know its value.</p>
+because it only see a literal (i.e. 3 letters: ‘B’, ‘A’ and ‘R’) and
+does not know its value.</p>
 <p>The way I solved this issue was to do two passes: once to collect all
 constants along with their values in a map, and then a second pass to
 find all arrays in tests:</p>
@@ -411,6 +412,10 @@ class="sourceCode rust"><code class="sourceCode rust"><span id="cb6-1"><a href="
 <span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;(const_item value: (integer_literal)) @capture &quot;</span><span class="op">,</span></span>
 <span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div>
 <p>So that we can then resolve the literals to their numeric value.</p>
+<p>That’s how I implemented a compiler for the Kotlin programming
+language in the past and it worked great. Maybe there are more advanced
+approaches but this one is dead-simple and fast so it’s good enough for
+us.</p>
 <p>I am pretty happy with how this turned out, scanning all C++ and Rust
 files to find interesting test data in them to build the corpus. I think
 this was key to move from the initial 20% code coverage with fuzzing
@@ -434,6 +439,10 @@ trimmed.</p>
 commit and developers can also run it locally.</li>
 <li>When fuzzing is complete, we print the code coverage statistics</li>
 </ol>
+<p>Finally, we still have the option to add manually crafted files to
+this corpus if we wish. For example after hitting a bug in the wild, and
+fixing it, we can add a reproducer file to the corpus as a kind of
+regression test.</p>
 <h2 id="pure-rust-vs-interop-ffi">Pure Rust vs interop (FFI)</h2>
 <p>Writing Rust has been a joy, even for more junior developers in the
 team. Pure Rust code was pretty much 100% correct on the first try.</p>
@@ -513,10 +522,11 @@ struct FooC {
     z: OwningArrayC&lt;u8&gt;,
 }</code></pre>
 <p>Which is cumbersome but still fine, especially since Rust has
-powerful macros. However, since Rust also does not have great idiomatic
-support for custom allocators, we stuck with the standard memory
-allocator, which meant that each struct with heap-allocated fields had
-to have a deallocation function:</p>
+powerful macros (which I investigated using but did not eventually).
+However, since Rust also does not have great idiomatic support for
+custom allocators, we stuck with the standard memory allocator, which
+meant that each struct with heap-allocated fields has to have a
+deallocation function:</p>
 <pre><code>#[no_mangle]
 pub extern &quot;C&quot; fn foo_free(foo: &amp;FooC) {
     ...
@@ -659,8 +669,9 @@ uses its own allocator - at least on Linux where there is no C library
 shipping with the kernel. Miri again is the MVP here since it detected
 the issue of mixing the C and Rust allocations which prompted this
 section.</p>
-<p>As Bryan Cantrill once said: “glibc, it’s just, like, your opinion
-dude”. Meaning, glibc is just one option, among many. So the Rust
+<p>As Bryan Cantrill once said: “glibc on Linux, it’s just, like, your
+opinion dude”. Meaning, glibc is just one option, among many, since
+Linux is just the kernel and does not ship with a libC. So the Rust
 standard library cannot expect a given C library on every Linux system,
 like it would be on macOS or the BSDs or Illumos. All of that to say: it
 implements its own memory allocator.</p>
