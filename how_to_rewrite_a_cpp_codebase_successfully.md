@@ -59,28 +59,38 @@ Here I think the way to go is showing the naked truth and staying very factual, 
 
 Essentially, it's a matter of genuinely presenting the alternative of rewriting being cheaper in terms of time and effort compared to improving the project with pure C++. If your teammates and boss are rationale, it should be a straightforward decision.
 
+We use at my dayjob basically a RFC process to introduce a major change. That's great because it forces the person pushing for a change to document the current issues, the possible solutions, and allowing for a rational discussion to take place in the team. And documenting the whole process in a shared document (that allows comments) is very valuable because when people ask about it months later, you can just share the link to it.
 
 After the problematic situation has been presented, I think at least 3 different solutions should be presented and compared (including sticking with pure C++), and seriously consider each option.
 
 Ideally, if time permits, a small prototype for the preferred solution should be done, to confirm or infirm early that it can work, and to eliminate doubts. It's a much more compelling argument to say: "Of course it will work, here is prototype I made!" compared to "I hope it will work, but who knows, oh well I guess we'll see...".
 
 
-After much debate, we settled on Rust as the new programming language being introduced into the codebase. It's important to note that I am not a Rust diehard fan. I appreciate the language but it's not a perfect language, it has issues, it's just that it solves all the issues we have in this project, especially considering the big focus on security (since we deal with payments),  the relative similarity with the company tech stack (Go), and the willingness of the team to learn it and review code in it.
+After much debate, we settled on Rust as the new programming language being introduced into the codebase. It's important to note that I am not a Rust diehard fan. I appreciate the language but it's not perfect (see the FFI section later), it has issues, it's just that it solves all the issues we have in this project, especially considering the big focus on security (since we deal with payments),  the relative similarity with the company tech stack (Go), and the willingness of the team to learn it and review code in it.
 
 After all, the goal is also to gain additional developers, and stop being the only person who can even touch this code.
 
-I also seriously considered Go, but after doing a prototype, I was doubtful the many limitations of CGO would allow us to achieve the rewrite.
+I also seriously considered Go, but after doing a prototype, I was doubtful the many limitations of CGO would allow us to achieve the rewrite. Other teammates also had concerns on how the performance would look like on low-end Android and Linux devices, especially 32 bits, having essentially two garbage collectors running concurrenctly, the JVM one and the Go one.
+
+## Keeping buy-in
+
+Keeping buy-in after initially getting it is not a given, since software always takes longer than expected and unexpected hurdles happen all the time. Here, showing the progress through regular demos (weekly or biweekly is a good frequence) is great for stakeholders especially non-technical ones.
+
+Addtionally, showing how long-standing issues in the old code get automatically solved by the new code, e.g. memory leaks, or fuzzing crashes in one function, are a great sign for stakeholders of the quality improving and the value of the on-going effort.
+
+Be prepared to repeat many many times the decision process that led to the rewrite to your boss, your boss's boss, the odd product manager who's not technical, the salesperson supporting the external customers, etc. It's important to nail the elevator's pitch.
+
+That applies also to teammates, who might be unsure the new programming language 'carries its weight'. It helps regularly asking them how they feel about the language, the on-going-effort, the roadmap, etc. Also, pairing with them, so that ideally, everyone in the team feels confident working on this project alone.
 
 
 ## Preparations to introduce the new language
 
-Once I reached this point, I created a Git tag `last-before-rust` (spoiler alert!). The commit right after introduced the first lines of code in the new language.
+Before adding the first line of code in the new language, I created a Git tag `last-before-rust`. The commit right after introduced the code in Rust.
 
 This proved invaluable, because when rewriting the legacy code, I found tens of bugs lying around, and I think that's very typical. Also, this rewriting effort requires time, during which other team members or external customers may report bugs they just found.
 
 Every time such a bug appeared, I switched to this Git tag, and tried to reproduce the bug. Almost every time, the bug was already present before the rewrite. That's a very important information (for me, it was a relief!) for solving the bug, and also for stakeholders. That's the difference in their eye between: We are improving the product by fixing long existing bugs; or: we are introducing new bugs with our risky changes and we should maybe stop the effort completely because it's harming the product.
 
-Stakeholder support is a really big deal. Be prepared to repeat many many times the decision process that led to the rewrite to your boss, your boss's boss, the odd product manager who's not technical, the salesperson supporting the external customers, etc. It's important to nail the elevator's pitch.
 
 ## Incremental rewrite
 
@@ -214,7 +224,7 @@ So:
 4. When fuzzing is complete, we print the code coverage statistics
 
 
-##  Memory management and unsafety
+##  Pure Rust vs interop (FFI)
 
 Writing Rust has been a joy, even for more junior developers in the team. Pure Rust code was pretty much 100% correct on the first try.
 
@@ -224,9 +234,10 @@ But that means this FFI code is the most likely part of the Rust code to have bu
 
 We run tests under Miri in CI to make sure each commit is reasonably safe.
 
-So beware: introducing Rust to a C or C++ codebase may actually introduce new memory safety issues in the FFI code.
+So beware: introducing Rust to a C or C++ codebase may actually introduce new memory safety issues, usually all located in the FFI code.
 
-Thankfully it's much shorter and simpler than the rest of the codebase.
+Thankfully that's a better situation to be in than to have to inspect all of the codebase when a memory issue is detected.
+
 
 ## C FFI in Rust is cumbersome
 
@@ -316,10 +327,14 @@ if (foo_parse(&foo, bytes) == SUCCESS) {
 }
 ```
 
-which feels right at home for Go developers. Still, it's more work than you'd have to do in pure idiomatic Rust or C++ code (or even C code with arenas for that matter).
+which feels right at home for Go developers, and is an improvement over the style in use in the old C++ code where it was fully manual calls to new/delete. 
 
-In Zig or Odin, I would probably have used arenas to avoid that.
+Still, it's more work than what you'd have to do in pure idiomatic Rust or C++ code (or even C code with arenas for that matter).
 
+In Zig or Odin, I would probably have used arenas to avoid that, or a general allocator with `defer`.
+
+
+## An example of a real bug at the FFI boundary
 
 More perniciously, it's easy to introduce memory unsafety at the FFI boundary. Here is a real bug I introduced, can you spot it? I elided all the error handling to make it easier to spot:
 
@@ -426,6 +441,20 @@ Which is not very informative, but better than nothing. `Miri`'s output is much 
 
 So in conclusion, Rust's FFI capabilities work but are tedious are error-prone in my opinion, and so require extra care and testing with Miri/fuzzing, with high code coverage of the FFI functions. It's not enough to only test the pure (non FFI) Rust code.
 
+
+## Another example of a real bug at the FFI boundary
+
+When I started this rewrite, I was under the impression that the Rust standard library uses the C memory allocator (basically, `malloc`) under the covers when it needs to allocate some memory.
+
+However, I quickly discovered that it is not (anymore?) the case, it uses its own allocator - at least on Linux where there is no C library shipping with the kernel. As Bryan Cantrill once said: glibc, it's just, like, your opinion dude. Meaning, glibc is just one option, among many. So the Rust standard library cannot assume one C library on every Linux system, like it would be on macOS or the BSDs or Illumos. All of that to say: it implements its own memory allocator.
+
+The consequence of this, is that allocating memory on the C/C++ side (since `new` in C++ just calls `malloc` under the hood), and freeing it on the Rust side, is undefined behavior: it amounts to freeing a pointer that was never allocated. And vice-versa.
+
+That has dire consequences since most memory allocators do not detect this in Release mode. You might free completely unrelated memory leading to use-after-free later, or corrupt the memory allocator structures. It's bad.
+
+So I recommend sticking to one 'side' , be it C/C++ or Rust, of the FFI boundary, to allocate and free all the memory. Rust has an edge here since the long-term goal is to have 100% of Rust so it will have to allocate all the memory anyway in the end.
+
+Miri again is the MVP here since it detected the issue of mixing the C and Rust allocations which prompted this section.
 
 ## Cross-compilation
 
