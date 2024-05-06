@@ -56,11 +56,17 @@ code).</li>
 <li>No hiring of C++ developers is planned or at least in the current
 budget</li>
 </ul>
-<p>So it was apparent to me that sticking with C++ was a dead end. The
-only solution would be to train everyone in the team on C++ and dedicate
-a significant amount of time rewriting the most problematic parts of the
-codebase to perhaps reach a good enough state, and even then, we have
-little confidence our code is robust against nation-state attacks.</p>
+<p>So it was apparent to me that sticking with C++ was a dead end. In
+the end it’s a conflict of values and priorities: C++ values many things
+that are not that important in this project, such as performance above
+all; and it does not give any guarantees about things that are crucial
+to us, such as memory and temporal safety. We bought a race car but what
+we needed was a fanily-friendly 5 seater.</p>
+<p>The only solution would be to train everyone in the team on C++ and
+dedicate a significant amount of time rewriting the most problematic
+parts of the codebase to perhaps reach a good enough state, and even
+then, we have little confidence our code is robust against nation-state
+attacks.</p>
 <p>It’s a judgement call in the end, but that seemed to be more effort
 than ‘simply’ introducing a new language and doing a rewrite.</p>
 <p>I don’t actually like the term ‘rewrite’. Folks on the internet will
@@ -166,7 +172,8 @@ collective.</p>
 solution should be done, to confirm or infirm early that it can work,
 and to eliminate doubts. It’s a much more compelling argument to say:
 “Of course it will work, here is prototype I made!” compared to “I hope
-it will work, but who knows, oh well I guess we’ll see…”.</p>
+it will work, but who knows, oh well I guess we’ll see in 3
+months…”.</p>
 <p>After much debate, we settled on Rust as the new programming language
 being introduced into the codebase. It’s important to note that I am not
 a Rust diehard fan. I appreciate the language but it’s not perfect (see

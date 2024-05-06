@@ -7,7 +7,9 @@ I recently wrote about [inheriting a legacy C++ codebase](/blog/you_inherited_a_
 - The code is pretty bad on all the criteria we care about: correctness, maintainability, security, you name it. I don't blame the original developers, they were understaffed and it was written as a prototype (the famous case of the prototype which becomes the production code).
 - No hiring of C++ developers is planned or at least in the current budget
 
-So it was apparent to me that sticking with C++ was a dead end. The only solution would be to train everyone in the team on C++ and dedicate a significant amount of time rewriting the most problematic parts of the codebase to perhaps reach a good enough state, and even then, we have little confidence our code is robust against nation-state attacks.
+So it was apparent to me that sticking with C++ was a dead end. In the end it's a conflict of values and priorities: C++ values many things that are not that important in this project, such as performance above all; and it does not give any guarantees about things that are crucial to us, such as memory and temporal safety. We bought a race car but what we needed was a fanily-friendly 5 seater.
+
+The only solution would be to train everyone in the team on C++ and dedicate a significant amount of time rewriting the most problematic parts of the codebase to perhaps reach a good enough state, and even then, we have little confidence our code is robust against nation-state attacks.
 
 It's a judgement call in the end, but that seemed to be more effort than 'simply' introducing a new language and doing a rewrite.
 
@@ -67,7 +69,7 @@ We use at my dayjob basically a RFC process to introduce a major change. That's 
 
 After the problematic situation has been presented, I think at least 3 different solutions should be presented and compared (including sticking with pure C++), and seriously consider each option. I find it important here to be as little emotionally invested as possible even if one option is your favorite, and to be ready to work for possibly months on your least favorite option, if it happens to be chosen by the collective.
 
-Ideally, if time permits, a small prototype for the preferred solution should be done, to confirm or infirm early that it can work, and to eliminate doubts. It's a much more compelling argument to say: "Of course it will work, here is prototype I made!" compared to "I hope it will work, but who knows, oh well I guess we'll see...".
+Ideally, if time permits, a small prototype for the preferred solution should be done, to confirm or infirm early that it can work, and to eliminate doubts. It's a much more compelling argument to say: "Of course it will work, here is prototype I made!" compared to "I hope it will work, but who knows, oh well I guess we'll see in 3 months...".
 
 
 After much debate, we settled on Rust as the new programming language being introduced into the codebase. It's important to note that I am not a Rust diehard fan. I appreciate the language but it's not perfect (see the FFI section later), it has issues, it's just that it solves all the issues we have in this project, especially considering the big focus on security (since we deal with payments),  the relative similarity with the company tech stack (Go), and the willingness of the team to learn it and review code in it.
