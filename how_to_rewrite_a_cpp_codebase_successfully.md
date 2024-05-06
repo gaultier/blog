@@ -61,7 +61,7 @@ Here I think the way to go is showing the naked truth and staying very factual, 
 - Linter X detects hundreds of real issues we need to fix
 - All of these points make it really likely a hacker can exploit our library to gain Remote Code Execution (RCE) or steal secrets
 
-Essentially, it's a matter of genuinely presenting the alternative of rewriting being cheaper in terms of time and effort compared to improving the project with pure C++. If your teammates and boss are rationale, it should be a straightforward decision.
+Essentially, it's a matter of genuinely presenting the alternative of rewriting being cheaper in terms of time and effort compared to improving the project with pure C++. If your teammates and boss are reality-based, it should be a straightforward decision.
 
 We use at my dayjob basically a RFC process to introduce a major change. That's great because it forces the person pushing for a change to document the current issues, the possible solutions, and allowing for a rational discussion to take place in the team. And documenting the whole process in a shared document (that allows comments) is very valuable because when people ask about it months later, you can just share the link to it.
 
