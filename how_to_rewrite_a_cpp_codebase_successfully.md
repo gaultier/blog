@@ -1,5 +1,7 @@
 # How to rewrite a C++ codebase successfully
 
+*Not your typical 'Rewrite it in Rust' article.*
+
 I recently wrote about [inheriting a legacy C++ codebase](/blog/you_inherited_a_legacy_cpp_codebase_now_what.html). At some point, although I cannot pinpoint exactly when, a few things became clear to me:
 
 - No one in the team but me is able - or feels confident enough - to make a change in this codebase
@@ -180,7 +182,7 @@ const std::vector<char> input = {0x32, 0x01, 0x49, ...}; // <= This is the inter
 assert(foo(input) == ...);
 ```
 
-So I had the idea of extracting all the `input = ...` data from the tests to build a good fuzzing corpus. My first go at it was a hand-written quick and dirty C++ lexer. It worked but it was clunky. Right after I finished it, I thought: why don't I use `tree-sitter` to properly parse C++? 
+So I had the idea of extracting all the `input = ...` data from the tests to build a good fuzzing corpus. My first go at it was a hand-written quick and dirty C++ lexer in Rust. It worked but it was clunky. Right after I finished it, I thought: why don't I use `tree-sitter` to properly parse C++ in Rust?
 
 And so I did, and it turned out great, just 300 lines of Rust walking through each `TestXXX.cpp` file in the repository and using tree-sitter to extract each pattern. I used the query language of tree-sitter to do so: 
 

@@ -39,6 +39,7 @@ window.addEventListener("load", (event) => {
 
 <p id="publication_date">Published on 2024-05-03.</p><h1 id="how-to-rewrite-a-c-codebase-successfully">How to rewrite a C++
 codebase successfully</h1>
+<p><em>Not your typical ‘Rewrite it in Rust’ article.</em></p>
 <p>I recently wrote about <a
 href="/blog/you_inherited_a_legacy_cpp_codebase_now_what.html">inheriting
 a legacy C++ codebase</a>. At some point, although I cannot pinpoint
@@ -402,9 +403,9 @@ class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb1-1"><a href="#c
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="ot">assert</span><span class="op">(</span>foo<span class="op">(</span>input<span class="op">)</span> <span class="op">==</span> <span class="op">...);</span></span></code></pre></div>
 <p>So I had the idea of extracting all the <code>input = ...</code> data
 from the tests to build a good fuzzing corpus. My first go at it was a
-hand-written quick and dirty C++ lexer. It worked but it was clunky.
-Right after I finished it, I thought: why don’t I use
-<code>tree-sitter</code> to properly parse C++?</p>
+hand-written quick and dirty C++ lexer in Rust. It worked but it was
+clunky. Right after I finished it, I thought: why don’t I use
+<code>tree-sitter</code> to properly parse C++ in Rust?</p>
 <p>And so I did, and it turned out great, just 300 lines of Rust walking
 through each <code>TestXXX.cpp</code> file in the repository and using
 tree-sitter to extract each pattern. I used the query language of
