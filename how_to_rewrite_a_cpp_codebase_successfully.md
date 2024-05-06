@@ -24,6 +24,26 @@ I think it's a good case study because whilst not a big codebase, it is a comple
 So join me on this journey, here's the guide to rewrite a C++ codebase successfully. And also what not do!
 
 
+**Table of Contents**
+
+-   [The project](#the-project)
+-   [Improve the existing codebase](#improve-the-existing-codebase)
+-   [Get buy-in](#get-buy-in)
+-   [Keeping buy-in](#keeping-buy-in)
+-   [Preparations to introduce the new
+    language](#preparations-to-introduce-the-new-language)
+-   [Incremental rewrite](#incremental-rewrite)
+-   [Fuzzing](#fuzzing)
+-   [Pure Rust vs interop (FFI)](#pure-rust-vs-interop-ffi)
+    -   [C FFI in Rust is cumbersome and
+    error-prone](#c-ffi-in-rust-is-cumbersome-and-error-prone)
+    -   [An example of a real bug at the FFI
+        boundary](#an-example-of-a-real-bug-at-the-ffi-boundary)
+    -   [Another example of a real bug at the FFI
+        boundary](#another-example-of-a-real-bug-at-the-ffi-boundary)
+-   [Cross-compilation](#cross-compilation)
+-   [Conclusion](#conclusion)
+
 ## The project
 
 This project is a library that exposes a C API but the implementation is C++, and it vendors C libraries (e.g. mbedtls) which we build from source. The final artifacts are a `libfoo.a` static library and a `libfoo.h` C header. It is used to talk to applets on a [smart card](https://en.wikipedia.org/wiki/Smart_card) like your credit card, ID, passport or driving license (yes, smart cards are nowadays everywhere - you probably carry several on you right now), since they use a ~~bizzarre~~ interesting communication protocol. The library also implements a home-grown protocol on top of the well-specified smart card protocol, encryption, and business logic.
@@ -257,7 +277,7 @@ So beware: introducing Rust to a C or C++ codebase may actually introduce new me
 Thankfully that's a better situation to be in than to have to inspect all of the codebase when a memory issue is detected.
 
 
-## C FFI in Rust is cumbersome and error-prone
+### C FFI in Rust is cumbersome and error-prone
 
 The root cause for all these issues is that the C API that C++ and Rust use to call each other is very limited in its expressiveness w.r.t ownership, as well as many Rust types not being marked `#[repr(C)]`, even types you would expect to, such as `Option`, `Vec` or `&[u8]`. That means that you have to define your own equivalent types:
 

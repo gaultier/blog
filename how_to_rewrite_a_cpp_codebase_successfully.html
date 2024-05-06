@@ -71,11 +71,11 @@ dedicate a significant amount of time rewriting the most problematic
 parts of the codebase to perhaps reach a good enough state, and even
 then, we’d have little confidence our code is robust against
 nation-state attacks.</p>
-<p>It’s a judgement call in the end, but that seemed to be more effort
+<p>It’s a judgment call in the end, but that seemed to be more effort
 than ‘simply’ introducing a new language and doing a rewrite.</p>
 <p>I don’t actually like the term ‘rewrite’. Folks on the internet will
-eagerly repeat that rewrites are a bad idea, will indubtedly fail, and
-are a sign of hubris and naivity. I have experienced such rewrites, from
+eagerly repeat that rewrites are a bad idea, will undoubtedly fail, and
+are a sign of hubris and naivety. I have experienced such rewrites, from
 scratch, and yes that does not end well.</p>
 <p>However, I claim, because I’ve done it, and many others before me,
 that an <strong>incremental</strong> rewrite can be successful, and is
@@ -88,6 +88,29 @@ operating systems and architectures, including by external customers.
 This is not a toy.</p>
 <p>So join me on this journey, here’s the guide to rewrite a C++
 codebase successfully. And also what not do!</p>
+<p><strong>Table of Contents</strong></p>
+<ul>
+<li><a href="#the-project">The project</a></li>
+<li><a href="#improve-the-existing-codebase">Improve the existing
+codebase</a></li>
+<li><a href="#get-buy-in">Get buy-in</a></li>
+<li><a href="#keeping-buy-in">Keeping buy-in</a></li>
+<li><a href="#preparations-to-introduce-the-new-language">Preparations
+to introduce the new language</a></li>
+<li><a href="#incremental-rewrite">Incremental rewrite</a></li>
+<li><a href="#fuzzing">Fuzzing</a></li>
+<li><a href="#pure-rust-vs-interop-ffi">Pure Rust vs interop (FFI)</a>
+<ul>
+<li><a href="#c-ffi-in-rust-is-cumbersome-and-error-prone">C FFI in Rust
+is cumbersome and error-prone</a></li>
+<li><a href="#an-example-of-a-real-bug-at-the-ffi-boundary">An example
+of a real bug at the FFI boundary</a></li>
+<li><a href="#another-example-of-a-real-bug-at-the-ffi-boundary">Another
+example of a real bug at the FFI boundary</a></li>
+</ul></li>
+<li><a href="#cross-compilation">Cross-compilation</a></li>
+<li><a href="#conclusion">Conclusion</a></li>
+</ul>
 <h2 id="the-project">The project</h2>
 <p>This project is a library that exposes a C API but the implementation
 is C++, and it vendors C libraries (e.g. mbedtls) which we build from
@@ -158,7 +181,7 @@ library to gain Remote Code Execution (RCE) or steal secrets</li>
 rewriting being cheaper in terms of time and effort compared to
 improving the project with pure C++. If your teammates and boss are
 reality-based, it should be a straightforward decision.</p>
-<p>We use at my dayjob basically a RFC process to introduce a major
+<p>We use at my day job basically a RFC process to introduce a major
 change. That’s great because it forces the person pushing for a change
 to document the current issues, the possible solutions, and allowing for
 a rational discussion to take place in the team. And documenting the
@@ -180,7 +203,7 @@ together!” compared to “I hope it will work, but who knows, oh well I
 guess we’ll see 3 months in…”.</p>
 <p>After much debate, we settled on Rust as the new programming language
 being introduced into the codebase. It’s important to note that I am not
-a Rust diehard fan. I appreciate the language but it’s not perfect (see
+a Rust die hard fan. I appreciate the language but it’s not perfect (see
 the FFI section later), it has issues, it’s just that it solves all the
 issues we have in this project, especially considering the big focus on
 security (since we deal with payments), the relative similarity with the
@@ -193,15 +216,15 @@ doubtful the many limitations of CGO would allow us to achieve the
 rewrite. Other teammates also had concerns on how the performance and
 battery usage would look like on low-end Android and Linux devices,
 especially 32 bits, having essentially two garbage collectors running
-concurrenctly, the JVM one and the Go one.</p>
+concurrently, the JVM one and the Go one.</p>
 <h2 id="keeping-buy-in">Keeping buy-in</h2>
 <p>Keeping buy-in after initially getting it is not a given, since
 software always takes longer than expected and unexpected hurdles happen
 all the time. Here, showing the progress through regular demos (weekly
-or biweekly is a good frequence) is great for stakeholders especially
+or biweekly is a good frequency) is great for stakeholders especially
 non-technical ones. And it can potentially motivate fellow developers to
 also learn the new language and help you out.</p>
-<p>Addtionally, showing how long-standing issues in the old code get
+<p>Additionally, showing how long-standing issues in the old code get
 automatically solved by the new code, e.g. memory leaks, or fuzzing
 crashes in one function, are a great sign for stakeholders of the
 quality improving and the value of the on-going effort.</p>
@@ -331,7 +354,7 @@ in detail so that you can correct the new implementation. Some people
 even develop big test suites verifying that the output of the old and
 the new implementation are exactly the same.</li>
 <li>Since it’s a bug-for-bug rewrite, <em>what</em> the new
-implementation does may seem weird or unnecessarily convulated but shall
+implementation does may seem weird or unnecessarily convoluted but shall
 be kept (at least as a first pass). However, <em>how</em> it does it in
 the new code should be up to the best software engineering standards,
 that means tests, fuzzing, documentation, etc.</li>
@@ -481,10 +504,10 @@ introduce new memory safety issues, usually all located in the FFI
 code.</p>
 <p>Thankfully that’s a better situation to be in than to have to inspect
 all of the codebase when a memory issue is detected.</p>
-<h2 id="c-ffi-in-rust-is-cumbersome-and-error-prone">C FFI in Rust is
-cumbersome and error-prone</h2>
+<h3 id="c-ffi-in-rust-is-cumbersome-and-error-prone">C FFI in Rust is
+cumbersome and error-prone</h3>
 <p>The root cause for all these issues is that the C API that C++ and
-Rust use to call each other is very limited in its expresiveness w.r.t
+Rust use to call each other is very limited in its expressiveness w.r.t
 ownership, as well as many Rust types not being marked
 <code>#[repr(C)]</code>, even types you would expect to, such as
 <code>Option</code>, <code>Vec</code> or <code>&amp;[u8]</code>. That
@@ -567,7 +590,7 @@ class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb12-1"><a href="#
 <span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a>    <span class="co">// do something with foo...</span></span>
 <span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a>    <span class="op">...</span></span>
 <span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
-<p>which feels right at home for Go developers, and is an improvement
+<p>Which feels right at home for Go developers, and is an improvement
 over the style in use in the old C++ code where it was fully manual
 calls to new/delete.</p>
 <p>Still, it’s more work than what you’d have to do in pure idiomatic
@@ -764,7 +787,7 @@ making FFI structures a simple opaque pointer (or ‘handle’) so that the
 caller has to use FFI functions to allocate and free this structure.
 That also means implementing getter/setters for certain fields since the
 structures are now opaque. It maximizes the ABI compatibility, since the
-caller cannot rely on a given struct size, alignement, or fields.</p>
+caller cannot rely on a given struct size, alignment, or fields.</p>
 <p>However that entails more work and more functions in the API.</p>
 <p><code>libcurl</code> is an example of such an approach,
 <code>libuv</code> is an example of a library which did not do this
@@ -992,7 +1015,7 @@ practice you have to resort to the Zig toolchain to automate
 cross-compiling the standard library etc.</p>
 <p>Also, developers not deeply familiar with either C or C++ do not want
 to touch all this CMake/Autotools with a ten-foot pole. And I understand
-them. Stockholm syndrom notwithstanding, these are pretty slow,
+them. Stockholm syndrome notwithstanding, these are pretty slow,
 convoluted, niche programming languages and no one wants to actively
 learn and use them unless they have to.</p>
 <p>Once you are used to simply typing <code>go build</code> or
@@ -1020,11 +1043,11 @@ written during this rewrite, now that I think of it.</p>
 first do <code>rustup target add ...</code> before cross-compiling
 tripped up a few people, since in Go that’s done automatically behind
 the scenes (I think one difference is that Go compiles everything from
-source and so does not need to downloed pre-compiled blobs?).</p>
+source and so does not need to download pre-compiled blobs?).</p>
 <p>Everyone also had an easy time with their text editor/IDE, Rust is
 ubiquitous enough now that every editor will have support for it.</p>
 <p>All the tooling we needed to scan dependencies for vulnerabilities,
-linting, etc was present and polished. Shoutout to
+linting, etc was present and polished. Shootout to
 <code>osv-scanner</code> from Google, which allowed us to scan both the
 Rust and C++ dependencies in the same project (and it evens supports
 Go).</p>
@@ -1032,7 +1055,7 @@ Go).</p>
 with the Rust code and almost every time asked for assistance when
 dealing with the C++ code. C++ is just too complex a language for most
 developers, especially compared to its alternatives.</p>
-<p>CMake/Make/Ninja proved surprinsingly difficult for developers not
+<p>CMake/Make/Ninja proved surprisingly difficult for developers not
 accustomed to them, but I mentioned that already. I think half of my
 time during this rewrite was actually spent coercing all the various
 build systems (Bazel/Xcode/CMake/cargo/Go) on the various platforms into
@@ -1044,7 +1067,7 @@ C++ codebase. It can absolutely be done, just pick the right programming
 language for you and your context, do it incrementally, don’t
 overpromise, establish a rough roadmap with milestones, regularly show
 progress to stakeholders (even if it’s just you, it helps staying
-motived!), and make sure the team is on-board and enjoying the
+motivated!), and make sure the team is on-board and enjoying the
 process.</p>
 <p>You know, like any other software project, really!</p>
 
