@@ -310,8 +310,9 @@ function. I recommend automating this process with <a
 href="https://github.com/mozilla/cbindgen">cbindgen</a>. I have
 encountered some limitations with it but it’s very useful, especially to
 keep the implementation (in Rust) and the API (in C) in sync, or if your
-teammates are not comfortable with C. I added the call to
-<code>cbindgen</code> to CMake so that rebuilding the C++ project would
+teammates are not comfortable with C.</li>
+<li>Automate when you can, for example I added the <code>cbindgen</code>
+code generation step to CMake so that rebuilding the C++ project would
 automatically run <code>cbindgen</code> as well as
 <code>cargo build</code> for the right target in the right mode (debug
 or release) for the right platforms (<code>--target=...</code>). DevUX
@@ -324,10 +325,10 @@ is short</li>
 <li>When a divergence is detected (a difference in output or side
 effects between the old and the new implementation), observe with tests
 or within the debugger the output of the old implementation (that’s
-where the initial Git tag comes handy) in detail so that you can correct
-the new implementation. Some people even develop big test suites
-verifying that the output of the old and the new implementation are
-exactly the same.</li>
+where the initial Git tag comes handy, and working with small commits)
+in detail so that you can correct the new implementation. Some people
+even develop big test suites verifying that the output of the old and
+the new implementation are exactly the same.</li>
 <li>Since it’s a bug-for-bug rewrite, <em>what</em> the new
 implementation does may seem weird or unnecessarily convulated but shall
 be kept (at least as a first pass). However, <em>how</em> it does it in
