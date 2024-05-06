@@ -527,7 +527,7 @@ This is undefined behavior if the array is of size 1, since the Rust allocator w
 SUMMARY: AddressSanitizer: alloc-dealloc-mismatch /home/runner/work/llvm-project/llvm-project/final/llvm-project/compiler-rt/lib/asan/asan_malloc_linux.cpp:52:3 in free
 ```
 
-However, it is only detected with sanitizers on and if a test (or fuzzing) triggers this case.
+However, it is only detected with sanitizers on and if a test (or fuzzing) triggers this case. Or by Miri if a Rust test covers this function.
 
 ---
 

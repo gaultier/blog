@@ -678,8 +678,9 @@ implements its own memory allocator.</p>
 <p>The consequence of this, is that allocating memory on the C/C++ side
 (since <code>new</code> in C++ just calls <code>malloc</code> under the
 hood), and freeing it on the Rust side, is undefined behavior: it
-amounts to freeing a pointer that was never allocated. And
-vice-versa.</p>
+amounts to freeing a pointer that was never allocated by this allocator.
+And vice-versa, allocating a pointer from Rust and freeing it from
+C.</p>
 <p>That has dire consequences since most memory allocators do not detect
 this in Release mode. You might free completely unrelated memory leading
 to use-after-free later, or corrupt the memory allocator structures.
@@ -733,7 +734,8 @@ allocator will free a pointer allocated by the C allocator, and address
 sanitizer catches it:</p>
 <pre><code>SUMMARY: AddressSanitizer: alloc-dealloc-mismatch /home/runner/work/llvm-project/llvm-project/final/llvm-project/compiler-rt/lib/asan/asan_malloc_linux.cpp:52:3 in free</code></pre>
 <p>However, it is only detected with sanitizers on and if a test (or
-fuzzing) triggers this case.</p>
+fuzzing) triggers this case. Or by Miri if a Rust test covers this
+function.</p>
 <hr />
 <p>So I recommend sticking to one ‘side’ , be it C/C++ or Rust, of the
 FFI boundary, to allocate and free all the memory using in FFI
