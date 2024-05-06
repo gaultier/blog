@@ -131,7 +131,7 @@ Here are a few additional tips I recommend doing:
 - When rewriting a function/class, port the tests for this function/class to the new implementation to avoid reducing the code coverage each time
 - Make the old and the new test suites fast so that the iteration time is short
 - When a divergence is detected (a difference in output or side effects between the old and the new implementation), observe with tests or within the debugger the output of the old implementation (that's where the initial Git tag comes handy) in detail so that you can correct the new implementation. Some people even develop big test suites verifying that the output of the old and the new implementation are exactly the same.
-- Since it's a bug-for-bug rewrite, *what* the new implementation does may seem weird or unnecessarily convulated. However, *how* it does it should be up to the best software engineering standards, that means tests, fuzzing, documentation, etc.
+- Since it's a bug-for-bug rewrite, *what* the new implementation does may seem weird or unnecessarily convulated but shall be kept (at least as a first pass). However, *how* it does it in the new code should be up to the best software engineering standards, that means tests, fuzzing, documentation, etc.
 
 Finally, there is one hidden advantage of doing an incremental rewrite. A from-scratch rewrite is all or nothing, if it does not fully complete and replace the old implementation, it's useless and waste. However, an incremental rewrite is immediately useful, may be pause and continued a number of times, and even if the funding gets cut short and it never fully completes, it's still a clear improvement over the starting point.
 
