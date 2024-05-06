@@ -41,11 +41,11 @@ Alright, now that the stage is set, let's go through the steps of rewriting this
 
 ## Improve the existing codebase
 
-That's basically all the steps in [Inheriting a legacy C++ codebase](/blog/you_inherited_a_legacy_cpp_codebase_now_what.html). We need to start the rewrite with a codebase that builds and runs on every platform we support, with tests passing, and a clear README explaining how to setup the project locally. This is a small investment (1 or 2 weeks) that will pay massive dividends in the future. 
+That's basically all the steps in [Inheriting a legacy C++ codebase](/blog/you_inherited_a_legacy_cpp_codebase_now_what.html). We need to start the rewrite with a codebase that builds and runs on every platform we support, with tests passing, and a clear README explaining how to setup the project locally. This is a small investment (a few days to a few weeks depending on the scale of the codebase) that will pay massive dividends in the future. 
 
 But I think the most important point is to trim all the unused code which is typically the majority of the codebase! No one wants to spend time and effort on rewriting completely unused code.
 
-Additionally, if you fail to convince your team and the stakeholders to do the rewrite, you at least have improved the codebase you are now stuck with.
+Additionally, if you fail to convince your team and the stakeholders to do the rewrite, you at least have improved the codebase you are now stuck with. So it's time well spent either way.
 
 ## Get buy-in
 
