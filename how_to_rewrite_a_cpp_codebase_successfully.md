@@ -127,7 +127,7 @@ Here are a few additional tips I recommend doing:
 - Thus, mapping out at the start from a high-level what are the existing components and which component calls out to which other component is invaluable in that regard, but also for establishing a rough roadmap for the rewrite, and reporting on the progress ("3 components have been rewritten, 2 left to do!").
 - Port the code comments from the old code to the new code if they make sense and add value
 - If you can use automated tools (search and replace, or tools operating at the AST level) to change every call site to use the new implementation, it'll make your reviewers very happy, and save you hours and hours of debugging because of a copy-paste mistake
-- Since Rust and C++ basically only can communicate through a C API (I am aware of experimental projects to make them talk directly but we did not use those), it means that each Rust function must be accompanied by a corresponding C function signature, so that C++ can call it as a C function. I recommend automating this process with [cbindgen](https://github.com/mozilla/cbindgen). I have encountered some limitations with it but it's very useful, especially to keep the implementation (in Rust) and the API (in C) in sync, or if your teammates are not comfortable with C. I added the call to `cbindgen` to CMake so that rebuilding the C++ project would automatically run `cbindgen`.
+- Since Rust and C++ basically only can communicate through a C API (I am aware of experimental projects to make them talk directly but we did not use those), it means that each Rust function must be accompanied by a corresponding C function signature, so that C++ can call it as a C function. I recommend automating this process with [cbindgen](https://github.com/mozilla/cbindgen). I have encountered some limitations with it but it's very useful, especially to keep the implementation (in Rust) and the API (in C) in sync, or if your teammates are not comfortable with C. I added the call to `cbindgen` to CMake so that rebuilding the C++ project would automatically run `cbindgen` as well as `cargo build` for the right target in the right mode (debug or release) for the right platforms (`--target=...`). DevUX matters!
 - When rewriting a function/class, port the tests for this function/class to the new implementation to avoid reducing the code coverage each time
 - Make the old and the new test suites fast so that the iteration time is short
 - When a divergence is detected (a difference in output or side effects between the old and the new implementation), observe with tests or within the debugger the output of the old implementation (that's where the initial Git tag comes handy) in detail so that you can correct the new implementation. Some people even develop big test suites verifying that the output of the old and the new implementation are exactly the same.
@@ -465,7 +465,7 @@ Miri again is the MVP here since it detected the issue of mixing the C and Rust 
 
 As Bryan Cantrill once said: "glibc on Linux, it's just, like, your opinion dude". Meaning, glibc is just one option, among many, since Linux is just the kernel and does not ship with a libC. So the Rust standard library cannot expect a given C library on every Linux system, like it would be on macOS or the BSDs or Illumos. All of that to say: it implements its own memory allocator.
 
-The consequence of this, is that allocating memory on the C/C++ side (since `new` in C++ just calls `malloc` under the hood), and freeing it on the Rust side, is undefined behavior: it amounts to freeing a pointer that was never allocated by this allocator. And vice-versa, allocating a pointer from Rust and freeing it from C.
+The consequence of this, is that allocating memory on the C/C++ side, and freeing it on the Rust side, is undefined behavior: it amounts to freeing a pointer that was never allocated by this allocator. And vice-versa, allocating a pointer from Rust and freeing it from C.
 
 That has dire consequences since most memory allocators do not detect this in Release mode. You might free completely unrelated memory leading to use-after-free later, or corrupt the memory allocator structures. It's bad.
 
@@ -533,14 +533,6 @@ However, it is only detected with sanitizers on and if a test (or fuzzing) trigg
 
 So I recommend sticking to one 'side' , be it C/C++ or Rust, of the FFI boundary, to allocate and free all the memory using in FFI structures. Rust has an edge here since the long-term goal is to have 100% of Rust so it will have to allocate all the memory anyway in the end.
 
-For example:
-
-```rust
-#[no_mangle]
-pub extern "C" fn make_owning_array_u8(len: usize) -> OwningArrayC<u8> {
-    vec![0; len].into()
-}
-```
 
 Depending on the existing code style, it might be hard to ensure that the C/C++ allocator is not used at all for structures used in FFI, due to abstractions and hidden memory allocations. 
 
@@ -560,7 +552,7 @@ That way, I can even cross-compile tests and example programs in C or C++ using 
 
 I took inspiration from the CMake code in the Android project, which has to cross-compile for many architectures. Did you know that Android supports x86 (which is 32 bits), x86_64, arm (which is 32 bits), aarch64 (sometimes called arm64), and more? 
 
-In short, you instruct CMake to cross-compile by supplying on the command-line the variables `CMAKE_SYSTEM_PROCESSOR` and `CMAKE_SYSTEM_NAME`, which are the equivalent of `GOARCH` and `GOOS` if you are familiar with Go. E.g.: `cmake .build -S src -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_SYSTEM_NAME=Linux -DCMAKE_SYSTEM_PROCESSOR=arm`.
+In short, you instruct CMake to cross-compile by supplying on the command-line the variables `CMAKE_SYSTEM_PROCESSOR` and `CMAKE_SYSTEM_NAME`, which are the equivalent of `GOARCH` and `GOOS` if you are familiar with Go. E.g.: `cmake -B .build -S src -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_SYSTEM_NAME=Linux -DCMAKE_SYSTEM_PROCESSOR=arm`.
 
 On the Rust side, you tell `cargo` to cross-compile by supplying the `--target` command-line argument, e.g.: `--target=x86_64-unknown-linux-musl`. This works by virtue of installing the pre-compiled toolchain for this platform with `rustup` first:
 
