@@ -540,7 +540,7 @@ class="sourceCode rust"><code class="sourceCode rust"><span id="cb8-1"><a href="
 <span id="cb8-24"><a href="#cb8-24" aria-hidden="true" tabindex="-1"></a><span class="co">/// # Safety</span></span>
 <span id="cb8-25"><a href="#cb8-25" aria-hidden="true" tabindex="-1"></a><span class="co">/// Only call from C.</span></span>
 <span id="cb8-26"><a href="#cb8-26" aria-hidden="true" tabindex="-1"></a><span class="at">#[</span>no_mangle<span class="at">]</span></span>
-<span id="cb8-27"><a href="#cb8-27" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">extern</span> <span class="st">&quot;C&quot;</span> <span class="kw">fn</span> FMW_RUST_make_owning_array_u8(len<span class="op">:</span> <span class="dt">usize</span>) <span class="op">-&gt;</span> OwningArrayC<span class="op">&lt;</span><span class="dt">u8</span><span class="op">&gt;</span> <span class="op">{</span></span>
+<span id="cb8-27"><a href="#cb8-27" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">extern</span> <span class="st">&quot;C&quot;</span> <span class="kw">fn</span> make_owning_array_u8(len<span class="op">:</span> <span class="dt">usize</span>) <span class="op">-&gt;</span> OwningArrayC<span class="op">&lt;</span><span class="dt">u8</span><span class="op">&gt;</span> <span class="op">{</span></span>
 <span id="cb8-28"><a href="#cb8-28" aria-hidden="true" tabindex="-1"></a>    <span class="pp">vec!</span>[<span class="dv">0</span><span class="op">;</span> len]<span class="op">.</span>into()</span>
 <span id="cb8-29"><a href="#cb8-29" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
 <p>Apparently, Rust developers do not want to commit to a particular ABI

@@ -310,7 +310,7 @@ pub struct OwningArrayC<T> {
 /// # Safety
 /// Only call from C.
 #[no_mangle]
-pub extern "C" fn FMW_RUST_make_owning_array_u8(len: usize) -> OwningArrayC<u8> {
+pub extern "C" fn make_owning_array_u8(len: usize) -> OwningArrayC<u8> {
     vec![0; len].into()
 }
 
