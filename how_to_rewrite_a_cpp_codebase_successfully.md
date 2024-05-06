@@ -5,7 +5,7 @@ I recently wrote about [inheriting a legacy C++ codebase](/blog/you_inherited_a_
 - No one in the team but me is able - or feels confident enough - to make a change in this codebase
 - This is a crucial project for the company and will live for years if not decades
 - The code is pretty bad on all the criteria we care about: correctness, maintainability, security, you name it. I don't blame the original developers, they were understaffed and it was written as a prototype (the famous case of the prototype which becomes the production code).
-- No hiring of C++ developers is planned
+- No hiring of C++ developers is planned or at least in the current budget
 
 So it was apparent that sticking with C++ was a dead end. The only solution would be to train everyone in the team on C++ and dedicate a significant amount of time rewriting the most problematic parts of the codebase to perhaps reach a good enough state. It's a judgement call in the end, but that seemed to be more effort than 'simply' introducing a new language and doing a rewrite.
 
