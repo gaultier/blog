@@ -280,6 +280,11 @@ effectively create a multiverse inside the codebase. It’s the same as
 regular software development, really.</p>
 <p>Here are a few additional tips I recommend doing:</p>
 <ul>
+<li>Starting from the leaves of the call graph is much easier than from
+the root. Mapping out at the start from a high-level what are the
+existing components and which component calls out to which other
+component is invaluable in that regard, but also for establishing a
+rough roadmap.</li>
 <li>Port the code comments from the old code to the new code if they
 make sense and add value</li>
 <li>If you can use automated tools (search and replace, or tools
