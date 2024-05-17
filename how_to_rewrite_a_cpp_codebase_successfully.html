@@ -698,7 +698,7 @@ valgrind:</p>
 ==805913==    at 0x127C69: main (src/example.cpp:14)</code></pre>
 <p>Which is not very informative, but better than nothing.
 <code>Miri</code>’s output is much more actionable.</p>
-<p>So in conclusion, Rust’s FFI capabilities work but are tedious are
+<p>So in conclusion, Rust’s FFI capabilities work but are tedious and
 error-prone in my opinion, and so require extra care and testing with
 Miri/fuzzing, with high code coverage of the FFI functions. It’s not
 enough to only test the pure (non FFI) Rust code.</p>
