@@ -780,7 +780,7 @@ fuzzing) triggers this case. Or by Miri if a Rust test covers this
 function.</p>
 <hr />
 <p>So I recommend sticking to one ‘side’, be it C/C++ or Rust, of the
-FFI boundary, to allocate and free all the memory using in FFI
+FFI boundary, to allocate and free all the memory used in FFI
 structures. Rust has an edge here since the long-term goal is to have
 100% of Rust so it will have to allocate all the memory anyway in the
 end.</p>

@@ -558,7 +558,7 @@ However, it is only detected with sanitizers on and if a test (or fuzzing) trigg
 
 ---
 
-So I recommend sticking to one 'side', be it C/C++ or Rust, of the FFI boundary, to allocate and free all the memory using in FFI structures. Rust has an edge here since the long-term goal is to have 100% of Rust so it will have to allocate all the memory anyway in the end.
+So I recommend sticking to one 'side', be it C/C++ or Rust, of the FFI boundary, to allocate and free all the memory used in FFI structures. Rust has an edge here since the long-term goal is to have 100% of Rust so it will have to allocate all the memory anyway in the end.
 
 
 Depending on the existing code style, it might be hard to ensure that the C/C++ allocator is not used at all for structures used in FFI, due to abstractions and hidden memory allocations. 
