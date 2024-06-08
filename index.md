@@ -40,6 +40,7 @@ I often am frustrated with the state of the software industry; however there is 
 - ZFS. The last filesystem you'll need. Reliable and is built on the right concepts. It feels like Git for the filesystem.
 - Wine/Proton. What a technical feat, and a massive reverse engineering effort, to make Windows applications work on Linux without the application even noticing.
 - Rust. Because it catches all my mistakes at compile time and I wish all compilers would too.
+- Zig the toolchain. Because straightforward cross-compiling should be what everyone does on a daily basis without having to setup Docker/VMs/a complicated CI.
 
 
 ## Portfolio
