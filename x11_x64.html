@@ -939,9 +939,10 @@ this:</p>
 <span id="cb28-2"><a href="#cb28-2" aria-hidden="true" tabindex="-1"></a>  u8 order<span class="op">;</span></span>
 <span id="cb28-3"><a href="#cb28-3" aria-hidden="true" tabindex="-1"></a>  u8 pad1<span class="op">;</span></span>
 <span id="cb28-4"><a href="#cb28-4" aria-hidden="true" tabindex="-1"></a>  u16 major<span class="op">,</span> minor<span class="op">;</span></span>
-<span id="cb28-5"><a href="#cb28-5" aria-hidden="true" tabindex="-1"></a>  u16 auth_proto<span class="op">,</span> auth_data<span class="op">;</span></span>
+<span id="cb28-5"><a href="#cb28-5" aria-hidden="true" tabindex="-1"></a>  u16 auth_proto_len<span class="op">,</span> auth_data_len<span class="op">;</span></span>
 <span id="cb28-6"><a href="#cb28-6" aria-hidden="true" tabindex="-1"></a>  u16 pad2<span class="op">;</span></span>
-<span id="cb28-7"><a href="#cb28-7" aria-hidden="true" tabindex="-1"></a><span class="op">}</span> x11_connection_req_t<span class="op">;</span></span></code></pre></div>
+<span id="cb28-7"><a href="#cb28-7" aria-hidden="true" tabindex="-1"></a>  <span class="co">// Optionally, authorization information follow, if `auth_proto_len` and `auth_data_len` are  not 0.</span></span>
+<span id="cb28-8"><a href="#cb28-8" aria-hidden="true" tabindex="-1"></a><span class="op">}</span> x11_connection_req_t<span class="op">;</span></span></code></pre></div>
 <p><code>pad*</code> fields can be ignored since they are padding and
 their value is not read by the server.</p>
 <p>For our handshake, we need to set the <code>order</code> to be
@@ -954,10 +955,12 @@ version, to <code>11</code>. I’ll leave it to the reader to guess
 why.</p>
 <p>In C, we would do:</p>
 <div class="sourceCode" id="cb29"><pre class="sourceCode c"><code class="sourceCode c"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a>  x11_connection_req_t req <span class="op">=</span> <span class="op">{.</span>order <span class="op">=</span> <span class="ch">&#39;l&#39;</span><span class="op">,</span> <span class="op">.</span>major <span class="op">=</span> <span class="dv">11</span><span class="op">};</span></span></code></pre></div>
-<p>This structure is only 12 bytes long, but since we will have to read
-the response from the server which is quite big (around 14 KiB during my
-testing), we will right away reserve a lot of space on the stack, 32
-KiB, to be safe:</p>
+<p>This structure is only 12 bytes long, since we do not use
+authorization (we leave all subsequent fields after the
+<code>minor_version</code> as 0).</p>
+<p>But since we will have to read the response from the server which is
+quite big (around 14 KiB during my testing), we will right away reserve
+a lot of space on the stack, 32 KiB, to be safe:</p>
 <pre class="x86asm"><code>  sub rsp, 1&lt;&lt;15
   mov BYTE [rsp + 0], &#39;l&#39; ; Set order to &#39;l&#39;.
   mov WORD [rsp + 2], 11 ; Set major version to 11.</code></pre>
@@ -966,10 +969,10 @@ KiB, to be safe:</p>
   mov rax, SYSCALL_WRITE
   mov rdi, rdi
   lea rsi, [rsp]
-  mov rdx, 12*8
+  mov rdx, 12
   syscall
 
-  cmp rax, 12*8 ; Check that all bytes were written.
+  cmp rax, 12 ; Check that all bytes were written.
   jnz die</code></pre>
 <p>After that, we read the server response, which should be at first 8
 bytes:</p>
@@ -1103,10 +1106,10 @@ static x11_send_handshake:function
   mov rax, SYSCALL_WRITE
   mov rdi, rdi
   lea rsi, [rsp]
-  mov rdx, 12*8
+  mov rdx, 12
   syscall
 
-  cmp rax, 12*8 ; Check that all bytes were written.
+  cmp rax, 12 ; Check that all bytes were written.
   jnz die
 
   ; Read the server response: read(2).
@@ -1760,10 +1763,10 @@ static x11_send_handshake:function
   mov rax, SYSCALL_WRITE
   mov rdi, rdi
   lea rsi, [rsp]
-  mov rdx, 12*8
+  mov rdx, 12
   syscall
 
-  cmp rax, 12*8 ; Check that all bytes were written.
+  cmp rax, 12 ; Check that all bytes were written.
   jnz die
 
   ; Read the server response: read(2).
