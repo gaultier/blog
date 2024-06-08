@@ -227,7 +227,7 @@ const INPUT: [u8; 4] = [BAR, 0x02, 0x03, 0x04]; // <= This is the interesting da
 assert_eq!(foo(&INPUT), ...);
 ```
 
-We have a constant `BAR` which trips up tree-sitter, because it only see a literal (i.e. 3 letters: 'B', 'A' and 'R') and does not know its value.
+We have a constant `BAR` which trips up tree-sitter, because it only sees a literal (i.e. 3 letters: 'B', 'A' and 'R') and does not know its value.
 
 The way I solved this issue was to do two passes: once to collect all constants along with their values in a map, and then a second pass to find all arrays in tests:
 
