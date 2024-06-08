@@ -21,11 +21,11 @@
 
 ## About me
 
-I am a Senior Software Engineer from France living in Bavaria, Germany. By day, I work for a Fintech company, and by night I write some fun projects in C, Rust, Odin, Zig, and Assembly. I like to work on low-level systems.
+I am a French/German Senior Software Engineer from France living in Bavaria, Germany. By day, I work for a Fintech company, and by night I write some fun projects in C, Rust, Odin, Zig, and Assembly. I like to work on low-level systems.
 
 In my free time, I run, lift weights, play music, and garden.
 
-Get in touch, send me an email!
+Get in touch, send me an email (link on my Github profile)!
 
 
 ## I am grateful
