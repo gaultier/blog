@@ -102,15 +102,20 @@ body {
     margin-bottom: 5rem;
 }
 
-@media only screen
-and (max-width : 450px) {
-    html {
-      font-size: 22px;
+@media (max-width : 450px) {
+    li {
+        padding: 0.5rem;
     }
 }
 
-li {
-    padding: 0.5rem;
+/* Mobile */
+@media (min-width : 450px) {
+    html {
+      font-size: 22px;
+    }
+    li {
+        padding: 1rem;
+    }
 }
 
 blockquote {
