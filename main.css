@@ -99,8 +99,14 @@ hr {
 body {
     margin: 0;
     font-family: monospace, sans-serif;
-    font-size: 1.3rem;
     margin-bottom: 5rem;
+}
+
+@media only screen
+and (max-width : 320px) {
+    html {
+      font-size: 18px;
+    }
 }
 
 li {
