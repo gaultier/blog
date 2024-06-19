@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Let's write a video game from scratch with X11</title>
+<meta charset="utf-8">
+<link rel="shortcut icon" type="image/ico" href="/blog/favicon.ico"/>
+<link rel="stylesheet" type="text/css" href="main.css">
+<link rel="stylesheet" href="https://unpkg.com/@highlightjs/cdn-assets@11.8.0/styles/default.min.css">
+<script src="https://unpkg.com/@highlightjs/cdn-assets@11.8.0/highlight.min.js"></script>
+<script>
+window.addEventListener("load", (event) => {
+  hljs.highlightAll();
+});
+</script>
+</head>
+<body>
+
+<div id="banner">
+    <a id="name" href="/blog"><img id="me" src="me.jpeg"/> Philippe Gaultier </a>
+    <ul>
+      <li>
+      <a href="/blog/body_of_work.html">Body of work</a>
+      </li>
+      <li>
+        <a href="https://github.com/gaultier/resume/raw/master/Philippe_Gaultier_resume_en.pdf">Resume</a>
+      </li>
+      <li>
+      <a href="https://www.linkedin.com/in/philippegaultier/">LinkedIn</a>
+      </li>
+      <li>
+        <a href="https://github.com/gaultier">Github</a>
+      </li>
+      <li>
+      <a href="/blog/feed.xml">Feed</a>
+      </li>
+    </ul>
+</div>
+<div class="body">
+
+<p id="publication_date">Published on .</p><h1 id="lets-write-a-video-game-from-scratch-with-x11">Let’s write a
+video game from scratch with X11</h1>
+<p>In a <a href="/blog/x11_x64.html">previous article</a> I’ve done the
+‘Hello, world!’ of GUI: A black window with a white text, using X11
+without any libraries, just talking directly over a socket.</p>
+<p>In a <a href="/blog/wayland_from_scratch.html">later article</a> I’ve
+done the same with Wayland, showing a static image.</p>
+<p>I hope that I’ve shown that no libraries are needed and the
+<del>overly complicated</del> venerable <code>libX11</code> and
+<code>libxcb</code> libraries (along with the tens of separate libraries
+you need to write a GUI - <code>libXau</code>, <code>libXext</code>,
+<code>libXinerama</code>, etc), or the mainstream SDL, may complicate
+your build and obscure what is really going on.</p>
+<p>The advantage of this approach is that the application is tiny and
+stand-alone: statically linked with the few bits of libC it uses (and
+that’s it), it can be trivially compiled on every Unix, and copied
+around, and it will work on every machine (with the same OS and
+architecture, that is). Even on ancient Linuxes from 20 years ago.</p>
+<p>However these applications of mine were mere simplistic proof of
+concepts.</p>
+<p>Per chance, I recently stumbled upon this <a
+href="https://news.ycombinator.com/item?id=40647278">Hacker News
+post</a>:</p>
+<blockquote>
+<p>Microsoft’s official Minesweeper app has ads, pay-to-win, and is
+hundreds of MBs</p>
+</blockquote>
+<p>And I thought it would be fun to make with the same principles a
+full-fledged GUI application: the cult video game Minesweeper.</p>
+<p>Will it be hundred of megabytes when we finish? How much work is it
+really? Can a hobbyist make this in a few hours?</p>
+<figure>
+<img src="screenshot.png" alt="Screenshot" />
+<figcaption aria-hidden="true">Screenshot</figcaption>
+</figure>
+<p>https://github.com/gaultier/minesweeper-from-scratch/raw/master/screencast.webm</p>
+
+<blockquote id="donate">
+  <p>If you liked this article and you want to support me, and can afford it: <a href="https://paypal.me/philigaultier?country.x=DE&locale.x=en_US">Donate</a></p>
+</blockquote>
+
+</div>
+</body>
+</html>

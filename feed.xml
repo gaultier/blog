@@ -4,7 +4,7 @@
 
      <title>Philippe Gaultier's blog</title>
      <link href="https://gaultier.github.io/blog/"/>
-     <updated>2024-06-18T09:06:40Z</updated>
+     <updated>2024-06-19T12:54:53Z</updated>
      <author>
        <name>Philippe Gaultier</name>
      </author>
@@ -112,6 +112,14 @@
        <id>urn:uuid:6b96e587-14ff-53a9-a142-d20e9c53d970</id>
        <updated>2024-02-29T14:46:33+01:00</updated>
 			 <published>2023-10-12T13:19:53+02:00</published>
+     </entry>
+
+     <entry>
+       <title>Let's write a video game from scratch with X11</title>
+       <link href="https://gaultier.github.io/blog/write_a_game_from_scratch_with_x11.html"/>
+       <id>urn:uuid:d3b49726-eed8-51df-98ed-17f8e65b68c7</id>
+       <updated></updated>
+			 <published></published>
      </entry>
 
      <entry>
