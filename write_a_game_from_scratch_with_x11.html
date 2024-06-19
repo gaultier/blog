@@ -655,8 +655,8 @@ because we need to tell X11 to show our window with the
 somewhere on the internet</del> ?</p>
 <p>Here is our sprite, the one image containing all our assets:</p>
 <figure>
-<img src="game-x11-sprite.png" alt="Sprite" />
-<figcaption aria-hidden="true">Sprite</figcaption>
+<img src="game-x11-sprite.png" alt="Our sprite" />
+<figcaption aria-hidden="true">Our sprite</figcaption>
 </figure>
 <p>Odin has a nice feature to embed the image file in our executable
 which makes redistribution a breeze and startup a bit faster, so we’ll
@@ -680,6 +680,39 @@ transparency.</p>
 <p>Now that our image is in (client) memory, how to make it available to
 the server? Which, again, in the X11 model, might be running on a
 totally different machine across the world!</p>
+<p>X11 has two useful calls for showing images:
+<code>CreatePixmap</code> and <code>PutImage</code>. A
+<code>Pixmap</code> is an off-screen image buffer. <code>PutImage</code>
+uploads image data either to a pixmap or to the window directly (a
+‘drawable’ in X11 parlance).</p>
+<p>We cannot simply use <code>PutImage</code> here since that would show
+the whole sprite on the screen. We could show only parts of it, with
+separate <code>PutImage</code> calls for each entity, but that would
+mean uploading the image data to the server each time.</p>
+<p>What we want is to upload the image data once, off-screen, with one
+<code>PutImage</code> call, and then copy parts of it onto the window.
+Here is the dance we need to do:</p>
+<ul>
+<li><code>CreatePixmap</code></li>
+<li><code>PutImage</code> to upload the image data to the pixmap - at
+that point nothing is shown on the window, everything is still
+off-screen</li>
+<li>For each entity in our game, issue a cheap <code>CopyRect</code>
+call which copies parts of the pixmap onto the window - now it’s
+visible!</li>
+</ul>
+<p>The X server can actually upload the image data to the GPU on a
+<code>PutImage</code> call. After that, <code>CopyRect</code> calls can
+be translated by the X server to GPU commands to copy the image data
+from one GPU buffer to another: that’s really performant! The image data
+is only uploaded once to the GPU and then resides there for the
+remainder of the program.</p>
+<p>Unfortunately, the X standard does not enforce that, but that’s a
+useful model to have in mind.</p>
+<p>Another useful model is to think of what happens when the X server is
+running across the network: We only want to send the image data once
+because that’s time-consuming, and afterwards issue cheap
+<code>CopyRect</code> commands that are only a few bytes each.</p>
 
 <blockquote id="donate">
   <p>If you liked this article and you want to support me, and can afford it: <a href="https://paypal.me/philigaultier?country.x=DE&locale.x=en_US">Donate</a></p>

@@ -625,7 +625,7 @@ What's a game without nice looking pictures ~~stolen from somewhere on the inter
 
 Here is our sprite, the one image containing all our assets:
 
-![Sprite](game-x11-sprite.png)
+![Our sprite](game-x11-sprite.png)
 
 Odin has a nice feature to embed the image file in our executable which makes redistribution a breeze and startup a bit faster, so we'll do that:
 
@@ -654,7 +654,7 @@ The `A` component is actually unused since we do not have transparency.
 
 Now that our image is in (client) memory, how to make it available to the server? Which, again, in the X11 model, might be running on a totally different machine across the world!
 
-X11 has two useful calls for showing images: `CreatePixmap` and `PutImage`. A `Pixmap` is an off-screen image buffer. `PutImage` uploads image data either to a pixmap or to the window directly (a 'drawable' in X11 parlance).
+X11 has two useful calls for images: `CreatePixmap` and `PutImage`. A `Pixmap` is an off-screen image buffer. `PutImage` uploads image data either to a pixmap or to the window directly (a 'drawable' in X11 parlance).
 
 We cannot simply use `PutImage` here since that would show the whole sprite on the screen. We could show only parts of it, with separate `PutImage` calls for each entity, but that would mean uploading the image data to the server each time.
 
