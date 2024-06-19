@@ -205,6 +205,7 @@ load_x11_auth_token :: proc(allocator := context.allocator) -> (token: AuthToken
 		}
 	}
 
+    // Did not find a fitting token.
 	return {}, false
 }
 ```
