@@ -37,6 +37,186 @@ Here are the steps we need to take:
 
 And that's it. Spoiler alert: every step is 1-3 X11 messages that we need to craft and send. The only messages that we receive are the keyboard and mouse events. It's really not much at all!
 
-We will implement this in the [Odin programming language](https://odin-lang.org/) which I really enjoy. But if you want to follow along with C or anything really, go for it. All we need is to be able to open a Unix socket, send and receive data on it, and load an image. We will use PNG for thats since Odin has in its standard library support for PNGs, but we could also very easily use a simple format like PPM (like I did in the Wayland article) that is trivial to parse. Since Odin has support for both in its standard library, I stuck with PNG.
+We will implement this in the [Odin programming language](https://odin-lang.org/) which I really enjoy. But if you want to follow along with C or anything really, go for it. All we need is to be able to open a Unix socket, send and receive data on it, and load an image. We will use PNG for thats since Odin has in its standard library support for PNGs, but we could also very easily use a simple format like PPM (like I did in the linked Wayland article) that is trivial to parse. Since Odin has support for both in its standard library, I stuck with PNG.
 
 
+Finally, if you're into writing X11 applications even with libraries, lots of things are undocumented and this article can be a good learning resource.
+
+
+## Open a window
+
+That's almost exactly the same as the first linked article so I'll speed run this.
+
+There is one difference: we now also support the X authentication protocol. 
+
+When running under XWayland, we must use authentication.
+
+This requires our application to read a 16 bytes long token that's present in a file in the user's home directory, and include it in the handshake we send to the X server.
+
+This mechanism is called `MIT-MAGIC-COOKIE-1`.
+
+The catch is that this file contains multiple tokens for multiple authentication mechanisms, and for multiple hosts. Remember, X11 is designed to work over the network. However we only ccare here about the entry for localhost.
+
+So we need to parse a little bit. It's basically what `libXau` does. From its docs:
+
+``` 
+The .Xauthority file is a binary file consisting of a sequence of entries
+in the following format:
+	2 bytes		Family value (second byte is as in protocol HOST)
+	2 bytes		address length (always MSB first)
+	A bytes		host address (as in protocol HOST)
+	2 bytes		display "number" length (always MSB first)
+	S bytes		display "number" string
+	2 bytes		name length (always MSB first)
+	N bytes		authorization name string
+	2 bytes		data length (always MSB first)
+	D bytes		authorization data string
+```
+
+So let's parse each entry accordingly:
+
+```odin
+read_x11_auth_entry :: proc(buffer: ^bytes.Buffer) -> (AuthEntry, bool) {
+	entry := AuthEntry{}
+
+	{
+		n_read, err := bytes.buffer_read(buffer, mem.ptr_to_bytes(&entry.family))
+		if err == .EOF {return {}, false}
+
+		assert(err == .None)
+		assert(n_read == size_of(entry.family))
+	}
+
+	address_len: u16 = 0
+	{
+		n_read, err := bytes.buffer_read(buffer, mem.ptr_to_bytes(&address_len))
+		assert(err == .None)
+
+		address_len = bits.byte_swap(address_len)
+		assert(n_read == size_of(address_len))
+	}
+
+	address := [256]u8{}
+	{
+		assert(address_len <= len(address))
+
+		n_read, err := bytes.buffer_read(buffer, address[:address_len])
+		assert(err == .None)
+		assert(n_read == cast(int)address_len)
+	}
+
+	display_number_len: u16 = 0
+	{
+		n_read, err := bytes.buffer_read(buffer, mem.ptr_to_bytes(&display_number_len))
+		assert(err == .None)
+
+		display_number_len = bits.byte_swap(display_number_len)
+		assert(n_read == size_of(display_number_len))
+	}
+
+	display_number := [256]u8{}
+	{
+		assert(display_number_len <= len(display_number))
+
+		n_read, err := bytes.buffer_read(buffer, display_number[:display_number_len])
+		assert(err == .None)
+		assert(n_read == cast(int)display_number_len)
+	}
+
+	auth_name_len: u16 = 0
+	{
+		n_read, err := bytes.buffer_read(buffer, mem.ptr_to_bytes(&auth_name_len))
+		assert(err == .None)
+
+		auth_name_len = bits.byte_swap(auth_name_len)
+		assert(n_read == size_of(auth_name_len))
+	}
+
+	auth_name := [256]u8{}
+	{
+		assert(auth_name_len <= len(auth_name))
+
+		n_read, err := bytes.buffer_read(buffer, auth_name[:auth_name_len])
+		assert(err == .None)
+		assert(n_read == cast(int)auth_name_len)
+
+		entry.auth_name = slice.clone(auth_name[:auth_name_len])
+	}
+
+	auth_data_len: u16 = 0
+	{
+		n_read, err := bytes.buffer_read(buffer, mem.ptr_to_bytes(&auth_data_len))
+		assert(err == .None)
+
+		auth_data_len = bits.byte_swap(auth_data_len)
+		assert(n_read == size_of(auth_data_len))
+	}
+
+	auth_data := [256]u8{}
+	{
+		assert(auth_data_len <= len(auth_data))
+
+		n_read, err := bytes.buffer_read(buffer, auth_data[:auth_data_len])
+		assert(err == .None)
+		assert(n_read == cast(int)auth_data_len)
+
+		entry.auth_data = slice.clone(auth_data[:auth_data_len])
+	}
+
+
+	return entry, true
+}
+
+```
+
+Now we can sift through the different entries in the file to find the one we are after:
+
+```odin
+load_x11_auth_token :: proc(allocator := context.allocator) -> (token: AuthToken, ok: bool) {
+	context.allocator = allocator
+	defer free_all(allocator)
+
+	filename_env := os.get_env("XAUTHORITY")
+
+	filename :=
+		len(filename_env) != 0 \
+		? filename_env \
+		: filepath.join([]string{os.get_env("HOME"), ".Xauthority"})
+
+	data := os.read_entire_file_from_filename(filename) or_return
+
+	buffer := bytes.Buffer{}
+	bytes.buffer_init(&buffer, data[:])
+
+
+	for {
+		auth_entry := read_x11_auth_entry(&buffer) or_break
+
+		if auth_entry.family == AUTH_ENTRY_FAMILY_LOCAL &&
+		   slice.equal(auth_entry.auth_name, transmute([]u8)AUTH_ENTRY_MAGIC_COOKIE) &&
+		   len(auth_entry.auth_data) == size_of(AuthToken) {
+
+			mem.copy_non_overlapping(
+				raw_data(&token),
+				raw_data(auth_entry.auth_data),
+				size_of(AuthToken),
+			)
+			return token, true
+		}
+	}
+
+	return {}, false
+}
+```
+
+And we use it so in `main`:
+
+```odin
+main :: proc() {
+	auth_token, _ := load_x11_auth_token(context.temp_allocator)
+}
+```
+
+One interesting thing: in Odin, similarly to Zig, allocators are passed to functions wishing to allocate memory. Contrary to Zig though, Odin has a mechanism to make that less tedious (and a bit more implicit as a result). Odin is nice enough to also provide us two allocators that we can use right away: A general purpose allocator, and a temporary allocator that uses an arena.
+
+Since authentication entries can be large, we have to allocate. However, we do not want to retain the parsed entries from the file in memory after finding the 16 bytes token.

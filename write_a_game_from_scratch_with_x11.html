@@ -107,8 +107,163 @@ along with C or anything really, go for it. All we need is to be able to
 open a Unix socket, send and receive data on it, and load an image. We
 will use PNG for thats since Odin has in its standard library support
 for PNGs, but we could also very easily use a simple format like PPM
-(like I did in the Wayland article) that is trivial to parse. Since Odin
-has support for both in its standard library, I stuck with PNG.</p>
+(like I did in the linked Wayland article) that is trivial to parse.
+Since Odin has support for both in its standard library, I stuck with
+PNG.</p>
+<p>Finally, if you’re into writing X11 applications even with libraries,
+lots of things are undocumented and this article can be a good learning
+resource.</p>
+<h2 id="open-a-window">Open a window</h2>
+<p>That’s almost exactly the same as the first linked article so I’ll
+speed run this.</p>
+<p>There is one difference: we now also support the X authentication
+protocol.</p>
+<p>When running under XWayland, we must use authentication.</p>
+<p>This requires our application to read a 16 bytes long token that’s
+present in a file in the user’s home directory, and include it in the
+handshake we send to the X server.</p>
+<p>The catch is that this file contains multiple tokens for multiple
+ways of authenticating so we need to parse a little bit. It’s basically
+what <code>libXau</code> does. From its docs:</p>
+<pre><code>The .Xauthority file is a binary file consisting of a sequence of entries
+in the following format:
+    2 bytes     Family value (second byte is as in protocol HOST)
+    2 bytes     address length (always MSB first)
+    A bytes     host address (as in protocol HOST)
+    2 bytes     display &quot;number&quot; length (always MSB first)
+    S bytes     display &quot;number&quot; string
+    2 bytes     name length (always MSB first)
+    N bytes     authorization name string
+    2 bytes     data length (always MSB first)
+    D bytes     authorization data string</code></pre>
+<p>So let’s parse it accordingly:</p>
+<pre class="odin"><code>read_x11_auth_entry :: proc(buffer: ^bytes.Buffer) -&gt; (AuthEntry, bool) {
+    entry := AuthEntry{}
+
+    {
+        n_read, err := bytes.buffer_read(buffer, mem.ptr_to_bytes(&amp;entry.family))
+        if err == .EOF {return {}, false}
+
+        assert(err == .None)
+        assert(n_read == size_of(entry.family))
+    }
+
+    address_len: u16 = 0
+    {
+        n_read, err := bytes.buffer_read(buffer, mem.ptr_to_bytes(&amp;address_len))
+        assert(err == .None)
+
+        address_len = bits.byte_swap(address_len)
+        assert(n_read == size_of(address_len))
+    }
+
+    address := [256]u8{}
+    {
+        assert(address_len &lt;= len(address))
+
+        n_read, err := bytes.buffer_read(buffer, address[:address_len])
+        assert(err == .None)
+        assert(n_read == cast(int)address_len)
+    }
+
+    display_number_len: u16 = 0
+    {
+        n_read, err := bytes.buffer_read(buffer, mem.ptr_to_bytes(&amp;display_number_len))
+        assert(err == .None)
+
+        display_number_len = bits.byte_swap(display_number_len)
+        assert(n_read == size_of(display_number_len))
+    }
+
+    display_number := [256]u8{}
+    {
+        assert(display_number_len &lt;= len(display_number))
+
+        n_read, err := bytes.buffer_read(buffer, display_number[:display_number_len])
+        assert(err == .None)
+        assert(n_read == cast(int)display_number_len)
+    }
+
+    auth_name_len: u16 = 0
+    {
+        n_read, err := bytes.buffer_read(buffer, mem.ptr_to_bytes(&amp;auth_name_len))
+        assert(err == .None)
+
+        auth_name_len = bits.byte_swap(auth_name_len)
+        assert(n_read == size_of(auth_name_len))
+    }
+
+    auth_name := [256]u8{}
+    {
+        assert(auth_name_len &lt;= len(auth_name))
+
+        n_read, err := bytes.buffer_read(buffer, auth_name[:auth_name_len])
+        assert(err == .None)
+        assert(n_read == cast(int)auth_name_len)
+
+        entry.auth_name = slice.clone(auth_name[:auth_name_len])
+    }
+
+    auth_data_len: u16 = 0
+    {
+        n_read, err := bytes.buffer_read(buffer, mem.ptr_to_bytes(&amp;auth_data_len))
+        assert(err == .None)
+
+        auth_data_len = bits.byte_swap(auth_data_len)
+        assert(n_read == size_of(auth_data_len))
+    }
+
+    auth_data := [256]u8{}
+    {
+        assert(auth_data_len &lt;= len(auth_data))
+
+        n_read, err := bytes.buffer_read(buffer, auth_data[:auth_data_len])
+        assert(err == .None)
+        assert(n_read == cast(int)auth_data_len)
+
+        entry.auth_data = slice.clone(auth_data[:auth_data_len])
+    }
+
+
+    return entry, true
+}
+
+load_x11_auth_token :: proc(allocator := context.allocator) -&gt; (token: AuthToken, ok: bool) {
+    context.allocator = allocator
+    defer free_all(allocator)
+
+    filename_env := os.get_env(&quot;XAUTHORITY&quot;)
+
+    filename :=
+        len(filename_env) != 0 \
+        ? filename_env \
+        : filepath.join([]string{os.get_env(&quot;HOME&quot;), &quot;.Xauthority&quot;})
+
+    data := os.read_entire_file_from_filename(filename) or_return
+
+    buffer := bytes.Buffer{}
+    bytes.buffer_init(&amp;buffer, data[:])
+
+
+    for {
+        auth_entry := read_x11_auth_entry(&amp;buffer) or_break
+
+        if auth_entry.family == AUTH_ENTRY_FAMILY_LOCAL &amp;&amp;
+           slice.equal(auth_entry.auth_name, transmute([]u8)AUTH_ENTRY_MAGIC_COOKIE) &amp;&amp;
+           len(auth_entry.auth_data) == size_of(AuthToken) {
+
+            mem.copy_non_overlapping(
+                raw_data(&amp;token),
+                raw_data(auth_entry.auth_data),
+                size_of(AuthToken),
+            )
+            return token, true
+        }
+    }
+
+    return {}, false
+}
+</code></pre>
 
 <blockquote id="donate">
   <p>If you liked this article and you want to support me, and can afford it: <a href="https://paypal.me/philigaultier?country.x=DE&locale.x=en_US">Donate</a></p>
