@@ -415,10 +415,9 @@ x11_handshake :: proc(socket: os.Socket, auth_token: ^AuthToken) -> ConnectionIn
 		} \
 	)
 }
-
 ```
 
-Or `main` now becomes:
+Our `main` now becomes:
 
 ```odin
 main :: proc() {
@@ -427,3 +426,192 @@ main :: proc() {
 	connection_information := x11_handshake(socket, &auth_token)
 }
 ```
+
+The next step is to create a graphical context. When creating a new entity, we generate an id for it, and send that in the create request. Afterwards, we can refer to the entity by this id:
+
+```odin
+next_x11_id :: proc(current_id: u32, info: ConnectionInformation) -> u32 {
+	return 1 + ((info.resource_id_mask & (current_id)) | info.resource_id_base)
+}
+```
+
+Time to create a graphical context:
+
+
+```odin
+x11_create_graphical_context :: proc(socket: os.Socket, gc_id: u32, root_id: u32) {
+	opcode: u8 : 55
+	FLAG_GC_BG: u32 : 8
+	BITMASK: u32 : FLAG_GC_BG
+	VALUE1: u32 : 0x00_00_ff_00
+
+	Request :: struct #packed {
+		opcode:   u8,
+		pad1:     u8,
+		length:   u16,
+		id:       u32,
+		drawable: u32,
+		bitmask:  u32,
+		value1:   u32,
+	}
+	request := Request {
+		opcode   = opcode,
+		length   = 5,
+		id       = gc_id,
+		drawable = root_id,
+		bitmask  = BITMASK,
+		value1   = VALUE1,
+	}
+
+	{
+		n_sent, err := os.send(socket, mem.ptr_to_bytes(&request), 0)
+		assert(err == os.ERROR_NONE)
+		assert(n_sent == size_of(Request))
+	}
+}
+```
+
+Finally we create a window. We subscribe to a few events as well:
+
+- `Exposure`: when our window becomes visible,
+- `KEY_PRESS`: when a keyboard key is pressed
+- `KEY_RELEASE`: when a keyboard key is released
+- `BUTTON_PRESS`: when a mouse button is pressed
+- `BUTTON_RELEASE`: when a mouse button is released
+
+We also pick an arbitrary background color, yellow. It does not matter because we will always cover every part of the window with our assets.
+
+```odin
+x11_create_window :: proc(
+	socket: os.Socket,
+	window_id: u32,
+	parent_id: u32,
+	x: u16,
+	y: u16,
+	width: u16,
+	height: u16,
+	root_visual_id: u32,
+) {
+	FLAG_WIN_BG_PIXEL: u32 : 2
+	FLAG_WIN_EVENT: u32 : 0x800
+	FLAG_COUNT: u16 : 2
+	EVENT_FLAG_EXPOSURE: u32 = 0x80_00
+	EVENT_FLAG_KEY_PRESS: u32 = 0x1
+	EVENT_FLAG_KEY_RELEASE: u32 = 0x2
+	EVENT_FLAG_BUTTON_PRESS: u32 = 0x4
+	EVENT_FLAG_BUTTON_RELEASE: u32 = 0x8
+	flags: u32 : FLAG_WIN_BG_PIXEL | FLAG_WIN_EVENT
+	depth: u8 : 24
+	border_width: u16 : 0
+	CLASS_INPUT_OUTPUT: u16 : 1
+	opcode: u8 : 1
+	BACKGROUND_PIXEL_COLOR: u32 : 0x00_ff_ff_00
+
+	Request :: struct #packed {
+		opcode:         u8,
+		depth:          u8,
+		request_length: u16,
+		window_id:      u32,
+		parent_id:      u32,
+		x:              u16,
+		y:              u16,
+		width:          u16,
+		height:         u16,
+		border_width:   u16,
+		class:          u16,
+		root_visual_id: u32,
+		bitmask:        u32,
+		value1:         u32,
+		value2:         u32,
+	}
+	request := Request {
+		opcode         = opcode,
+		depth          = depth,
+		request_length = 8 + FLAG_COUNT,
+		window_id      = window_id,
+		parent_id      = parent_id,
+		x              = x,
+		y              = y,
+		width          = width,
+		height         = height,
+		border_width   = border_width,
+		class          = CLASS_INPUT_OUTPUT,
+		root_visual_id = root_visual_id,
+		bitmask        = flags,
+		value1         = BACKGROUND_PIXEL_COLOR,
+		value2         = EVENT_FLAG_EXPOSURE | EVENT_FLAG_BUTTON_RELEASE | EVENT_FLAG_BUTTON_PRESS | EVENT_FLAG_KEY_PRESS | EVENT_FLAG_KEY_RELEASE,
+	}
+
+	{
+		n_sent, err := os.send(socket, mem.ptr_to_bytes(&request), 0)
+		assert(err == os.ERROR_NONE)
+		assert(n_sent == size_of(Request))
+	}
+}
+
+```
+
+
+We decide that our game will have 16 rows and 16 columns, and each asset is 16x16 pixels.
+
+`main` is now:
+
+```odin
+ENTITIES_ROW_COUNT :: 16
+ENTITIES_COLUMN_COUNT :: 16
+ENTITIES_WIDTH :: 16
+ENTITIES_HEIGHT :: 16
+
+main :: proc() {
+	auth_token, _ := load_x11_auth_token(context.temp_allocator)
+	socket := connect_x11_socket()
+	connection_information := x11_handshake(socket, &auth_token)
+
+	gc_id := next_x11_id(0, connection_information)
+	x11_create_graphical_context(socket, gc_id, connection_information.root_screen.id)
+
+	window_id := next_x11_id(gc_id, connection_information)
+	x11_create_window(
+		socket,
+		window_id,
+		connection_information.root_screen.id,
+		200,
+		200,
+		ENTITIES_COLUMN_COUNT * ENTITIES_WIDTH,
+		ENTITIES_ROW_COUNT * ENTITIES_HEIGHT,
+		connection_information.root_screen.root_visual_id,
+	)
+}
+```
+
+Note that the window dimensions are a hint, they might now be respected, for example in a tiling window manager. We do not handle this case here since the assets are fixed size.
+
+If you have followed along, you will now see.. nothing. That's because we need to tell X11 to show our window with the `map_window` call:
+
+```odin
+x11_map_window :: proc(socket: os.Socket, window_id: u32) {
+	opcode: u8 : 8
+
+	Request :: struct #packed {
+		opcode:         u8,
+		pad1:           u8,
+		request_length: u16,
+		window_id:      u32,
+	}
+	request := Request {
+		opcode         = opcode,
+		request_length = 2,
+		window_id      = window_id,
+	}
+	{
+		n_sent, err := os.send(socket, mem.ptr_to_bytes(&request), 0)
+		assert(err == os.ERROR_NONE)
+		assert(n_sent == size_of(Request))
+	}
+
+}
+```
+
+We now see:
+
+![Empty yellow window](game-x11-empty-background.png)
