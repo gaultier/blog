@@ -140,7 +140,20 @@ in the following format:
     N bytes     authorization name string
     2 bytes     data length (always MSB first)
     D bytes     authorization data string</code></pre>
-<p>So let’s parse each entry accordingly:</p>
+<p>First let’s define some types and constants:</p>
+<pre class="odin"><code>
+AUTH_ENTRY_FAMILY_LOCAL: u16 : 1
+AUTH_ENTRY_MAGIC_COOKIE: string : &quot;MIT-MAGIC-COOKIE-1&quot;
+
+AuthToken :: [16]u8
+
+AuthEntry :: struct {
+    family:    u16,
+    auth_name: []u8,
+    auth_data: []u8,
+}</code></pre>
+<p>We only define fields we are interested in.</p>
+<p>Let’s now parse each entry accordingly:</p>
 <pre class="odin"><code>read_x11_auth_entry :: proc(buffer: ^bytes.Buffer) -&gt; (AuthEntry, bool) {
     entry := AuthEntry{}
 
@@ -161,11 +174,9 @@ in the following format:
         assert(n_read == size_of(address_len))
     }
 
-    address := [256]u8{}
+    address := make([]u8, address_len)
     {
-        assert(address_len &lt;= len(address))
-
-        n_read, err := bytes.buffer_read(buffer, address[:address_len])
+        n_read, err := bytes.buffer_read(buffer, address)
         assert(err == .None)
         assert(n_read == cast(int)address_len)
     }
@@ -179,11 +190,9 @@ in the following format:
         assert(n_read == size_of(display_number_len))
     }
 
-    display_number := [256]u8{}
+    display_number := make([]u8, display_number_len)
     {
-        assert(display_number_len &lt;= len(display_number))
-
-        n_read, err := bytes.buffer_read(buffer, display_number[:display_number_len])
+        n_read, err := bytes.buffer_read(buffer, display_number)
         assert(err == .None)
         assert(n_read == cast(int)display_number_len)
     }
@@ -197,15 +206,11 @@ in the following format:
         assert(n_read == size_of(auth_name_len))
     }
 
-    auth_name := [256]u8{}
+    entry.auth_name = make([]u8, auth_name_len)
     {
-        assert(auth_name_len &lt;= len(auth_name))
-
-        n_read, err := bytes.buffer_read(buffer, auth_name[:auth_name_len])
+        n_read, err := bytes.buffer_read(buffer, entry.auth_name)
         assert(err == .None)
         assert(n_read == cast(int)auth_name_len)
-
-        entry.auth_name = slice.clone(auth_name[:auth_name_len])
     }
 
     auth_data_len: u16 = 0
@@ -217,21 +222,15 @@ in the following format:
         assert(n_read == size_of(auth_data_len))
     }
 
-    auth_data := [256]u8{}
+    entry.auth_data = make([]u8, auth_data_len)
     {
-        assert(auth_data_len &lt;= len(auth_data))
-
-        n_read, err := bytes.buffer_read(buffer, auth_data[:auth_data_len])
+        n_read, err := bytes.buffer_read(buffer, entry.auth_data)
         assert(err == .None)
         assert(n_read == cast(int)auth_data_len)
-
-        entry.auth_data = slice.clone(auth_data[:auth_data_len])
     }
 
-
     return entry, true
-}
-</code></pre>
+}</code></pre>
 <p>Now we can sift through the different entries in the file to find the
 one we are after:</p>
 <pre class="odin"><code>load_x11_auth_token :: proc(allocator := context.allocator) -&gt; (token: AuthToken, ok: bool) {
@@ -267,9 +266,14 @@ one we are after:</p>
         }
     }
 
+    // Did not find a fitting token.
     return {}, false
 }</code></pre>
-<p>And we use it so in <code>main</code>:</p>
+<p>Odin has a nice shorthand to return early on errors:
+<code>or_return</code>, which is the equivalent of <code>?</code> in
+Rust or <code>try</code> in Zig. Same thing with
+<code>or_break</code>.</p>
+<p>And we use it in this manner in <code>main</code>:</p>
 <pre class="odin"><code>main :: proc() {
     auth_token, _ := load_x11_auth_token(context.temp_allocator)
 }</code></pre>
@@ -279,9 +283,14 @@ Odin has a mechanism to make that less tedious (and a bit more implicit
 as a result). Odin is nice enough to also provide us two allocators that
 we can use right away: A general purpose allocator, and a temporary
 allocator that uses an arena.</p>
-<p>Since authentication entries can be large, we have to allocate.
-However, we do not want to retain the parsed entries from the file in
-memory after finding the 16 bytes token.</p>
+<p>Since authentication entries can be large, we have to allocate - the
+stack is only so big. However, we do not want to retain the parsed
+entries from the file in memory after finding the 16 bytes token, so we
+<code>defer free_all(allocator)</code>. This is much better than going
+through each entry and freeing individually each field. We simply free
+the whole arena (but the backing memory remains around to be reused
+later).</p>
+<p>It’s very elegant compared to other languages.</p>
 
 <blockquote id="donate">
   <p>If you liked this article and you want to support me, and can afford it: <a href="https://paypal.me/philigaultier?country.x=DE&locale.x=en_US">Donate</a></p>

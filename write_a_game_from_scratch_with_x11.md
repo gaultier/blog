@@ -73,7 +73,25 @@ in the following format:
 	D bytes		authorization data string
 ```
 
-So let's parse each entry accordingly:
+First let's define some types and constants:
+
+```odin
+
+AUTH_ENTRY_FAMILY_LOCAL: u16 : 1
+AUTH_ENTRY_MAGIC_COOKIE: string : "MIT-MAGIC-COOKIE-1"
+
+AuthToken :: [16]u8
+
+AuthEntry :: struct {
+	family:    u16,
+	auth_name: []u8,
+	auth_data: []u8,
+}
+```
+
+We only define fields we are interested in.
+
+Let's now parse each entry accordingly:
 
 ```odin
 read_x11_auth_entry :: proc(buffer: ^bytes.Buffer) -> (AuthEntry, bool) {
@@ -96,11 +114,9 @@ read_x11_auth_entry :: proc(buffer: ^bytes.Buffer) -> (AuthEntry, bool) {
 		assert(n_read == size_of(address_len))
 	}
 
-	address := [256]u8{}
+	address := make([]u8, address_len)
 	{
-		assert(address_len <= len(address))
-
-		n_read, err := bytes.buffer_read(buffer, address[:address_len])
+		n_read, err := bytes.buffer_read(buffer, address)
 		assert(err == .None)
 		assert(n_read == cast(int)address_len)
 	}
@@ -114,11 +130,9 @@ read_x11_auth_entry :: proc(buffer: ^bytes.Buffer) -> (AuthEntry, bool) {
 		assert(n_read == size_of(display_number_len))
 	}
 
-	display_number := [256]u8{}
+	display_number := make([]u8, display_number_len)
 	{
-		assert(display_number_len <= len(display_number))
-
-		n_read, err := bytes.buffer_read(buffer, display_number[:display_number_len])
+		n_read, err := bytes.buffer_read(buffer, display_number)
 		assert(err == .None)
 		assert(n_read == cast(int)display_number_len)
 	}
@@ -132,15 +146,11 @@ read_x11_auth_entry :: proc(buffer: ^bytes.Buffer) -> (AuthEntry, bool) {
 		assert(n_read == size_of(auth_name_len))
 	}
 
-	auth_name := [256]u8{}
+	entry.auth_name = make([]u8, auth_name_len)
 	{
-		assert(auth_name_len <= len(auth_name))
-
-		n_read, err := bytes.buffer_read(buffer, auth_name[:auth_name_len])
+		n_read, err := bytes.buffer_read(buffer, entry.auth_name)
 		assert(err == .None)
 		assert(n_read == cast(int)auth_name_len)
-
-		entry.auth_name = slice.clone(auth_name[:auth_name_len])
 	}
 
 	auth_data_len: u16 = 0
@@ -152,21 +162,15 @@ read_x11_auth_entry :: proc(buffer: ^bytes.Buffer) -> (AuthEntry, bool) {
 		assert(n_read == size_of(auth_data_len))
 	}
 
-	auth_data := [256]u8{}
+	entry.auth_data = make([]u8, auth_data_len)
 	{
-		assert(auth_data_len <= len(auth_data))
-
-		n_read, err := bytes.buffer_read(buffer, auth_data[:auth_data_len])
+		n_read, err := bytes.buffer_read(buffer, entry.auth_data)
 		assert(err == .None)
 		assert(n_read == cast(int)auth_data_len)
-
-		entry.auth_data = slice.clone(auth_data[:auth_data_len])
 	}
-
 
 	return entry, true
 }
-
 ```
 
 Now we can sift through the different entries in the file to find the one we are after:
@@ -210,7 +214,10 @@ load_x11_auth_token :: proc(allocator := context.allocator) -> (token: AuthToken
 }
 ```
 
-And we use it so in `main`:
+
+Odin has a nice shorthand to return early on errors: `or_return`, which is the equivalent of `?` in Rust or `try` in Zig. Same thing with `or_break`.
+
+And we use it in this manner in `main`:
 
 ```odin
 main :: proc() {
@@ -218,6 +225,10 @@ main :: proc() {
 }
 ```
 
+If we did not find a fitting token, no matter, we will simply carry on with an empty one.
+
 One interesting thing: in Odin, similarly to Zig, allocators are passed to functions wishing to allocate memory. Contrary to Zig though, Odin has a mechanism to make that less tedious (and a bit more implicit as a result). Odin is nice enough to also provide us two allocators that we can use right away: A general purpose allocator, and a temporary allocator that uses an arena.
 
-Since authentication entries can be large, we have to allocate. However, we do not want to retain the parsed entries from the file in memory after finding the 16 bytes token.
+Since authentication entries can be large, we have to allocate - the stack is only so big. However, we do not want to retain the parsed entries from the file in memory after finding the 16 bytes token, so we `defer free_all(allocator)`. This is much better than going through each entry and freeing individually each field. We simply free the whole arena (but the backing memory remains around to be reused later).
+
+It's very elegant compared to other languages.
