@@ -664,6 +664,22 @@ do that:</p>
 <pre class="odin"><code>    png_data := #load(&quot;sprite.png&quot;)
     sprite, err := png.load_from_bytes(png_data, {})
     assert(err == nil)</code></pre>
+<p>Now here is the catch: The X11 image format is different from the one
+in the sprite so we have to swap the bytes around:</p>
+<pre class="odin"><code>    sprite_data := make([]u8, sprite.height * sprite.width * 4)
+
+    // Convert the image format from the sprite (RGB) into the X11 image format (BGRX).
+    for i := 0; i &lt; sprite.height * sprite.width - 3; i += 1 {
+        sprite_data[i * 4 + 0] = sprite.pixels.buf[i * 3 + 2] // R -&gt; B
+        sprite_data[i * 4 + 1] = sprite.pixels.buf[i * 3 + 1] // G -&gt; G
+        sprite_data[i * 4 + 2] = sprite.pixels.buf[i * 3 + 0] // B -&gt; R
+        sprite_data[i * 4 + 3] = 0 // pad
+    }</code></pre>
+<p>The <code>A</code> component is actually unused since we do not have
+transparency.</p>
+<p>Now that our image is in (client) memory, how to make it available to
+the server? Which, again, in the X11 model, might be running on a
+totally different machine across the world!</p>
 
 <blockquote id="donate">
   <p>If you liked this article and you want to support me, and can afford it: <a href="https://paypal.me/philigaultier?country.x=DE&locale.x=en_US">Donate</a></p>

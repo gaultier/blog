@@ -635,3 +635,21 @@ Odin has a nice feature to embed the image file in our executable which makes re
 	sprite, err := png.load_from_bytes(png_data, {})
 	assert(err == nil)
 ```
+
+Now here is the catch: The X11 image format is different from the one in the sprite so we have to swap the bytes around:
+
+```odin
+	sprite_data := make([]u8, sprite.height * sprite.width * 4)
+
+	// Convert the image format from the sprite (RGB) into the X11 image format (BGRX).
+	for i := 0; i < sprite.height * sprite.width - 3; i += 1 {
+		sprite_data[i * 4 + 0] = sprite.pixels.buf[i * 3 + 2] // R -> B
+		sprite_data[i * 4 + 1] = sprite.pixels.buf[i * 3 + 1] // G -> G
+		sprite_data[i * 4 + 2] = sprite.pixels.buf[i * 3 + 0] // B -> R
+		sprite_data[i * 4 + 3] = 0 // pad
+	}
+```
+
+The `A` component is actually unused since we do not have transparency.
+
+Now that our image is in (client) memory, how to make it available to the server? Which, again, in the X11 model, might be running on a totally different machine across the world!
