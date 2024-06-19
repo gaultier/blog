@@ -20,5 +20,5 @@ Will it be hundred of megabytes when we finish? How much work is it really? Can 
 
 ![Screenshot](https://github.com/gaultier/minesweeper-from-scratch/raw/master/screenshot.png)
 
-https://github.com/gaultier/minesweeper-from-scratch/raw/master/screencast.webm
+![Screencast](https://github.com/gaultier/minesweeper-from-scratch/raw/master/screencast.webm)
 
