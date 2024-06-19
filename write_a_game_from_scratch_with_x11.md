@@ -653,3 +653,20 @@ Now here is the catch: The X11 image format is different from the one in the spr
 The `A` component is actually unused since we do not have transparency.
 
 Now that our image is in (client) memory, how to make it available to the server? Which, again, in the X11 model, might be running on a totally different machine across the world!
+
+X11 has two useful calls for showing images: `CreatePixmap` and `PutImage`. A `Pixmap` is an off-screen image buffer. `PutImage` uploads image data either to a pixmap or to the window directly (a 'drawable' in X11 parlance).
+
+We cannot simply use `PutImage` here since that would show the whole sprite on the screen. We could show only parts of it, with separate `PutImage` calls for each entity, but that would mean uploading the image data to the server each time.
+
+What we want is to upload the image data once, off-screen, with one `PutImage` call, and then copy parts of it onto the window. Here is the dance we need to do:
+
+- `CreatePixmap`
+- `PutImage` to upload the image data to the pixmap - at that point nothing is shown on the window, everything is still off-screen
+- For each entity in our game, issue a cheap `CopyRect` call which copies parts of the pixmap onto the window - now it's visible!
+
+The X server can actually upload the image data to the GPU on a `PutImage` call. After that, `CopyRect` calls can be translated by the X server to GPU commands to copy the image data from one GPU buffer to another: that's really performant! The image data is only uploaded once to the GPU and then resides there for the remainder of the program. 
+
+Unfortunately, the X standard does not enforce that, but that's a useful model to have in mind.
+
+Another useful model is to think of what happens when the X server is running across the network: We only want to send the image data once because that's time-consuming, and afterwards issue cheap `CopyRect` commands that are only a few bytes each.
+
