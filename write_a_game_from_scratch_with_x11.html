@@ -122,9 +122,13 @@ protocol.</p>
 <p>This requires our application to read a 16 bytes long token that’s
 present in a file in the user’s home directory, and include it in the
 handshake we send to the X server.</p>
+<p>This mechanism is called <code>MIT-MAGIC-COOKIE-1</code>.</p>
 <p>The catch is that this file contains multiple tokens for multiple
-ways of authenticating so we need to parse a little bit. It’s basically
-what <code>libXau</code> does. From its docs:</p>
+authentication mechanisms, and for multiple hosts. Remember, X11 is
+designed to work over the network. However we only ccare here about the
+entry for localhost.</p>
+<p>So we need to parse a little bit. It’s basically what
+<code>libXau</code> does. From its docs:</p>
 <pre><code>The .Xauthority file is a binary file consisting of a sequence of entries
 in the following format:
     2 bytes     Family value (second byte is as in protocol HOST)
@@ -136,7 +140,7 @@ in the following format:
     N bytes     authorization name string
     2 bytes     data length (always MSB first)
     D bytes     authorization data string</code></pre>
-<p>So let’s parse it accordingly:</p>
+<p>So let’s parse each entry accordingly:</p>
 <pre class="odin"><code>read_x11_auth_entry :: proc(buffer: ^bytes.Buffer) -&gt; (AuthEntry, bool) {
     entry := AuthEntry{}
 
@@ -227,8 +231,10 @@ in the following format:
 
     return entry, true
 }
-
-load_x11_auth_token :: proc(allocator := context.allocator) -&gt; (token: AuthToken, ok: bool) {
+</code></pre>
+<p>Now we can sift through the different entries in the file to find the
+one we are after:</p>
+<pre class="odin"><code>load_x11_auth_token :: proc(allocator := context.allocator) -&gt; (token: AuthToken, ok: bool) {
     context.allocator = allocator
     defer free_all(allocator)
 
@@ -262,8 +268,20 @@ load_x11_auth_token :: proc(allocator := context.allocator) -&gt; (token: AuthTo
     }
 
     return {}, false
-}
-</code></pre>
+}</code></pre>
+<p>And we use it so in <code>main</code>:</p>
+<pre class="odin"><code>main :: proc() {
+    auth_token, _ := load_x11_auth_token(context.temp_allocator)
+}</code></pre>
+<p>One interesting thing: in Odin, similarly to Zig, allocators are
+passed to functions wishing to allocate memory. Contrary to Zig though,
+Odin has a mechanism to make that less tedious (and a bit more implicit
+as a result). Odin is nice enough to also provide us two allocators that
+we can use right away: A general purpose allocator, and a temporary
+allocator that uses an arena.</p>
+<p>Since authentication entries can be large, we have to allocate.
+However, we do not want to retain the parsed entries from the file in
+memory after finding the 16 bytes token.</p>
 
 <blockquote id="donate">
   <p>If you liked this article and you want to support me, and can afford it: <a href="https://paypal.me/philigaultier?country.x=DE&locale.x=en_US">Donate</a></p>
