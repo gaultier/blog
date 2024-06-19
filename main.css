@@ -82,12 +82,17 @@ p {
   background-color: #FFA726;
 }
 
-img {
-  margin: auto;
-  display: block;
-  max-width: 95%;
+figure {
+  display: flex;
+  justify-content: center;
   margin-top: 1rem;
   margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+
+figure > figcaption {
+  width: 100%;
+  text-align: center;
 }
 
 hr {
