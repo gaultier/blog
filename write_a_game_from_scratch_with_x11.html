@@ -113,12 +113,13 @@ PNG.</p>
 <p>Finally, if you’re into writing X11 applications even with libraries,
 lots of things are undocumented and this article can be a good learning
 resource.</p>
-<h2 id="open-a-window">Open a window</h2>
-<p>That’s almost exactly the same as the first linked article so I’ll
-speed run this.</p>
-<p>There is one difference: we now also support the X authentication
+<h2 id="authentication">Authentication</h2>
+<p>In previous articles, we connected to the X server without any
+authentication.</p>
+<p>Let’s be a bit more refined: we now also support the X authentication
 protocol.</p>
-<p>When running under XWayland, we must use authentication.</p>
+<p>That’s because when running under Wayland with XWayland, we have to
+use authentication.</p>
 <p>This requires our application to read a 16 bytes long token that’s
 present in a file in the user’s home directory, and include it in the
 handshake we send to the X server.</p>
@@ -277,6 +278,8 @@ Rust or <code>try</code> in Zig. Same thing with
 <pre class="odin"><code>main :: proc() {
     auth_token, _ := load_x11_auth_token(context.temp_allocator)
 }</code></pre>
+<p>If we did not find a fitting token, no matter, we will simply carry
+on with an empty one.</p>
 <p>One interesting thing: in Odin, similarly to Zig, allocators are
 passed to functions wishing to allocate memory. Contrary to Zig though,
 Odin has a mechanism to make that less tedious (and a bit more implicit
@@ -291,6 +294,187 @@ through each entry and freeing individually each field. We simply free
 the whole arena (but the backing memory remains around to be reused
 later).</p>
 <p>It’s very elegant compared to other languages.</p>
+<h2 id="opening-a-window">Opening a window</h2>
+<p>This part is almost exactly the same as the first linked article so
+I’ll speed run this.</p>
+<p>First we open a UNIX domain socket:</p>
+<pre class="odin"><code>connect_x11_socket :: proc() -&gt; os.Socket {
+    SockaddrUn :: struct #packed {
+        sa_family: os.ADDRESS_FAMILY,
+        sa_data:   [108]u8,
+    }
+
+    socket, err := os.socket(os.AF_UNIX, os.SOCK_STREAM, 0)
+    assert(err == os.ERROR_NONE)
+
+    possible_socket_paths := [2]string{&quot;/tmp/.X11-unix/X0&quot;, &quot;/tmp/.X11-unix/X1&quot;}
+    for &amp;socket_path in possible_socket_paths {
+        addr := SockaddrUn {
+            sa_family = cast(u16)os.AF_UNIX,
+        }
+        mem.copy_non_overlapping(&amp;addr.sa_data, raw_data(socket_path), len(socket_path))
+
+        err = os.connect(socket, cast(^os.SOCKADDR)&amp;addr, size_of(addr))
+        if (err == os.ERROR_NONE) {return socket}
+    }
+
+    os.exit(1)
+}</code></pre>
+<p>We try a few possible paths for the socket, that can vary a bit from
+distribution to distribution.</p>
+<p>We now can send the handshake and receive general information from
+the server, let’s define some structs for that per the X11 protocol:</p>
+<pre class="odin"><code>Screen :: struct #packed {
+    id:             u32,
+    colormap:       u32,
+    white:          u32,
+    black:          u32,
+    input_mask:     u32,
+    width:          u16,
+    height:         u16,
+    width_mm:       u16,
+    height_mm:      u16,
+    maps_min:       u16,
+    maps_max:       u16,
+    root_visual_id: u32,
+    backing_store:  u8,
+    save_unders:    u8,
+    root_depth:     u8,
+    depths_count:   u8,
+}
+
+ConnectionInformation :: struct {
+    root_screen:      Screen,
+    resource_id_base: u32,
+    resource_id_mask: u32,
+}</code></pre>
+<p>The structs are <code>#packed</code> to match the network protocol
+format, otherwise the compiler may insert padding between fields.</p>
+<p>We can now send the handshake. We leverage the <code>writev</code>
+system call to send multiple separate buffers of different lengths in
+one call.</p>
+<p>We skip over most of the information the server sends us, since we
+only are after a few fields:</p>
+<pre class="odin"><code>x11_handshake :: proc(socket: os.Socket, auth_token: ^AuthToken) -&gt; ConnectionInformation {
+    Request :: struct #packed {
+        endianness:             u8,
+        pad1:                   u8,
+        major_version:          u16,
+        minor_version:          u16,
+        authorization_len:      u16,
+        authorization_data_len: u16,
+        pad2:                   u16,
+    }
+
+    request := Request {
+        endianness             = &#39;l&#39;,
+        major_version          = 11,
+        authorization_len      = len(AUTH_ENTRY_MAGIC_COOKIE),
+        authorization_data_len = size_of(AuthToken),
+    }
+
+
+    {
+        padding := [2]u8{0, 0}
+        n_sent, err := linux.writev(
+            cast(linux.Fd)socket,
+            []linux.IO_Vec {
+                {base = &amp;request, len = size_of(Request)},
+                {base = raw_data(AUTH_ENTRY_MAGIC_COOKIE), len = len(AUTH_ENTRY_MAGIC_COOKIE)},
+                {base = raw_data(padding[:]), len = len(padding)},
+                {base = raw_data(auth_token[:]), len = len(auth_token)},
+            },
+        )
+        assert(err == .NONE)
+        assert(
+            n_sent ==
+            size_of(Request) + len(AUTH_ENTRY_MAGIC_COOKIE) + len(padding) + len(auth_token),
+        )
+    }
+
+    StaticResponse :: struct #packed {
+        success:       u8,
+        pad1:          u8,
+        major_version: u16,
+        minor_version: u16,
+        length:        u16,
+    }
+
+    static_response := StaticResponse{}
+    {
+        n_recv, err := os.recv(socket, mem.ptr_to_bytes(&amp;static_response), 0)
+        assert(err == os.ERROR_NONE)
+        assert(n_recv == size_of(StaticResponse))
+        assert(static_response.success == 1)
+    }
+
+
+    recv_buf: [1 &lt;&lt; 15]u8 = {}
+    {
+        assert(len(recv_buf) &gt;= cast(u32)static_response.length * 4)
+
+        n_recv, err := os.recv(socket, recv_buf[:], 0)
+        assert(err == os.ERROR_NONE)
+        assert(n_recv == cast(u32)static_response.length * 4)
+    }
+
+
+    DynamicResponse :: struct #packed {
+        release_number:              u32,
+        resource_id_base:            u32,
+        resource_id_mask:            u32,
+        motion_buffer_size:          u32,
+        vendor_length:               u16,
+        maximum_request_length:      u16,
+        screens_in_root_count:       u8,
+        formats_count:               u8,
+        image_byte_order:            u8,
+        bitmap_format_bit_order:     u8,
+        bitmap_format_scanline_unit: u8,
+        bitmap_format_scanline_pad:  u8,
+        min_keycode:                 u8,
+        max_keycode:                 u8,
+        pad2:                        u32,
+    }
+
+    read_buffer := bytes.Buffer{}
+    bytes.buffer_init(&amp;read_buffer, recv_buf[:])
+
+    dynamic_response := DynamicResponse{}
+    {
+        n_read, err := bytes.buffer_read(&amp;read_buffer, mem.ptr_to_bytes(&amp;dynamic_response))
+        assert(err == .None)
+        assert(n_read == size_of(DynamicResponse))
+    }
+
+
+    // Skip over the vendor information.
+    bytes.buffer_next(&amp;read_buffer, cast(int)round_up_4(cast(u32)dynamic_response.vendor_length))
+    // Skip over the format information (each 8 bytes long).
+    bytes.buffer_next(&amp;read_buffer, 8 * cast(int)dynamic_response.formats_count)
+
+    screen := Screen{}
+    {
+        n_read, err := bytes.buffer_read(&amp;read_buffer, mem.ptr_to_bytes(&amp;screen))
+        assert(err == .None)
+        assert(n_read == size_of(screen))
+    }
+
+    return(
+        ConnectionInformation {
+            resource_id_base = dynamic_response.resource_id_base,
+            resource_id_mask = dynamic_response.resource_id_mask,
+            root_screen = screen,
+        } \
+    )
+}
+</code></pre>
+<p>Or <code>main</code> now becomes:</p>
+<pre class="odin"><code>main :: proc() {
+    auth_token, _ := load_x11_auth_token(context.temp_allocator)
+    socket := connect_x11_socket()
+    connection_information := x11_handshake(socket, &amp;auth_token)
+}</code></pre>
 
 <blockquote id="donate">
   <p>If you liked this article and you want to support me, and can afford it: <a href="https://paypal.me/philigaultier?country.x=DE&locale.x=en_US">Donate</a></p>

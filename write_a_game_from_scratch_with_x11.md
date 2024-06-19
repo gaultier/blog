@@ -43,13 +43,13 @@ We will implement this in the [Odin programming language](https://odin-lang.org/
 Finally, if you're into writing X11 applications even with libraries, lots of things are undocumented and this article can be a good learning resource.
 
 
-## Open a window
+## Authentication
 
-That's almost exactly the same as the first linked article so I'll speed run this.
+In previous articles, we connected to the X server without any authentication.
 
-There is one difference: we now also support the X authentication protocol. 
+Let's be a bit more refined: we now also support the X authentication protocol. 
 
-When running under XWayland, we must use authentication.
+That's because when running under Wayland with XWayland, we have to use authentication.
 
 This requires our application to read a 16 bytes long token that's present in a file in the user's home directory, and include it in the handshake we send to the X server.
 
@@ -232,3 +232,198 @@ One interesting thing: in Odin, similarly to Zig, allocators are passed to funct
 Since authentication entries can be large, we have to allocate - the stack is only so big. However, we do not want to retain the parsed entries from the file in memory after finding the 16 bytes token, so we `defer free_all(allocator)`. This is much better than going through each entry and freeing individually each field. We simply free the whole arena (but the backing memory remains around to be reused later).
 
 It's very elegant compared to other languages.
+
+## Opening a window
+
+This part is almost exactly the same as the first linked article so I'll speed run this.
+
+First we open a UNIX domain socket:
+
+```odin
+connect_x11_socket :: proc() -> os.Socket {
+	SockaddrUn :: struct #packed {
+		sa_family: os.ADDRESS_FAMILY,
+		sa_data:   [108]u8,
+	}
+
+	socket, err := os.socket(os.AF_UNIX, os.SOCK_STREAM, 0)
+	assert(err == os.ERROR_NONE)
+
+	possible_socket_paths := [2]string{"/tmp/.X11-unix/X0", "/tmp/.X11-unix/X1"}
+	for &socket_path in possible_socket_paths {
+		addr := SockaddrUn {
+			sa_family = cast(u16)os.AF_UNIX,
+		}
+		mem.copy_non_overlapping(&addr.sa_data, raw_data(socket_path), len(socket_path))
+
+		err = os.connect(socket, cast(^os.SOCKADDR)&addr, size_of(addr))
+		if (err == os.ERROR_NONE) {return socket}
+	}
+
+	os.exit(1)
+}
+```
+
+We try a few possible paths for the socket, that can vary a bit from distribution to distribution.
+
+We now can send the handshake and receive general information from the server, let's define some structs for that per the X11 protocol:
+
+```odin
+Screen :: struct #packed {
+	id:             u32,
+	colormap:       u32,
+	white:          u32,
+	black:          u32,
+	input_mask:     u32,
+	width:          u16,
+	height:         u16,
+	width_mm:       u16,
+	height_mm:      u16,
+	maps_min:       u16,
+	maps_max:       u16,
+	root_visual_id: u32,
+	backing_store:  u8,
+	save_unders:    u8,
+	root_depth:     u8,
+	depths_count:   u8,
+}
+
+ConnectionInformation :: struct {
+	root_screen:      Screen,
+	resource_id_base: u32,
+	resource_id_mask: u32,
+}
+```
+
+The structs are `#packed` to match the network protocol format, otherwise the compiler may insert padding between fields.
+
+We can now send the handshake. We leverage the `writev` system call to send multiple separate buffers of different lengths in one call.
+
+We skip over most of the information the server sends us, since we only are after a few fields:
+
+```odin
+x11_handshake :: proc(socket: os.Socket, auth_token: ^AuthToken) -> ConnectionInformation {
+	Request :: struct #packed {
+		endianness:             u8,
+		pad1:                   u8,
+		major_version:          u16,
+		minor_version:          u16,
+		authorization_len:      u16,
+		authorization_data_len: u16,
+		pad2:                   u16,
+	}
+
+	request := Request {
+		endianness             = 'l',
+		major_version          = 11,
+		authorization_len      = len(AUTH_ENTRY_MAGIC_COOKIE),
+		authorization_data_len = size_of(AuthToken),
+	}
+
+
+	{
+		padding := [2]u8{0, 0}
+		n_sent, err := linux.writev(
+			cast(linux.Fd)socket,
+			[]linux.IO_Vec {
+				{base = &request, len = size_of(Request)},
+				{base = raw_data(AUTH_ENTRY_MAGIC_COOKIE), len = len(AUTH_ENTRY_MAGIC_COOKIE)},
+				{base = raw_data(padding[:]), len = len(padding)},
+				{base = raw_data(auth_token[:]), len = len(auth_token)},
+			},
+		)
+		assert(err == .NONE)
+		assert(
+			n_sent ==
+			size_of(Request) + len(AUTH_ENTRY_MAGIC_COOKIE) + len(padding) + len(auth_token),
+		)
+	}
+
+	StaticResponse :: struct #packed {
+		success:       u8,
+		pad1:          u8,
+		major_version: u16,
+		minor_version: u16,
+		length:        u16,
+	}
+
+	static_response := StaticResponse{}
+	{
+		n_recv, err := os.recv(socket, mem.ptr_to_bytes(&static_response), 0)
+		assert(err == os.ERROR_NONE)
+		assert(n_recv == size_of(StaticResponse))
+		assert(static_response.success == 1)
+	}
+
+
+	recv_buf: [1 << 15]u8 = {}
+	{
+		assert(len(recv_buf) >= cast(u32)static_response.length * 4)
+
+		n_recv, err := os.recv(socket, recv_buf[:], 0)
+		assert(err == os.ERROR_NONE)
+		assert(n_recv == cast(u32)static_response.length * 4)
+	}
+
+
+	DynamicResponse :: struct #packed {
+		release_number:              u32,
+		resource_id_base:            u32,
+		resource_id_mask:            u32,
+		motion_buffer_size:          u32,
+		vendor_length:               u16,
+		maximum_request_length:      u16,
+		screens_in_root_count:       u8,
+		formats_count:               u8,
+		image_byte_order:            u8,
+		bitmap_format_bit_order:     u8,
+		bitmap_format_scanline_unit: u8,
+		bitmap_format_scanline_pad:  u8,
+		min_keycode:                 u8,
+		max_keycode:                 u8,
+		pad2:                        u32,
+	}
+
+	read_buffer := bytes.Buffer{}
+	bytes.buffer_init(&read_buffer, recv_buf[:])
+
+	dynamic_response := DynamicResponse{}
+	{
+		n_read, err := bytes.buffer_read(&read_buffer, mem.ptr_to_bytes(&dynamic_response))
+		assert(err == .None)
+		assert(n_read == size_of(DynamicResponse))
+	}
+
+
+	// Skip over the vendor information.
+	bytes.buffer_next(&read_buffer, cast(int)round_up_4(cast(u32)dynamic_response.vendor_length))
+	// Skip over the format information (each 8 bytes long).
+	bytes.buffer_next(&read_buffer, 8 * cast(int)dynamic_response.formats_count)
+
+	screen := Screen{}
+	{
+		n_read, err := bytes.buffer_read(&read_buffer, mem.ptr_to_bytes(&screen))
+		assert(err == .None)
+		assert(n_read == size_of(screen))
+	}
+
+	return(
+		ConnectionInformation {
+			resource_id_base = dynamic_response.resource_id_base,
+			resource_id_mask = dynamic_response.resource_id_mask,
+			root_screen = screen,
+		} \
+	)
+}
+
+```
+
+Or `main` now becomes:
+
+```odin
+main :: proc() {
+	auth_token, _ := load_x11_auth_token(context.temp_allocator)
+	socket := connect_x11_socket()
+	connection_information := x11_handshake(socket, &auth_token)
+}
+```
