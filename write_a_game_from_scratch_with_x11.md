@@ -615,3 +615,23 @@ x11_map_window :: proc(socket: os.Socket, window_id: u32) {
 We now see:
 
 ![Empty yellow window](game-x11-empty-background.png)
+
+Time to start programming the game itself!
+
+
+## Loading assets
+
+What's a game without nice looking pictures ~~stolen from somewhere on the internet~~ ?
+
+Here is our sprite, the one image containing all our assets:
+
+![Sprite](game-x11-sprite.png)
+
+Odin has a nice feature to embed the image file in our executable which makes redistribution a breeze and startup a bit faster, so we'll do that:
+
+
+```odin
+	png_data := #load("sprite.png")
+	sprite, err := png.load_from_bytes(png_data, {})
+	assert(err == nil)
+```

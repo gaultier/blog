@@ -589,7 +589,7 @@ assets.</p>
     }
 }
 </code></pre>
-<p>We decided that our game will have 16 rows and 16 columns, and each
+<p>We decide that our game will have 16 rows and 16 columns, and each
 asset is 16x16 pixels.</p>
 <p><code>main</code> is now:</p>
 <pre class="odin"><code>ENTITIES_ROW_COUNT :: 16
@@ -649,6 +649,21 @@ because we need to tell X11 to show our window with the
 <img src="game-x11-empty-background.png" alt="Empty yellow window" />
 <figcaption aria-hidden="true">Empty yellow window</figcaption>
 </figure>
+<p>Time to start programming the game itself!</p>
+<h2 id="loading-assets">Loading assets</h2>
+<p>What’s a game without nice looking pictures <del>stolen from
+somewhere on the internet</del> ?</p>
+<p>Here is our sprite, the one image containing all our assets:</p>
+<figure>
+<img src="game-x11-sprite.png" alt="Sprite" />
+<figcaption aria-hidden="true">Sprite</figcaption>
+</figure>
+<p>Odin has a nice feature to embed the image file in our executable
+which makes redistribution a breeze and startup a bit faster, so we’ll
+do that:</p>
+<pre class="odin"><code>    png_data := #load(&quot;sprite.png&quot;)
+    sprite, err := png.load_from_bytes(png_data, {})
+    assert(err == nil)</code></pre>
 
 <blockquote id="donate">
   <p>If you liked this article and you want to support me, and can afford it: <a href="https://paypal.me/philigaultier?country.x=DE&locale.x=en_US">Donate</a></p>
