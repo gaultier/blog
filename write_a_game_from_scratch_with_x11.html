@@ -49,14 +49,17 @@ done the same with Wayland, showing a static image.</p>
 <code>libxcb</code> libraries (along with the tens of separate libraries
 you need to write a GUI - <code>libXau</code>, <code>libXext</code>,
 <code>libXinerama</code>, etc), or the mainstream SDL, may complicate
-your build and obscure what is really going on.</p>
+your build and obscure what is really going on. It something does not
+work, that’s tens of thousands of lines of code you have to now
+troubleshoot.</p>
 <p>The advantage of this approach is that the application is tiny and
 stand-alone: statically linked with the few bits of libC it uses (and
 that’s it), it can be trivially compiled on every Unix, and copied
 around, and it will work on every machine (with the same OS and
 architecture, that is). Even on ancient Linuxes from 20 years ago.</p>
-<p>However these applications of mine were mere simplistic proof of
-concepts.</p>
+<p>However these GUIs of mine were mere proof of concepts, too
+simplistic to convince the skeptic that this approach is actually
+viable.</p>
 <p>Per chance, I recently stumbled upon this <a
 href="https://news.ycombinator.com/item?id=40647278">Hacker News
 post</a>:</p>
@@ -81,6 +84,31 @@ controls=""><a
 href="https://github.com/gaultier/minesweeper-from-scratch/raw/master/screencast.webm">Screencast</a></video>
 <figcaption aria-hidden="true">Screencast</figcaption>
 </figure>
+<p><em>Press enter to reset and press any mouse button to uncover the
+cell under the mouse cursor.</em></p>
+<p>The result is a ~300 KiB statically linked executable, that requires
+no libraries, and uses a constant ~ 1 MiB of resident heap memory
+(allocated at the start, to hold the assets). That’s roughly a thousand
+times smaller in size than Microsoft’s. And it only is a few hundred
+lines of code.</p>
+<p>Here are the steps we need to take:</p>
+<ul>
+<li>Open a window</li>
+<li>Upload image data (the one sprite with all the assets)</li>
+<li>Draw parts of the sprite to the window</li>
+<li>React to keyboard/mouse events</li>
+</ul>
+<p>And that’s it. Spoiler alert: every step is 1-3 X11 messages that we
+need to craft and send. The only messages that we receive are the
+keyboard and mouse events. It’s really not much at all!</p>
+<p>We will implement this in the <a href="https://odin-lang.org/">Odin
+programming language</a> which I really enjoy. But if you want to follow
+along with C or anything really, go for it. All we need is to be able to
+open a Unix socket, send and receive data on it, and load an image. We
+will use PNG for thats since Odin has in its standard library support
+for PNGs, but we could also very easily use a simple format like PPM
+(like I did in the Wayland article) that is trivial to parse. Since Odin
+has support for both in its standard library, I stuck with PNG.</p>
 
 <blockquote id="donate">
   <p>If you liked this article and you want to support me, and can afford it: <a href="https://paypal.me/philigaultier?country.x=DE&locale.x=en_US">Donate</a></p>
