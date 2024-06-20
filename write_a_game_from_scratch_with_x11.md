@@ -979,4 +979,34 @@ The first interesting field is `displayed_entities` which keeps track of which a
 
 The second one is `mines` which simply keeps track of where mines are. It could be a bitfield to optimize space but I did not bother.
 
+In `main` we create a new scene and plant mines randomly.
+
+```odin
+	scene := Scene {
+		window_id              = window_id,
+		gc_id                  = gc_id,
+		sprite_pixmap_id       = pixmap_id,
+		connection_information = connection_information,
+		sprite_width           = cast(u16)sprite.width,
+		sprite_height          = cast(u16)sprite.height,
+		sprite_data            = sprite_data,
+	}
+	reset(&scene)
+```
+
+We put this logic in the `reset` helper so that the player can easily restart the game with one keystroke:
+
+```
+reset :: proc(scene: ^Scene) {
+	for &entity in scene.displayed_entities {
+		entity = .Covered
+	}
+
+	for &mine in scene.mines {
+		mine = rand.choice([]bool{true, false, false, false})
+	}
+}
+```
+
+Here I used a 1/4 chance that a cell has a mine.
 
