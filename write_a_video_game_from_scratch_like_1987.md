@@ -14,7 +14,8 @@ And I thought it would be fun to make with the same principles a full-fledged GU
 
 Will it be hundred of megabytes when we finish? How much work is it really? Can a hobbyist make this in a few hours? 
 
-![Screenshot](https://github.com/gaultier/minesweeper-from-scratch/raw/master/screenshot.png)
+![The game running on Linux](https://github.com/gaultier/minesweeper-from-scratch/raw/master/screenshot.png)
+![The game (unmodified) running on FreeBSD](game-x11-freebsd.png)
 
 ![Screencast](https://github.com/gaultier/minesweeper-from-scratch/raw/master/screencast.webm)
 
