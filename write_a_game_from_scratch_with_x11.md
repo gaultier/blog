@@ -1032,7 +1032,7 @@ And here is what we get:
 ![First scene](game-x11-first-scene.png)
 
 
-The next steps is to response to events.
+The next step is to respond to events.
 
 
 ## Reacting to keyboard and mouse events
