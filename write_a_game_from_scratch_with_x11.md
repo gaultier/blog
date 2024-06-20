@@ -1,8 +1,8 @@
 # Let's write a video game from scratch like it's 1987
 
-In a [previous article](/blog/x11_x64.html) I've done the 'Hello, world!' of GUIs: A black window with a white text, using X11 without any libraries, just talking directly over a socket. 
+In a [previous article](/blog/x11_x64.html) I've done the 'Hello, world!' of GUIs in assembly: A black window with a white text, using X11 without any libraries, just talking directly over a socket. 
 
-In a [later article](/blog/wayland_from_scratch.html) I've done the same with Wayland, displaying a static image.
+In a [later article](/blog/wayland_from_scratch.html) I've done the same with Wayland in C, displaying a static image.
 
 I showed that this is not complex and results in a very lean and small application.
 
