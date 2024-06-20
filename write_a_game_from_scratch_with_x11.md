@@ -965,17 +965,13 @@ And we'll group everything we need in one struct called `Scene`:
 Scene :: struct {
 	window_id:              u32,
 	gc_id:                  u32,
-	connection_information: ConnectionInformation,
-	sprite_data:            []u8,
 	sprite_pixmap_id:       u32,
-	sprite_width:           u16,
-	sprite_height:          u16,
 	displayed_entities:     [ENTITIES_ROW_COUNT * ENTITIES_COLUMN_COUNT]Entity_kind,
 	mines:                  [ENTITIES_ROW_COUNT * ENTITIES_COLUMN_COUNT]bool,
 }
 ```
 
-The first interesting field is `displayed_entities` which keeps track of which assets are shown. For example, a mine is either covered, uncovered and exploded if the player clicked on it, or uncovered and idle is the player won).
+The first interesting field is `displayed_entities` which keeps track of which assets are shown. For example, a mine is either covered, uncovered and exploded if the player clicked on it, or uncovered and idle if the player won).
 
 The second one is `mines` which simply keeps track of where mines are. It could be a bitfield to optimize space but I did not bother.
 
@@ -986,10 +982,6 @@ In `main` we create a new scene and plant mines randomly.
 		window_id              = window_id,
 		gc_id                  = gc_id,
 		sprite_pixmap_id       = pixmap_id,
-		connection_information = connection_information,
-		sprite_width           = cast(u16)sprite.width,
-		sprite_height          = cast(u16)sprite.height,
-		sprite_data            = sprite_data,
 	}
 	reset(&scene)
 ```
@@ -1010,3 +1002,37 @@ reset :: proc(scene: ^Scene) {
 
 Here I used a 1/4 chance that a cell has a mine.
 
+We are now ready to render our (static for now) scene:
+
+```odin
+render :: proc(socket: os.Socket, scene: ^Scene) {
+	for entity, i in scene.displayed_entities {
+		rect := ASSET_COORDINATES[entity]
+		column: u16 = cast(u16)i % ENTITIES_COLUMN_COUNT
+		row: u16 = cast(u16)i / ENTITIES_COLUMN_COUNT
+
+		x11_copy_area(
+			socket,
+			scene.sprite_pixmap_id,
+			scene.window_id,
+			scene.gc_id,
+			rect.x,
+			rect.y,
+			column * ENTITIES_WIDTH,
+			row * ENTITIES_HEIGHT,
+			ENTITIES_WIDTH,
+			ENTITIES_HEIGHT,
+		)
+	}
+}
+```
+
+And here is what we get:
+
+![First scene](game-x11-first-scene.png)
+
+
+The next steps is to response to events.
+
+
+## Reacting to keyboard and mouse events

@@ -1010,21 +1010,66 @@ ASSET_COORDINATES: [Entity_kind]Position = {
 <pre class="odin"><code>Scene :: struct {
     window_id:              u32,
     gc_id:                  u32,
-    connection_information: ConnectionInformation,
-    sprite_data:            []u8,
     sprite_pixmap_id:       u32,
-    sprite_width:           u16,
-    sprite_height:          u16,
     displayed_entities:     [ENTITIES_ROW_COUNT * ENTITIES_COLUMN_COUNT]Entity_kind,
     mines:                  [ENTITIES_ROW_COUNT * ENTITIES_COLUMN_COUNT]bool,
 }</code></pre>
 <p>The first interesting field is <code>displayed_entities</code> which
 keeps track of which assets are shown. For example, a mine is either
 covered, uncovered and exploded if the player clicked on it, or
-uncovered and idle is the player won).</p>
+uncovered and idle if the player won).</p>
 <p>The second one is <code>mines</code> which simply keeps track of
 where mines are. It could be a bitfield to optimize space but I did not
 bother.</p>
+<p>In <code>main</code> we create a new scene and plant mines
+randomly.</p>
+<pre class="odin"><code>    scene := Scene {
+        window_id              = window_id,
+        gc_id                  = gc_id,
+        sprite_pixmap_id       = pixmap_id,
+    }
+    reset(&amp;scene)</code></pre>
+<p>We put this logic in the <code>reset</code> helper so that the player
+can easily restart the game with one keystroke:</p>
+<pre><code>reset :: proc(scene: ^Scene) {
+    for &amp;entity in scene.displayed_entities {
+        entity = .Covered
+    }
+
+    for &amp;mine in scene.mines {
+        mine = rand.choice([]bool{true, false, false, false})
+    }
+}</code></pre>
+<p>Here I used a 1/4 chance that a cell has a mine.</p>
+<p>We are now ready to render our (static for now) scene:</p>
+<pre class="odin"><code>render :: proc(socket: os.Socket, scene: ^Scene) {
+    for entity, i in scene.displayed_entities {
+        rect := ASSET_COORDINATES[entity]
+        column: u16 = cast(u16)i % ENTITIES_COLUMN_COUNT
+        row: u16 = cast(u16)i / ENTITIES_COLUMN_COUNT
+
+        x11_copy_area(
+            socket,
+            scene.sprite_pixmap_id,
+            scene.window_id,
+            scene.gc_id,
+            rect.x,
+            rect.y,
+            column * ENTITIES_WIDTH,
+            row * ENTITIES_HEIGHT,
+            ENTITIES_WIDTH,
+            ENTITIES_HEIGHT,
+        )
+    }
+}</code></pre>
+<p>And here is what we get:</p>
+<figure>
+<img src="game-x11-first-scene.png" alt="First scene" />
+<figcaption aria-hidden="true">First scene</figcaption>
+</figure>
+<p>The next steps is to response to events.</p>
+<h2 id="reacting-to-keyboard-and-mouse-events">Reacting to keyboard and
+mouse events</h2>
 
 <blockquote id="donate">
   <p>If you liked this article and you want to support me, and can afford it: <a href="https://paypal.me/philigaultier?country.x=DE&locale.x=en_US">Donate</a></p>
