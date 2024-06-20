@@ -80,7 +80,7 @@ This requires our application to read a 16 bytes long token that's present in a 
 
 This mechanism is called `MIT-MAGIC-COOKIE-1`.
 
-The catch is that this file contains multiple tokens for various authentication mechanisms, and network hosts. Remember, X11 is designed to work over the network. However we only ccare here about the entry for localhost.
+The catch is that this file contains multiple tokens for various authentication mechanisms, and network hosts. Remember, X11 is designed to work over the network. However we only care here about the entry for localhost.
 
 So we need to parse a little bit. It's basically what `libXau` does. From its docs:
 
@@ -260,7 +260,7 @@ Since authentication entries can be large, we have to allocate - the stack is on
 
 However, we do not want to retain the parsed entries from the file in memory after finding the 16 bytes token, so we `defer free_all(allocator)`. This is much better than going through each entry and freeing individually each field. We simply free the whole arena in one swoop (but the backing memory remains around to be reused later).
 
-Furthermore, using this arena places an upper bound (a few MiBs) on the allocations we can do. So if one entry in the file is huge, or malformed, we verifyingly cannot allocate many Gibs of memory. This is good news, because otherwise, the OS will start swapping like crazy and start killing random programs. In my experience it usually kills the window/desktop manager which kills all open windows. Very efficient from the OS perspective, and awful from the user perspective. So it's always good to place an upper bound on all resources including heap memory usage of your program.
+Furthermore, using this arena places an upper bound (a few MiBs) on the allocations we can do. So if one entry in the file is huge, or malformed, we verifyingly cannot allocate many GiBs of memory. This is good news, because otherwise, the OS will start swapping like crazy and start killing random programs. In my experience it usually kills the window/desktop manager which kills all open windows. Very efficient from the OS perspective, and awful from the user perspective. So it's always good to place an upper bound on all resources including heap memory usage of your program.
 
 
 All in all I find Odin's approach very elegant. I usually want the ability to use a different allocator in a given function, but also if I don't care, it will do the right thing and use the standard allocator.
@@ -1136,7 +1136,7 @@ wait_for_x11_events :: proc(socket: os.Socket, scene: ^Scene) {
 }
 ```
 
-If the event is `Exposed`, we simply render (that's our first render when the window becomes visible - or if the window was mimized and then made visible again).
+If the event is `Exposed`, we simply render (that's our first render when the window becomes visible - or if the window was minimized and then made visible again).
 
 If the event is the `Enter` key, we reset the state of the game and render. X11 differentiates between physical and logical keys on the keyboard but that does not matter here (or I would argue in most games: we are interested in the physical location of the key, not what the user mapped it to).
 
@@ -1153,9 +1153,9 @@ The last thing to do is implementing the game rules.
 From my faint memory, when uncovering a cell, we have X cases:
 
 - If it's a mine, we lost
-- If it's not a mine, we uncover this cell and neighbouring cells, in a flood fill fashion. We only uncover non-mines of course. An uncovered cell shows how many neighbouring mines are around with a number (0 is simply empty, no number is shown).
+- If it's not a mine, we uncover this cell and neighboring cells, in a flood fill fashion. We only uncover non-mines of course. An uncovered cell shows how many neighboring mines are around with a number (0 is simply empty, no number is shown).
 
-The one thing that tripped me is that we inspect all 8 neighbouring cells to count mines, but when doing the flood fill, we only visit the 4 neighbouring cells: up, right, down, left - not the diagonal neighbours. Otherwise the flood fill ends up uncovering all cells in the game at once.
+The one thing that tripped me is that we inspect all 8 neighboring cells to count mines, but when doing the flood fill, we only visit the 4 neighboring cells: up, right, down, left - not the diagonal neighbors. Otherwise the flood fill ends up uncovering all cells in the game at once.
 
 First, we need to translate the mouse position in the window to a cell index/row/column in our grid:
 

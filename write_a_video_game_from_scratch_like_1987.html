@@ -164,7 +164,7 @@ handshake we send to the X server.</p>
 <p>This mechanism is called <code>MIT-MAGIC-COOKIE-1</code>.</p>
 <p>The catch is that this file contains multiple tokens for various
 authentication mechanisms, and network hosts. Remember, X11 is designed
-to work over the network. However we only ccare here about the entry for
+to work over the network. However we only care here about the entry for
 localhost.</p>
 <p>So we need to parse a little bit. It’s basically what
 <code>libXau</code> does. From its docs:</p>
@@ -337,7 +337,7 @@ the whole arena in one swoop (but the backing memory remains around to
 be reused later).</p>
 <p>Furthermore, using this arena places an upper bound (a few MiBs) on
 the allocations we can do. So if one entry in the file is huge, or
-malformed, we verifyingly cannot allocate many Gibs of memory. This is
+malformed, we verifyingly cannot allocate many GiBs of memory. This is
 good news, because otherwise, the OS will start swapping like crazy and
 start killing random programs. In my experience it usually kills the
 window/desktop manager which kills all open windows. Very efficient from
@@ -1179,7 +1179,7 @@ which kind of event it is:</p>
 }</code></pre>
 <p>If the event is <code>Exposed</code>, we simply render (that’s our
 first render when the window becomes visible - or if the window was
-mimized and then made visible again).</p>
+minimized and then made visible again).</p>
 <p>If the event is the <code>Enter</code> key, we reset the state of the
 game and render. X11 differentiates between physical and logical keys on
 the keyboard but that does not matter here (or I would argue in most
@@ -1193,14 +1193,14 @@ game logic to uncover a cell and render.</p>
 <p>From my faint memory, when uncovering a cell, we have X cases:</p>
 <ul>
 <li>If it’s a mine, we lost</li>
-<li>If it’s not a mine, we uncover this cell and neighbouring cells, in
-a flood fill fashion. We only uncover non-mines of course. An uncovered
-cell shows how many neighbouring mines are around with a number (0 is
+<li>If it’s not a mine, we uncover this cell and neighboring cells, in a
+flood fill fashion. We only uncover non-mines of course. An uncovered
+cell shows how many neighboring mines are around with a number (0 is
 simply empty, no number is shown).</li>
 </ul>
-<p>The one thing that tripped me is that we inspect all 8 neighbouring
+<p>The one thing that tripped me is that we inspect all 8 neighboring
 cells to count mines, but when doing the flood fill, we only visit the 4
-neighbouring cells: up, right, down, left - not the diagonal neighbours.
+neighboring cells: up, right, down, left - not the diagonal neighbors.
 Otherwise the flood fill ends up uncovering all cells in the game at
 once.</p>
 <p>First, we need to translate the mouse position in the window to a
