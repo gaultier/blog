@@ -1025,8 +1025,7 @@ We are now ready to render our (static for now) scene:
 render :: proc(socket: os.Socket, scene: ^Scene) {
 	for entity, i in scene.displayed_entities {
 		rect := ASSET_COORDINATES[entity]
-		column: u16 = cast(u16)i % ENTITIES_COLUMN_COUNT
-		row: u16 = cast(u16)i / ENTITIES_COLUMN_COUNT
+		row, column := idx_to_row_column(i)
 
 		x11_copy_area(
 			socket,
@@ -1035,8 +1034,8 @@ render :: proc(socket: os.Socket, scene: ^Scene) {
 			scene.gc_id,
 			rect.x,
 			rect.y,
-			column * ENTITIES_WIDTH,
-			row * ENTITIES_HEIGHT,
+			cast(u16)column * ENTITIES_WIDTH,
+			cast(u16)row * ENTITIES_HEIGHT,
 			ENTITIES_WIDTH,
 			ENTITIES_HEIGHT,
 		)
