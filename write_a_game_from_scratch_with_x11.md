@@ -1266,6 +1266,8 @@ There are a few helpers here and there that are simple, but otherwise... that's 
 
 X11 is old and crufty, but also gets out of the way. Once a few utility functions to open the window, receive events, etc have been implemented, it can be forgotten and we can focus all our attention on the game. That's very valuable. How many libraries, frameworks and development environments can say the same?
 
+I also enjoy that it works with any programming language, any tech stack. Don't need no bindings, no FFI, just send some bytes over the socket. You can even do that in Bash (don't tempt me!).
+
 I did not implement a few accessory things from the original game, like planting a flag on a cell you suspect has a mine. Feel free to do this at home, it's not much work.
 
 
