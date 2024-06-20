@@ -31,7 +31,7 @@ The advantage of this approach is that the application is tiny and stand-alone: 
 
 I remember playing this game as a kid (must have been on Windows 98). It was a lot of fun! I don't exactly remember the rules though so it's a best approximation.
 
-> If you spot an error, please open a [Github issue](https://github.com/gaultier/blog)!
+> If you spot an error, please open a [Github issue](https://github.com/gaultier/blog)! And the source code repository for the game is [here](https://github.com/gaultier/minesweeper-from-scratch).
 
 **Table of Contents**
 
