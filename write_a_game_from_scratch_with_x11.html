@@ -1163,6 +1163,1133 @@ the user mapped it to).</p>
 game logic to uncover a cell and render.</p>
 <p>That’s it!</p>
 <h2 id="game-logic-uncover-a-cell">Game logic: uncover a cell</h2>
+<p>The last thing to do is implementing the game rules.</p>
+<p>From my faint memory, when uncovering a cell, we have X cases:</p>
+<ul>
+<li>If it’s a mine, we lost</li>
+<li>If it’s not a mine, we uncover this cell and neighbouring cells, in
+a flood fill fashion. We only uncover non-mines of course. An uncovered
+cell shows how many neighbouring mines are around with a number (0 is
+simply empty, no number is shown).</li>
+</ul>
+<p>The one thing that tripped me is that we inspect all 8 neighbouring
+cells to count mines, but when doing the flood fill, we only visit the 4
+neighbouring cells: up, right, down, left - not the diagonal neighbours.
+Otherwise the flood fill ends up uncovering all cells in the game at
+once.</p>
+<p>First, we need to translate the mouse position in the window to a
+cell index/row/column in our grid:</p>
+<pre class="odin"><code>row_column_to_idx :: #force_inline proc(row: int, column: int) -&gt; int {
+    return cast(int)row * ENTITIES_COLUMN_COUNT + cast(int)column
+}
+
+locate_entity_by_coordinate :: proc(win_x: u16, win_y: u16) -&gt; (idx: int, row: int, column: int) {
+    column = cast(int)win_x / ENTITIES_WIDTH
+    row = cast(int)win_y / ENTITIES_HEIGHT
+
+    idx = row_column_to_idx(row, column)
+
+    return idx, row, column
+}</code></pre>
+<p>Then the game logic:</p>
+<pre class="odin"><code>on_cell_clicked :: proc(x: u16, y: u16, scene: ^Scene) {
+    idx, row, column := locate_entity_by_coordinate(x, y)
+
+    mined := scene.mines[idx]
+
+    if mined {
+        scene.displayed_entities[idx] = .Mine_exploded
+        // Lose.
+        uncover_all_cells(&amp;scene.displayed_entities, &amp;scene.mines, .Mine_exploded)
+    } else {
+        visited := [ENTITIES_COLUMN_COUNT * ENTITIES_ROW_COUNT]bool{}
+        uncover_cells_flood_fill(row, column, &amp;scene.displayed_entities, &amp;scene.mines, &amp;visited)
+
+        // Win.
+        if count_remaining_goals(scene.displayed_entities, scene.mines) == 0 {
+            uncover_all_cells(&amp;scene.displayed_entities, &amp;scene.mines, .Mine_idle)
+        }
+    }
+}</code></pre>
+<p>The objective is to uncover all cells without mines. We could keep a
+counter around and decrement it each time, but I wanted to make it
+idiot-proof, so I simply scan the grid to count how many uncovered cells
+without a mine underneath remain (in
+<code>count_remaining_goals</code>). No risk that way to have a desync
+between the game state and what is shown on the screen, because we did
+not decrement the counter in one edge case.</p>
+<p><code>uncover_all_cells</code> unconditionally reveals the whole grid
+when the player won or lost. We just need to show the mines exploded
+when they lost, and idle when they won.</p>
+<p><code>uncover_cells_flood_fill</code> is the interesting one. We use
+recursion, and to avoid visiting the same cells multiple times and
+potentially getting into infinite recursion, we track which cells were
+visited:</p>
+<pre class="odin"><code>uncover_cells_flood_fill :: proc(
+    row: int,
+    column: int,
+    displayed_entities: ^[ENTITIES_COLUMN_COUNT * ENTITIES_ROW_COUNT]Entity_kind,
+    mines: ^[ENTITIES_ROW_COUNT * ENTITIES_COLUMN_COUNT]bool,
+    visited: ^[ENTITIES_COLUMN_COUNT * ENTITIES_ROW_COUNT]bool,
+) {
+    i := row_column_to_idx(row, column)
+    if visited[i] {return}
+
+    visited[i] = true
+
+    // Do not uncover covered mines.
+    if mines[i] {return}
+
+    if displayed_entities[i] != .Covered {return}
+
+    // Uncover cell.
+
+    mines_around_count := count_mines_around_cell(row, column, mines[:])
+    assert(mines_around_count &lt;= 8)
+
+    displayed_entities[i] =
+    cast(Entity_kind)(cast(int)Entity_kind.Uncovered_0 + mines_around_count)
+
+    // Uncover neighbors.
+
+    // Up.
+    if !(row == 0) {
+        uncover_cells_flood_fill(row - 1, column, displayed_entities, mines, visited)
+    }
+
+    // Right
+    if !(column == (ENTITIES_COLUMN_COUNT - 1)) {
+        uncover_cells_flood_fill(row, column + 1, displayed_entities, mines, visited)
+    }
+
+    // Bottom.
+    if !(row == (ENTITIES_ROW_COUNT - 1)) {
+        uncover_cells_flood_fill(row + 1, column, displayed_entities, mines, visited)
+    }
+
+    // Left.
+    if !(column == 0) {
+        uncover_cells_flood_fill(row, column - 1, displayed_entities, mines, visited)
+    }
+}</code></pre>
+<p>There are a few helpers here and there that are simple, but
+otherwise…that’s it, that’s the end. We’re done! All under 1000 lines of
+code without any tricks or clever things.</p>
+<h2 id="conclusion">Conclusion</h2>
+<p>X11 is old and crufty, but also gets out of the way. Once a few
+utility functions to open the window, receive events, etc have been
+implemented, it can be forgotten and we can focus all our attention on
+the game. That’s very valuable. How many libraries, frameworks and
+development environments can say the same?</p>
+<p>I did not implement a few accessory things from the original game,
+like planting a flag on a cell you suspect has a mine. Feel free to do
+this at home, it’s not much work.</p>
+<p>Finally, give Odin a try, it’s great! It’s this weird mix of a sane C
+with a Go-ish syntax and a good standard library.</p>
+<h2 id="addendum-the-full-code">Addendum: the full code</h2>
+<pre class="odin"><code>package main
+
+import &quot;core:bytes&quot;
+import &quot;core:image/png&quot;
+import &quot;core:math/bits&quot;
+import &quot;core:math/rand&quot;
+import &quot;core:mem&quot;
+import &quot;core:os&quot;
+import &quot;core:path/filepath&quot;
+import &quot;core:slice&quot;
+import &quot;core:sys/linux&quot;
+import &quot;core:testing&quot;
+
+TILE_WIDTH :: 16
+TILE_HEIGHT :: 16
+
+Position :: struct {
+    x: u16,
+    y: u16,
+}
+
+Entity_kind :: enum {
+    Covered,
+    Uncovered_0,
+    Uncovered_1,
+    Uncovered_2,
+    Uncovered_3,
+    Uncovered_4,
+    Uncovered_5,
+    Uncovered_6,
+    Uncovered_7,
+    Uncovered_8,
+    Mine_exploded,
+    Mine_idle,
+}
+
+ASSET_COORDINATES: [Entity_kind]Position = {
+    .Uncovered_0 = {x = 0 * 16, y = 22},
+    .Uncovered_1 = {x = 1 * 16, y = 22},
+    .Uncovered_2 = {x = 2 * 16, y = 22},
+    .Uncovered_3 = {x = 3 * 16, y = 22},
+    .Uncovered_4 = {x = 4 * 16, y = 22},
+    .Uncovered_5 = {x = 5 * 16, y = 22},
+    .Uncovered_6 = {x = 6 * 16, y = 22},
+    .Uncovered_7 = {x = 7 * 16, y = 22},
+    .Uncovered_8 = {x = 8 * 16, y = 22},
+    .Covered = {x = 0, y = 38},
+    .Mine_exploded = {x = 32, y = 40},
+    .Mine_idle = {x = 64, y = 40},
+}
+
+AuthToken :: [16]u8
+
+AuthEntry :: struct {
+    family:    u16,
+    auth_name: []u8,
+    auth_data: []u8,
+}
+
+Screen :: struct #packed {
+    id:             u32,
+    colormap:       u32,
+    white:          u32,
+    black:          u32,
+    input_mask:     u32,
+    width:          u16,
+    height:         u16,
+    width_mm:       u16,
+    height_mm:      u16,
+    maps_min:       u16,
+    maps_max:       u16,
+    root_visual_id: u32,
+    backing_store:  u8,
+    save_unders:    u8,
+    root_depth:     u8,
+    depths_count:   u8,
+}
+
+ConnectionInformation :: struct {
+    root_screen:      Screen,
+    resource_id_base: u32,
+    resource_id_mask: u32,
+}
+
+
+AUTH_ENTRY_FAMILY_LOCAL: u16 : 1
+AUTH_ENTRY_MAGIC_COOKIE: string : &quot;MIT-MAGIC-COOKIE-1&quot;
+
+round_up_4 :: #force_inline proc(x: u32) -&gt; u32 {
+    mask: i32 = -4
+    return transmute(u32)((transmute(i32)x + 3) &amp; mask)
+}
+
+read_x11_auth_entry :: proc(buffer: ^bytes.Buffer) -&gt; (AuthEntry, bool) {
+    entry := AuthEntry{}
+
+    {
+        n_read, err := bytes.buffer_read(buffer, mem.ptr_to_bytes(&amp;entry.family))
+        if err == .EOF {return {}, false}
+
+        assert(err == .None)
+        assert(n_read == size_of(entry.family))
+    }
+
+    address_len: u16 = 0
+    {
+        n_read, err := bytes.buffer_read(buffer, mem.ptr_to_bytes(&amp;address_len))
+        assert(err == .None)
+
+        address_len = bits.byte_swap(address_len)
+        assert(n_read == size_of(address_len))
+    }
+
+    address := make([]u8, address_len)
+    {
+        n_read, err := bytes.buffer_read(buffer, address)
+        assert(err == .None)
+        assert(n_read == cast(int)address_len)
+    }
+
+    display_number_len: u16 = 0
+    {
+        n_read, err := bytes.buffer_read(buffer, mem.ptr_to_bytes(&amp;display_number_len))
+        assert(err == .None)
+
+        display_number_len = bits.byte_swap(display_number_len)
+        assert(n_read == size_of(display_number_len))
+    }
+
+    display_number := make([]u8, display_number_len)
+    {
+        n_read, err := bytes.buffer_read(buffer, display_number)
+        assert(err == .None)
+        assert(n_read == cast(int)display_number_len)
+    }
+
+    auth_name_len: u16 = 0
+    {
+        n_read, err := bytes.buffer_read(buffer, mem.ptr_to_bytes(&amp;auth_name_len))
+        assert(err == .None)
+
+        auth_name_len = bits.byte_swap(auth_name_len)
+        assert(n_read == size_of(auth_name_len))
+    }
+
+    entry.auth_name = make([]u8, auth_name_len)
+    {
+        n_read, err := bytes.buffer_read(buffer, entry.auth_name)
+        assert(err == .None)
+        assert(n_read == cast(int)auth_name_len)
+    }
+
+    auth_data_len: u16 = 0
+    {
+        n_read, err := bytes.buffer_read(buffer, mem.ptr_to_bytes(&amp;auth_data_len))
+        assert(err == .None)
+
+        auth_data_len = bits.byte_swap(auth_data_len)
+        assert(n_read == size_of(auth_data_len))
+    }
+
+    entry.auth_data = make([]u8, auth_data_len)
+    {
+        n_read, err := bytes.buffer_read(buffer, entry.auth_data)
+        assert(err == .None)
+        assert(n_read == cast(int)auth_data_len)
+    }
+
+
+    return entry, true
+}
+
+load_x11_auth_token :: proc(allocator := context.allocator) -&gt; (token: AuthToken, ok: bool) {
+    context.allocator = allocator
+    defer free_all(allocator)
+
+    filename_env := os.get_env(&quot;XAUTHORITY&quot;)
+
+    filename :=
+        len(filename_env) != 0 \
+        ? filename_env \
+        : filepath.join([]string{os.get_env(&quot;HOME&quot;), &quot;.Xauthority&quot;})
+
+    data := os.read_entire_file_from_filename(filename) or_return
+
+    buffer := bytes.Buffer{}
+    bytes.buffer_init(&amp;buffer, data[:])
+
+
+    for {
+        auth_entry := read_x11_auth_entry(&amp;buffer) or_break
+
+        if auth_entry.family == AUTH_ENTRY_FAMILY_LOCAL &amp;&amp;
+           slice.equal(auth_entry.auth_name, transmute([]u8)AUTH_ENTRY_MAGIC_COOKIE) &amp;&amp;
+           len(auth_entry.auth_data) == size_of(AuthToken) {
+
+            mem.copy_non_overlapping(
+                raw_data(&amp;token),
+                raw_data(auth_entry.auth_data),
+                size_of(AuthToken),
+            )
+            return token, true
+        }
+    }
+
+    // Did not find a fitting token.
+    return {}, false
+}
+
+connect_x11_socket :: proc() -&gt; os.Socket {
+    SockaddrUn :: struct #packed {
+        sa_family: os.ADDRESS_FAMILY,
+        sa_data:   [108]u8,
+    }
+
+    socket, err := os.socket(os.AF_UNIX, os.SOCK_STREAM, 0)
+    assert(err == os.ERROR_NONE)
+
+    possible_socket_paths := [2]string{&quot;/tmp/.X11-unix/X0&quot;, &quot;/tmp/.X11-unix/X1&quot;}
+    for &amp;socket_path in possible_socket_paths {
+        addr := SockaddrUn {
+            sa_family = cast(u16)os.AF_UNIX,
+        }
+        mem.copy_non_overlapping(&amp;addr.sa_data, raw_data(socket_path), len(socket_path))
+
+        err = os.connect(socket, cast(^os.SOCKADDR)&amp;addr, size_of(addr))
+        if (err == os.ERROR_NONE) {return socket}
+    }
+
+    os.exit(1)
+}
+
+
+x11_handshake :: proc(socket: os.Socket, auth_token: ^AuthToken) -&gt; ConnectionInformation {
+
+    Request :: struct #packed {
+        endianness:             u8,
+        pad1:                   u8,
+        major_version:          u16,
+        minor_version:          u16,
+        authorization_len:      u16,
+        authorization_data_len: u16,
+        pad2:                   u16,
+    }
+
+    request := Request {
+        endianness             = &#39;l&#39;,
+        major_version          = 11,
+        authorization_len      = len(AUTH_ENTRY_MAGIC_COOKIE),
+        authorization_data_len = size_of(AuthToken),
+    }
+
+
+    {
+        padding := [2]u8{0, 0}
+        n_sent, err := linux.writev(
+            cast(linux.Fd)socket,
+            []linux.IO_Vec {
+                {base = &amp;request, len = size_of(Request)},
+                {base = raw_data(AUTH_ENTRY_MAGIC_COOKIE), len = len(AUTH_ENTRY_MAGIC_COOKIE)},
+                {base = raw_data(padding[:]), len = len(padding)},
+                {base = raw_data(auth_token[:]), len = len(auth_token)},
+            },
+        )
+        assert(err == .NONE)
+        assert(
+            n_sent ==
+            size_of(Request) + len(AUTH_ENTRY_MAGIC_COOKIE) + len(padding) + len(auth_token),
+        )
+    }
+
+    StaticResponse :: struct #packed {
+        success:       u8,
+        pad1:          u8,
+        major_version: u16,
+        minor_version: u16,
+        length:        u16,
+    }
+
+    static_response := StaticResponse{}
+    {
+        n_recv, err := os.recv(socket, mem.ptr_to_bytes(&amp;static_response), 0)
+        assert(err == os.ERROR_NONE)
+        assert(n_recv == size_of(StaticResponse))
+        assert(static_response.success == 1)
+    }
+
+
+    recv_buf: [1 &lt;&lt; 15]u8 = {}
+    {
+        assert(len(recv_buf) &gt;= cast(u32)static_response.length * 4)
+
+        n_recv, err := os.recv(socket, recv_buf[:], 0)
+        assert(err == os.ERROR_NONE)
+        assert(n_recv == cast(u32)static_response.length * 4)
+    }
+
+
+    DynamicResponse :: struct #packed {
+        release_number:              u32,
+        resource_id_base:            u32,
+        resource_id_mask:            u32,
+        motion_buffer_size:          u32,
+        vendor_length:               u16,
+        maximum_request_length:      u16,
+        screens_in_root_count:       u8,
+        formats_count:               u8,
+        image_byte_order:            u8,
+        bitmap_format_bit_order:     u8,
+        bitmap_format_scanline_unit: u8,
+        bitmap_format_scanline_pad:  u8,
+        min_keycode:                 u8,
+        max_keycode:                 u8,
+        pad2:                        u32,
+    }
+
+    read_buffer := bytes.Buffer{}
+    bytes.buffer_init(&amp;read_buffer, recv_buf[:])
+
+    dynamic_response := DynamicResponse{}
+    {
+        n_read, err := bytes.buffer_read(&amp;read_buffer, mem.ptr_to_bytes(&amp;dynamic_response))
+        assert(err == .None)
+        assert(n_read == size_of(DynamicResponse))
+    }
+
+
+    // Skip over the vendor information.
+    bytes.buffer_next(&amp;read_buffer, cast(int)round_up_4(cast(u32)dynamic_response.vendor_length))
+    // Skip over the format information (each 8 bytes long).
+    bytes.buffer_next(&amp;read_buffer, 8 * cast(int)dynamic_response.formats_count)
+
+    screen := Screen{}
+    {
+        n_read, err := bytes.buffer_read(&amp;read_buffer, mem.ptr_to_bytes(&amp;screen))
+        assert(err == .None)
+        assert(n_read == size_of(screen))
+    }
+
+    return (ConnectionInformation {
+                resource_id_base = dynamic_response.resource_id_base,
+                resource_id_mask = dynamic_response.resource_id_mask,
+                root_screen = screen,
+            })
+}
+
+next_x11_id :: proc(current_id: u32, info: ConnectionInformation) -&gt; u32 {
+    return 1 + ((info.resource_id_mask &amp; (current_id)) | info.resource_id_base)
+}
+
+x11_create_graphical_context :: proc(socket: os.Socket, gc_id: u32, root_id: u32) {
+    opcode: u8 : 55
+    FLAG_GC_BG: u32 : 8
+    BITMASK: u32 : FLAG_GC_BG
+    VALUE1: u32 : 0x00_00_ff_00
+
+    Request :: struct #packed {
+        opcode:   u8,
+        pad1:     u8,
+        length:   u16,
+        id:       u32,
+        drawable: u32,
+        bitmask:  u32,
+        value1:   u32,
+    }
+    request := Request {
+        opcode   = opcode,
+        length   = 5,
+        id       = gc_id,
+        drawable = root_id,
+        bitmask  = BITMASK,
+        value1   = VALUE1,
+    }
+
+    {
+        n_sent, err := os.send(socket, mem.ptr_to_bytes(&amp;request), 0)
+        assert(err == os.ERROR_NONE)
+        assert(n_sent == size_of(Request))
+    }
+}
+
+x11_create_window :: proc(
+    socket: os.Socket,
+    window_id: u32,
+    parent_id: u32,
+    x: u16,
+    y: u16,
+    width: u16,
+    height: u16,
+    root_visual_id: u32,
+) {
+    FLAG_WIN_BG_PIXEL: u32 : 2
+    FLAG_WIN_EVENT: u32 : 0x800
+    FLAG_COUNT: u16 : 2
+    EVENT_FLAG_EXPOSURE: u32 = 0x80_00
+    EVENT_FLAG_KEY_PRESS: u32 = 0x1
+    EVENT_FLAG_KEY_RELEASE: u32 = 0x2
+    EVENT_FLAG_BUTTON_PRESS: u32 = 0x4
+    EVENT_FLAG_BUTTON_RELEASE: u32 = 0x8
+    flags: u32 : FLAG_WIN_BG_PIXEL | FLAG_WIN_EVENT
+    depth: u8 : 24
+    border_width: u16 : 0
+    CLASS_INPUT_OUTPUT: u16 : 1
+    opcode: u8 : 1
+    BACKGROUND_PIXEL_COLOR: u32 : 0x00_ff_ff_00
+
+    Request :: struct #packed {
+        opcode:         u8,
+        depth:          u8,
+        request_length: u16,
+        window_id:      u32,
+        parent_id:      u32,
+        x:              u16,
+        y:              u16,
+        width:          u16,
+        height:         u16,
+        border_width:   u16,
+        class:          u16,
+        root_visual_id: u32,
+        bitmask:        u32,
+        value1:         u32,
+        value2:         u32,
+    }
+    request := Request {
+        opcode         = opcode,
+        depth          = depth,
+        request_length = 8 + FLAG_COUNT,
+        window_id      = window_id,
+        parent_id      = parent_id,
+        x              = x,
+        y              = y,
+        width          = width,
+        height         = height,
+        border_width   = border_width,
+        class          = CLASS_INPUT_OUTPUT,
+        root_visual_id = root_visual_id,
+        bitmask        = flags,
+        value1         = BACKGROUND_PIXEL_COLOR,
+        value2         = EVENT_FLAG_EXPOSURE | EVENT_FLAG_BUTTON_RELEASE | EVENT_FLAG_BUTTON_PRESS | EVENT_FLAG_KEY_PRESS | EVENT_FLAG_KEY_RELEASE,
+    }
+
+    {
+        n_sent, err := os.send(socket, mem.ptr_to_bytes(&amp;request), 0)
+        assert(err == os.ERROR_NONE)
+        assert(n_sent == size_of(Request))
+    }
+}
+
+x11_map_window :: proc(socket: os.Socket, window_id: u32) {
+    opcode: u8 : 8
+
+    Request :: struct #packed {
+        opcode:         u8,
+        pad1:           u8,
+        request_length: u16,
+        window_id:      u32,
+    }
+    request := Request {
+        opcode         = opcode,
+        request_length = 2,
+        window_id      = window_id,
+    }
+    {
+        n_sent, err := os.send(socket, mem.ptr_to_bytes(&amp;request), 0)
+        assert(err == os.ERROR_NONE)
+        assert(n_sent == size_of(Request))
+    }
+
+}
+
+x11_put_image :: proc(
+    socket: os.Socket,
+    drawable_id: u32,
+    gc_id: u32,
+    width: u16,
+    height: u16,
+    dst_x: u16,
+    dst_y: u16,
+    depth: u8,
+    data: []u8,
+) {
+    opcode: u8 : 72
+
+    Request :: struct #packed {
+        opcode:         u8,
+        format:         u8,
+        request_length: u16,
+        drawable_id:    u32,
+        gc_id:          u32,
+        width:          u16,
+        height:         u16,
+        dst_x:          u16,
+        dst_y:          u16,
+        left_pad:       u8,
+        depth:          u8,
+        pad1:           u16,
+    }
+
+    data_length_padded := round_up_4(cast(u32)len(data))
+
+    request := Request {
+        opcode         = opcode,
+        format         = 2, // ZPixmap
+        request_length = cast(u16)(6 + data_length_padded / 4),
+        drawable_id    = drawable_id,
+        gc_id          = gc_id,
+        width          = width,
+        height         = height,
+        dst_x          = dst_x,
+        dst_y          = dst_y,
+        depth          = depth,
+    }
+    {
+        padding_len := data_length_padded - cast(u32)len(data)
+
+        n_sent, err := linux.writev(
+            cast(linux.Fd)socket,
+            []linux.IO_Vec {
+                {base = &amp;request, len = size_of(Request)},
+                {base = raw_data(data), len = len(data)},
+                {base = raw_data(data), len = cast(uint)padding_len},
+            },
+        )
+        assert(err == .NONE)
+        assert(n_sent == size_of(Request) + len(data) + cast(int)padding_len)
+    }
+}
+
+render :: proc(socket: os.Socket, scene: ^Scene) {
+    for entity, i in scene.displayed_entities {
+        rect := ASSET_COORDINATES[entity]
+        column: u16 = cast(u16)i % ENTITIES_COLUMN_COUNT
+        row: u16 = cast(u16)i / ENTITIES_COLUMN_COUNT
+
+        x11_copy_area(
+            socket,
+            scene.sprite_pixmap_id,
+            scene.window_id,
+            scene.gc_id,
+            rect.x,
+            rect.y,
+            column * ENTITIES_WIDTH,
+            row * ENTITIES_HEIGHT,
+            ENTITIES_WIDTH,
+            ENTITIES_HEIGHT,
+        )
+    }
+}
+
+ENTITIES_ROW_COUNT :: 16
+ENTITIES_COLUMN_COUNT :: 16
+ENTITIES_WIDTH :: 16
+ENTITIES_HEIGHT :: 16
+
+Scene :: struct {
+    window_id:          u32,
+    gc_id:              u32,
+    sprite_pixmap_id:   u32,
+    displayed_entities: [ENTITIES_ROW_COUNT * ENTITIES_COLUMN_COUNT]Entity_kind,
+    // TODO: Bitfield?
+    mines:              [ENTITIES_ROW_COUNT * ENTITIES_COLUMN_COUNT]bool,
+}
+
+wait_for_x11_events :: proc(socket: os.Socket, scene: ^Scene) {
+    GenericEvent :: struct #packed {
+        code: u8,
+        pad:  [31]u8,
+    }
+    assert(size_of(GenericEvent) == 32)
+
+    KeyReleaseEvent :: struct #packed {
+        code:            u8,
+        detail:          u8,
+        sequence_number: u16,
+        time:            u32,
+        root_id:         u32,
+        event:           u32,
+        child_id:        u32,
+        root_x:          u16,
+        root_y:          u16,
+        event_x:         u16,
+        event_y:         u16,
+        state:           u16,
+        same_screen:     bool,
+        pad1:            u8,
+    }
+    assert(size_of(KeyReleaseEvent) == 32)
+
+    ButtonReleaseEvent :: struct #packed {
+        code:        u8,
+        detail:      u8,
+        seq_number:  u16,
+        timestamp:   u32,
+        root:        u32,
+        event:       u32,
+        child:       u32,
+        root_x:      u16,
+        root_y:      u16,
+        event_x:     u16,
+        event_y:     u16,
+        state:       u16,
+        same_screen: bool,
+        pad1:        u8,
+    }
+    assert(size_of(ButtonReleaseEvent) == 32)
+
+    EVENT_EXPOSURE: u8 : 0xc
+    EVENT_KEY_RELEASE: u8 : 0x3
+    EVENT_BUTTON_RELEASE: u8 : 0x5
+
+    KEYCODE_ENTER: u8 : 36
+
+    for {
+        generic_event := GenericEvent{}
+        n_recv, err := os.recv(socket, mem.ptr_to_bytes(&amp;generic_event), 0)
+        if err == os.EPIPE || n_recv == 0 {
+            os.exit(0) // The end.
+        }
+
+        assert(err == os.ERROR_NONE)
+        assert(n_recv == size_of(GenericEvent))
+
+        switch generic_event.code {
+        case EVENT_EXPOSURE:
+            render(socket, scene)
+
+        case EVENT_KEY_RELEASE:
+            event := transmute(KeyReleaseEvent)generic_event
+            if event.detail == KEYCODE_ENTER {
+                reset(scene)
+                render(socket, scene)
+            }
+
+        case EVENT_BUTTON_RELEASE:
+            event := transmute(ButtonReleaseEvent)generic_event
+            on_cell_clicked(event.event_x, event.event_y, scene)
+            render(socket, scene)
+        }
+    }
+}
+
+reset :: proc(scene: ^Scene) {
+    for &amp;entity in scene.displayed_entities {
+        entity = .Covered
+    }
+
+    for &amp;mine in scene.mines {
+        mine = rand.choice([]bool{true, false, false, false})
+    }
+}
+
+x11_copy_area :: proc(
+    socket: os.Socket,
+    src_id: u32,
+    dst_id: u32,
+    gc_id: u32,
+    src_x: u16,
+    src_y: u16,
+    dst_x: u16,
+    dst_y: u16,
+    width: u16,
+    height: u16,
+) {
+    opcode: u8 : 62
+    Request :: struct #packed {
+        opcode:         u8,
+        pad1:           u8,
+        request_length: u16,
+        src_id:         u32,
+        dst_id:         u32,
+        gc_id:          u32,
+        src_x:          u16,
+        src_y:          u16,
+        dst_x:          u16,
+        dst_y:          u16,
+        width:          u16,
+        height:         u16,
+    }
+
+    request := Request {
+        opcode         = opcode,
+        request_length = 7,
+        src_id         = src_id,
+        dst_id         = dst_id,
+        gc_id          = gc_id,
+        src_x          = src_x,
+        src_y          = src_y,
+        dst_x          = dst_x,
+        dst_y          = dst_y,
+        width          = width,
+        height         = height,
+    }
+    {
+        n_sent, err := os.send(socket, mem.ptr_to_bytes(&amp;request), 0)
+        assert(err == os.ERROR_NONE)
+        assert(n_sent == size_of(Request))
+    }
+}
+
+on_cell_clicked :: proc(x: u16, y: u16, scene: ^Scene) {
+    idx, row, column := locate_entity_by_coordinate(x, y)
+
+    mined := scene.mines[idx]
+
+    if mined {
+        scene.displayed_entities[idx] = .Mine_exploded
+        // Lose.
+        uncover_all_cells(&amp;scene.displayed_entities, &amp;scene.mines, .Mine_exploded)
+    } else {
+        visited := [ENTITIES_COLUMN_COUNT * ENTITIES_ROW_COUNT]bool{}
+        uncover_cells_flood_fill(row, column, &amp;scene.displayed_entities, &amp;scene.mines, &amp;visited)
+
+        // Win.
+        if count_remaining_goals(scene.displayed_entities, scene.mines) == 0 {
+            uncover_all_cells(&amp;scene.displayed_entities, &amp;scene.mines, .Mine_idle)
+        }
+    }
+}
+
+count_remaining_goals :: proc(
+    displayed_entities: [ENTITIES_COLUMN_COUNT * ENTITIES_ROW_COUNT]Entity_kind,
+    mines: [ENTITIES_COLUMN_COUNT * ENTITIES_ROW_COUNT]bool,
+) -&gt; int {
+
+    covered := 0
+
+    for entity in displayed_entities {
+        covered += cast(int)(entity == .Covered)
+    }
+
+    mines_count := 0
+
+    for mine in mines {
+        mines_count += cast(int)mine
+    }
+
+    return covered - mines_count
+}
+
+uncover_all_cells :: proc(
+    displayed_entities: ^[ENTITIES_COLUMN_COUNT * ENTITIES_ROW_COUNT]Entity_kind,
+    mines: ^[ENTITIES_ROW_COUNT * ENTITIES_COLUMN_COUNT]bool,
+    shown_mine: Entity_kind,
+) {
+    for &amp;entity, i in displayed_entities {
+        if mines[i] {
+            entity = shown_mine
+        } else {
+            row, column := idx_to_row_column(i)
+            mines_around_count := count_mines_around_cell(row, column, mines[:])
+            assert(mines_around_count &lt;= 8)
+
+            entity = cast(Entity_kind)(cast(int)Entity_kind.Uncovered_0 + mines_around_count)
+        }
+    }
+}
+
+uncover_cells_flood_fill :: proc(
+    row: int,
+    column: int,
+    displayed_entities: ^[ENTITIES_COLUMN_COUNT * ENTITIES_ROW_COUNT]Entity_kind,
+    mines: ^[ENTITIES_ROW_COUNT * ENTITIES_COLUMN_COUNT]bool,
+    visited: ^[ENTITIES_COLUMN_COUNT * ENTITIES_ROW_COUNT]bool,
+) {
+    i := row_column_to_idx(row, column)
+    if visited[i] {return}
+
+    visited[i] = true
+
+    // Do not uncover covered mines.
+    if mines[i] {return}
+
+    if displayed_entities[i] != .Covered {return}
+
+    // Uncover cell.
+
+    mines_around_count := count_mines_around_cell(row, column, mines[:])
+    assert(mines_around_count &lt;= 8)
+
+    displayed_entities[i] =
+    cast(Entity_kind)(cast(int)Entity_kind.Uncovered_0 + mines_around_count)
+
+    // Uncover neighbors.
+
+    // Up.
+    if !(row == 0) {
+        uncover_cells_flood_fill(row - 1, column, displayed_entities, mines, visited)
+    }
+
+    // Right
+    if !(column == (ENTITIES_COLUMN_COUNT - 1)) {
+        uncover_cells_flood_fill(row, column + 1, displayed_entities, mines, visited)
+    }
+
+    // Bottom.
+    if !(row == (ENTITIES_ROW_COUNT - 1)) {
+        uncover_cells_flood_fill(row + 1, column, displayed_entities, mines, visited)
+    }
+
+    // Left.
+    if !(column == 0) {
+        uncover_cells_flood_fill(row, column - 1, displayed_entities, mines, visited)
+    }
+}
+
+idx_to_row_column :: #force_inline proc(i: int) -&gt; (int, int) {
+    column := i % ENTITIES_COLUMN_COUNT
+    row := i / ENTITIES_ROW_COUNT
+
+    return row, column
+}
+
+row_column_to_idx :: #force_inline proc(row: int, column: int) -&gt; int {
+    return cast(int)row * ENTITIES_COLUMN_COUNT + cast(int)column
+}
+
+count_mines_around_cell :: proc(row: int, column: int, displayed_entities: []bool) -&gt; int {
+    // TODO: Pad the border to elide all bound checks?
+
+    up_left :=
+        row == 0 || column == 0 \
+        ? false \
+        : displayed_entities[row_column_to_idx(row - 1, column - 1)]
+    up := row == 0 ? false : displayed_entities[row_column_to_idx(row - 1, column)]
+    up_right :=
+        row == 0 || column == (ENTITIES_COLUMN_COUNT - 1) \
+        ? false \
+        : displayed_entities[row_column_to_idx(row - 1, column + 1)]
+    right :=
+        column == (ENTITIES_COLUMN_COUNT - 1) \
+        ? false \
+        : displayed_entities[row_column_to_idx(row, column + 1)]
+    bottom_right :=
+        row == (ENTITIES_ROW_COUNT - 1) || column == (ENTITIES_COLUMN_COUNT - 1) \
+        ? false \
+        : displayed_entities[row_column_to_idx(row + 1, column + 1)]
+    bottom :=
+        row == (ENTITIES_ROW_COUNT - 1) \
+        ? false \
+        : displayed_entities[row_column_to_idx(row + 1, column)]
+    bottom_left :=
+        column == 0 || row == (ENTITIES_COLUMN_COUNT - 1) \
+        ? false \
+        : displayed_entities[row_column_to_idx(row + 1, column - 1)]
+    left := column == 0 ? false : displayed_entities[row_column_to_idx(row, column - 1)]
+
+
+    return(
+        cast(int)up_left +
+        cast(int)up +
+        cast(int)up_right +
+        cast(int)right +
+        cast(int)bottom_right +
+        cast(int)bottom +
+        cast(int)bottom_left +
+        cast(int)left \
+    )
+}
+
+locate_entity_by_coordinate :: proc(win_x: u16, win_y: u16) -&gt; (idx: int, row: int, column: int) {
+    column = cast(int)win_x / ENTITIES_WIDTH
+    row = cast(int)win_y / ENTITIES_HEIGHT
+
+    idx = row_column_to_idx(row, column)
+
+    return idx, row, column
+}
+
+x11_create_pixmap :: proc(
+    socket: os.Socket,
+    window_id: u32,
+    pixmap_id: u32,
+    width: u16,
+    height: u16,
+    depth: u8,
+) {
+    opcode: u8 : 53
+
+    Request :: struct #packed {
+        opcode:         u8,
+        depth:          u8,
+        request_length: u16,
+        pixmap_id:      u32,
+        drawable_id:    u32,
+        width:          u16,
+        height:         u16,
+    }
+
+    request := Request {
+        opcode         = opcode,
+        depth          = depth,
+        request_length = 4,
+        pixmap_id      = pixmap_id,
+        drawable_id    = window_id,
+        width          = width,
+        height         = height,
+    }
+
+    {
+        n_sent, err := os.send(socket, mem.ptr_to_bytes(&amp;request), 0)
+        assert(err == os.ERROR_NONE)
+        assert(n_sent == size_of(Request))
+    }
+}
+
+main :: proc() {
+    png_data := #load(&quot;sprite.png&quot;)
+    sprite, err := png.load_from_bytes(png_data, {})
+    assert(err == nil)
+    sprite_data := make([]u8, sprite.height * sprite.width * 4)
+
+    // Convert the image format from the sprite (RGB) into the X11 image format (BGRX).
+    for i := 0; i &lt; sprite.height * sprite.width - 3; i += 1 {
+        sprite_data[i * 4 + 0] = sprite.pixels.buf[i * 3 + 2] // R -&gt; B
+        sprite_data[i * 4 + 1] = sprite.pixels.buf[i * 3 + 1] // G -&gt; G
+        sprite_data[i * 4 + 2] = sprite.pixels.buf[i * 3 + 0] // B -&gt; R
+        sprite_data[i * 4 + 3] = 0 // pad
+    }
+
+    auth_token, _ := load_x11_auth_token(context.temp_allocator)
+
+    socket := connect_x11_socket()
+    connection_information := x11_handshake(socket, &amp;auth_token)
+
+    gc_id := next_x11_id(0, connection_information)
+    x11_create_graphical_context(socket, gc_id, connection_information.root_screen.id)
+
+    window_id := next_x11_id(gc_id, connection_information)
+    x11_create_window(
+        socket,
+        window_id,
+        connection_information.root_screen.id,
+        200,
+        200,
+        ENTITIES_COLUMN_COUNT * ENTITIES_WIDTH,
+        ENTITIES_ROW_COUNT * ENTITIES_HEIGHT,
+        connection_information.root_screen.root_visual_id,
+    )
+
+    img_depth: u8 = 24
+    pixmap_id := next_x11_id(window_id, connection_information)
+    x11_create_pixmap(
+        socket,
+        window_id,
+        pixmap_id,
+        cast(u16)sprite.width,
+        cast(u16)sprite.height,
+        img_depth,
+    )
+    scene := Scene {
+        window_id        = window_id,
+        gc_id            = gc_id,
+        sprite_pixmap_id = pixmap_id,
+    }
+    reset(&amp;scene)
+
+    x11_put_image(
+        socket,
+        scene.sprite_pixmap_id,
+        scene.gc_id,
+        cast(u16)sprite.width,
+        cast(u16)sprite.height,
+        0,
+        0,
+        img_depth,
+        sprite_data,
+    )
+
+    x11_map_window(socket, window_id)
+
+    wait_for_x11_events(socket, &amp;scene)
+}
+
+
+@(test)
+test_round_up_4 :: proc(_: ^testing.T) {
+    assert(round_up_4(0) == 0)
+    assert(round_up_4(1) == 4)
+    assert(round_up_4(2) == 4)
+    assert(round_up_4(3) == 4)
+    assert(round_up_4(4) == 4)
+    assert(round_up_4(5) == 8)
+    assert(round_up_4(6) == 8)
+    assert(round_up_4(7) == 8)
+    assert(round_up_4(8) == 8)
+}
+
+@(test)
+test_count_mines_around_cell :: proc(_: ^testing.T) {
+    {
+        mines := [ENTITIES_ROW_COUNT * ENTITIES_COLUMN_COUNT]bool{}
+        mines[row_column_to_idx(0, 0)] = true
+        mines[row_column_to_idx(0, 1)] = true
+        mines[row_column_to_idx(0, 2)] = true
+        mines[row_column_to_idx(1, 2)] = true
+        mines[row_column_to_idx(2, 2)] = true
+        mines[row_column_to_idx(2, 1)] = true
+        mines[row_column_to_idx(2, 0)] = true
+        mines[row_column_to_idx(1, 0)] = true
+
+        assert(count_mines_around_cell(1, 1, mines[:]) == 8)
+    }
+}</code></pre>
 
 <blockquote id="donate">
   <p>If you liked this article and you want to support me, and can afford it: <a href="https://paypal.me/philigaultier?country.x=DE&locale.x=en_US">Donate</a></p>
