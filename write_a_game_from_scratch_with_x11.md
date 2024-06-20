@@ -691,9 +691,9 @@ The `A` component is actually unused since we do not have transparency.
 
 Now that our image is in (client) memory, how to make it available to the server? Which, again, in the X11 model, might be running on a totally different machine across the world!
 
-X11 has 3 useful calls for images: `CreatePixmap` and `PutImage`. A `Pixmap` is an off-screen image buffer. `PutImage` uploads image data either to a pixmap or to the window directly (a 'drawable' in X11 parlance). `CopyRect` copies one rectangle in one drawable to another drawable.
+X11 has 3 useful calls for images: `CreatePixmap` and `PutImage`. A `Pixmap` is an off-screen image buffer. `PutImage` uploads image data either to a pixmap or to the window directly (a 'drawable' in X11 parlance). `CopyArea` copies one rectangle in one drawable to another drawable.
 
-In my humble opinion, these are complete misnomers. `CreatePixmap` should have been called `CreateOffscreenImageBuffer` and `PutImage` should have been `UploadImageData`. `CopyRect`: you're fine buddy, carry on.
+In my humble opinion, these are complete misnomers. `CreatePixmap` should have been called `CreateOffscreenImageBuffer` and `PutImage` should have been `UploadImageData`. `CopyArea`: you're fine buddy, carry on.
 
 We cannot simply use `PutImage` here since that would show the whole sprite on the screen (there are no fields to specify that only part of the image should be displayed). We could show only parts of it, with separate `PutImage` calls for each entity, but that would mean uploading the image data to the server each time.
 
@@ -701,13 +701,13 @@ What we want is to upload the image data once, off-screen, with one `PutImage` c
 
 - `CreatePixmap`
 - `PutImage` to upload the image data to the pixmap - at that point nothing is shown on the window, everything is still off-screen
-- For each entity in our game, issue a cheap `CopyRect` call which copies parts of the pixmap onto the window - now it's visible!
+- For each entity in our game, issue a cheap `CopyArea` call which copies parts of the pixmap onto the window - now it's visible!
 
-The X server can actually upload the image data to the GPU on a `PutImage` call (this is implementation dependent). After that, `CopyRect` calls can be translated by the X server to GPU commands to copy the image data from one GPU buffer to another: that's really performant! The image data is only uploaded once to the GPU and then resides there for the remainder of the program. 
+The X server can actually upload the image data to the GPU on a `PutImage` call (this is implementation dependent). After that, `CopyArea` calls can be translated by the X server to GPU commands to copy the image data from one GPU buffer to another: that's really performant! The image data is only uploaded once to the GPU and then resides there for the remainder of the program. 
 
 Unfortunately, the X standard does not enforce that (it says: "may or may not [...]"), but that's a useful model to have in mind.
 
-Another useful model is to think of what happens when the X server is running across the network: We only want to send the image data once because that's time-consuming, and afterwards issue cheap `CopyRect` commands that are only a few bytes each.
+Another useful model is to think of what happens when the X server is running across the network: We only want to send the image data once because that's time-consuming, and afterwards issue cheap `CopyArea` commands that are only a few bytes each.
 
 
 Ok, let's implement that then:
@@ -749,7 +749,6 @@ x11_create_pixmap :: proc(
 		assert(n_sent == size_of(Request))
 	}
 }
-
 
 x11_put_image :: proc(
 	socket: os.Socket,
@@ -808,4 +807,109 @@ x11_put_image :: proc(
 		assert(n_sent == size_of(Request) + len(data) + cast(int)padding_len)
 	}
 }
+
+x11_copy_area :: proc(
+	socket: os.Socket,
+	src_id: u32,
+	dst_id: u32,
+	gc_id: u32,
+	src_x: u16,
+	src_y: u16,
+	dst_x: u16,
+	dst_y: u16,
+	width: u16,
+	height: u16,
+) {
+	opcode: u8 : 62
+	Request :: struct #packed {
+		opcode:         u8,
+		pad1:           u8,
+		request_length: u16,
+		src_id:         u32,
+		dst_id:         u32,
+		gc_id:          u32,
+		src_x:          u16,
+		src_y:          u16,
+		dst_x:          u16,
+		dst_y:          u16,
+		width:          u16,
+		height:         u16,
+	}
+
+	request := Request {
+		opcode         = opcode,
+		request_length = 7,
+		src_id         = src_id,
+		dst_id         = dst_id,
+		gc_id          = gc_id,
+		src_x          = src_x,
+		src_y          = src_y,
+		dst_x          = dst_x,
+		dst_y          = dst_y,
+		width          = width,
+		height         = height,
+	}
+	{
+		n_sent, err := os.send(socket, mem.ptr_to_bytes(&request), 0)
+		assert(err == os.ERROR_NONE)
+		assert(n_sent == size_of(Request))
+	}
+}
 ```
+
+Let's try in `main`:
+
+```odin
+	img_depth: u8 = 24
+	pixmap_id := next_x11_id(window_id, connection_information)
+	x11_create_pixmap(
+		socket,
+		window_id,
+		pixmap_id,
+		cast(u16)sprite.width,
+		cast(u16)sprite.height,
+		img_depth,
+	)
+
+	x11_put_image(
+		socket,
+		pixmap_id,
+		gc_id,
+		sprite_width,
+		sprite_height,
+		0,
+		0,
+		img_depth,
+		sprite_data,
+	)
+
+    // Let's render two different assets: an exploded mine and an idle mine.
+	x11_copy_area(
+		socket,
+		pixmap_id,
+		window_id,
+		gc_id,
+		32, // X coordinate on the sprite sheet.
+		40, // Y coordinate on the sprite sheet.
+		0, // X coordinate on the window.
+		0, // Y coordinate on the window.
+		16, // Width.
+		16, // Height.
+	)
+	x11_copy_area(
+		socket,
+		pixmap_id,
+		window_id,
+		gc_id,
+		64,
+		40,
+		16,
+		0,
+		16,
+		16,
+	)
+```
+
+Result:
+
+![First images on the screen](game-x11-first-image.png)
