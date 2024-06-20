@@ -1150,7 +1150,7 @@ That's it!
 
 The last thing to do is implementing the game rules.
 
-From my faint memory, when uncovering a cell, we have X cases:
+From my faint memory, when uncovering a cell, we have two cases:
 
 - If it's a mine, we lost
 - If it's not a mine, we uncover this cell and neighboring cells, in a flood fill fashion. We only uncover non-mines of course. An uncovered cell shows how many neighboring mines are around with a number (0 is simply empty, no number is shown).
