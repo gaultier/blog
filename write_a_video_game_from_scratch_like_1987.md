@@ -32,6 +32,7 @@ Will it be hundred of megabytes when we finish? How much work is it really? Can 
 
 *Press enter to reset and press any mouse button to uncover the cell under the mouse cursor.*
 
+Here is a [Youtube link](https://youtube.com/shorts/HLS0xS8KKQY?feature=share) in case the video does not play.
 
 The result is a ~300 KiB statically linked executable, that requires no libraries, and uses a constant ~1 MiB of resident heap memory (allocated at the start, to hold the assets). That's roughly a thousand times smaller in size than Microsoft's. And it only is a few hundred lines of code.
 
