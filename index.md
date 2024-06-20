@@ -16,7 +16,7 @@
 - <span class="date">February 29 2024</span> [You've just inherited a legacy C++ codebase, now what?](/blog/you_inherited_a_legacy_cpp_codebase_now_what.html)
 - <span class="date">March 7 2024</span> [A small trick to improve technical discussions by sharing code](/blog/a_small_trick_to_improve_technical_discussions_by_sharing_code.html)
 - <span class="date">May 6 2024</span> [How to rewrite a C++ codebase successfully](/blog/how_to_rewrite_a_cpp_codebase_successfully.html)
-- <span class="date">June 20 2024</span> [Let's write a video game from scratch like it's 1987](/blog/write_a_game_from_scratch_with_x11.html)
+- <span class="date">June 20 2024</span> [Let's write a video game from scratch like it's 1987](/blog/write_a_video_game_from_scratch_like_1987.html)
 
 </div>
 
