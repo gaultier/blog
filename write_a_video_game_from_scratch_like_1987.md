@@ -101,7 +101,6 @@ in the following format:
 First let's define some types and constants:
 
 ```odin
-
 AUTH_ENTRY_FAMILY_LOCAL: u16 : 1
 AUTH_ENTRY_MAGIC_COOKIE: string : "MIT-MAGIC-COOKIE-1"
 
