@@ -418,7 +418,7 @@ removes letters in place:</p>
 <span id="cb29-22"><a href="#cb29-22" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> <span class="op">(</span>read<span class="op">(</span>fd<span class="op">,</span> input<span class="op">,</span> input_len<span class="op">)</span> <span class="op">!=</span> input_len<span class="op">)</span></span>
 <span id="cb29-23"><a href="#cb29-23" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> errno<span class="op">;</span></span>
 <span id="cb29-24"><a href="#cb29-24" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb29-25"><a href="#cb29-25" aria-hidden="true" tabindex="-1"></a>  <span class="cf">while</span> <span class="op">(</span>input<span class="op">[</span>input_len <span class="op">-</span> <span class="dv">1</span><span class="op">]</span> <span class="op">==</span> <span class="ch">&#39;</span><span class="sc">\n</span><span class="ch">&#39;</span> <span class="op">||</span> input<span class="op">[</span>input_len <span class="op">-</span> <span class="dv">1</span><span class="op">]</span> <span class="op">==</span> <span class="ch">&#39; &#39;</span><span class="op">)</span></span>
+<span id="cb29-25"><a href="#cb29-25" aria-hidden="true" tabindex="-1"></a>  <span class="cf">while</span> <span class="op">(</span>input<span class="op">[</span>input_len <span class="op">-</span> <span class="dv">1</span><span class="op">]</span> <span class="op">==</span> <span class="ch">&#39;\n&#39;</span> <span class="op">||</span> input<span class="op">[</span>input_len <span class="op">-</span> <span class="dv">1</span><span class="op">]</span> <span class="op">==</span> <span class="ch">&#39; &#39;</span><span class="op">)</span></span>
 <span id="cb29-26"><a href="#cb29-26" aria-hidden="true" tabindex="-1"></a>    input_len<span class="op">--;</span></span>
 <span id="cb29-27"><a href="#cb29-27" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb29-28"><a href="#cb29-28" aria-hidden="true" tabindex="-1"></a>  <span class="dt">int64_t</span> i <span class="op">=</span> <span class="dv">0</span><span class="op">;</span></span>
@@ -431,7 +431,7 @@ removes letters in place:</p>
 <span id="cb29-35"><a href="#cb29-35" aria-hidden="true" tabindex="-1"></a>      i<span class="op">++;</span></span>
 <span id="cb29-36"><a href="#cb29-36" aria-hidden="true" tabindex="-1"></a>  <span class="op">}</span></span>
 <span id="cb29-37"><a href="#cb29-37" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb29-38"><a href="#cb29-38" aria-hidden="true" tabindex="-1"></a>  printf<span class="op">(</span><span class="st">&quot;`</span><span class="sc">%zu</span><span class="st">`</span><span class="sc">\n</span><span class="st">&quot;</span><span class="op">,</span> input_len<span class="op">);</span></span>
+<span id="cb29-38"><a href="#cb29-38" aria-hidden="true" tabindex="-1"></a>  printf<span class="op">(</span><span class="st">&quot;`%zu`</span><span class="sc">\n</span><span class="st">&quot;</span><span class="op">,</span> input_len<span class="op">);</span></span>
 <span id="cb29-39"><a href="#cb29-39" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
 <p>Let’s benchmark it on the same input:</p>
 <div class="sourceCode" id="cb30"><pre

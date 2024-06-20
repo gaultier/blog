@@ -337,7 +337,7 @@ profile</h2>
 <p>Let’s start with a very simple arena (directly based on <a
 href="https://nullprogram.com/blog/2023/09/27/">https://nullprogram.com/blog/2023/09/27/</a>)
 and show how it is used:</p>
-<div class="sourceCode" id="cb6"><pre class="sourceCode c"><code class="sourceCode c"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="pp">#define </span><span class="ot">_GNU_SOURCE</span></span>
+<div class="sourceCode" id="cb6"><pre class="sourceCode c"><code class="sourceCode c"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="pp">#define _GNU_SOURCE</span></span>
 <span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="pp">#include </span><span class="im">&lt;stdint.h&gt;</span></span>
 <span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a><span class="pp">#include </span><span class="im">&lt;stdio.h&gt;</span></span>
 <span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a><span class="pp">#include </span><span class="im">&lt;stdlib.h&gt;</span></span>
@@ -362,8 +362,8 @@ and show how it is used:</p>
 <span id="cb6-23"><a href="#cb6-23" aria-hidden="true" tabindex="-1"></a>  <span class="dt">size_t</span> offset <span class="op">=</span> padding <span class="op">+</span> size <span class="op">*</span> count<span class="op">;</span></span>
 <span id="cb6-24"><a href="#cb6-24" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> <span class="op">(</span>available <span class="op">&lt;</span> offset<span class="op">)</span> <span class="op">{</span></span>
 <span id="cb6-25"><a href="#cb6-25" aria-hidden="true" tabindex="-1"></a>    fprintf<span class="op">(</span>stderr<span class="op">,</span></span>
-<span id="cb6-26"><a href="#cb6-26" aria-hidden="true" tabindex="-1"></a>            <span class="st">&quot;Out of memory: available=</span><span class="sc">%lu</span><span class="st"> &quot;</span></span>
-<span id="cb6-27"><a href="#cb6-27" aria-hidden="true" tabindex="-1"></a>            <span class="st">&quot;allocation_size=</span><span class="sc">%lu\n</span><span class="st">&quot;</span><span class="op">,</span></span>
+<span id="cb6-26"><a href="#cb6-26" aria-hidden="true" tabindex="-1"></a>            <span class="st">&quot;Out of memory: available=%lu &quot;</span></span>
+<span id="cb6-27"><a href="#cb6-27" aria-hidden="true" tabindex="-1"></a>            <span class="st">&quot;allocation_size=%lu</span><span class="sc">\n</span><span class="st">&quot;</span><span class="op">,</span></span>
 <span id="cb6-28"><a href="#cb6-28" aria-hidden="true" tabindex="-1"></a>            available<span class="op">,</span> offset<span class="op">);</span></span>
 <span id="cb6-29"><a href="#cb6-29" aria-hidden="true" tabindex="-1"></a>    abort<span class="op">();</span></span>
 <span id="cb6-30"><a href="#cb6-30" aria-hidden="true" tabindex="-1"></a>  <span class="op">}</span></span>
@@ -702,7 +702,7 @@ it: <a
 href="https://paypal.me/philigaultier?country.x=DE&amp;locale.x=en_US">Donate</a></p>
 </blockquote>
 <h2 id="addendum-the-full-code">Addendum: the full code</h2>
-<div class="sourceCode" id="cb17"><pre class="sourceCode c"><code class="sourceCode c"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="pp">#define </span><span class="ot">_GNU_SOURCE</span></span>
+<div class="sourceCode" id="cb17"><pre class="sourceCode c"><code class="sourceCode c"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="pp">#define _GNU_SOURCE</span></span>
 <span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a><span class="pp">#include </span><span class="im">&lt;assert.h&gt;</span></span>
 <span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a><span class="pp">#include </span><span class="im">&lt;fcntl.h&gt;</span></span>
 <span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a><span class="pp">#include </span><span class="im">&lt;stdint.h&gt;</span></span>
@@ -811,20 +811,20 @@ href="https://paypal.me/philigaultier?country.x=DE&amp;locale.x=en_US">Donate</a
 <span id="cb17-107"><a href="#cb17-107" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
 <span id="cb17-108"><a href="#cb17-108" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb17-109"><a href="#cb17-109" aria-hidden="true" tabindex="-1"></a><span class="dt">static</span> <span class="dt">void</span> mem_profile_write<span class="op">(</span>mem_profile_t <span class="op">*</span>profile<span class="op">,</span> <span class="dt">FILE</span> <span class="op">*</span>out<span class="op">)</span> <span class="op">{</span></span>
-<span id="cb17-110"><a href="#cb17-110" aria-hidden="true" tabindex="-1"></a>  fprintf<span class="op">(</span>out<span class="op">,</span> <span class="st">&quot;heap profile: </span><span class="sc">%lu</span><span class="st">: </span><span class="sc">%lu</span><span class="st"> [     </span><span class="sc">%lu</span><span class="st">:    </span><span class="sc">%lu</span><span class="st">] @ heapprofile</span><span class="sc">\n</span><span class="st">&quot;</span><span class="op">,</span></span>
+<span id="cb17-110"><a href="#cb17-110" aria-hidden="true" tabindex="-1"></a>  fprintf<span class="op">(</span>out<span class="op">,</span> <span class="st">&quot;heap profile: %lu: %lu [     %lu:    %lu] @ heapprofile</span><span class="sc">\n</span><span class="st">&quot;</span><span class="op">,</span></span>
 <span id="cb17-111"><a href="#cb17-111" aria-hidden="true" tabindex="-1"></a>          profile<span class="op">-&gt;</span>in_use_objects<span class="op">,</span> profile<span class="op">-&gt;</span>in_use_space<span class="op">,</span></span>
 <span id="cb17-112"><a href="#cb17-112" aria-hidden="true" tabindex="-1"></a>          profile<span class="op">-&gt;</span>alloc_objects<span class="op">,</span> profile<span class="op">-&gt;</span>alloc_space<span class="op">);</span></span>
 <span id="cb17-113"><a href="#cb17-113" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb17-114"><a href="#cb17-114" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> <span class="op">(</span><span class="dt">uint64_t</span> i <span class="op">=</span> <span class="dv">0</span><span class="op">;</span> i <span class="op">&lt;</span> profile<span class="op">-&gt;</span>records_len<span class="op">;</span> i<span class="op">++)</span> <span class="op">{</span></span>
 <span id="cb17-115"><a href="#cb17-115" aria-hidden="true" tabindex="-1"></a>    mem_record_t r <span class="op">=</span> profile<span class="op">-&gt;</span>records<span class="op">[</span>i<span class="op">];</span></span>
 <span id="cb17-116"><a href="#cb17-116" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb17-117"><a href="#cb17-117" aria-hidden="true" tabindex="-1"></a>    fprintf<span class="op">(</span>out<span class="op">,</span> <span class="st">&quot;</span><span class="sc">%lu</span><span class="st">: </span><span class="sc">%lu</span><span class="st"> [</span><span class="sc">%lu</span><span class="st">: </span><span class="sc">%lu</span><span class="st">] @ &quot;</span><span class="op">,</span> r<span class="op">.</span>in_use_objects<span class="op">,</span> r<span class="op">.</span>in_use_space<span class="op">,</span></span>
+<span id="cb17-117"><a href="#cb17-117" aria-hidden="true" tabindex="-1"></a>    fprintf<span class="op">(</span>out<span class="op">,</span> <span class="st">&quot;%lu: %lu [%lu: %lu] @ &quot;</span><span class="op">,</span> r<span class="op">.</span>in_use_objects<span class="op">,</span> r<span class="op">.</span>in_use_space<span class="op">,</span></span>
 <span id="cb17-118"><a href="#cb17-118" aria-hidden="true" tabindex="-1"></a>            r<span class="op">.</span>alloc_objects<span class="op">,</span> r<span class="op">.</span>alloc_space<span class="op">);</span></span>
 <span id="cb17-119"><a href="#cb17-119" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb17-120"><a href="#cb17-120" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> <span class="op">(</span><span class="dt">uint64_t</span> j <span class="op">=</span> <span class="dv">0</span><span class="op">;</span> j <span class="op">&lt;</span> r<span class="op">.</span>call_stack_len<span class="op">;</span> j<span class="op">++)</span> <span class="op">{</span></span>
-<span id="cb17-121"><a href="#cb17-121" aria-hidden="true" tabindex="-1"></a>      fprintf<span class="op">(</span>out<span class="op">,</span> <span class="st">&quot;</span><span class="sc">%#lx</span><span class="st"> &quot;</span><span class="op">,</span> r<span class="op">.</span>call_stack<span class="op">[</span>j<span class="op">]);</span></span>
+<span id="cb17-121"><a href="#cb17-121" aria-hidden="true" tabindex="-1"></a>      fprintf<span class="op">(</span>out<span class="op">,</span> <span class="st">&quot;%#lx &quot;</span><span class="op">,</span> r<span class="op">.</span>call_stack<span class="op">[</span>j<span class="op">]);</span></span>
 <span id="cb17-122"><a href="#cb17-122" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
-<span id="cb17-123"><a href="#cb17-123" aria-hidden="true" tabindex="-1"></a>    fputc<span class="op">(</span><span class="ch">&#39;</span><span class="sc">\n</span><span class="ch">&#39;</span><span class="op">,</span> out<span class="op">);</span></span>
+<span id="cb17-123"><a href="#cb17-123" aria-hidden="true" tabindex="-1"></a>    fputc<span class="op">(</span><span class="ch">&#39;\n&#39;</span><span class="op">,</span> out<span class="op">);</span></span>
 <span id="cb17-124"><a href="#cb17-124" aria-hidden="true" tabindex="-1"></a>  <span class="op">}</span></span>
 <span id="cb17-125"><a href="#cb17-125" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb17-126"><a href="#cb17-126" aria-hidden="true" tabindex="-1"></a>  fputs<span class="op">(</span><span class="st">&quot;</span><span class="sc">\n</span><span class="st">MAPPED_LIBRARIES:</span><span class="sc">\n</span><span class="st">&quot;</span><span class="op">,</span> out<span class="op">);</span></span>
@@ -848,8 +848,8 @@ href="https://paypal.me/philigaultier?country.x=DE&amp;locale.x=en_US">Donate</a
 <span id="cb17-144"><a href="#cb17-144" aria-hidden="true" tabindex="-1"></a>  <span class="dt">size_t</span> offset <span class="op">=</span> padding <span class="op">+</span> size <span class="op">*</span> count<span class="op">;</span></span>
 <span id="cb17-145"><a href="#cb17-145" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> <span class="op">(</span>available <span class="op">&lt;</span> offset<span class="op">)</span> <span class="op">{</span></span>
 <span id="cb17-146"><a href="#cb17-146" aria-hidden="true" tabindex="-1"></a>    fprintf<span class="op">(</span>stderr<span class="op">,</span></span>
-<span id="cb17-147"><a href="#cb17-147" aria-hidden="true" tabindex="-1"></a>            <span class="st">&quot;Out of memory: available=</span><span class="sc">%lu</span><span class="st"> &quot;</span></span>
-<span id="cb17-148"><a href="#cb17-148" aria-hidden="true" tabindex="-1"></a>            <span class="st">&quot;allocation_size=</span><span class="sc">%lu\n</span><span class="st">&quot;</span><span class="op">,</span></span>
+<span id="cb17-147"><a href="#cb17-147" aria-hidden="true" tabindex="-1"></a>            <span class="st">&quot;Out of memory: available=%lu &quot;</span></span>
+<span id="cb17-148"><a href="#cb17-148" aria-hidden="true" tabindex="-1"></a>            <span class="st">&quot;allocation_size=%lu</span><span class="sc">\n</span><span class="st">&quot;</span><span class="op">,</span></span>
 <span id="cb17-149"><a href="#cb17-149" aria-hidden="true" tabindex="-1"></a>            available<span class="op">,</span> offset<span class="op">);</span></span>
 <span id="cb17-150"><a href="#cb17-150" aria-hidden="true" tabindex="-1"></a>    abort<span class="op">();</span></span>
 <span id="cb17-151"><a href="#cb17-151" aria-hidden="true" tabindex="-1"></a>  <span class="op">}</span></span>
