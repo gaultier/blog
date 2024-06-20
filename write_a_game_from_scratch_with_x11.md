@@ -312,6 +312,28 @@ ConnectionInformation :: struct {
 
 The structs are `#packed` to match the network protocol format, otherwise the compiler may insert padding between fields.
 
+One thing to know about X11: Everything we send has to be padded to a multiple of 4 bytes. We define a helper to do that by using the formula `((i32)x + 3) & -4` along with a unit test for good measure:
+
+```odin
+round_up_4 :: #force_inline proc(x: u32) -> u32 {
+	mask: i32 = -4
+	return transmute(u32)((transmute(i32)x + 3) & mask)
+}
+
+@(test)
+test_round_up_4 :: proc(_: ^testing.T) {
+	assert(round_up_4(0) == 0)
+	assert(round_up_4(1) == 4)
+	assert(round_up_4(2) == 4)
+	assert(round_up_4(3) == 4)
+	assert(round_up_4(4) == 4)
+	assert(round_up_4(5) == 8)
+	assert(round_up_4(6) == 8)
+	assert(round_up_4(7) == 8)
+	assert(round_up_4(8) == 8)
+}
+```
+
 We can now send the handshake with the authentication token inside. We leverage the `writev` system call to send multiple separate buffers of different lengths in one call.
 
 We skip over most of the information the server sends us, since we only are after a few fields:
@@ -687,3 +709,103 @@ Unfortunately, the X standard does not enforce that (it says: "may or may not [.
 
 Another useful model is to think of what happens when the X server is running across the network: We only want to send the image data once because that's time-consuming, and afterwards issue cheap `CopyRect` commands that are only a few bytes each.
 
+
+Ok, let's implement that then:
+
+```odin
+x11_create_pixmap :: proc(
+	socket: os.Socket,
+	window_id: u32,
+	pixmap_id: u32,
+	width: u16,
+	height: u16,
+	depth: u8,
+) {
+	opcode: u8 : 53
+
+	Request :: struct #packed {
+		opcode:         u8,
+		depth:          u8,
+		request_length: u16,
+		pixmap_id:      u32,
+		drawable_id:    u32,
+		width:          u16,
+		height:         u16,
+	}
+
+	request := Request {
+		opcode         = opcode,
+		depth          = depth,
+		request_length = 4,
+		pixmap_id      = pixmap_id,
+		drawable_id    = window_id,
+		width          = width,
+		height         = height,
+	}
+
+	{
+		n_sent, err := os.send(socket, mem.ptr_to_bytes(&request), 0)
+		assert(err == os.ERROR_NONE)
+		assert(n_sent == size_of(Request))
+	}
+}
+
+
+x11_put_image :: proc(
+	socket: os.Socket,
+	drawable_id: u32,
+	gc_id: u32,
+	width: u16,
+	height: u16,
+	dst_x: u16,
+	dst_y: u16,
+	depth: u8,
+	data: []u8,
+) {
+	opcode: u8 : 72
+
+	Request :: struct #packed {
+		opcode:         u8,
+		format:         u8,
+		request_length: u16,
+		drawable_id:    u32,
+		gc_id:          u32,
+		width:          u16,
+		height:         u16,
+		dst_x:          u16,
+		dst_y:          u16,
+		left_pad:       u8,
+		depth:          u8,
+		pad1:           u16,
+	}
+
+	data_length_padded := round_up_4(cast(u32)len(data))
+
+	request := Request {
+		opcode         = opcode,
+		format         = 2, // ZPixmap
+		request_length = cast(u16)(6 + data_length_padded / 4),
+		drawable_id    = drawable_id,
+		gc_id          = gc_id,
+		width          = width,
+		height         = height,
+		dst_x          = dst_x,
+		dst_y          = dst_y,
+		depth          = depth,
+	}
+	{
+		padding_len := data_length_padded - cast(u32)len(data)
+
+		n_sent, err := linux.writev(
+			cast(linux.Fd)socket,
+			[]linux.IO_Vec {
+				{base = &request, len = size_of(Request)},
+				{base = raw_data(data), len = len(data)},
+				{base = raw_data(data), len = cast(uint)padding_len},
+			},
+		)
+		assert(err == .NONE)
+		assert(n_sent == size_of(Request) + len(data) + cast(int)padding_len)
+	}
+}
+```
