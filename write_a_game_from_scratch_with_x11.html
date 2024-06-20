@@ -708,14 +708,22 @@ transparency.</p>
 <p>Now that our image is in (client) memory, how to make it available to
 the server? Which, again, in the X11 model, might be running on a
 totally different machine across the world!</p>
-<p>X11 has two useful calls for images: <code>CreatePixmap</code> and
+<p>X11 has 3 useful calls for images: <code>CreatePixmap</code> and
 <code>PutImage</code>. A <code>Pixmap</code> is an off-screen image
 buffer. <code>PutImage</code> uploads image data either to a pixmap or
-to the window directly (a ‘drawable’ in X11 parlance).</p>
+to the window directly (a ‘drawable’ in X11 parlance).
+<code>CopyRect</code> copies one rectangle in one drawable to another
+drawable.</p>
+<p>In my humble opinion, these are complete misnomers.
+<code>CreatePixmap</code> should have been called
+<code>CreateOffscreenImageBuffer</code> and <code>PutImage</code> should
+have been <code>UploadImageData</code>. <code>CopyRect</code>: you’re
+fine buddy, carry on.</p>
 <p>We cannot simply use <code>PutImage</code> here since that would show
-the whole sprite on the screen. We could show only parts of it, with
-separate <code>PutImage</code> calls for each entity, but that would
-mean uploading the image data to the server each time.</p>
+the whole sprite on the screen (there are no fields to specify that only
+part of the image should be displayed). We could show only parts of it,
+with separate <code>PutImage</code> calls for each entity, but that
+would mean uploading the image data to the server each time.</p>
 <p>What we want is to upload the image data once, off-screen, with one
 <code>PutImage</code> call, and then copy parts of it onto the window.
 Here is the dance we need to do:</p>

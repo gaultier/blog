@@ -669,9 +669,11 @@ The `A` component is actually unused since we do not have transparency.
 
 Now that our image is in (client) memory, how to make it available to the server? Which, again, in the X11 model, might be running on a totally different machine across the world!
 
-X11 has two useful calls for images: `CreatePixmap` and `PutImage`. A `Pixmap` is an off-screen image buffer. `PutImage` uploads image data either to a pixmap or to the window directly (a 'drawable' in X11 parlance).
+X11 has 3 useful calls for images: `CreatePixmap` and `PutImage`. A `Pixmap` is an off-screen image buffer. `PutImage` uploads image data either to a pixmap or to the window directly (a 'drawable' in X11 parlance). `CopyRect` copies one rectangle in one drawable to another drawable.
 
-We cannot simply use `PutImage` here since that would show the whole sprite on the screen. We could show only parts of it, with separate `PutImage` calls for each entity, but that would mean uploading the image data to the server each time.
+In my humble opinion, these are complete misnomers. `CreatePixmap` should have been called `CreateOffscreenImageBuffer` and `PutImage` should have been `UploadImageData`. `CopyRect`: you're fine buddy, carry on.
+
+We cannot simply use `PutImage` here since that would show the whole sprite on the screen (there are no fields to specify that only part of the image should be displayed). We could show only parts of it, with separate `PutImage` calls for each entity, but that would mean uploading the image data to the server each time.
 
 What we want is to upload the image data once, off-screen, with one `PutImage` call, and then copy parts of it onto the window. Here is the dance we need to do:
 
