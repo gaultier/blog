@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>Let's write a video game from scratch with X11</title>
+<title>Let's write a video game from scratch like it's 1987</title>
 <meta charset="utf-8">
 <link rel="shortcut icon" type="image/ico" href="/blog/favicon.ico"/>
 <link rel="stylesheet" type="text/css" href="main.css">
@@ -37,30 +37,16 @@ window.addEventListener("load", (event) => {
 </div>
 <div class="body">
 
-<p id="publication_date">Published on 2024-06-19.</p><h1 id="lets-write-a-video-game-from-scratch-with-x11">Let’s write a
-video game from scratch with X11</h1>
+<p id="publication_date">Published on 2024-06-19.</p><h1 id="lets-write-a-video-game-from-scratch-like-its-1987">Let’s write
+a video game from scratch like it’s 1987</h1>
 <p>In a <a href="/blog/x11_x64.html">previous article</a> I’ve done the
-‘Hello, world!’ of GUI: A black window with a white text, using X11
+‘Hello, world!’ of GUIs: A black window with a white text, using X11
 without any libraries, just talking directly over a socket.</p>
 <p>In a <a href="/blog/wayland_from_scratch.html">later article</a> I’ve
-done the same with Wayland, showing a static image.</p>
-<p>I hope that I’ve shown that no libraries are needed and the
-<del>overly complicated</del> venerable <code>libX11</code> and
-<code>libxcb</code> libraries (along with the tens of separate libraries
-you need to write a GUI - <code>libXau</code>, <code>libXext</code>,
-<code>libXinerama</code>, etc), or the mainstream SDL, may complicate
-your build and obscure what is really going on. It something does not
-work, that’s tens of thousands of lines of code you have to now
-troubleshoot.</p>
-<p>The advantage of this approach is that the application is tiny and
-stand-alone: statically linked with the few bits of libC it uses (and
-that’s it), it can be trivially compiled on every Unix, and copied
-around, and it will work on every machine (with the same OS and
-architecture, that is). Even on ancient Linuxes from 20 years ago.</p>
-<p>However these GUIs of mine were mere proof of concepts, too
-simplistic to convince the skeptic that this approach is actually
-viable.</p>
-<p>Per chance, I recently stumbled upon this <a
+done the same with Wayland, displaying a static image.</p>
+<p>I showed that this is not complex and results in a very lean and
+small application.</p>
+<p>Recently, I stumbled upon this <a
 href="https://news.ycombinator.com/item?id=40647278">Hacker News
 post</a>:</p>
 <blockquote>
@@ -87,10 +73,32 @@ href="https://github.com/gaultier/minesweeper-from-scratch/raw/master/screencast
 <p><em>Press enter to reset and press any mouse button to uncover the
 cell under the mouse cursor.</em></p>
 <p>The result is a ~300 KiB statically linked executable, that requires
-no libraries, and uses a constant ~ 1 MiB of resident heap memory
+no libraries, and uses a constant ~1 MiB of resident heap memory
 (allocated at the start, to hold the assets). That’s roughly a thousand
 times smaller in size than Microsoft’s. And it only is a few hundred
 lines of code.</p>
+<p>The advantage of this approach is that the application is tiny and
+stand-alone: statically linked with the few bits of libC it uses (and
+that’s it), it can be trivially compiled on every Unix, and copied
+around, and it will work on every machine (with the same OS/architecture
+that is). Even on ancient Linuxes from 20 years ago.</p>
+<p>I remember playing this game as a kid (must have been on Windows 98).
+It was a lot of fun! I don’t exactly remember the rules though so it’s a
+best approximation.</p>
+<h2 id="what-were-making">What we’re making</h2>
+<p>The 11th version of the X protocol was born in 1987 and has not
+changed since. Since it predates GPUs by a decade or so, its model does
+not really fit the hardware of today. Still, it’s everywhere. Any Unix
+has a X server, even macOS with XQuartz, and now Windows supports
+running GUI Linux applications inside WSL! X11 has never been so
+ubiquitous. The protocol is relatively simple and the entry bar is low:
+we only need to create a socket and we’re off the races. And for 2D
+applications, there’s no need to be a Vulkan wizard or even interact
+with the GPU. Hell, it will work even without any GPU!</p>
+<p>Everyone writing GUIs these days use a giant pile of libraries,
+starting with the <del>overly complicated</del> venerable
+<code>libX11</code> and <code>libxcb</code> libraries, to Qt and
+SDL.</p>
 <p>Here are the steps we need to take:</p>
 <ul>
 <li>Open a window</li>
@@ -104,22 +112,26 @@ keyboard and mouse events. It’s really not much at all!</p>
 <p>We will implement this in the <a href="https://odin-lang.org/">Odin
 programming language</a> which I really enjoy. But if you want to follow
 along with C or anything really, go for it. All we need is to be able to
-open a Unix socket, send and receive data on it, and load an image. We
-will use PNG for thats since Odin has in its standard library support
-for PNGs, but we could also very easily use a simple format like PPM
-(like I did in the linked Wayland article) that is trivial to parse.
-Since Odin has support for both in its standard library, I stuck with
-PNG.</p>
+open a Unix socket, send and receive data on it, and load an image into
+memory. We will use PNG for that, since Odin has in its standard library
+support for PNGs, but we could also very easily use a simple format like
+PPM (like I did in the linked Wayland article) that is trivial to parse.
+Since Odin has support for both in its standard library, it does not
+really matter, and I stuck with PNG since it’s more space-efficient.</p>
 <p>Finally, if you’re into writing X11 applications even with libraries,
-lots of things are undocumented and this article can be a good learning
-resource.</p>
+lots of things in X11 are undocumented or underdocumented, and this
+article can be a good learning resource. As a bonus, you can also follow
+along with pure Wayland, using my previous Wayland article.</p>
+<p>Or perhaps you simply enjoy, like me, peeking behind the curtain to
+understand the magician’s tricks. It almost always ends up with: “That’s
+it? That’s all there is to it?”.</p>
 <h2 id="authentication">Authentication</h2>
 <p>In previous articles, we connected to the X server without any
 authentication.</p>
 <p>Let’s be a bit more refined: we now also support the X authentication
 protocol.</p>
-<p>That’s because when running under Wayland with XWayland, we have to
-use authentication.</p>
+<p>That’s because when running under Wayland with XWayland in some
+desktop environments like Gnome, we have to use authentication.</p>
 <p>This requires our application to read a 16 bytes long token that’s
 present in a file in the user’s home directory, and include it in the
 handshake we send to the X server.</p>
@@ -680,11 +692,10 @@ transparency.</p>
 <p>Now that our image is in (client) memory, how to make it available to
 the server? Which, again, in the X11 model, might be running on a
 totally different machine across the world!</p>
-<p>X11 has two useful calls for showing images:
-<code>CreatePixmap</code> and <code>PutImage</code>. A
-<code>Pixmap</code> is an off-screen image buffer. <code>PutImage</code>
-uploads image data either to a pixmap or to the window directly (a
-‘drawable’ in X11 parlance).</p>
+<p>X11 has two useful calls for images: <code>CreatePixmap</code> and
+<code>PutImage</code>. A <code>Pixmap</code> is an off-screen image
+buffer. <code>PutImage</code> uploads image data either to a pixmap or
+to the window directly (a ‘drawable’ in X11 parlance).</p>
 <p>We cannot simply use <code>PutImage</code> here since that would show
 the whole sprite on the screen. We could show only parts of it, with
 separate <code>PutImage</code> calls for each entity, but that would

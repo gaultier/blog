@@ -1,20 +1,12 @@
 # Let's write a video game from scratch like it's 1987
 
-In a [previous article](/blog/x11_x64.html) I've done the 'Hello, world!' of GUI: A black window with a white text, using X11 without any libraries, just talking directly over a socket. 
+In a [previous article](/blog/x11_x64.html) I've done the 'Hello, world!' of GUIs: A black window with a white text, using X11 without any libraries, just talking directly over a socket. 
 
-In a [later article](/blog/wayland_from_scratch.html) I've done the same with Wayland, showing a static image.
+In a [later article](/blog/wayland_from_scratch.html) I've done the same with Wayland, displaying a static image.
 
-The 11th version of the X protocol was born in 1987 and has not changed since. Since it predates GPUs by a decade or so, its model does not really fit the hardware of today. Still, it's ubiquitous (any Unix has a X server, even macOS with XQuartz), the protocol is simple and the entry bar is low. We only need to create a socket and we're off the races. And for 2D applications, there's no need to be a Vulkan wizard or even interact with the GPU. Hell, it will work even without any GPU!
+I showed that this is not complex and results in a very lean and small application.
 
-Everyone writing GUIs these days use a giant pile of libraries, starting with the ~~overly complicated~~ venerable `libX11` and `libxcb` libraries, to Qt and SDL.
-
-But no libraries are actually needed! They will complicate your build (especially if you want to target various Unices) and obscure what is really going on. It something does not work, that's tens r hundred of thousands of lines of code you have to now inspect and troubleshoot.
-
-So let's create a real application, not a toy, from scratch, without any library. The advantage of this approach is that the application is tiny and stand-alone: statically linked with the few bits of libC it uses (and that's it), it can be trivially compiled on every Unix, and copied around, and it will work on every machine (with the same OS/architecture that is). Even on ancient Linuxes from 20 years ago.
-
-However in my previous articles, the end result was a mere proof of concept, too simplistic to convince the skeptic that this approach is actually viable.
-
-Per chance, I recently stumbled upon this [Hacker News post](https://news.ycombinator.com/item?id=40647278): 
+Recently, I stumbled upon this [Hacker News post](https://news.ycombinator.com/item?id=40647278): 
 
 > 	Microsoft's official Minesweeper app has ads, pay-to-win, and is hundreds of MBs
 
@@ -29,9 +21,19 @@ Will it be hundred of megabytes when we finish? How much work is it really? Can 
 
 *Press enter to reset and press any mouse button to uncover the cell under the mouse cursor.*
 
-The result is a ~300 KiB statically linked executable, that requires no libraries, and uses a constant ~ 1 MiB of resident heap memory (allocated at the start, to hold the assets). That's roughly a thousand times smaller in size than Microsoft's. And it only is a few hundred lines of code.
 
-I remember playing it as a kid (must have been on Windows 98). I don't exactly remember the rules so it's a best approximation.
+The result is a ~300 KiB statically linked executable, that requires no libraries, and uses a constant ~1 MiB of resident heap memory (allocated at the start, to hold the assets). That's roughly a thousand times smaller in size than Microsoft's. And it only is a few hundred lines of code.
+
+
+The advantage of this approach is that the application is tiny and stand-alone: statically linked with the few bits of libC it uses (and that's it), it can be trivially compiled on every Unix, and copied around, and it will work on every machine (with the same OS/architecture that is). Even on ancient Linuxes from 20 years ago.
+
+I remember playing this game as a kid (must have been on Windows 98). It was a lot of fun! I don't exactly remember the rules though so it's a best approximation.
+
+## What we're making
+
+The 11th version of the X protocol was born in 1987 and has not changed since. Since it predates GPUs by a decade or so, its model does not really fit the hardware of today. Still, it's everywhere. Any Unix has a X server, even macOS with XQuartz, and now Windows supports running GUI Linux applications inside WSL! X11 has never been so ubiquitous. The protocol is relatively simple and the entry bar is low: we only need to create a socket and we're off the races. And for 2D applications, there's no need to be a Vulkan wizard or even interact with the GPU. Hell, it will work even without any GPU!
+
+Everyone writing GUIs these days use a giant pile of libraries, starting with the ~~overly complicated~~ venerable `libX11` and `libxcb` libraries, to Qt and SDL.
 
 Here are the steps we need to take:
 
@@ -42,9 +44,9 @@ Here are the steps we need to take:
 
 And that's it. Spoiler alert: every step is 1-3 X11 messages that we need to craft and send. The only messages that we receive are the keyboard and mouse events. It's really not much at all!
 
-We will implement this in the [Odin programming language](https://odin-lang.org/) which I really enjoy. But if you want to follow along with C or anything really, go for it. All we need is to be able to open a Unix socket, send and receive data on it, and load an image into memory. We will use PNG for thats since Odin has in its standard library support for PNGs, but we could also very easily use a simple format like PPM (like I did in the linked Wayland article) that is trivial to parse. Since Odin has support for both in its standard library, it does not really matter, and I stuck with PNG since it's more space-efficient.
+We will implement this in the [Odin programming language](https://odin-lang.org/) which I really enjoy. But if you want to follow along with C or anything really, go for it. All we need is to be able to open a Unix socket, send and receive data on it, and load an image into memory. We will use PNG for that, since Odin has in its standard library support for PNGs, but we could also very easily use a simple format like PPM (like I did in the linked Wayland article) that is trivial to parse. Since Odin has support for both in its standard library, it does not really matter, and I stuck with PNG since it's more space-efficient.
 
-Finally, if you're into writing X11 applications even with libraries, lots of things in X11 are undocumented or underdocumented, and this article can be a good learning resource.
+Finally, if you're into writing X11 applications even with libraries, lots of things in X11 are undocumented or underdocumented, and this article can be a good learning resource. As a bonus, you can also follow along with pure Wayland, using my previous Wayland article.
 
 Or perhaps you simply enjoy, like me, peeking behind the curtain to understand the magician's tricks. It almost always ends up with: "That's it? That's all there is to it?".
 
@@ -55,7 +57,7 @@ In previous articles, we connected to the X server without any authentication.
 
 Let's be a bit more refined: we now also support the X authentication protocol. 
 
-That's because when running under Wayland with XWayland, we have to use authentication.
+That's because when running under Wayland with XWayland in some desktop environments like Gnome, we have to use authentication.
 
 This requires our application to read a 16 bytes long token that's present in a file in the user's home directory, and include it in the handshake we send to the X server.
 
