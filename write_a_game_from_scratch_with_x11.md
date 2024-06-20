@@ -29,6 +29,23 @@ The advantage of this approach is that the application is tiny and stand-alone: 
 
 I remember playing this game as a kid (must have been on Windows 98). It was a lot of fun! I don't exactly remember the rules though so it's a best approximation.
 
+> If you spot an error, please open a [Github issue](https://github.com/gaultier/blog)!
+
+**Table of Contents**
+
+- [What we're making](#what-were-making){#toc-what-were-making}
+- [Authentication](#authentication){#toc-authentication}
+- [Opening a window](#opening-a-window){#toc-opening-a-window}
+- [Loading assets](#loading-assets){#toc-loading-assets}
+- [The game entities](#the-game-entities){#toc-the-game-entities}
+- [Reacting to keyboard and mouse
+  events](#reacting-to-keyboard-and-mouse-events){#toc-reacting-to-keyboard-and-mouse-events}
+- [Game logic: uncover a
+  cell](#game-logic-uncover-a-cell){#toc-game-logic-uncover-a-cell}
+- [Conclusion](#conclusion){#toc-conclusion}
+- [Addendum: the full
+  code](#addendum-the-full-code){#toc-addendum-the-full-code}
+
 ## What we're making
 
 The 11th version of the X protocol was born in 1987 and has not changed since. Since it predates GPUs by a decade or so, its model does not really fit the hardware of today. Still, it's everywhere. Any Unix has a X server, even macOS with XQuartz, and now Windows supports running GUI Linux applications inside WSL! X11 has never been so ubiquitous. The protocol is relatively simple and the entry bar is low: we only need to create a socket and we're off the races. And for 2D applications, there's no need to be a Vulkan wizard or even interact with the GPU. Hell, it will work even without any GPU!
