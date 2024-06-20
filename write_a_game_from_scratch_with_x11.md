@@ -1036,3 +1036,97 @@ The next step is to respond to events.
 
 
 ## Reacting to keyboard and mouse events
+
+This is very straightforward. Since the only messages we expect are for keyboard and mouse events, with a fixed size of 32 bytes, we simply read 32 bytes exactly in a blocking fashion. The first byte indicates which kind of event it is:
+
+```
+wait_for_x11_events :: proc(socket: os.Socket, scene: ^Scene) {
+	GenericEvent :: struct #packed {
+		code: u8,
+		pad:  [31]u8,
+	}
+	assert(size_of(GenericEvent) == 32)
+
+	KeyReleaseEvent :: struct #packed {
+		code:            u8,
+		detail:          u8,
+		sequence_number: u16,
+		time:            u32,
+		root_id:         u32,
+		event:           u32,
+		child_id:        u32,
+		root_x:          u16,
+		root_y:          u16,
+		event_x:         u16,
+		event_y:         u16,
+		state:           u16,
+		same_screen:     bool,
+		pad1:            u8,
+	}
+	assert(size_of(KeyReleaseEvent) == 32)
+
+	ButtonReleaseEvent :: struct #packed {
+		code:        u8,
+		detail:      u8,
+		seq_number:  u16,
+		timestamp:   u32,
+		root:        u32,
+		event:       u32,
+		child:       u32,
+		root_x:      u16,
+		root_y:      u16,
+		event_x:     u16,
+		event_y:     u16,
+		state:       u16,
+		same_screen: bool,
+		pad1:        u8,
+	}
+	assert(size_of(ButtonReleaseEvent) == 32)
+
+	EVENT_EXPOSURE: u8 : 0xc
+	EVENT_KEY_RELEASE: u8 : 0x3
+	EVENT_BUTTON_RELEASE: u8 : 0x5
+
+	KEYCODE_ENTER: u8 : 36
+
+	for {
+		generic_event := GenericEvent{}
+		n_recv, err := os.recv(socket, mem.ptr_to_bytes(&generic_event), 0)
+		if err == os.EPIPE || n_recv == 0 {
+			os.exit(0) // The end.
+		}
+
+		assert(err == os.ERROR_NONE)
+		assert(n_recv == size_of(GenericEvent))
+
+		switch generic_event.code {
+		case EVENT_EXPOSURE:
+			render(socket, scene)
+
+		case EVENT_KEY_RELEASE:
+			event := transmute(KeyReleaseEvent)generic_event
+			if event.detail == KEYCODE_ENTER {
+				reset(scene)
+				render(socket, scene)
+			}
+
+		case EVENT_BUTTON_RELEASE:
+			event := transmute(ButtonReleaseEvent)generic_event
+			on_cell_clicked(event.event_x, event.event_y, scene)
+			render(socket, scene)
+		}
+	}
+}
+```
+
+If the event is `Exposed`, we simply render (that's our first render when the window becomes visible - or if the window was mimized and then made visible again).
+
+If the event is the `Enter` key, we reset the state of the game and render. X11 differentiates between physical and logical keys on the keyboard but that does not matter here (or I would argue in most games: we are interested in the physical location of the key, not what the user mapped it to).
+
+If the event is (pressing and) releasing a mouse button, we run the game logic to uncover a cell and render.
+
+
+That's it!
+
+
+## Game logic: uncover a cell
