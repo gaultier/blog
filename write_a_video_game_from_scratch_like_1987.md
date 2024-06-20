@@ -18,8 +18,13 @@ Will it be hundred of megabytes when we finish? How much work is it really? Can 
 
 ![The game executable running unmodified on FreeBSD (X11) through Linux binary compatibility](game-x11-freebsd.png)
 
-![Screencast](https://github.com/gaultier/minesweeper-from-scratch/raw/master/screencast.webm)
-
+<figure>
+    <video controls>
+      <source src="https://github.com/gaultier/minesweeper-from-scratch/raw/master/screencast.webm" type="video/mp4" />
+      <source src="screencast.mp4" type="video/webm" />
+    </video>
+    <figcaption aria-hidden="true">Screencast</figcaption>
+</figure>
 
 *Press enter to reset and press any mouse button to uncover the cell under the mouse cursor.*
 
