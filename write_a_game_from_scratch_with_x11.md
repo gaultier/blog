@@ -601,7 +601,7 @@ main :: proc() {
 
 Note that the window dimensions are a hint, they might now be respected, for example in a tiling window manager. We do not handle this case here since the assets are fixed size.
 
-If you have followed along, you will now see.. nothing. That's because we need to tell X11 to show our window with the `map_window` call:
+If you have followed along, you will now see... nothing. That's because we need to tell X11 to show our window with the `map_window` call:
 
 ```odin
 x11_map_window :: proc(socket: os.Socket, window_id: u32) {
@@ -679,9 +679,9 @@ What we want is to upload the image data once, off-screen, with one `PutImage` c
 - `PutImage` to upload the image data to the pixmap - at that point nothing is shown on the window, everything is still off-screen
 - For each entity in our game, issue a cheap `CopyRect` call which copies parts of the pixmap onto the window - now it's visible!
 
-The X server can actually upload the image data to the GPU on a `PutImage` call. After that, `CopyRect` calls can be translated by the X server to GPU commands to copy the image data from one GPU buffer to another: that's really performant! The image data is only uploaded once to the GPU and then resides there for the remainder of the program. 
+The X server can actually upload the image data to the GPU on a `PutImage` call (this is implementation dependent). After that, `CopyRect` calls can be translated by the X server to GPU commands to copy the image data from one GPU buffer to another: that's really performant! The image data is only uploaded once to the GPU and then resides there for the remainder of the program. 
 
-Unfortunately, the X standard does not enforce that, but that's a useful model to have in mind.
+Unfortunately, the X standard does not enforce that (it says: "may or may not [...]"), but that's a useful model to have in mind.
 
 Another useful model is to think of what happens when the X server is running across the network: We only want to send the image data once because that's time-consuming, and afterwards issue cheap `CopyRect` commands that are only a few bytes each.
 

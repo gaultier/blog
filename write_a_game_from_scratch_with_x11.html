@@ -648,9 +648,9 @@ main :: proc() {
 <p>Note that the window dimensions are a hint, they might now be
 respected, for example in a tiling window manager. We do not handle this
 case here since the assets are fixed size.</p>
-<p>If you have followed along, you will now see.. nothing. That’s
-because we need to tell X11 to show our window with the
-<code>map_window</code> call:</p>
+<p>If you have followed along, you will now see… nothing. That’s because
+we need to tell X11 to show our window with the <code>map_window</code>
+call:</p>
 <pre class="odin"><code>x11_map_window :: proc(socket: os.Socket, window_id: u32) {
     opcode: u8 : 8
 
@@ -729,13 +729,13 @@ call which copies parts of the pixmap onto the window - now it’s
 visible!</li>
 </ul>
 <p>The X server can actually upload the image data to the GPU on a
-<code>PutImage</code> call. After that, <code>CopyRect</code> calls can
-be translated by the X server to GPU commands to copy the image data
-from one GPU buffer to another: that’s really performant! The image data
-is only uploaded once to the GPU and then resides there for the
-remainder of the program.</p>
-<p>Unfortunately, the X standard does not enforce that, but that’s a
-useful model to have in mind.</p>
+<code>PutImage</code> call (this is implementation dependent). After
+that, <code>CopyRect</code> calls can be translated by the X server to
+GPU commands to copy the image data from one GPU buffer to another:
+that’s really performant! The image data is only uploaded once to the
+GPU and then resides there for the remainder of the program.</p>
+<p>Unfortunately, the X standard does not enforce that (it says: “may or
+may not […]”), but that’s a useful model to have in mind.</p>
 <p>Another useful model is to think of what happens when the X server is
 running across the network: We only want to send the image data once
 because that’s time-consuming, and afterwards issue cheap
