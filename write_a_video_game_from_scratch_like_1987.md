@@ -20,8 +20,8 @@ Will it be hundred of megabytes when we finish? How much work is it really? Can 
 
 <figure>
     <video controls>
-      <source src="https://github.com/gaultier/minesweeper-from-scratch/raw/master/screencast.webm" type="video/mp4" />
-      <source src="screencast.mp4" type="video/webm" />
+      <source src="screencast.mp4" type="video/mp4" />
+      <source src="screencast.webm" type="video/webm" />
     </video>
     <figcaption aria-hidden="true">Screencast</figcaption>
 </figure>
