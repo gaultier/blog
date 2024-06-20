@@ -180,8 +180,7 @@ in the following format:
     2 bytes     data length (always MSB first)
     D bytes     authorization data string</code></pre>
 <p>First let’s define some types and constants:</p>
-<pre class="odin"><code>
-AUTH_ENTRY_FAMILY_LOCAL: u16 : 1
+<pre class="odin"><code>AUTH_ENTRY_FAMILY_LOCAL: u16 : 1
 AUTH_ENTRY_MAGIC_COOKIE: string : &quot;MIT-MAGIC-COOKIE-1&quot;
 
 AuthToken :: [16]u8
