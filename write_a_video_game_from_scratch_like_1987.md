@@ -22,6 +22,7 @@ Will it be hundred of megabytes when we finish? How much work is it really? Can 
     <video controls>
       <source src="screencast.mp4" type="video/mp4" />
       <source src="screencast.webm" type="video/webm" />
+      <source src="screencast.mov" type="video/mov" />
     </video>
     <figcaption aria-hidden="true">Screencast</figcaption>
 </figure>
