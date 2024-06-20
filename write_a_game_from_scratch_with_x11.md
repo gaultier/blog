@@ -913,3 +913,70 @@ Let's try in `main`:
 Result:
 
 ![First images on the screen](game-x11-first-image.png)
+
+We are now ready to focus on the game entities.
+
+
+## The game entities
+
+
+We have a few different entities we want to show, each is a 16x16 section of the sprite sheet. Let's define their coordinates to be readable:
+
+```odin
+Position :: struct {
+	x: u16,
+	y: u16,
+}
+
+Entity_kind :: enum {
+	Covered,
+	Uncovered_0,
+	Uncovered_1,
+	Uncovered_2,
+	Uncovered_3,
+	Uncovered_4,
+	Uncovered_5,
+	Uncovered_6,
+	Uncovered_7,
+	Uncovered_8,
+	Mine_exploded,
+	Mine_idle,
+}
+
+ASSET_COORDINATES: [Entity_kind]Position = {
+	.Uncovered_0 = {x = 0 * 16, y = 22},
+	.Uncovered_1 = {x = 1 * 16, y = 22},
+	.Uncovered_2 = {x = 2 * 16, y = 22},
+	.Uncovered_3 = {x = 3 * 16, y = 22},
+	.Uncovered_4 = {x = 4 * 16, y = 22},
+	.Uncovered_5 = {x = 5 * 16, y = 22},
+	.Uncovered_6 = {x = 6 * 16, y = 22},
+	.Uncovered_7 = {x = 7 * 16, y = 22},
+	.Uncovered_8 = {x = 8 * 16, y = 22},
+	.Covered = {x = 0, y = 38},
+	.Mine_exploded = {x = 32, y = 40},
+	.Mine_idle = {x = 64, y = 40},
+}
+```
+
+And we'll group everything we need in one struct called `Scene`:
+
+```odin
+Scene :: struct {
+	window_id:              u32,
+	gc_id:                  u32,
+	connection_information: ConnectionInformation,
+	sprite_data:            []u8,
+	sprite_pixmap_id:       u32,
+	sprite_width:           u16,
+	sprite_height:          u16,
+	displayed_entities:     [ENTITIES_ROW_COUNT * ENTITIES_COLUMN_COUNT]Entity_kind,
+	mines:                  [ENTITIES_ROW_COUNT * ENTITIES_COLUMN_COUNT]bool,
+}
+```
+
+The first interesting field is `displayed_entities` which keeps track of which assets are shown. For example, a mine is either covered, uncovered and exploded if the player clicked on it, or uncovered and idle is the player won).
+
+The second one is `mines` which simply keeps track of where mines are. It could be a bitfield to optimize space but I did not bother.
+
+
