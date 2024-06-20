@@ -1240,7 +1240,7 @@ uncover_cells_flood_fill :: proc(
 }
 ```
 
-There are a few helpers here and there that are simple, but otherwise...that's it, that's the end. We're done! All under 1000 lines of code without any tricks or clever things.
+There are a few helpers here and there that are simple, but otherwise... that's it, that's the end. We're done! All under 1000 lines of code without any tricks or clever things.
 
 
 ## Conclusion
@@ -1252,6 +1252,9 @@ I did not implement a few accessory things from the original game, like planting
 
 Finally, give Odin a try, it's great! It's this weird mix of a sane C with a Go-ish syntax and a good standard library.
 
+I hope that you had as much fun as I did!
+
+> If you liked this article and you want to support me, and can afford it: [Donate](https://paypal.me/philigaultier?country.x=DE&locale.x=en_US)
 
 ## Addendum: the full code
 
