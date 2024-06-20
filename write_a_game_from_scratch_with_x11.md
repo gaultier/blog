@@ -63,7 +63,7 @@ This requires our application to read a 16 bytes long token that's present in a 
 
 This mechanism is called `MIT-MAGIC-COOKIE-1`.
 
-The catch is that this file contains multiple tokens for multiple authentication mechanisms, and for multiple hosts. Remember, X11 is designed to work over the network. However we only ccare here about the entry for localhost.
+The catch is that this file contains multiple tokens for various authentication mechanisms, and network hosts. Remember, X11 is designed to work over the network. However we only ccare here about the entry for localhost.
 
 So we need to parse a little bit. It's basically what `libXau` does. From its docs:
 
@@ -235,11 +235,18 @@ main :: proc() {
 
 If we did not find a fitting token, no matter, we will simply carry on with an empty one.
 
-One interesting thing: in Odin, similarly to Zig, allocators are passed to functions wishing to allocate memory. Contrary to Zig though, Odin has a mechanism to make that less tedious (and a bit more implicit as a result). Odin is nice enough to also provide us two allocators that we can use right away: A general purpose allocator, and a temporary allocator that uses an arena.
+One interesting thing: in Odin, similarly to Zig, allocators are passed to functions wishing to allocate memory. Contrary to Zig though, Odin has a mechanism to make that less tedious (and more implicit as a result) by essentially passing the allocator as the last function argument which is optional. 
 
-Since authentication entries can be large, we have to allocate - the stack is only so big. However, we do not want to retain the parsed entries from the file in memory after finding the 16 bytes token, so we `defer free_all(allocator)`. This is much better than going through each entry and freeing individually each field. We simply free the whole arena (but the backing memory remains around to be reused later).
+Odin is nice enough to also provide us two allocators that we can use right away: A general purpose allocator, and a temporary allocator that uses an arena.
 
-It's very elegant compared to other languages.
+Since authentication entries can be large, we have to allocate - the stack is only so big. It would be unfortunate to stack overflow because a hostname is a tiny bit too long in this file.
+
+However, we do not want to retain the parsed entries from the file in memory after finding the 16 bytes token, so we `defer free_all(allocator)`. This is much better than going through each entry and freeing individually each field. We simply free the whole arena in one swoop (but the backing memory remains around to be reused later).
+
+Furthermore, using this arena places an upper bound (a few MiBs) on the allocations we can do. So if one entry in the file is huge, or malformed, we verifyingly cannot allocate many Gibs of memory. This is good news, because otherwise, the OS will start swapping like crazy and start killing random programs. In my experience it usually kills the window/desktop manager which kills all open windows. Very efficient from the OS perspective, and awful from the user perspective. So it's always good to place an upper bound on all resources including heap memory usage of your program.
+
+
+All in all I find Odin's approach very elegant. I usually want the ability to use a different allocator in a given function, but also if I don't care, it will do the right thing and use the standard allocator.
 
 ## Opening a window
 
@@ -274,7 +281,7 @@ connect_x11_socket :: proc() -> os.Socket {
 
 We try a few possible paths for the socket, that can vary a bit from distribution to distribution.
 
-We now can send the handshake and receive general information from the server, let's define some structs for that per the X11 protocol:
+We now can send the handshake, and receive general information from the server. Let's define some structs for that per the X11 protocol:
 
 ```odin
 Screen :: struct #packed {
@@ -305,7 +312,7 @@ ConnectionInformation :: struct {
 
 The structs are `#packed` to match the network protocol format, otherwise the compiler may insert padding between fields.
 
-We can now send the handshake. We leverage the `writev` system call to send multiple separate buffers of different lengths in one call.
+We can now send the handshake with the authentication token inside. We leverage the `writev` system call to send multiple separate buffers of different lengths in one call.
 
 We skip over most of the information the server sends us, since we only are after a few fields:
 
@@ -481,7 +488,7 @@ x11_create_graphical_context :: proc(socket: os.Socket, gc_id: u32, root_id: u32
 
 Finally we create a window. We subscribe to a few events as well:
 
-- `Exposure`: when our window becomes visible,
+- `Exposure`: when our window becomes visible
 - `KEY_PRESS`: when a keyboard key is pressed
 - `KEY_RELEASE`: when a keyboard key is released
 - `BUTTON_PRESS`: when a mouse button is pressed

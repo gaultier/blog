@@ -136,10 +136,10 @@ desktop environments like Gnome, we have to use authentication.</p>
 present in a file in the user’s home directory, and include it in the
 handshake we send to the X server.</p>
 <p>This mechanism is called <code>MIT-MAGIC-COOKIE-1</code>.</p>
-<p>The catch is that this file contains multiple tokens for multiple
-authentication mechanisms, and for multiple hosts. Remember, X11 is
-designed to work over the network. However we only ccare here about the
-entry for localhost.</p>
+<p>The catch is that this file contains multiple tokens for various
+authentication mechanisms, and network hosts. Remember, X11 is designed
+to work over the network. However we only ccare here about the entry for
+localhost.</p>
 <p>So we need to parse a little bit. It’s basically what
 <code>libXau</code> does. From its docs:</p>
 <pre><code>The .Xauthority file is a binary file consisting of a sequence of entries
@@ -294,18 +294,34 @@ Rust or <code>try</code> in Zig. Same thing with
 on with an empty one.</p>
 <p>One interesting thing: in Odin, similarly to Zig, allocators are
 passed to functions wishing to allocate memory. Contrary to Zig though,
-Odin has a mechanism to make that less tedious (and a bit more implicit
-as a result). Odin is nice enough to also provide us two allocators that
-we can use right away: A general purpose allocator, and a temporary
-allocator that uses an arena.</p>
+Odin has a mechanism to make that less tedious (and more implicit as a
+result) by essentially passing the allocator as the last function
+argument which is optional.</p>
+<p>Odin is nice enough to also provide us two allocators that we can use
+right away: A general purpose allocator, and a temporary allocator that
+uses an arena.</p>
 <p>Since authentication entries can be large, we have to allocate - the
-stack is only so big. However, we do not want to retain the parsed
-entries from the file in memory after finding the 16 bytes token, so we
+stack is only so big. It would be unfortunate to stack overflow because
+a hostname is a tiny bit too long in this file.</p>
+<p>However, we do not want to retain the parsed entries from the file in
+memory after finding the 16 bytes token, so we
 <code>defer free_all(allocator)</code>. This is much better than going
 through each entry and freeing individually each field. We simply free
-the whole arena (but the backing memory remains around to be reused
-later).</p>
-<p>It’s very elegant compared to other languages.</p>
+the whole arena in one swoop (but the backing memory remains around to
+be reused later).</p>
+<p>Furthermore, using this arena places an upper bound (a few MiBs) on
+the allocations we can do. So if one entry in the file is huge, or
+malformed, we verifyingly cannot allocate many Gibs of memory. This is
+good news, because otherwise, the OS will start swapping like crazy and
+start killing random programs. In my experience it usually kills the
+window/desktop manager which kills all open windows. Very efficient from
+the OS perspective, and awful from the user perspective. So it’s always
+good to place an upper bound on all resources including heap memory
+usage of your program.</p>
+<p>All in all I find Odin’s approach very elegant. I usually want the
+ability to use a different allocator in a given function, but also if I
+don’t care, it will do the right thing and use the standard
+allocator.</p>
 <h2 id="opening-a-window">Opening a window</h2>
 <p>This part is almost exactly the same as the first linked article so
 I’ll speed run this.</p>
@@ -334,8 +350,8 @@ I’ll speed run this.</p>
 }</code></pre>
 <p>We try a few possible paths for the socket, that can vary a bit from
 distribution to distribution.</p>
-<p>We now can send the handshake and receive general information from
-the server, let’s define some structs for that per the X11 protocol:</p>
+<p>We now can send the handshake, and receive general information from
+the server. Let’s define some structs for that per the X11 protocol:</p>
 <pre class="odin"><code>Screen :: struct #packed {
     id:             u32,
     colormap:       u32,
@@ -362,9 +378,9 @@ ConnectionInformation :: struct {
 }</code></pre>
 <p>The structs are <code>#packed</code> to match the network protocol
 format, otherwise the compiler may insert padding between fields.</p>
-<p>We can now send the handshake. We leverage the <code>writev</code>
-system call to send multiple separate buffers of different lengths in
-one call.</p>
+<p>We can now send the handshake with the authentication token inside.
+We leverage the <code>writev</code> system call to send multiple
+separate buffers of different lengths in one call.</p>
 <p>We skip over most of the information the server sends us, since we
 only are after a few fields:</p>
 <pre class="odin"><code>x11_handshake :: proc(socket: os.Socket, auth_token: ^AuthToken) -&gt; ConnectionInformation {
@@ -525,7 +541,7 @@ Afterwards, we can refer to the entity by this id:</p>
 }</code></pre>
 <p>Finally we create a window. We subscribe to a few events as well:</p>
 <ul>
-<li><code>Exposure</code>: when our window becomes visible,</li>
+<li><code>Exposure</code>: when our window becomes visible</li>
 <li><code>KEY_PRESS</code>: when a keyboard key is pressed</li>
 <li><code>KEY_RELEASE</code>: when a keyboard key is released</li>
 <li><code>BUTTON_PRESS</code>: when a mouse button is pressed</li>
