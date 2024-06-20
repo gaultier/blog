@@ -1260,6 +1260,8 @@ uncover_cells_flood_fill :: proc(
 There are a few helpers here and there that are simple, but otherwise... that's it, that's the end. We're done! All under 1000 lines of code without any tricks or clever things.
 
 
+![Screenshot](https://github.com/gaultier/minesweeper-from-scratch/raw/master/screenshot.png)
+
 ## Conclusion
 
 X11 is old and crufty, but also gets out of the way. Once a few utility functions to open the window, receive events, etc have been implemented, it can be forgotten and we can focus all our attention on the game. That's very valuable. How many libraries, frameworks and development environments can say the same?
