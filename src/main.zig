@@ -105,13 +105,7 @@ fn generate_toc_for_article(markdown_file_path: []const u8, allocator: std.mem.A
     return allocator.dupe(u8, toc_trimmed);
 }
 
-fn generate_all_articles_in_dir(allocator: std.mem.Allocator) !void {
-    const header_file = try std.fs.cwd().openFile("header.html", .{});
-    const header = try header_file.readToEndAlloc(allocator, 2048);
-
-    const footer_file = try std.fs.cwd().openFile("footer.html", .{});
-    const footer = try footer_file.readToEndAlloc(allocator, 2048);
-
+fn generate_all_articles_in_dir(header: []const u8, footer: []const u8, allocator: std.mem.Allocator) !void {
     const cwd = try std.fs.cwd().openDir(".", .{ .iterate = true });
     var cwd_iterator = cwd.iterate();
 
@@ -156,8 +150,20 @@ pub fn main() !void {
         std.process.exit(1);
     };
 
-    if (std.mem.eql(u8, cmd, "gen")) {
-        try generate_all_articles_in_dir(allocator);
+    const header_file = try std.fs.cwd().openFile("header.html", .{});
+    const header = try header_file.readToEndAlloc(allocator, 2048);
+
+    const footer_file = try std.fs.cwd().openFile("footer.html", .{});
+    const footer = try footer_file.readToEndAlloc(allocator, 2048);
+
+    if (std.mem.eql(u8, cmd, "gen_all")) {
+        try generate_all_articles_in_dir(header, footer, allocator);
+    } else if (std.mem.eql(u8, cmd, "gen")) {
+        const file = args_iterator.next() orelse {
+            std.log.err("missing second argument", .{});
+            std.process.exit(1);
+        };
+        try generate_article(file, header, footer, allocator);
     } else if (std.mem.eql(u8, cmd, "toc")) {
         const file = args_iterator.next() orelse {
             std.log.err("missing second argument", .{});
