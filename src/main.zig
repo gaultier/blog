@@ -85,7 +85,7 @@ fn generate_article(markdown_file_path: []const u8, header: []const u8, footer: 
     std.log.info("generated {s}", .{html_file_path});
 }
 
-fn generate_toc_for_article(markdown_file_path: []const u8, allocator: std.mem.Allocator) []u8 {
+fn generate_toc_for_article(markdown_file_path: []const u8, allocator: std.mem.Allocator) ![]u8 {
     const pandoc_output = try std.process.Child.run(.{
         .allocator = allocator,
         .argv = &[_][]const u8{ "pandoc", "-s", "--toc", markdown_file_path, "-f", "markdown", "-t", "markdown" },
@@ -96,13 +96,13 @@ fn generate_toc_for_article(markdown_file_path: []const u8, allocator: std.mem.A
 
     std.debug.assert(pandoc_output.stderr.len == 0);
 
-    const first_pound_pos = std.mem.indexOf(u8, pandoc_output.stdout, "#") orelse 0;
+    const first_pound_pos = std.mem.indexOf(u8, pandoc_output.stdout, "\n#") orelse 0;
     std.debug.assert(first_pound_pos > 0);
 
     const toc = pandoc_output.stdout[0..first_pound_pos];
     const toc_trimmed = std.mem.trim(u8, toc, &[_]u8{ '\n', ' ' });
 
-    return allocator.dupe(toc_trimmed);
+    return allocator.dupe(u8, toc_trimmed);
 }
 
 fn generate_all_articles_in_dir(allocator: std.mem.Allocator) !void {
@@ -147,5 +147,26 @@ pub fn main() !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     const allocator = gpa.allocator();
 
-    try generate_all_articles_in_dir(allocator);
+    var args_iterator = try std.process.argsWithAllocator(allocator);
+    defer args_iterator.deinit();
+    _ = args_iterator.skip();
+
+    const cmd = args_iterator.next() orelse {
+        std.log.err("missing first argument", .{});
+        std.process.exit(1);
+    };
+
+    if (std.mem.eql(u8, cmd, "gen")) {
+        try generate_all_articles_in_dir(allocator);
+    } else if (std.mem.eql(u8, cmd, "toc")) {
+        const file = args_iterator.next() orelse {
+            std.log.err("missing second argument", .{});
+            std.process.exit(1);
+        };
+
+        const toc = try generate_toc_for_article(file, allocator);
+        defer allocator.free(toc);
+
+        try std.io.getStdOut().writeAll(toc);
+    }
 }
