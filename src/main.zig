@@ -4,15 +4,13 @@ pub const std_options = .{
     .log_level = .info,
 };
 
-const html_envelope = "<!DOCTYPE html>\n<html>\n<head>\n<title>{}</title>\n";
+const html_prelude = "<!DOCTYPE html>\n<html>\n<head>\n<title>{s}</title>\n";
 
 fn generate_article(markdown_file_path: []const u8, header: []const u8, allocator: std.mem.Allocator) !void {
     const markdown_file = try std.fs.cwd().openFile(markdown_file_path, .{});
     defer markdown_file.close();
 
     const markdown_content = try markdown_file.readToEndAlloc(allocator, 1 * 1024 * 1024);
-    _ = markdown_content;
-
     const stem = std.fs.path.stem(markdown_file_path);
     std.debug.assert(stem.len != 0);
 
@@ -20,6 +18,11 @@ fn generate_article(markdown_file_path: []const u8, header: []const u8, allocato
     std.log.info("create html file {s} {s}", .{ markdown_file_path, html_file_path });
     const html_file = try std.fs.cwd().createFile(html_file_path, .{});
 
+    const first_newline_pos = std.mem.indexOf(u8, markdown_content, "\n") orelse 0;
+    std.debug.assert(first_newline_pos > 0);
+    const title = std.mem.trim(u8, markdown_content[0..first_newline_pos], &[_]u8{ '#', ' ' });
+
+    try std.fmt.format(html_file.writer(), html_prelude, .{title});
     try html_file.writeAll(header);
 }
 
