@@ -7,6 +7,8 @@ pub const std_options = .{
 const html_prelude = "<!DOCTYPE html>\n<html>\n<head>\n<title>{s}</title>\n";
 
 fn generate_article(markdown_file_path: []const u8, header: []const u8, footer: []const u8, allocator: std.mem.Allocator) !void {
+    const is_index_page = std.mem.eql(u8, markdown_file_path, "index.md");
+
     const markdown_file = try std.fs.cwd().openFile(markdown_file_path, .{});
     defer markdown_file.close();
 
@@ -19,16 +21,20 @@ fn generate_article(markdown_file_path: []const u8, header: []const u8, footer: 
     const html_file = try std.fs.cwd().createFile(html_file_path, .{});
 
     {
-        const first_newline_pos = std.mem.indexOf(u8, markdown_content, "\n") orelse 0;
-        std.debug.assert(first_newline_pos > 0);
-        const title = std.mem.trim(u8, markdown_content[0..first_newline_pos], &[_]u8{ '#', ' ' });
+        var title: []const u8 = "Philippe Gaultier's blog";
+
+        if (!is_index_page) {
+            const first_newline_pos = std.mem.indexOf(u8, markdown_content, "\n") orelse 0;
+            std.debug.assert(first_newline_pos > 0);
+            title = std.mem.trim(u8, markdown_content[0..first_newline_pos], &[_]u8{ '#', ' ' });
+        }
 
         try std.fmt.format(html_file.writer(), html_prelude, .{title});
     }
 
     try html_file.writeAll(header);
 
-    {
+    if (!is_index_page) {
         const git_output = try std.process.Child.run(.{
             .allocator = allocator,
             .argv = &[_][]const u8{ "git", "log", "--format='%as'", "--reverse", "--", markdown_file_path },
@@ -39,10 +45,19 @@ fn generate_article(markdown_file_path: []const u8, header: []const u8, footer: 
         std.debug.assert(first_newline_pos > 0);
 
         const markdown_file_creation_date = git_output.stdout[0..first_newline_pos];
-        try std.fmt.format(html_file.writer(), "<p id=\"publication_date\">Published on {s}.</p>", .{std.mem.trim(u8, markdown_file_creation_date, &[_]u8{ ' ', '\n', '\'' })});
+        try std.fmt.format(html_file.writer(), "<p id=\"publication_date\">Published on {s}.</p>\n", .{std.mem.trim(u8, markdown_file_creation_date, &[_]u8{ ' ', '\n', '\'' })});
     }
 
-    // TODO: md -> html.
+    {
+        const pandoc_output = try std.process.Child.run(.{
+            .allocator = allocator,
+            .argv = &[_][]const u8{ "pandoc", "--toc", markdown_file_path },
+            .max_output_bytes = 1 * 1024 * 1024,
+        });
+        std.debug.assert(pandoc_output.stderr.len == 0);
+
+        try html_file.writeAll(pandoc_output.stdout);
+    }
 
     try html_file.writeAll(footer);
 
@@ -69,6 +84,8 @@ pub fn main() !void {
             // Skip non markdown files.
             if (entry.kind != .file) continue;
             if (!std.mem.eql(u8, std.fs.path.extension(entry.name), ".md")) continue;
+
+            if (std.mem.eql(u8, entry.name, "README.md")) continue; // Skip.
 
             try generate_article(entry.name, header, footer, allocator);
         } else break; // End of directory.
