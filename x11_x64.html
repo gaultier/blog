@@ -153,7 +153,8 @@ course, in the context of a desktop computer in 2023, it will be running
 on the same machine, but that’s a detail.</p>
 <p>The <a
 href="https://www.x.org/releases/X11R7.7/doc/xproto/x11protocol.html">official
-documentation</a> is pretty good, so in doubt we can refer to it.</p>
+documentation</a> is pretty good, so when in doubt we can refer to
+it.</p>
 <h2 id="main-in-x64-assembly">Main in x64 assembly</h2>
 <p>Let’s start slow with minimal program that simply exits with 0, and
 build from there.</p>
@@ -263,7 +264,7 @@ troubleshooting. On some BSD, its equivalent is <code>truss</code> or
 <code>dtruss</code>.</p>
 <div class="sourceCode" id="cb8"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> strace ./main</span>
-<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a><span class="ex">execve</span><span class="er">(</span><span class="st">&quot;./main&quot;</span><span class="ex">,</span> [<span class="st">&quot;./main&quot;</span>], 0x7ffc60e6bf10 /<span class="pp">*</span> 60 vars <span class="pp">*</span>/<span class="kw">)</span> <span class="ex">=</span> 0</span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a><span class="ex">execve</span><span class="er">(</span><span class="st">&quot;./main&quot;</span><span class="ex">,</span> <span class="pp">[</span><span class="st">&quot;./main&quot;</span><span class="pp">]</span>, 0x7ffc60e6bf10 /<span class="pp">*</span> 60 vars <span class="pp">*</span>/<span class="kw">)</span> <span class="ex">=</span> 0</span>
 <span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a><span class="bu">exit</span><span class="er">(</span><span class="ex">8</span><span class="kw">)</span>                                 <span class="ex">=</span> <span class="pp">?</span></span>
 <span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a><span class="ex">+++</span> exited with 8 +++</span></code></pre></div>
 <p>Let’s change it back to 0 and continue.</p>
@@ -1074,7 +1075,7 @@ bytes-aligned).</p>
 modulo operations, but those are annoying to do in assembly. We can do
 better.</p>
 <p><code>libX11</code> uses this macro:</p>
-<div class="sourceCode" id="cb35"><pre class="sourceCode c"><code class="sourceCode c"><span id="cb35-1"><a href="#cb35-1" aria-hidden="true" tabindex="-1"></a><span class="pp">#define ROUNDUP(nbytes, pad) (((nbytes) + ((pad)-1)) &amp; ~(long)((pad)-1))</span></span></code></pre></div>
+<div class="sourceCode" id="cb35"><pre class="sourceCode c"><code class="sourceCode c"><span id="cb35-1"><a href="#cb35-1" aria-hidden="true" tabindex="-1"></a><span class="pp">#define ROUNDUP</span><span class="op">(</span><span class="pp">nbytes</span><span class="op">,</span><span class="pp"> pad</span><span class="op">)</span><span class="pp"> </span><span class="op">(((</span><span class="pp">nbytes</span><span class="op">)</span><span class="pp"> </span><span class="op">+</span><span class="pp"> </span><span class="op">((</span><span class="pp">pad</span><span class="op">)-</span><span class="dv">1</span><span class="op">))</span><span class="pp"> </span><span class="op">&amp;</span><span class="pp"> </span><span class="op">~(</span><span class="dt">long</span><span class="op">)((</span><span class="pp">pad</span><span class="op">)-</span><span class="dv">1</span><span class="op">))</span></span></code></pre></div>
 <p>And it should be used so:</p>
 <div class="sourceCode" id="cb36"><pre class="sourceCode c"><code class="sourceCode c"><span id="cb36-1"><a href="#cb36-1" aria-hidden="true" tabindex="-1"></a>assert<span class="op">(</span>ROUNDUP<span class="op">(</span><span class="dv">0</span><span class="op">,</span> <span class="dv">4</span><span class="op">)</span> <span class="op">==</span> <span class="dv">0</span><span class="op">);</span></span>
 <span id="cb36-2"><a href="#cb36-2" aria-hidden="true" tabindex="-1"></a>assert<span class="op">(</span>ROUNDUP<span class="op">(</span><span class="dv">1</span><span class="op">,</span> <span class="dv">4</span><span class="op">)</span> <span class="op">==</span> <span class="dv">4</span><span class="op">);</span></span>
