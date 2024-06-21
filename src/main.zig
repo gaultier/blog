@@ -25,10 +25,14 @@ fn generate_article(markdown_file_path: []const u8, header: []const u8, footer: 
     defer markdown_file.close();
 
     const markdown_content = try markdown_file.readToEndAlloc(allocator, 1 * 1024 * 1024);
+    defer allocator.free(markdown_content);
+
     const stem = std.fs.path.stem(markdown_file_path);
     std.debug.assert(stem.len != 0);
 
     const html_file_path = try std.mem.concat(allocator, u8, &[2][]const u8{ stem, ".html" });
+    defer allocator.free(html_file_path);
+
     const html_file = try std.fs.cwd().createFile(html_file_path, .{});
 
     {
@@ -50,6 +54,9 @@ fn generate_article(markdown_file_path: []const u8, header: []const u8, footer: 
             .allocator = allocator,
             .argv = &[_][]const u8{ "git", "log", "--format='%as'", "--reverse", "--", markdown_file_path },
         });
+        defer allocator.free(git_output.stdout);
+        defer allocator.free(git_output.stderr);
+
         std.debug.assert(git_output.stderr.len == 0);
 
         const first_newline_pos = std.mem.indexOf(u8, git_output.stdout, "\n") orelse 0;
@@ -65,6 +72,9 @@ fn generate_article(markdown_file_path: []const u8, header: []const u8, footer: 
             .argv = &[_][]const u8{ "pandoc", "--toc", markdown_file_path },
             .max_output_bytes = 1 * 1024 * 1024,
         });
+        defer allocator.free(pandoc_output.stdout);
+        defer allocator.free(pandoc_output.stderr);
+
         std.debug.assert(pandoc_output.stderr.len == 0);
 
         try html_file.writeAll(pandoc_output.stdout);
@@ -75,10 +85,27 @@ fn generate_article(markdown_file_path: []const u8, header: []const u8, footer: 
     std.log.info("generated {s}", .{html_file_path});
 }
 
-pub fn main() !void {
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-    const allocator = gpa.allocator();
+fn generate_toc_for_article(markdown_file_path: []const u8, allocator: std.mem.Allocator) []u8 {
+    const pandoc_output = try std.process.Child.run(.{
+        .allocator = allocator,
+        .argv = &[_][]const u8{ "pandoc", "-s", "--toc", markdown_file_path, "-f", "markdown", "-t", "markdown" },
+        .max_output_bytes = 1 * 1024 * 1024,
+    });
+    defer allocator.free(pandoc_output.stdout);
+    defer allocator.free(pandoc_output.stderr);
 
+    std.debug.assert(pandoc_output.stderr.len == 0);
+
+    const first_pound_pos = std.mem.indexOf(u8, pandoc_output.stdout, "#") orelse 0;
+    std.debug.assert(first_pound_pos > 0);
+
+    const toc = pandoc_output.stdout[0..first_pound_pos];
+    const toc_trimmed = std.mem.trim(u8, toc, &[_]u8{ '\n', ' ' });
+
+    return allocator.dupe(toc_trimmed);
+}
+
+fn generate_all_articles_in_dir(allocator: std.mem.Allocator) !void {
     const header_file = try std.fs.cwd().openFile("header.html", .{});
     const header = try header_file.readToEndAlloc(allocator, 2048);
 
@@ -114,4 +141,11 @@ pub fn main() !void {
     }
 
     wait_group.wait();
+}
+
+pub fn main() !void {
+    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    const allocator = gpa.allocator();
+
+    try generate_all_articles_in_dir(allocator);
 }
