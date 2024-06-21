@@ -14,6 +14,37 @@ fn do_generate_article(markdown_file_path: []const u8, header: []const u8, foote
     };
 }
 
+const Dates = struct {
+    creation_date: [10]u8,
+    modification_date: [10]u8,
+};
+
+fn get_creation_and_modification_date_for_article(markdown_file_path: []const u8, allocator: std.mem.Allocator) !Dates {
+    const git_cmd = try std.process.Child.run(.{
+        .allocator = allocator,
+        .argv = &[_][]const u8{ "git", "log", "--format='%as'", "--", markdown_file_path },
+    });
+    defer allocator.free(git_cmd.stdout);
+    defer allocator.free(git_cmd.stderr);
+
+    std.debug.assert(git_cmd.stderr.len == 0);
+
+    var it = std.mem.splitScalar(u8, git_cmd.stdout, '\n');
+    const modification_date = std.mem.trim(u8, it.first(), "' \n");
+
+    var creation_date: []const u8 = undefined;
+    while (it.next()) |line| {
+        const trimmed = std.mem.trim(u8, line, "' \n");
+        if (trimmed.len > 0) creation_date = trimmed;
+    }
+
+    std.log.info("{s} {s} {s}", .{ markdown_file_path, creation_date, modification_date });
+    return .{
+        .creation_date = creation_date[0..10].*,
+        .modification_date = modification_date[0..10].*,
+    };
+}
+
 fn generate_article(markdown_file_path: []const u8, header: []const u8, footer: []const u8, allocator: std.mem.Allocator) !void {
     std.debug.assert(std.mem.eql(u8, std.fs.path.extension(markdown_file_path), ".md"));
     std.debug.assert(header.len > 0);
@@ -50,20 +81,8 @@ fn generate_article(markdown_file_path: []const u8, header: []const u8, footer: 
     try html_file.writeAll(header);
 
     if (!is_index_page) {
-        const git_cmd = try std.process.Child.run(.{
-            .allocator = allocator,
-            .argv = &[_][]const u8{ "git", "log", "--format='%as'", "--reverse", "--", markdown_file_path },
-        });
-        defer allocator.free(git_cmd.stdout);
-        defer allocator.free(git_cmd.stderr);
-
-        std.debug.assert(git_cmd.stderr.len == 0);
-
-        const first_newline_pos = std.mem.indexOf(u8, git_cmd.stdout, "\n") orelse 0;
-        std.debug.assert(first_newline_pos > 0);
-
-        const markdown_file_creation_date = git_cmd.stdout[0..first_newline_pos];
-        try std.fmt.format(html_file.writer(), "<p id=\"publication_date\">Published on {s}.</p>\n", .{std.mem.trim(u8, markdown_file_creation_date, &[_]u8{ ' ', '\n', '\'' })});
+        const dates = try get_creation_and_modification_date_for_article(markdown_file_path, allocator);
+        try std.fmt.format(html_file.writer(), "<p id=\"publication_date\">Published on {s}.</p>\n", .{std.mem.trim(u8, &dates.creation_date, &[_]u8{ ' ', '\n', '\'' })});
     }
 
     {
