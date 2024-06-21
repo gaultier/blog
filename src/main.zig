@@ -18,21 +18,29 @@ fn generate_article(markdown_file_path: []const u8, header: []const u8, footer: 
     std.log.info("create html file {s} {s}", .{ markdown_file_path, html_file_path });
     const html_file = try std.fs.cwd().createFile(html_file_path, .{});
 
-    const first_newline_pos = std.mem.indexOf(u8, markdown_content, "\n") orelse 0;
-    std.debug.assert(first_newline_pos > 0);
-    const title = std.mem.trim(u8, markdown_content[0..first_newline_pos], &[_]u8{ '#', ' ' });
+    {
+        const first_newline_pos = std.mem.indexOf(u8, markdown_content, "\n") orelse 0;
+        std.debug.assert(first_newline_pos > 0);
+        const title = std.mem.trim(u8, markdown_content[0..first_newline_pos], &[_]u8{ '#', ' ' });
 
-    try std.fmt.format(html_file.writer(), html_prelude, .{title});
+        try std.fmt.format(html_file.writer(), html_prelude, .{title});
+    }
+
     try html_file.writeAll(header);
 
-    const git_output = try std.process.Child.run(.{
-        .allocator = allocator,
-        .argv = &[_][]const u8{ "git", "log", "--format='%as'", "--reverse", "--max-count=1", "--", markdown_file_path },
-    });
-    std.debug.assert(git_output.stderr.len == 0);
+    {
+        const git_output = try std.process.Child.run(.{
+            .allocator = allocator,
+            .argv = &[_][]const u8{ "git", "log", "--format='%as'", "--reverse", "--", markdown_file_path },
+        });
+        std.debug.assert(git_output.stderr.len == 0);
 
-    const markdown_file_creation_date = std.mem.trim(u8, git_output.stdout, &[_]u8{ '\n', ' ', '\'' });
-    try std.fmt.format(html_file.writer(), "<p id=\"publication_date\">Published on {s}.</p>", .{markdown_file_creation_date});
+        const first_newline_pos = std.mem.indexOf(u8, git_output.stdout, "\n") orelse 0;
+        std.debug.assert(first_newline_pos > 0);
+
+        const markdown_file_creation_date = git_output.stdout[0..first_newline_pos];
+        try std.fmt.format(html_file.writer(), "<p id=\"publication_date\">Published on {s}.</p>", .{std.mem.trim(u8, markdown_file_creation_date, &[_]u8{ ' ', '\n', '\'' })});
+    }
 
     // TODO: md -> html.
 
