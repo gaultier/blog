@@ -86,23 +86,49 @@ fn generate_article(markdown_file_path: []const u8, header: []const u8, footer: 
 }
 
 fn generate_toc_for_article(markdown_file_path: []const u8, allocator: std.mem.Allocator) ![]u8 {
-    const converter_cmd = try std.process.Child.run(.{
-        .allocator = allocator,
-        .argv = &[_][]const u8{ "pandoc", "-s", "--toc", markdown_file_path, "-f", "markdown", "-t", "markdown" },
-        .max_output_bytes = 1 * 1024 * 1024,
-    });
-    defer allocator.free(converter_cmd.stdout);
-    defer allocator.free(converter_cmd.stderr);
+    const markdown_file = try std.fs.cwd().openFile(markdown_file_path, .{});
+    defer markdown_file.close();
 
-    std.debug.assert(converter_cmd.stderr.len == 0);
+    var buf_reader = std.io.bufferedReader(markdown_file.reader());
+    const reader = buf_reader.reader();
 
-    const first_pound_pos = std.mem.indexOf(u8, converter_cmd.stdout, "\n#") orelse 0;
-    std.debug.assert(first_pound_pos > 0);
+    var line = std.ArrayList(u8).init(allocator);
+    defer line.deinit();
 
-    const toc = converter_cmd.stdout[0..first_pound_pos];
-    const toc_trimmed = std.mem.trim(u8, toc, &[_]u8{ '\n', ' ' });
+    const writer = line.writer();
 
-    return allocator.dupe(u8, toc_trimmed);
+    var toc = std.ArrayList(u8).init(allocator);
+    try toc.ensureTotalCapacity(4096);
+
+    while (reader.streamUntilDelimiter(writer, '\n', null)) {
+        // Clear the line so we can reuse it.
+        defer line.clearRetainingCapacity();
+
+        if (!std.mem.startsWith(u8, line.items, "#")) continue;
+
+        const first_space_pos = std.mem.indexOf(u8, line.items, " ") orelse 0;
+        const level = first_space_pos;
+        const title = std.mem.trim(u8, line.items[first_space_pos..], &[_]u8{ ' ', '\n' });
+
+        try toc.appendNTimes(' ', level * 2);
+        try toc.appendSlice(" - [");
+        try toc.appendSlice(title);
+        try toc.appendSlice("](#");
+
+        for (title) |c| {
+            if (c == ' ') {
+                try toc.append('-');
+            } else if (std.ascii.isAlphanumeric(c)) {
+                try toc.append(std.ascii.toLower(c));
+            }
+        }
+        try toc.appendSlice(")\n");
+    } else |err| switch (err) {
+        error.EndOfStream => {},
+        else => return err, // Propagate error
+    }
+
+    return toc.toOwnedSlice();
 }
 
 fn generate_all_articles_in_dir(header: []const u8, footer: []const u8, allocator: std.mem.Allocator) !void {

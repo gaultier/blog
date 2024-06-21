@@ -4,7 +4,7 @@ https://gaultier.github.io/blog/
 ## Quickstart
 
 ```sh
-apt install golang pandoc zig
+apt install golang cmark zig
 
 $ zig build
 
