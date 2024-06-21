@@ -37,7 +37,875 @@ window.addEventListener("load", (event) => {
 </div>
 <div class="body">
 
-<p id="publication_date">Published on 2024-05-03.</p>
+<p id="publication_date">Published on 2023-11-23.</p>
+<h1 id="roll-your-own-memory-profiling-its-actually-not-hard">Roll your
+own memory profiling: it’s actually not hard</h1>
+<p><em>Or: An exploration of the <a
+href="https://github.com/gperftools/gperftools">pprof</a> memory
+profiler and its textual format for fun an profit.</em></p>
+<p>Say that you are using a programming language where memory is
+manually managed, and you have decided to use a custom allocator for one
+reason or another, for example an arena allocator, and are
+wondering:</p>
+<ul>
+<li>How do I track every allocation, recording how many bytes were
+allocated and what was the call stack at that time?</li>
+<li>How much memory is my program using, and what is the peak use?</li>
+<li>How much memory does my program free? Is it all of it (are there
+leaks)?</li>
+<li>Which line of code in my function is allocating, and how much?</li>
+<li>I want a flamegraph showing allocations by function</li>
+</ul>
+<p>What to do? Mainstream allocators such as <code>tcmalloc</code> and
+<code>jemalloc</code> can provide us this information but we have lost
+this ability by using our own!</p>
+<p>Well, it turns out that this can all be achieved very simply without
+adding dependencies to your application, in ~100 lines of code
+(including lots of comments). I’ll show one way and then explore other
+possibilities. And here are the results we are working towards:</p>
+<p><img src="mem_prof1.png" alt="1" /> <em>Profiling the memory usage of
+my <a href="https://github.com/gaultier/micro-kotlin">micro-kotlin</a>
+project.</em></p>
+<p><img src="mem_prof2.png" alt="2" /> <em>Showing which lines of code
+are allocating in a function.</em></p>
+<p><img src="mem_prof3.png" alt="3" /> <em>A flamegraph based on the
+previous data.</em></p>
+<p>The only requirement to make it all work is to be able to run a bit
+of code on each allocation.</p>
+<p>Another good reason to do this, is when the system’s
+<code>malloc</code> comes with some form of memory profiling which is
+not suitable for your needs and you want something different/better/the
+same on every platform.</p>
+<blockquote>
+<p>If you spot an error, please open a <a
+href="https://github.com/gaultier/blog">Github issue</a>!</p>
+</blockquote>
+<p><strong>Table of Contents</strong></p>
+<ul>
+<li><a href="#pprof">Pprof</a></li>
+<li><a href="#the-text-format">The text format</a></li>
+<li><a href="#generating-a-pprof-profile">Generating a
+<code>pprof</code> profile</a></li>
+<li><a href="#variations-and-limitations">Variations and
+limitations</a></li>
+<li><a href="#alternatives">Alternatives</a></li>
+<li><a href="#conclusion">Conclusion</a></li>
+<li><a href="#addendum-the-full-code">Addendum: the full code</a></li>
+</ul>
+<h2 id="pprof">Pprof</h2>
+<p>Here is the plan:</p>
+<ol type="1">
+<li>Each time there is an allocation in our program, we record
+information about it in an array.</li>
+<li>At the end of the program (or upon receiving a signal, a special TCP
+packet, whatever), we dump the information in the (original) <a
+href="https://github.com/gperftools/gperftools">pprof</a> format, which
+is basically just a text file with one line per allocation (more details
+on that in a bit).</li>
+<li>We can then use the (original) <code>pprof</code> which is just a <a
+href="https://github.com/gperftools/gperftools/blob/master/src/pprof">giant
+Perl script</a> which will extract interesting information and most
+importantly symbolize (meaning: transform memory addresses into
+line/column/function/file information).</li>
+</ol>
+<p>I will showcase this approach with C code using an arena allocator.
+The full code can be found in my project <a
+href="https://github.com/gaultier/micro-kotlin/blob/pprof-original/str.h#L320">micro-kotlin</a>.
+But this can be done in any language since the <code>pprof</code> text
+format is so simple! Also, using arenas, we do not bother to free
+anything so the memory profiling part is even simpler.</p>
+<blockquote>
+<p>The original <code>pprof</code> written in Perl is not to be confused
+with the rewritten <a href="https://github.com/google/pprof">pprof</a>
+in Go which offers a superset of the features of the original but based
+on a completely different and incompatible file format (protobuf)!</p>
+</blockquote>
+<h2 id="the-text-format">The text format</h2>
+<p>Here is the text format we want to generate:</p>
+<pre><code>heap profile:    &lt;in use objects sum&gt;:  &lt;in use bytes sum&gt; [   &lt;space objects sum&gt;:  &lt;space bytes sum&gt;] @ heapprofile
+&lt;in use objects&gt;: &lt;in use bytes&gt; [&lt;space objects&gt;: &lt;space bytes&gt;] @ &lt;rip1&gt; &lt;rip2&gt; &lt;rip3&gt; [...]
+&lt;in use objects&gt;: &lt;in use bytes&gt; [&lt;space objects&gt;: &lt;space bytes&gt;] @ &lt;rip1&gt; &lt;rip2&gt; &lt;rip3&gt; [...]
+&lt;in use objects&gt;: &lt;in use bytes&gt; [&lt;space objects&gt;: &lt;space bytes&gt;] @ &lt;rip1&gt; &lt;rip2&gt; &lt;rip3&gt; [...]
+                                                                             
+MAPPED_LIBRARIES:
+[...]
+</code></pre>
+<p>The first line is a header identifying that this is a heap profile
+(contrary to a CPU profile which <code>pprof</code> can also analyze,
+which uses a different, binary, format) and gives for each of the four
+fields we will record, their sum.</p>
+<p>Then comes one line per entry. Each entry has these four fields that
+the header just gave us a sum of:</p>
+<ul>
+<li><code>in use objects</code>: How many objects are ‘live’ i.e. in use
+on the heap at the time of the allocation. Allocating increases its
+value, freeing decreases it.</li>
+<li><code>in use bytes</code>: How many bytes are ‘live’ i.e. in use on
+the heap at the time of the allocation. Allocating increases its value,
+freeing decreases it.</li>
+<li><code>space objects</code>: How many objects have been allocated
+since the start of the program. It is not affected by freeing memory, it
+only increases.</li>
+<li><code>space bytes</code>: How many bytes have been allocated since
+the start of the program. It is not affected by freeing memory, it only
+increases.</li>
+</ul>
+<p>So when we allocate an object e.g. <code>new(Foo)</code> in C++:</p>
+<ul>
+<li><code>in use objects</code> and <code>space objects</code> increment
+by 1</li>
+<li><code>in use bytes</code> and <code>space bytes</code> increment by
+<code>sizeof(Foo)</code></li>
+</ul>
+<p>When we allocate an array of N elements of type <code>Foo</code>:</p>
+<ul>
+<li><code>in use objects</code> and <code>space objects</code> increment
+by N</li>
+<li><code>in use bytes</code> and <code>space bytes</code> increment by
+<code>N * sizeof(Foo)</code></li>
+</ul>
+<p>When we free an object:</p>
+<ul>
+<li><code>in use objects</code> decrements by 1</li>
+<li><code>in use bytes</code> decrements by
+<code>sizeof(Foo)</code></li>
+</ul>
+<p>When we free an array of N elements of type <code>Foo</code>:</p>
+<ul>
+<li><code>in use objects</code> decrements by N</li>
+<li><code>in use bytes</code> decrements by
+<code>N * sizeof(Foo)</code></li>
+</ul>
+<p>These 4 dimensions are really useful to spot memory leaks
+(<code>in use objects</code> and <code>in use bytes</code> increase over
+time), peak memory usage (<code>space bytes</code>), whether we are
+doing many small allocations versus a few big allocations, etc.
+<code>pprof</code> also supports sampling and we could supply a sampling
+rate here optionally but we want to track each and every allocation so
+we do not bother with that.</p>
+<p>Each entry (i.e. line) ends with the call stack which is a
+space-separated list of addresses. We’ll see that it is easy to get that
+information without resorting to external libraries such as
+<code>libunwind</code> by simply walking the stack, a topic I touched on
+in a previous <a
+href="/blog/x11_x64.html#a-stack-primer">article</a>.</p>
+<p>Very importantly, multiple allocation records with the same stack
+must be merged together into one, summing their values. In that sense,
+each line conceptually an entry in a hashmap where the key is the call
+stack (the part of the right of the <code>@</code> character) and the
+value is a 4-tuple: <code>(u64, u64, u64, u64)</code> (the part on the
+left of the <code>@</code> character).</p>
+<p>The text file ends with a trailer which is crucial for symbolication
+(to transform memory addresses into source code locations), which on
+Linux is trivial to get: This is just a copy of the file
+<code>/proc/self/maps</code>. It lists of the loaded libraries and at
+which address they are.</p>
+<p>I have not implemented it myself but a quick internet search shows
+that the other major operating systems have a similar capability, named
+differently: - Windows: <code>VirtualQuery</code> - macOS:
+<code>mach_vm_region_info</code> - FreeBSD:
+<code>procstat_getvmmap</code></p>
+<p>Here is a small example:</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode c"><code class="sourceCode c"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="pp">#include </span><span class="im">&lt;stdlib.h&gt;</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="dt">void</span> b<span class="op">(</span><span class="dt">int</span> n<span class="op">)</span> <span class="op">{</span> malloc<span class="op">(</span>n<span class="op">);</span> <span class="op">}</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="dt">void</span> a<span class="op">(</span><span class="dt">int</span> n<span class="op">)</span> <span class="op">{</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>  malloc<span class="op">(</span>n<span class="op">);</span></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>  b<span class="op">(</span>n<span class="op">);</span></span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a><span class="dt">int</span> main<span class="op">()</span> <span class="op">{</span></span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> <span class="op">(</span><span class="dt">int</span> i <span class="op">=</span> <span class="dv">0</span><span class="op">;</span> i <span class="op">&lt;</span> <span class="dv">2</span><span class="op">;</span> i<span class="op">++)</span></span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a>    a<span class="op">(</span><span class="dv">2</span><span class="op">);</span></span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a>  b<span class="op">(</span><span class="dv">3</span><span class="op">);</span></span>
+<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<p>Leveraging <code>tcmalloc</code>, this program will generate a heap
+profile:</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> cc /tmp/test_alloc.c <span class="at">-ltcmalloc</span>  <span class="at">-g3</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> HEAPPROFILE=/tmp/heapprof ./a.out</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="ex">Starting</span> tracking the heap</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="ex">Dumping</span> heap profile to /tmp/heapprof.0001.heap <span class="er">(</span><span class="ex">Exiting,</span> 11 bytes in use<span class="kw">)</span></span></code></pre></div>
+<p><em>This is just an example to showcase the format, we will from this
+point on use our own code to generate this text format.</em></p>
+<pre><code>heap profile:      5:       11 [     5:       11] @ heapprofile
+     2:        4 [     2:        4] @ 0x558e804cc165 0x558e804cc18e 0x558e804cc1b0 0x7f452a4daa90 0x7f452a4dab49 0x558e804cc085
+     2:        4 [     2:        4] @ 0x558e804cc184 0x558e804cc1b0 0x7f452a4daa90 0x7f452a4dab49 0x558e804cc085
+     1:        3 [     1:        3] @ 0x558e804cc165 0x558e804cc1c4 0x7f452a4daa90 0x7f452a4dab49 0x558e804cc085
+
+MAPPED_LIBRARIES:
+558e804cb000-558e804cc000 r--p 00000000 00:00 183128      /tmp/a.out
+558e804cc000-558e804cd000 r-xp 00001000 00:00 183128      /tmp/a.out
+558e804cd000-558e804ce000 r--p 00002000 00:00 183128      /tmp/a.out
+558e804ce000-558e804cf000 r--p 00002000 00:00 183128      /tmp/a.out
+558e804cf000-558e804d0000 rw-p 00003000 00:00 183128      /tmp/a.out
+558e814b7000-558e81db8000 rw-p 00000000 00:00 0           [heap]
+7f4529e7e000-7f452a112000 rw-p 00000000 00:00 0           
+7f452a112000-7f452a115000 r--p 00000000 00:00 678524      /usr/lib/x86_64-linux-gnu/liblzma.so.5.4.1
+7f452a115000-7f452a136000 r-xp 00003000 00:00 678524      /usr/lib/x86_64-linux-gnu/liblzma.so.5.4.1
+7f452a136000-7f452a142000 r--p 00024000 00:00 678524      /usr/lib/x86_64-linux-gnu/liblzma.so.5.4.1
+7f452a142000-7f452a143000 r--p 00030000 00:00 678524      /usr/lib/x86_64-linux-gnu/liblzma.so.5.4.1
+7f452a143000-7f452a144000 rw-p 00031000 00:00 678524      /usr/lib/x86_64-linux-gnu/liblzma.so.5.4.1
+7f452a144000-7f452a152000 r--p 00000000 00:00 668348      /usr/lib/x86_64-linux-gnu/libm.so.6
+7f452a152000-7f452a1d0000 r-xp 0000e000 00:00 668348      /usr/lib/x86_64-linux-gnu/libm.so.6
+7f452a1d0000-7f452a22b000 r--p 0008c000 00:00 668348      /usr/lib/x86_64-linux-gnu/libm.so.6
+7f452a22b000-7f452a22c000 r--p 000e6000 00:00 668348      /usr/lib/x86_64-linux-gnu/libm.so.6
+7f452a22c000-7f452a22d000 rw-p 000e7000 00:00 668348      /usr/lib/x86_64-linux-gnu/libm.so.6
+7f452a22d000-7f452a22f000 rw-p 00000000 00:00 0           
+7f452a22f000-7f452a2cb000 r--p 00000000 00:00 678806      /usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.32
+7f452a2cb000-7f452a3fc000 r-xp 0009c000 00:00 678806      /usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.32
+7f452a3fc000-7f452a489000 r--p 001cd000 00:00 678806      /usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.32
+7f452a489000-7f452a494000 r--p 0025a000 00:00 678806      /usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.32
+7f452a494000-7f452a497000 rw-p 00265000 00:00 678806      /usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.32
+7f452a497000-7f452a49b000 rw-p 00000000 00:00 0           
+7f452a49b000-7f452a49e000 r--p 00000000 00:00 702044      /usr/lib/x86_64-linux-gnu/libunwind.so.8.0.1
+7f452a49e000-7f452a4a8000 r-xp 00003000 00:00 702044      /usr/lib/x86_64-linux-gnu/libunwind.so.8.0.1
+7f452a4a8000-7f452a4ab000 r--p 0000d000 00:00 702044      /usr/lib/x86_64-linux-gnu/libunwind.so.8.0.1
+7f452a4ab000-7f452a4ac000 r--p 0000f000 00:00 702044      /usr/lib/x86_64-linux-gnu/libunwind.so.8.0.1
+7f452a4ac000-7f452a4ad000 rw-p 00010000 00:00 702044      /usr/lib/x86_64-linux-gnu/libunwind.so.8.0.1
+7f452a4ad000-7f452a4b7000 rw-p 00000000 00:00 0           
+7f452a4b7000-7f452a4d9000 r--p 00000000 00:00 668342      /usr/lib/x86_64-linux-gnu/libc.so.6
+7f452a4d9000-7f452a651000 r-xp 00022000 00:00 668342      /usr/lib/x86_64-linux-gnu/libc.so.6
+7f452a651000-7f452a6a9000 r--p 0019a000 00:00 668342      /usr/lib/x86_64-linux-gnu/libc.so.6
+7f452a6a9000-7f452a6ad000 r--p 001f1000 00:00 668342      /usr/lib/x86_64-linux-gnu/libc.so.6
+7f452a6ad000-7f452a6af000 rw-p 001f5000 00:00 668342      /usr/lib/x86_64-linux-gnu/libc.so.6
+7f452a6af000-7f452a6bc000 rw-p 00000000 00:00 0           
+7f452a6bc000-7f452a6bf000 r--p 00000000 00:00 677590      /usr/lib/x86_64-linux-gnu/libgcc_s.so.1
+7f452a6bf000-7f452a6da000 r-xp 00003000 00:00 677590      /usr/lib/x86_64-linux-gnu/libgcc_s.so.1
+7f452a6da000-7f452a6de000 r--p 0001e000 00:00 677590      /usr/lib/x86_64-linux-gnu/libgcc_s.so.1
+7f452a6de000-7f452a6df000 r--p 00021000 00:00 677590      /usr/lib/x86_64-linux-gnu/libgcc_s.so.1
+7f452a6df000-7f452a6e0000 rw-p 00022000 00:00 677590      /usr/lib/x86_64-linux-gnu/libgcc_s.so.1
+7f452a6e0000-7f452a6f3000 r--p 00000000 00:00 182678      /usr/lib/x86_64-linux-gnu/libtcmalloc.so.4.5.9
+7f452a6f3000-7f452a719000 r-xp 00013000 00:00 182678      /usr/lib/x86_64-linux-gnu/libtcmalloc.so.4.5.9
+7f452a719000-7f452a729000 r--p 00039000 00:00 182678      /usr/lib/x86_64-linux-gnu/libtcmalloc.so.4.5.9
+7f452a729000-7f452a72a000 r--p 00048000 00:00 182678      /usr/lib/x86_64-linux-gnu/libtcmalloc.so.4.5.9
+7f452a72a000-7f452a72b000 rw-p 00049000 00:00 182678      /usr/lib/x86_64-linux-gnu/libtcmalloc.so.4.5.9
+7f452a72b000-7f452a8e1000 rw-p 00000000 00:00 0           
+7f452a8e4000-7f452a8f8000 rw-p 00000000 00:00 0           
+7f452a8f8000-7f452a8f9000 r--p 00000000 00:00 668336      /usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2
+7f452a8f9000-7f452a921000 r-xp 00001000 00:00 668336      /usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2
+7f452a921000-7f452a92b000 r--p 00029000 00:00 668336      /usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2
+7f452a92b000-7f452a92d000 r--p 00033000 00:00 668336      /usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2
+7f452a92d000-7f452a92f000 rw-p 00035000 00:00 668336      /usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2
+7fff91a4d000-7fff91a6e000 rw-p 00000000 00:00 0           [stack]
+7fff91b3f000-7fff91b43000 r--p 00000000 00:00 0           [vvar]
+7fff91b43000-7fff91b45000 r-xp 00000000 00:00 0           [vdso]
+ffffffffff600000-ffffffffff601000 --xp 00000000 00:00 0           [vsyscall]</code></pre>
+<p>We see that at the end of the program, we have (looking at the first
+line):</p>
+<ul>
+<li>5 objects in use</li>
+<li>11 bytes in use</li>
+<li>5 objects allocated in total</li>
+<li>11 bytes allocated in total</li>
+</ul>
+<p>Since we never freed any memory, the <code>in use</code> counters are
+the same as the <code>space</code> counters.</p>
+<p>We have 3 unique call stacks that allocate, in the same order as they
+appear in the text file (although order does not matter for
+<code>pprof</code>):</p>
+<ul>
+<li><code>b</code> &lt;- <code>a</code> &lt;- <code>main</code></li>
+<li><code>a</code> &lt;- <code>main</code></li>
+<li><code>b</code> &lt;- <code>main</code></li>
+</ul>
+<p>Since our program is a Position Independant Executable (PIE), the
+loader picks a random address for where to load our program in virtual
+memory. Consequently, addresses collected from within our program have
+this offset added to them and this offset is different every run.
+Thankfully, the <code>MAPPED_LIBRARIES</code> section lists address
+ranges (the first column of each line in that section) for each library
+that gets loaded.</p>
+<p>As such, <code>pprof</code> only needs to find for each address the
+relevant range, subtract the start of the range from this address, and
+it has the real address in our executable. It then runs
+<code>addr2line</code> or similar to get the code location.</p>
+<p>Finally we can use <code>pprof</code> to extract human-readable
+information from this text file:</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> pprof <span class="at">--text</span> ./a.out ./heapprof.0001.heap</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="ex">Using</span> local file ./a.out.</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="ex">Using</span> local file /tmp/heapprof.0001.heap.</span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a><span class="ex">Total:</span> 0.0 MB</span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>     <span class="ex">0.0</span>  63.6%  63.6%      0.0  63.6% b</span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>     <span class="ex">0.0</span>  36.4% 100.0%      0.0  72.7% a</span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>     <span class="ex">0.0</span>   0.0% 100.0%      0.0 100.0% __libc_start_call_main</span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>     <span class="ex">0.0</span>   0.0% 100.0%      0.0 100.0% __libc_start_main_impl</span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>     <span class="ex">0.0</span>   0.0% 100.0%      0.0 100.0% _start</span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>     <span class="ex">0.0</span>   0.0% 100.0%      0.0 100.0% main</span></code></pre></div>
+<h2 id="generating-a-pprof-profile">Generating a <code>pprof</code>
+profile</h2>
+<p>Let’s start with a very simple arena (directly based on <a
+href="https://nullprogram.com/blog/2023/09/27/">https://nullprogram.com/blog/2023/09/27/</a>)
+and show how it is used:</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode c"><code class="sourceCode c"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="pp">#define _GNU_SOURCE</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="pp">#include </span><span class="im">&lt;stdint.h&gt;</span></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a><span class="pp">#include </span><span class="im">&lt;stdio.h&gt;</span></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a><span class="pp">#include </span><span class="im">&lt;stdlib.h&gt;</span></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a><span class="pp">#include </span><span class="im">&lt;string.h&gt;</span></span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a><span class="pp">#include </span><span class="im">&lt;sys/mman.h&gt;</span></span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a><span class="pp">#include </span><span class="im">&lt;fcntl.h&gt;</span></span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a><span class="pp">#include </span><span class="im">&lt;unistd.h&gt;</span></span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a><span class="kw">typedef</span> <span class="kw">struct</span> <span class="op">{</span></span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a>  u8 <span class="op">*</span>start<span class="op">;</span></span>
+<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a>  u8 <span class="op">*</span>end<span class="op">;</span></span>
+<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a><span class="op">}</span> arena_t<span class="op">;</span></span>
+<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-16"><a href="#cb6-16" aria-hidden="true" tabindex="-1"></a><span class="dt">static</span> <span class="dt">void</span> <span class="op">*</span> arena_alloc<span class="op">(</span>arena_t <span class="op">*</span>a<span class="op">,</span> <span class="dt">size_t</span> size<span class="op">,</span> <span class="dt">size_t</span> align<span class="op">,</span> <span class="dt">size_t</span> count<span class="op">)</span> <span class="op">{</span></span>
+<span id="cb6-17"><a href="#cb6-17" aria-hidden="true" tabindex="-1"></a>  pg_assert<span class="op">(</span>a<span class="op">-&gt;</span>start <span class="op">&lt;=</span> a<span class="op">-&gt;</span>end<span class="op">);</span></span>
+<span id="cb6-18"><a href="#cb6-18" aria-hidden="true" tabindex="-1"></a>  pg_assert<span class="op">(</span>align <span class="op">==</span> <span class="dv">1</span> <span class="op">||</span> align <span class="op">==</span> <span class="dv">2</span> <span class="op">||</span> align <span class="op">==</span> <span class="dv">4</span> <span class="op">||</span> align <span class="op">==</span> <span class="dv">8</span><span class="op">);</span></span>
+<span id="cb6-19"><a href="#cb6-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-20"><a href="#cb6-20" aria-hidden="true" tabindex="-1"></a>  <span class="dt">size_t</span> available <span class="op">=</span> a<span class="op">-&gt;</span>end <span class="op">-</span> a<span class="op">-&gt;</span>start<span class="op">;</span></span>
+<span id="cb6-21"><a href="#cb6-21" aria-hidden="true" tabindex="-1"></a>  <span class="dt">size_t</span> padding <span class="op">=</span> <span class="op">-(</span><span class="dt">size_t</span><span class="op">)</span>a<span class="op">-&gt;</span>start <span class="op">&amp;</span> <span class="op">(</span>align <span class="op">-</span> <span class="dv">1</span><span class="op">);</span></span>
+<span id="cb6-22"><a href="#cb6-22" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-23"><a href="#cb6-23" aria-hidden="true" tabindex="-1"></a>  <span class="dt">size_t</span> offset <span class="op">=</span> padding <span class="op">+</span> size <span class="op">*</span> count<span class="op">;</span></span>
+<span id="cb6-24"><a href="#cb6-24" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> <span class="op">(</span>available <span class="op">&lt;</span> offset<span class="op">)</span> <span class="op">{</span></span>
+<span id="cb6-25"><a href="#cb6-25" aria-hidden="true" tabindex="-1"></a>    fprintf<span class="op">(</span>stderr<span class="op">,</span></span>
+<span id="cb6-26"><a href="#cb6-26" aria-hidden="true" tabindex="-1"></a>            <span class="st">&quot;Out of memory: available=%lu &quot;</span></span>
+<span id="cb6-27"><a href="#cb6-27" aria-hidden="true" tabindex="-1"></a>            <span class="st">&quot;allocation_size=%lu</span><span class="sc">\n</span><span class="st">&quot;</span><span class="op">,</span></span>
+<span id="cb6-28"><a href="#cb6-28" aria-hidden="true" tabindex="-1"></a>            available<span class="op">,</span> offset<span class="op">);</span></span>
+<span id="cb6-29"><a href="#cb6-29" aria-hidden="true" tabindex="-1"></a>    abort<span class="op">();</span></span>
+<span id="cb6-30"><a href="#cb6-30" aria-hidden="true" tabindex="-1"></a>  <span class="op">}</span></span>
+<span id="cb6-31"><a href="#cb6-31" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-32"><a href="#cb6-32" aria-hidden="true" tabindex="-1"></a>  <span class="dt">uint8_t</span> <span class="op">*</span>res <span class="op">=</span> a<span class="op">-&gt;</span>start <span class="op">+</span> padding<span class="op">;</span></span>
+<span id="cb6-33"><a href="#cb6-33" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-34"><a href="#cb6-34" aria-hidden="true" tabindex="-1"></a>  a<span class="op">-&gt;</span>start <span class="op">+=</span> offset<span class="op">;</span></span>
+<span id="cb6-35"><a href="#cb6-35" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-36"><a href="#cb6-36" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> <span class="op">(</span><span class="dt">void</span> <span class="op">*)</span>res<span class="op">;</span></span>
+<span id="cb6-37"><a href="#cb6-37" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<p>Now, we are ready to add memory profiling to our simple
+allocator.</p>
+<p>First, we model a record with the 4 counters and the call stack:</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode c"><code class="sourceCode c"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="kw">typedef</span> <span class="kw">struct</span> <span class="op">{</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>  <span class="dt">uint64_t</span> in_use_space<span class="op">,</span> in_use_objects<span class="op">,</span> alloc_space<span class="op">,</span> alloc_objects<span class="op">;</span></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>  <span class="dt">uint64_t</span> <span class="op">*</span>call_stack<span class="op">;</span></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>  <span class="dt">uint64_t</span> call_stack_len<span class="op">;</span></span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a><span class="op">}</span> mem_record_t<span class="op">;</span></span></code></pre></div>
+<p>Then, the profile, which contains the 4 counters as a sum and an
+array of records.</p>
+<p>An arena now has an (optional) pointer to a memory profile:</p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode c"><code class="sourceCode c"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="kw">typedef</span> <span class="kw">struct</span> mem_profile_t mem_profile_t<span class="op">;</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="kw">typedef</span> <span class="kw">struct</span> <span class="op">{</span></span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>  <span class="dt">uint8_t</span> <span class="op">*</span>start<span class="op">;</span></span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>  <span class="dt">uint8_t</span> <span class="op">*</span>end<span class="op">;</span></span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>  mem_profile_t<span class="op">*</span> profile<span class="op">;</span></span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a><span class="op">}</span> arena_t<span class="op">;</span></span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a><span class="kw">struct</span> mem_profile_t <span class="op">{</span></span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a>  mem_record_t <span class="op">*</span>records<span class="op">;</span></span>
+<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a>  <span class="dt">uint64_t</span> records_len<span class="op">;</span></span>
+<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a>  <span class="dt">uint64_t</span> records_cap<span class="op">;</span></span>
+<span id="cb8-12"><a href="#cb8-12" aria-hidden="true" tabindex="-1"></a>  <span class="dt">uint64_t</span> in_use_space<span class="op">,</span> in_use_objects<span class="op">,</span> alloc_space<span class="op">,</span> alloc_objects<span class="op">;</span></span>
+<span id="cb8-13"><a href="#cb8-13" aria-hidden="true" tabindex="-1"></a>  arena_t arena<span class="op">;</span></span>
+<span id="cb8-14"><a href="#cb8-14" aria-hidden="true" tabindex="-1"></a><span class="op">};</span></span></code></pre></div>
+<p>Note that the memory profile needs to allocate to store this metadata
+and as such needs an arena. Which makes these two structures cyclic!</p>
+<p>The way we solve it is: 1. We create an small arena dedicated to the
+memory profiling and this arena does <em>not</em> have a memory profile
+attached (otherwise we would end up in a infinite recursion, and we are
+not interested in profiling the memory usage of the memory profiler
+anyway; its memory usage is capped by the size of its dedicated arena).
+2. We create the memory profile using this arena. 3. We create the main
+arena for our program to use and attach the profile to it.</p>
+<div class="sourceCode" id="cb9"><pre class="sourceCode c"><code class="sourceCode c"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="dt">static</span> arena_t arena_new<span class="op">(</span><span class="dt">uint64_t</span> cap<span class="op">,</span> mem_profile_t <span class="op">*</span>profile<span class="op">)</span> <span class="op">{</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>  <span class="dt">uint8_t</span> <span class="op">*</span>mem <span class="op">=</span> mmap<span class="op">(</span>NULL<span class="op">,</span> cap<span class="op">,</span> PROT_READ <span class="op">|</span> PROT_WRITE<span class="op">,</span></span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>                      MAP_ANONYMOUS <span class="op">|</span> MAP_PRIVATE<span class="op">,</span> <span class="op">-</span><span class="dv">1</span><span class="op">,</span> <span class="dv">0</span><span class="op">);</span></span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>  arena_t arena <span class="op">=</span> <span class="op">{</span></span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>      <span class="op">.</span>profile <span class="op">=</span> profile<span class="op">,</span></span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a>      <span class="op">.</span>start <span class="op">=</span> mem<span class="op">,</span></span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a>      <span class="op">.</span>end <span class="op">=</span> mem <span class="op">+</span> cap<span class="op">,</span></span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a>  <span class="op">};</span></span>
+<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> arena<span class="op">;</span></span>
+<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="cb9-12"><a href="#cb9-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-13"><a href="#cb9-13" aria-hidden="true" tabindex="-1"></a><span class="dt">int</span> main<span class="op">(){</span></span>
+<span id="cb9-14"><a href="#cb9-14" aria-hidden="true" tabindex="-1"></a>  arena_t mem_profile_arena <span class="op">=</span> arena_new<span class="op">(</span><span class="dv">1</span> <span class="op">&lt;&lt;</span> <span class="dv">16</span><span class="op">,</span> NULL<span class="op">);</span></span>
+<span id="cb9-15"><a href="#cb9-15" aria-hidden="true" tabindex="-1"></a>  mem_profile_t mem_profile <span class="op">=</span> <span class="op">{.</span>arena <span class="op">=</span> mem_profile_arena<span class="op">};</span></span>
+<span id="cb9-16"><a href="#cb9-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-17"><a href="#cb9-17" aria-hidden="true" tabindex="-1"></a>  arena_t arena <span class="op">=</span> arena_new<span class="op">(</span><span class="dv">1</span> <span class="op">&lt;&lt;</span> <span class="dv">22</span><span class="op">,</span> <span class="op">&amp;</span>mem_profile<span class="op">);</span></span>
+<span id="cb9-18"><a href="#cb9-18" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<p>Now, in <code>arena_alloc</code>, if there is a non-NULL memory
+profile, we record the allocation just before returning the freshly
+allocated pointer:</p>
+<div class="sourceCode" id="cb10"><pre class="sourceCode c"><code class="sourceCode c"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="dt">static</span> <span class="dt">void</span> <span class="op">*</span>arena_alloc<span class="op">(</span>arena_t <span class="op">*</span>a<span class="op">,</span> <span class="dt">size_t</span> size<span class="op">,</span> <span class="dt">size_t</span> align<span class="op">,</span> <span class="dt">size_t</span> count<span class="op">)</span> <span class="op">{</span></span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>  <span class="op">[...]</span></span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> <span class="op">(</span>a<span class="op">-&gt;</span>profile<span class="op">)</span> <span class="op">{</span></span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>    mem_profile_record_alloc<span class="op">(</span>a<span class="op">-&gt;</span>profile<span class="op">,</span> count<span class="op">,</span> offset<span class="op">);</span></span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>  <span class="op">}</span></span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> <span class="op">(</span><span class="dt">void</span> <span class="op">*)</span>res<span class="op">;</span></span>
+<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<p>We now have to implement <code>mem_profile_record_alloc</code> and
+exporting the profile to the text format, and we are done.</p>
+<p>When recording an allocation, we need to capture the call stack, so
+we walk the stack upwards until we reach a frame address that is 0 or
+does not have the alignement of a pointer (8); at which point we know
+not to dereference it and go further.</p>
+<p>This will break if we disable frame pointers when compiling
+(<code>-fomit-frame-pointer</code>) which is in my opinion always a bad
+idea. There are other ways to get a call stack fortunately but they all
+are more involved and potentially slower. Note that this approach
+probably only works on x86_64, no idea how ARM does that. Here is a <a
+href="https://hacks.mozilla.org/2022/06/everything-is-broken-shipping-rust-minidump-at-mozilla/">deep
+dive</a> on getting a stack trace in different environments.</p>
+<div class="sourceCode" id="cb11"><pre class="sourceCode c"><code class="sourceCode c"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="dt">static</span> <span class="dt">uint8_t</span> record_call_stack<span class="op">(</span><span class="dt">uint64_t</span> <span class="op">*</span>dst<span class="op">,</span> <span class="dt">uint64_t</span> cap<span class="op">)</span> <span class="op">{</span></span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>  <span class="dt">uintptr_t</span> <span class="op">*</span>rbp <span class="op">=</span> __builtin_frame_address<span class="op">(</span><span class="dv">0</span><span class="op">);</span></span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>  <span class="dt">uint64_t</span> len <span class="op">=</span> <span class="dv">0</span><span class="op">;</span></span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a>  <span class="cf">while</span> <span class="op">(</span>rbp <span class="op">!=</span> <span class="dv">0</span> <span class="op">&amp;&amp;</span> <span class="op">((</span><span class="dt">uint64_t</span><span class="op">)</span>rbp <span class="op">&amp;</span> <span class="dv">7</span><span class="op">)</span> <span class="op">==</span> <span class="dv">0</span> <span class="op">&amp;&amp;</span> <span class="op">*</span>rbp <span class="op">!=</span> <span class="dv">0</span><span class="op">)</span> <span class="op">{</span></span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a>    <span class="dt">const</span> <span class="dt">uintptr_t</span> rip <span class="op">=</span> <span class="op">*(</span>rbp <span class="op">+</span> <span class="dv">1</span><span class="op">);</span></span>
+<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a>    rbp <span class="op">=</span> <span class="op">(</span><span class="dt">uintptr_t</span> <span class="op">*)*</span>rbp<span class="op">;</span></span>
+<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-10"><a href="#cb11-10" aria-hidden="true" tabindex="-1"></a>    <span class="co">// `rip` points to the return instruction in the caller, once this call is</span></span>
+<span id="cb11-11"><a href="#cb11-11" aria-hidden="true" tabindex="-1"></a>    <span class="co">// done. But: We want the location of the call i.e. the `call xxx`</span></span>
+<span id="cb11-12"><a href="#cb11-12" aria-hidden="true" tabindex="-1"></a>    <span class="co">// instruction, so we subtract one byte to point inside it, which is not</span></span>
+<span id="cb11-13"><a href="#cb11-13" aria-hidden="true" tabindex="-1"></a>    <span class="co">// quite &#39;at&#39; it, but good enough.</span></span>
+<span id="cb11-14"><a href="#cb11-14" aria-hidden="true" tabindex="-1"></a>    dst<span class="op">[</span>len<span class="op">++]</span> <span class="op">=</span> rip <span class="op">-</span> <span class="dv">1</span><span class="op">;</span></span>
+<span id="cb11-15"><a href="#cb11-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-16"><a href="#cb11-16" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> <span class="op">(</span>len <span class="op">&gt;=</span> cap<span class="op">)</span></span>
+<span id="cb11-17"><a href="#cb11-17" aria-hidden="true" tabindex="-1"></a>      <span class="cf">return</span> len<span class="op">;</span></span>
+<span id="cb11-18"><a href="#cb11-18" aria-hidden="true" tabindex="-1"></a>  <span class="op">}</span></span>
+<span id="cb11-19"><a href="#cb11-19" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> len<span class="op">;</span></span>
+<span id="cb11-20"><a href="#cb11-20" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<p>Now we can record the allocation proper, upserting the new record
+into our existing list of records, trying to find an existing record
+with the same call stack. That part is important to avoid having a huge
+profile and that’s why <code>pprof</code> made this design decision.</p>
+<p>The code is slightly length because we need to roll our own arrays
+here in this minimal example, but in a real application you’d have your
+own array structure and helper functions, most likely:</p>
+<div class="sourceCode" id="cb12"><pre class="sourceCode c"><code class="sourceCode c"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="dt">static</span> <span class="dt">void</span> mem_profile_record_alloc<span class="op">(</span>mem_profile_t <span class="op">*</span>profile<span class="op">,</span></span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>                                     <span class="dt">uint64_t</span> objects_count<span class="op">,</span></span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>                                     <span class="dt">uint64_t</span> bytes_count<span class="op">)</span> <span class="op">{</span></span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>  <span class="co">// Record the call stack by stack walking.</span></span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a>  <span class="dt">uint64_t</span> call_stack<span class="op">[</span><span class="dv">64</span><span class="op">]</span> <span class="op">=</span> <span class="op">{</span><span class="dv">0</span><span class="op">};</span></span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a>  <span class="dt">uint64_t</span> call_stack_len <span class="op">=</span></span>
+<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a>      record_call_stack<span class="op">(</span>call_stack<span class="op">,</span> <span class="kw">sizeof</span><span class="op">(</span>call_stack<span class="op">)</span> <span class="op">/</span> <span class="kw">sizeof</span><span class="op">(</span>call_stack<span class="op">[</span><span class="dv">0</span><span class="op">]));</span></span>
+<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a>  <span class="co">// Update the sums.</span></span>
+<span id="cb12-10"><a href="#cb12-10" aria-hidden="true" tabindex="-1"></a>  profile<span class="op">-&gt;</span>alloc_objects <span class="op">+=</span> objects_count<span class="op">;</span></span>
+<span id="cb12-11"><a href="#cb12-11" aria-hidden="true" tabindex="-1"></a>  profile<span class="op">-&gt;</span>alloc_space <span class="op">+=</span> bytes_count<span class="op">;</span></span>
+<span id="cb12-12"><a href="#cb12-12" aria-hidden="true" tabindex="-1"></a>  profile<span class="op">-&gt;</span>in_use_objects <span class="op">+=</span> objects_count<span class="op">;</span></span>
+<span id="cb12-13"><a href="#cb12-13" aria-hidden="true" tabindex="-1"></a>  profile<span class="op">-&gt;</span>in_use_space <span class="op">+=</span> bytes_count<span class="op">;</span></span>
+<span id="cb12-14"><a href="#cb12-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-15"><a href="#cb12-15" aria-hidden="true" tabindex="-1"></a>  <span class="co">// Upsert the record.</span></span>
+<span id="cb12-16"><a href="#cb12-16" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> <span class="op">(</span><span class="dt">uint64_t</span> i <span class="op">=</span> <span class="dv">0</span><span class="op">;</span> i <span class="op">&lt;</span> profile<span class="op">-&gt;</span>records_len<span class="op">;</span> i<span class="op">++)</span> <span class="op">{</span></span>
+<span id="cb12-17"><a href="#cb12-17" aria-hidden="true" tabindex="-1"></a>    mem_record_t <span class="op">*</span>r <span class="op">=</span> <span class="op">&amp;</span>profile<span class="op">-&gt;</span>records<span class="op">[</span>i<span class="op">];</span></span>
+<span id="cb12-18"><a href="#cb12-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-19"><a href="#cb12-19" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> <span class="op">(</span>r<span class="op">-&gt;</span>call_stack_len <span class="op">==</span> call_stack_len <span class="op">&amp;&amp;</span></span>
+<span id="cb12-20"><a href="#cb12-20" aria-hidden="true" tabindex="-1"></a>        memcmp<span class="op">(</span>r<span class="op">-&gt;</span>call_stack<span class="op">,</span> call_stack<span class="op">,</span> call_stack_len <span class="op">*</span> <span class="kw">sizeof</span><span class="op">(</span><span class="dt">uint64_t</span><span class="op">))</span> <span class="op">==</span></span>
+<span id="cb12-21"><a href="#cb12-21" aria-hidden="true" tabindex="-1"></a>            <span class="dv">0</span><span class="op">)</span> <span class="op">{</span></span>
+<span id="cb12-22"><a href="#cb12-22" aria-hidden="true" tabindex="-1"></a>      <span class="co">// Found an existing record, update it.</span></span>
+<span id="cb12-23"><a href="#cb12-23" aria-hidden="true" tabindex="-1"></a>      r<span class="op">-&gt;</span>alloc_objects <span class="op">+=</span> objects_count<span class="op">;</span></span>
+<span id="cb12-24"><a href="#cb12-24" aria-hidden="true" tabindex="-1"></a>      r<span class="op">-&gt;</span>alloc_space <span class="op">+=</span> bytes_count<span class="op">;</span></span>
+<span id="cb12-25"><a href="#cb12-25" aria-hidden="true" tabindex="-1"></a>      r<span class="op">-&gt;</span>in_use_objects <span class="op">+=</span> objects_count<span class="op">;</span></span>
+<span id="cb12-26"><a href="#cb12-26" aria-hidden="true" tabindex="-1"></a>      r<span class="op">-&gt;</span>in_use_space <span class="op">+=</span> bytes_count<span class="op">;</span></span>
+<span id="cb12-27"><a href="#cb12-27" aria-hidden="true" tabindex="-1"></a>      <span class="cf">return</span><span class="op">;</span></span>
+<span id="cb12-28"><a href="#cb12-28" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb12-29"><a href="#cb12-29" aria-hidden="true" tabindex="-1"></a>  <span class="op">}</span></span>
+<span id="cb12-30"><a href="#cb12-30" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-31"><a href="#cb12-31" aria-hidden="true" tabindex="-1"></a>  <span class="co">// Not found, insert a new record</span></span>
+<span id="cb12-32"><a href="#cb12-32" aria-hidden="true" tabindex="-1"></a>  mem_record_t record <span class="op">=</span> <span class="op">{</span></span>
+<span id="cb12-33"><a href="#cb12-33" aria-hidden="true" tabindex="-1"></a>      <span class="op">.</span>alloc_objects <span class="op">=</span> objects_count<span class="op">,</span></span>
+<span id="cb12-34"><a href="#cb12-34" aria-hidden="true" tabindex="-1"></a>      <span class="op">.</span>alloc_space <span class="op">=</span> bytes_count<span class="op">,</span></span>
+<span id="cb12-35"><a href="#cb12-35" aria-hidden="true" tabindex="-1"></a>      <span class="op">.</span>in_use_objects <span class="op">=</span> objects_count<span class="op">,</span></span>
+<span id="cb12-36"><a href="#cb12-36" aria-hidden="true" tabindex="-1"></a>      <span class="op">.</span>in_use_space <span class="op">=</span> bytes_count<span class="op">,</span></span>
+<span id="cb12-37"><a href="#cb12-37" aria-hidden="true" tabindex="-1"></a>  <span class="op">};</span></span>
+<span id="cb12-38"><a href="#cb12-38" aria-hidden="true" tabindex="-1"></a>  record<span class="op">.</span>call_stack <span class="op">=</span> arena_alloc<span class="op">(&amp;</span>profile<span class="op">-&gt;</span>arena<span class="op">,</span> <span class="kw">sizeof</span><span class="op">(</span><span class="dt">uint64_t</span><span class="op">),</span></span>
+<span id="cb12-39"><a href="#cb12-39" aria-hidden="true" tabindex="-1"></a>                                  <span class="kw">_Alignof</span><span class="op">(</span><span class="dt">uint64_t</span><span class="op">),</span> call_stack_len<span class="op">);</span></span>
+<span id="cb12-40"><a href="#cb12-40" aria-hidden="true" tabindex="-1"></a>  memcpy<span class="op">(</span>record<span class="op">.</span>call_stack<span class="op">,</span> call_stack<span class="op">,</span> call_stack_len <span class="op">*</span> <span class="kw">sizeof</span><span class="op">(</span><span class="dt">uint64_t</span><span class="op">));</span></span>
+<span id="cb12-41"><a href="#cb12-41" aria-hidden="true" tabindex="-1"></a>  record<span class="op">.</span>call_stack_len <span class="op">=</span> call_stack_len<span class="op">;</span></span>
+<span id="cb12-42"><a href="#cb12-42" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-43"><a href="#cb12-43" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> <span class="op">(</span>profile<span class="op">-&gt;</span>records_len <span class="op">&gt;=</span> profile<span class="op">-&gt;</span>records_cap<span class="op">)</span> <span class="op">{</span></span>
+<span id="cb12-44"><a href="#cb12-44" aria-hidden="true" tabindex="-1"></a>    <span class="dt">uint64_t</span> new_cap <span class="op">=</span> profile<span class="op">-&gt;</span>records_cap <span class="op">*</span> <span class="dv">2</span><span class="op">;</span></span>
+<span id="cb12-45"><a href="#cb12-45" aria-hidden="true" tabindex="-1"></a>    <span class="co">// Grow the array.</span></span>
+<span id="cb12-46"><a href="#cb12-46" aria-hidden="true" tabindex="-1"></a>    mem_record_t <span class="op">*</span>new_records <span class="op">=</span> arena_alloc<span class="op">(</span></span>
+<span id="cb12-47"><a href="#cb12-47" aria-hidden="true" tabindex="-1"></a>        <span class="op">&amp;</span>profile<span class="op">-&gt;</span>arena<span class="op">,</span> <span class="kw">sizeof</span><span class="op">(</span>mem_record_t<span class="op">),</span> <span class="kw">_Alignof</span><span class="op">(</span>mem_record_t<span class="op">),</span> new_cap<span class="op">);</span></span>
+<span id="cb12-48"><a href="#cb12-48" aria-hidden="true" tabindex="-1"></a>    memcpy<span class="op">(</span>new_records<span class="op">,</span> profile<span class="op">-&gt;</span>records<span class="op">,</span></span>
+<span id="cb12-49"><a href="#cb12-49" aria-hidden="true" tabindex="-1"></a>           profile<span class="op">-&gt;</span>records_len <span class="op">*</span> <span class="kw">sizeof</span><span class="op">(</span>mem_record_t<span class="op">));</span></span>
+<span id="cb12-50"><a href="#cb12-50" aria-hidden="true" tabindex="-1"></a>    profile<span class="op">-&gt;</span>records_cap <span class="op">=</span> new_cap<span class="op">;</span></span>
+<span id="cb12-51"><a href="#cb12-51" aria-hidden="true" tabindex="-1"></a>    profile<span class="op">-&gt;</span>records <span class="op">=</span> new_records<span class="op">;</span></span>
+<span id="cb12-52"><a href="#cb12-52" aria-hidden="true" tabindex="-1"></a>  <span class="op">}</span></span>
+<span id="cb12-53"><a href="#cb12-53" aria-hidden="true" tabindex="-1"></a>  profile<span class="op">-&gt;</span>records<span class="op">[</span>profile<span class="op">-&gt;</span>records_len<span class="op">++]</span> <span class="op">=</span> record<span class="op">;</span></span>
+<span id="cb12-54"><a href="#cb12-54" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<p>Finally, we can dump this profile in the <code>pprof</code> textual
+representation:</p>
+<pre><code>static void mem_profile_write(mem_profile_t *profile, FILE *out) {
+  fprintf(out, &quot;heap profile: %lu: %lu [     %lu:    %lu] @ heapprofile\n&quot;,
+          profile-&gt;in_use_objects, profile-&gt;in_use_space,
+          profile-&gt;alloc_objects, profile-&gt;alloc_space);
+
+  for (uint64_t i = 0; i &lt; profile-&gt;records_len; i++) {
+    mem_record_t r = profile-&gt;records[i];
+
+    fprintf(out, &quot;%lu: %lu [%lu: %lu] @ &quot;, r.in_use_objects, r.in_use_space,
+            r.alloc_objects, r.alloc_space);
+
+    for (uint64_t j = 0; j &lt; r.call_stack_len; j++) {
+      fprintf(out, &quot;%#lx &quot;, r.call_stack[j]);
+    }
+    fputc(&#39;\n&#39;, out);
+  }
+
+  fputs(&quot;\nMAPPED_LIBRARIES:\n&quot;, out);
+
+  static uint8_t mem[4096] = {0};
+  int fd = open(&quot;/proc/self/maps&quot;, O_RDONLY);
+  assert(fd != -1);
+  ssize_t read_bytes = read(fd, mem, sizeof(mem));
+  assert(read_bytes != -1);
+  close(fd);
+
+  fwrite(mem, 1, read_bytes, out);
+
+  fflush(out);
+}</code></pre>
+<p>And we’re done! Let’s try it with our initial example (bumping the
+size of the allocations a bit because <code>pprof</code> ignores tiny
+allocations for readability - although this is configurable):</p>
+<div class="sourceCode" id="cb14"><pre class="sourceCode c"><code class="sourceCode c"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="dt">void</span> b<span class="op">(</span><span class="dt">int</span> n<span class="op">,</span> arena_t <span class="op">*</span>arena<span class="op">)</span> <span class="op">{</span></span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a>  arena_alloc<span class="op">(</span>arena<span class="op">,</span> <span class="kw">sizeof</span><span class="op">(</span><span class="dt">int</span><span class="op">),</span> <span class="kw">_Alignof</span><span class="op">(</span><span class="dt">int</span><span class="op">),</span> n<span class="op">);</span></span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a><span class="dt">void</span> a<span class="op">(</span><span class="dt">int</span> n<span class="op">,</span> arena_t <span class="op">*</span>arena<span class="op">)</span> <span class="op">{</span></span>
+<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a>  arena_alloc<span class="op">(</span>arena<span class="op">,</span> <span class="kw">sizeof</span><span class="op">(</span><span class="dt">int</span><span class="op">),</span> <span class="kw">_Alignof</span><span class="op">(</span><span class="dt">int</span><span class="op">),</span> n<span class="op">);</span></span>
+<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a>  b<span class="op">(</span>n<span class="op">,</span> arena<span class="op">);</span></span>
+<span id="cb14-8"><a href="#cb14-8" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="cb14-9"><a href="#cb14-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-10"><a href="#cb14-10" aria-hidden="true" tabindex="-1"></a><span class="dt">int</span> main<span class="op">()</span> <span class="op">{</span></span>
+<span id="cb14-11"><a href="#cb14-11" aria-hidden="true" tabindex="-1"></a>  <span class="op">[...]</span></span>
+<span id="cb14-12"><a href="#cb14-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-13"><a href="#cb14-13" aria-hidden="true" tabindex="-1"></a>  arena_t arena <span class="op">=</span> arena_new<span class="op">(</span><span class="dv">1</span> <span class="op">&lt;&lt;</span> <span class="dv">28</span><span class="op">,</span> <span class="op">&amp;</span>mem_profile<span class="op">);</span></span>
+<span id="cb14-14"><a href="#cb14-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-15"><a href="#cb14-15" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> <span class="op">(</span><span class="dt">int</span> i <span class="op">=</span> <span class="dv">0</span><span class="op">;</span> i <span class="op">&lt;</span> <span class="dv">2</span><span class="op">;</span> i<span class="op">++)</span></span>
+<span id="cb14-16"><a href="#cb14-16" aria-hidden="true" tabindex="-1"></a>    a<span class="op">(</span><span class="dv">2</span> <span class="op">*</span> <span class="dv">1024</span> <span class="op">*</span> <span class="dv">1024</span><span class="op">,</span> <span class="op">&amp;</span>arena<span class="op">);</span></span>
+<span id="cb14-17"><a href="#cb14-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-18"><a href="#cb14-18" aria-hidden="true" tabindex="-1"></a>  b<span class="op">(</span><span class="dv">3</span> <span class="op">*</span> <span class="dv">1024</span> <span class="op">*</span> <span class="dv">1024</span><span class="op">,</span> <span class="op">&amp;</span>arena<span class="op">);</span></span>
+<span id="cb14-19"><a href="#cb14-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-20"><a href="#cb14-20" aria-hidden="true" tabindex="-1"></a>  mem_profile_write<span class="op">(&amp;</span>mem_profile<span class="op">,</span> stderr<span class="op">);</span></span>
+<span id="cb14-21"><a href="#cb14-21" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<div class="sourceCode" id="cb15"><pre
+class="sourceCode sh"><code class="sourceCode bash"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> cc <span class="at">-g3</span> example.c</span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> ./a.out <span class="dv">2</span><span class="op">&gt;</span> heap.profile</span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> pprof <span class="at">--web</span> ./a.out heap.profile</span></code></pre></div>
+<p>And we see in our browser:</p>
+<figure>
+<img src="mem_prof4.png" alt="Initial profile" />
+<figcaption aria-hidden="true">Initial profile</figcaption>
+</figure>
+<p>And we can even generate a flamegraph for it leveraging the great <a
+href="https://github.com/brendangregg/FlameGraph">OG flamegraph
+project</a>:</p>
+<div class="sourceCode" id="cb16"><pre
+class="sourceCode sh"><code class="sourceCode bash"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> pprof <span class="at">--collapsed</span> ./a.out heap.profile <span class="kw">|</span> <span class="ex">flamegraph.pl</span> <span class="op">&gt;</span> out.svg</span></code></pre></div>
+<figure>
+<img src="mem_prof_flamegraph.svg" alt="Flamegraph" />
+<figcaption aria-hidden="true">Flamegraph</figcaption>
+</figure>
+<h2 id="variations-and-limitations">Variations and limitations</h2>
+<ul>
+<li>For this article we always do memory profiling and abort once the
+arena is full; but it does not have to be this way. Memory profiling
+could be enabled in a CLI program with a command line flag; if it is
+disabled we do not create a memory profile nor an arena for it. Or, it
+could be enabled/disabled dynamically, after a given amount of time,
+etc. It could also stop when its dedicated arena is full instead of
+aborting the whole program.</li>
+<li>Sampling could be easily added to
+<code>mem_profile_record_alloc</code> to only record some records, say
+1%</li>
+<li>The current maximum call stack depth is 64, for brevity in the
+context of this article. We can store a bigger one by having a
+dynamically sized array or storing each address in a more compact
+format, e.g. varint instead of a fixed 8 bytes</li>
+<li>Stack traces won’t work across library calls that are compiled
+without frame pointers. To which I’d say: It’s likely easier to compile
+all of the code you depend on with the build flags you require than try
+to come up with alternative ways to walk the stack. Your mileage may
+vary.</li>
+<li>We use linear scanning to find an existing record with the same call
+stack. When having lots of records, it would be advantageous to use a
+binary search on a sorted array or perhaps a hashtable.</li>
+</ul>
+<h2 id="alternatives">Alternatives</h2>
+<p><code>pprof</code> (the Perl one) is not the only way to get this
+information.</p>
+<p>It turns out that your browser comes with a built-in profiler and a
+nice one to use at that! And it has support for native allocations,
+stack traces and so forth. Another possibility is the new
+<code>pprof</code> (the Go one). They all have more features than the
+original <code>pprof</code> that are really handy, most notably:</p>
+<ul>
+<li>A built-in interactive flamegraph feature</li>
+<li>Tracking the time at which an allocation happened, which can then be
+used to produce a flamechart representing allocations over time (for
+example to observe a memory leak increasing the memory usage over time,
+and discover where it comes from)</li>
+</ul>
+<p>To make use of these, our application needs to generate the
+information we gathered in the format the profiler expects, just like we
+did with <code>pprof</code>.</p>
+<ul>
+<li>Chrome expects a <a
+href="https://docs.google.com/document/d/1CvAClvFfyA5R-PhYUmn5OOQtYMH4h6I0nSsKchNAySU/preview">JSON
+file</a>, which I did not experiment with yet.</li>
+<li>Firefox expects a <a
+href="https://github.com/firefox-devtools/profiler/blob/main/docs-developer/processed-profile-format.md">different
+JSON file</a>. A good starting point is <a
+href="https://github.com/mstange/samply">https://github.com/mstange/samply</a>.
+I experimented with it but dropped this avenue because of several
+frustrating aspects:
+<ul>
+<li>It is very JS-centric so much of the profile has to be filled with
+<code>null</code> values or explicitly saying that the each sample is
+not for JS.</li>
+<li>All fields must be provided even if empty, including arrays. Failing
+to do so throws an obscure exception in the profiler, that has to be
+tracked in the browser debugger, which shows the minified JS profiler
+code, which is not fun (yes, the profiler is written mostly/entirely in
+JS). The consequence is that most of the profile file is made of lengthy
+arrays only containing <code>null</code> values. Thus, most of the code
+to generate it is boilerplate noise.</li>
+<li>Memory traces are supported but it seems that a CPU trace is
+required for each memory trace which makes the profile even bigger, and
+harder to generate. Only providing memory samples shows nothing in the
+graphs.</li>
+</ul></li>
+<li>The new <code>pprof</code> (the Go version) expects a relatively
+simple gzipped <a
+href="https://github.com/google/pprof/tree/4ca4178f5c7ab3f10300f07dab7422ead8dc17bc/proto">protobuf
+file</a>, but that means adding code generation and a library
+dependency. I use this tool when writing Go quite often and it is
+helpful. It also supports adding labels to samples, for example we could
+label the allocations coming from different arenas differently to be
+able to distinguish them in the same profile.</li>
+</ul>
+<h2 id="conclusion">Conclusion</h2>
+<p>I like that one of the most common memory profilers uses a very
+simple text format that anyone can generate, and that’s it’s
+stand-alone. It’s very UNIXy!</p>
+<p>Nonetheless, I will in the future explore the other aforementioned
+profilers (probably the Chrome one because it seems the most
+straightforward) and I do not think it should be much additional work.
+It’s nice to leverage the existing browser to avoid having to install a
+profiler.</p>
+<p>After all, it’s been <a
+href="https://technology.riotgames.com/news/profiling-real-world-performance-league">done
+before</a>!</p>
+<blockquote>
+<p>If you liked this article and you want to support me, and can afford
+it: <a
+href="https://paypal.me/philigaultier?country.x=DE&amp;locale.x=en_US">Donate</a></p>
+</blockquote>
+<h2 id="addendum-the-full-code">Addendum: the full code</h2>
+<div class="sourceCode" id="cb17"><pre class="sourceCode c"><code class="sourceCode c"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="pp">#define _GNU_SOURCE</span></span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a><span class="pp">#include </span><span class="im">&lt;assert.h&gt;</span></span>
+<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a><span class="pp">#include </span><span class="im">&lt;fcntl.h&gt;</span></span>
+<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a><span class="pp">#include </span><span class="im">&lt;stdint.h&gt;</span></span>
+<span id="cb17-5"><a href="#cb17-5" aria-hidden="true" tabindex="-1"></a><span class="pp">#include </span><span class="im">&lt;stdio.h&gt;</span></span>
+<span id="cb17-6"><a href="#cb17-6" aria-hidden="true" tabindex="-1"></a><span class="pp">#include </span><span class="im">&lt;stdlib.h&gt;</span></span>
+<span id="cb17-7"><a href="#cb17-7" aria-hidden="true" tabindex="-1"></a><span class="pp">#include </span><span class="im">&lt;string.h&gt;</span></span>
+<span id="cb17-8"><a href="#cb17-8" aria-hidden="true" tabindex="-1"></a><span class="pp">#include </span><span class="im">&lt;sys/mman.h&gt;</span></span>
+<span id="cb17-9"><a href="#cb17-9" aria-hidden="true" tabindex="-1"></a><span class="pp">#include </span><span class="im">&lt;unistd.h&gt;</span></span>
+<span id="cb17-10"><a href="#cb17-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-11"><a href="#cb17-11" aria-hidden="true" tabindex="-1"></a><span class="kw">typedef</span> <span class="kw">struct</span> <span class="op">{</span></span>
+<span id="cb17-12"><a href="#cb17-12" aria-hidden="true" tabindex="-1"></a>  <span class="dt">uint64_t</span> in_use_space<span class="op">,</span> in_use_objects<span class="op">,</span> alloc_space<span class="op">,</span> alloc_objects<span class="op">;</span></span>
+<span id="cb17-13"><a href="#cb17-13" aria-hidden="true" tabindex="-1"></a>  <span class="dt">uint64_t</span> <span class="op">*</span>call_stack<span class="op">;</span></span>
+<span id="cb17-14"><a href="#cb17-14" aria-hidden="true" tabindex="-1"></a>  <span class="dt">uint64_t</span> call_stack_len<span class="op">;</span></span>
+<span id="cb17-15"><a href="#cb17-15" aria-hidden="true" tabindex="-1"></a><span class="op">}</span> mem_record_t<span class="op">;</span></span>
+<span id="cb17-16"><a href="#cb17-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-17"><a href="#cb17-17" aria-hidden="true" tabindex="-1"></a><span class="kw">typedef</span> <span class="kw">struct</span> mem_profile mem_profile_t<span class="op">;</span></span>
+<span id="cb17-18"><a href="#cb17-18" aria-hidden="true" tabindex="-1"></a><span class="kw">typedef</span> <span class="kw">struct</span> <span class="op">{</span></span>
+<span id="cb17-19"><a href="#cb17-19" aria-hidden="true" tabindex="-1"></a>  <span class="dt">uint8_t</span> <span class="op">*</span>start<span class="op">;</span></span>
+<span id="cb17-20"><a href="#cb17-20" aria-hidden="true" tabindex="-1"></a>  <span class="dt">uint8_t</span> <span class="op">*</span>end<span class="op">;</span></span>
+<span id="cb17-21"><a href="#cb17-21" aria-hidden="true" tabindex="-1"></a>  mem_profile_t <span class="op">*</span>profile<span class="op">;</span></span>
+<span id="cb17-22"><a href="#cb17-22" aria-hidden="true" tabindex="-1"></a><span class="op">}</span> arena_t<span class="op">;</span></span>
+<span id="cb17-23"><a href="#cb17-23" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-24"><a href="#cb17-24" aria-hidden="true" tabindex="-1"></a><span class="kw">struct</span> mem_profile <span class="op">{</span></span>
+<span id="cb17-25"><a href="#cb17-25" aria-hidden="true" tabindex="-1"></a>  mem_record_t <span class="op">*</span>records<span class="op">;</span></span>
+<span id="cb17-26"><a href="#cb17-26" aria-hidden="true" tabindex="-1"></a>  <span class="dt">uint64_t</span> records_len<span class="op">;</span></span>
+<span id="cb17-27"><a href="#cb17-27" aria-hidden="true" tabindex="-1"></a>  <span class="dt">uint64_t</span> records_cap<span class="op">;</span></span>
+<span id="cb17-28"><a href="#cb17-28" aria-hidden="true" tabindex="-1"></a>  <span class="dt">uint64_t</span> in_use_space<span class="op">,</span> in_use_objects<span class="op">,</span> alloc_space<span class="op">,</span> alloc_objects<span class="op">;</span></span>
+<span id="cb17-29"><a href="#cb17-29" aria-hidden="true" tabindex="-1"></a>  arena_t arena<span class="op">;</span></span>
+<span id="cb17-30"><a href="#cb17-30" aria-hidden="true" tabindex="-1"></a><span class="op">};</span></span>
+<span id="cb17-31"><a href="#cb17-31" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-32"><a href="#cb17-32" aria-hidden="true" tabindex="-1"></a><span class="dt">static</span> <span class="dt">void</span> <span class="op">*</span>arena_alloc<span class="op">(</span>arena_t <span class="op">*</span>a<span class="op">,</span> <span class="dt">size_t</span> size<span class="op">,</span> <span class="dt">size_t</span> align<span class="op">,</span> <span class="dt">size_t</span> count<span class="op">);</span></span>
+<span id="cb17-33"><a href="#cb17-33" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-34"><a href="#cb17-34" aria-hidden="true" tabindex="-1"></a><span class="dt">static</span> <span class="dt">uint8_t</span> record_call_stack<span class="op">(</span><span class="dt">uint64_t</span> <span class="op">*</span>dst<span class="op">,</span> <span class="dt">uint64_t</span> cap<span class="op">)</span> <span class="op">{</span></span>
+<span id="cb17-35"><a href="#cb17-35" aria-hidden="true" tabindex="-1"></a>  <span class="dt">uintptr_t</span> <span class="op">*</span>rbp <span class="op">=</span> __builtin_frame_address<span class="op">(</span><span class="dv">0</span><span class="op">);</span></span>
+<span id="cb17-36"><a href="#cb17-36" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-37"><a href="#cb17-37" aria-hidden="true" tabindex="-1"></a>  <span class="dt">uint64_t</span> len <span class="op">=</span> <span class="dv">0</span><span class="op">;</span></span>
+<span id="cb17-38"><a href="#cb17-38" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-39"><a href="#cb17-39" aria-hidden="true" tabindex="-1"></a>  <span class="cf">while</span> <span class="op">(</span>rbp <span class="op">!=</span> <span class="dv">0</span> <span class="op">&amp;&amp;</span> <span class="op">((</span><span class="dt">uint64_t</span><span class="op">)</span>rbp <span class="op">&amp;</span> <span class="dv">7</span><span class="op">)</span> <span class="op">==</span> <span class="dv">0</span> <span class="op">&amp;&amp;</span> <span class="op">*</span>rbp <span class="op">!=</span> <span class="dv">0</span><span class="op">)</span> <span class="op">{</span></span>
+<span id="cb17-40"><a href="#cb17-40" aria-hidden="true" tabindex="-1"></a>    <span class="dt">const</span> <span class="dt">uintptr_t</span> rip <span class="op">=</span> <span class="op">*(</span>rbp <span class="op">+</span> <span class="dv">1</span><span class="op">);</span></span>
+<span id="cb17-41"><a href="#cb17-41" aria-hidden="true" tabindex="-1"></a>    rbp <span class="op">=</span> <span class="op">(</span><span class="dt">uintptr_t</span> <span class="op">*)*</span>rbp<span class="op">;</span></span>
+<span id="cb17-42"><a href="#cb17-42" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-43"><a href="#cb17-43" aria-hidden="true" tabindex="-1"></a>    <span class="co">// `rip` points to the return instruction in the caller, once this call is</span></span>
+<span id="cb17-44"><a href="#cb17-44" aria-hidden="true" tabindex="-1"></a>    <span class="co">// done. But: We want the location of the call i.e. the `call xxx`</span></span>
+<span id="cb17-45"><a href="#cb17-45" aria-hidden="true" tabindex="-1"></a>    <span class="co">// instruction, so we subtract one byte to point inside it, which is not</span></span>
+<span id="cb17-46"><a href="#cb17-46" aria-hidden="true" tabindex="-1"></a>    <span class="co">// quite &#39;at&#39; it, but good enough.</span></span>
+<span id="cb17-47"><a href="#cb17-47" aria-hidden="true" tabindex="-1"></a>    dst<span class="op">[</span>len<span class="op">++]</span> <span class="op">=</span> rip <span class="op">-</span> <span class="dv">1</span><span class="op">;</span></span>
+<span id="cb17-48"><a href="#cb17-48" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-49"><a href="#cb17-49" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> <span class="op">(</span>len <span class="op">&gt;=</span> cap<span class="op">)</span></span>
+<span id="cb17-50"><a href="#cb17-50" aria-hidden="true" tabindex="-1"></a>      <span class="cf">return</span> len<span class="op">;</span></span>
+<span id="cb17-51"><a href="#cb17-51" aria-hidden="true" tabindex="-1"></a>  <span class="op">}</span></span>
+<span id="cb17-52"><a href="#cb17-52" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> len<span class="op">;</span></span>
+<span id="cb17-53"><a href="#cb17-53" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="cb17-54"><a href="#cb17-54" aria-hidden="true" tabindex="-1"></a><span class="dt">static</span> <span class="dt">void</span> mem_profile_record_alloc<span class="op">(</span>mem_profile_t <span class="op">*</span>profile<span class="op">,</span></span>
+<span id="cb17-55"><a href="#cb17-55" aria-hidden="true" tabindex="-1"></a>                                     <span class="dt">uint64_t</span> objects_count<span class="op">,</span></span>
+<span id="cb17-56"><a href="#cb17-56" aria-hidden="true" tabindex="-1"></a>                                     <span class="dt">uint64_t</span> bytes_count<span class="op">)</span> <span class="op">{</span></span>
+<span id="cb17-57"><a href="#cb17-57" aria-hidden="true" tabindex="-1"></a>  <span class="co">// Record the call stack by stack walking.</span></span>
+<span id="cb17-58"><a href="#cb17-58" aria-hidden="true" tabindex="-1"></a>  <span class="dt">uint64_t</span> call_stack<span class="op">[</span><span class="dv">64</span><span class="op">]</span> <span class="op">=</span> <span class="op">{</span><span class="dv">0</span><span class="op">};</span></span>
+<span id="cb17-59"><a href="#cb17-59" aria-hidden="true" tabindex="-1"></a>  <span class="dt">uint64_t</span> call_stack_len <span class="op">=</span></span>
+<span id="cb17-60"><a href="#cb17-60" aria-hidden="true" tabindex="-1"></a>      record_call_stack<span class="op">(</span>call_stack<span class="op">,</span> <span class="kw">sizeof</span><span class="op">(</span>call_stack<span class="op">)</span> <span class="op">/</span> <span class="kw">sizeof</span><span class="op">(</span>call_stack<span class="op">[</span><span class="dv">0</span><span class="op">]));</span></span>
+<span id="cb17-61"><a href="#cb17-61" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-62"><a href="#cb17-62" aria-hidden="true" tabindex="-1"></a>  <span class="co">// Update the sums.</span></span>
+<span id="cb17-63"><a href="#cb17-63" aria-hidden="true" tabindex="-1"></a>  profile<span class="op">-&gt;</span>alloc_objects <span class="op">+=</span> objects_count<span class="op">;</span></span>
+<span id="cb17-64"><a href="#cb17-64" aria-hidden="true" tabindex="-1"></a>  profile<span class="op">-&gt;</span>alloc_space <span class="op">+=</span> bytes_count<span class="op">;</span></span>
+<span id="cb17-65"><a href="#cb17-65" aria-hidden="true" tabindex="-1"></a>  profile<span class="op">-&gt;</span>in_use_objects <span class="op">+=</span> objects_count<span class="op">;</span></span>
+<span id="cb17-66"><a href="#cb17-66" aria-hidden="true" tabindex="-1"></a>  profile<span class="op">-&gt;</span>in_use_space <span class="op">+=</span> bytes_count<span class="op">;</span></span>
+<span id="cb17-67"><a href="#cb17-67" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-68"><a href="#cb17-68" aria-hidden="true" tabindex="-1"></a>  <span class="co">// Upsert the record.</span></span>
+<span id="cb17-69"><a href="#cb17-69" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> <span class="op">(</span><span class="dt">uint64_t</span> i <span class="op">=</span> <span class="dv">0</span><span class="op">;</span> i <span class="op">&lt;</span> profile<span class="op">-&gt;</span>records_len<span class="op">;</span> i<span class="op">++)</span> <span class="op">{</span></span>
+<span id="cb17-70"><a href="#cb17-70" aria-hidden="true" tabindex="-1"></a>    mem_record_t <span class="op">*</span>r <span class="op">=</span> <span class="op">&amp;</span>profile<span class="op">-&gt;</span>records<span class="op">[</span>i<span class="op">];</span></span>
+<span id="cb17-71"><a href="#cb17-71" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-72"><a href="#cb17-72" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> <span class="op">(</span>r<span class="op">-&gt;</span>call_stack_len <span class="op">==</span> call_stack_len <span class="op">&amp;&amp;</span></span>
+<span id="cb17-73"><a href="#cb17-73" aria-hidden="true" tabindex="-1"></a>        memcmp<span class="op">(</span>r<span class="op">-&gt;</span>call_stack<span class="op">,</span> call_stack<span class="op">,</span> call_stack_len <span class="op">*</span> <span class="kw">sizeof</span><span class="op">(</span><span class="dt">uint64_t</span><span class="op">))</span> <span class="op">==</span></span>
+<span id="cb17-74"><a href="#cb17-74" aria-hidden="true" tabindex="-1"></a>            <span class="dv">0</span><span class="op">)</span> <span class="op">{</span></span>
+<span id="cb17-75"><a href="#cb17-75" aria-hidden="true" tabindex="-1"></a>      <span class="co">// Found an existing record, update it.</span></span>
+<span id="cb17-76"><a href="#cb17-76" aria-hidden="true" tabindex="-1"></a>      r<span class="op">-&gt;</span>alloc_objects <span class="op">+=</span> objects_count<span class="op">;</span></span>
+<span id="cb17-77"><a href="#cb17-77" aria-hidden="true" tabindex="-1"></a>      r<span class="op">-&gt;</span>alloc_space <span class="op">+=</span> bytes_count<span class="op">;</span></span>
+<span id="cb17-78"><a href="#cb17-78" aria-hidden="true" tabindex="-1"></a>      r<span class="op">-&gt;</span>in_use_objects <span class="op">+=</span> objects_count<span class="op">;</span></span>
+<span id="cb17-79"><a href="#cb17-79" aria-hidden="true" tabindex="-1"></a>      r<span class="op">-&gt;</span>in_use_space <span class="op">+=</span> bytes_count<span class="op">;</span></span>
+<span id="cb17-80"><a href="#cb17-80" aria-hidden="true" tabindex="-1"></a>      <span class="cf">return</span><span class="op">;</span></span>
+<span id="cb17-81"><a href="#cb17-81" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb17-82"><a href="#cb17-82" aria-hidden="true" tabindex="-1"></a>  <span class="op">}</span></span>
+<span id="cb17-83"><a href="#cb17-83" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-84"><a href="#cb17-84" aria-hidden="true" tabindex="-1"></a>  <span class="co">// Not found, insert a new record.</span></span>
+<span id="cb17-85"><a href="#cb17-85" aria-hidden="true" tabindex="-1"></a>  mem_record_t record <span class="op">=</span> <span class="op">{</span></span>
+<span id="cb17-86"><a href="#cb17-86" aria-hidden="true" tabindex="-1"></a>      <span class="op">.</span>alloc_objects <span class="op">=</span> objects_count<span class="op">,</span></span>
+<span id="cb17-87"><a href="#cb17-87" aria-hidden="true" tabindex="-1"></a>      <span class="op">.</span>alloc_space <span class="op">=</span> bytes_count<span class="op">,</span></span>
+<span id="cb17-88"><a href="#cb17-88" aria-hidden="true" tabindex="-1"></a>      <span class="op">.</span>in_use_objects <span class="op">=</span> objects_count<span class="op">,</span></span>
+<span id="cb17-89"><a href="#cb17-89" aria-hidden="true" tabindex="-1"></a>      <span class="op">.</span>in_use_space <span class="op">=</span> bytes_count<span class="op">,</span></span>
+<span id="cb17-90"><a href="#cb17-90" aria-hidden="true" tabindex="-1"></a>  <span class="op">};</span></span>
+<span id="cb17-91"><a href="#cb17-91" aria-hidden="true" tabindex="-1"></a>  record<span class="op">.</span>call_stack <span class="op">=</span> arena_alloc<span class="op">(&amp;</span>profile<span class="op">-&gt;</span>arena<span class="op">,</span> <span class="kw">sizeof</span><span class="op">(</span><span class="dt">uint64_t</span><span class="op">),</span></span>
+<span id="cb17-92"><a href="#cb17-92" aria-hidden="true" tabindex="-1"></a>                                  <span class="kw">_Alignof</span><span class="op">(</span><span class="dt">uint64_t</span><span class="op">),</span> call_stack_len<span class="op">);</span></span>
+<span id="cb17-93"><a href="#cb17-93" aria-hidden="true" tabindex="-1"></a>  memcpy<span class="op">(</span>record<span class="op">.</span>call_stack<span class="op">,</span> call_stack<span class="op">,</span> call_stack_len <span class="op">*</span> <span class="kw">sizeof</span><span class="op">(</span><span class="dt">uint64_t</span><span class="op">));</span></span>
+<span id="cb17-94"><a href="#cb17-94" aria-hidden="true" tabindex="-1"></a>  record<span class="op">.</span>call_stack_len <span class="op">=</span> call_stack_len<span class="op">;</span></span>
+<span id="cb17-95"><a href="#cb17-95" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-96"><a href="#cb17-96" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> <span class="op">(</span>profile<span class="op">-&gt;</span>records_len <span class="op">&gt;=</span> profile<span class="op">-&gt;</span>records_cap<span class="op">)</span> <span class="op">{</span></span>
+<span id="cb17-97"><a href="#cb17-97" aria-hidden="true" tabindex="-1"></a>    <span class="dt">uint64_t</span> new_cap <span class="op">=</span> profile<span class="op">-&gt;</span>records_cap <span class="op">*</span> <span class="dv">2</span><span class="op">;</span></span>
+<span id="cb17-98"><a href="#cb17-98" aria-hidden="true" tabindex="-1"></a>    <span class="co">// Grow the array.</span></span>
+<span id="cb17-99"><a href="#cb17-99" aria-hidden="true" tabindex="-1"></a>    mem_record_t <span class="op">*</span>new_records <span class="op">=</span> arena_alloc<span class="op">(</span></span>
+<span id="cb17-100"><a href="#cb17-100" aria-hidden="true" tabindex="-1"></a>        <span class="op">&amp;</span>profile<span class="op">-&gt;</span>arena<span class="op">,</span> <span class="kw">sizeof</span><span class="op">(</span>mem_record_t<span class="op">),</span> <span class="kw">_Alignof</span><span class="op">(</span>mem_record_t<span class="op">),</span> new_cap<span class="op">);</span></span>
+<span id="cb17-101"><a href="#cb17-101" aria-hidden="true" tabindex="-1"></a>    memcpy<span class="op">(</span>new_records<span class="op">,</span> profile<span class="op">-&gt;</span>records<span class="op">,</span></span>
+<span id="cb17-102"><a href="#cb17-102" aria-hidden="true" tabindex="-1"></a>           profile<span class="op">-&gt;</span>records_len <span class="op">*</span> <span class="kw">sizeof</span><span class="op">(</span>mem_record_t<span class="op">));</span></span>
+<span id="cb17-103"><a href="#cb17-103" aria-hidden="true" tabindex="-1"></a>    profile<span class="op">-&gt;</span>records_cap <span class="op">=</span> new_cap<span class="op">;</span></span>
+<span id="cb17-104"><a href="#cb17-104" aria-hidden="true" tabindex="-1"></a>    profile<span class="op">-&gt;</span>records <span class="op">=</span> new_records<span class="op">;</span></span>
+<span id="cb17-105"><a href="#cb17-105" aria-hidden="true" tabindex="-1"></a>  <span class="op">}</span></span>
+<span id="cb17-106"><a href="#cb17-106" aria-hidden="true" tabindex="-1"></a>  profile<span class="op">-&gt;</span>records<span class="op">[</span>profile<span class="op">-&gt;</span>records_len<span class="op">++]</span> <span class="op">=</span> record<span class="op">;</span></span>
+<span id="cb17-107"><a href="#cb17-107" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="cb17-108"><a href="#cb17-108" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-109"><a href="#cb17-109" aria-hidden="true" tabindex="-1"></a><span class="dt">static</span> <span class="dt">void</span> mem_profile_write<span class="op">(</span>mem_profile_t <span class="op">*</span>profile<span class="op">,</span> <span class="dt">FILE</span> <span class="op">*</span>out<span class="op">)</span> <span class="op">{</span></span>
+<span id="cb17-110"><a href="#cb17-110" aria-hidden="true" tabindex="-1"></a>  fprintf<span class="op">(</span>out<span class="op">,</span> <span class="st">&quot;heap profile: %lu: %lu [     %lu:    %lu] @ heapprofile</span><span class="sc">\n</span><span class="st">&quot;</span><span class="op">,</span></span>
+<span id="cb17-111"><a href="#cb17-111" aria-hidden="true" tabindex="-1"></a>          profile<span class="op">-&gt;</span>in_use_objects<span class="op">,</span> profile<span class="op">-&gt;</span>in_use_space<span class="op">,</span></span>
+<span id="cb17-112"><a href="#cb17-112" aria-hidden="true" tabindex="-1"></a>          profile<span class="op">-&gt;</span>alloc_objects<span class="op">,</span> profile<span class="op">-&gt;</span>alloc_space<span class="op">);</span></span>
+<span id="cb17-113"><a href="#cb17-113" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-114"><a href="#cb17-114" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> <span class="op">(</span><span class="dt">uint64_t</span> i <span class="op">=</span> <span class="dv">0</span><span class="op">;</span> i <span class="op">&lt;</span> profile<span class="op">-&gt;</span>records_len<span class="op">;</span> i<span class="op">++)</span> <span class="op">{</span></span>
+<span id="cb17-115"><a href="#cb17-115" aria-hidden="true" tabindex="-1"></a>    mem_record_t r <span class="op">=</span> profile<span class="op">-&gt;</span>records<span class="op">[</span>i<span class="op">];</span></span>
+<span id="cb17-116"><a href="#cb17-116" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-117"><a href="#cb17-117" aria-hidden="true" tabindex="-1"></a>    fprintf<span class="op">(</span>out<span class="op">,</span> <span class="st">&quot;%lu: %lu [%lu: %lu] @ &quot;</span><span class="op">,</span> r<span class="op">.</span>in_use_objects<span class="op">,</span> r<span class="op">.</span>in_use_space<span class="op">,</span></span>
+<span id="cb17-118"><a href="#cb17-118" aria-hidden="true" tabindex="-1"></a>            r<span class="op">.</span>alloc_objects<span class="op">,</span> r<span class="op">.</span>alloc_space<span class="op">);</span></span>
+<span id="cb17-119"><a href="#cb17-119" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-120"><a href="#cb17-120" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> <span class="op">(</span><span class="dt">uint64_t</span> j <span class="op">=</span> <span class="dv">0</span><span class="op">;</span> j <span class="op">&lt;</span> r<span class="op">.</span>call_stack_len<span class="op">;</span> j<span class="op">++)</span> <span class="op">{</span></span>
+<span id="cb17-121"><a href="#cb17-121" aria-hidden="true" tabindex="-1"></a>      fprintf<span class="op">(</span>out<span class="op">,</span> <span class="st">&quot;%#lx &quot;</span><span class="op">,</span> r<span class="op">.</span>call_stack<span class="op">[</span>j<span class="op">]);</span></span>
+<span id="cb17-122"><a href="#cb17-122" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb17-123"><a href="#cb17-123" aria-hidden="true" tabindex="-1"></a>    fputc<span class="op">(</span><span class="ch">&#39;\n&#39;</span><span class="op">,</span> out<span class="op">);</span></span>
+<span id="cb17-124"><a href="#cb17-124" aria-hidden="true" tabindex="-1"></a>  <span class="op">}</span></span>
+<span id="cb17-125"><a href="#cb17-125" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-126"><a href="#cb17-126" aria-hidden="true" tabindex="-1"></a>  fputs<span class="op">(</span><span class="st">&quot;</span><span class="sc">\n</span><span class="st">MAPPED_LIBRARIES:</span><span class="sc">\n</span><span class="st">&quot;</span><span class="op">,</span> out<span class="op">);</span></span>
+<span id="cb17-127"><a href="#cb17-127" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-128"><a href="#cb17-128" aria-hidden="true" tabindex="-1"></a>  <span class="dt">static</span> <span class="dt">uint8_t</span> mem<span class="op">[</span><span class="dv">4096</span><span class="op">]</span> <span class="op">=</span> <span class="op">{</span><span class="dv">0</span><span class="op">};</span></span>
+<span id="cb17-129"><a href="#cb17-129" aria-hidden="true" tabindex="-1"></a>  <span class="dt">int</span> fd <span class="op">=</span> open<span class="op">(</span><span class="st">&quot;/proc/self/maps&quot;</span><span class="op">,</span> O_RDONLY<span class="op">);</span></span>
+<span id="cb17-130"><a href="#cb17-130" aria-hidden="true" tabindex="-1"></a>  assert<span class="op">(</span>fd <span class="op">!=</span> <span class="op">-</span><span class="dv">1</span><span class="op">);</span></span>
+<span id="cb17-131"><a href="#cb17-131" aria-hidden="true" tabindex="-1"></a>  <span class="dt">ssize_t</span> read_bytes <span class="op">=</span> read<span class="op">(</span>fd<span class="op">,</span> mem<span class="op">,</span> <span class="kw">sizeof</span><span class="op">(</span>mem<span class="op">));</span></span>
+<span id="cb17-132"><a href="#cb17-132" aria-hidden="true" tabindex="-1"></a>  assert<span class="op">(</span>read_bytes <span class="op">!=</span> <span class="op">-</span><span class="dv">1</span><span class="op">);</span></span>
+<span id="cb17-133"><a href="#cb17-133" aria-hidden="true" tabindex="-1"></a>  close<span class="op">(</span>fd<span class="op">);</span></span>
+<span id="cb17-134"><a href="#cb17-134" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-135"><a href="#cb17-135" aria-hidden="true" tabindex="-1"></a>  fwrite<span class="op">(</span>mem<span class="op">,</span> <span class="dv">1</span><span class="op">,</span> read_bytes<span class="op">,</span> out<span class="op">);</span></span>
+<span id="cb17-136"><a href="#cb17-136" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-137"><a href="#cb17-137" aria-hidden="true" tabindex="-1"></a>  fflush<span class="op">(</span>out<span class="op">);</span></span>
+<span id="cb17-138"><a href="#cb17-138" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="cb17-139"><a href="#cb17-139" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-140"><a href="#cb17-140" aria-hidden="true" tabindex="-1"></a><span class="dt">static</span> <span class="dt">void</span> <span class="op">*</span>arena_alloc<span class="op">(</span>arena_t <span class="op">*</span>a<span class="op">,</span> <span class="dt">size_t</span> size<span class="op">,</span> <span class="dt">size_t</span> align<span class="op">,</span> <span class="dt">size_t</span> count<span class="op">)</span> <span class="op">{</span></span>
+<span id="cb17-141"><a href="#cb17-141" aria-hidden="true" tabindex="-1"></a>  <span class="dt">size_t</span> available <span class="op">=</span> a<span class="op">-&gt;</span>end <span class="op">-</span> a<span class="op">-&gt;</span>start<span class="op">;</span></span>
+<span id="cb17-142"><a href="#cb17-142" aria-hidden="true" tabindex="-1"></a>  <span class="dt">size_t</span> padding <span class="op">=</span> <span class="op">-(</span><span class="dt">size_t</span><span class="op">)</span>a<span class="op">-&gt;</span>start <span class="op">&amp;</span> <span class="op">(</span>align <span class="op">-</span> <span class="dv">1</span><span class="op">);</span></span>
+<span id="cb17-143"><a href="#cb17-143" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-144"><a href="#cb17-144" aria-hidden="true" tabindex="-1"></a>  <span class="dt">size_t</span> offset <span class="op">=</span> padding <span class="op">+</span> size <span class="op">*</span> count<span class="op">;</span></span>
+<span id="cb17-145"><a href="#cb17-145" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> <span class="op">(</span>available <span class="op">&lt;</span> offset<span class="op">)</span> <span class="op">{</span></span>
+<span id="cb17-146"><a href="#cb17-146" aria-hidden="true" tabindex="-1"></a>    fprintf<span class="op">(</span>stderr<span class="op">,</span></span>
+<span id="cb17-147"><a href="#cb17-147" aria-hidden="true" tabindex="-1"></a>            <span class="st">&quot;Out of memory: available=%lu &quot;</span></span>
+<span id="cb17-148"><a href="#cb17-148" aria-hidden="true" tabindex="-1"></a>            <span class="st">&quot;allocation_size=%lu</span><span class="sc">\n</span><span class="st">&quot;</span><span class="op">,</span></span>
+<span id="cb17-149"><a href="#cb17-149" aria-hidden="true" tabindex="-1"></a>            available<span class="op">,</span> offset<span class="op">);</span></span>
+<span id="cb17-150"><a href="#cb17-150" aria-hidden="true" tabindex="-1"></a>    abort<span class="op">();</span></span>
+<span id="cb17-151"><a href="#cb17-151" aria-hidden="true" tabindex="-1"></a>  <span class="op">}</span></span>
+<span id="cb17-152"><a href="#cb17-152" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-153"><a href="#cb17-153" aria-hidden="true" tabindex="-1"></a>  <span class="dt">uint8_t</span> <span class="op">*</span>res <span class="op">=</span> a<span class="op">-&gt;</span>start <span class="op">+</span> padding<span class="op">;</span></span>
+<span id="cb17-154"><a href="#cb17-154" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-155"><a href="#cb17-155" aria-hidden="true" tabindex="-1"></a>  a<span class="op">-&gt;</span>start <span class="op">+=</span> offset<span class="op">;</span></span>
+<span id="cb17-156"><a href="#cb17-156" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-157"><a href="#cb17-157" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> <span class="op">(</span>a<span class="op">-&gt;</span>profile<span class="op">)</span> <span class="op">{</span></span>
+<span id="cb17-158"><a href="#cb17-158" aria-hidden="true" tabindex="-1"></a>    mem_profile_record_alloc<span class="op">(</span>a<span class="op">-&gt;</span>profile<span class="op">,</span> count<span class="op">,</span> offset<span class="op">);</span></span>
+<span id="cb17-159"><a href="#cb17-159" aria-hidden="true" tabindex="-1"></a>  <span class="op">}</span></span>
+<span id="cb17-160"><a href="#cb17-160" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-161"><a href="#cb17-161" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> <span class="op">(</span><span class="dt">void</span> <span class="op">*)</span>res<span class="op">;</span></span>
+<span id="cb17-162"><a href="#cb17-162" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="cb17-163"><a href="#cb17-163" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-164"><a href="#cb17-164" aria-hidden="true" tabindex="-1"></a><span class="dt">static</span> arena_t arena_new<span class="op">(</span><span class="dt">uint64_t</span> cap<span class="op">,</span> mem_profile_t <span class="op">*</span>profile<span class="op">)</span> <span class="op">{</span></span>
+<span id="cb17-165"><a href="#cb17-165" aria-hidden="true" tabindex="-1"></a>  <span class="dt">uint8_t</span> <span class="op">*</span>mem <span class="op">=</span> mmap<span class="op">(</span>NULL<span class="op">,</span> cap<span class="op">,</span> PROT_READ <span class="op">|</span> PROT_WRITE<span class="op">,</span></span>
+<span id="cb17-166"><a href="#cb17-166" aria-hidden="true" tabindex="-1"></a>                      MAP_ANONYMOUS <span class="op">|</span> MAP_PRIVATE<span class="op">,</span> <span class="op">-</span><span class="dv">1</span><span class="op">,</span> <span class="dv">0</span><span class="op">);</span></span>
+<span id="cb17-167"><a href="#cb17-167" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-168"><a href="#cb17-168" aria-hidden="true" tabindex="-1"></a>  arena_t arena <span class="op">=</span> <span class="op">{</span></span>
+<span id="cb17-169"><a href="#cb17-169" aria-hidden="true" tabindex="-1"></a>      <span class="op">.</span>profile <span class="op">=</span> profile<span class="op">,</span></span>
+<span id="cb17-170"><a href="#cb17-170" aria-hidden="true" tabindex="-1"></a>      <span class="op">.</span>start <span class="op">=</span> mem<span class="op">,</span></span>
+<span id="cb17-171"><a href="#cb17-171" aria-hidden="true" tabindex="-1"></a>      <span class="op">.</span>end <span class="op">=</span> mem <span class="op">+</span> cap<span class="op">,</span></span>
+<span id="cb17-172"><a href="#cb17-172" aria-hidden="true" tabindex="-1"></a>  <span class="op">};</span></span>
+<span id="cb17-173"><a href="#cb17-173" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> arena<span class="op">;</span></span>
+<span id="cb17-174"><a href="#cb17-174" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="cb17-175"><a href="#cb17-175" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-176"><a href="#cb17-176" aria-hidden="true" tabindex="-1"></a><span class="dt">void</span> b<span class="op">(</span><span class="dt">int</span> n<span class="op">,</span> arena_t <span class="op">*</span>arena<span class="op">)</span> <span class="op">{</span></span>
+<span id="cb17-177"><a href="#cb17-177" aria-hidden="true" tabindex="-1"></a>  arena_alloc<span class="op">(</span>arena<span class="op">,</span> <span class="kw">sizeof</span><span class="op">(</span><span class="dt">int</span><span class="op">),</span> <span class="kw">_Alignof</span><span class="op">(</span><span class="dt">int</span><span class="op">),</span> n<span class="op">);</span></span>
+<span id="cb17-178"><a href="#cb17-178" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="cb17-179"><a href="#cb17-179" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-180"><a href="#cb17-180" aria-hidden="true" tabindex="-1"></a><span class="dt">void</span> a<span class="op">(</span><span class="dt">int</span> n<span class="op">,</span> arena_t <span class="op">*</span>arena<span class="op">)</span> <span class="op">{</span></span>
+<span id="cb17-181"><a href="#cb17-181" aria-hidden="true" tabindex="-1"></a>  arena_alloc<span class="op">(</span>arena<span class="op">,</span> <span class="kw">sizeof</span><span class="op">(</span><span class="dt">int</span><span class="op">),</span> <span class="kw">_Alignof</span><span class="op">(</span><span class="dt">int</span><span class="op">),</span> n<span class="op">);</span></span>
+<span id="cb17-182"><a href="#cb17-182" aria-hidden="true" tabindex="-1"></a>  b<span class="op">(</span>n<span class="op">,</span> arena<span class="op">);</span></span>
+<span id="cb17-183"><a href="#cb17-183" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="cb17-184"><a href="#cb17-184" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-185"><a href="#cb17-185" aria-hidden="true" tabindex="-1"></a><span class="dt">int</span> main<span class="op">()</span> <span class="op">{</span></span>
+<span id="cb17-186"><a href="#cb17-186" aria-hidden="true" tabindex="-1"></a>  arena_t mem_profile_arena <span class="op">=</span> arena_new<span class="op">(</span><span class="dv">1</span> <span class="op">&lt;&lt;</span> <span class="dv">16</span><span class="op">,</span> NULL<span class="op">);</span></span>
+<span id="cb17-187"><a href="#cb17-187" aria-hidden="true" tabindex="-1"></a>  mem_profile_t mem_profile <span class="op">=</span> <span class="op">{</span></span>
+<span id="cb17-188"><a href="#cb17-188" aria-hidden="true" tabindex="-1"></a>      <span class="op">.</span>arena <span class="op">=</span> mem_profile_arena<span class="op">,</span></span>
+<span id="cb17-189"><a href="#cb17-189" aria-hidden="true" tabindex="-1"></a>      <span class="op">.</span>records <span class="op">=</span> arena_alloc<span class="op">(&amp;</span>mem_profile_arena<span class="op">,</span> <span class="kw">sizeof</span><span class="op">(</span>mem_record_t<span class="op">),</span></span>
+<span id="cb17-190"><a href="#cb17-190" aria-hidden="true" tabindex="-1"></a>                             <span class="kw">_Alignof</span><span class="op">(</span>mem_record_t<span class="op">),</span> <span class="dv">16</span><span class="op">),</span></span>
+<span id="cb17-191"><a href="#cb17-191" aria-hidden="true" tabindex="-1"></a>      <span class="op">.</span>records_cap <span class="op">=</span> <span class="dv">16</span><span class="op">,</span></span>
+<span id="cb17-192"><a href="#cb17-192" aria-hidden="true" tabindex="-1"></a>  <span class="op">};</span></span>
+<span id="cb17-193"><a href="#cb17-193" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-194"><a href="#cb17-194" aria-hidden="true" tabindex="-1"></a>  arena_t arena <span class="op">=</span> arena_new<span class="op">(</span><span class="dv">1</span> <span class="op">&lt;&lt;</span> <span class="dv">28</span><span class="op">,</span> <span class="op">&amp;</span>mem_profile<span class="op">);</span></span>
+<span id="cb17-195"><a href="#cb17-195" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-196"><a href="#cb17-196" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> <span class="op">(</span><span class="dt">int</span> i <span class="op">=</span> <span class="dv">0</span><span class="op">;</span> i <span class="op">&lt;</span> <span class="dv">2</span><span class="op">;</span> i<span class="op">++)</span></span>
+<span id="cb17-197"><a href="#cb17-197" aria-hidden="true" tabindex="-1"></a>    a<span class="op">(</span><span class="dv">2</span> <span class="op">*</span> <span class="dv">1024</span> <span class="op">*</span> <span class="dv">1024</span><span class="op">,</span> <span class="op">&amp;</span>arena<span class="op">);</span></span>
+<span id="cb17-198"><a href="#cb17-198" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-199"><a href="#cb17-199" aria-hidden="true" tabindex="-1"></a>  b<span class="op">(</span><span class="dv">3</span> <span class="op">*</span> <span class="dv">1024</span> <span class="op">*</span> <span class="dv">1024</span><span class="op">,</span> <span class="op">&amp;</span>arena<span class="op">);</span></span>
+<span id="cb17-200"><a href="#cb17-200" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-201"><a href="#cb17-201" aria-hidden="true" tabindex="-1"></a>  mem_profile_write<span class="op">(&amp;</span>mem_profile<span class="op">,</span> stderr<span class="op">);</span></span>
+<span id="cb17-202"><a href="#cb17-202" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+
 <blockquote id="donate">
   <p>If you liked this article and you want to support me, and can afford it: <a href="https://paypal.me/philigaultier?country.x=DE&locale.x=en_US">Donate</a></p>
 </blockquote>

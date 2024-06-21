@@ -37,7 +37,16 @@ window.addEventListener("load", (event) => {
 </div>
 <div class="body">
 
-<p id="publication_date">Published on 2024-03-03.</p>
+<p id="publication_date">Published on 2020-09-07.</p>
+<p>https://gaultier.github.io/blog/</p>
+<h2 id="quickstart">Quickstart</h2>
+<pre><code>apt install parallel graphviz golang pandoc
+make</code></pre>
+<p>Generating table of contents (not sure if there is a better way):</p>
+<pre><code>pandoc -s --toc input.md -o /tmp/output.md</code></pre>
+<p>Serving the files locally:</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> python3 <span class="at">-m</span> http.server <span class="at">-d</span> ..</span></code></pre></div>
+
 <blockquote id="donate">
   <p>If you liked this article and you want to support me, and can afford it: <a href="https://paypal.me/philigaultier?country.x=DE&locale.x=en_US">Donate</a></p>
 </blockquote>

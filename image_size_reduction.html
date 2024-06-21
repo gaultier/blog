@@ -38,6 +38,69 @@ window.addEventListener("load", (event) => {
 <div class="body">
 
 <p id="publication_date">Published on 2024-02-23.</p>
+<h1 id="quick-and-easy-png-image-size-reduction">Quick and easy PNG
+image size reduction</h1>
+<p>I seredenpitously noticed that my blog had somewhat big PNG images.
+But these are just very simple screenshots. There surely must be a way
+to reduce their size, without affecting their size or legibility? Well
+yes, let’s quantize them! What? Quant-what?</p>
+<p>Quoting Wikipedia:</p>
+<blockquote>
+<p>Quantization, involved in image processing, is a lossy compression
+technique achieved by compressing a range of values to a single quantum
+(discrete) value. When the number of discrete symbols in a given stream
+is reduced, the stream becomes more compressible. For example, reducing
+the number of colors required to represent a digital image makes it
+possible to reduce its file size</p>
+</blockquote>
+<p>In other words, by picking the right color palette for an image, we
+can reduce its size without the human eye noticing. For example, an
+image which has multiple red variants, all very close, are a prime
+candidate to be converted to the same red color (perhaps the average
+value) so long as the human eye does not see the difference. Since PNG
+images use compression, it will compress better.</p>
+<p>At least, that’s my layman understanding.</p>
+<p>Fortunately there is an open-source <a
+href="https://github.com/kornelski/pngquant">command line tool</a> that
+is very easy to use and works great. So go give them a star and come
+back!</p>
+<p>I simply ran the tool on all images to convert them in place in
+parallel:</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> ls <span class="pp">*</span>.png <span class="kw">|</span> <span class="ex">parallel</span> <span class="st">&#39;pngquant {} -o {}.tmp &amp;&amp; mv {}.tmp {}&#39;</span></span></code></pre></div>
+<p>It finished instantly, and here is the result:</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> git show 2e126f55a77e75e182ea18b36fb535a0e37793e4 <span class="at">--compact-summary</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="ex">commit</span> 2e126f55a77e75e182ea18b36fb535a0e37793e4 <span class="er">(</span><span class="ex">HEAD</span> <span class="at">-</span><span class="op">&gt;</span> master, origin/master, origin/HEAD<span class="kw">)</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>    <span class="ex">use</span> pgnquant to shrink images</span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a> <span class="ex">feed.png</span>                        <span class="kw">|</span> <span class="ex">Bin</span> 167641 <span class="at">-</span><span class="op">&gt;</span> 63272 bytes</span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a> <span class="ex">gnuplot.png</span>                     <span class="kw">|</span> <span class="ex">Bin</span> 4594 <span class="at">-</span><span class="op">&gt;</span> 3316 bytes</span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a> <span class="ex">mem_prof1.png</span>                   <span class="kw">|</span> <span class="ex">Bin</span> 157587 <span class="at">-</span><span class="op">&gt;</span> 59201 bytes</span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a> <span class="ex">mem_prof2.png</span>                   <span class="kw">|</span> <span class="ex">Bin</span> 209046 <span class="at">-</span><span class="op">&gt;</span> 81028 bytes</span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a> <span class="ex">mem_prof3.png</span>                   <span class="kw">|</span> <span class="ex">Bin</span> 75019 <span class="at">-</span><span class="op">&gt;</span> 27259 bytes</span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a> <span class="ex">mem_prof4.png</span>                   <span class="kw">|</span> <span class="ex">Bin</span> 50964 <span class="at">-</span><span class="op">&gt;</span> 21345 bytes</span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a> <span class="ex">wayland-screenshot-floating.png</span> <span class="kw">|</span> <span class="ex">Bin</span> 54620 <span class="at">-</span><span class="op">&gt;</span> 19272 bytes</span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a> <span class="ex">wayland-screenshot-red.png</span>      <span class="kw">|</span> <span class="ex">Bin</span> 101047 <span class="at">-</span><span class="op">&gt;</span> 45230 bytes</span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a> <span class="ex">wayland-screenshot-tiled.png</span>    <span class="kw">|</span> <span class="ex">Bin</span> 188549 <span class="at">-</span><span class="op">&gt;</span> 107573 bytes</span>
+<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a> <span class="ex">wayland-screenshot-tiled1.png</span>   <span class="kw">|</span> <span class="ex">Bin</span> 505994 <span class="at">-</span><span class="op">&gt;</span> 170804 bytes</span>
+<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a> <span class="ex">x11_x64_black_window.png</span>        <span class="kw">|</span> <span class="ex">Bin</span> 32977 <span class="at">-</span><span class="op">&gt;</span> 16898 bytes</span>
+<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a> <span class="ex">x11_x64_final.png</span>               <span class="kw">|</span> <span class="ex">Bin</span> 47985 <span class="at">-</span><span class="op">&gt;</span> 16650 bytes</span>
+<span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a> <span class="ex">12</span> files changed, 0 insertions<span class="er">(</span><span class="ex">+</span><span class="kw">)</span><span class="ex">,</span> 0 deletions<span class="er">(</span><span class="ex">-</span><span class="kw">)</span></span></code></pre></div>
+<p>Eye-balling it, every image was on average halved. Not bad, for no
+visible difference!</p>
+<p>Initially, I wanted to use the new hotness: AVIF. Here’s an example
+using the <code>avifenc</code> tool on the original image:</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> avifenc feed.png feed.avif</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> stat <span class="at">-c</span> <span class="st">&#39;%n %s&#39;</span> feed.<span class="dt">{png</span><span class="op">,</span><span class="dt">avif}</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="ex">feed.png</span> 167641</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="ex">feed.avif</span> 36034</span></code></pre></div>
+<p>That’s almost a x5 reduction in size! However this format is not yet
+well supported by all browsers. It’s recommended to still serve a PNG as
+fallback, which is a bit too complex for this blog. Still, this format
+is very promising so I thought I should mention it.</p>
+<p>So as of now, all PNG images on this blog are much lighter! Not too
+bad for 10m of work.</p>
+
 <blockquote id="donate">
   <p>If you liked this article and you want to support me, and can afford it: <a href="https://paypal.me/philigaultier?country.x=DE&locale.x=en_US">Donate</a></p>
 </blockquote>
