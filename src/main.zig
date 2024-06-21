@@ -6,7 +6,7 @@ pub const std_options = .{
 
 const html_prelude = "<!DOCTYPE html>\n<html>\n<head>\n<title>{s}</title>\n";
 
-fn generate_article(markdown_file_path: []const u8, header: []const u8, allocator: std.mem.Allocator) !void {
+fn generate_article(markdown_file_path: []const u8, header: []const u8, footer: []const u8, allocator: std.mem.Allocator) !void {
     const markdown_file = try std.fs.cwd().openFile(markdown_file_path, .{});
     defer markdown_file.close();
 
@@ -24,6 +24,8 @@ fn generate_article(markdown_file_path: []const u8, header: []const u8, allocato
 
     try std.fmt.format(html_file.writer(), html_prelude, .{title});
     try html_file.writeAll(header);
+    // TODO: md -> html.
+    try html_file.writeAll(footer);
 }
 
 pub fn main() !void {
@@ -35,6 +37,9 @@ pub fn main() !void {
     const header_file = try std.fs.cwd().openFile("header.html", .{});
     const header = try header_file.readToEndAlloc(allocator, 2048);
 
+    const footer_file = try std.fs.cwd().openFile("footer.html", .{});
+    const footer = try footer_file.readToEndAlloc(allocator, 2048);
+
     const cwd = try std.fs.cwd().openDir(".", .{ .iterate = true });
     var cwd_iterator = cwd.iterate();
 
@@ -44,7 +49,7 @@ pub fn main() !void {
             if (entry.kind != .file) continue;
             if (!std.mem.eql(u8, std.fs.path.extension(entry.name), ".md")) continue;
 
-            try generate_article(entry.name, header, allocator);
+            try generate_article(entry.name, header, footer, allocator);
         } else break; // End of directory.
     } else |err| {
         std.log.err("failed to iterate over directory entries: {}", .{err});
