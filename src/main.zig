@@ -10,13 +10,14 @@ fn generate_article(markdown_file_path: []const u8, header: []const u8, allocato
     const markdown_file = try std.fs.cwd().openFile(markdown_file_path, .{});
     defer markdown_file.close();
 
-    const markdown_content = try markdown_file.readToEndAlloc(allocator, 2048);
+    const markdown_content = try markdown_file.readToEndAlloc(allocator, 1 * 1024 * 1024);
     _ = markdown_content;
 
     const stem = std.fs.path.stem(markdown_file_path);
     std.debug.assert(stem.len != 0);
 
-    const html_file_path = try std.fs.path.join(allocator, &[2][]const u8{ stem, ".html" });
+    const html_file_path = try std.mem.concat(allocator, u8, &[2][]const u8{ stem, ".html" });
+    std.log.info("create html file {s} {s}", .{ markdown_file_path, html_file_path });
     const html_file = try std.fs.cwd().createFile(html_file_path, .{});
 
     try html_file.writeAll(header);
@@ -31,7 +32,8 @@ pub fn main() !void {
     const header_file = try std.fs.cwd().openFile("header.html", .{});
     const header = try header_file.readToEndAlloc(allocator, 2048);
 
-    var cwd_iterator = std.fs.cwd().iterate();
+    const cwd = try std.fs.cwd().openDir(".", .{ .iterate = true });
+    var cwd_iterator = cwd.iterate();
 
     while (cwd_iterator.next()) |entry_opt| {
         if (entry_opt) |entry| {

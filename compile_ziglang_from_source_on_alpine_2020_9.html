@@ -1,7 +1,3 @@
-<!DOCTYPE html>
-<html>
-<head>
-<title>How to compile LLVM, Clang, LLD, and Ziglang from source on Alpine Linux</title>
 <meta charset="utf-8">
 <link rel="shortcut icon" type="image/ico" href="/blog/favicon.ico"/>
 <link rel="stylesheet" type="text/css" href="main.css">
@@ -37,68 +33,3 @@ window.addEventListener("load", (event) => {
 </div>
 <div class="body">
 
-<p id="publication_date">Published on 2020-09-07.</p><h1
-id="how-to-compile-llvm-clang-lld-and-ziglang-from-source-on-alpine-linux">How
-to compile LLVM, Clang, LLD, and Ziglang from source on Alpine
-Linux</h1>
-<p><em>This article is now outdated but remains for historical
-reasons.</em></p>
-<p><a href="https://ziglang.org">Ziglang</a>, or <code>Zig</code> for
-short, is an ambitious programming language addressing important flaws
-of mainstream languages such as failing to handle memory allocation
-failures or forgetting to handle an error condition in general.</p>
-<p>It is also fast moving so for most, the latest (HEAD) version will be
-needed, and most package managers will not have it, so we will compile
-it from source.</p>
-<p>Since the official Zig compiler is (currently) written in C++ and
-using the LLVM libraries at a specific version, we will need them as
-well, and once again, some package managers will not have the exact
-version you want (10.0.0).</p>
-<p>I find it more reliable to compile LLVM, Clang, LLD, and Zig from
-source and that is what we will do here. I have found that the official
-LLVM and Zig instructions differed somewhat, were presenting too many
-options, and I wanted to have one place to centralize them for my future
-self.</p>
-<p>Incidentally, if you are a lost C++ developer trying to compile LLVM
-from source, without having ever heard of Zig, well you have stumbled on
-the right page, you can simply skip the final block about Zig.</p>
-<p>Note that those instructions should work just the same on any Unix
-system. Feel free to pick the directories you want when cloning the git
-repositories.</p>
-<div class="sourceCode" id="cb1"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co"># The only Alpine specific bit. build-base mainly installs make and a C++ compiler. Python 3 is required by LLVM for some reason.</span></span>
-<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> apk add build-base cmake git python3</span>
-<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> git clone https://github.com/llvm/llvm-project.git <span class="at">--branch</span> llvmorg-10.0.0  <span class="at">--depth</span> 1</span>
-<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> cd llvm-project/</span>
-<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> mkdir build</span>
-<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> cd build/</span>
-<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="co"># The flag LLVM_ENABLE_PROJECTS is crucial, otherwise only llvm will be built, without clang or lld,</span></span>
-<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a><span class="co"># and we need all three with the exact same version since C++ does not have a stable ABI.</span></span>
-<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> cmake <span class="at">-DCMAKE_BUILD_TYPE</span><span class="op">=</span>Release <span class="at">-DLLVM_EXPERIMENTAL_TARGETS_TO_BUILD</span><span class="op">=</span><span class="st">&quot;AVR&quot;</span> <span class="at">-DLLVM_ENABLE_LIBXML2</span><span class="op">=</span>OFF <span class="at">-DLLVM_ENABLE_TERMINFO</span><span class="op">=</span>OFF <span class="at">-DLLVM_ENABLE_PROJECTS</span><span class="op">=</span><span class="st">&quot;clang;lld&quot;</span> ../llvm</span>
-<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a><span class="co"># nproc is Linux only but you can set the number of threads manually</span></span>
-<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> make <span class="at">-j</span><span class="va">$(</span><span class="fu">nproc</span><span class="va">)</span></span>
-<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> sudo make install</span>
-<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> cd ~</span>
-<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> git clone https://github.com/ziglang/zig.git <span class="at">--depth</span> 1</span>
-<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> cd zig</span>
-<span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> mkdir build</span>
-<span id="cb1-20"><a href="#cb1-20" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> cd build</span>
-<span id="cb1-21"><a href="#cb1-21" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> cmake .. <span class="at">-DCMAKE_BUILD_TYPE</span><span class="op">=</span>Release <span class="at">-DZIG_STATIC</span><span class="op">=</span>ON</span>
-<span id="cb1-22"><a href="#cb1-22" aria-hidden="true" tabindex="-1"></a><span class="co"># nproc is Linux only but you can set the number of threads manually</span></span>
-<span id="cb1-23"><a href="#cb1-23" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> make <span class="at">-j</span><span class="va">$(</span><span class="fu">nproc</span><span class="va">)</span></span>
-<span id="cb1-24"><a href="#cb1-24" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> sudo make install</span></code></pre></div>
-<p>You will now have a <code>zig</code> executable in the PATH as well
-as the zig standard library. You can verify you have now the latest
-version by doing:</p>
-<pre><code>$ zig version
-0.6.0+749417a</code></pre>
-
-<blockquote id="donate">
-  <p>If you liked this article and you want to support me, and can afford it: <a href="https://paypal.me/philigaultier?country.x=DE&locale.x=en_US">Donate</a></p>
-</blockquote>
-
-</div>
-</body>
-</html>
