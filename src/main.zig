@@ -6,12 +6,21 @@ pub const std_options = .{
 
 const html_prelude = "<!DOCTYPE html>\n<html>\n<head>\n<title>{s}</title>\n";
 
+const Article = struct {
+    dates: Dates,
+    title: []u8,
+    output_file_hash: [20]u8,
+};
+
 fn do_generate_article(markdown_file_path: []const u8, header: []const u8, footer: []const u8, wait_group: *std.Thread.WaitGroup, allocator: std.mem.Allocator) void {
     defer wait_group.finish();
 
-    generate_article(markdown_file_path, header, footer, allocator) catch |err| {
+    const article = generate_article(markdown_file_path, header, footer, allocator) catch |err| {
         std.log.err("failed to generate article: {s} {}", .{ markdown_file_path, err });
+        return;
     };
+
+    _ = article;
 }
 
 const Dates = struct {
@@ -45,7 +54,7 @@ fn get_creation_and_modification_date_for_article(markdown_file_path: []const u8
     };
 }
 
-fn generate_article(markdown_file_path: []const u8, header: []const u8, footer: []const u8, allocator: std.mem.Allocator) !void {
+fn generate_article(markdown_file_path: []const u8, header: []const u8, footer: []const u8, allocator: std.mem.Allocator) !Article {
     std.debug.assert(std.mem.eql(u8, std.fs.path.extension(markdown_file_path), ".md"));
     std.debug.assert(header.len > 0);
     std.debug.assert(footer.len > 0);
@@ -64,6 +73,10 @@ fn generate_article(markdown_file_path: []const u8, header: []const u8, footer: 
     const html_file_path = try std.mem.concat(allocator, u8, &[2][]const u8{ stem, ".html" });
     defer allocator.free(html_file_path);
 
+    var article: Article = .{ .dates = undefined, .output_file_hash = undefined, .title = undefined };
+
+    std.crypto.hash.Sha1.hash(html_file_path, &article.output_file_hash, .{});
+
     const html_file = try std.fs.cwd().createFile(html_file_path, .{});
 
     {
@@ -76,13 +89,14 @@ fn generate_article(markdown_file_path: []const u8, header: []const u8, footer: 
         }
 
         try std.fmt.format(html_file.writer(), html_prelude, .{title});
+        article.title = try allocator.dupe(u8, title);
     }
 
     try html_file.writeAll(header);
 
     if (!is_index_page) {
-        const dates = try get_creation_and_modification_date_for_article(markdown_file_path, allocator);
-        try std.fmt.format(html_file.writer(), "<p id=\"publication_date\">Published on {s}.</p>\n", .{std.mem.trim(u8, &dates.creation_date, &[_]u8{ ' ', '\n', '\'' })});
+        article.dates = try get_creation_and_modification_date_for_article(markdown_file_path, allocator);
+        try std.fmt.format(html_file.writer(), "<p id=\"publication_date\">Published on {s}.</p>\n", .{std.mem.trim(u8, &article.dates.creation_date, &[_]u8{ ' ', '\n', '\'' })});
     }
 
     {
@@ -102,6 +116,17 @@ fn generate_article(markdown_file_path: []const u8, header: []const u8, footer: 
     try html_file.writeAll(footer);
 
     std.log.info("generated {s}", .{html_file_path});
+
+    return article;
+}
+
+fn generate_rss_feed(allocator: std.mem.Allocator) !void {
+    _ = allocator;
+    // const feed_uuid = "9c065c53-31bc-4049-a795-936802a6b1df";
+    // const feed_file = try std.fs.cwd().createFile("feed.xml", .{});
+    // defer feed_file.close();
+
+    // var buffered_writer = std.io.bufferedWriter(feed_file.writer());
 }
 
 fn generate_toc_for_article(markdown_file_path: []const u8, allocator: std.mem.Allocator) ![]u8 {
@@ -224,7 +249,8 @@ pub fn main() !void {
             std.log.err("missing second argument", .{});
             std.process.exit(1);
         };
-        try generate_article(file, header, footer, allocator);
+        const article = try generate_article(file, header, footer, allocator);
+        _ = article;
     } else if (std.mem.eql(u8, cmd, "toc")) {
         const file = args_iterator.next() orelse {
             std.log.err("missing second argument", .{});
