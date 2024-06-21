@@ -85,8 +85,6 @@ p {
 figure {
   display: flex;
   justify-content: center;
-  margin-top: 1rem;
-  margin-bottom: 1rem;
   flex-wrap: wrap;
 }
 
@@ -95,8 +93,12 @@ figure > figcaption {
   text-align: center;
 }
 
-img {
+img, video {
   max-width: 90%;
+  margin-top: 1rem;
+  margin-bottom: 1rem;
+  display: block;
+  margin: auto;
 }
 
 hr {
