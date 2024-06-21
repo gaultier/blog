@@ -2,7 +2,7 @@ const std = @import("std");
 
 pub const std_options = .{
     .log_level = .info,
-    .logFn = myLogFn,
+    // .logFn = myLogFn,
 };
 
 pub fn myLogFn(
@@ -70,7 +70,6 @@ fn generate_article(markdown_file_path: []const u8, header: []const u8, footer: 
         std.debug.assert(git_output.stderr.len == 0);
 
         const first_newline_pos = std.mem.indexOf(u8, git_output.stdout, "\n") orelse 0;
-        std.log.info("[D001] {s} {} {s}", .{ markdown_file_path, first_newline_pos, git_output.stdout });
         std.debug.assert(first_newline_pos > 0);
 
         const markdown_file_creation_date = git_output.stdout[0..first_newline_pos];
@@ -120,7 +119,7 @@ pub fn main() !void {
 
             wait_group.start();
             pool.spawnWg(&wait_group, do_generate_article, .{
-                entry.name,
+                try allocator.dupe(u8, entry.name),
                 header,
                 footer,
                 &wait_group,
