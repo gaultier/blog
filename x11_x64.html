@@ -38,35 +38,15 @@ window.addEventListener("load", (event) => {
 <div class="body">
 
 <p id="publication_date">Published on 2023-05-31.</p>
-<h1 id="learn-x86-64-assembly-by-writing-a-gui-from-scratch">Learn
-x86-64 assembly by writing a GUI from scratch</h1>
-<p>Most people think assembly is only to be used to write toy programs
-for learning purposes, or to write a highly optimized version of a
-specific function inside a codebase written in a high-level
-language.</p>
-<p>Well, what if we wrote a whole program in assembly that opens a GUI
-window? It will be the hello world of the GUI world, but that still
-counts. Here is what we are working towards:</p>
-<figure>
-<img src="x11_x64_final.png" alt="Result" />
-<figcaption aria-hidden="true">Result</figcaption>
-</figure>
-<p>I wanted to expand my knowledge of assembly and by doing something
-fun and motivating. It all originated from the observation that so many
-program binaries today are very big, often over 30 Mib (!), and I asked
-myself: How small a binary can be for a (very simplistic) GUI? Well, it
-turns out, very little. Spoiler alert: around 1 KiB!</p>
+<h1>Learn x86-64 assembly by writing a GUI from scratch</h1>
+<p>Most people think assembly is only to be used to write toy programs for learning purposes, or to write a highly optimized version of a specific function inside a codebase written in a high-level language.</p>
+<p>Well, what if we wrote a whole program in assembly that opens a GUI window? It will be the hello world of the GUI world, but that still counts. Here is what we are working towards:</p>
+<p><img src="x11_x64_final.png" alt="Result" /></p>
+<p>I wanted to expand my knowledge of assembly and by doing something fun and motivating. It all originated from the observation that so many program binaries today are very big, often over 30 Mib (!), and I asked myself: How small a binary can be for a (very simplistic) GUI? Well, it turns out, very little. Spoiler alert: around 1 KiB!</p>
 <blockquote>
-<p>I am by no means an expert in assembly or in X11. I just hope to
-provide an entertaining, approachable article, something a beginner can
-understand. Something I wished I had found when I was learning those
-topics. If you spot an error, please open a <a
-href="https://github.com/gaultier/blog">Github issue</a>!</p>
+<p>I am by no means an expert in assembly or in X11. I just hope to provide an entertaining, approachable article, something a beginner can understand. Something I wished I had found when I was learning those topics. If you spot an error, please open a <a href="https://github.com/gaultier/blog">Github issue</a>!</p>
 </blockquote>
-<p><em>This article has been discussed on <a
-href="https://news.ycombinator.com/item?id=36153237">Hacker News</a> and
-<a
-href="https://lobste.rs/s/dvtzfl/learn_x86_64_assembly_by_writing_gui_from">Lobsters</a>.</em></p>
+<p><em>This article has been discussed on <a href="https://news.ycombinator.com/item?id=36153237">Hacker News</a> and <a href="https://lobste.rs/s/dvtzfl/learn_x86_64_assembly_by_writing_gui_from">Lobsters</a>.</em></p>
 <p><strong>Table of Contents</strong></p>
 <ul>
 <li><a href="#what-do-we-need">What do we need?</a></li>
@@ -75,363 +55,148 @@ href="https://lobste.rs/s/dvtzfl/learn_x86_64_assembly_by_writing_gui_from">Lobs
 <li><a href="#a-stack-primer">A stack primer</a>
 <ul>
 <li><a href="#a-small-stack-example">A small stack example</a></li>
-</ul></li>
+</ul>
+</li>
 <li><a href="#opening-a-socket">Opening a socket</a></li>
-<li><a href="#connecting-to-the-server">Connecting to the
-server</a></li>
-<li><a href="#sending-data-over-the-socket">Sending data over the
-socket</a></li>
+<li><a href="#connecting-to-the-server">Connecting to the server</a></li>
+<li><a href="#sending-data-over-the-socket">Sending data over the socket</a></li>
 <li><a href="#generating-ids">Generating ids</a></li>
 <li><a href="#opening-a-font">Opening a font</a></li>
-<li><a href="#creating-a-graphical-context">Creating a graphical
-context</a></li>
+<li><a href="#creating-a-graphical-context">Creating a graphical context</a></li>
 <li><a href="#creating-the-window">Creating the window</a></li>
 <li><a href="#mapping-the-window">Mapping the window</a></li>
-<li><a href="#polling-for-server-messages">Polling for server
-messages</a></li>
+<li><a href="#polling-for-server-messages">Polling for server messages</a></li>
 <li><a href="#drawing-text">Drawing text</a></li>
 <li><a href="#the-end">The end</a></li>
 <li><a href="#addendum-the-full-code">Addendum: the full code</a></li>
 </ul>
-<h2 id="what-do-we-need">What do we need?</h2>
-<p>I will be using the <code>nasm</code> assembler which is simple,
-cross-platform, fast, and has quite a readable syntax.</p>
-<p>For the GUI, I will be using X11 since I am based on Linux and it has
-some interesting properties that make it easy to do without external
-libraries. If you are running Wayland, it should work with XWayland out
-of the box (<em>EDIT: After testing it, I can confirm it does
-work</em>), and perhaps also on macOS with XQuartz, but I have not
-tested those (for macOS, remember to tell <code>nasm</code> to use the
-<code>macho64</code> format, since macOS does not use the ELF format!
-Also, the stock linker on macOS does not support
-<code>-static</code>.).</p>
-<p>Note that the only difference between *nix operating systems in the
-context of this program is the system call values. Since I am based on
-Linux I will be using the Linux system call values, but ‘porting’ this
-program to, say, FreeBSD, would only require to change those values,
-possibly using the <code>nasm</code> macros:</p>
-<pre class="x86asm"><code>%ifdef linux
+<h2>What do we need?</h2>
+<p>I will be using the <code>nasm</code> assembler which is simple, cross-platform, fast, and has quite a readable syntax.</p>
+<p>For the GUI, I will be using X11 since I am based on Linux and it has some interesting properties that make it easy to do without external libraries. If you are running Wayland, it should work with XWayland out of the box (<em>EDIT: After testing it, I can confirm it does work</em>), and perhaps also on macOS with XQuartz, but I have not tested those (for macOS, remember to tell <code>nasm</code> to use the <code>macho64</code> format, since macOS does not use the ELF format! Also, the stock linker on macOS does not support <code>-static</code>.).</p>
+<p>Note that the only difference between *nix operating systems in the context of this program is the system call values. Since I am based on Linux I will be using the Linux system call values, but 'porting' this program to, say, FreeBSD, would only require to change those values, possibly using the <code>nasm</code> macros:</p>
+<pre><code class="language-x86asm">%ifdef linux
   %define SYSCALL_EXIT 60
 %elifdef freebsd
   %define SYSCALL_EXIT 1
-%endif</code></pre>
+%endif
+</code></pre>
 <blockquote>
-<p><code>%define</code> and its variants are part of the macro system in
-<code>nasm</code>, which is powerful but we will only use it here to
-define constants, just like in C: <code>#define FOO 3</code>.</p>
+<p><code>%define</code> and its variants are part of the macro system in <code>nasm</code>, which is powerful but we will only use it here to define constants, just like in C: <code>#define FOO 3</code>.</p>
 </blockquote>
-<p>No need for additional tooling to cross-compile, issues with dynamic
-libraries, libc differences, etc. Just compile on Linux by defining the
-right variable on the command line, send the binary to your friend on
-FreeBSD, and it just works(tm). That’s refreshing.</p>
+<p>No need for additional tooling to cross-compile, issues with dynamic libraries, libc differences, etc. Just compile on Linux by defining the right variable on the command line, send the binary to your friend on FreeBSD, and it just works(tm). That's refreshing.</p>
 <blockquote>
-<p>Some readers have rightfully pointed out that Linux is the only
-mainstream operating system that officially provides a stable userland
-ABI, other OSes often break their ABI from (major) version to version
-and recommend all programs to link to a library
-(e.g. <code>libSystem</code> in the case of macOS). That layer
-guarantees API stability, and acts as a insulation layer from breaking
-changes in the ABI. In practice, for common system calls such as the
-ones we use here, they very rarely break, but doing more exotic things
-may break in the future. That actually happened to the Go project in the
-past on macOS! The solution if that happens is to simply recompile the
-program on the new version of the OS.</p>
+<p>Some readers have rightfully pointed out that Linux is the only mainstream operating system that officially provides a stable userland ABI, other OSes often break their ABI from (major) version to version and recommend all programs to link to a library (e.g. <code>libSystem</code> in the case of macOS). That layer guarantees API stability, and acts as a insulation layer from breaking changes in the ABI. In practice, for common system calls such as the ones we use here, they very rarely break, but doing more exotic things may break in the future. That actually happened to the Go project in the past on macOS! The solution if that happens is to simply recompile the program on the new version of the OS.</p>
 </blockquote>
-<p>So let’s dive in!</p>
-<h2 id="x11-basics">X11 basics</h2>
-<p>X11 is a server accessible over the network that handles windowing
-and rendering inside those windows. A client opens a socket, connects to
-the server, and sends commands in a specific format to open a window,
-draw shapes, text, etc. The server sends message about errors or events
-to the client.</p>
-<p>Most applications will want to use <code>libX11</code> or
-<code>libxcb</code> which offer a C API, but we want to do that
-ourselves.</p>
-<p>Where the server lives is actually not relevant for a client, it
-might run on the same machine or in a data center far far away. Of
-course, in the context of a desktop computer in 2023, it will be running
-on the same machine, but that’s a detail.</p>
-<p>The <a
-href="https://www.x.org/releases/X11R7.7/doc/xproto/x11protocol.html">official
-documentation</a> is pretty good, so when in doubt we can refer to
-it.</p>
-<h2 id="main-in-x64-assembly">Main in x64 assembly</h2>
-<p>Let’s start slow with minimal program that simply exits with 0, and
-build from there.</p>
-<p>First, we tell nasm we are writing a 64 bit program and that we
-target x86_64. Then, we need a main function, which we call
-<code>_start</code> and needs to be visible since this is the entry
-point of our program (hence the <code>global</code> keyword):</p>
-<pre class="x86asm"><code>; Comments start with a semicolon!
+<p>So let's dive in!</p>
+<h2>X11 basics</h2>
+<p>X11 is a server accessible over the network that handles windowing and rendering inside those windows. A client opens a socket, connects to the server, and sends commands in a specific format to open a window, draw shapes, text, etc. The server sends message about errors or events to the client.</p>
+<p>Most applications will want to use <code>libX11</code> or <code>libxcb</code> which offer a C API, but we want to do that ourselves.</p>
+<p>Where the server lives is actually not relevant for a client, it might run on the same machine or in a data center far far away. Of course, in the context of a desktop computer in 2023, it will be running on the same machine, but that's a detail.</p>
+<p>The <a href="https://www.x.org/releases/X11R7.7/doc/xproto/x11protocol.html">official documentation</a> is pretty good, so when in doubt we can refer to it.</p>
+<h2>Main in x64 assembly</h2>
+<p>Let's start slow with minimal program that simply exits with 0, and build from there.</p>
+<p>First, we tell nasm we are writing a 64 bit program and that we target x86_64. Then, we need a main function, which we call <code>_start</code> and needs to be visible since this is the entry point of our program (hence the <code>global</code> keyword):</p>
+<pre><code class="language-x86asm">; Comments start with a semicolon!
 BITS 64 ; 64 bits.
 CPU X64 ; Target the x86_64 family of CPUs.
 
 section .text
 global _start
 _start:
-  xor rax, rax ; Set rax to 0. Not actually needed, it&#39;s just to avoid having an empty body.</code></pre>
-<p><code>section .text</code> is telling <code>nasm</code> and the
-linker, that what follows is code that should be placed in the text
-section of the executable.</p>
-<p>We will soon have a <code>section .data</code> for our global
-variables.</p>
-<p>Note that those section usually get mapped by the OS to different
-pages in memory with different permissions (visible with
-<code>readelf -l</code>) so that the text section is not writable and
-the data section is not executable, but that varies from OS to OS.</p>
-<p>The <code>_start</code> function has a body that does nothing for
-now, but not for long. The actual name of the main function is actually
-up to us, it’s just that <code>start</code> or <code>_start</code> is
-usual.</p>
+  xor rax, rax ; Set rax to 0. Not actually needed, it's just to avoid having an empty body.
+</code></pre>
+<p><code>section .text</code> is telling <code>nasm</code> and the linker, that what follows is code that should be placed in the text section of the executable.</p>
+<p>We will soon have a <code>section .data</code> for our global variables.</p>
+<p>Note that those section usually get mapped by the OS to different pages in memory with different permissions (visible with <code>readelf -l</code>) so that the text section is not writable and the data section is not executable, but that varies from OS to OS.</p>
+<p>The <code>_start</code> function has a body that does nothing for now, but not for long. The actual name of the main function is actually up to us, it's just that <code>start</code> or <code>_start</code> is usual.</p>
 <p>We build and run our little program like this:</p>
-<div class="sourceCode" id="cb3"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> nasm <span class="at">-f</span> elf64 <span class="at">-g</span> main.nasm <span class="kw">&amp;&amp;</span> <span class="fu">ld</span> main.o <span class="at">-static</span> <span class="at">-o</span> main</span></code></pre></div>
-<p><code>nasm</code> actually only produces an object file, so to get an
-executable out of it, we need to invoke the linker <code>ld</code>. The
-flag <code>-g</code> is telling <code>nasm</code> to produce debugging
-information which is immensely useful when writing raw assembly, since
-firing the debugger is often our only recourse in face of a bug.</p>
-<p><em>To remove the debugging information, we can pass <code>-s</code>
-to the linker, for example when we are about to ship our program and
-want to save a few KiB.</em></p>
+<pre><code class="language-sh">$ nasm -f elf64 -g main.nasm &amp;&amp; ld main.o -static -o main
+</code></pre>
+<p><code>nasm</code> actually only produces an object file, so to get an executable out of it, we need to invoke the linker <code>ld</code>. The flag <code>-g</code> is telling <code>nasm</code> to produce debugging information which is immensely useful when writing raw assembly, since firing the debugger is often our only recourse in face of a bug.</p>
+<p><em>To remove the debugging information, we can pass <code>-s</code> to the linker, for example when we are about to ship our program and want to save a few KiB.</em></p>
 <p>We finally have an executable:</p>
-<div class="sourceCode" id="cb4"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> file ./main</span>
-<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="ex">main:</span> ELF 64-bit LSB executable, x86-64, version 1 <span class="er">(</span><span class="ex">SYSV</span><span class="kw">)</span><span class="ex">,</span> statically linked, with debug_info, not stripped</span></code></pre></div>
-<p>We can see the different sections with
-<code>readelf -a ./main</code>, and it tells us that the
-<code>.text</code> section, which contains our code, is only 3 bytes
-long.</p>
-<p>Now, if we try to run our program, it will segfault. That’s because
-we are expected by the operating system to exit (using the exit system
-call) ourselves (otherwise the CPU will keep executing whatever comes
-after our entry point until it hits an unmapped page, triggering a
-segfault). That’s what libc does for us in C programs, so let’s handle
-that:</p>
-<pre class="x86asm"><code>%define SYSCALL_EXIT 60
+<pre><code class="language-sh">$ file ./main
+main: ELF 64-bit LSB executable, x86-64, version 1 (SYSV), statically linked, with debug_info, not stripped
+</code></pre>
+<p>We can see the different sections with <code>readelf -a ./main</code>, and it tells us that the <code>.text</code> section, which contains our code, is only 3 bytes long.</p>
+<p>Now, if we try to run our program, it will segfault. That's because we are expected by the operating system to exit (using the exit system call) ourselves (otherwise the CPU will keep executing whatever comes after our entry point until it hits an unmapped page, triggering a segfault). That's what libc does for us in C programs, so let's handle that:</p>
+<pre><code class="language-x86asm">%define SYSCALL_EXIT 60
 
 global _start:
 _start:
   mov rax, SYSCALL_EXIT
   mov rdi, 0
-  syscall</code></pre>
+  syscall
+</code></pre>
 <blockquote>
-<p><code>nasm</code> uses the Intel syntax:
-<code>&lt;instruction&gt; &lt;destination&gt;, &lt;source&gt;</code>, so
-<code>mov rdi, 0</code> puts 0 into the register <code>rdi</code>. Other
-assemblers use the AT&amp;T syntax which swaps the source and
-destination. My advice: pick one syntax and one assembler and stick to
-it, both syntaxes are fine and most tools have some support for
-both.</p>
+<p><code>nasm</code> uses the Intel syntax: <code>&lt;instruction&gt; &lt;destination&gt;, &lt;source&gt;</code>, so <code>mov rdi, 0</code> puts 0 into the register <code>rdi</code>. Other assemblers use the AT&amp;T syntax which swaps the source and destination. My advice: pick one syntax and one assembler and stick to it, both syntaxes are fine and most tools have some support for both.</p>
 </blockquote>
-<p>Following the System V ABI, which is required on Linux and other
-Unices for system calls, invoking a system call requires us to put the
-system call code in the register <code>rax</code>, the parameters to the
-syscall (up to 6) in the registers <code>rdi</code>, <code>rsi</code>,
-<code>rdx</code>, <code>rcx</code>, <code>r8</code>, <code>r9</code>,
-and additional parameters, if any, on the stack (which will not happen
-in this program so we can forget about it). We then use the instruction
-<code>syscall</code> and check <code>rax</code> for the return value,
-<code>0</code> usually meaning: no error.</p>
-<p><em>Note that Linux (and perhaps other Unices?) has a ‘fun’
-difference, which is that the fourth parameter of a system call is
-actually passed using the register <code>r10</code>.</em></p>
+<p>Following the System V ABI, which is required on Linux and other Unices for system calls, invoking a system call requires us to put the system call code in the register <code>rax</code>, the parameters to the syscall (up to 6) in the registers <code>rdi</code>, <code>rsi</code>, <code>rdx</code>, <code>rcx</code>, <code>r8</code>, <code>r9</code>, and additional parameters, if any, on the stack (which will not happen in this program so we can forget about it).
+We then use the instruction <code>syscall</code> and check <code>rax</code> for the return value, <code>0</code> usually meaning: no error.</p>
+<p><em>Note that Linux (and perhaps other Unices?) has a 'fun' difference, which is that the fourth parameter of a system call is actually passed using the register <code>r10</code>.</em></p>
 <blockquote>
-<p>Astute readers have pointed out that this is the case across all OSes
-and documented in the x86_64 architecture supplement of the System V
-ABI. The more you know! That’s only for system calls, though, regular
-functions still use <code>rcx</code> for the fourth parameter.</p>
+<p>Astute readers have pointed out that this is the case across all OSes and documented in the x86_64 architecture supplement of the System V ABI. The more you know! That's only for system calls, though, regular functions still use <code>rcx</code> for the fourth parameter.</p>
 </blockquote>
 <blockquote>
-<p>Note that the System V ABI is required when making system calls and
-when interfacing with C but we are free to use whatever conventions we
-want in our own assembly code. For a long time, Go was using a different
-calling convention than the System V ABI, for example, when calling
-functions (passing arguments on the stack). Most tools (debuggers,
-profilers) expect the System V ABI though, so I recommend sticking to
-it.</p>
+<p>Note that the System V ABI is required when making system calls and when interfacing with C but we are free to use whatever conventions we want in our own assembly code. For a long time, Go was using a different calling convention than the System V ABI, for example, when calling functions (passing arguments on the stack). Most tools (debuggers, profilers) expect the System V ABI though, so I recommend sticking to it.</p>
 </blockquote>
-<p>Back to our program: when we run it, we see…nothing. That’s because
-everything went well, true to the UNIX philosophy!</p>
+<p>Back to our program: when we run it, we see...nothing. That's because everything went well, true to the UNIX philosophy!</p>
 <p>We can check the exit code:</p>
-<div class="sourceCode" id="cb6"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> ./main<span class="kw">;</span> <span class="bu">echo</span> <span class="va">$?</span></span>
-<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="ex">0</span></span></code></pre></div>
-<p>Changing <code>mov rdi, 0</code> to <code>mov rdi, 8</code> will now
-result in:</p>
-<div class="sourceCode" id="cb7"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> ./main<span class="kw">;</span> <span class="bu">echo</span> <span class="va">$?</span></span>
-<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="ex">8</span></span></code></pre></div>
-<p>Another way to observe system calls made by a program is with
-<code>strace</code>, which will also prove very useful when
-troubleshooting. On some BSD, its equivalent is <code>truss</code> or
-<code>dtruss</code>.</p>
-<div class="sourceCode" id="cb8"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> strace ./main</span>
-<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a><span class="ex">execve</span><span class="er">(</span><span class="st">&quot;./main&quot;</span><span class="ex">,</span> [<span class="st">&quot;./main&quot;</span>], 0x7ffc60e6bf10 /<span class="pp">*</span> 60 vars <span class="pp">*</span>/<span class="kw">)</span> <span class="ex">=</span> 0</span>
-<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a><span class="bu">exit</span><span class="er">(</span><span class="ex">8</span><span class="kw">)</span>                                 <span class="ex">=</span> <span class="pp">?</span></span>
-<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a><span class="ex">+++</span> exited with 8 +++</span></code></pre></div>
-<p>Let’s change it back to 0 and continue.</p>
-<h2 id="a-stack-primer">A stack primer</h2>
-<p>Before we can continue, we need to know the basics of how the stack
-works in assembly since we have no friendly compiler to do that for
-us.</p>
-<p><strong>The three most important things about the stack are:</strong>
-- It grows downwards: to reserve more space on the stack, we decrease
-the value of <code>rsp</code> - A function must restore the stack
-pointer to its original value before the function returns, meaning,
-either remember the original value and set <code>rsp</code> to this, or,
-match every decrement by an increment of the same value. - Before a
-function call, the stack pointer needs to be 16 bytes aligned, according
-to the System V ABI. Also, at the very beginning of a function, the
-stack pointer value is: <code>16*N + 8</code>. That’s because before the
-function call, its value was 16 byte aligned, i.e. <code>16*N</code>,
-and the <code>call</code> instruction pushes on the stack the current
-location (the register <code>rip</code>, which is 8 bytes long), to know
-where to jump when the called function returns.</p>
-<p>Not abiding by those rules will result in nasty crashes, so be
-warned. That’s because the location of where to jump when the function
-returns will be likely overwritten and the program will jump to the
-wrong location. That, or the stack content will be overwritten and the
-program will operate on wrong values. Bad either way.</p>
-<h3 id="a-small-stack-example">A small stack example</h3>
-<p>Let’s write a function that prints <code>hello</code> to the standard
-out, using the stack, to learn the ropes. An easier way would be to
-store this static string in the <code>.rodata</code> section, but that
-would not teach us anything about the stack.</p>
-<p>We need to reserve (at least) 5 bytes on the stack, since that’s the
-length in bytes of <code>hello</code>.</p>
+<pre><code class="language-sh">$ ./main; echo $?
+0
+</code></pre>
+<p>Changing <code>mov rdi, 0</code> to <code>mov rdi, 8</code> will now result in:</p>
+<pre><code class="language-sh">$ ./main; echo $?
+8
+</code></pre>
+<p>Another way to observe system calls made by a program is with <code>strace</code>, which will also prove very useful when troubleshooting. On some BSD, its equivalent is <code>truss</code> or <code>dtruss</code>.</p>
+<pre><code class="language-sh">
+$ strace ./main
+execve(&quot;./main&quot;, [&quot;./main&quot;], 0x7ffc60e6bf10 /* 60 vars */) = 0
+exit(8)                                 = ?
++++ exited with 8 +++
+
+</code></pre>
+<p>Let's change it back to 0 and continue.</p>
+<h2>A stack primer</h2>
+<p>Before we can continue, we need to know the basics of how the stack works in assembly since we have no friendly compiler to do that for us.</p>
+<p><strong>The three most important things about the stack are:</strong></p>
+<ul>
+<li>It grows downwards: to reserve more space on the stack, we decrease the value of <code>rsp</code></li>
+<li>A function must restore the stack pointer to its original value before the function returns, meaning, either remember the original value and set <code>rsp</code> to this, or, match every decrement by an increment of the same value.</li>
+<li>Before a function call, the stack pointer needs to be 16 bytes aligned, according to the System V ABI. Also, at the very beginning of a function, the stack pointer value is: <code>16*N + 8</code>. That's because before the function call, its value was 16 byte aligned, i.e. <code>16*N</code>, and the <code>call</code> instruction pushes on the stack the current location (the register <code>rip</code>, which is 8 bytes long), to know where to jump when the called function returns.</li>
+</ul>
+<p>Not abiding by those rules will result in nasty crashes, so be warned. That's because the location of where to jump when the function returns will be likely overwritten and the program will jump to the wrong location. That, or the stack content will be overwritten and the program will operate on wrong values. Bad either way.</p>
+<h3>A small stack example</h3>
+<p>Let's write a function that prints <code>hello</code> to the standard out, using the stack, to learn the ropes. An easier way would be to store this static string in the <code>.rodata</code> section, but that would not teach us anything about the stack.</p>
+<p>We need to reserve (at least) 5 bytes on the stack, since that's the length in bytes of <code>hello</code>.</p>
 <p>The stack looks like this:</p>
 <table>
-<tr>
-<td align="left">
-…
-</td>
-</tr>
-<tr>
-<td align="left">
-rbp
-</td>
-</tr>
-<tr>
-<td align="left">
-o
-</td>
-</tr>
-<tr>
-<td align="left">
-l
-</td>
-</tr>
-<tr>
-<td align="left">
-l
-</td>
-</tr>
-<tr>
-<td align="left">
-e
-</td>
-</tr>
-<tr>
-<td align="left">
-h
-</td>
-</tr>
+  <tr> <td align="left">...</td> </tr>
+  <tr> <td align="left" >rbp</td> </tr>
+  <tr> <td align="left" >o</td> </tr>
+  <tr> <td align="left" >l</td> </tr>
+  <tr> <td align="left" >l</td> </tr>
+  <tr> <td align="left" >e</td> </tr>
+  <tr> <td align="left" >h</td> </tr>
 </table>
 <p>And <code>rsp</code> points to the bottom of it.</p>
-<p>Here’s how we access each element:</p>
+<p>Here's how we access each element:</p>
 <table>
-<thead>
-<tr>
-<th>
-Memory location (example)
-</th>
-<th>
-Assembly code
-</th>
-<th align="left">
-Stack element
-</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>
-0x1016
-</td>
-<td>
-</td>
-<td align="left">
-…
-</td>
-</tr>
-<tr>
-<td>
-0x1015
-</td>
-<td>
-rsp + 5
-</td>
-<td align="left">
-rbp
-</td>
-</tr>
-<tr>
-<td>
-0x1014
-</td>
-<td>
-rsp + 4
-</td>
-<td align="left">
-o
-</td>
-</tr>
-<tr>
-<td>
-0x1013
-</td>
-<td>
-rsp + 3
-</td>
-<td align="left">
-l
-</td>
-</tr>
-<tr>
-<td>
-0x1012
-</td>
-<td>
-rsp + 2
-</td>
-<td align="left">
-l
-</td>
-</tr>
-<tr>
-<td>
-0x1011
-</td>
-<td>
-rsp + 1
-</td>
-<td align="left">
-e
-</td>
-</tr>
-<tr>
-<td>
-0x1010
-</td>
-<td>
-rsp + 0
-</td>
-<td align="left">
-h
-</td>
-</tr>
-</tbody>
+  <thead>
+  <tr> <th>Memory location (example)</th> <th>Assembly code</th> <th align="left">Stack element</th> </tr>
+  </thead>
+  <tbody>
+  <tr> <td>0x1016</td> <td></td> <td align="left">...</td> </tr>
+  <tr> <td>0x1015</td> <td>rsp + 5</td> <td align="left" >rbp</td> </tr>
+  <tr> <td>0x1014</td> <td>rsp + 4</td> <td align="left" >o</td> </tr>
+  <tr> <td>0x1013</td> <td>rsp + 3</td> <td align="left" >l</td> </tr>
+  <tr> <td>0x1012</td> <td>rsp + 2</td> <td align="left" >l</td> </tr>
+  <tr> <td>0x1011</td> <td>rsp + 1</td> <td align="left" >e</td> </tr>
+  <tr> <td>0x1010</td> <td>rsp + 0</td> <td align="left" >h</td> </tr>
+  </tbody>
 </table>
-<p>We then pass the address on the stack of the beginning of the string
-to the <code>write</code> syscall, as well as its length:</p>
+<p>We then pass the address on the stack of the beginning of the string to the <code>write</code> syscall, as well as its length:</p>
 <pre><code>%define SYSCALL_WRITE 1
 %define STDOUT 1
 
@@ -440,11 +205,11 @@ print_hello:
   mov rbp, rsp ; Set rbp to rsp
 
   sub rsp, 5 ; Reserve 5 bytes of space on the stack.
-  mov BYTE [rsp + 0], &#39;h&#39; ; Set each byte on the stack to a string character.
-  mov BYTE [rsp + 1], &#39;e&#39;
-  mov BYTE [rsp + 2], &#39;l&#39;
-  mov BYTE [rsp + 3], &#39;l&#39;
-  mov BYTE [rsp + 4], &#39;o&#39;
+  mov BYTE [rsp + 0], 'h' ; Set each byte on the stack to a string character.
+  mov BYTE [rsp + 1], 'e'
+  mov BYTE [rsp + 2], 'l'
+  mov BYTE [rsp + 3], 'l'
+  mov BYTE [rsp + 4], 'o'
 
   ; Make the write syscall
   mov rax, SYSCALL_WRITE
@@ -456,56 +221,20 @@ print_hello:
   add rsp, 5 ; Restore the stack to its original value.
 
   pop rbp ; Restore rbp
-  ret</code></pre>
+  ret
+</code></pre>
 <blockquote>
-<p><code>lea destination, source</code> loads the effective address of
-the source into the destination, which is how C pointers are
-implemented. To dereference a memory location we use square brackets.
-So, assuming we just have loaded an address into <code>rdi</code> with
-<code>lea</code>, e.g. <code>lea rdi, [hello_world]</code>, and we want
-to store the value at the address into <code>rax</code>, we do:
-<code>mov rax, [rdi]</code>. We usually have to tell <code>nasm</code>
-how many bytes to dereference with <code>BYTE</code>, <code>WORD</code>,
-<code>DWORD</code>, <code>QWORD</code> so:
-<code>mov rax, DWORD [rdi]</code>, because <code>nasm</code> does not
-keep track of the sizes of each variable. That’s also what the C
-compiler does when we dereference a <code>int8_t</code>,
-<code>int16_t</code>, <code>int32_t</code>, and <code>int64_t</code>
-pointer, respectively.</p>
+<p><code>lea destination, source</code> loads the effective address of the source into the destination, which is how C pointers are implemented. To dereference a memory location we use square brackets. So, assuming we just have loaded an address into <code>rdi</code> with <code>lea</code>, e.g. <code>lea rdi, [hello_world]</code>, and we want to store the value at the address into <code>rax</code>, we do: <code>mov rax, [rdi]</code>. We usually have to tell <code>nasm</code> how many bytes to dereference with <code>BYTE</code>, <code>WORD</code>, <code>DWORD</code>, <code>QWORD</code> so: <code>mov rax, DWORD [rdi]</code>, because <code>nasm</code> does not keep track of the sizes of each variable. That's also what the C compiler does when we dereference a <code>int8_t</code>, <code>int16_t</code>, <code>int32_t</code>, and <code>int64_t</code> pointer, respectively.</p>
 </blockquote>
 <p>There is a lot to unpack here.</p>
-<p>First, what is <code>rbp</code>? That’s a register like any other.
-But, you can choose to follow the convention of not using this register
-like the other registers, to store arbitrary values, and instead, use it
-to store a linked list of call frames. That’s a lot of words.</p>
-<p>Basically, at the very beginning of a function, the value of
-<code>rbp</code> is stored on the stack (that’s <code>push rbp</code>).
-Since <code>rbp</code> stores an address (the address of the frame
-that’s called us), we are storing on the stack the address of the caller
-in a known location.</p>
-<p>Immediately after that, we set <code>rbp</code> to <code>rsp</code>,
-that is, to the stack pointer at the beginning of the function.
-<code>push rbp</code> and <code>mov rbp, rsp</code> are thus usually
-referred to as the function prolog.</p>
-<p>For the rest of the function body, we treat <code>rbp</code> as a
-constant and only decrease <code>rsp</code> if we need to reserve space
-on the stack.</p>
-<p>So if function A calls function B which in turn calls function C, and
-each function stores on the stack the address of the caller frame, we
-know where to find on the stack the address of each. Thus, we can print
-a stack trace in any location of our program simply by inspecting the
-stack. Pretty nifty. That’s already very useful to profilers and other
-similar tools.</p>
-<p>We must not forget of course, just before we exit the function, to
-restore <code>rbp</code> to its original value (which is still on the
-stack at that point): that’s <code>pop rbp</code>. This is also known as
-the function epilog. Another way to look at it is that we remove the
-last element of the linked list of call frames, since we are exiting the
-leaf function.</p>
-<p>Don’t worry if you have not fully understood everything, just
-remember to always have the function epilogs and prologs and you’ll be
-fine:</p>
-<pre class="x86asm"><code>my_function:
+<p>First, what is <code>rbp</code>? That's a register like any other. But, you can choose to follow the convention of not using this register like the other registers, to store arbitrary values, and instead, use it to store a linked list of call frames. That's a lot of words.</p>
+<p>Basically, at the very beginning of a function, the value of <code>rbp</code> is stored on the stack (that's <code>push rbp</code>). Since <code>rbp</code> stores an address (the address of the frame that's called us), we are storing on the stack the address of the caller in a known location.</p>
+<p>Immediately after that, we set <code>rbp</code> to <code>rsp</code>, that is, to the stack pointer at the beginning of the function. <code>push rbp</code> and <code>mov rbp, rsp</code> are thus usually referred to as the function prolog.</p>
+<p>For the rest of the function body, we treat <code>rbp</code> as a constant and only decrease <code>rsp</code> if we need to reserve space on the stack.</p>
+<p>So if function A calls function B which in turn calls function C, and each function stores on the stack the address of the caller frame, we know where to find on the stack the address of each. Thus, we can print a stack trace in any location of our program simply by inspecting the stack. Pretty nifty. That's already very useful to profilers and other similar tools.</p>
+<p>We must not forget of course, just before we exit the function, to restore <code>rbp</code> to its original value (which is still on the stack at that point): that's <code>pop rbp</code>. This is also known as the function epilog. Another way to look at it is that we remove the last element of the linked list of call frames, since we are exiting the leaf function.</p>
+<p>Don't worry if you have not fully understood everything, just remember to always have the function epilogs and prologs and you'll be fine:</p>
+<pre><code class="language-x86asm">my_function:
   push rbp
   mov rbp, rsp
 
@@ -516,32 +245,24 @@ fine:</p>
 
   add rsp, N
   pop rbp
-  ret</code></pre>
-<p><strong>Note</strong>: There is an optimization method that uses
-<code>rbp</code> as a standard register (with a C compiler, that’s the
-flag <code>-fomit-frame-pointer</code>), which means we lose the
-information about the call stack. My advice is: never do this, it is no
-worth it.</p>
+  ret
+</code></pre>
+<p><strong>Note</strong>: There is an optimization method that uses <code>rbp</code> as a standard register (with a C compiler, that's the flag <code>-fomit-frame-pointer</code>), which means we lose the information about the call stack. My advice is: never do this, it is no worth it.</p>
 <blockquote>
-<p>Wait, but didn’t you say the stack needs to be 16 byte aligned (that
-is, a multiple of 16)? Last time I checked, 5 is not really a multiple
-of 16!</p>
+<p>Wait, but didn't you say the stack needs to be 16 byte aligned (that is, a multiple of 16)? Last time I checked, 5 is not really a multiple of 16!</p>
 </blockquote>
-<p>Good catch! The only reason why this program works, is that
-<code>print_hello</code> is a leaf function, meaning it does not call
-another function. Remember, the stack needs to be 16 bytes aligned when
-we do a <code>call</code>!</p>
+<p>Good catch! The only reason why this program works, is that <code>print_hello</code> is a leaf function, meaning it does not call another function. Remember, the stack needs to be 16 bytes aligned when we do a <code>call</code>!</p>
 <p>So the correct way would be:</p>
 <pre><code>print_hello:
   push rbp
   mov rbp, rsp
 
   sub rsp, 16
-  mov BYTE [rsp + 0], &#39;h&#39;
-  mov BYTE [rsp + 1], &#39;e&#39;
-  mov BYTE [rsp + 2], &#39;l&#39;
-  mov BYTE [rsp + 3], &#39;l&#39;
-  mov BYTE [rsp + 4], &#39;o&#39;
+  mov BYTE [rsp + 0], 'h'
+  mov BYTE [rsp + 1], 'e'
+  mov BYTE [rsp + 2], 'l'
+  mov BYTE [rsp + 3], 'l'
+  mov BYTE [rsp + 4], 'o'
 
   mov rax, SYSCALL_WRITE
   mov rdi, STDOUT
@@ -554,25 +275,21 @@ we do a <code>call</code>!</p>
   add rsp, 16
 
   pop rbp
-  ret</code></pre>
-<p>Since when we enter the function, the value of <code>rsp</code> is
-<code>16*N+8</code>, and pushing <code>rbp</code> increases it by 8, the
-stack pointer is 16 bytes aligned at the point of
-<code>sub rsp, 16</code>. Decrementing it by 16 (or a multiple of 16)
-keeps it 16 bytes aligned.</p>
-<p>We now can safely call another function from within
-<code>print_hello</code>:</p>
-<pre class="x86asm"><code>print_world:
+  ret
+</code></pre>
+<p>Since when we enter the function, the value of <code>rsp</code> is <code>16*N+8</code>, and pushing <code>rbp</code> increases it by 8, the stack pointer is 16 bytes aligned at the point of <code>sub rsp, 16</code>. Decrementing it by 16 (or a multiple of 16) keeps it 16 bytes aligned.</p>
+<p>We now can safely call another function from within <code>print_hello</code>:</p>
+<pre><code class="language-x86asm">print_world:
   push rbp
   mov rbp, rsp
 
   sub rsp, 16
-  mov BYTE [rsp + 0], &#39; &#39;
-  mov BYTE [rsp + 1], &#39;w&#39;
-  mov BYTE [rsp + 2], &#39;o&#39;
-  mov BYTE [rsp + 3], &#39;r&#39;
-  mov BYTE [rsp + 4], &#39;l&#39;
-  mov BYTE [rsp + 5], &#39;d&#39;
+  mov BYTE [rsp + 0], ' '
+  mov BYTE [rsp + 1], 'w'
+  mov BYTE [rsp + 2], 'o'
+  mov BYTE [rsp + 3], 'r'
+  mov BYTE [rsp + 4], 'l'
+  mov BYTE [rsp + 5], 'd'
 
   mov rax, SYSCALL_WRITE
   mov rdi, STDOUT
@@ -590,11 +307,11 @@ print_hello:
   mov rbp, rsp
 
   sub rsp, 16
-  mov BYTE [rsp + 0], &#39;h&#39;
-  mov BYTE [rsp + 1], &#39;e&#39;
-  mov BYTE [rsp + 2], &#39;l&#39;
-  mov BYTE [rsp + 3], &#39;l&#39;
-  mov BYTE [rsp + 4], &#39;o&#39;
+  mov BYTE [rsp + 0], 'h'
+  mov BYTE [rsp + 1], 'e'
+  mov BYTE [rsp + 2], 'l'
+  mov BYTE [rsp + 3], 'l'
+  mov BYTE [rsp + 4], 'o'
 
   mov rax, SYSCALL_WRITE
   mov rdi, STDOUT
@@ -607,71 +324,48 @@ print_hello:
   add rsp, 16
 
   pop rbp
-  ret</code></pre>
+  ret
+</code></pre>
 <p>And we get <code>hello world</code> as an output.</p>
-<p>Now, try to do <code>sub rsp, 5</code> in <code>print_hello</code>,
-and your program <em>may</em> crash. There is no guarantee, that’s what
-makes it hard to track down.</p>
+<p>Now, try to do <code>sub rsp, 5</code> in <code>print_hello</code>, and your program <em>may</em> crash. There is no guarantee, that's what makes it hard to track down.</p>
 <p>My advice is:</p>
 <ul>
 <li>Always use the standard function prologs and epilogs</li>
-<li>Always increment/decrement <code>rsp</code> by (a multiple of)
-16</li>
-<li>Address items on the stack relative to <code>rsp</code>,
-i.e. <code>mov BYTE [rsp + 4], 'o'</code></li>
-<li>If you have to decrement <code>rsp</code> by a value that’s unknown
-at compile time (similar to how <code>alloca()</code> works in C), you
-can <code>and rsp, -16</code> to 16 bytes align it.</li>
+<li>Always increment/decrement <code>rsp</code> by (a multiple of) 16</li>
+<li>Address items on the stack relative to <code>rsp</code>, i.e. <code>mov BYTE [rsp + 4], 'o'</code></li>
+<li>If you have to decrement <code>rsp</code> by a value that's unknown at compile time (similar to how <code>alloca()</code> works in C), you can <code>and rsp, -16</code> to 16 bytes align it.</li>
 </ul>
-<p>And you’ll be safe.</p>
+<p>And you'll be safe.</p>
 <p>The last point is interesting, see for yourself:</p>
-<pre class="shell"><code>(gdb) p -100 &amp; -16
+<pre><code class="language-shell">(gdb) p -100 &amp; -16
 $1 = -112
 (gdb) p -112 &amp; -16
-$2 = -112</code></pre>
+$2 = -112
+</code></pre>
 <p>Which translates in assembly to:</p>
 <pre><code>sub rsp, 100
-and rsp, -16</code></pre>
-<p>Finally, following those conventions means that our assembly
-functions can be safely called from C or other languages following the
-<a href="https://wiki.osdev.org/System_V_ABI">System V ABI</a>, without
-any modification, which is great.</p>
-<p><em>I have not talked about the red zone which is a 128 byte region
-at the bottom of the stack which our program is free to use as it
-pleases without having to change the stack pointer. In my opinion, it is
-not helpful and creates hard to track bugs, so I do not recommend to use
-it. To disable it entirely, run:
-<code>nasm -f elf64 -g main.nasm &amp;&amp; cc main.o -static -o main -mno-red-zone -nostdlib</code></em>.</p>
-<h2 id="opening-a-socket">Opening a socket</h2>
-<p>We now are ready to open a socket with the <code>socket(2)</code>
-syscall, so we add a few constants, taken from the libc headers
-(<em>note that those values might actually be different on a different
-Unix, I have not checked. Again, a few <code>%ifdef</code> can easily
-remedy this discrepancy</em>):</p>
-<pre class="x86asm"><code>%define AF_UNIX 1
+and rsp, -16
+</code></pre>
+<p>Finally, following those conventions means that our assembly functions can be safely called from C or other languages following the <a href="https://wiki.osdev.org/System_V_ABI">System V ABI</a>, without any modification, which is great.</p>
+<p><em>I have not talked about the red zone which is a 128 byte region at the bottom of the stack which our program is free to use as it pleases without having to change the stack pointer. In my opinion, it is not helpful and creates hard to track bugs, so I do not recommend to use it. To disable it entirely, run: <code>nasm -f elf64 -g main.nasm &amp;&amp; cc main.o -static -o main -mno-red-zone -nostdlib</code></em>.</p>
+<h2>Opening a socket</h2>
+<p>We now are ready to open a socket with the <code>socket(2)</code> syscall, so we add a few constants, taken from the libc headers (<em>note that those values might actually be different on a different Unix, I have not checked. Again, a few <code>%ifdef</code> can easily remedy this discrepancy</em>):</p>
+<pre><code class="language-x86asm">%define AF_UNIX 1
 %define SOCK_STREAM 1
 
-%define SYSCALL_SOCKET 41</code></pre>
-<p>The <code>AF_UNIX</code> constant means we want a Unix domain socket,
-and <code>SOCK_STREAM</code> means <a
-href="https://en.wikipedia.org/wiki/Unix_domain_socket">stream-oriented</a>.
-We use a domain socket since we now that our server is running on the
-same machine and it should be faster, but we could change it to
-<code>AF_INET</code> to connect to a remote IPv4 address for
-example.</p>
-<p>We then fill the relevant registers with those values and invoke the
-system call:</p>
-<pre class="x86asm"><code>  mov rax, SYSCALL_SOCKET
+%define SYSCALL_SOCKET 41
+</code></pre>
+<p>The <code>AF_UNIX</code> constant means we want a Unix domain socket, and <code>SOCK_STREAM</code> means <a href="https://en.wikipedia.org/wiki/Unix_domain_socket">stream-oriented</a>. We use a domain socket since we now that our server is running on the same machine and it should be faster, but we could change it to <code>AF_INET</code> to connect to a remote IPv4 address for example.</p>
+<p>We then fill the relevant registers with those values and invoke the system call:</p>
+<pre><code class="language-x86asm">  mov rax, SYSCALL_SOCKET
   mov rdi, AF_UNIX ; Unix socket.
   mov rsi, SOCK_STREAM ; Stream oriented.
   mov rdx, 0 ; Automatic protocol.
-  syscall</code></pre>
-<p>The C equivalent would be:
-<code>socket(AF_UNIX, SOCK_STREAM, 0);</code>. So you see that if we
-fill the registers in the same order as the C function parameters, we
-stay close to what C code would do.</p>
+  syscall
+</code></pre>
+<p>The C equivalent would be: <code>socket(AF_UNIX, SOCK_STREAM, 0);</code>. So you see that if we fill the registers in the same order as the C function parameters, we stay close to what C code would do.</p>
 <p>The whole program now looks like this:</p>
-<pre class="x86asm"><code>BITS 64 ; 64 bits.
+<pre><code class="language-x86asm">BITS 64 ; 64 bits.
 CPU X64 ; Target the x86_64 family of CPUs.
 
 section .text
@@ -695,44 +389,34 @@ _start:
   ; The end.
   mov rax, SYSCALL_EXIT
   mov rdi, 0
-  syscall</code></pre>
-<p>Building and running it under <code>strace</code> shows that it works
-and we get a socket with the file descriptor <code>3</code> (in this
-case, it might be different for you if you are following at home):</p>
+  syscall
+</code></pre>
+<p>Building and running it under <code>strace</code> shows that it works and we get a socket with the file descriptor <code>3</code> (in this case, it might be different for you if you are following at home):</p>
 <pre><code>$ nasm -f elf64 -g main.nasm &amp;&amp; ld main.o -static -o main 
 $ strace ./main
 execve(&quot;./main&quot;, [&quot;./main&quot;], 0x7ffe54dfe550 /* 60 vars */) = 0
 socket(AF_UNIX, SOCK_STREAM, 0)         = 3
 exit(0)                                 = ?
-+++ exited with 0 +++</code></pre>
-<h2 id="connecting-to-the-server">Connecting to the server</h2>
-<p>Now that we have created a socket, we can connect to the server with
-the <code>connect(2)</code> system call.</p>
-<p>It’s a good time to extract that logic in its own little function,
-just like in any other high-level language.</p>
-<pre class="x86asm"><code>x11_connect_to_server:
-  ; TODO</code></pre>
-<p>In assembly, a function is simply a label we can jump to. But for
-clarity, both for readers of the code and tools, we can add a hint that
-this is a real function we can call, like this:
-<code>call x11_connect_to_server</code>. This will improve the call
-stack for example when using <code>strace -k</code>. This hint has the
-form (in <code>nasm</code>):
-<code>static &lt;name of the function&gt;:function</code>.</p>
-<p>Of course, we also need to add our standard function prolog and
-epilog:</p>
-<pre class="x86asm"><code>x11_connect_to_server:
++++ exited with 0 +++
+</code></pre>
+<h2>Connecting to the server</h2>
+<p>Now that we have created a socket, we can connect to the server with the <code>connect(2)</code> system call.</p>
+<p>It's a good time to extract that logic in its own little function, just like in any other high-level language.</p>
+<pre><code class="language-x86asm">x11_connect_to_server:
+  ; TODO
+</code></pre>
+<p>In assembly, a function is simply a label we can jump to. But for clarity, both for readers of the code and tools, we can add a hint that this is a real function we can call, like this: <code>call x11_connect_to_server</code>. This will improve the call stack for example when using <code>strace -k</code>. This hint has the form (in <code>nasm</code>): <code>static &lt;name of the function&gt;:function</code>.</p>
+<p>Of course, we also need to add our standard function prolog and epilog:</p>
+<pre><code class="language-x86asm">x11_connect_to_server:
 static x11_connect_to_server:function
   push rbp
   mov rbp, rsp
   
   pop rbp
-  ret</code></pre>
-<p>An additional help when reading functions in assembly code is adding
-comments describing what parameters they accept and what is the return
-value, if any. Since there is no language level feature for this, we
-resort to comments:</p>
-<pre class="x86asm"><code>; Create a UNIX domain socket and connect to the X11 server.
+  ret
+</code></pre>
+<p>An additional help when reading functions in assembly code is adding comments describing what parameters they accept and what is the return value, if any. Since there is no language level feature for this, we resort to comments:</p>
+<pre><code class="language-x86asm">; Create a UNIX domain socket and connect to the X11 server.
 ; @returns The socket file descriptor.
 x11_connect_to_server:
 static x11_connect_to_server:function
@@ -740,10 +424,10 @@ static x11_connect_to_server:function
   mov rbp, rsp
   
   pop rbp
-  ret</code></pre>
-<p>First, let’s move the socket creation logic to our function and call
-it in the program:</p>
-<pre class="x86asm"><code>; Create a UNIX domain socket and connect to the X11 server.
+  ret
+</code></pre>
+<p>First, let's move the socket creation logic to our function and call it in the program:</p>
+<pre><code class="language-x86asm">; Create a UNIX domain socket and connect to the X11 server.
 ; @returns The socket file descriptor.
 x11_connect_to_server:
 static x11_connect_to_server:function
@@ -777,83 +461,50 @@ global _start:function
   ; The end.
   mov rax, SYSCALL_EXIT
   mov rdi, 0
-  syscall</code></pre>
-<p>The error checking is very simplistic: we only check that the return
-value of the system call (in <code>rax</code>) is what we expect,
-otherwise we exit the program with a non-zero code by jumping to the
-<code>die</code> section.</p>
+  syscall
+</code></pre>
+<p>The error checking is very simplistic: we only check that the return value of the system call (in <code>rax</code>) is what we expect, otherwise we exit the program with a non-zero code by jumping to the <code>die</code> section.</p>
 <blockquote>
-<p><code>jle</code> is a conditional jump, which inspects global flags,
-hopefully set just before with <code>cmp</code> or <code>test</code>,
-and jumps to a label if the condition is true. Here, we compare the
-returned value with 0, and if it is lower or equal to 0, we jump to the
-error label. That’s how we implement conditionals and loops.</p>
+<p><code>jle</code> is a conditional jump, which inspects global flags, hopefully set just before with <code>cmp</code> or <code>test</code>, and jumps to a label if the condition is true. Here, we compare the returned value with 0, and if it is lower or equal to 0, we jump to the error label. That's how we implement conditionals and loops.</p>
 </blockquote>
 <hr />
-<p>Ok, we can finally connect to the server now. The
-<code>connect(2)</code> system call takes the address of a
-<code>sockaddr_un</code> structure as the second argument. This
-structure is too big to fit in a register.</p>
-<p>This is the first syscall we encounter that needs to be passed a
-pointer, in other words, the address of a region in memory. That region
-can be on the stack or on the heap, or even be our own executable mapped
-in memory. That’s assembly, we get to do whatever we want.</p>
-<p>Since we want to keep things simple and fast, we will store
-everything in this program on the stack. And since we have 8 MiB of it
-(according to <code>limit</code>, on my machine, that is), it’ll be
-plenty enough. Actually, the most space we will need on the stack in
-this program will be 32 KiB.</p>
-<p>The size of the <code>sockaddr_un</code> structure is 110 bytes, so
-we reserve 112 to align <code>rsp</code> to 16 bytes.</p>
+<p>Ok, we can finally connect to the server now. The <code>connect(2)</code> system call takes the address of a <code>sockaddr_un</code> structure as the second argument. This structure is too big to fit in a register.</p>
+<p>This is the first syscall we encounter that needs to be passed a pointer, in other words, the address of a region in memory. That region can be on the stack or on the heap, or even be our own executable mapped in memory. That's assembly, we get to do whatever we want.</p>
+<p>Since we want to keep things simple and fast, we will store everything in this program on the stack. And since we have 8 MiB of it (according to <code>limit</code>, on my machine, that is), it'll be plenty enough. Actually, the most space we will need on the stack in this program will be 32 KiB.</p>
+<p>The size of the <code>sockaddr_un</code> structure is 110 bytes, so we reserve 112 to align <code>rsp</code> to 16 bytes.</p>
 <blockquote>
-<p>Nasm does have structs, but they are rather a way to define offsets
-with a name, than structures like in C with a specific syntax to address
-a specific field. For the sake of simplicity, I’ll use the manual way,
-without <code>nasm</code> structs.</p>
+<p>Nasm does have structs, but they are rather a way to define offsets with a name, than structures like in C with a specific syntax to address a specific field. For the sake of simplicity, I'll use the manual way, without <code>nasm</code> structs.</p>
 </blockquote>
-<p>We set the first 2 bytes of this structure to <code>AF_UNIX</code>
-since this is a domain socket. Then comes the path of the Unix domain
-socket which X11 expects to be in a certain format. We want to display
-our window on the first monitor starting at 0, so the string is:
-<code>/tmp/.X11-unix/X0</code>.</p>
+<p>We set the first 2 bytes of this structure to <code>AF_UNIX</code> since this is a domain socket. Then comes the path of the Unix domain socket which X11 expects to be in a certain format. We want to display our window on the first monitor starting at 0, so the string is: <code>/tmp/.X11-unix/X0</code>.</p>
 <p>In C, we would do:</p>
-<div class="sourceCode" id="cb23"><pre class="sourceCode c"><code class="sourceCode c"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a>  <span class="dt">const</span> sockaddr_un addr <span class="op">=</span> <span class="op">{.</span>sun_family <span class="op">=</span> AF_UNIX<span class="op">,</span></span>
-<span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a>                            <span class="op">.</span>sun_path <span class="op">=</span> <span class="st">&quot;/tmp/.X11-unix/X0&quot;</span><span class="op">};</span></span>
-<span id="cb23-3"><a href="#cb23-3" aria-hidden="true" tabindex="-1"></a>  <span class="dt">const</span> <span class="dt">int</span> res <span class="op">=</span></span>
-<span id="cb23-4"><a href="#cb23-4" aria-hidden="true" tabindex="-1"></a>      connect<span class="op">(</span>x11_socket_fd<span class="op">,</span> <span class="op">(</span><span class="dt">const</span> <span class="kw">struct</span> sockaddr <span class="op">*)&amp;</span>addr<span class="op">,</span> <span class="kw">sizeof</span><span class="op">(</span>addr<span class="op">));</span></span></code></pre></div>
+<pre><code class="language-c">  const sockaddr_un addr = {.sun_family = AF_UNIX,
+                            .sun_path = &quot;/tmp/.X11-unix/X0&quot;};
+  const int res =
+      connect(x11_socket_fd, (const struct sockaddr *)&amp;addr, sizeof(addr));
+</code></pre>
 <p>How do we translate that to assembly, especially the string part?</p>
-<p>We could set each byte to each character of the string in the
-structure, on the stack, manually, one by one. Another <a
-href="https://en.wikibooks.org/wiki/X86_Assembly/Data_Transfer#Move_String">way</a>
-to do it is to use the <code>rep movsb</code> idiom, which instructs the
-CPU to copy a character from a string A to another string B, N times.
-This is exactly what we need!</p>
-<p>The way it works is: - We put the string in the <code>.rodata</code>
-section (same as the data section but read-only) - We load its address
-in <code>rsi</code> (it’s the source) - We load the address of the
-string in the structure on the stack in <code>rdi</code> (it’s the
-destination) - We set <code>rcx</code> to the number of bytes to be
-copied - We use <code>cld</code> to clear the <code>DF</code> flag to
-ensure the copy is done forwards (since it can also be done backwards) -
-We call <code>rep movsb</code> and voila</p>
-<p>It’s basically <code>memcpy</code> from C.</p>
+<p>We could set each byte to each character of the string in the structure, on the stack, manually, one by one. Another <a href="https://en.wikibooks.org/wiki/X86_Assembly/Data_Transfer#Move_String">way</a> to do it is to use the <code>rep movsb</code> idiom, which instructs the CPU to copy a character from a string A to another string B, N times. This is exactly what we need!</p>
+<p>The way it works is:</p>
+<ul>
+<li>We put the string in the <code>.rodata</code> section (same as the data section but read-only)</li>
+<li>We load its address in <code>rsi</code> (it's the source)</li>
+<li>We load the address of the string in the structure on the stack in <code>rdi</code> (it's the destination)</li>
+<li>We set <code>rcx</code> to the number of bytes to be copied</li>
+<li>We use <code>cld</code> to clear the <code>DF</code> flag to ensure the copy is done forwards (since it can also be done backwards)</li>
+<li>We call <code>rep movsb</code> and voila</li>
+</ul>
+<p>It's basically <code>memcpy</code> from C.</p>
 <blockquote>
-<p>This is a interesting case: we can see that some instructions expect
-some of their operands to be in certain registers and there is no way
-around it. So, we have to plan ahead and expect those registers to be
-overwritten. If we need to keep their original values around, we have to
-store those values elsewhere, for example on the stack (that’s called
-spilling) or in other registers. This is a broader topic of register
-allocation which is NP-hard! In small functions, it’s manageable
-though.</p>
+<p>This is a interesting case: we can see that some instructions expect some of their operands to be in certain registers and there is no way around it.  So, we have to plan ahead and expect those registers to be overwritten. If we need to keep their original values around, we have to store those values elsewhere, for example on the stack (that's called spilling) or in other registers. This is a broader topic of register allocation which is NP-hard! In small functions, it's manageable though.</p>
 </blockquote>
 <p>First, the <code>.rodata</code> section:</p>
-<pre class="x86asm"><code>section .rodata
+<pre><code class="language-x86asm">section .rodata
 
 sun_path: db &quot;/tmp/.X11-unix/X0&quot;, 0
-static sun_path:data</code></pre>
+static sun_path:data
+</code></pre>
 <p>Then we copy the string:</p>
-<pre class="x86asm"><code>  mov WORD [rsp], AF_UNIX ; Set sockaddr_un.sun_family to AF_UNIX
+<pre><code class="language-x86asm">  mov WORD [rsp], AF_UNIX ; Set sockaddr_un.sun_family to AF_UNIX
   ; Fill sockaddr_un.sun_path with: &quot;/tmp/.X11-unix/X0&quot;.
   lea rsi, sun_path
   mov r12, rdi ; Save the socket file descriptor in `rdi` in `r12`.
@@ -861,28 +512,14 @@ static sun_path:data</code></pre>
   cld ; Move forward
   mov ecx, 19 ; Length is 19 with the null terminator.
   rep movsb ; Copy.
+
 </code></pre>
 <blockquote>
-<p><code>ecx</code> is the 32 bit form of the register <code>rcx</code>,
-meaning we only set here the lower 32 bits of the 64 bit register. <a
-href="https://wiki.osdev.org/CPU_Registers_x86-64">This handy table</a>
-lists all of the forms for all of the registers. But be cautious of the
-pitfall case of only setting a value in part of a register, and then
-using the whole register later. The rest of the bits that have not been
-set will contain some past value, which is hard to troubleshoot. The
-solution is to use <code>movzx</code> to zero extend, meaning setting
-the rest of the bits to 0. A good way to visualize this is to use
-<code>info registers</code> within gdb, and that will display for each
-register the value for each of its forms, e.g. for <code>rcx</code>, it
-will display the value for <code>rcx</code>, <code>ecx</code>,
-<code>cx</code>, <code>ch</code>, <code>cl</code>.</p>
+<p><code>ecx</code> is the 32 bit form of the register <code>rcx</code>, meaning we only set here the lower 32 bits of the 64 bit register. <a href="https://wiki.osdev.org/CPU_Registers_x86-64">This handy table</a> lists all of the forms for all of the registers. But be cautious of the pitfall case of only setting a value in part of a register, and then using the whole register later. The rest of the bits that have not been set will contain some past value, which is hard to troubleshoot. The solution is to use <code>movzx</code> to zero extend, meaning setting the rest of the bits to 0. A good way to visualize this is to use <code>info registers</code> within gdb, and that will display for each register the value for each of its forms, e.g. for <code>rcx</code>, it will display the value for <code>rcx</code>, <code>ecx</code>, <code>cx</code>, <code>ch</code>, <code>cl</code>.</p>
 </blockquote>
-<p>Then, we do the syscall, check the returned value, exit the program
-if the value is not 0, and finally return the socket file descriptor,
-which will be used every time in the rest of the program when talking to
-the X11 server.</p>
+<p>Then, we do the syscall, check the returned value, exit the program if the value is not 0, and finally return the socket file descriptor, which will be used every time in the rest of the program when talking to the X11 server.</p>
 <p>Everything together, it looks like:</p>
-<pre class="x86asm"><code>; Create a UNIX domain socket and connect to the X11 server.
+<pre><code class="language-x86asm">; Create a UNIX domain socket and connect to the X11 server.
 ; @returns The socket file descriptor.
 x11_connect_to_server:
 static x11_connect_to_server:function
@@ -928,46 +565,37 @@ static x11_connect_to_server:function
   add rsp, 112
   pop rbp
   ret
+
 </code></pre>
 <p>We are ready to talk to the X11 server!</p>
-<h2 id="sending-data-over-the-socket">Sending data over the socket</h2>
-<p>There is the <code>send(2)</code> syscall to do this, but we can keep
-it simple and use the generic <code>write(2)</code> syscall instead.
-Either way works.</p>
-<pre class="x86asm"><code>%define SYSCALL_WRITE 1</code></pre>
-<p>The C structure for the handshake in the case of success looks like
-this:</p>
-<div class="sourceCode" id="cb28"><pre class="sourceCode c"><code class="sourceCode c"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a><span class="kw">typedef</span> <span class="kw">struct</span> <span class="op">{</span></span>
-<span id="cb28-2"><a href="#cb28-2" aria-hidden="true" tabindex="-1"></a>  u8 order<span class="op">;</span></span>
-<span id="cb28-3"><a href="#cb28-3" aria-hidden="true" tabindex="-1"></a>  u8 pad1<span class="op">;</span></span>
-<span id="cb28-4"><a href="#cb28-4" aria-hidden="true" tabindex="-1"></a>  u16 major<span class="op">,</span> minor<span class="op">;</span></span>
-<span id="cb28-5"><a href="#cb28-5" aria-hidden="true" tabindex="-1"></a>  u16 auth_proto_len<span class="op">,</span> auth_data_len<span class="op">;</span></span>
-<span id="cb28-6"><a href="#cb28-6" aria-hidden="true" tabindex="-1"></a>  u16 pad2<span class="op">;</span></span>
-<span id="cb28-7"><a href="#cb28-7" aria-hidden="true" tabindex="-1"></a>  <span class="co">// Optionally, authorization information follow, if `auth_proto_len` and `auth_data_len` are  not 0.</span></span>
-<span id="cb28-8"><a href="#cb28-8" aria-hidden="true" tabindex="-1"></a><span class="op">}</span> x11_connection_req_t<span class="op">;</span></span></code></pre></div>
-<p><code>pad*</code> fields can be ignored since they are padding and
-their value is not read by the server.</p>
-<p>For our handshake, we need to set the <code>order</code> to be
-<code>l</code>, that is, little-endian, since X11 can be told to
-interpret message as big or little endian. Since x64 is little-endian,
-we do not want to have a endianness translation layer and so we stick to
-little-endian.</p>
-<p>We also need to set the <code>major</code> field, which is the
-version, to <code>11</code>. I’ll leave it to the reader to guess
-why.</p>
+<h2>Sending data over the socket</h2>
+<p>There is the <code>send(2)</code> syscall to do this, but we can keep it simple and use the generic <code>write(2)</code> syscall instead. Either way works.</p>
+<pre><code class="language-x86asm">%define SYSCALL_WRITE 1
+</code></pre>
+<p>The C structure for the handshake in the case of success looks like this:</p>
+<pre><code class="language-c">typedef struct {
+  u8 order;
+  u8 pad1;
+  u16 major, minor;
+  u16 auth_proto_len, auth_data_len;
+  u16 pad2;
+  // Optionally, authorization information follow, if `auth_proto_len` and `auth_data_len` are  not 0.
+} x11_connection_req_t;
+</code></pre>
+<p><code>pad*</code> fields can be ignored since they are padding and their value is not read by the server.</p>
+<p>For our handshake, we need to set the <code>order</code> to be <code>l</code>, that is, little-endian, since X11 can be told to interpret message as big or little endian. Since x64 is little-endian, we do not want to have a endianness translation layer and so we stick to little-endian.</p>
+<p>We also need to set the <code>major</code> field, which is the version, to <code>11</code>. I'll leave it to the reader to guess why.</p>
 <p>In C, we would do:</p>
-<div class="sourceCode" id="cb29"><pre class="sourceCode c"><code class="sourceCode c"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a>  x11_connection_req_t req <span class="op">=</span> <span class="op">{.</span>order <span class="op">=</span> <span class="ch">&#39;l&#39;</span><span class="op">,</span> <span class="op">.</span>major <span class="op">=</span> <span class="dv">11</span><span class="op">};</span></span></code></pre></div>
-<p>This structure is only 12 bytes long, since we do not use
-authorization (we leave all subsequent fields after the
-<code>minor_version</code> as 0).</p>
-<p>But since we will have to read the response from the server which is
-quite big (around 14 KiB during my testing), we will right away reserve
-a lot of space on the stack, 32 KiB, to be safe:</p>
-<pre class="x86asm"><code>  sub rsp, 1&lt;&lt;15
-  mov BYTE [rsp + 0], &#39;l&#39; ; Set order to &#39;l&#39;.
-  mov WORD [rsp + 2], 11 ; Set major version to 11.</code></pre>
+<pre><code class="language-c">  x11_connection_req_t req = {.order = 'l', .major = 11};
+</code></pre>
+<p>This structure is only 12 bytes long, since we do not use authorization (we leave all subsequent fields after the <code>minor_version</code> as 0).</p>
+<p>But since we will have to read the response from the server which is quite big (around 14 KiB during my testing), we will right away reserve a lot of space on the stack, 32 KiB, to be safe:</p>
+<pre><code class="language-x86asm">  sub rsp, 1&lt;&lt;15
+  mov BYTE [rsp + 0], 'l' ; Set order to 'l'.
+  mov WORD [rsp + 2], 11 ; Set major version to 11.
+</code></pre>
 <p>Then we send it to the server:</p>
-<pre class="x86asm"><code>  ; Send the handshake to the server: write(2).
+<pre><code class="language-x86asm">  ; Send the handshake to the server: write(2).
   mov rax, SYSCALL_WRITE
   mov rdi, rdi
   lea rsi, [rsp]
@@ -975,10 +603,10 @@ a lot of space on the stack, 32 KiB, to be safe:</p>
   syscall
 
   cmp rax, 12 ; Check that all bytes were written.
-  jnz die</code></pre>
-<p>After that, we read the server response, which should be at first 8
-bytes:</p>
-<pre class="x86asm"><code>  ; Read the server response: read(2).
+  jnz die
+</code></pre>
+<p>After that, we read the server response, which should be at first 8 bytes:</p>
+<pre><code class="language-x86asm">  ; Read the server response: read(2).
   ; Use the stack for the read buffer.
   ; The X11 server first replies with 8 bytes. Once these are read, it replies with a much bigger message.
   mov rax, SYSCALL_READ
@@ -990,16 +618,13 @@ bytes:</p>
   cmp rax, 8 ; Check that the server replied with 8 bytes.
   jnz die
 
-  cmp BYTE [rsp], 1 ; Check that the server sent &#39;success&#39; (first byte is 1).
-  jnz die</code></pre>
-<p>The first byte in the server response is <code>0</code> for failure
-and <code>1</code> for success (and <code>2</code> for authentication
-but we will not need it here).</p>
-<p>The server sends a big message with a lot of general information,
-which we will need for later, so we store certain fields in global
-variables located in the data section.</p>
+  cmp BYTE [rsp], 1 ; Check that the server sent 'success' (first byte is 1).
+  jnz die
+</code></pre>
+<p>The first byte in the server response is <code>0</code> for failure and <code>1</code> for success (and <code>2</code> for authentication but we will not need it here).</p>
+<p>The server sends a big message with a lot of general information, which we will need for later, so we store certain fields in global variables located in the data section.</p>
 <p>First we add those variables, each 4 bytes big:</p>
-<pre class="x86asm"><code>section .data
+<pre><code class="language-x86asm">section .data
 
 id: dd 0
 static id:data
@@ -1011,13 +636,10 @@ id_mask: dd 0
 static id_mask:data
 
 root_visual_id: dd 0
-static root_visual_id:data</code></pre>
-<p>Then we read the server response, and skip over the parts we are not
-interested in. This boils down to incrementing a pointer by a dynamic
-value, a few times. Note that since we do not do any checks here, that
-would be a great attack vector to trigger a stack overflow or such in
-our program.</p>
-<pre class="x86asm"><code>  ; Read the rest of the server response: read(2).
+static root_visual_id:data
+</code></pre>
+<p>Then we read the server response, and skip over the parts we are not interested in. This boils down to incrementing a pointer by a dynamic value, a few times. Note that since we do not do any checks here, that would be a great attack vector to trigger a stack overflow or such in our program.</p>
+<pre><code class="language-x86asm">  ; Read the rest of the server response: read(2).
   ; Use the stack for the read buffer.
   mov rax, SYSCALL_READ
   mov rdi, rdi
@@ -1059,40 +681,33 @@ our program.</p>
 
   ; Set the root_visual_id globally.
   mov edx, DWORD [rdi + 32]
-  mov DWORD [root_visual_id], edx</code></pre>
+  mov DWORD [root_visual_id], edx
+</code></pre>
 <hr />
-<p>A small aside about padding, <a
-href="https://github.com/gaultier/blog/issues/6">thanks to a
-perspicacious reader</a>:</p>
-<p>How we skip padding is the only bit of smartness we allow ourselves:
-some fields in the X11 protocol have a variable length. But the X11
-protocol counts everything in units of ‘4 bytes’.</p>
-<p>Meaning, if a field is only 5 bytes long, per the protocol, there
-will be 3 bytes of padding (which should be skipped over by the
-application), so that the field occupies 2 units of 4 bytes (it is 4
-bytes-aligned).</p>
-<p>How do we do that then? The specification uses some division and
-modulo operations, but those are annoying to do in assembly. We can do
-better.</p>
+<p>A small aside about padding, <a href="https://github.com/gaultier/blog/issues/6">thanks to a perspicacious reader</a>:</p>
+<p>How we skip padding is the only bit of smartness we allow ourselves: some fields in the X11 protocol have a variable length. But the X11 protocol counts everything in units of '4 bytes'.</p>
+<p>Meaning, if a field is only 5 bytes long, per the protocol, there will be 3 bytes of padding (which should be skipped over by the application), so that the field occupies 2 units of 4 bytes (it is 4 bytes-aligned).</p>
+<p>How do we do that then? The specification uses some division and modulo operations, but those are annoying to do in assembly. We can do better.</p>
 <p><code>libX11</code> uses this macro:</p>
-<div class="sourceCode" id="cb35"><pre class="sourceCode c"><code class="sourceCode c"><span id="cb35-1"><a href="#cb35-1" aria-hidden="true" tabindex="-1"></a><span class="pp">#define ROUNDUP(nbytes, pad) (((nbytes) + ((pad)-1)) &amp; ~(long)((pad)-1))</span></span></code></pre></div>
+<pre><code class="language-c">#define ROUNDUP(nbytes, pad) (((nbytes) + ((pad)-1)) &amp; ~(long)((pad)-1))
+</code></pre>
 <p>And it should be used so:</p>
-<div class="sourceCode" id="cb36"><pre class="sourceCode c"><code class="sourceCode c"><span id="cb36-1"><a href="#cb36-1" aria-hidden="true" tabindex="-1"></a>assert<span class="op">(</span>ROUNDUP<span class="op">(</span><span class="dv">0</span><span class="op">,</span> <span class="dv">4</span><span class="op">)</span> <span class="op">==</span> <span class="dv">0</span><span class="op">);</span></span>
-<span id="cb36-2"><a href="#cb36-2" aria-hidden="true" tabindex="-1"></a>assert<span class="op">(</span>ROUNDUP<span class="op">(</span><span class="dv">1</span><span class="op">,</span> <span class="dv">4</span><span class="op">)</span> <span class="op">==</span> <span class="dv">4</span><span class="op">);</span></span>
-<span id="cb36-3"><a href="#cb36-3" aria-hidden="true" tabindex="-1"></a>assert<span class="op">(</span>ROUNDUP<span class="op">(</span><span class="dv">2</span><span class="op">,</span> <span class="dv">4</span><span class="op">)</span> <span class="op">==</span> <span class="dv">4</span><span class="op">);</span></span>
-<span id="cb36-4"><a href="#cb36-4" aria-hidden="true" tabindex="-1"></a>assert<span class="op">(</span>ROUNDUP<span class="op">(</span><span class="dv">3</span><span class="op">,</span> <span class="dv">4</span><span class="op">)</span> <span class="op">==</span> <span class="dv">4</span><span class="op">);</span></span>
-<span id="cb36-5"><a href="#cb36-5" aria-hidden="true" tabindex="-1"></a>assert<span class="op">(</span>ROUNDUP<span class="op">(</span><span class="dv">4</span><span class="op">,</span> <span class="dv">4</span><span class="op">)</span> <span class="op">==</span> <span class="dv">4</span><span class="op">);</span></span>
-<span id="cb36-6"><a href="#cb36-6" aria-hidden="true" tabindex="-1"></a>assert<span class="op">(</span>ROUNDUP<span class="op">(</span><span class="dv">5</span><span class="op">,</span> <span class="dv">4</span><span class="op">)</span> <span class="op">==</span> <span class="dv">8</span><span class="op">);</span></span>
-<span id="cb36-7"><a href="#cb36-7" aria-hidden="true" tabindex="-1"></a><span class="co">// etc</span></span></code></pre></div>
-<p>This works, but is kind of complex. If we look at this output when
-compiling this code, we see that <code>gcc</code> smartly optimizes this
-macro down to:</p>
-<pre class="x86asm"><code>  add     eax, 3
-  and     eax, -4</code></pre>
+<pre><code class="language-c">assert(ROUNDUP(0, 4) == 0);
+assert(ROUNDUP(1, 4) == 4);
+assert(ROUNDUP(2, 4) == 4);
+assert(ROUNDUP(3, 4) == 4);
+assert(ROUNDUP(4, 4) == 4);
+assert(ROUNDUP(5, 4) == 8);
+// etc
+</code></pre>
+<p>This works, but is kind of complex. If we look at this output when compiling this code, we see that <code>gcc</code> smartly optimizes this macro down to:</p>
+<pre><code class="language-x86asm">  add     eax, 3
+  and     eax, -4
+</code></pre>
 <p>So we use this form.</p>
 <hr />
 <p>All together:</p>
-<pre class="x86asm"><code>; Send the handshake to the X11 server and read the returned system information.
+<pre><code class="language-x86asm">; Send the handshake to the X11 server and read the returned system information.
 ; @param rdi The socket file descriptor
 ; @returns The window root id (uint32_t) in rax.
 x11_send_handshake:
@@ -1101,7 +716,7 @@ static x11_send_handshake:function
   mov rbp, rsp
 
   sub rsp, 1&lt;&lt;15
-  mov BYTE [rsp + 0], &#39;l&#39; ; Set order to &#39;l&#39;.
+  mov BYTE [rsp + 0], 'l' ; Set order to 'l'.
   mov WORD [rsp + 2], 11 ; Set major version to 11.
 
   ; Send the handshake to the server: write(2).
@@ -1126,7 +741,7 @@ static x11_send_handshake:function
   cmp rax, 8 ; Check that the server replied with 8 bytes.
   jnz die
 
-  cmp BYTE [rsp], 1 ; Check that the server sent &#39;success&#39; (first byte is 1).
+  cmp BYTE [rsp], 1 ; Check that the server sent 'success' (first byte is 1).
   jnz die
 
   ; Read the rest of the server response: read(2).
@@ -1175,19 +790,16 @@ static x11_send_handshake:function
 
   add rsp, 1&lt;&lt;15
   pop rbp
-  ret</code></pre>
+  ret
+</code></pre>
 <blockquote>
-<p>From this point on, I will assume you are familiar with the basics of
-assembly and X11 and will not go as much into details.</p>
+<p>From this point on, I will assume you are familiar with the basics of assembly and X11 and will not go as much into details.</p>
 </blockquote>
-<h2 id="generating-ids">Generating ids</h2>
-<p>When creating resources on the server-side, we usually first generate
-an id on the client side, and send that id to the server when creating
-the resource.</p>
-<p>We store the current id in a global variable and increment it each
-time a new id is generated.</p>
+<h2>Generating ids</h2>
+<p>When creating resources on the server-side, we usually first generate an id on the client side, and send that id to the server when creating the resource.</p>
+<p>We store the current id in a global variable and increment it each time a new id is generated.</p>
 <p>This is how we do it:</p>
-<pre class="x86asm"><code>; Increment the global id.
+<pre><code class="language-x86asm">; Increment the global id.
 ; @return The new id.
 x11_next_id:
 static x11_next_id:function
@@ -1206,16 +818,13 @@ static x11_next_id:function
   add DWORD [id], 1 ; Increment id.
 
   pop rbp
-  ret</code></pre>
-<h2 id="opening-a-font">Opening a font</h2>
-<p>To open a font, which is a prerequisite to draw text, we send a
-message to the server specifying (part of) the name of the font we want,
-and the server will select a matching font.</p>
-<p>To play with another font, you can use <code>xfontsel</code> which
-displays all the font names that the X11 server knows about.</p>
-<p>First, we generate an id for the font locally, and then we send it
-alongside the font name.</p>
-<pre class="x86asm"><code>; Open the font on the server side.
+  ret
+</code></pre>
+<h2>Opening a font</h2>
+<p>To open a font, which is a prerequisite to draw text, we send a message to the server specifying (part of) the name of the font we want, and the server will select a matching font.</p>
+<p>To play with another font, you can use <code>xfontsel</code> which displays all the font names that the X11 server knows about.</p>
+<p>First, we generate an id for the font locally, and then we send it alongside the font name.</p>
+<pre><code class="language-x86asm">; Open the font on the server side.
 ; @param rdi The socket file descriptor.
 ; @param esi The font id.
 x11_open_font:
@@ -1232,11 +841,11 @@ static x11_open_font:function
   mov DWORD [rsp + 0*4], X11_OP_REQ_OPEN_FONT | (OPEN_FONT_NAME_BYTE_COUNT &lt;&lt; 16)
   mov DWORD [rsp + 1*4], esi
   mov DWORD [rsp + 2*4], OPEN_FONT_NAME_BYTE_COUNT
-  mov BYTE [rsp + 3*4 + 0], &#39;f&#39;
-  mov BYTE [rsp + 3*4 + 1], &#39;i&#39;
-  mov BYTE [rsp + 3*4 + 2], &#39;x&#39;
-  mov BYTE [rsp + 3*4 + 3], &#39;e&#39;
-  mov BYTE [rsp + 3*4 + 4], &#39;d&#39;
+  mov BYTE [rsp + 3*4 + 0], 'f'
+  mov BYTE [rsp + 3*4 + 1], 'i'
+  mov BYTE [rsp + 3*4 + 2], 'x'
+  mov BYTE [rsp + 3*4 + 3], 'e'
+  mov BYTE [rsp + 3*4 + 4], 'd'
 
 
   mov rax, SYSCALL_WRITE
@@ -1251,16 +860,13 @@ static x11_open_font:function
   add rsp, 6*8
 
   pop rbp
-  ret</code></pre>
-<h2 id="creating-a-graphical-context">Creating a graphical context</h2>
-<p>Since an application in X11 can have multiple windows, we first need
-to create a graphical context containing the general information. When
-we create a window, we refer to this graphical context by id.</p>
+  ret
+</code></pre>
+<h2>Creating a graphical context</h2>
+<p>Since an application in X11 can have multiple windows, we first need to create a graphical context containing the general information. When we create a window, we refer to this graphical context by id.</p>
 <p>Again, we need to generate an id for the graphical context to be.</p>
-<p>X11 stores a hierarchy of windows, so when creating the graphical
-context, we also need to give it the root window id (i.e. the parent
-id).</p>
-<pre class="x86asm"><code>; Create a X11 graphical context.
+<p>X11 stores a hierarchy of windows, so when creating the graphical context, we also need to give it the root window id (i.e. the parent id).</p>
+<pre><code class="language-x86asm">; Create a X11 graphical context.
 ; @param rdi The socket file descriptor.
 ; @param esi The graphical context id.
 ; @param edx The window root id.
@@ -1303,15 +909,13 @@ static x11_create_gc:function
   add rsp, 8*8
 
   pop rbp
-  ret</code></pre>
-<h2 id="creating-the-window">Creating the window</h2>
-<p>We can now create the window, which refers to the freshly created
-graphical context. We also provide the desired x and y coordinates of
-the window, as well as the desired dimensions (width and height).</p>
-<p>Note that those are simply hints and the resulting window may well
-have different coordinates and dimensions, for example when using a
-tiling window manager, or when resizing the window.</p>
-<pre class="x86asm"><code>; Create the X11 window.
+  ret
+</code></pre>
+<h2>Creating the window</h2>
+<p>We can now create the window, which refers to the freshly created graphical context.
+We also provide the desired x and y coordinates of the window, as well as the desired dimensions (width and height).</p>
+<p>Note that those are simply hints and the resulting window may well have different coordinates and dimensions, for example when using a tiling window manager, or when resizing the window.</p>
+<pre><code class="language-x86asm">; Create the X11 window.
 ; @param rdi The socket file descriptor.
 ; @param esi The new window id.
 ; @param edx The window root id.
@@ -1360,13 +964,12 @@ static x11_create_window:function
   add rsp, 12*8
 
   pop rbp
-  ret</code></pre>
-<h2 id="mapping-the-window">Mapping the window</h2>
-<p>If you are following along at home, and just ran the program, you
-have realized nothing is displayed.</p>
-<p>That is because X11 does not show the window until we have mapped it.
-This is a simple message to send:</p>
-<pre class="x86asm"><code>; Map a X11 window.
+  ret
+</code></pre>
+<h2>Mapping the window</h2>
+<p>If you are following along at home, and just ran the program, you have realized nothing is displayed.</p>
+<p>That is because X11 does not show the window until we have mapped it. This is a simple message to send:</p>
+<pre><code class="language-x86asm">; Map a X11 window.
 ; @param rdi The socket file descriptor.
 ; @param esi The window id.
 x11_map_window:
@@ -1392,35 +995,21 @@ static x11_map_window:function
   add rsp, 16
 
   pop rbp
-  ret</code></pre>
+  ret
+</code></pre>
 <p>We now have a black window:</p>
-<figure>
-<img src="x11_x64_black_window.png" alt="Black window" />
-<figcaption aria-hidden="true">Black window</figcaption>
-</figure>
+<p><img src="x11_x64_black_window.png" alt="Black window" /></p>
 <p>Yay!</p>
-<h2 id="polling-for-server-messages">Polling for server messages</h2>
-<p>We would like to draw text in the window now, but we have to wait for
-the <code>Expose</code> event to be sent to us, which means that the
-window is visible, to be able to start drawing on it.</p>
-<p>We want to listen for all server messages actually, be it errors or
-events, for example when the user presses a key on the keyboard.</p>
-<p>If we do a simple blocking <code>read(2)</code>, but the server sends
-nothing, the program will appear not responding. Not good. The solution
-is to use the <code>poll(2)</code> system call to be awoken by the
-operating system whenever there is data to be read on the socket, a la
-NodeJS or Nginx.</p>
+<h2>Polling for server messages</h2>
+<p>We would like to draw text in the window now, but we have to wait for the <code>Expose</code> event to be sent to us, which means that the window is visible, to be able to start drawing on it.</p>
+<p>We want to listen for all server messages actually, be it errors or events, for example when the user presses a key on the keyboard.</p>
+<p>If we do a simple blocking <code>read(2)</code>, but the server sends nothing, the program will appear not responding. Not good.
+The solution is to use the <code>poll(2)</code> system call to be awoken by the operating system whenever there is data to be read on the socket, a la NodeJS or Nginx.</p>
 <blockquote>
-<p>An shrewd reader has pointed out that we could simply
-<code>read</code> from the socket in a loop, since we only have one,
-possibly with a timeout. Linux, and perhaps others, support setting a
-read timeout on a socket with <code>setsockopt(2)</code>. But I will
-keep this version in this article since this is the original one. Feel
-free to experiment with the alternative at home!</p>
+<p>An shrewd reader has pointed out that we could simply <code>read</code> from the socket in a loop, since we only have one, possibly with a timeout. Linux, and perhaps others, support setting a read timeout on a socket with <code>setsockopt(2)</code>. But I will keep this version in this article since this is the original one. Feel free to experiment with the alternative at home!</p>
 </blockquote>
-<p>First, we need to mark the socket as ‘non-blocking’ since it is by
-default in blocking mode:</p>
-<pre class="x86asm"><code>; Set a file descriptor in non-blocking mode.
+<p>First, we need to mark the socket as 'non-blocking' since it is by default in blocking mode:</p>
+<pre><code class="language-x86asm">; Set a file descriptor in non-blocking mode.
 ; @param rdi The file descriptor.
 set_fd_non_blocking:
 static set_fd_non_blocking:function
@@ -1450,12 +1039,10 @@ static set_fd_non_blocking:function
   jl die
 
   pop rbp
-  ret</code></pre>
-<p>Then, we write a small function to read data on the socket. For
-simplicity, we only read 32 bytes of data, because most messages from
-X11 are of this size. We also return the first byte which contains the
-event type.</p>
-<pre class="x86asm"><code>; Read the X11 server reply.
+  ret
+</code></pre>
+<p>Then, we write a small function to read data on the socket. For simplicity, we only read 32 bytes of data, because most messages from X11 are of this size. We also return the first byte which contains the event type.</p>
+<pre><code class="language-x86asm">; Read the X11 server reply.
 ; @return The message code in al.
 x11_read_reply:
 static x11_read_reply:function
@@ -1478,10 +1065,10 @@ static x11_read_reply:function
   add rsp, 32
 
   pop rbp
-  ret</code></pre>
-<p>We now can poll. If an error occurs or the other side has closed
-their end of the socket, we exit the program.</p>
-<pre class="x86asm"><code>; Poll indefinitely messages from the X11 server with poll(2).
+  ret
+</code></pre>
+<p>We now can poll. If an error occurs or the other side has closed their end of the socket, we exit the program.</p>
+<pre><code class="language-x86asm">; Poll indefinitely messages from the X11 server with poll(2).
 ; @param rdi The socket file descriptor.
 ; @param esi The window id.
 ; @param edx The gc id.
@@ -1528,14 +1115,12 @@ static poll_messages:function
 
   add rsp, 32
   pop rbp
-  ret</code></pre>
-<h2 id="drawing-text">Drawing text</h2>
-<p>At last, we can draw text. The small difficulty here is that the text
-is of unknown length in the general case, so we have to compute the size
-of the X11 message, including the padding at the end. So far, we only
-had messages of fixed size.</p>
+  ret
+</code></pre>
+<h2>Drawing text</h2>
+<p>At last, we can draw text. The small difficulty here is that the text is of unknown length in the general case, so we have to compute the size of the X11 message, including the padding at the end. So far, we only had messages of fixed size.</p>
 <p>The official documentation has formulas to compute those values.</p>
-<pre class="x86asm"><code>; Draw text in a X11 window with server-side text rendering.
+<pre><code class="language-x86asm">; Draw text in a X11 window with server-side text rendering.
 ; @param rdi The socket file descriptor.
 ; @param rsi The text string.
 ; @param edx The text string length in bytes.
@@ -1600,11 +1185,10 @@ static x11_draw_text:function
   add rsp, 1024
 
   pop rbp
-  ret</code></pre>
-<p>We then call this function inside the polling loop, and we store the
-‘exposed’ state in a boolean on the stack to know whether we should
-render the text or not:</p>
-<pre class="x86asm"><code>    %define X11_EVENT_EXPOSURE 0xc
+  ret
+</code></pre>
+<p>We then call this function inside the polling loop, and we store the 'exposed' state in a boolean on the stack to know whether we should render the text or not:</p>
+<pre><code class="language-x86asm">    %define X11_EVENT_EXPOSURE 0xc
     cmp eax, X11_EVENT_EXPOSURE
     jnz .received_other_event
 
@@ -1625,43 +1209,31 @@ render the text or not:</p>
       mov r9d, 100 ; x
       shl r9d, 16
       or r9d, 100 ; y
-      call x11_draw_text</code></pre>
-<p>Finally, we see our <code>Hello, world!</code> text displayed inside
-the window:</p>
-<figure>
-<img src="x11_x64_final.png" alt="Result" />
-<figcaption aria-hidden="true">Result</figcaption>
-</figure>
-<h2 id="the-end">The end</h2>
-<p>Wow, that was a lot. But we did it! We wrote a (albeit simplistic)
-GUI program in pure assembly, no dependencies, and that’s just 600 lines
-of code in the end.</p>
+      call x11_draw_text
+</code></pre>
+<p>Finally, we see our <code>Hello, world!</code> text displayed inside the window:</p>
+<p><img src="x11_x64_final.png" alt="Result" /></p>
+<h2>The end</h2>
+<p>Wow, that was a lot. But we did it! We wrote a (albeit simplistic) GUI program in pure assembly, no dependencies, and that's just 600 lines of code in the end.</p>
 <p>How did we fare on the executable size part?</p>
 <ul>
 <li>With debug information: 10744 bytes (10 KiB)</li>
 <li>Without debug information (stripped): 8592 bytes (8 KiB)</li>
-<li>Stripped and <code>OMAGIC</code> (<code>--omagic</code> linker flag,
-from the man page:
-<code>Set the text and data sections to be readable and writable.  Also, do not page-align the data segment</code>):
-1776 bytes (1 KiB)</li>
+<li>Stripped and <code>OMAGIC</code> (<code>--omagic</code> linker flag, from the man page: <code>Set the text and data sections to be readable and writable.  Also, do not page-align the data segment</code>): 1776 bytes (1 KiB)</li>
 </ul>
 <p>Not too shabby, a GUI program in 1 KiB.</p>
 <p>Where to go from there?</p>
 <ul>
-<li>We could move text rendering client-side. Doing it server-side has
-lots of limitations.</li>
+<li>We could move text rendering client-side. Doing it server-side has lots of limitations.</li>
 <li>We could add shape rendering, such as quads and circles</li>
-<li>We could listen to keyboard and mouse events (the polling loop is
-easy to extend to do that)</li>
+<li>We could listen to keyboard and mouse events (the polling loop is easy to extend to do that)</li>
 </ul>
 <p>I hope that you had as much fun as I did!</p>
 <blockquote>
-<p>If you liked this article and you want to support me, and can afford
-it: <a
-href="https://paypal.me/philigaultier?country.x=DE&amp;locale.x=en_US">Donate</a></p>
+<p>If you liked this article and you want to support me, and can afford it: <a href="https://paypal.me/philigaultier?country.x=DE&amp;locale.x=en_US">Donate</a></p>
 </blockquote>
-<h2 id="addendum-the-full-code">Addendum: the full code</h2>
-<pre class="x86asm"><code>; Build with: nasm -f elf64 -g main.nasm &amp;&amp; ld main.o -static -o main 
+<h2>Addendum: the full code</h2>
+<pre><code class="language-x86asm">; Build with: nasm -f elf64 -g main.nasm &amp;&amp; ld main.o -static -o main 
 
 BITS 64 ; 64 bits.
 CPU X64 ; Target the x86_64 family of CPUs.
@@ -1758,7 +1330,7 @@ static x11_send_handshake:function
   mov rbp, rsp
 
   sub rsp, 1&lt;&lt;15
-  mov BYTE [rsp + 0], &#39;l&#39; ; Set order to &#39;l&#39;.
+  mov BYTE [rsp + 0], 'l' ; Set order to 'l'.
   mov WORD [rsp + 2], 11 ; Set major version to 11.
 
   ; Send the handshake to the server: write(2).
@@ -1783,7 +1355,7 @@ static x11_send_handshake:function
   cmp rax, 8 ; Check that the server replied with 8 bytes.
   jnz die
 
-  cmp BYTE [rsp], 1 ; Check that the server sent &#39;success&#39; (first byte is 1).
+  cmp BYTE [rsp], 1 ; Check that the server sent 'success' (first byte is 1).
   jnz die
 
   ; Read the rest of the server response: read(2).
@@ -1872,11 +1444,11 @@ static x11_open_font:function
   mov DWORD [rsp + 0*4], X11_OP_REQ_OPEN_FONT | (OPEN_FONT_NAME_BYTE_COUNT &lt;&lt; 16)
   mov DWORD [rsp + 1*4], esi
   mov DWORD [rsp + 2*4], OPEN_FONT_NAME_BYTE_COUNT
-  mov BYTE [rsp + 3*4 + 0], &#39;f&#39;
-  mov BYTE [rsp + 3*4 + 1], &#39;i&#39;
-  mov BYTE [rsp + 3*4 + 2], &#39;x&#39;
-  mov BYTE [rsp + 3*4 + 3], &#39;e&#39;
-  mov BYTE [rsp + 3*4 + 4], &#39;d&#39;
+  mov BYTE [rsp + 3*4 + 0], 'f'
+  mov BYTE [rsp + 3*4 + 1], 'i'
+  mov BYTE [rsp + 3*4 + 2], 'x'
+  mov BYTE [rsp + 3*4 + 3], 'e'
+  mov BYTE [rsp + 3*4 + 4], 'd'
 
 
   mov rax, SYSCALL_WRITE
@@ -2283,7 +1855,8 @@ global _start:function
   ; The end.
   mov rax, SYSCALL_EXIT
   mov rdi, 0
-  syscall</code></pre>
+  syscall
+</code></pre>
 <script src="https://unpkg.com/@highlightjs/cdn-assets@11.8.0/languages/x86asm.min.js"></script>
 
 <blockquote id="donate">

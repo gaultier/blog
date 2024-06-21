@@ -38,416 +38,162 @@ window.addEventListener("load", (event) => {
 <div class="body">
 
 <p id="publication_date">Published on 2023-06-03.</p>
-<h1
-id="cycle-detection-in-graphs-does-not-have-to-be-hard-a-lesser-known-simple-way-with-kahns-algorithm">Cycle
-detection in graphs does not have to be hard: A lesser known, simple way
-with Kahn’s algorithm</h1>
+<h1>Cycle detection in graphs does not have to be hard: A lesser known, simple way with Kahn's algorithm</h1>
 <p><strong>Table of Contents</strong></p>
 <ul>
 <li><a href="#introduction">Introduction</a></li>
 <li><a href="#the-database">The database</a></li>
 <li><a href="#topological-sort">Topological sort</a></li>
-<li><a href="#how-to-store-the-graph-in-memory">How to store the graph
-in memory</a></li>
-<li><a href="#kahns-algorithm">Kahn’s algorithm</a></li>
+<li><a href="#how-to-store-the-graph-in-memory">How to store the graph in memory</a></li>
+<li><a href="#kahns-algorithm">Kahn's algorithm</a></li>
 <li><a href="#implementation">Implementation</a>
 <ul>
 <li><a href="#helpers">Helpers</a></li>
 <li><a href="#the-algorithm">The algorithm</a></li>
-<li><a href="#inserting-entries-in-the-database">Inserting entries in
-the database</a></li>
+<li><a href="#inserting-entries-in-the-database">Inserting entries in the database</a></li>
 <li><a href="#detecting-cycles">Detecting cycles</a></li>
-<li><a href="#detecting-multiple-roots">Detecting multiple
-roots</a></li>
-</ul></li>
-<li><a href="#playing-with-the-database">Playing with the
-database</a></li>
+<li><a href="#detecting-multiple-roots">Detecting multiple roots</a></li>
+</ul>
+</li>
+<li><a href="#playing-with-the-database">Playing with the database</a></li>
 <li><a href="#closing-thoughts">Closing thoughts</a></li>
 <li><a href="#addendum-the-full-code">Addendum: the full code</a></li>
 </ul>
-<p><em>If you spot an error, please open a <a
-href="https://github.com/gaultier/blog">Github issue</a>!</em></p>
-<h2 id="introduction">Introduction</h2>
-<p>Graphs are everywhere in Software Engineering, or so we are told by
-Computer Science teachers and interviewers. But sometimes, they do show
-up in real problems.</p>
-<p>Not too long ago, I was tasked to create a Web API to create and
-update a company’s hierarchy of employee, and display that on a web
-page. Basically, who reports to whom.</p>
-<p>In the simple case, it’s a tree, when an employee reports to exactly
-one manager.</p>
-<figure>
-<img src="kahns_algorithm_1.svg" alt="Employee hierarchy" />
-<figcaption aria-hidden="true">Employee hierarchy</figcaption>
-</figure>
-<p>Here’s the tree of employees in an organization. An employee reports
-to a manager, and this forms a tree. The root is the CEO since they
-report to no one and so they have no outgoing edge.</p>
-<p>An arrow (or ‘edge’) between two nodes means
-<code>&lt;source&gt; reports to &lt;destination&gt;</code>, for example:
-<code>Jane the CFO reports to Ellen the CEO</code>.</p>
-<p>But here is the twist: our API receives a list of
-<code>employee -&gt; manager</code> links, in any order:</p>
+<p><em>If you spot an error, please open a <a href="https://github.com/gaultier/blog">Github issue</a>!</em></p>
+<h2>Introduction</h2>
+<p>Graphs are everywhere in Software Engineering, or so we are told by Computer Science teachers and interviewers. But sometimes, they do show up in real problems.</p>
+<p>Not too long ago, I was tasked to create a Web API to create and update a company's hierarchy of employee, and display that on a web page. Basically, who reports to whom.</p>
+<p>In the simple case, it's a tree, when an employee reports to exactly one manager.</p>
+<p><img src="kahns_algorithm_1.svg" alt="Employee hierarchy" /></p>
+<p>Here's the tree of employees in an organization. An employee reports to a manager, and this forms a tree. The root is the CEO since they report to no one and so they have no outgoing edge.</p>
+<p>An arrow (or 'edge') between two nodes means <code>&lt;source&gt; reports to &lt;destination&gt;</code>, for example: <code>Jane the CFO reports to Ellen the CEO</code>.</p>
+<p>But here is the twist: our API receives a list of <code>employee -&gt; manager</code> links, in any order:</p>
 <pre><code>Jane -&gt; Ellen
 Angela -&gt; Ellen
 Zoe -&gt; Jane
 Zoe -&gt; Angela
 Bella -&gt; Angela
-Miranda -&gt; Angela</code></pre>
-<p>It opens the door to various invalid inputs: links that form a graph
-(an employee has multiple managers), multiple roots (e.g. multiple CEOs)
-or cycles.</p>
+Miranda -&gt; Angela
+</code></pre>
+<p>It opens the door to various invalid inputs: links that form a graph (an employee has multiple managers), multiple roots (e.g. multiple CEOs) or cycles.</p>
 <p>We have to detect those and reject them, such as this one:</p>
-<figure>
-<img src="kahns_algorithm_1_invalid.svg"
-alt="Invalid employee hierarchy" />
-<figcaption aria-hidden="true">Invalid employee hierarchy</figcaption>
-</figure>
-<h2 id="the-database">The database</h2>
+<p><img src="kahns_algorithm_1_invalid.svg" alt="Invalid employee hierarchy" /></p>
+<h2>The database</h2>
 <p>So how do we store all of those people in the database?</p>
-<div class="sourceCode" id="cb2"><pre
-class="sourceCode sql"><code class="sourceCode sql"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="kw">CREATE</span> <span class="kw">TABLE</span> <span class="cf">IF</span> <span class="kw">NOT</span> <span class="kw">EXISTS</span> people(name TEXT <span class="kw">NOT</span> <span class="kw">NULL</span> <span class="kw">UNIQUE</span>, manager BIGINT <span class="kw">REFERENCES</span> people)</span></code></pre></div>
+<pre><code class="language-sql">CREATE TABLE IF NOT EXISTS people(name TEXT NOT NULL UNIQUE, manager BIGINT REFERENCES people)
+</code></pre>
 <p>Each employee has a optional reference to a manager.</p>
 <blockquote>
-<p>This is not a novel idea, actually this is one of the examples in the
-official <a href="https://www.sqlite.org/lang_with.html">SQLite
-documentation</a>.</p>
+<p>This is not a novel idea, actually this is one of the examples in the official <a href="https://www.sqlite.org/lang_with.html">SQLite documentation</a>.</p>
 </blockquote>
-<p>For example, to save <code>Ellen, CEO</code> inside the database, we
-do:</p>
-<div class="sourceCode" id="cb3"><pre
-class="sourceCode sql"><code class="sourceCode sql"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="kw">INSERT</span> <span class="kw">INTO</span> people <span class="kw">VALUES</span>(<span class="st">&#39;Ellen, CEO&#39;</span>, <span class="kw">NULL</span>)</span></code></pre></div>
+<p>For example, to save <code>Ellen, CEO</code> inside the database, we do:</p>
+<pre><code class="language-sql">INSERT INTO people VALUES('Ellen, CEO', NULL)
+</code></pre>
 <p>And to save <code>Jane, CFO</code> in the database:</p>
-<div class="sourceCode" id="cb4"><pre
-class="sourceCode sql"><code class="sourceCode sql"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="kw">INSERT</span> <span class="kw">INTO</span> people <span class="kw">VALUES</span>(<span class="st">&#39;Jane, CFO&#39;</span>, <span class="dv">1</span>)</span></code></pre></div>
-<p>Where <code>Ellen, CEO</code>, Jane’s boss, which we just inserted
-before, has the id <code>1</code>.</p>
-<p>Immediately, we notice that to insert an employee, their manager
-needs to already by in the database, by virtue of the self-referential
-foreign key <code>manager BIGINT REFERENCES people</code>.</p>
-<p>So we need a way to sort the big list of
-<code>employee -&gt; manager</code> links (or ‘edges’ in graph
-parlance), to insert them in the right order. First we insert the CEO,
-who reports to no one. Then we insert the employees directly reporting
-to the CEO. Then the employees reporting to those. Etc.</p>
-<p>And that’s called a topological sort.</p>
+<pre><code class="language-sql">INSERT INTO people VALUES('Jane, CFO', 1)
+</code></pre>
+<p>Where <code>Ellen, CEO</code>, Jane's boss, which we just inserted before, has the id <code>1</code>.</p>
+<p>Immediately, we notice that to insert an employee, their manager needs to already by in the database, by virtue of the self-referential foreign key <code>manager BIGINT REFERENCES people</code>.</p>
+<p>So we need a way to sort the big list of <code>employee -&gt; manager</code> links (or 'edges' in graph parlance), to insert them in the right order. First we insert the CEO, who reports to no one. Then we insert the employees directly reporting to the CEO. Then the employees reporting to those. Etc.</p>
+<p>And that's called a topological sort.</p>
 <p>A big benefit is that we hit three birds with one stone:</p>
 <ul>
 <li>We detect cycles</li>
-<li>We have the nodes in an convenient order to insert them in the
-database</li>
-<li>Since the algorithm for the topological sort takes as input an
-adjacency matrix (more on this later), we can easily detect the invalid
-case of a node having more than one outgoing edge (i.e. more than one
-manager, i.e. multiple roots).</li>
+<li>We have the nodes in an convenient order to insert them in the database</li>
+<li>Since the algorithm for the topological sort takes as input an adjacency matrix (more on this later), we can easily detect the invalid case of a node having more than one outgoing edge (i.e. more than one manager, i.e. multiple roots).</li>
 </ul>
-<p>From now one, I will use the graph of employees (where
-<code>Zoe</code> has two managers) as example since that’s a possible
-input to our API and we need to detect this case.</p>
-<h2 id="topological-sort">Topological sort</h2>
+<p>From now one, I will use the graph of employees (where <code>Zoe</code> has two managers) as example since that's a possible input to our API and we need to detect this case.</p>
+<h2>Topological sort</h2>
 <p>From Wikipedia:</p>
 <blockquote>
-<p>A topological sort or topological ordering of a directed graph is a
-linear ordering of its vertices such that for every directed edge uv
-from vertex u to vertex v, u comes before v in the ordering. For
-instance, the vertices of the graph may represent tasks to be performed,
-and the edges may represent constraints that one task must be performed
-before another; in this application, a topological ordering is just a
-valid sequence for the tasks</p>
+<p>A topological sort or topological ordering of a directed graph is a linear ordering of its vertices such that for every directed edge uv from vertex u to vertex v, u comes before v in the ordering. For instance, the vertices of the graph may represent tasks to be performed, and the edges may represent constraints that one task must be performed before another; in this application, a topological ordering is just a valid sequence for the tasks</p>
 </blockquote>
-<p>That’s a mouthful but it’s not too hard.</p>
-<p>A useful command line utility that’s already on your (Unix) machine
-is <code>tsort</code>, which takes a list of edges as input, and outputs
-a topological sort. Here is the input in a text file
-(<code>people.txt</code>):</p>
+<p>That's a mouthful but it's not too hard.</p>
+<p>A useful command line utility that's already on your (Unix) machine is <code>tsort</code>, which takes a list of edges as input, and outputs a topological sort. Here is the input in a text file (<code>people.txt</code>):</p>
 <pre><code>Jane Ellen
 Angela Ellen
 Zoe Jane
 Zoe Angela
 Bella Angela
-Miranda Angela</code></pre>
+Miranda Angela
+</code></pre>
 <blockquote>
-<p><code>tsort</code> uses a simple way of defining each edge
-<code>A -&gt; B</code> on its own line with the syntax:
-<code>A B</code>. The order of the lines does not matter.</p>
+<p><code>tsort</code> uses a simple way of defining each edge <code>A -&gt; B</code> on its own line with the syntax: <code>A B</code>. The order of the lines does not matter.</p>
 </blockquote>
-<p>And here’s the <code>tsort</code> output:</p>
-<div class="sourceCode" id="cb6"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> tsort <span class="op">&lt;</span> people.txt</span>
-<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="ex">Bella</span></span>
-<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a><span class="ex">Miranda</span></span>
-<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a><span class="ex">Zoe</span></span>
-<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a><span class="ex">Angela</span></span>
-<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a><span class="ex">Jane</span></span>
-<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a><span class="ex">Ellen</span></span></code></pre></div>
-<p>The first 3 elements are the ones with no incoming edge, the Software
-Engineers, since no one reports to them. Then come their respective
-managers, Angela and Jane. Finally comes their manager,
-<code>Ellen</code>.</p>
-<p>So to insert all those people in our <code>people</code> SQL table,
-we go through that list in reverse order: We can first insert
-<code>Ellen</code>, then <code>Jane</code>, etc, until we finally insert
-<code>Bella</code>.</p>
-<p>Also, <code>tsort</code> detects cycles, for example if we add the
-line: <code>Ellen Zoe</code> at the end of <code>people.txt</code>, we
-get:</p>
-<div class="sourceCode" id="cb7"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> tsort <span class="op">&lt;</span> people.txt</span>
-<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="ex">Bella</span></span>
-<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a><span class="ex">Miranda</span></span>
-<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a><span class="ex">tsort:</span> <span class="at">-:</span> input contains a loop:</span>
-<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a><span class="ex">tsort:</span> Jane</span>
-<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a><span class="ex">tsort:</span> Ellen</span>
-<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a><span class="ex">tsort:</span> Zoe</span>
-<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a><span class="ex">Jane</span></span>
-<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a><span class="ex">tsort:</span> <span class="at">-:</span> input contains a loop:</span>
-<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a><span class="ex">tsort:</span> Angela</span>
-<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a><span class="ex">tsort:</span> Ellen</span>
-<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a><span class="ex">tsort:</span> Zoe</span>
-<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a><span class="ex">Angela</span></span>
-<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a><span class="ex">Ellen</span></span>
-<span id="cb7-15"><a href="#cb7-15" aria-hidden="true" tabindex="-1"></a><span class="ex">Zoe</span></span></code></pre></div>
-<p>So, how can we implement something like <code>tsort</code> for our
-problem at hand? That’s where <a
-href="https://en.wikipedia.org/wiki/Topological_sorting#Kahn&#39;s_algorithm">Kahn’s
-algorithm</a> comes in to do exactly that: find cycles in the graph and
-output a topological sort.</p>
-<p><em>Note that that’s not the only solution and there are ways to
-detect cycles without creating a topological sort, but this algorithm
-seems relatively unknown and does not come up often on the Internet, so
-let’s discover how it works and implement it. I promise, it’s not
-complex.</em></p>
-<h2 id="how-to-store-the-graph-in-memory">How to store the graph in
-memory</h2>
-<p>There are many ways to do so, and Kahn’s algorithm does not dictate
-which one to use.</p>
-<p>We’ll use an <a
-href="https://en.wikipedia.org/wiki/Adjacency_matrix">adjacency
-matrix</a>, because it’s simple conceptually, maps well to Kahn’s
-algorithm, and can be optimized if needed.</p>
-<p>It’s just a 2D square table of size <code>n x n</code> (where
-<code>n</code> is the number of nodes), where the cell at row
-<code>i</code> and column <code>j</code> is 1 if there is an edge from
-the node <code>i</code> to the node <code>j</code>, and otherwise,
-<code>0</code>.</p>
-<p>The order of the nodes is arbitrary, I’ll use the alphabetical order
-because again, it’s simple to do:</p>
+<p>And here's the <code>tsort</code> output:</p>
+<pre><code class="language-sh">$ tsort &lt; people.txt
+Bella
+Miranda
+Zoe
+Angela
+Jane
+Ellen
+</code></pre>
+<p>The first 3 elements are the ones with no incoming edge, the Software Engineers, since no one reports to them. Then come their respective managers, Angela and Jane. Finally comes their manager, <code>Ellen</code>.</p>
+<p>So to insert all those people in our <code>people</code> SQL table, we go through that list in reverse order: We can first insert <code>Ellen</code>, then <code>Jane</code>, etc, until we finally insert <code>Bella</code>.</p>
+<p>Also, <code>tsort</code> detects cycles, for example if we add the line: <code>Ellen Zoe</code> at the end of <code>people.txt</code>, we get:</p>
+<pre><code class="language-sh">$ tsort &lt; people.txt
+Bella
+Miranda
+tsort: -: input contains a loop:
+tsort: Jane
+tsort: Ellen
+tsort: Zoe
+Jane
+tsort: -: input contains a loop:
+tsort: Angela
+tsort: Ellen
+tsort: Zoe
+Angela
+Ellen
+Zoe
+</code></pre>
+<p>So, how can we implement something like <code>tsort</code> for our problem at hand? That's where <a href="https://en.wikipedia.org/wiki/Topological_sorting#Kahn&#x27;s_algorithm">Kahn's algorithm</a> comes in to do exactly that: find cycles in the graph and output a topological sort.</p>
+<p><em>Note that that's not the only solution and there are ways to detect cycles without creating a topological sort, but this algorithm seems relatively unknown and does not come up often on the Internet, so let's discover how it works and implement it. I promise, it's not complex.</em></p>
+<h2>How to store the graph in memory</h2>
+<p>There are many ways to do so, and Kahn's algorithm does not dictate which one to use.</p>
+<p>We'll use an <a href="https://en.wikipedia.org/wiki/Adjacency_matrix">adjacency matrix</a>, because it's simple conceptually, maps well to Kahn's algorithm, and can be optimized if needed.</p>
+<p>It's just a 2D square table of size <code>n x n</code> (where <code>n</code> is the number of nodes), where the cell at row <code>i</code> and column <code>j</code> is 1 if there is an edge from the node <code>i</code> to the node <code>j</code>, and otherwise, <code>0</code>.</p>
+<p>The order of the nodes is arbitrary, I'll use the alphabetical order because again, it's simple to do:</p>
 <pre><code>Angela
 Bella
 Ellen
 Jane
 Miranda
-Zoe</code></pre>
-<p>Here, <code>Angela</code> is the node <code>0</code> and
-<code>Zoe</code> is the node <code>5</code>.</p>
-<p>Since there is an edge from <code>Zoe</code> to <code>Angela</code>,
-i.e. from the node <code>5</code> to the node <code>0</code>, the cell
-at the position <code>(5, 0)</code> is set to <code>1</code>.</p>
-<p>The full adjacency matrix for the employee graph in the example above
-looks like:</p>
+Zoe
+</code></pre>
+<p>Here, <code>Angela</code> is the node <code>0</code> and <code>Zoe</code> is the node <code>5</code>.</p>
+<p>Since there is an edge from <code>Zoe</code> to <code>Angela</code>, i.e. from the node <code>5</code> to the node <code>0</code>, the cell at the position <code>(5, 0)</code> is set to <code>1</code>.</p>
+<p>The full adjacency matrix for the employee graph in the example above looks like:</p>
 <table>
-<tbody>
-<tr>
-<th>
-</th>
-<th>
-Angela
-</th>
-<th>
-Bella
-</th>
-<th>
-Ellen
-</th>
-<th>
-Jane
-</th>
-<th>
-Miranda
-</th>
-<th>
-Zoe
-</th>
-</tr>
-<tr>
-<td>
-Angela
-</td>
-<td>
-0
-</td>
-<td>
-0
-</td>
-<td>
-1
-</td>
-<td>
-0
-</td>
-<td>
-0
-</td>
-<td>
-0
-</td>
-</tr>
-<tr>
-<td>
-Bella
-</td>
-<td>
-1
-</td>
-<td>
-0
-</td>
-<td>
-0
-</td>
-<td>
-0
-</td>
-<td>
-0
-</td>
-<td>
-0
-</td>
-</tr>
-<tr>
-<td>
-Ellen
-</td>
-<td>
-0
-</td>
-<td>
-0
-</td>
-<td>
-0
-</td>
-<td>
-0
-</td>
-<td>
-0
-</td>
-<td>
-0
-</td>
-</tr>
-<tr>
-<td>
-Jane
-</td>
-<td>
-0
-</td>
-<td>
-0
-</td>
-<td>
-1
-</td>
-<td>
-0
-</td>
-<td>
-0
-</td>
-<td>
-0
-</td>
-</tr>
-<tr>
-<td>
-Miranda
-</td>
-<td>
-1
-</td>
-<td>
-0
-</td>
-<td>
-0
-</td>
-<td>
-0
-</td>
-<td>
-0
-</td>
-<td>
-0
-</td>
-</tr>
-<tr>
-<td>
-Zoe
-</td>
-<td>
-1
-</td>
-<td>
-0
-</td>
-<td>
-0
-</td>
-<td>
-1
-</td>
-<td>
-0
-</td>
-<td>
-0
-</td>
-</tr>
-</tbody>
+ <tbody>
+ <tr> <th></th> <th>Angela</th> <th>Bella</th> <th>Ellen</th> <th>Jane</th> <th>Miranda</th> <th>Zoe</th> </tr>
+ <tr> <td>Angela</td> <td>0</td> <td>0</td> <td>1</td> <td>0</td> <td>0</td> <td>0</td> </tr>
+ <tr> <td>Bella</td> <td>1</td> <td>0</td> <td>0</td> <td>0</td> <td>0</td> <td>0</td> </tr>
+ <tr> <td>Ellen</td> <td>0</td> <td>0</td> <td>0</td> <td>0</td> <td>0</td> <td>0</td> </tr>
+ <tr> <td>Jane</td> <td>0</td> <td>0</td> <td>1</td> <td>0</td> <td>0</td> <td>0</td> </tr>
+ <tr> <td>Miranda</td> <td>1</td> <td>0</td> <td>0</td> <td>0</td> <td>0</td> <td>0</td> </tr>
+ <tr> <td>Zoe</td> <td>1</td> <td>0</td> <td>0</td> <td>1</td> <td>0</td> <td>0</td> </tr>
+ </tbody>
 </table>
 <p>The way to read this table is:</p>
 <ul>
-<li>For a given row, all the <code>1</code>’s indicate outgoing
-edges</li>
-<li>For a given column, all the <code>1</code>’s indicate incoming
-edges</li>
-<li>If there is a <code>1</code> on the diagonal, it means there is an
-edge going out of a node and going to the same node.</li>
+<li>For a given row, all the <code>1</code>'s indicate outgoing edges</li>
+<li>For a given column, all the <code>1</code>'s indicate incoming edges</li>
+<li>If there is a <code>1</code> on the diagonal, it means there is an edge going out of a node and going to the same node.</li>
 </ul>
-<p>There are a lot of zeroes in this table. Some may think this is
-horribly inefficient, which it is, but it really depends on number of
-nodes, i.e. the number of employees in the organization. But note that
-this adjacency matrix is a concept, it shows what information is
-present, but not how it is stored.</p>
-<p>For this article, we will store it the naive way, in a 2D array. Here
-are two optimization ideas I considered but have not had time to
-experiment with:</p>
+<p>There are a lot of zeroes in this table. Some may think this is horribly inefficient, which it is, but it really depends on number of nodes, i.e. the number of employees in the organization.
+But note that this adjacency matrix is a concept, it shows what information is present, but not how it is stored.</p>
+<p>For this article, we will store it the naive way, in a 2D array. Here are two optimization ideas I considered but have not had time to experiment with:</p>
 <ul>
-<li>Make this a bitarray. We are already only storing zeroes and ones,
-so it maps perfectly to this format.</li>
-<li>Since there are a ton of zeroes (in the valid case, a regular
-employee’s row only has one <code>1</code> and the CEO’s row is only
-zeroes), it is very compressible. An easy way would be to use run-length
-encoding, meaning, instead of <code>0 0 0 0</code>, we just store the
-number of times the number occurs: <code>4 0</code>. Easy to implement,
-easy to understand. A row compresses to just a few bytes. And this size
-would be constant, whatever the size of the organization (i.e. number of
-employees) is.</li>
+<li>Make this a bitarray. We are already only storing zeroes and ones, so it maps perfectly to this format.</li>
+<li>Since there are a ton of zeroes (in the valid case, a regular employee's row only has one <code>1</code> and the CEO's row is only zeroes), it is very compressible. An easy way would be to use run-length encoding, meaning, instead of <code>0 0 0 0</code>, we just store the number of times the number occurs: <code>4 0</code>. Easy to implement, easy to understand. A row compresses to just a few bytes. And this size would be constant, whatever the size of the organization (i.e. number of employees) is.</li>
 </ul>
-<p>Wikipedia lists others if you are interested, it’s a well-known
-problem.</p>
-<p>Alright, now that we know how our graph is represented, on to the
-algorithm.</p>
-<h2 id="kahns-algorithm">Kahn’s algorithm</h2>
-<p><a
-href="https://en.wikipedia.org/wiki/Topological_sorting#Kahn&#39;s_algorithm">Kahn’s
-algorithm</a> keeps track of nodes with no incoming edge, and mutates
-the graph (in our case the adjacency matrix), by removing one edge at a
-time, until there are no more edges, and builds a list of nodes in the
-right order, which is the output.</p>
-<p>Here’s the pseudo-code:</p>
+<p>Wikipedia lists others if you are interested, it's a well-known problem.</p>
+<p>Alright, now that we know how our graph is represented, on to the algorithm.</p>
+<h2>Kahn's algorithm</h2>
+<p><a href="https://en.wikipedia.org/wiki/Topological_sorting#Kahn&#x27;s_algorithm">Kahn's algorithm</a> keeps track of nodes with no incoming edge, and mutates the graph (in our case the adjacency matrix), by removing one edge at a time, until there are no more edges, and builds a list of nodes in the right order, which is the output.</p>
+<p>Here's the pseudo-code:</p>
 <pre><code> 1│ L ← Empty list that will contain the sorted elements
  2│ S ← Set of all nodes with no incoming edge
  3│ 
@@ -462,467 +208,344 @@ right order, which is the output.</p>
 12│ if graph has edges then
 13│     return error   (graph has at least one cycle)
 14│ else 
-15│     return L   (a topologically sorted order)</code></pre>
+15│     return L   (a topologically sorted order)
+</code></pre>
 <p>And in plain English:</p>
-<p><code>Line 1</code>: The result of this algorithm is the list of
-nodes in the desired order (topological). It starts empty, and we add
-nodes one-by one during the algorithm. We can simply use an array in our
-implementation.</p>
-<p><code>Line 2</code>: We first collect all nodes with no incoming
-edge. In terms of adjacency matrix, it means picking columns with only
-zeroes. The algorithm calls it a set, but we are free in our
-implementation to use whatever data structure we see fit. It just means
-a given node appears at most once in it. In our example, this set is:
-<code>[Zoe, Bella, Miranda]</code>. During the algorithm course, we will
-add further nodes to this set. Note that this is a working set, not the
-final result. Also, the order does not matter.</p>
-<p><code>Line 4</code>: Self-explanatory, we continue until the working
-set is empty and there is no more work to do.</p>
-<p><code>Line 5</code>: We first pick a node with no incoming edge (it
-does not matter which one). For example, <code>Zoe</code>, and remove it
-from <code>S</code>. <code>S</code> is now:
-<code>[Bella, Miranda]</code>.</p>
-<p><code>Line 6</code>: We add this node to the list of topologically
-sorted nodes, <code>L</code>. It now is: <code>[Zoe]</code>.</p>
-<p><code>Line 7</code>: We then inspect each node that <code>Zoe</code>
-has an edge to. That means <code>Jane</code> and <code>Angela</code>. In
-terms of adjacency matrix, we simply read <code>Zoe's</code> row, and
-inspect cells with a <code>1</code> in it.</p>
-<p><code>Line 8</code>: We remove such an edge, for example,
-<code>Zoe -&gt; Jane</code>. In terms of adjacency matrix, it means
-setting the cell on the row <code>Zoe</code> and column
-<code>Jane</code> to <code>0</code>.</p>
+<p><code>Line 1</code>: The result of this algorithm is the list of nodes in the desired order (topological). It starts empty, and we add nodes one-by one during the algorithm. We can simply use an array in our implementation.</p>
+<p><code>Line 2</code>: We first collect all nodes with no incoming edge. In terms of adjacency matrix, it means picking columns with only zeroes. The algorithm calls it a set, but we are free in our implementation to use whatever data structure we see fit. It just means a given node appears at most once in it. In our example, this set is: <code>[Zoe, Bella, Miranda]</code>. During the algorithm course, we will add further nodes to this set. Note that this is a working set, not the final result. Also, the order does not matter.</p>
+<p><code>Line 4</code>: Self-explanatory, we continue until the working set is empty and there is no more work to do.</p>
+<p><code>Line 5</code>: We first pick a node with no incoming edge (it does not matter which one). For example, <code>Zoe</code>, and remove it from <code>S</code>. <code>S</code> is now: <code>[Bella, Miranda]</code>.</p>
+<p><code>Line 6</code>: We add this node to the list of topologically sorted nodes, <code>L</code>. It now is: <code>[Zoe]</code>.</p>
+<p><code>Line 7</code>: We then inspect each node that <code>Zoe</code> has an edge to. That means <code>Jane</code> and <code>Angela</code>. In terms of adjacency matrix, we simply read <code>Zoe's</code> row, and inspect cells with a <code>1</code> in it.</p>
+<p><code>Line 8</code>: We remove such an edge, for example, <code>Zoe -&gt; Jane</code>. In terms of adjacency matrix, it means setting the cell on the row <code>Zoe</code> and column <code>Jane</code> to <code>0</code>.</p>
 <p>At this point, the graph looks like this:</p>
-<figure>
-<img src="kahns_algorithm_2.svg" alt="Employee hierarchy, step 1" />
-<figcaption aria-hidden="true">Employee hierarchy, step 1</figcaption>
-</figure>
-<p><code>Line 9</code>: If <code>Jane</code> does not have another
-incoming edge, we add it to the set of all nodes with no incoming edge.
-That’s the case here, so <code>S</code> now looks like:
-<code>[Bella, Miranda, Jane]</code>.</p>
-<p>We know loop to <code>Line 7</code> and handle the node
-<code>Angela</code> since <code>Jane</code> is taken care of.</p>
-<p><code>Line 7-10</code>: We are now handling the node
-<code>Angela</code>. We remove the edge <code>Zoe -&gt; Angela</code>.
-We check whether the node <code>Angela</code> has incoming edges. It
-does, so we do <strong>not</strong> add it to <code>S</code>.</p>
+<p><img src="kahns_algorithm_2.svg" alt="Employee hierarchy, step 1" /></p>
+<p><code>Line 9</code>: If <code>Jane</code> does not have another incoming edge, we add it to the set of all nodes with no incoming edge. That's the case here, so <code>S</code> now looks like: <code>[Bella, Miranda, Jane]</code>.</p>
+<p>We know loop to <code>Line 7</code> and handle the node <code>Angela</code> since <code>Jane</code> is taken care of.</p>
+<p><code>Line 7-10</code>: We are now handling the node <code>Angela</code>. We remove the edge <code>Zoe -&gt; Angela</code>. We check whether the node <code>Angela</code> has incoming edges. It does, so we do <strong>not</strong> add it to <code>S</code>.</p>
 <p>The graph is now:</p>
-<figure>
-<img src="kahns_algorithm_2_1.svg" alt="Employee hierarchy, step 2" />
-<figcaption aria-hidden="true">Employee hierarchy, step 2</figcaption>
-</figure>
-<p>We are now done with the <code>Line 7</code> for loop, so go back to
-<code>Line 5</code> and pick this time <code>Bella</code>. And so
-on.</p>
+<p><img src="kahns_algorithm_2_1.svg" alt="Employee hierarchy, step 2" /></p>
+<p>We are now done with the <code>Line 7</code> for loop, so go back to <code>Line 5</code> and pick this time <code>Bella</code>. And so on.</p>
 <p>The graph would now, to the algorithm, look like:</p>
-<figure>
-<img src="kahns_algorithm_2_2.svg" alt="Employee hierarchy, step 3" />
-<figcaption aria-hidden="true">Employee hierarchy, step 3</figcaption>
-</figure>
+<p><img src="kahns_algorithm_2_2.svg" alt="Employee hierarchy, step 3" /></p>
 <hr />
 <p>And here are the next steps in images:</p>
 <ul>
-<li><figure>
-<img src="kahns_algorithm_2_3.svg" alt="Employee hierarchy, step 4" />
-<figcaption aria-hidden="true">Employee hierarchy, step 4</figcaption>
-</figure></li>
-<li><figure>
-<img src="kahns_algorithm_2_4.svg" alt="Employee hierarchy, step 5" />
-<figcaption aria-hidden="true">Employee hierarchy, step 5</figcaption>
-</figure></li>
-<li><figure>
-<img src="kahns_algorithm_2_5.svg" alt="Employee hierarchy, step 6" />
-<figcaption aria-hidden="true">Employee hierarchy, step 6</figcaption>
-</figure></li>
-<li><figure>
-<img src="kahns_algorithm_2_6.svg" alt="Employee hierarchy, step 7" />
-<figcaption aria-hidden="true">Employee hierarchy, step 7</figcaption>
-</figure></li>
-<li><figure>
-<img src="kahns_algorithm_2_7.svg" alt="Employee hierarchy, step 8" />
-<figcaption aria-hidden="true">Employee hierarchy, step 8</figcaption>
-</figure></li>
-<li><figure>
-<img src="kahns_algorithm_2_8.svg" alt="Employee hierarchy, step 9" />
-<figcaption aria-hidden="true">Employee hierarchy, step 9</figcaption>
-</figure></li>
-<li><figure>
-<img src="kahns_algorithm_2_9.svg" alt="Employee hierarchy, step 10" />
-<figcaption aria-hidden="true">Employee hierarchy, step 10</figcaption>
-</figure></li>
+<li><img src="kahns_algorithm_2_3.svg" alt="Employee hierarchy, step 4" /></li>
+<li><img src="kahns_algorithm_2_4.svg" alt="Employee hierarchy, step 5" /></li>
+<li><img src="kahns_algorithm_2_5.svg" alt="Employee hierarchy, step 6" /></li>
+<li><img src="kahns_algorithm_2_6.svg" alt="Employee hierarchy, step 7" /></li>
+<li><img src="kahns_algorithm_2_7.svg" alt="Employee hierarchy, step 8" /></li>
+<li><img src="kahns_algorithm_2_8.svg" alt="Employee hierarchy, step 9" /></li>
+<li><img src="kahns_algorithm_2_9.svg" alt="Employee hierarchy, step 10" /></li>
 </ul>
 <hr />
-<p><code>Line 12-15</code>: Once the loop at <code>Line 4</code> is
-finished, we inspect our graph. If there are no more edges, we are done.
-If there is still an edge, it means there was a cycle in the graph, and
-we return an error. Note that this algorithm is not capable by itself to
-point out which cycle there was exactly, only that there was one. That’s
-because we mutated the graph by removing edges. If this information was
-important, we could keep track of which edges we removed in order, and
-re-add them back, or perhaps apply the algorithm to a copy of the graph
-(the adjacency matrix is trivial to clone).</p>
-<p>This algorithm is loose concerning the order of some operations, for
-example, picking a node with no incoming edge, or in which order the
-nodes in <code>S</code> are stored. That gives room for an
-implementation to use certain data structures or orders that are faster,
-but in some cases we want the order to be always the same to solve ties
-in the stable way and to be reproducible. In order to do that, we simply
-use the alphabetical order. So in our example above, at
-<code>Line 5</code>, we picked <code>Zoe</code> out of
-<code>[Zoe, Bella, Miranda]</code>. Using this method, we would keep the
-working set <code>S</code> sorted alphabetically and pick
-<code>Bella</code> out of <code>[Bella, Miranda, Zoe]</code>.</p>
-<h2 id="implementation">Implementation</h2>
-<p>I implemented this at the time in Go, but I will use for this article
-the lingua franca of the 2010s, Javascript.</p>
-<p><em>I don’t write Javascript these days, I stopped many years ago, so
-apologies in advance if I am not using all the bells and whistles of
-‘Modern Javascript’, or if the code is not quite idiomatic.</em></p>
-<p>First, we define our adjacency matrix and the list of nodes. This is
-the naive format. We would get the nodes and edges in some format, for
-example JSON, in the API, and build the adjacency matrix, which is
-trivial. Let’s take the very first example, the (valid) tree of
-employees:</p>
-<div class="sourceCode" id="cb10"><pre
-class="sourceCode js"><code class="sourceCode javascript"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> adjacencyMatrix <span class="op">=</span> [</span>
-<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>  [<span class="dv">0</span><span class="op">,</span> <span class="dv">0</span><span class="op">,</span> <span class="dv">1</span><span class="op">,</span> <span class="dv">0</span><span class="op">,</span> <span class="dv">0</span><span class="op">,</span> <span class="dv">0</span>]<span class="op">,</span></span>
-<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>  [<span class="dv">1</span><span class="op">,</span> <span class="dv">0</span><span class="op">,</span> <span class="dv">0</span><span class="op">,</span> <span class="dv">0</span><span class="op">,</span> <span class="dv">0</span><span class="op">,</span> <span class="dv">0</span>]<span class="op">,</span></span>
-<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>  [<span class="dv">0</span><span class="op">,</span> <span class="dv">0</span><span class="op">,</span> <span class="dv">0</span><span class="op">,</span> <span class="dv">0</span><span class="op">,</span> <span class="dv">0</span><span class="op">,</span> <span class="dv">0</span>]<span class="op">,</span></span>
-<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>  [<span class="dv">0</span><span class="op">,</span> <span class="dv">0</span><span class="op">,</span> <span class="dv">1</span><span class="op">,</span> <span class="dv">0</span><span class="op">,</span> <span class="dv">0</span><span class="op">,</span> <span class="dv">0</span>]<span class="op">,</span></span>
-<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>  [<span class="dv">1</span><span class="op">,</span> <span class="dv">0</span><span class="op">,</span> <span class="dv">0</span><span class="op">,</span> <span class="dv">0</span><span class="op">,</span> <span class="dv">0</span><span class="op">,</span> <span class="dv">0</span>]<span class="op">,</span></span>
-<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a>  [<span class="dv">0</span><span class="op">,</span> <span class="dv">0</span><span class="op">,</span> <span class="dv">0</span><span class="op">,</span> <span class="dv">1</span><span class="op">,</span> <span class="dv">0</span><span class="op">,</span> <span class="dv">0</span>]<span class="op">,</span></span>
-<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a>]<span class="op">;</span></span>
-<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> nodes <span class="op">=</span> [<span class="st">&quot;Angela&quot;</span><span class="op">,</span> <span class="st">&quot;Bella&quot;</span><span class="op">,</span> <span class="st">&quot;Ellen&quot;</span><span class="op">,</span> <span class="st">&quot;Jane&quot;</span><span class="op">,</span> <span class="st">&quot;Miranda&quot;</span><span class="op">,</span> <span class="st">&quot;Zoe&quot;</span>]<span class="op">;</span></span></code></pre></div>
-<h3 id="helpers">Helpers</h3>
-<p>We need a helper function to check if a node has no incoming edge
-(<code>Line 9</code> in the algorithm):</p>
-<div class="sourceCode" id="cb11"><pre
-class="sourceCode js"><code class="sourceCode javascript"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="kw">function</span> <span class="fu">hasNodeNoIncomingEdge</span>(adjacencyMatrix<span class="op">,</span> nodeIndex) {</span>
-<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> column <span class="op">=</span> nodeIndex<span class="op">;</span></span>
-<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (<span class="kw">let</span> row <span class="op">=</span> <span class="dv">0</span><span class="op">;</span> row <span class="op">&lt;</span> adjacencyMatrix<span class="op">.</span><span class="at">length</span><span class="op">;</span> row <span class="op">+=</span> <span class="dv">1</span>) {</span>
-<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> cell <span class="op">=</span> adjacencyMatrix[row][column]<span class="op">;</span></span>
-<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> (cell <span class="op">!=</span> <span class="dv">0</span>) {</span>
-<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a>      <span class="cf">return</span> <span class="kw">false</span><span class="op">;</span></span>
-<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a>    }</span>
-<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a>  }</span>
-<span id="cb11-10"><a href="#cb11-10" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-11"><a href="#cb11-11" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> <span class="kw">true</span><span class="op">;</span></span>
-<span id="cb11-12"><a href="#cb11-12" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
-<p>Then, using this helper, we can define a second helper to initially
-collect all the nodes with no incoming edge (<code>Line 2</code> in the
-algorithm):</p>
-<div class="sourceCode" id="cb12"><pre
-class="sourceCode js"><code class="sourceCode javascript"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="kw">function</span> <span class="fu">getNodesWithNoIncomingEdge</span>(adjacencyMatrix<span class="op">,</span> nodes) {</span>
-<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> nodes<span class="op">.</span><span class="fu">filter</span>((_<span class="op">,</span> i) <span class="kw">=&gt;</span> <span class="fu">hasNodeNoIncomingEdge</span>(adjacencyMatrix<span class="op">,</span> i))<span class="op">;</span></span>
-<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
+<p><code>Line 12-15</code>: Once the loop at <code>Line 4</code> is finished, we inspect our graph. If there are no more edges, we are done. If there is still an edge, it means there was a cycle in the graph, and we return an error.
+Note that this algorithm is not capable by itself to point out which cycle there was exactly, only that there was one. That's because we mutated the graph by removing edges. If this information was important, we could keep track of which edges we removed in order, and re-add them back, or perhaps apply the algorithm to a copy of the graph (the adjacency matrix is trivial to clone).</p>
+<p>This algorithm is loose concerning the order of some operations, for example, picking a node with no incoming edge, or in which order the nodes in <code>S</code> are stored. That gives room for an implementation to use certain data structures or orders that are faster, but in some cases we want the order to be always the same to solve ties in the stable way and to be reproducible. In order to do that, we simply use the alphabetical order. So in our example above, at <code>Line 5</code>, we picked <code>Zoe</code> out of <code>[Zoe, Bella, Miranda]</code>. Using this method, we would keep the working set <code>S</code> sorted alphabetically and pick <code>Bella</code> out of <code>[Bella, Miranda, Zoe]</code>.</p>
+<h2>Implementation</h2>
+<p>I implemented this at the time in Go, but I will use for this article the lingua franca of the 2010s, Javascript.</p>
+<p><em>I don't write Javascript these days, I stopped many years ago, so apologies in advance if I am not using all the bells and whistles of 'Modern Javascript', or if the code is not quite idiomatic.</em></p>
+<p>First, we define our adjacency matrix and the list of nodes. This is the naive format. We would get the nodes and edges in some format, for example JSON, in the API, and build the adjacency matrix, which is trivial. Let's take the very first example, the (valid) tree  of employees:</p>
+<pre><code class="language-js">const adjacencyMatrix = [
+  [0, 0, 1, 0, 0, 0],
+  [1, 0, 0, 0, 0, 0],
+  [0, 0, 0, 0, 0, 0],
+  [0, 0, 1, 0, 0, 0],
+  [1, 0, 0, 0, 0, 0],
+  [0, 0, 0, 1, 0, 0],
+];
+
+const nodes = [&quot;Angela&quot;, &quot;Bella&quot;, &quot;Ellen&quot;, &quot;Jane&quot;, &quot;Miranda&quot;, &quot;Zoe&quot;];
+</code></pre>
+<h3>Helpers</h3>
+<p>We need a helper function to check if a node has no incoming edge (<code>Line 9</code> in the algorithm):</p>
+<pre><code class="language-js">function hasNodeNoIncomingEdge(adjacencyMatrix, nodeIndex) {
+  const column = nodeIndex;
+
+  for (let row = 0; row &lt; adjacencyMatrix.length; row += 1) {
+    const cell = adjacencyMatrix[row][column];
+    if (cell != 0) {
+      return false;
+    }
+  }
+
+  return true;
+}
+</code></pre>
+<p>Then, using this helper, we can define a second helper to initially collect all the nodes with no incoming edge (<code>Line 2</code> in the algorithm):</p>
+<pre><code class="language-js">function getNodesWithNoIncomingEdge(adjacencyMatrix, nodes) {
+  return nodes.filter((_, i) =&gt; hasNodeNoIncomingEdge(adjacencyMatrix, i));
+}
+</code></pre>
 <p>We can try it:</p>
-<div class="sourceCode" id="cb13"><pre
-class="sourceCode js"><code class="sourceCode javascript"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="bu">console</span><span class="op">.</span><span class="fu">log</span>(<span class="fu">getNodesWithNoIncomingEdge</span>(adjacencyMatrix<span class="op">,</span> nodes))<span class="op">;</span></span></code></pre></div>
+<pre><code class="language-js">console.log(getNodesWithNoIncomingEdge(adjacencyMatrix, nodes));
+</code></pre>
 <p>And it outputs:</p>
-<div class="sourceCode" id="cb14"><pre
-class="sourceCode js"><code class="sourceCode javascript"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a>[ <span class="st">&#39;Bella&#39;</span><span class="op">,</span> <span class="st">&#39;Miranda&#39;</span><span class="op">,</span> <span class="st">&#39;Zoe&#39;</span> ]</span></code></pre></div>
-<p>We need one final helper, to determine if the graph has edges
-(<code>Line 12</code>), which is straightforward:</p>
-<div class="sourceCode" id="cb15"><pre
-class="sourceCode js"><code class="sourceCode javascript"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="kw">function</span> <span class="fu">graphHasEdges</span>(adjacencyMatrix) {</span>
-<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (<span class="kw">let</span> row <span class="op">=</span> <span class="dv">0</span><span class="op">;</span> row <span class="op">&lt;</span> adjacencyMatrix<span class="op">.</span><span class="at">length</span><span class="op">;</span> row <span class="op">+=</span> <span class="dv">1</span>) {</span>
-<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> (<span class="kw">let</span> column <span class="op">=</span> <span class="dv">0</span><span class="op">;</span> column <span class="op">&lt;</span> adjacencyMatrix<span class="op">.</span><span class="at">length</span><span class="op">;</span> column <span class="op">+=</span> <span class="dv">1</span>) {</span>
-<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a>      <span class="cf">if</span> (adjacencyMatrix[row][column] <span class="op">==</span> <span class="dv">1</span>) <span class="cf">return</span> <span class="kw">true</span><span class="op">;</span></span>
-<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a>    }</span>
-<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a>  }</span>
-<span id="cb15-7"><a href="#cb15-7" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb15-8"><a href="#cb15-8" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> <span class="kw">false</span><span class="op">;</span></span>
-<span id="cb15-9"><a href="#cb15-9" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
-<h3 id="the-algorithm">The algorithm</h3>
-<p>We are finally ready to implement the algorithm. It’s a
-straightforward, line by line, translation of the pseudo-code:</p>
-<div class="sourceCode" id="cb16"><pre
-class="sourceCode js"><code class="sourceCode javascript"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="kw">function</span> <span class="fu">topologicalSort</span>(adjacencyMatrix) {</span>
-<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> L <span class="op">=</span> []<span class="op">;</span></span>
-<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> S <span class="op">=</span> <span class="fu">getNodesWithNoIncomingEdge</span>(adjacencyMatrix<span class="op">,</span> nodes)<span class="op">;</span></span>
-<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-5"><a href="#cb16-5" aria-hidden="true" tabindex="-1"></a>  <span class="cf">while</span> (S<span class="op">.</span><span class="at">length</span> <span class="op">&gt;</span> <span class="dv">0</span>) {</span>
-<span id="cb16-6"><a href="#cb16-6" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> node <span class="op">=</span> S<span class="op">.</span><span class="fu">pop</span>()<span class="op">;</span></span>
-<span id="cb16-7"><a href="#cb16-7" aria-hidden="true" tabindex="-1"></a>    L<span class="op">.</span><span class="fu">push</span>(node)<span class="op">;</span></span>
-<span id="cb16-8"><a href="#cb16-8" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> nodeIndex <span class="op">=</span> nodes<span class="op">.</span><span class="fu">indexOf</span>(node)<span class="op">;</span></span>
-<span id="cb16-9"><a href="#cb16-9" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-10"><a href="#cb16-10" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> (<span class="kw">let</span> mIndex <span class="op">=</span> <span class="dv">0</span><span class="op">;</span> mIndex <span class="op">&lt;</span> nodes<span class="op">.</span><span class="at">length</span><span class="op">;</span> mIndex <span class="op">+=</span> <span class="dv">1</span>) {</span>
-<span id="cb16-11"><a href="#cb16-11" aria-hidden="true" tabindex="-1"></a>      <span class="kw">const</span> hasEdgeFromNtoM <span class="op">=</span> adjacencyMatrix[nodeIndex][mIndex]<span class="op">;</span></span>
-<span id="cb16-12"><a href="#cb16-12" aria-hidden="true" tabindex="-1"></a>      <span class="cf">if</span> (<span class="op">!</span>hasEdgeFromNtoM) <span class="cf">continue</span><span class="op">;</span></span>
-<span id="cb16-13"><a href="#cb16-13" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-14"><a href="#cb16-14" aria-hidden="true" tabindex="-1"></a>      adjacencyMatrix[nodeIndex][mIndex] <span class="op">=</span> <span class="dv">0</span><span class="op">;</span></span>
-<span id="cb16-15"><a href="#cb16-15" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-16"><a href="#cb16-16" aria-hidden="true" tabindex="-1"></a>      <span class="cf">if</span> (<span class="fu">hasNodeNoIncomingEdge</span>(adjacencyMatrix<span class="op">,</span> mIndex)) {</span>
-<span id="cb16-17"><a href="#cb16-17" aria-hidden="true" tabindex="-1"></a>        <span class="kw">const</span> m <span class="op">=</span> nodes[mIndex]<span class="op">;</span></span>
-<span id="cb16-18"><a href="#cb16-18" aria-hidden="true" tabindex="-1"></a>        S<span class="op">.</span><span class="fu">push</span>(m)<span class="op">;</span></span>
-<span id="cb16-19"><a href="#cb16-19" aria-hidden="true" tabindex="-1"></a>      }</span>
-<span id="cb16-20"><a href="#cb16-20" aria-hidden="true" tabindex="-1"></a>    }</span>
-<span id="cb16-21"><a href="#cb16-21" aria-hidden="true" tabindex="-1"></a>  }</span>
-<span id="cb16-22"><a href="#cb16-22" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-23"><a href="#cb16-23" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (<span class="fu">graphHasEdges</span>(adjacencyMatrix)) {</span>
-<span id="cb16-24"><a href="#cb16-24" aria-hidden="true" tabindex="-1"></a>    <span class="cf">throw</span> <span class="kw">new</span> <span class="bu">Error</span>(<span class="st">&quot;Graph has at least one cycle&quot;</span>)<span class="op">;</span></span>
-<span id="cb16-25"><a href="#cb16-25" aria-hidden="true" tabindex="-1"></a>  }</span>
-<span id="cb16-26"><a href="#cb16-26" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-27"><a href="#cb16-27" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> L<span class="op">;</span></span>
-<span id="cb16-28"><a href="#cb16-28" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
-<p>Let’s try it:</p>
-<div class="sourceCode" id="cb17"><pre
-class="sourceCode js"><code class="sourceCode javascript"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="bu">console</span><span class="op">.</span><span class="fu">log</span>(<span class="fu">topologicalSort</span>(adjacencyMatrix<span class="op">,</span> nodes))<span class="op">;</span></span></code></pre></div>
+<pre><code class="language-js">[ 'Bella', 'Miranda', 'Zoe' ]
+</code></pre>
+<p>We need one final helper, to determine if the graph has edges (<code>Line 12</code>), which is straightforward:</p>
+<pre><code class="language-js">function graphHasEdges(adjacencyMatrix) {
+  for (let row = 0; row &lt; adjacencyMatrix.length; row += 1) {
+    for (let column = 0; column &lt; adjacencyMatrix.length; column += 1) {
+      if (adjacencyMatrix[row][column] == 1) return true;
+    }
+  }
+
+  return false;
+}
+</code></pre>
+<h3>The algorithm</h3>
+<p>We are finally ready to implement the algorithm. It's a straightforward, line by line, translation of the pseudo-code:</p>
+<pre><code class="language-js">function topologicalSort(adjacencyMatrix) {
+  const L = [];
+  const S = getNodesWithNoIncomingEdge(adjacencyMatrix, nodes);
+
+  while (S.length &gt; 0) {
+    const node = S.pop();
+    L.push(node);
+    const nodeIndex = nodes.indexOf(node);
+
+    for (let mIndex = 0; mIndex &lt; nodes.length; mIndex += 1) {
+      const hasEdgeFromNtoM = adjacencyMatrix[nodeIndex][mIndex];
+      if (!hasEdgeFromNtoM) continue;
+
+      adjacencyMatrix[nodeIndex][mIndex] = 0;
+
+      if (hasNodeNoIncomingEdge(adjacencyMatrix, mIndex)) {
+        const m = nodes[mIndex];
+        S.push(m);
+      }
+    }
+  }
+
+  if (graphHasEdges(adjacencyMatrix)) {
+    throw new Error(&quot;Graph has at least one cycle&quot;);
+  }
+
+  return L;
+}
+</code></pre>
+<p>Let's try it:</p>
+<pre><code class="language-js">console.log(topologicalSort(adjacencyMatrix, nodes));
+</code></pre>
 <p>We get:</p>
-<div class="sourceCode" id="cb18"><pre
-class="sourceCode js"><code class="sourceCode javascript"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a>[ <span class="st">&#39;Zoe&#39;</span><span class="op">,</span> <span class="st">&#39;Jane&#39;</span><span class="op">,</span> <span class="st">&#39;Miranda&#39;</span><span class="op">,</span> <span class="st">&#39;Bella&#39;</span><span class="op">,</span> <span class="st">&#39;Angela&#39;</span><span class="op">,</span> <span class="st">&#39;Ellen&#39;</span> ]</span></code></pre></div>
-<p>Interestingly, it is not the same order as <code>tsort</code>, but it
-is indeed a valid topological ordering. That’s because there are ties
-between some nodes and we do not resolve those ties the exact same way
-<code>tsort</code> does.</p>
-<p>But in our specific case, we just want a valid insertion order in the
-database, and so this is enough.</p>
-<h3 id="inserting-entries-in-the-database">Inserting entries in the
-database</h3>
-<p>Now, we can produce the SQL code to insert our entries. We operate on
-a clone of the adjacency matrix for convenience because we later need to
-know what is the outgoing edge for a given node.</p>
-<p>We handle the special case of the root first, which is the last
-element, and then we go through the topologically sorted list of
-employees in reverse order, and insert each one. We use a one liner to
-get the manager id by name when inserting to avoid many round trips to
-the database:</p>
-<div class="sourceCode" id="cb19"><pre
-class="sourceCode js"><code class="sourceCode javascript"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> employeesTopologicallySorted <span class="op">=</span> <span class="fu">topologicalSort</span>(<span class="fu">structuredClone</span>(adjacencyMatrix)<span class="op">,</span> nodes)</span>
-<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> <span class="bu">root</span> <span class="op">=</span> employeesTopologicallySorted[employeesTopologicallySorted<span class="op">.</span><span class="at">length</span> <span class="op">-</span> <span class="dv">1</span>]<span class="op">;</span></span>
-<span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a><span class="bu">console</span><span class="op">.</span><span class="fu">log</span>(<span class="vs">`INSERT INTO people VALUES(&quot;</span><span class="sc">${</span><span class="bu">root</span><span class="sc">}</span><span class="vs">&quot;, NULL)`</span>)<span class="op">;</span></span>
-<span id="cb19-5"><a href="#cb19-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb19-6"><a href="#cb19-6" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (<span class="kw">let</span> i <span class="op">=</span> employeesTopologicallySorted<span class="op">.</span><span class="at">length</span> <span class="op">-</span> <span class="dv">2</span><span class="op">;</span> i <span class="op">&gt;=</span> <span class="dv">0</span><span class="op">;</span> i <span class="op">-=</span> <span class="dv">1</span>) {</span>
-<span id="cb19-7"><a href="#cb19-7" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> employee <span class="op">=</span> employeesTopologicallySorted[i]<span class="op">;</span></span>
-<span id="cb19-8"><a href="#cb19-8" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> employeeIndex <span class="op">=</span> nodes<span class="op">.</span><span class="fu">indexOf</span>(employee)<span class="op">;</span></span>
-<span id="cb19-9"><a href="#cb19-9" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb19-10"><a href="#cb19-10" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> managerIndex <span class="op">=</span> adjacencyMatrix[employeeIndex]<span class="op">.</span><span class="fu">indexOf</span>(<span class="dv">1</span>)<span class="op">;</span></span>
-<span id="cb19-11"><a href="#cb19-11" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> manager <span class="op">=</span> nodes[managerIndex]<span class="op">;</span></span>
-<span id="cb19-12"><a href="#cb19-12" aria-hidden="true" tabindex="-1"></a>  <span class="bu">console</span><span class="op">.</span><span class="fu">log</span>(</span>
-<span id="cb19-13"><a href="#cb19-13" aria-hidden="true" tabindex="-1"></a>    <span class="vs">`INSERT INTO people SELECT &quot;</span><span class="sc">${</span>employee<span class="sc">}</span><span class="vs">&quot;, rowid FROM people WHERE name = &quot;</span><span class="sc">${</span>manager<span class="sc">}</span><span class="vs">&quot; LIMIT 1;`</span><span class="op">,</span></span>
-<span id="cb19-14"><a href="#cb19-14" aria-hidden="true" tabindex="-1"></a>  )<span class="op">;</span></span>
-<span id="cb19-15"><a href="#cb19-15" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
+<pre><code class="language-js">[ 'Zoe', 'Jane', 'Miranda', 'Bella', 'Angela', 'Ellen' ]
+</code></pre>
+<p>Interestingly, it is not the same order as <code>tsort</code>, but it is indeed a valid topological ordering. That's because there are ties between some nodes and we do not resolve those ties the exact same way <code>tsort</code> does.</p>
+<p>But in our specific case, we just want a valid insertion order in the database, and so this is enough.</p>
+<h3>Inserting entries in the database</h3>
+<p>Now, we can produce the SQL code to insert our entries. We operate on a clone of the adjacency matrix for convenience because we later need to know what is the outgoing edge for a given node.</p>
+<p>We handle the special case of the root first, which is the last element, and then we go through the topologically sorted list of employees in reverse order, and insert each one. We use a one liner to get the manager id by name when inserting to avoid many round trips to the database:</p>
+<pre><code class="language-js">const employeesTopologicallySorted = topologicalSort(structuredClone(adjacencyMatrix), nodes)
+
+const root = employeesTopologicallySorted[employeesTopologicallySorted.length - 1];
+console.log(`INSERT INTO people VALUES(&quot;${root}&quot;, NULL)`);
+
+for (let i = employeesTopologicallySorted.length - 2; i &gt;= 0; i -= 1) {
+  const employee = employeesTopologicallySorted[i];
+  const employeeIndex = nodes.indexOf(employee);
+
+  const managerIndex = adjacencyMatrix[employeeIndex].indexOf(1);
+  const manager = nodes[managerIndex];
+  console.log(
+    `INSERT INTO people SELECT &quot;${employee}&quot;, rowid FROM people WHERE name = &quot;${manager}&quot; LIMIT 1;`,
+  );
+}
+</code></pre>
 <p>Which outputs:</p>
-<div class="sourceCode" id="cb20"><pre
-class="sourceCode sql"><code class="sourceCode sql"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="kw">INSERT</span> <span class="kw">INTO</span> people <span class="kw">VALUES</span>(<span class="ot">&quot;Ellen&quot;</span>, <span class="kw">NULL</span>);</span>
-<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a><span class="kw">INSERT</span> <span class="kw">INTO</span> people <span class="kw">SELECT</span> <span class="ot">&quot;Angela&quot;</span>, <span class="dt">rowid</span> <span class="kw">FROM</span> people <span class="kw">WHERE</span> name <span class="op">=</span> <span class="ot">&quot;Ellen&quot;</span> <span class="kw">LIMIT</span> <span class="dv">1</span>;</span>
-<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a><span class="kw">INSERT</span> <span class="kw">INTO</span> people <span class="kw">SELECT</span> <span class="ot">&quot;Bella&quot;</span>, <span class="dt">rowid</span> <span class="kw">FROM</span> people <span class="kw">WHERE</span> name <span class="op">=</span> <span class="ot">&quot;Angela&quot;</span> <span class="kw">LIMIT</span> <span class="dv">1</span>;</span>
-<span id="cb20-4"><a href="#cb20-4" aria-hidden="true" tabindex="-1"></a><span class="kw">INSERT</span> <span class="kw">INTO</span> people <span class="kw">SELECT</span> <span class="ot">&quot;Miranda&quot;</span>, <span class="dt">rowid</span> <span class="kw">FROM</span> people <span class="kw">WHERE</span> name <span class="op">=</span> <span class="ot">&quot;Angela&quot;</span> <span class="kw">LIMIT</span> <span class="dv">1</span>;</span>
-<span id="cb20-5"><a href="#cb20-5" aria-hidden="true" tabindex="-1"></a><span class="kw">INSERT</span> <span class="kw">INTO</span> people <span class="kw">SELECT</span> <span class="ot">&quot;Jane&quot;</span>, <span class="dt">rowid</span> <span class="kw">FROM</span> people <span class="kw">WHERE</span> name <span class="op">=</span> <span class="ot">&quot;Ellen&quot;</span> <span class="kw">LIMIT</span> <span class="dv">1</span>;</span>
-<span id="cb20-6"><a href="#cb20-6" aria-hidden="true" tabindex="-1"></a><span class="kw">INSERT</span> <span class="kw">INTO</span> people <span class="kw">SELECT</span> <span class="ot">&quot;Zoe&quot;</span>, <span class="dt">rowid</span> <span class="kw">FROM</span> people <span class="kw">WHERE</span> name <span class="op">=</span> <span class="ot">&quot;Jane&quot;</span> <span class="kw">LIMIT</span> <span class="dv">1</span>;</span></code></pre></div>
-<h3 id="detecting-cycles">Detecting cycles</h3>
-<p>As we said earlier, we get that for free, so let’s check our
-implementation against this invalid example:</p>
-<figure>
-<img src="kahns_algorithm_4.svg" alt="Employee hierarchy with cycle" />
-<figcaption aria-hidden="true">Employee hierarchy with
-cycle</figcaption>
-</figure>
+<pre><code class="language-sql">INSERT INTO people VALUES(&quot;Ellen&quot;, NULL);
+INSERT INTO people SELECT &quot;Angela&quot;, rowid FROM people WHERE name = &quot;Ellen&quot; LIMIT 1;
+INSERT INTO people SELECT &quot;Bella&quot;, rowid FROM people WHERE name = &quot;Angela&quot; LIMIT 1;
+INSERT INTO people SELECT &quot;Miranda&quot;, rowid FROM people WHERE name = &quot;Angela&quot; LIMIT 1;
+INSERT INTO people SELECT &quot;Jane&quot;, rowid FROM people WHERE name = &quot;Ellen&quot; LIMIT 1;
+INSERT INTO people SELECT &quot;Zoe&quot;, rowid FROM people WHERE name = &quot;Jane&quot; LIMIT 1;
+</code></pre>
+<h3>Detecting cycles</h3>
+<p>As we said earlier, we get that for free, so let's check our implementation against this invalid example:</p>
+<p><img src="kahns_algorithm_4.svg" alt="Employee hierarchy with cycle" /></p>
 <p>We add the edge <code>Ellen -&gt; Zoe</code> to create a cycle:</p>
-<div class="sourceCode" id="cb21"><pre
-class="sourceCode js"><code class="sourceCode javascript"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> adjacencyMatrix <span class="op">=</span> [</span>
-<span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a>  [<span class="dv">0</span><span class="op">,</span> <span class="dv">0</span><span class="op">,</span> <span class="dv">1</span><span class="op">,</span> <span class="dv">0</span><span class="op">,</span> <span class="dv">0</span><span class="op">,</span> <span class="dv">0</span>]<span class="op">,</span></span>
-<span id="cb21-3"><a href="#cb21-3" aria-hidden="true" tabindex="-1"></a>  [<span class="dv">1</span><span class="op">,</span> <span class="dv">0</span><span class="op">,</span> <span class="dv">0</span><span class="op">,</span> <span class="dv">0</span><span class="op">,</span> <span class="dv">0</span><span class="op">,</span> <span class="dv">0</span>]<span class="op">,</span></span>
-<span id="cb21-4"><a href="#cb21-4" aria-hidden="true" tabindex="-1"></a>  [<span class="dv">0</span><span class="op">,</span> <span class="dv">0</span><span class="op">,</span> <span class="dv">0</span><span class="op">,</span> <span class="dv">0</span><span class="op">,</span> <span class="dv">0</span><span class="op">,</span> <span class="dv">1</span>]<span class="op">,</span> <span class="co">// =&gt; We change the last element of this row (Ellen&#39;s row, Zoe&#39;s column) from 0 to 1.</span></span>
-<span id="cb21-5"><a href="#cb21-5" aria-hidden="true" tabindex="-1"></a>  [<span class="dv">0</span><span class="op">,</span> <span class="dv">0</span><span class="op">,</span> <span class="dv">1</span><span class="op">,</span> <span class="dv">0</span><span class="op">,</span> <span class="dv">0</span><span class="op">,</span> <span class="dv">0</span>]<span class="op">,</span></span>
-<span id="cb21-6"><a href="#cb21-6" aria-hidden="true" tabindex="-1"></a>  [<span class="dv">1</span><span class="op">,</span> <span class="dv">0</span><span class="op">,</span> <span class="dv">0</span><span class="op">,</span> <span class="dv">0</span><span class="op">,</span> <span class="dv">0</span><span class="op">,</span> <span class="dv">0</span>]<span class="op">,</span></span>
-<span id="cb21-7"><a href="#cb21-7" aria-hidden="true" tabindex="-1"></a>  [<span class="dv">0</span><span class="op">,</span> <span class="dv">0</span><span class="op">,</span> <span class="dv">0</span><span class="op">,</span> <span class="dv">1</span><span class="op">,</span> <span class="dv">0</span><span class="op">,</span> <span class="dv">0</span>]<span class="op">,</span></span>
-<span id="cb21-8"><a href="#cb21-8" aria-hidden="true" tabindex="-1"></a>]<span class="op">;</span></span>
-<span id="cb21-9"><a href="#cb21-9" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb21-10"><a href="#cb21-10" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> nodes <span class="op">=</span> [<span class="st">&quot;Angela&quot;</span><span class="op">,</span> <span class="st">&quot;Bella&quot;</span><span class="op">,</span> <span class="st">&quot;Ellen&quot;</span><span class="op">,</span> <span class="st">&quot;Jane&quot;</span><span class="op">,</span> <span class="st">&quot;Miranda&quot;</span><span class="op">,</span> <span class="st">&quot;Zoe&quot;</span>]<span class="op">;</span></span>
-<span id="cb21-11"><a href="#cb21-11" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb21-12"><a href="#cb21-12" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> employeesTopologicallySorted <span class="op">=</span> <span class="fu">topologicalSort</span>(<span class="fu">structuredClone</span>(adjacencyMatrix)<span class="op">,</span> nodes)<span class="op">;</span></span></code></pre></div>
+<pre><code class="language-js">const adjacencyMatrix = [
+  [0, 0, 1, 0, 0, 0],
+  [1, 0, 0, 0, 0, 0],
+  [0, 0, 0, 0, 0, 1], // =&gt; We change the last element of this row (Ellen's row, Zoe's column) from 0 to 1.
+  [0, 0, 1, 0, 0, 0],
+  [1, 0, 0, 0, 0, 0],
+  [0, 0, 0, 1, 0, 0],
+];
+
+const nodes = [&quot;Angela&quot;, &quot;Bella&quot;, &quot;Ellen&quot;, &quot;Jane&quot;, &quot;Miranda&quot;, &quot;Zoe&quot;];
+
+const employeesTopologicallySorted = topologicalSort(structuredClone(adjacencyMatrix), nodes);
+</code></pre>
 <p>And we get an error as expected:</p>
-<div class="sourceCode" id="cb22"><pre
-class="sourceCode sh"><code class="sourceCode bash"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a><span class="ex">/home/pg/my-code/blog/kahns_algorithm.js:63</span></span>
-<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a>    <span class="ex">throw</span> new Error<span class="er">(</span><span class="st">&quot;Graph has at least one cycle&quot;</span><span class="kw">);</span></span>
-<span id="cb22-3"><a href="#cb22-3" aria-hidden="true" tabindex="-1"></a>    <span class="ex">^</span></span>
-<span id="cb22-4"><a href="#cb22-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb22-5"><a href="#cb22-5" aria-hidden="true" tabindex="-1"></a><span class="ex">Error:</span> Graph has at least one cycle</span></code></pre></div>
-<h3 id="detecting-multiple-roots">Detecting multiple roots</h3>
-<p>One thing that topological sorting does not do for us is to detect
-the case of multiple roots in the graph, for example:</p>
-<figure>
-<img src="kahns_algorithm_3.svg"
-alt="Employee hierarchy with multiple roots" />
-<figcaption aria-hidden="true">Employee hierarchy with multiple
-roots</figcaption>
-</figure>
-<p>To do this, we simply scan the adjacency matrix and verify that there
-is only one row with only zeroes, that is, only one node that has no
-outgoing edges:</p>
-<div class="sourceCode" id="cb23"><pre
-class="sourceCode js"><code class="sourceCode javascript"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="kw">function</span> <span class="fu">hasMultipleRoots</span>(adjacencyMatrix) {</span>
-<span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">let</span> countOfRowsWithOnlyZeroes <span class="op">=</span> <span class="dv">0</span><span class="op">;</span></span>
-<span id="cb23-3"><a href="#cb23-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb23-4"><a href="#cb23-4" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (<span class="kw">let</span> row <span class="op">=</span> <span class="dv">0</span><span class="op">;</span> row <span class="op">&lt;</span> adjacencyMatrix<span class="op">.</span><span class="at">length</span><span class="op">;</span> row <span class="op">+=</span> <span class="dv">1</span>) {</span>
-<span id="cb23-5"><a href="#cb23-5" aria-hidden="true" tabindex="-1"></a>    <span class="kw">let</span> rowHasOnlyZeroes <span class="op">=</span> <span class="kw">true</span><span class="op">;</span></span>
-<span id="cb23-6"><a href="#cb23-6" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> (<span class="kw">let</span> column <span class="op">=</span> <span class="dv">0</span><span class="op">;</span> column <span class="op">&lt;</span> adjacencyMatrix<span class="op">.</span><span class="at">length</span><span class="op">;</span> column <span class="op">+=</span> <span class="dv">1</span>) {</span>
-<span id="cb23-7"><a href="#cb23-7" aria-hidden="true" tabindex="-1"></a>      <span class="cf">if</span> (adjacencyMatrix[row][column] <span class="op">!=</span> <span class="dv">0</span>) {</span>
-<span id="cb23-8"><a href="#cb23-8" aria-hidden="true" tabindex="-1"></a>        rowHasOnlyZeroes <span class="op">=</span> <span class="kw">false</span><span class="op">;</span></span>
-<span id="cb23-9"><a href="#cb23-9" aria-hidden="true" tabindex="-1"></a>        <span class="cf">break</span><span class="op">;</span></span>
-<span id="cb23-10"><a href="#cb23-10" aria-hidden="true" tabindex="-1"></a>      }</span>
-<span id="cb23-11"><a href="#cb23-11" aria-hidden="true" tabindex="-1"></a>    }</span>
-<span id="cb23-12"><a href="#cb23-12" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> (rowHasOnlyZeroes) countOfRowsWithOnlyZeroes <span class="op">+=</span> <span class="dv">1</span><span class="op">;</span></span>
-<span id="cb23-13"><a href="#cb23-13" aria-hidden="true" tabindex="-1"></a>  }</span>
-<span id="cb23-14"><a href="#cb23-14" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb23-15"><a href="#cb23-15" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> countOfRowsWithOnlyZeroes <span class="op">&gt;</span> <span class="dv">1</span><span class="op">;</span></span>
-<span id="cb23-16"><a href="#cb23-16" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
-<p>Let’s try it with our invalid example from above:</p>
-<div class="sourceCode" id="cb24"><pre
-class="sourceCode js"><code class="sourceCode javascript"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> adjacencyMatrix <span class="op">=</span> [</span>
-<span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a>  [<span class="dv">0</span><span class="op">,</span> <span class="dv">0</span><span class="op">,</span> <span class="dv">1</span><span class="op">,</span> <span class="dv">0</span><span class="op">,</span> <span class="dv">0</span><span class="op">,</span> <span class="dv">0</span><span class="op">,</span> <span class="dv">0</span>]<span class="op">,</span></span>
-<span id="cb24-3"><a href="#cb24-3" aria-hidden="true" tabindex="-1"></a>  [<span class="dv">1</span><span class="op">,</span> <span class="dv">0</span><span class="op">,</span> <span class="dv">0</span><span class="op">,</span> <span class="dv">0</span><span class="op">,</span> <span class="dv">0</span><span class="op">,</span> <span class="dv">0</span><span class="op">,</span> <span class="dv">0</span>]<span class="op">,</span></span>
-<span id="cb24-4"><a href="#cb24-4" aria-hidden="true" tabindex="-1"></a>  [<span class="dv">0</span><span class="op">,</span> <span class="dv">0</span><span class="op">,</span> <span class="dv">0</span><span class="op">,</span> <span class="dv">0</span><span class="op">,</span> <span class="dv">0</span><span class="op">,</span> <span class="dv">0</span><span class="op">,</span> <span class="dv">0</span>]<span class="op">,</span></span>
-<span id="cb24-5"><a href="#cb24-5" aria-hidden="true" tabindex="-1"></a>  [<span class="dv">0</span><span class="op">,</span> <span class="dv">0</span><span class="op">,</span> <span class="dv">1</span><span class="op">,</span> <span class="dv">0</span><span class="op">,</span> <span class="dv">0</span><span class="op">,</span> <span class="dv">0</span><span class="op">,</span> <span class="dv">0</span>]<span class="op">,</span></span>
-<span id="cb24-6"><a href="#cb24-6" aria-hidden="true" tabindex="-1"></a>  [<span class="dv">1</span><span class="op">,</span> <span class="dv">0</span><span class="op">,</span> <span class="dv">0</span><span class="op">,</span> <span class="dv">0</span><span class="op">,</span> <span class="dv">0</span><span class="op">,</span> <span class="dv">0</span><span class="op">,</span> <span class="dv">0</span>]<span class="op">,</span></span>
-<span id="cb24-7"><a href="#cb24-7" aria-hidden="true" tabindex="-1"></a>  [<span class="dv">0</span><span class="op">,</span> <span class="dv">0</span><span class="op">,</span> <span class="dv">0</span><span class="op">,</span> <span class="dv">1</span><span class="op">,</span> <span class="dv">0</span><span class="op">,</span> <span class="dv">0</span><span class="op">,</span> <span class="dv">0</span>]<span class="op">,</span></span>
-<span id="cb24-8"><a href="#cb24-8" aria-hidden="true" tabindex="-1"></a>  [<span class="dv">0</span><span class="op">,</span> <span class="dv">0</span><span class="op">,</span> <span class="dv">0</span><span class="op">,</span> <span class="dv">0</span><span class="op">,</span> <span class="dv">0</span><span class="op">,</span> <span class="dv">0</span><span class="op">,</span> <span class="dv">0</span>]<span class="op">,</span></span>
-<span id="cb24-9"><a href="#cb24-9" aria-hidden="true" tabindex="-1"></a>]<span class="op">;</span></span>
-<span id="cb24-10"><a href="#cb24-10" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb24-11"><a href="#cb24-11" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> nodes <span class="op">=</span> [<span class="st">&quot;Angela&quot;</span><span class="op">,</span> <span class="st">&quot;Bella&quot;</span><span class="op">,</span> <span class="st">&quot;Ellen&quot;</span><span class="op">,</span> <span class="st">&quot;Jane&quot;</span><span class="op">,</span> <span class="st">&quot;Miranda&quot;</span><span class="op">,</span> <span class="st">&quot;Zoe&quot;</span><span class="op">,</span> <span class="st">&quot;Kelly&quot;</span>]<span class="op">;</span></span>
-<span id="cb24-12"><a href="#cb24-12" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb24-13"><a href="#cb24-13" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb24-14"><a href="#cb24-14" aria-hidden="true" tabindex="-1"></a><span class="bu">console</span><span class="op">.</span><span class="fu">log</span>(<span class="fu">hasMultipleRoots</span>(adjacencyMatrix))<span class="op">;</span></span></code></pre></div>
-<p>And we get: <code>true</code>. With our previous (valid) example, we
-get: <code>false</code>.</p>
-<h2 id="playing-with-the-database">Playing with the database</h2>
+<pre><code class="language-sh">/home/pg/my-code/blog/kahns_algorithm.js:63
+    throw new Error(&quot;Graph has at least one cycle&quot;);
+    ^
+
+Error: Graph has at least one cycle
+</code></pre>
+<h3>Detecting multiple roots</h3>
+<p>One thing that topological sorting does not do for us is to detect the case of multiple roots in the graph, for example:</p>
+<p><img src="kahns_algorithm_3.svg" alt="Employee hierarchy with multiple roots" /></p>
+<p>To do this, we simply scan the adjacency matrix and verify that there is only one row with only zeroes, that is, only one node that has no outgoing edges:</p>
+<pre><code class="language-js">function hasMultipleRoots(adjacencyMatrix) {
+  let countOfRowsWithOnlyZeroes = 0;
+
+  for (let row = 0; row &lt; adjacencyMatrix.length; row += 1) {
+    let rowHasOnlyZeroes = true;
+    for (let column = 0; column &lt; adjacencyMatrix.length; column += 1) {
+      if (adjacencyMatrix[row][column] != 0) {
+        rowHasOnlyZeroes = false;
+        break;
+      }
+    }
+    if (rowHasOnlyZeroes) countOfRowsWithOnlyZeroes += 1;
+  }
+
+  return countOfRowsWithOnlyZeroes &gt; 1;
+}
+</code></pre>
+<p>Let's try it with our invalid example from above:</p>
+<pre><code class="language-js">const adjacencyMatrix = [
+  [0, 0, 1, 0, 0, 0, 0],
+  [1, 0, 0, 0, 0, 0, 0],
+  [0, 0, 0, 0, 0, 0, 0],
+  [0, 0, 1, 0, 0, 0, 0],
+  [1, 0, 0, 0, 0, 0, 0],
+  [0, 0, 0, 1, 0, 0, 0],
+  [0, 0, 0, 0, 0, 0, 0],
+];
+
+const nodes = [&quot;Angela&quot;, &quot;Bella&quot;, &quot;Ellen&quot;, &quot;Jane&quot;, &quot;Miranda&quot;, &quot;Zoe&quot;, &quot;Kelly&quot;];
+
+
+console.log(hasMultipleRoots(adjacencyMatrix));
+</code></pre>
+<p>And we get: <code>true</code>. With our previous (valid) example, we get: <code>false</code>.</p>
+<h2>Playing with the database</h2>
 <p>We can query each employee along with their manager name so:</p>
-<div class="sourceCode" id="cb25"><pre
-class="sourceCode sql"><code class="sourceCode sql"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a><span class="kw">SELECT</span> a.name <span class="kw">as</span> employee_name, <span class="fu">COALESCE</span>(b.name, <span class="st">&#39;&#39;</span>) <span class="kw">as</span> manager_name <span class="kw">FROM</span> people a <span class="kw">LEFT</span> <span class="kw">JOIN</span> people b <span class="kw">ON</span> a.manager <span class="op">=</span> b.<span class="dt">rowid</span>;</span></code></pre></div>
-<p>To query the manager (N+1) and the manager’s manager (N+2) of an
-employee:</p>
-<div class="sourceCode" id="cb26"><pre
-class="sourceCode sql"><code class="sourceCode sql"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a><span class="kw">SELECT</span> <span class="fu">COALESCE</span>(n_plus_1.name, <span class="st">&#39;&#39;</span>), <span class="fu">COALESCE</span>(n_plus_2.name, <span class="st">&#39;&#39;</span>)</span>
-<span id="cb26-2"><a href="#cb26-2" aria-hidden="true" tabindex="-1"></a><span class="kw">FROM</span> people employee</span>
-<span id="cb26-3"><a href="#cb26-3" aria-hidden="true" tabindex="-1"></a><span class="kw">LEFT</span> <span class="kw">JOIN</span> people n_plus_1 <span class="kw">ON</span> employee.manager <span class="op">=</span> n_plus_1.<span class="dt">rowid</span></span>
-<span id="cb26-4"><a href="#cb26-4" aria-hidden="true" tabindex="-1"></a><span class="kw">LEFT</span> <span class="kw">JOIN</span> people n_plus_2 <span class="kw">ON</span> n_plus_1.manager <span class="op">=</span> n_plus_2.<span class="dt">rowid</span></span>
-<span id="cb26-5"><a href="#cb26-5" aria-hidden="true" tabindex="-1"></a><span class="kw">WHERE</span> employee.name <span class="op">=</span> ?</span></code></pre></div>
-<p>We can also do this with hairy recursive Common Table Expression
-(CTE) but I’ll leave that to the reader.</p>
-<h2 id="closing-thoughts">Closing thoughts</h2>
-<p>Graphs and algorithms operating on them do not have to be
-complicated. Using an adjacency matrix and Kahn’s algorithm, we can
-achieve a lot with little and it remains simple.</p>
-<p>There are many ways to optimize the code in this article; the point
-was not to write the most efficient code, but to showcase in the
-clearest, simplest way possible to detect cycles and store a graph/tree
-in memory and in a database.</p>
-<p>If you want to play with the code here and try to make it faster, go
-at it!</p>
+<pre><code class="language-sql">SELECT a.name as employee_name, COALESCE(b.name, '') as manager_name FROM people a LEFT JOIN people b ON a.manager = b.rowid;
+</code></pre>
+<p>To query the manager (N+1) and the manager's manager (N+2) of an employee:</p>
+<pre><code class="language-sql">SELECT COALESCE(n_plus_1.name, ''), COALESCE(n_plus_2.name, '')
+FROM people employee
+LEFT JOIN people n_plus_1 ON employee.manager = n_plus_1.rowid
+LEFT JOIN people n_plus_2 ON n_plus_1.manager = n_plus_2.rowid
+WHERE employee.name = ?
+</code></pre>
+<p>We can also do this with hairy recursive Common Table Expression (CTE) but I'll leave that to the reader.</p>
+<h2>Closing thoughts</h2>
+<p>Graphs and algorithms operating on them do not have to be complicated. Using an adjacency matrix and Kahn's algorithm, we can achieve a lot with little and it remains simple.</p>
+<p>There are many ways to optimize the code in this article; the point was not to write the most efficient code, but to showcase in the clearest, simplest way possible to detect cycles and store a graph/tree in memory and in a database.</p>
+<p>If you want to play with the code here and try to make it faster, go at it!</p>
 <blockquote>
-<p>If you liked this article and you want to support me, and can afford
-it: <a
-href="https://paypal.me/philigaultier?country.x=DE&amp;locale.x=en_US">Donate</a></p>
+<p>If you liked this article and you want to support me, and can afford it: <a href="https://paypal.me/philigaultier?country.x=DE&amp;locale.x=en_US">Donate</a></p>
 </blockquote>
-<h2 id="addendum-the-full-code">Addendum: the full code</h2>
-<div class="sourceCode" id="cb27"><pre
-class="sourceCode js"><code class="sourceCode javascript"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> adjacencyMatrix <span class="op">=</span> [</span>
-<span id="cb27-2"><a href="#cb27-2" aria-hidden="true" tabindex="-1"></a>  [<span class="dv">0</span><span class="op">,</span> <span class="dv">0</span><span class="op">,</span> <span class="dv">1</span><span class="op">,</span> <span class="dv">0</span><span class="op">,</span> <span class="dv">0</span><span class="op">,</span> <span class="dv">0</span>]<span class="op">,</span></span>
-<span id="cb27-3"><a href="#cb27-3" aria-hidden="true" tabindex="-1"></a>  [<span class="dv">1</span><span class="op">,</span> <span class="dv">0</span><span class="op">,</span> <span class="dv">0</span><span class="op">,</span> <span class="dv">0</span><span class="op">,</span> <span class="dv">0</span><span class="op">,</span> <span class="dv">0</span>]<span class="op">,</span></span>
-<span id="cb27-4"><a href="#cb27-4" aria-hidden="true" tabindex="-1"></a>  [<span class="dv">0</span><span class="op">,</span> <span class="dv">0</span><span class="op">,</span> <span class="dv">0</span><span class="op">,</span> <span class="dv">0</span><span class="op">,</span> <span class="dv">0</span><span class="op">,</span> <span class="dv">0</span>]<span class="op">,</span></span>
-<span id="cb27-5"><a href="#cb27-5" aria-hidden="true" tabindex="-1"></a>  [<span class="dv">0</span><span class="op">,</span> <span class="dv">0</span><span class="op">,</span> <span class="dv">1</span><span class="op">,</span> <span class="dv">0</span><span class="op">,</span> <span class="dv">0</span><span class="op">,</span> <span class="dv">0</span>]<span class="op">,</span></span>
-<span id="cb27-6"><a href="#cb27-6" aria-hidden="true" tabindex="-1"></a>  [<span class="dv">1</span><span class="op">,</span> <span class="dv">0</span><span class="op">,</span> <span class="dv">0</span><span class="op">,</span> <span class="dv">0</span><span class="op">,</span> <span class="dv">0</span><span class="op">,</span> <span class="dv">0</span>]<span class="op">,</span></span>
-<span id="cb27-7"><a href="#cb27-7" aria-hidden="true" tabindex="-1"></a>  [<span class="dv">0</span><span class="op">,</span> <span class="dv">0</span><span class="op">,</span> <span class="dv">0</span><span class="op">,</span> <span class="dv">1</span><span class="op">,</span> <span class="dv">0</span><span class="op">,</span> <span class="dv">0</span>]<span class="op">,</span></span>
-<span id="cb27-8"><a href="#cb27-8" aria-hidden="true" tabindex="-1"></a>]<span class="op">;</span></span>
-<span id="cb27-9"><a href="#cb27-9" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb27-10"><a href="#cb27-10" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> nodes <span class="op">=</span> [<span class="st">&quot;Angela&quot;</span><span class="op">,</span> <span class="st">&quot;Bella&quot;</span><span class="op">,</span> <span class="st">&quot;Ellen&quot;</span><span class="op">,</span> <span class="st">&quot;Jane&quot;</span><span class="op">,</span> <span class="st">&quot;Miranda&quot;</span><span class="op">,</span> <span class="st">&quot;Zoe&quot;</span>]<span class="op">;</span></span>
-<span id="cb27-11"><a href="#cb27-11" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb27-12"><a href="#cb27-12" aria-hidden="true" tabindex="-1"></a><span class="kw">function</span> <span class="fu">hasNodeNoIncomingEdge</span>(adjacencyMatrix<span class="op">,</span> nodeIndex) {</span>
-<span id="cb27-13"><a href="#cb27-13" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> column <span class="op">=</span> nodeIndex<span class="op">;</span></span>
-<span id="cb27-14"><a href="#cb27-14" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb27-15"><a href="#cb27-15" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (<span class="kw">let</span> row <span class="op">=</span> <span class="dv">0</span><span class="op">;</span> row <span class="op">&lt;</span> adjacencyMatrix<span class="op">.</span><span class="at">length</span><span class="op">;</span> row <span class="op">+=</span> <span class="dv">1</span>) {</span>
-<span id="cb27-16"><a href="#cb27-16" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> cell <span class="op">=</span> adjacencyMatrix[row][column]<span class="op">;</span></span>
-<span id="cb27-17"><a href="#cb27-17" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb27-18"><a href="#cb27-18" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> (cell <span class="op">!=</span> <span class="dv">0</span>) {</span>
-<span id="cb27-19"><a href="#cb27-19" aria-hidden="true" tabindex="-1"></a>      <span class="cf">return</span> <span class="kw">false</span><span class="op">;</span></span>
-<span id="cb27-20"><a href="#cb27-20" aria-hidden="true" tabindex="-1"></a>    }</span>
-<span id="cb27-21"><a href="#cb27-21" aria-hidden="true" tabindex="-1"></a>  }</span>
-<span id="cb27-22"><a href="#cb27-22" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb27-23"><a href="#cb27-23" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> <span class="kw">true</span><span class="op">;</span></span>
-<span id="cb27-24"><a href="#cb27-24" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb27-25"><a href="#cb27-25" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb27-26"><a href="#cb27-26" aria-hidden="true" tabindex="-1"></a><span class="kw">function</span> <span class="fu">getNodesWithNoIncomingEdge</span>(adjacencyMatrix<span class="op">,</span> nodes) {</span>
-<span id="cb27-27"><a href="#cb27-27" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> nodes<span class="op">.</span><span class="fu">filter</span>((_<span class="op">,</span> i) <span class="kw">=&gt;</span> <span class="fu">hasNodeNoIncomingEdge</span>(adjacencyMatrix<span class="op">,</span> i))<span class="op">;</span></span>
-<span id="cb27-28"><a href="#cb27-28" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb27-29"><a href="#cb27-29" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb27-30"><a href="#cb27-30" aria-hidden="true" tabindex="-1"></a><span class="kw">function</span> <span class="fu">graphHasEdges</span>(adjacencyMatrix) {</span>
-<span id="cb27-31"><a href="#cb27-31" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (<span class="kw">let</span> row <span class="op">=</span> <span class="dv">0</span><span class="op">;</span> row <span class="op">&lt;</span> adjacencyMatrix<span class="op">.</span><span class="at">length</span><span class="op">;</span> row <span class="op">+=</span> <span class="dv">1</span>) {</span>
-<span id="cb27-32"><a href="#cb27-32" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> (<span class="kw">let</span> column <span class="op">=</span> <span class="dv">0</span><span class="op">;</span> column <span class="op">&lt;</span> adjacencyMatrix<span class="op">.</span><span class="at">length</span><span class="op">;</span> column <span class="op">+=</span> <span class="dv">1</span>) {</span>
-<span id="cb27-33"><a href="#cb27-33" aria-hidden="true" tabindex="-1"></a>      <span class="cf">if</span> (adjacencyMatrix[row][column] <span class="op">==</span> <span class="dv">1</span>) <span class="cf">return</span> <span class="kw">true</span><span class="op">;</span></span>
-<span id="cb27-34"><a href="#cb27-34" aria-hidden="true" tabindex="-1"></a>    }</span>
-<span id="cb27-35"><a href="#cb27-35" aria-hidden="true" tabindex="-1"></a>  }</span>
-<span id="cb27-36"><a href="#cb27-36" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb27-37"><a href="#cb27-37" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> <span class="kw">false</span><span class="op">;</span></span>
-<span id="cb27-38"><a href="#cb27-38" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb27-39"><a href="#cb27-39" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb27-40"><a href="#cb27-40" aria-hidden="true" tabindex="-1"></a><span class="kw">function</span> <span class="fu">topologicalSort</span>(adjacencyMatrix) {</span>
-<span id="cb27-41"><a href="#cb27-41" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> L <span class="op">=</span> []<span class="op">;</span></span>
-<span id="cb27-42"><a href="#cb27-42" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> S <span class="op">=</span> <span class="fu">getNodesWithNoIncomingEdge</span>(adjacencyMatrix<span class="op">,</span> nodes)<span class="op">;</span></span>
-<span id="cb27-43"><a href="#cb27-43" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb27-44"><a href="#cb27-44" aria-hidden="true" tabindex="-1"></a>  <span class="cf">while</span> (S<span class="op">.</span><span class="at">length</span> <span class="op">&gt;</span> <span class="dv">0</span>) {</span>
-<span id="cb27-45"><a href="#cb27-45" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> node <span class="op">=</span> S<span class="op">.</span><span class="fu">pop</span>()<span class="op">;</span></span>
-<span id="cb27-46"><a href="#cb27-46" aria-hidden="true" tabindex="-1"></a>    L<span class="op">.</span><span class="fu">push</span>(node)<span class="op">;</span></span>
-<span id="cb27-47"><a href="#cb27-47" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> nodeIndex <span class="op">=</span> nodes<span class="op">.</span><span class="fu">indexOf</span>(node)<span class="op">;</span></span>
-<span id="cb27-48"><a href="#cb27-48" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb27-49"><a href="#cb27-49" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> (<span class="kw">let</span> mIndex <span class="op">=</span> <span class="dv">0</span><span class="op">;</span> mIndex <span class="op">&lt;</span> nodes<span class="op">.</span><span class="at">length</span><span class="op">;</span> mIndex <span class="op">+=</span> <span class="dv">1</span>) {</span>
-<span id="cb27-50"><a href="#cb27-50" aria-hidden="true" tabindex="-1"></a>      <span class="kw">const</span> hasEdgeFromNtoM <span class="op">=</span> adjacencyMatrix[nodeIndex][mIndex]<span class="op">;</span></span>
-<span id="cb27-51"><a href="#cb27-51" aria-hidden="true" tabindex="-1"></a>      <span class="cf">if</span> (<span class="op">!</span>hasEdgeFromNtoM) <span class="cf">continue</span><span class="op">;</span></span>
-<span id="cb27-52"><a href="#cb27-52" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb27-53"><a href="#cb27-53" aria-hidden="true" tabindex="-1"></a>      adjacencyMatrix[nodeIndex][mIndex] <span class="op">=</span> <span class="dv">0</span><span class="op">;</span></span>
-<span id="cb27-54"><a href="#cb27-54" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb27-55"><a href="#cb27-55" aria-hidden="true" tabindex="-1"></a>      <span class="cf">if</span> (<span class="fu">hasNodeNoIncomingEdge</span>(adjacencyMatrix<span class="op">,</span> mIndex)) {</span>
-<span id="cb27-56"><a href="#cb27-56" aria-hidden="true" tabindex="-1"></a>        <span class="kw">const</span> m <span class="op">=</span> nodes[mIndex]<span class="op">;</span></span>
-<span id="cb27-57"><a href="#cb27-57" aria-hidden="true" tabindex="-1"></a>        S<span class="op">.</span><span class="fu">push</span>(m)<span class="op">;</span></span>
-<span id="cb27-58"><a href="#cb27-58" aria-hidden="true" tabindex="-1"></a>      }</span>
-<span id="cb27-59"><a href="#cb27-59" aria-hidden="true" tabindex="-1"></a>    }</span>
-<span id="cb27-60"><a href="#cb27-60" aria-hidden="true" tabindex="-1"></a>  }</span>
-<span id="cb27-61"><a href="#cb27-61" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb27-62"><a href="#cb27-62" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (<span class="fu">graphHasEdges</span>(adjacencyMatrix)) {</span>
-<span id="cb27-63"><a href="#cb27-63" aria-hidden="true" tabindex="-1"></a>    <span class="cf">throw</span> <span class="kw">new</span> <span class="bu">Error</span>(<span class="st">&quot;Graph has at least one cycle&quot;</span>)<span class="op">;</span></span>
-<span id="cb27-64"><a href="#cb27-64" aria-hidden="true" tabindex="-1"></a>  }</span>
-<span id="cb27-65"><a href="#cb27-65" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb27-66"><a href="#cb27-66" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> L<span class="op">;</span></span>
-<span id="cb27-67"><a href="#cb27-67" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb27-68"><a href="#cb27-68" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb27-69"><a href="#cb27-69" aria-hidden="true" tabindex="-1"></a><span class="kw">function</span> <span class="fu">hasMultipleRoots</span>(adjacencyMatrix) {</span>
-<span id="cb27-70"><a href="#cb27-70" aria-hidden="true" tabindex="-1"></a>  <span class="kw">let</span> countOfRowsWithOnlyZeroes <span class="op">=</span> <span class="dv">0</span><span class="op">;</span></span>
-<span id="cb27-71"><a href="#cb27-71" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb27-72"><a href="#cb27-72" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (<span class="kw">let</span> row <span class="op">=</span> <span class="dv">0</span><span class="op">;</span> row <span class="op">&lt;</span> adjacencyMatrix<span class="op">.</span><span class="at">length</span><span class="op">;</span> row <span class="op">+=</span> <span class="dv">1</span>) {</span>
-<span id="cb27-73"><a href="#cb27-73" aria-hidden="true" tabindex="-1"></a>    <span class="kw">let</span> rowHasOnlyZeroes <span class="op">=</span> <span class="kw">true</span><span class="op">;</span></span>
-<span id="cb27-74"><a href="#cb27-74" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> (<span class="kw">let</span> column <span class="op">=</span> <span class="dv">0</span><span class="op">;</span> column <span class="op">&lt;</span> adjacencyMatrix<span class="op">.</span><span class="at">length</span><span class="op">;</span> column <span class="op">+=</span> <span class="dv">1</span>) {</span>
-<span id="cb27-75"><a href="#cb27-75" aria-hidden="true" tabindex="-1"></a>      <span class="cf">if</span> (adjacencyMatrix[row][column] <span class="op">!=</span> <span class="dv">0</span>) {</span>
-<span id="cb27-76"><a href="#cb27-76" aria-hidden="true" tabindex="-1"></a>        rowHasOnlyZeroes <span class="op">=</span> <span class="kw">false</span><span class="op">;</span></span>
-<span id="cb27-77"><a href="#cb27-77" aria-hidden="true" tabindex="-1"></a>        <span class="cf">break</span><span class="op">;</span></span>
-<span id="cb27-78"><a href="#cb27-78" aria-hidden="true" tabindex="-1"></a>      }</span>
-<span id="cb27-79"><a href="#cb27-79" aria-hidden="true" tabindex="-1"></a>    }</span>
-<span id="cb27-80"><a href="#cb27-80" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> (rowHasOnlyZeroes) countOfRowsWithOnlyZeroes <span class="op">+=</span> <span class="dv">1</span><span class="op">;</span></span>
-<span id="cb27-81"><a href="#cb27-81" aria-hidden="true" tabindex="-1"></a>  }</span>
-<span id="cb27-82"><a href="#cb27-82" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb27-83"><a href="#cb27-83" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> countOfRowsWithOnlyZeroes <span class="op">&gt;</span> <span class="dv">1</span><span class="op">;</span></span>
-<span id="cb27-84"><a href="#cb27-84" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb27-85"><a href="#cb27-85" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb27-86"><a href="#cb27-86" aria-hidden="true" tabindex="-1"></a><span class="bu">console</span><span class="op">.</span><span class="fu">log</span>(<span class="fu">hasMultipleRoots</span>(adjacencyMatrix))<span class="op">;</span></span>
-<span id="cb27-87"><a href="#cb27-87" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> employeesTopologicallySorted <span class="op">=</span> <span class="fu">topologicalSort</span>(<span class="fu">structuredClone</span>(adjacencyMatrix)<span class="op">,</span> nodes)<span class="op">;</span></span>
-<span id="cb27-88"><a href="#cb27-88" aria-hidden="true" tabindex="-1"></a><span class="bu">console</span><span class="op">.</span><span class="fu">log</span>(employeesTopologicallySorted)<span class="op">;</span></span>
-<span id="cb27-89"><a href="#cb27-89" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb27-90"><a href="#cb27-90" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> <span class="bu">root</span> <span class="op">=</span> employeesTopologicallySorted[employeesTopologicallySorted<span class="op">.</span><span class="at">length</span> <span class="op">-</span> <span class="dv">1</span>]<span class="op">;</span></span>
-<span id="cb27-91"><a href="#cb27-91" aria-hidden="true" tabindex="-1"></a><span class="bu">console</span><span class="op">.</span><span class="fu">log</span>(<span class="vs">`INSERT INTO people VALUES(&quot;</span><span class="sc">${</span><span class="bu">root</span><span class="sc">}</span><span class="vs">&quot;, NULL)`</span>)<span class="op">;</span></span>
-<span id="cb27-92"><a href="#cb27-92" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb27-93"><a href="#cb27-93" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (<span class="kw">let</span> i <span class="op">=</span> employeesTopologicallySorted<span class="op">.</span><span class="at">length</span> <span class="op">-</span> <span class="dv">2</span><span class="op">;</span> i <span class="op">&gt;=</span> <span class="dv">0</span><span class="op">;</span> i <span class="op">-=</span> <span class="dv">1</span>) {</span>
-<span id="cb27-94"><a href="#cb27-94" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> employee <span class="op">=</span> employeesTopologicallySorted[i]<span class="op">;</span></span>
-<span id="cb27-95"><a href="#cb27-95" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> employeeIndex <span class="op">=</span> nodes<span class="op">.</span><span class="fu">indexOf</span>(employee)<span class="op">;</span></span>
-<span id="cb27-96"><a href="#cb27-96" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb27-97"><a href="#cb27-97" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> managerIndex <span class="op">=</span> adjacencyMatrix[employeeIndex]<span class="op">.</span><span class="fu">indexOf</span>(<span class="dv">1</span>)<span class="op">;</span></span>
-<span id="cb27-98"><a href="#cb27-98" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> manager <span class="op">=</span> nodes[managerIndex]<span class="op">;</span></span>
-<span id="cb27-99"><a href="#cb27-99" aria-hidden="true" tabindex="-1"></a>  <span class="bu">console</span><span class="op">.</span><span class="fu">log</span>(</span>
-<span id="cb27-100"><a href="#cb27-100" aria-hidden="true" tabindex="-1"></a>    <span class="vs">`INSERT INTO people SELECT &quot;</span><span class="sc">${</span>employee<span class="sc">}</span><span class="vs">&quot;, rowid FROM people WHERE name = &quot;</span><span class="sc">${</span>manager<span class="sc">}</span><span class="vs">&quot; LIMIT 1;`</span><span class="op">,</span></span>
-<span id="cb27-101"><a href="#cb27-101" aria-hidden="true" tabindex="-1"></a>  )<span class="op">;</span></span>
-<span id="cb27-102"><a href="#cb27-102" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
+<h2>Addendum: the full code</h2>
+<pre><code class="language-js">const adjacencyMatrix = [
+  [0, 0, 1, 0, 0, 0],
+  [1, 0, 0, 0, 0, 0],
+  [0, 0, 0, 0, 0, 0],
+  [0, 0, 1, 0, 0, 0],
+  [1, 0, 0, 0, 0, 0],
+  [0, 0, 0, 1, 0, 0],
+];
+
+const nodes = [&quot;Angela&quot;, &quot;Bella&quot;, &quot;Ellen&quot;, &quot;Jane&quot;, &quot;Miranda&quot;, &quot;Zoe&quot;];
+
+function hasNodeNoIncomingEdge(adjacencyMatrix, nodeIndex) {
+  const column = nodeIndex;
+
+  for (let row = 0; row &lt; adjacencyMatrix.length; row += 1) {
+    const cell = adjacencyMatrix[row][column];
+
+    if (cell != 0) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+function getNodesWithNoIncomingEdge(adjacencyMatrix, nodes) {
+  return nodes.filter((_, i) =&gt; hasNodeNoIncomingEdge(adjacencyMatrix, i));
+}
+
+function graphHasEdges(adjacencyMatrix) {
+  for (let row = 0; row &lt; adjacencyMatrix.length; row += 1) {
+    for (let column = 0; column &lt; adjacencyMatrix.length; column += 1) {
+      if (adjacencyMatrix[row][column] == 1) return true;
+    }
+  }
+
+  return false;
+}
+
+function topologicalSort(adjacencyMatrix) {
+  const L = [];
+  const S = getNodesWithNoIncomingEdge(adjacencyMatrix, nodes);
+
+  while (S.length &gt; 0) {
+    const node = S.pop();
+    L.push(node);
+    const nodeIndex = nodes.indexOf(node);
+
+    for (let mIndex = 0; mIndex &lt; nodes.length; mIndex += 1) {
+      const hasEdgeFromNtoM = adjacencyMatrix[nodeIndex][mIndex];
+      if (!hasEdgeFromNtoM) continue;
+
+      adjacencyMatrix[nodeIndex][mIndex] = 0;
+
+      if (hasNodeNoIncomingEdge(adjacencyMatrix, mIndex)) {
+        const m = nodes[mIndex];
+        S.push(m);
+      }
+    }
+  }
+
+  if (graphHasEdges(adjacencyMatrix)) {
+    throw new Error(&quot;Graph has at least one cycle&quot;);
+  }
+
+  return L;
+}
+
+function hasMultipleRoots(adjacencyMatrix) {
+  let countOfRowsWithOnlyZeroes = 0;
+
+  for (let row = 0; row &lt; adjacencyMatrix.length; row += 1) {
+    let rowHasOnlyZeroes = true;
+    for (let column = 0; column &lt; adjacencyMatrix.length; column += 1) {
+      if (adjacencyMatrix[row][column] != 0) {
+        rowHasOnlyZeroes = false;
+        break;
+      }
+    }
+    if (rowHasOnlyZeroes) countOfRowsWithOnlyZeroes += 1;
+  }
+
+  return countOfRowsWithOnlyZeroes &gt; 1;
+}
+
+console.log(hasMultipleRoots(adjacencyMatrix));
+const employeesTopologicallySorted = topologicalSort(structuredClone(adjacencyMatrix), nodes);
+console.log(employeesTopologicallySorted);
+
+const root = employeesTopologicallySorted[employeesTopologicallySorted.length - 1];
+console.log(`INSERT INTO people VALUES(&quot;${root}&quot;, NULL)`);
+
+for (let i = employeesTopologicallySorted.length - 2; i &gt;= 0; i -= 1) {
+  const employee = employeesTopologicallySorted[i];
+  const employeeIndex = nodes.indexOf(employee);
+
+  const managerIndex = adjacencyMatrix[employeeIndex].indexOf(1);
+  const manager = nodes[managerIndex];
+  console.log(
+    `INSERT INTO people SELECT &quot;${employee}&quot;, rowid FROM people WHERE name = &quot;${manager}&quot; LIMIT 1;`,
+  );
+}
+</code></pre>
 
 <blockquote id="donate">
   <p>If you liked this article and you want to support me, and can afford it: <a href="https://paypal.me/philigaultier?country.x=DE&locale.x=en_US">Donate</a></p>

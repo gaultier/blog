@@ -38,524 +38,228 @@ window.addEventListener("load", (event) => {
 <div class="body">
 
 <p id="publication_date">Published on 2024-05-03.</p>
-<h1 id="how-to-rewrite-a-c-codebase-successfully">How to rewrite a C++
-codebase successfully</h1>
-<p><em>Not your typical ‘Rewrite it in Rust’ article.</em></p>
-<p>I recently wrote about <a
-href="/blog/you_inherited_a_legacy_cpp_codebase_now_what.html">inheriting
-a legacy C++ codebase</a>. At some point, although I cannot pinpoint
-exactly when, a few things became clear to me:</p>
+<h1>How to rewrite a C++ codebase successfully</h1>
+<p><em>Not your typical 'Rewrite it in Rust' article.</em></p>
+<p>I recently wrote about <a href="/blog/you_inherited_a_legacy_cpp_codebase_now_what.html">inheriting a legacy C++ codebase</a>. At some point, although I cannot pinpoint exactly when, a few things became clear to me:</p>
 <ul>
-<li>No one in the team but me is able - or feels confident enough - to
-make a change in this codebase</li>
-<li>This is a crucial project for the company and will live for years if
-not decades</li>
-<li>The code is pretty bad on all the criteria we care about:
-correctness, maintainability, security, you name it. I don’t blame the
-original developers, they were understaffed and it was written as a
-prototype (the famous case of the prototype which becomes the production
-code).</li>
-<li>No hiring of C++ developers is planned or at least in the current
-budget (also because that’s the only C++ project we have and we have
-many other projects to maintain and extend)</li>
+<li>No one in the team but me is able - or feels confident enough - to make a change in this codebase</li>
+<li>This is a crucial project for the company and will live for years if not decades</li>
+<li>The code is pretty bad on all the criteria we care about: correctness, maintainability, security, you name it. I don't blame the original developers, they were understaffed and it was written as a prototype (the famous case of the prototype which becomes the production code).</li>
+<li>No hiring of C++ developers is planned or at least in the current budget (also because that's the only C++ project we have and we have many other projects to maintain and extend)</li>
 </ul>
-<p>So it was apparent to me that sticking with C++ was a dead end. It’s
-simply a conflict of values and priorities: C++ values many things that
-are not that important in this project, such as performance above all;
-and it does not give any guarantees about things that are crucial to us,
-such as memory and temporal safety (special mention to integer
-under/overflows. Have fun reviewing every single instance of arithmetic
-operations to check if it can under/overflow).</p>
-<p>We bought a race car but what we needed was a family-friendly 5
-seater, that’s our mistake.</p>
-<p>The only solution would be to train everyone in the team on C++ and
-dedicate a significant amount of time rewriting the most problematic
-parts of the codebase to perhaps reach a good enough state, and even
-then, we’d have little confidence our code is robust against
-nation-state attacks.</p>
-<p>It’s a judgment call in the end, but that seemed to be more effort
-than ‘simply’ introducing a new language and doing a rewrite.</p>
-<p>I don’t actually like the term ‘rewrite’. Folks on the internet will
-eagerly repeat that rewrites are a bad idea, will undoubtedly fail, and
-are a sign of hubris and naivety. I have experienced such rewrites, from
-scratch, and yes that does not end well.</p>
-<p>However, I claim, because I’ve done it, and many others before me,
-that an <strong>incremental</strong> rewrite can be successful, and is
-absolutely worth it. It’s all about how it is being done, so here’s how
-I proceeded and I hope it can be applied in other cases, and people find
-it useful.</p>
-<p>I think it’s a good case study because whilst not a big codebase, it
-is a complex codebase, and it’s used in production on 10+ different
-operating systems and architectures, including by external customers.
-This is not a toy.</p>
-<p>So join me on this journey, here’s the guide to rewrite a C++
-codebase successfully. And also what not do!</p>
+<p>So it was apparent to me that sticking with C++ was a dead end. It's simply a conflict of values and priorities: C++ values many things that are not that important in this project, such as performance above all; and it does not give any guarantees about things that are crucial to us, such as memory and temporal safety (special mention to integer under/overflows. Have fun reviewing every single instance of arithmetic operations to check if it can under/overflow).</p>
+<p>We bought a race car but what we needed was a family-friendly 5 seater, that's our mistake.</p>
+<p>The only solution would be to train everyone in the team on C++ and dedicate a significant amount of time rewriting the most problematic parts of the codebase to perhaps reach a good enough state, and even then, we'd have little confidence our code is robust against nation-state attacks.</p>
+<p>It's a judgment call in the end, but that seemed to be more effort than 'simply' introducing a new language and doing a rewrite.</p>
+<p>I don't actually like the term 'rewrite'. Folks on the internet will eagerly repeat that rewrites are a bad idea, will undoubtedly fail, and are a sign of hubris and naivety. I have experienced such rewrites, from scratch, and yes that does not end well.</p>
+<p>However, I claim, because I've done it, and many others before me, that an <strong>incremental</strong> rewrite can be successful, and is absolutely worth it. It's all about how it is being done, so here's how I proceeded and I hope it can be applied in other cases, and people find it useful.</p>
+<p>I think it's a good case study because whilst not a big codebase, it is a complex codebase, and it's used in production on 10+ different operating systems and architectures, including by external customers. This is not a toy.</p>
+<p>So join me on this journey, here's the guide to rewrite a C++ codebase successfully. And also what not do!</p>
 <p><strong>Table of Contents</strong></p>
 <ul>
 <li><a href="#the-project">The project</a></li>
-<li><a href="#improve-the-existing-codebase">Improve the existing
-codebase</a></li>
+<li><a href="#improve-the-existing-codebase">Improve the existing codebase</a></li>
 <li><a href="#get-buy-in">Get buy-in</a></li>
 <li><a href="#keeping-buy-in">Keeping buy-in</a></li>
-<li><a href="#preparations-to-introduce-the-new-language">Preparations
-to introduce the new language</a></li>
+<li><a href="#preparations-to-introduce-the-new-language">Preparations to introduce the new
+language</a></li>
 <li><a href="#incremental-rewrite">Incremental rewrite</a></li>
 <li><a href="#fuzzing">Fuzzing</a></li>
 <li><a href="#pure-rust-vs-interop-ffi">Pure Rust vs interop (FFI)</a>
 <ul>
-<li><a href="#c-ffi-in-rust-is-cumbersome-and-error-prone">C FFI in Rust
-is cumbersome and error-prone</a></li>
-<li><a href="#an-example-of-a-real-bug-at-the-ffi-boundary">An example
-of a real bug at the FFI boundary</a></li>
-<li><a href="#another-example-of-a-real-bug-at-the-ffi-boundary">Another
-example of a real bug at the FFI boundary</a></li>
-</ul></li>
+<li><a href="#c-ffi-in-rust-is-cumbersome-and-error-prone">C FFI in Rust is cumbersome and
+error-prone</a></li>
+<li><a href="#an-example-of-a-real-bug-at-the-ffi-boundary">An example of a real bug at the FFI
+boundary</a></li>
+<li><a href="#another-example-of-a-real-bug-at-the-ffi-boundary">Another example of a real bug at the FFI
+boundary</a></li>
+</ul>
+</li>
 <li><a href="#cross-compilation">Cross-compilation</a></li>
 <li><a href="#conclusion">Conclusion</a></li>
 </ul>
-<h2 id="the-project">The project</h2>
-<p>This project is a library that exposes a C API but the implementation
-is C++, and it vendors C libraries (e.g. mbedtls) which we build from
-source. The final artifacts are a <code>libfoo.a</code> static library
-and a <code>libfoo.h</code> C header. It is used to talk to applets on a
-<a href="https://en.wikipedia.org/wiki/Smart_card">smart card</a> like
-your credit card, ID, passport or driving license (yes, smart cards are
-nowadays everywhere - you probably carry several on you right now),
-since they use a <del>bizzarre</del> interesting communication protocol.
-The library also implements a home-grown protocol on top of the
-well-specified smart card protocol, encryption, and business logic.</p>
-<p>It is meant to be part of an user-facing application running on
-smartphones and Point of Sales terminals, as well as in servers running
-in a datacenter or in the cloud.</p>
+<h2>The project</h2>
+<p>This project is a library that exposes a C API but the implementation is C++, and it vendors C libraries (e.g. mbedtls) which we build from source. The final artifacts are a <code>libfoo.a</code> static library and a <code>libfoo.h</code> C header. It is used to talk to applets on a <a href="https://en.wikipedia.org/wiki/Smart_card">smart card</a> like your credit card, ID, passport or driving license (yes, smart cards are nowadays everywhere - you probably carry several on you right now), since they use a ~~bizzarre~~ interesting communication protocol. The library also implements a home-grown protocol on top of the well-specified smart card protocol, encryption, and business logic.</p>
+<p>It is meant to be part of an user-facing application running on smartphones and Point of Sales terminals, as well as in servers running in a datacenter or in the cloud.</p>
 <p>This library is used in:</p>
 <ul>
 <li>Android applications, through JNI</li>
 <li>Go back-end services running in Kubernetes, through CGO</li>
 <li>iOS applications, through Swift FFI</li>
-<li>C and C++ applications running on very small 32 bits ARM boards
-similar to the first Raspberry Pi</li>
+<li>C and C++ applications running on very small 32 bits ARM boards similar to the first Raspberry Pi</li>
 </ul>
-<p>Additionally, developers are using macOS (x64 and arm64) and Linux so
-the library needs to build and run on these platforms.</p>
-<p>Since external customers also integrate their applications with our
-library and we do not control these environments, and because some
-developer machines and servers use glibc and others musl, we also need
-to work with either the glibc and the musl C libraries, as well as clang
-and gcc, and expose a C89-ish API, to maximize compatibility.</p>
-<p>Alright, now that the stage is set, let’s go through the steps of
-rewriting this project.</p>
-<h2 id="improve-the-existing-codebase">Improve the existing
-codebase</h2>
-<p>That’s basically all the steps in <a
-href="/blog/you_inherited_a_legacy_cpp_codebase_now_what.html">Inheriting
-a legacy C++ codebase</a>. We need to start the rewrite with a codebase
-that builds and runs on every platform we support, with tests passing,
-and a clear README explaining how to setup the project locally. This is
-a small investment (a few days to a few weeks depending on the scale of
-the codebase) that will pay massive dividends in the future.</p>
-<p>But I think the most important point is to trim all the unused code
-which is typically the majority of the codebase! No one wants to spend
-time and effort on rewriting completely unused code.</p>
-<p>Additionally, if you fail to convince your team and the stakeholders
-to do the rewrite, you at least have improved the codebase you are now
-stuck with. So it’s time well spent either way.</p>
-<h2 id="get-buy-in">Get buy-in</h2>
-<p>Same as in my previous article: Buy-in from teammates and
-stakeholders is probably the most important thing to get, and
-maintain.</p>
-<p>It’s a big investment in time and thus money we are talking about, it
-can only work with everyone on board.</p>
-<p>Here I think the way to go is showing the naked truth and staying
-very factual, in terms managers and non-technical people can understand.
-This is roughly what I presented:</p>
+<p>Additionally, developers are using macOS (x64 and arm64) and Linux so the library needs to build and run on these platforms.</p>
+<p>Since external customers also integrate their applications with our library and we do not control these environments, and because some developer machines and servers use glibc and others musl,  we also need to work with either the glibc and the musl C libraries, as well as clang and gcc, and expose a C89-ish API, to maximize compatibility.</p>
+<p>Alright, now that the stage is set, let's go through the steps of rewriting this project.</p>
+<h2>Improve the existing codebase</h2>
+<p>That's basically all the steps in <a href="/blog/you_inherited_a_legacy_cpp_codebase_now_what.html">Inheriting a legacy C++ codebase</a>. We need to start the rewrite with a codebase that builds and runs on every platform we support, with tests passing, and a clear README explaining how to setup the project locally. This is a small investment (a few days to a few weeks depending on the scale of the codebase) that will pay massive dividends in the future.</p>
+<p>But I think the most important point is to trim all the unused code which is typically the majority of the codebase! No one wants to spend time and effort on rewriting completely unused code.</p>
+<p>Additionally, if you fail to convince your team and the stakeholders to do the rewrite, you at least have improved the codebase you are now stuck with. So it's time well spent either way.</p>
+<h2>Get buy-in</h2>
+<p>Same as in my previous article: Buy-in from teammates and stakeholders is probably the most important thing to get, and maintain.</p>
+<p>It's a big investment in time and thus money we are talking about, it can only work with everyone on board.</p>
+<p>Here I think the way to go is showing the naked truth and staying very factual, in terms managers and non-technical people can understand. This is roughly what I presented:</p>
 <ul>
 <li>The bus factor for this project is 1 (me)</li>
-<li>Tool X shows that there are memory leaks at the rate of Y MiB/hour
-which means the application using our library will be OOM killed after
-around Z minutes/hours.</li>
-<li>Quick and dirty fuzzing manages to make the library crash 133 times
-in 10 seconds</li>
+<li>Tool X shows that there are memory leaks at the rate of Y MiB/hour which means the application using our library will be OOM killed after around Z minutes/hours.</li>
+<li>Quick and dirty fuzzing manages to make the library crash 133 times in 10 seconds</li>
 <li>Linter X detects hundreds of real issues we need to fix</li>
-<li>All of these points make it really likely a hacker can exploit our
-library to gain Remote Code Execution (RCE) or steal secrets</li>
+<li>All of these points make it really likely a hacker can exploit our library to gain Remote Code Execution (RCE) or steal secrets</li>
 </ul>
-<p>Essentially, it’s a matter of genuinely presenting the alternative of
-rewriting being cheaper in terms of time and effort compared to
-improving the project with pure C++. If your teammates and boss are
-reality-based, it should be a straightforward decision.</p>
-<p>We use at my day job basically a RFC process to introduce a major
-change. That’s great because it forces the person pushing for a change
-to document the current issues, the possible solutions, and allowing for
-a rational discussion to take place in the team. And documenting the
-whole process in a shared document (that allows comments) is very
-valuable because when people ask about it months later, you can just
-share the link to it.</p>
-<p>After the problematic situation has been presented, I think at least
-3 different solutions should be presented and compared (including
-sticking with pure C++), and seriously consider each option. I find it
-important here to be as little emotionally invested as possible even if
-one option is your favorite, and to be ready to work for possibly months
-on your least favorite option, if it happens to be chosen by the
-collective.</p>
-<p>Ideally, if time permits, a small prototype for the preferred
-solution should be done, to confirm or infirm early that it can work,
-and to eliminate doubts. It’s a much more compelling argument to say:
-“Of course it will work, here is prototype I made, let’s look at it
-together!” compared to “I hope it will work, but who knows, oh well I
-guess we’ll see 3 months in…”.</p>
-<p>After much debate, we settled on Rust as the new programming language
-being introduced into the codebase. It’s important to note that I am not
-a Rust die hard fan. I appreciate the language but it’s not perfect (see
-the FFI section later), it has issues, it’s just that it solves all the
-issues we have in this project, especially considering the big focus on
-security (since we deal with payments), the relative similarity with the
-company tech stack (Go), and the willingness of the team to learn it and
-review code in it.</p>
-<p>After all, the goal is also to gain additional developers, and stop
-being the only person who can even touch this code.</p>
-<p>I also seriously considered Go, but after doing a prototype, I was
-doubtful the many limitations of CGO would allow us to achieve the
-rewrite. Other teammates also had concerns on how the performance and
-battery usage would look like on low-end Android and Linux devices,
-especially 32 bits, having essentially two garbage collectors running
-concurrently, the JVM one and the Go one.</p>
-<h2 id="keeping-buy-in">Keeping buy-in</h2>
-<p>Keeping buy-in after initially getting it is not a given, since
-software always takes longer than expected and unexpected hurdles happen
-all the time. Here, showing the progress through regular demos (weekly
-or biweekly is a good frequency) is great for stakeholders especially
-non-technical ones. And it can potentially motivate fellow developers to
-also learn the new language and help you out.</p>
-<p>Additionally, showing how long-standing issues in the old code get
-automatically solved by the new code, e.g. memory leaks, or fuzzing
-crashes in one function, are a great sign for stakeholders of the
-quality improving and the value of the on-going effort.</p>
-<p>Be prepared to repeat many many times the decision process that led
-to the rewrite to your boss, your boss’s boss, the odd product manager
-who’s not technical, the salesperson supporting the external customers,
-etc. It’s important to nail the elevator’s pitch.</p>
-<p>That applies also to teammates, who might be unsure the new
-programming language ‘carries its weight’. It helps to regularly ask
-them how they feel about the language, the on-going-effort, the roadmap,
-etc. Also, pairing with them, so that ideally, everyone in the team
-feels confident working on this project alone.</p>
-<h2 id="preparations-to-introduce-the-new-language">Preparations to
-introduce the new language</h2>
-<p>Before adding the first line of code in the new language, I created a
-Git tag <code>last-before-rust</code>. The commit right after introduced
-some code in Rust.</p>
-<p>This proved invaluable, because when rewriting the legacy code, I
-found tens of bugs lying around, and I think that’s very typical. Also,
-this rewriting effort requires time, during which other team members or
-external customers may report bugs they just found.</p>
-<p>Every time such a bug appeared, I switched to this Git tag, and tried
-to reproduce the bug. Almost every time, the bug was already present
-before the rewrite. That’s a very important information (for me, it was
-a relief!) for solving the bug, and also for stakeholders. That’s the
-difference in their eye between: We are improving the product by fixing
-long existing bugs; or: we are introducing new bugs with our risky
-changes and we should maybe stop the effort completely because it’s
-harming the product.</p>
-<p>Furthermore, I think the first commit introducing the new code should
-add dummy code and focus on making the build system and CI work
-seamlessly on every supported platform. This is not appealing work but
-it’s necessary. Also, having instructions in the README explaining a bit
-what each tool does (<code>cargo</code>, <code>rustup</code>,
-<code>clippy</code>, etc) is very valuable and will ease beginners into
-contributing in the new language.</p>
-<h2 id="incremental-rewrite">Incremental rewrite</h2>
-<p>Along with stakeholder buy-in, the most important point in the
-article is that only an <strong>incremental</strong> rewrite can
-succeed, in my opinion. Rewriting from scratch is bound to fail, I
-think. At least I have never seen it succeed, and have seen it fail many
-times.</p>
-<p>What does it mean, very pragmatically? Well it’s just a few rules of
-thumb:</p>
+<p>Essentially, it's a matter of genuinely presenting the alternative of rewriting being cheaper in terms of time and effort compared to improving the project with pure C++. If your teammates and boss are reality-based, it should be a straightforward decision.</p>
+<p>We use at my day job basically a RFC process to introduce a major change. That's great because it forces the person pushing for a change to document the current issues, the possible solutions, and allowing for a rational discussion to take place in the team. And documenting the whole process in a shared document (that allows comments) is very valuable because when people ask about it months later, you can just share the link to it.</p>
+<p>After the problematic situation has been presented, I think at least 3 different solutions should be presented and compared (including sticking with pure C++), and seriously consider each option. I find it important here to be as little emotionally invested as possible even if one option is your favorite, and to be ready to work for possibly months on your least favorite option, if it happens to be chosen by the collective.</p>
+<p>Ideally, if time permits, a small prototype for the preferred solution should be done, to confirm or infirm early that it can work, and to eliminate doubts. It's a much more compelling argument to say: &quot;Of course it will work, here is prototype I made, let's look at it together!&quot; compared to &quot;I hope it will work, but who knows, oh well I guess we'll see 3 months in...&quot;.</p>
+<p>After much debate, we settled on Rust as the new programming language being introduced into the codebase. It's important to note that I am not a Rust die hard fan. I appreciate the language but it's not perfect (see the FFI section later), it has issues, it's just that it solves all the issues we have in this project, especially considering the big focus on security (since we deal with payments),  the relative similarity with the company tech stack (Go), and the willingness of the team to learn it and review code in it.</p>
+<p>After all, the goal is also to gain additional developers, and stop being the only person who can even touch this code.</p>
+<p>I also seriously considered Go, but after doing a prototype, I was doubtful the many limitations of CGO would allow us to achieve the rewrite. Other teammates also had concerns on how the performance and battery usage would look like on low-end Android and Linux devices, especially 32 bits, having essentially two garbage collectors running concurrently, the JVM one and the Go one.</p>
+<h2>Keeping buy-in</h2>
+<p>Keeping buy-in after initially getting it is not a given, since software always takes longer than expected and unexpected hurdles happen all the time. Here, showing the progress through regular demos (weekly or biweekly is a good frequency) is great for stakeholders especially non-technical ones. And it can potentially motivate fellow developers to also learn the new language and help you out.</p>
+<p>Additionally, showing how long-standing issues in the old code get automatically solved by the new code, e.g. memory leaks, or fuzzing crashes in one function, are a great sign for stakeholders of the quality improving and the value of the on-going effort.</p>
+<p>Be prepared to repeat many many times the decision process that led to the rewrite to your boss, your boss's boss, the odd product manager who's not technical, the salesperson supporting the external customers, etc. It's important to nail the elevator's pitch.</p>
+<p>That applies also to teammates, who might be unsure the new programming language 'carries its weight'. It helps to regularly ask them how they feel about the language, the on-going-effort, the roadmap, etc. Also, pairing with them, so that ideally, everyone in the team feels confident working on this project alone.</p>
+<h2>Preparations to introduce the new language</h2>
+<p>Before adding the first line of code in the new language, I created a Git tag <code>last-before-rust</code>. The commit right after introduced some code in Rust.</p>
+<p>This proved invaluable, because when rewriting the legacy code, I found tens of bugs lying around, and I think that's very typical. Also, this rewriting effort requires time, during which other team members or external customers may report bugs they just found.</p>
+<p>Every time such a bug appeared, I switched to this Git tag, and tried to reproduce the bug. Almost every time, the bug was already present before the rewrite. That's a very important information (for me, it was a relief!) for solving the bug, and also for stakeholders. That's the difference in their eye between: We are improving the product by fixing long existing bugs; or: we are introducing new bugs with our risky changes and we should maybe stop the effort completely because it's harming the product.</p>
+<p>Furthermore, I think the first commit introducing the new code should add dummy code and focus on making the build system and CI work seamlessly on every supported platform. This is not appealing work but it's necessary. Also, having instructions in the README explaining a bit what each tool does (<code>cargo</code>, <code>rustup</code>, <code>clippy</code>, etc) is very valuable and will ease beginners into contributing in the new language.</p>
+<h2>Incremental rewrite</h2>
+<p>Along with stakeholder buy-in, the most important point in the article is that only an <strong>incremental</strong> rewrite can succeed, in my opinion. Rewriting from scratch is bound to fail, I think. At least I have never seen it succeed, and have seen it fail many times.</p>
+<p>What does it mean, very pragmatically? Well it's just a few rules of thumb:</p>
 <ul>
-<li>A small component is picked to be rewritten, the smallest, the
-better. Ideally it is as small as one function, or one class.</li>
-<li>The new implementation is written in the same Git (or whatever CVS
-you use) repository as the existing code, alongside it. It’s a ‘bug for
-bug’ implementation which means it does the exact same thing as the old
-implementation, even if the old seems sometimes non-sensical. In some
-cases, what the old code tries to do is so broken and insecure, that we
-have to do something different in the new code, but that should be
-rare.</li>
-<li>Tests for the new implementation are written and pass (so that we
-know the new implementation is likely correct)</li>
-<li>Each site calling the function/class is switched to using the new
-implementation. After each replacement, the test suite is run and passes
-(so that we know that nothing broke at the scale of the project; a kind
-of regression testing). The change is committed. That way is something
-breaks, we know exactly which change is the culprit.</li>
-<li>A small PR is opened, reviewed and merged. Since our changes are
-anyways incremental, it’s up to us to decide that the current diff is of
-the right size for a PR. We can make the PR as big or small as we want.
-We can even make a PR with only the new implementation that’s not yet
-used at all.</li>
-<li>Once the old function/class is not used anymore by any code, it can
-be ‘garbage-collected’ i.e. safely removed. This can even be its own PR
-depending on the size.</li>
+<li>A small component is picked to be rewritten, the smallest, the better. Ideally it is as small as one function, or one class.</li>
+<li>The new implementation is written in the same Git (or whatever CVS you use) repository as the existing code, alongside it. It's a 'bug for bug' implementation which means it does the exact same thing as the old implementation, even if the old seems sometimes non-sensical. In some cases, what the old code tries to do is so broken and insecure, that we have to do something different in the new code, but that should be rare.</li>
+<li>Tests for the new implementation are written and pass (so that we know the new implementation is likely correct)</li>
+<li>Each site calling the function/class is switched to using the new implementation. After each replacement, the test suite is run and passes (so that we know that nothing broke at the scale of the project; a kind of regression testing). The change is committed. That way is something breaks, we know exactly which change is the culprit.</li>
+<li>A small PR is opened, reviewed and merged. Since our changes are anyways incremental, it's up to us to decide that the current diff is of the right size for a PR. We can make the PR as big or small as we want. We can even make a PR with only the new implementation that's not yet used at all.</li>
+<li>Once the old function/class is not used anymore by any code, it can be 'garbage-collected' i.e. safely removed. This can even be its own PR depending on the size.</li>
 <li>Rinse and repeat until all of the old code has been replaced</li>
 </ul>
-<p>There are of course thornier cases, but that’s the gist of it. What’s
-crucial is that each commit on the main branch builds and runs fine. At
-not point the codebase is ever broken, does not build, or is in an
-unknown state.</p>
-<p>It’s actually not much different from the way I do a refactor in a
-codebase with just one programming language.</p>
-<p>What’s very important to avoid are big PRs that are thousands lines
-long and nobody wants to review them, or long running branches that
-effectively create a multiverse inside the codebase. It’s the same as
-regular software development, really.</p>
+<p>There are of course thornier cases, but that's the gist of it. What's crucial is that each commit on the main branch builds and runs fine. At not point the codebase is ever broken, does not build, or is in an unknown state.</p>
+<p>It's actually not much different from the way I do a refactor in a codebase with just one programming language.</p>
+<p>What's very important to avoid are big PRs that are thousands lines long and nobody wants to review them, or long running branches that effectively create a multiverse inside the codebase. It's the same as regular software development, really.</p>
 <p>Here are a few additional tips I recommend doing:</p>
 <ul>
-<li>Starting from the leaves of the call graph is much easier than from
-the root. For example, if <code>foo</code> calls <code>bar</code> which
-calls <code>baz</code>, first rewriting <code>baz</code> then
-<code>bar</code> then <code>foo</code> is straightforward, but the
-reverse is usually not true.</li>
-<li>Thus, mapping out at the start from a high-level what are the
-existing components and which component calls out to which other
-component is invaluable in that regard, but also for establishing a
-rough roadmap for the rewrite, and reporting on the progress (“3
-components have been rewritten, 2 left to do!”).</li>
-<li>Port the code comments from the old code to the new code if they
-make sense and add value. In my experience, a few are knowledge gems and
-should be kept, and most are completely useless noise.</li>
-<li>If you can use automated tools (search and replace, or tools
-operating at the AST level) to change every call site to use the new
-implementation, it’ll make your reviewers very happy, and save you hours
-and hours of debugging because of a copy-paste mistake</li>
-<li>Since Rust and C++ can basically only communicate through a C API (I
-am aware of experimental projects to make them talk directly but we did
-not use those - we ultimately want 100% Rust code exposing a C API, just
-like the old C++ did), it means that each Rust function must be
-accompanied by a corresponding C function signature, so that C++ can
-call it as a C function. I recommend automating this process with <a
-href="https://github.com/mozilla/cbindgen">cbindgen</a>. I have
-encountered some limitations with it but it’s very useful, especially to
-keep the implementation (in Rust) and the API (in C) in sync, or if your
-teammates are not comfortable with C.</li>
-<li>Automate when you can, for example I added the <code>cbindgen</code>
-code generation step to CMake so that rebuilding the C++ project would
-automatically run <code>cbindgen</code> as well as
-<code>cargo build</code> for the right target in the right mode (debug
-or release) for the right platforms (<code>--target=...</code>). DevUX
-matters!</li>
-<li>When rewriting a function/class, port the tests for this
-function/class to the new implementation to avoid reducing the code
-coverage each time</li>
-<li>Make the old and the new test suites fast so that the iteration time
-is short</li>
-<li>When a divergence is detected (a difference in output or side
-effects between the old and the new implementation), observe with tests
-or within the debugger the output of the old implementation (that’s
-where the initial Git tag comes handy, and working with small commits)
-in detail so that you can correct the new implementation. Some people
-even develop big test suites verifying that the output of the old and
-the new implementation are exactly the same.</li>
-<li>Since it’s a bug-for-bug rewrite, <em>what</em> the new
-implementation does may seem weird or unnecessarily convoluted but shall
-be kept (at least as a first pass). However, <em>how</em> it does it in
-the new code should be up to the best software engineering standards,
-that means tests, fuzzing, documentation, etc.</li>
-<li>Thread lightly, what can tank the project is being too bold when
-rewriting code and by doing so, introducing bugs or subtly changing the
-behavior which will cause breakage down the line. It’s better to be
-conservative here.</li>
-<li>Pick a prefix for all structs and functions in the C API exposed by
-the Rust code, even if it’s just <code>RUST_xxx</code>, so that they are
-immediately identifiable and greppable. Just like <code>libcurl</code>
-has the prefix <code>curl_xxx</code>.</li>
+<li>Starting from the leaves of the call graph is much easier than from the root. For example, if <code>foo</code> calls <code>bar</code> which calls <code>baz</code>, first rewriting <code>baz</code> then <code>bar</code> then <code>foo</code> is straightforward, but the reverse is usually not true.</li>
+<li>Thus, mapping out at the start from a high-level what are the existing components and which component calls out to which other component is invaluable in that regard, but also for establishing a rough roadmap for the rewrite, and reporting on the progress (&quot;3 components have been rewritten, 2 left to do!&quot;).</li>
+<li>Port the code comments from the old code to the new code if they make sense and add value. In my experience, a few are knowledge gems and should be kept, and most are completely useless noise.</li>
+<li>If you can use automated tools (search and replace, or tools operating at the AST level) to change every call site to use the new implementation, it'll make your reviewers very happy, and save you hours and hours of debugging because of a copy-paste mistake</li>
+<li>Since Rust and C++ can basically only communicate through a C API (I am aware of experimental projects to make them talk directly but we did not use those - we ultimately want 100% Rust code exposing a C API, just like the old C++ did), it means that each Rust function must be accompanied by a corresponding C function signature, so that C++ can call it as a C function. I recommend automating this process with <a href="https://github.com/mozilla/cbindgen">cbindgen</a>. I have encountered some limitations with it but it's very useful, especially to keep the implementation (in Rust) and the API (in C) in sync, or if your teammates are not comfortable with C.</li>
+<li>Automate when you can, for example I added the <code>cbindgen</code> code generation step to CMake so that rebuilding the C++ project would automatically run <code>cbindgen</code> as well as <code>cargo build</code> for the right target in the right mode (debug or release) for the right platforms (<code>--target=...</code>). DevUX matters!</li>
+<li>When rewriting a function/class, port the tests for this function/class to the new implementation to avoid reducing the code coverage each time</li>
+<li>Make the old and the new test suites fast so that the iteration time is short</li>
+<li>When a divergence is detected (a difference in output or side effects between the old and the new implementation), observe with tests or within the debugger the output of the old implementation (that's where the initial Git tag comes handy, and working with small commits) in detail so that you can correct the new implementation. Some people even develop big test suites verifying that the output of the old and the new implementation are exactly the same.</li>
+<li>Since it's a bug-for-bug rewrite, <em>what</em> the new implementation does may seem weird or unnecessarily convoluted but shall be kept (at least as a first pass). However, <em>how</em> it does it in the new code should be up to the best software engineering standards, that means tests, fuzzing, documentation, etc.</li>
+<li>Thread lightly, what can tank the project is being too bold when rewriting code and by doing so, introducing bugs or subtly changing the behavior which will cause breakage down the line. It's better to be conservative here.</li>
+<li>Pick a prefix for all structs and functions in the C API exposed by the Rust code, even if it's just <code>RUST_xxx</code>, so that they are immediately identifiable and greppable. Just like <code>libcurl</code> has the prefix <code>curl_xxx</code>.</li>
 </ul>
-<p>Finally, there is one hidden advantage of doing an incremental
-rewrite. A from-scratch rewrite is all or nothing, if it does not fully
-complete and replace the old implementation, it’s useless and wasteful.
-However, an incremental rewrite is immediately useful, may be paused and
-continued a number of times, and even if the funding gets cut short and
-it never fully completes, it’s still a clear improvement over the
-starting point.</p>
-<h2 id="fuzzing">Fuzzing</h2>
-<p>I am a fan a fuzzing, it’s great. Almost every time I fuzz some code,
-I find an corner case I did not think about, especially when doing
-parsing.</p>
-<p>I added fuzzing to the project so that every new Rust function is
-fuzzed. I initially used <a
-href="https://rust-fuzz.github.io/book/afl.html">AFL</a> but then turned
-to <a
-href="https://rust-fuzz.github.io/book/cargo-fuzz.html">cargo-fuzz</a>,
-and I’ll explain why.</p>
-<p>Fuzzing is only useful if code coverage is <a
-href="https://blog.trailofbits.com/2024/03/01/toward-more-effective-curl-fuzzing/">high</a>.
-The worst that can happen is to dedicate serious time to setup fuzzing,
-to only discover at the end that the same few branches are always taken
-during fuzzing.</p>
-<p>Coverage can only be improved if developers can easily see exactly
-which branches are being executed during fuzzing. And I could not find
-an easy way with AFL to get a hold on that data.</p>
-<p>Using <code>cargo-fuzz</code> and various LLVM tools, I wrote a small
-shell script to visualize exactly which branches are taken during
-fuzzing as well as the code coverage in percents for each file and for
-the project as a whole (right now it’s at around 90%).</p>
-<p>To get to a high coverage, the quality of the corpus data is
-paramount, since fuzzing works by doing small mutations of this corpus
-and observing which branches are taken as a result.</p>
-<p>I realized that the existing tests in C++ had lots of useful data in
-them, e.g.:</p>
-<div class="sourceCode" id="cb1"><pre
-class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="at">const</span> <span class="bu">std::</span>vector<span class="op">&lt;</span><span class="dt">char</span><span class="op">&gt;</span> input <span class="op">=</span> <span class="op">{</span><span class="bn">0x32</span><span class="op">,</span> <span class="bn">0x01</span><span class="op">,</span> <span class="bn">0x49</span><span class="op">,</span> <span class="op">...};</span> <span class="co">// &lt;= This is the interesting data.</span></span>
-<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="ot">assert</span><span class="op">(</span>foo<span class="op">(</span>input<span class="op">)</span> <span class="op">==</span> <span class="op">...);</span></span></code></pre></div>
-<p>So I had the idea of extracting all the <code>input = ...</code> data
-from the tests to build a good fuzzing corpus. My first go at it was a
-hand-written quick and dirty C++ lexer in Rust. It worked but it was
-clunky. Right after I finished it, I thought: why don’t I use
-<code>tree-sitter</code> to properly parse C++ in Rust?</p>
-<p>And so I did, and it turned out great, just 300 lines of Rust walking
-through each <code>TestXXX.cpp</code> file in the repository and using
-tree-sitter to extract each pattern. I used the query language of
-tree-sitter to do so:</p>
-<div class="sourceCode" id="cb2"><pre
-class="sourceCode rust"><code class="sourceCode rust"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="kw">let</span> query <span class="op">=</span> <span class="pp">tree_sitter::Query::</span>new(</span>
-<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>    <span class="pp">tree_sitter_cpp::</span>language()<span class="op">,</span></span>
-<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;(initializer_list (number_literal)+) @capture&quot;</span><span class="op">,</span></span>
-<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div>
-<p>The tree-sitter website thankfully has a playground where I could
-experiment and tweak the query and see the results live.</p>
-<p>As time went on and more and more C++ tests were migrated to Rust
-tests, it was very easy to extend this small Rust program that builds
-the corpus data, to also scan the Rust tests!</p>
+<p>Finally, there is one hidden advantage of doing an incremental rewrite. A from-scratch rewrite is all or nothing, if it does not fully complete and replace the old implementation, it's useless and wasteful. However, an incremental rewrite is immediately useful, may be paused and continued a number of times, and even if the funding gets cut short and it never fully completes, it's still a clear improvement over the starting point.</p>
+<h2>Fuzzing</h2>
+<p>I am a fan a fuzzing, it's great. Almost every time I fuzz some code, I find an corner case I did not think about, especially when doing parsing.</p>
+<p>I added fuzzing to the project so that every new Rust function is fuzzed. I initially used <a href="https://rust-fuzz.github.io/book/afl.html">AFL</a> but then turned to <a href="https://rust-fuzz.github.io/book/cargo-fuzz.html">cargo-fuzz</a>, and I'll explain why.</p>
+<p>Fuzzing is only useful if code coverage is <a href="https://blog.trailofbits.com/2024/03/01/toward-more-effective-curl-fuzzing/">high</a>. The worst that can happen is to dedicate serious time to setup fuzzing, to only discover at the end that the same few branches are always taken during fuzzing.</p>
+<p>Coverage can only be improved if developers can easily see exactly which branches are being executed during fuzzing. And I could not find an easy way with AFL to get a hold on that data.</p>
+<p>Using <code>cargo-fuzz</code> and various LLVM tools, I wrote a small shell script to visualize exactly which branches are taken during fuzzing as well as the code coverage in percents for each file and for the project as a whole (right now it's at around 90%).</p>
+<p>To get to a high coverage, the quality of the corpus data is paramount, since fuzzing works by doing small mutations of this corpus and observing which branches are taken as a result.</p>
+<p>I realized that the existing tests in C++ had lots of useful data in them, e.g.:</p>
+<pre><code class="language-c++">const std::vector&lt;char&gt; input = {0x32, 0x01, 0x49, ...}; // &lt;= This is the interesting data.
+assert(foo(input) == ...);
+</code></pre>
+<p>So I had the idea of extracting all the <code>input = ...</code> data from the tests to build a good fuzzing corpus. My first go at it was a hand-written quick and dirty C++ lexer in Rust. It worked but it was clunky. Right after I finished it, I thought: why don't I use <code>tree-sitter</code> to properly parse C++ in Rust?</p>
+<p>And so I did, and it turned out great, just 300 lines of Rust walking through each <code>TestXXX.cpp</code> file in the repository and using tree-sitter to extract each pattern. I used the query language of tree-sitter to do so:</p>
+<pre><code class="language-rust">let query = tree_sitter::Query::new(
+    tree_sitter_cpp::language(),
+    &quot;(initializer_list (number_literal)+) @capture&quot;,
+)
+</code></pre>
+<p>The tree-sitter website thankfully has a playground where I could experiment and tweak the query and see the results live.</p>
+<p>As time went on and more and more C++ tests were migrated to Rust tests, it was very easy to extend this small Rust program that builds the corpus data, to also scan the Rust tests!</p>
 <p>A typical Rust test would look like this:</p>
-<div class="sourceCode" id="cb3"><pre
-class="sourceCode rust"><code class="sourceCode rust"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> INPUT<span class="op">:</span> [<span class="dt">u8</span><span class="op">;</span> <span class="dv">4</span>] <span class="op">=</span> [<span class="dv">0x01</span><span class="op">,</span> <span class="dv">0x02</span><span class="op">,</span> <span class="dv">0x03</span><span class="op">,</span> <span class="dv">0x04</span>]<span class="op">;</span> <span class="co">// &lt;= This is the interesting data.</span></span>
-<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="pp">assert_eq!</span>(foo(<span class="op">&amp;</span>INPUT)<span class="op">,</span> <span class="op">...</span>)<span class="op">;</span></span></code></pre></div>
+<pre><code class="language-rust">const INPUT: [u8; 4] = [0x01, 0x02, 0x03, 0x04]; // &lt;= This is the interesting data.
+assert_eq!(foo(&amp;INPUT), ...);
+</code></pre>
 <p>And the query to extract the interesting data would be:</p>
-<div class="sourceCode" id="cb4"><pre
-class="sourceCode rust"><code class="sourceCode rust"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="kw">let</span> query <span class="op">=</span> <span class="pp">tree_sitter::Query::</span>new(</span>
-<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>    <span class="pp">tree_sitter_rust::</span>language()<span class="op">,</span></span>
-<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>    <span class="co">// </span><span class="al">TODO</span><span class="co">: Maybe make this query more specific with:</span></span>
-<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>    <span class="co">// `(let_declaration value: (array_expression (integer_literal)+)) @capture`.</span></span>
-<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>    <span class="co">// But in a few cases, the byte array is defined with `const`, not `let`.</span></span>
-<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;(array_expression (integer_literal)+) @capture&quot;</span><span class="op">,</span></span>
-<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div>
-<p>However I discovered that not all data was successfully extracted.
-What about this code:</p>
-<div class="sourceCode" id="cb5"><pre
-class="sourceCode rust"><code class="sourceCode rust"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> BAR <span class="op">:</span> <span class="dt">u8</span> <span class="op">=</span> <span class="dv">0x42</span><span class="op">;</span></span>
-<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> INPUT<span class="op">:</span> [<span class="dt">u8</span><span class="op">;</span> <span class="dv">4</span>] <span class="op">=</span> [BAR<span class="op">,</span> <span class="dv">0x02</span><span class="op">,</span> <span class="dv">0x03</span><span class="op">,</span> <span class="dv">0x04</span>]<span class="op">;</span> <span class="co">// &lt;= This is the interesting data.</span></span>
-<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="pp">assert_eq!</span>(foo(<span class="op">&amp;</span>INPUT)<span class="op">,</span> <span class="op">...</span>)<span class="op">;</span></span></code></pre></div>
-<p>We have a constant <code>BAR</code> which trips up tree-sitter,
-because it only sees a literal (i.e. 3 letters: ‘B’, ‘A’ and ‘R’) and
-does not know its value.</p>
-<p>The way I solved this issue was to do two passes: once to collect all
-constants along with their values in a map, and then a second pass to
-find all arrays in tests:</p>
-<div class="sourceCode" id="cb6"><pre
-class="sourceCode rust"><code class="sourceCode rust"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="kw">let</span> query <span class="op">=</span> <span class="pp">tree_sitter::Query::</span>new(</span>
-<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>    <span class="pp">tree_sitter_rust::</span>language()<span class="op">,</span></span>
-<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;(const_item value: (integer_literal)) @capture &quot;</span><span class="op">,</span></span>
-<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div>
+<pre><code class="language-rust">let query = tree_sitter::Query::new(
+    tree_sitter_rust::language(),
+    // TODO: Maybe make this query more specific with:
+    // `(let_declaration value: (array_expression (integer_literal)+)) @capture`.
+    // But in a few cases, the byte array is defined with `const`, not `let`.
+    &quot;(array_expression (integer_literal)+) @capture&quot;,
+)
+</code></pre>
+<p>However I discovered that not all data was successfully extracted. What about this code:</p>
+<pre><code class="language-rust">const BAR : u8 = 0x42;
+const INPUT: [u8; 4] = [BAR, 0x02, 0x03, 0x04]; // &lt;= This is the interesting data.
+assert_eq!(foo(&amp;INPUT), ...);
+</code></pre>
+<p>We have a constant <code>BAR</code> which trips up tree-sitter, because it only sees a literal (i.e. 3 letters: 'B', 'A' and 'R') and does not know its value.</p>
+<p>The way I solved this issue was to do two passes: once to collect all constants along with their values in a map, and then a second pass to find all arrays in tests:</p>
+<pre><code class="language-rust">let query = tree_sitter::Query::new(
+    tree_sitter_rust::language(),
+    &quot;(const_item value: (integer_literal)) @capture &quot;,
+)
+</code></pre>
 <p>So that we can then resolve the literals to their numeric value.</p>
-<p>That’s how I implemented a compiler for the Kotlin programming
-language in the past and it worked great. Maybe there are more advanced
-approaches but this one is dead-simple and fast so it’s good enough for
-us.</p>
-<p>I am pretty happy with how this turned out, scanning all C++ and Rust
-files to find interesting test data in them to build the corpus. I think
-this was key to move from the initial 20% code coverage with fuzzing
-(using a few hard-coded corpus files) to 90%. It’s fast too.</p>
-<p>Also, it means the corpus gets better each time we had a test (be it
-in C++ or Rust), for free.</p>
-<p>Does it mean that the corpus will grow to an extreme size? Well,
-worry not, because LLVM comes with a fuzzing corpus minimizer:</p>
+<p>That's how I implemented a compiler for the Kotlin programming language in the past and it worked great. Maybe there are more advanced approaches but this one is dead-simple and fast so it's good enough for us.</p>
+<p>I am pretty happy with how this turned out, scanning all C++ and Rust files to find interesting test data in them to build the corpus. I think this was key to move from the initial 20% code coverage with fuzzing (using a few hard-coded corpus files) to 90%. It's fast too.</p>
+<p>Also, it means the corpus gets better each time we had a test (be it in C++ or Rust), for free.</p>
+<p>Does it mean that the corpus will grow to an extreme size? Well, worry not, because LLVM comes with a fuzzing corpus minimizer:</p>
 <pre><code># Minimize the fuzzing corpus (in place).
-cargo +nightly fuzz cmin [...]</code></pre>
-<p>For each file in the corpus, it feeds it as input to our code,
-observes which branches are taken, and if a new set of branches is
-taken, this file remains (or perhaps gets minimized even more, not sure
-how smart this tool is). Otherwise it is deemed a duplicate and is
-trimmed.</p>
+cargo +nightly fuzz cmin [...]
+</code></pre>
+<p>For each file in the corpus, it feeds it as input to our code, observes which branches are taken, and if a new set of branches is taken, this file remains (or perhaps gets minimized even more, not sure how smart this tool is). Otherwise it is deemed a duplicate and is trimmed.</p>
 <p>So:</p>
-<ol type="1">
+<ol>
 <li>We generate the corpus with our program</li>
 <li>Minimize it</li>
-<li>Run the fuzzing for however long we wish. It runs in CI for every
-commit and developers can also run it locally.</li>
+<li>Run the fuzzing for however long we wish. It runs in CI for every commit and developers can also run it locally.</li>
 <li>When fuzzing is complete, we print the code coverage statistics</li>
 </ol>
-<p>Finally, we still have the option to add manually crafted files to
-this corpus if we wish. For example after hitting a bug in the wild, and
-fixing it, we can add a reproducer file to the corpus as a kind of
-regression test.</p>
-<h2 id="pure-rust-vs-interop-ffi">Pure Rust vs interop (FFI)</h2>
-<p>Writing Rust has been a joy, even for more junior developers in the
-team. Pure Rust code was pretty much 100% correct on the first try.</p>
-<p>However we had to use <code>unsafe {}</code> blocks in the FFI layer.
-We segregated all the FFI code to one file, and converted the C FFI
-structs to Rust idiomatic structs as soon as possible, so that the bulk
-of the Rust code can be idiomatic and safe.</p>
-<p>But that means this FFI code is the most likely part of the Rust code
-to have bugs. To get some confidence in its correctness, we write Rust
-tests using the C FFI functions (as if we were a C consumer of the
-library) running under <a
-href="https://github.com/rust-lang/miri">Miri</a> which acts as valgrind
-essentially, simulating a CPU and checking that our code is memory safe.
-Tests run perhaps 5 to 10 times as slow as without Miri but this has
-proven invaluable since it detected many bugs ranging from alignment
-issues to memory leaks and use-after-free issues.</p>
-<p>We run tests under Miri in CI to make sure each commit is reasonably
-safe.</p>
-<p>So beware: introducing Rust to a C or C++ codebase may actually
-introduce new memory safety issues, usually all located in the FFI
-code.</p>
-<p>Thankfully that’s a better situation to be in than to have to inspect
-all of the codebase when a memory issue is detected.</p>
-<h3 id="c-ffi-in-rust-is-cumbersome-and-error-prone">C FFI in Rust is
-cumbersome and error-prone</h3>
-<p>The root cause for all these issues is that the C API that C++ and
-Rust use to call each other is very limited in its expressiveness w.r.t
-ownership, as well as many Rust types not being marked
-<code>#[repr(C)]</code>, even types you would expect to, such as
-<code>Option</code>, <code>Vec</code> or <code>&amp;[u8]</code>. That
-means that you have to define your own equivalent types:</p>
-<div class="sourceCode" id="cb8"><pre
-class="sourceCode rust"><code class="sourceCode rust"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="at">#[</span>repr<span class="at">(</span>C<span class="at">)]</span></span>
-<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="co">// An option type that can be used from C</span></span>
-<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">struct</span> OptionC<span class="op">&lt;</span>T<span class="op">&gt;</span> <span class="op">{</span></span>
-<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">pub</span> has_value<span class="op">:</span> <span class="dt">bool</span><span class="op">,</span></span>
-<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>    <span class="kw">pub</span> value<span class="op">:</span> T<span class="op">,</span></span>
-<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
-<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a><span class="at">#[</span>repr<span class="at">(</span>C<span class="at">)]</span></span>
-<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a><span class="co">// Akin to `&amp;[u8]`, for C.</span></span>
-<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">struct</span> ByteSliceView <span class="op">{</span></span>
-<span id="cb8-12"><a href="#cb8-12" aria-hidden="true" tabindex="-1"></a>    <span class="kw">pub</span> ptr<span class="op">:</span> <span class="op">*</span><span class="kw">const</span> <span class="dt">u8</span><span class="op">,</span></span>
-<span id="cb8-13"><a href="#cb8-13" aria-hidden="true" tabindex="-1"></a>    <span class="kw">pub</span> len<span class="op">:</span> <span class="dt">usize</span><span class="op">,</span></span>
-<span id="cb8-14"><a href="#cb8-14" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
-<span id="cb8-15"><a href="#cb8-15" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-16"><a href="#cb8-16" aria-hidden="true" tabindex="-1"></a><span class="co">/// Owning Array i.e. `Vec&lt;T&gt;` in Rust or `std::vector&lt;T&gt;` in C++.</span></span>
-<span id="cb8-17"><a href="#cb8-17" aria-hidden="true" tabindex="-1"></a><span class="at">#[</span>repr<span class="at">(</span>C<span class="at">)]</span></span>
-<span id="cb8-18"><a href="#cb8-18" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">struct</span> OwningArrayC<span class="op">&lt;</span>T<span class="op">&gt;</span> <span class="op">{</span></span>
-<span id="cb8-19"><a href="#cb8-19" aria-hidden="true" tabindex="-1"></a>    <span class="kw">pub</span> data<span class="op">:</span> <span class="op">*</span><span class="kw">mut</span> T<span class="op">,</span></span>
-<span id="cb8-20"><a href="#cb8-20" aria-hidden="true" tabindex="-1"></a>    <span class="kw">pub</span> len<span class="op">:</span> <span class="dt">usize</span><span class="op">,</span></span>
-<span id="cb8-21"><a href="#cb8-21" aria-hidden="true" tabindex="-1"></a>    <span class="kw">pub</span> cap<span class="op">:</span> <span class="dt">usize</span><span class="op">,</span></span>
-<span id="cb8-22"><a href="#cb8-22" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
-<span id="cb8-23"><a href="#cb8-23" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-24"><a href="#cb8-24" aria-hidden="true" tabindex="-1"></a><span class="co">/// # Safety</span></span>
-<span id="cb8-25"><a href="#cb8-25" aria-hidden="true" tabindex="-1"></a><span class="co">/// Only call from C.</span></span>
-<span id="cb8-26"><a href="#cb8-26" aria-hidden="true" tabindex="-1"></a><span class="at">#[</span>no_mangle<span class="at">]</span></span>
-<span id="cb8-27"><a href="#cb8-27" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">extern</span> <span class="st">&quot;C&quot;</span> <span class="kw">fn</span> make_owning_array_u8(len<span class="op">:</span> <span class="dt">usize</span>) <span class="op">-&gt;</span> OwningArrayC<span class="op">&lt;</span><span class="dt">u8</span><span class="op">&gt;</span> <span class="op">{</span></span>
-<span id="cb8-28"><a href="#cb8-28" aria-hidden="true" tabindex="-1"></a>    <span class="pp">vec!</span>[<span class="dv">0</span><span class="op">;</span> len]<span class="op">.</span>into()</span>
-<span id="cb8-29"><a href="#cb8-29" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
-<p>Apparently, Rust developers do not want to commit to a particular ABI
-for these types, to avoid missing out on some future optimizations. So
-it means that every Rust struct now needs the equivalent “FFI friendly”
-struct along with conversion functions (usually implemented as
-<code>.into()</code> for convenience):</p>
-<pre><code>struct Foo&lt;&#39;a&gt; {
+<p>Finally, we still have the option to add manually crafted files to this corpus if we wish. For example after hitting a bug in the wild, and fixing it, we can add a reproducer file to the corpus as a kind of regression test.</p>
+<h2>Pure Rust vs interop (FFI)</h2>
+<p>Writing Rust has been a joy, even for more junior developers in the team. Pure Rust code was pretty much 100% correct on the first try.</p>
+<p>However we had to use <code>unsafe {}</code> blocks in the FFI layer. We segregated all the FFI code to one file, and converted the C FFI structs to Rust idiomatic structs as soon as possible, so that the bulk of the Rust code can be idiomatic and safe.</p>
+<p>But that means this FFI code is the most likely part of the Rust code to have bugs. To get some confidence in its correctness, we write Rust tests using the C FFI functions (as if we were a C consumer of the library) running under <a href="https://github.com/rust-lang/miri">Miri</a> which acts as valgrind essentially, simulating a CPU and checking that our code is memory safe. Tests run perhaps 5 to 10 times as slow as without Miri but this has proven invaluable since it detected many bugs ranging from alignment issues to memory leaks and use-after-free issues.</p>
+<p>We run tests under Miri in CI to make sure each commit is reasonably safe.</p>
+<p>So beware: introducing Rust to a C or C++ codebase may actually introduce new memory safety issues, usually all located in the FFI code.</p>
+<p>Thankfully that's a better situation to be in than to have to inspect all of the codebase when a memory issue is detected.</p>
+<h3>C FFI in Rust is cumbersome and error-prone</h3>
+<p>The root cause for all these issues is that the C API that C++ and Rust use to call each other is very limited in its expressiveness w.r.t ownership, as well as many Rust types not being marked <code>#[repr(C)]</code>, even types you would expect to, such as <code>Option</code>, <code>Vec</code> or <code>&amp;[u8]</code>. That means that you have to define your own equivalent types:</p>
+<pre><code class="language-rust">#[repr(C)]
+// An option type that can be used from C
+pub struct OptionC&lt;T&gt; {
+    pub has_value: bool,
+    pub value: T,
+}
+
+
+#[repr(C)]
+// Akin to `&amp;[u8]`, for C.
+pub struct ByteSliceView {
+    pub ptr: *const u8,
+    pub len: usize,
+}
+
+/// Owning Array i.e. `Vec&lt;T&gt;` in Rust or `std::vector&lt;T&gt;` in C++.
+#[repr(C)]
+pub struct OwningArrayC&lt;T&gt; {
+    pub data: *mut T,
+    pub len: usize,
+    pub cap: usize,
+}
+
+/// # Safety
+/// Only call from C.
+#[no_mangle]
+pub extern &quot;C&quot; fn make_owning_array_u8(len: usize) -&gt; OwningArrayC&lt;u8&gt; {
+    vec![0; len].into()
+}
+
+</code></pre>
+<p>Apparently, Rust developers do not want to commit to a particular ABI for these types, to avoid missing out on some future optimizations. So it means that every Rust struct now needs the equivalent &quot;FFI friendly&quot; struct along with conversion functions (usually implemented as <code>.into()</code> for convenience):</p>
+<pre><code>struct Foo&lt;'a&gt; {
     x: Option&lt;usize&gt;,
-    y: &amp;&#39;a [u8],
+    y: &amp;'a [u8],
     z: Vec&lt;u8&gt;,
 }
 
@@ -565,101 +269,80 @@ struct FooC {
     x: OptionC&lt;usize&gt;,
     y: ByteSliceView,
     z: OwningArrayC&lt;u8&gt;,
-}</code></pre>
-<p>Which is cumbersome but still fine, especially since Rust has
-powerful macros (which I investigated using but did not eventually).
-However, since Rust also does not have great idiomatic support for
-custom allocators, we stuck with the standard memory allocator, which
-meant that each struct with heap-allocated fields has to have a
-deallocation function:</p>
+}
+</code></pre>
+<p>Which is cumbersome but still fine, especially since Rust has powerful macros (which I investigated using but did not eventually). However, since Rust also does not have great idiomatic support for custom allocators, we stuck with the standard memory allocator, which meant that each struct with heap-allocated fields has to have a deallocation function:</p>
 <pre><code>#[no_mangle]
 pub extern &quot;C&quot; fn foo_free(foo: &amp;FooC) {
     ...
-}</code></pre>
+}
+</code></pre>
 <p>And the C or C++ calling code would have to do:</p>
-<div class="sourceCode" id="cb11"><pre
-class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>FooC foo<span class="op">{};</span></span>
-<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> <span class="op">(</span>foo_parse<span class="op">(&amp;</span>foo<span class="op">,</span> bytes<span class="op">)</span> <span class="op">==</span> SUCCESS<span class="op">)</span> <span class="op">{</span></span>
-<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>    <span class="co">// do something with foo...</span></span>
-<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>    <span class="op">...</span></span>
-<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a>    foo_free<span class="op">(</span>foo<span class="op">);</span></span>
-<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
-<p>To simplify this, I introduced a <code>defer</code> <a
-href="https://www.gingerbill.org/article/2015/08/19/defer-in-cpp/">construct</a>
-to C++ (thanks Gingerbill!):</p>
-<div class="sourceCode" id="cb12"><pre
-class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>FooC foo<span class="op">{};</span></span>
-<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>defer<span class="op">({</span>foo_free<span class="op">(</span>foo<span class="op">);});</span></span>
-<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> <span class="op">(</span>foo_parse<span class="op">(&amp;</span>foo<span class="op">,</span> bytes<span class="op">)</span> <span class="op">==</span> SUCCESS<span class="op">)</span> <span class="op">{</span></span>
-<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a>    <span class="co">// do something with foo...</span></span>
-<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a>    <span class="op">...</span></span>
-<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
-<p>Which feels right at home for Go developers, and is an improvement
-over the style in use in the old C++ code where it was fully manual
-calls to new/delete.</p>
-<p>Still, it’s more work than what you’d have to do in pure idiomatic
-Rust or C++ code (or even C code with arenas for that matter).</p>
-<p>In Zig or Odin, I would probably have used arenas to avoid that, or a
-general allocator with <code>defer</code>.</p>
-<h3 id="an-example-of-a-real-bug-at-the-ffi-boundary">An example of a
-real bug at the FFI boundary</h3>
-<p>More perniciously, it’s easy to introduce memory unsafety at the FFI
-boundary. Here is a real bug I introduced, can you spot it? I elided all
-the error handling to make it easier to spot:</p>
-<div class="sourceCode" id="cb13"><pre
-class="sourceCode rust"><code class="sourceCode rust"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="at">#[</span>repr<span class="at">(</span>C<span class="at">)]</span></span>
-<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a><span class="kw">struct</span> BarC <span class="op">{</span></span>
-<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a>    x<span class="op">:</span> ByteSliceView<span class="op">,</span></span>
-<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
-<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a><span class="at">#[</span>no_mangle<span class="at">]</span></span>
-<span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a><span class="kw">unsafe</span> <span class="kw">extern</span> <span class="st">&quot;C&quot;</span> <span class="kw">fn</span> bar_parse(input<span class="op">:</span> <span class="op">*</span><span class="kw">const</span> <span class="dt">u8</span><span class="op">,</span> input_len<span class="op">:</span> <span class="dt">usize</span><span class="op">,</span> bar_c<span class="op">:</span> <span class="op">&amp;</span><span class="kw">mut</span> BarC) <span class="op">{</span></span>
-<span id="cb13-8"><a href="#cb13-8" aria-hidden="true" tabindex="-1"></a>    <span class="kw">let</span> input<span class="op">:</span> <span class="op">&amp;</span>[<span class="dt">u8</span>] <span class="op">=</span> <span class="kw">unsafe</span> <span class="op">{</span> <span class="pp">std::slice::</span>from_raw_parts(input<span class="op">,</span> input_len) <span class="op">};</span></span>
-<span id="cb13-9"><a href="#cb13-9" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb13-10"><a href="#cb13-10" aria-hidden="true" tabindex="-1"></a>    <span class="kw">let</span> bar<span class="op">:</span> Bar <span class="op">=</span> Bar <span class="op">{</span></span>
-<span id="cb13-11"><a href="#cb13-11" aria-hidden="true" tabindex="-1"></a>        x<span class="op">:</span> [input[<span class="dv">0</span>]<span class="op">,</span> input[<span class="dv">1</span>]]<span class="op">,</span></span>
-<span id="cb13-12"><a href="#cb13-12" aria-hidden="true" tabindex="-1"></a>    <span class="op">};</span></span>
-<span id="cb13-13"><a href="#cb13-13" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb13-14"><a href="#cb13-14" aria-hidden="true" tabindex="-1"></a>    <span class="op">*</span>bar_c <span class="op">=</span> BarC <span class="op">{</span></span>
-<span id="cb13-15"><a href="#cb13-15" aria-hidden="true" tabindex="-1"></a>        x<span class="op">:</span> ByteSliceView <span class="op">{</span></span>
-<span id="cb13-16"><a href="#cb13-16" aria-hidden="true" tabindex="-1"></a>            ptr<span class="op">:</span> bar<span class="op">.</span>x<span class="op">.</span>as_ptr()<span class="op">,</span></span>
-<span id="cb13-17"><a href="#cb13-17" aria-hidden="true" tabindex="-1"></a>            len<span class="op">:</span> bar<span class="op">.</span>x<span class="op">.</span>len()<span class="op">,</span></span>
-<span id="cb13-18"><a href="#cb13-18" aria-hidden="true" tabindex="-1"></a>        <span class="op">},</span></span>
-<span id="cb13-19"><a href="#cb13-19" aria-hidden="true" tabindex="-1"></a>    <span class="op">};</span></span>
-<span id="cb13-20"><a href="#cb13-20" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
-<p><code>clippy</code> did not notice anything.
-<code>address-sanitizer</code> did not notice anything. However, both
-<code>miri</code> and <code>valgrind</code> did, and fuzzing crashed
-(which was not easy to troubleshoot but at least pinpointed to a
-problem).</p>
-<p>So…found it? Still nothing? Well, let’s be good developers and add a
-test for it:</p>
-<div class="sourceCode" id="cb14"><pre
-class="sourceCode rust"><code class="sourceCode rust"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="at">#[</span>test<span class="at">]</span></span>
-<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a><span class="kw">fn</span> bar() <span class="op">{</span></span>
-<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a>    <span class="co">// This mimicks how C/C++ code would call our function.</span></span>
-<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">let</span> <span class="kw">mut</span> bar_c <span class="op">=</span> <span class="pp">MaybeUninit::</span><span class="op">&lt;</span>BarC<span class="op">&gt;</span><span class="pp">::</span>uninit()<span class="op">;</span></span>
-<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a>    <span class="kw">let</span> input <span class="op">=</span> [<span class="dv">0</span><span class="op">,</span> <span class="dv">1</span><span class="op">,</span> <span class="dv">2</span>]<span class="op">;</span></span>
-<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a>    <span class="kw">unsafe</span> <span class="op">{</span></span>
-<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a>        bar_parse(</span>
-<span id="cb14-8"><a href="#cb14-8" aria-hidden="true" tabindex="-1"></a>            input<span class="op">.</span>as_ptr()<span class="op">,</span></span>
-<span id="cb14-9"><a href="#cb14-9" aria-hidden="true" tabindex="-1"></a>            input<span class="op">.</span>len()<span class="op">,</span></span>
-<span id="cb14-10"><a href="#cb14-10" aria-hidden="true" tabindex="-1"></a>            bar_c<span class="op">.</span>as_mut_ptr()<span class="op">.</span>as_mut()<span class="op">.</span>unwrap()<span class="op">,</span></span>
-<span id="cb14-11"><a href="#cb14-11" aria-hidden="true" tabindex="-1"></a>        )<span class="op">;</span></span>
-<span id="cb14-12"><a href="#cb14-12" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
-<span id="cb14-13"><a href="#cb14-13" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-14"><a href="#cb14-14" aria-hidden="true" tabindex="-1"></a>    <span class="kw">let</span> bar_c <span class="op">=</span> <span class="kw">unsafe</span> <span class="op">{</span> bar_c<span class="op">.</span>assume_init_ref() <span class="op">};</span></span>
-<span id="cb14-15"><a href="#cb14-15" aria-hidden="true" tabindex="-1"></a>    <span class="kw">let</span> x<span class="op">:</span> <span class="op">&amp;</span>[<span class="dt">u8</span>] <span class="op">=</span> (<span class="op">&amp;</span>bar_c<span class="op">.</span>x)<span class="op">.</span>into()<span class="op">;</span></span>
-<span id="cb14-16"><a href="#cb14-16" aria-hidden="true" tabindex="-1"></a>    <span class="pp">assert_eq!</span>(x<span class="op">,</span> [<span class="dv">0</span><span class="op">,</span> <span class="dv">1</span>]<span class="op">.</span>as_slice())<span class="op">;</span></span>
-<span id="cb14-17"><a href="#cb14-17" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
-<p>If you’re lucky, <code>cargo test</code> would fail at the last
-assertion saying that the value is not what we expected, but in my case
-it passed every time, and so the bug stayed undetected for a while.
-That’s because we unknowingly introduced undefined behavior, and as
-such, how or if it manifests is impossible to tell.</p>
-<p>Let’s run the test with Miri:</p>
+<pre><code class="language-c++">FooC foo{};
+if (foo_parse(&amp;foo, bytes) == SUCCESS) {
+    // do something with foo...
+    ...
+
+    foo_free(foo);
+}
+</code></pre>
+<p>To simplify this, I introduced a <code>defer</code> <a href="https://www.gingerbill.org/article/2015/08/19/defer-in-cpp/">construct</a> to C++ (thanks Gingerbill!):</p>
+<pre><code class="language-c++">FooC foo{};
+defer({foo_free(foo);});
+
+if (foo_parse(&amp;foo, bytes) == SUCCESS) {
+    // do something with foo...
+    ...
+}
+</code></pre>
+<p>Which feels right at home for Go developers, and is an improvement over the style in use in the old C++ code where it was fully manual calls to new/delete.</p>
+<p>Still, it's more work than what you'd have to do in pure idiomatic Rust or C++ code (or even C code with arenas for that matter).</p>
+<p>In Zig or Odin, I would probably have used arenas to avoid that, or a general allocator with <code>defer</code>.</p>
+<h3>An example of a real bug at the FFI boundary</h3>
+<p>More perniciously, it's easy to introduce memory unsafety at the FFI boundary. Here is a real bug I introduced, can you spot it? I elided all the error handling to make it easier to spot:</p>
+<pre><code class="language-rust">#[repr(C)]
+struct BarC {
+    x: ByteSliceView,
+}
+
+#[no_mangle]
+unsafe extern &quot;C&quot; fn bar_parse(input: *const u8, input_len: usize, bar_c: &amp;mut BarC) {
+    let input: &amp;[u8] = unsafe { std::slice::from_raw_parts(input, input_len) };
+
+    let bar: Bar = Bar {
+        x: [input[0], input[1]],
+    };
+
+    *bar_c = BarC {
+        x: ByteSliceView {
+            ptr: bar.x.as_ptr(),
+            len: bar.x.len(),
+        },
+    };
+}
+</code></pre>
+<p><code>clippy</code> did not notice anything. <code>address-sanitizer</code> did not notice anything. However, both <code>miri</code> and <code>valgrind</code> did, and fuzzing crashed (which was not easy to troubleshoot but at least pinpointed to a problem).</p>
+<p>So...found it? Still nothing? Well, let's be good developers and add a test for it:</p>
+<pre><code class="language-rust">#[test]
+fn bar() {
+    // This mimicks how C/C++ code would call our function.
+    let mut bar_c = MaybeUninit::&lt;BarC&gt;::uninit();
+    let input = [0, 1, 2];
+    unsafe {
+        bar_parse(
+            input.as_ptr(),
+            input.len(),
+            bar_c.as_mut_ptr().as_mut().unwrap(),
+        );
+    }
+
+    let bar_c = unsafe { bar_c.assume_init_ref() };
+    let x: &amp;[u8] = (&amp;bar_c.x).into();
+    assert_eq!(x, [0, 1].as_slice());
+}
+</code></pre>
+<p>If you're lucky, <code>cargo test</code> would fail at the last assertion saying that the value is not what we expected, but in my case it passed every time, and so the bug stayed undetected for a while. That's because we unknowingly introduced undefined behavior, and as such, how or if it manifests is impossible to tell.</p>
+<p>Let's run the test with Miri:</p>
 <pre><code>running 1 test
 test api::tests::bar ... error: Undefined Behavior: out-of-bounds pointer use: alloc195648 has been freed, so this pointer is dangling
     --&gt; src/tlv.rs:321:18
@@ -677,404 +360,267 @@ help: alloc195648 was allocated here:
 help: alloc195648 was deallocated here:
     --&gt; src/api.rs:1406:1
      |
-1406 | }</code></pre>
+1406 | }
+</code></pre>
 <p>Miri is great, I tell you.</p>
-<p>The issue here is that we essentially return a pointer to local
-variable (<code>x</code>) from inside the function, so the pointer is
-dangling.</p>
-<p>Alternatively we can call our function from C/C++ and run that under
-valgrind:</p>
-<div class="sourceCode" id="cb16"><pre class="sourceCode c"><code class="sourceCode c"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="dt">int</span> main<span class="op">()</span> <span class="op">{</span></span>
-<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a>  BarC bar<span class="op">{};</span></span>
-<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a>  <span class="dt">const</span> <span class="dt">uint8_t</span> input<span class="op">[]</span> <span class="op">=</span> <span class="op">{</span><span class="dv">0</span><span class="op">,</span> <span class="dv">1</span><span class="op">,</span> <span class="dv">2</span><span class="op">,</span> <span class="dv">3</span><span class="op">};</span></span>
-<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a>  bar_parse<span class="op">(</span>input<span class="op">,</span> <span class="kw">sizeof</span><span class="op">(</span>input<span class="op">),</span> <span class="op">&amp;</span>bar<span class="op">);</span></span>
-<span id="cb16-5"><a href="#cb16-5" aria-hidden="true" tabindex="-1"></a>  assert<span class="op">(</span>bar<span class="op">.</span>x<span class="op">.</span>ptr<span class="op">[</span><span class="dv">0</span><span class="op">]</span> <span class="op">==</span> <span class="dv">0</span><span class="op">);</span></span>
-<span id="cb16-6"><a href="#cb16-6" aria-hidden="true" tabindex="-1"></a>  assert<span class="op">(</span>bar<span class="op">.</span>x<span class="op">.</span>ptr<span class="op">[</span><span class="dv">1</span><span class="op">]</span> <span class="op">==</span> <span class="dv">1</span><span class="op">);</span></span>
-<span id="cb16-7"><a href="#cb16-7" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<p>The issue here is that we essentially return a pointer to local variable (<code>x</code>) from inside the function, so the pointer is dangling.</p>
+<p>Alternatively we can call our function from C/C++ and run that under valgrind:</p>
+<pre><code class="language-c">int main() {
+  BarC bar{};
+  const uint8_t input[] = {0, 1, 2, 3};
+  bar_parse(input, sizeof(input), &amp;bar);
+  assert(bar.x.ptr[0] == 0);
+  assert(bar.x.ptr[1] == 1);
+}
+</code></pre>
 <p>And I get:</p>
 <pre><code>==805913== Conditional jump or move depends on uninitialised value(s)
 ==805913==    at 0x127C34: main (src/example.cpp:13)
 ==805913== 
 ==805913== Conditional jump or move depends on uninitialised value(s)
-==805913==    at 0x127C69: main (src/example.cpp:14)</code></pre>
-<p>Which is not very informative, but better than nothing.
-<code>Miri</code>’s output is much more actionable.</p>
-<p>So in conclusion, Rust’s FFI capabilities work but are tedious are
-error-prone in my opinion, and so require extra care and testing with
-Miri/fuzzing, with high code coverage of the FFI functions. It’s not
-enough to only test the pure (non FFI) Rust code.</p>
-<h3 id="another-example-of-a-real-bug-at-the-ffi-boundary">Another
-example of a real bug at the FFI boundary</h3>
-<p>When I started this rewrite, I was under the impression that the Rust
-standard library uses the C memory allocator (basically,
-<code>malloc</code>) under the covers when it needs to allocate some
-memory.</p>
-<p>However, I quickly discovered that it is not (anymore?) the case,
-Rust uses its own allocator - at least on Linux where there is no C
-library shipping with the kernel. Miri again is the MVP here since it
-detected the issue of mixing the C and Rust allocations which prompted
-this section.</p>
-<p>As Bryan Cantrill once said: “glibc on Linux, it’s just, like, your
-opinion dude”. Meaning, glibc is just one option, among many, since
-Linux is just the kernel and does not ship with a libC. So the Rust
-standard library cannot expect a given C library on every Linux system,
-like it would be on macOS or the BSDs or Illumos. All of that to say:
-Rust implements its own memory allocator.</p>
-<p>The consequence of this, is that allocating memory on the C/C++ side,
-and freeing it on the Rust side, is undefined behavior: it amounts to
-freeing a pointer that was never allocated by this allocator. And
-vice-versa, allocating a pointer from Rust and freeing it from C.</p>
-<p>That has dire consequences since most memory allocators do not detect
-this in release mode. You might free completely unrelated memory leading
-to use-after-free later, or corrupt the memory allocator structures.
-It’s bad.</p>
-<p>Here’s a simplified example of code that triggered this issue:</p>
-<div class="sourceCode" id="cb18"><pre
-class="sourceCode rust"><code class="sourceCode rust"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="at">#[</span>repr<span class="at">(</span>C<span class="at">)]</span></span>
-<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">struct</span> FooC <span class="op">{</span></span>
-<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a>    foo<span class="op">:</span> <span class="dt">u8</span><span class="op">,</span></span>
-<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a>    bar<span class="op">:</span> <span class="op">*</span><span class="kw">mut</span> <span class="dt">usize</span><span class="op">,</span></span>
-<span id="cb18-5"><a href="#cb18-5" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
-<span id="cb18-6"><a href="#cb18-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb18-7"><a href="#cb18-7" aria-hidden="true" tabindex="-1"></a><span class="at">#[</span>no_mangle<span class="at">]</span></span>
-<span id="cb18-8"><a href="#cb18-8" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">extern</span> <span class="st">&quot;C&quot;</span> <span class="kw">fn</span> parse_foo(in_bytes<span class="op">:</span> <span class="op">*</span><span class="kw">const</span> <span class="dt">u8</span><span class="op">,</span> in_bytes_len<span class="op">:</span> <span class="dt">usize</span><span class="op">,</span> foo<span class="op">:</span> <span class="op">&amp;</span><span class="kw">mut</span> FooC) <span class="op">{</span></span>
-<span id="cb18-9"><a href="#cb18-9" aria-hidden="true" tabindex="-1"></a>    <span class="kw">let</span> in_bytes<span class="op">:</span> <span class="op">&amp;</span>[<span class="dt">u8</span>] <span class="op">=</span> <span class="kw">unsafe</span> <span class="op">{</span> <span class="op">&amp;*</span><span class="pp">core::ptr::</span>slice_from_raw_parts(in_bytes<span class="op">,</span> in_bytes_len) <span class="op">};</span></span>
-<span id="cb18-10"><a href="#cb18-10" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb18-11"><a href="#cb18-11" aria-hidden="true" tabindex="-1"></a>    <span class="co">// Parse `foo` from `in_bytes` but `bar` is sometimes not present in the payload.</span></span>
-<span id="cb18-12"><a href="#cb18-12" aria-hidden="true" tabindex="-1"></a>    <span class="co">// In that case it is set manually by the calling code.</span></span>
-<span id="cb18-13"><a href="#cb18-13" aria-hidden="true" tabindex="-1"></a>    <span class="op">*</span>foo <span class="op">=</span> FooC <span class="op">{</span></span>
-<span id="cb18-14"><a href="#cb18-14" aria-hidden="true" tabindex="-1"></a>        foo<span class="op">:</span> in_bytes[<span class="dv">0</span>]<span class="op">,</span></span>
-<span id="cb18-15"><a href="#cb18-15" aria-hidden="true" tabindex="-1"></a>        bar<span class="op">:</span> <span class="cf">if</span> in_bytes_len <span class="op">==</span> <span class="dv">1</span> <span class="op">{</span></span>
-<span id="cb18-16"><a href="#cb18-16" aria-hidden="true" tabindex="-1"></a>            <span class="pp">core::ptr::</span>null_mut()</span>
-<span id="cb18-17"><a href="#cb18-17" aria-hidden="true" tabindex="-1"></a>        <span class="op">}</span> <span class="cf">else</span> <span class="op">{</span></span>
-<span id="cb18-18"><a href="#cb18-18" aria-hidden="true" tabindex="-1"></a>            <span class="kw">let</span> x <span class="op">=</span> <span class="dt">Box</span><span class="pp">::</span>new(in_bytes[<span class="dv">1</span>] <span class="kw">as</span> <span class="dt">usize</span>)<span class="op">;</span></span>
-<span id="cb18-19"><a href="#cb18-19" aria-hidden="true" tabindex="-1"></a>            <span class="dt">Box</span><span class="pp">::</span>into_raw(x)</span>
-<span id="cb18-20"><a href="#cb18-20" aria-hidden="true" tabindex="-1"></a>        <span class="op">},</span></span>
-<span id="cb18-21"><a href="#cb18-21" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
-<span id="cb18-22"><a href="#cb18-22" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
-<span id="cb18-23"><a href="#cb18-23" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb18-24"><a href="#cb18-24" aria-hidden="true" tabindex="-1"></a><span class="at">#[</span>no_mangle<span class="at">]</span></span>
-<span id="cb18-25"><a href="#cb18-25" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">extern</span> <span class="st">&quot;C&quot;</span> <span class="kw">fn</span> free_foo(foo<span class="op">:</span> <span class="op">&amp;</span><span class="kw">mut</span> FooC) <span class="op">{</span></span>
-<span id="cb18-26"><a href="#cb18-26" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> <span class="op">!</span>foo<span class="op">.</span>bar<span class="op">.</span>is_null() <span class="op">{</span></span>
-<span id="cb18-27"><a href="#cb18-27" aria-hidden="true" tabindex="-1"></a>        <span class="kw">unsafe</span> <span class="op">{</span></span>
-<span id="cb18-28"><a href="#cb18-28" aria-hidden="true" tabindex="-1"></a>            <span class="kw">let</span> _ <span class="op">=</span> <span class="dt">Box</span><span class="pp">::</span>from_raw(foo<span class="op">.</span>bar)<span class="op">;</span></span>
-<span id="cb18-29"><a href="#cb18-29" aria-hidden="true" tabindex="-1"></a>        <span class="op">}</span></span>
-<span id="cb18-30"><a href="#cb18-30" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
-<span id="cb18-31"><a href="#cb18-31" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+==805913==    at 0x127C69: main (src/example.cpp:14)
+</code></pre>
+<p>Which is not very informative, but better than nothing. <code>Miri</code>'s output is much more actionable.</p>
+<p>So in conclusion, Rust's FFI capabilities work but are tedious are error-prone in my opinion, and so require extra care and testing with Miri/fuzzing, with high code coverage of the FFI functions. It's not enough to only test the pure (non FFI) Rust code.</p>
+<h3>Another example of a real bug at the FFI boundary</h3>
+<p>When I started this rewrite, I was under the impression that the Rust standard library uses the C memory allocator (basically, <code>malloc</code>) under the covers when it needs to allocate some memory.</p>
+<p>However, I quickly discovered that it is not (anymore?) the case, Rust uses its own allocator - at least on Linux where there is no C library shipping with the kernel.
+Miri again is the MVP here since it detected the issue of mixing the C and Rust allocations which prompted this section.</p>
+<p>As Bryan Cantrill once said: &quot;glibc on Linux, it's just, like, your opinion dude&quot;. Meaning, glibc is just one option, among many, since Linux is just the kernel and does not ship with a libC. So the Rust standard library cannot expect a given C library on every Linux system, like it would be on macOS or the BSDs or Illumos. All of that to say: Rust implements its own memory allocator.</p>
+<p>The consequence of this, is that allocating memory on the C/C++ side, and freeing it on the Rust side, is undefined behavior: it amounts to freeing a pointer that was never allocated by this allocator. And vice-versa, allocating a pointer from Rust and freeing it from C.</p>
+<p>That has dire consequences since most memory allocators do not detect this in release mode. You might free completely unrelated memory leading to use-after-free later, or corrupt the memory allocator structures. It's bad.</p>
+<p>Here's a simplified example of code that triggered this issue:</p>
+<pre><code class="language-rust">#[repr(C)]
+pub struct FooC {
+    foo: u8,
+    bar: *mut usize,
+}
+
+#[no_mangle]
+pub extern &quot;C&quot; fn parse_foo(in_bytes: *const u8, in_bytes_len: usize, foo: &amp;mut FooC) {
+    let in_bytes: &amp;[u8] = unsafe { &amp;*core::ptr::slice_from_raw_parts(in_bytes, in_bytes_len) };
+
+    // Parse `foo` from `in_bytes` but `bar` is sometimes not present in the payload.
+    // In that case it is set manually by the calling code.
+    *foo = FooC {
+        foo: in_bytes[0],
+        bar: if in_bytes_len == 1 {
+            core::ptr::null_mut()
+        } else {
+            let x = Box::new(in_bytes[1] as usize);
+            Box::into_raw(x)
+        },
+    }
+}
+
+#[no_mangle]
+pub extern &quot;C&quot; fn free_foo(foo: &amp;mut FooC) {
+    if !foo.bar.is_null() {
+        unsafe {
+            let _ = Box::from_raw(foo.bar);
+        }
+    }
+}
+</code></pre>
 <p>And the calling code:</p>
-<div class="sourceCode" id="cb19"><pre
-class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a>FooC foo<span class="op">{};</span></span>
-<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a><span class="at">const</span> <span class="dt">uint8_t</span> data<span class="op">[]</span> <span class="op">=</span> <span class="op">{</span> <span class="dv">1</span> <span class="op">};</span></span>
-<span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a>parse_foo<span class="op">(</span>data<span class="op">,</span> <span class="kw">sizeof</span><span class="op">(</span>data<span class="op">),</span> <span class="op">&amp;</span>foo<span class="op">);</span></span>
-<span id="cb19-5"><a href="#cb19-5" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> <span class="op">(</span>foo<span class="op">.</span>bar <span class="op">==</span> <span class="kw">nullptr</span><span class="op">)</span> <span class="op">{</span></span>
-<span id="cb19-6"><a href="#cb19-6" aria-hidden="true" tabindex="-1"></a>  foo<span class="op">.</span>bar <span class="op">=</span> <span class="kw">new</span> <span class="dt">size_t</span><span class="op">{</span><span class="dv">99999</span><span class="op">};</span></span>
-<span id="cb19-7"><a href="#cb19-7" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
-<span id="cb19-8"><a href="#cb19-8" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb19-9"><a href="#cb19-9" aria-hidden="true" tabindex="-1"></a>free_foo<span class="op">(&amp;</span>foo<span class="op">);</span></span></code></pre></div>
-<p>This is undefined behavior if the array is of size 1, since in that
-case the Rust allocator will free a pointer allocated by the C
-allocator, and address sanitizer catches it:</p>
-<pre><code>SUMMARY: AddressSanitizer: alloc-dealloc-mismatch /home/runner/work/llvm-project/llvm-project/final/llvm-project/compiler-rt/lib/asan/asan_malloc_linux.cpp:52:3 in free</code></pre>
-<p>However, it is only detected with sanitizers on and if a test (or
-fuzzing) triggers this case. Or by Miri if a Rust test covers this
-function.</p>
+<pre><code class="language-c++">FooC foo{};
+
+const uint8_t data[] = { 1 };
+parse_foo(data, sizeof(data), &amp;foo);
+if (foo.bar == nullptr) {
+  foo.bar = new size_t{99999};
+}
+
+free_foo(&amp;foo);
+</code></pre>
+<p>This is undefined behavior if the array is of size 1, since in that case the Rust allocator will free a pointer allocated by the C allocator, and address sanitizer catches it:</p>
+<pre><code>SUMMARY: AddressSanitizer: alloc-dealloc-mismatch /home/runner/work/llvm-project/llvm-project/final/llvm-project/compiler-rt/lib/asan/asan_malloc_linux.cpp:52:3 in free
+</code></pre>
+<p>However, it is only detected with sanitizers on and if a test (or fuzzing) triggers this case. Or by Miri if a Rust test covers this function.</p>
 <hr />
-<p>So I recommend sticking to one ‘side’, be it C/C++ or Rust, of the
-FFI boundary, to allocate and free all the memory used in FFI
-structures. Rust has an edge here since the long-term goal is to have
-100% of Rust so it will have to allocate all the memory anyway in the
-end.</p>
-<p>Depending on the existing code style, it might be hard to ensure that
-the C/C++ allocator is not used at all for structures used in FFI, due
-to abstractions and hidden memory allocations.</p>
-<p>One possible solution (which I did not implement but considered) is
-making FFI structures a simple opaque pointer (or ‘handle’) so that the
-caller has to use FFI functions to allocate and free this structure.
-That also means implementing getter/setters for certain fields since the
-structures are now opaque. It maximizes the ABI compatibility, since the
-caller cannot rely on a given struct size, alignment, or fields.</p>
+<p>So I recommend sticking to one 'side', be it C/C++ or Rust, of the FFI boundary, to allocate and free all the memory used in FFI structures. Rust has an edge here since the long-term goal is to have 100% of Rust so it will have to allocate all the memory anyway in the end.</p>
+<p>Depending on the existing code style, it might be hard to ensure that the C/C++ allocator is not used at all for structures used in FFI, due to abstractions and hidden memory allocations.</p>
+<p>One possible solution (which I did not implement but considered) is making FFI structures a simple opaque pointer (or 'handle') so that the caller has to use FFI functions to allocate and free this structure. That also means implementing getter/setters for certain fields since the structures are now opaque. It maximizes the ABI compatibility, since the caller cannot rely on a given struct size, alignment, or fields.</p>
 <p>However that entails more work and more functions in the API.</p>
-<p><code>libcurl</code> is an example of such an approach,
-<code>libuv</code> is an example of a library which did not do this
-initially, but plans to move to this approach in future versions, which
-would be a breaking change for clients.</p>
-<p>So to summarize, Miri is so essential that I don’t know whether it’s
-viable to write Rust code with lots of FFI (and thus lots of unsafe
-blocks) without it. If Miri did not exist, I would seriously consider
-using only arenas or reconsider the use of Rust.</p>
-<h2 id="cross-compilation">Cross-compilation</h2>
-<p>Rust has great cross-compilation support; C++ not so much.
-Nonetheless I managed to coerced CMake into cross-compiling to every
-platform we support from my Linux laptop. After using Docker for more
-than 10 years I am firmly against using Docker for that, it’s just
-clunky and slow and not a good fit. Also we already have to
-cross-compile to the mobile platforms anyway so why not make that work
-for all platforms?</p>
-<p>That way, I can even cross-compile tests and example programs in C or
-C++ using the library and run them inside <code>qemu</code> to make sure
-all platforms work as expected.</p>
-<p>I took inspiration from the CMake code in the Android project, which
-has to cross-compile for many architectures. Did you know that Android
-supports x86 (which is 32 bits), x86_64, arm (which is 32 bits), aarch64
-(sometimes called arm64), and more?</p>
-<p>In short, you instruct CMake to cross-compile by supplying on the
-command-line the variables <code>CMAKE_SYSTEM_PROCESSOR</code> and
-<code>CMAKE_SYSTEM_NAME</code>, which are the equivalent of
-<code>GOARCH</code> and <code>GOOS</code> if you are familiar with Go.
-E.g.:</p>
-<div class="sourceCode" id="cb21"><pre
-class="sourceCode sh"><code class="sourceCode bash"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> cmake <span class="at">-B</span> .build <span class="at">-S</span> src <span class="at">-DCMAKE_C_COMPILER</span><span class="op">=</span>clang <span class="at">-DCMAKE_CXX_COMPILER</span><span class="op">=</span>clang++ <span class="at">-DCMAKE_SYSTEM_NAME</span><span class="op">=</span>Linux <span class="at">-DCMAKE_SYSTEM_PROCESSOR</span><span class="op">=</span>arm</span></code></pre></div>
-<p>On the Rust side, you tell <code>cargo</code> to cross-compile by
-supplying the <code>--target</code> command-line argument, e.g.:
-<code>--target=x86_64-unknown-linux-musl</code>. This works by virtue of
-installing the pre-compiled toolchain for this platform with
-<code>rustup</code> first:</p>
-<div class="sourceCode" id="cb22"><pre
-class="sourceCode sh"><code class="sourceCode bash"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> rustup target add x86_64-unknown-linux-musl</span></code></pre></div>
-<p>So now we have to convert in CMake
-<code>CMAKE_SYSTEM_ARCHITECTURE</code> and
-<code>CMAKE_SYSTEM_NAME</code> into a target triple that clang and cargo
-can understand. Of course you have to do all the hard work yourself.
-This is complicated by lots of factors like Apple using the architecture
-name <code>arm64</code> instead of <code>aarch64</code>, iOS
-peculiarities, soft vs hard float, arm having multiple variants (v6, v7,
-v8, etc), and so on. Your mileage may vary. We opt-in into using musl
-with a CMake command line option, on Linux.</p>
+<p><code>libcurl</code> is an example of such an approach, <code>libuv</code> is an example of a library which did not do this initially, but plans to move to this approach in future versions, which would be a breaking change for clients.</p>
+<p>So to summarize, Miri is so essential that I don't know whether it's viable to write Rust code with lots of FFI (and thus lots of unsafe blocks) without it. If Miri did not exist, I would seriously consider using only arenas or reconsider the use of Rust.</p>
+<h2>Cross-compilation</h2>
+<p>Rust has great cross-compilation support; C++ not so much. Nonetheless I managed to coerced CMake into cross-compiling to every platform we support from my Linux laptop. After using Docker for more than 10 years I am firmly against using Docker for that, it's just clunky and slow and not a good fit. Also we already have to cross-compile to the mobile platforms anyway so why not make that work for all platforms?</p>
+<p>That way, I can even cross-compile tests and example programs in C or C++ using the library and run them inside <code>qemu</code> to make sure all platforms work as expected.</p>
+<p>I took inspiration from the CMake code in the Android project, which has to cross-compile for many architectures. Did you know that Android supports x86 (which is 32 bits), x86_64, arm (which is 32 bits), aarch64 (sometimes called arm64), and more?</p>
+<p>In short, you instruct CMake to cross-compile by supplying on the command-line the variables <code>CMAKE_SYSTEM_PROCESSOR</code> and <code>CMAKE_SYSTEM_NAME</code>, which are the equivalent of <code>GOARCH</code> and <code>GOOS</code> if you are familiar with Go. E.g.:</p>
+<pre><code class="language-sh">$ cmake -B .build -S src -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_SYSTEM_NAME=Linux -DCMAKE_SYSTEM_PROCESSOR=arm
+</code></pre>
+<p>On the Rust side, you tell <code>cargo</code> to cross-compile by supplying the <code>--target</code> command-line argument, e.g.: <code>--target=x86_64-unknown-linux-musl</code>. This works by virtue of installing the pre-compiled toolchain for this platform with <code>rustup</code> first:</p>
+<pre><code class="language-sh">$ rustup target add x86_64-unknown-linux-musl
+</code></pre>
+<p>So now we have to convert in CMake <code>CMAKE_SYSTEM_ARCHITECTURE</code> and <code>CMAKE_SYSTEM_NAME</code> into a target triple that clang and cargo can understand. Of course you have to do all the hard work yourself. This is complicated by lots of factors like Apple using the architecture name <code>arm64</code> instead of <code>aarch64</code>, iOS peculiarities, soft vs hard float, arm having multiple variants (v6, v7, v8, etc), and so on. Your mileage may vary. We opt-in into using musl with a CMake command line option, on Linux.</p>
 <p>Here it is in all its glory:</p>
-<div class="sourceCode" id="cb23"><pre
-class="sourceCode cmake"><code class="sourceCode cmake"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="co"># We need to craft the target triple to make it work when cross-compiling.</span></span>
-<span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a><span class="co"># </span><span class="al">NOTE</span><span class="co">: If an architecture supports both soft-float and hard-float, we pick hard-float (`hf`).</span></span>
-<span id="cb23-3"><a href="#cb23-3" aria-hidden="true" tabindex="-1"></a><span class="co"># since we do not target any real hardware with soft-float.</span></span>
-<span id="cb23-4"><a href="#cb23-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Linux has two main libcs, glibc (the default) and musl (opt-in with `FMW_LIBC_MUSL=1`), useful for Alpine.</span></span>
-<span id="cb23-5"><a href="#cb23-5" aria-hidden="true" tabindex="-1"></a><span class="kw">if</span> (<span class="dv">CMAKE_SYSTEM_NAME</span> <span class="ot">STREQUAL</span> <span class="st">&quot;Linux&quot;</span> <span class="ot">AND</span> <span class="dv">CMAKE_SYSTEM_PROCESSOR</span> <span class="ot">STREQUAL</span> <span class="st">&quot;x86_64&quot;</span> <span class="ot">AND</span> <span class="ot">NOT</span> <span class="ot">DEFINED</span> FMW_LIBC_MUSL)</span>
-<span id="cb23-6"><a href="#cb23-6" aria-hidden="true" tabindex="-1"></a>    <span class="kw">set</span>(TARGET_TRIPLE <span class="st">&quot;x86_64-unknown-linux-gnu&quot;</span>)</span>
-<span id="cb23-7"><a href="#cb23-7" aria-hidden="true" tabindex="-1"></a><span class="kw">elseif</span> (<span class="dv">CMAKE_SYSTEM_NAME</span> <span class="ot">STREQUAL</span> <span class="st">&quot;Linux&quot;</span> <span class="ot">AND</span> <span class="dv">CMAKE_SYSTEM_PROCESSOR</span> <span class="ot">STREQUAL</span> <span class="st">&quot;x86_64&quot;</span> <span class="ot">AND</span> <span class="st">&quot;</span><span class="dv">${FMW_LIBC_MUSL}</span><span class="st">&quot;</span> <span class="ot">EQUAL</span> <span class="ot">1</span>)</span>
-<span id="cb23-8"><a href="#cb23-8" aria-hidden="true" tabindex="-1"></a>    <span class="kw">set</span>(TARGET_TRIPLE <span class="st">&quot;x86_64-unknown-linux-musl&quot;</span>)</span>
-<span id="cb23-9"><a href="#cb23-9" aria-hidden="true" tabindex="-1"></a><span class="kw">elseif</span> (<span class="dv">CMAKE_SYSTEM_NAME</span> <span class="ot">STREQUAL</span> <span class="st">&quot;Linux&quot;</span> <span class="ot">AND</span> <span class="dv">CMAKE_SYSTEM_PROCESSOR</span> <span class="ot">STREQUAL</span> <span class="st">&quot;arm&quot;</span> <span class="ot">AND</span> <span class="ot">NOT</span> <span class="ot">DEFINED</span> FMW_LIBC_MUSL)</span>
-<span id="cb23-10"><a href="#cb23-10" aria-hidden="true" tabindex="-1"></a>    <span class="kw">set</span>(TARGET_TRIPLE <span class="st">&quot;arm-unknown-linux-gnueabihf&quot;</span>)</span>
-<span id="cb23-11"><a href="#cb23-11" aria-hidden="true" tabindex="-1"></a><span class="kw">elseif</span> (<span class="dv">CMAKE_SYSTEM_NAME</span> <span class="ot">STREQUAL</span> <span class="st">&quot;Linux&quot;</span> <span class="ot">AND</span> <span class="dv">CMAKE_SYSTEM_PROCESSOR</span> <span class="ot">STREQUAL</span> <span class="st">&quot;arm&quot;</span> <span class="ot">AND</span> <span class="st">&quot;</span><span class="dv">${FMW_LIBC_MUSL}</span><span class="st">&quot;</span> <span class="ot">EQUAL</span> <span class="ot">1</span>)</span>
-<span id="cb23-12"><a href="#cb23-12" aria-hidden="true" tabindex="-1"></a>    <span class="kw">set</span>(TARGET_TRIPLE <span class="st">&quot;arm-unknown-linux-musleabihf&quot;</span>)</span>
-<span id="cb23-13"><a href="#cb23-13" aria-hidden="true" tabindex="-1"></a><span class="kw">elseif</span> (<span class="dv">CMAKE_SYSTEM_NAME</span> <span class="ot">STREQUAL</span> <span class="st">&quot;Linux&quot;</span> <span class="ot">AND</span> <span class="dv">CMAKE_SYSTEM_PROCESSOR</span> <span class="ot">STREQUAL</span> <span class="st">&quot;aarch64&quot;</span> <span class="ot">AND</span> <span class="ot">NOT</span> <span class="ot">DEFINED</span> FMW_LIBC_MUSL)</span>
-<span id="cb23-14"><a href="#cb23-14" aria-hidden="true" tabindex="-1"></a>    <span class="kw">set</span>(TARGET_TRIPLE <span class="st">&quot;aarch64-unknown-linux-gnu&quot;</span>)</span>
-<span id="cb23-15"><a href="#cb23-15" aria-hidden="true" tabindex="-1"></a><span class="kw">elseif</span> (<span class="dv">CMAKE_SYSTEM_NAME</span> <span class="ot">STREQUAL</span> <span class="st">&quot;Linux&quot;</span> <span class="ot">AND</span> <span class="dv">CMAKE_SYSTEM_PROCESSOR</span> <span class="ot">STREQUAL</span> <span class="st">&quot;aarch64&quot;</span> <span class="ot">AND</span> <span class="st">&quot;</span><span class="dv">${FMW_LIBC_MUSL}</span><span class="st">&quot;</span> <span class="ot">EQUAL</span> <span class="ot">1</span>)</span>
-<span id="cb23-16"><a href="#cb23-16" aria-hidden="true" tabindex="-1"></a>    <span class="kw">set</span>(TARGET_TRIPLE <span class="st">&quot;aarch64-unknown-linux-musl&quot;</span>)</span>
-<span id="cb23-17"><a href="#cb23-17" aria-hidden="true" tabindex="-1"></a><span class="kw">elseif</span> (<span class="dv">CMAKE_SYSTEM_NAME</span> <span class="ot">STREQUAL</span> <span class="st">&quot;Linux&quot;</span> <span class="ot">AND</span> <span class="dv">CMAKE_SYSTEM_PROCESSOR</span> <span class="ot">STREQUAL</span> <span class="st">&quot;armv7&quot;</span>)</span>
-<span id="cb23-18"><a href="#cb23-18" aria-hidden="true" tabindex="-1"></a>    <span class="kw">set</span>(TARGET_TRIPLE <span class="st">&quot;armv7-unknown-linux-gnueabihf&quot;</span>)</span>
-<span id="cb23-19"><a href="#cb23-19" aria-hidden="true" tabindex="-1"></a><span class="kw">elseif</span> (<span class="dv">CMAKE_SYSTEM_NAME</span> <span class="ot">STREQUAL</span> <span class="st">&quot;Darwin&quot;</span> <span class="ot">AND</span> <span class="dv">CMAKE_SYSTEM_PROCESSOR</span> <span class="ot">STREQUAL</span> <span class="st">&quot;aarch64&quot;</span>)</span>
-<span id="cb23-20"><a href="#cb23-20" aria-hidden="true" tabindex="-1"></a>    <span class="kw">set</span>(TARGET_TRIPLE <span class="st">&quot;aarch64-apple-darwin&quot;</span>)</span>
-<span id="cb23-21"><a href="#cb23-21" aria-hidden="true" tabindex="-1"></a><span class="kw">elseif</span> (<span class="dv">CMAKE_SYSTEM_NAME</span> <span class="ot">STREQUAL</span> <span class="st">&quot;Darwin&quot;</span> <span class="ot">AND</span> <span class="dv">CMAKE_SYSTEM_PROCESSOR</span> <span class="ot">STREQUAL</span> <span class="st">&quot;arm64&quot;</span>)</span>
-<span id="cb23-22"><a href="#cb23-22" aria-hidden="true" tabindex="-1"></a>    <span class="kw">set</span>(TARGET_TRIPLE <span class="st">&quot;aarch64-apple-darwin&quot;</span>)</span>
-<span id="cb23-23"><a href="#cb23-23" aria-hidden="true" tabindex="-1"></a><span class="kw">elseif</span> (<span class="dv">CMAKE_SYSTEM_NAME</span> <span class="ot">STREQUAL</span> <span class="st">&quot;Darwin&quot;</span> <span class="ot">AND</span> <span class="dv">CMAKE_SYSTEM_PROCESSOR</span> <span class="ot">STREQUAL</span> <span class="st">&quot;x86_64&quot;</span>)</span>
-<span id="cb23-24"><a href="#cb23-24" aria-hidden="true" tabindex="-1"></a>    <span class="kw">set</span>(TARGET_TRIPLE <span class="st">&quot;x86_64-apple-darwin&quot;</span>)</span>
-<span id="cb23-25"><a href="#cb23-25" aria-hidden="true" tabindex="-1"></a><span class="kw">elseif</span> (<span class="dv">CMAKE_SYSTEM_NAME</span> <span class="ot">STREQUAL</span> <span class="st">&quot;iOS&quot;</span> <span class="ot">AND</span> <span class="dv">CMAKE_SYSTEM_PROCESSOR</span> <span class="ot">STREQUAL</span> <span class="st">&quot;x86_64&quot;</span>)</span>
-<span id="cb23-26"><a href="#cb23-26" aria-hidden="true" tabindex="-1"></a>    <span class="kw">set</span>(TARGET_TRIPLE <span class="st">&quot;x86_64-apple-ios&quot;</span>)</span>
-<span id="cb23-27"><a href="#cb23-27" aria-hidden="true" tabindex="-1"></a>    <span class="kw">execute_process</span>(<span class="ot">COMMAND</span> xcrun --sdk iphonesimulator --show-sdk-path <span class="ot">OUTPUT_VARIABLE</span> <span class="dv">CMAKE_OSX_SYSROOT</span>)</span>
-<span id="cb23-28"><a href="#cb23-28" aria-hidden="true" tabindex="-1"></a>    <span class="kw">string</span>(<span class="ot">REPLACE</span> <span class="st">&quot;</span><span class="sc">\n</span><span class="st">&quot;</span> <span class="st">&quot;&quot;</span> <span class="dv">CMAKE_OSX_SYSROOT</span> <span class="dv">${CMAKE_OSX_SYSROOT}</span>)</span>
-<span id="cb23-29"><a href="#cb23-29" aria-hidden="true" tabindex="-1"></a><span class="kw">elseif</span> (<span class="dv">CMAKE_SYSTEM_NAME</span> <span class="ot">STREQUAL</span> <span class="st">&quot;iOS&quot;</span> <span class="ot">AND</span> <span class="dv">CMAKE_SYSTEM_PROCESSOR</span> <span class="ot">STREQUAL</span> <span class="st">&quot;aarch64&quot;</span>)</span>
-<span id="cb23-30"><a href="#cb23-30" aria-hidden="true" tabindex="-1"></a>    <span class="kw">set</span>(TARGET_TRIPLE <span class="st">&quot;aarch64-apple-ios&quot;</span>)</span>
-<span id="cb23-31"><a href="#cb23-31" aria-hidden="true" tabindex="-1"></a>    <span class="kw">execute_process</span>(<span class="ot">COMMAND</span> xcrun --sdk iphoneos --show-sdk-path <span class="ot">OUTPUT_VARIABLE</span> <span class="dv">CMAKE_OSX_SYSROOT</span>)</span>
-<span id="cb23-32"><a href="#cb23-32" aria-hidden="true" tabindex="-1"></a>    <span class="kw">string</span>(<span class="ot">REPLACE</span> <span class="st">&quot;</span><span class="sc">\n</span><span class="st">&quot;</span> <span class="st">&quot;&quot;</span> <span class="dv">CMAKE_OSX_SYSROOT</span> <span class="dv">${CMAKE_OSX_SYSROOT}</span>)</span>
-<span id="cb23-33"><a href="#cb23-33" aria-hidden="true" tabindex="-1"></a><span class="kw">elseif</span> (<span class="dv">CMAKE_SYSTEM_NAME</span> <span class="ot">STREQUAL</span> <span class="st">&quot;iOS&quot;</span> <span class="ot">AND</span> <span class="dv">CMAKE_SYSTEM_PROCESSOR</span> <span class="ot">STREQUAL</span> <span class="st">&quot;arm64&quot;</span>)</span>
-<span id="cb23-34"><a href="#cb23-34" aria-hidden="true" tabindex="-1"></a>    <span class="kw">set</span>(TARGET_TRIPLE <span class="st">&quot;aarch64-apple-ios&quot;</span>)</span>
-<span id="cb23-35"><a href="#cb23-35" aria-hidden="true" tabindex="-1"></a>    <span class="kw">execute_process</span>(<span class="ot">COMMAND</span> xcrun --sdk iphoneos --show-sdk-path <span class="ot">OUTPUT_VARIABLE</span> <span class="dv">CMAKE_OSX_SYSROOT</span>)</span>
-<span id="cb23-36"><a href="#cb23-36" aria-hidden="true" tabindex="-1"></a>    <span class="kw">string</span>(<span class="ot">REPLACE</span> <span class="st">&quot;</span><span class="sc">\n</span><span class="st">&quot;</span> <span class="st">&quot;&quot;</span> <span class="dv">CMAKE_OSX_SYSROOT</span> <span class="dv">${CMAKE_OSX_SYSROOT}</span>)</span>
-<span id="cb23-37"><a href="#cb23-37" aria-hidden="true" tabindex="-1"></a><span class="kw">elseif</span> (<span class="dv">CMAKE_SYSTEM_NAME</span> <span class="ot">STREQUAL</span> <span class="st">&quot;Android&quot;</span> <span class="ot">AND</span> <span class="dv">CMAKE_SYSTEM_PROCESSOR</span> <span class="ot">STREQUAL</span> <span class="st">&quot;arm&quot;</span>)</span>
-<span id="cb23-38"><a href="#cb23-38" aria-hidden="true" tabindex="-1"></a>    <span class="kw">set</span>(TARGET_TRIPLE <span class="st">&quot;arm-linux-androideabi&quot;</span>)</span>
-<span id="cb23-39"><a href="#cb23-39" aria-hidden="true" tabindex="-1"></a><span class="kw">elseif</span> (<span class="dv">CMAKE_SYSTEM_NAME</span> <span class="ot">STREQUAL</span> <span class="st">&quot;Android&quot;</span> <span class="ot">AND</span> <span class="dv">CMAKE_SYSTEM_PROCESSOR</span> <span class="ot">STREQUAL</span> <span class="st">&quot;armv7&quot;</span>)</span>
-<span id="cb23-40"><a href="#cb23-40" aria-hidden="true" tabindex="-1"></a>    <span class="kw">set</span>(TARGET_TRIPLE <span class="st">&quot;armv7-linux-androideabi&quot;</span>)</span>
-<span id="cb23-41"><a href="#cb23-41" aria-hidden="true" tabindex="-1"></a><span class="kw">elseif</span> (<span class="dv">CMAKE_SYSTEM_NAME</span> <span class="ot">STREQUAL</span> <span class="st">&quot;Android&quot;</span> <span class="ot">AND</span> <span class="dv">CMAKE_SYSTEM_PROCESSOR</span> <span class="ot">STREQUAL</span> <span class="st">&quot;armv7-a&quot;</span>)</span>
-<span id="cb23-42"><a href="#cb23-42" aria-hidden="true" tabindex="-1"></a>    <span class="kw">set</span>(TARGET_TRIPLE <span class="st">&quot;armv7-linux-androideabi&quot;</span>)</span>
-<span id="cb23-43"><a href="#cb23-43" aria-hidden="true" tabindex="-1"></a><span class="kw">elseif</span> (<span class="dv">CMAKE_SYSTEM_NAME</span> <span class="ot">STREQUAL</span> <span class="st">&quot;Android&quot;</span> <span class="ot">AND</span> <span class="dv">CMAKE_SYSTEM_PROCESSOR</span> <span class="ot">STREQUAL</span> <span class="st">&quot;aarch64&quot;</span>)</span>
-<span id="cb23-44"><a href="#cb23-44" aria-hidden="true" tabindex="-1"></a>    <span class="kw">set</span>(TARGET_TRIPLE <span class="st">&quot;aarch64-linux-android&quot;</span>)</span>
-<span id="cb23-45"><a href="#cb23-45" aria-hidden="true" tabindex="-1"></a><span class="kw">elseif</span> (<span class="dv">CMAKE_SYSTEM_NAME</span> <span class="ot">STREQUAL</span> <span class="st">&quot;Android&quot;</span> <span class="ot">AND</span> <span class="dv">CMAKE_SYSTEM_PROCESSOR</span> <span class="ot">STREQUAL</span> <span class="st">&quot;i686&quot;</span>)</span>
-<span id="cb23-46"><a href="#cb23-46" aria-hidden="true" tabindex="-1"></a>    <span class="kw">set</span>(TARGET_TRIPLE <span class="st">&quot;i686-linux-android&quot;</span>)</span>
-<span id="cb23-47"><a href="#cb23-47" aria-hidden="true" tabindex="-1"></a><span class="kw">elseif</span> (<span class="dv">CMAKE_SYSTEM_NAME</span> <span class="ot">STREQUAL</span> <span class="st">&quot;Android&quot;</span> <span class="ot">AND</span> <span class="dv">CMAKE_SYSTEM_PROCESSOR</span> <span class="ot">STREQUAL</span> <span class="st">&quot;x86_64&quot;</span>)</span>
-<span id="cb23-48"><a href="#cb23-48" aria-hidden="true" tabindex="-1"></a>    <span class="kw">set</span>(TARGET_TRIPLE <span class="st">&quot;x86_64-linux-android&quot;</span>)</span>
-<span id="cb23-49"><a href="#cb23-49" aria-hidden="true" tabindex="-1"></a><span class="kw">else</span>()</span>
-<span id="cb23-50"><a href="#cb23-50" aria-hidden="true" tabindex="-1"></a>    <span class="kw">message</span>(<span class="ot">FATAL_ERROR</span> <span class="st">&quot;Invalid OS/Architecture, not supported: CMAKE_SYSTEM_NAME=</span><span class="dv">${CMAKE_SYSTEM_NAME}</span><span class="st"> CMAKE_SYSTEM_PROCESSOR=</span><span class="dv">${CMAKE_SYSTEM_PROCESSOR}</span><span class="st">&quot;</span>)</span>
-<span id="cb23-51"><a href="#cb23-51" aria-hidden="true" tabindex="-1"></a><span class="kw">endif</span>()</span>
-<span id="cb23-52"><a href="#cb23-52" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb23-53"><a href="#cb23-53" aria-hidden="true" tabindex="-1"></a><span class="kw">message</span>(<span class="ot">STATUS</span> <span class="st">&quot;Target triple: </span><span class="dv">${TARGET_TRIPLE}</span><span class="st">&quot;</span>)</span>
-<span id="cb23-54"><a href="#cb23-54" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb23-55"><a href="#cb23-55" aria-hidden="true" tabindex="-1"></a><span class="co"># If we are cross compiling manually (e.g to Linux arm), `CMAKE_C_COMPILER_TARGET` and `CMAKE_CXX_COMPILER_TARGET` are unset and we need to set them manually.</span></span>
-<span id="cb23-56"><a href="#cb23-56" aria-hidden="true" tabindex="-1"></a><span class="co"># But if we are cross compiling through a separate build system e.g. to Android or iOS, they will set these variables and we should not override them.</span></span>
-<span id="cb23-57"><a href="#cb23-57" aria-hidden="true" tabindex="-1"></a><span class="kw">if</span> ( <span class="ot">NOT</span> <span class="ot">DEFINED</span> <span class="dv">CMAKE_C_COMPILER_TARGET</span> )</span>
-<span id="cb23-58"><a href="#cb23-58" aria-hidden="true" tabindex="-1"></a>   <span class="kw">set</span>(<span class="dv">CMAKE_C_COMPILER_TARGET</span> <span class="dv">${TARGET_TRIPLE}</span>)</span>
-<span id="cb23-59"><a href="#cb23-59" aria-hidden="true" tabindex="-1"></a><span class="kw">endif</span>()</span>
-<span id="cb23-60"><a href="#cb23-60" aria-hidden="true" tabindex="-1"></a><span class="kw">if</span> ( <span class="ot">NOT</span> <span class="ot">DEFINED</span> <span class="dv">CMAKE_CXX_COMPILER_TARGET</span> )</span>
-<span id="cb23-61"><a href="#cb23-61" aria-hidden="true" tabindex="-1"></a>   <span class="kw">set</span>(<span class="dv">CMAKE_CXX_COMPILER_TARGET</span> <span class="dv">${TARGET_TRIPLE}</span>)</span>
-<span id="cb23-62"><a href="#cb23-62" aria-hidden="true" tabindex="-1"></a><span class="kw">endif</span>()</span></code></pre></div>
+<pre><code class="language-cmake"># We need to craft the target triple to make it work when cross-compiling.
+# NOTE: If an architecture supports both soft-float and hard-float, we pick hard-float (`hf`).
+# since we do not target any real hardware with soft-float.
+# Linux has two main libcs, glibc (the default) and musl (opt-in with `FMW_LIBC_MUSL=1`), useful for Alpine.
+if (CMAKE_SYSTEM_NAME STREQUAL &quot;Linux&quot; AND CMAKE_SYSTEM_PROCESSOR STREQUAL &quot;x86_64&quot; AND NOT DEFINED FMW_LIBC_MUSL)
+    set(TARGET_TRIPLE &quot;x86_64-unknown-linux-gnu&quot;)
+elseif (CMAKE_SYSTEM_NAME STREQUAL &quot;Linux&quot; AND CMAKE_SYSTEM_PROCESSOR STREQUAL &quot;x86_64&quot; AND &quot;${FMW_LIBC_MUSL}&quot; EQUAL 1)
+    set(TARGET_TRIPLE &quot;x86_64-unknown-linux-musl&quot;)
+elseif (CMAKE_SYSTEM_NAME STREQUAL &quot;Linux&quot; AND CMAKE_SYSTEM_PROCESSOR STREQUAL &quot;arm&quot; AND NOT DEFINED FMW_LIBC_MUSL)
+    set(TARGET_TRIPLE &quot;arm-unknown-linux-gnueabihf&quot;)
+elseif (CMAKE_SYSTEM_NAME STREQUAL &quot;Linux&quot; AND CMAKE_SYSTEM_PROCESSOR STREQUAL &quot;arm&quot; AND &quot;${FMW_LIBC_MUSL}&quot; EQUAL 1)
+    set(TARGET_TRIPLE &quot;arm-unknown-linux-musleabihf&quot;)
+elseif (CMAKE_SYSTEM_NAME STREQUAL &quot;Linux&quot; AND CMAKE_SYSTEM_PROCESSOR STREQUAL &quot;aarch64&quot; AND NOT DEFINED FMW_LIBC_MUSL)
+    set(TARGET_TRIPLE &quot;aarch64-unknown-linux-gnu&quot;)
+elseif (CMAKE_SYSTEM_NAME STREQUAL &quot;Linux&quot; AND CMAKE_SYSTEM_PROCESSOR STREQUAL &quot;aarch64&quot; AND &quot;${FMW_LIBC_MUSL}&quot; EQUAL 1)
+    set(TARGET_TRIPLE &quot;aarch64-unknown-linux-musl&quot;)
+elseif (CMAKE_SYSTEM_NAME STREQUAL &quot;Linux&quot; AND CMAKE_SYSTEM_PROCESSOR STREQUAL &quot;armv7&quot;)
+    set(TARGET_TRIPLE &quot;armv7-unknown-linux-gnueabihf&quot;)
+elseif (CMAKE_SYSTEM_NAME STREQUAL &quot;Darwin&quot; AND CMAKE_SYSTEM_PROCESSOR STREQUAL &quot;aarch64&quot;)
+    set(TARGET_TRIPLE &quot;aarch64-apple-darwin&quot;)
+elseif (CMAKE_SYSTEM_NAME STREQUAL &quot;Darwin&quot; AND CMAKE_SYSTEM_PROCESSOR STREQUAL &quot;arm64&quot;)
+    set(TARGET_TRIPLE &quot;aarch64-apple-darwin&quot;)
+elseif (CMAKE_SYSTEM_NAME STREQUAL &quot;Darwin&quot; AND CMAKE_SYSTEM_PROCESSOR STREQUAL &quot;x86_64&quot;)
+    set(TARGET_TRIPLE &quot;x86_64-apple-darwin&quot;)
+elseif (CMAKE_SYSTEM_NAME STREQUAL &quot;iOS&quot; AND CMAKE_SYSTEM_PROCESSOR STREQUAL &quot;x86_64&quot;)
+    set(TARGET_TRIPLE &quot;x86_64-apple-ios&quot;)
+    execute_process(COMMAND xcrun --sdk iphonesimulator --show-sdk-path OUTPUT_VARIABLE CMAKE_OSX_SYSROOT)
+    string(REPLACE &quot;\n&quot; &quot;&quot; CMAKE_OSX_SYSROOT ${CMAKE_OSX_SYSROOT})
+elseif (CMAKE_SYSTEM_NAME STREQUAL &quot;iOS&quot; AND CMAKE_SYSTEM_PROCESSOR STREQUAL &quot;aarch64&quot;)
+    set(TARGET_TRIPLE &quot;aarch64-apple-ios&quot;)
+    execute_process(COMMAND xcrun --sdk iphoneos --show-sdk-path OUTPUT_VARIABLE CMAKE_OSX_SYSROOT)
+    string(REPLACE &quot;\n&quot; &quot;&quot; CMAKE_OSX_SYSROOT ${CMAKE_OSX_SYSROOT})
+elseif (CMAKE_SYSTEM_NAME STREQUAL &quot;iOS&quot; AND CMAKE_SYSTEM_PROCESSOR STREQUAL &quot;arm64&quot;)
+    set(TARGET_TRIPLE &quot;aarch64-apple-ios&quot;)
+    execute_process(COMMAND xcrun --sdk iphoneos --show-sdk-path OUTPUT_VARIABLE CMAKE_OSX_SYSROOT)
+    string(REPLACE &quot;\n&quot; &quot;&quot; CMAKE_OSX_SYSROOT ${CMAKE_OSX_SYSROOT})
+elseif (CMAKE_SYSTEM_NAME STREQUAL &quot;Android&quot; AND CMAKE_SYSTEM_PROCESSOR STREQUAL &quot;arm&quot;)
+    set(TARGET_TRIPLE &quot;arm-linux-androideabi&quot;)
+elseif (CMAKE_SYSTEM_NAME STREQUAL &quot;Android&quot; AND CMAKE_SYSTEM_PROCESSOR STREQUAL &quot;armv7&quot;)
+    set(TARGET_TRIPLE &quot;armv7-linux-androideabi&quot;)
+elseif (CMAKE_SYSTEM_NAME STREQUAL &quot;Android&quot; AND CMAKE_SYSTEM_PROCESSOR STREQUAL &quot;armv7-a&quot;)
+    set(TARGET_TRIPLE &quot;armv7-linux-androideabi&quot;)
+elseif (CMAKE_SYSTEM_NAME STREQUAL &quot;Android&quot; AND CMAKE_SYSTEM_PROCESSOR STREQUAL &quot;aarch64&quot;)
+    set(TARGET_TRIPLE &quot;aarch64-linux-android&quot;)
+elseif (CMAKE_SYSTEM_NAME STREQUAL &quot;Android&quot; AND CMAKE_SYSTEM_PROCESSOR STREQUAL &quot;i686&quot;)
+    set(TARGET_TRIPLE &quot;i686-linux-android&quot;)
+elseif (CMAKE_SYSTEM_NAME STREQUAL &quot;Android&quot; AND CMAKE_SYSTEM_PROCESSOR STREQUAL &quot;x86_64&quot;)
+    set(TARGET_TRIPLE &quot;x86_64-linux-android&quot;)
+else()
+    message(FATAL_ERROR &quot;Invalid OS/Architecture, not supported: CMAKE_SYSTEM_NAME=${CMAKE_SYSTEM_NAME} CMAKE_SYSTEM_PROCESSOR=${CMAKE_SYSTEM_PROCESSOR}&quot;)
+endif()
+
+message(STATUS &quot;Target triple: ${TARGET_TRIPLE}&quot;)
+
+# If we are cross compiling manually (e.g to Linux arm), `CMAKE_C_COMPILER_TARGET` and `CMAKE_CXX_COMPILER_TARGET` are unset and we need to set them manually.
+# But if we are cross compiling through a separate build system e.g. to Android or iOS, they will set these variables and we should not override them.
+if ( NOT DEFINED CMAKE_C_COMPILER_TARGET )
+   set(CMAKE_C_COMPILER_TARGET ${TARGET_TRIPLE})
+endif()
+if ( NOT DEFINED CMAKE_CXX_COMPILER_TARGET )
+   set(CMAKE_CXX_COMPILER_TARGET ${TARGET_TRIPLE})
+endif()
+</code></pre>
 <p>There was a lot of trial and error as you can guess.</p>
-<p>Also, gcc is not directly supported for cross-compilation in this
-approach because gcc does not support a <code>--target</code> option
-like clang does, since it’s not a cross-compiler. You have to download
-the variant you need e.g. <code>gcc-9-i686-linux-gnu</code> to compile
-for x86, and set <code>CMAKE_C_COMPILER</code> and
-<code>CMAKE_CXX_COMPILER</code> to <code>gcc-9-i686-linux-gnu</code>.
-However, in that case you are not setting <code>CMAKE_SYSTEM_NAME</code>
-and <code>CMAKE_SYSTEM_PROCESSOR</code> since it’s in theory not
-cross-compiling, so <code>cargo</code> will not have its
-<code>--target</code> option filled, so it won’t work for the Rust code.
-I advise sticking with clang in this setup. Still, when not
-cross-compiling, gcc works fine.</p>
-<p>Finally, I wrote a Lua script to cross-compile for every platform we
-support to make sure I did not break anything. I resorted to using the
-Zig toolchain (not the language) to be able to statically link with musl
-or cross-compile from Linux to iOS which I could not achieve with pure
-clang. However this is only my local setup, we do not use the Zig
-toolchain when building the production artifacts (e.g. the iOS build is
-done in a macOS virtual machine, not from a Linux machine).</p>
-<p>This is very useful also if you have several compile-time feature
-flags and want to build in different configurations for all platforms,
-e.g. enable/disable logs at compile time:</p>
-<div class="sourceCode" id="cb24"><pre
-class="sourceCode lua"><code class="sourceCode lua"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a><span class="kw">local</span> android_sdk <span class="op">=</span> arg<span class="op">[</span><span class="dv">1</span><span class="op">]</span></span>
-<span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> android_sdk <span class="op">==</span> <span class="kw">nil</span> <span class="kw">or</span> android_sdk <span class="op">==</span> <span class="st">&quot;&quot;</span> <span class="cf">then</span></span>
-<span id="cb24-3"><a href="#cb24-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">print</span><span class="op">(</span><span class="st">&quot;Missing Android SDK as argv[1] e.g. &#39;~/Android/Sdk/ndk/21.4.7075529&#39;.&quot;</span><span class="op">)</span></span>
-<span id="cb24-4"><a href="#cb24-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">os.exit</span><span class="op">(</span><span class="dv">1</span><span class="op">)</span></span>
-<span id="cb24-5"><a href="#cb24-5" aria-hidden="true" tabindex="-1"></a><span class="cf">end</span></span>
-<span id="cb24-6"><a href="#cb24-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb24-7"><a href="#cb24-7" aria-hidden="true" tabindex="-1"></a><span class="kw">local</span> build_root <span class="op">=</span> arg<span class="op">[</span><span class="dv">2</span><span class="op">]</span></span>
-<span id="cb24-8"><a href="#cb24-8" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> build_root <span class="op">==</span> <span class="kw">nil</span> <span class="cf">then</span></span>
-<span id="cb24-9"><a href="#cb24-9" aria-hidden="true" tabindex="-1"></a>  build_root <span class="op">=</span> <span class="st">&quot;/tmp/&quot;</span></span>
-<span id="cb24-10"><a href="#cb24-10" aria-hidden="true" tabindex="-1"></a><span class="cf">end</span></span>
-<span id="cb24-11"><a href="#cb24-11" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb24-12"><a href="#cb24-12" aria-hidden="true" tabindex="-1"></a><span class="kw">local</span> rustup_targets <span class="op">=</span> <span class="op">{</span></span>
-<span id="cb24-13"><a href="#cb24-13" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;aarch64-apple-darwin&quot;</span><span class="op">,</span></span>
-<span id="cb24-14"><a href="#cb24-14" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;aarch64-linux-android&quot;</span><span class="op">,</span></span>
-<span id="cb24-15"><a href="#cb24-15" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;aarch64-unknown-linux-gnu&quot;</span><span class="op">,</span></span>
-<span id="cb24-16"><a href="#cb24-16" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;aarch64-unknown-linux-musl&quot;</span><span class="op">,</span></span>
-<span id="cb24-17"><a href="#cb24-17" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;arm-linux-androideabi&quot;</span><span class="op">,</span></span>
-<span id="cb24-18"><a href="#cb24-18" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;arm-unknown-linux-gnueabihf&quot;</span><span class="op">,</span></span>
-<span id="cb24-19"><a href="#cb24-19" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;arm-unknown-linux-musleabihf&quot;</span><span class="op">,</span></span>
-<span id="cb24-20"><a href="#cb24-20" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;armv7-linux-androideabi&quot;</span><span class="op">,</span></span>
-<span id="cb24-21"><a href="#cb24-21" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;armv7-unknown-linux-gnueabi&quot;</span><span class="op">,</span></span>
-<span id="cb24-22"><a href="#cb24-22" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;armv7-unknown-linux-gnueabihf&quot;</span><span class="op">,</span></span>
-<span id="cb24-23"><a href="#cb24-23" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;armv7-unknown-linux-musleabi&quot;</span><span class="op">,</span></span>
-<span id="cb24-24"><a href="#cb24-24" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;armv7-unknown-linux-musleabihf&quot;</span><span class="op">,</span></span>
-<span id="cb24-25"><a href="#cb24-25" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;i686-linux-android&quot;</span><span class="op">,</span></span>
-<span id="cb24-26"><a href="#cb24-26" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;x86_64-apple-darwin&quot;</span><span class="op">,</span></span>
-<span id="cb24-27"><a href="#cb24-27" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;x86_64-linux-android&quot;</span><span class="op">,</span></span>
-<span id="cb24-28"><a href="#cb24-28" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;x86_64-unknown-linux-gnu&quot;</span><span class="op">,</span></span>
-<span id="cb24-29"><a href="#cb24-29" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;x86_64-unknown-linux-musl&quot;</span><span class="op">,</span></span>
-<span id="cb24-30"><a href="#cb24-30" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
-<span id="cb24-31"><a href="#cb24-31" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb24-32"><a href="#cb24-32" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> i <span class="op">=</span> <span class="dv">1</span><span class="op">,#</span>rustup_targets <span class="cf">do</span></span>
-<span id="cb24-33"><a href="#cb24-33" aria-hidden="true" tabindex="-1"></a>  <span class="kw">local</span> target <span class="op">=</span> rustup_targets<span class="op">[</span>i<span class="op">]</span></span>
-<span id="cb24-34"><a href="#cb24-34" aria-hidden="true" tabindex="-1"></a>  <span class="fu">os.execute</span><span class="op">(</span><span class="st">&quot;rustup target install &quot;</span> <span class="op">..</span> target<span class="op">)</span></span>
-<span id="cb24-35"><a href="#cb24-35" aria-hidden="true" tabindex="-1"></a><span class="cf">end</span></span>
-<span id="cb24-36"><a href="#cb24-36" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb24-37"><a href="#cb24-37" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb24-38"><a href="#cb24-38" aria-hidden="true" tabindex="-1"></a><span class="kw">local</span> targets <span class="op">=</span> <span class="op">{</span></span>
-<span id="cb24-39"><a href="#cb24-39" aria-hidden="true" tabindex="-1"></a>  <span class="op">{</span>os<span class="op">=</span><span class="st">&quot;Linux&quot;</span><span class="op">,</span> arch<span class="op">=</span><span class="st">&quot;x86_64&quot;</span><span class="op">,</span> cc<span class="op">=</span><span class="st">&quot;clang&quot;</span><span class="op">,</span> cxx<span class="op">=</span><span class="st">&quot;clang++&quot;</span><span class="op">,</span> cmakeArgs<span class="op">=</span><span class="st">&quot;&quot;</span><span class="op">},</span></span>
-<span id="cb24-40"><a href="#cb24-40" aria-hidden="true" tabindex="-1"></a>  <span class="op">{</span>os<span class="op">=</span><span class="st">&quot;Linux&quot;</span><span class="op">,</span> arch<span class="op">=</span><span class="st">&quot;aarch64&quot;</span><span class="op">,</span> cc<span class="op">=</span><span class="st">&quot;clang&quot;</span><span class="op">,</span> cxx<span class="op">=</span><span class="st">&quot;clang++&quot;</span><span class="op">,</span> cmakeArgs<span class="op">=</span><span class="st">&quot;&quot;</span><span class="op">},</span></span>
-<span id="cb24-41"><a href="#cb24-41" aria-hidden="true" tabindex="-1"></a>  <span class="op">{</span>os<span class="op">=</span><span class="st">&quot;Linux&quot;</span><span class="op">,</span> arch<span class="op">=</span><span class="st">&quot;arm&quot;</span><span class="op">,</span> cc<span class="op">=</span><span class="st">&quot;clang&quot;</span><span class="op">,</span> cxx<span class="op">=</span><span class="st">&quot;clang++&quot;</span><span class="op">,</span> cmakeArgs<span class="op">=</span><span class="st">&quot;&quot;</span><span class="op">},</span></span>
-<span id="cb24-42"><a href="#cb24-42" aria-hidden="true" tabindex="-1"></a>  <span class="op">{</span>os<span class="op">=</span><span class="st">&quot;Linux&quot;</span><span class="op">,</span> arch<span class="op">=</span><span class="st">&quot;armv7&quot;</span><span class="op">,</span> cc<span class="op">=</span><span class="st">&quot;clang&quot;</span><span class="op">,</span> cxx<span class="op">=</span><span class="st">&quot;clang++&quot;</span><span class="op">,</span> cmakeArgs<span class="op">=</span><span class="st">&quot;&quot;</span><span class="op">},</span></span>
-<span id="cb24-43"><a href="#cb24-43" aria-hidden="true" tabindex="-1"></a>  <span class="op">{</span>os<span class="op">=</span><span class="st">&quot;Linux&quot;</span><span class="op">,</span> arch<span class="op">=</span><span class="st">&quot;arm&quot;</span><span class="op">,</span> cc<span class="op">=</span><span class="st">&quot;zig&quot;</span><span class="op">,</span> cxx<span class="op">=</span><span class="st">&quot;zig&quot;</span><span class="op">,</span> cmakeArgs<span class="op">=</span><span class="st">&quot;-DCMAKE_C_COMPILER_ARG1=cc -DCMAKE_CXX_COMPILER_ARG1=c++ -DFMW_LIBC_MUSL=1 -DCMAKE_C_COMPILER_TARGET=arm-linux-musleabihf -DCMAKE_CXX_COMPILER_TARGET=arm-linux-musleabihf&quot;</span><span class="op">},</span></span>
-<span id="cb24-44"><a href="#cb24-44" aria-hidden="true" tabindex="-1"></a>  <span class="op">{</span>os<span class="op">=</span><span class="st">&quot;Linux&quot;</span><span class="op">,</span> arch<span class="op">=</span><span class="st">&quot;aarch64&quot;</span><span class="op">,</span> cc<span class="op">=</span><span class="st">&quot;zig&quot;</span><span class="op">,</span> cxx<span class="op">=</span><span class="st">&quot;zig&quot;</span><span class="op">,</span> cmakeArgs<span class="op">=</span><span class="st">&quot;-DCMAKE_C_COMPILER_ARG1=cc -DCMAKE_CXX_COMPILER_ARG1=c++ -DFMW_LIBC_MUSL=1 -DCMAKE_C_COMPILER_TARGET=aarch64-linux-musl -DCMAKE_CXX_COMPILER_TARGET=aarch64-linux-musl&quot;</span><span class="op">},</span></span>
-<span id="cb24-45"><a href="#cb24-45" aria-hidden="true" tabindex="-1"></a>  <span class="op">{</span>os<span class="op">=</span><span class="st">&quot;Linux&quot;</span><span class="op">,</span> arch<span class="op">=</span><span class="st">&quot;x86_64&quot;</span><span class="op">,</span> cc<span class="op">=</span><span class="st">&quot;zig&quot;</span><span class="op">,</span> cxx<span class="op">=</span><span class="st">&quot;zig&quot;</span><span class="op">,</span> cmakeArgs<span class="op">=</span><span class="st">&quot;-DCMAKE_C_COMPILER_ARG1=cc -DCMAKE_CXX_COMPILER_ARG1=c++ -DFMW_LIBC_MUSL=1 -DCMAKE_C_COMPILER_TARGET=x86_64-linux-musl -DCMAKE_CXX_COMPILER_TARGET=x86_64-linux-musl&quot;</span><span class="op">},</span></span>
-<span id="cb24-46"><a href="#cb24-46" aria-hidden="true" tabindex="-1"></a>  <span class="op">{</span>os<span class="op">=</span><span class="st">&quot;Darwin&quot;</span><span class="op">,</span> arch<span class="op">=</span><span class="st">&quot;x86_64&quot;</span><span class="op">,</span> cc<span class="op">=</span><span class="st">&quot;zig&quot;</span><span class="op">,</span> cxx<span class="op">=</span><span class="st">&quot;zig&quot;</span><span class="op">,</span> cmakeArgs<span class="op">=</span><span class="st">&quot;-DCMAKE_C_COMPILER_ARG1=cc -DCMAKE_CXX_COMPILER_ARG1=c++ -DFMW_LIBC_MUSL=1 -DCMAKE_C_COMPILER_TARGET=x86_64-macos-none -DCMAKE_CXX_COMPILER_TARGET=x86_64-macos-none&quot;</span><span class="op">},</span></span>
-<span id="cb24-47"><a href="#cb24-47" aria-hidden="true" tabindex="-1"></a>  <span class="op">{</span>os<span class="op">=</span><span class="st">&quot;Darwin&quot;</span><span class="op">,</span> arch<span class="op">=</span><span class="st">&quot;arm64&quot;</span><span class="op">,</span> cc<span class="op">=</span><span class="st">&quot;zig&quot;</span><span class="op">,</span> cxx<span class="op">=</span><span class="st">&quot;zig&quot;</span><span class="op">,</span> cmakeArgs<span class="op">=</span><span class="st">&quot;-DCMAKE_C_COMPILER_ARG1=cc -DCMAKE_CXX_COMPILER_ARG1=c++ -DFMW_LIBC_MUSL=1 -DCMAKE_C_COMPILER_TARGET=aarch64-macos-none -DCMAKE_CXX_COMPILER_TARGET=aarch64-macos-none&quot;</span><span class="op">},</span></span>
-<span id="cb24-48"><a href="#cb24-48" aria-hidden="true" tabindex="-1"></a>  <span class="op">{</span>os<span class="op">=</span><span class="st">&quot;Android&quot;</span><span class="op">,</span> arch<span class="op">=</span><span class="st">&quot;armv7-a&quot;</span><span class="op">,</span> cc<span class="op">=</span><span class="st">&quot;clang&quot;</span><span class="op">,</span> cxx<span class="op">=</span><span class="st">&quot;clang++&quot;</span><span class="op">,</span> cmakeArgs<span class="op">=</span><span class="st">&quot;-DCMAKE_ANDROID_NDK=&#39;&quot;</span> <span class="op">..</span> android_sdk <span class="op">..</span> <span class="st">&quot;&#39;&quot;</span><span class="op">},</span></span>
-<span id="cb24-49"><a href="#cb24-49" aria-hidden="true" tabindex="-1"></a>  <span class="op">{</span>os<span class="op">=</span><span class="st">&quot;Android&quot;</span><span class="op">,</span> arch<span class="op">=</span><span class="st">&quot;aarch64&quot;</span><span class="op">,</span> cc<span class="op">=</span><span class="st">&quot;clang&quot;</span><span class="op">,</span> cxx<span class="op">=</span><span class="st">&quot;clang++&quot;</span><span class="op">,</span> cmakeArgs<span class="op">=</span><span class="st">&quot;-DCMAKE_ANDROID_NDK=&#39;&quot;</span> <span class="op">..</span> android_sdk <span class="op">..</span> <span class="st">&quot;&#39;&quot;</span><span class="op">},</span></span>
-<span id="cb24-50"><a href="#cb24-50" aria-hidden="true" tabindex="-1"></a>  <span class="op">{</span>os<span class="op">=</span><span class="st">&quot;Android&quot;</span><span class="op">,</span> arch<span class="op">=</span><span class="st">&quot;i686&quot;</span><span class="op">,</span> cc<span class="op">=</span><span class="st">&quot;clang&quot;</span><span class="op">,</span> cxx<span class="op">=</span><span class="st">&quot;clang++&quot;</span><span class="op">,</span> cmakeArgs<span class="op">=</span><span class="st">&quot;-DCMAKE_ANDROID_NDK=&#39;&quot;</span> <span class="op">..</span> android_sdk <span class="op">..</span> <span class="st">&quot;&#39;&quot;</span><span class="op">},</span></span>
-<span id="cb24-51"><a href="#cb24-51" aria-hidden="true" tabindex="-1"></a>  <span class="op">{</span>os<span class="op">=</span><span class="st">&quot;Android&quot;</span><span class="op">,</span> arch<span class="op">=</span><span class="st">&quot;x86_64&quot;</span><span class="op">,</span> cc<span class="op">=</span><span class="st">&quot;clang&quot;</span><span class="op">,</span> cxx<span class="op">=</span><span class="st">&quot;clang++&quot;</span><span class="op">,</span> cmakeArgs<span class="op">=</span><span class="st">&quot;-DCMAKE_ANDROID_NDK=&#39;&quot;</span> <span class="op">..</span> android_sdk <span class="op">..</span> <span class="st">&quot;&#39;&quot;</span><span class="op">},</span></span>
-<span id="cb24-52"><a href="#cb24-52" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
-<span id="cb24-53"><a href="#cb24-53" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb24-54"><a href="#cb24-54" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> i <span class="op">=</span> <span class="dv">1</span><span class="op">,#</span>targets <span class="cf">do</span></span>
-<span id="cb24-55"><a href="#cb24-55" aria-hidden="true" tabindex="-1"></a>  <span class="kw">local</span> target <span class="op">=</span> targets<span class="op">[</span>i<span class="op">]</span></span>
-<span id="cb24-56"><a href="#cb24-56" aria-hidden="true" tabindex="-1"></a>  <span class="kw">local</span> build_dir <span class="op">=</span> <span class="st">&quot;.build-&quot;</span> <span class="op">..</span> target<span class="op">.</span>os <span class="op">..</span> <span class="st">&quot;-&quot;</span> <span class="op">..</span> target<span class="op">.</span>arch <span class="op">..</span> <span class="st">&quot;-&quot;</span> <span class="op">..</span> target<span class="op">.</span>cc <span class="op">..</span> <span class="st">&quot;-&quot;</span> <span class="op">..</span> target<span class="op">.</span>cxx <span class="op">..</span> <span class="st">&quot;-&quot;</span> <span class="op">..</span> target<span class="op">.</span>cmakeArgs</span>
-<span id="cb24-57"><a href="#cb24-57" aria-hidden="true" tabindex="-1"></a>  build_dir <span class="op">=</span> <span class="fu">string.gsub</span><span class="op">(</span>build_dir<span class="op">,</span> <span class="st">&quot;%s+&quot;</span><span class="op">,</span> <span class="st">&quot;_&quot;</span><span class="op">)</span></span>
-<span id="cb24-58"><a href="#cb24-58" aria-hidden="true" tabindex="-1"></a>  build_dir <span class="op">=</span> <span class="fu">string.gsub</span><span class="op">(</span>build_dir<span class="op">,</span> <span class="st">&quot;^./+&quot;</span><span class="op">,</span> <span class="st">&quot;_&quot;</span><span class="op">)</span></span>
-<span id="cb24-59"><a href="#cb24-59" aria-hidden="true" tabindex="-1"></a>  build_dir <span class="op">=</span> build_root <span class="op">..</span> <span class="st">&quot;/&quot;</span> <span class="op">..</span> build_dir</span>
-<span id="cb24-60"><a href="#cb24-60" aria-hidden="true" tabindex="-1"></a>  <span class="fu">print</span><span class="op">(</span>build_dir<span class="op">)</span></span>
-<span id="cb24-61"><a href="#cb24-61" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb24-62"><a href="#cb24-62" aria-hidden="true" tabindex="-1"></a>  <span class="kw">local</span> cmd_handle <span class="op">=</span> <span class="fu">io.popen</span><span class="op">(</span><span class="st">&quot;command -v llvm-ar&quot;</span><span class="op">)</span></span>
-<span id="cb24-63"><a href="#cb24-63" aria-hidden="true" tabindex="-1"></a>  <span class="kw">local</span> llvm_ar <span class="op">=</span> cmd_handle<span class="op">:</span><span class="fu">read</span><span class="op">(</span><span class="st">&#39;*a&#39;</span><span class="op">)</span></span>
-<span id="cb24-64"><a href="#cb24-64" aria-hidden="true" tabindex="-1"></a>  cmd_handle<span class="op">:</span><span class="fu">close</span><span class="op">()</span></span>
-<span id="cb24-65"><a href="#cb24-65" aria-hidden="true" tabindex="-1"></a>  llvm_ar <span class="op">=</span> <span class="fu">string.gsub</span><span class="op">(</span>llvm_ar<span class="op">,</span> <span class="st">&quot;%s+$&quot;</span><span class="op">,</span> <span class="st">&quot;&quot;</span><span class="op">)</span></span>
-<span id="cb24-66"><a href="#cb24-66" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb24-67"><a href="#cb24-67" aria-hidden="true" tabindex="-1"></a>  <span class="kw">local</span> cmd_handle <span class="op">=</span> <span class="fu">io.popen</span><span class="op">(</span><span class="st">&quot;command -v llvm-ranlib&quot;</span><span class="op">)</span></span>
-<span id="cb24-68"><a href="#cb24-68" aria-hidden="true" tabindex="-1"></a>  <span class="kw">local</span> llvm_ranlib <span class="op">=</span> cmd_handle<span class="op">:</span><span class="fu">read</span><span class="op">(</span><span class="st">&#39;*a&#39;</span><span class="op">)</span></span>
-<span id="cb24-69"><a href="#cb24-69" aria-hidden="true" tabindex="-1"></a>  cmd_handle<span class="op">:</span><span class="fu">close</span><span class="op">()</span></span>
-<span id="cb24-70"><a href="#cb24-70" aria-hidden="true" tabindex="-1"></a>  llvm_ranlib <span class="op">=</span> <span class="fu">string.gsub</span><span class="op">(</span>llvm_ranlib<span class="op">,</span> <span class="st">&quot;%s+$&quot;</span><span class="op">,</span> <span class="st">&quot;&quot;</span><span class="op">)</span></span>
-<span id="cb24-71"><a href="#cb24-71" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb24-72"><a href="#cb24-72" aria-hidden="true" tabindex="-1"></a>  <span class="kw">local</span> build_cmd <span class="op">=</span> <span class="st">&quot;cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo -B &#39;&quot;</span> <span class="op">..</span> build_dir <span class="op">..</span> <span class="st">&quot;&#39; -DCMAKE_AR=&quot;</span> <span class="op">..</span> llvm_ar <span class="op">..</span> <span class="st">&quot; -DCMAKE_RANLIB=&quot;</span> <span class="op">..</span> llvm_ranlib <span class="op">..</span> <span class="st">&quot; -DCMAKE_SYSTEM_NAME=&quot;</span> <span class="op">..</span> target<span class="op">.</span>os <span class="op">..</span> <span class="st">&quot; -DCMAKE_SYSTEM_PROCESSOR=&quot;</span> <span class="op">..</span> target<span class="op">.</span>arch <span class="op">..</span> <span class="st">&quot; -DCMAKE_C_COMPILER=&quot;</span> <span class="op">..</span> target<span class="op">.</span>cc <span class="op">..</span> <span class="st">&quot; -DCMAKE_CXX_COMPILER=&quot;</span> <span class="op">..</span> target<span class="op">.</span>cxx <span class="op">..</span> <span class="st">&quot; &quot;</span> <span class="op">..</span>  target<span class="op">.</span>cmakeArgs <span class="op">..</span> <span class="st">&quot; -S src/. -G Ninja&quot;</span></span>
-<span id="cb24-73"><a href="#cb24-73" aria-hidden="true" tabindex="-1"></a>  <span class="fu">print</span><span class="op">(</span>build_cmd<span class="op">)</span></span>
-<span id="cb24-74"><a href="#cb24-74" aria-hidden="true" tabindex="-1"></a>  <span class="fu">os.execute</span><span class="op">(</span>build_cmd<span class="op">)</span></span>
-<span id="cb24-75"><a href="#cb24-75" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb24-76"><a href="#cb24-76" aria-hidden="true" tabindex="-1"></a>  <span class="co">-- Work-around for getting rid of mbedtls linker flags specific to Apple&#39;s LLVM fork that are actually not needed.</span></span>
-<span id="cb24-77"><a href="#cb24-77" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> target<span class="op">.</span>os <span class="op">==</span> <span class="st">&quot;Darwin&quot;</span> <span class="cf">then</span></span>
-<span id="cb24-78"><a href="#cb24-78" aria-hidden="true" tabindex="-1"></a>    <span class="fu">os.execute</span><span class="op">(</span><span class="st">&quot;sed -i &#39;&quot;</span> <span class="op">..</span> build_dir <span class="op">..</span> <span class="st">&quot;/CMakeFiles/rules.ninja&#39; -e &#39;s/ -no_warning_for_no_symbols -c//g&#39;&quot;</span><span class="op">)</span></span>
-<span id="cb24-79"><a href="#cb24-79" aria-hidden="true" tabindex="-1"></a>  <span class="cf">end</span></span>
-<span id="cb24-80"><a href="#cb24-80" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb24-81"><a href="#cb24-81" aria-hidden="true" tabindex="-1"></a>  <span class="fu">os.execute</span><span class="op">(</span><span class="st">&quot;ninja -C &#39;&quot;</span> <span class="op">..</span> build_dir <span class="op">..</span> <span class="st">&quot;&#39;&quot;</span><span class="op">)</span></span>
-<span id="cb24-82"><a href="#cb24-82" aria-hidden="true" tabindex="-1"></a><span class="cf">end</span></span></code></pre></div>
-<p>I look forward to only having Rust code and deleting all of this
-convoluted stuff.</p>
-<p>That’s something that people do not mention often when saying that
-modern C++ is good enough and secure enough. Well, first I disagree with
-this statement, but more broadly, the C++ toolchain to cross-compile
-sucks. You only have clang that can cross-compile in theory but in
-practice you have to resort to the Zig toolchain to automate
-cross-compiling the standard library etc.</p>
-<p>Also, developers not deeply familiar with either C or C++ do not want
-to touch all this CMake/Autotools with a ten-foot pole. And I understand
-them. Stockholm syndrome notwithstanding, these are pretty slow,
-convoluted, niche programming languages and no one wants to actively
-learn and use them unless they have to.</p>
-<p>Once you are used to simply typing <code>go build</code> or
-<code>cargo build</code>, you really start to ask yourself if those
-weird things are worth anyone’s time.</p>
-<h2 id="conclusion">Conclusion</h2>
-<p>The rewrite is not yet fully done, but we have already more Rust code
-than C++ code, and it’s moving along nicely, at our own pace (it’s not
-by far the only project we have on our lap). Once all C++ code is
-removed, we will do a final pass to remove the CMake stuff and build
-directly via <code>cargo</code>. We’ll see if that works when
-integrating with other build systems e.g. Bazel for Android or Xcode for
-iOS.</p>
-<p>Developers who learned Rust are overall very happy with it and did
-not have too many fights with the borrow checker, with one notable
-exception of trying to migrate a C struct that used an intrusive linked
-list (ah, the dreaded linked list v. borrow checker!). My suggestion was
-to simply use a <code>Vec</code> in Rust since the linked list was not
-really justified here, and the problem was solved.</p>
-<p>Adding unit tests was trivial in Rust compared to C++ and as a result
-people would write a lot more of them. Built-in support for tests is
-expected in 2024 by developers. I don’t think one single C++ test was
-written during this rewrite, now that I think of it.</p>
-<p>Everyone was really satisfied with the tooling, even though having to
-first do <code>rustup target add ...</code> before cross-compiling
-tripped up a few people, since in Go that’s done automatically behind
-the scenes (I think one difference is that Go compiles everything from
-source and so does not need to download pre-compiled blobs?).</p>
-<p>Everyone also had an easy time with their text editor/IDE, Rust is
-ubiquitous enough now that every editor will have support for it.</p>
-<p>All the tooling we needed to scan dependencies for vulnerabilities,
-linting, etc was present and polished. Shootout to
-<code>osv-scanner</code> from Google, which allowed us to scan both the
-Rust and C++ dependencies in the same project (and it evens supports
-Go).</p>
-<p>As expected, developers migrating C++ code to Rust code had a breeze
-with the Rust code and almost every time asked for assistance when
-dealing with the C++ code. C++ is just too complex a language for most
-developers, especially compared to its alternatives.</p>
-<p>CMake/Make/Ninja proved surprisingly difficult for developers not
-accustomed to them, but I mentioned that already. I think half of my
-time during this rewrite was actually spent coercing all the various
-build systems (Bazel/Xcode/CMake/cargo/Go) on the various platforms into
-working well together. If there is no one in the team who’s really
-familiar with build systems, I think this is going to be a real
-challenge.</p>
-<p>So, I hope this article alleviated your concerns about rewriting your
-C++ codebase. It can absolutely be done, just pick the right programming
-language for you and your context, do it incrementally, don’t
-overpromise, establish a rough roadmap with milestones, regularly show
-progress to stakeholders (even if it’s just you, it helps staying
-motivated!), and make sure the team is on-board and enjoying the
-process.</p>
+<p>Also, gcc is not directly supported for cross-compilation in this approach because gcc does not support a <code>--target</code> option like clang does, since it's not a cross-compiler. You have to download the variant you need e.g. <code>gcc-9-i686-linux-gnu</code> to compile for x86, and set <code>CMAKE_C_COMPILER</code> and <code>CMAKE_CXX_COMPILER</code> to <code>gcc-9-i686-linux-gnu</code>. However, in that case you are not setting <code>CMAKE_SYSTEM_NAME</code> and <code>CMAKE_SYSTEM_PROCESSOR</code> since it's in theory not cross-compiling, so <code>cargo</code> will not have its <code>--target</code> option filled, so it won't work for the Rust code. I advise sticking with clang in this setup. Still, when not cross-compiling, gcc works fine.</p>
+<p>Finally, I wrote a Lua script to cross-compile for every platform we support to make sure I did not break anything. I resorted to using the Zig toolchain (not the language) to be able to statically link with musl or cross-compile from Linux to iOS which I could not achieve with pure clang. However this is only my local setup, we do not use the Zig toolchain when building the production artifacts (e.g. the iOS build is done in a macOS virtual machine, not from a Linux machine).</p>
+<p>This is very useful also if you have several compile-time feature flags and want to build in different configurations for all platforms, e.g. enable/disable logs at compile time:</p>
+<pre><code class="language-lua">local android_sdk = arg[1]
+if android_sdk == nil or android_sdk == &quot;&quot; then
+  print(&quot;Missing Android SDK as argv[1] e.g. '~/Android/Sdk/ndk/21.4.7075529'.&quot;)
+  os.exit(1)
+end
+
+local build_root = arg[2]
+if build_root == nil then
+  build_root = &quot;/tmp/&quot;
+end
+
+local rustup_targets = {
+  &quot;aarch64-apple-darwin&quot;,
+  &quot;aarch64-linux-android&quot;,
+  &quot;aarch64-unknown-linux-gnu&quot;,
+  &quot;aarch64-unknown-linux-musl&quot;,
+  &quot;arm-linux-androideabi&quot;,
+  &quot;arm-unknown-linux-gnueabihf&quot;,
+  &quot;arm-unknown-linux-musleabihf&quot;,
+  &quot;armv7-linux-androideabi&quot;,
+  &quot;armv7-unknown-linux-gnueabi&quot;,
+  &quot;armv7-unknown-linux-gnueabihf&quot;,
+  &quot;armv7-unknown-linux-musleabi&quot;,
+  &quot;armv7-unknown-linux-musleabihf&quot;,
+  &quot;i686-linux-android&quot;,
+  &quot;x86_64-apple-darwin&quot;,
+  &quot;x86_64-linux-android&quot;,
+  &quot;x86_64-unknown-linux-gnu&quot;,
+  &quot;x86_64-unknown-linux-musl&quot;,
+}
+
+for i = 1,#rustup_targets do
+  local target = rustup_targets[i]
+  os.execute(&quot;rustup target install &quot; .. target)
+end
+
+
+local targets = {
+  {os=&quot;Linux&quot;, arch=&quot;x86_64&quot;, cc=&quot;clang&quot;, cxx=&quot;clang++&quot;, cmakeArgs=&quot;&quot;},
+  {os=&quot;Linux&quot;, arch=&quot;aarch64&quot;, cc=&quot;clang&quot;, cxx=&quot;clang++&quot;, cmakeArgs=&quot;&quot;},
+  {os=&quot;Linux&quot;, arch=&quot;arm&quot;, cc=&quot;clang&quot;, cxx=&quot;clang++&quot;, cmakeArgs=&quot;&quot;},
+  {os=&quot;Linux&quot;, arch=&quot;armv7&quot;, cc=&quot;clang&quot;, cxx=&quot;clang++&quot;, cmakeArgs=&quot;&quot;},
+  {os=&quot;Linux&quot;, arch=&quot;arm&quot;, cc=&quot;zig&quot;, cxx=&quot;zig&quot;, cmakeArgs=&quot;-DCMAKE_C_COMPILER_ARG1=cc -DCMAKE_CXX_COMPILER_ARG1=c++ -DFMW_LIBC_MUSL=1 -DCMAKE_C_COMPILER_TARGET=arm-linux-musleabihf -DCMAKE_CXX_COMPILER_TARGET=arm-linux-musleabihf&quot;},
+  {os=&quot;Linux&quot;, arch=&quot;aarch64&quot;, cc=&quot;zig&quot;, cxx=&quot;zig&quot;, cmakeArgs=&quot;-DCMAKE_C_COMPILER_ARG1=cc -DCMAKE_CXX_COMPILER_ARG1=c++ -DFMW_LIBC_MUSL=1 -DCMAKE_C_COMPILER_TARGET=aarch64-linux-musl -DCMAKE_CXX_COMPILER_TARGET=aarch64-linux-musl&quot;},
+  {os=&quot;Linux&quot;, arch=&quot;x86_64&quot;, cc=&quot;zig&quot;, cxx=&quot;zig&quot;, cmakeArgs=&quot;-DCMAKE_C_COMPILER_ARG1=cc -DCMAKE_CXX_COMPILER_ARG1=c++ -DFMW_LIBC_MUSL=1 -DCMAKE_C_COMPILER_TARGET=x86_64-linux-musl -DCMAKE_CXX_COMPILER_TARGET=x86_64-linux-musl&quot;},
+  {os=&quot;Darwin&quot;, arch=&quot;x86_64&quot;, cc=&quot;zig&quot;, cxx=&quot;zig&quot;, cmakeArgs=&quot;-DCMAKE_C_COMPILER_ARG1=cc -DCMAKE_CXX_COMPILER_ARG1=c++ -DFMW_LIBC_MUSL=1 -DCMAKE_C_COMPILER_TARGET=x86_64-macos-none -DCMAKE_CXX_COMPILER_TARGET=x86_64-macos-none&quot;},
+  {os=&quot;Darwin&quot;, arch=&quot;arm64&quot;, cc=&quot;zig&quot;, cxx=&quot;zig&quot;, cmakeArgs=&quot;-DCMAKE_C_COMPILER_ARG1=cc -DCMAKE_CXX_COMPILER_ARG1=c++ -DFMW_LIBC_MUSL=1 -DCMAKE_C_COMPILER_TARGET=aarch64-macos-none -DCMAKE_CXX_COMPILER_TARGET=aarch64-macos-none&quot;},
+  {os=&quot;Android&quot;, arch=&quot;armv7-a&quot;, cc=&quot;clang&quot;, cxx=&quot;clang++&quot;, cmakeArgs=&quot;-DCMAKE_ANDROID_NDK='&quot; .. android_sdk .. &quot;'&quot;},
+  {os=&quot;Android&quot;, arch=&quot;aarch64&quot;, cc=&quot;clang&quot;, cxx=&quot;clang++&quot;, cmakeArgs=&quot;-DCMAKE_ANDROID_NDK='&quot; .. android_sdk .. &quot;'&quot;},
+  {os=&quot;Android&quot;, arch=&quot;i686&quot;, cc=&quot;clang&quot;, cxx=&quot;clang++&quot;, cmakeArgs=&quot;-DCMAKE_ANDROID_NDK='&quot; .. android_sdk .. &quot;'&quot;},
+  {os=&quot;Android&quot;, arch=&quot;x86_64&quot;, cc=&quot;clang&quot;, cxx=&quot;clang++&quot;, cmakeArgs=&quot;-DCMAKE_ANDROID_NDK='&quot; .. android_sdk .. &quot;'&quot;},
+}
+
+for i = 1,#targets do
+  local target = targets[i]
+  local build_dir = &quot;.build-&quot; .. target.os .. &quot;-&quot; .. target.arch .. &quot;-&quot; .. target.cc .. &quot;-&quot; .. target.cxx .. &quot;-&quot; .. target.cmakeArgs
+  build_dir = string.gsub(build_dir, &quot;%s+&quot;, &quot;_&quot;)
+  build_dir = string.gsub(build_dir, &quot;^./+&quot;, &quot;_&quot;)
+  build_dir = build_root .. &quot;/&quot; .. build_dir
+  print(build_dir)
+
+  local cmd_handle = io.popen(&quot;command -v llvm-ar&quot;)
+  local llvm_ar = cmd_handle:read('*a')
+  cmd_handle:close()
+  llvm_ar = string.gsub(llvm_ar, &quot;%s+$&quot;, &quot;&quot;)
+
+  local cmd_handle = io.popen(&quot;command -v llvm-ranlib&quot;)
+  local llvm_ranlib = cmd_handle:read('*a')
+  cmd_handle:close()
+  llvm_ranlib = string.gsub(llvm_ranlib, &quot;%s+$&quot;, &quot;&quot;)
+
+  local build_cmd = &quot;cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo -B '&quot; .. build_dir .. &quot;' -DCMAKE_AR=&quot; .. llvm_ar .. &quot; -DCMAKE_RANLIB=&quot; .. llvm_ranlib .. &quot; -DCMAKE_SYSTEM_NAME=&quot; .. target.os .. &quot; -DCMAKE_SYSTEM_PROCESSOR=&quot; .. target.arch .. &quot; -DCMAKE_C_COMPILER=&quot; .. target.cc .. &quot; -DCMAKE_CXX_COMPILER=&quot; .. target.cxx .. &quot; &quot; ..  target.cmakeArgs .. &quot; -S src/. -G Ninja&quot;
+  print(build_cmd)
+  os.execute(build_cmd)
+
+  -- Work-around for getting rid of mbedtls linker flags specific to Apple's LLVM fork that are actually not needed.
+  if target.os == &quot;Darwin&quot; then
+    os.execute(&quot;sed -i '&quot; .. build_dir .. &quot;/CMakeFiles/rules.ninja' -e 's/ -no_warning_for_no_symbols -c//g'&quot;)
+  end
+
+  os.execute(&quot;ninja -C '&quot; .. build_dir .. &quot;'&quot;)
+end
+
+</code></pre>
+<p>I look forward to only having Rust code and deleting all of this convoluted stuff.</p>
+<p>That's something that people do not mention often when saying that modern C++ is good enough and secure enough. Well, first I disagree with this statement, but more broadly, the C++ toolchain to cross-compile sucks. You only have clang that can cross-compile in theory but in practice you have to resort to the Zig toolchain to automate cross-compiling the standard library etc.</p>
+<p>Also, developers not deeply familiar with either C or C++ do not want to touch all this CMake/Autotools with a ten-foot pole. And I understand them. Stockholm syndrome notwithstanding, these are pretty slow, convoluted, niche programming languages and no one wants to actively learn and use them unless they have to.</p>
+<p>Once you are used to simply typing <code>go build</code> or <code>cargo build</code>, you really start to ask yourself if those weird things are worth anyone's time.</p>
+<h2>Conclusion</h2>
+<p>The rewrite is not yet fully done, but we have already more Rust code than C++ code, and it's moving along nicely, at our own pace (it's not by far the only project we have on our lap). Once all C++ code is removed, we will do a final pass to remove the CMake stuff and build directly via <code>cargo</code>. We'll see if that works when integrating with other build systems e.g. Bazel for Android or Xcode for iOS.</p>
+<p>Developers who learned Rust are overall very happy with it and did not have too many fights with the borrow checker, with one notable exception of trying to migrate a C struct that used an intrusive linked list (ah, the dreaded linked list v. borrow checker!). My suggestion was to simply use a <code>Vec</code> in Rust since the linked list was not really justified here, and the problem was solved.</p>
+<p>Adding unit tests was trivial in Rust compared to C++ and as a result people would write a lot more of them. Built-in support for tests is expected in 2024 by developers. I don't think one single C++ test was written during this rewrite, now that I think of it.</p>
+<p>Everyone was really satisfied with the tooling, even though having to first do <code>rustup target add ...</code> before cross-compiling tripped up a few people, since in Go that's done automatically behind the scenes (I think one difference is that Go compiles everything from source and so does not need to download pre-compiled blobs?).</p>
+<p>Everyone also had an easy time with their text editor/IDE, Rust is ubiquitous enough now that every editor will have support for it.</p>
+<p>All the tooling we needed to scan dependencies for vulnerabilities, linting, etc was present and polished. Shootout to <code>osv-scanner</code> from Google, which allowed us to scan both the Rust and C++ dependencies in the same project (and it evens supports Go).</p>
+<p>As expected, developers migrating C++ code to Rust code had a breeze with the Rust code and almost every time asked for assistance when dealing with the C++ code. C++ is just too complex a language for most developers, especially compared to its alternatives.</p>
+<p>CMake/Make/Ninja proved surprisingly difficult for developers not accustomed to them, but I mentioned that already. I think half of my time during this rewrite was actually spent coercing all the various build systems (Bazel/Xcode/CMake/cargo/Go) on the various platforms into working well together. If there is no one in the team who's really familiar with build systems, I think this is going to be a real challenge.</p>
+<p>So, I hope this article alleviated your concerns about rewriting your C++ codebase. It can absolutely be done, just pick the right programming language for you and your context, do it incrementally, don't overpromise, establish a rough roadmap with milestones, regularly show progress to stakeholders (even if it's just you, it helps staying motivated!), and make sure the team is on-board and enjoying the process.</p>
 <p>You know, like any other software project, really!</p>
 
 <blockquote id="donate">

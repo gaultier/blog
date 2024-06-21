@@ -69,7 +69,7 @@ fn generate_article(markdown_file_path: []const u8, header: []const u8, footer: 
     {
         const converter_cmd = try std.process.Child.run(.{
             .allocator = allocator,
-            .argv = &[_][]const u8{ "pandoc", "--toc", markdown_file_path },
+            .argv = &[_][]const u8{ "cmark", "--unsafe", "-t", "html", markdown_file_path },
             .max_output_bytes = 1 * 1024 * 1024,
         });
         defer allocator.free(converter_cmd.stdout);

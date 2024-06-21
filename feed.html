@@ -38,59 +38,25 @@ window.addEventListener("load", (event) => {
 <div class="body">
 
 <p id="publication_date">Published on 2023-12-15.</p>
-<h1
-id="this-blog-now-has-an-atom-feed-and-yours-should-probably-too">This
-blog now has an Atom feed, and yours should probably too</h1>
-<p><em>Find it <a
-href="https://gaultier.github.io/blog/feed.xml">here</a> or in the
-header on the top right-hand corner.</em></p>
-<p>Imagine a world where you can see the content of each website you
-like inside the app of your choosing, read the articles offline and save
-them on disk for later, be notified whenever the website has something
-new, and all of which is implemented with an open standard. Well that
-was most of the web some years ago and this blog now does all of
-that.</p>
-<figure>
-<img src="feed.png"
-alt="This feed inside the open-source app NewsFlash (https://flathub.org/apps/io.gitlab.news_flash.NewsFlash)" />
-<figcaption aria-hidden="true">This feed inside the open-source app
-NewsFlash
-(https://flathub.org/apps/io.gitlab.news_flash.NewsFlash)</figcaption>
-</figure>
-<p>And it’s not hard! The only thing we need is to serve a
-<code>feed.xml</code> file that lists articles with some metadata such
-as ‘updated at’ and a UUID to be able to uniquely identify an article.
-This XML file is an <a
-href="https://en.wikipedia.org/wiki/Atom_(web_standard)">Atom feed</a>
-which has a nice <a
-href="https://datatracker.ietf.org/doc/html/rfc4287">RFC</a>.</p>
-<p>I implemented that in under an hour, skimming at the RFC and
-examples. It’s a bit hacky but it works. The script to do so is <a
-href="https://github.com/gaultier/blog/blob/master/feed.go">here</a>.
-And you can do too! Again, it’s not hard. Here goes:</p>
+<h1>This blog now has an Atom feed, and yours should probably too</h1>
+<p><em>Find it <a href="https://gaultier.github.io/blog/feed.xml">here</a> or in the header on the top right-hand corner.</em></p>
+<p>Imagine a world where you can see the content of each website you like inside the app of your choosing, read the articles offline and save them on disk for later, be notified whenever the website has something new, and all of which is implemented with an open standard. Well that was most of the web some years ago and this blog now does all of that.</p>
+<p><img src="feed.png" alt="This feed inside the open-source app NewsFlash (https://flathub.org/apps/io.gitlab.news_flash.NewsFlash)" /></p>
+<p>And it's not hard! The only thing we need is to serve a <code>feed.xml</code> file that lists articles with some metadata such as 'updated at' and a UUID to be able to uniquely identify an article. This XML file is an <a href="https://en.wikipedia.org/wiki/Atom_(web_standard)">Atom feed</a> which has a nice <a href="https://datatracker.ietf.org/doc/html/rfc4287">RFC</a>.</p>
+<p>I implemented that in under an hour, skimming at the RFC and examples. It's a bit hacky but it works. The script to do so is <a href="https://github.com/gaultier/blog/blob/master/feed.go">here</a>. And you can do too! Again, it's not hard. Here goes:</p>
 <ul>
-<li>We pick a UUID for our feed. I just generated one and stuck it as a
-constant in the script.</li>
-<li>The ‘updated at’ field for the feed is just <code>time.Now()</code>.
-It’s not exactly accurate, it should probably be the most recent
-<code>mtime</code> across articles but it’s good enough.</li>
-<li>For each article (<code>*.html</code>) file in the directory, we add
-an entry (<code>&lt;entry&gt;</code>) in the XML document with:
+<li>We pick a UUID for our feed. I just generated one and stuck it as a constant in the script.</li>
+<li>The 'updated at' field for the feed is just <code>time.Now()</code>. It's not exactly accurate, it should probably be the most recent <code>mtime</code> across articles but it's good enough.</li>
+<li>For each article (<code>*.html</code>) file in the directory, we add an entry (<code>&lt;entry&gt;</code>) in the XML document with:
 <ul>
-<li>The link to the article, that’s just the filename in my case.</li>
-<li>The ‘updated at’ field, which is <s>just the <code>mtime</code> of
-the file locally</s> queried from git</li>
-<li>The ‘published at’ field, which is <s>just the <code>ctime</code> of
-the file locally</s> queried from git</li>
-<li>A UUID. Here I went with UUIDv5 which is simply the sha1 of the file
-name in the UUID format. It’s nifty because it means that the script is
-stateless and idempotent. If the article is later updated, the UUID
-remains the same (but the <code>updated at</code> will still hint at the
-update).</li>
-</ul></li>
+<li>The link to the article, that's just the filename in my case.</li>
+<li>The 'updated at' field, which is <s>just the <code>mtime</code> of the file locally</s> queried from git</li>
+<li>The 'published at' field, which is <s>just the <code>ctime</code> of the file locally</s> queried from git</li>
+<li>A UUID. Here I went with UUIDv5 which is simply the sha1 of the file name in the UUID format. It's nifty because it means that the script is stateless and idempotent. If the article is later updated, the UUID remains the same (but the <code>updated at</code> will still hint at the update).</li>
 </ul>
-<p>And…that’s it really. Enjoy reading these articles in your favorite
-app!</p>
+</li>
+</ul>
+<p>And...that's it really. Enjoy reading these articles in your favorite app!</p>
 
 <blockquote id="donate">
   <p>If you liked this article and you want to support me, and can afford it: <a href="https://paypal.me/philigaultier?country.x=DE&locale.x=en_US">Donate</a></p>
