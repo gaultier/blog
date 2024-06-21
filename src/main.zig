@@ -4,6 +4,7 @@ pub const std_options = .{
     .log_level = .info,
 };
 
+const base_url = "https://gaultier.github.io/blog";
 const feed_uuid_str = "9c065c53-31bc-4049-a795-936802a6b1df";
 const feed_uuid_raw = [16]u8{ 0x9c, 0x06, 0x5c, 0x53, 0x31, 0xbc, 0x40, 0x49, 0xa7, 0x95, 0x93, 0x68, 0x02, 0xa6, 0xb1, 0xdf };
 const html_prelude = "<!DOCTYPE html>\n<html>\n<head>\n<title>{s}</title>\n";
@@ -20,7 +21,12 @@ const Article = struct {
     }
 };
 
-fn do_generate_article(markdown_file_path: []const u8, header: []const u8, footer: []const u8, wait_group: *std.Thread.WaitGroup, allocator: std.mem.Allocator) void {
+fn articleLess(ctx: void, a: Article, b: Article) bool {
+    _ = ctx;
+    return std.mem.lessThan(u8, &a.dates.creation_date, &b.dates.creation_date);
+}
+
+fn do_generate_article(markdown_file_path: []const u8, header: []const u8, footer: []const u8, wait_group: *std.Thread.WaitGroup, articles: *std.ArrayList(Article), articles_mtx: *std.Thread.Mutex, allocator: std.mem.Allocator) void {
     defer wait_group.finish();
 
     const article = generate_article(markdown_file_path, header, footer, allocator) catch |err| {
@@ -28,7 +34,11 @@ fn do_generate_article(markdown_file_path: []const u8, header: []const u8, foote
         return;
     };
 
-    _ = article;
+    articles_mtx.lock();
+    articles.append(article) catch {
+        @panic("oom");
+    };
+    articles_mtx.unlock();
 }
 
 const Dates = struct {
@@ -93,7 +103,6 @@ fn sha1_uuid(space_uuid: [16]u8, data: []const u8) [36]u8 {
 }
 
 fn generate_rss_feed_entry_for_article(writer: anytype, article: Article) !void {
-    const base_url = "https://gaultier.github.io/blog";
     const template =
         \\<entry>
         \\  <title>{s}</title>
@@ -102,6 +111,7 @@ fn generate_rss_feed_entry_for_article(writer: anytype, article: Article) !void 
         \\  <updated>{s}</updated>
         \\  <published>{s}</published>
         \\</entry>
+        \\
     ;
     const uuid = sha1_uuid(feed_uuid_raw, article.output_file_name);
 
@@ -181,12 +191,37 @@ fn generate_article(markdown_file_path: []const u8, header: []const u8, footer: 
     return article;
 }
 
-fn generate_rss_feed(allocator: std.mem.Allocator) !void {
-    _ = allocator;
-    // const feed_file = try std.fs.cwd().createFile("feed.xml", .{});
-    // defer feed_file.close();
+fn generate_rss_feed(articles: []Article) !void {
+    const feed_file = try std.fs.cwd().createFile("feed.xml", .{});
+    defer feed_file.close();
 
-    // var buffered_writer = std.io.bufferedWriter(feed_file.writer());
+    var buffered_writer = std.io.bufferedWriter(feed_file.writer());
+
+    std.mem.sort(Article, articles, {}, articleLess);
+
+    const template_prelude =
+        \\<?xml version="1.0" encoding="utf-8"?>
+        \\  <feed xmlns="http://www.w3.org/2005/Atom">
+        \\    <title>Philippe Gaultier's blog</title>
+        \\    <link href="{s}"/>
+        \\    <updated>{s}</updated>
+        \\    <author>
+        \\      <name>Philippe Gaultier</name>
+        \\    </author>
+        \\    <id>urn:uuid:{s}</id>
+        \\
+    ;
+    try std.fmt.format(buffered_writer.writer(), template_prelude, .{
+        base_url,
+        articles[articles.len - 1].dates.modification_date,
+        feed_uuid_str,
+    });
+
+    for (articles) |article| {
+        try generate_rss_feed_entry_for_article(buffered_writer.writer(), article);
+    }
+
+    try buffered_writer.writer().writeAll("</feed>");
 }
 
 fn generate_toc_for_article(markdown_file_path: []const u8, allocator: std.mem.Allocator) ![]u8 {
@@ -251,13 +286,16 @@ fn generate_toc_for_article(markdown_file_path: []const u8, allocator: std.mem.A
     return toc.toOwnedSlice();
 }
 
-fn generate_all_articles_in_dir(header: []const u8, footer: []const u8, allocator: std.mem.Allocator) !void {
+fn generate_all_articles_in_dir(header: []const u8, footer: []const u8, allocator: std.mem.Allocator) ![]Article {
     const cwd = try std.fs.cwd().openDir(".", .{ .iterate = true });
     var cwd_iterator = cwd.iterate();
 
     var pool: std.Thread.Pool = undefined;
     try std.Thread.Pool.init(&pool, .{ .allocator = allocator });
     var wait_group = std.Thread.WaitGroup{};
+
+    var articles = std.ArrayList(Article).init(allocator);
+    var articles_mtx = std.Thread.Mutex{};
 
     while (cwd_iterator.next()) |entry_opt| {
         if (entry_opt) |entry| {
@@ -273,6 +311,8 @@ fn generate_all_articles_in_dir(header: []const u8, footer: []const u8, allocato
                 header,
                 footer,
                 &wait_group,
+                &articles,
+                &articles_mtx,
                 allocator,
             });
         } else break; // End of directory.
@@ -281,6 +321,8 @@ fn generate_all_articles_in_dir(header: []const u8, footer: []const u8, allocato
     }
 
     wait_group.wait();
+
+    return articles.toOwnedSlice();
 }
 
 pub fn main() !void {
@@ -303,7 +345,8 @@ pub fn main() !void {
     const footer = try footer_file.readToEndAlloc(allocator, 2048);
 
     if (std.mem.eql(u8, cmd, "gen_all")) {
-        try generate_all_articles_in_dir(header, footer, allocator);
+        const articles = try generate_all_articles_in_dir(header, footer, allocator);
+        try generate_rss_feed(articles);
     } else if (std.mem.eql(u8, cmd, "gen")) {
         const file = args_iterator.next() orelse {
             std.log.err("missing second argument", .{});
