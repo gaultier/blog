@@ -4,6 +4,8 @@ pub const std_options = .{
     .log_level = .info,
 };
 
+const feed_uuid_str = "9c065c53-31bc-4049-a795-936802a6b1df";
+const feed_uuid_raw = [16]u8{ 0x9c, 0x06, 0x5c, 0x53, 0x31, 0xbc, 0x40, 0x49, 0xa7, 0x95, 0x93, 0x68, 0x02, 0xa6, 0xb1, 0xdf };
 const html_prelude = "<!DOCTYPE html>\n<html>\n<head>\n<title>{s}</title>\n";
 
 const Article = struct {
@@ -60,6 +62,36 @@ fn get_creation_and_modification_date_for_article(markdown_file_path: []const u8
     };
 }
 
+fn sha1_uuid(space_uuid: [16]u8, data: []const u8) [36]u8 {
+    var sha1 = std.crypto.hash.Sha1.init(.{});
+    sha1.update(&space_uuid);
+    sha1.update(data);
+
+    var uuid = sha1.finalResult();
+
+    uuid[6] = (uuid[6] & 0x0f) | 80;
+    uuid[8] = (uuid[8] & 0x3f) | 0x80;
+
+    var res = [_]u8{0} ** 36;
+
+    const hex1 = std.fmt.bytesToHex(uuid[0..4], .lower);
+    std.mem.copyForwards(u8, res[0..8], &hex1);
+    res[8] = '-';
+    const hex2 = std.fmt.bytesToHex(uuid[4..6], .lower);
+    std.mem.copyForwards(u8, res[9..13], &hex2);
+    res[13] = '-';
+    const hex3 = std.fmt.bytesToHex(uuid[6..8], .lower);
+    std.mem.copyForwards(u8, res[14..18], &hex3);
+    res[18] = '-';
+    const hex4 = std.fmt.bytesToHex(uuid[8..10], .lower);
+    std.mem.copyForwards(u8, res[19..23], &hex4);
+    res[23] = '-';
+    const hex5 = std.fmt.bytesToHex(uuid[10..16], .lower);
+    std.mem.copyForwards(u8, res[24..], &hex5);
+
+    return res;
+}
+
 fn generate_rss_feed_entry_for_article(writer: anytype, article: Article) !void {
     const base_url = "https://gaultier.github.io/blog";
     const template =
@@ -71,7 +103,7 @@ fn generate_rss_feed_entry_for_article(writer: anytype, article: Article) !void 
         \\  <published>{s}</published>
         \\</entry>
     ;
-    const uuid = "FIXME";
+    const uuid = sha1_uuid(feed_uuid_raw, article.output_file_name);
 
     try std.fmt.format(writer, template, .{
         article.title,
@@ -151,7 +183,6 @@ fn generate_article(markdown_file_path: []const u8, header: []const u8, footer: 
 
 fn generate_rss_feed(allocator: std.mem.Allocator) !void {
     _ = allocator;
-    // const feed_uuid = "9c065c53-31bc-4049-a795-936802a6b1df";
     // const feed_file = try std.fs.cwd().createFile("feed.xml", .{});
     // defer feed_file.close();
 
