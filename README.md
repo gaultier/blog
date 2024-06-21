@@ -4,7 +4,7 @@ https://gaultier.github.io/blog/
 ## Quickstart
 
 ```
-apt install parallel graphviz golang pandoc
+apt install graphviz golang pandoc zig
 make
 ```
 

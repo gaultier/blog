@@ -4,7 +4,7 @@
 
      <title>Philippe Gaultier's blog</title>
      <link href="https://gaultier.github.io/blog/"/>
-     <updated>2024-06-21T12:48:22Z</updated>
+     <updated>2024-06-21T13:36:28Z</updated>
      <author>
        <name>Philippe Gaultier</name>
      </author>
@@ -118,7 +118,7 @@
        <title>Let's write a video game from scratch like it's 1987</title>
        <link href="https://gaultier.github.io/blog/write_a_video_game_from_scratch_like_1987.html"/>
        <id>urn:uuid:6bea7a85-d449-5f4d-9ab6-7e627c67ba57</id>
-       <updated>2024-06-20T15:22:46+02:00</updated>
+       <updated>2024-06-21T06:22:30+00:00</updated>
 			 <published>2024-06-19T14:55:01+02:00</published>
      </entry>
 
@@ -126,7 +126,7 @@
        <title>Learn x86-64 assembly by writing a GUI from scratch</title>
        <link href="https://gaultier.github.io/blog/x11_x64.html"/>
        <id>urn:uuid:fa923100-dd66-531e-bdab-8eed3527960f</id>
-       <updated>2024-06-08T21:07:10+02:00</updated>
+       <updated>2024-06-21T05:59:39+00:00</updated>
 			 <published>2023-05-31T14:24:11+02:00</published>
      </entry>
 
