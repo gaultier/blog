@@ -50,34 +50,34 @@ fn generate_article(markdown_file_path: []const u8, header: []const u8, footer: 
     try html_file.writeAll(header);
 
     if (!is_index_page) {
-        const git_output = try std.process.Child.run(.{
+        const git_cmd = try std.process.Child.run(.{
             .allocator = allocator,
             .argv = &[_][]const u8{ "git", "log", "--format='%as'", "--reverse", "--", markdown_file_path },
         });
-        defer allocator.free(git_output.stdout);
-        defer allocator.free(git_output.stderr);
+        defer allocator.free(git_cmd.stdout);
+        defer allocator.free(git_cmd.stderr);
 
-        std.debug.assert(git_output.stderr.len == 0);
+        std.debug.assert(git_cmd.stderr.len == 0);
 
-        const first_newline_pos = std.mem.indexOf(u8, git_output.stdout, "\n") orelse 0;
+        const first_newline_pos = std.mem.indexOf(u8, git_cmd.stdout, "\n") orelse 0;
         std.debug.assert(first_newline_pos > 0);
 
-        const markdown_file_creation_date = git_output.stdout[0..first_newline_pos];
+        const markdown_file_creation_date = git_cmd.stdout[0..first_newline_pos];
         try std.fmt.format(html_file.writer(), "<p id=\"publication_date\">Published on {s}.</p>\n", .{std.mem.trim(u8, markdown_file_creation_date, &[_]u8{ ' ', '\n', '\'' })});
     }
 
     {
-        const pandoc_output = try std.process.Child.run(.{
+        const converter_cmd = try std.process.Child.run(.{
             .allocator = allocator,
             .argv = &[_][]const u8{ "pandoc", "--toc", markdown_file_path },
             .max_output_bytes = 1 * 1024 * 1024,
         });
-        defer allocator.free(pandoc_output.stdout);
-        defer allocator.free(pandoc_output.stderr);
+        defer allocator.free(converter_cmd.stdout);
+        defer allocator.free(converter_cmd.stderr);
 
-        std.debug.assert(pandoc_output.stderr.len == 0);
+        std.debug.assert(converter_cmd.stderr.len == 0);
 
-        try html_file.writeAll(pandoc_output.stdout);
+        try html_file.writeAll(converter_cmd.stdout);
     }
 
     try html_file.writeAll(footer);
@@ -86,20 +86,20 @@ fn generate_article(markdown_file_path: []const u8, header: []const u8, footer: 
 }
 
 fn generate_toc_for_article(markdown_file_path: []const u8, allocator: std.mem.Allocator) ![]u8 {
-    const pandoc_output = try std.process.Child.run(.{
+    const converter_cmd = try std.process.Child.run(.{
         .allocator = allocator,
         .argv = &[_][]const u8{ "pandoc", "-s", "--toc", markdown_file_path, "-f", "markdown", "-t", "markdown" },
         .max_output_bytes = 1 * 1024 * 1024,
     });
-    defer allocator.free(pandoc_output.stdout);
-    defer allocator.free(pandoc_output.stderr);
+    defer allocator.free(converter_cmd.stdout);
+    defer allocator.free(converter_cmd.stderr);
 
-    std.debug.assert(pandoc_output.stderr.len == 0);
+    std.debug.assert(converter_cmd.stderr.len == 0);
 
-    const first_pound_pos = std.mem.indexOf(u8, pandoc_output.stdout, "\n#") orelse 0;
+    const first_pound_pos = std.mem.indexOf(u8, converter_cmd.stdout, "\n#") orelse 0;
     std.debug.assert(first_pound_pos > 0);
 
-    const toc = pandoc_output.stdout[0..first_pound_pos];
+    const toc = converter_cmd.stdout[0..first_pound_pos];
     const toc_trimmed = std.mem.trim(u8, toc, &[_]u8{ '\n', ' ' });
 
     return allocator.dupe(u8, toc_trimmed);
