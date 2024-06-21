@@ -24,8 +24,21 @@ fn generate_article(markdown_file_path: []const u8, header: []const u8, footer: 
 
     try std.fmt.format(html_file.writer(), html_prelude, .{title});
     try html_file.writeAll(header);
+
+    const git_output = try std.process.Child.run(.{
+        .allocator = allocator,
+        .argv = &[_][]const u8{ "git", "log", "--format='%as'", "--reverse", "--max-count=1", "--", markdown_file_path },
+    });
+    std.debug.assert(git_output.stderr.len == 0);
+
+    const markdown_file_creation_date = std.mem.trim(u8, git_output.stdout, &[_]u8{ '\n', ' ', '\'' });
+    try std.fmt.format(html_file.writer(), "<p id=\"publication_date\">Published on {s}.</p>", .{markdown_file_creation_date});
+
     // TODO: md -> html.
+
     try html_file.writeAll(footer);
+
+    std.log.info("generated {s}", .{html_file_path});
 }
 
 pub fn main() !void {
