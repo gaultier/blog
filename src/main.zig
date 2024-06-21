@@ -2,23 +2,7 @@ const std = @import("std");
 
 pub const std_options = .{
     .log_level = .info,
-    // .logFn = myLogFn,
 };
-
-pub fn myLogFn(
-    comptime level: std.log.Level,
-    comptime scope: @TypeOf(.EnumLiteral),
-    comptime format: []const u8,
-    args: anytype,
-) void {
-    const prefix = "[" ++ comptime level.asText() ++ "] " ++ @tagName(scope);
-
-    // Print the message to stderr, silently ignoring any errors
-    std.debug.lockStdErr();
-    defer std.debug.unlockStdErr();
-    const stderr = std.io.getStdErr().writer();
-    nosuspend stderr.print(prefix ++ format ++ "\n", args) catch return;
-}
 
 const html_prelude = "<!DOCTYPE html>\n<html>\n<head>\n<title>{s}</title>\n";
 
