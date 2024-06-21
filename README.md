@@ -4,7 +4,7 @@ https://gaultier.github.io/blog/
 ## Quickstart
 
 ```
-apt install graphviz golang pandoc zig
+apt install golang pandoc zig
 make
 ```
 
