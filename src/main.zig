@@ -9,7 +9,13 @@ const html_prelude = "<!DOCTYPE html>\n<html>\n<head>\n<title>{s}</title>\n";
 const Article = struct {
     dates: Dates,
     title: []u8,
-    output_file_hash: [20]u8,
+    output_file_name: []u8,
+    allocator: std.mem.Allocator,
+
+    pub fn deinit(self: *Article) void {
+        self.allocator.free(self.title);
+        self.allocator.free(self.output_file_name);
+    }
 };
 
 fn do_generate_article(markdown_file_path: []const u8, header: []const u8, footer: []const u8, wait_group: *std.Thread.WaitGroup, allocator: std.mem.Allocator) void {
@@ -54,6 +60,29 @@ fn get_creation_and_modification_date_for_article(markdown_file_path: []const u8
     };
 }
 
+fn generate_rss_feed_entry_for_article(writer: anytype, article: Article) !void {
+    const base_url = "https://gaultier.github.io/blog";
+    const template =
+        \\<entry>
+        \\  <title>{s}</title>
+        \\  <link href="{s}/{s}"/>
+        \\  <id>urn:uuid:{s}</id>
+        \\  <updated>{s}</updated>
+        \\  <published>{s}</published>
+        \\</entry>
+    ;
+    const uuid = "FIXME";
+
+    try std.fmt.format(writer, template, .{
+        article.title,
+        base_url,
+        article.output_file_name,
+        uuid,
+        article.dates.modification_date,
+        article.dates.creation_date,
+    });
+}
+
 fn generate_article(markdown_file_path: []const u8, header: []const u8, footer: []const u8, allocator: std.mem.Allocator) !Article {
     std.debug.assert(std.mem.eql(u8, std.fs.path.extension(markdown_file_path), ".md"));
     std.debug.assert(header.len > 0);
@@ -70,14 +99,14 @@ fn generate_article(markdown_file_path: []const u8, header: []const u8, footer: 
     const stem = std.fs.path.stem(markdown_file_path);
     std.debug.assert(stem.len != 0);
 
-    const html_file_path = try std.mem.concat(allocator, u8, &[2][]const u8{ stem, ".html" });
-    defer allocator.free(html_file_path);
+    var article: Article = .{
+        .dates = undefined,
+        .title = undefined,
+        .output_file_name = try std.mem.concat(allocator, u8, &[2][]const u8{ stem, ".html" }),
+        .allocator = allocator,
+    };
 
-    var article: Article = .{ .dates = undefined, .output_file_hash = undefined, .title = undefined };
-
-    std.crypto.hash.Sha1.hash(html_file_path, &article.output_file_hash, .{});
-
-    const html_file = try std.fs.cwd().createFile(html_file_path, .{});
+    const html_file = try std.fs.cwd().createFile(article.output_file_name, .{});
 
     {
         var title: []const u8 = "Philippe Gaultier's blog";
@@ -115,7 +144,7 @@ fn generate_article(markdown_file_path: []const u8, header: []const u8, footer: 
 
     try html_file.writeAll(footer);
 
-    std.log.info("generated {s}", .{html_file_path});
+    std.log.info("generated {s}", .{article.output_file_name});
 
     return article;
 }
@@ -249,8 +278,10 @@ pub fn main() !void {
             std.log.err("missing second argument", .{});
             std.process.exit(1);
         };
-        const article = try generate_article(file, header, footer, allocator);
-        _ = article;
+        var article = try generate_article(file, header, footer, allocator);
+        defer article.deinit();
+
+        try generate_rss_feed_entry_for_article(std.io.getStdOut().writer(), article);
     } else if (std.mem.eql(u8, cmd, "toc")) {
         const file = args_iterator.next() orelse {
             std.log.err("missing second argument", .{});
