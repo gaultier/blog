@@ -353,6 +353,9 @@ uses an arena.</p>
 <p>Since authentication entries can be large, we have to allocate - the
 stack is only so big. It would be unfortunate to stack overflow because
 a hostname is a tiny bit too long in this file.</p>
+<p><em>Some readers have pointed out that it is likely it would all fit
+on the stack here, but this was also a perfect opportunity to describe
+Odin’s approach to memory management.</em></p>
 <p>However, we do not want to retain the parsed entries from the file in
 memory after finding the 16 bytes token, so we
 <code>defer free_all(allocator)</code>. This is much better than going
