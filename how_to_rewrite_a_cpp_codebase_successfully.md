@@ -319,7 +319,7 @@ pub extern "C" fn make_owning_array_u8(len: usize) -> OwningArrayC<u8> {
 
 Apparently, Rust developers do not want to commit to a particular ABI for these types, to avoid missing out on some future optimizations. So it means that every Rust struct now needs the equivalent "FFI friendly" struct along with conversion functions (usually implemented as `.into()` for convenience):
 
-```
+```rust
 struct Foo<'a> {
     x: Option<usize>,
     y: &'a [u8],

@@ -100,11 +100,25 @@ fn generate_toc_for_article(markdown_file_path: []const u8, allocator: std.mem.A
     var toc = std.ArrayList(u8).init(allocator);
     try toc.ensureTotalCapacity(4096);
 
+    var inside_code_section = false;
     while (reader.streamUntilDelimiter(writer, '\n', null)) {
         // Clear the line so we can reuse it.
         defer line.clearRetainingCapacity();
 
-        if (!std.mem.startsWith(u8, line.items, "#")) continue;
+        const is_begin_title = std.mem.startsWith(u8, line.items, "#");
+        const is_begin_code_section = std.mem.startsWith(u8, line.items, "```");
+
+        if (is_begin_code_section and !inside_code_section) {
+            inside_code_section = true;
+            continue;
+        }
+        if (is_begin_code_section and inside_code_section) {
+            inside_code_section = false;
+            continue;
+        }
+
+        if (inside_code_section) continue;
+        if (!is_begin_title) continue;
 
         const first_space_pos = std.mem.indexOf(u8, line.items, " ") orelse 0;
         const level = first_space_pos;
@@ -118,6 +132,8 @@ fn generate_toc_for_article(markdown_file_path: []const u8, allocator: std.mem.A
         for (title) |c| {
             if (c == ' ') {
                 try toc.append('-');
+            } else if (c == '-') {
+                try toc.append(c);
             } else if (std.ascii.isAlphanumeric(c)) {
                 try toc.append(std.ascii.toLower(c));
             }
