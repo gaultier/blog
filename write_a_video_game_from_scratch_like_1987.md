@@ -1,5 +1,7 @@
 # Let's write a video game from scratch like it's 1987
 
+> This article has been discussed on [Hacker News](https://news.ycombinator.com/item?id=40737370) and [Reddit](https://old.reddit.com/r/programming/comments/1dkahjw/lets_write_a_video_game_from_scratch_like_its_1987/)
+
 In a [previous article](/blog/x11_x64.html) I've done the 'Hello, world!' of GUIs in assembly: A black window with a white text, using X11 without any libraries, just talking directly over a socket. 
 
 In a [later article](/blog/wayland_from_scratch.html) I've done the same with Wayland in C, displaying a static image.
