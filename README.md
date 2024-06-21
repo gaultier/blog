@@ -8,10 +8,10 @@ apt install graphviz golang pandoc zig
 make
 ```
 
-Generating table of contents (not sure if there is a better way):
+Generating table of contents:
 
 ```
-pandoc -s --toc input.md -o /tmp/output.md
+zig run ./zig-out/bin/blog toc <file.md>
 ```
 
 Serving the files locally:
