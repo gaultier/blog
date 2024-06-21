@@ -29,7 +29,6 @@ fn generate_article(markdown_file_path: []const u8, header: []const u8, footer: 
     std.debug.assert(stem.len != 0);
 
     const html_file_path = try std.mem.concat(allocator, u8, &[2][]const u8{ stem, ".html" });
-    std.log.info("create html file {s} {s}", .{ markdown_file_path, html_file_path });
     const html_file = try std.fs.cwd().createFile(html_file_path, .{});
 
     {
