@@ -241,7 +241,8 @@ fn generate_rss_feed(articles: []Article) !void {
         feed_uuid_str,
     });
 
-    for (articles) |article| {
+    // Skip over the last article which is the index.
+    for (articles[0 .. articles.len - 1]) |article| {
         try generate_rss_feed_entry_for_article(buffered_writer.writer(), article);
     }
 
