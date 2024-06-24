@@ -41,15 +41,16 @@ fn do_generate_article(markdown_file_path: []const u8, header: []const u8, foote
     articles_mtx.unlock();
 }
 
+const iso_date_str_len = "2023-12-15T12:23:43+01:00".len;
 const Dates = struct {
-    creation_date: [10]u8,
-    modification_date: [10]u8,
+    creation_date: [iso_date_str_len]u8,
+    modification_date: [iso_date_str_len]u8,
 };
 
 fn get_creation_and_modification_date_for_article(markdown_file_path: []const u8, allocator: std.mem.Allocator) !Dates {
     const git_cmd = try std.process.Child.run(.{
         .allocator = allocator,
-        .argv = &[_][]const u8{ "git", "log", "--format='%as'", "--", markdown_file_path },
+        .argv = &[_][]const u8{ "git", "log", "--format='%aI'", "--", markdown_file_path },
     });
     defer allocator.free(git_cmd.stdout);
     defer allocator.free(git_cmd.stderr);
@@ -66,9 +67,28 @@ fn get_creation_and_modification_date_for_article(markdown_file_path: []const u8
     }
 
     std.log.info("{s} {s} {s}", .{ markdown_file_path, creation_date, modification_date });
+
+    std.debug.assert(creation_date.len == iso_date_str_len);
+    std.debug.assert(modification_date.len == iso_date_str_len);
+
+    for (creation_date) |c| {
+        const ok = switch (c) {
+            '-', '0'...'9', 'T', 'Z', ':', '+' => true,
+            else => false,
+        };
+        std.debug.assert(ok);
+    }
+    for (modification_date) |c| {
+        const ok = switch (c) {
+            '-', '0'...'9', 'T', 'Z', ':', '+' => true,
+            else => false,
+        };
+        std.debug.assert(ok);
+    }
+
     return .{
-        .creation_date = creation_date[0..10].*,
-        .modification_date = modification_date[0..10].*,
+        .creation_date = creation_date[0..iso_date_str_len].*,
+        .modification_date = modification_date[0..iso_date_str_len].*,
     };
 }
 
@@ -167,7 +187,7 @@ fn generate_article(markdown_file_path: []const u8, header: []const u8, footer: 
 
     if (!is_index_page) {
         article.dates = try get_creation_and_modification_date_for_article(markdown_file_path, allocator);
-        try std.fmt.format(html_file.writer(), "<p id=\"publication_date\">Published on {s}.</p>\n", .{std.mem.trim(u8, &article.dates.creation_date, &[_]u8{ ' ', '\n', '\'' })});
+        try std.fmt.format(html_file.writer(), "<p id=\"publication_date\">Published on {s}.</p>\n", .{std.mem.trim(u8, article.dates.creation_date[0..10], &[_]u8{ ' ', '\n', '\'' })});
     }
 
     {
@@ -211,9 +231,13 @@ fn generate_rss_feed(articles: []Article) !void {
         \\    <id>urn:uuid:{s}</id>
         \\
     ;
+    std.debug.assert(articles.len > 2);
+    std.debug.assert(std.mem.eql(u8, articles[articles.len - 1].output_file_name, "index.html"));
+    std.debug.assert(!std.mem.eql(u8, articles[articles.len - 2].output_file_name, "index.html"));
+
     try std.fmt.format(buffered_writer.writer(), template_prelude, .{
         base_url,
-        articles[articles.len - 1].dates.modification_date,
+        articles[articles.len - 2].dates.modification_date,
         feed_uuid_str,
     });
 
@@ -222,6 +246,7 @@ fn generate_rss_feed(articles: []Article) !void {
     }
 
     try buffered_writer.writer().writeAll("</feed>");
+    try buffered_writer.flush();
 }
 
 fn generate_toc_for_article(markdown_file_path: []const u8, allocator: std.mem.Allocator) ![]u8 {
@@ -347,15 +372,6 @@ pub fn main() !void {
     if (std.mem.eql(u8, cmd, "gen_all")) {
         const articles = try generate_all_articles_in_dir(header, footer, allocator);
         try generate_rss_feed(articles);
-    } else if (std.mem.eql(u8, cmd, "gen")) {
-        const file = args_iterator.next() orelse {
-            std.log.err("missing second argument", .{});
-            std.process.exit(1);
-        };
-        var article = try generate_article(file, header, footer, allocator);
-        defer article.deinit();
-
-        try generate_rss_feed_entry_for_article(std.io.getStdOut().writer(), article);
     } else if (std.mem.eql(u8, cmd, "toc")) {
         const file = args_iterator.next() orelse {
             std.log.err("missing second argument", .{});

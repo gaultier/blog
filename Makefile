@@ -1,7 +1,6 @@
 all:
-	./zig-out/bin/blog
+	./zig-out/bin/blog gen_all
 	ls *.dot | parallel 'make {/.}.svg'
-	go run feed.go > feed.xml
     
 
 %.svg: %.dot

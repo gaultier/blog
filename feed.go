@@ -51,7 +51,7 @@ func main() {
 
 		htmlFileName := strings.TrimSuffix(e.Name(), "md") + "html"
 
-		gitCmd := exec.Command("git", "log", "--follow", "--format=%ad", "--date", "iso-strict", "--", markdownFileName)
+		gitCmd := exec.Command("git", "log", "--follow", "--format=%aI", "--date", "iso-strict", "--", markdownFileName)
 		gitOut, err := gitCmd.Output()
 		if err != nil {
 			panic(err)
