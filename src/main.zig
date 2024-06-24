@@ -66,8 +66,6 @@ fn get_creation_and_modification_date_for_article(markdown_file_path: []const u8
         if (trimmed.len > 0) creation_date = trimmed;
     }
 
-    std.log.info("{s} {s} {s}", .{ markdown_file_path, creation_date, modification_date });
-
     std.debug.assert(creation_date.len == iso_date_str_len);
     std.debug.assert(modification_date.len == iso_date_str_len);
 
