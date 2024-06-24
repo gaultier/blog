@@ -246,6 +246,8 @@ fn generate_rss_feed(articles: []Article) !void {
 
     try buffered_writer.writer().writeAll("</feed>");
     try buffered_writer.flush();
+
+    std.log.info("generated RSS feed for {} articles", .{articles.len});
 }
 
 fn generate_toc_for_article(markdown_file_path: []const u8, allocator: std.mem.Allocator) ![]u8 {
