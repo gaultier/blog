@@ -64,7 +64,7 @@ I remember playing this game as a kid (must have been on Windows 98). It was a l
 
 The 11th version of the X protocol was born in 1987 and has not changed since. Since it predates GPUs by a decade or so, its model does not really fit the hardware of today. Still, it's everywhere. Any Unix has a X server, even macOS with XQuartz, and now Windows supports running GUI Linux applications inside WSL! X11 has never been so ubiquitous. The protocol is relatively simple and the entry bar is low: we only need to create a socket and we're off the races. And for 2D applications, there's no need to be a Vulkan wizard or even interact with the GPU. Hell, it will work even without any GPU!
 
-Everyone writing GUIs these days use a giant pile of libraries, starting with the ~~overly complicated~~ venerable `libX11` and `libxcb` libraries, to Qt and SDL.
+Everyone writing GUIs these days use a giant pile of libraries, starting with the <s>overly complicated</s> venerable `libX11` and `libxcb` libraries, to Qt and SDL.
 
 Here are the steps we need to take:
 
@@ -690,7 +690,7 @@ Time to start programming the game itself!
 
 ## Loading assets
 
-What's a game without nice looking pictures ~~stolen from somewhere on the internet~~ ?
+What's a game without nice looking pictures <s>stolen from somewhere on the internet</s> ?
 
 Here is our sprite, the one image containing all our assets:
 
