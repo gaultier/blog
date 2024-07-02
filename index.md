@@ -98,10 +98,3 @@ I think my most noteworthy projects are compilers both because I tend to be attr
 
 You can find my resume [online](https://gaultier.github.io/resume/resume)
 or download it as [PDF](https://github.com/gaultier/resume/raw/master/Philippe_Gaultier_resume_en.pdf).
-
-## License
-
-This blog is [open-source](https://github.com/gaultier/blog)!
-
-The content of this blog as well as the code snippets are under the [BSD-3 License](https://en.wikipedia.org/wiki/BSD_licenses) which I also usually use for all my personal projects. It's basically free for every use but you have to mention me as the original author.
-
