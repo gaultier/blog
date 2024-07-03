@@ -154,6 +154,7 @@ code {
     background: #FFF3E0 !important;
     line-height: 1.6;
     padding: 0 .2rem !important;
+    word-wrap: break-word;
 }
 
 table {
