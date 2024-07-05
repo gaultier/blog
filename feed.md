@@ -20,3 +20,5 @@ I implemented that in under an hour, skimming at the RFC and examples. It's a bi
   * A UUID. Here I went with UUIDv5 which is simply the sha1 of the file name in the UUID format. It's nifty because it means that the script is stateless and idempotent. If the article is later updated, the UUID remains the same (but the `updated at` will still hint at the update).
 
 And...that's it really. Enjoy reading these articles in your favorite app!
+
+*Tags: Feed, Atom, UUID*

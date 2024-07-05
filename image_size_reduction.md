@@ -59,3 +59,5 @@ That's almost a x5 reduction in size! However this format is not yet well suppor
 
 So as of now, all PNG images on this blog are much lighter! Not too bad for 10m of work.
 
+
+*Tags: Optimization, PNG*

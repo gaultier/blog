@@ -1415,4 +1415,4 @@ int main() {
 
 ```
 
-*Tags: C, Wayland, GUI*
+*Tags: C, Wayland, GUI, X11*

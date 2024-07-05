@@ -783,4 +783,4 @@ int main() {
 }
 ```
 
-*Tags: C, Allocator, Profiling*
+*Tags: C, Allocator, Profiling, Pprof*

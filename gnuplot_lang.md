@@ -174,3 +174,5 @@ do for [line in data] {
 
 print(sum)
 ```
+
+*Tags: Advent of Code, Gnuplot*

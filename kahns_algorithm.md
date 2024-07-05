@@ -677,3 +677,5 @@ for (let i = employeesTopologicallySorted.length - 2; i >= 0; i -= 1) {
   );
 }
 ```
+
+*Tags: Graph, Algorithm, JavaScript, SQL*

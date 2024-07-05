@@ -208,3 +208,5 @@ vim.api.nvim_create_user_command('GitWebUiUrlCopy', function(arg)
 end,
 {force=true, range=true, nargs=0, desc='Copy to clipboard a URL to a git webui for the current line'})
 ```
+
+*Tags: Lua, Neovim, Git*

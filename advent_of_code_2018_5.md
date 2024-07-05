@@ -530,3 +530,5 @@ posts about programming. I intend to post more solutions to other coding
 challenges, solved with a variety of programming languages.
 
 <script src="https://unpkg.com/@highlightjs/cdn-assets@11.8.0/languages/scheme.min.js"></script>
+
+*Tags: Lisp, Scheme, C, Advent of Code*

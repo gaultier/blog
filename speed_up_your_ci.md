@@ -88,3 +88,5 @@ Finally, I would recommend leading by example with the pipelines for the tools m
 I wish you well on your journey towards a fast, reliable and simple CI pipeline. 
 
 I noticed in my numerous projects with different tech stacks that some are friendlier than others towards CI pipelines than others (I am looking at you, Gradle!). If you have the luxury of choosing your technical stack, do consider how it will play out with your pipeline. I believe this is a much more important factor than discussing whether $LANG has semicolons or not because I am convinced it can completely decide the outcome of your project.
+
+*Tags: CI, Optimization*

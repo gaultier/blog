@@ -47,3 +47,5 @@ You will now have a `zig` executable in the PATH as well as the zig standard lib
 $ zig version
 0.6.0+749417a
 ```
+
+*Tags: LLVM, Zig, Alpine*
