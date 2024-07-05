@@ -1414,3 +1414,5 @@ int main() {
 }
 
 ```
+
+*Tags: C, Wayland, GUI*

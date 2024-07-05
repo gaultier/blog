@@ -19,6 +19,10 @@ const Article = struct {
     pub fn deinit(self: *Article) void {
         self.allocator.free(self.title);
         self.allocator.free(self.output_file_name);
+
+        for (self.tags) |tag| {
+            self.allocator.free(tag);
+        }
         self.allocator.free(self.tags);
     }
 };
@@ -155,7 +159,7 @@ fn extract_tags_for_article(markdown_content: []const u8, allocator: std.mem.All
 
     while (it.next()) |tag| {
         const trimmed = std.mem.trim(u8, tag, &[_]u8{ ' ', '\n', '*' });
-        try tags.append(trimmed);
+        try tags.append(try allocator.dupe(u8, trimmed));
     }
 
     return tags.toOwnedSlice();
@@ -228,13 +232,57 @@ fn generate_article(markdown_file_path: []const u8, header: []const u8, footer: 
     return article;
 }
 
+fn generate_page_articles_by_tag(articles: []Article, header: []const u8, footer: []const u8, allocator: std.mem.Allocator) !void {
+    const tags_file = try std.fs.cwd().createFile("articles_per_tag.html", .{});
+    defer tags_file.close();
+
+    var buffered_writer = std.io.bufferedWriter(tags_file.writer());
+    try buffered_writer.writer().writeAll(header);
+    try buffered_writer.writer().writeAll("<h1>Articles per tag:</h1>\n");
+
+    var articles_per_tag = std.StringArrayHashMap(std.ArrayList([]u8)).init(allocator);
+    defer articles_per_tag.deinit();
+    defer for (articles_per_tag.values()) |v| {
+        v.deinit();
+    };
+
+    for (articles) |article| {
+        for (article.tags) |tag| {
+            std.debug.assert(tag.len > 0);
+
+            var entry = try articles_per_tag.getOrPut(tag);
+            if (!entry.found_existing) {
+                entry.value_ptr.* = std.ArrayList([]u8).init(allocator);
+            }
+            try entry.value_ptr.append(article.output_file_name);
+        }
+    }
+
+    try buffered_writer.writer().writeAll("<ul>\n");
+    for (articles_per_tag.keys()) |tag| {
+        const links = articles_per_tag.get(tag) orelse undefined;
+        std.log.info("articles per tag: {s}: {s}", .{ tag, links.items });
+
+        try std.fmt.format(buffered_writer.writer(), "<li><ul>{s}\n", .{tag});
+
+        for (links.items) |link| {
+            try std.fmt.format(buffered_writer.writer(), "<li>{s}</li>\n", .{link});
+        }
+
+        try buffered_writer.writer().writeAll("</ul></li>\n");
+    }
+    try buffered_writer.writer().writeAll("</ul>\n");
+
+    try buffered_writer.writer().writeAll(footer);
+
+    try buffered_writer.flush();
+}
+
 fn generate_rss_feed(articles: []Article) !void {
     const feed_file = try std.fs.cwd().createFile("feed.xml", .{});
     defer feed_file.close();
 
     var buffered_writer = std.io.bufferedWriter(feed_file.writer());
-
-    std.mem.sort(Article, articles, {}, articleLess);
 
     const template_prelude =
         \\<?xml version="1.0" encoding="utf-8"?>
@@ -398,6 +446,8 @@ pub fn main() !void {
         try std.io.getStdOut().writeAll(toc);
     } else {
         const articles = try generate_all_articles_in_dir(header, footer, allocator);
+        std.mem.sort(Article, articles, {}, articleLess);
+        try generate_page_articles_by_tag(articles, header, footer, allocator);
         try generate_rss_feed(articles);
     }
 }

@@ -782,3 +782,5 @@ int main() {
   mem_profile_write(&mem_profile, stderr);
 }
 ```
+
+*Tags: C, Allocator, Profiling*
