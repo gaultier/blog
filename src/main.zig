@@ -27,6 +27,11 @@ const Article = struct {
     }
 };
 
+fn stringLess(ctx: void, a: []const u8, b: []const u8) bool {
+    _ = ctx;
+    return std.mem.order(u8, a, b) == .lt;
+}
+
 fn articleLess(ctx: void, a: Article, b: Article) bool {
     _ = ctx;
     return std.mem.lessThan(u8, &a.dates.creation_date, &b.dates.creation_date);
@@ -259,7 +264,10 @@ fn generate_page_articles_by_tag(articles: []Article, header: []const u8, footer
     }
 
     try buffered_writer.writer().writeAll("<ul>\n");
-    for (articles_per_tag.keys()) |tag| {
+    const keys = articles_per_tag.keys();
+    std.mem.sort([]const u8, keys, {}, stringLess);
+
+    for (keys) |tag| {
         const articles_for_tag = articles_per_tag.get(tag) orelse undefined;
         try std.fmt.format(buffered_writer.writer(), "<li><ul>{s}\n", .{tag});
 
