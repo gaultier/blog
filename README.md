@@ -9,7 +9,7 @@ apt install cmark zig
 $ zig build
 
 # (Re)generate all articles
-./zig-out/bin/blog gen_all
+./zig-out/bin/blog
 
 # Output the table of contents
 $ ./zig-out/bin/blog toc <file.md>

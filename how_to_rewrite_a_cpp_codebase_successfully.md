@@ -791,3 +791,5 @@ So, I hope this article alleviated your concerns about rewriting your C++ codeba
 
 You know, like any other software project, really!
 
+
+*Tags: C, C++, Rust, Rewrite*

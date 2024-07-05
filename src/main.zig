@@ -359,10 +359,7 @@ pub fn main() !void {
     defer args_iterator.deinit();
     _ = args_iterator.skip();
 
-    const cmd = args_iterator.next() orelse {
-        std.log.err("missing first argument", .{});
-        std.process.exit(1);
-    };
+    const cmd = args_iterator.next() orelse "";
 
     const header_file = try std.fs.cwd().openFile("header.html", .{});
     const header = try header_file.readToEndAlloc(allocator, 2048);
@@ -370,10 +367,7 @@ pub fn main() !void {
     const footer_file = try std.fs.cwd().openFile("footer.html", .{});
     const footer = try footer_file.readToEndAlloc(allocator, 2048);
 
-    if (std.mem.eql(u8, cmd, "gen_all")) {
-        const articles = try generate_all_articles_in_dir(header, footer, allocator);
-        try generate_rss_feed(articles);
-    } else if (std.mem.eql(u8, cmd, "toc")) {
+    if (std.mem.eql(u8, cmd, "toc")) {
         const file = args_iterator.next() orelse {
             std.log.err("missing second argument", .{});
             std.process.exit(1);
@@ -383,5 +377,8 @@ pub fn main() !void {
         defer allocator.free(toc);
 
         try std.io.getStdOut().writeAll(toc);
+    } else {
+        const articles = try generate_all_articles_in_dir(header, footer, allocator);
+        try generate_rss_feed(articles);
     }
 }
