@@ -264,7 +264,8 @@ fn generate_page_articles_by_tag(articles: []Article, header: []const u8, footer
     }
 
     try buffered_writer.writer().writeAll("<ul>\n");
-    const keys = articles_per_tag.keys();
+    const keys = try allocator.dupe([]const u8, articles_per_tag.keys());
+    defer allocator.free(keys);
     std.mem.sort([]const u8, keys, {}, stringLess);
 
     for (keys) |tag| {
