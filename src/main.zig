@@ -238,35 +238,33 @@ fn generate_page_articles_by_tag(articles: []Article, header: []const u8, footer
 
     var buffered_writer = std.io.bufferedWriter(tags_file.writer());
     try buffered_writer.writer().writeAll(header);
-    try buffered_writer.writer().writeAll("<h1>Articles per tag:</h1>\n");
+    try buffered_writer.writer().writeAll("<h1>Articles per tag</h1>\n");
 
-    var articles_per_tag = std.StringArrayHashMap(std.ArrayList([]u8)).init(allocator);
+    var articles_per_tag = std.StringArrayHashMap(std.ArrayList(*const Article)).init(allocator);
     defer articles_per_tag.deinit();
     defer for (articles_per_tag.values()) |v| {
         v.deinit();
     };
 
-    for (articles) |article| {
+    for (articles, 0..) |article, i| {
         for (article.tags) |tag| {
             std.debug.assert(tag.len > 0);
 
             var entry = try articles_per_tag.getOrPut(tag);
             if (!entry.found_existing) {
-                entry.value_ptr.* = std.ArrayList([]u8).init(allocator);
+                entry.value_ptr.* = std.ArrayList(*const Article).init(allocator);
             }
-            try entry.value_ptr.append(article.output_file_name);
+            try entry.value_ptr.append(&articles[i]);
         }
     }
 
     try buffered_writer.writer().writeAll("<ul>\n");
     for (articles_per_tag.keys()) |tag| {
-        const links = articles_per_tag.get(tag) orelse undefined;
-        std.log.info("articles per tag: {s}: {s}", .{ tag, links.items });
-
+        const articles_for_tag = articles_per_tag.get(tag) orelse undefined;
         try std.fmt.format(buffered_writer.writer(), "<li><ul>{s}\n", .{tag});
 
-        for (links.items) |link| {
-            try std.fmt.format(buffered_writer.writer(), "<li>{s}</li>\n", .{link});
+        for (articles_for_tag.items) |article_for_tag| {
+            try std.fmt.format(buffered_writer.writer(), "<li><a href={s}>{s}</a></li>\n", .{ article_for_tag.output_file_name, article_for_tag.title });
         }
 
         try buffered_writer.writer().writeAll("</ul></li>\n");
