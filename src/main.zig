@@ -13,11 +13,13 @@ const Article = struct {
     dates: Dates,
     title: []u8,
     output_file_name: []u8,
+    tags: [][]const u8,
     allocator: std.mem.Allocator,
 
     pub fn deinit(self: *Article) void {
         self.allocator.free(self.title);
         self.allocator.free(self.output_file_name);
+        self.allocator.free(self.tags);
     }
 };
 
@@ -143,6 +145,22 @@ fn generate_rss_feed_entry_for_article(writer: anytype, article: Article) !void 
     });
 }
 
+fn extract_tags_for_article(markdown_content: []const u8, allocator: std.mem.Allocator) ![][]const u8 {
+    var tags = std.ArrayList([]const u8).init(allocator);
+    const prefix = "Tags: ";
+    const tags_begin = (std.mem.indexOf(u8, markdown_content, prefix) orelse return tags.toOwnedSlice()) + prefix.len;
+    const tags_end = std.mem.indexOf(u8, markdown_content[tags_begin..], "\n") orelse markdown_content.len;
+
+    var it = std.mem.splitSequence(u8, markdown_content[tags_begin..][0..tags_end], ", ");
+
+    while (it.next()) |tag| {
+        const trimmed = std.mem.trim(u8, tag, &[_]u8{ ' ', '\n', '*' });
+        try tags.append(trimmed);
+    }
+
+    return tags.toOwnedSlice();
+}
+
 fn generate_article(markdown_file_path: []const u8, header: []const u8, footer: []const u8, allocator: std.mem.Allocator) !Article {
     std.debug.assert(std.mem.eql(u8, std.fs.path.extension(markdown_file_path), ".md"));
     std.debug.assert(header.len > 0);
@@ -163,6 +181,7 @@ fn generate_article(markdown_file_path: []const u8, header: []const u8, footer: 
         .dates = undefined,
         .title = undefined,
         .output_file_name = try std.mem.concat(allocator, u8, &[2][]const u8{ stem, ".html" }),
+        .tags = try extract_tags_for_article(markdown_content, allocator),
         .allocator = allocator,
     };
 
@@ -204,7 +223,7 @@ fn generate_article(markdown_file_path: []const u8, header: []const u8, footer: 
 
     try html_file.writeAll(footer);
 
-    std.log.info("generated {s}", .{article.output_file_name});
+    std.log.info("generated {s} {s}", .{ article.output_file_name, article.tags });
 
     return article;
 }
