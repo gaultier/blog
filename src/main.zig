@@ -163,7 +163,6 @@ fn extract_tags_for_article(markdown_content: []const u8, allocator: std.mem.All
 
     var i: usize = 0;
     while (i < tags_end) {
-        std.debug.print("[D001] {} {} `{s}`\n", .{ i, tags_str[i], tags_str });
         switch (tags_str[i]) {
             '[' => {
                 i += 1;
@@ -175,7 +174,6 @@ fn extract_tags_for_article(markdown_content: []const u8, allocator: std.mem.All
                 i += std.mem.indexOfScalar(u8, tags_str[i..], '(') orelse @panic("missing opening (");
                 const link_end = std.mem.indexOfScalar(u8, tags_str[i..], ')') orelse @panic("missing closing )");
                 const link = tags_str[i + 1 ..][0..link_end];
-                std.debug.print("[D002] {} `{s}` `{s}` `{s}`\n", .{ i, tags_str[i .. i + 2], link, tags_str });
                 std.debug.assert(std.mem.indexOfScalar(u8, link, ' ') == null);
 
                 i += link_end + 1;
