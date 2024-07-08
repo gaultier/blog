@@ -1,6 +1,6 @@
 <div class="articles">
 
-## Articles
+<h2 id="articles">Articles</h2>
 
 - <span class="date">Sep 5 2019</span> [Getting started with Scheme by solving an Advent of Code 2018 challenge](/blog/advent_of_code_2018_5.html)
 - <span class="date">Sep 7 2020</span> [How to compile LLVM, Clang, LLD, and Ziglang from source on Alpine Linux](/blog/compile_ziglang_from_source_on_alpine_2020_9.html)
@@ -20,7 +20,7 @@
 
 </div>
 
-## About me
+<h2 id="about-me">About me</h2>
 
 I am a French/German Senior Software Engineer from France living in Bavaria, Germany. By day, I work for a Fintech company, and by night I write some fun projects in C, Rust, Odin, Zig, and Assembly. I like to work on low-level systems.
 
@@ -29,7 +29,7 @@ In my free time, I run, lift weights, play music, and garden.
 Get in touch, send me an email (link on my Github profile)!
 
 
-## I am grateful
+<h2 id="i-am-grateful">I am grateful</h2>
 
 I often am frustrated with the state of the software industry; however there is software out there that I am deeply grateful for.
 
@@ -44,7 +44,7 @@ I often am frustrated with the state of the software industry; however there is 
 - Zig the toolchain. Because straightforward cross-compiling should be what everyone does on a daily basis without having to setup Docker/VMs/a complicated CI.
 
 
-## Portfolio
+<h2 id="portfolio">Portfolio</h2>
 
 *In chronological order, which is also roughly the ascending order of technical difficulty:*
 
@@ -94,7 +94,7 @@ The implementation still holds, however I would definitely revist the assembly g
 
 I think my most noteworthy projects are compilers both because I tend to be attracted to that domain and also because small CLI tools are less interesting. Compilers for real programming languages are hard!
 
-## Resume
+<h2 id="resume">Resume</h2>
 
 You can find my resume [online](https://gaultier.github.io/resume/resume)
 or download it as [PDF](https://github.com/gaultier/resume/raw/master/Philippe_Gaultier_resume_en.pdf).

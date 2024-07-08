@@ -81,7 +81,7 @@ boundary</a></li>
 <li><a href="#cross-compilation">Cross-compilation</a></li>
 <li><a href="#conclusion">Conclusion</a></li>
 </ul>
-<h2>The project</h2>
+<h2 id="the-project">The project</h2>
 <p>This project is a library that exposes a C API but the implementation is C++, and it vendors C libraries (e.g. mbedtls) which we build from source. The final artifacts are a <code>libfoo.a</code> static library and a <code>libfoo.h</code> C header. It is used to talk to applets on a <a href="https://en.wikipedia.org/wiki/Smart_card">smart card</a> like your credit card, ID, passport or driving license (yes, smart cards are nowadays everywhere - you probably carry several on you right now), since they use a <s>bizarre</s> interesting communication protocol. The library also implements a home-grown protocol on top of the well-specified smart card protocol, encryption, and business logic.</p>
 <p>It is meant to be part of an user-facing application running on smartphones and Point of Sales terminals, as well as in servers running in a datacenter or in the cloud.</p>
 <p>This library is used in:</p>
@@ -94,11 +94,11 @@ boundary</a></li>
 <p>Additionally, developers are using macOS (x64 and arm64) and Linux so the library needs to build and run on these platforms.</p>
 <p>Since external customers also integrate their applications with our library and we do not control these environments, and because some developer machines and servers use glibc and others musl,  we also need to work with either the glibc and the musl C libraries, as well as clang and gcc, and expose a C89-ish API, to maximize compatibility.</p>
 <p>Alright, now that the stage is set, let's go through the steps of rewriting this project.</p>
-<h2>Improve the existing codebase</h2>
+<h2 id="improve-the-existing-codebase">Improve the existing codebase</h2>
 <p>That's basically all the steps in <a href="/blog/you_inherited_a_legacy_cpp_codebase_now_what.html">Inheriting a legacy C++ codebase</a>. We need to start the rewrite with a codebase that builds and runs on every platform we support, with tests passing, and a clear README explaining how to setup the project locally. This is a small investment (a few days to a few weeks depending on the scale of the codebase) that will pay massive dividends in the future.</p>
 <p>But I think the most important point is to trim all the unused code which is typically the majority of the codebase! No one wants to spend time and effort on rewriting completely unused code.</p>
 <p>Additionally, if you fail to convince your team and the stakeholders to do the rewrite, you at least have improved the codebase you are now stuck with. So it's time well spent either way.</p>
-<h2>Get buy-in</h2>
+<h2 id="get-buy-in">Get buy-in</h2>
 <p>Same as in my previous article: Buy-in from teammates and stakeholders is probably the most important thing to get, and maintain.</p>
 <p>It's a big investment in time and thus money we are talking about, it can only work with everyone on board.</p>
 <p>Here I think the way to go is showing the naked truth and staying very factual, in terms managers and non-technical people can understand. This is roughly what I presented:</p>
@@ -116,17 +116,17 @@ boundary</a></li>
 <p>After much debate, we settled on Rust as the new programming language being introduced into the codebase. It's important to note that I am not a Rust die hard fan. I appreciate the language but it's not perfect (see the FFI section later), it has issues, it's just that it solves all the issues we have in this project, especially considering the big focus on security (since we deal with payments),  the relative similarity with the company tech stack (Go), and the willingness of the team to learn it and review code in it.</p>
 <p>After all, the goal is also to gain additional developers, and stop being the only person who can even touch this code.</p>
 <p>I also seriously considered Go, but after doing a prototype, I was doubtful the many limitations of CGO would allow us to achieve the rewrite. Other teammates also had concerns on how the performance and battery usage would look like on low-end Android and Linux devices, especially 32 bits, having essentially two garbage collectors running concurrently, the JVM one and the Go one.</p>
-<h2>Keeping buy-in</h2>
+<h2 id="keeping-buy-in">Keeping buy-in</h2>
 <p>Keeping buy-in after initially getting it is not a given, since software always takes longer than expected and unexpected hurdles happen all the time. Here, showing the progress through regular demos (weekly or biweekly is a good frequency) is great for stakeholders especially non-technical ones. And it can potentially motivate fellow developers to also learn the new language and help you out.</p>
 <p>Additionally, showing how long-standing issues in the old code get automatically solved by the new code, e.g. memory leaks, or fuzzing crashes in one function, are a great sign for stakeholders of the quality improving and the value of the on-going effort.</p>
 <p>Be prepared to repeat many many times the decision process that led to the rewrite to your boss, your boss's boss, the odd product manager who's not technical, the salesperson supporting the external customers, etc. It's important to nail the elevator's pitch.</p>
 <p>That applies also to teammates, who might be unsure the new programming language 'carries its weight'. It helps to regularly ask them how they feel about the language, the on-going-effort, the roadmap, etc. Also, pairing with them, so that ideally, everyone in the team feels confident working on this project alone.</p>
-<h2>Preparations to introduce the new language</h2>
+<h2 id="preparations-to-introduce-the-new-language">Preparations to introduce the new language</h2>
 <p>Before adding the first line of code in the new language, I created a Git tag <code>last-before-rust</code>. The commit right after introduced some code in Rust.</p>
 <p>This proved invaluable, because when rewriting the legacy code, I found tens of bugs lying around, and I think that's very typical. Also, this rewriting effort requires time, during which other team members or external customers may report bugs they just found.</p>
 <p>Every time such a bug appeared, I switched to this Git tag, and tried to reproduce the bug. Almost every time, the bug was already present before the rewrite. That's a very important information (for me, it was a relief!) for solving the bug, and also for stakeholders. That's the difference in their eye between: We are improving the product by fixing long existing bugs; or: we are introducing new bugs with our risky changes and we should maybe stop the effort completely because it's harming the product.</p>
 <p>Furthermore, I think the first commit introducing the new code should add dummy code and focus on making the build system and CI work seamlessly on every supported platform. This is not appealing work but it's necessary. Also, having instructions in the README explaining a bit what each tool does (<code>cargo</code>, <code>rustup</code>, <code>clippy</code>, etc) is very valuable and will ease beginners into contributing in the new language.</p>
-<h2>Incremental rewrite</h2>
+<h2 id="incremental-rewrite">Incremental rewrite</h2>
 <p>Along with stakeholder buy-in, the most important point in the article is that only an <strong>incremental</strong> rewrite can succeed, in my opinion. Rewriting from scratch is bound to fail, I think. At least I have never seen it succeed, and have seen it fail many times.</p>
 <p>What does it mean, very pragmatically? Well it's just a few rules of thumb:</p>
 <ul>
@@ -157,7 +157,7 @@ boundary</a></li>
 <li>Pick a prefix for all structs and functions in the C API exposed by the Rust code, even if it's just <code>RUST_xxx</code>, so that they are immediately identifiable and greppable. Just like <code>libcurl</code> has the prefix <code>curl_xxx</code>.</li>
 </ul>
 <p>Finally, there is one hidden advantage of doing an incremental rewrite. A from-scratch rewrite is all or nothing, if it does not fully complete and replace the old implementation, it's useless and wasteful. However, an incremental rewrite is immediately useful, may be paused and continued a number of times, and even if the funding gets cut short and it never fully completes, it's still a clear improvement over the starting point.</p>
-<h2>Fuzzing</h2>
+<h2 id="fuzzing">Fuzzing</h2>
 <p>I am a fan a fuzzing, it's great. Almost every time I fuzz some code, I find an corner case I did not think about, especially when doing parsing.</p>
 <p>I added fuzzing to the project so that every new Rust function is fuzzed. I initially used <a href="https://rust-fuzz.github.io/book/afl.html">AFL</a> but then turned to <a href="https://rust-fuzz.github.io/book/cargo-fuzz.html">cargo-fuzz</a>, and I'll explain why.</p>
 <p>Fuzzing is only useful if code coverage is <a href="https://blog.trailofbits.com/2024/03/01/toward-more-effective-curl-fuzzing/">high</a>. The worst that can happen is to dedicate serious time to setup fuzzing, to only discover at the end that the same few branches are always taken during fuzzing.</p>
@@ -226,7 +226,7 @@ cargo +nightly fuzz cmin [...]
 <p>We run tests under Miri in CI to make sure each commit is reasonably safe.</p>
 <p>So beware: introducing Rust to a C or C++ codebase may actually introduce new memory safety issues, usually all located in the FFI code.</p>
 <p>Thankfully that's a better situation to be in than to have to inspect all of the codebase when a memory issue is detected.</p>
-<h3>C FFI in Rust is cumbersome and error-prone</h3>
+<h3 id="c-ffi-in-rust-is-cumbersome-and-error-prone">C FFI in Rust is cumbersome and error-prone</h3>
 <p>The root cause for all these issues is that the C API that C++ and Rust use to call each other is very limited in its expressiveness w.r.t ownership, as well as many Rust types not being marked <code>#[repr(C)]</code>, even types you would expect to, such as <code>Option</code>, <code>Vec</code> or <code>&amp;[u8]</code>. That means that you have to define your own equivalent types:</p>
 <pre><code class="language-rust">#[repr(C)]
 // An option type that can be used from C
@@ -301,7 +301,7 @@ if (foo_parse(&amp;foo, bytes) == SUCCESS) {
 <p>Which feels right at home for Go developers, and is an improvement over the style in use in the old C++ code where it was fully manual calls to new/delete.</p>
 <p>Still, it's more work than what you'd have to do in pure idiomatic Rust or C++ code (or even C code with arenas for that matter).</p>
 <p>In Zig or Odin, I would probably have used arenas to avoid that, or a general allocator with <code>defer</code>.</p>
-<h3>An example of a real bug at the FFI boundary</h3>
+<h3 id="an-example-of-a-real-bug-at-the-ffi-boundary">An example of a real bug at the FFI boundary</h3>
 <p>More perniciously, it's easy to introduce memory unsafety at the FFI boundary. Here is a real bug I introduced, can you spot it? I elided all the error handling to make it easier to spot:</p>
 <pre><code class="language-rust">#[repr(C)]
 struct BarC {
@@ -385,7 +385,7 @@ help: alloc195648 was deallocated here:
 </code></pre>
 <p>Which is not very informative, but better than nothing. <code>Miri</code>'s output is much more actionable.</p>
 <p>So in conclusion, Rust's FFI capabilities work but are tedious are error-prone in my opinion, and so require extra care and testing with Miri/fuzzing, with high code coverage of the FFI functions. It's not enough to only test the pure (non FFI) Rust code.</p>
-<h3>Another example of a real bug at the FFI boundary</h3>
+<h3 id="another-example-of-a-real-bug-at-the-ffi-boundary">Another example of a real bug at the FFI boundary</h3>
 <p>When I started this rewrite, I was under the impression that the Rust standard library uses the C memory allocator (basically, <code>malloc</code>) under the covers when it needs to allocate some memory.</p>
 <p>However, I quickly discovered that it is not (anymore?) the case, Rust uses its own allocator - at least on Linux where there is no C library shipping with the kernel.
 Miri again is the MVP here since it detected the issue of mixing the C and Rust allocations which prompted this section.</p>
@@ -447,7 +447,7 @@ free_foo(&amp;foo);
 <p>However that entails more work and more functions in the API.</p>
 <p><code>libcurl</code> is an example of such an approach, <code>libuv</code> is an example of a library which did not do this initially, but plans to move to this approach in future versions, which would be a breaking change for clients.</p>
 <p>So to summarize, Miri is so essential that I don't know whether it's viable to write Rust code with lots of FFI (and thus lots of unsafe blocks) without it. If Miri did not exist, I would seriously consider using only arenas or reconsider the use of Rust.</p>
-<h2>Cross-compilation</h2>
+<h2 id="cross-compilation">Cross-compilation</h2>
 <p>Rust has great cross-compilation support; C++ not so much. Nonetheless I managed to coerced CMake into cross-compiling to every platform we support from my Linux laptop. After using Docker for more than 10 years I am firmly against using Docker for that, it's just clunky and slow and not a good fit. Also we already have to cross-compile to the mobile platforms anyway so why not make that work for all platforms?</p>
 <p>That way, I can even cross-compile tests and example programs in C or C++ using the library and run them inside <code>qemu</code> to make sure all platforms work as expected.</p>
 <p>I took inspiration from the CMake code in the Android project, which has to cross-compile for many architectures. Did you know that Android supports x86 (which is 32 bits), x86_64, arm (which is 32 bits), aarch64 (sometimes called arm64), and more?</p>
@@ -614,7 +614,7 @@ end
 <p>That's something that people do not mention often when saying that modern C++ is good enough and secure enough. Well, first I disagree with this statement, but more broadly, the C++ toolchain to cross-compile sucks. You only have clang that can cross-compile in theory but in practice you have to resort to the Zig toolchain to automate cross-compiling the standard library etc.</p>
 <p>Also, developers not deeply familiar with either C or C++ do not want to touch all this CMake/Autotools with a ten-foot pole. And I understand them. Stockholm syndrome notwithstanding, these are pretty slow, convoluted, niche programming languages and no one wants to actively learn and use them unless they have to.</p>
 <p>Once you are used to simply typing <code>go build</code> or <code>cargo build</code>, you really start to ask yourself if those weird things are worth anyone's time.</p>
-<h2>Conclusion</h2>
+<h2 id="conclusion">Conclusion</h2>
 <p>The rewrite is not yet fully done, but we have already more Rust code than C++ code, and it's moving along nicely, at our own pace (it's not by far the only project we have on our lap). Once all C++ code is removed, we will do a final pass to remove the CMake stuff and build directly via <code>cargo</code>. We'll see if that works when integrating with other build systems e.g. Bazel for Android or Xcode for iOS.</p>
 <p>Developers who learned Rust are overall very happy with it and did not have too many fights with the borrow checker, with one notable exception of trying to migrate a C struct that used an intrusive linked list (ah, the dreaded linked list v. borrow checker!). My suggestion was to simply use a <code>Vec</code> in Rust since the linked list was not really justified here, and the problem was solved.</p>
 <p>Adding unit tests was trivial in Rust compared to C++ and as a result people would write a lot more of them. Built-in support for tests is expected in 2024 by developers. I don't think one single C++ test was written during this rewrite, now that I think of it.</p>

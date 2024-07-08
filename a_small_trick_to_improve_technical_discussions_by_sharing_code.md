@@ -161,7 +161,7 @@ vim.keymap.set({'v', 'n'}, '<leader>x', ':GitWebUiUrlCopy<CR>')
 And that's it, just 40 lines of Lua, and easy to extend to support even more hosting providers.
 
 
-## Addendum: the full code
+<h2 id="addendum-the-full-code">Addendum: the full code</h2>
 
 ```lua
 vim.keymap.set({'v', 'n'}, '<leader>x', ':GitWebUiUrlCopy<CR>')

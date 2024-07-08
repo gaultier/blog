@@ -41,7 +41,7 @@ window.addEventListener("load", (event) => {
 <div class="body">
 
 <div class="articles">
-<h2>Articles</h2>
+<h2 id="articles">Articles</h2>
 <ul>
 <li><span class="date">Sep 5 2019</span> <a href="/blog/advent_of_code_2018_5.html">Getting started with Scheme by solving an Advent of Code 2018 challenge</a></li>
 <li><span class="date">Sep 7 2020</span> <a href="/blog/compile_ziglang_from_source_on_alpine_2020_9.html">How to compile LLVM, Clang, LLD, and Ziglang from source on Alpine Linux</a></li>
@@ -60,11 +60,11 @@ window.addEventListener("load", (event) => {
 <li><span class="date">June 20 2024</span> <a href="/blog/write_a_video_game_from_scratch_like_1987.html">Let's write a video game from scratch like it's 1987</a></li>
 </ul>
 </div>
-<h2>About me</h2>
+<h2 id="about-me">About me</h2>
 <p>I am a French/German Senior Software Engineer from France living in Bavaria, Germany. By day, I work for a Fintech company, and by night I write some fun projects in C, Rust, Odin, Zig, and Assembly. I like to work on low-level systems.</p>
 <p>In my free time, I run, lift weights, play music, and garden.</p>
 <p>Get in touch, send me an email (link on my Github profile)!</p>
-<h2>I am grateful</h2>
+<h2 id="i-am-grateful">I am grateful</h2>
 <p>I often am frustrated with the state of the software industry; however there is software out there that I am deeply grateful for.</p>
 <ul>
 <li>Address Sanitizer/Thread Sanitizer. How many projects can revolutionize the way an established industry writes and thinks about native programming languages, and by so doing, impacts the development of new programming languages, such as Rust and Go? And how many projects are massively helpful for beginners and experts alike? Any respectable C or C++ programmer should test every new line of code under these sanitizers, numerous bugs will be caught and your understanding of the standard and undefined behaviour will be greatly improved. Finally, its benefits compound nicely with fuzzing and automated testing.</li>
@@ -77,7 +77,7 @@ window.addEventListener("load", (event) => {
 <li>Rust. Because it catches all my mistakes at compile time and I wish all compilers would too.</li>
 <li>Zig the toolchain. Because straightforward cross-compiling should be what everyone does on a daily basis without having to setup Docker/VMs/a complicated CI.</li>
 </ul>
-<h2>Portfolio</h2>
+<h2 id="portfolio">Portfolio</h2>
 <p><em>In chronological order, which is also roughly the ascending order of technical difficulty:</em></p>
 <p><a href="https://github.com/gaultier/Simulation_Stars_OpenGL">Prototype using the Oculus Rift</a>: This was my second internship and the first time I owned a project from start to finish. This was a blast and possibly the most fun I had in all my career. This is back in 2014 and the first version of the Oculus Rift was all the hype back then. The goal of the project in the astronomy/CERN lab I was at was to explore how to teach kids about the solar system and astronomy by having them put the Oculus Rift on and experiment it for themselves, flying through the stars. It was great! I got to learn about OpenGL, SDL and multiplying specific 4x4 matrices together to slightly move the camera for each eye so that the VR effect happens and your brain is tricked.
 In terms of implementation this is pretty subpar C++ code in retrospect - I went all in on OOP and trying to use every C++ feature under the sun. But it worked, kind of, each star was a cube because I ran out of time.
@@ -114,7 +114,7 @@ The implementation still holds, however I would definitely revist the assembly g
 <li>It's only 10k lines of code, it ony needs ~10 MiB of memory to compile real programs, and the final stripped executable for the compiler is ~180 Kib!</li>
 </ul>
 <p>I think my most noteworthy projects are compilers both because I tend to be attracted to that domain and also because small CLI tools are less interesting. Compilers for real programming languages are hard!</p>
-<h2>Resume</h2>
+<h2 id="resume">Resume</h2>
 <p>You can find my resume <a href="https://gaultier.github.io/resume/resume">online</a>
 or download it as <a href="https://github.com/gaultier/resume/raw/master/Philippe_Gaultier_resume_en.pdf">PDF</a>.</p>
 
