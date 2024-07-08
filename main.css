@@ -24,7 +24,7 @@ p {
 }
 
 #banner > ul > li {
-  padding: .5rem;
+  padding: .5rem .2rem;
 }
 
 #banner > ul > li > a:hover {
@@ -115,17 +115,22 @@ body {
 
 @media (max-width : 450px) {
     li {
-        padding: 0.5rem;
+        padding: .5rem .2rem;
     }
 }
 
 /* Mobile */
-@media (min-width : 450px) {
+@media (max-width : 600px) {
     html {
       font-size: 24px;
     }
     li {
-        padding: 1rem;
+        padding: 1rem .2rem;
+    }
+}
+@media (min-width : 601px) {
+    li {
+        padding: .5rem .2rem;
     }
 }
 
