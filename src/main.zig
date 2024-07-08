@@ -270,7 +270,9 @@ fn generate_page_articles_by_tag(articles: []Article, header: []const u8, footer
 
     for (keys) |tag| {
         const articles_for_tag = articles_per_tag.get(tag) orelse undefined;
-        try std.fmt.format(buffered_writer.writer(), "<li><ul>{s}\n", .{tag});
+        const tag_id = try allocator.dupe(u8, tag);
+        std.mem.replaceScalar(u8, tag_id, ' ', '-');
+        try std.fmt.format(buffered_writer.writer(), "<li><ul id=\"{s}\">{s}\n", .{ tag_id, tag });
 
         for (articles_for_tag.items) |article_for_tag| {
             try std.fmt.format(buffered_writer.writer(), "<li><a href={s}>{s}</a></li>\n", .{ article_for_tag.output_file_name, article_for_tag.title });
