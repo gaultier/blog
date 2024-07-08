@@ -42,7 +42,7 @@ fn articlesOrderedByCreationDateAsc(ctx: void, a: Article, b: Article) bool {
     return std.mem.lessThan(u8, &a.dates.creation_date, &b.dates.creation_date);
 }
 
-fn getDate(datetime: []const u8) []const u8 {
+fn get_date(datetime: [iso_date_str_len]u8) []const u8 {
     return datetime[0..10];
 }
 
@@ -202,8 +202,6 @@ fn generate_article(markdown_file_path: []const u8, header: []const u8, footer: 
     std.debug.assert(header.len > 0);
     std.debug.assert(footer.len > 0);
 
-    const is_index_page = std.mem.eql(u8, markdown_file_path, "index.md");
-
     const markdown_file = try std.fs.cwd().openFile(markdown_file_path, .{});
     defer markdown_file.close();
 
@@ -222,15 +220,14 @@ fn generate_article(markdown_file_path: []const u8, header: []const u8, footer: 
     };
 
     const html_file = try std.fs.cwd().createFile(article.output_file_name, .{});
+    defer html_file.close();
 
     {
-        var title: []const u8 = "Philippe Gaultier's blog";
+        var title: []const u8 = undefined;
 
-        if (!is_index_page) {
-            const first_newline_pos = std.mem.indexOf(u8, markdown_content, "\n") orelse 0;
-            std.debug.assert(first_newline_pos > 0);
-            title = std.mem.trim(u8, markdown_content[0..first_newline_pos], &[_]u8{ '#', ' ' });
-        }
+        const first_newline_pos = std.mem.indexOf(u8, markdown_content, "\n") orelse 0;
+        std.debug.assert(first_newline_pos > 0);
+        title = std.mem.trim(u8, markdown_content[0..first_newline_pos], &[_]u8{ '#', ' ' });
 
         try std.fmt.format(html_file.writer(), html_prelude, .{title});
         article.title = try allocator.dupe(u8, title);
@@ -238,11 +235,9 @@ fn generate_article(markdown_file_path: []const u8, header: []const u8, footer: 
 
     try html_file.writeAll(header);
 
-    if (!is_index_page) {
-        article.dates = try get_creation_and_modification_date_for_article(markdown_file_path, allocator);
-        try html_file.writer().writeAll(back_link);
-        try std.fmt.format(html_file.writer(), "<p id=\"publication_date\">Published on {s}.</p>\n", .{std.mem.trim(u8, getDate(&article.dates.creation_date), &[_]u8{ ' ', '\n', '\'' })});
-    }
+    article.dates = try get_creation_and_modification_date_for_article(markdown_file_path, allocator);
+    try html_file.writer().writeAll(back_link);
+    try std.fmt.format(html_file.writer(), "<p id=\"publication_date\">Published on {s}.</p>\n", .{get_date(article.dates.creation_date)});
 
     {
         const converter_cmd = try std.process.Child.run(.{
@@ -258,9 +253,7 @@ fn generate_article(markdown_file_path: []const u8, header: []const u8, footer: 
         try html_file.writeAll(converter_cmd.stdout);
     }
 
-    if (!is_index_page) {
-        try html_file.writer().writeAll(back_link);
-    }
+    try html_file.writer().writeAll(back_link);
     try html_file.writeAll(footer);
 
     std.log.info("generated {s} {s}", .{ article.output_file_name, article.tags });
@@ -309,7 +302,7 @@ fn generate_page_articles_by_tag(articles: []Article, header: []const u8, footer
         try std.fmt.format(buffered_writer.writer(), "<li id=\"{s}\">{s}<ul>\n", .{ tag_id, tag });
 
         for (articles_for_tag.items) |article_for_tag| {
-            try std.fmt.format(buffered_writer.writer(), "<li><span class=\"date\">{s}</span> <a href={s}>{s}</a></li>\n", .{ getDate(&article_for_tag.dates.creation_date), article_for_tag.output_file_name, article_for_tag.title });
+            try std.fmt.format(buffered_writer.writer(), "<li><span class=\"date\">{s}</span> <a href={s}>{s}</a></li>\n", .{ get_date(article_for_tag.dates.creation_date), article_for_tag.output_file_name, article_for_tag.title });
         }
 
         try buffered_writer.writer().writeAll("</ul></li>\n");
@@ -339,18 +332,15 @@ fn generate_rss_feed(articles: []Article) !void {
         \\    <id>urn:uuid:{s}</id>
         \\
     ;
-    std.debug.assert(articles.len > 2);
-    std.debug.assert(std.mem.eql(u8, articles[articles.len - 1].output_file_name, "index.html"));
-    std.debug.assert(!std.mem.eql(u8, articles[articles.len - 2].output_file_name, "index.html"));
+    std.debug.assert(articles.len > 10);
 
     try std.fmt.format(buffered_writer.writer(), template_prelude, .{
         base_url,
-        articles[articles.len - 2].dates.modification_date,
+        articles[articles.len - 1].dates.modification_date,
         feed_uuid_str,
     });
 
-    // Skip over the last article which is the index.
-    for (articles[0 .. articles.len - 1]) |article| {
+    for (articles) |article| {
         try generate_rss_feed_entry_for_article(buffered_writer.writer(), article);
     }
 
@@ -449,6 +439,59 @@ fn generate_toc_for_article(markdown_file_path: []const u8, allocator: std.mem.A
     return toc.toOwnedSlice();
 }
 
+fn generate_home_page(header: []const u8, articles: []const Article, allocator: std.mem.Allocator) !void {
+    std.debug.assert(header.len > 0);
+
+    const markdown_file_path = "index.md";
+    const markdown_file = try std.fs.cwd().openFile(markdown_file_path, .{});
+    defer markdown_file.close();
+
+    const markdown_content = try markdown_file.readToEndAlloc(allocator, 1 * 1024 * 1024);
+    defer allocator.free(markdown_content);
+
+    const output_file_name = "index.html";
+    const html_file = try std.fs.cwd().createFile(output_file_name, .{});
+    defer html_file.close();
+
+    try std.fmt.format(html_file.writer(), html_prelude, .{"Philippe Gaultier's blog"});
+    try html_file.writeAll(header);
+
+    try html_file.writeAll(
+        \\ <div class="articles">
+        \\ <h2 id="articles">Articles</h2>
+        \\ <ul>
+        \\
+    );
+
+    for (articles) |article| {
+        if (std.mem.eql(u8, article.output_file_name, "body_of_work.html")) continue;
+
+        try std.fmt.format(html_file.writer(), "<li><span class=\"date\">{s}</span> <a href=\"/blog/{s}\">{s}</a></li>\n", .{ get_date(article.dates.creation_date), article.output_file_name, article.title });
+    }
+
+    try html_file.writeAll(
+        \\ </ul>
+        \\ </div>
+        \\
+    );
+
+    {
+        const converter_cmd = try std.process.Child.run(.{
+            .allocator = allocator,
+            .argv = &[_][]const u8{ "cmark", "--unsafe", "-t", "html", markdown_file_path },
+            .max_output_bytes = 1 * 1024 * 1024,
+        });
+        defer allocator.free(converter_cmd.stdout);
+        defer allocator.free(converter_cmd.stderr);
+
+        std.debug.assert(converter_cmd.stderr.len == 0);
+
+        try html_file.writeAll(converter_cmd.stdout);
+    }
+
+    std.log.info("generated {s}", .{output_file_name});
+}
+
 fn generate_all_articles_in_dir(header: []const u8, footer: []const u8, allocator: std.mem.Allocator) ![]Article {
     const cwd = try std.fs.cwd().openDir(".", .{ .iterate = true });
     var cwd_iterator = cwd.iterate();
@@ -466,6 +509,7 @@ fn generate_all_articles_in_dir(header: []const u8, footer: []const u8, allocato
             if (entry.kind != .file) continue;
             if (!std.mem.eql(u8, std.fs.path.extension(entry.name), ".md")) continue;
 
+            if (std.mem.eql(u8, entry.name, "index.md")) continue;
             if (std.mem.eql(u8, entry.name, "README.md")) continue;
 
             wait_group.start();
@@ -517,6 +561,7 @@ pub fn main() !void {
     } else {
         const articles = try generate_all_articles_in_dir(header, footer, allocator);
         std.mem.sort(Article, articles, {}, articlesOrderedByCreationDateAsc);
+        try generate_home_page(header, articles, allocator);
         try generate_page_articles_by_tag(articles, header, footer, allocator);
         try generate_rss_feed(articles);
     }

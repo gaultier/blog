@@ -1,25 +1,3 @@
-<div class="articles">
-
-<h2 id="articles">Articles</h2>
-
-- <span class="date">Sep 5 2019</span> [Getting started with Scheme by solving an Advent of Code 2018 challenge](/blog/advent_of_code_2018_5.html)
-- <span class="date">Sep 7 2020</span> [How to compile LLVM, Clang, LLD, and Ziglang from source on Alpine Linux](/blog/compile_ziglang_from_source_on_alpine_2020_9.html)
-- <span class="date">Sep 21 2020</span> [Adventures in CI land, or how to speed up your CI](/blog/speed_up_your_ci.html)
-- <span class="date">May 31 2023</span> [Learn x86-64 assembly by writing a GUI from scratch](/blog/x11_x64.html)
-- <span class="date">June 5 2023</span> [Cycle detection in graphs does not have to be hard: A lesser known, simple way with Kahn's algorithm](/blog/kahns_algorithm.html)
-- <span class="date">October 5 2023</span> [Optimizing an Advent of Code solution in assembly](/blog/advent_of_code_2018_5_revisited.html)
-- <span class="date">October 13 2023</span> [Learn Wayland by writing a GUI from scratch](/blog/wayland_from_scratch.html)
-- <span class="date">November 24 2023</span> [Roll your own memory profiling: it's actually not hard](/blog/roll_your_own_memory_profiling.html)
-- <span class="date">December 1 2023</span> [Solving a problem with Gnuplot, the programming language (not the plotting software!)](/blog/gnuplot_lang.html)
-- <span class="date">December 15 2023</span> [This blog now has an Atom feed, and yours should probably too](/blog/feed.html)
-- <span class="date">February 23 2024</span> [Quick and easy PNG image size reduction](/blog/image_size_reduction.html)
-- <span class="date">February 29 2024</span> [You've just inherited a legacy C++ codebase, now what?](/blog/you_inherited_a_legacy_cpp_codebase_now_what.html)
-- <span class="date">March 7 2024</span> [A small trick to improve technical discussions by sharing code](/blog/a_small_trick_to_improve_technical_discussions_by_sharing_code.html)
-- <span class="date">May 6 2024</span> [How to rewrite a C++ codebase successfully](/blog/how_to_rewrite_a_cpp_codebase_successfully.html)
-- <span class="date">June 20 2024</span> [Let's write a video game from scratch like it's 1987](/blog/write_a_video_game_from_scratch_like_1987.html)
-
-</div>
-
 <h2 id="about-me">About me</h2>
 
 I am a French/German Senior Software Engineer from France living in Bavaria, Germany. By day, I work for a Fintech company, and by night I write some fun projects in C, Rust, Odin, Zig, and Assembly. I like to work on low-level systems.
