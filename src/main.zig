@@ -32,7 +32,7 @@ fn stringLess(ctx: void, a: []const u8, b: []const u8) bool {
     return std.mem.order(u8, a, b) == .lt;
 }
 
-fn articleLess(ctx: void, a: Article, b: Article) bool {
+fn articlesOrderedByCreationDateAsc(ctx: void, a: Article, b: Article) bool {
     _ = ctx;
     return std.mem.lessThan(u8, &a.dates.creation_date, &b.dates.creation_date);
 }
@@ -453,7 +453,7 @@ pub fn main() !void {
         try std.io.getStdOut().writeAll(toc);
     } else {
         const articles = try generate_all_articles_in_dir(header, footer, allocator);
-        std.mem.sort(Article, articles, {}, articleLess);
+        std.mem.sort(Article, articles, {}, articlesOrderedByCreationDateAsc);
         try generate_page_articles_by_tag(articles, header, footer, allocator);
         try generate_rss_feed(articles);
     }
