@@ -175,4 +175,4 @@ do for [line in data] {
 print(sum)
 ```
 
-*Tags: [Advent of Code](/blog/articles-per-tag/#Advent-of-Code), [Gnuplot](/blog/articles-per-tag/Gnuplot)*
+*Tags: [Advent of Code](/blog/articles-per-tag.html#Advent-of-Code), [Gnuplot](/blog/articles-per-tag.htmlGnuplot)*

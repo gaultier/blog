@@ -21,4 +21,4 @@ I implemented that in under an hour, skimming at the RFC and examples. It's a bi
 
 And...that's it really. Enjoy reading these articles in your favorite app!
 
-*Tags: [Feed](/blog/articles-per-tag/#Feed), [Atom](/blog/articles-per-tag/#Atom), [UUID](/blog/articles-per-tag/#UUID)*
+*Tags: [Feed](/blog/articles-per-tag.html#Feed), [Atom](/blog/articles-per-tag.html#Atom), [UUID](/blog/articles-per-tag.html#UUID)*

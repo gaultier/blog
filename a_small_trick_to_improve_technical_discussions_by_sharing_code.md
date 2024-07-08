@@ -209,4 +209,4 @@ end,
 {force=true, range=true, nargs=0, desc='Copy to clipboard a URL to a git webui for the current line'})
 ```
 
-*Tags: [Lua](/blog/articles-per-tag/#Lua), [Neovim](/blog/articles-per-tag/#Neovim), [Git](/blog/articles-per-tag/#Git)*
+*Tags: [Lua](/blog/articles-per-tag.html#Lua), [Neovim](/blog/articles-per-tag.html#Neovim), [Git](/blog/articles-per-tag.html#Git)*

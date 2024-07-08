@@ -1415,4 +1415,4 @@ int main() {
 
 ```
 
-*Tags: [C](/blog/articles-per-tag/#C), [Wayland](/blog/articles-per-tag/#Wayland), [GUI](/blog/articles-per-tag/#GUI), [X11](/blog/articles-per-tag/#X11)*
+*Tags: [C](/blog/articles-per-tag.html#C), [Wayland](/blog/articles-per-tag.html#Wayland), [GUI](/blog/articles-per-tag.html#GUI), [X11](/blog/articles-per-tag.html#X11)*

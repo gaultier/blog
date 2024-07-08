@@ -678,4 +678,4 @@ for (let i = employeesTopologicallySorted.length - 2; i >= 0; i -= 1) {
 }
 ```
 
-*Tags: [Graph](/blog/articles-per-tag/#Graph), [Algorithm](/blog/articles-per-tag/#Algorithm), [JavaScript](/blog/articles-per-tag/#JavaScript), [SQL](/blog/articles-per-tag/#SQL)*
+*Tags: [Graph](/blog/articles-per-tag.html#Graph), [Algorithm](/blog/articles-per-tag.html#Algorithm), [JavaScript](/blog/articles-per-tag.html#JavaScript), [SQL](/blog/articles-per-tag.html#SQL)*

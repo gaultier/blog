@@ -48,4 +48,4 @@ $ zig version
 0.6.0+749417a
 ```
 
-*Tags: [LLVM](/blog/articles-per-tag/#LLVM), [Zig](/blog/articles-per-tag/#Zig), [Alpine](/blog/articles-per-tag/#Alpine)*
+*Tags: [LLVM](/blog/articles-per-tag.html#LLVM), [Zig](/blog/articles-per-tag.html#Zig), [Alpine](/blog/articles-per-tag.html#Alpine)*

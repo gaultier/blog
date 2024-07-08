@@ -783,4 +783,4 @@ int main() {
 }
 ```
 
-*Tags: [C](/blog/articles-per-tag/#C), [Allocator](/blog/articles-per-tag/#Allocator), [Profiling](/blog/articles-per-tag/#Profiling), [Pprof](/blog/articles-per-tag/#Pprof)*
+*Tags: [C](/blog/articles-per-tag.html#C), [Allocator](/blog/articles-per-tag.html#Allocator), [Profiling](/blog/articles-per-tag.html#Profiling), [Pprof](/blog/articles-per-tag.html#Pprof)*

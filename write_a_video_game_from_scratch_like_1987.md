@@ -2299,4 +2299,4 @@ test_count_mines_around_cell :: proc(_: ^testing.T) {
 ```
 
 
-*Tags: [C](/blog/articles-per-tag/#C), [X11](/blog/articles-per-tag/#X11), [Video game](/blog/articles-per-tag/#Video-game), [Odin](/blog/articles-per-tag/#Odin), [Optimization](/blog/articles-per-tag/#Optimization)*
+*Tags: [C](/blog/articles-per-tag.html#C), [X11](/blog/articles-per-tag.html#X11), [Video game](/blog/articles-per-tag.html#Video-game), [Odin](/blog/articles-per-tag.html#Odin), [Optimization](/blog/articles-per-tag.html#Optimization)*
