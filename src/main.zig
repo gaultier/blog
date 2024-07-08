@@ -298,6 +298,8 @@ fn generate_page_articles_by_tag(articles: []Article, header: []const u8, footer
         std.mem.sort(*const Article, articles_for_tag.items, {}, articlesPtrOrderedByCreationDateAsc);
 
         const tag_id = try allocator.dupe(u8, tag);
+        defer allocator.free(tag_id);
+
         std.mem.replaceScalar(u8, tag_id, ' ', '-');
         try std.fmt.format(buffered_writer.writer(), "<li id=\"{s}\">{s}<ul>\n", .{ tag_id, tag });
 
