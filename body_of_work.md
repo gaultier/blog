@@ -2,6 +2,14 @@
 
 I am here recounting chronologically what I have achieved in my career until now. I have a sub par memory so it's great for me to look back on that, and may it also hopefully serve as an interesting insight for fellow practitioners and recruiters into the kind of work I enjoy and am experienced with.
 
+**Table of Contents:**
+
+ - [Crédit Mutuel (Bank), Strasbourg, France; 2013](#cr-dit-mutuel-bank-strasbourg-france-2013)
+ - [CNRS Intern Software Engineer experimenting with the Oculus Rift (VR) CNRS, Strasbourg, France; 2014](#cnrs-intern-software-engineer-experimenting-with-the-oculus-rift-vr-cnrs-strasbourg-france-2014)
+ - [Full-stack Software Engineer EdgeLab, Lausanne, Switzerland; 2015-2017](#full-stack-software-engineer-edgelab-lausanne-switzerland-2015-2017)
+ - [Back-end Software Engineer & DevOps PPRO, Munich, Germany; 2017-2023](#back-end-software-engineer-devops-ppro-munich-germany-2017-2023)
+ - [Senior Software Engineer Giesecke+Devrient, Munich, Germany; 2023-present](#senior-software-engineer-giesecke-devrient-munich-germany-2023-present)
+
 <h2 id="cr-dit-mutuel-bank-strasbourg-france-2013">Crédit Mutuel (Bank), Strasbourg, France; 2013</h2>
 
 This was my first professional experience (a 8 weeks internship) and happened at one of the big banks in the country. Like most banks that have been founded in the 20th century, they have millions and millions of lines of code in COBOL, and realized this is not tenable and need to migrate to a modern tech stack to be able to keep it simply running. 
