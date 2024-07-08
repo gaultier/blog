@@ -384,7 +384,11 @@ fn generate_toc_for_article(markdown_file_path: []const u8, allocator: std.mem.A
         const first_space_pos = std.mem.indexOf(u8, line.items, " ") orelse 0;
         const level = if (is_begin_title_markdown) first_space_pos else (line.items[2] - '0');
         std.debug.assert(1 <= level and level <= 6);
-        const title = std.mem.trim(u8, line.items[first_space_pos..], &[_]u8{ ' ', '\n' });
+        const title = if (is_begin_title_markdown) std.mem.trim(u8, line.items[first_space_pos..], &[_]u8{ ' ', '\n' }) else blk: {
+            const start = 1 + (std.mem.indexOfScalar(u8, line.items, '>') orelse @panic("html title end tag not found"));
+            const end = std.mem.indexOfScalar(u8, line.items[start..], '<') orelse @panic("html title start tag not found");
+            break :blk line.items[start..][0..end];
+        };
 
         try toc.appendNTimes(' ', level * 2);
         try toc.appendSlice(" - [");
