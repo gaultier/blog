@@ -466,7 +466,13 @@ fn generate_home_page(header: []const u8, articles: []const Article, allocator: 
     for (articles) |article| {
         if (std.mem.eql(u8, article.output_file_name, "body_of_work.html")) continue;
 
-        try std.fmt.format(html_file.writer(), "<li><span class=\"date\">{s}</span> <a href=\"/blog/{s}\">{s}</a></li>\n", .{ get_date(article.dates.creation_date), article.output_file_name, article.title });
+        try std.fmt.format(html_file.writer(),
+            \\<li>
+            \\  <span class="date">{s}</span>
+            \\  <a href="/blog/{s}">{s}</a>
+            \\</li>
+            \\
+        , .{ get_date(article.dates.creation_date), article.output_file_name, article.title });
     }
 
     try html_file.writeAll(
