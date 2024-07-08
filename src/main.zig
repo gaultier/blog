@@ -249,6 +249,7 @@ fn generate_article(markdown_file_path: []const u8, header: []const u8, footer: 
         try html_file.writeAll(converter_cmd.stdout);
     }
 
+    try html_file.writer().writeAll("<p><a href=\"/blog\"> ⏴ Back to all articles</a>\n");
     try html_file.writeAll(footer);
 
     std.log.info("generated {s} {s}", .{ article.output_file_name, article.tags });
