@@ -16,12 +16,15 @@ p {
 
 #banner > ul {
   list-style: none;
-  padding: 0 1rem 0 .5rem;
+  padding: 0 .5rem;
   display: inline-flex;
+  flex-wrap: wrap;
+  justify-content: space-evenly;
+  gap: .5rem;
 }
 
 #banner > ul > li {
-  padding: 0 .5rem;
+  padding: .5rem;
 }
 
 #banner > ul > li > a:hover {
@@ -69,17 +72,14 @@ p {
 #name {
   font-weight: bolder;
   display: inline-flex;
+  flex-wrap: wrap;
   align-items: center;
   margin: 0;
-  text-decoration: none;
   color: black;
   border-radius: 8px;
   border: 15px;
   padding: 0 .5rem;
-}
-
-#name:hover {
-  background-color: #FFA726;
+  padding-bottom: .5rem;
 }
 
 figure {
