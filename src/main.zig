@@ -32,9 +32,17 @@ fn stringLess(ctx: void, a: []const u8, b: []const u8) bool {
     return std.mem.order(u8, a, b) == .lt;
 }
 
+fn articlesPtrOrderedByCreationDateAsc(ctx: void, a: *const Article, b: *const Article) bool {
+    return articlesOrderedByCreationDateAsc(ctx, a.*, b.*);
+}
+
 fn articlesOrderedByCreationDateAsc(ctx: void, a: Article, b: Article) bool {
     _ = ctx;
     return std.mem.lessThan(u8, &a.dates.creation_date, &b.dates.creation_date);
+}
+
+fn getDate(datetime: []const u8) []const u8 {
+    return datetime[0..10];
 }
 
 fn do_generate_article(markdown_file_path: []const u8, header: []const u8, footer: []const u8, wait_group: *std.Thread.WaitGroup, articles: *std.ArrayList(Article), articles_mtx: *std.Thread.Mutex, allocator: std.mem.Allocator) void {
@@ -232,7 +240,7 @@ fn generate_article(markdown_file_path: []const u8, header: []const u8, footer: 
     if (!is_index_page) {
         article.dates = try get_creation_and_modification_date_for_article(markdown_file_path, allocator);
         try html_file.writer().writeAll("<p><a href=\"/blog\"> ⏴ Back to all articles</a>\n");
-        try std.fmt.format(html_file.writer(), "<p id=\"publication_date\">Published on {s}.</p>\n", .{std.mem.trim(u8, article.dates.creation_date[0..10], &[_]u8{ ' ', '\n', '\'' })});
+        try std.fmt.format(html_file.writer(), "<p id=\"publication_date\">Published on {s}.</p>\n", .{std.mem.trim(u8, getDate(&article.dates.creation_date), &[_]u8{ ' ', '\n', '\'' })});
     }
 
     {
@@ -293,12 +301,14 @@ fn generate_page_articles_by_tag(articles: []Article, header: []const u8, footer
 
     for (keys) |tag| {
         const articles_for_tag = articles_per_tag.get(tag) orelse undefined;
+        std.mem.sort(*const Article, articles_for_tag.items, {}, articlesPtrOrderedByCreationDateAsc);
+
         const tag_id = try allocator.dupe(u8, tag);
         std.mem.replaceScalar(u8, tag_id, ' ', '-');
         try std.fmt.format(buffered_writer.writer(), "<li id=\"{s}\">{s}<ul>\n", .{ tag_id, tag });
 
         for (articles_for_tag.items) |article_for_tag| {
-            try std.fmt.format(buffered_writer.writer(), "<li><a href={s}>{s}</a></li>\n", .{ article_for_tag.output_file_name, article_for_tag.title });
+            try std.fmt.format(buffered_writer.writer(), "<li><span class=\"date\">{s}</span> <a href={s}>{s}</a></li>\n", .{ getDate(&article_for_tag.dates.creation_date), article_for_tag.output_file_name, article_for_tag.title });
         }
 
         try buffered_writer.writer().writeAll("</ul></li>\n");
