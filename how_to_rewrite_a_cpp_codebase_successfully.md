@@ -792,4 +792,4 @@ So, I hope this article alleviated your concerns about rewriting your C++ codeba
 You know, like any other software project, really!
 
 
-*Tags: C, C++, Rust, Rewrite*
+*Tags: [C](/blog/articles-per-tag/#C), [C++](/blog/articles-per-tag/#C++), [Rust](/blog/articles-per-tag/#Rust), [Rewrite](/blog/articles-per-tag/#Rewrite)*

@@ -2299,4 +2299,4 @@ test_count_mines_around_cell :: proc(_: ^testing.T) {
 ```
 
 
-*Tags: C, X11, Video game, Odin, Optimization*
+*Tags: [C](/blog/articles-per-tag/#C), [X11](/blog/articles-per-tag/#X11), [Video game](/blog/articles-per-tag/#Video-game), [Odin](/blog/articles-per-tag/#Odin), [Optimization](/blog/articles-per-tag/#Optimization)*

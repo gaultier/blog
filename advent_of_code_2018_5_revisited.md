@@ -1228,4 +1228,4 @@ _start:
 <script src="https://unpkg.com/@highlightjs/cdn-assets@11.8.0/languages/x86asm.min.js"></script>
 
 
-*Tags: x86_64, Advent of Code, Optimization, Algorithm, C, Lisp, Scheme*
+*Tags: [x86_64](/blog/articles-per-tag/#x86_64), [Advent of Code](/blog/articles-per-tag/#Advent-of-Code), [Optimization](/blog/articles-per-tag/#Optimization), [Algorithm](/blog/articles-per-tag/#Algorithm), [C](/blog/articles-per-tag/#C), [Lisp](/blog/articles-per-tag/#Lisp), [Scheme](/blog/articles-per-tag/#Scheme)*

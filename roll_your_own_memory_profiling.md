@@ -783,4 +783,4 @@ int main() {
 }
 ```
 
-*Tags: C, Allocator, Profiling, Pprof*
+*Tags: [C](/blog/articles-per-tag/#C), [Allocator](/blog/articles-per-tag/#Allocator), [Profiling](/blog/articles-per-tag/#Profiling), [Pprof](/blog/articles-per-tag/#Pprof)*

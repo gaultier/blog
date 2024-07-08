@@ -531,4 +531,4 @@ challenges, solved with a variety of programming languages.
 
 <script src="https://unpkg.com/@highlightjs/cdn-assets@11.8.0/languages/scheme.min.js"></script>
 
-*Tags: Lisp, Scheme, C, Advent of Code*
+*Tags: [Lisp](/blog/articles-per-tag/#Lisp), [Scheme](/blog/articles-per-tag/#Scheme), [C](/blog/articles-per-tag/#C), [Advent of Code](/blog/articles-per-tag/#Advent-of-Code)*

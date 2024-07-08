@@ -158,13 +158,33 @@ fn extract_tags_for_article(markdown_content: []const u8, allocator: std.mem.All
     var tags = std.ArrayList([]const u8).init(allocator);
     const prefix = "Tags: ";
     const tags_begin = (std.mem.indexOf(u8, markdown_content, prefix) orelse return tags.toOwnedSlice()) + prefix.len;
-    const tags_end = std.mem.indexOf(u8, markdown_content[tags_begin..], "\n") orelse markdown_content.len;
+    const tags_end = std.mem.indexOfScalar(u8, markdown_content[tags_begin..], '\n') orelse markdown_content.len;
+    const tags_str = markdown_content[tags_begin..][0..tags_end];
 
-    var it = std.mem.splitSequence(u8, markdown_content[tags_begin..][0..tags_end], ", ");
+    var i: usize = 0;
+    while (i < tags_end) {
+        std.debug.print("[D001] {} {} `{s}`\n", .{ i, tags_str[i], tags_str });
+        switch (tags_str[i]) {
+            '[' => {
+                i += 1;
+                const tag_end = std.mem.indexOfScalar(u8, tags_str[i..], ']') orelse @panic("missing closing ]");
+                const tag_str = tags_str[i..][0..tag_end];
 
-    while (it.next()) |tag| {
-        const trimmed = std.mem.trim(u8, tag, &[_]u8{ ' ', '\n', '*' });
-        try tags.append(try allocator.dupe(u8, trimmed));
+                try tags.append(try allocator.dupe(u8, tag_str));
+
+                i += std.mem.indexOfScalar(u8, tags_str[i..], '(') orelse @panic("missing opening (");
+                const link_end = std.mem.indexOfScalar(u8, tags_str[i..], ')') orelse @panic("missing closing )");
+                const link = tags_str[i + 1 ..][0..link_end];
+                std.debug.print("[D002] {} `{s}` `{s}` `{s}`\n", .{ i, tags_str[i .. i + 2], link, tags_str });
+                std.debug.assert(std.mem.indexOfScalar(u8, link, ' ') == null);
+
+                i += link_end + 1;
+            },
+            ' ' => i += 1,
+            ',' => i += 1,
+            '*' => break,
+            else => @panic("unexpected character found"),
+        }
     }
 
     return tags.toOwnedSlice();
@@ -238,7 +258,7 @@ fn generate_article(markdown_file_path: []const u8, header: []const u8, footer: 
 }
 
 fn generate_page_articles_by_tag(articles: []Article, header: []const u8, footer: []const u8, allocator: std.mem.Allocator) !void {
-    const tags_file = try std.fs.cwd().createFile("articles_per_tag.html", .{});
+    const tags_file = try std.fs.cwd().createFile("articles-per-tag.html", .{});
     defer tags_file.close();
 
     var buffered_writer = std.io.bufferedWriter(tags_file.writer());
@@ -393,7 +413,7 @@ fn generate_all_articles_in_dir(header: []const u8, footer: []const u8, allocato
     var cwd_iterator = cwd.iterate();
 
     var pool: std.Thread.Pool = undefined;
-    try std.Thread.Pool.init(&pool, .{ .allocator = allocator });
+    try std.Thread.Pool.init(&pool, .{ .allocator = allocator, .n_jobs = 1 });
     var wait_group = std.Thread.WaitGroup{};
 
     var articles = std.ArrayList(Article).init(allocator);
