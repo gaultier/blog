@@ -395,15 +395,20 @@ fn generate_toc_for_article(markdown_file_path: []const u8, allocator: std.mem.A
         try toc.appendSlice(title);
         try toc.appendSlice("](#");
 
+        var id = std.ArrayList(u8).init(allocator);
+        try id.ensureTotalCapacity(title.len);
+        defer id.deinit();
+
         for (title) |c| {
-            if (c == ' ') {
-                try toc.append('-');
-            } else if (c == '-') {
-                try toc.append(c);
-            } else if (std.ascii.isAlphanumeric(c)) {
-                try toc.append(std.ascii.toLower(c));
+            if (std.ascii.isAlphanumeric(c)) {
+                try id.append(std.ascii.toLower(c));
+            } else if (id.items.len > 0 and id.items[id.items.len - 1] != '-') {
+                try id.append('-');
             }
         }
+        const final_id = std.mem.trim(u8, id.items, "-");
+        try toc.appendSlice(final_id);
+
         try toc.appendSlice(")\n");
     } else |err| switch (err) {
         error.EndOfStream => {},

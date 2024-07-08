@@ -10,6 +10,16 @@ Lastly, remember to measure and profile your changes. If a change has made no im
 
 *This article assumes you are running a POSIX system. Windows developers, this is not the article you are looking for.*
 
+**Table of Contents:**
+
+   - [Adventures in CI land, or how to speed up your CI](#adventures-in-ci-land-or-how-to-speed-up-your-ci)
+     - [Reduce the size of everything](#reduce-the-size-of-everything)
+     - [Be lazy: Don't do things you don't need to do](#be-lazy-don-t-do-things-you-don-t-need-to-do)
+     - [Miscellenaous tricks](#miscellenaous-tricks)
+     - [A note on security](#a-note-on-security)
+     - [I am a DevOps Engineer, what can I do?](#i-am-a-devops-engineer-what-can-i-do-)
+     - [Closing words](#closing-words)
+
 <h2 id="reduce-the-size-of-everything">Reduce the size of everything</h2>
 
 Almost certainly, your CI pipeline has to download 'something', be it a base docker image, a virtual machine image, some packages, maybe a few company wide scripts. The thing is, you are downloading those every time it runs, 24/7, every day of the year. Even a small size reduction can yield big speed ups. Remember, the network is usually the bottleneck. 
