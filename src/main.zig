@@ -263,6 +263,7 @@ fn generate_page_articles_by_tag(articles: []Article, header: []const u8, footer
 
     var buffered_writer = std.io.bufferedWriter(tags_file.writer());
     try buffered_writer.writer().writeAll(header);
+    try buffered_writer.writer().writeAll("<p><a href=\"/blog\"> ⏴ Back to all articles</a>\n");
     try buffered_writer.writer().writeAll("<h1>Articles per tag</h1>\n");
 
     var articles_per_tag = std.StringArrayHashMap(std.ArrayList(*const Article)).init(allocator);
