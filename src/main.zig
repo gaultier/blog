@@ -410,6 +410,21 @@ fn generate_toc_for_article(markdown_file_path: []const u8, allocator: std.mem.A
         try toc.appendSlice(final_id);
 
         try toc.appendSlice(")\n");
+
+        // Sanity check.
+        if (is_begin_title_html) {
+            const needle = "id=\"";
+            const id_start = std.mem.indexOf(u8, line.items, needle);
+            if (id_start) |start| {
+                const id_end = std.mem.indexOfScalar(u8, line.items[start + needle.len ..], '"') orelse @panic("unterminated id");
+                const id_found = line.items[start + needle.len ..][0..id_end];
+
+                if (!std.mem.eql(u8, id_found, final_id)) {
+                    std.log.warn("mismatched title ids: found:{s} expected:{s}", .{ id_found, final_id });
+                    std.process.exit(1);
+                }
+            }
+        }
     } else |err| switch (err) {
         error.EndOfStream => {},
         else => return err, // Propagate error
