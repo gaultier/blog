@@ -231,6 +231,7 @@ fn generate_article(markdown_file_path: []const u8, header: []const u8, footer: 
 
     if (!is_index_page) {
         article.dates = try get_creation_and_modification_date_for_article(markdown_file_path, allocator);
+        try html_file.writer().writeAll("<p><a href=\"/blog\"> ⏴ Back to all articles</a>\n");
         try std.fmt.format(html_file.writer(), "<p id=\"publication_date\">Published on {s}.</p>\n", .{std.mem.trim(u8, article.dates.creation_date[0..10], &[_]u8{ ' ', '\n', '\'' })});
     }
 
