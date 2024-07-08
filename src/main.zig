@@ -364,7 +364,9 @@ fn generate_toc_for_article(markdown_file_path: []const u8, allocator: std.mem.A
         // Clear the line so we can reuse it.
         defer line.clearRetainingCapacity();
 
-        const is_begin_title = std.mem.startsWith(u8, line.items, "#");
+        const is_begin_title_markdown = std.mem.startsWith(u8, line.items, "#");
+        const is_begin_title_html = std.mem.startsWith(u8, line.items, "<h");
+        const is_begin_title = is_begin_title_markdown or is_begin_title_html;
         const is_begin_code_section = std.mem.startsWith(u8, line.items, "```");
 
         if (is_begin_code_section and !inside_code_section) {
@@ -380,7 +382,8 @@ fn generate_toc_for_article(markdown_file_path: []const u8, allocator: std.mem.A
         if (!is_begin_title) continue;
 
         const first_space_pos = std.mem.indexOf(u8, line.items, " ") orelse 0;
-        const level = first_space_pos;
+        const level = if (is_begin_title_markdown) first_space_pos else (line.items[2] - '0');
+        std.debug.assert(1 <= level and level <= 6);
         const title = std.mem.trim(u8, line.items[first_space_pos..], &[_]u8{ ' ', '\n' });
 
         try toc.appendNTimes(' ', level * 2);

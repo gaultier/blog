@@ -42,7 +42,7 @@ Now, if you want to follow along and translate the C snippets into assembly, go 
 -   [The end](#the-end)
 -   [Addendum: the full code](#addendum-the-full-code)
 
-## What do we need?
+<h2 id="what-do-we-need">What do we need?</h2>
 
 Not much: We'll use C99 so any C compiler of the last 20 years will do. Having a Wayland desktop to test the application will also greatly help.
 
@@ -50,7 +50,7 @@ Note that I have only run it on Linux; it should work (meaning: compile and run)
 
 *Note that the code in this article has not been written in the most robust way, it simply exits when things are not how they should be for example. So, not production ready, but still a good learning resource and a good foundation for more.*
 
-## Wayland basics
+<h2 id="wayland-basics">Wayland basics</h2>
 
 Wayland is a protocol specification for GUI applications (and more), in short. We will write the client side, while the server side is a compositor which understands our protocol. If you have a Wayland desktop right now, a Wayland compositor is already running so there is nothing to do.
 
@@ -105,7 +105,7 @@ static const uint32_t color_channels = 4;
 So, not that much!
 
 
-## Opening a socket
+<h2 id="opening-a-socket">Opening a socket</h2>
 
 The first step is opening a UNIX domain socket. Note that this step is exactly the same as for X11, save for the path of the socket. Also, X11 is designed to be used over the network so it does not have to be a UNIX domain socket, on the same machine - but everybody does so on their desktop machine anyway.
 
@@ -167,7 +167,7 @@ static int wayland_display_connect() {
 
 In Wayland, there is no connection setup to do, such as sending some special messages, so there is nothing more to do.
 
-## Creating a registry
+<h2 id="creating-a-registry">Creating a registry</h2>
 
 Now, to do anything useful, we want to create a registry: it is an object that allows us to query at runtime the capabilities of the compositor.
 
@@ -285,7 +285,7 @@ And by calling it, we have created our very first Wayland resource!
 *From this point on, the utility functions to send Wayland messages (`wayland_*`) will not be included in the code snippets for brevity (but you will find all of the code at the end!), just because they all are similar to the one above.*
 
 
-## Shared memory: the frame buffer
+<h2 id="shared-memory-the-frame-buffer">Shared memory: the frame buffer</h2>
 
 To avoid drawing  a frame in our application, and having to send all of the bytes over the socket to the compositor, there is a smarter approach: the buffer should be shared between the two processes, so that no copying is required.
 
@@ -390,7 +390,7 @@ Later, we will send the file descriptor over the UNIX domain socket as ancillary
 
 Alright, we now have some memory to draw our frame to, but the compositor does not know of it yet. Let's tackle that now.
 
-## Chatting with the compositor
+<h2 id="chatting-with-the-compositor">Chatting with the compositor</h2>
 
 
 We are going to exchange messages back and forth over the socket with the compositor. Let's use plain old blocking calls in `main` like it's the 70's. We read as much as we can from the socket:
@@ -443,7 +443,7 @@ static void wayland_handle_message(int fd, state_t *state, char **msg,
 }
 ```
 
-### Reacting to events: binding interfaces
+<h3 id="reacting-to-events-binding-interfaces">Reacting to events: binding interfaces</h3>
 
 At this point we have sent one message to the compositor: `wl_display@1.get_registry()` thanks to our C function `wayland_wl_display_get_registry`.
 The compositor responds with a series of events, listing the available global objects, such as shared memory support, extension protocols, etc.
@@ -514,7 +514,7 @@ Remember: Since the Wayland protocol is a kind of RPC, we need to create the obj
 In terms of robustness, we do not have guarantees that every feature (i.e.: interface) we need in our application will be supported by the compositor. It could be a good idea to bail if the interfaces we require are not present.
 
 
-### Using the interfaces we created
+<h3 id="using-the-interfaces-we-created">Using the interfaces we created</h3>
 
 We can now call methods on the new interfaces to create more entities we will need, namely:
 
@@ -544,7 +544,7 @@ Once we have done that, the surface is setup, and we commit it, to signal to the
   }
 ```
 
-### Reacting to events: ping/pong
+<h3 id="reacting-to-events-ping-pong">Reacting to events: ping/pong</h3>
 
 For some entities, the Wayland compositor will send us a ping message and expect a pong back to ensure our application is responsive and not deadlocked or frozen.
 
@@ -561,7 +561,7 @@ if (object_id == state->xdg_wm_base &&
   }
 ```
 
-### Reacting to events: configure/ACK configure
+<h3 id="reacting-to-events-configure-ack-configure">Reacting to events: configure/ACK configure</h3>
 
 Akin to the previous ping/pong mechanism, we receive a `configure` event for the `xdg_surface` and we reply with a `ack_configure` message.
 
@@ -580,7 +580,7 @@ if (object_id == state->xdg_surface &&
   } 
 ```
 
-### Rendering a frame: the red rectangle
+<h3 id="rendering-a-frame-the-red-rectangle">Rendering a frame: the red rectangle</h3>
 
 Once the configure/ack configure step has been completed, we can render a frame.
 
@@ -632,7 +632,7 @@ Result:
 
 ![Result, red](wayland-screenshot-red.png)
 
-### Rendering a frame: The Wayland logo
+<h3 id="rendering-a-frame-the-wayland-logo">Rendering a frame: The Wayland logo</h3>
 
 Let's render something more interesting. We download the [Wayland logo](https://wayland.freedesktop.org/wayland.png), but we do not want to have to deal with a complicated format like PNG (because we then have to uncompress the image data with `zlib` or similar).
 
@@ -675,7 +675,7 @@ Floating: ![Result, floating](wayland-screenshot-floating.png)
 
 *Note: We handle the absolute minimum set of events coming from the compositor to make it work in a simple way. If your particular compositor sends more events, they will have to be read (and possibly ignored). Since the Wayland protocol uses a Tag-Length-Value (TLV) encoding, one can simply skip over `<length>` bytes if the opcode is unknown. But some events will demand a reply (e.g. ping/pong)!*
 
-## The end
+<h2 id="the-end">The end</h2>
 
 It was not that much work to go from zero to a working GUI application, albeit a simplistic one.
 
@@ -691,7 +691,7 @@ As for the next steps, I would like to draw some text, and react to user input e
 > If you liked this article and you want to support me, and can afford it: [Donate](https://paypal.me/philigaultier?country.x=DE&locale.x=en_US)
 
 
-## Addendum: the full code
+<h2 id="addendum-the-full-code">Addendum: the full code</h2>
 
 *Do not forget to generate `wayland-logo.h` with the aforementioned commands!*
 
