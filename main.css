@@ -122,7 +122,7 @@ body {
 /* Mobile */
 @media (max-width : 600px) {
     html {
-      font-size: 24px;
+      font-size: 26px;
     }
     li {
         padding: 1rem .2rem;
