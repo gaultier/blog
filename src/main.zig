@@ -4,6 +4,7 @@ pub const std_options = .{
     .log_level = .info,
 };
 
+const back_link = "<p><a href=\"/blog\"> ⏴ Back to all articles</a>\n";
 const base_url = "https://gaultier.github.io/blog";
 const feed_uuid_str = "9c065c53-31bc-4049-a795-936802a6b1df";
 const feed_uuid_raw = [16]u8{ 0x9c, 0x06, 0x5c, 0x53, 0x31, 0xbc, 0x40, 0x49, 0xa7, 0x95, 0x93, 0x68, 0x02, 0xa6, 0xb1, 0xdf };
@@ -239,7 +240,7 @@ fn generate_article(markdown_file_path: []const u8, header: []const u8, footer: 
 
     if (!is_index_page) {
         article.dates = try get_creation_and_modification_date_for_article(markdown_file_path, allocator);
-        try html_file.writer().writeAll("<p><a href=\"/blog\"> ⏴ Back to all articles</a>\n");
+        try html_file.writer().writeAll(back_link);
         try std.fmt.format(html_file.writer(), "<p id=\"publication_date\">Published on {s}.</p>\n", .{std.mem.trim(u8, getDate(&article.dates.creation_date), &[_]u8{ ' ', '\n', '\'' })});
     }
 
@@ -258,7 +259,7 @@ fn generate_article(markdown_file_path: []const u8, header: []const u8, footer: 
     }
 
     if (!is_index_page) {
-        try html_file.writer().writeAll("<p><a href=\"/blog\"> ⏴ Back to all articles</a>\n");
+        try html_file.writer().writeAll(back_link);
     }
     try html_file.writeAll(footer);
 
@@ -273,7 +274,7 @@ fn generate_page_articles_by_tag(articles: []Article, header: []const u8, footer
 
     var buffered_writer = std.io.bufferedWriter(tags_file.writer());
     try buffered_writer.writer().writeAll(header);
-    try buffered_writer.writer().writeAll("<p><a href=\"/blog\"> ⏴ Back to all articles</a>\n");
+    try buffered_writer.writer().writeAll(back_link);
     try buffered_writer.writer().writeAll("<h1>Articles per tag</h1>\n");
 
     var articles_per_tag = std.StringArrayHashMap(std.ArrayList(*const Article)).init(allocator);
