@@ -17,7 +17,7 @@ Lastly, remember to measure and profile your changes. If a change has made no im
      - [Be lazy: Don't do things you don't need to do](#be-lazy-don-t-do-things-you-don-t-need-to-do)
      - [Miscellenaous tricks](#miscellenaous-tricks)
      - [A note on security](#a-note-on-security)
-     - [I am a DevOps Engineer, what can I do?](#i-am-a-devops-engineer-what-can-i-do-)
+     - [I am a DevOps Engineer, what can I do?](#i-am-a-devops-engineer-what-can-i-do)
      - [Closing words](#closing-words)
 
 <h2 id="reduce-the-size-of-everything">Reduce the size of everything</h2>
