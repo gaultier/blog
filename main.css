@@ -115,17 +115,15 @@ body {
 
 @media only screen and (max-width : 768px) {
     html {
-      font-size: 26px;
+      font-size: 2rem;
     }
     li {
         padding: 1rem .2rem;
     }
 }
 
-@media only screen and (min-width : 768px) {
-    li {
-        padding: .5rem .2rem;
-    }
+li {
+    padding: .5rem .2rem;
 }
 
 blockquote {
