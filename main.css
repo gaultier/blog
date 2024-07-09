@@ -111,19 +111,11 @@ body {
     margin: 0;
     font-family: monospace, sans-serif;
     margin-bottom: 5rem;
-}
-
-@media only screen and (max-width : 768px) {
-    html {
-      font-size: 2rem;
-    }
-    li {
-        padding: 1rem .2rem;
-    }
+    font-size: calc(8px + 0.390625vw);
 }
 
 li {
-    padding: .5rem .2rem;
+    padding: 1rem .2rem;
 }
 
 blockquote {
