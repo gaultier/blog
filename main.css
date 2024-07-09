@@ -111,7 +111,7 @@ body {
     margin: 0;
     font-family: monospace, sans-serif;
     margin-bottom: 5rem;
-    font-size: calc(8px + 0.390625vw);
+    font-size: calc(15px + 0.1vw);
 }
 
 li {
