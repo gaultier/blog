@@ -300,7 +300,7 @@ fn generate_article(markdown_file_path: []const u8, header: []const u8, footer: 
     var article: Article = .{
         .dates = undefined,
         .output_file_name = try std.mem.concat(allocator, u8, &[2][]const u8{ stem, ".html" }),
-        .metadata = parse_metadata(original_markdown_content, allocator),
+        .metadata = try parse_metadata(original_markdown_content, allocator),
         .allocator = allocator,
     };
 
@@ -312,7 +312,7 @@ fn generate_article(markdown_file_path: []const u8, header: []const u8, footer: 
 
     try convert_markdown_to_html(markdown_content.items, article.metadata.title, header, footer, article.output_file_name, allocator);
 
-    std.log.info("generated {s} {s}", .{ article.output_file_name, article.tags });
+    std.log.info("generated {s} {s}", .{ article.output_file_name, article.metadata.tags });
 
     return article;
 }
@@ -333,7 +333,7 @@ fn generate_page_articles_by_tag(articles: []Article, header: []const u8, footer
     };
 
     for (articles, 0..) |article, i| {
-        for (article.metada.tags) |tag| {
+        for (article.metadata.tags) |tag| {
             std.debug.assert(tag.len > 0);
 
             var entry = try articles_per_tag.getOrPut(tag);
@@ -360,7 +360,7 @@ fn generate_page_articles_by_tag(articles: []Article, header: []const u8, footer
         try std.fmt.format(buffered_writer.writer(), "<li id=\"{s}\">{s}<ul>\n", .{ tag_id, tag });
 
         for (articles_for_tag.items) |article_for_tag| {
-            try std.fmt.format(buffered_writer.writer(), "<li><span class=\"date\">{s}</span> <a href={s}>{s}</a></li>\n", .{ get_date(article_for_tag.dates.creation_date), article_for_tag.output_file_name, article_for_tag.title });
+            try std.fmt.format(buffered_writer.writer(), "<li><span class=\"date\">{s}</span> <a href={s}>{s}</a></li>\n", .{ get_date(article_for_tag.dates.creation_date), article_for_tag.output_file_name, article_for_tag.metadata.title });
         }
 
         try buffered_writer.writer().writeAll("</ul></li>\n");
@@ -530,7 +530,7 @@ fn generate_home_page(header: []const u8, articles: []const Article, allocator: 
             \\  <a href="/blog/{s}">{s}</a>
             \\</li>
             \\
-        , .{ get_date(article.dates.creation_date), article.output_file_name, article.title });
+        , .{ get_date(article.dates.creation_date), article.output_file_name, article.metadata.title });
     }
 
     try html_file.writeAll(
