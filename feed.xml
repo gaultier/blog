@@ -2,7 +2,7 @@
   <feed xmlns="http://www.w3.org/2005/Atom">
     <title>Philippe Gaultier's blog</title>
     <link href="https://gaultier.github.io/blog"/>
-    <updated>2024-07-11T16:57:11+02:00</updated>
+    <updated>2024-07-11T17:14:58+02:00</updated>
     <author>
       <name>Philippe Gaultier</name>
     </author>
@@ -116,7 +116,7 @@
   <title>Let's write a video game from scratch like it's 1987</title>
   <link href="https://gaultier.github.io/blog/write_a_video_game_from_scratch_like_1987.html"/>
   <id>urn:uuid:6bea7a85-d449-5f4d-9ab6-7e627c67ba57</id>
-  <updated>2024-07-11T16:57:11+02:00</updated>
+  <updated>2024-07-11T17:14:58+02:00</updated>
   <published>2024-06-20T07:44:40+00:00</published>
 </entry>
 </feed>
