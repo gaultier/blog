@@ -210,8 +210,12 @@ fn generate_html_article(markdown: []const u8, article: Article, header: []const
         \\ 
         \\ <div class="article-title">
         \\   <h1>{s}</h1>
-        \\   <span>🏷️ 
+        \\
     , .{ back_link, get_date(article.dates.creation_date), article.metadata.title });
+
+    if (article.metadata.tags.len > 0) {
+        try html_file.writeAll("  <span>🏷️");
+    }
 
     for (article.metadata.tags, 0..) |tag, i| {
         const id = try make_html_friendly_id(tag, allocator);
@@ -225,8 +229,10 @@ fn generate_html_article(markdown: []const u8, article: Article, header: []const
             try html_file.writeAll(", ");
         }
     }
+    if (article.metadata.tags.len > 0) {
+        try html_file.writeAll("</span>\n");
+    }
     try html_file.writeAll(
-        \\</span>
         \\ </div>
         \\ 
     );
