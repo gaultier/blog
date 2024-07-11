@@ -2,7 +2,7 @@
   <feed xmlns="http://www.w3.org/2005/Atom">
     <title>Philippe Gaultier's blog</title>
     <link href="https://gaultier.github.io/blog"/>
-    <updated>2024-07-08T11:06:19+02:00</updated>
+    <updated>2024-07-11T13:12:49+02:00</updated>
     <author>
       <name>Philippe Gaultier</name>
     </author>
@@ -11,70 +11,70 @@
   <title>Getting started with Scheme by solving an Advent of Code 2018 challenge</title>
   <link href="https://gaultier.github.io/blog/advent_of_code_2018_5.html"/>
   <id>urn:uuid:b3c0c1c1-e36f-51fd-9356-99f8686e7329</id>
-  <updated>2024-07-08T11:06:19+02:00</updated>
+  <updated>2024-07-11T13:12:49+02:00</updated>
   <published>2019-09-05T11:45:48+02:00</published>
 </entry>
 <entry>
   <title>How to compile LLVM, Clang, LLD, and Ziglang from source on Alpine Linux</title>
   <link href="https://gaultier.github.io/blog/compile_ziglang_from_source_on_alpine_2020_9.html"/>
   <id>urn:uuid:6cccb673-c083-550b-a1c8-d7a27819f1c7</id>
-  <updated>2024-07-08T10:02:25+02:00</updated>
+  <updated>2024-07-11T13:12:49+02:00</updated>
   <published>2020-09-07T20:49:20+02:00</published>
 </entry>
 <entry>
   <title>Adventures in CI land, or how to speed up your CI</title>
   <link href="https://gaultier.github.io/blog/speed_up_your_ci.html"/>
   <id>urn:uuid:4663e8ea-73ab-56ef-9dc5-8dbb4743d84a</id>
-  <updated>2024-07-08T11:19:09+02:00</updated>
+  <updated>2024-07-11T13:12:49+02:00</updated>
   <published>2020-09-21T08:37:07+02:00</published>
 </entry>
 <entry>
   <title>Learn x86-64 assembly by writing a GUI from scratch</title>
   <link href="https://gaultier.github.io/blog/x11_x64.html"/>
   <id>urn:uuid:fa923100-dd66-531e-bdab-8eed3527960f</id>
-  <updated>2024-07-08T11:06:19+02:00</updated>
+  <updated>2024-07-11T13:12:49+02:00</updated>
   <published>2023-05-31T14:24:11+02:00</published>
 </entry>
 <entry>
   <title>Cycle detection in graphs does not have to be hard: A lesser known, simple way with Kahn's algorithm</title>
   <link href="https://gaultier.github.io/blog/kahns_algorithm.html"/>
   <id>urn:uuid:665ef523-5c28-5dad-8582-587bfea27205</id>
-  <updated>2024-07-08T11:06:19+02:00</updated>
+  <updated>2024-07-11T13:12:49+02:00</updated>
   <published>2023-06-03T09:20:51+02:00</published>
 </entry>
 <entry>
   <title>Optimizing an Advent of Code solution in assembly</title>
   <link href="https://gaultier.github.io/blog/advent_of_code_2018_5_revisited.html"/>
   <id>urn:uuid:371c9129-162e-5d69-af73-c3263a2f7e47</id>
-  <updated>2024-07-08T11:06:19+02:00</updated>
+  <updated>2024-07-11T13:12:49+02:00</updated>
   <published>2023-10-05T15:39:43+02:00</published>
 </entry>
 <entry>
   <title>Learn Wayland by writing a GUI from scratch</title>
   <link href="https://gaultier.github.io/blog/wayland_from_scratch.html"/>
   <id>urn:uuid:6b96e587-14ff-53a9-a142-d20e9c53d970</id>
-  <updated>2024-07-08T10:44:38+02:00</updated>
+  <updated>2024-07-11T13:12:49+02:00</updated>
   <published>2023-10-12T13:19:53+02:00</published>
 </entry>
 <entry>
   <title>Roll your own memory profiling: it's actually not hard</title>
   <link href="https://gaultier.github.io/blog/roll_your_own_memory_profiling.html"/>
   <id>urn:uuid:5344c109-864c-5db2-97a9-24834e053169</id>
-  <updated>2024-07-08T11:06:19+02:00</updated>
+  <updated>2024-07-11T13:12:49+02:00</updated>
   <published>2023-11-23T11:26:11+01:00</published>
 </entry>
 <entry>
   <title>Solving a problem with Gnuplot, the programming language (not the plotting software!)</title>
   <link href="https://gaultier.github.io/blog/gnuplot_lang.html"/>
   <id>urn:uuid:f2d9c4e3-5c3d-57ab-8083-0f56daf1f41e</id>
-  <updated>2024-07-08T11:06:19+02:00</updated>
+  <updated>2024-07-11T13:12:49+02:00</updated>
   <published>2023-12-01T15:15:26+01:00</published>
 </entry>
 <entry>
   <title>This blog now has an Atom feed, and yours should probably too</title>
   <link href="https://gaultier.github.io/blog/feed.html"/>
   <id>urn:uuid:1f4df7db-eea8-5ef0-ae92-1038111f5dc9</id>
-  <updated>2024-07-08T10:02:25+02:00</updated>
+  <updated>2024-07-11T13:12:49+02:00</updated>
   <published>2023-12-15T12:23:43+01:00</published>
 </entry>
 <entry>
@@ -88,35 +88,35 @@
   <title>Quick and easy PNG image size reduction</title>
   <link href="https://gaultier.github.io/blog/image_size_reduction.html"/>
   <id>urn:uuid:1cd73d67-ad32-5cdc-93a7-f4046d7cd4a5</id>
-  <updated>2024-07-08T10:02:25+02:00</updated>
+  <updated>2024-07-11T13:12:49+02:00</updated>
   <published>2024-02-23T11:27:43+01:00</published>
 </entry>
 <entry>
   <title>You've just inherited a legacy C++ codebase, now what?</title>
   <link href="https://gaultier.github.io/blog/you_inherited_a_legacy_cpp_codebase_now_what.html"/>
   <id>urn:uuid:b9c26cf9-cb85-5ca9-b52f-5cdd535a3b84</id>
-  <updated>2024-07-08T11:06:19+02:00</updated>
+  <updated>2024-07-11T13:12:49+02:00</updated>
   <published>2024-02-29T09:30:30+01:00</published>
 </entry>
 <entry>
   <title>A small trick to improve technical discussions by sharing code</title>
   <link href="https://gaultier.github.io/blog/a_small_trick_to_improve_technical_discussions_by_sharing_code.html"/>
   <id>urn:uuid:ec2664b2-2153-5f24-a222-21f87171b57b</id>
-  <updated>2024-07-08T11:06:19+02:00</updated>
+  <updated>2024-07-11T13:12:49+02:00</updated>
   <published>2024-03-07T11:14:09+01:00</published>
 </entry>
 <entry>
   <title>How to rewrite a C++ codebase successfully</title>
   <link href="https://gaultier.github.io/blog/how_to_rewrite_a_cpp_codebase_successfully.html"/>
   <id>urn:uuid:70495e98-9416-5945-9178-1b77e690ea86</id>
-  <updated>2024-07-08T11:06:19+02:00</updated>
+  <updated>2024-07-11T13:12:49+02:00</updated>
   <published>2024-05-03T14:46:42+02:00</published>
 </entry>
 <entry>
   <title>Let's write a video game from scratch like it's 1987</title>
   <link href="https://gaultier.github.io/blog/write_a_video_game_from_scratch_like_1987.html"/>
   <id>urn:uuid:6bea7a85-d449-5f4d-9ab6-7e627c67ba57</id>
-  <updated>2024-07-08T11:06:19+02:00</updated>
+  <updated>2024-07-11T13:12:49+02:00</updated>
   <published>2024-06-20T07:44:40+00:00</published>
 </entry>
 </feed>

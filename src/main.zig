@@ -236,8 +236,10 @@ fn generate_article(markdown_file_path: []const u8, header: []const u8, footer: 
     try html_file.writeAll(header);
 
     article.dates = try get_creation_and_modification_date_for_article(markdown_file_path, allocator);
+    try html_file.writer().writeAll("<div class=\"article-prelude\">");
     try html_file.writer().writeAll(back_link);
-    try std.fmt.format(html_file.writer(), "<p id=\"publication_date\">Published on {s}.</p>\n", .{get_date(article.dates.creation_date)});
+    try std.fmt.format(html_file.writer(), "<p id=\"publication_date\">Published on {s}</p>\n", .{get_date(article.dates.creation_date)});
+    try html_file.writer().writeAll("</div>");
 
     {
         const converter_cmd = try std.process.Child.run(.{

@@ -1,6 +1,6 @@
 # Let's write a video game from scratch like it's 1987
 
-*🏷️ [C](/blog/articles-per-tag.html#C), [X11](/blog/articles-per-tag.html#X11), [Video game](/blog/articles-per-tag.html#Video-game), [Odin](/blog/articles-per-tag.html#Odin), [Optimization](/blog/articles-per-tag.html#Optimization)*
+*<svg aria-hidden="true" focusable="false" role="img" class="octicon octicon-tag" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" style="display:inline-block;user-select:none;overflow:visible"><path d="M1 7.775V2.75C1 1.784 1.784 1 2.75 1h5.025c.464 0 .91.184 1.238.513l6.25 6.25a1.75 1.75 0 0 1 0 2.474l-5.026 5.026a1.75 1.75 0 0 1-2.474 0l-6.25-6.25A1.752 1.752 0 0 1 1 7.775Zm1.5 0c0 .066.026.13.073.177l6.25 6.25a.25.25 0 0 0 .354 0l5.025-5.025a.25.25 0 0 0 0-.354l-6.25-6.25a.25.25 0 0 0-.177-.073H2.75a.25.25 0 0 0-.25.25ZM6 5a1 1 0 1 1 0 2 1 1 0 0 1 0-2Z"></path></svg> [C](/blog/articles-per-tag.html#C), [X11](/blog/articles-per-tag.html#X11), [Video game](/blog/articles-per-tag.html#Video-game), [Odin](/blog/articles-per-tag.html#Odin), [Optimization](/blog/articles-per-tag.html#Optimization)*
 
 > This article has been discussed on [Hacker News](https://news.ycombinator.com/item?id=40737370) and [Reddit](https://old.reddit.com/r/programming/comments/1dkahjw/lets_write_a_video_game_from_scratch_like_its_1987/)
 

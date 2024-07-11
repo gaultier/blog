@@ -2,6 +2,12 @@
   font-style: italic;
 }
 
+.article-prelude {
+  display: inline-flex;
+  justify-content: space-between;
+  width: 100%;
+}
+
 p {
   padding: .5rem;
 }
