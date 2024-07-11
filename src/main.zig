@@ -205,7 +205,13 @@ fn convert_markdown_to_html(markdown: []const u8, article: Article, header: []co
     , .{ back_link, get_date(article.dates.creation_date), article.metadata.title });
 
     for (article.metadata.tags, 0..) |tag, i| {
-        try html_file.writeAll(tag);
+        const id = try make_html_friendly_id(tag, allocator);
+        defer allocator.free(id);
+
+        try std.fmt.format(html_file.writer(),
+            \\ <a href="/blog/articles-by-tag.html#{s}">{s}</a>
+        , .{ id, tag });
+
         if (i < article.metadata.tags.len - 1) {
             try html_file.writeAll(", ");
         }
@@ -347,10 +353,9 @@ fn generate_page_articles_by_tag(articles: []Article, header: []const u8, footer
         const articles_for_tag = articles_by_tag.get(tag) orelse undefined;
         std.mem.sort(*const Article, articles_for_tag.items, {}, articlesPtrOrderedByCreationDateAsc);
 
-        const tag_id = try allocator.dupe(u8, tag);
+        const tag_id = try make_html_friendly_id(tag, allocator);
         defer allocator.free(tag_id);
 
-        std.mem.replaceScalar(u8, tag_id, ' ', '-');
         try std.fmt.format(buffered_writer.writer(), "<li id=\"{s}\">{s}<ul>\n", .{ tag_id, tag });
 
         for (articles_for_tag.items) |article_for_tag| {
@@ -453,18 +458,9 @@ fn generate_toc_for_article(markdown_file_path: []const u8, allocator: std.mem.A
         try toc.appendSlice(title);
         try toc.appendSlice("](#");
 
-        var id = std.ArrayList(u8).init(allocator);
-        try id.ensureTotalCapacity(title.len);
-        defer id.deinit();
+        const final_id = try make_html_friendly_id(title, allocator);
+        defer allocator.free(final_id);
 
-        for (title) |c| {
-            if (std.ascii.isAlphanumeric(c)) {
-                try id.append(std.ascii.toLower(c));
-            } else if (id.items.len > 0 and id.items[id.items.len - 1] != '-') {
-                try id.append('-');
-            }
-        }
-        const final_id = std.mem.trim(u8, id.items, "-");
         try toc.appendSlice(final_id);
 
         try toc.appendSlice(")\n");
@@ -489,6 +485,25 @@ fn generate_toc_for_article(markdown_file_path: []const u8, allocator: std.mem.A
     }
 
     return toc.toOwnedSlice();
+}
+
+fn make_html_friendly_id(s: []const u8, allocator: std.mem.Allocator) ![]const u8 {
+    var id = std.ArrayList(u8).init(allocator);
+    try id.ensureTotalCapacity(s.len * 2);
+    defer id.deinit();
+
+    for (s) |c| {
+        if (std.ascii.isAlphanumeric(c)) {
+            try id.append(std.ascii.toLower(c));
+        } else if (c == '+') {
+            try id.appendSlice("plus");
+        } else if (id.items.len > 0 and id.items[id.items.len - 1] != '-') {
+            try id.append('-');
+        }
+    }
+    const final_id = std.mem.trim(u8, id.items, "-");
+
+    return allocator.dupe(u8, final_id);
 }
 
 fn generate_home_page(header: []const u8, articles: []const Article, allocator: std.mem.Allocator) !void {
