@@ -1246,6 +1246,10 @@ static x11_draw_text:function
 <p>If you liked this article and you want to support me, and can afford it: <a href="https://paypal.me/philigaultier?country.x=DE&amp;locale.x=en_US">Donate</a></p>
 </blockquote>
 <h2 id="addendum-the-full-code">Addendum: the full code</h2>
+<div class="wrap-collapsible">
+  <input id="collapsible" class="toggle" type="checkbox">
+  <label for="collapsible" class="label-toggle">Code</label>
+  <div class="collapsible-content">
 <pre><code class="language-x86asm">; Build with: nasm -f elf64 -g main.nasm &amp;&amp; ld main.o -static -o main 
 
 BITS 64 ; 64 bits.
@@ -1871,6 +1875,9 @@ global _start:function
   syscall
 </code></pre>
 <script src="https://unpkg.com/@highlightjs/cdn-assets@11.8.0/languages/x86asm.min.js"></script>
+<pre><code>&lt;/div&gt;
+</code></pre>
+</div>
 <p><a href="/blog"> ⏴ Back to all articles</a>
 
 <blockquote id="donate">

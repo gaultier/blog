@@ -197,12 +197,14 @@ p:has(img):has(em) {
 }
 
 .collapsible-content {
-  height: 0;
+  max-height: 0;
   overflow: hidden;
+
+  transition: max-height .25s ease-in-out;
 }
 
 .toggle:checked + .label-toggle + .collapsible-content {
-  height: 100vh;
+  max-height: initial;
 }
 
 input[type='checkbox'] { display: none; }
