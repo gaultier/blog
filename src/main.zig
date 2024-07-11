@@ -168,7 +168,7 @@ fn generate_rss_feed_entry_for_article(writer: anytype, article: Article) !void 
 
 fn extract_tags_for_article(markdown_content: []const u8, allocator: std.mem.Allocator) ![][]const u8 {
     var tags = std.ArrayList([]const u8).init(allocator);
-    const prefix = "Tags: ";
+    const prefix = "🏷️";
     const tags_begin = (std.mem.indexOf(u8, markdown_content, prefix) orelse return tags.toOwnedSlice()) + prefix.len;
     const tags_end = std.mem.indexOfScalar(u8, markdown_content[tags_begin..], '\n') orelse markdown_content.len;
     const tags_str = markdown_content[tags_begin..][0..tags_end];
