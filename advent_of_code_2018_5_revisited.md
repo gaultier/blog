@@ -2,20 +2,6 @@ Title: Optimizing an Advent of Code solution in assembly
 Tags: x86_64, Advent of Code, Optimization, Algorithm, C, Lisp, Scheme
 ---
 
-**Table of Contents**
-
--   [The new solution](#the-new-solution)
--   [The x86_64 implementation](#the-x86_64-implementation)
--   [Benchmarking](#benchmarking)
--   [Learnings](#learnings)
--   [Appendix: The full code](#appendix-the-full-code)
-    -   [The old C implementation](#the-old-c-implementation)
-    -   [The x64 implementation](#the-x64-implementation)
-
-*If you spot an error, please open a [Github issue](https://github.com/gaultier/blog)!*
-
----
-
 A few days ago I was tweaking the appearance of this blog and I stumbled upon my [first article](/blog/advent_of_code_2018_5) which is about solving a simple problem from Advent of Code. Here it is again:
 
 > We have a string looking like this: `AabcdZZqQ` which represents a chain of

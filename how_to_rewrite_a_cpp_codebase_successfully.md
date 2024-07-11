@@ -28,25 +28,6 @@ I think it's a good case study because whilst not a big codebase, it is a comple
 So join me on this journey, here's the guide to rewrite a C++ codebase successfully. And also what not do!
 
 
-**Table of Contents**
-
--   [The project](#the-project)
--   [Improve the existing codebase](#improve-the-existing-codebase)
--   [Get buy-in](#get-buy-in)
--   [Keeping buy-in](#keeping-buy-in)
--   [Preparations to introduce the new
-    language](#preparations-to-introduce-the-new-language)
--   [Incremental rewrite](#incremental-rewrite)
--   [Fuzzing](#fuzzing)
--   [Pure Rust vs interop (FFI)](#pure-rust-vs-interop-ffi)
-    -   [C FFI in Rust is cumbersome and
-    error-prone](#c-ffi-in-rust-is-cumbersome-and-error-prone)
-    -   [An example of a real bug at the FFI
-        boundary](#an-example-of-a-real-bug-at-the-ffi-boundary)
-    -   [Another example of a real bug at the FFI
-        boundary](#another-example-of-a-real-bug-at-the-ffi-boundary)
--   [Cross-compilation](#cross-compilation)
--   [Conclusion](#conclusion)
 
 ## The project
 

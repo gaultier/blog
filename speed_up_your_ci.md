@@ -12,15 +12,6 @@ Lastly, remember to measure and profile your changes. If a change has made no im
 
 *This article assumes you are running a POSIX system. Windows developers, this is not the article you are looking for.*
 
-**Table of Contents:**
-
-   - [Adventures in CI land, or how to speed up your CI](#adventures-in-ci-land-or-how-to-speed-up-your-ci)
-     - [Reduce the size of everything](#reduce-the-size-of-everything)
-     - [Be lazy: Don't do things you don't need to do](#be-lazy-don-t-do-things-you-don-t-need-to-do)
-     - [Miscellenaous tricks](#miscellenaous-tricks)
-     - [A note on security](#a-note-on-security)
-     - [I am a DevOps Engineer, what can I do?](#i-am-a-devops-engineer-what-can-i-do)
-     - [Closing words](#closing-words)
 
 ## Reduce the size of everything
 

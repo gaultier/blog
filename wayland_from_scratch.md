@@ -20,30 +20,6 @@ Now, if you want to follow along and translate the C snippets into assembly, go 
 
 *This article has been discussed on [Hacker News](https://news.ycombinator.com/item?id=37876896) and [Lobsters](https://lobste.rs/s/385e2w/learn_wayland_by_writing_gui_from_scratch).*
 
-**Table of Contents**
-
--   [What do we need?](#what-do-we-need)
--   [Wayland basics](#wayland-basics)
--   [Opening a socket](#opening-a-socket)
--   [Creating a registry](#creating-a-registry)
--   [Shared memory: the frame
-    buffer](#shared-memory-the-frame-buffer)
--   [Chatting with the compositor](#chatting-with-the-compositor)
-    -   [Reacting to events: binding
-        interfaces](#reacting-to-events-binding-interfaces)
-    -   [Using the interfaces we
-        created](#using-the-interfaces-we-created)
-    -   [Reacting to events:
-        ping/pong](#reacting-to-events-pingpong)
-    -   [Reacting to events: configure/ACK
-        configure](#reacting-to-events-configureack-configure)
-    -   [Rendering a frame: the red
-        rectangle](#rendering-a-frame-the-red-rectangle)
-    -   [Rendering a frame: The Wayland
-        logo](#rendering-a-frame-the-wayland-logo)
--   [The end](#the-end)
--   [Addendum: the full code](#addendum-the-full-code)
-
 ## What do we need?
 
 Not much: We'll use C99 so any C compiler of the last 20 years will do. Having a Wayland desktop to test the application will also greatly help.

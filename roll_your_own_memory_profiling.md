@@ -33,16 +33,6 @@ Another good reason to do this, is when the system's `malloc` comes with some fo
 
 >  If you spot an error, please open a [Github issue](https://github.com/gaultier/blog)!
 
-**Table of Contents**
-
--   [Pprof](#pprof)
--   [The text format](#the-text-format)
--   [Generating a `pprof` profile](#generating-a-pprof-profile)
--   [Variations and limitations](#variations-and-limitations)
--   [Alternatives](#alternatives)
--   [Conclusion](#conclusion)
--   [Addendum: the full code](#addendum-the-full-code)
-
 ## Pprof
 
 Here is the plan: 

@@ -67,19 +67,6 @@ window.addEventListener("load", (event) => {
 <p>And finally, I hope you will realize this endeavour is not unlike optimizing a program: it requires some time and dedication but you will get tremendous results. Also, almost incidentally, it will be more secure and easier to audit.</p>
 <p>Lastly, remember to measure and profile your changes. If a change has made no improvements, it should be reverted.</p>
 <p><em>This article assumes you are running a POSIX system. Windows developers, this is not the article you are looking for.</em></p>
-<p><strong>Table of Contents:</strong></p>
-<ul>
-<li><a href="#adventures-in-ci-land-or-how-to-speed-up-your-ci">Adventures in CI land, or how to speed up your CI</a>
-<ul>
-<li><a href="#reduce-the-size-of-everything">Reduce the size of everything</a></li>
-<li><a href="#be-lazy-don-t-do-things-you-don-t-need-to-do">Be lazy: Don't do things you don't need to do</a></li>
-<li><a href="#miscellenaous-tricks">Miscellenaous tricks</a></li>
-<li><a href="#a-note-on-security">A note on security</a></li>
-<li><a href="#i-am-a-devops-engineer-what-can-i-do">I am a DevOps Engineer, what can I do?</a></li>
-<li><a href="#closing-words">Closing words</a></li>
-</ul>
-</li>
-</ul>
 <h2>Reduce the size of everything</h2>
 <p>Almost certainly, your CI pipeline has to download 'something', be it a base docker image, a virtual machine image, some packages, maybe a few company wide scripts. The thing is, you are downloading those every time it runs, 24/7, every day of the year. Even a small size reduction can yield big speed ups. Remember, the network is usually the bottleneck.</p>
 <p>In no particular order:</p>

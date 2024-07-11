@@ -3,25 +3,6 @@ Tags: Graph, Algorithm, JavaScript, SQL
 ---
 
 
-**Table of Contents**
-
-- [Introduction](#introduction)
-- [The database](#the-database)
-- [Topological sort](#topological-sort)
-- [How to store the graph in memory](#how-to-store-the-graph-in-memory)
-- [Kahn's algorithm](#kahns-algorithm)
-- [Implementation](#implementation)
-  - [Helpers](#helpers)
-  - [The algorithm](#the-algorithm)
-  - [Inserting entries in the database](#inserting-entries-in-the-database)
-  - [Detecting cycles](#detecting-cycles)
-  - [Detecting multiple roots](#detecting-multiple-roots)
-- [Playing with the database](#playing-with-the-database)
-- [Closing thoughts](#closing-thoughts)
-- [Addendum: the full code](#addendum-the-full-code)
-
-*If you spot an error, please open a [Github issue](https://github.com/gaultier/blog)!*
-
 ## Introduction 
 
 

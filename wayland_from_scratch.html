@@ -82,33 +82,6 @@ window.addEventListener("load", (event) => {
 <p>If you spot an error, please open a <a href="https://github.com/gaultier/blog">Github issue</a>!</p>
 </blockquote>
 <p><em>This article has been discussed on <a href="https://news.ycombinator.com/item?id=37876896">Hacker News</a> and <a href="https://lobste.rs/s/385e2w/learn_wayland_by_writing_gui_from_scratch">Lobsters</a>.</em></p>
-<p><strong>Table of Contents</strong></p>
-<ul>
-<li><a href="#what-do-we-need">What do we need?</a></li>
-<li><a href="#wayland-basics">Wayland basics</a></li>
-<li><a href="#opening-a-socket">Opening a socket</a></li>
-<li><a href="#creating-a-registry">Creating a registry</a></li>
-<li><a href="#shared-memory-the-frame-buffer">Shared memory: the frame
-buffer</a></li>
-<li><a href="#chatting-with-the-compositor">Chatting with the compositor</a>
-<ul>
-<li><a href="#reacting-to-events-binding-interfaces">Reacting to events: binding
-interfaces</a></li>
-<li><a href="#using-the-interfaces-we-created">Using the interfaces we
-created</a></li>
-<li><a href="#reacting-to-events-pingpong">Reacting to events:
-ping/pong</a></li>
-<li><a href="#reacting-to-events-configureack-configure">Reacting to events: configure/ACK
-configure</a></li>
-<li><a href="#rendering-a-frame-the-red-rectangle">Rendering a frame: the red
-rectangle</a></li>
-<li><a href="#rendering-a-frame-the-wayland-logo">Rendering a frame: The Wayland
-logo</a></li>
-</ul>
-</li>
-<li><a href="#the-end">The end</a></li>
-<li><a href="#addendum-the-full-code">Addendum: the full code</a></li>
-</ul>
 <h2>What do we need?</h2>
 <p>Not much: We'll use C99 so any C compiler of the last 20 years will do. Having a Wayland desktop to test the application will also greatly help.</p>
 <p>Note that I have only run it on Linux; it should work (meaning: compile and run) on other platforms running Wayland such as FreeBSD, it's just that I have not tried.</p>

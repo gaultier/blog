@@ -48,20 +48,6 @@ I remember playing this game as a kid (must have been on Windows 98). It was a l
 
 > If you spot an error, please open a [Github issue](https://github.com/gaultier/blog)! And the source code repository for the game is [here](https://github.com/gaultier/minesweeper-from-scratch).
 
-**Table of Contents**
-
-- [What we're making](#what-were-making){#toc-what-were-making}
-- [Authentication](#authentication){#toc-authentication}
-- [Opening a window](#opening-a-window){#toc-opening-a-window}
-- [Loading assets](#loading-assets){#toc-loading-assets}
-- [The game entities](#the-game-entities){#toc-the-game-entities}
-- [Reacting to keyboard and mouse
-  events](#reacting-to-keyboard-and-mouse-events){#toc-reacting-to-keyboard-and-mouse-events}
-- [Game logic: uncover a
-  cell](#game-logic-uncover-a-cell){#toc-game-logic-uncover-a-cell}
-- [Conclusion](#conclusion){#toc-conclusion}
-- [Addendum: the full
-  code](#addendum-the-full-code){#toc-addendum-the-full-code}
 
 ## What we're making
 

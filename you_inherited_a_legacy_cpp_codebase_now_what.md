@@ -34,31 +34,6 @@ Ok, let's dive in!
 
 *By the way, everything here applies to a pure C codebase or a mixed C and C++ codebase, so if that's you, keep reading!*
 
-**Table of contents**
-
--   [Get buy-in](#get-buy-in)
--   [Write down the platforms you support](#write-down-the-platforms-you-support)
--   [Get the build working on your
-    machine](#get-the-build-working-on-your-machine)
--   [Get the tests passing on your
-    machine](#get-the-tests-passing-on-your-machine)
--   [Write down in the README how to build and test the
-    application](#write-down-in-the-readme-how-to-build-and-test-the-application)
--   [Find low hanging fruits to speed up the build and
-    tests](#find-low-hanging-fruits-to-speed-up-the-build-and-tests)
--   [Remove all unnecessary code](#remove-all-unnecessary-code)
--   [Linters](#linters)
--   [Code formatting](#code-formatting)
--   [Sanitizers](#sanitizers)
--   [Add a CI pipeline](#add-a-ci-pipeline)
--   [Incremental code improvements](#incremental-code-improvements)
--   [Rewrite in a memory safe
-    language?](#rewrite-in-a-memory-safe-language)
--   [Conclusion](#conclusion)
--   [Addendum: Dependency
-    management](#addendum-dependency-management)
--   [Addendum: suggestions from readers](#addendum-suggestions-from-readers)
-
 ## Get buy-in
 
 You thought I was going to compare the different sanitizers, compile flags, or build systems? No sir, before we do any work, we talk to people. Crazy, right?

@@ -21,11 +21,6 @@ So Gnuplot is definitely worth of a spot in a Software Engineer's toolbox.
 
 However, few know that Gnuplot is actually also Turing complete programming language. It is similar in syntax to Perl or Awk. So I scratched an itch and solved a [problem](https://adventofcode.com/2023/day/1) with it.
 
-**Table of Contents**
-
-- [The problem](#the-problem)
-- [Closing thoughts](#closing-thoughts)
-- [Addendum: The full code](#addendum-the-full-code)
 
 ## The problem
  
