@@ -196,12 +196,13 @@ p:has(img):has(em) {
   text-align: center;
 }
 
-.wrap-collabsible > pre {
-  visibility: hidden;
+.collapsible-content {
+  height: 0;
+  overflow: hidden;
 }
 
-.toggle:checked + .label-toggle + pre {
-  visibility: initial;
+.toggle:checked + .label-toggle + .collapsible-content {
+  height: 100vh;
 }
 
 input[type='checkbox'] { display: none; }
