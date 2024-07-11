@@ -196,6 +196,7 @@ fn generate_html_article(markdown: []const u8, article: Article, header: []const
     const fixed_up_markdown = try fixup_markdown_with_title_ids(markdown, allocator);
     defer allocator.free(fixed_up_markdown);
     const child_stdout = try run_cmark_with_stdin_data(fixed_up_markdown, allocator);
+    defer allocator.free(child_stdout);
 
     const html_file = try std.fs.cwd().createFile(html_file_path, .{});
     defer html_file.close();
@@ -606,17 +607,12 @@ fn generate_home_page(header: []const u8, articles: []const Article, allocator: 
     );
 
     {
-        const converter_cmd = try std.process.Child.run(.{
-            .allocator = allocator,
-            .argv = &[_][]const u8{ "cmark", "--unsafe", "-t", "html", markdown_file_path },
-            .max_output_bytes = 1 * 1024 * 1024,
-        });
-        defer allocator.free(converter_cmd.stdout);
-        defer allocator.free(converter_cmd.stderr);
+        const fixed_up_markdown = try fixup_markdown_with_title_ids(markdown_content, allocator);
+        defer allocator.free(fixed_up_markdown);
+        const child_stdout = try run_cmark_with_stdin_data(fixed_up_markdown, allocator);
+        defer allocator.free(child_stdout);
 
-        std.debug.assert(converter_cmd.stderr.len == 0);
-
-        try html_file.writeAll(converter_cmd.stdout);
+        try html_file.writeAll(child_stdout);
     }
 
     std.log.info("generated {s}", .{output_file_name});
