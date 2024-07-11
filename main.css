@@ -1,5 +1,6 @@
-#publication_date {
+.publication-date {
   font-style: italic;
+  color: gray;
 }
 
 .article-prelude {

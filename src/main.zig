@@ -4,6 +4,9 @@ pub const std_options = .{
     .log_level = .info,
 };
 
+const tag_icon =
+    \\ <svg aria-hidden="true" focusable="false" role="img" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" style="display:inline-block;user-select:none;overflow:visible"><path d="M1 7.775V2.75C1 1.784 1.784 1 2.75 1h5.025c.464 0 .91.184 1.238.513l6.25 6.25a1.75 1.75 0 0 1 0 2.474l-5.026 5.026a1.75 1.75 0 0 1-2.474 0l-6.25-6.25A1.752 1.752 0 0 1 1 7.775Zm1.5 0c0 .066.026.13.073.177l6.25 6.25a.25.25 0 0 0 .354 0l5.025-5.025a.25.25 0 0 0 0-.354l-6.25-6.25a.25.25 0 0 0-.177-.073H2.75a.25.25 0 0 0-.25.25ZM6 5a1 1 0 1 1 0 2 1 1 0 0 1 0-2Z"></path></svg>
+;
 const back_link = "<p><a href=\"/blog\"> ⏴ Back to all articles</a>\n";
 const base_url = "https://gaultier.github.io/blog";
 const feed_uuid_str = "9c065c53-31bc-4049-a795-936802a6b1df";
@@ -197,6 +200,29 @@ fn extract_tags_for_article(markdown_content: []const u8, allocator: std.mem.All
     return tags.toOwnedSlice();
 }
 
+fn convert_markdown_to_html(markdown: []const u8,title:[]const u8, html_file_path: []const u8, allocator:std.mem.Allocator) !void {
+    const html_file = try std.fs.cwd().createFile(html_file_path, .{});
+    defer html_file.close();
+
+        var child = std.process.ChildProcess{
+            .stdin_behavior = .Pipe,
+        };
+        _ = markdown; // FIXME
+        std.process.Child.spawn(&child);
+        const converter_cmd = try std.process.Child.run(.{
+            .allocator = allocator,
+            .argv = &[_][]const u8{ "cmark", "--unsafe", "-t", "html"},
+            .max_output_bytes = 1 * 1024 * 1024,
+        });
+        defer allocator.free(converter_cmd.stdout);
+        defer allocator.free(converter_cmd.stderr);
+
+        std.debug.assert(converter_cmd.stderr.len == 0);
+
+        try std.fmt.format(html_file.writer(), html_prelude, .{title});
+        try html_file.writeAll(converter_cmd.stdout);
+}
+
 fn generate_article(markdown_file_path: []const u8, header: []const u8, footer: []const u8, allocator: std.mem.Allocator) !Article {
     std.debug.assert(std.mem.eql(u8, std.fs.path.extension(markdown_file_path), ".md"));
     std.debug.assert(header.len > 0);
@@ -205,8 +231,8 @@ fn generate_article(markdown_file_path: []const u8, header: []const u8, footer: 
     const markdown_file = try std.fs.cwd().openFile(markdown_file_path, .{});
     defer markdown_file.close();
 
-    const markdown_content = try markdown_file.readToEndAlloc(allocator, 1 * 1024 * 1024);
-    defer allocator.free(markdown_content);
+    const original_markdown_content: []const u8 = try markdown_file.readToEndAlloc(allocator, 1 * 1024 * 1024);
+    defer allocator.free(original_markdown_content);
 
     const stem = std.fs.path.stem(markdown_file_path);
     std.debug.assert(stem.len != 0);
@@ -215,33 +241,42 @@ fn generate_article(markdown_file_path: []const u8, header: []const u8, footer: 
         .dates = undefined,
         .title = undefined,
         .output_file_name = try std.mem.concat(allocator, u8, &[2][]const u8{ stem, ".html" }),
-        .tags = try extract_tags_for_article(markdown_content, allocator),
+        .tags = try extract_tags_for_article(original_markdown_content, allocator),
         .allocator = allocator,
     };
 
-    const html_file = try std.fs.cwd().createFile(article.output_file_name, .{});
-    defer html_file.close();
 
     {
-        var title: []const u8 = undefined;
-
-        const first_newline_pos = std.mem.indexOf(u8, markdown_content, "\n") orelse 0;
+        const first_newline_pos = std.mem.indexOf(u8, original_markdown_content, "\n") orelse 0;
         std.debug.assert(first_newline_pos > 0);
-        title = std.mem.trim(u8, markdown_content[0..first_newline_pos], &[_]u8{ '#', ' ' });
 
-        try std.fmt.format(html_file.writer(), html_prelude, .{title});
+        var title = original_markdown_content[0..first_newline_pos];
+        const title_prefix = "Title: ";
+        std.debug.assert(std.mem.startsWith(u8, title_prefix, title));
+        title = std.mem.trim(u8, title[title_prefix.len..], &[_]u8{' '});
+
         article.title = try allocator.dupe(u8, title);
     }
+    var markdown_content = std.ArrayList(u8).init(allocator);
+    defer markdown_content.deinit();
+
+    const metadata_delimiter = "---\n";
+    const metadata_delimiter_idx = std.mem.indexOf(u8, original_markdown_content, metadata_delimiter) orelse @panic("missing metadata");
+    try markdown_content.appendSlice(original_markdown_content[metadata_delimiter_idx + metadata_delimiter.len ..]);
 
     try html_file.writeAll(header);
 
     article.dates = try get_creation_and_modification_date_for_article(markdown_file_path, allocator);
     try html_file.writer().writeAll("<div class=\"article-prelude\">");
     try html_file.writer().writeAll(back_link);
-    try std.fmt.format(html_file.writer(), "<p id=\"publication_date\">Published on {s}</p>\n", .{get_date(article.dates.creation_date)});
+    try std.fmt.format(html_file.writer(), "<p class=\"publication-date\">Published on {s}</p>\n", .{get_date(article.dates.creation_date)});
     try html_file.writer().writeAll("</div>");
 
     {
+        var child = std.process.ChildProcess{
+            .stdin_behavior = .Pipe,
+        };
+        std.process.Child.spawn(&child);
         const converter_cmd = try std.process.Child.run(.{
             .allocator = allocator,
             .argv = &[_][]const u8{ "cmark", "--unsafe", "-t", "html", markdown_file_path },
@@ -486,6 +521,8 @@ fn generate_home_page(header: []const u8, articles: []const Article, allocator: 
     );
 
     {
+        var child = std.process.Child{};
+        std.process.Child.spawn(&child);
         const converter_cmd = try std.process.Child.run(.{
             .allocator = allocator,
             .argv = &[_][]const u8{ "cmark", "--unsafe", "-t", "html", markdown_file_path },
