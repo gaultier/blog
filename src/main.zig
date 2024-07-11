@@ -15,19 +15,13 @@ const html_prelude = "<!DOCTYPE html>\n<html>\n<head>\n<title>{s}</title>\n";
 
 const Article = struct {
     dates: Dates,
-    title: []u8,
     output_file_name: []u8,
-    tags: [][]const u8,
+    metadata: Metadata,
     allocator: std.mem.Allocator,
 
     pub fn deinit(self: *Article) void {
-        self.allocator.free(self.title);
         self.allocator.free(self.output_file_name);
-
-        for (self.tags) |tag| {
-            self.allocator.free(tag);
-        }
-        self.allocator.free(self.tags);
+        self.metadata.deinit();
     }
 };
 
@@ -157,7 +151,7 @@ fn generate_rss_feed_entry_for_article(writer: anytype, article: Article) !void 
     const uuid = sha1_uuid(feed_uuid_raw, article.output_file_name);
 
     try std.fmt.format(writer, template, .{
-        article.title,
+        article.metadata.title,
         base_url,
         article.output_file_name,
         uuid,
@@ -234,6 +228,61 @@ fn convert_markdown_to_html(markdown: []const u8, title: []const u8, header: []c
     try html_file.writeAll(footer);
 }
 
+const Metadata = struct {
+    title: []const u8,
+    tags: []const []const u8,
+    end_offset: usize,
+
+    allocator: std.mem.Allocator,
+
+    fn deinit(self: *Metadata) void {
+        self.allocator.free(self.title);
+        for (self.tags) |tag| {
+            self.allocator.free(tag);
+        }
+        self.allocator.free(self.tags);
+    }
+};
+
+fn parse_metadata(markdown: []const u8, allocator: std.mem.Allocator) !Metadata {
+    const metadata_delimiter = "---\n";
+    const metadata_delimiter_idx = std.mem.indexOf(u8, markdown, metadata_delimiter) orelse @panic("missing metadata");
+
+    const metadata_str = markdown[0..metadata_delimiter_idx];
+
+    var it_newline = std.mem.splitScalar(u8, metadata_str, '\n');
+    const title_prefix = "Title: ";
+    const tags_prefix = "Tags: ";
+
+    var metadata: Metadata = .{
+        .allocator = allocator,
+        .title = undefined,
+        .tags = undefined,
+        .end_offset = metadata_delimiter_idx + metadata_delimiter.len,
+    };
+    var tags = std.ArrayList([]const u8).init(allocator);
+    errdefer tags.deinit();
+
+    while (it_newline.next()) |line| {
+        if (std.mem.startsWith(u8, line, title_prefix)) {
+            const title_str = std.mem.trim(u8, line[title_prefix.len..], "\n ");
+            metadata.title = try allocator.dupe(u8, title_str);
+        } else if (std.mem.startsWith(u8, line, tags_prefix)) {
+            const tags_str = std.mem.trim(u8, line[tags_prefix.len..], "\n ");
+
+            var it_commas = std.mem.split(u8, tags_str, ", ");
+            while (it_commas.next()) |tag_str| {
+                const trimmed = std.mem.trim(u8, tag_str, "\n ");
+                try tags.append(try allocator.dupe(u8, trimmed));
+            }
+
+            metadata.tags = try tags.toOwnedSlice();
+        } else break;
+    }
+
+    return metadata;
+}
+
 fn generate_article(markdown_file_path: []const u8, header: []const u8, footer: []const u8, allocator: std.mem.Allocator) !Article {
     std.debug.assert(std.mem.eql(u8, std.fs.path.extension(markdown_file_path), ".md"));
     std.debug.assert(header.len > 0);
@@ -250,33 +299,18 @@ fn generate_article(markdown_file_path: []const u8, header: []const u8, footer: 
 
     var article: Article = .{
         .dates = undefined,
-        .title = undefined,
         .output_file_name = try std.mem.concat(allocator, u8, &[2][]const u8{ stem, ".html" }),
-        .tags = try extract_tags_for_article(original_markdown_content, allocator),
+        .metadata = parse_metadata(original_markdown_content, allocator),
         .allocator = allocator,
     };
 
-    {
-        const first_newline_pos = std.mem.indexOf(u8, original_markdown_content, "\n") orelse 0;
-        std.debug.assert(first_newline_pos > 0);
-
-        var title = original_markdown_content[0..first_newline_pos];
-        const title_prefix = "Title: ";
-        std.debug.assert(std.mem.startsWith(u8, title_prefix, title));
-        title = std.mem.trim(u8, title[title_prefix.len..], &[_]u8{' '});
-
-        article.title = try allocator.dupe(u8, title);
-    }
     var markdown_content = std.ArrayList(u8).init(allocator);
     defer markdown_content.deinit();
-
-    const metadata_delimiter = "---\n";
-    const metadata_delimiter_idx = std.mem.indexOf(u8, original_markdown_content, metadata_delimiter) orelse @panic("missing metadata");
-    try markdown_content.appendSlice(original_markdown_content[metadata_delimiter_idx + metadata_delimiter.len ..]);
+    try markdown_content.appendSlice(original_markdown_content[article.metadata.end_offset..]);
 
     article.dates = try get_creation_and_modification_date_for_article(markdown_file_path, allocator);
 
-    try convert_markdown_to_html(markdown_content.items, article.title, header, footer, article.output_file_name, allocator);
+    try convert_markdown_to_html(markdown_content.items, article.metadata.title, header, footer, article.output_file_name, allocator);
 
     std.log.info("generated {s} {s}", .{ article.output_file_name, article.tags });
 
@@ -299,7 +333,7 @@ fn generate_page_articles_by_tag(articles: []Article, header: []const u8, footer
     };
 
     for (articles, 0..) |article, i| {
-        for (article.tags) |tag| {
+        for (article.metada.tags) |tag| {
             std.debug.assert(tag.len > 0);
 
             var entry = try articles_per_tag.getOrPut(tag);
