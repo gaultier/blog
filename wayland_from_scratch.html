@@ -604,6 +604,10 @@ $ sed -i 's/wayland_ppm/wayland_logo/g' wayland-logo.h
 <h2 id="addendum-the-full-code">Addendum: the full code</h2>
 <p><em>Do not forget to generate <code>wayland-logo.h</code> with the aforementioned commands!</em></p>
 <p>Compile with: <code>cc -std=c99 wayland.c -Ofast</code>.</p>
+<div class="wrap-collapsible">
+  <input id="collapsible" class="toggle" type="checkbox">
+  <label for="collapsible" class="label-toggle">Code</label>
+  <div class="collapsible-content">
 <pre><code class="language-c">#define _POSIX_C_SOURCE 200112L
 #include &lt;assert.h&gt;
 #include &lt;errno.h&gt;
@@ -1320,6 +1324,8 @@ int main() {
 }
 
 </code></pre>
+</div>
+</div>
 <p><a href="/blog"> ⏴ Back to all articles</a>
 
 <blockquote id="donate">

@@ -547,6 +547,10 @@ $ pprof --web ./a.out heap.profile
 <p>If you liked this article and you want to support me, and can afford it: <a href="https://paypal.me/philigaultier?country.x=DE&amp;locale.x=en_US">Donate</a></p>
 </blockquote>
 <h2 id="addendum-the-full-code">Addendum: the full code</h2>
+<div class="wrap-collapsible">
+  <input id="collapsible" class="toggle" type="checkbox">
+  <label for="collapsible" class="label-toggle">Code</label>
+  <div class="collapsible-content">
 <pre><code class="language-c">#define _GNU_SOURCE
 #include &lt;assert.h&gt;
 #include &lt;fcntl.h&gt;
@@ -750,6 +754,8 @@ int main() {
   mem_profile_write(&amp;mem_profile, stderr);
 }
 </code></pre>
+</div>
+</div>
 <p><a href="/blog"> ⏴ Back to all articles</a>
 
 <blockquote id="donate">

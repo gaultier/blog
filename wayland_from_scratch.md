@@ -675,6 +675,11 @@ As for the next steps, I would like to draw some text, and react to user input e
 
 Compile with: `cc -std=c99 wayland.c -Ofast`.
 
+<div class="wrap-collapsible">
+  <input id="collapsible" class="toggle" type="checkbox">
+  <label for="collapsible" class="label-toggle">Code</label>
+  <div class="collapsible-content">
+
 ```c
 #define _POSIX_C_SOURCE 200112L
 #include <assert.h>
@@ -1393,3 +1398,5 @@ int main() {
 
 ```
 
+</div>
+</div>

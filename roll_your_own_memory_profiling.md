@@ -571,6 +571,11 @@ After all, it's been [done before](https://technology.riotgames.com/news/profili
 
 ## Addendum: the full code
 
+<div class="wrap-collapsible">
+  <input id="collapsible" class="toggle" type="checkbox">
+  <label for="collapsible" class="label-toggle">Code</label>
+  <div class="collapsible-content">
+
 ```c
 #define _GNU_SOURCE
 #include <assert.h>
@@ -776,3 +781,5 @@ int main() {
 }
 ```
 
+</div>
+</div>
