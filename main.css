@@ -187,6 +187,17 @@ h2, h3, h4, h5, h6 {
     margin: 3rem 0 1rem 0;
 }
 
+a.title {
+  text-decoration: none !important;
+  color: initial;
+}
+
+a.title:hover {
+   cursor: pointer;
+   color: blue;
+   text-decoration: underline !important;
+}
+
 p:has(img):has(em) {
   padding-bottom: 2.5rem;
 }

@@ -81,7 +81,7 @@ It means we want to remove adjacent characters which are the same letter and hav
 <li>In the C solution, we use <code>abs(x) == 32</code> which we could avoid by doing <code>x*x == 32*32</code>.</li>
 </ul>
 <p>This coincided with me listening to an interview from the VLC developers saying they wrote hundred of thousand of lines of (multi platform!) Assembly code by hand in their new AV1 decoder. I thought that was intriguing, who still writes assembly by hand in 2023? Well these guys are no idiots so I should try it as well.</p>
-<h2 id="the-new-solution">The new solution</h2>
+<h2 id="the-new-solution"><a class="title" href="#the-new-solution">The new solution</a></h2>
 <p>I came up with a new algorithm, which on paper does less work. It's one linear pass on the input, and does not allocate.</p>
 <p>Since the result we care about is the number of remaining characters, we simply keep track of the count as we sift through the input.</p>
 <p>We maintain two pointers, <code>current</code> and <code>next</code>, which we compare to decide whether we should merge the characters they point to. 'Merging' means setting the two characters to <code>0</code> (it's basically a tombstone) and lower the count.</p>
@@ -129,7 +129,7 @@ print(remaining_count)
 We could memoize this location, but that would basically come down to the Scheme solution, having an output array of the same size as the input.</p>
 <p>Astute readers might have noticed a potential issue with the backwards search: We may underflow the <code>input</code> and go out of bounds! To avoid that, we could clamp <code>current</code>, but the branch misprediction is costly (an earlier implementation of mine did this and that was almost twice as slow!), and we can simplify the code as well as improve the performance by simply prefixing the <code>input</code> with a non-zero value that has no chance of being merged with the rest of the input, say, <code>1</code>.</p>
 <p>Let's implement it in x86_64 assembly!</p>
-<h2 id="the-x86-64-implementation">The x86_64 implementation</h2>
+<h2 id="the-x86-64-implementation"><a class="title" href="#the-x86-64-implementation">The x86_64 implementation</a></h2>
 <p><em>For a gentle introduction to x64 assembly, go read an <a href="/blog/x11_x64.html">earlier article</a> of mine.</em></p>
 <pre><code class="language-x86asm">BITS 64
 CPU X64
@@ -324,7 +324,7 @@ static solve:function
   pop rbp
   ret
 </code></pre>
-<h2 id="benchmarking">Benchmarking</h2>
+<h2 id="benchmarking"><a class="title" href="#benchmarking">Benchmarking</a></h2>
 <p>So, did it work? Is it fast? Let's compare the old C solution (also embedding the input data for a fair comparison) with our new Assembly one:</p>
 <pre><code class="language-sh">$ clang -Ofast -g3 -march=native aoc2018_5.c -o aoc2018_5-c
 $ hyperfine --warmup 3 --shell=none ./aoc2018_5 ./aoc2018_5-c
@@ -342,7 +342,7 @@ Summary
     1.95 ± 0.86 times faster than './aoc2018_5-c'
 </code></pre>
 <p>Yes, indeed, almost twice as fast!</p>
-<h2 id="learnings">Learnings</h2>
+<h2 id="learnings"><a class="title" href="#learnings">Learnings</a></h2>
 <ul>
 <li>Assembly can absolutely be written by hand, although with (much) more effort and a harder time troubleshooting what goes wrong.</li>
 <li>Some tools (profilers, reverse-engineering tools) expect that the assembly they consume came from a C source file and will be confused when it's not the case.</li>
@@ -352,8 +352,8 @@ Summary
 <li>Having a clear idea in pseudo-code of the solution will simplify the implementation in any language.</li>
 <li>Naive assembly is very fast (your CPU is crazy fast when you do not abuse it with badly written interpreted languages, seriously!), but a good compiler will emit better assembly than you if you write C or similar. Unless you are an expert like the VLC guys.</li>
 </ul>
-<h2 id="appendix-the-full-code">Appendix: The full code</h2>
-<h3 id="the-old-c-implementation">The old C implementation</h3>
+<h2 id="appendix-the-full-code"><a class="title" href="#appendix-the-full-code">Appendix: The full code</a></h2>
+<h3 id="the-old-c-implementation"><a class="title" href="#the-old-c-implementation">The old C implementation</a></h3>
 <div class="wrap-collapsible">
   <input id="collapsible2" class="toggle" type="checkbox">
   <label for="collapsible2" class="label-toggle">Code</label>
@@ -1061,7 +1061,7 @@ int main() {
 </code></pre>
 </div>
 </div>
-<h3 id="the-x64-implementation">The x64 implementation</h3>
+<h3 id="the-x64-implementation"><a class="title" href="#the-x64-implementation">The x64 implementation</a></h3>
 <div class="wrap-collapsible">
   <input id="collapsible1" class="toggle" type="checkbox">
   <label for="collapsible1" class="label-toggle">Code</label>
