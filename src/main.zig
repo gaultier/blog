@@ -222,10 +222,13 @@ fn generate_html_article(markdown: []const u8, article: Article, header: []const
         \\ 
     );
 
-    try html_file.writeAll("<strong>Table of contents</strong>\n");
     const toc = try generate_toc_for_article(markdown, allocator);
     defer allocator.free(toc);
-    try html_file.writeAll(toc);
+
+    if (toc.len > 0) {
+        try html_file.writeAll("<strong>Table of contents</strong>\n");
+        try html_file.writeAll(toc);
+    }
     try html_file.writeAll("\n");
 
     try html_file.writeAll(stdout.items);
@@ -416,54 +419,67 @@ fn generate_rss_feed(articles: []Article) !void {
 fn generate_toc_for_article(markdown: []const u8, allocator: std.mem.Allocator) ![]u8 {
     var it_lines = std.mem.splitScalar(u8, markdown, '\n');
 
+    var inside_code_section = false;
+
+    const Title = struct { title: []const u8, level: usize };
+    var titles = std.ArrayList(Title).init(allocator);
+    defer titles.deinit();
+    {
+        while (it_lines.next()) |line| {
+            const is_begin_title_html = std.mem.startsWith(u8, line, "<h");
+            std.debug.assert(!is_begin_title_html);
+
+            const is_begin_title = std.mem.startsWith(u8, line, "#");
+            const is_begin_code_section = std.mem.startsWith(u8, line, "```");
+
+            if (is_begin_code_section and !inside_code_section) {
+                inside_code_section = true;
+                continue;
+            }
+            if (is_begin_code_section and inside_code_section) {
+                inside_code_section = false;
+                continue;
+            }
+
+            if (inside_code_section) continue;
+            if (!is_begin_title) continue;
+
+            const first_space_pos = std.mem.indexOf(u8, line, " ") orelse 0;
+            const level = first_space_pos;
+            std.debug.assert(1 <= level and level <= 6);
+
+            const title = std.mem.trim(u8, line[first_space_pos..], &[_]u8{ ' ', '\n' });
+            try titles.append(.{ .title = title, .level = level });
+        }
+    }
+
+    if (titles.items.len == 0) return &.{};
+
     var toc = std.ArrayList(u8).init(allocator);
     try toc.ensureTotalCapacity(4096);
 
-    var inside_code_section = false;
-    var level_old: usize = 0;
+    {
+        var level_old: usize = 0;
+        for (titles.items) |title| {
+            if (title.level < level_old) {
+                try toc.appendSlice("</ul>\n");
+            }
+            if (title.level > level_old) {
+                try toc.appendSlice("<ul>\n");
+            }
 
-    while (it_lines.next()) |line| {
-        const is_begin_title_html = std.mem.startsWith(u8, line, "<h");
-        std.debug.assert(!is_begin_title_html);
+            const id = try make_html_friendly_id(title.title, allocator);
+            defer allocator.free(id);
 
-        const is_begin_title = std.mem.startsWith(u8, line, "#");
-        const is_begin_code_section = std.mem.startsWith(u8, line, "```");
+            try std.fmt.format(toc.writer(),
+                \\ <li><a href="#{s}">{s}</a></li>
+                \\
+            , .{ id, title.title });
 
-        if (is_begin_code_section and !inside_code_section) {
-            inside_code_section = true;
-            continue;
+            level_old = title.level;
         }
-        if (is_begin_code_section and inside_code_section) {
-            inside_code_section = false;
-            continue;
-        }
-
-        if (inside_code_section) continue;
-        if (!is_begin_title) continue;
-
-        const first_space_pos = std.mem.indexOf(u8, line, " ") orelse 0;
-        const level = first_space_pos;
-        std.debug.assert(1 <= level and level <= 6);
-
-        if (level < level_old) {
-            try toc.appendSlice("</ul>\n");
-        }
-        if (level > level_old) {
-            try toc.appendSlice("<ul>\n");
-        }
-
-        const title = std.mem.trim(u8, line[first_space_pos..], &[_]u8{ ' ', '\n' });
-        const id = try make_html_friendly_id(title, allocator);
-        defer allocator.free(id);
-
-        try std.fmt.format(toc.writer(),
-            \\ <li><a href="#{s}">{s}</a></li>
-            \\
-        , .{ id, title });
-
-        level_old = level;
+        try toc.appendSlice("</ul>\n");
     }
-    try toc.appendSlice("</ul>\n");
     return toc.toOwnedSlice();
 }
 
