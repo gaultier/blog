@@ -222,6 +222,7 @@ fn generate_html_article(markdown: []const u8, article: Article, header: []const
         \\ 
     );
 
+    try html_file.writeAll("<strong>Table of contents</strong>\n");
     const toc = try generate_toc_for_article(markdown, allocator);
     defer allocator.free(toc);
     try html_file.writeAll(toc);
@@ -417,7 +418,7 @@ fn generate_toc_for_article(markdown: []const u8, allocator: std.mem.Allocator) 
 
     var toc = std.ArrayList(u8).init(allocator);
     try toc.ensureTotalCapacity(4096);
-    try toc.appendSlice("<strong>Table of contents</strong>\n<ul>\n");
+    try toc.appendSlice("<ul>\n");
 
     var inside_code_section = false;
     while (it_lines.next()) |line| {
