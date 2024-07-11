@@ -195,20 +195,21 @@ fn extract_tags_for_article(markdown_content: []const u8, allocator: std.mem.All
 }
 
 fn convert_markdown_to_html(markdown: []const u8, title: []const u8, header: []const u8, footer: []const u8, html_file_path: []const u8, allocator: std.mem.Allocator) !void {
-    const html_file = try std.fs.cwd().createFile(html_file_path, .{});
-    defer html_file.close();
-
     const argv = &[_][]const u8{ "cmark", "--unsafe", "-t", "html" };
 
     var child = std.process.Child.init(argv, allocator);
-
     child.stdin_behavior = .Pipe;
     child.stdout_behavior = .Pipe;
     child.stderr_behavior = .Pipe;
 
     try std.process.Child.spawn(&child);
-    var stdin = child.stdin orelse @panic("no stdin");
-    try stdin.writeAll(markdown);
+    if (child.stdin) |*stdin| {
+        try stdin.writeAll(markdown);
+        stdin.close();
+        child.stdin = null;
+    } else {
+        @panic("no stdin");
+    }
 
     var stdout = std.ArrayList(u8).init(allocator);
     defer stdout.deinit();
@@ -218,9 +219,13 @@ fn convert_markdown_to_html(markdown: []const u8, title: []const u8, header: []c
     try child.collectOutput(&stdout, &stderr, 10 * 1024 * 1024);
 
     _ = try child.wait();
+    if (stderr.items.len > 0) {
+        std.log.err("cmark exited with error: {s}", .{stderr.items});
+    }
 
-    // std.debug.assert(converter_cmd.stderr.len == 0);
-
+    std.debug.print("[D001] {s}\n", .{html_file_path});
+    const html_file = try std.fs.cwd().createFile(html_file_path, .{});
+    defer html_file.close();
     try html_file.writeAll(header);
     try std.fmt.format(html_file.writer(), html_prelude, .{title});
     try html_file.writeAll(stdout.items);
@@ -266,6 +271,8 @@ fn parse_metadata(markdown: []const u8, allocator: std.mem.Allocator) !Metadata 
     while (it_newline.next()) |line| {
         if (std.mem.startsWith(u8, line, title_prefix)) {
             const title_str = std.mem.trim(u8, line[title_prefix.len..], "\n ");
+            std.debug.assert(std.mem.indexOfScalar(u8, title_str, '#') == null);
+
             metadata.title = try allocator.dupe(u8, title_str);
         } else if (std.mem.startsWith(u8, line, tags_prefix)) {
             const tags_str = std.mem.trim(u8, line[tags_prefix.len..], "\n ");
@@ -275,10 +282,9 @@ fn parse_metadata(markdown: []const u8, allocator: std.mem.Allocator) !Metadata 
                 const trimmed = std.mem.trim(u8, tag_str, "\n ");
                 try tags.append(try allocator.dupe(u8, trimmed));
             }
-
-            metadata.tags = try tags.toOwnedSlice();
         } else break;
     }
+    metadata.tags = try tags.toOwnedSlice();
 
     return metadata;
 }

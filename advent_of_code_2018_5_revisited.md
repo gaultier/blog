@@ -1,4 +1,4 @@
-# Optimizing an Advent of Code solution in assembly
+Title: Optimizing an Advent of Code solution in assembly
 Tags: [x86_64](/blog/articles-per-tag.html#x86_64), [Advent of Code](/blog/articles-per-tag.html#Advent-of-Code), [Optimization](/blog/articles-per-tag.html#Optimization), [Algorithm](/blog/articles-per-tag.html#Algorithm), [C](/blog/articles-per-tag.html#C), [Lisp](/blog/articles-per-tag.html#Lisp), [Scheme](/blog/articles-per-tag.html#Scheme)
 ---
 
