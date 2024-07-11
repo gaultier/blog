@@ -52,7 +52,12 @@ window.addEventListener("load", (event) => {
    <h1>A small trick to improve technical discussions by sharing code</h1>
    <span>🏷️  <a href="/blog/articles-by-tag.html#lua">Lua</a>,  <a href="/blog/articles-by-tag.html#neovim">Neovim</a>,  <a href="/blog/articles-by-tag.html#git">Git</a></span>
  </div>
- <p>This is a big title for a small trick that I've been using daily for years now, in every place I've worked at.</p>
+ <strong>Table of contents</strong>
+<ul>
+ <li id="addendum-the-full-code"><a href="#addendum-the-full-code">Addendum: the full code</a></li>
+</ul>
+
+<p>This is a big title for a small trick that I've been using daily for years now, in every place I've worked at.</p>
 <p>Whenever there is a technical discussion, a bug hunt, or any disagreement about the codebase, I think it really helps to look at existing code to anchor the debate in reality and make it concrete.</p>
 <p>Copy pasting code, taking screenshots, or screen sharing may work at times but I have found a low-tech solution that's superior: Sharing a link to a region of code in the codebase. It's shorter, easier, and can be used in chats, documentation and PRs.
 It works for any code, be it existing code on the main branch, or experimental code on a branch:</p>
@@ -151,7 +156,7 @@ I assume the git remote URL is a <code>ssh</code> URL here, again it's easy to t
 <pre><code class="language-lua">vim.keymap.set({'v', 'n'}, '&lt;leader&gt;x', ':GitWebUiUrlCopy&lt;CR&gt;')
 </code></pre>
 <p>And that's it, just 40 lines of Lua, and easy to extend to support even more hosting providers.</p>
-<h2 id="addendum-the-full-code">Addendum: the full code</h2>
+<h2>Addendum: the full code</h2>
 <pre><code class="language-lua">vim.keymap.set({'v', 'n'}, '&lt;leader&gt;x', ':GitWebUiUrlCopy&lt;CR&gt;')
 vim.api.nvim_create_user_command('GitWebUiUrlCopy', function(arg)
   local file_path = vim.fn.expand('%:p')

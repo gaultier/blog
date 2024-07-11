@@ -12,7 +12,7 @@ I am here recounting chronologically what I have achieved in my career until now
  - [Back-end Software Engineer & DevOps PPRO, Munich, Germany; 2017-2023](#back-end-software-engineer-devops-ppro-munich-germany-2017-2023)
  - [Senior Software Engineer Giesecke+Devrient, Munich, Germany; 2023-present](#senior-software-engineer-giesecke-devrient-munich-germany-2023-present)
 
-<h2 id="cr-dit-mutuel-bank-strasbourg-france-2013">Crédit Mutuel (Bank), Strasbourg, France; 2013</h2>
+## Crédit Mutuel (Bank), Strasbourg, France; 2013
 
 This was my first professional experience (a 8 weeks internship) and happened at one of the big banks in the country. Like most banks that have been founded in the 20th century, they have millions and millions of lines of code in COBOL, and realized this is not tenable and need to migrate to a modern tech stack to be able to keep it simply running. 
 
@@ -26,7 +26,7 @@ All in all, that was a very interesting social experience and a great insight on
 
 ---
 
-<h2 id="cnrs-intern-software-engineer-experimenting-with-the-oculus-rift-vr-cnrs-strasbourg-france-2014">CNRS Intern Software Engineer experimenting with the Oculus Rift (VR) CNRS, Strasbourg, France; 2014</h2>
+## CNRS Intern Software Engineer experimenting with the Oculus Rift (VR) CNRS, Strasbourg, France; 2014
 
 My second internship (10 weeks), and perhaps the project I loved the most. This took place at an astronomy lab, I had the incredible privilege to have my office in the old library that was probably a few centuries old, filled with old books; the building was this 19th century observatory with a big park with bee houses... This will never be topped.
 
@@ -49,7 +49,7 @@ Finally, I on-boarded my successor on the codebase and the build system and help
 
 ---
 
-<h2 id="full-stack-software-engineer-edgelab-lausanne-switzerland-2015-2017">Full-stack Software Engineer EdgeLab, Lausanne, Switzerland; 2015-2017</h2>
+## Full-stack Software Engineer EdgeLab, Lausanne, Switzerland; 2015-2017
 
 My first full-time job, initially being a 6 months internship concluding my Master's degree of Computer Science, and then extending into a full time position. The company was a financial startup building simulations of the stock market: how does the price of a bond or an option evolve if there is an earthquake or a housing crash? The idea was to observe how these events affected the stock market historically and simulate these happening on your portfolio to get a sense of how robust or risky your positions are.
 
@@ -67,7 +67,7 @@ Eventually, the company got acquired for 8 digits by a Swiss bank.
 
 ---
 
-<h2 id="back-end-software-engineer-devops-ppro-munich-germany-2017-2023">Back-end Software Engineer & DevOps PPRO, Munich, Germany; 2017-2023</h2>
+## Back-end Software Engineer & DevOps PPRO, Munich, Germany; 2017-2023
 
 I knew I did not want to stay in Switzerland, and found a job as a Software Engineer in Munich, Germany, at a FinTech company. This time not the stock market kind but the online payments kind. Think Paypal or the now defunct Wirecard (but we were honest and law abiding, and they were not).
 
@@ -96,7 +96,7 @@ I look fondly on all these achievements, achieving business targets with a varie
 
 ---
 
-<h2 id="senior-software-engineer-giesecke-devrient-munich-germany-2023-present">Senior Software Engineer Giesecke+Devrient, Munich, Germany; 2023-present</h2>
+## Senior Software Engineer Giesecke+Devrient, Munich, Germany; 2023-present
 
 After 6+ years in my job, I decided I was ready for the next challenge and joined my current company to help productionize an innovative Central Bank Digital Currency project (similar to a cryptocurrency, but backed by a sovereign state, using the state's currency, and with all the high standards one expects from regulated financial institutions). The most interesting feature, technically and product wise, is offline payments (card to card) with a focus on privacy. 
 

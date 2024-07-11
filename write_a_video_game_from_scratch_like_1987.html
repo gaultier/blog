@@ -52,7 +52,20 @@ window.addEventListener("load", (event) => {
    <h1>Let's write a video game from scratch like it's 1987</h1>
    <span>🏷️  <a href="/blog/articles-by-tag.html#c">C</a>,  <a href="/blog/articles-by-tag.html#x11">X11</a>,  <a href="/blog/articles-by-tag.html#video-game">Video game</a>,  <a href="/blog/articles-by-tag.html#odin">Odin</a>,  <a href="/blog/articles-by-tag.html#optimization">Optimization</a></span>
  </div>
- <blockquote>
+ <strong>Table of contents</strong>
+<ul>
+ <li id="what-we-re-making"><a href="#what-we-re-making">What we're making</a></li>
+ <li id="authentication"><a href="#authentication">Authentication</a></li>
+ <li id="opening-a-window"><a href="#opening-a-window">Opening a window</a></li>
+ <li id="loading-assets"><a href="#loading-assets">Loading assets</a></li>
+ <li id="the-game-entities"><a href="#the-game-entities">The game entities</a></li>
+ <li id="reacting-to-keyboard-and-mouse-events"><a href="#reacting-to-keyboard-and-mouse-events">Reacting to keyboard and mouse events</a></li>
+ <li id="game-logic-uncover-a-cell"><a href="#game-logic-uncover-a-cell">Game logic: uncover a cell</a></li>
+ <li id="conclusion"><a href="#conclusion">Conclusion</a></li>
+ <li id="addendum-the-full-code"><a href="#addendum-the-full-code">Addendum: the full code</a></li>
+</ul>
+
+<blockquote>
 <p>This article has been discussed on <a href="https://news.ycombinator.com/item?id=40737370">Hacker News</a> and <a href="https://old.reddit.com/r/programming/comments/1dkahjw/lets_write_a_video_game_from_scratch_like_its_1987/">Reddit</a></p>
 </blockquote>
 <p>In a <a href="/blog/x11_x64.html">previous article</a> I've done the 'Hello, world!' of GUIs in assembly: A black window with a white text, using X11 without any libraries, just talking directly over a socket.</p>
@@ -100,7 +113,7 @@ cell</a>{#toc-game-logic-uncover-a-cell}</li>
 <li><a href="#addendum-the-full-code">Addendum: the full
 code</a>{#toc-addendum-the-full-code}</li>
 </ul>
-<h2 id="what-we-re-making">What we're making</h2>
+<h2>What we're making</h2>
 <p>The 11th version of the X protocol was born in 1987 and has not changed since. Since it predates GPUs by a decade or so, its model does not really fit the hardware of today. Still, it's everywhere. Any Unix has a X server, even macOS with XQuartz, and now Windows supports running GUI Linux applications inside WSL! X11 has never been so ubiquitous. The protocol is relatively simple and the entry bar is low: we only need to create a socket and we're off the races. And for 2D applications, there's no need to be a Vulkan wizard or even interact with the GPU. Hell, it will work even without any GPU!</p>
 <p>Everyone writing GUIs these days use a giant pile of libraries, starting with the <s>overly complicated</s> venerable <code>libX11</code> and <code>libxcb</code> libraries, to Qt and SDL.</p>
 <p>Here are the steps we need to take:</p>
@@ -114,7 +127,7 @@ code</a>{#toc-addendum-the-full-code}</li>
 <p>We will implement this in the <a href="https://odin-lang.org/">Odin programming language</a> which I really enjoy. But if you want to follow along with C or anything really, go for it. All we need is to be able to open a Unix socket, send and receive data on it, and load an image into memory. We will use PNG for that, since Odin has in its standard library support for PNGs, but we could also very easily use a simple format like PPM (like I did in the linked Wayland article) that is trivial to parse. Since Odin has support for both in its standard library, it does not really matter, and I stuck with PNG since it's more space-efficient.</p>
 <p>Finally, if you're into writing X11 applications even with libraries, lots of things in X11 are undocumented or underdocumented, and this article can be a good learning resource. As a bonus, you can also follow along with pure Wayland, using my previous Wayland article.</p>
 <p>Or perhaps you simply enjoy, like me, peeking behind the curtain to understand the magician's tricks. It almost always ends up with: &quot;That's it? That's all there is to it?&quot;.</p>
-<h2 id="authentication">Authentication</h2>
+<h2>Authentication</h2>
 <p>In previous articles, we connected to the X server without any authentication.</p>
 <p>Let's be a bit more refined: we now also support the X authentication protocol.</p>
 <p>That's because when running under Wayland with XWayland in some desktop environments like Gnome, we have to use authentication.</p>
@@ -278,7 +291,7 @@ AuthEntry :: struct {
 <p>However, we do not want to retain the parsed entries from the file in memory after finding the 16 bytes token, so we <code>defer free_all(allocator)</code>. This is much better than going through each entry and freeing individually each field. We simply free the whole arena in one swoop (but the backing memory remains around to be reused later).</p>
 <p>Furthermore, using this arena places an upper bound (a few MiBs) on the allocations we can do. So if one entry in the file is huge, or malformed, we verifyingly cannot allocate many GiBs of memory. This is good news, because otherwise, the OS will start swapping like crazy and start killing random programs. In my experience it usually kills the window/desktop manager which kills all open windows. Very efficient from the OS perspective, and awful from the user perspective. So it's always good to place an upper bound on all resources including heap memory usage of your program.</p>
 <p>All in all I find Odin's approach very elegant. I usually want the ability to use a different allocator in a given function, but also if I don't care, it will do the right thing and use the standard allocator.</p>
-<h2 id="opening-a-window">Opening a window</h2>
+<h2>Opening a window</h2>
 <p>This part is almost exactly the same as the first linked article so I'll speed run this.</p>
 <p>First we open a UNIX domain socket:</p>
 <pre><code class="language-odin">connect_x11_socket :: proc() -&gt; os.Socket {
@@ -643,7 +656,7 @@ main :: proc() {
 <p>We now see:</p>
 <p><img src="game-x11-empty-background.png" alt="Empty yellow window" /></p>
 <p>Time to start programming the game itself!</p>
-<h2 id="loading-assets">Loading assets</h2>
+<h2>Loading assets</h2>
 <p>What's a game without nice looking pictures <s>stolen from somewhere on the internet</s> ?</p>
 <p>Here is our sprite, the one image containing all our assets:</p>
 <p><img src="game-x11-sprite.png" alt="Our sprite" /></p>
@@ -874,7 +887,7 @@ x11_copy_area :: proc(
 <p>Result:</p>
 <p><img src="game-x11-first-image.png" alt="First images on the screen" /></p>
 <p>We are now ready to focus on the game entities.</p>
-<h2 id="the-game-entities">The game entities</h2>
+<h2>The game entities</h2>
 <p>We have a few different entities we want to show, each is a 16x16 section of the sprite sheet. Let's define their coordinates to be readable:</p>
 <pre><code class="language-odin">Position :: struct {
 	x: u16,
@@ -966,7 +979,7 @@ ASSET_COORDINATES: [Entity_kind]Position = {
 <p>And here is what we get:</p>
 <p><img src="game-x11-first-scene.png" alt="First scene" /></p>
 <p>The next step is to respond to events.</p>
-<h2 id="reacting-to-keyboard-and-mouse-events">Reacting to keyboard and mouse events</h2>
+<h2>Reacting to keyboard and mouse events</h2>
 <p>This is very straightforward. Since the only messages we expect are for keyboard and mouse events, with a fixed size of 32 bytes, we simply read 32 bytes exactly in a blocking fashion. The first byte indicates which kind of event it is:</p>
 <pre><code>wait_for_x11_events :: proc(socket: os.Socket, scene: ^Scene) {
 	GenericEvent :: struct #packed {
@@ -1050,7 +1063,7 @@ ASSET_COORDINATES: [Entity_kind]Position = {
 <p>If the event is the <code>Enter</code> key, we reset the state of the game and render. X11 differentiates between physical and logical keys on the keyboard but that does not matter here (or I would argue in most games: we are interested in the physical location of the key, not what the user mapped it to).</p>
 <p>If the event is (pressing and) releasing a mouse button, we run the game logic to uncover a cell and render.</p>
 <p>That's it!</p>
-<h2 id="game-logic-uncover-a-cell">Game logic: uncover a cell</h2>
+<h2>Game logic: uncover a cell</h2>
 <p>The last thing to do is implementing the game rules.</p>
 <p>From my faint memory, when uncovering a cell, we have two cases:</p>
 <ul>
@@ -1146,7 +1159,7 @@ locate_entity_by_coordinate :: proc(win_x: u16, win_y: u16) -&gt; (idx: int, row
 </code></pre>
 <p>There are a few helpers here and there that are simple, but otherwise... that's it, that's the end. We're done! All under 1000 lines of code without any tricks or clever things.</p>
 <p><img src="https://github.com/gaultier/minesweeper-from-scratch/raw/master/screenshot.png" alt="Screenshot" /></p>
-<h2 id="conclusion">Conclusion</h2>
+<h2>Conclusion</h2>
 <p>X11 is old and crufty, but also gets out of the way. Once a few utility functions to open the window, receive events, etc have been implemented, it can be forgotten and we can focus all our attention on the game. That's very valuable. How many libraries, frameworks and development environments can say the same?</p>
 <p>I also enjoy that it works with any programming language, any tech stack. Don't need no bindings, no FFI, just send some bytes over the socket. You can even do that in Bash (don't tempt me!).</p>
 <p>I did not implement a few accessory things from the original game, like planting a flag on a cell you suspect has a mine. Feel free to do this at home, it's not much work.</p>
@@ -1155,7 +1168,7 @@ locate_entity_by_coordinate :: proc(win_x: u16, win_y: u16) -&gt; (idx: int, row
 <blockquote>
 <p>If you liked this article and you want to support me, and can afford it: <a href="https://paypal.me/philigaultier?country.x=DE&amp;locale.x=en_US">Donate</a></p>
 </blockquote>
-<h2 id="addendum-the-full-code">Addendum: the full code</h2>
+<h2>Addendum: the full code</h2>
 <pre><code class="language-odin">package main
 
 import &quot;core:bytes&quot;

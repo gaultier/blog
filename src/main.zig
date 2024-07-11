@@ -417,6 +417,7 @@ fn generate_toc_for_article(markdown: []const u8, allocator: std.mem.Allocator) 
 
     var toc = std.ArrayList(u8).init(allocator);
     try toc.ensureTotalCapacity(4096);
+    try toc.appendSlice("<strong>Table of contents</strong>\n<ul>\n");
 
     var inside_code_section = false;
     while (it_lines.next()) |line| {
@@ -442,18 +443,15 @@ fn generate_toc_for_article(markdown: []const u8, allocator: std.mem.Allocator) 
         const level = first_space_pos;
         std.debug.assert(1 <= level and level <= 6);
         const title = std.mem.trim(u8, line[first_space_pos..], &[_]u8{ ' ', '\n' });
-        try toc.appendNTimes(' ', level * 2);
-        try toc.appendSlice(" - [");
-        try toc.appendSlice(title);
-        try toc.appendSlice("](#");
+        const id = try make_html_friendly_id(title, allocator);
+        defer allocator.free(id);
 
-        const final_id = try make_html_friendly_id(title, allocator);
-        defer allocator.free(final_id);
-
-        try toc.appendSlice(final_id);
-
-        try toc.appendSlice(")\n");
+        try std.fmt.format(toc.writer(),
+            \\ <li id="{s}"><a href="#{s}">{s}</a></li>
+            \\
+        , .{ id, id, title });
     }
+    try toc.appendSlice("</ul>\n");
     return toc.toOwnedSlice();
 }
 
@@ -540,7 +538,7 @@ fn generate_all_articles_in_dir(header: []const u8, footer: []const u8, allocato
     var cwd_iterator = cwd.iterate();
 
     var pool: std.Thread.Pool = undefined;
-    try std.Thread.Pool.init(&pool, .{ .allocator = allocator, .n_jobs = 1 });
+    try std.Thread.Pool.init(&pool, .{ .allocator = allocator });
     var wait_group = std.Thread.WaitGroup{};
 
     var articles = std.ArrayList(Article).init(allocator);
@@ -583,29 +581,15 @@ pub fn main() !void {
     defer args_iterator.deinit();
     _ = args_iterator.skip();
 
-    const cmd = args_iterator.next() orelse "";
-
     const header_file = try std.fs.cwd().openFile("header.html", .{});
     const header = try header_file.readToEndAlloc(allocator, 2048);
 
     const footer_file = try std.fs.cwd().openFile("footer.html", .{});
     const footer = try footer_file.readToEndAlloc(allocator, 2048);
 
-    if (std.mem.eql(u8, cmd, "toc")) {
-        const file = args_iterator.next() orelse {
-            std.log.err("missing second argument", .{});
-            std.process.exit(1);
-        };
-
-        const toc = try generate_toc_for_article(file, allocator);
-        defer allocator.free(toc);
-
-        try std.io.getStdOut().writeAll(toc);
-    } else {
-        const articles = try generate_all_articles_in_dir(header, footer, allocator);
-        std.mem.sort(Article, articles, {}, articlesOrderedByCreationDateAsc);
-        try generate_home_page(header, articles, allocator);
-        try generate_page_articles_by_tag(articles, header, footer, allocator);
-        try generate_rss_feed(articles);
-    }
+    const articles = try generate_all_articles_in_dir(header, footer, allocator);
+    std.mem.sort(Article, articles, {}, articlesOrderedByCreationDateAsc);
+    try generate_home_page(header, articles, allocator);
+    try generate_page_articles_by_tag(articles, header, footer, allocator);
+    try generate_rss_feed(articles);
 }

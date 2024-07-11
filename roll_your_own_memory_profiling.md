@@ -43,7 +43,7 @@ Another good reason to do this, is when the system's `malloc` comes with some fo
 -   [Conclusion](#conclusion)
 -   [Addendum: the full code](#addendum-the-full-code)
 
-<h2 id="pprof">Pprof</h2>
+## Pprof
 
 Here is the plan: 
 
@@ -55,7 +55,7 @@ I will showcase this approach with C code using an arena allocator. The full cod
 
 > The original `pprof` written in Perl is not to be confused with the rewritten [pprof](https://github.com/google/pprof) in Go which offers a superset of the features of the original but based on a completely different and incompatible file format (protobuf)!
 
-<h2 id="the-text-format">The text format</h2>
+## The text format
 
 Here is the text format we want to generate:
 
@@ -246,7 +246,7 @@ Total: 0.0 MB
      0.0   0.0% 100.0%      0.0 100.0% main
 ```
 
-<h2 id="generating-a-pprof-profile">Generating a `pprof` profile</h2>
+## Generating a `pprof` profile
 
 Let's start with a very simple arena (directly based on [https://nullprogram.com/blog/2023/09/27/](https://nullprogram.com/blog/2023/09/27/)) and show how it is used:
 
@@ -541,7 +541,7 @@ $ pprof --collapsed ./a.out heap.profile | flamegraph.pl > out.svg
 ![Flamegraph](mem_prof_flamegraph.svg)
 
 
-<h2 id="variations-and-limitations">Variations and limitations</h2>
+## Variations and limitations
 
 - For this article we always do memory profiling and abort once the arena is full; but it does not have to be this way. Memory profiling could be enabled in a CLI program with a command line flag; if it is disabled we do not create a memory profile nor an arena for it. Or, it could be enabled/disabled dynamically, after a given amount of time, etc. It could also stop when its dedicated arena is full instead of aborting the whole program.
 - Sampling could be easily added to `mem_profile_record_alloc` to only record some records, say 1%
@@ -549,7 +549,7 @@ $ pprof --collapsed ./a.out heap.profile | flamegraph.pl > out.svg
 - Stack traces won't work across library calls that are compiled without frame pointers. To which I'd say: It's likely easier to compile all of the code you depend on with the build flags you require than try to come up with alternative ways to walk the stack. Your mileage may vary.
 - We use linear scanning to find an existing record with the same call stack. When having lots of records, it would be advantageous to use a binary search on a sorted array or perhaps a hashtable.
 
-<h2 id="alternatives">Alternatives</h2>
+## Alternatives
 
 `pprof` (the Perl one) is not the only way to get this information. 
 
@@ -567,7 +567,7 @@ It turns out that your browser comes with a built-in profiler and a nice one to 
   * Memory traces are supported but it seems that a CPU trace is required for each memory trace which makes the profile even bigger, and harder to generate. Only providing memory samples shows nothing in the graphs.
 - The new `pprof` (the Go version) expects a relatively simple gzipped [protobuf file](https://github.com/google/pprof/tree/4ca4178f5c7ab3f10300f07dab7422ead8dc17bc/proto), but that means adding code generation and a library dependency. I use this tool when writing Go quite often and it is helpful. It also supports adding labels to samples, for example we could label the allocations coming from different arenas differently to be able to distinguish them in the same profile.
 
-<h2 id="conclusion">Conclusion</h2>
+## Conclusion
 
 I like that one of the most common memory profilers uses a very simple text format that anyone can generate, and that's it's stand-alone. It's very UNIXy!
 
@@ -579,7 +579,7 @@ After all, it's been [done before](https://technology.riotgames.com/news/profili
 > If you liked this article and you want to support me, and can afford it: [Donate](https://paypal.me/philigaultier?country.x=DE&locale.x=en_US)
 
 
-<h2 id="addendum-the-full-code">Addendum: the full code</h2>
+## Addendum: the full code
 
 ```c
 #define _GNU_SOURCE

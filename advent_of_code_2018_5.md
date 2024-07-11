@@ -27,7 +27,7 @@ it was [already done better than I can](http://blog.klipse.tech/scheme/2016/09/1
 - [Conclusion](#conclusion)
 
  
-<h2 id="the-problem">The problem</h2>
+## The problem
 
 We have a string looking like this: `AabcdZZqQ` which represents a chain of
 chemical units. Adjacent units of the same type (i.e letter) and opposite
@@ -37,7 +37,7 @@ It means we want to remove adjacent characters which are the same letter and hav
 
 The final output is the number of characters in the final string, i.e, `5`.
 
-<h2 id="working-with-the-repl-to-iteratively-close-in-on-a-solution">Working with the REPL to iteratively close in on a solution</h2>
+## Working with the REPL to iteratively close in on a solution
 
 First, let's define our input, which is a string: 
 
@@ -187,7 +187,7 @@ So we need to treat the case of the empty list (both for the first and the
 second argument) explicitly. We could do that by using lots of `if`, but it is
 more readable and concise to use pattern matching.
 
-<h3 id="a-small-detour-pattern-matching">A small detour: pattern matching</h3>
+### A small detour: pattern matching
 
 Scheme has a minimalist core, so we do not get pattern matching out of
 the box, but we can easily add it with the package `matchable`. Let's install
@@ -252,7 +252,7 @@ Let's go ahead and match the case of a list of one or more elements (`(a . arest
 Here we choose to (arbitrarily) return the product of the first elements of both
 list, to show that pattern matching is also a way to do destructuring.
 
-<h3 id="using-pattern-matching-to-solve-our-problem">Using pattern matching to solve our problem</h3>
+### Using pattern matching to solve our problem
 
 If the second list (the input) is empty, it means we are
 finished, so we return the first list (`acc`):
@@ -370,7 +370,7 @@ It's quite simple: we use the modules `chicken.file.posix` and `chicken.io`:
 ```
 
 
-<h2 id="the-final-solution">The final solution</h2>
+## The final solution
 
 Here I use the package `clojurian` (`chicken-install clojurian`) to have access
 to the `->>` macro which makes code more readable. It works like the pipe in the
@@ -515,7 +515,7 @@ Yes, of course. However we need to be careful about how strings are implemented
 and what we we do with those. Most runtimes (e.g the JVM) use immutable strings,
 meaning we could end up allocating thousands of big strings, and being quite slow.
 
-<h2 id="conclusion">Conclusion</h2>
+## Conclusion
 
 That's it, we solved the fifth Advent of Code challenge in Scheme. The solution
 is under 30 lines of code, is (hopefully) simple and readable, and has a

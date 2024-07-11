@@ -22,7 +22,7 @@ Tags: Graph, Algorithm, JavaScript, SQL
 
 *If you spot an error, please open a [Github issue](https://github.com/gaultier/blog)!*
 
-<h2 id="introduction">Introduction </h2>
+## Introduction 
 
 
 Graphs are everywhere in Software Engineering, or so we are told by Computer Science teachers and interviewers. But sometimes, they do show up in real problems.
@@ -56,7 +56,7 @@ It opens the door to various invalid inputs: links that form a graph (an employe
 ![Invalid employee hierarchy](kahns_algorithm_1_invalid.svg)
 
 
-<h2 id="the-database">The database</h2>
+## The database
 
 So how do we store all of those people in the database?
 
@@ -97,7 +97,7 @@ A big benefit is that we hit three birds with one stone:
 
 From now one, I will use the graph of employees (where `Zoe` has two managers) as example since that's a possible input to our API and we need to detect this case.
 
-<h2 id="topological-sort">Topological sort</h2>
+## Topological sort
 
 From Wikipedia:
 
@@ -158,7 +158,7 @@ So, how can we implement something like `tsort` for our problem at hand? That's 
 
 *Note that that's not the only solution and there are ways to detect cycles without creating a topological sort, but this algorithm seems relatively unknown and does not come up often on the Internet, so let's discover how it works and implement it. I promise, it's not complex.*
 
-<h2 id="how-to-store-the-graph-in-memory">How to store the graph in memory</h2>
+## How to store the graph in memory
 
 There are many ways to do so, and Kahn's algorithm does not dictate which one to use. 
 
@@ -215,7 +215,7 @@ Wikipedia lists others if you are interested, it's a well-known problem.
 
 Alright, now that we know how our graph is represented, on to the algorithm.
 
-<h2 id="kahn-s-algorithm">Kahn's algorithm</h2>
+## Kahn's algorithm
 
 [Kahn's algorithm](https://en.wikipedia.org/wiki/Topological_sorting#Kahn's_algorithm) keeps track of nodes with no incoming edge, and mutates the graph (in our case the adjacency matrix), by removing one edge at a time, until there are no more edges, and builds a list of nodes in the right order, which is the output.
 
@@ -297,7 +297,7 @@ Note that this algorithm is not capable by itself to point out which cycle there
 This algorithm is loose concerning the order of some operations, for example, picking a node with no incoming edge, or in which order the nodes in `S` are stored. That gives room for an implementation to use certain data structures or orders that are faster, but in some cases we want the order to be always the same to solve ties in the stable way and to be reproducible. In order to do that, we simply use the alphabetical order. So in our example above, at `Line 5`, we picked `Zoe` out of `[Zoe, Bella, Miranda]`. Using this method, we would keep the working set `S` sorted alphabetically and pick `Bella` out of `[Bella, Miranda, Zoe]`.
 
 
-<h2 id="implementation">Implementation</h2>
+## Implementation
 
 I implemented this at the time in Go, but I will use for this article the lingua franca of the 2010s, Javascript.
 
@@ -319,7 +319,7 @@ const adjacencyMatrix = [
 const nodes = ["Angela", "Bella", "Ellen", "Jane", "Miranda", "Zoe"];
 ```
  
-<h3 id="helpers">Helpers</h3>
+### Helpers
 
 We need a helper function to check if a node has no incoming edge (`Line 9` in the algorithm):
 
@@ -373,7 +373,7 @@ function graphHasEdges(adjacencyMatrix) {
 ```
 
 
-<h3 id="the-algorithm">The algorithm</h3>
+### The algorithm
 
 We are finally ready to implement the algorithm. It's a straightforward, line by line, translation of the pseudo-code:
 
@@ -425,7 +425,7 @@ Interestingly, it is not the same order as `tsort`, but it is indeed a valid top
 
 But in our specific case, we just want a valid insertion order in the database, and so this is enough.
 
-<h3 id="inserting-entries-in-the-database">Inserting entries in the database</h3>
+### Inserting entries in the database
 
 Now, we can produce the SQL code to insert our entries. We operate on a clone of the adjacency matrix for convenience because we later need to know what is the outgoing edge for a given node.
 
@@ -460,7 +460,7 @@ INSERT INTO people SELECT "Jane", rowid FROM people WHERE name = "Ellen" LIMIT 1
 INSERT INTO people SELECT "Zoe", rowid FROM people WHERE name = "Jane" LIMIT 1;
 ```
 
-<h3 id="detecting-cycles">Detecting cycles</h3>
+### Detecting cycles
 
 As we said earlier, we get that for free, so let's check our implementation against this invalid example:
 
@@ -493,7 +493,7 @@ And we get an error as expected:
 Error: Graph has at least one cycle
 ```
 
-<h3 id="detecting-multiple-roots">Detecting multiple roots</h3>
+### Detecting multiple roots
 
 
 One thing that topological sorting does not do for us is to detect the case of multiple roots in the graph, for example:
@@ -543,7 +543,7 @@ console.log(hasMultipleRoots(adjacencyMatrix));
 
 And we get: `true`. With our previous (valid) example, we get: `false`.
 
-<h2 id="playing-with-the-database">Playing with the database</h2>
+## Playing with the database
 
 We can query each employee along with their manager name so:
 
@@ -563,7 +563,7 @@ WHERE employee.name = ?
 
 We can also do this with hairy recursive Common Table Expression (CTE) but I'll leave that to the reader.
 
-<h2 id="closing-thoughts">Closing thoughts</h2>
+## Closing thoughts
 
 Graphs and algorithms operating on them do not have to be complicated. Using an adjacency matrix and Kahn's algorithm, we can achieve a lot with little and it remains simple.
 
@@ -574,7 +574,7 @@ If you want to play with the code here and try to make it faster, go at it!
 
 > If you liked this article and you want to support me, and can afford it: [Donate](https://paypal.me/philigaultier?country.x=DE&locale.x=en_US)
 
-<h2 id="addendum-the-full-code">Addendum: the full code</h2>
+## Addendum: the full code
 
 ```js
 const adjacencyMatrix = [

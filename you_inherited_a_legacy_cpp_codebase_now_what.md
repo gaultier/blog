@@ -59,7 +59,7 @@ Ok, let's dive in!
     management](#addendum-dependency-management)
 -   [Addendum: suggestions from readers](#addendum-suggestions-from-readers)
 
-<h2 id="get-buy-in">Get buy-in</h2>
+## Get buy-in
 
 You thought I was going to compare the different sanitizers, compile flags, or build systems? No sir, before we do any work, we talk to people. Crazy, right?
 
@@ -93,7 +93,7 @@ In my experience, with this approach, you keep everyone happy and can do the imp
 
 Alright, let's get down to business now!
 
-<h2 id="write-down-the-platforms-you-support">Write down the platforms you support</h2>
+## Write down the platforms you support
 
 This is so important and not many projects do it. Write in the README (you do have a README, right?). It's just a list of `<architecture>-<operating-system>` pair, e.g. `x86_64-linux` or `aarch64-darwin`, that your codebase officially supports. This is crucial for getting the build working on every one of them but also and we'll see later, removing cruft for platforms you do *not* support.
 
@@ -108,7 +108,7 @@ That helps answer important questions such as:
 
 And an important point: This list should absolutely include the developers workstations. Which leads me to my next point:
 
-<h2 id="get-the-build-working-on-your-machine">Get the build working on your machine</h2>
+## Get the build working on your machine
 
 You'd be amazed at how many C++ codebase in the wild that are a core part of a successful product earning millions and they basically do not compile. Well, if all the stars are aligned they do. But that's not what I'm talking about. I'm talking about reliably, consistently building on all platforms you support. No fuss, no 'I finally got it building after 3 weeks of hair-pulling' (this brings back some memories). It just works(tm).
 
@@ -126,13 +126,13 @@ Another hurdle is the code requiring some platform specific API, for example `io
 
 I have done all of the above in the past and that works but building directly on your machine is still the best option.
 
-<h2 id="get-the-tests-passing-on-your-machine">Get the tests passing on your machine</h2>
+## Get the tests passing on your machine
 
 First, if there are no tests, I am sorry. This is going to be really difficult to do any change at all. So go write some tests before doing any change to the code, make them pass, and come back. The easiest way is to capture inputs and outputs of the program running in the real world and write end-to-end tests based on that, the more varied the better. It will ensure there are no regressions when making changes, not that the behavior was correct in the first place, but again, better than nothing.
 
 So, now you have a test suite. If some tests fail, disable them for now. Make them pass, even if the whole test suite takes hours to run. We'll worry about that later.
 
-<h2 id="write-down-in-the-readme-how-to-build-and-test-the-application">Write down in the README how to build and test the application</h2>
+## Write down in the README how to build and test the application
 
 Ideally it's one command to build and one for testing. At first it's fine if it's more involved, in that case the respective commands can be put in a `build.sh` and `test.sh` that encapsulate the madness.
 
@@ -142,7 +142,7 @@ The goal is to have a non C++ expert be able to build the code and run the tests
 Here some folks would recommend documenting the project layout, the architecture, etc. Since the next step is going to rip out most of it, I'd say don't waste your time now, do that at the end.
 
 
-<h2 id="find-low-hanging-fruits-to-speed-up-the-build-and-tests">Find low hanging fruits to speed up the build and tests</h2>
+## Find low hanging fruits to speed up the build and tests
 
 Emphasis on 'low hanging'. No change of the build system, no heroic efforts (I keep repeating that in this article but this is so important).
 
@@ -167,7 +167,7 @@ Once that's done, here are a few things to additionally try, although the gains 
 Once the iteration cycle feels ok, the code gets to go under the microscope. If the build takes ages, it's not realistic to want to modify the code.
 
 
-<h2 id="remove-all-unnecessary-code">Remove all unnecessary code</h2>
+## Remove all unnecessary code
 
 Dad, I see dead lines of code.
 
@@ -186,15 +186,15 @@ Here are some ways to go about it:
 And the bonus for doing all of this, is not only that you sped up the build time by a factor of 5 with zero downside, is that, if your boss is a tiny bit technical, they'll love seeing PRs deleting thousands of lines of code. And your coworkers as well.
 
 
-<h2 id="linters">Linters</h2>
+## Linters
 
 Don't go overboard with linter rules, add a few basic ones, incorporate them in the development life cycle, incrementally tweak the rules and fix the issues that pop up, and move on. Don't try to enable all the rules, it's just a rabbit hole of diminishing returns. I have used `clang-tidy` and `cppcheck` in the past, they can be helpful, but also incredibly slow and noisy, so be warned. Having no linter is not an option though. The first time you run the linter, it'll catch so many real issues that you'll wonder why the compiler is not detecting anything even with all the warnings on.
 
-<h2 id="code-formatting">Code formatting</h2>
+## Code formatting
 
 Wait for the appropriate moment where no branches are active (otherwise people will have horrendous merge conflicts), pick a code style at random, do a one time formatting of the entire codebase (no exceptions), typically with `clang-format`, commit the configuration, done. Don't waste any bit of saliva arguing about the actual code formatting. It only exists to make diffs smaller and avoid arguments, so do not argue about it!
 
-<h2 id="sanitizers">Sanitizers</h2>
+## Sanitizers
 
 Same as linters, it can be a rabbit hole, unfortunately it's absolutely required to spot real, production affecting, hard to detect, bugs and to be able to fix them. `-fsanitize=address,undefined` is a good baseline. They usually do not have false positives so if something gets detected, go fix it. Run the tests with it so that issues get detected there as well. I even heard of people running the production code with some sanitizers enabled, so if your performance budget can allow it, it could be a good idea.
 
@@ -205,7 +205,7 @@ Each sanitizer also has options so it could be useful to inspect them if your pr
 
 One last thing: ideally, all third-party dependencies should also be compiled with the sanitizers enabled when running tests, to spot [issues](https://github.com/rxi/microui/pull/67) in them as well.
 
-<h2 id="add-a-ci-pipeline">Add a CI pipeline</h2>
+## Add a CI pipeline
 
 As Bryan Cantrill once said (quoting from memory), 'I am convinced most firmware just comes out of the home directory of a developer's laptop'. Setting up a CI is quick, free, and automates all the good things we have set up so far (linters, code formatting, tests, etc). And that way we can produce in a pristine environment the production binaries, on every change. If you're not doing this already as a developer, I don't think you really have entered the 21st century yet. 
 
@@ -214,7 +214,7 @@ Cherry on the cake: most CI systems allow for running the steps on a matrix of d
 Typically the pipeline just looks like `make all test lint fmt`  so it's not rocket science. Just make sure that issues that get reported by the tools (linters, sanitizers, etc) actually fail the pipeline, otherwise no one will notice and fix them.
 
 
-<h2 id="incremental-code-improvements">Incremental code improvements</h2>
+## Incremental code improvements
 
 Well that's known territory so I won't say much here. Just that lots of code can often be dramatically simplified.
 
@@ -224,12 +224,12 @@ I feel that's the step that's the hardest to timebox because each round of simpl
 
 In my experience, upgrading the C++ standard in use in the project can at times help with code simplifications, for example to replace code that manually increments iterators by a `for (auto x : items)` loop, but remember it's just a means to an end, not an end in itself. If all you need is `std::clamp`, just write it yourself.
 
-<h2 id="rewrite-in-a-memory-safe-language">Rewrite in a memory safe language?</h2>
+## Rewrite in a memory safe language?
 
 I am doing this right now at work, and that deserves an article of its own. Lots of gotchas there as well. Only do this with a compelling reason.
 
 
-<h2 id="conclusion">Conclusion</h2>
+## Conclusion
 
 Well, there you have it. A tangible, step-by-step plan to get out of the finicky situation that's a complex legacy C++ codebase. I have just finished going through that at work on a project, and it's become much more bearable to work on it now. I have seen coworkers, who previously would not have come within a 10 mile radius of the codebase, now make meaningful contributions. So it feels great.
 
@@ -237,7 +237,7 @@ There are important topics that I wanted to mention but in the end did not, such
 
 If you go through this on a project, and you found this article helpful, shoot me an email! It's nice to know that it helped someone.
 
-<h2 id="addendum-dependency-management">Addendum: Dependency management</h2>
+## Addendum: Dependency management
 
 *This section is very subjective, it's just my strong, biased opinion.*
 
@@ -291,7 +291,7 @@ Of course, if your dependency graph visualized in Graphviz looks like a Rorschac
 
 If you look at the landscape of package managers for compiled languages (Go, Rust, etc), all of them that I know of compile from source. It's the same approach, minus git, plus the automation.
 
-<h2 id="addendum-suggestions-from-readers">Addendum: suggestions from readers</h2>
+## Addendum: suggestions from readers
 
 I've gathered here some great ideas and feedback from readers (sometimes it's the almagamation of multiple comments from different people, and I am paraphrasing from memory so sorry if it's not completely accurate):
 

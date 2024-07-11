@@ -52,7 +52,18 @@ window.addEventListener("load", (event) => {
    <h1>Roll your own memory profiling: it's actually not hard</h1>
    <span>🏷️  <a href="/blog/articles-by-tag.html#c">C</a>,  <a href="/blog/articles-by-tag.html#allocator">Allocator</a>,  <a href="/blog/articles-by-tag.html#profiling">Profiling</a>,  <a href="/blog/articles-by-tag.html#pprof">Pprof</a></span>
  </div>
- <p><em>Or: An exploration of the <a href="https://github.com/gperftools/gperftools">pprof</a> memory profiler and its textual format for fun an profit.</em></p>
+ <strong>Table of contents</strong>
+<ul>
+ <li id="pprof"><a href="#pprof">Pprof</a></li>
+ <li id="the-text-format"><a href="#the-text-format">The text format</a></li>
+ <li id="generating-a-pprof-profile"><a href="#generating-a-pprof-profile">Generating a `pprof` profile</a></li>
+ <li id="variations-and-limitations"><a href="#variations-and-limitations">Variations and limitations</a></li>
+ <li id="alternatives"><a href="#alternatives">Alternatives</a></li>
+ <li id="conclusion"><a href="#conclusion">Conclusion</a></li>
+ <li id="addendum-the-full-code"><a href="#addendum-the-full-code">Addendum: the full code</a></li>
+</ul>
+
+<p><em>Or: An exploration of the <a href="https://github.com/gperftools/gperftools">pprof</a> memory profiler and its textual format for fun an profit.</em></p>
 <p>Say that you are using a programming language where memory is manually managed, and you have decided to use a custom allocator for one reason or another, for example an arena allocator, and are wondering:</p>
 <ul>
 <li>How do I track every allocation, recording how many bytes were allocated and what was the call stack at that time?</li>
@@ -84,7 +95,7 @@ window.addEventListener("load", (event) => {
 <li><a href="#conclusion">Conclusion</a></li>
 <li><a href="#addendum-the-full-code">Addendum: the full code</a></li>
 </ul>
-<h2 id="pprof">Pprof</h2>
+<h2>Pprof</h2>
 <p>Here is the plan:</p>
 <ol>
 <li>Each time there is an allocation in our program, we record information about it in an array.</li>
@@ -95,7 +106,7 @@ window.addEventListener("load", (event) => {
 <blockquote>
 <p>The original <code>pprof</code> written in Perl is not to be confused with the rewritten <a href="https://github.com/google/pprof">pprof</a> in Go which offers a superset of the features of the original but based on a completely different and incompatible file format (protobuf)!</p>
 </blockquote>
-<h2 id="the-text-format">The text format</h2>
+<h2>The text format</h2>
 <p>Here is the text format we want to generate:</p>
 <pre><code>heap profile:    &lt;in use objects sum&gt;:  &lt;in use bytes sum&gt; [   &lt;space objects sum&gt;:  &lt;space bytes sum&gt;] @ heapprofile
 &lt;in use objects&gt;: &lt;in use bytes&gt; [&lt;space objects&gt;: &lt;space bytes&gt;] @ &lt;rip1&gt; &lt;rip2&gt; &lt;rip3&gt; [...]
@@ -261,7 +272,7 @@ Total: 0.0 MB
      0.0   0.0% 100.0%      0.0 100.0% _start
      0.0   0.0% 100.0%      0.0 100.0% main
 </code></pre>
-<h2 id="generating-a-pprof-profile">Generating a `pprof` profile</h2>
+<h2>Generating a <code>pprof</code> profile</h2>
 <p>Let's start with a very simple arena (directly based on <a href="https://nullprogram.com/blog/2023/09/27/">https://nullprogram.com/blog/2023/09/27/</a>) and show how it is used:</p>
 <pre><code class="language-c">#define _GNU_SOURCE
 #include &lt;stdint.h&gt;
@@ -511,7 +522,7 @@ $ pprof --web ./a.out heap.profile
 <pre><code class="language-sh">$ pprof --collapsed ./a.out heap.profile | flamegraph.pl &gt; out.svg
 </code></pre>
 <p><img src="mem_prof_flamegraph.svg" alt="Flamegraph" /></p>
-<h2 id="variations-and-limitations">Variations and limitations</h2>
+<h2>Variations and limitations</h2>
 <ul>
 <li>For this article we always do memory profiling and abort once the arena is full; but it does not have to be this way. Memory profiling could be enabled in a CLI program with a command line flag; if it is disabled we do not create a memory profile nor an arena for it. Or, it could be enabled/disabled dynamically, after a given amount of time, etc. It could also stop when its dedicated arena is full instead of aborting the whole program.</li>
 <li>Sampling could be easily added to <code>mem_profile_record_alloc</code> to only record some records, say 1%</li>
@@ -519,7 +530,7 @@ $ pprof --web ./a.out heap.profile
 <li>Stack traces won't work across library calls that are compiled without frame pointers. To which I'd say: It's likely easier to compile all of the code you depend on with the build flags you require than try to come up with alternative ways to walk the stack. Your mileage may vary.</li>
 <li>We use linear scanning to find an existing record with the same call stack. When having lots of records, it would be advantageous to use a binary search on a sorted array or perhaps a hashtable.</li>
 </ul>
-<h2 id="alternatives">Alternatives</h2>
+<h2>Alternatives</h2>
 <p><code>pprof</code> (the Perl one) is not the only way to get this information.</p>
 <p>It turns out that your browser comes with a built-in profiler and a nice one to use at that! And it has support for native allocations, stack traces and so forth. Another possibility is the new <code>pprof</code> (the Go one). They all have more features than the original <code>pprof</code> that are really handy, most notably:</p>
 <ul>
@@ -538,14 +549,14 @@ $ pprof --web ./a.out heap.profile
 </li>
 <li>The new <code>pprof</code> (the Go version) expects a relatively simple gzipped <a href="https://github.com/google/pprof/tree/4ca4178f5c7ab3f10300f07dab7422ead8dc17bc/proto">protobuf file</a>, but that means adding code generation and a library dependency. I use this tool when writing Go quite often and it is helpful. It also supports adding labels to samples, for example we could label the allocations coming from different arenas differently to be able to distinguish them in the same profile.</li>
 </ul>
-<h2 id="conclusion">Conclusion</h2>
+<h2>Conclusion</h2>
 <p>I like that one of the most common memory profilers uses a very simple text format that anyone can generate, and that's it's stand-alone. It's very UNIXy!</p>
 <p>Nonetheless, I will in the future explore the other aforementioned profilers (probably the Chrome one because it seems the most straightforward) and I do not think it should be much additional work. It's nice to leverage the existing browser to avoid having to install a profiler.</p>
 <p>After all, it's been <a href="https://technology.riotgames.com/news/profiling-real-world-performance-league">done before</a>!</p>
 <blockquote>
 <p>If you liked this article and you want to support me, and can afford it: <a href="https://paypal.me/philigaultier?country.x=DE&amp;locale.x=en_US">Donate</a></p>
 </blockquote>
-<h2 id="addendum-the-full-code">Addendum: the full code</h2>
+<h2>Addendum: the full code</h2>
 <pre><code class="language-c">#define _GNU_SOURCE
 #include &lt;assert.h&gt;
 #include &lt;fcntl.h&gt;

@@ -52,7 +52,14 @@ window.addEventListener("load", (event) => {
    <h1>Solving a problem with Gnuplot, the programming language (not the plotting software!)</h1>
    <span>🏷️  <a href="/blog/articles-by-tag.html#advent-of-code">Advent of Code</a>,  <a href="/blog/articles-by-tag.html#gnuplot">Gnuplot</a></span>
  </div>
- <p><em>Is it any good? Can you solve real problems with it?</em></p>
+ <strong>Table of contents</strong>
+<ul>
+ <li id="the-problem"><a href="#the-problem">The problem</a></li>
+ <li id="closing-thoughts"><a href="#closing-thoughts">Closing thoughts</a></li>
+ <li id="addendum-the-full-code"><a href="#addendum-the-full-code">Addendum: The full code</a></li>
+</ul>
+
+<p><em>Is it any good? Can you solve real problems with it?</em></p>
 <p>Most people know <a href="https://en.wikipedia.org/wiki/Gnuplot">Gnuplot</a> as a way to plot data. Two lines of code and we can visualize data:</p>
 <pre><code class="language-gnuplot">set output &quot;plot.png&quot;
 plot &quot;out.dat&quot; with lines
@@ -68,7 +75,7 @@ plot &quot;out.dat&quot; with lines
 <li><a href="#closing-thoughts">Closing thoughts</a></li>
 <li><a href="#addendum-the-full-code">Addendum: The full code</a></li>
 </ul>
-<h2 id="the-problem">The problem</h2>
+<h2>The problem</h2>
 <p>In short, we get a text file where each line contains random ASCII characters. For each line, we must find the first and last digit characters, combine them into an number and at the end output the sum of all these numbers.</p>
 <p>The way we read the data into a variable is through a shell command:</p>
 <pre><code>data = system(&quot;cat in.txt&quot;)
@@ -129,7 +136,7 @@ do for [line in data] {
 <p>We just have to print the sum at the end:</p>
 <pre><code class="language-gnuplot">print(sum)
 </code></pre>
-<h2 id="closing-thoughts">Closing thoughts</h2>
+<h2>Closing thoughts</h2>
 <p>Pretty straightforward, isn't it? Well, no. The language is weirdly restrictive, for example <code>sum += num</code> does not parse. <code>for</code> and <code>while</code> loops cannot for some reason be used interchangeably due to the weird <code>do</code> prefix for for-loops. Very few builtin functions are available.
 There does not seem to be basic data structures such as arrays and maps. Every variable is global. And so on.</p>
 <p>It's weird because the language also has very modern constructs that some mainstream languages still do not have, like the slicing syntax.</p>
@@ -139,7 +146,7 @@ There does not seem to be basic data structures such as arrays and maps. Every v
 <blockquote>
 <p>If you liked this article and you want to support me, and can afford it: <a href="https://paypal.me/philigaultier?country.x=DE&amp;locale.x=en_US">Donate</a></p>
 </blockquote>
-<h2 id="addendum-the-full-code">Addendum: The full code</h2>
+<h2>Addendum: The full code</h2>
 <p>Run with <code>gnuplot my_file.dem</code>.</p>
 <pre><code class="language-gnuplot">data = system(&quot;cat in.txt&quot;)
 

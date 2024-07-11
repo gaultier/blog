@@ -27,7 +27,7 @@ However, few know that Gnuplot is actually also Turing complete programming lang
 - [Closing thoughts](#closing-thoughts)
 - [Addendum: The full code](#addendum-the-full-code)
 
-<h2 id="the-problem">The problem</h2>
+## The problem
  
 In short, we get a text file where each line contains random ASCII characters. For each line, we must find the first and last digit characters, combine them into an number and at the end output the sum of all these numbers.
 
@@ -116,7 +116,7 @@ We just have to print the sum at the end:
 print(sum)
 ```
 
-<h2 id="closing-thoughts">Closing thoughts</h2>
+## Closing thoughts
 
 Pretty straightforward, isn't it? Well, no. The language is weirdly restrictive, for example `sum += num` does not parse. `for` and `while` loops cannot for some reason be used interchangeably due to the weird `do` prefix for for-loops. Very few builtin functions are available.
 There does not seem to be basic data structures such as arrays and maps. Every variable is global. And so on.
@@ -133,7 +133,7 @@ I'll investigate Julia and perhaps R in the future, which are in the same niche 
 
 > If you liked this article and you want to support me, and can afford it: [Donate](https://paypal.me/philigaultier?country.x=DE&locale.x=en_US)
 
-<h2 id="addendum-the-full-code">Addendum: The full code</h2>
+## Addendum: The full code
 
 Run with `gnuplot my_file.dem`.
 

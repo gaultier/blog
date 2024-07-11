@@ -38,7 +38,7 @@ Immediately, I thought I could do better than my past self:
 
 This coincided with me listening to an interview from the VLC developers saying they wrote hundred of thousand of lines of (multi platform!) Assembly code by hand in their new AV1 decoder. I thought that was intriguing, who still writes assembly by hand in 2023? Well these guys are no idiots so I should try it as well.
 
-<h2 id="the-new-solution">The new solution</h2>
+## The new solution
 
 I came up with a new algorithm, which on paper does less work. It's one linear pass on the input, and does not allocate.
 
@@ -103,7 +103,7 @@ Astute readers might have noticed a potential issue with the backwards search: W
 
 Let's implement it in x86_64 assembly!
 
-<h2 id="the-x86-64-implementation">The x86_64 implementation</h2>
+## The x86_64 implementation
 
 *For a gentle introduction to x64 assembly, go read an [earlier article](/blog/x11_x64.html) of mine.*
 
@@ -333,7 +333,7 @@ static solve:function
   ret
 ```
 
-<h2 id="benchmarking">Benchmarking</h2>
+## Benchmarking
 
 So, did it work? Is it fast? Let's compare the old C solution (also embedding the input data for a fair comparison) with our new Assembly one:
 
@@ -357,7 +357,7 @@ Summary
 Yes, indeed, almost twice as fast!
 
 
-<h2 id="learnings">Learnings</h2>
+## Learnings
 
 - Assembly can absolutely be written by hand, although with (much) more effort and a harder time troubleshooting what goes wrong.
 - Some tools (profilers, reverse-engineering tools) expect that the assembly they consume came from a C source file and will be confused when it's not the case.
@@ -370,9 +370,9 @@ Yes, indeed, almost twice as fast!
 
 > If you liked this article and you want to support me, and can afford it: [Donate](https://paypal.me/philigaultier?country.x=DE&locale.x=en_US)
 
-<h2 id="appendix-the-full-code">Appendix: The full code</h2>
+## Appendix: The full code
 
-<h3 id="the-old-c-implementation">The old C implementation</h3>
+### The old C implementation
 
 ```c
 #include <stdint.h>
@@ -1077,7 +1077,7 @@ int main() {
 }
 ```
 
-<h3 id="the-x64-implementation">The x64 implementation</h3>
+### The x64 implementation
 
 ```x86asm
 BITS 64

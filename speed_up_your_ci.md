@@ -22,7 +22,7 @@ Lastly, remember to measure and profile your changes. If a change has made no im
      - [I am a DevOps Engineer, what can I do?](#i-am-a-devops-engineer-what-can-i-do)
      - [Closing words](#closing-words)
 
-<h2 id="reduce-the-size-of-everything">Reduce the size of everything</h2>
+## Reduce the size of everything
 
 Almost certainly, your CI pipeline has to download 'something', be it a base docker image, a virtual machine image, some packages, maybe a few company wide scripts. The thing is, you are downloading those every time it runs, 24/7, every day of the year. Even a small size reduction can yield big speed ups. Remember, the network is usually the bottleneck. 
 
@@ -43,7 +43,7 @@ In no particular order:
 - Don't create unnecessary files: you use use heredoc and shell pipelines to avoid creating intermediary files.
 
 
-<h2 id="be-lazy-don-t-do-things-you-don-t-need-to-do">Be lazy: Don't do things you don't need to do</h2>
+## Be lazy: Don't do things you don't need to do
 
 - Some features you are not using are enabled by default. Be explicit instead of relying on obscure, ever changing defaults. Example: `CGO_ENABLED=0 go build ...` because it is (at the time of writing) enabled by default. The Gradle build system also has the annoying habit to run stuff behind your back. Use `gradle foo -x baz` to run `foo` and not `baz`.
 - Don't run tests from your dependencies. This can happen if you are using git submodules or vendoring dependencies in some way. You generally always want to build them, but not run their tests. Again, `gradle` is the culprit here. If you are storing your git submodules in a `submodules/` directory for example, you can run only your project tests with: `gradle test -x submodules:test`.
@@ -67,7 +67,7 @@ In no particular order:
 - Silence the tools: most command line applications accept the `-q` flag which reduces their verbosity. Most of their output is likely to be useless, some CI systems will struggle storing big pipeline logs, and you might be bottlenecked on stdout! Also, it will simplify troubleshooting *your* build if it is not swamped in thousands of unrelated logs.
 
 
-<h2 id="miscellenaous-tricks">Miscellenaous tricks</h2>
+## Miscellenaous tricks
 
 - Use `sed` to quickly edit big files in place. E.g.: you want to insert a line at the top of a Javascript file to skip linter warnings. Instead of doing: `printf '/* eslint-disable */\n\n' | cat - foo.js > foo_tmp && mv foo_tmp foo.js`, which involves reading the whole file, copying it, and renaming it, we can do: `sed -i '1s#^#/* eslint-disable */ #' foo.js` which is simpler.
 - Favor static linking and LTO. This will simplify much of your pipeline because you'll have to deal with fewer files, ideally one statically built executable.
@@ -80,14 +80,14 @@ In no particular order:
     * a portable artifact format such as `jar`, and not using native dependencies, or
     * your toolchain supports cross-compilation
 
-<h2 id="a-note-on-security">A note on security</h2>
+## A note on security
 
 - Always use https
 - Checksum files you fetched from third-parties with `shasum`.
 - Favor official package repositories, docker images, and third-parties over those of individuals.
 - Never bypass certificate checks (such as `curl -k`)
 
-<h2 id="i-am-a-devops-engineer-what-can-i-do">I am a DevOps Engineer, what can I do?</h2>
+## I am a DevOps Engineer, what can I do?
 
 Most of the above rules can be automated with a script, assuming the definition of a CI pipeline is in a text format (e.g. Gitlab CI). I would suggest starting here, and teaching developers about these simple tips than really make a difference.
 
@@ -95,7 +95,7 @@ I would also suggest considering adding strict firewall rules inside CI pipeline
 
 Finally, I would recommend leading by example with the pipelines for the tools made by DevOps Engineers in your organization.
 
-<h2 id="closing-words">Closing words</h2>
+## Closing words
 
 I wish you well on your journey towards a fast, reliable and simple CI pipeline. 
 

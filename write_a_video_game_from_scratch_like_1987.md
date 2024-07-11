@@ -63,7 +63,7 @@ I remember playing this game as a kid (must have been on Windows 98). It was a l
 - [Addendum: the full
   code](#addendum-the-full-code){#toc-addendum-the-full-code}
 
-<h2 id="what-we-re-making">What we're making</h2>
+## What we're making
 
 The 11th version of the X protocol was born in 1987 and has not changed since. Since it predates GPUs by a decade or so, its model does not really fit the hardware of today. Still, it's everywhere. Any Unix has a X server, even macOS with XQuartz, and now Windows supports running GUI Linux applications inside WSL! X11 has never been so ubiquitous. The protocol is relatively simple and the entry bar is low: we only need to create a socket and we're off the races. And for 2D applications, there's no need to be a Vulkan wizard or even interact with the GPU. Hell, it will work even without any GPU!
 
@@ -85,7 +85,7 @@ Finally, if you're into writing X11 applications even with libraries, lots of th
 Or perhaps you simply enjoy, like me, peeking behind the curtain to understand the magician's tricks. It almost always ends up with: "That's it? That's all there is to it?".
 
 
-<h2 id="authentication">Authentication</h2>
+## Authentication
 
 In previous articles, we connected to the X server without any authentication.
 
@@ -283,7 +283,7 @@ Furthermore, using this arena places an upper bound (a few MiBs) on the allocati
 
 All in all I find Odin's approach very elegant. I usually want the ability to use a different allocator in a given function, but also if I don't care, it will do the right thing and use the standard allocator.
 
-<h2 id="opening-a-window">Opening a window</h2>
+## Opening a window
 
 This part is almost exactly the same as the first linked article so I'll speed run this.
 
@@ -691,7 +691,7 @@ We now see:
 Time to start programming the game itself!
 
 
-<h2 id="loading-assets">Loading assets</h2>
+## Loading assets
 
 What's a game without nice looking pictures <s>stolen from somewhere on the internet</s> ?
 
@@ -952,7 +952,7 @@ Result:
 We are now ready to focus on the game entities.
 
 
-<h2 id="the-game-entities">The game entities</h2>
+## The game entities
 
 
 We have a few different entities we want to show, each is a 16x16 section of the sprite sheet. Let's define their coordinates to be readable:
@@ -1069,7 +1069,7 @@ And here is what we get:
 The next step is to respond to events.
 
 
-<h2 id="reacting-to-keyboard-and-mouse-events">Reacting to keyboard and mouse events</h2>
+## Reacting to keyboard and mouse events
 
 This is very straightforward. Since the only messages we expect are for keyboard and mouse events, with a fixed size of 32 bytes, we simply read 32 bytes exactly in a blocking fashion. The first byte indicates which kind of event it is:
 
@@ -1163,7 +1163,7 @@ If the event is (pressing and) releasing a mouse button, we run the game logic t
 That's it!
 
 
-<h2 id="game-logic-uncover-a-cell">Game logic: uncover a cell</h2>
+## Game logic: uncover a cell
 
 The last thing to do is implementing the game rules.
 
@@ -1279,7 +1279,7 @@ There are a few helpers here and there that are simple, but otherwise... that's 
 
 ![Screenshot](https://github.com/gaultier/minesweeper-from-scratch/raw/master/screenshot.png)
 
-<h2 id="conclusion">Conclusion</h2>
+## Conclusion
 
 X11 is old and crufty, but also gets out of the way. Once a few utility functions to open the window, receive events, etc have been implemented, it can be forgotten and we can focus all our attention on the game. That's very valuable. How many libraries, frameworks and development environments can say the same?
 
@@ -1294,7 +1294,7 @@ I hope that you had as much fun as I did!
 
 > If you liked this article and you want to support me, and can afford it: [Donate](https://paypal.me/philigaultier?country.x=DE&locale.x=en_US)
 
-<h2 id="addendum-the-full-code">Addendum: the full code</h2>
+## Addendum: the full code
 
 ```odin
 package main
