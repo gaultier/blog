@@ -1,5 +1,5 @@
 Title: Cycle detection in graphs does not have to be hard: A lesser known, simple way with Kahn's algorithm
-Tags: [Graph](/blog/articles-per-tag.html#Graph), [Algorithm](/blog/articles-per-tag.html#Algorithm), [JavaScript](/blog/articles-per-tag.html#JavaScript), [SQL](/blog/articles-per-tag.html#SQL)
+Tags: Graph, Algorithm, JavaScript, SQL
 ---
 
 

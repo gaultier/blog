@@ -1,5 +1,5 @@
 Title: Getting started with Scheme by solving an Advent of Code 2018 challenge 
-Tags: [Lisp](/blog/articles-per-tag.html#Lisp), [Scheme](/blog/articles-per-tag.html#Scheme), [C](/blog/articles-per-tag.html#C), [Advent of Code](/blog/articles-per-tag.html#Advent-of-Code)
+Tags: Lisp, Scheme, C, Advent of Code
 ---
 
 I started learning [Scheme](https://en.wikipedia.org/wiki/Scheme_(programming_language)) very recently. [Chicken Scheme](http://wiki.call-cc.org/) is a wonderful small and

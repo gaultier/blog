@@ -1,5 +1,5 @@
 Title: You've just inherited a legacy C++ codebase, now what?
-Tags: [C++](/blog/articles-per-tag.html#C++), [C](/blog/articles-per-tag.html#C), [Legacy](/blog/articles-per-tag.html#Legacy), [CI](/blog/articles-per-tag.html#CI), [Git](/blog/articles-per-tag.html#Git), [Rewrite](/blog/articles-per-tag.html#Rewrite)
+Tags: C++, C, Legacy, CI, Git, Rewrite
 ---
 
 

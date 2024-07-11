@@ -1,5 +1,5 @@
 Title: How to compile LLVM, Clang, LLD, and Ziglang from source on Alpine Linux
-Tags: [LLVM](/blog/articles-per-tag.html#LLVM), [Zig](/blog/articles-per-tag.html#Zig), [Alpine](/blog/articles-per-tag.html#Alpine)
+Tags: LLVM, Zig, Alpine
 ---
 
 *This article is now outdated but remains for historical reasons.*

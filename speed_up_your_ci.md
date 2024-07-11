@@ -1,5 +1,5 @@
 Title: Adventures in CI land, or how to speed up your CI
-Tags: [CI](/blog/articles-per-tag.html#CI), [Optimization](/blog/articles-per-tag.html#Optimization)
+Tags: CI, Optimization
 ---
 
 Every project has a Continuous Integration (CI) pipeline and every one of them complains its CI is too slow. It is more important than you might think; this can be the root cause of many problems, including lackluster productivity, low morale, high barrier of entry for newcomers, and overall suboptimal quality.

@@ -1,5 +1,5 @@
 Title: Let's write a video game from scratch like it's 1987
-Tags: [C](/blog/articles-per-tag.html#C), [X11](/blog/articles-per-tag.html#X11), [Video game](/blog/articles-per-tag.html#Video-game), [Odin](/blog/articles-per-tag.html#Odin), [Optimization](/blog/articles-per-tag.html#Optimization)
+Tags: C, X11, Video game, Odin, Optimization
 ---
 
 

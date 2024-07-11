@@ -1,5 +1,5 @@
 Title: Solving a problem with Gnuplot, the programming language (not the plotting software!)
-Tags: [Advent of Code](/blog/articles-per-tag.html#Advent-of-Code), [Gnuplot](/blog/articles-per-tag.htmlGnuplot)
+Tags: Advent of Code, Gnuplot
 ---
 
 

@@ -1,5 +1,5 @@
 Title: Roll your own memory profiling: it's actually not hard
-Tags: [C](/blog/articles-per-tag.html#C), [Allocator](/blog/articles-per-tag.html#Allocator), [Profiling](/blog/articles-per-tag.html#Profiling), [Pprof](/blog/articles-per-tag.html#Pprof)
+Tags: C, Allocator, Profiling, Pprof
 ---
 
 
