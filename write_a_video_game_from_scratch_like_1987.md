@@ -1281,6 +1281,9 @@ I hope that you had as much fun as I did!
 > If you liked this article and you want to support me, and can afford it: [Donate](https://paypal.me/philigaultier?country.x=DE&locale.x=en_US)
 
 ## Addendum: the full code
+<div class="wrap-collabsible">
+  <input id="collapsible" class="toggle" type="checkbox">
+  <label for="collapsible" class="label-toggle">Code</label>
 
 ```odin
 package main
@@ -2286,5 +2289,4 @@ test_count_mines_around_cell :: proc(_: ^testing.T) {
 	}
 }
 ```
-
-
+</div>
