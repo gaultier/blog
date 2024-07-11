@@ -1,5 +1,7 @@
 # A small trick to improve technical discussions by sharing code
 
+*🏷️ [Lua](/blog/articles-per-tag.html#Lua), [Neovim](/blog/articles-per-tag.html#Neovim), [Git](/blog/articles-per-tag.html#Git)*
+
 This is a big title for a small trick that I've been using daily for years now, in every place I've worked at. 
 
 Whenever there is a technical discussion, a bug hunt, or any disagreement about the codebase, I think it really helps to look at existing code to anchor the debate in reality and make it concrete.
@@ -209,4 +211,3 @@ end,
 {force=true, range=true, nargs=0, desc='Copy to clipboard a URL to a git webui for the current line'})
 ```
 
-*Tags: [Lua](/blog/articles-per-tag.html#Lua), [Neovim](/blog/articles-per-tag.html#Neovim), [Git](/blog/articles-per-tag.html#Git)*

@@ -1,5 +1,7 @@
 # How to compile LLVM, Clang, LLD, and Ziglang from source on Alpine Linux
 
+*🏷️ [LLVM](/blog/articles-per-tag.html#LLVM), [Zig](/blog/articles-per-tag.html#Zig), [Alpine](/blog/articles-per-tag.html#Alpine)*
+
 *This article is now outdated but remains for historical reasons.*
 
 [Ziglang](https://ziglang.org), or `Zig` for short, is an ambitious programming language addressing important flaws of mainstream languages such as failing to handle memory allocation failures or forgetting to handle an error condition in general.
@@ -48,4 +50,3 @@ $ zig version
 0.6.0+749417a
 ```
 
-*Tags: [LLVM](/blog/articles-per-tag.html#LLVM), [Zig](/blog/articles-per-tag.html#Zig), [Alpine](/blog/articles-per-tag.html#Alpine)*

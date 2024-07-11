@@ -1,5 +1,7 @@
 # Cycle detection in graphs does not have to be hard: A lesser known, simple way with Kahn's algorithm
 
+*🏷️ [Graph](/blog/articles-per-tag.html#Graph), [Algorithm](/blog/articles-per-tag.html#Algorithm), [JavaScript](/blog/articles-per-tag.html#JavaScript), [SQL](/blog/articles-per-tag.html#SQL)*
+
 **Table of Contents**
 
 - [Introduction](#introduction)
@@ -678,4 +680,3 @@ for (let i = employeesTopologicallySorted.length - 2; i >= 0; i -= 1) {
 }
 ```
 
-*Tags: [Graph](/blog/articles-per-tag.html#Graph), [Algorithm](/blog/articles-per-tag.html#Algorithm), [JavaScript](/blog/articles-per-tag.html#JavaScript), [SQL](/blog/articles-per-tag.html#SQL)*

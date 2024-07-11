@@ -1,5 +1,7 @@
 # How to rewrite a C++ codebase successfully
 
+*🏷️ [C](/blog/articles-per-tag.html#C), [C++](/blog/articles-per-tag.html#C++), [Rust](/blog/articles-per-tag.html#Rust), [Rewrite](/blog/articles-per-tag.html#Rewrite)*
+
 *Not your typical 'Rewrite it in Rust' article.*
 
 I recently wrote about [inheriting a legacy C++ codebase](/blog/you_inherited_a_legacy_cpp_codebase_now_what.html). At some point, although I cannot pinpoint exactly when, a few things became clear to me:
@@ -792,4 +794,3 @@ So, I hope this article alleviated your concerns about rewriting your C++ codeba
 You know, like any other software project, really!
 
 
-*Tags: [C](/blog/articles-per-tag.html#C), [C++](/blog/articles-per-tag.html#C++), [Rust](/blog/articles-per-tag.html#Rust), [Rewrite](/blog/articles-per-tag.html#Rewrite)*

@@ -1,5 +1,7 @@
 # Adventures in CI land, or how to speed up your CI
 
+*🏷️ [CI](/blog/articles-per-tag.html#CI), [Optimization](/blog/articles-per-tag.html#Optimization)*
+
 Every project has a Continuous Integration (CI) pipeline and every one of them complains its CI is too slow. It is more important than you might think; this can be the root cause of many problems, including lackluster productivity, low morale, high barrier of entry for newcomers, and overall suboptimal quality.
 
 But this need not be. I have compiled here a lengthy list of various ways you can simplify your CI and make it faster, based on my experience on open-source projects and my work experience. I sure wish you will find something in here worth your time.
@@ -99,4 +101,3 @@ I wish you well on your journey towards a fast, reliable and simple CI pipeline.
 
 I noticed in my numerous projects with different tech stacks that some are friendlier than others towards CI pipelines than others (I am looking at you, Gradle!). If you have the luxury of choosing your technical stack, do consider how it will play out with your pipeline. I believe this is a much more important factor than discussing whether $LANG has semicolons or not because I am convinced it can completely decide the outcome of your project.
 
-*Tags: [CI](/blog/articles-per-tag.html#CI), [Optimization](/blog/articles-per-tag.html#Optimization)*

@@ -1,5 +1,7 @@
 # This blog now has an Atom feed, and yours should probably too
 
+*🏷️ [Feed](/blog/articles-per-tag.html#Feed), [Atom](/blog/articles-per-tag.html#Atom), [UUID](/blog/articles-per-tag.html#UUID)*
+
 *Find it [here](https://gaultier.github.io/blog/feed.xml) or in the header on the top right-hand corner.*
 
 Imagine a world where you can see the content of each website you like inside the app of your choosing, read the articles offline and save them on disk for later, be notified whenever the website has something new, and all of which is implemented with an open standard. Well that was most of the web some years ago and this blog now does all of that. 
@@ -21,4 +23,3 @@ I implemented that in under an hour, skimming at the RFC and examples. It's a bi
 
 And...that's it really. Enjoy reading these articles in your favorite app!
 
-*Tags: [Feed](/blog/articles-per-tag.html#Feed), [Atom](/blog/articles-per-tag.html#Atom), [UUID](/blog/articles-per-tag.html#UUID)*

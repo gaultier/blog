@@ -1,5 +1,7 @@
 # Optimizing an Advent of Code solution in assembly
 
+*🏷️ [x86_64](/blog/articles-per-tag.html#x86_64), [Advent of Code](/blog/articles-per-tag.html#Advent-of-Code), [Optimization](/blog/articles-per-tag.html#Optimization), [Algorithm](/blog/articles-per-tag.html#Algorithm), [C](/blog/articles-per-tag.html#C), [Lisp](/blog/articles-per-tag.html#Lisp), [Scheme](/blog/articles-per-tag.html#Scheme)*
+
 **Table of Contents**
 
 -   [The new solution](#the-new-solution)
@@ -1228,4 +1230,3 @@ _start:
 <script src="https://unpkg.com/@highlightjs/cdn-assets@11.8.0/languages/x86asm.min.js"></script>
 
 
-*Tags: [x86_64](/blog/articles-per-tag.html#x86_64), [Advent of Code](/blog/articles-per-tag.html#Advent-of-Code), [Optimization](/blog/articles-per-tag.html#Optimization), [Algorithm](/blog/articles-per-tag.html#Algorithm), [C](/blog/articles-per-tag.html#C), [Lisp](/blog/articles-per-tag.html#Lisp), [Scheme](/blog/articles-per-tag.html#Scheme)*

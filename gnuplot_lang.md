@@ -1,5 +1,8 @@
 # Solving a problem with Gnuplot, the programming language (not the plotting software!)
 
+*🏷️ [Advent of Code](/blog/articles-per-tag.html#Advent-of-Code), [Gnuplot](/blog/articles-per-tag.htmlGnuplot)*
+
+
 *Is it any good? Can you solve real problems with it?*
 
 Most people know [Gnuplot](https://en.wikipedia.org/wiki/Gnuplot) as a way to plot data. Two lines of code and we can visualize data:
@@ -175,4 +178,3 @@ do for [line in data] {
 print(sum)
 ```
 
-*Tags: [Advent of Code](/blog/articles-per-tag.html#Advent-of-Code), [Gnuplot](/blog/articles-per-tag.htmlGnuplot)*

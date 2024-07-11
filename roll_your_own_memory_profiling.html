@@ -46,6 +46,7 @@ window.addEventListener("load", (event) => {
 <p><a href="/blog"> ⏴ Back to all articles</a>
 <p id="publication_date">Published on 2023-11-23.</p>
 <h1>Roll your own memory profiling: it's actually not hard</h1>
+<p><em>🏷️ <a href="/blog/articles-per-tag.html#C">C</a>, <a href="/blog/articles-per-tag.html#Allocator">Allocator</a>, <a href="/blog/articles-per-tag.html#Profiling">Profiling</a>, <a href="/blog/articles-per-tag.html#Pprof">Pprof</a></em></p>
 <p><em>Or: An exploration of the <a href="https://github.com/gperftools/gperftools">pprof</a> memory profiler and its textual format for fun an profit.</em></p>
 <p>Say that you are using a programming language where memory is manually managed, and you have decided to use a custom allocator for one reason or another, for example an arena allocator, and are wondering:</p>
 <ul>
@@ -743,7 +744,6 @@ int main() {
   mem_profile_write(&amp;mem_profile, stderr);
 }
 </code></pre>
-<p><em>Tags: <a href="/blog/articles-per-tag.html#C">C</a>, <a href="/blog/articles-per-tag.html#Allocator">Allocator</a>, <a href="/blog/articles-per-tag.html#Profiling">Profiling</a>, <a href="/blog/articles-per-tag.html#Pprof">Pprof</a></em></p>
 <p><a href="/blog"> ⏴ Back to all articles</a>
 
 <blockquote id="donate">

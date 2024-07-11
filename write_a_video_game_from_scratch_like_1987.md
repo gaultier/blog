@@ -1,5 +1,7 @@
 # Let's write a video game from scratch like it's 1987
 
+*🏷️ [C](/blog/articles-per-tag.html#C), [X11](/blog/articles-per-tag.html#X11), [Video game](/blog/articles-per-tag.html#Video-game), [Odin](/blog/articles-per-tag.html#Odin), [Optimization](/blog/articles-per-tag.html#Optimization)*
+
 > This article has been discussed on [Hacker News](https://news.ycombinator.com/item?id=40737370) and [Reddit](https://old.reddit.com/r/programming/comments/1dkahjw/lets_write_a_video_game_from_scratch_like_its_1987/)
 
 In a [previous article](/blog/x11_x64.html) I've done the 'Hello, world!' of GUIs in assembly: A black window with a white text, using X11 without any libraries, just talking directly over a socket. 
@@ -2299,4 +2301,3 @@ test_count_mines_around_cell :: proc(_: ^testing.T) {
 ```
 
 
-*Tags: [C](/blog/articles-per-tag.html#C), [X11](/blog/articles-per-tag.html#X11), [Video game](/blog/articles-per-tag.html#Video-game), [Odin](/blog/articles-per-tag.html#Odin), [Optimization](/blog/articles-per-tag.html#Optimization)*
