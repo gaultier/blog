@@ -2,7 +2,7 @@
   <feed xmlns="http://www.w3.org/2005/Atom">
     <title>Philippe Gaultier's blog</title>
     <link href="https://gaultier.github.io/blog"/>
-    <updated>2024-07-11T17:15:21+02:00</updated>
+    <updated>2024-07-11T17:22:58+02:00</updated>
     <author>
       <name>Philippe Gaultier</name>
     </author>
@@ -32,7 +32,7 @@
   <title>Learn x86-64 assembly by writing a GUI from scratch</title>
   <link href="https://gaultier.github.io/blog/x11_x64.html"/>
   <id>urn:uuid:fa923100-dd66-531e-bdab-8eed3527960f</id>
-  <updated>2024-07-11T17:18:55+02:00</updated>
+  <updated>2024-07-11T17:22:58+02:00</updated>
   <published>2023-05-31T14:24:11+02:00</published>
 </entry>
 <entry>
@@ -53,14 +53,14 @@
   <title>Learn Wayland by writing a GUI from scratch</title>
   <link href="https://gaultier.github.io/blog/wayland_from_scratch.html"/>
   <id>urn:uuid:6b96e587-14ff-53a9-a142-d20e9c53d970</id>
-  <updated>2024-07-11T16:31:50+02:00</updated>
+  <updated>2024-07-11T17:22:58+02:00</updated>
   <published>2023-10-12T13:19:53+02:00</published>
 </entry>
 <entry>
   <title>Roll your own memory profiling: it's actually not hard</title>
   <link href="https://gaultier.github.io/blog/roll_your_own_memory_profiling.html"/>
   <id>urn:uuid:5344c109-864c-5db2-97a9-24834e053169</id>
-  <updated>2024-07-11T16:31:50+02:00</updated>
+  <updated>2024-07-11T17:22:58+02:00</updated>
   <published>2023-11-23T11:26:11+01:00</published>
 </entry>
 <entry>
@@ -116,7 +116,7 @@
   <title>Let's write a video game from scratch like it's 1987</title>
   <link href="https://gaultier.github.io/blog/write_a_video_game_from_scratch_like_1987.html"/>
   <id>urn:uuid:6bea7a85-d449-5f4d-9ab6-7e627c67ba57</id>
-  <updated>2024-07-11T17:15:21+02:00</updated>
+  <updated>2024-07-11T17:22:58+02:00</updated>
   <published>2024-06-20T07:44:40+00:00</published>
 </entry>
 </feed>

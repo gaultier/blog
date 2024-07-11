@@ -1278,8 +1278,6 @@ Finally, give Odin a try, it's great! It's this weird mix of a sane C with a Go-
 
 I hope that you had as much fun as I did!
 
-> If you liked this article and you want to support me, and can afford it: [Donate](https://paypal.me/philigaultier?country.x=DE&locale.x=en_US)
-
 ## Addendum: the full code
 
 <div class="wrap-collapsible">

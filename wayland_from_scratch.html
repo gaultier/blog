@@ -598,9 +598,6 @@ $ sed -i 's/wayland_ppm/wayland_logo/g' wayland-logo.h
 <p>The setup is a bit tedious but once this is done, we are in practice going to spend all of our time in the frame rendering code, and perhaps add support for a few additional events (we do not yet support keyboard or mouse events, for example, or animations, which would require us to notify the compositor that a region was 'damaged' meaning modified, and needs re-rendering).</p>
 <p>Thus, I have the feeling that Wayland really goes out of the way once the initial scaffolding is done.</p>
 <p>As for the next steps, I would like to draw some text, and react to user input events. Maybe even port something like <a href="https://github.com/rxi/microui">microui</a>, which only needs a few drawing routines, to our application.</p>
-<blockquote>
-<p>If you liked this article and you want to support me, and can afford it: <a href="https://paypal.me/philigaultier?country.x=DE&amp;locale.x=en_US">Donate</a></p>
-</blockquote>
 <h2 id="addendum-the-full-code">Addendum: the full code</h2>
 <p><em>Do not forget to generate <code>wayland-logo.h</code> with the aforementioned commands!</em></p>
 <p>Compile with: <code>cc -std=c99 wayland.c -Ofast</code>.</p>
