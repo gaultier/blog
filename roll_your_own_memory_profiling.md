@@ -1,6 +1,7 @@
-# Roll your own memory profiling: it's actually not hard
+Title: Roll your own memory profiling: it's actually not hard
+Tags: [C](/blog/articles-per-tag.html#C), [Allocator](/blog/articles-per-tag.html#Allocator), [Profiling](/blog/articles-per-tag.html#Profiling), [Pprof](/blog/articles-per-tag.html#Pprof)
+---
 
-*🏷️ [C](/blog/articles-per-tag.html#C), [Allocator](/blog/articles-per-tag.html#Allocator), [Profiling](/blog/articles-per-tag.html#Profiling), [Pprof](/blog/articles-per-tag.html#Pprof)*
 
 *Or: An exploration of the [pprof](https://github.com/gperftools/gperftools) memory profiler and its textual format for fun an profit.*
 

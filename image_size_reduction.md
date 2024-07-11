@@ -1,6 +1,6 @@
-# Quick and easy PNG image size reduction
-
-*🏷️ [Optimization](/blog/articles-per-tag.html#Optimization), [PNG](/blog/articles-per-tag.html#PNG)*
+Title: Quick and easy PNG image size reduction
+Tags: [Optimization](/blog/articles-per-tag.html#Optimization), [PNG](/blog/articles-per-tag.html#PNG)
+---
 
 I seredenpitously noticed that my blog had somewhat big PNG images. But these are just very simple screenshots. There surely must be a way to reduce their size, without affecting their size or legibility?
 Well yes, let's quantize them!

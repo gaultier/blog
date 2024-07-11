@@ -1,6 +1,6 @@
-# How to rewrite a C++ codebase successfully
-
-*🏷️ [C](/blog/articles-per-tag.html#C), [C++](/blog/articles-per-tag.html#C++), [Rust](/blog/articles-per-tag.html#Rust), [Rewrite](/blog/articles-per-tag.html#Rewrite)*
+Title: How to rewrite a C++ codebase successfully
+Tags: [C](/blog/articles-per-tag.html#C), [C++](/blog/articles-per-tag.html#C++), [Rust](/blog/articles-per-tag.html#Rust), [Rewrite](/blog/articles-per-tag.html#Rewrite)
+---
 
 *Not your typical 'Rewrite it in Rust' article.*
 

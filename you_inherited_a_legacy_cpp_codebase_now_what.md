@@ -1,6 +1,6 @@
-# You've just inherited a legacy C++ codebase, now what?
-
-*🏷️ [C++](/blog/articles-per-tag.html#C++), [C](/blog/articles-per-tag.html#C), [Legacy](/blog/articles-per-tag.html#Legacy), [CI](/blog/articles-per-tag.html#CI), [Git](/blog/articles-per-tag.html#Git), [Rewrite](/blog/articles-per-tag.html#Rewrite)*
+Title: You've just inherited a legacy C++ codebase, now what?
+Tags: [C++](/blog/articles-per-tag.html#C++), [C](/blog/articles-per-tag.html#C), [Legacy](/blog/articles-per-tag.html#Legacy), [CI](/blog/articles-per-tag.html#CI), [Git](/blog/articles-per-tag.html#Git), [Rewrite](/blog/articles-per-tag.html#Rewrite)
+---
 
 
 *This article was discussed on [Hacker News](https://news.ycombinator.com/item?id=39549486), [Lobster.rs](https://lobste.rs/s/lf8b9r/you_ve_just_inherited_legacy_c_codebase) and [Reddit](https://old.reddit.com/r/programming/comments/1b3143w/youve_just_inherited_a_legacy_c_codebase_now_what/). I've got great suggestions from the comments, see the addendum at the end!*

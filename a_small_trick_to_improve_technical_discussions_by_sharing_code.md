@@ -1,6 +1,6 @@
-# A small trick to improve technical discussions by sharing code
-
-*🏷️ [Lua](/blog/articles-per-tag.html#Lua), [Neovim](/blog/articles-per-tag.html#Neovim), [Git](/blog/articles-per-tag.html#Git)*
+Title: A small trick to improve technical discussions by sharing code
+Tags: [Lua](/blog/articles-per-tag.html#Lua), [Neovim](/blog/articles-per-tag.html#Neovim), [Git](/blog/articles-per-tag.html#Git)
+---
 
 This is a big title for a small trick that I've been using daily for years now, in every place I've worked at. 
 

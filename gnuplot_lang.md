@@ -1,6 +1,6 @@
-# Solving a problem with Gnuplot, the programming language (not the plotting software!)
-
-*🏷️ [Advent of Code](/blog/articles-per-tag.html#Advent-of-Code), [Gnuplot](/blog/articles-per-tag.htmlGnuplot)*
+Title: Solving a problem with Gnuplot, the programming language (not the plotting software!)
+Tags: [Advent of Code](/blog/articles-per-tag.html#Advent-of-Code), [Gnuplot](/blog/articles-per-tag.htmlGnuplot)
+---
 
 
 *Is it any good? Can you solve real problems with it?*

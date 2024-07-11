@@ -1,6 +1,7 @@
-# Let's write a video game from scratch like it's 1987
+Title: Let's write a video game from scratch like it's 1987
+Tags: [C](/blog/articles-per-tag.html#C), [X11](/blog/articles-per-tag.html#X11), [Video game](/blog/articles-per-tag.html#Video-game), [Odin](/blog/articles-per-tag.html#Odin), [Optimization](/blog/articles-per-tag.html#Optimization)
+---
 
-*🏷️ [C](/blog/articles-per-tag.html#C), [X11](/blog/articles-per-tag.html#X11), [Video game](/blog/articles-per-tag.html#Video-game), [Odin](/blog/articles-per-tag.html#Odin), [Optimization](/blog/articles-per-tag.html#Optimization)*
 
 > This article has been discussed on [Hacker News](https://news.ycombinator.com/item?id=40737370) and [Reddit](https://old.reddit.com/r/programming/comments/1dkahjw/lets_write_a_video_game_from_scratch_like_its_1987/)
 
