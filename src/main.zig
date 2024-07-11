@@ -448,9 +448,9 @@ fn generate_toc_for_article(markdown: []const u8, allocator: std.mem.Allocator) 
         defer allocator.free(id);
 
         try std.fmt.format(toc.writer(),
-            \\ <li id="{s}"><a href="#{s}">{s}</a></li>
+            \\ <li><a href="#{s}">{s}</a></li>
             \\
-        , .{ id, id, title });
+        , .{ id, title });
     }
     try toc.appendSlice("</ul>\n");
     return toc.toOwnedSlice();
