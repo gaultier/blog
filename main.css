@@ -200,6 +200,7 @@ a.title:hover {
 
 .hash-anchor {
   opacity: 0;
+  color: blue;
 }
 
 .title:hover + .hash-anchor {
