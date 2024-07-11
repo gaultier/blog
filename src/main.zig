@@ -170,7 +170,11 @@ fn generate_html_article(markdown: []const u8, article: Article, header: []const
 
     try std.process.Child.spawn(&child);
     if (child.stdin) |*stdin| {
-        try stdin.writeAll(markdown);
+        const fixed_up_markdown = try fixup_markdown_with_title_ids(markdown, allocator);
+        defer allocator.free(fixed_up_markdown);
+
+        try stdin.writeAll(fixed_up_markdown);
+
         stdin.close();
         child.stdin = null;
     } else {
@@ -290,6 +294,59 @@ fn parse_metadata(markdown: []const u8, allocator: std.mem.Allocator) !Metadata 
     metadata.tags = try tags.toOwnedSlice();
 
     return metadata;
+}
+
+fn fixup_markdown_with_title_ids(markdown: []const u8, allocator: std.mem.Allocator) ![]const u8 {
+    var it_lines = std.mem.splitScalar(u8, markdown, '\n');
+
+    var res = std.ArrayList(u8).init(allocator);
+    defer res.deinit();
+
+    var inside_code_section = false;
+    while (it_lines.next()) |line| {
+        const is_begin_title_html = std.mem.startsWith(u8, line, "<h");
+        std.debug.assert(!is_begin_title_html);
+
+        const is_begin_title = std.mem.startsWith(u8, line, "#");
+        const is_begin_code_section = std.mem.startsWith(u8, line, "```");
+
+        if (is_begin_code_section and !inside_code_section) {
+            inside_code_section = true;
+            try res.appendSlice(line);
+            try res.append('\n');
+            continue;
+        }
+        if (is_begin_code_section and inside_code_section) {
+            inside_code_section = false;
+            try res.appendSlice(line);
+            try res.append('\n');
+            continue;
+        }
+
+        if (inside_code_section) {
+            try res.appendSlice(line);
+            try res.append('\n');
+            continue;
+        }
+        if (!is_begin_title) {
+            try res.appendSlice(line);
+            try res.append('\n');
+            continue;
+        }
+
+        const first_space_pos = std.mem.indexOf(u8, line, " ") orelse 0;
+        const level = first_space_pos;
+        std.debug.assert(1 <= level and level <= 6);
+
+        const title = std.mem.trim(u8, line[first_space_pos..], &[_]u8{ ' ', '\n' });
+        const id = try make_html_friendly_id(title, allocator);
+
+        try std.fmt.format(res.writer(),
+            \\<h{d} id="{s}">{s}</h{d}>
+            \\
+        , .{ level, id, title, level });
+    }
+    return res.toOwnedSlice();
 }
 
 fn generate_article(markdown_file_path: []const u8, header: []const u8, footer: []const u8, allocator: std.mem.Allocator) !Article {
