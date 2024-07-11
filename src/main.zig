@@ -222,6 +222,11 @@ fn generate_html_article(markdown: []const u8, article: Article, header: []const
         \\ 
     );
 
+    const toc = try generate_toc_for_article(markdown, allocator);
+    defer allocator.free(toc);
+    try html_file.writeAll(toc);
+    try html_file.writeAll("\n");
+
     try html_file.writeAll(stdout.items);
     try html_file.writer().writeAll(back_link);
     try html_file.writeAll(footer);
@@ -407,30 +412,19 @@ fn generate_rss_feed(articles: []Article) !void {
     std.log.info("generated RSS feed for {} articles", .{articles.len});
 }
 
-fn generate_toc_for_article(markdown_file_path: []const u8, allocator: std.mem.Allocator) ![]u8 {
-    const markdown_file = try std.fs.cwd().openFile(markdown_file_path, .{});
-    defer markdown_file.close();
-
-    var buf_reader = std.io.bufferedReader(markdown_file.reader());
-    const reader = buf_reader.reader();
-
-    var line = std.ArrayList(u8).init(allocator);
-    defer line.deinit();
-
-    const writer = line.writer();
+fn generate_toc_for_article(markdown: []const u8, allocator: std.mem.Allocator) ![]u8 {
+    var it_lines = std.mem.splitScalar(u8, markdown, '\n');
 
     var toc = std.ArrayList(u8).init(allocator);
     try toc.ensureTotalCapacity(4096);
 
     var inside_code_section = false;
-    while (reader.streamUntilDelimiter(writer, '\n', null)) {
-        // Clear the line so we can reuse it.
-        defer line.clearRetainingCapacity();
+    while (it_lines.next()) |line| {
+        const is_begin_title_html = std.mem.startsWith(u8, line, "<h");
+        std.debug.assert(!is_begin_title_html);
 
-        const is_begin_title_markdown = std.mem.startsWith(u8, line.items, "#");
-        const is_begin_title_html = std.mem.startsWith(u8, line.items, "<h");
-        const is_begin_title = is_begin_title_markdown or is_begin_title_html;
-        const is_begin_code_section = std.mem.startsWith(u8, line.items, "```");
+        const is_begin_title = std.mem.startsWith(u8, line, "#");
+        const is_begin_code_section = std.mem.startsWith(u8, line, "```");
 
         if (is_begin_code_section and !inside_code_section) {
             inside_code_section = true;
@@ -444,15 +438,10 @@ fn generate_toc_for_article(markdown_file_path: []const u8, allocator: std.mem.A
         if (inside_code_section) continue;
         if (!is_begin_title) continue;
 
-        const first_space_pos = std.mem.indexOf(u8, line.items, " ") orelse 0;
-        const level = if (is_begin_title_markdown) first_space_pos else (line.items[2] - '0');
+        const first_space_pos = std.mem.indexOf(u8, line, " ") orelse 0;
+        const level = first_space_pos;
         std.debug.assert(1 <= level and level <= 6);
-        const title = if (is_begin_title_markdown) std.mem.trim(u8, line.items[first_space_pos..], &[_]u8{ ' ', '\n' }) else blk: {
-            const start = 1 + (std.mem.indexOfScalar(u8, line.items, '>') orelse @panic("html title end tag not found"));
-            const end = std.mem.indexOfScalar(u8, line.items[start..], '<') orelse @panic("html title start tag not found");
-            break :blk line.items[start..][0..end];
-        };
-
+        const title = std.mem.trim(u8, line[first_space_pos..], &[_]u8{ ' ', '\n' });
         try toc.appendNTimes(' ', level * 2);
         try toc.appendSlice(" - [");
         try toc.appendSlice(title);
@@ -464,26 +453,7 @@ fn generate_toc_for_article(markdown_file_path: []const u8, allocator: std.mem.A
         try toc.appendSlice(final_id);
 
         try toc.appendSlice(")\n");
-
-        // Sanity check.
-        if (is_begin_title_html) {
-            const needle = "id=\"";
-            const id_start = std.mem.indexOf(u8, line.items, needle);
-            if (id_start) |start| {
-                const id_end = std.mem.indexOfScalar(u8, line.items[start + needle.len ..], '"') orelse @panic("unterminated id");
-                const id_found = line.items[start + needle.len ..][0..id_end];
-
-                if (!std.mem.eql(u8, id_found, final_id)) {
-                    std.log.warn("mismatched title ids: found:{s} expected:{s}", .{ id_found, final_id });
-                    std.process.exit(1);
-                }
-            }
-        }
-    } else |err| switch (err) {
-        error.EndOfStream => {},
-        else => return err, // Propagate error
     }
-
     return toc.toOwnedSlice();
 }
 
