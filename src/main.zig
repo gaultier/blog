@@ -160,40 +160,6 @@ fn generate_rss_feed_entry_for_article(writer: anytype, article: Article) !void 
     });
 }
 
-fn extract_tags_for_article(markdown_content: []const u8, allocator: std.mem.Allocator) ![][]const u8 {
-    var tags = std.ArrayList([]const u8).init(allocator);
-    const prefix = "🏷️";
-    const tags_begin = (std.mem.indexOf(u8, markdown_content, prefix) orelse return tags.toOwnedSlice()) + prefix.len;
-    const tags_end = std.mem.indexOfScalar(u8, markdown_content[tags_begin..], '\n') orelse markdown_content.len;
-    const tags_str = markdown_content[tags_begin..][0..tags_end];
-
-    var i: usize = 0;
-    while (i < tags_end) {
-        switch (tags_str[i]) {
-            '[' => {
-                i += 1;
-                const tag_end = std.mem.indexOfScalar(u8, tags_str[i..], ']') orelse @panic("missing closing ]");
-                const tag_str = tags_str[i..][0..tag_end];
-
-                try tags.append(try allocator.dupe(u8, tag_str));
-
-                i += std.mem.indexOfScalar(u8, tags_str[i..], '(') orelse @panic("missing opening (");
-                const link_end = std.mem.indexOfScalar(u8, tags_str[i..], ')') orelse @panic("missing closing )");
-                const link = tags_str[i + 1 ..][0..link_end];
-                std.debug.assert(std.mem.indexOfScalar(u8, link, ' ') == null);
-
-                i += link_end + 1;
-            },
-            ' ' => i += 1,
-            ',' => i += 1,
-            '*' => break,
-            else => @panic("unexpected character found"),
-        }
-    }
-
-    return tags.toOwnedSlice();
-}
-
 fn convert_markdown_to_html(markdown: []const u8, article: Article, header: []const u8, footer: []const u8, html_file_path: []const u8, allocator: std.mem.Allocator) !void {
     const argv = &[_][]const u8{ "cmark", "--unsafe", "-t", "html" };
 
@@ -346,17 +312,17 @@ fn generate_article(markdown_file_path: []const u8, header: []const u8, footer: 
 }
 
 fn generate_page_articles_by_tag(articles: []Article, header: []const u8, footer: []const u8, allocator: std.mem.Allocator) !void {
-    const tags_file = try std.fs.cwd().createFile("articles-per-tag.html", .{});
+    const tags_file = try std.fs.cwd().createFile("articles-by-tag.html", .{});
     defer tags_file.close();
 
     var buffered_writer = std.io.bufferedWriter(tags_file.writer());
     try buffered_writer.writer().writeAll(header);
     try buffered_writer.writer().writeAll(back_link);
-    try buffered_writer.writer().writeAll("<h1>Articles per tag</h1>\n");
+    try buffered_writer.writer().writeAll("<h1>Articles by tag</h1>\n");
 
-    var articles_per_tag = std.StringArrayHashMap(std.ArrayList(*const Article)).init(allocator);
-    defer articles_per_tag.deinit();
-    defer for (articles_per_tag.values()) |v| {
+    var articles_by_tag = std.StringArrayHashMap(std.ArrayList(*const Article)).init(allocator);
+    defer articles_by_tag.deinit();
+    defer for (articles_by_tag.values()) |v| {
         v.deinit();
     };
 
@@ -364,7 +330,7 @@ fn generate_page_articles_by_tag(articles: []Article, header: []const u8, footer
         for (article.metadata.tags) |tag| {
             std.debug.assert(tag.len > 0);
 
-            var entry = try articles_per_tag.getOrPut(tag);
+            var entry = try articles_by_tag.getOrPut(tag);
             if (!entry.found_existing) {
                 entry.value_ptr.* = std.ArrayList(*const Article).init(allocator);
             }
@@ -373,12 +339,12 @@ fn generate_page_articles_by_tag(articles: []Article, header: []const u8, footer
     }
 
     try buffered_writer.writer().writeAll("<ul>\n");
-    const keys = try allocator.dupe([]const u8, articles_per_tag.keys());
+    const keys = try allocator.dupe([]const u8, articles_by_tag.keys());
     defer allocator.free(keys);
     std.mem.sort([]const u8, keys, {}, stringLess);
 
     for (keys) |tag| {
-        const articles_for_tag = articles_per_tag.get(tag) orelse undefined;
+        const articles_for_tag = articles_by_tag.get(tag) orelse undefined;
         std.mem.sort(*const Article, articles_for_tag.items, {}, articlesPtrOrderedByCreationDateAsc);
 
         const tag_id = try allocator.dupe(u8, tag);
