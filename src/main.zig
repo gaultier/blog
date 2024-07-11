@@ -200,27 +200,38 @@ fn extract_tags_for_article(markdown_content: []const u8, allocator: std.mem.All
     return tags.toOwnedSlice();
 }
 
-fn convert_markdown_to_html(markdown: []const u8,title:[]const u8, html_file_path: []const u8, allocator:std.mem.Allocator) !void {
+fn convert_markdown_to_html(markdown: []const u8, title: []const u8, header: []const u8, footer: []const u8, html_file_path: []const u8, allocator: std.mem.Allocator) !void {
     const html_file = try std.fs.cwd().createFile(html_file_path, .{});
     defer html_file.close();
 
-        var child = std.process.ChildProcess{
-            .stdin_behavior = .Pipe,
-        };
-        _ = markdown; // FIXME
-        std.process.Child.spawn(&child);
-        const converter_cmd = try std.process.Child.run(.{
-            .allocator = allocator,
-            .argv = &[_][]const u8{ "cmark", "--unsafe", "-t", "html"},
-            .max_output_bytes = 1 * 1024 * 1024,
-        });
-        defer allocator.free(converter_cmd.stdout);
-        defer allocator.free(converter_cmd.stderr);
+    const argv = &[_][]const u8{ "cmark", "--unsafe", "-t", "html" };
 
-        std.debug.assert(converter_cmd.stderr.len == 0);
+    var child = std.process.Child.init(argv, allocator);
 
-        try std.fmt.format(html_file.writer(), html_prelude, .{title});
-        try html_file.writeAll(converter_cmd.stdout);
+    child.stdin_behavior = .Pipe;
+    child.stdout_behavior = .Pipe;
+    child.stderr_behavior = .Pipe;
+
+    try std.process.Child.spawn(&child);
+    var stdin = child.stdin orelse @panic("no stdin");
+    try stdin.writeAll(markdown);
+
+    var stdout = std.ArrayList(u8).init(allocator);
+    defer stdout.deinit();
+    var stderr = std.ArrayList(u8).init(allocator);
+    defer stderr.deinit();
+
+    try child.collectOutput(&stdout, &stderr, 10 * 1024 * 1024);
+
+    _ = try child.wait();
+
+    // std.debug.assert(converter_cmd.stderr.len == 0);
+
+    try html_file.writeAll(header);
+    try std.fmt.format(html_file.writer(), html_prelude, .{title});
+    try html_file.writeAll(stdout.items);
+    try html_file.writer().writeAll(back_link);
+    try html_file.writeAll(footer);
 }
 
 fn generate_article(markdown_file_path: []const u8, header: []const u8, footer: []const u8, allocator: std.mem.Allocator) !Article {
@@ -245,7 +256,6 @@ fn generate_article(markdown_file_path: []const u8, header: []const u8, footer: 
         .allocator = allocator,
     };
 
-
     {
         const first_newline_pos = std.mem.indexOf(u8, original_markdown_content, "\n") orelse 0;
         std.debug.assert(first_newline_pos > 0);
@@ -264,34 +274,9 @@ fn generate_article(markdown_file_path: []const u8, header: []const u8, footer: 
     const metadata_delimiter_idx = std.mem.indexOf(u8, original_markdown_content, metadata_delimiter) orelse @panic("missing metadata");
     try markdown_content.appendSlice(original_markdown_content[metadata_delimiter_idx + metadata_delimiter.len ..]);
 
-    try html_file.writeAll(header);
-
     article.dates = try get_creation_and_modification_date_for_article(markdown_file_path, allocator);
-    try html_file.writer().writeAll("<div class=\"article-prelude\">");
-    try html_file.writer().writeAll(back_link);
-    try std.fmt.format(html_file.writer(), "<p class=\"publication-date\">Published on {s}</p>\n", .{get_date(article.dates.creation_date)});
-    try html_file.writer().writeAll("</div>");
 
-    {
-        var child = std.process.ChildProcess{
-            .stdin_behavior = .Pipe,
-        };
-        std.process.Child.spawn(&child);
-        const converter_cmd = try std.process.Child.run(.{
-            .allocator = allocator,
-            .argv = &[_][]const u8{ "cmark", "--unsafe", "-t", "html", markdown_file_path },
-            .max_output_bytes = 1 * 1024 * 1024,
-        });
-        defer allocator.free(converter_cmd.stdout);
-        defer allocator.free(converter_cmd.stderr);
-
-        std.debug.assert(converter_cmd.stderr.len == 0);
-
-        try html_file.writeAll(converter_cmd.stdout);
-    }
-
-    try html_file.writer().writeAll(back_link);
-    try html_file.writeAll(footer);
+    try convert_markdown_to_html(markdown_content.items, article.title, header, footer, article.output_file_name, allocator);
 
     std.log.info("generated {s} {s}", .{ article.output_file_name, article.tags });
 
@@ -521,8 +506,6 @@ fn generate_home_page(header: []const u8, articles: []const Article, allocator: 
     );
 
     {
-        var child = std.process.Child{};
-        std.process.Child.spawn(&child);
         const converter_cmd = try std.process.Child.run(.{
             .allocator = allocator,
             .argv = &[_][]const u8{ "cmark", "--unsafe", "-t", "html", markdown_file_path },
