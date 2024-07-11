@@ -160,7 +160,7 @@ fn generate_rss_feed_entry_for_article(writer: anytype, article: Article) !void 
     });
 }
 
-fn convert_markdown_to_html(markdown: []const u8, article: Article, header: []const u8, footer: []const u8, html_file_path: []const u8, allocator: std.mem.Allocator) !void {
+fn generate_html_article(markdown: []const u8, article: Article, header: []const u8, footer: []const u8, html_file_path: []const u8, allocator: std.mem.Allocator) !void {
     const argv = &[_][]const u8{ "cmark", "--unsafe", "-t", "html" };
 
     var child = std.process.Child.init(argv, allocator);
@@ -310,7 +310,7 @@ fn generate_article(markdown_file_path: []const u8, header: []const u8, footer: 
 
     article.dates = try get_creation_and_modification_date_for_article(markdown_file_path, allocator);
 
-    try convert_markdown_to_html(markdown_content.items, article, header, footer, article.output_file_name, allocator);
+    try generate_html_article(markdown_content.items, article, header, footer, article.output_file_name, allocator);
 
     std.log.info("generated {s} {s}", .{ article.output_file_name, article.metadata.tags });
 
