@@ -232,6 +232,10 @@ p:has(img):has(em) {
   transition: max-height .25s ease-in-out;
 }
 
+.wrap-collapsible {
+  margin: 2.5rem 1.5rem;
+}
+
 .toggle:checked + .label-toggle + .collapsible-content {
   max-height: initial;
 }
