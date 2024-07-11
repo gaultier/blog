@@ -198,6 +198,23 @@ a.title:hover {
    text-decoration: underline !important;
 }
 
+.hash-anchor {
+  opacity: 0;
+}
+
+.title:hover + .hash-anchor {
+  opacity: 1;
+}
+
+.hash-anchor:hover {
+  opacity: 1;
+}
+
+.hash-anchor::before {
+  margin-left: .5rem;
+  content: '#';
+}
+
 p:has(img):has(em) {
   padding-bottom: 2.5rem;
 }

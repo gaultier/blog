@@ -347,9 +347,9 @@ fn fixup_markdown_with_title_ids(markdown: []const u8, allocator: std.mem.Alloca
         const id = try make_html_friendly_id(title, allocator);
 
         try std.fmt.format(res.writer(),
-            \\<h{d} id="{s}"><a class="title" href="#{s}">{s}</a></h{d}>
+            \\<h{d} id="{s}"><a class="title" href="#{s}">{s}</a><a class="hash-anchor" href="#{s}" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a></h{d}>
             \\
-        , .{ level, id, id, title, level });
+        , .{ level, id, id, title, id, level });
     }
     return res.toOwnedSlice();
 }
