@@ -229,12 +229,27 @@ fn convert_markdown_to_html(markdown: []const u8, article: Article, header: []co
     try html_file.writeAll(header);
     try std.fmt.format(html_file.writer(),
         \\ <div class="article-prelude">
-        \\ {s}
-        \\ <p class="publication-date">Published on {s}</p>
+        \\   {s}
+        \\   <p class="publication-date">Published on {s}</p>
         \\ </div>
-        \\ <h1>{s}</h1>
-        \\
+        \\ 
+        \\ <div class="article-title">
+        \\   <h1>{s}</h1>
+        \\   <span>🏷️ 
     , .{ back_link, get_date(article.dates.creation_date), article.metadata.title });
+
+    for (article.metadata.tags, 0..) |tag, i| {
+        try html_file.writeAll(tag);
+        if (i < article.metadata.tags.len - 1) {
+            try html_file.writeAll(", ");
+        }
+    }
+    try html_file.writeAll(
+        \\</span>
+        \\ </div>
+        \\ 
+    );
+
     try html_file.writeAll(stdout.items);
     try html_file.writer().writeAll(back_link);
     try html_file.writeAll(footer);

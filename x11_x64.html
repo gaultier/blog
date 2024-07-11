@@ -43,12 +43,16 @@ window.addEventListener("load", (event) => {
 </div>
 <div class="body">
  <div class="article-prelude">
- <p><a href="/blog"> ⏴ Back to all articles</a>
+   <p><a href="/blog"> ⏴ Back to all articles</a>
 
- <p class="publication-date">Published on 2023-05-31</p>
+   <p class="publication-date">Published on 2023-05-31</p>
  </div>
- <h1>Learn x86-64 assembly by writing a GUI from scratch</h1>
-<p>Most people think assembly is only to be used to write toy programs for learning purposes, or to write a highly optimized version of a specific function inside a codebase written in a high-level language.</p>
+ 
+ <div class="article-title">
+   <h1>Learn x86-64 assembly by writing a GUI from scratch</h1>
+   <span>🏷️ [GUI](/blog/articles-per-tag.html#GUI), [x86_64](/blog/articles-per-tag.html#x86_64), [X11](/blog/articles-per-tag.html#X11), [Optimization](/blog/articles-per-tag.html#Optimization)</span>
+ </div>
+ <p>Most people think assembly is only to be used to write toy programs for learning purposes, or to write a highly optimized version of a specific function inside a codebase written in a high-level language.</p>
 <p>Well, what if we wrote a whole program in assembly that opens a GUI window? It will be the hello world of the GUI world, but that still counts. Here is what we are working towards:</p>
 <p><img src="x11_x64_final.png" alt="Result" /></p>
 <p>I wanted to expand my knowledge of assembly and by doing something fun and motivating. It all originated from the observation that so many program binaries today are very big, often over 30 Mib (!), and I asked myself: How small a binary can be for a (very simplistic) GUI? Well, it turns out, very little. Spoiler alert: around 1 KiB!</p>

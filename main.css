@@ -3,6 +3,13 @@
   color: gray;
 }
 
+.article-title {
+  display: inline-flex;
+  justify-content: space-between;
+  width: 100%;
+  align-items: center;
+}
+
 .article-prelude {
   display: inline-flex;
   justify-content: space-between;

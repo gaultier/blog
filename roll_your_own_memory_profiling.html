@@ -43,12 +43,16 @@ window.addEventListener("load", (event) => {
 </div>
 <div class="body">
  <div class="article-prelude">
- <p><a href="/blog"> ⏴ Back to all articles</a>
+   <p><a href="/blog"> ⏴ Back to all articles</a>
 
- <p class="publication-date">Published on 2023-11-23</p>
+   <p class="publication-date">Published on 2023-11-23</p>
  </div>
- <h1>Roll your own memory profiling: it's actually not hard</h1>
-<p><em>Or: An exploration of the <a href="https://github.com/gperftools/gperftools">pprof</a> memory profiler and its textual format for fun an profit.</em></p>
+ 
+ <div class="article-title">
+   <h1>Roll your own memory profiling: it's actually not hard</h1>
+   <span>🏷️ [C](/blog/articles-per-tag.html#C), [Allocator](/blog/articles-per-tag.html#Allocator), [Profiling](/blog/articles-per-tag.html#Profiling), [Pprof](/blog/articles-per-tag.html#Pprof)</span>
+ </div>
+ <p><em>Or: An exploration of the <a href="https://github.com/gperftools/gperftools">pprof</a> memory profiler and its textual format for fun an profit.</em></p>
 <p>Say that you are using a programming language where memory is manually managed, and you have decided to use a custom allocator for one reason or another, for example an arena allocator, and are wondering:</p>
 <ul>
 <li>How do I track every allocation, recording how many bytes were allocated and what was the call stack at that time?</li>

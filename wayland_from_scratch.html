@@ -43,12 +43,16 @@ window.addEventListener("load", (event) => {
 </div>
 <div class="body">
  <div class="article-prelude">
- <p><a href="/blog"> ⏴ Back to all articles</a>
+   <p><a href="/blog"> ⏴ Back to all articles</a>
 
- <p class="publication-date">Published on 2023-10-12</p>
+   <p class="publication-date">Published on 2023-10-12</p>
  </div>
- <h1>Learn Wayland by writing a GUI from scratch</h1>
-<p><a href="https://wayland.freedesktop.org/">Wayland</a> is all the rage those days. Distributions left and right switch to it, many readers of my previous article on <a href="/blog/x11_x64.html">writing a X11 GUI from scratch in x86_64 assembly</a> asked for a follow-up article about Wayland, and I now run Wayland on my desktop. So here we go, let's write a (very simple) GUI program with Wayland, without any libraries, this time in C.</p>
+ 
+ <div class="article-title">
+   <h1>Learn Wayland by writing a GUI from scratch</h1>
+   <span>🏷️ [C](/blog/articles-per-tag.html#C), [Wayland](/blog/articles-per-tag.html#Wayland), [GUI](/blog/articles-per-tag.html#GUI), [X11](/blog/articles-per-tag.html#X11)</span>
+ </div>
+ <p><a href="https://wayland.freedesktop.org/">Wayland</a> is all the rage those days. Distributions left and right switch to it, many readers of my previous article on <a href="/blog/x11_x64.html">writing a X11 GUI from scratch in x86_64 assembly</a> asked for a follow-up article about Wayland, and I now run Wayland on my desktop. So here we go, let's write a (very simple) GUI program with Wayland, without any libraries, this time in C.</p>
 <p>Here is what we are working towards:</p>
 <p><img src="wayland-screenshot-tiled1.png" alt="Result" /></p>
 <p>We display the Wayland logo in its own window (we can see the mountain wallpaper in the background since we use a fixed size buffer). It's not quite Visual Studio yet, I know, but it's a good foundation for more in future articles, perhaps.</p>
