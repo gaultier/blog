@@ -194,7 +194,7 @@ fn extract_tags_for_article(markdown_content: []const u8, allocator: std.mem.All
     return tags.toOwnedSlice();
 }
 
-fn convert_markdown_to_html(markdown: []const u8, title: []const u8, header: []const u8, footer: []const u8, html_file_path: []const u8, allocator: std.mem.Allocator) !void {
+fn convert_markdown_to_html(markdown: []const u8, article: Article, header: []const u8, footer: []const u8, html_file_path: []const u8, allocator: std.mem.Allocator) !void {
     const argv = &[_][]const u8{ "cmark", "--unsafe", "-t", "html" };
 
     var child = std.process.Child.init(argv, allocator);
@@ -223,11 +223,18 @@ fn convert_markdown_to_html(markdown: []const u8, title: []const u8, header: []c
         std.log.err("cmark exited with error: {s}", .{stderr.items});
     }
 
-    std.debug.print("[D001] {s}\n", .{html_file_path});
     const html_file = try std.fs.cwd().createFile(html_file_path, .{});
     defer html_file.close();
+    try std.fmt.format(html_file.writer(), html_prelude, .{article.metadata.title});
     try html_file.writeAll(header);
-    try std.fmt.format(html_file.writer(), html_prelude, .{title});
+    try std.fmt.format(html_file.writer(),
+        \\ <div class="article-prelude">
+        \\ {s}
+        \\ <p class="publication-date">Published on {s}</p>
+        \\ </div>
+        \\ <h1>{s}</h1>
+        \\
+    , .{ back_link, get_date(article.dates.creation_date), article.metadata.title });
     try html_file.writeAll(stdout.items);
     try html_file.writer().writeAll(back_link);
     try html_file.writeAll(footer);
@@ -316,7 +323,7 @@ fn generate_article(markdown_file_path: []const u8, header: []const u8, footer: 
 
     article.dates = try get_creation_and_modification_date_for_article(markdown_file_path, allocator);
 
-    try convert_markdown_to_html(markdown_content.items, article.metadata.title, header, footer, article.output_file_name, allocator);
+    try convert_markdown_to_html(markdown_content.items, article, header, footer, article.output_file_name, allocator);
 
     std.log.info("generated {s} {s}", .{ article.output_file_name, article.metadata.tags });
 
