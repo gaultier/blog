@@ -39,11 +39,13 @@ In no particular order:
 - Some features you are not using are enabled by default. Be explicit instead of relying on obscure, ever changing defaults. Example: `CGO_ENABLED=0 go build ...` because it is (at the time of writing) enabled by default. The Gradle build system also has the annoying habit to run stuff behind your back. Use `gradle foo -x baz` to run `foo` and not `baz`.
 - Don't run tests from your dependencies. This can happen if you are using git submodules or vendoring dependencies in some way. You generally always want to build them, but not run their tests. Again, `gradle` is the culprit here. If you are storing your git submodules in a `submodules/` directory for example, you can run only your project tests with: `gradle test -x submodules:test`.
 - Disable the generation of reports files. They frequently come in the form of HTML or XML form, and once again, `gradle` gets out of his way to clutter your filesystem with those. Of debatable usefulness locally, they are downright wasteful in CI. And it takes some precious time, too! Disable it with: 
+    ```
      tasks.withType<Test> {
          useJUnitPlatform()
          reports.html.isEnabled = false
          reports.junitXml.isEnabled = false
      }
+     ```
 - Check alternative repositories for a dependency instead of building it from source. It can happen that a certain dependency you need is not in the main repositories of the package manager of your system. You can however inspect other repositories before falling back to building it yourself. On Alpine, you can simply add the URL of the repository to `/etc/apk/repositories`. For example, in the main Alpine Docker image, the repository `https://<mirror-server>/alpine/edge/testing` is not enabled. More information [here](https://wiki.alpinelinux.org/wiki/Enable_Community_Repository). Other example: on OpenBSD or FreeBSD, you can opt-in to use the `current` branch to get the newest and latest changes, and along them the newest dependencies.
 - Don't build the static and dynamic variants of the same library (in C or C++). You probably only want one, preferably the static one. Otherwise, you are doing twice the work!
 - Fetch statically built binaries instead of building them from source. Go, and sometimes Rust, are great for this. As long as the OS and the architecture are the same, of course. E.g.: you can simply fetch `kubectl` which is a Go static binary instead of installing lots of Kubernetes packages, if you simply need to talk to a Kubernetes cluster. Naturally, the same goes for single file, dependency-less script: shell, awk, python, lua, perl, and ruby, assuming the interpreter is the right one. But this case is rarer and you might as well vendor the script at this point.
