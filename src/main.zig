@@ -418,9 +418,10 @@ fn generate_toc_for_article(markdown: []const u8, allocator: std.mem.Allocator) 
 
     var toc = std.ArrayList(u8).init(allocator);
     try toc.ensureTotalCapacity(4096);
-    try toc.appendSlice("<ul>\n");
 
     var inside_code_section = false;
+    var level_old: usize = 0;
+
     while (it_lines.next()) |line| {
         const is_begin_title_html = std.mem.startsWith(u8, line, "<h");
         std.debug.assert(!is_begin_title_html);
@@ -443,6 +444,14 @@ fn generate_toc_for_article(markdown: []const u8, allocator: std.mem.Allocator) 
         const first_space_pos = std.mem.indexOf(u8, line, " ") orelse 0;
         const level = first_space_pos;
         std.debug.assert(1 <= level and level <= 6);
+
+        if (level < level_old) {
+            try toc.appendSlice("</ul>\n");
+        }
+        if (level > level_old) {
+            try toc.appendSlice("<ul>\n");
+        }
+
         const title = std.mem.trim(u8, line[first_space_pos..], &[_]u8{ ' ', '\n' });
         const id = try make_html_friendly_id(title, allocator);
         defer allocator.free(id);
@@ -451,6 +460,8 @@ fn generate_toc_for_article(markdown: []const u8, allocator: std.mem.Allocator) 
             \\ <li><a href="#{s}">{s}</a></li>
             \\
         , .{ id, title });
+
+        level_old = level;
     }
     try toc.appendSlice("</ul>\n");
     return toc.toOwnedSlice();

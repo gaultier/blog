@@ -54,20 +54,22 @@ window.addEventListener("load", (event) => {
  </div>
  <strong>Table of contents</strong>
 <ul>
- <li id="what-do-we-need"><a href="#what-do-we-need">What do we need?</a></li>
- <li id="wayland-basics"><a href="#wayland-basics">Wayland basics</a></li>
- <li id="opening-a-socket"><a href="#opening-a-socket">Opening a socket</a></li>
- <li id="creating-a-registry"><a href="#creating-a-registry">Creating a registry</a></li>
- <li id="shared-memory-the-frame-buffer"><a href="#shared-memory-the-frame-buffer">Shared memory: the frame buffer</a></li>
- <li id="chatting-with-the-compositor"><a href="#chatting-with-the-compositor">Chatting with the compositor</a></li>
- <li id="reacting-to-events-binding-interfaces"><a href="#reacting-to-events-binding-interfaces">Reacting to events: binding interfaces</a></li>
- <li id="using-the-interfaces-we-created"><a href="#using-the-interfaces-we-created">Using the interfaces we created</a></li>
- <li id="reacting-to-events-ping-pong"><a href="#reacting-to-events-ping-pong">Reacting to events: ping/pong</a></li>
- <li id="reacting-to-events-configure-ack-configure"><a href="#reacting-to-events-configure-ack-configure">Reacting to events: configure/ACK configure</a></li>
- <li id="rendering-a-frame-the-red-rectangle"><a href="#rendering-a-frame-the-red-rectangle">Rendering a frame: the red rectangle</a></li>
- <li id="rendering-a-frame-the-wayland-logo"><a href="#rendering-a-frame-the-wayland-logo">Rendering a frame: The Wayland logo</a></li>
- <li id="the-end"><a href="#the-end">The end</a></li>
- <li id="addendum-the-full-code"><a href="#addendum-the-full-code">Addendum: the full code</a></li>
+ <li><a href="#what-do-we-need">What do we need?</a></li>
+ <li><a href="#wayland-basics">Wayland basics</a></li>
+ <li><a href="#opening-a-socket">Opening a socket</a></li>
+ <li><a href="#creating-a-registry">Creating a registry</a></li>
+ <li><a href="#shared-memory-the-frame-buffer">Shared memory: the frame buffer</a></li>
+ <li><a href="#chatting-with-the-compositor">Chatting with the compositor</a></li>
+<ul>
+ <li><a href="#reacting-to-events-binding-interfaces">Reacting to events: binding interfaces</a></li>
+ <li><a href="#using-the-interfaces-we-created">Using the interfaces we created</a></li>
+ <li><a href="#reacting-to-events-ping-pong">Reacting to events: ping/pong</a></li>
+ <li><a href="#reacting-to-events-configure-ack-configure">Reacting to events: configure/ACK configure</a></li>
+ <li><a href="#rendering-a-frame-the-red-rectangle">Rendering a frame: the red rectangle</a></li>
+ <li><a href="#rendering-a-frame-the-wayland-logo">Rendering a frame: The Wayland logo</a></li>
+</ul>
+ <li><a href="#the-end">The end</a></li>
+ <li><a href="#addendum-the-full-code">Addendum: the full code</a></li>
 </ul>
 
 <p><a href="https://wayland.freedesktop.org/">Wayland</a> is all the rage those days. Distributions left and right switch to it, many readers of my previous article on <a href="/blog/x11_x64.html">writing a X11 GUI from scratch in x86_64 assembly</a> asked for a follow-up article about Wayland, and I now run Wayland on my desktop. So here we go, let's write a (very simple) GUI program with Wayland, without any libraries, this time in C.</p>
