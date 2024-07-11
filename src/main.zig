@@ -160,7 +160,7 @@ fn generate_rss_feed_entry_for_article(writer: anytype, article: Article) !void 
     });
 }
 
-fn generate_html_article(markdown: []const u8, article: Article, header: []const u8, footer: []const u8, html_file_path: []const u8, allocator: std.mem.Allocator) !void {
+fn run_cmark_with_stdin_data(markdown: []const u8, allocator: std.mem.Allocator) ![]const u8 {
     const argv = &[_][]const u8{ "cmark", "--unsafe", "-t", "html" };
 
     var child = std.process.Child.init(argv, allocator);
@@ -170,10 +170,7 @@ fn generate_html_article(markdown: []const u8, article: Article, header: []const
 
     try std.process.Child.spawn(&child);
     if (child.stdin) |*stdin| {
-        const fixed_up_markdown = try fixup_markdown_with_title_ids(markdown, allocator);
-        defer allocator.free(fixed_up_markdown);
-
-        try stdin.writeAll(fixed_up_markdown);
+        try stdin.writeAll(markdown);
 
         stdin.close();
         child.stdin = null;
@@ -190,8 +187,15 @@ fn generate_html_article(markdown: []const u8, article: Article, header: []const
 
     _ = try child.wait();
     if (stderr.items.len > 0) {
-        std.log.err("cmark exited with error: {s}", .{stderr.items});
+        std.log.err("cmark had errors: {s}", .{stderr.items});
     }
+    return stdout.toOwnedSlice();
+}
+
+fn generate_html_article(markdown: []const u8, article: Article, header: []const u8, footer: []const u8, html_file_path: []const u8, allocator: std.mem.Allocator) !void {
+    const fixed_up_markdown = try fixup_markdown_with_title_ids(markdown, allocator);
+    defer allocator.free(fixed_up_markdown);
+    const child_stdout = try run_cmark_with_stdin_data(fixed_up_markdown, allocator);
 
     const html_file = try std.fs.cwd().createFile(html_file_path, .{});
     defer html_file.close();
@@ -235,7 +239,7 @@ fn generate_html_article(markdown: []const u8, article: Article, header: []const
     }
     try html_file.writeAll("\n");
 
-    try html_file.writeAll(stdout.items);
+    try html_file.writeAll(child_stdout);
     try html_file.writer().writeAll(back_link);
     try html_file.writeAll(footer);
 }
