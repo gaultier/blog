@@ -354,6 +354,10 @@ Summary
 </ul>
 <h2 id="appendix-the-full-code">Appendix: The full code</h2>
 <h3 id="the-old-c-implementation">The old C implementation</h3>
+<div class="wrap-collapsible">
+  <input id="collapsible2" class="toggle" type="checkbox">
+  <label for="collapsible2" class="label-toggle">Code</label>
+  <div class="collapsible-content">
 <pre><code class="language-c">#include &lt;stdint.h&gt;
 #include &lt;stdio.h&gt;
 #include &lt;stdlib.h&gt;
@@ -1055,7 +1059,13 @@ int main() {
   printf(&quot;`%zu`\n&quot;, input_len);
 }
 </code></pre>
+</div>
+</div>
 <h3 id="the-x64-implementation">The x64 implementation</h3>
+<div class="wrap-collapsible">
+  <input id="collapsible1" class="toggle" type="checkbox">
+  <label for="collapsible1" class="label-toggle">Code</label>
+  <div class="collapsible-content">
 <pre><code class="language-x86asm">BITS 64
 CPU X64
 
@@ -1203,6 +1213,8 @@ _start:
   call exit
 </code></pre>
 <script src="https://unpkg.com/@highlightjs/cdn-assets@11.8.0/languages/x86asm.min.js"></script>
+</div>
+</div>
 <p><a href="/blog"> ⏴ Back to all articles</a>
 
 <blockquote id="donate">
