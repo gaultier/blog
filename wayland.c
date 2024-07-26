@@ -780,7 +780,8 @@ static void wayland_handle_message(int fd, state_t *state, char **msg,
     assert(padded_interface_len <= cstring_len(interface));
 
     buf_read_n(msg, msg_len, interface, padded_interface_len);
-    assert(interface[interface_len] == 0);
+    // The length includes the NULL terminator.
+    assert(interface[interface_len - 1] == 0);
 
     uint32_t version = buf_read_u32(msg, msg_len);
 
