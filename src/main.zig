@@ -83,9 +83,6 @@ fn get_creation_and_modification_date_for_article(markdown_file_path: []const u8
         if (trimmed.len > 0) creation_date = trimmed;
     }
 
-    std.debug.assert(creation_date.len == iso_date_str_len);
-    std.debug.assert(modification_date.len == iso_date_str_len);
-
     for (creation_date) |c| {
         const ok = switch (c) {
             '-', '0'...'9', 'T', 'Z', ':', '+' => true,
@@ -101,10 +98,11 @@ fn get_creation_and_modification_date_for_article(markdown_file_path: []const u8
         std.debug.assert(ok);
     }
 
-    return .{
-        .creation_date = creation_date[0..iso_date_str_len].*,
-        .modification_date = modification_date[0..iso_date_str_len].*,
-    };
+    var res: Dates = .{ .creation_date = [_]u8{0} ** 25, .modification_date = [_]u8{0} ** 25 };
+    std.mem.copyForwards(u8, &res.creation_date, creation_date);
+    std.mem.copyForwards(u8, &res.modification_date, modification_date);
+
+    return res;
 }
 
 fn sha1_uuid(space_uuid: [16]u8, data: []const u8) [36]u8 {
