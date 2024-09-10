@@ -43,7 +43,7 @@ What we want is to link our object file with the correct libc, meaning one that 
 
 Enter musl, a C library for Linux that supports many platforms including ARM64, and static compilation. That's exactly what we need!
 
-A big difference between Odin and Zig is that Zig is a full cross-compilation toolchain: it comes with the source code of `musl`, and has put a ton of work to cross-compile it to the target the user desires. 
+A big difference between Odin and Zig is that Zig is a full cross-compilation toolchain: it comes with the source code of `musl`, and has put in a ton of work to cross-compile it to the target the user desires. 
 
 So to make our use-case work with Odin, without Odin the toolchain supporting what Zig supports, what we need to do is cross-compile our code to an ARM64 object file but without linking it yet. Then we link it manually to musl libc that has been built for ARM64. We could download this musl artifact from the internet but it's both more educational and secure to build it ourselves. So let's do this, it's not too much work. 
 
