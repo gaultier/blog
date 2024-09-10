@@ -106,3 +106,59 @@ $ du -h a.out
 So it's a breeze to `scp` or `rsync` our small executable over to the Raspberry Pi Zero while hacking on it.
 
 Perhaps Odin will have built-in support for musl in the future like Zig does. In the meantime, this article shows it's absolutely possible to do that ourselves!
+
+
+## Appendix: Many you don't even need a libc
+
+Odin comes with batteries included with a rich standard library. So why do we even need libc? Let's inspect which functions we really use:
+
+```
+$ nm -u src.o
+                 U calloc
+                 U free
+                 U malloc
+                 U memcpy
+                 U memmove
+                 U memset
+                 U realloc
+```
+
+Ok, so basically: heap allocation and some compiler intrisics to copy/set memory.
+
+The former is not actually required if our program does not do heap allocations (Odin provides the option `-default-to-nil-allocator` for this case), or if we implement these ourselves, for example with a naive mmap implementation.
+
+The latter are required even if we do not call them directly because typically, the compiler will replace some code patterns, e.g. struct or array initialization, with these functions behind the scene.
+
+These `memxxx` functions can potentially be implemented ourselves, likely incurring a performance cost compared to the hand-optimized libc versions. But Odin can provide them for us! We can just use the `-no-crt` option.
+
+Note that not all targets will be equally supported for this use-case and I also had to install `nasm` to make it work because Odin ships with some assembly files which are then built for the target with `nasm`, but Odin does not ship with `nasm` itself.
+
+Let's try with a 'hello world' example:
+
+```
+package main
+
+import "core:fmt"
+
+main :: proc() {
+	fmt.println("Hello")
+}
+```
+
+We can build it as outlined like this:
+
+```
+$ odin build hello.odin -file -target=linux_amd64 -default-to-nil-allocator -no-crt
+$ file hello
+hello: ELF 64-bit LSB executable, x86-64, version 1 (SYSV), statically linked, BuildID[sha1]=ef8dfc9dc297295808f80ec66e92763358a598d1, not stripped
+```
+
+And we can see the `malloc` symbol is not present since we do opted out of it, and that Odin provided with these assembly files the correct implementation for `memset`:
+
+```
+$ nm hello | grep malloc
+# Nothing
+$ nm hello | grep memset
+00000000004042c0 T memset
+```
+
