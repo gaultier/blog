@@ -1,5 +1,6 @@
-# Odin and musl: Write Odin programs for the Raspberry Pi Zero
-
+Title: Odin and musl: Write Odin programs for the Raspberry Pi Zero
+Tags: Odin, Musl, ARM, Cross-compilation
+---
 
 Odin is becoming my favorite tool as a Software Engineer. It's a fantastic programming language. 
 I have purchased some time ago a Raspberry Pi Zero, and I found myself wanting to write command-line Odin programs for it.
