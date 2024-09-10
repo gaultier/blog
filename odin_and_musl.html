@@ -138,8 +138,8 @@ $ du -h a.out
                  U realloc
 </code></pre>
 <p>Ok, so basically: heap allocation and some functions to copy/set memory.</p>
-<p>The former are not actually required if our program does not do heap allocations (Odin provides the option <code>-default-to-nil-allocator</code> for this case), or if we implement these ourselves, for example with a naive mmap implementation.</p>
-<p>The latter are required even if we do not call them directly because typically, the compiler will replace some code patterns, e.g. struct or array initialization, with these functions behind the scene.</p>
+<p>The former are not actually required if our program does not do heap allocations (Odin provides the option <code>-default-to-nil-allocator</code> for this case), or if we implement these ourselves, for example with a naive <code>mmap</code> implementation.</p>
+<p>The latter are required even if we do not call them directly because typically, the compiler will replace some code patterns, e.g. <code>struct</code> or array initialization, with these functions behind the scene.</p>
 <p>These <code>memxxx</code> functions could potentially be implemented by us, likely incurring a performance cost compared to the hand-optimized libc versions. But Odin can provide them for us! We can just use the <code>-no-crt</code> option.</p>
 <p>Note that not all targets will be equally supported for this use-case and I also had to install <code>nasm</code> to make it work because Odin ships with some assembly files which are then built for the target with <code>nasm</code>, but Odin does not ship with <code>nasm</code> itself.</p>
 <p>Let's try with a 'hello world' example:</p>
