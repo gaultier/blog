@@ -114,7 +114,7 @@ Perhaps Odin will have built-in support for musl in the future like Zig does. In
 
 ## Appendix: Many you don't even need a libc
 
-Odin comes with batteries included with a rich standard library. So why do we even need libc? Let's inspect which functions we really use:
+Odin comes with batteries included with a rich standard library. So why do we even need libc? Let's inspect which functions we really use from libc, i.e. are undefined symbols in the object file built from our source code:
 
 ```sh
 $ nm -u src.o
