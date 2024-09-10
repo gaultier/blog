@@ -45,7 +45,7 @@ So to make our use-case work with Odin, without Odin the toolchain supporting wh
 
 We'd like to use clang since it is a cross-compiler by default, so that should be straightforward. However musl is partially written in assembly in the GCC syntax which of course clang does not understand, so we have to use a GCC compiler that targets ARM64, to be able to build musl. 
 
-Most Linux distributions provide such a compiler as a package typically called `gcc-aarch64-xxx` e.g. `sudo dnf install gcc-aarch64-linux-gnu`.
+Most Linux distributions provide such a compiler as a package typically called `gcc-aarch64-xxx` e.g. `sudo apt-get install gcc-aarch64-linux-gnu` or `sudo dnf install gcc-aarch64-linux-gnu`.
 
 So let's now build a static musl for ARM64, following the official instructions. We just need to this once:
 
