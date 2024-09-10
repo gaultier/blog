@@ -3,11 +3,13 @@ Tags: Odin, Musl, ARM, Cross-compilation
 ---
 
 Odin is becoming my favorite tool as a Software Engineer. It's a fantastic programming language. 
-I have purchased some time ago a Raspberry Pi Zero, and I found myself wanting to write command-line Odin programs for it.
+I have purchased some time ago a Raspberry Pi Zero, and I found myself wanting to write command-line Odin programs for it. Here it is in all its beauty:
+
+![Raspberry Pi Zero 2](zero2.png)
 
 Here's the story of how I did it. If you do not work with Odin but do work a lot with cross-compilation, like I do at work, all of these techniques will be, I believe, very valuable anyway.
 
-*Note: ARM64 is sometimes also called AARCH64.*
+*Note: ARM64 is sometimes also called AARCH64 interchangeably.*
 
 ## Inciting incident
 
@@ -44,7 +46,7 @@ A big difference between Odin and Zig is that Zig is a full cross-compilation to
 
 So to make our use-case work with Odin, without Odin the toolchain supporting what Zig supports, what we need to do is cross-compile our code to an ARM64 object file but without linking it yet. Then we link it manually to musl libc that has been built for ARM64. We could download this musl artifact from the internet but it's both more educational and secure to build it ourselves. So let's do this, it's not too much work. 
 
-We'd like to use clang since it is a cross-compiler by default, so that should be straightforward. However musl is partially written in assembly in the GCC syntax which of course clang does not understand, so we have to use a GCC compiler that targets ARM64, to be able to build musl. 
+We'd like to use clang since it is a cross-compiler by default, so that would be straightforward. However musl is partially written in assembly in the GCC syntax which of course clang does not understand, so we have to use a GCC compiler that targets ARM64, to be able to build musl. 
 
 Most Linux distributions provide such a compiler as a package typically called `gcc-aarch64-xxx` e.g. `sudo apt-get install gcc-aarch64-linux-gnu` or `sudo dnf install gcc-aarch64-linux-gnu`.
 
@@ -72,7 +74,7 @@ $ readelf -h lib/libc.a | grep '^\s*Machine:'
 
 ## Resolution
 
-Now we can finally put all the pieces together. We can use any linker, I am using LLD (the LLVM linker) here, but the GNU LD linker would also work as long as it knows to target ARM64 e.g. using the one coming with the GCC toolchain with just installed would work.
+Now we can finally put all the pieces together. We can use any linker, I am using LLD (the LLVM linker) here, but the GNU LD linker would also work as long as it knows to target ARM64 e.g. using the one coming with the GCC toolchain we just installed would work.
 
 ```
 $ odin build src  -target=linux_arm64 -build-mode=object
@@ -124,7 +126,7 @@ $ nm -u src.o
                  U realloc
 ```
 
-Ok, so basically: heap allocation and some compiler intrisics to copy/set memory.
+Ok, so basically: heap allocation and some functions to copy/set memory.
 
 The former is not actually required if our program does not do heap allocations (Odin provides the option `-default-to-nil-allocator` for this case), or if we implement these ourselves, for example with a naive mmap implementation.
 
