@@ -1,4 +1,4 @@
-Title: Odin and musl: Write Odin programs for the Raspberry Pi Zero
+Title: Odin and musl: Cross-compiling Odin programs for the Raspberry Pi Zero
 Tags: Odin, Musl, ARM, Cross-compilation
 ---
 
