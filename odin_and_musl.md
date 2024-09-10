@@ -17,7 +17,7 @@ The thing is, I work on an Intel Linux laptop and the Zero is a Linux ARM 64 bit
 
 Odin can cross-compile to it with `-target=linux_arm64`, so that's great, let's try it:
 
-```
+```sh
 $ odin build src -target=linux_arm64
 [...]
 /usr/bin/ld: /home/pg/my-code/odin-music-chords-placements/src.o: error adding symbols: file in wrong format
@@ -30,7 +30,7 @@ That's because behind the scenes, the Odin compiler builds our code into an ARM6
 
 We can confirm this theory by asking Odin to print the linking command:
 
-```
+```sh
 $ odin build src -target=linux_arm64 -print-linker-flags
 clang -Wno-unused-command-line-argument [...]  -lm -lc   -L/       -no-pie
 ```
@@ -52,7 +52,7 @@ Most Linux distributions provide such a compiler as a package typically called `
 
 So let's now build a static musl for ARM64, following the official instructions. We just need to this once:
 
-```
+```sh
 $ git clone --recurse --depth 1 https://git.musl-libc.org/git/musl
 $ cd musl
 # We need to provide `ranlib` and `ar` tools that target ARM64.
@@ -62,7 +62,7 @@ $ make
 
 We now have the two artifacts we want: `crt1.o` and `libc.a`. We can confirm that they have been correctly built for our target:
 
-```
+```sh
 $ file lib/crt1.o
 lib/crt1.o: ELF 64-bit LSB relocatable, ARM aarch64, version 1 (SYSV), not stripped
 $ readelf -h lib/libc.a | grep '^\s*Machine:'
@@ -76,7 +76,7 @@ $ readelf -h lib/libc.a | grep '^\s*Machine:'
 
 Now we can finally put all the pieces together. We can use any linker, I am using LLD (the LLVM linker) here, but the GNU LD linker would also work as long as it knows to target ARM64 e.g. using the one coming with the GCC toolchain we just installed would work.
 
-```
+```sh
 $ odin build src  -target=linux_arm64 -build-mode=object
 $ file src.o
 src.o: ELF 64-bit LSB relocatable, ARM aarch64, version 1 (SYSV), not stripped
@@ -87,20 +87,20 @@ a.out: ELF 64-bit LSB executable, ARM aarch64, version 1 (SYSV), statically link
 
 Alternatively, we can decide to stick with the Odin compiler through and through, and we pass it the (lengthy) required build options:
 
-```
+```sh
 $ odin build src -target=linux_arm64 -extra-linker-flags:'-L ~/not-my-code/musl/lib/ -nostdlib -fuse-ld=lld --target=linux-aarch64 ~/not-my-code/musl/lib/crt1.o -static'
 ```
 
 We can even verify it works by running it inside a ARM64 Linux system using `qemu`:
 
-```
+```sh
 $ qemu-aarch64-static a.out
 # It runs!
 ```
 
 Cherry on the cake, the resulting program is small:
 
-```
+```sh
 $ llvm-strip a.out
 $ du -h a.out 
 288K	a.out
@@ -115,7 +115,7 @@ Perhaps Odin will have built-in support for musl in the future like Zig does. In
 
 Odin comes with batteries included with a rich standard library. So why do we even need libc? Let's inspect which functions we really use:
 
-```
+```sh
 $ nm -u src.o
                  U calloc
                  U free
@@ -132,13 +132,13 @@ The former is not actually required if our program does not do heap allocations 
 
 The latter are required even if we do not call them directly because typically, the compiler will replace some code patterns, e.g. struct or array initialization, with these functions behind the scene.
 
-These `memxxx` functions can potentially be implemented ourselves, likely incurring a performance cost compared to the hand-optimized libc versions. But Odin can provide them for us! We can just use the `-no-crt` option.
+These `memxxx` functions could potentially be implemented by us, likely incurring a performance cost compared to the hand-optimized libc versions. But Odin can provide them for us! We can just use the `-no-crt` option.
 
 Note that not all targets will be equally supported for this use-case and I also had to install `nasm` to make it work because Odin ships with some assembly files which are then built for the target with `nasm`, but Odin does not ship with `nasm` itself.
 
 Let's try with a 'hello world' example:
 
-```
+```odin
 package main
 
 import "core:fmt"
@@ -150,7 +150,7 @@ main :: proc() {
 
 We can build it as outlined like this:
 
-```
+```sh
 $ odin build hello.odin -file -target=linux_amd64 -default-to-nil-allocator -no-crt
 $ file hello
 hello: ELF 64-bit LSB executable, x86-64, version 1 (SYSV), statically linked, BuildID[sha1]=ef8dfc9dc297295808f80ec66e92763358a598d1, not stripped
@@ -158,7 +158,7 @@ hello: ELF 64-bit LSB executable, x86-64, version 1 (SYSV), statically linked, B
 
 And we can see the `malloc` symbol is not present since we do opted out of it, and that Odin provided with these assembly files the correct implementation for `memset`:
 
-```
+```sh
 $ nm hello | grep malloc
 # Nothing
 $ nm hello | grep memset
