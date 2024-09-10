@@ -128,7 +128,7 @@ $ nm -u src.o
 
 Ok, so basically: heap allocation and some functions to copy/set memory.
 
-The former is not actually required if our program does not do heap allocations (Odin provides the option `-default-to-nil-allocator` for this case), or if we implement these ourselves, for example with a naive mmap implementation.
+The former are not actually required if our program does not do heap allocations (Odin provides the option `-default-to-nil-allocator` for this case), or if we implement these ourselves, for example with a naive mmap implementation.
 
 The latter are required even if we do not call them directly because typically, the compiler will replace some code patterns, e.g. struct or array initialization, with these functions behind the scene.
 
@@ -165,3 +165,5 @@ $ nm hello | grep memset
 00000000004042c0 T memset
 ```
 
+
+I'll soon write about what programs I made for the Raspberry Pi Zero, so check back soon!

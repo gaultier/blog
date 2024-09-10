@@ -68,7 +68,7 @@ I have purchased some time ago a Raspberry Pi Zero, and I found myself wanting t
 <h2 id="inciting-incident"><a class="title" href="#inciting-incident">Inciting incident</a><a class="hash-anchor" href="#inciting-incident" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a></h2>
 <p>The thing is, I work on an Intel Linux laptop and the Zero is a Linux ARM 64 bits piece of hardware. It's also a relatively cheap component with only 512 MiB of RAM and a slow CPU (compared to a modern developer workstation), and based on a very slow SD card, so it's not fast to install the required tools and to build source code on it. Cross-compilation is much easier and faster.</p>
 <p>Odin can cross-compile to it with <code>-target=linux_arm64</code>, so that's great, let's try it:</p>
-<pre><code>$ odin build src -target=linux_arm64
+<pre><code class="language-sh">$ odin build src -target=linux_arm64
 [...]
 /usr/bin/ld: /home/pg/my-code/odin-music-chords-placements/src.o: error adding symbols: file in wrong format
 clang: error: linker command failed with exit code 1 (use -v to see invocation)
@@ -76,7 +76,7 @@ clang: error: linker command failed with exit code 1 (use -v to see invocation)
 <p>Oh no...The key part is: <code>file in wrong format</code>.</p>
 <p>That's because behind the scenes, the Odin compiler builds our code into an ARM64 object file, which is great. But then it tries to link this object file with libc, which on this computer is a x86_64 library, and that won't work.</p>
 <p>We can confirm this theory by asking Odin to print the linking command:</p>
-<pre><code>$ odin build src -target=linux_arm64 -print-linker-flags
+<pre><code class="language-sh">$ odin build src -target=linux_arm64 -print-linker-flags
 clang -Wno-unused-command-line-argument [...]  -lm -lc   -L/       -no-pie
 </code></pre>
 <p>And we see it links libc with <code>-lc</code>, meaning it links our program with the local libc it finds on my machine which is a different architecture than our target.</p>
@@ -88,14 +88,14 @@ clang -Wno-unused-command-line-argument [...]  -lm -lc   -L/       -no-pie
 <p>We'd like to use clang since it is a cross-compiler by default, so that would be straightforward. However musl is partially written in assembly in the GCC syntax which of course clang does not understand, so we have to use a GCC compiler that targets ARM64, to be able to build musl.</p>
 <p>Most Linux distributions provide such a compiler as a package typically called <code>gcc-aarch64-xxx</code> e.g. <code>sudo apt-get install gcc-aarch64-linux-gnu</code> or <code>sudo dnf install gcc-aarch64-linux-gnu</code>.</p>
 <p>So let's now build a static musl for ARM64, following the official instructions. We just need to this once:</p>
-<pre><code>$ git clone --recurse --depth 1 https://git.musl-libc.org/git/musl
+<pre><code class="language-sh">$ git clone --recurse --depth 1 https://git.musl-libc.org/git/musl
 $ cd musl
 # We need to provide `ranlib` and `ar` tools that target ARM64.
 $ RANLIB=/usr/bin/aarch64-linux-gnu-gcc-ranlib AR=/usr/bin/aarch64-linux-gnu-gcc-ar CC=/usr/bin/aarch64-linux-gnu-gcc ./configure --target=aarch64 --disable-shared
 $ make
 </code></pre>
 <p>We now have the two artifacts we want: <code>crt1.o</code> and <code>libc.a</code>. We can confirm that they have been correctly built for our target:</p>
-<pre><code>$ file lib/crt1.o
+<pre><code class="language-sh">$ file lib/crt1.o
 lib/crt1.o: ELF 64-bit LSB relocatable, ARM aarch64, version 1 (SYSV), not stripped
 $ readelf -h lib/libc.a | grep '^\s*Machine:'
   Machine:                           AArch64
@@ -105,7 +105,7 @@ $ readelf -h lib/libc.a | grep '^\s*Machine:'
 </code></pre>
 <h2 id="resolution"><a class="title" href="#resolution">Resolution</a><a class="hash-anchor" href="#resolution" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a></h2>
 <p>Now we can finally put all the pieces together. We can use any linker, I am using LLD (the LLVM linker) here, but the GNU LD linker would also work as long as it knows to target ARM64 e.g. using the one coming with the GCC toolchain we just installed would work.</p>
-<pre><code>$ odin build src  -target=linux_arm64 -build-mode=object
+<pre><code class="language-sh">$ odin build src  -target=linux_arm64 -build-mode=object
 $ file src.o
 src.o: ELF 64-bit LSB relocatable, ARM aarch64, version 1 (SYSV), not stripped
 $ ld.lld main.o ~/not-my-code/musl/lib/libc.a ~/not-my-code/musl/lib/crt1.o
@@ -113,14 +113,14 @@ $ file a.out
 a.out: ELF 64-bit LSB executable, ARM aarch64, version 1 (SYSV), statically linked, not stripped
 </code></pre>
 <p>Alternatively, we can decide to stick with the Odin compiler through and through, and we pass it the (lengthy) required build options:</p>
-<pre><code>$ odin build src -target=linux_arm64 -extra-linker-flags:'-L ~/not-my-code/musl/lib/ -nostdlib -fuse-ld=lld --target=linux-aarch64 ~/not-my-code/musl/lib/crt1.o -static'
+<pre><code class="language-sh">$ odin build src -target=linux_arm64 -extra-linker-flags:'-L ~/not-my-code/musl/lib/ -nostdlib -fuse-ld=lld --target=linux-aarch64 ~/not-my-code/musl/lib/crt1.o -static'
 </code></pre>
 <p>We can even verify it works by running it inside a ARM64 Linux system using <code>qemu</code>:</p>
-<pre><code>$ qemu-aarch64-static a.out
+<pre><code class="language-sh">$ qemu-aarch64-static a.out
 # It runs!
 </code></pre>
 <p>Cherry on the cake, the resulting program is small:</p>
-<pre><code>$ llvm-strip a.out
+<pre><code class="language-sh">$ llvm-strip a.out
 $ du -h a.out 
 288K	a.out
 </code></pre>
@@ -128,7 +128,7 @@ $ du -h a.out
 <p>Perhaps Odin will have built-in support for musl in the future like Zig does. In the meantime, this article shows it's absolutely possible to do that ourselves!</p>
 <h2 id="appendix-many-you-don-t-even-need-a-libc"><a class="title" href="#appendix-many-you-don-t-even-need-a-libc">Appendix: Many you don't even need a libc</a><a class="hash-anchor" href="#appendix-many-you-don-t-even-need-a-libc" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a></h2>
 <p>Odin comes with batteries included with a rich standard library. So why do we even need libc? Let's inspect which functions we really use:</p>
-<pre><code>$ nm -u src.o
+<pre><code class="language-sh">$ nm -u src.o
                  U calloc
                  U free
                  U malloc
@@ -138,12 +138,12 @@ $ du -h a.out
                  U realloc
 </code></pre>
 <p>Ok, so basically: heap allocation and some functions to copy/set memory.</p>
-<p>The former is not actually required if our program does not do heap allocations (Odin provides the option <code>-default-to-nil-allocator</code> for this case), or if we implement these ourselves, for example with a naive mmap implementation.</p>
+<p>The former are not actually required if our program does not do heap allocations (Odin provides the option <code>-default-to-nil-allocator</code> for this case), or if we implement these ourselves, for example with a naive mmap implementation.</p>
 <p>The latter are required even if we do not call them directly because typically, the compiler will replace some code patterns, e.g. struct or array initialization, with these functions behind the scene.</p>
 <p>These <code>memxxx</code> functions could potentially be implemented by us, likely incurring a performance cost compared to the hand-optimized libc versions. But Odin can provide them for us! We can just use the <code>-no-crt</code> option.</p>
 <p>Note that not all targets will be equally supported for this use-case and I also had to install <code>nasm</code> to make it work because Odin ships with some assembly files which are then built for the target with <code>nasm</code>, but Odin does not ship with <code>nasm</code> itself.</p>
 <p>Let's try with a 'hello world' example:</p>
-<pre><code>package main
+<pre><code class="language-odin">package main
 
 import &quot;core:fmt&quot;
 
@@ -152,16 +152,17 @@ main :: proc() {
 }
 </code></pre>
 <p>We can build it as outlined like this:</p>
-<pre><code>$ odin build hello.odin -file -target=linux_amd64 -default-to-nil-allocator -no-crt
+<pre><code class="language-sh">$ odin build hello.odin -file -target=linux_amd64 -default-to-nil-allocator -no-crt
 $ file hello
 hello: ELF 64-bit LSB executable, x86-64, version 1 (SYSV), statically linked, BuildID[sha1]=ef8dfc9dc297295808f80ec66e92763358a598d1, not stripped
 </code></pre>
 <p>And we can see the <code>malloc</code> symbol is not present since we do opted out of it, and that Odin provided with these assembly files the correct implementation for <code>memset</code>:</p>
-<pre><code>$ nm hello | grep malloc
+<pre><code class="language-sh">$ nm hello | grep malloc
 # Nothing
 $ nm hello | grep memset
 00000000004042c0 T memset
 </code></pre>
+<p>I'll soon write about what programs I made for the Raspberry Pi Zero, so check back soon!</p>
 <p><a href="/blog"> ⏴ Back to all articles</a>
 
 <blockquote id="donate">
