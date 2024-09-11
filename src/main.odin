@@ -115,7 +115,7 @@ run_sub_process_and_get_stdout :: proc(
 		return {}, .Unknown
 	}
 
-	return strings.trim_space(strings.to_string(stdout_sb)), nil
+	return strings.to_string(stdout_sb), nil
 }
 
 
@@ -131,6 +131,7 @@ get_creation_and_modification_date_for_article :: proc(
 		[]u8{},
 	) or_return
 	defer delete(stdout)
+	stdout = strings.trim_space(stdout)
 
 	lines := strings.split_lines(stdout, context.temp_allocator)
 	modification_date = strings.clone(strings.trim(lines[0], "' \n"))
@@ -139,7 +140,7 @@ get_creation_and_modification_date_for_article :: proc(
 	return
 }
 
-make_html_friendly_id :: proc(input: string) -> string {
+make_html_friendly_id :: proc(input: string, allocator := context.allocator) -> string {
 	builder := strings.builder_make_len_cap(0, len(input) * 2)
 
 	for c in input {
@@ -158,15 +159,16 @@ make_html_friendly_id :: proc(input: string) -> string {
 		}
 	}
 
-	return strings.to_string(builder)
+	return strings.trim(strings.to_string(builder), "-")
 }
 
-fixup_markdown_with_title_ids :: proc(markdown: ^string) -> string {
+fixup_markdown_with_title_ids :: proc(markdown: string) -> string {
 	inside_code_section := false
 
 	builder := strings.builder_make_len_cap(0, len(markdown) * 2)
 
-	for line in strings.split_lines_iterator(markdown) {
+	markdown_ptr := markdown
+	for line in strings.split_lines_iterator(&markdown_ptr) {
 		is_begin_html_title := strings.starts_with(line, "<h")
 		assert(!is_begin_html_title)
 
@@ -216,19 +218,83 @@ fixup_markdown_with_title_ids :: proc(markdown: ^string) -> string {
 			title_id,
 			title_level,
 		)
+		strings.write_rune(&builder, '\n')
 	}
 	return strings.to_string(builder)
 }
 
+append_article_toc :: proc(sb: ^strings.Builder, markdown: string) {
+	inside_code_section := false
+
+	Title :: struct {
+		title: string,
+		level: int,
+	}
+	titles := make([dynamic]Title, context.temp_allocator)
+
+	markdown_ptr := markdown
+	for line in strings.split_lines_iterator(&markdown_ptr) {
+		is_begin_html_title := strings.starts_with(line, "<h")
+		assert(!is_begin_html_title)
+
+		is_begin_markdown_title := strings.starts_with(line, "#")
+		is_delimiter_markdown_code_section := strings.starts_with(line, "```")
+
+		if is_delimiter_markdown_code_section && !inside_code_section {
+			inside_code_section = true
+			continue
+		}
+
+		if is_delimiter_markdown_code_section && inside_code_section {
+			inside_code_section = false
+			continue
+		}
+
+		if inside_code_section {continue}
+		if !is_begin_markdown_title {continue}
+
+
+		title_level := strings.count(line, "#")
+		assert(1 <= title_level && title_level <= 6)
+
+		title_content := strings.trim_space(line[title_level:])
+
+		append(&titles, Title{title = title_content, level = title_level})
+	}
+
+	if len(titles) == 0 {return}
+
+	strings.write_string(sb, " <strong>Table of contents</strong>\n")
+
+	level_old := 0
+
+	for title in titles {
+		if title.level < level_old {
+			strings.write_string(sb, "</ul>\n")
+		} else if title.level > level_old {
+			strings.write_string(sb, "<ul>\n")
+		}
+
+		id := make_html_friendly_id(title.title, context.temp_allocator)
+		fmt.sbprintf(sb, " <li><a href=\"#%s\">%s</a></li>\n", id, title.title)
+		level_old = title.level
+	}
+
+	strings.write_string(sb, "</ul>\n")
+}
+
 generate_html_article :: proc(
-	markdown: ^string,
+	markdown: string,
 	article: Article,
 	header: string,
 	footer: string,
 ) -> (
 	err: os.Error,
 ) {
-	fixed_up_markdown := fixup_markdown_with_title_ids(markdown)
+	metadata_split := strings.split_n(markdown, "---\n", 2, context.temp_allocator)
+	article_content := metadata_split[1]
+
+	fixed_up_markdown := fixup_markdown_with_title_ids(article_content)
 	defer delete(fixed_up_markdown)
 
 	cmark_output, os2_err := run_sub_process_and_get_stdout(
@@ -245,7 +311,7 @@ generate_html_article :: proc(
 	strings.write_string(&html_sb, header)
 	fmt.sbprintf(
 		&html_sb,
-		" <div class=\"article-prelude\">\n   %s\n   <p class=\"publication-date\">Published on %s</p>\n </div>\n\n <div class=\"article-title\">\n   <h1>%s</h1>\n",
+		" <div class=\"article-prelude\">\n   %s\n   <p class=\"publication-date\">Published on %s</p>\n </div>\n \n <div class=\"article-title\">\n   <h1>%s</h1>\n",
 		back_link,
 		datetime_to_date(article.creation_date),
 		article.title,
@@ -269,9 +335,9 @@ generate_html_article :: proc(
 	if len(article.tags) > 0 {
 		strings.write_string(&html_sb, "</span>\n")
 	}
-	strings.write_string(&html_sb, "</div>\n")
+	strings.write_string(&html_sb, " </div>\n")
 
-	// TODO: TOC
+	append_article_toc(&html_sb, article_content)
 
 	strings.write_rune(&html_sb, '\n')
 	strings.write_string(&html_sb, cmark_output)
@@ -313,7 +379,7 @@ generate_article :: proc(
 
 	fmt.println(markdown_file_path, article)
 
-	generate_html_article(&original_markdown_content, article, header, footer) or_return
+	generate_html_article(original_markdown_content, article, header, footer) or_return
 
 	return
 }
