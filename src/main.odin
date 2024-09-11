@@ -204,6 +204,7 @@ fixup_markdown_with_title_ids :: proc(markdown: ^string) -> string {
 
 		title_content := strings.trim_space(line[title_level:])
 		title_id := make_html_friendly_id(title_content)
+		defer delete(title_id)
 
 		fmt.sbprintf(
 			&builder,
@@ -237,6 +238,7 @@ generate_html_article :: proc(
 	if os2_err != nil {
 		return .Unknown
 	}
+	defer delete(cmark_output)
 
 	html_sb := strings.builder_make()
 	fmt.sbprintf(&html_sb, html_prelude_fmt, article.title)
@@ -329,7 +331,7 @@ generate_all_articles_in_directory :: proc(
 	defer os.close(cwd)
 
 	files := os.read_dir(cwd, 0) or_return
-	defer delete(files)
+	defer os.file_info_slice_delete(files)
 
 	for f in files {
 		if f.is_dir {continue}
@@ -346,10 +348,22 @@ generate_all_articles_in_directory :: proc(
 
 run :: proc() -> (err: os.Error) {
 	header := transmute(string)os.read_entire_file_from_filename_or_err("header.html") or_return
+	defer delete(header)
 	footer := transmute(string)os.read_entire_file_from_filename_or_err("footer.html") or_return
+	defer delete(footer)
 
 	articles := generate_all_articles_in_directory(header, footer) or_return
 	defer delete(articles)
+	defer for &article in articles {
+		delete(article.title)
+		for tag in article.tags {
+			delete(tag)
+		}
+		delete(article.tags)
+		delete(article.creation_date)
+		delete(article.modification_date)
+		delete(article.output_file_name)
+	}
 
 	return
 }
