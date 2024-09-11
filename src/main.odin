@@ -122,10 +122,10 @@ generate_all_articles_in_directory :: proc(
 	cwd := os2.open(".") or_return
 	defer os2.close(cwd)
 
-	files := os2.read_dir(cwd, 0, context.allocator) or_return
-	defer delete(files)
+	dir_it := os2.read_directory_iterator_create(cwd) or_return
+	defer os2.read_directory_iterator_destroy(&dir_it)
 
-	for f in files {
+	for f in os2.read_directory_iterator(&dir_it) {
 		if f.type != .Regular {continue}
 		if filepath.ext(f.name) != ".md" {continue}
 		if f.name == "index.md" {continue}
