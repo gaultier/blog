@@ -5,6 +5,7 @@ import "core:os"
 import "core:os/os2"
 import "core:path/filepath"
 import "core:strings"
+import "core:unicode"
 
 back_link :: "<p><a href=\"/blog\"> ⏴ Back to all articles</a>\n"
 html_prelude_fmt :: "<!DOCTYPE html>\n<html>\n<head>\n<title>%s</title>\n"
@@ -125,13 +126,13 @@ get_creation_and_modification_date_for_article :: proc(
 	return
 }
 
-make_html_friendly_id :: proc(title_content: string) -> string {
-	builder := strings.builder_make_len_cap(0, len(title_content) * 2)
+make_html_friendly_id :: proc(input: string) -> string {
+	builder := strings.builder_make_len_cap(0, len(input) * 2)
 
-	for c in title_content {
+	for c in input {
 		switch c {
 		case 'A' ..= 'Z', 'a' ..= 'z', 0 ..= 9:
-			strings.write_rune(&builder, c)
+			strings.write_rune(&builder, unicode.to_lower(c))
 		case '+':
 			strings.write_string(&builder, "plus")
 		case '#':
