@@ -6,7 +6,7 @@ import "core:os/os2"
 import "core:path/filepath"
 import "core:strings"
 
-back_link :: `<p><a href="/blog"> ⏴ Back to all articles</a>\n`
+back_link :: "<p><a href=\"/blog\"> ⏴ Back to all articles</a>\n"
 html_prelude_fmt :: "<!DOCTYPE html>\n<html>\n<head>\n<title>%s</title>\n"
 
 Article :: struct {
@@ -196,6 +196,7 @@ fixup_markdown_with_title_ids :: proc(markdown: ^string) -> string {
 			`<h%d id="%s"><a class="title" href="#%s">%s</a><a class="hash-anchor" href="#%s" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a></h%d>`,
 			title_level,
 			title_id,
+			title_id,
 			title_content,
 			title_id,
 			title_level,
@@ -228,7 +229,7 @@ generate_html_article :: proc(
 	strings.write_string(&html_sb, header)
 	fmt.sbprintf(
 		&html_sb,
-		`<div class="article-prelude">%s <p class="publication-date">Published on %s</p></div><div class="article-title"><h1>%s</h1>`,
+		" <div class=\"article-prelude\">\n   %s\n   <p class=\"publication-date\">Published on %s</p>\n </div>\n\n <div class=\"article-title\">\n   <h1>%s</h1>\n",
 		back_link,
 		datetime_to_date(article.creation_date),
 		article.title,
