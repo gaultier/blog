@@ -33,13 +33,23 @@ parse_metadata :: proc(markdown: string, path: string) -> (title: string, tags: 
 		panic(fmt.aprintf("file %s missing metadata delimiter", path))
 	}
 
-	title_line_split := strings.split(metadata_lines[0], ": ", allocator = context.temp_allocator)
-	if len(title_line_split) < 2 {
+	title_line_split := strings.split_n(
+		metadata_lines[0],
+		": ",
+		2,
+		allocator = context.temp_allocator,
+	)
+	if len(title_line_split) != 2 {
 		panic(fmt.aprintf("file %s has a malformed metadata title", path))
 	}
-	title = strings.clone(title_line_split[1])
+	title = strings.clone(strings.trim_space(title_line_split[1]))
 
-	tags_line_split := strings.split(metadata_lines[1], ": ", allocator = context.temp_allocator)
+	tags_line_split := strings.split_n(
+		metadata_lines[1],
+		": ",
+		2,
+		allocator = context.temp_allocator,
+	)
 	if len(tags_line_split) != 2 {
 		panic(fmt.aprintf("file %s has a malformed metadata tags", path))
 	}
@@ -48,7 +58,10 @@ parse_metadata :: proc(markdown: string, path: string) -> (title: string, tags: 
 	tags = make([]string, len(tags_split))
 	for tag, i in tags_split {
 		tags[i] = strings.clone(tag)
+		assert(!strings.starts_with(tags[i], ","))
 	}
+
+	assert(!strings.starts_with(title, "Title:"))
 
 	return
 }
@@ -131,7 +144,7 @@ make_html_friendly_id :: proc(input: string) -> string {
 
 	for c in input {
 		switch c {
-		case 'A' ..= 'Z', 'a' ..= 'z', 0 ..= 9:
+		case 'A' ..= 'Z', 'a' ..= 'z', '0' ..= '9':
 			strings.write_rune(&builder, unicode.to_lower(c))
 		case '+':
 			strings.write_string(&builder, "plus")
