@@ -120,8 +120,8 @@ get_creation_and_modification_date_for_article :: proc(
 	defer delete(stdout)
 
 	lines := strings.split_lines(stdout, context.temp_allocator)
-	creation_date = strings.clone(lines[0])
-	modification_date = strings.clone(lines[len(lines) - 1])
+	modification_date = strings.clone(strings.trim(lines[0], "' \n"))
+	creation_date = strings.clone(strings.trim(lines[len(lines) - 1], "' \n"))
 
 	return
 }
