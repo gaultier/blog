@@ -78,21 +78,22 @@ run_sub_process_and_get_stdout :: proc(
 		os2.close(stdin_w)
 	}
 
+
+	stdout_sb := strings.builder_make()
+	for {
+		buf := [4096]u8{}
+		read_n := os2.read(stdout_r, buf[:]) or_break
+		if read_n == 0 {break}
+
+		strings.write_bytes(&stdout_sb, buf[:read_n])
+	}
+
 	process_state := os2.process_wait(process) or_return
 	if !process_state.success {
 		return {}, .Unknown
 	}
 
-	process_output := make([]byte, 4096)
-	cur := 0
-	for {
-		process_output_read_n := os2.read(stdout_r, process_output[cur:]) or_break
-		if process_output_read_n == 0 {break}
-		cur += process_output_read_n
-	}
-	process_output_string := strings.trim_space(transmute(string)process_output[:cur])
-
-	return process_output_string, nil
+	return strings.trim_space(strings.to_string(stdout_sb)), nil
 }
 
 
@@ -214,6 +215,8 @@ generate_html_article :: proc(
 		return .Unknown
 	}
 	defer delete(stdout)
+
+	fmt.println(stdout)
 
 	return
 }
