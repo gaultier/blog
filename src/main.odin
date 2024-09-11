@@ -82,7 +82,17 @@ get_creation_and_modification_date_for_article :: proc(
 	creation_date = strings.clone(lines[0])
 	modification_date = strings.clone(lines[len(lines) - 1])
 
+	return
+}
 
+generate_html_article :: proc(
+	markdown: string,
+	article: Article,
+	header: string,
+	footer: string,
+) -> (
+	err: os.Error,
+) {
 	return
 }
 
@@ -115,6 +125,8 @@ generate_article :: proc(
 
 	article.output_file_name = strings.concatenate([]string{stem, ".html"})
 
+
+	generate_html_article(original_markdown_content, article, header, footer) or_return
 
 	return
 }
