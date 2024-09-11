@@ -51,32 +51,37 @@ get_creation_and_modification_date_for_article :: proc(
 	modification_date: string,
 	err: os2.Error,
 ) {
-	stdout_r, _ := os2.pipe() or_return
+	stdout_r, stdout_w := os2.pipe() or_return
+	defer os2.close(stdout_r)
 
 	desc := os2.Process_Desc {
 		command = []string{"git", "log", "--format='%aI'", "--", path},
-		stdout  = stdout_r,
+		stdout  = stdout_w,
 	}
 
 	process := os2.process_start(desc) or_return
+	os2.close(stdout_w)
+	defer _ = os2.process_close(process)
+
 	process_state := os2.process_wait(process) or_return
 	if !process_state.success {
+		fmt.println(path, process_state)
 		return {}, {}, .Unknown
 	}
 
-	process_output := transmute(string)os2.read_entire_file_from_file(
-		stdout_r,
-		context.temp_allocator,
-	) or_return
-	first_line, ok := strings.split_lines_iterator(&process_output)
-	assert(ok)
-	creation_date = strings.clone(first_line)
+	process_output := make([]byte, 4096, context.temp_allocator)
+	cur := 0
+	for {
+		process_output_read_n := os2.read(stdout_r, process_output[cur:]) or_break
+		if process_output_read_n == 0 {break}
+		cur += process_output_read_n
+	}
+	process_output_string := strings.trim_space(transmute(string)process_output[:cur])
 
-	line: string
+	lines := strings.split_lines(process_output_string, context.temp_allocator)
+	creation_date = strings.clone(lines[0])
+	modification_date = strings.clone(lines[len(lines) - 1])
 
-	for ; ok; line, ok = strings.split_lines_iterator(&process_output) {}
-
-	modification_date = strings.clone(line)
 
 	return
 }
@@ -87,11 +92,10 @@ generate_article :: proc(
 	footer: []byte,
 ) -> (
 	article: Article,
-	err: os2.Error,
+	err: os.Error,
 ) {
-	original_markdown_content := os2.read_entire_file_from_path(
+	original_markdown_content := os.read_entire_file_from_filename_or_err(
 		markdown_file_path,
-		context.allocator,
 	) or_return
 
 	stem := filepath.stem(markdown_file_path)
@@ -100,8 +104,13 @@ generate_article :: proc(
 		transmute(string)original_markdown_content,
 		markdown_file_path,
 	)
-	article.creation_date, article.modification_date =
-		get_creation_and_modification_date_for_article(markdown_file_path) or_return
+
+	os2_err: os2.Error
+	article.creation_date, article.modification_date, os2_err =
+		get_creation_and_modification_date_for_article(markdown_file_path)
+	if os2_err != nil {
+		panic(fmt.aprintf("failed to get dates %v", os2_err))
+	}
 	fmt.println(markdown_file_path, article)
 
 	article.output_file_name = strings.concatenate([]string{stem, ".html"})
@@ -115,18 +124,18 @@ generate_all_articles_in_directory :: proc(
 	footer: []byte,
 ) -> (
 	articles: []Article,
-	err: os2.Error,
+	err: os.Error,
 ) {
 	articles_dyn := make([dynamic]Article)
 
-	cwd := os2.open(".") or_return
-	defer os2.close(cwd)
+	cwd := os.open(".") or_return
+	defer os.close(cwd)
 
-	dir_it := os2.read_directory_iterator_create(cwd) or_return
-	defer os2.read_directory_iterator_destroy(&dir_it)
+	files := os.read_dir(cwd, 0) or_return
+	defer delete(files)
 
-	for f in os2.read_directory_iterator(&dir_it) {
-		if f.type != .Regular {continue}
+	for f in files {
+		if f.is_dir {continue}
 		if filepath.ext(f.name) != ".md" {continue}
 		if f.name == "index.md" {continue}
 		if f.name == "README.md" {continue}
@@ -138,9 +147,9 @@ generate_all_articles_in_directory :: proc(
 	return articles_dyn[:], nil
 }
 
-run :: proc() -> (err: os2.Error) {
-	header := os2.read_entire_file_from_path("header.html", context.allocator) or_return
-	footer := os2.read_entire_file_from_path("footer.html", context.allocator) or_return
+run :: proc() -> (err: os.Error) {
+	header := os.read_entire_file_from_filename_or_err("header.html") or_return
+	footer := os.read_entire_file_from_filename_or_err("footer.html") or_return
 
 	articles := generate_all_articles_in_directory(header, footer) or_return
 	defer delete(articles)
