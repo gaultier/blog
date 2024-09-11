@@ -112,7 +112,7 @@ So it's a breeze to `scp` or `rsync` our small executable over to the Raspberry 
 Perhaps Odin will have built-in support for musl in the future like Zig does. In the meantime, this article shows it's absolutely possible to do that ourselves!
 
 
-## Appendix: Many you don't even need a libc
+## Appendix: Maybe you don't even need a libc
 
 Odin comes with batteries included with a rich standard library. So why do we even need libc? Let's inspect which functions we really use from libc, i.e. are undefined symbols in the object file built from our source code:
 
