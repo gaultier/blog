@@ -3,3 +3,4 @@ a.out
 .zig-cache
 zig-out
 README.html
+src.bin
