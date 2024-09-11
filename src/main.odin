@@ -85,6 +85,74 @@ get_creation_and_modification_date_for_article :: proc(
 	return
 }
 
+make_html_friendly_id :: proc(title_content: string) -> string {
+	builder := strings.builder_make_len_cap(0, len(title_content) * 2)
+
+	for c, i in title_content {
+		switch c {
+		case 'A' ..= 'Z', 'a' ..= 'z', 0 ..= 9:
+			strings.write_rune(&builder, c)
+		case '+':
+			strings.write_string(&builder, "plus")
+		case '#':
+			strings.write_string(&builder, "sharp")
+		case:
+			s := strings.to_string(builder)
+			if len(s) > 0 && !strings.ends_with(s, "-") {
+				strings.write_rune(&builder, '-')
+			}
+		}
+	}
+
+	return strings.to_string(builder)
+}
+
+fixup_markdown_with_title_ids :: proc(markdown: ^string) {
+	inside_code_section := false
+
+	builder := strings.builder_make_len_cap(0, len(markdown) * 2)
+
+	for line in strings.split_lines_iterator(markdown) {
+		is_begin_html_title := strings.starts_with(line, "<h")
+		assert(!is_begin_html_title)
+
+		is_begin_markdown_title := strings.starts_with(line, "#")
+		is_delimiter_markdown_code_section := strings.starts_with(line, "```")
+
+		if is_delimiter_markdown_code_section && !inside_code_section {
+			inside_code_section = true
+			strings.write_string(&builder, line)
+			strings.write_rune(&builder, '\n')
+			continue
+		}
+
+		if is_delimiter_markdown_code_section && inside_code_section {
+			inside_code_section = false
+			strings.write_string(&builder, line)
+			strings.write_rune(&builder, '\n')
+			continue
+		}
+
+		if inside_code_section {
+			strings.write_string(&builder, line)
+			strings.write_rune(&builder, '\n')
+			continue
+		}
+
+		if !is_begin_markdown_title {
+			strings.write_string(&builder, line)
+			strings.write_rune(&builder, '\n')
+			continue
+		}
+
+		title_level := strings.count(line, "#")
+		assert(1 <= title_level && title_level <= 6)
+
+		title_content := strings.trim_space(line[title_level:])
+		title_id := make_html_friendly_id(title_content)
+	}
+}
+
 generate_html_article :: proc(
 	markdown: string,
 	article: Article,
