@@ -98,22 +98,19 @@ generate_html_article :: proc(
 
 generate_article :: proc(
 	markdown_file_path: string,
-	header: []byte,
-	footer: []byte,
+	header: string,
+	footer: string,
 ) -> (
 	article: Article,
 	err: os.Error,
 ) {
-	original_markdown_content := os.read_entire_file_from_filename_or_err(
+	original_markdown_content := transmute(string)os.read_entire_file_from_filename_or_err(
 		markdown_file_path,
 	) or_return
 
 	stem := filepath.stem(markdown_file_path)
 
-	article.title, article.tags = parse_metadata(
-		transmute(string)original_markdown_content,
-		markdown_file_path,
-	)
+	article.title, article.tags = parse_metadata(original_markdown_content, markdown_file_path)
 
 	os2_err: os2.Error
 	article.creation_date, article.modification_date, os2_err =
@@ -132,8 +129,8 @@ generate_article :: proc(
 }
 
 generate_all_articles_in_directory :: proc(
-	header: []byte,
-	footer: []byte,
+	header: string,
+	footer: string,
 ) -> (
 	articles: []Article,
 	err: os.Error,
@@ -160,8 +157,8 @@ generate_all_articles_in_directory :: proc(
 }
 
 run :: proc() -> (err: os.Error) {
-	header := os.read_entire_file_from_filename_or_err("header.html") or_return
-	footer := os.read_entire_file_from_filename_or_err("footer.html") or_return
+	header := transmute(string)os.read_entire_file_from_filename_or_err("header.html") or_return
+	footer := transmute(string)os.read_entire_file_from_filename_or_err("footer.html") or_return
 
 	articles := generate_all_articles_in_directory(header, footer) or_return
 	defer delete(articles)
