@@ -70,7 +70,7 @@ run_sub_process_and_get_stdout :: proc(
 	defer _ = os2.process_close(process)
 
 	if stdin_w != nil {
-		for cur := 0; cur < len(command); {
+		for cur := 0; cur < len(stdin); {
 			n_written := os2.write(stdin_w, stdin[cur:]) or_return
 			if n_written == 0 {break}
 			cur += n_written
