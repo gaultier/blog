@@ -141,7 +141,7 @@ get_creation_and_modification_date_for_article :: proc(
 }
 
 make_html_friendly_id :: proc(input: string, allocator := context.allocator) -> string {
-	builder := strings.builder_make_len_cap(0, len(input) * 2)
+	builder := strings.builder_make_len_cap(0, len(input) * 2, allocator)
 
 	for c in input {
 		switch c {
@@ -205,8 +205,7 @@ fixup_markdown_with_title_ids :: proc(markdown: string) -> string {
 		assert(1 <= title_level && title_level <= 6)
 
 		title_content := strings.trim_space(line[title_level:])
-		title_id := make_html_friendly_id(title_content)
-		defer delete(title_id)
+		title_id := make_html_friendly_id(title_content, context.temp_allocator)
 
 		fmt.sbprintf(
 			&builder,
@@ -322,9 +321,7 @@ generate_html_article :: proc(
 	}
 
 	for tag, i in article.tags {
-		id := make_html_friendly_id(tag)
-		defer delete(id)
-
+		id := make_html_friendly_id(tag, context.temp_allocator)
 		fmt.sbprintf(&html_sb, ` <a href="/blog/articles-by-tag.html#%s">%s</a>`, id, tag)
 
 		if i < len(article.tags) - 1 {
@@ -363,6 +360,7 @@ generate_article :: proc(
 	original_markdown_content := transmute(string)os.read_entire_file_from_filename_or_err(
 		markdown_file_path,
 	) or_return
+	defer delete(original_markdown_content)
 
 	stem := filepath.stem(markdown_file_path)
 
@@ -430,6 +428,11 @@ run :: proc() -> (err: os.Error) {
 		delete(article.modification_date)
 		delete(article.output_file_name)
 	}
+	// TODO: 
+	// - sort articles
+	// - generate home page
+	// - generae page articles
+	// - generate rss feed
 
 	return
 }
