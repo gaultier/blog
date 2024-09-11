@@ -44,32 +44,46 @@ parse_metadata :: proc(markdown: string, path: string) -> (title: string, tags: 
 	return
 }
 
-get_creation_and_modification_date_for_article :: proc(
-	path: string,
+run_sub_process_and_get_stdout :: proc(
+	command: []string,
+	stdin: []byte,
 ) -> (
-	creation_date: string,
-	modification_date: string,
+	stdout: string,
 	err: os2.Error,
 ) {
-	stdout_r, stdout_w := os2.pipe() or_return
-	defer os2.close(stdout_r)
+	stdin_w: ^os2.File
+	stdin_r: ^os2.File
+	if len(stdin) > 0 {
+		stdin_r, stdin_w = os2.pipe() or_return
+	}
 
+	stdout_r, stdout_w := os2.pipe() or_return
 	desc := os2.Process_Desc {
-		command = []string{"git", "log", "--format='%aI'", "--", path},
+		command = command,
 		stdout  = stdout_w,
+		stdin   = stdin_r,
 	}
 
 	process := os2.process_start(desc) or_return
+	os2.close(stdin_r)
 	os2.close(stdout_w)
 	defer _ = os2.process_close(process)
 
-	process_state := os2.process_wait(process) or_return
-	if !process_state.success {
-		fmt.println(path, process_state)
-		return {}, {}, .Unknown
+	if stdin_w != nil {
+		for cur := 0; cur < len(command); {
+			n_written := os2.write(stdin_w, stdin[cur:]) or_return
+			if n_written == 0 {break}
+			cur += n_written
+		}
+		os2.close(stdin_w)
 	}
 
-	process_output := make([]byte, 4096, context.temp_allocator)
+	process_state := os2.process_wait(process) or_return
+	if !process_state.success {
+		return {}, .Unknown
+	}
+
+	process_output := make([]byte, 4096)
 	cur := 0
 	for {
 		process_output_read_n := os2.read(stdout_r, process_output[cur:]) or_break
@@ -78,7 +92,24 @@ get_creation_and_modification_date_for_article :: proc(
 	}
 	process_output_string := strings.trim_space(transmute(string)process_output[:cur])
 
-	lines := strings.split_lines(process_output_string, context.temp_allocator)
+	return process_output_string, nil
+}
+
+
+get_creation_and_modification_date_for_article :: proc(
+	path: string,
+) -> (
+	creation_date: string,
+	modification_date: string,
+	err: os2.Error,
+) {
+	stdout := run_sub_process_and_get_stdout(
+		[]string{"git", "log", "--format='%aI'", "--", path},
+		[]u8{},
+	) or_return
+	defer delete(stdout)
+
+	lines := strings.split_lines(stdout, context.temp_allocator)
 	creation_date = strings.clone(lines[0])
 	modification_date = strings.clone(lines[len(lines) - 1])
 
@@ -88,7 +119,7 @@ get_creation_and_modification_date_for_article :: proc(
 make_html_friendly_id :: proc(title_content: string) -> string {
 	builder := strings.builder_make_len_cap(0, len(title_content) * 2)
 
-	for c, i in title_content {
+	for c in title_content {
 		switch c {
 		case 'A' ..= 'Z', 'a' ..= 'z', 0 ..= 9:
 			strings.write_rune(&builder, c)
@@ -107,7 +138,7 @@ make_html_friendly_id :: proc(title_content: string) -> string {
 	return strings.to_string(builder)
 }
 
-fixup_markdown_with_title_ids :: proc(markdown: ^string) {
+fixup_markdown_with_title_ids :: proc(markdown: ^string) -> string {
 	inside_code_section := false
 
 	builder := strings.builder_make_len_cap(0, len(markdown) * 2)
@@ -150,17 +181,40 @@ fixup_markdown_with_title_ids :: proc(markdown: ^string) {
 
 		title_content := strings.trim_space(line[title_level:])
 		title_id := make_html_friendly_id(title_content)
+
+		fmt.sbprintf(
+			&builder,
+			`<h%d id="%s"><a class="title" href="#%s">%s</a><a class="hash-anchor" href="#%s" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a></h%d>`,
+			title_level,
+			title_id,
+			title_content,
+			title_id,
+			title_level,
+		)
 	}
+	return strings.to_string(builder)
 }
 
 generate_html_article :: proc(
-	markdown: string,
+	markdown: ^string,
 	article: Article,
 	header: string,
 	footer: string,
 ) -> (
 	err: os.Error,
 ) {
+	fixed_up_markdown := fixup_markdown_with_title_ids(markdown)
+	defer delete(fixed_up_markdown)
+
+	stdout, os2_err := run_sub_process_and_get_stdout(
+		[]string{"cmark", "--unsafe", "-t", "html"},
+		transmute([]u8)fixed_up_markdown,
+	)
+	if os2_err != nil {
+		return .Unknown
+	}
+	defer delete(stdout)
+
 	return
 }
 
@@ -186,12 +240,12 @@ generate_article :: proc(
 	if os2_err != nil {
 		panic(fmt.aprintf("failed to get dates %v", os2_err))
 	}
-	fmt.println(markdown_file_path, article)
 
 	article.output_file_name = strings.concatenate([]string{stem, ".html"})
 
+	fmt.println(markdown_file_path, article)
 
-	generate_html_article(original_markdown_content, article, header, footer) or_return
+	generate_html_article(&original_markdown_content, article, header, footer) or_return
 
 	return
 }
