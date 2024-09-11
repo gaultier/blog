@@ -666,10 +666,6 @@ pub fn main() !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     const allocator = gpa.allocator();
 
-    var args_iterator = try std.process.argsWithAllocator(allocator);
-    defer args_iterator.deinit();
-    _ = args_iterator.skip();
-
     const header_file = try std.fs.cwd().openFile("header.html", .{});
     const header = try header_file.readToEndAlloc(allocator, 2048);
 
