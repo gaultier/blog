@@ -2,6 +2,7 @@ package main
 
 import "core:fmt"
 import "core:os"
+import "core:os/os2"
 import "core:path/filepath"
 import "core:strings"
 
@@ -43,16 +44,54 @@ parse_metadata :: proc(markdown: string, path: string) -> (title: string, tags: 
 	return
 }
 
+get_creation_and_modification_date_for_article :: proc(
+	path: string,
+) -> (
+	creation_date: string,
+	modification_date: string,
+	err: os2.Error,
+) {
+	stdout_r, _ := os2.pipe() or_return
+
+	desc := os2.Process_Desc {
+		command = []string{"git", "log", "--format='%aI'", "--", path},
+		stdout  = stdout_r,
+	}
+
+	process := os2.process_start(desc) or_return
+	process_state := os2.process_wait(process) or_return
+	if !process_state.success {
+		return {}, {}, .Unknown
+	}
+
+	process_output := transmute(string)os2.read_entire_file_from_file(
+		stdout_r,
+		context.temp_allocator,
+	) or_return
+	first_line, ok := strings.split_lines_iterator(&process_output)
+	assert(ok)
+	creation_date = strings.clone(first_line)
+
+	line: string
+
+	for ; ok; line, ok = strings.split_lines_iterator(&process_output) {}
+
+	modification_date = strings.clone(line)
+
+	return
+}
+
 generate_article :: proc(
 	markdown_file_path: string,
 	header: []byte,
 	footer: []byte,
 ) -> (
 	article: Article,
-	err: os.Error,
+	err: os2.Error,
 ) {
-	original_markdown_content := os.read_entire_file_from_filename_or_err(
+	original_markdown_content := os2.read_entire_file_from_path(
 		markdown_file_path,
+		context.allocator,
 	) or_return
 
 	stem := filepath.stem(markdown_file_path)
@@ -61,7 +100,9 @@ generate_article :: proc(
 		transmute(string)original_markdown_content,
 		markdown_file_path,
 	)
-	fmt.println(markdown_file_path, article.title, article.tags)
+	article.creation_date, article.modification_date =
+		get_creation_and_modification_date_for_article(markdown_file_path) or_return
+	fmt.println(markdown_file_path, article)
 
 	article.output_file_name = strings.concatenate([]string{stem, ".html"})
 
@@ -74,18 +115,18 @@ generate_all_articles_in_directory :: proc(
 	footer: []byte,
 ) -> (
 	articles: []Article,
-	err: os.Error,
+	err: os2.Error,
 ) {
 	articles_dyn := make([dynamic]Article)
 
-	cwd := os.open(".") or_return
-	defer os.close(cwd)
+	cwd := os2.open(".") or_return
+	defer os2.close(cwd)
 
-	files := os.read_dir(cwd, 0) or_return
+	files := os2.read_dir(cwd, 0, context.allocator) or_return
 	defer delete(files)
 
 	for f in files {
-		if f.is_dir {continue}
+		if f.type != .Regular {continue}
 		if filepath.ext(f.name) != ".md" {continue}
 		if f.name == "index.md" {continue}
 		if f.name == "README.md" {continue}
@@ -97,9 +138,9 @@ generate_all_articles_in_directory :: proc(
 	return articles_dyn[:], nil
 }
 
-run :: proc() -> (err: os.Error) {
-	header := os.read_entire_file_from_filename_or_err("header.html") or_return
-	footer := os.read_entire_file_from_filename_or_err("footer.html") or_return
+run :: proc() -> (err: os2.Error) {
+	header := os2.read_entire_file_from_path("header.html", context.allocator) or_return
+	footer := os2.read_entire_file_from_path("footer.html", context.allocator) or_return
 
 	articles := generate_all_articles_in_directory(header, footer) or_return
 	defer delete(articles)
