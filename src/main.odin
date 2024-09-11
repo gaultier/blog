@@ -13,6 +13,36 @@ Article :: struct {
 	modification_date: string,
 }
 
+parse_metadata :: proc(markdown: string, path: string) -> (title: string, tags: []string) {
+	metadata_lines := strings.split_lines_n(markdown, 4, allocator = context.temp_allocator)
+
+	if len(metadata_lines) < 4 {
+		panic(fmt.aprintf("file %s missing metadata", path))
+	}
+	if metadata_lines[2] != "---" {
+		panic(fmt.aprintf("file %s missing metadata delimiter", path))
+	}
+
+	title_line_split := strings.split(metadata_lines[0], ": ", allocator = context.temp_allocator)
+	if len(title_line_split) < 2 {
+		panic(fmt.aprintf("file %s has a malformed metadata title", path))
+	}
+	title = strings.clone(title_line_split[1])
+
+	tags_line_split := strings.split(metadata_lines[1], ": ", allocator = context.temp_allocator)
+	if len(tags_line_split) != 2 {
+		panic(fmt.aprintf("file %s has a malformed metadata tags", path))
+	}
+	tags_split := strings.split(tags_line_split[1], ", ", allocator = context.temp_allocator)
+
+	tags = make([]string, len(tags_split))
+	for tag, i in tags_split {
+		tags[i] = strings.clone(tag)
+	}
+
+	return
+}
+
 generate_article :: proc(
 	markdown_file_path: string,
 	header: []byte,
@@ -26,6 +56,12 @@ generate_article :: proc(
 	) or_return
 
 	stem := filepath.stem(markdown_file_path)
+
+	article.title, article.tags = parse_metadata(
+		transmute(string)original_markdown_content,
+		markdown_file_path,
+	)
+	fmt.println(markdown_file_path, article.title, article.tags)
 
 	article.output_file_name = strings.concatenate([]string{stem, ".html"})
 

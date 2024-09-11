@@ -1,5 +1,5 @@
 Title: Body of work
-Tags:
+Tags: Cobol, C#, C++, OpenGL, Oculus Rift, Typescript, Go, Rust, Kubernetes, Docker
 ---
 
 I am here recounting chronologically what I have achieved in my career until now. I have a sub par memory so it's great for me to look back on that, and may it also hopefully serve as an interesting insight for fellow practitioners and recruiters into the kind of work I enjoy and am experienced with.
