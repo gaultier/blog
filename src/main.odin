@@ -6,12 +6,20 @@ import "core:os/os2"
 import "core:path/filepath"
 import "core:strings"
 
+back_link :: `<p><a href="/blog"> ⏴ Back to all articles</a>\n`
+html_prelude_fmt :: "<!DOCTYPE html>\n<html>\n<head>\n<title>%s</title>\n"
+
 Article :: struct {
 	output_file_name:  string,
 	title:             string,
 	tags:              []string,
 	creation_date:     string,
 	modification_date: string,
+}
+
+datetime_to_date :: proc(datetime: string) -> string {
+	split := strings.split_n(datetime, "T", 2, allocator = context.temp_allocator)
+	return split[0]
 }
 
 parse_metadata :: proc(markdown: string, path: string) -> (title: string, tags: []string) {
@@ -207,16 +215,56 @@ generate_html_article :: proc(
 	fixed_up_markdown := fixup_markdown_with_title_ids(markdown)
 	defer delete(fixed_up_markdown)
 
-	stdout, os2_err := run_sub_process_and_get_stdout(
+	cmark_output, os2_err := run_sub_process_and_get_stdout(
 		[]string{"cmark", "--unsafe", "-t", "html"},
 		transmute([]u8)fixed_up_markdown,
 	)
 	if os2_err != nil {
 		return .Unknown
 	}
-	defer delete(stdout)
 
-	fmt.println(stdout)
+	html_sb := strings.builder_make()
+	fmt.sbprintf(&html_sb, html_prelude_fmt, article.title)
+	strings.write_string(&html_sb, header)
+	fmt.sbprintf(
+		&html_sb,
+		`<div class="article-prelude">%s <p class="publication-date">Published on %s</p></div><div class="article-title"><h1>%s</h1>`,
+		back_link,
+		datetime_to_date(article.creation_date),
+		article.title,
+	)
+
+	if len(article.tags) > 0 {
+		strings.write_string(&html_sb, "  <span>🏷️")
+	}
+
+	for tag, i in article.tags {
+		id := make_html_friendly_id(tag)
+		defer delete(id)
+
+		fmt.sbprintf(&html_sb, ` <a href="/blog/articles-by-tag.html#%s">%s</a>`, id, tag)
+
+		if i < len(article.tags) - 1 {
+			strings.write_string(&html_sb, ", ")
+		}
+	}
+
+	if len(article.tags) > 0 {
+		strings.write_string(&html_sb, "</span>\n")
+	}
+	strings.write_string(&html_sb, "</div>\n")
+
+	// TODO: TOC
+
+	strings.write_rune(&html_sb, '\n')
+	strings.write_string(&html_sb, cmark_output)
+	strings.write_string(&html_sb, back_link)
+	strings.write_string(&html_sb, footer)
+
+	os.write_entire_file_or_err(
+		article.output_file_name,
+		transmute([]u8)strings.to_string(html_sb),
+	) or_return
 
 	return
 }
