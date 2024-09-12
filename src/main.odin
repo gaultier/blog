@@ -319,7 +319,7 @@ generate_html_article :: proc(
 		transmute([]u8)fixed_up_markdown,
 	)
 	if os2_err != nil {
-		return .Unknown
+		panic(fmt.aprintf("failed to run cmark: %v", os2.error_string(os2_err)))
 	}
 	defer delete(cmark_output)
 
@@ -400,7 +400,7 @@ generate_article :: proc(
 	article.creation_date, article.modification_date, os2_err =
 		get_creation_and_modification_date_for_article(markdown_file_path)
 	if os2_err != nil {
-		panic(fmt.aprintf("failed to get dates %v", os2_err))
+		panic(fmt.aprintf("failed to run git: %v", os2.error_string(os2_err)))
 	}
 
 	article.output_file_name = strings.concatenate([]string{stem, ".html"})
