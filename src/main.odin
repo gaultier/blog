@@ -468,7 +468,11 @@ generate_home_page :: proc(articles: []Article, header: string) -> (err: os.Erro
 
 		fmt.sbprintf(
 			&sb,
-			"<li>\n  <span class=\"date\">%s</span>\n  <a href=\"/blog/%s\">%s</a>\n</li>\n",
+			`
+	<li>
+		<span class="date">%s</span>
+		<a href="/blog/%s">%s</a>
+	</li>`,
 			datetime_to_date(a.creation_date),
 			a.output_file_name,
 			a.title,
