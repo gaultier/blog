@@ -485,6 +485,7 @@ generate_home_page :: proc(articles: []Article, header: string) -> (err: os.Erro
 		markdown_content := transmute(string)os.read_entire_file_from_filename_or_err(
 			markdown_file_path,
 		) or_return
+		defer delete(markdown_content)
 		fixed_up_markdown := fixup_markdown_with_title_ids(markdown_content)
 		defer delete(fixed_up_markdown)
 
@@ -495,6 +496,7 @@ generate_home_page :: proc(articles: []Article, header: string) -> (err: os.Erro
 		if os2_err != nil {
 			panic(fmt.aprintf("failed to run cmark %v", os2_err))
 		}
+		defer delete(cmark_stdout)
 		strings.write_string(&sb, cmark_stdout)
 	}
 
