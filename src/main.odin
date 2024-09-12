@@ -328,7 +328,14 @@ generate_html_article :: proc(
 	strings.write_string(&html_sb, header)
 	fmt.sbprintf(
 		&html_sb,
-		" <div class=\"article-prelude\">\n   %s\n   <p class=\"publication-date\">Published on %s</p>\n </div>\n \n <div class=\"article-title\">\n   <h1>%s</h1>\n",
+		`
+		<div class="article-prelude">
+			%s
+			<p class="publication-date">Published on %s</p>
+		</div>
+		<div class="article-title">
+		<h1>%s</h1>
+		`,
 		back_link,
 		datetime_to_date(article.creation_date),
 		article.title,
