@@ -48,17 +48,20 @@ A big difference between Odin and Zig is that Zig is a full cross-compilation to
 
 So to make our use-case work with Odin, without Odin the toolchain supporting what Zig supports, what we need to do is cross-compile our code to an ARM64 object file but without linking it yet. Then we link it manually to musl libc that has been built for ARM64. We could download this musl artifact from the internet but it's both more educational, empowering, and secure, to build it ourselves. So let's do this, it's not too much work.
 
-We'd like to use clang since it is a cross-compiler by default, so that would be straightforward. However musl is partially written in assembly in the GCC syntax which of course clang does not understand, so we have to use a GCC compiler that targets ARM64, to be able to build musl. 
-
-Most Linux distributions provide such a compiler as a package typically called `gcc-aarch64-xxx` e.g. `sudo apt-get install gcc-aarch64-linux-gnu` or `sudo dnf install gcc-aarch64-linux-gnu`.
+To build musl, we can use clang since it is a cross-compiler by default, or we can use GCC by installing a GCC toolchain that has been made to target ARM64. Most Linux distributions provide such a compiler as a package typically called `gcc-aarch64-xxx` e.g. `sudo apt-get install gcc-aarch64-linux-gnu` or `sudo dnf install gcc-aarch64-linux-gnu`.
 
 So let's now build a static musl for ARM64, following the official instructions. We just need to this once:
 
 ```sh
 $ git clone --recurse --depth 1 https://git.musl-libc.org/git/musl
 $ cd musl
-# We need to provide `ranlib` and `ar` tools that target ARM64.
+
+# With Clang:
+$ CFLAGS='--target=aarch64-unknown-linux-musl' RANLIB=llvm-ranlib AR=llvm-ar CC=clang ./configure --target=aarch64 --disable-shared
+# Or with GCC:
 $ RANLIB=/usr/bin/aarch64-linux-gnu-gcc-ranlib AR=/usr/bin/aarch64-linux-gnu-gcc-ar CC=/usr/bin/aarch64-linux-gnu-gcc ./configure --target=aarch64 --disable-shared
+
+# Either way (Clang/GCC), the build command itself is the same.
 $ make
 ```
 
@@ -76,7 +79,7 @@ $ readelf -h lib/libc.a | grep '^\s*Machine:'
 
 ## Resolution
 
-Now we can finally put all the pieces together. We can use any linker, I am using LLD (the LLVM linker) here, but the GNU LD linker would also work as long as it knows to target ARM64 e.g. using the one coming with the GCC toolchain we just installed would work.
+Now we can finally put all the pieces together. We can use any linker, I am using LLD (the LLVM linker) here, but the GNU LD linker would also work as long as it knows to target ARM64 e.g. using the one coming with the right GCC toolchain would work.
 
 ```sh
 $ odin build src  -target=linux_arm64 -build-mode=object
