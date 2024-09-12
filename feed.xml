@@ -3,7 +3,7 @@
   <feed xmlns="http://www.w3.org/2005/Atom">
     <title>Philippe Gaultier's blog</title>
     <link href="https://gaultier.github.io/blog"/>
-    <updated>2024-09-12T12:02:41+02:00</updated>
+    <updated>2024-09-12T12:03:30+02:00</updated>
     <author>
       <name>Philippe Gaultier</name>
     </author>
@@ -141,7 +141,7 @@
   <title>Odin and musl: Cross-compiling Odin programs for the Raspberry Pi Zero</title>
   <link href="https://gaultier.github.io/blog/odin_and_musl.html"/>
   <id>urn:uuid:5fa076c9-2d59-5651-8337-9f2fb85d9e3e</id>
-  <updated>2024-09-12T12:02:41+02:00</updated>
+  <updated>2024-09-12T12:03:30+02:00</updated>
   <published>2024-09-10T12:59:04+02:00</published>
   </entry>
 	</feed>

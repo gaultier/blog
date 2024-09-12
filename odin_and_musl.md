@@ -115,6 +115,7 @@ So it's a breeze to `scp` or `rsync` our small executable over to the Raspberry 
 
 Perhaps Odin will have built-in support for musl in the future like Zig does. In the meantime, this article shows it's absolutely possible to do that ourselves!
 
+By the way, this technique can be used to cross-compile any C library that's a dependency of our project, assuming the library did not do anything silly that would prevent cross-compilation.
 
 ## Appendix: Maybe you don't even need a libc
 
