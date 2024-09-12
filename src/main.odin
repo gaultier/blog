@@ -478,6 +478,45 @@ generate_home_page :: proc(articles: []Article, header: string) -> (err: os.Erro
 	return
 }
 
+generate_page_articles_by_tag :: proc(
+	articles: []Article,
+	header: string,
+	footer: string,
+) -> (
+	err: os.Error,
+) {
+	assert(len(articles) > 0)
+	assert(len(header) > 0)
+	assert(len(footer) > 0)
+
+
+	articles_by_tag := make(map[string][dynamic]Article)
+	defer delete(articles_by_tag)
+
+	for a in articles {
+		for tag in a.tags {
+			assert(len(tag) > 0)
+
+			entry, ok := &articles_by_tag[tag]
+			if ok {continue}
+
+			entry^ = make([dynamic]Article)
+			append(entry, a)
+		}
+	}
+
+
+	sb := strings.builder_make()
+	strings.write_string(&sb, header)
+	strings.write_string(&sb, back_link)
+	strings.write_string(&sb, "<h1>Articles by tag</h1>\n")
+	strings.write_string(&sb, "<ul>\n")
+
+	html_file_name :: "articles_by_tag.html"
+
+	return
+}
+
 compare_articles_by_creation_date_asc :: proc(a: Article, b: Article) -> bool {
 	return a.creation_date < b.creation_date
 }
