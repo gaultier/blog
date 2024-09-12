@@ -4,11 +4,13 @@ import "core:fmt"
 import "core:os"
 import "core:os/os2"
 import "core:path/filepath"
+import "core:slice"
 import "core:strings"
 import "core:unicode"
 
 back_link :: "<p><a href=\"/blog\"> ⏴ Back to all articles</a>\n"
 html_prelude_fmt :: "<!DOCTYPE html>\n<html>\n<head>\n<title>%s</title>\n"
+cmark_command :: []string{"cmark", "--unsafe", "-t", "html"}
 
 Article :: struct {
 	output_file_name:  string,
@@ -128,7 +130,7 @@ get_creation_and_modification_date_for_article :: proc(
 ) {
 	stdout := run_sub_process_and_get_stdout(
 		[]string{"git", "log", "--format='%aI'", "--", path},
-		[]u8{},
+		{},
 	) or_return
 	defer delete(stdout)
 	stdout = strings.trim_space(stdout)
@@ -301,7 +303,7 @@ generate_html_article :: proc(
 	defer delete(fixed_up_markdown)
 
 	cmark_output, os2_err := run_sub_process_and_get_stdout(
-		[]string{"cmark", "--unsafe", "-t", "html"},
+		cmark_command,
 		transmute([]u8)fixed_up_markdown,
 	)
 	if os2_err != nil {
@@ -384,9 +386,8 @@ generate_article :: proc(
 
 	article.output_file_name = strings.concatenate([]string{stem, ".html"})
 
-	fmt.println(markdown_file_path, article)
-
 	generate_html_article(original_markdown_content, article, header, footer) or_return
+	fmt.printf("generated %s %v\n", article.output_file_name, article.tags)
 
 	return
 }
@@ -423,9 +424,62 @@ generate_all_articles_in_directory :: proc(
 }
 
 generate_home_page :: proc(articles: []Article, header: string) -> (err: os.Error) {
+	assert(len(articles) > 0)
 	assert(len(header) > 0)
 
+	markdown_file_path :: "index.md"
+	html_file_path :: "index.html"
+
+	sb := strings.builder_make()
+	defer strings.builder_destroy(&sb)
+
+	fmt.sbprintf(&sb, html_prelude_fmt, "Philippe Gaultier's blog")
+	strings.write_string(&sb, header)
+	strings.write_string(
+		&sb,
+		" <div class=\"articles\">\n <h2 id=\"articles\">Articles</h2>\n <ul>\n",
+	)
+
+	for a in articles {
+		if a.output_file_name == "body_of_work.html" {continue}
+
+		fmt.sbprintf(
+			&sb,
+			"<li>\n  <span class=\"date\">%s</span>\n  <a href=\"/blog/%s\">%s</a>\n</li>\n",
+			datetime_to_date(a.creation_date),
+			a.output_file_name,
+			a.title,
+		)
+	}
+
+	strings.write_string(&sb, " </ul>\n </div>\n")
+
+	{
+		markdown_content := transmute(string)os.read_entire_file_from_filename_or_err(
+			markdown_file_path,
+		) or_return
+		fixed_up_markdown := fixup_markdown_with_title_ids(markdown_content)
+		defer delete(fixed_up_markdown)
+
+		cmark_stdout, os2_err := run_sub_process_and_get_stdout(
+			cmark_command,
+			transmute([]u8)fixed_up_markdown,
+		)
+		if os2_err != nil {
+			panic(fmt.aprintf("failed to run cmark %v", os2_err))
+		}
+		strings.write_string(&sb, cmark_stdout)
+	}
+
+	os.write_entire_file_or_err(html_file_path, transmute([]u8)strings.to_string(sb)) or_return
+
+	fmt.printf("generated %s\n", html_file_path)
+
 	return
+}
+
+compare_articles_by_creation_date_asc :: proc(a: Article, b: Article) -> bool {
+	return a.creation_date < b.creation_date
 }
 
 run :: proc() -> (err: os.Error) {
@@ -446,9 +500,9 @@ run :: proc() -> (err: os.Error) {
 		delete(article.modification_date)
 		delete(article.output_file_name)
 	}
+	slice.sort_by(articles, compare_articles_by_creation_date_asc)
+	generate_home_page(articles, header) or_return
 	// TODO: 
-	// - sort articles
-	// - generate home page
 	// - generae page articles
 	// - generate rss feed
 
