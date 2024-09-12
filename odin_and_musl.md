@@ -48,7 +48,7 @@ A big difference between Odin and Zig is that Zig is a full cross-compilation to
 
 So to make our use-case work with Odin, without Odin the toolchain supporting what Zig supports, what we need to do is cross-compile our code to an ARM64 object file but without linking it yet. Then we link it manually to musl libc that has been built for ARM64. We could download this musl artifact from the internet but it's both more educational, empowering, and secure, to build it ourselves. So let's do this, it's not too much work.
 
-To build musl, we can use clang since it is a cross-compiler by default, or we can use GCC by installing a GCC toolchain that has been made to target ARM64. Most Linux distributions provide such a compiler as a package typically called `gcc-aarch64-xxx` e.g. `sudo apt-get install gcc-aarch64-linux-gnu` or `sudo dnf install gcc-aarch64-linux-gnu`.
+To build musl, we can either use clang since it is a cross-compiler by default, or a GCC toolchain that has been made to target ARM64. Most Linux distributions provide such a compiler as a package typically called `gcc-aarch64-xxx` e.g. `sudo apt-get install gcc-aarch64-linux-gnu` or `sudo dnf install gcc-aarch64-linux-gnu`.
 
 So let's now build a static musl for ARM64, following the official instructions. We just need to this once:
 
