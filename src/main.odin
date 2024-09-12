@@ -562,7 +562,12 @@ generate_page_articles_by_tag :: proc(
 		for a in articles_for_tag {
 			fmt.sbprintf(
 				&sb,
-				"<li><span class=\"date\">%s</span> <a href=\"%s\">%s</a></li>\n",
+				`
+	<li>
+		<span class="date">%s</span>
+		<a href="%s">%s</a>
+	</li>
+				`,
 				datetime_to_date(a.creation_date),
 				a.output_file_name,
 				a.title,
