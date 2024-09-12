@@ -215,7 +215,11 @@ fixup_markdown_with_title_ids :: proc(markdown: string) -> string {
 
 		fmt.sbprintf(
 			&builder,
-			`<h%d id="%s"><a class="title" href="#%s">%s</a><a class="hash-anchor" href="#%s" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a></h%d>`,
+			`<h%d id="%s">
+	<a class="title" href="#%s">%s</a>
+	<a class="hash-anchor" href="#%s" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+</h%d>
+			`,
 			title_level,
 			title_id,
 			title_id,
@@ -616,7 +620,7 @@ generate_rss_feed :: proc(articles: []Article) -> (err: os.Error) {
 
 	strings.write_string(&sb, "</feed>")
 
-	fmt.printf("generated RSS feed for %d articles", len(articles))
+	fmt.printf("generated RSS feed for %d articles\n", len(articles))
 
 	os.write_entire_file_or_err("feed.xml", transmute([]u8)strings.to_string(sb)) or_return
 	return

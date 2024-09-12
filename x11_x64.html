@@ -83,7 +83,10 @@ window.addEventListener("load", (event) => {
 <p>I am by no means an expert in assembly or in X11. I just hope to provide an entertaining, approachable article, something a beginner can understand. Something I wished I had found when I was learning those topics. If you spot an error, please open a <a href="https://github.com/gaultier/blog">Github issue</a>!</p>
 </blockquote>
 <p><em>This article has been discussed on <a href="https://news.ycombinator.com/item?id=36153237">Hacker News</a> and <a href="https://lobste.rs/s/dvtzfl/learn_x86_64_assembly_by_writing_gui_from">Lobsters</a>.</em></p>
-<h2 id="what-do-we-need"><a class="title" href="#what-do-we-need">What do we need?</a><a class="hash-anchor" href="#what-do-we-need" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a></h2>
+<h2 id="what-do-we-need">
+	<a class="title" href="#what-do-we-need">What do we need?</a>
+	<a class="hash-anchor" href="#what-do-we-need" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+</h2>
 <p>I will be using the <code>nasm</code> assembler which is simple, cross-platform, fast, and has quite a readable syntax.</p>
 <p>For the GUI, I will be using X11 since I am based on Linux and it has some interesting properties that make it easy to do without external libraries. If you are running Wayland, it should work with XWayland out of the box (<em>EDIT: After testing it, I can confirm it does work</em>), and perhaps also on macOS with XQuartz, but I have not tested those (for macOS, remember to tell <code>nasm</code> to use the <code>macho64</code> format, since macOS does not use the ELF format! Also, the stock linker on macOS does not support <code>-static</code>.).</p>
 <p>Note that the only difference between *nix operating systems in the context of this program is the system call values. Since I am based on Linux I will be using the Linux system call values, but 'porting' this program to, say, FreeBSD, would only require to change those values, possibly using the <code>nasm</code> macros:</p>
@@ -101,12 +104,18 @@ window.addEventListener("load", (event) => {
 <p>Some readers have rightfully pointed out that Linux is the only mainstream operating system that officially provides a stable userland ABI, other OSes often break their ABI from (major) version to version and recommend all programs to link to a library (e.g. <code>libSystem</code> in the case of macOS). That layer guarantees API stability, and acts as a insulation layer from breaking changes in the ABI. In practice, for common system calls such as the ones we use here, they very rarely break, but doing more exotic things may break in the future. That actually happened to the Go project in the past on macOS! The solution if that happens is to simply recompile the program on the new version of the OS.</p>
 </blockquote>
 <p>So let's dive in!</p>
-<h2 id="x11-basics"><a class="title" href="#x11-basics">X11 basics</a><a class="hash-anchor" href="#x11-basics" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a></h2>
+<h2 id="x11-basics">
+	<a class="title" href="#x11-basics">X11 basics</a>
+	<a class="hash-anchor" href="#x11-basics" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+</h2>
 <p>X11 is a server accessible over the network that handles windowing and rendering inside those windows. A client opens a socket, connects to the server, and sends commands in a specific format to open a window, draw shapes, text, etc. The server sends message about errors or events to the client.</p>
 <p>Most applications will want to use <code>libX11</code> or <code>libxcb</code> which offer a C API, but we want to do that ourselves.</p>
 <p>Where the server lives is actually not relevant for a client, it might run on the same machine or in a data center far far away. Of course, in the context of a desktop computer in 2023, it will be running on the same machine, but that's a detail.</p>
 <p>The <a href="https://www.x.org/releases/X11R7.7/doc/xproto/x11protocol.html">official documentation</a> is pretty good, so when in doubt we can refer to it.</p>
-<h2 id="main-in-x64-assembly"><a class="title" href="#main-in-x64-assembly">Main in x64 assembly</a><a class="hash-anchor" href="#main-in-x64-assembly" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a></h2>
+<h2 id="main-in-x64-assembly">
+	<a class="title" href="#main-in-x64-assembly">Main in x64 assembly</a>
+	<a class="hash-anchor" href="#main-in-x64-assembly" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+</h2>
 <p>Let's start slow with minimal program that simply exits with 0, and build from there.</p>
 <p>First, we tell nasm we are writing a 64 bit program and that we target x86_64. Then, we need a main function, which we call <code>_start</code> and needs to be visible since this is the entry point of our program (hence the <code>global</code> keyword):</p>
 <pre><code class="language-x86asm">; Comments start with a semicolon!
@@ -171,7 +180,10 @@ exit(8)                                 = ?
 
 </code></pre>
 <p>Let's change it back to 0 and continue.</p>
-<h2 id="a-stack-primer"><a class="title" href="#a-stack-primer">A stack primer</a><a class="hash-anchor" href="#a-stack-primer" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a></h2>
+<h2 id="a-stack-primer">
+	<a class="title" href="#a-stack-primer">A stack primer</a>
+	<a class="hash-anchor" href="#a-stack-primer" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+</h2>
 <p>Before we can continue, we need to know the basics of how the stack works in assembly since we have no friendly compiler to do that for us.</p>
 <p><strong>The three most important things about the stack are:</strong></p>
 <ul>
@@ -180,7 +192,10 @@ exit(8)                                 = ?
 <li>Before a function call, the stack pointer needs to be 16 bytes aligned, according to the System V ABI. Also, at the very beginning of a function, the stack pointer value is: <code>16*N + 8</code>. That's because before the function call, its value was 16 byte aligned, i.e. <code>16*N</code>, and the <code>call</code> instruction pushes on the stack the current location (the register <code>rip</code>, which is 8 bytes long), to know where to jump when the called function returns.</li>
 </ul>
 <p>Not abiding by those rules will result in nasty crashes, so be warned. That's because the location of where to jump when the function returns will be likely overwritten and the program will jump to the wrong location. That, or the stack content will be overwritten and the program will operate on wrong values. Bad either way.</p>
-<h3 id="a-small-stack-example"><a class="title" href="#a-small-stack-example">A small stack example</a><a class="hash-anchor" href="#a-small-stack-example" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a></h3>
+<h3 id="a-small-stack-example">
+	<a class="title" href="#a-small-stack-example">A small stack example</a>
+	<a class="hash-anchor" href="#a-small-stack-example" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+</h3>
 <p>Let's write a function that prints <code>hello</code> to the standard out, using the stack, to learn the ropes. An easier way would be to store this static string in the <code>.rodata</code> section, but that would not teach us anything about the stack.</p>
 <p>We need to reserve (at least) 5 bytes on the stack, since that's the length in bytes of <code>hello</code>.</p>
 <p>The stack looks like this:</p>
@@ -361,7 +376,10 @@ and rsp, -16
 </code></pre>
 <p>Finally, following those conventions means that our assembly functions can be safely called from C or other languages following the <a href="https://wiki.osdev.org/System_V_ABI">System V ABI</a>, without any modification, which is great.</p>
 <p><em>I have not talked about the red zone which is a 128 byte region at the bottom of the stack which our program is free to use as it pleases without having to change the stack pointer. In my opinion, it is not helpful and creates hard to track bugs, so I do not recommend to use it. To disable it entirely, run: <code>nasm -f elf64 -g main.nasm &amp;&amp; cc main.o -static -o main -mno-red-zone -nostdlib</code></em>.</p>
-<h2 id="opening-a-socket"><a class="title" href="#opening-a-socket">Opening a socket</a><a class="hash-anchor" href="#opening-a-socket" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a></h2>
+<h2 id="opening-a-socket">
+	<a class="title" href="#opening-a-socket">Opening a socket</a>
+	<a class="hash-anchor" href="#opening-a-socket" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+</h2>
 <p>We now are ready to open a socket with the <code>socket(2)</code> syscall, so we add a few constants, taken from the libc headers (<em>note that those values might actually be different on a different Unix, I have not checked. Again, a few <code>%ifdef</code> can easily remedy this discrepancy</em>):</p>
 <pre><code class="language-x86asm">%define AF_UNIX 1
 %define SOCK_STREAM 1
@@ -412,7 +430,10 @@ socket(AF_UNIX, SOCK_STREAM, 0)         = 3
 exit(0)                                 = ?
 +++ exited with 0 +++
 </code></pre>
-<h2 id="connecting-to-the-server"><a class="title" href="#connecting-to-the-server">Connecting to the server</a><a class="hash-anchor" href="#connecting-to-the-server" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a></h2>
+<h2 id="connecting-to-the-server">
+	<a class="title" href="#connecting-to-the-server">Connecting to the server</a>
+	<a class="hash-anchor" href="#connecting-to-the-server" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+</h2>
 <p>Now that we have created a socket, we can connect to the server with the <code>connect(2)</code> system call.</p>
 <p>It's a good time to extract that logic in its own little function, just like in any other high-level language.</p>
 <pre><code class="language-x86asm">x11_connect_to_server:
@@ -581,7 +602,10 @@ static x11_connect_to_server:function
 
 </code></pre>
 <p>We are ready to talk to the X11 server!</p>
-<h2 id="sending-data-over-the-socket"><a class="title" href="#sending-data-over-the-socket">Sending data over the socket</a><a class="hash-anchor" href="#sending-data-over-the-socket" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a></h2>
+<h2 id="sending-data-over-the-socket">
+	<a class="title" href="#sending-data-over-the-socket">Sending data over the socket</a>
+	<a class="hash-anchor" href="#sending-data-over-the-socket" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+</h2>
 <p>There is the <code>send(2)</code> syscall to do this, but we can keep it simple and use the generic <code>write(2)</code> syscall instead. Either way works.</p>
 <pre><code class="language-x86asm">%define SYSCALL_WRITE 1
 </code></pre>
@@ -808,7 +832,10 @@ static x11_send_handshake:function
 <blockquote>
 <p>From this point on, I will assume you are familiar with the basics of assembly and X11 and will not go as much into details.</p>
 </blockquote>
-<h2 id="generating-ids"><a class="title" href="#generating-ids">Generating ids</a><a class="hash-anchor" href="#generating-ids" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a></h2>
+<h2 id="generating-ids">
+	<a class="title" href="#generating-ids">Generating ids</a>
+	<a class="hash-anchor" href="#generating-ids" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+</h2>
 <p>When creating resources on the server-side, we usually first generate an id on the client side, and send that id to the server when creating the resource.</p>
 <p>We store the current id in a global variable and increment it each time a new id is generated.</p>
 <p>This is how we do it:</p>
@@ -833,7 +860,10 @@ static x11_next_id:function
   pop rbp
   ret
 </code></pre>
-<h2 id="opening-a-font"><a class="title" href="#opening-a-font">Opening a font</a><a class="hash-anchor" href="#opening-a-font" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a></h2>
+<h2 id="opening-a-font">
+	<a class="title" href="#opening-a-font">Opening a font</a>
+	<a class="hash-anchor" href="#opening-a-font" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+</h2>
 <p>To open a font, which is a prerequisite to draw text, we send a message to the server specifying (part of) the name of the font we want, and the server will select a matching font.</p>
 <p>To play with another font, you can use <code>xfontsel</code> which displays all the font names that the X11 server knows about.</p>
 <p>First, we generate an id for the font locally, and then we send it alongside the font name.</p>
@@ -875,7 +905,10 @@ static x11_open_font:function
   pop rbp
   ret
 </code></pre>
-<h2 id="creating-a-graphical-context"><a class="title" href="#creating-a-graphical-context">Creating a graphical context</a><a class="hash-anchor" href="#creating-a-graphical-context" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a></h2>
+<h2 id="creating-a-graphical-context">
+	<a class="title" href="#creating-a-graphical-context">Creating a graphical context</a>
+	<a class="hash-anchor" href="#creating-a-graphical-context" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+</h2>
 <p>Since an application in X11 can have multiple windows, we first need to create a graphical context containing the general information. When we create a window, we refer to this graphical context by id.</p>
 <p>Again, we need to generate an id for the graphical context to be.</p>
 <p>X11 stores a hierarchy of windows, so when creating the graphical context, we also need to give it the root window id (i.e. the parent id).</p>
@@ -924,7 +957,10 @@ static x11_create_gc:function
   pop rbp
   ret
 </code></pre>
-<h2 id="creating-the-window"><a class="title" href="#creating-the-window">Creating the window</a><a class="hash-anchor" href="#creating-the-window" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a></h2>
+<h2 id="creating-the-window">
+	<a class="title" href="#creating-the-window">Creating the window</a>
+	<a class="hash-anchor" href="#creating-the-window" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+</h2>
 <p>We can now create the window, which refers to the freshly created graphical context.
 We also provide the desired x and y coordinates of the window, as well as the desired dimensions (width and height).</p>
 <p>Note that those are simply hints and the resulting window may well have different coordinates and dimensions, for example when using a tiling window manager, or when resizing the window.</p>
@@ -979,7 +1015,10 @@ static x11_create_window:function
   pop rbp
   ret
 </code></pre>
-<h2 id="mapping-the-window"><a class="title" href="#mapping-the-window">Mapping the window</a><a class="hash-anchor" href="#mapping-the-window" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a></h2>
+<h2 id="mapping-the-window">
+	<a class="title" href="#mapping-the-window">Mapping the window</a>
+	<a class="hash-anchor" href="#mapping-the-window" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+</h2>
 <p>If you are following along at home, and just ran the program, you have realized nothing is displayed.</p>
 <p>That is because X11 does not show the window until we have mapped it. This is a simple message to send:</p>
 <pre><code class="language-x86asm">; Map a X11 window.
@@ -1013,7 +1052,10 @@ static x11_map_window:function
 <p>We now have a black window:</p>
 <p><img src="x11_x64_black_window.png" alt="Black window" /></p>
 <p>Yay!</p>
-<h2 id="polling-for-server-messages"><a class="title" href="#polling-for-server-messages">Polling for server messages</a><a class="hash-anchor" href="#polling-for-server-messages" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a></h2>
+<h2 id="polling-for-server-messages">
+	<a class="title" href="#polling-for-server-messages">Polling for server messages</a>
+	<a class="hash-anchor" href="#polling-for-server-messages" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+</h2>
 <p>We would like to draw text in the window now, but we have to wait for the <code>Expose</code> event to be sent to us, which means that the window is visible, to be able to start drawing on it.</p>
 <p>We want to listen for all server messages actually, be it errors or events, for example when the user presses a key on the keyboard.</p>
 <p>If we do a simple blocking <code>read(2)</code>, but the server sends nothing, the program will appear not responding. Not good.
@@ -1130,7 +1172,10 @@ static poll_messages:function
   pop rbp
   ret
 </code></pre>
-<h2 id="drawing-text"><a class="title" href="#drawing-text">Drawing text</a><a class="hash-anchor" href="#drawing-text" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a></h2>
+<h2 id="drawing-text">
+	<a class="title" href="#drawing-text">Drawing text</a>
+	<a class="hash-anchor" href="#drawing-text" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+</h2>
 <p>At last, we can draw text. The small difficulty here is that the text is of unknown length in the general case, so we have to compute the size of the X11 message, including the padding at the end. So far, we only had messages of fixed size.</p>
 <p>The official documentation has formulas to compute those values.</p>
 <pre><code class="language-x86asm">; Draw text in a X11 window with server-side text rendering.
@@ -1226,7 +1271,10 @@ static x11_draw_text:function
 </code></pre>
 <p>Finally, we see our <code>Hello, world!</code> text displayed inside the window:</p>
 <p><img src="x11_x64_final.png" alt="Result" /></p>
-<h2 id="the-end"><a class="title" href="#the-end">The end</a><a class="hash-anchor" href="#the-end" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a></h2>
+<h2 id="the-end">
+	<a class="title" href="#the-end">The end</a>
+	<a class="hash-anchor" href="#the-end" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+</h2>
 <p>Wow, that was a lot. But we did it! We wrote a (albeit simplistic) GUI program in pure assembly, no dependencies, and that's just 600 lines of code in the end.</p>
 <p>How did we fare on the executable size part?</p>
 <ul>
@@ -1242,7 +1290,10 @@ static x11_draw_text:function
 <li>We could listen to keyboard and mouse events (the polling loop is easy to extend to do that)</li>
 </ul>
 <p>I hope that you had as much fun as I did!</p>
-<h2 id="addendum-the-full-code"><a class="title" href="#addendum-the-full-code">Addendum: the full code</a><a class="hash-anchor" href="#addendum-the-full-code" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a></h2>
+<h2 id="addendum-the-full-code">
+	<a class="title" href="#addendum-the-full-code">Addendum: the full code</a>
+	<a class="hash-anchor" href="#addendum-the-full-code" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+</h2>
 <div class="wrap-collapsible">
   <input id="collapsible" class="toggle" type="checkbox">
   <label for="collapsible" class="label-toggle">Code</label>
