@@ -497,22 +497,45 @@ generate_page_articles_by_tag :: proc(
 		for tag in a.tags {
 			assert(len(tag) > 0)
 
-			entry, ok := &articles_by_tag[tag]
-			if ok {continue}
-
-			entry^ = make([dynamic]Article)
-			append(entry, a)
+			entry, present := articles_by_tag[tag]
+			if !present {
+				articles_by_tag[tag] = make([dynamic]Article)
+			}
+			append(&articles_by_tag[tag], a)
 		}
 	}
 
 
 	sb := strings.builder_make()
+	defer strings.builder_destroy(&sb)
 	strings.write_string(&sb, header)
 	strings.write_string(&sb, back_link)
 	strings.write_string(&sb, "<h1>Articles by tag</h1>\n")
 	strings.write_string(&sb, "<ul>\n")
 
+
+	for tag, articles_for_tag in articles_by_tag {
+		slice.sort_by(articles_for_tag[:], compare_articles_by_creation_date_asc)
+		tag_id := make_html_friendly_id(tag, allocator = context.temp_allocator)
+
+		fmt.sbprintf(&sb, "<li id=\"%s\">%s<ul>\n", tag_id, tag)
+
+		for a in articles_for_tag {
+			fmt.sbprintf(
+				&sb,
+				"<li><span class=\"date\">%s</span> <a href=\"%s\">%s</a></li>\n",
+				datetime_to_date(a.creation_date),
+				a.output_file_name,
+				a.title,
+			)
+		}
+		strings.write_string(&sb, "</ul></li>\n")
+	}
+	strings.write_string(&sb, "</ul>\n")
+	strings.write_string(&sb, footer)
+
 	html_file_name :: "articles_by_tag.html"
+	os.write_entire_file_or_err(html_file_name, transmute([]u8)strings.to_string(sb)) or_return
 
 	return
 }
