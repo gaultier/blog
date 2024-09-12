@@ -563,8 +563,8 @@ run :: proc() -> (err: os.Error) {
 	}
 	slice.sort_by(articles, compare_articles_by_creation_date_asc)
 	generate_home_page(articles, header) or_return
+	generate_page_articles_by_tag(articles, header, footer) or_return
 	// TODO: 
-	// - generae page articles
 	// - generate rss feed
 
 	return
