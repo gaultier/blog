@@ -140,7 +140,9 @@ The functions to manipulate memory are required even if we do not call them dire
 
 These `memxxx` functions could potentially be implemented by us, likely incurring a performance cost compared to the hand-optimized libc versions. But Odin can provide them for us! We can just use the `-no-crt` option.
 
-Note that not all targets will be equally supported for this use-case and I also had to install `nasm` to make it work because Odin ships with some assembly files which are then built for the target with `nasm`, but Odin does not ship with `nasm` itself.
+Note that not all targets will be equally supported for this use-case. ARM64 is not yet supported, so I will demonstrate targeting AMD64 (i.e. Intel/AMD 64 bits).
+
+I also had to install `nasm` to make it work because Odin ships with some assembly files which are then built for the target with `nasm`, but Odin does not ship with `nasm` itself.
 
 Let's try with a 'hello world' example:
 
