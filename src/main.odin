@@ -285,7 +285,11 @@ append_article_toc :: proc(sb: ^strings.Builder, markdown: string) {
 		}
 
 		id := make_html_friendly_id(title.title, context.temp_allocator)
-		fmt.sbprintf(sb, " <li><a href=\"#%s\">%s</a></li>\n", id, title.title)
+		fmt.sbprintf(sb, `
+		<li>
+		  <a href="#%s">%s</a>
+		</li>
+		`, id, title.title)
 		level_old = title.level
 	}
 
