@@ -492,12 +492,13 @@ generate_page_articles_by_tag :: proc(
 
 	articles_by_tag := make(map[string][dynamic]Article)
 	defer delete(articles_by_tag)
+	defer for _, a in articles_by_tag {delete(a)}
 
 	for a in articles {
 		for tag in a.tags {
 			assert(len(tag) > 0)
 
-			if tag in articles_by_tag {
+			if _, present := articles_by_tag[tag]; !present {
 				articles_by_tag[tag] = make([dynamic]Article)
 			}
 			append(&articles_by_tag[tag], a)
@@ -512,8 +513,19 @@ generate_page_articles_by_tag :: proc(
 	strings.write_string(&sb, "<h1>Articles by tag</h1>\n")
 	strings.write_string(&sb, "<ul>\n")
 
+	tags_lexicographically_ordered := make([]string, len(articles_by_tag))
+	defer delete(tags_lexicographically_ordered)
 
-	for tag, articles_for_tag in articles_by_tag {
+	i := 0
+	for tag in articles_by_tag {
+		tags_lexicographically_ordered[i] = tag
+		i += 1
+	}
+	slice.sort(tags_lexicographically_ordered)
+
+	for tag in tags_lexicographically_ordered {
+		articles_for_tag := articles_by_tag[tag]
+
 		slice.sort_by(articles_for_tag[:], compare_articles_by_creation_date_asc)
 		tag_id := make_html_friendly_id(tag, allocator = context.temp_allocator)
 
@@ -533,7 +545,7 @@ generate_page_articles_by_tag :: proc(
 	strings.write_string(&sb, "</ul>\n")
 	strings.write_string(&sb, footer)
 
-	html_file_name :: "articles_by_tag.html"
+	html_file_name :: "articles-by-tag.html"
 	os.write_entire_file_or_err(html_file_name, transmute([]u8)strings.to_string(sb)) or_return
 
 	return
