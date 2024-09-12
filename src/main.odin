@@ -15,6 +15,7 @@ base_url :: "https://gaultier.github.io/blog"
 back_link :: "<p><a href=\"/blog\"> ⏴ Back to all articles</a>\n"
 html_prelude_fmt :: "<!DOCTYPE html>\n<html>\n<head>\n<title>%s</title>\n"
 cmark_command :: []string{"cmark", "--unsafe", "-t", "html"}
+metadata_delimiter :: "---"
 
 Article :: struct {
 	output_file_name:  string,
@@ -35,7 +36,7 @@ parse_metadata :: proc(markdown: string, path: string) -> (title: string, tags: 
 	if len(metadata_lines) < 4 {
 		panic(fmt.aprintf("file %s missing metadata", path))
 	}
-	if metadata_lines[2] != "---" {
+	if metadata_lines[2] != metadata_delimiter {
 		panic(fmt.aprintf("file %s missing metadata delimiter", path))
 	}
 
@@ -168,7 +169,7 @@ make_html_friendly_id :: proc(input: string, allocator := context.allocator) -> 
 	return strings.trim(strings.to_string(builder), "-")
 }
 
-fixup_markdown_with_title_ids :: proc(markdown: string) -> string {
+decorate_markdown_with_title_ids :: proc(markdown: string) -> string {
 	inside_code_section := false
 
 	builder := strings.builder_make_len_cap(0, len(markdown) * 2)
@@ -308,15 +309,20 @@ generate_html_article :: proc(
 	assert(len(header) > 0)
 	assert(len(footer) > 0)
 
-	metadata_split := strings.split_n(markdown, "---\n", 2, context.temp_allocator)
+	metadata_split := strings.split_n(
+		markdown,
+		metadata_delimiter + "\n",
+		2,
+		context.temp_allocator,
+	)
 	article_content := metadata_split[1]
 
-	fixed_up_markdown := fixup_markdown_with_title_ids(article_content)
-	defer delete(fixed_up_markdown)
+	decorated_markdown := decorate_markdown_with_title_ids(article_content)
+	defer delete(decorated_markdown)
 
 	cmark_output, os2_err := run_sub_process_and_get_stdout(
 		cmark_command,
-		transmute([]u8)fixed_up_markdown,
+		transmute([]u8)decorated_markdown,
 	)
 	if os2_err != nil {
 		panic(fmt.aprintf("failed to run cmark: %v", os2.error_string(os2_err)))
@@ -488,12 +494,12 @@ generate_home_page :: proc(articles: []Article, header: string) -> (err: os.Erro
 			markdown_file_path,
 		) or_return
 		defer delete(markdown_content)
-		fixed_up_markdown := fixup_markdown_with_title_ids(markdown_content)
-		defer delete(fixed_up_markdown)
+		decorated_markdown := decorate_markdown_with_title_ids(markdown_content)
+		defer delete(decorated_markdown)
 
 		cmark_stdout, os2_err := run_sub_process_and_get_stdout(
 			cmark_command,
-			transmute([]u8)fixed_up_markdown,
+			transmute([]u8)decorated_markdown,
 		)
 		if os2_err != nil {
 			panic(fmt.aprintf("failed to run cmark %v", os2_err))
@@ -620,7 +626,6 @@ generate_rss_feed_for_article :: proc(sb: ^strings.Builder, article: Article) {
 
 generate_rss_feed :: proc(articles: []Article) -> (err: os.Error) {
 	assert(len(articles) > 0)
-
 
 	sb := strings.builder_make()
 	defer strings.builder_destroy(&sb)
