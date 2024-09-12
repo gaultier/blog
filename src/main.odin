@@ -497,8 +497,7 @@ generate_page_articles_by_tag :: proc(
 		for tag in a.tags {
 			assert(len(tag) > 0)
 
-			entry, present := articles_by_tag[tag]
-			if !present {
+			if tag in articles_by_tag {
 				articles_by_tag[tag] = make([dynamic]Article)
 			}
 			append(&articles_by_tag[tag], a)
