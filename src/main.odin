@@ -556,7 +556,8 @@ generate_page_articles_by_tag :: proc(
 		slice.sort_by(articles_for_tag[:], compare_articles_by_creation_date_asc)
 		tag_id := make_html_friendly_id(tag, allocator = context.temp_allocator)
 
-		fmt.sbprintf(&sb, "<li id=\"%s\">%s<ul>\n", tag_id, tag)
+		fmt.sbprintf(&sb, `<li id="%s">%s<ul>
+		`, tag_id, tag)
 
 		for a in articles_for_tag {
 			fmt.sbprintf(
