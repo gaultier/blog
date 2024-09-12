@@ -437,6 +437,8 @@ generate_all_articles_in_directory :: proc(
 
 		article := generate_article(f.name, header, footer) or_return
 		append(&articles_dyn, article)
+
+		free_all(context.temp_allocator)
 	}
 
 	return articles_dyn[:], nil
