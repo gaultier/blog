@@ -134,9 +134,9 @@ $ nm -u src.o
 
 Ok, so basically: heap allocation and some functions to copy/set memory.
 
-The former are not actually required if our program does not do heap allocations (Odin provides the option `-default-to-nil-allocator` for this case), or if we implement these ourselves, for example with a naive `mmap` implementation.
+Heap allocation functions are not actually required if our program does not do heap allocations (Odin provides the option `-default-to-nil-allocator` for this case), or if we implement these ourselves, for example with a naive `mmap` implementation, or by setting in our program the default allocator to be an arena. Odin has first class support for custom allocators!
 
-The latter are required even if we do not call them directly because typically, the compiler will replace some code patterns, e.g. `struct` or array initialization, with these functions behind the scene.
+The functions to manipulate memory are required even if we do not call them directly because typically, the compiler will replace some code patterns, e.g. `struct` or array initialization, with these functions behind the scene.
 
 These `memxxx` functions could potentially be implemented by us, likely incurring a performance cost compared to the hand-optimized libc versions. But Odin can provide them for us! We can just use the `-no-crt` option.
 
