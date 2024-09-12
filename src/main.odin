@@ -1,5 +1,7 @@
 package main
 
+import "core:encoding/uuid"
+import "core:encoding/uuid/legacy"
 import "core:fmt"
 import "core:os"
 import "core:os/os2"
@@ -8,6 +10,8 @@ import "core:slice"
 import "core:strings"
 import "core:unicode"
 
+feed_uuid_str :: "9c065c53-31bc-4049-a795-936802a6b1df"
+base_url :: "https://gaultier.github.io/blog"
 back_link :: "<p><a href=\"/blog\"> ⏴ Back to all articles</a>\n"
 html_prelude_fmt :: "<!DOCTYPE html>\n<html>\n<head>\n<title>%s</title>\n"
 cmark_command :: []string{"cmark", "--unsafe", "-t", "html"}
@@ -555,6 +559,69 @@ compare_articles_by_creation_date_asc :: proc(a: Article, b: Article) -> bool {
 	return a.creation_date < b.creation_date
 }
 
+generate_rss_feed_for_article :: proc(sb: ^strings.Builder, article: Article) {
+	base_uuid, err := uuid.read(feed_uuid_str)
+	assert(err == nil)
+	article_uuid := legacy.generate_v5_string(base_uuid, article.output_file_name)
+	article_uuid_str := uuid.to_string(article_uuid, allocator = context.temp_allocator)
+
+	fmt.sbprintf(
+		sb,
+		`
+	<entry>
+  <title>%s</title>
+  <link href="%s/%s"/>
+  <id>urn:uuid:%s</id>
+  <updated>%s</updated>
+  <published>%s</published>
+  </entry>
+	`,
+		article.title,
+		base_url,
+		article.output_file_name,
+		article_uuid_str,
+		article.modification_date,
+		article.creation_date,
+	)
+}
+
+generate_rss_feed :: proc(articles: []Article) -> (err: os.Error) {
+	assert(len(articles) > 0)
+
+
+	sb := strings.builder_make()
+	defer strings.builder_destroy(&sb)
+
+	fmt.sbprintf(
+		&sb,
+		`
+<?xml version="1.0" encoding="utf-8"?>
+  <feed xmlns="http://www.w3.org/2005/Atom">
+    <title>Philippe Gaultier's blog</title>
+    <link href="%s"/>
+    <updated>%s</updated>
+    <author>
+      <name>Philippe Gaultier</name>
+    </author>
+    <id>urn:uuid:%s</id>
+`,
+		base_url,
+		articles[len(articles) - 1].modification_date,
+		feed_uuid_str,
+	)
+
+	for a in articles {
+		generate_rss_feed_for_article(&sb, a)
+	}
+
+	strings.write_string(&sb, "</feed>")
+
+	fmt.printf("generated RSS feed for %d articles", len(articles))
+
+	os.write_entire_file_or_err("feed.xml", transmute([]u8)strings.to_string(sb)) or_return
+	return
+}
+
 run :: proc() -> (err: os.Error) {
 	header := transmute(string)os.read_entire_file_from_filename_or_err("header.html") or_return
 	defer delete(header)
@@ -576,8 +643,7 @@ run :: proc() -> (err: os.Error) {
 	slice.sort_by(articles, compare_articles_by_creation_date_asc)
 	generate_home_page(articles, header) or_return
 	generate_page_articles_by_tag(articles, header, footer) or_return
-	// TODO: 
-	// - generate rss feed
+	generate_rss_feed(articles) or_return
 
 	return
 }
