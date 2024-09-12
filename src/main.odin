@@ -456,7 +456,11 @@ generate_home_page :: proc(articles: []Article, header: string) -> (err: os.Erro
 	strings.write_string(&sb, header)
 	strings.write_string(
 		&sb,
-		" <div class=\"articles\">\n <h2 id=\"articles\">Articles</h2>\n <ul>\n",
+		`
+		<div class="articles">
+		  <h2 id="articles">Articles</h2>
+			<ul>
+		`,
 	)
 
 	for a in articles {
