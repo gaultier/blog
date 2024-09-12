@@ -290,6 +290,10 @@ generate_html_article :: proc(
 ) -> (
 	err: os.Error,
 ) {
+	assert(len(markdown) > 0)
+	assert(len(header) > 0)
+	assert(len(footer) > 0)
+
 	metadata_split := strings.split_n(markdown, "---\n", 2, context.temp_allocator)
 	article_content := metadata_split[1]
 
@@ -357,6 +361,11 @@ generate_article :: proc(
 	article: Article,
 	err: os.Error,
 ) {
+	assert(len(markdown_file_path) > 0)
+	assert(filepath.ext(markdown_file_path) == ".md")
+	assert(len(header) > 0)
+	assert(len(footer) > 0)
+
 	original_markdown_content := transmute(string)os.read_entire_file_from_filename_or_err(
 		markdown_file_path,
 	) or_return
@@ -389,6 +398,9 @@ generate_all_articles_in_directory :: proc(
 	articles: []Article,
 	err: os.Error,
 ) {
+	assert(len(header) > 0)
+	assert(len(footer) > 0)
+
 	articles_dyn := make([dynamic]Article)
 
 	cwd := os.open(".") or_return
@@ -408,6 +420,12 @@ generate_all_articles_in_directory :: proc(
 	}
 
 	return articles_dyn[:], nil
+}
+
+generate_home_page :: proc(articles: []Article, header: string) -> (err: os.Error) {
+	assert(len(header) > 0)
+
+	return
 }
 
 run :: proc() -> (err: os.Error) {
