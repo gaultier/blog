@@ -25,6 +25,17 @@ Article :: struct {
 	modification_date: string,
 }
 
+TitleNode :: struct {
+	title:    Title,
+	children: [dynamic]^TitleNode,
+	parent:   ^TitleNode,
+}
+
+Title :: struct {
+	title: string,
+	level: int,
+}
+
 datetime_to_date :: proc(datetime: string) -> string {
 	split := strings.split_n(datetime, "T", 2, allocator = context.temp_allocator)
 	return split[0]
@@ -233,15 +244,31 @@ decorate_markdown_with_title_ids :: proc(markdown: string) -> string {
 	return strings.to_string(builder)
 }
 
-append_article_toc :: proc(sb: ^strings.Builder, markdown: string) {
+// append_title_to_toc :: proc(sb: ^strings.Builder, titles: []Title, parent_level: int = 0) {
+// 	if len(titles) == 0 {return}
+
+// 	title := titles[0]
+// 	id := make_html_friendly_id(title.title, context.temp_allocator)
+
+// 	if parent_level < title.level { 	// Begin nesting.
+// 		strings.write_string(sb, "<ul>\n")
+// 	}
+
+// 	fmt.sbprintf(sb, `
+// 		<li>
+// 		  <a href="#%s">%s</a>
+// 		`, id, title.title)
+
+
+// 	append_title_to_toc(sb, titles[1:])
+
+// 	strings.write_string(sb, "</li>\n")
+// }
+
+toc_lex_titles :: proc(markdown: string, allocator := context.allocator) -> []Title {
+	titles := make([dynamic]Title)
+
 	inside_code_section := false
-
-	Title :: struct {
-		title: string,
-		level: int,
-	}
-	titles := make([dynamic]Title, context.temp_allocator)
-
 	markdown_ptr := markdown
 	for line in strings.split_lines_iterator(&markdown_ptr) {
 		is_begin_html_title := strings.starts_with(line, "<h")
@@ -263,20 +290,79 @@ append_article_toc :: proc(sb: ^strings.Builder, markdown: string) {
 		if inside_code_section {continue}
 		if !is_begin_markdown_title {continue}
 
-
 		title_level := strings.count(line, "#")
 		assert(1 <= title_level && title_level <= 6)
 
 		title_content := strings.trim_space(line[title_level:])
-
 		append(&titles, Title{title = title_content, level = title_level})
+	}
+
+	return titles[:]
+}
+
+toc_parse :: proc(titles: []Title, parent: ^TitleNode, allocator := context.allocator) {
+	if len(parent.children) > 0 {
+		for child, i in parent.children[1:] {
+			assert(child.title.level - 1 == parent.title.level)
+			assert(child.title.level == parent.children[i - 1].title.level)
+		}
 	}
 
 	if len(titles) == 0 {return}
 
-	strings.write_string(sb, " <strong>Table of contents</strong>\n")
+	title := titles[0]
 
-	level_old := 0
+	new_node := new(TitleNode, allocator)
+	new_node.parent = parent
+	new_node.title = title
+
+	if title.level == parent.title.level {
+		assert(parent.parent.title.level == title.level - 1)
+		append(&parent.parent.children, new_node)
+	} else if title.level > parent.title.level { 	// Begin nesting.
+		assert(title.level == parent.title.level + 1)
+
+		append(&parent.children, new_node)
+	} else if title.level < parent.title.level { 	// End nesting.
+		parent := parent
+		level := title.level
+
+		for _ in 0 ..< parent.title.level - title.level {
+			parent = parent.parent
+			level -= 1
+		}
+		assert(level == title.level - 1)
+		append(&parent.children, new_node)
+	}
+	toc_parse(titles[1:], new_node, allocator)
+
+	return
+}
+
+toc_print :: proc(title: ^TitleNode, indent: int = 0) {
+	for _ in 0 ..< indent {
+		fmt.print("  ")
+	}
+	fmt.println(title.title)
+
+	for child in title.children {
+		toc_print(child, indent + 1)
+	}
+}
+
+append_article_toc :: proc(sb: ^strings.Builder, markdown: string, article_title: string) {
+	titles := toc_lex_titles(markdown, context.temp_allocator)
+	title_root := new(TitleNode, context.temp_allocator)
+	title_root.title = Title {
+		title = article_title,
+		level = 1,
+	}
+	toc_parse(titles, title_root, context.temp_allocator)
+	toc_print(title_root)
+
+	if len(title_root.children) == 0 {return}
+
+	strings.write_string(sb, " <strong>Table of contents</strong>\n")
 
 	// FIXME: Per spec, nested lists (`<ul>`) must be located inside an `<li>` tag.
 	// Wrong: 
@@ -331,21 +417,21 @@ append_article_toc :: proc(sb: ^strings.Builder, markdown: string) {
 	//     <li>F</li>
 	// </ul>
 	// ```
-	for title in titles {
-		if title.level < level_old {
-			strings.write_string(sb, "</ul>\n")
-		} else if title.level > level_old {
-			strings.write_string(sb, "<ul>\n")
-		}
+	// for title in titles {
+	// 	if title.level < level_old {
+	// 		strings.write_string(sb, "</ul>\n")
+	// 	} else if title.level > level_old {
+	// 		strings.write_string(sb, "<ul>\n")
+	// 	}
 
-		id := make_html_friendly_id(title.title, context.temp_allocator)
-		fmt.sbprintf(sb, `
-		<li>
-		  <a href="#%s">%s</a>
-		</li>
-		`, id, title.title)
-		level_old = title.level
-	}
+	// 	id := make_html_friendly_id(title.title, context.temp_allocator)
+	// 	fmt.sbprintf(sb, `
+	// 	<li>
+	// 	  <a href="#%s">%s</a>
+	// 	</li>
+	// 	`, id, title.title)
+	// 	level_old = title.level
+	// }
 
 	strings.write_string(sb, "</ul>\n")
 }
@@ -418,7 +504,7 @@ generate_html_article :: proc(
 	}
 	strings.write_string(&html_sb, " </div>\n")
 
-	append_article_toc(&html_sb, article_content)
+	append_article_toc(&html_sb, article_content, article.title)
 
 	strings.write_rune(&html_sb, '\n')
 	strings.write_string(&html_sb, cmark_output)
