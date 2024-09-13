@@ -278,6 +278,26 @@ append_article_toc :: proc(sb: ^strings.Builder, markdown: string) {
 
 	level_old := 0
 
+	// FIXME: Per spec, nested lists (`<ul>`) must be located inside an `<li>` tag.
+	// Wrong: 
+	// ```
+	// <ul>
+	//   <li>parent</li>
+	//   <ul>
+	//     <li>child</li>
+	//   </ul>
+	// </ul>
+	// ```
+	// Right: 
+	// ```
+	// <ul>
+	//   <li>parent
+	//     <ul>
+	//       <li>child</li>
+	//     </ul>
+	//   </li>
+	// </ul>
+	// ```
 	for title in titles {
 		if title.level < level_old {
 			strings.write_string(sb, "</ul>\n")
