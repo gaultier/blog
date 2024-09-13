@@ -32,8 +32,8 @@ TitleNode :: struct {
 }
 
 Title :: struct {
-	title: string,
-	level: int,
+	content: string,
+	level:   int,
 }
 
 datetime_to_date :: proc(datetime: string) -> string {
@@ -244,26 +244,43 @@ decorate_markdown_with_title_ids :: proc(markdown: string) -> string {
 	return strings.to_string(builder)
 }
 
-// append_title_to_toc :: proc(sb: ^strings.Builder, titles: []Title, parent_level: int = 0) {
-// 	if len(titles) == 0 {return}
-
-// 	title := titles[0]
-// 	id := make_html_friendly_id(title.title, context.temp_allocator)
-
-// 	if parent_level < title.level { 	// Begin nesting.
-// 		strings.write_string(sb, "<ul>\n")
-// 	}
-
-// 	fmt.sbprintf(sb, `
-// 		<li>
-// 		  <a href="#%s">%s</a>
-// 		`, id, title.title)
+toc_write :: proc(sb: ^strings.Builder, node: ^TitleNode) {
+	id := make_html_friendly_id(node.title.content, context.temp_allocator)
 
 
-// 	append_title_to_toc(sb, titles[1:])
+	fmt.sbprintf(sb, `
+<li>
+	<a href="#%s">%s</a>
+		`, id, node.title.content)
 
-// 	strings.write_string(sb, "</li>\n")
-// }
+
+	// Per spec, nested lists (`<ul>`) must be located inside an `<li>` tag.
+	// Example:
+	// ```
+	// <ul>
+	//     <li>List item one</li>
+	//     <li>List item two with subitems:
+	//         <ul>
+	//             <li>Subitem 1</li>
+	//             <li>Subitem 2</li>
+	//         </ul>
+	//     </li>
+	//     <li>Final list item</li>
+	// </ul>
+	// ```
+	if len(node.children) > 0 {
+		strings.write_string(sb, "<ul>\n")
+	}
+
+	for child in node.children {
+		toc_write(sb, child)
+	}
+
+	if len(node.children) > 0 {
+		strings.write_string(sb, "</ul>\n")
+	}
+	strings.write_string(sb, "</li>\n")
+}
 
 toc_lex_titles :: proc(markdown: string, allocator := context.allocator) -> []Title {
 	titles := make([dynamic]Title)
@@ -294,7 +311,7 @@ toc_lex_titles :: proc(markdown: string, allocator := context.allocator) -> []Ti
 		assert(1 <= title_level && title_level <= 6)
 
 		title_content := strings.trim_space(line[title_level:])
-		append(&titles, Title{title = title_content, level = title_level})
+		append(&titles, Title{content = title_content, level = title_level})
 	}
 
 	return titles[:]
@@ -350,86 +367,15 @@ append_article_toc :: proc(sb: ^strings.Builder, markdown: string, article_title
 	titles := toc_lex_titles(markdown, context.temp_allocator)
 	title_root := new(TitleNode, context.temp_allocator)
 	title_root.title = Title {
-		title = article_title,
-		level = 1,
+		content = article_title,
+		level   = 1,
 	}
 	toc_parse(titles, title_root, context.temp_allocator)
-	toc_print(title_root)
 
 	if len(title_root.children) == 0 {return}
 
 	strings.write_string(sb, " <strong>Table of contents</strong>\n")
-
-	// FIXME: Per spec, nested lists (`<ul>`) must be located inside an `<li>` tag.
-	// Wrong: 
-	// ```
-	// <ul>
-	//   <li>parent</li>
-	//   <ul>
-	//     <li>child</li>
-	//   </ul>
-	// </ul>
-	// ```
-	// Right: 
-	// ```
-	// <ul>
-	//   <li>parent
-	//     <ul>
-	//       <li>child</li>
-	//     </ul>
-	//   </li>
-	// </ul>
-	// ```
-
-	// Bigger example:
-	// ```
-	// <ul>
-	//     <li>List item one</li>
-	//     <li>List item two with subitems:
-	//         <ul>
-	//             <li>Subitem 1</li>
-	//             <li>Subitem 2</li>
-	//         </ul>
-	//     </li>
-	//     <li>Final list item</li>
-	// </ul>
-	// ```
-	// 
-	// [A1, B1, C2, D3, E2, F1]
-	// =>
-	// ```
-	// <ul>
-	//     <li>A</li>
-	//     <li>B
-	//         <ul>
-	//             <li>C
-	//               <ul>
-	//                 <li>D</li>
-	//               </ul>
-	//             </li>
-	//             <li>E</li>
-	//         </ul>
-	//     </li>
-	//     <li>F</li>
-	// </ul>
-	// ```
-	// for title in titles {
-	// 	if title.level < level_old {
-	// 		strings.write_string(sb, "</ul>\n")
-	// 	} else if title.level > level_old {
-	// 		strings.write_string(sb, "<ul>\n")
-	// 	}
-
-	// 	id := make_html_friendly_id(title.title, context.temp_allocator)
-	// 	fmt.sbprintf(sb, `
-	// 	<li>
-	// 	  <a href="#%s">%s</a>
-	// 	</li>
-	// 	`, id, title.title)
-	// 	level_old = title.level
-	// }
-
-	strings.write_string(sb, "</ul>\n")
+	toc_write(sb, title_root)
 }
 
 generate_html_article :: proc(

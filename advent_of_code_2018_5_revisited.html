@@ -71,37 +71,42 @@ hljs.registerLanguage("odin", function(e) {
 		  <span>🏷️ <a href="/blog/articles-by-tag.html#x86-64">x86_64</a>,  <a href="/blog/articles-by-tag.html#advent-of-code">Advent of Code</a>,  <a href="/blog/articles-by-tag.html#optimization">Optimization</a>,  <a href="/blog/articles-by-tag.html#algorithm">Algorithm</a>,  <a href="/blog/articles-by-tag.html#c">C</a>,  <a href="/blog/articles-by-tag.html#lisp">Lisp</a>,  <a href="/blog/articles-by-tag.html#scheme">Scheme</a></span>
  </div>
  <strong>Table of contents</strong>
-<ul>
 
-		<li>
-		  <a href="#the-new-solution">The new solution</a>
-		</li>
-		
-		<li>
-		  <a href="#the-x86-64-implementation">The x86_64 implementation</a>
-		</li>
-		
-		<li>
-		  <a href="#benchmarking">Benchmarking</a>
-		</li>
-		
-		<li>
-		  <a href="#learnings">Learnings</a>
-		</li>
-		
-		<li>
-		  <a href="#appendix-the-full-code">Appendix: The full code</a>
-		</li>
+<li>
+	<a href="#optimizing-an-advent-of-code-solution-in-assembly">Optimizing an Advent of Code solution in assembly</a>
 		<ul>
 
-		<li>
-		  <a href="#the-old-c-implementation">The old C implementation</a>
+<li>
+	<a href="#the-new-solution">The new solution</a>
 		</li>
-		
-		<li>
-		  <a href="#the-x64-implementation">The x64 implementation</a>
+
+<li>
+	<a href="#the-x86-64-implementation">The x86_64 implementation</a>
 		</li>
-		</ul>
+
+<li>
+	<a href="#benchmarking">Benchmarking</a>
+		</li>
+
+<li>
+	<a href="#learnings">Learnings</a>
+		</li>
+
+<li>
+	<a href="#appendix-the-full-code">Appendix: The full code</a>
+		<ul>
+
+<li>
+	<a href="#the-old-c-implementation">The old C implementation</a>
+		</li>
+
+<li>
+	<a href="#the-x64-implementation">The x64 implementation</a>
+		</li>
+</ul>
+</li>
+</ul>
+</li>
 
 <p>A few days ago I was tweaking the appearance of this blog and I stumbled upon my <a href="/blog/advent_of_code_2018_5">first article</a> which is about solving a simple problem from Advent of Code. Here it is again:</p>
 <blockquote>

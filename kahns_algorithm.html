@@ -71,66 +71,70 @@ hljs.registerLanguage("odin", function(e) {
 		  <span>🏷️ <a href="/blog/articles-by-tag.html#graph">Graph</a>,  <a href="/blog/articles-by-tag.html#algorithm">Algorithm</a>,  <a href="/blog/articles-by-tag.html#javascript">JavaScript</a>,  <a href="/blog/articles-by-tag.html#sql">SQL</a></span>
  </div>
  <strong>Table of contents</strong>
-<ul>
 
-		<li>
-		  <a href="#introduction">Introduction</a>
-		</li>
-		
-		<li>
-		  <a href="#the-database">The database</a>
-		</li>
-		
-		<li>
-		  <a href="#topological-sort">Topological sort</a>
-		</li>
-		
-		<li>
-		  <a href="#how-to-store-the-graph-in-memory">How to store the graph in memory</a>
-		</li>
-		
-		<li>
-		  <a href="#kahn-s-algorithm">Kahn's algorithm</a>
-		</li>
-		
-		<li>
-		  <a href="#implementation">Implementation</a>
-		</li>
+<li>
+	<a href="#cycle-detection-in-graphs-does-not-have-to-be-hard-a-lesser-known-simple-way-with-kahn-s-algorithm">Cycle detection in graphs does not have to be hard: A lesser known, simple way with Kahn's algorithm</a>
 		<ul>
 
-		<li>
-		  <a href="#helpers">Helpers</a>
+<li>
+	<a href="#introduction">Introduction</a>
 		</li>
-		
-		<li>
-		  <a href="#the-algorithm">The algorithm</a>
-		</li>
-		
-		<li>
-		  <a href="#inserting-entries-in-the-database">Inserting entries in the database</a>
-		</li>
-		
-		<li>
-		  <a href="#detecting-cycles">Detecting cycles</a>
-		</li>
-		
-		<li>
-		  <a href="#detecting-multiple-roots">Detecting multiple roots</a>
-		</li>
-		</ul>
 
-		<li>
-		  <a href="#playing-with-the-database">Playing with the database</a>
+<li>
+	<a href="#the-database">The database</a>
 		</li>
-		
-		<li>
-		  <a href="#closing-thoughts">Closing thoughts</a>
+
+<li>
+	<a href="#topological-sort">Topological sort</a>
 		</li>
-		
-		<li>
-		  <a href="#addendum-the-full-code">Addendum: the full code</a>
+
+<li>
+	<a href="#how-to-store-the-graph-in-memory">How to store the graph in memory</a>
 		</li>
-		</ul>
+
+<li>
+	<a href="#kahn-s-algorithm">Kahn's algorithm</a>
+		</li>
+
+<li>
+	<a href="#implementation">Implementation</a>
+		<ul>
+
+<li>
+	<a href="#helpers">Helpers</a>
+		</li>
+
+<li>
+	<a href="#the-algorithm">The algorithm</a>
+		</li>
+
+<li>
+	<a href="#inserting-entries-in-the-database">Inserting entries in the database</a>
+		</li>
+
+<li>
+	<a href="#detecting-cycles">Detecting cycles</a>
+		</li>
+
+<li>
+	<a href="#detecting-multiple-roots">Detecting multiple roots</a>
+		</li>
+</ul>
+</li>
+
+<li>
+	<a href="#playing-with-the-database">Playing with the database</a>
+		</li>
+
+<li>
+	<a href="#closing-thoughts">Closing thoughts</a>
+		</li>
+
+<li>
+	<a href="#addendum-the-full-code">Addendum: the full code</a>
+		</li>
+</ul>
+</li>
 
 <h2 id="introduction">
 	<a class="title" href="#introduction">Introduction</a>

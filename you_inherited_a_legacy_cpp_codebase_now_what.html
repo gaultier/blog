@@ -71,72 +71,76 @@ hljs.registerLanguage("odin", function(e) {
 		  <span>🏷️ <a href="/blog/articles-by-tag.html#cplusplus">C++</a>,  <a href="/blog/articles-by-tag.html#c">C</a>,  <a href="/blog/articles-by-tag.html#legacy">Legacy</a>,  <a href="/blog/articles-by-tag.html#ci">CI</a>,  <a href="/blog/articles-by-tag.html#git">Git</a>,  <a href="/blog/articles-by-tag.html#rewrite">Rewrite</a></span>
  </div>
  <strong>Table of contents</strong>
-<ul>
 
-		<li>
-		  <a href="#get-buy-in">Get buy-in</a>
+<li>
+	<a href="#you-ve-just-inherited-a-legacy-cplusplus-codebase-now-what">You've just inherited a legacy C++ codebase, now what?</a>
+		<ul>
+
+<li>
+	<a href="#get-buy-in">Get buy-in</a>
 		</li>
-		
-		<li>
-		  <a href="#write-down-the-platforms-you-support">Write down the platforms you support</a>
+
+<li>
+	<a href="#write-down-the-platforms-you-support">Write down the platforms you support</a>
 		</li>
-		
-		<li>
-		  <a href="#get-the-build-working-on-your-machine">Get the build working on your machine</a>
+
+<li>
+	<a href="#get-the-build-working-on-your-machine">Get the build working on your machine</a>
 		</li>
-		
-		<li>
-		  <a href="#get-the-tests-passing-on-your-machine">Get the tests passing on your machine</a>
+
+<li>
+	<a href="#get-the-tests-passing-on-your-machine">Get the tests passing on your machine</a>
 		</li>
-		
-		<li>
-		  <a href="#write-down-in-the-readme-how-to-build-and-test-the-application">Write down in the README how to build and test the application</a>
+
+<li>
+	<a href="#write-down-in-the-readme-how-to-build-and-test-the-application">Write down in the README how to build and test the application</a>
 		</li>
-		
-		<li>
-		  <a href="#find-low-hanging-fruits-to-speed-up-the-build-and-tests">Find low hanging fruits to speed up the build and tests</a>
+
+<li>
+	<a href="#find-low-hanging-fruits-to-speed-up-the-build-and-tests">Find low hanging fruits to speed up the build and tests</a>
 		</li>
-		
-		<li>
-		  <a href="#remove-all-unnecessary-code">Remove all unnecessary code</a>
+
+<li>
+	<a href="#remove-all-unnecessary-code">Remove all unnecessary code</a>
 		</li>
-		
-		<li>
-		  <a href="#linters">Linters</a>
+
+<li>
+	<a href="#linters">Linters</a>
 		</li>
-		
-		<li>
-		  <a href="#code-formatting">Code formatting</a>
+
+<li>
+	<a href="#code-formatting">Code formatting</a>
 		</li>
-		
-		<li>
-		  <a href="#sanitizers">Sanitizers</a>
+
+<li>
+	<a href="#sanitizers">Sanitizers</a>
 		</li>
-		
-		<li>
-		  <a href="#add-a-ci-pipeline">Add a CI pipeline</a>
+
+<li>
+	<a href="#add-a-ci-pipeline">Add a CI pipeline</a>
 		</li>
-		
-		<li>
-		  <a href="#incremental-code-improvements">Incremental code improvements</a>
+
+<li>
+	<a href="#incremental-code-improvements">Incremental code improvements</a>
 		</li>
-		
-		<li>
-		  <a href="#rewrite-in-a-memory-safe-language">Rewrite in a memory safe language?</a>
+
+<li>
+	<a href="#rewrite-in-a-memory-safe-language">Rewrite in a memory safe language?</a>
 		</li>
-		
-		<li>
-		  <a href="#conclusion">Conclusion</a>
+
+<li>
+	<a href="#conclusion">Conclusion</a>
 		</li>
-		
-		<li>
-		  <a href="#addendum-dependency-management">Addendum: Dependency management</a>
+
+<li>
+	<a href="#addendum-dependency-management">Addendum: Dependency management</a>
 		</li>
-		
-		<li>
-		  <a href="#addendum-suggestions-from-readers">Addendum: suggestions from readers</a>
+
+<li>
+	<a href="#addendum-suggestions-from-readers">Addendum: suggestions from readers</a>
 		</li>
-		</ul>
+</ul>
+</li>
 
 <p><em>This article was discussed on <a href="https://news.ycombinator.com/item?id=39549486">Hacker News</a>, <a href="https://lobste.rs/s/lf8b9r/you_ve_just_inherited_legacy_c_codebase">Lobster.rs</a> and <a href="https://old.reddit.com/r/programming/comments/1b3143w/youve_just_inherited_a_legacy_c_codebase_now_what/">Reddit</a>. I've got great suggestions from the comments, see the addendum at the end!</em></p>
 <p>You were minding your own business, and out of nowhere something fell on your lap. Maybe you started a new job, or perhaps changed teams, or someone experienced just left.</p>

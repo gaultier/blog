@@ -71,36 +71,40 @@ hljs.registerLanguage("odin", function(e) {
 		  <span>🏷️ <a href="/blog/articles-by-tag.html#c">C</a>,  <a href="/blog/articles-by-tag.html#allocator">Allocator</a>,  <a href="/blog/articles-by-tag.html#profiling">Profiling</a>,  <a href="/blog/articles-by-tag.html#pprof">Pprof</a></span>
  </div>
  <strong>Table of contents</strong>
-<ul>
 
-		<li>
-		  <a href="#pprof">Pprof</a>
+<li>
+	<a href="#roll-your-own-memory-profiling-it-s-actually-not-hard">Roll your own memory profiling: it's actually not hard</a>
+		<ul>
+
+<li>
+	<a href="#pprof">Pprof</a>
 		</li>
-		
-		<li>
-		  <a href="#the-text-format">The text format</a>
+
+<li>
+	<a href="#the-text-format">The text format</a>
 		</li>
-		
-		<li>
-		  <a href="#generating-a-pprof-profile">Generating a `pprof` profile</a>
+
+<li>
+	<a href="#generating-a-pprof-profile">Generating a `pprof` profile</a>
 		</li>
-		
-		<li>
-		  <a href="#variations-and-limitations">Variations and limitations</a>
+
+<li>
+	<a href="#variations-and-limitations">Variations and limitations</a>
 		</li>
-		
-		<li>
-		  <a href="#alternatives">Alternatives</a>
+
+<li>
+	<a href="#alternatives">Alternatives</a>
 		</li>
-		
-		<li>
-		  <a href="#conclusion">Conclusion</a>
+
+<li>
+	<a href="#conclusion">Conclusion</a>
 		</li>
-		
-		<li>
-		  <a href="#addendum-the-full-code">Addendum: the full code</a>
+
+<li>
+	<a href="#addendum-the-full-code">Addendum: the full code</a>
 		</li>
-		</ul>
+</ul>
+</li>
 
 <p><em>Or: An exploration of the <a href="https://github.com/gperftools/gperftools">pprof</a> memory profiler and its textual format for fun an profit.</em></p>
 <p>Say that you are using a programming language where memory is manually managed, and you have decided to use a custom allocator for one reason or another, for example an arena allocator, and are wondering:</p>
