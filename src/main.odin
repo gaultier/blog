@@ -298,6 +298,39 @@ append_article_toc :: proc(sb: ^strings.Builder, markdown: string) {
 	//   </li>
 	// </ul>
 	// ```
+
+	// Bigger example:
+	// ```
+	// <ul>
+	//     <li>List item one</li>
+	//     <li>List item two with subitems:
+	//         <ul>
+	//             <li>Subitem 1</li>
+	//             <li>Subitem 2</li>
+	//         </ul>
+	//     </li>
+	//     <li>Final list item</li>
+	// </ul>
+	// ```
+	// 
+	// [A1, B1, C2, D3, E2, F1]
+	// =>
+	// ```
+	// <ul>
+	//     <li>A</li>
+	//     <li>B
+	//         <ul>
+	//             <li>C
+	//               <ul>
+	//                 <li>D</li>
+	//               </ul>
+	//             </li>
+	//             <li>E</li>
+	//         </ul>
+	//     </li>
+	//     <li>F</li>
+	// </ul>
+	// ```
 	for title in titles {
 		if title.level < level_old {
 			strings.write_string(sb, "</ul>\n")
