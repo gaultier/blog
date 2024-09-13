@@ -6,7 +6,7 @@ https://gaultier.github.io/blog/
 *Requirement: [Odin](https://github.com/odin-lang/Odin.git)*
 
 ```sh
-apt install cmark
+apt install cmark git
 
 # Build this blog.
 $ odin run src
