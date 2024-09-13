@@ -283,7 +283,7 @@ toc_write :: proc(sb: ^strings.Builder, node: ^TitleNode) {
 }
 
 toc_lex_titles :: proc(markdown: string, allocator := context.allocator) -> []Title {
-	titles := make([dynamic]Title)
+	titles := make([dynamic]Title, allocator)
 
 	inside_code_section := false
 	markdown_ptr := markdown
