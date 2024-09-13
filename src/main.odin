@@ -639,8 +639,7 @@ generate_page_articles_by_tag :: proc(
 	strings.write_string(&sb, "<h1>Articles by tag</h1>\n")
 	strings.write_string(&sb, "<ul>\n")
 
-	tags_lexicographically_ordered := make([]string, len(articles_by_tag))
-	defer delete(tags_lexicographically_ordered)
+	tags_lexicographically_ordered := make([]string, len(articles_by_tag), context.temp_allocator)
 
 	i := 0
 	for tag in articles_by_tag {
