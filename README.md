@@ -3,16 +3,13 @@ https://gaultier.github.io/blog/
 
 ## Quickstart
 
+*Requirement: [Odin](https://github.com/odin-lang/Odin.git)*
+
 ```sh
-apt install cmark zig
+apt install cmark
 
-$ zig build
-
-# (Re)generate all articles
-./zig-out/bin/blog
-
-# Output the table of contents
-$ ./zig-out/bin/blog toc <file.md>
+# Build this blog.
+$ odin run src
 ```
 
 Serving the files locally:
