@@ -6,6 +6,12 @@ In my free time, I run, lift weights, play music, learn languages, and garden.
 
 Get in touch, send me an email (link on my Github profile)!
 
+## This blog
+
+I very unregularly post about various technical topics, usually low-level, esoteric and probably not directly applicable to your run-of-the-mill business application.
+
+This blog does not and will not employ any tracking or cookie of any sort. The only Javascript present is fully optional and only used to do code highlighting.
+
 
 ## I am grateful
 
