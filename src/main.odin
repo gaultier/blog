@@ -615,7 +615,6 @@ generate_page_articles_by_tag :: proc(
 	assert(len(header) > 0)
 	assert(len(footer) > 0)
 
-
 	articles_by_tag := make(map[string][dynamic]Article)
 	defer delete(articles_by_tag)
 	defer for _, a in articles_by_tag {delete(a)}
