@@ -313,27 +313,23 @@ toc_parse :: proc(titles: []Title, parent: ^TitleNode, allocator := context.allo
 	title := titles[0]
 
 	new_node := new(TitleNode, allocator)
-	new_node.parent = parent
 	new_node.title = title
 
+	real_parent := parent
 	if title.level == parent.title.level {
 		assert(parent.parent.title.level == title.level - 1)
-		append(&parent.parent.children, new_node)
+		real_parent = parent.parent
 	} else if title.level > parent.title.level { 	// Begin nesting.
 		assert(title.level == parent.title.level + 1)
-
-		append(&parent.children, new_node)
 	} else if title.level < parent.title.level { 	// End nesting.
-		parent := parent
-		level := title.level
-
-		for _ in 0 ..< parent.title.level - title.level {
-			parent = parent.parent
-			level -= 1
+		for _ in 0 ..= parent.title.level - title.level {
+			real_parent = real_parent.parent
 		}
-		assert(level == title.level - 1)
-		append(&parent.children, new_node)
 	}
+	assert(new_node.title.level - 1 == real_parent.title.level)
+	new_node.parent = real_parent
+	append(&real_parent.children, new_node)
+
 	toc_parse(titles[1:], new_node, allocator)
 
 	return
