@@ -375,7 +375,9 @@ append_article_toc :: proc(sb: ^strings.Builder, markdown: string, article_title
 	if len(title_root.children) == 0 {return}
 
 	strings.write_string(sb, " <strong>Table of contents</strong>\n")
+	strings.write_string(sb, "<ul>\n")
 	toc_write(sb, title_root)
+	strings.write_string(sb, "</ul>\n")
 }
 
 generate_html_article :: proc(
