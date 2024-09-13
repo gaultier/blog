@@ -450,9 +450,16 @@ generate_all_articles_in_directory :: proc(
 	return articles_dyn[:], nil
 }
 
-generate_home_page :: proc(articles: []Article, header: string) -> (err: os.Error) {
+generate_home_page :: proc(
+	articles: []Article,
+	header: string,
+	footer: string,
+) -> (
+	err: os.Error,
+) {
 	assert(len(articles) > 0)
 	assert(len(header) > 0)
+	assert(len(footer) > 0)
 
 	markdown_file_path :: "index.md"
 	html_file_path :: "index.html"
@@ -507,6 +514,7 @@ generate_home_page :: proc(articles: []Article, header: string) -> (err: os.Erro
 		defer delete(cmark_stdout)
 		strings.write_string(&sb, cmark_stdout)
 	}
+	strings.write_string(&sb, footer)
 
 	os.write_entire_file_or_err(html_file_path, transmute([]u8)strings.to_string(sb)) or_return
 
@@ -679,7 +687,7 @@ run :: proc() -> (err: os.Error) {
 		delete(article.output_file_name)
 	}
 	slice.sort_by(articles, compare_articles_by_creation_date_asc)
-	generate_home_page(articles, header) or_return
+	generate_home_page(articles, header, footer) or_return
 	generate_page_articles_by_tag(articles, header, footer) or_return
 	generate_rss_feed(articles) or_return
 
