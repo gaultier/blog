@@ -3,16 +3,19 @@ https://gaultier.github.io/blog/
 
 ## Quickstart
 
-*Requirement: [Odin](https://github.com/odin-lang/Odin.git)*
+Requirements: 
+- [Odin](https://github.com/odin-lang/Odin.git)
+- `cmark`
+- `git`
+
+E.g.: `apt install cmark git`
 
 ```sh
-apt install cmark git
-
 # Build this blog.
 $ odin run src
 ```
 
-Serving the files locally:
+Serve the files locally:
 
 ```sh
 $ python3 -m http.server -d ..
