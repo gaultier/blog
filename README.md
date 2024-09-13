@@ -14,6 +14,8 @@ Build this blog (i.e. convert markdown files to HTML):
 
 ```sh
 $ odin run src
+# Or directly (this binary is available in the Github releases):
+$ ./src.bin
 ```
 
 Serve the files locally:
