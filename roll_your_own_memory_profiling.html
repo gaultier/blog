@@ -8,34 +8,37 @@
 <link rel="stylesheet" href="https://unpkg.com/@highlightjs/cdn-assets@11.8.0/styles/default.min.css">
 <script src="https://unpkg.com/@highlightjs/cdn-assets@11.8.0/highlight.min.js"></script>
 <!-- From https://github.com/odin-lang/odin-lang.org/blob/6f48c2cfb094a42dffd34143884fa958bd9c0ba2/themes/odin/layouts/partials/head.html#L71 -->
+<script src="https://unpkg.com/@highlightjs/cdn-assets@11.8.0/languages/x86asm.min.js"></script>
 <script>
-hljs.registerLanguage("odin", function(e) {
-    return {
-        aliases: ["odin", "odinlang", "odin-lang"],
-        keywords: {
-            keyword: "auto_cast bit_field bit_set break case cast context continue defer distinct do dynamic else enum fallthrough for foreign if import in map matrix not_in or_else or_return package proc return struct switch transmute type_of typeid union using when where",
-            literal: "true false nil",
-            built_in: "abs align_of cap clamp complex conj expand_to_tuple imag jmag kmag len max min offset_of quaternion real size_of soa_unzip soa_zip swizzle type_info_of type_of typeid_of"
-        },
-        illegal: "</",
-        contains: [e.C_LINE_COMMENT_MODE, e.C_BLOCK_COMMENT_MODE, {
-            className: "string",
-            variants: [e.QUOTE_STRING_MODE, {
-                begin: "'",
-                end: "[^\\\\]'"
-            }, {
-                begin: "`",
-                end: "`"
-            }]
-        }, {
-            className: "number",
-            variants: [{
-                begin: e.C_NUMBER_RE + "[ijk]",
-                relevance: 1
-            }, e.C_NUMBER_MODE]
-        }]
-    }
-});
+  window.onload = function() {
+      hljs.registerLanguage("odin", function(e) {
+      return {
+          aliases: ["odin", "odinlang", "odin-lang"],
+          keywords: {
+              keyword: "auto_cast bit_field bit_set break case cast context continue defer distinct do dynamic else enum fallthrough for foreign if import in map matrix not_in or_else or_return package proc return struct switch transmute type_of typeid union using when where",
+              literal: "true false nil",
+              built_in: "abs align_of cap clamp complex conj expand_to_tuple imag jmag kmag len max min offset_of quaternion real size_of soa_unzip soa_zip swizzle type_info_of type_of typeid_of"
+          },
+          illegal: "</",
+          contains: [e.C_LINE_COMMENT_MODE, e.C_BLOCK_COMMENT_MODE, {
+              className: "string",
+              variants: [e.QUOTE_STRING_MODE, {
+                  begin: "'",
+                  end: "[^\\\\]'"
+              }, {
+                  begin: "`",
+                  end: "`"
+              }]
+          }, {
+              className: "number",
+              variants: [{
+                  begin: e.C_NUMBER_RE + "[ijk]",
+                  relevance: 1
+              }, e.C_NUMBER_MODE]
+          }]
+      }
+  });
+}
 </script>
 <script>
   window.addEventListener("load", (event) => {
@@ -608,10 +611,8 @@ $ pprof --web ./a.out heap.profile
 	<a class="title" href="#addendum-the-full-code">Addendum: the full code</a>
 	<a class="hash-anchor" href="#addendum-the-full-code" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
-<div class="wrap-collapsible">
-  <input id="collapsible" class="toggle" type="checkbox">
-  <label for="collapsible" class="label-toggle">Code</label>
-  <div class="collapsible-content">
+<details>
+  <summary>The full code</summary>
 <pre><code class="language-c">#define _GNU_SOURCE
 #include &lt;assert.h&gt;
 #include &lt;fcntl.h&gt;
@@ -815,8 +816,8 @@ int main() {
   mem_profile_write(&amp;mem_profile, stderr);
 }
 </code></pre>
-</div>
-</div>
+  </summary>
+</details>
 <p><a href="/blog"> ⏴ Back to all articles</a></p>
 
 <blockquote id="donate">

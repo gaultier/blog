@@ -358,10 +358,9 @@ Yes, indeed, almost twice as fast!
 
 ### The old C implementation
 
-<div class="wrap-collapsible">
-  <input id="collapsible2" class="toggle" type="checkbox">
-  <label for="collapsible2" class="label-toggle">Code</label>
-  <div class="collapsible-content">
+<details>
+  <summary>The full code</summary>
+
 
 ```c
 #include <stdint.h>
@@ -1066,15 +1065,14 @@ int main() {
 }
 ```
 
-</div>
-</div>
+  </summary>
+</details>
 
 ### The x64 implementation
 
-<div class="wrap-collapsible">
-  <input id="collapsible1" class="toggle" type="checkbox">
-  <label for="collapsible1" class="label-toggle">Code</label>
-  <div class="collapsible-content">
+<details>
+  <summary>The full code</summary>
+
 
 ```x86asm
 BITS 64
@@ -1224,8 +1222,5 @@ _start:
   call exit
 ```
 
-<script src="https://unpkg.com/@highlightjs/cdn-assets@11.8.0/languages/x86asm.min.js"></script>
-
-
-</div>
-</div>
+  </summary>
+</details>

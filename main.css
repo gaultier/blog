@@ -192,6 +192,10 @@ a.title {
   color: initial;
 }
 
+details:hover {
+   cursor: pointer;
+}
+
 a.title:hover {
    cursor: pointer;
    color: blue;
@@ -223,58 +227,4 @@ p:has(img):has(em) {
 #donate {
   margin-top: 8rem;
   text-align: center;
-}
-
-.collapsible-content {
-  max-height: 0;
-  overflow: hidden;
-
-  transition: max-height .25s ease-in-out;
-}
-
-.wrap-collapsible {
-  margin: 2.5rem 1.5rem;
-}
-
-.toggle:checked + .label-toggle + .collapsible-content {
-  max-height: initial;
-}
-
-input[type='checkbox'] { display: none; }
-
-
-.label-toggle::before {
-  content: ' ';
-  display: inline-block;
-
-  border-top: 5px solid transparent;
-  border-bottom: 5px solid transparent;
-  border-left: 5px solid currentColor;
-
-  vertical-align: middle;
-  margin-right: .7rem;
-  transform: translateY(-2px);
-
-  transition: transform .2s ease-out;
-}
-
-.toggle:checked + .label-toggle::before {
-  transform: rotate(90deg) translateX(-3px);
-}
-
-.toggle:checked + .label-toggle {
-  border-bottom-right-radius: 0;
-  border-bottom-left-radius: 0;
-}
-
-.label-toggle {
-  font-size: 1.5rem;
-  text-align: center;
-
-  padding: 1rem;
-
-  cursor: pointer;
-
-  border-radius: 7px;
-  transition: all 0.25s ease-out;
 }

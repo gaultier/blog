@@ -1280,10 +1280,8 @@ I hope that you had as much fun as I did!
 
 ## Addendum: the full code
 
-<div class="wrap-collapsible">
-  <input id="collapsible" class="toggle" type="checkbox">
-  <label for="collapsible" class="label-toggle">Code</label>
-  <div class="collapsible-content">
+<details>
+  <summary>The full code</summary>
 
 ```odin
 package main
@@ -2290,5 +2288,5 @@ test_count_mines_around_cell :: proc(_: ^testing.T) {
 }
 ```
 
-</div>
-</div>
+  </summary>
+</details>
