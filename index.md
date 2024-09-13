@@ -8,6 +8,10 @@ Get in touch, send me an email (link on my Github profile)!
 
 ## This blog
 
+This blog is [open-source](https://github.com/gaultier/blog)! If you find a problem, please open a Github issue.
+
+The content of this blog as well as the code snippets are under the [BSD-3 License](https://en.wikipedia.org/wiki/BSD_licenses#3-clause_license_(%22BSD_License_2.0%22,_%22Revised_BSD_License%22,_%22New_BSD_License%22,_or_%22Modified_BSD_License%22)) which I also usually use for all my personal projects. It's basically free for every use but you have to mention me as the original author.
+
 I very unregularly post about various technical topics, usually low-level, esoteric and probably not directly applicable to your run-of-the-mill business application.
 
 This blog does not and will not employ any tracking or cookie of any sort. The only Javascript present is fully optional and only used to do code highlighting.
