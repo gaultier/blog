@@ -10,8 +10,9 @@ Requirements:
 
 E.g.: `apt install cmark git`
 
+Build this blog (i.e. convert markdown files to HTML):
+
 ```sh
-# Build this blog.
 $ odin run src
 ```
 
