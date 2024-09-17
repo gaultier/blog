@@ -273,8 +273,8 @@ toc_lex_titles :: proc(markdown: string, allocator := context.allocator) -> []Ti
 	return titles[:]
 }
 
-toc_write :: proc(sb: ^strings.Builder, titles: []Title) {
-	if len(titles) == 0 {return}
+toc_write :: proc(sb: ^strings.Builder, titles: []Title) -> []Title {
+	if len(titles) == 0 {return {}}
 
 	title := titles[0]
 	id := make_html_friendly_id(title.content, context.temp_allocator)
@@ -284,18 +284,23 @@ toc_write :: proc(sb: ^strings.Builder, titles: []Title) {
 	<a href="#%s">%s</a>
 		`, id, title.content)
 
-	is_next_title_child := len(titles) > 1 && titles[1].level > title.level
-	if is_next_title_child {
+	is_next_title_higher := len(titles) > 1 && titles[1].level > title.level
+	is_next_title_lower := len(titles) > 1 && titles[1].level < title.level
+	if is_next_title_higher {
 		assert(titles[1].level - 1 == title.level)
 		strings.write_string(sb, "<ul>\n")
 	}
 
-	toc_write(sb, titles[1:])
+	if is_next_title_lower {return titles[1:]}
 
-	if is_next_title_child {
+	remaining := toc_write(sb, titles[1:])
+
+	if is_next_title_higher {
 		strings.write_string(sb, "</ul>\n")
 	}
+
 	strings.write_string(sb, "</li>\n")
+	return remaining
 }
 
 
