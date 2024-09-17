@@ -286,21 +286,36 @@ toc_write :: proc(sb: ^strings.Builder, titles: []Title) -> []Title {
 
 	is_next_title_higher := len(titles) > 1 && titles[1].level > title.level
 	is_next_title_lower := len(titles) > 1 && titles[1].level < title.level
-	if is_next_title_higher {
+
+	if is_next_title_lower {
+		assert(titles[1].level + 1 == title.level)
+
+		strings.write_string(sb, "</li>\n")
+
+		// No recursion: return to the caller (parent title) to allow them to close the `<ul>` tag.
+		// The parent will then handle the rest of the titles.
+		// Otherwise said: the current title is a leaf.
+		return titles[1:]
+	} else if is_next_title_higher {
 		assert(titles[1].level - 1 == title.level)
+
 		strings.write_string(sb, "<ul>\n")
-	}
+		// Recurse on children.
+		// `remaining` is now a sibling or '(great-)uncle' of ours.
+		remaining := toc_write(sb, titles[1:])
+		assert(true if len(remaining) == 0 else remaining[0].level >= title.level)
 
-	if is_next_title_lower {return titles[1:]}
-
-	remaining := toc_write(sb, titles[1:])
-
-	if is_next_title_higher {
+		// Close the tags that need to be closed.
 		strings.write_string(sb, "</ul>\n")
-	}
+		strings.write_string(sb, "</li>\n")
 
-	strings.write_string(sb, "</li>\n")
-	return remaining
+		// And now handle the rest of the titles.
+		return toc_write(sb, remaining)
+	} else {
+		// Easy case, next title is a sibling, just close our own `<li>` tag and handle the rest of the titles.
+		strings.write_string(sb, "</li>\n")
+		return toc_write(sb, titles[1:])
+	}
 }
 
 
