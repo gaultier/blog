@@ -317,67 +317,36 @@ toc_lex_titles :: proc(markdown: string, allocator := context.allocator) -> []Ti
 	return titles[:]
 }
 
-toc_parse :: proc(titles: []Title, parent: ^TitleNode, allocator := context.allocator) {
-	if len(parent.children) > 0 {
-		for child, i in parent.children[1:] {
-			assert(child.title.level - 1 == parent.title.level)
-			assert(child.title.level == parent.children[i - 1].title.level)
-		}
-	}
-
-	if len(titles) == 0 {return}
-
-	title := titles[0]
-
-	new_node := new(TitleNode, allocator)
-	new_node.title = title
-
-	real_parent := parent
-	if title.level == parent.title.level {
-		assert(parent.parent.title.level == title.level - 1)
-		real_parent = parent.parent
-	} else if title.level > parent.title.level { 	// Begin nesting.
-		assert(title.level == parent.title.level + 1)
-	} else if title.level < parent.title.level { 	// End nesting.
-		for _ in 0 ..= parent.title.level - title.level {
-			real_parent = real_parent.parent
-		}
-	}
-	assert(new_node.title.level - 1 == real_parent.title.level)
-	new_node.parent = real_parent
-	append(&real_parent.children, new_node)
-
-	toc_parse(titles[1:], new_node, allocator)
-
-	return
-}
-
-toc_print :: proc(title: ^TitleNode, indent: int = 0) {
-	for _ in 0 ..< indent {
-		fmt.print("  ")
-	}
-	fmt.println(title.title)
-
-	for child in title.children {
-		toc_print(child, indent + 1)
-	}
-}
 
 append_article_toc :: proc(sb: ^strings.Builder, markdown: string, article_title: string) {
 	titles := toc_lex_titles(markdown, context.temp_allocator)
 	if len(titles) == 0 {return}
 
-	title_root := new(TitleNode, context.temp_allocator)
-	title_root.title = Title {
-		content = article_title,
-		level   = 1,
-	}
-	toc_parse(titles, title_root, context.temp_allocator)
-
+	fmt.println(titles, article_title)
 
 	strings.write_string(sb, " <strong>Table of contents</strong>\n")
 	strings.write_string(sb, "<ul>\n")
-	toc_write(sb, title_root)
+
+	for title, i in titles {
+		id := make_html_friendly_id(title.content, context.temp_allocator)
+
+		is_last_title_higher := i > 0 && titles[i - 1].level > title.level
+		if is_last_title_higher {
+			assert(titles[i - 1].level - 1 == title.level)
+			strings.write_string(sb, "</ul>\n</li>\n")
+		}
+
+		// is_next_title_child := i < len(titles) - 1 && titles[i + 1].level > title.level
+		// is_next_title_uncle := i < len(titles) - 1 && titles[i + 1].level < title.level
+
+		fmt.sbprintf(sb, `
+<li>
+	<a href="#%s">%s</a>
+	<ul>
+		`, id, title.content)
+
+	}
+	strings.write_string(sb, "</ul>\n</li>\n")
 	strings.write_string(sb, "</ul>\n")
 }
 
