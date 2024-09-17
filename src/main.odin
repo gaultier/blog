@@ -273,6 +273,31 @@ toc_lex_titles :: proc(markdown: string, allocator := context.allocator) -> []Ti
 	return titles[:]
 }
 
+toc_write :: proc(sb: ^strings.Builder, titles: []Title) {
+	if len(titles) == 0 {return}
+
+	title := titles[0]
+	id := make_html_friendly_id(title.content, context.temp_allocator)
+
+	fmt.sbprintf(sb, `
+<li>
+	<a href="#%s">%s</a>
+		`, id, title.content)
+
+	is_next_title_child := len(titles) > 1 && titles[1].level > title.level
+	if is_next_title_child {
+		assert(titles[1].level - 1 == title.level)
+		strings.write_string(sb, "<ul>\n")
+	}
+
+	toc_write(sb, titles[1:])
+
+	if is_next_title_child {
+		strings.write_string(sb, "</ul>\n")
+	}
+	strings.write_string(sb, "</li>\n")
+}
+
 
 append_article_toc :: proc(sb: ^strings.Builder, markdown: string, article_title: string) {
 	titles := toc_lex_titles(markdown, context.temp_allocator)
@@ -282,29 +307,7 @@ append_article_toc :: proc(sb: ^strings.Builder, markdown: string, article_title
 
 	strings.write_string(sb, " <strong>Table of contents</strong>\n")
 	strings.write_string(sb, "<ul>\n")
-
-	for title, i in titles {
-		id := make_html_friendly_id(title.content, context.temp_allocator)
-
-		is_last_title_higher := i > 0 && titles[i - 1].level > title.level
-		if is_last_title_higher {
-			assert(titles[i - 1].level - 1 == title.level)
-			strings.write_string(sb, "</ul>\n</li>\n")
-		}
-
-		is_next_title_child := i < len(titles) - 1 && titles[i + 1].level > title.level
-
-		fmt.sbprintf(sb, `
-<li>
-	<a href="#%s">%s</a>
-		`, id, title.content)
-
-		if is_next_title_child {
-			strings.write_string(sb, "  <ul>\n")
-		} else {
-			strings.write_string(sb, "</li>\n")
-		}
-	}
+	toc_write(sb, titles)
 	strings.write_string(sb, "</ul>\n")
 }
 
