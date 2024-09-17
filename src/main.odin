@@ -245,41 +245,45 @@ decorate_markdown_with_title_ids :: proc(markdown: string) -> string {
 }
 
 toc_write :: proc(sb: ^strings.Builder, node: ^TitleNode) {
-	id := make_html_friendly_id(node.title.content, context.temp_allocator)
+	if node.title.level >= 2 {
+		id := make_html_friendly_id(node.title.content, context.temp_allocator)
 
 
-	fmt.sbprintf(sb, `
+		fmt.sbprintf(sb, `
 <li>
 	<a href="#%s">%s</a>
 		`, id, node.title.content)
 
 
-	// Per spec, nested lists (`<ul>`) must be located inside an `<li>` tag.
-	// Example:
-	// ```
-	// <ul>
-	//     <li>List item one</li>
-	//     <li>List item two with subitems:
-	//         <ul>
-	//             <li>Subitem 1</li>
-	//             <li>Subitem 2</li>
-	//         </ul>
-	//     </li>
-	//     <li>Final list item</li>
-	// </ul>
-	// ```
-	if len(node.children) > 0 {
-		strings.write_string(sb, "<ul>\n")
-	}
+		// Per spec, nested lists (`<ul>`) must be located inside an `<li>` tag.
+		// Example:
+		// ```
+		// <ul>
+		//     <li>List item one</li>
+		//     <li>List item two with subitems:
+		//         <ul>
+		//             <li>Subitem 1</li>
+		//             <li>Subitem 2</li>
+		//         </ul>
+		//     </li>
+		//     <li>Final list item</li>
+		// </ul>
+		// ```
+		if len(node.children) > 0 {
+			strings.write_string(sb, "<ul>\n")
+		}
 
+	}
 	for child in node.children {
 		toc_write(sb, child)
 	}
 
-	if len(node.children) > 0 {
-		strings.write_string(sb, "</ul>\n")
+	if node.title.level >= 2 {
+		if len(node.children) > 0 {
+			strings.write_string(sb, "</ul>\n")
+		}
+		strings.write_string(sb, "</li>\n")
 	}
-	strings.write_string(sb, "</li>\n")
 }
 
 toc_lex_titles :: proc(markdown: string, allocator := context.allocator) -> []Title {
