@@ -365,6 +365,8 @@ toc_print :: proc(title: ^TitleNode, indent: int = 0) {
 
 append_article_toc :: proc(sb: ^strings.Builder, markdown: string, article_title: string) {
 	titles := toc_lex_titles(markdown, context.temp_allocator)
+	if len(titles) == 0 {return}
+
 	title_root := new(TitleNode, context.temp_allocator)
 	title_root.title = Title {
 		content = article_title,
@@ -372,7 +374,6 @@ append_article_toc :: proc(sb: ^strings.Builder, markdown: string, article_title
 	}
 	toc_parse(titles, title_root, context.temp_allocator)
 
-	if len(title_root.children) == 0 {return}
 
 	strings.write_string(sb, " <strong>Table of contents</strong>\n")
 	strings.write_string(sb, "<ul>\n")
