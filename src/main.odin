@@ -25,12 +25,6 @@ Article :: struct {
 	modification_date: string,
 }
 
-TitleNode :: struct {
-	title:    Title,
-	children: [dynamic]^TitleNode,
-	parent:   ^TitleNode,
-}
-
 Title :: struct {
 	content: string,
 	level:   int,
@@ -244,48 +238,6 @@ decorate_markdown_with_title_ids :: proc(markdown: string) -> string {
 	return strings.to_string(builder)
 }
 
-toc_write :: proc(sb: ^strings.Builder, node: ^TitleNode) {
-	if node.title.level >= 2 {
-		id := make_html_friendly_id(node.title.content, context.temp_allocator)
-
-
-		fmt.sbprintf(sb, `
-<li>
-	<a href="#%s">%s</a>
-		`, id, node.title.content)
-
-
-		// Per spec, nested lists (`<ul>`) must be located inside an `<li>` tag.
-		// Example:
-		// ```
-		// <ul>
-		//     <li>List item one</li>
-		//     <li>List item two with subitems:
-		//         <ul>
-		//             <li>Subitem 1</li>
-		//             <li>Subitem 2</li>
-		//         </ul>
-		//     </li>
-		//     <li>Final list item</li>
-		// </ul>
-		// ```
-		if len(node.children) > 0 {
-			strings.write_string(sb, "<ul>\n")
-		}
-
-	}
-	for child in node.children {
-		toc_write(sb, child)
-	}
-
-	if node.title.level >= 2 {
-		if len(node.children) > 0 {
-			strings.write_string(sb, "</ul>\n")
-		}
-		strings.write_string(sb, "</li>\n")
-	}
-}
-
 toc_lex_titles :: proc(markdown: string, allocator := context.allocator) -> []Title {
 	titles := make([dynamic]Title, allocator)
 
@@ -340,17 +292,19 @@ append_article_toc :: proc(sb: ^strings.Builder, markdown: string, article_title
 			strings.write_string(sb, "</ul>\n</li>\n")
 		}
 
-		// is_next_title_child := i < len(titles) - 1 && titles[i + 1].level > title.level
-		// is_next_title_uncle := i < len(titles) - 1 && titles[i + 1].level < title.level
+		is_next_title_child := i < len(titles) - 1 && titles[i + 1].level > title.level
 
 		fmt.sbprintf(sb, `
 <li>
 	<a href="#%s">%s</a>
-	<ul>
 		`, id, title.content)
 
+		if is_next_title_child {
+			strings.write_string(sb, "  <ul>\n")
+		} else {
+			strings.write_string(sb, "</li>\n")
+		}
 	}
-	strings.write_string(sb, "</ul>\n</li>\n")
 	strings.write_string(sb, "</ul>\n")
 }
 
