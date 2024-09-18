@@ -1,8 +1,10 @@
 package main
 
+// import "base:runtime"
 import "core:encoding/uuid"
 import "core:encoding/uuid/legacy"
 import "core:fmt"
+import "core:mem"
 import "core:os"
 import "core:os/os2"
 import "core:path/filepath"
@@ -364,6 +366,8 @@ generate_html_article :: proc(
 	defer delete(cmark_output)
 
 	html_sb := strings.builder_make()
+	defer strings.builder_destroy(&html_sb)
+
 	fmt.sbprintf(&html_sb, html_prelude_fmt, article.title)
 	strings.write_string(&html_sb, header)
 	fmt.sbprintf(
@@ -701,6 +705,33 @@ generate_rss_feed :: proc(articles: []Article) -> (err: os.Error) {
 }
 
 run :: proc() -> (err: os.Error) {
+	// arena: runtime.Arena
+	// if err := runtime.arena_init(&arena, 1 << 20, context.allocator); err != nil {
+	// 	fmt.eprintln(err)
+	// 	os.exit(1)
+	// }
+	// context.allocator = runtime.arena_allocator(&arena)
+	when ODIN_DEBUG {
+		track: mem.Tracking_Allocator
+		mem.tracking_allocator_init(&track, context.allocator)
+		context.allocator = mem.tracking_allocator(&track)
+
+		defer {
+			if len(track.allocation_map) > 0 {
+				fmt.eprintf("=== %v allocations not freed: ===\n", len(track.allocation_map))
+				for _, entry in track.allocation_map {
+					fmt.eprintf("- %v bytes @ %v\n", entry.size, entry.location)
+				}
+			}
+			if len(track.bad_free_array) > 0 {
+				fmt.eprintf("=== %v incorrect frees: ===\n", len(track.bad_free_array))
+				for entry in track.bad_free_array {
+					fmt.eprintf("- %p @ %v\n", entry.memory, entry.location)
+				}
+			}
+			mem.tracking_allocator_destroy(&track)
+		}
+	}
 	header := transmute(string)os.read_entire_file_from_filename_or_err("header.html") or_return
 	defer delete(header)
 	footer := transmute(string)os.read_entire_file_from_filename_or_err("footer.html") or_return
