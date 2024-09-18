@@ -1,10 +1,10 @@
 package main
 
-// import "base:runtime"
 import "core:encoding/uuid"
 import "core:encoding/uuid/legacy"
 import "core:fmt"
 import "core:mem"
+import "core:mem/virtual"
 import "core:os"
 import "core:os/os2"
 import "core:path/filepath"
@@ -33,12 +33,12 @@ Title :: struct {
 }
 
 datetime_to_date :: proc(datetime: string) -> string {
-	split := strings.split_n(datetime, "T", 2, allocator = context.temp_allocator)
+	split := strings.split_n(datetime, "T", 2)
 	return split[0]
 }
 
 parse_metadata :: proc(markdown: string, path: string) -> (title: string, tags: []string) {
-	metadata_lines := strings.split_lines_n(markdown, 4, allocator = context.temp_allocator)
+	metadata_lines := strings.split_lines_n(markdown, 4)
 
 	if len(metadata_lines) < 4 {
 		panic(fmt.aprintf("file %s missing metadata", path))
@@ -47,27 +47,17 @@ parse_metadata :: proc(markdown: string, path: string) -> (title: string, tags: 
 		panic(fmt.aprintf("file %s missing metadata delimiter", path))
 	}
 
-	title_line_split := strings.split_n(
-		metadata_lines[0],
-		": ",
-		2,
-		allocator = context.temp_allocator,
-	)
+	title_line_split := strings.split_n(metadata_lines[0], ": ", 2)
 	if len(title_line_split) != 2 {
 		panic(fmt.aprintf("file %s has a malformed metadata title", path))
 	}
 	title = strings.clone(strings.trim_space(title_line_split[1]))
 
-	tags_line_split := strings.split_n(
-		metadata_lines[1],
-		": ",
-		2,
-		allocator = context.temp_allocator,
-	)
+	tags_line_split := strings.split_n(metadata_lines[1], ": ", 2)
 	if len(tags_line_split) != 2 {
 		panic(fmt.aprintf("file %s has a malformed metadata tags", path))
 	}
-	tags_split := strings.split(tags_line_split[1], ", ", allocator = context.temp_allocator)
+	tags_split := strings.split(tags_line_split[1], ", ")
 
 	tags = make([]string, len(tags_split))
 	for tag, i in tags_split {
@@ -144,10 +134,9 @@ get_creation_and_modification_date_for_article :: proc(
 		[]string{"git", "log", "--format='%aI'", "--", path},
 		{},
 	) or_return
-	defer delete(stdout)
 	stdout = strings.trim_space(stdout)
 
-	lines := strings.split_lines(stdout, context.temp_allocator)
+	lines := strings.split_lines(stdout)
 	modification_date = strings.clone(strings.trim(lines[0], "' \n"))
 	creation_date = strings.clone(strings.trim(lines[len(lines) - 1], "' \n"))
 
@@ -219,7 +208,7 @@ decorate_markdown_with_title_ids :: proc(markdown: string) -> string {
 		assert(1 <= title_level && title_level <= 6)
 
 		title_content := strings.trim_space(line[title_level:])
-		title_id := make_html_friendly_id(title_content, context.temp_allocator)
+		title_id := make_html_friendly_id(title_content)
 
 		fmt.sbprintf(
 			&builder,
@@ -279,7 +268,7 @@ toc_write :: proc(sb: ^strings.Builder, titles: []Title) -> []Title {
 	if len(titles) == 0 {return {}}
 
 	title := titles[0]
-	id := make_html_friendly_id(title.content, context.temp_allocator)
+	id := make_html_friendly_id(title.content)
 
 	fmt.sbprintf(sb, `
 <li>
@@ -322,7 +311,7 @@ toc_write :: proc(sb: ^strings.Builder, titles: []Title) -> []Title {
 
 
 append_article_toc :: proc(sb: ^strings.Builder, markdown: string, article_title: string) {
-	titles := toc_lex_titles(markdown, context.temp_allocator)
+	titles := toc_lex_titles(markdown)
 	if len(titles) == 0 {return}
 
 	fmt.println(titles, article_title)
@@ -345,16 +334,10 @@ generate_html_article :: proc(
 	assert(len(header) > 0)
 	assert(len(footer) > 0)
 
-	metadata_split := strings.split_n(
-		markdown,
-		metadata_delimiter + "\n",
-		2,
-		context.temp_allocator,
-	)
+	metadata_split := strings.split_n(markdown, metadata_delimiter + "\n", 2)
 	article_content := metadata_split[1]
 
 	decorated_markdown := decorate_markdown_with_title_ids(article_content)
-	defer delete(decorated_markdown)
 
 	cmark_output, os2_err := run_sub_process_and_get_stdout(
 		cmark_command,
@@ -363,10 +346,8 @@ generate_html_article :: proc(
 	if os2_err != nil {
 		panic(fmt.aprintf("failed to run cmark: %v", os2.error_string(os2_err)))
 	}
-	defer delete(cmark_output)
 
 	html_sb := strings.builder_make()
-	defer strings.builder_destroy(&html_sb)
 
 	fmt.sbprintf(&html_sb, html_prelude_fmt, article.title)
 	strings.write_string(&html_sb, header)
@@ -390,7 +371,7 @@ generate_html_article :: proc(
 	}
 
 	for tag, i in article.tags {
-		id := make_html_friendly_id(tag, context.temp_allocator)
+		id := make_html_friendly_id(tag)
 		fmt.sbprintf(&html_sb, ` <a href="/blog/articles-by-tag.html#%s">%s</a>`, id, tag)
 
 		if i < len(article.tags) - 1 {
@@ -434,7 +415,6 @@ generate_article :: proc(
 	original_markdown_content := transmute(string)os.read_entire_file_from_filename_or_err(
 		markdown_file_path,
 	) or_return
-	defer delete(original_markdown_content)
 
 	stem := filepath.stem(markdown_file_path)
 
@@ -471,7 +451,6 @@ generate_all_articles_in_directory :: proc(
 	defer os.close(cwd)
 
 	files := os.read_dir(cwd, 0) or_return
-	defer os.file_info_slice_delete(files)
 
 	for f in files {
 		if f.is_dir {continue}
@@ -481,8 +460,6 @@ generate_all_articles_in_directory :: proc(
 
 		article := generate_article(f.name, header, footer) or_return
 		append(&articles_dyn, article)
-
-		free_all(context.temp_allocator)
 	}
 
 	return articles_dyn[:], nil
@@ -503,7 +480,6 @@ generate_home_page :: proc(
 	html_file_path :: "index.html"
 
 	sb := strings.builder_make()
-	defer strings.builder_destroy(&sb)
 
 	fmt.sbprintf(&sb, html_prelude_fmt, "Philippe Gaultier's blog")
 	strings.write_string(&sb, header)
@@ -538,9 +514,7 @@ generate_home_page :: proc(
 		markdown_content := transmute(string)os.read_entire_file_from_filename_or_err(
 			markdown_file_path,
 		) or_return
-		defer delete(markdown_content)
 		decorated_markdown := decorate_markdown_with_title_ids(markdown_content)
-		defer delete(decorated_markdown)
 
 		cmark_stdout, os2_err := run_sub_process_and_get_stdout(
 			cmark_command,
@@ -549,7 +523,6 @@ generate_home_page :: proc(
 		if os2_err != nil {
 			panic(fmt.aprintf("failed to run cmark %v", os2_err))
 		}
-		defer delete(cmark_stdout)
 		strings.write_string(&sb, cmark_stdout)
 	}
 	strings.write_string(&sb, footer)
@@ -573,8 +546,6 @@ generate_page_articles_by_tag :: proc(
 	assert(len(footer) > 0)
 
 	articles_by_tag := make(map[string][dynamic]Article)
-	defer delete(articles_by_tag)
-	defer for _, a in articles_by_tag {delete(a)}
 
 	for a in articles {
 		for tag in a.tags {
@@ -589,13 +560,12 @@ generate_page_articles_by_tag :: proc(
 
 
 	sb := strings.builder_make()
-	defer strings.builder_destroy(&sb)
 	strings.write_string(&sb, header)
 	strings.write_string(&sb, back_link)
 	strings.write_string(&sb, "<h1>Articles by tag</h1>\n")
 	strings.write_string(&sb, "<ul>\n")
 
-	tags_lexicographically_ordered := make([]string, len(articles_by_tag), context.temp_allocator)
+	tags_lexicographically_ordered := make([]string, len(articles_by_tag))
 
 	i := 0
 	for tag in articles_by_tag {
@@ -608,7 +578,7 @@ generate_page_articles_by_tag :: proc(
 		articles_for_tag := articles_by_tag[tag]
 
 		slice.sort_by(articles_for_tag[:], compare_articles_by_creation_date_asc)
-		tag_id := make_html_friendly_id(tag, allocator = context.temp_allocator)
+		tag_id := make_html_friendly_id(tag)
 
 		fmt.sbprintf(&sb, `<li id="%s">%s<ul>
 		`, tag_id, tag)
@@ -646,7 +616,7 @@ generate_rss_feed_for_article :: proc(sb: ^strings.Builder, article: Article) {
 	base_uuid, err := uuid.read(feed_uuid_str)
 	assert(err == nil)
 	article_uuid := legacy.generate_v5_string(base_uuid, article.output_file_name)
-	article_uuid_str := uuid.to_string(article_uuid, allocator = context.temp_allocator)
+	article_uuid_str := uuid.to_string(article_uuid)
 
 	fmt.sbprintf(
 		sb,
@@ -672,7 +642,6 @@ generate_rss_feed :: proc(articles: []Article) -> (err: os.Error) {
 	assert(len(articles) > 0)
 
 	sb := strings.builder_make()
-	defer strings.builder_destroy(&sb)
 
 	fmt.sbprintf(
 		&sb,
@@ -704,55 +673,30 @@ generate_rss_feed :: proc(articles: []Article) -> (err: os.Error) {
 	return
 }
 
-run :: proc() -> (err: os.Error) {
-	// arena: runtime.Arena
-	// if err := runtime.arena_init(&arena, 1 << 20, context.allocator); err != nil {
-	// 	fmt.eprintln(err)
-	// 	os.exit(1)
-	// }
-	// context.allocator = runtime.arena_allocator(&arena)
-	when ODIN_DEBUG {
-		track: mem.Tracking_Allocator
-		mem.tracking_allocator_init(&track, context.allocator)
-		context.allocator = mem.tracking_allocator(&track)
-
-		defer {
-			if len(track.allocation_map) > 0 {
-				fmt.eprintf("=== %v allocations not freed: ===\n", len(track.allocation_map))
-				for _, entry in track.allocation_map {
-					fmt.eprintf("- %v bytes @ %v\n", entry.size, entry.location)
-				}
-			}
-			if len(track.bad_free_array) > 0 {
-				fmt.eprintf("=== %v incorrect frees: ===\n", len(track.bad_free_array))
-				for entry in track.bad_free_array {
-					fmt.eprintf("- %p @ %v\n", entry.memory, entry.location)
-				}
-			}
-			mem.tracking_allocator_destroy(&track)
-		}
+run :: proc() -> (os_err: os.Error) {
+	arena_size := uint(8) * mem.Megabyte
+	mmaped, err := virtual.reserve_and_commit(arena_size)
+	if err != nil {
+		fmt.eprintln(err)
+		os.exit(1)
 	}
+	arena: virtual.Arena
+	if err = virtual.arena_init_buffer(&arena, mmaped); err != nil {
+		fmt.eprintln(err)
+		os.exit(1)
+	}
+	context.allocator = virtual.arena_allocator(&arena)
+
 	header := transmute(string)os.read_entire_file_from_filename_or_err("header.html") or_return
-	defer delete(header)
 	footer := transmute(string)os.read_entire_file_from_filename_or_err("footer.html") or_return
-	defer delete(footer)
 
 	articles := generate_all_articles_in_directory(header, footer) or_return
-	defer delete(articles)
-	defer for &article in articles {
-		delete(article.title)
-		for tag in article.tags {
-			delete(tag)
-		}
-		delete(article.tags)
-		delete(article.creation_date)
-		delete(article.modification_date)
-		delete(article.output_file_name)
-	}
 	slice.sort_by(articles, compare_articles_by_creation_date_asc)
 	generate_home_page(articles, header, footer) or_return
 	generate_page_articles_by_tag(articles, header, footer) or_return
 	generate_rss_feed(articles) or_return
+
+	fmt.println(arena)
 
 	return
 }
