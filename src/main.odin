@@ -334,6 +334,9 @@ generate_html_article :: proc(
 	assert(len(header) > 0)
 	assert(len(footer) > 0)
 
+	context.allocator = context.temp_allocator
+	defer free_all(context.allocator)
+
 	metadata_split := strings.split_n(markdown, metadata_delimiter + "\n", 2)
 	article_content := metadata_split[1]
 
@@ -412,8 +415,11 @@ generate_article :: proc(
 	assert(len(header) > 0)
 	assert(len(footer) > 0)
 
+	defer free_all(context.temp_allocator)
+
 	original_markdown_content := transmute(string)os.read_entire_file_from_filename_or_err(
 		markdown_file_path,
+		allocator = context.temp_allocator,
 	) or_return
 
 	stem := filepath.stem(markdown_file_path)
@@ -475,6 +481,9 @@ generate_home_page :: proc(
 	assert(len(articles) > 0)
 	assert(len(header) > 0)
 	assert(len(footer) > 0)
+
+	context.allocator = context.temp_allocator
+	defer free_all(context.allocator)
 
 	markdown_file_path :: "index.md"
 	html_file_path :: "index.html"
@@ -544,6 +553,9 @@ generate_page_articles_by_tag :: proc(
 	assert(len(articles) > 0)
 	assert(len(header) > 0)
 	assert(len(footer) > 0)
+
+	context.allocator = context.temp_allocator
+	defer free_all(context.allocator)
 
 	articles_by_tag := make(map[string][dynamic]Article)
 
@@ -641,6 +653,9 @@ generate_rss_feed_for_article :: proc(sb: ^strings.Builder, article: Article) {
 generate_rss_feed :: proc(articles: []Article) -> (err: os.Error) {
 	assert(len(articles) > 0)
 
+	context.allocator = context.temp_allocator
+	defer free_all(context.allocator)
+
 	sb := strings.builder_make()
 
 	fmt.sbprintf(
@@ -693,7 +708,7 @@ main :: proc() {
 	defer fmt.println(arena)
 
 	{
-		arena_size := uint(8) * mem.Megabyte
+		arena_size := uint(1) * mem.Megabyte
 		mmaped, err := virtual.reserve_and_commit(arena_size)
 		if err != nil {
 			panic(fmt.aprintf("failed to mmap %v", err))
@@ -722,6 +737,4 @@ main :: proc() {
 	if err := run(); err != nil {
 		panic(fmt.aprintf("%v", err))
 	}
-	fmt.println(arena)
-	fmt.println(tmp_arena)
 }
