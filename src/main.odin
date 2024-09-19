@@ -696,12 +696,10 @@ main :: proc() {
 		arena_size := uint(8) * mem.Megabyte
 		mmaped, err := virtual.reserve_and_commit(arena_size)
 		if err != nil {
-			fmt.eprintln(err)
-			os.exit(1)
+			panic(fmt.aprintf("failed to mmap %v", err))
 		}
 		if err = virtual.arena_init_buffer(&arena, mmaped); err != nil {
-			fmt.eprintln(err)
-			os.exit(1)
+			panic(fmt.aprintf("failed to create main arena %v", err))
 		}
 	}
 	context.allocator = virtual.arena_allocator(&arena)
@@ -713,12 +711,10 @@ main :: proc() {
 		tmp_arena_size := uint(1) * mem.Megabyte
 		tmp_mmaped, err := virtual.reserve_and_commit(tmp_arena_size)
 		if err != nil {
-			fmt.eprintln(err)
-			os.exit(1)
+			panic(fmt.aprintf("failed to create mmap %v", err))
 		}
 		if err = virtual.arena_init_buffer(&tmp_arena, tmp_mmaped); err != nil {
-			fmt.eprintln(err)
-			os.exit(1)
+			panic(fmt.aprintf("failed to create temp arena %v", err))
 		}
 	}
 	context.temp_allocator = virtual.arena_allocator(&tmp_arena)
