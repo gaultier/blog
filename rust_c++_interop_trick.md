@@ -19,6 +19,8 @@ In my case, there were a handful of virtual methods, which could all be advantag
 This is all very abstract? Let's proceed with an example!
 
 
+## Example
+
 Here is our fancy C++ class, `User`.
 
 ```cpp
@@ -100,7 +102,7 @@ Note that the fields can be named differently from the C++ fields if you so choo
 
 Also note that `std::string` is represented here by an opaque array of 32 bytes. That's because on my machine, with the standard library I have, `sizeof(std::string)` is 32. That is *not* guaranteed by the standard, so this makes it very much not portable. We'll go over some options to work-around this at the end. I wanted to include a standard library type to show that it does not prevent the class from being a 'standard layout class', but that is also creates challenges.
 
-For now, let's forget about this con.
+For now, let's forget about this hurdle.
 
 We can also write a stub for the Rust function equivalent to the C++ method:
 
