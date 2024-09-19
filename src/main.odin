@@ -674,18 +674,6 @@ generate_rss_feed :: proc(articles: []Article) -> (err: os.Error) {
 }
 
 run :: proc() -> (os_err: os.Error) {
-	arena_size := uint(8) * mem.Megabyte
-	mmaped, err := virtual.reserve_and_commit(arena_size)
-	if err != nil {
-		fmt.eprintln(err)
-		os.exit(1)
-	}
-	arena: virtual.Arena
-	if err = virtual.arena_init_buffer(&arena, mmaped); err != nil {
-		fmt.eprintln(err)
-		os.exit(1)
-	}
-	context.allocator = virtual.arena_allocator(&arena)
 
 	header := transmute(string)os.read_entire_file_from_filename_or_err("header.html") or_return
 	footer := transmute(string)os.read_entire_file_from_filename_or_err("footer.html") or_return
@@ -696,13 +684,48 @@ run :: proc() -> (os_err: os.Error) {
 	generate_page_articles_by_tag(articles, header, footer) or_return
 	generate_rss_feed(articles) or_return
 
-	fmt.println(arena)
 
 	return
 }
 
 main :: proc() {
+	arena: virtual.Arena
+	defer fmt.println(arena)
+
+	{
+		arena_size := uint(8) * mem.Megabyte
+		mmaped, err := virtual.reserve_and_commit(arena_size)
+		if err != nil {
+			fmt.eprintln(err)
+			os.exit(1)
+		}
+		if err = virtual.arena_init_buffer(&arena, mmaped); err != nil {
+			fmt.eprintln(err)
+			os.exit(1)
+		}
+	}
+	context.allocator = virtual.arena_allocator(&arena)
+
+
+	tmp_arena: virtual.Arena
+	defer fmt.println(tmp_arena)
+	{
+		tmp_arena_size := uint(1) * mem.Megabyte
+		tmp_mmaped, err := virtual.reserve_and_commit(tmp_arena_size)
+		if err != nil {
+			fmt.eprintln(err)
+			os.exit(1)
+		}
+		if err = virtual.arena_init_buffer(&tmp_arena, tmp_mmaped); err != nil {
+			fmt.eprintln(err)
+			os.exit(1)
+		}
+	}
+	context.temp_allocator = virtual.arena_allocator(&tmp_arena)
+
 	if err := run(); err != nil {
 		panic(fmt.aprintf("%v", err))
 	}
+	fmt.println(arena)
+	fmt.println(tmp_arena)
 }
