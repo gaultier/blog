@@ -320,7 +320,7 @@ Alternatively, if we cannot or do not want to change the Rust signature, we can 
 ## Improving the std::string situation
 
 - Instead of modeling `std::string` as an array of bytes whose size is platform-dependent, we could move this field to the end of the C++ class and remove it entirely from Rust (since it is unused there). This would break `sizeof(User) == sizeof(UserC)`, it would now be `sizeof(User) - sizeof(std::string) == sizeof(UserC)`. Thus, the layout would be exactly the same (until the last field which is fine) between C++ and Rust. However, it will be an ABI breakage, if external users depend on the exact layout of the C++ class, and C++ constructors will have to be adapted since they rely on the order of fields. This approach is basically the same as the [flexible array member](https://en.wikipedia.org/wiki/Flexible_array_member) feature in C.
-- If allocations are cheap, we could store the name as a pointer: `std::string *` on the C++ side, and on the Rust side, as a void pointer: `*const std::ffi::c_void`, since pointers have a guaranteed size on all platforms. That has the advantage that Rust can access the data in `std::string`, by calling a C++ helper with a C calling convention. But some will dislike that a naked pointer is being used in C++.
+- If allocations are cheap, we could store the name as a pointer: `std::string * name;` on the C++ side, and on the Rust side, as a void pointer: `name: *const std::ffi::c_void`, since pointers have a guaranteed size on all platforms. That has the advantage that Rust can access the data in `std::string`, by calling a C++ helper with a C calling convention. But some will dislike that a naked pointer is being used in C++.
 
 
 
