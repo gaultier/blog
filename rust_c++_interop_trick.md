@@ -337,7 +337,7 @@ It can also be in theory automated, say with tree-sitter or libclang to operate 
 1. Add a compile-time assert in the C++ class constructor to ensure it is a 'standard layout class' e.g. `static_assert(std::is_standard_layout_v<User>);`. If this fails, skip this class, it requires manual intervention.
 1. Generate the equivalent Rust struct e.g. the struct `UserC.`
 1. For each field of the C++ class/Rust struct, add an compile-time assert to make sure the layout is the same e.g. `static_assert(sizeof(User) == sizeof(UserC)); static_assert(offsetof(User, name) == offsetof(UserC, name));`. If this fails, bail.
-1. For each C++ method, generate an (empty) equivalent Rust function (the implementation sill has to be done by hand I suppose). E.g. `RUST_write_comment`.
+1. For each C++ method, generate an (empty) equivalent Rust function. E.g. `RUST_write_comment`.
 1. A developer implements the Rust function .
 1. For each call site in C++, replace the C++ method call by a call to the Rust function. E.g. `alice.write_comment(..);` becomes `RUST_write_comment(alice, ..);`.
 1. Delete the C++ methods that have been rewritten.

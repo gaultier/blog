@@ -373,7 +373,7 @@ Comment count: 2
 <li>Add a compile-time assert in the C++ class constructor to ensure it is a 'standard layout class' e.g. <code>static_assert(std::is_standard_layout_v&lt;User&gt;);</code>. If this fails, skip this class, it requires manual intervention.</li>
 <li>Generate the equivalent Rust struct e.g. the struct <code>UserC.</code></li>
 <li>For each field of the C++ class/Rust struct, add an compile-time assert to make sure the layout is the same e.g. <code>static_assert(sizeof(User) == sizeof(UserC)); static_assert(offsetof(User, name) == offsetof(UserC, name));</code>. If this fails, bail.</li>
-<li>For each C++ method, generate an (empty) equivalent Rust function (the implementation sill has to be done by hand I suppose). E.g. <code>RUST_write_comment</code>.</li>
+<li>For each C++ method, generate an (empty) equivalent Rust function. E.g. <code>RUST_write_comment</code>.</li>
 <li>A developer implements the Rust function .</li>
 <li>For each call site in C++, replace the C++ method call by a call to the Rust function. E.g. <code>alice.write_comment(..);</code> becomes <code>RUST_write_comment(alice, ..);</code>.</li>
 <li>Delete the C++ methods that have been rewritten.</li>
