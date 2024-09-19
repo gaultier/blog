@@ -86,6 +86,10 @@
 		</li>
 
 <li>
+	<a href="#improving-the-std-string-situation">Improving the std::string situation</a>
+		</li>
+
+<li>
 	<a href="#conclusion">Conclusion</a>
 		</li>
 
@@ -349,6 +353,14 @@ alice ([69, b7, c4, 14, 9, 1c, cf, bd, 28, c2, 69, ea, 40, 91, 65, 2d]) says: he
 Comment count: 2
 </code></pre>
 <p>Alternatively, if we cannot or do not want to change the Rust signature, we can make the C++ helper <code>get_std_string_pointer_and_length</code> have a C convention and take a void pointer, so that Rust will call the helper itself, at the cost of numerous casts in and out of <code>void*</code>.</p>
+<h2 id="improving-the-std-string-situation">
+	<a class="title" href="#improving-the-std-string-situation">Improving the std::string situation</a>
+	<a class="hash-anchor" href="#improving-the-std-string-situation" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+</h2>
+<ul>
+<li>Instead of modeling <code>std::string</code> as an array of bytes whose size is platform-dependent, we could move this field to the end of the C++ class and remove it entirely from Rust (since it is unused there). This would break <code>sizeof(User) == sizeof(UserC)</code>, it would now be <code>sizeof(User) - sizeof(std::string) == sizeof(UserC)</code>. Thus, the layout would be exactly the same (until the last field which is fine) between C++ and Rust. However, it will be an ABI breakage, if external users depend on the exact layout of the C++ class, and C++ constructors will have to be adapted since they rely on the order of fields. This approach is basically the same as the <a href="https://en.wikipedia.org/wiki/Flexible_array_member">flexible array member</a> feature in C.</li>
+<li>If allocations are cheap, we could store the name as a pointer: <code>std::string *</code> on the C++ side, and on the Rust side, as a void pointer: <code>*const std::ffi::c_void</code>, since pointers have a guaranteed size on all platforms. That has the advantage that Rust can access the data in <code>std::string</code>, by calling a C++ helper with a C calling convention. But some will dislike that a naked pointer is being used in C++.</li>
+</ul>
 <h2 id="conclusion">
 	<a class="title" href="#conclusion">Conclusion</a>
 	<a class="hash-anchor" href="#conclusion" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
