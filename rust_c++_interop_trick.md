@@ -6,13 +6,15 @@ I am [rewriting](/blog/how_to_rewrite_a_cpp_codebase_successfully.html) a gnarly
 
 Due to the heavy use of callbacks (sigh), Rust sometimes calls C++ and C++ sometimes calls Rust. This done by having both sides expose a C API for the functions they want the other side to be able to call.
 
-This is for functions; but what about C++ methods? Here is a trick to rewrite one C++ method at a time, without headaches:
+This is for functions; but what about C++ methods? Here is a trick to rewrite one C++ method at a time, without headaches. And by the way, this works whatever the language you are rewriting the project in, it does not have to be Rust!
+
+## The trick
 
 1. Make the C++ class a [standard layout class](https://en.cppreference.com/w/cpp/language/classes#Standard-layout_class). This is defined by the C++ standard. In layman terms, this makes the C++ class be similar to a plain C struct. With a few allowances, for example the C++ class can still use inheritance and a few other things. Most notably, virtual methods are forbidden. I don't care about this limitation because I never use virtual methods myself and this is my least favorite feature in any programming language.
 2. Create a Rust struct with the *exact* same layout as the C++ class.
 3. Create a Rust function with a C calling convention, whose first argument is this Rust class. You can now access every C++ member of the class!
 
-Note: Depending on the C++ codebase you find yourself in, the first point could be either trivial or not possible at all. It depends on the amount of virtual methods used, etc.
+Note: Depending on the C++ codebase you find yourself in, the first point could be either trivial or not feasible at all. It depends on the amount of virtual methods used, etc.
 
 In my case, there were a handful of virtual methods, which could all be advantageously made non virtual, so I first did this.
 
@@ -21,7 +23,7 @@ This is all very abstract? Let's proceed with an example!
 
 ## Example
 
-Here is our fancy C++ class, `User`.
+Here is our fancy C++ class, `User`. It stores a name, a uuid, and a comment count. A user can write comments, which is just a string, that we print.
 
 ```cpp
 // Path: user.cpp
@@ -118,6 +120,7 @@ pub extern "C" fn RUST_write_comment(user: &mut UserC, comment: *const u8, comme
 Now, let's use the tool [cbindgen](https://github.com/mozilla/cbindgen) to generate the C header corresponding to this Rust code:
 
 ```
+$ cargo install cbindgen
 $ cbindgen -v src/lib.rs --lang=c++ -o ../user-rs-lib.h
 ```
 
@@ -231,17 +234,19 @@ Comment count: 1
 Comment count: 2
 ```
 
-The output is slightly different for the uuid, because we use in the Rust implementation the default debug form, but the content is the same. 
+The output is slightly different for the uuid, because we use in the Rust implementation the default `Debug` trait to print the slice, but the content is the same. 
 
 A couple of thoughts:
-- The calls `alice.write_comment(..)` and `RUST_write_comment(alice, ..)` are strictly equivalent and in fact, a C++ compiler will transform the former into the latter in a pure C++ codebase, if you look at the assembly generated. So our Rust function is just mimicking what the C++ compiler would do anyway. However, we are free to have the `User` argument be in any position in the function.
-- The Rust implementation can freely read and modify private members of the C++ class, for example the `comment_count` is only accessible in C++ through the getter, but Rust can just access it as if it was public. That's because `public/private` are just rules enforced by the C++ compiler. However your CPU does not know nor care. The bytes are the bytes. If you can access the bytes at runtime, it does not matter that they were marked 'private' in the source code.
-- We have to use tedious casts which is normal. We are indeed reinterpreting memory from one type (`User`) to another (`UserC`). This is allowed by the standard because the C++ class is a 'standard layout class'. If it was not the case, this would be undefined behavior.
+- The calls `alice.write_comment(..)` and `RUST_write_comment(alice, ..)` are strictly equivalent and in fact, a C++ compiler will transform the former into the latter in a pure C++ codebase, if you look at the assembly generated. So our Rust function is just mimicking what the C++ compiler would do anyway. However, we are free to have the `User` argument be in any position in the function. An other way to say it: We rely on the API, not the ABI, compatibility.
+- The Rust implementation can freely read and modify private members of the C++ class, for example the `comment_count` field is only accessible in C++ through the getter, but Rust can just access it as if it was public. That's because `public/private` are just rules enforced by the C++ compiler. However your CPU does not know nor care. The bytes are the bytes. If you can access the bytes at runtime, it does not matter that they were marked 'private' in the source code.
+- We have to use tedious casts which is normal. We are indeed reinterpreting memory from one type (`User`) to another (`UserC`). This is allowed by the standard because the C++ class is a 'standard layout class'. If it was not the case, this would be undefined behavior and likely work on some platforms but break on others.
 
 
-## Accessing `std::string` from Rust
+## Accessing std::string from Rust
 
-`std::string` should be an opaque type from the perspective of Rust, because it is not the same across platforms or even compiler versions. But we only want to access the underlying bytes of the string. We thus need a helper on the C++ side, that will extract these bytes for us.
+`std::string` should be an opaque type from the perspective of Rust, because it is not the same across platforms or even compiler versions, so we cannot exactly describe its layout.
+
+But we only want to access the underlying bytes of the string. We thus need a helper on the C++ side, that will extract these bytes for us.
 
 First, the Rust side. We define a helper type `ByteSliceView` which is a pointer and a length (the equivalent of a `std::string_view` in C++ latest versions and `&[u8]` in Rust), and our Rust function now takes an additional parameter, the `name`:
 
@@ -259,7 +264,7 @@ pub extern "C" fn RUST_write_comment(
     user: &mut UserC,
     comment: *const u8,
     comment_len: usize,
-    name: ByteSliceView,
+    name: ByteSliceView, // <-- Additional parameter
 ) {
     let comment = unsafe { std::slice::from_raw_parts(comment, comment_len) };
     let comment_str = unsafe { std::str::from_utf8_unchecked(comment) };
@@ -335,7 +340,148 @@ And boom, project rewritten.
 
 
 
+## Addendum: the full code
 
+<details>
+  <summary>The full code</summary>
+
+```cpp
+// Path: user.cpp
+
+#include "user-rs-lib.h"
+#include <cstdint>
+#include <cstdio>
+#include <cstring>
+#include <string>
+
+extern "C" ByteSliceView
+get_std_string_pointer_and_length(const std::string &str) {
+  return {
+      .ptr = reinterpret_cast<const uint8_t *>(str.data()),
+      .len = str.size(),
+  };
+}
+
+class User {
+  std::string name;
+  uint64_t comments_count;
+  uint8_t uuid[16];
+
+public:
+  User(std::string name_) : name{name_}, comments_count{0} {
+    arc4random_buf(uuid, sizeof(uuid));
+
+    static_assert(std::is_standard_layout_v<User>);
+    static_assert(sizeof(std::string) == 32);
+    static_assert(sizeof(User) == sizeof(UserC));
+    static_assert(offsetof(User, name) == offsetof(UserC, name));
+    static_assert(offsetof(User, comments_count) ==
+                  offsetof(UserC, comments_count));
+    static_assert(offsetof(User, uuid) == offsetof(UserC, uuid));
+  }
+
+  void write_comment(const char *comment, size_t comment_len) {
+    printf("%s (", name.c_str());
+    for (size_t i = 0; i < sizeof(uuid); i += 1) {
+      printf("%x", uuid[i]);
+    }
+    printf(") says: %.*s\n", (int)comment_len, comment);
+    comments_count += 1;
+  }
+
+  uint64_t get_comment_count() { return comments_count; }
+
+  const std::string &get_name() { return name; }
+};
+
+int main() {
+  User alice{"alice"};
+  const char msg[] = "hello, world!";
+  alice.write_comment(msg, sizeof(msg) - 1);
+
+  printf("Comment count: %lu\n", alice.get_comment_count());
+
+  RUST_write_comment(reinterpret_cast<UserC *>(&alice),
+                     reinterpret_cast<const uint8_t *>(msg), sizeof(msg) - 1,
+                     get_std_string_pointer_and_length(alice.get_name()));
+  printf("Comment count: %lu\n", alice.get_comment_count());
+}
+```
+
+```c
+// Path: user-rs-lib.h
+
+#include <cstdarg>
+#include <cstdint>
+#include <cstdlib>
+#include <ostream>
+#include <new>
+
+struct UserC {
+  uint8_t name[32];
+  uint64_t comments_count;
+  uint8_t uuid[16];
+};
+
+struct ByteSliceView {
+  const uint8_t *ptr;
+  uintptr_t len;
+};
+
+extern "C" {
+
+void RUST_write_comment(UserC *user,
+                        const uint8_t *comment,
+                        uintptr_t comment_len,
+                        ByteSliceView name);
+
+} // extern "C"
+
+```
+
+```rust
+// Path: user-rs-lib/src/lib.rs
+
+#[repr(C)]
+pub struct UserC {
+    pub name: [u8; 32],
+    pub comments_count: u64,
+    pub uuid: [u8; 16],
+}
+
+#[repr(C)]
+// Akin to `&[u8]`, for C.
+pub struct ByteSliceView {
+    pub ptr: *const u8,
+    pub len: usize,
+}
+
+#[no_mangle]
+pub extern "C" fn RUST_write_comment(
+    user: &mut UserC,
+    comment: *const u8,
+    comment_len: usize,
+    name: ByteSliceView,
+) {
+    let comment = unsafe { std::slice::from_raw_parts(comment, comment_len) };
+    let comment_str = unsafe { std::str::from_utf8_unchecked(comment) };
+
+    let name_slice = unsafe { std::slice::from_raw_parts(name.ptr, name.len) };
+    let name_str = unsafe { std::str::from_utf8_unchecked(name_slice) };
+
+    println!(
+        "{} ({:x?}) says: {}",
+        name_str,
+        user.uuid.as_slice(),
+        comment_str
+    );
+
+    user.comments_count += 1;
+}
+
+```
+
+</details>
 
 
 
