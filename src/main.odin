@@ -314,8 +314,6 @@ append_article_toc :: proc(sb: ^strings.Builder, markdown: string, article_title
 	titles := toc_lex_titles(markdown)
 	if len(titles) == 0 {return}
 
-	fmt.println(titles, article_title)
-
 	strings.write_string(sb, " <strong>Table of contents</strong>\n")
 	strings.write_string(sb, "<ul>\n")
 	toc_write(sb, titles)
