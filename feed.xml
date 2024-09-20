@@ -3,7 +3,7 @@
   <feed xmlns="http://www.w3.org/2005/Atom">
     <title>Philippe Gaultier's blog</title>
     <link href="https://gaultier.github.io/blog"/>
-    <updated>2024-09-19T18:37:46+02:00</updated>
+    <updated>2024-09-19T18:38:16+02:00</updated>
     <author>
       <name>Philippe Gaultier</name>
     </author>
@@ -149,7 +149,7 @@
   <title>A small trick for simple Rust/C++ interop</title>
   <link href="https://gaultier.github.io/blog/rust_c++_interop_trick.html"/>
   <id>urn:uuid:fdfd0b73-184a-5d7f-91f0-457820b278d8</id>
-  <updated>2024-09-19T18:37:46+02:00</updated>
+  <updated>2024-09-19T18:38:16+02:00</updated>
   <published>2024-09-19T18:09:57+02:00</published>
   </entry>
 	</feed>
