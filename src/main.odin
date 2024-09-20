@@ -483,6 +483,8 @@ generate_home_page :: proc(
 	context.allocator = context.temp_allocator
 	defer free_all(context.allocator)
 
+	slice.sort_by(articles, compare_articles_by_creation_date_desc)
+
 	markdown_file_path :: "index.md"
 	html_file_path :: "index.html"
 
@@ -622,7 +624,12 @@ compare_articles_by_creation_date_asc :: proc(a: Article, b: Article) -> bool {
 	return a.creation_date < b.creation_date
 }
 
+compare_articles_by_creation_date_desc :: proc(a: Article, b: Article) -> bool {
+	return a.creation_date > b.creation_date
+}
+
 generate_rss_feed_for_article :: proc(sb: ^strings.Builder, article: Article) {
+
 	base_uuid, err := uuid.read(feed_uuid_str)
 	assert(err == nil)
 	article_uuid := legacy.generate_v5_string(base_uuid, article.output_file_name)
@@ -653,6 +660,8 @@ generate_rss_feed :: proc(articles: []Article) -> (err: os.Error) {
 
 	context.allocator = context.temp_allocator
 	defer free_all(context.allocator)
+
+	slice.sort_by(articles, compare_articles_by_creation_date_asc)
 
 	sb := strings.builder_make()
 
@@ -692,7 +701,6 @@ run :: proc() -> (os_err: os.Error) {
 	footer := transmute(string)os.read_entire_file_from_filename_or_err("footer.html") or_return
 
 	articles := generate_all_articles_in_directory(header, footer) or_return
-	slice.sort_by(articles, compare_articles_by_creation_date_asc)
 	generate_home_page(articles, header, footer) or_return
 	generate_page_articles_by_tag(articles, header, footer) or_return
 	generate_rss_feed(articles) or_return
