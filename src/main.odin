@@ -667,8 +667,7 @@ generate_rss_feed :: proc(articles: []Article) -> (err: os.Error) {
 
 	fmt.sbprintf(
 		&sb,
-		`
-<?xml version="1.0" encoding="utf-8"?>
+		`<?xml version="1.0" encoding="utf-8"?>
   <feed xmlns="http://www.w3.org/2005/Atom">
     <title>Philippe Gaultier's blog</title>
     <link href="%s"/>
