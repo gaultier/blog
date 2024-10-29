@@ -58,7 +58,7 @@ Originally I implemented it wrongly, like this:
 
 
 ```sh
-$ awk '/mod tests/{skip[FILENAME]=1}  skip[FILENAME]{exit 0} {count += 1} END{print(count)}'  src/***.rs
+$ awk '/mod tests/{exit 0} {count += 1} END{print(count)}'  src/***.rs
 ```
 
 If the file is flagged as 'skipped', stop processing it altogether with the builtin statement `exit` ([docs](https://www.gnu.org/software/gawk/manual/html_node/Exit-Statement.html)).

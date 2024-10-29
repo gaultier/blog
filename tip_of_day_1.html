@@ -120,7 +120,7 @@ $ wc -l src/***/.rs
 	<a class="hash-anchor" href="#addendum-exit" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>Originally I implemented it wrongly, like this:</p>
-<pre><code class="language-sh">$ awk '/mod tests/{skip[FILENAME]=1}  skip[FILENAME]{exit 0} {count += 1} END{print(count)}'  src/***.rs
+<pre><code class="language-sh">$ awk '/mod tests/{exit 0} {count += 1} END{print(count)}'  src/***.rs
 </code></pre>
 <p>If the file is flagged as 'skipped', stop processing it altogether with the builtin statement <code>exit</code> (<a href="https://www.gnu.org/software/gawk/manual/html_node/Exit-Statement.html">docs</a>).</p>
 <p>Running this on the same Rust codebase prints: <code>1038</code> which is obviously wrong.</p>
