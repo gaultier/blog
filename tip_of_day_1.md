@@ -67,4 +67,4 @@ Running this on the same Rust codebase prints: `1038` which is obviously wrong.
 
 Why is it wrong then?
 
-Well, as I understand it, AWK processes all inputs files one by one, as if it was one big sequential file (it will still fill the builtin constant `FILENAME` though, that's why the solution above works). Since there is no isolation between processing each file (AWK does not spawn a subprocess for each file), it means we simply stop altogether at the first encountered test in any file.
+Well, as I understand it, AWK processes all inputs files one by one, as if it was one big sequential file (it will still fill the builtin constant `FILENAME` though, that's why the solution above works). Since there is no isolation between the processing each file (AWK does not spawn a subprocess for each file), it means we simply stop altogether at the first encountered test in any file.
