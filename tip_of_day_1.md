@@ -1,4 +1,4 @@
-Title: Tip of the day #1
+Title: Tip of the day #1: Count lines of Rust code, ignoring tests
 Tags: Rust, Tip of the day
 ---
 
