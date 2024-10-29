@@ -2,20 +2,12 @@
   <feed xmlns="http://www.w3.org/2005/Atom">
     <title>Philippe Gaultier's blog</title>
     <link href="https://gaultier.github.io/blog"/>
-    <updated>2024-09-20T08:16:20+02:00</updated>
+    <updated>2024-10-29T13:46:14+01:00</updated>
     <author>
       <name>Philippe Gaultier</name>
     </author>
     <id>urn:uuid:9c065c53-31bc-4049-a795-936802a6b1df</id>
 
-	<entry>
-  <title>Tip of the day #1</title>
-  <link href="https://gaultier.github.io/blog/tip_of_day_1.html"/>
-  <id>urn:uuid:7f069c67-f7cc-5b66-99c5-240656047972</id>
-  <updated></updated>
-  <published></published>
-  </entry>
-	
 	<entry>
   <title>Getting started with Scheme by solving an Advent of Code 2018 challenge</title>
   <link href="https://gaultier.github.io/blog/advent_of_code_2018_5.html"/>
@@ -158,5 +150,13 @@
   <id>urn:uuid:fdfd0b73-184a-5d7f-91f0-457820b278d8</id>
   <updated>2024-09-20T08:16:20+02:00</updated>
   <published>2024-09-19T18:09:57+02:00</published>
+  </entry>
+	
+	<entry>
+  <title>Tip of the day #1</title>
+  <link href="https://gaultier.github.io/blog/tip_of_day_1.html"/>
+  <id>urn:uuid:7f069c67-f7cc-5b66-99c5-240656047972</id>
+  <updated>2024-10-29T13:46:14+01:00</updated>
+  <published>2024-10-29T13:46:14+01:00</published>
   </entry>
 	</feed>
