@@ -61,7 +61,7 @@ Originally I implemented it wrongly, like this:
 $ awk '/mod tests/{exit 0} {count += 1} END{print(count)}'  src/***.rs
 ```
 
-If the file is flagged as 'skipped', stop processing it altogether with the builtin statement `exit` ([docs](https://www.gnu.org/software/gawk/manual/html_node/Exit-Statement.html)).
+If we encounter tests, stop processing the file altogether, with the builtin statement `exit` ([docs](https://www.gnu.org/software/gawk/manual/html_node/Exit-Statement.html)).
 
 Running this on the same Rust codebase prints: `1038` which is obviously wrong.
 
