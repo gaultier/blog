@@ -46,7 +46,7 @@ And this prints in the same project: `10057`.
 Let's unpack it:
 
 - We maintain a hashtable called `skip` which is a mapping of filename to whether or not we should skip the rest of this file. In AWK we do not need to initialize variables, we can use them right away and they are zero initialized. AWK also automatically stores the name of the current file in the global builtin variable `FILENAME`.
-- `/mod tests/`: this pattern matches the line containing `mod tests`. The action for this line is to flag this file as 'skipped'. 
+- `/mod tests/`: this pattern matches the line containing `mod tests`. The action for this line is to flag this file as 'skipped', by setting the value in the map to `1` (i.e. `true`).
 - `!skip[FILENAME]{count += 1}`: If this file is not flagged as 'skipped', we increment for each line, the global counter. Most people think that AWK can only use patterns as clauses before the action, but in fact it also supports boolean conditions, and both can be use together, e.g.: `/foo/ && !skip[FILENAME] {print("hello")}`
 - `END{print(count)}`: we print the count at the very end.
 

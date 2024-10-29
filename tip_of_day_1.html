@@ -110,7 +110,7 @@ $ wc -l src/***/.rs
 <p>Let's unpack it:</p>
 <ul>
 <li>We maintain a hashtable called <code>skip</code> which is a mapping of filename to whether or not we should skip the rest of this file. In AWK we do not need to initialize variables, we can use them right away and they are zero initialized. AWK also automatically stores the name of the current file in the global builtin variable <code>FILENAME</code>.</li>
-<li><code>/mod tests/</code>: this pattern matches the line containing <code>mod tests</code>. The action for this line is to flag this file as 'skipped'.</li>
+<li><code>/mod tests/</code>: this pattern matches the line containing <code>mod tests</code>. The action for this line is to flag this file as 'skipped', by setting the value in the map to <code>1</code> (i.e. <code>true</code>).</li>
 <li><code>!skip[FILENAME]{count += 1}</code>: If this file is not flagged as 'skipped', we increment for each line, the global counter. Most people think that AWK can only use patterns as clauses before the action, but in fact it also supports boolean conditions, and both can be use together, e.g.: <code>/foo/ &amp;&amp; !skip[FILENAME] {print(&quot;hello&quot;)}</code></li>
 <li><code>END{print(count)}</code>: we print the count at the very end.</li>
 </ul>
