@@ -52,7 +52,7 @@ Let's unpack it:
 
 And that's it. AWK is always very nifty.
 
-## Addendum: `exit`
+## Addendum: exit
 
 Originally I implemented it wrongly, like this:
 
