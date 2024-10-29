@@ -2,7 +2,7 @@
   <feed xmlns="http://www.w3.org/2005/Atom">
     <title>Philippe Gaultier's blog</title>
     <link href="https://gaultier.github.io/blog"/>
-    <updated>2024-10-29T13:52:30+01:00</updated>
+    <updated>2024-10-29T13:53:24+01:00</updated>
     <author>
       <name>Philippe Gaultier</name>
     </author>
@@ -156,7 +156,7 @@
   <title>Tip of the day #1: Count lines of Rust code, ignoring tests</title>
   <link href="https://gaultier.github.io/blog/tip_of_day_1.html"/>
   <id>urn:uuid:7f069c67-f7cc-5b66-99c5-240656047972</id>
-  <updated>2024-10-29T13:52:30+01:00</updated>
+  <updated>2024-10-29T13:53:24+01:00</updated>
   <published>2024-10-29T13:46:14+01:00</published>
   </entry>
 	</feed>
