@@ -83,7 +83,7 @@
 		<ul>
 
 <li>
-	<a href="#i-am-still-chasing-undefined-behavior">I am still chasing undefined behavior</a>
+	<a href="#i-am-still-chasing-undefined-behavior">I am still chasing Undefined Behavior</a>
 		</li>
 
 <li>
@@ -142,11 +142,11 @@
 </h2>
 <p>This section is surprisingly long and is the most interesting in my opinion. Did Rust hold its promises?</p>
 <h3 id="i-am-still-chasing-undefined-behavior">
-	<a class="title" href="#i-am-still-chasing-undefined-behavior">I am still chasing undefined behavior</a>
+	<a class="title" href="#i-am-still-chasing-undefined-behavior">I am still chasing Undefined Behavior</a>
 	<a class="hash-anchor" href="#i-am-still-chasing-undefined-behavior" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h3>
 <p>Doing an incremental rewrite from C/C++ to Rust, we had to use a lot of raw pointers and <code>unsafe{}</code> blocks. And even when segregating these to the entry point of the library, they proved to be a big pain in the neck.</p>
-<p>All the stringent rules of Rust still apply inside these blocks but the compiler just stops checking them for you, so you are on your own. As such, it's so easy to introduce undefined behavior. I honestly think from this experience that it is easier to inadvertently introduce Undefined Behavior in Rust than in C++, and it turn, it's easier in C++ than in C.</p>
+<p>All the stringent rules of Rust still apply inside these blocks but the compiler just stops checking them for you, so you are on your own. As such, it's so easy to introduce Undefined Behavior. I honestly think from this experience that it is easier to inadvertently introduce Undefined Behavior in Rust than in C++, and it turn, it's easier in C++ than in C.</p>
 <p>The main rule in Rust is: <code>multiple read-only pointers XOR one mutable pointer</code>. That's what the borrow checker is always pestering you about.</p>
 <p>But when using raw pointers, it's so easy to silently break, especially when porting C or C++ code as-is, which is mutation heavy:</p>
 <pre><code class="language-rust">fn main() {

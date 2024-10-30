@@ -33,11 +33,11 @@ It felt so good to remove all the CMake files. On all the C or C++ projects I wo
 This section is surprisingly long and is the most interesting in my opinion. Did Rust hold its promises?
 
 
-### I am still chasing undefined behavior
+### I am still chasing Undefined Behavior
 
 Doing an incremental rewrite from C/C++ to Rust, we had to use a lot of raw pointers and `unsafe{}` blocks. And even when segregating these to the entry point of the library, they proved to be a big pain in the neck.
 
-All the stringent rules of Rust still apply inside these blocks but the compiler just stops checking them for you, so you are on your own. As such, it's so easy to introduce undefined behavior. I honestly think from this experience that it is easier to inadvertently introduce Undefined Behavior in Rust than in C++, and it turn, it's easier in C++ than in C.
+All the stringent rules of Rust still apply inside these blocks but the compiler just stops checking them for you, so you are on your own. As such, it's so easy to introduce Undefined Behavior. I honestly think from this experience that it is easier to inadvertently introduce Undefined Behavior in Rust than in C++, and it turn, it's easier in C++ than in C.
 
 The main rule in Rust is: `multiple read-only pointers XOR one mutable pointer`. That's what the borrow checker is always pestering you about.
 
