@@ -257,7 +257,7 @@ mod test {
 	<a class="title" href="#cross-compilation-does-not-always-work">Cross-compilation does not always work</a>
 	<a class="hash-anchor" href="#cross-compilation-does-not-always-work" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h3>
-<p>Same issue as with Miri, using libraries with a Rust API but with parts implemented in C or Assembly will make <code>cargo build --target=...</code> not work out of the box. It won't affect everyone out there, and perhaps it can be worked around by providing a sysroot like I do in C or C++. But that's a bummer still. For example, I think Zig manages this situation smoothly for most targets, since it ships with a C compiler and standard library, whereas <code>cargo</code> does not.</p>
+<p>Same issue as with Miri, using libraries with a Rust API but with parts implemented in C or Assembly will make <code>cargo build --target=...</code> not work out of the box. It won't affect everyone out there, and perhaps it can be worked around by providing a sysroot like in C or C++. But that's a bummer still. For example, I think Zig manages this situation smoothly for most targets, since it ships with a C compiler and standard library, whereas <code>cargo</code> does not.</p>
 <h3 id="cbindgen-does-not-always-work">
 	<a class="title" href="#cbindgen-does-not-always-work">Cbindgen does not always work</a>
 	<a class="hash-anchor" href="#cbindgen-does-not-always-work" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>

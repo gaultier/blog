@@ -175,7 +175,7 @@ However, the Rust borrow checker really does not like the `defer` pattern. Typic
 
 ### Cross-compilation does not always work
 
-Same issue as with Miri, using libraries with a Rust API but with parts implemented in C or Assembly will make `cargo build --target=...` not work out of the box. It won't affect everyone out there, and perhaps it can be worked around by providing a sysroot like I do in C or C++. But that's a bummer still. For example, I think Zig manages this situation smoothly for most targets, since it ships with a C compiler and standard library, whereas `cargo` does not.
+Same issue as with Miri, using libraries with a Rust API but with parts implemented in C or Assembly will make `cargo build --target=...` not work out of the box. It won't affect everyone out there, and perhaps it can be worked around by providing a sysroot like in C or C++. But that's a bummer still. For example, I think Zig manages this situation smoothly for most targets, since it ships with a C compiler and standard library, whereas `cargo` does not.
 
 ### Cbindgen does not always work
 
