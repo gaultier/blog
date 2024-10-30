@@ -121,7 +121,7 @@
 		</li>
 </ul>
 
-<p><em>Discussions: <a href="https://old.reddit.com/r/rust/comments/1gflxxh/lessons_learned_from_a_successful_rust_rewrite/?">/r/rust</a>, <a href="https://old.reddit.com/r/programming/comments/1gfljj7/lessons_learned_from_a_successful_rust_rewrite/?">/r/programming</a></em></p>
+<p><em>Discussions: <a href="https://old.reddit.com/r/rust/comments/1gflxxh/lessons_learned_from_a_successful_rust_rewrite/?">/r/rust</a>, <a href="https://old.reddit.com/r/programming/comments/1gfljj7/lessons_learned_from_a_successful_rust_rewrite/?">/r/programming</a>, <a href="https://news.ycombinator.com/item?id=41994189">HN</a></em></p>
 <p>I have written about my on-going rewrite-it-to-Rust effort at work: <a href="/blog/you_inherited_a_legacy_cpp_codebase_now_what.md">1</a>, <a href="/blog/how_to_rewrite_a_cpp_codebase_successfully.md">2</a>, <a href="/blog/rust_c++_interop_trick.html">3</a>. And now it's finished. Let's have a look back at what worked, what didn't, and what can be done about it.</p>
 <p>For context, I have written projects in pure Rust before, so I won't mention all of the usual Rust complaints, like &quot;learning it is hard&quot;, they did not affect me during this project.</p>
 <h2 id="what-worked-well">
@@ -148,8 +148,9 @@
 </h3>
 <p>Doing an incremental rewrite from C/C++ to Rust, we had to use a lot of raw pointers and <code>unsafe{}</code> blocks. And even when segregating these to the entry point of the library, they proved to be a big pain in the neck.</p>
 <p>All the stringent rules of Rust still apply inside these blocks but the compiler just stops checking them for you, so you are on your own. As such, it's so easy to introduce Undefined Behavior. I honestly think from this experience that it is easier to inadvertently introduce Undefined Behavior in Rust than in C++, and it turn, it's easier in C++ than in C.</p>
-<p>The main rule in Rust is: <code>multiple read-only pointers XOR one mutable pointer</code>. That's what the borrow checker is always pestering you about.</p>
+<p>The main rule in Rust is: <s>multiple read-only pointers XOR one mutable pointer</s> <code>multiple read-only reference XOR one mutable reference</code>. That's what the borrow checker is always pestering you about.</p>
 <p>But when using raw pointers, it's so easy to silently break, especially when porting C or C++ code as-is, which is mutation and pointer heavy:</p>
+<p><em>Note: Astute readers have pointed out that the issue in the snippet below is having multiple mutable references, not pointers, and that using the syntax <code>let a = &amp;raw mut x;</code> in recent Rust versions, or <code>addr_of_mut</code> in older versions, avoids creating multiple mutable references.</em></p>
 <pre><code class="language-rust">fn main() {
     let mut x = 1;
     unsafe {
