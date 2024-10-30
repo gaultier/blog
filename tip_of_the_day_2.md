@@ -52,7 +52,7 @@ Very simple, just ask the OS to give us a region of virtual memory and off we go
 
 ## The bug
 
-Now, since we use a system call directly, sanitizers and runtime checks from the libc allocator do not apply, since we bypass them completely.
+Now, since we use a system call directly, sanitizers and runtime checks from the libc allocator do not apply, since we bypass them completely. In a way, it is also a feature: it means that our program will behave exactly the same on all OSes, and use the exact same amount of memory. It does not depend on the libc or allocator.
 
 So it turns out that I had a bug in my code: I allocated an array from the arena, and then accidentally wrote paste the bounds of my array (so far, this sounds like a typical story from the C trenches). 
 
