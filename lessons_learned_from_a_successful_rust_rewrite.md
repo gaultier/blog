@@ -198,7 +198,7 @@ Many, many hours of hair pulling would be avoided if Rust and C++ adopted, like 
 
 With lots of C libraries, the user can provide its own allocator at runtime, which is often very useful. In Rust, the developer can only pick the global allocator at compile time. So we did not attempt to offer this feature in the library API. 
 
-Additionally, all of the aforementioned issues about cleaning up resources would have been instantly fixed by using an [arena allocator](http://localhost:8000/blog/tip_of_the_day_2.html), which is not at all idiomatic in Rust and does not integrate with the standard library (even though there are crates for it). Again, C, Zig, and Odin all support arenas natively. I really longed for an arena while chasing subtle memory leaks.
+Additionally, all of the aforementioned issues about cleaning up resources would have been instantly fixed by using an [arena allocator](http://localhost:8000/blog/tip_of_the_day_2.html), which is not at all idiomatic in Rust and does not integrate with the standard library (even though there are crates for it). Again, Zig and Odin all support arenas natively, and it's trivial to implement and use them in C. I really longed for an arena while chasing subtle memory leaks.
 
 
 ### Complexity
