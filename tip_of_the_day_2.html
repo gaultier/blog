@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Tip of the day #2: A safer arena allocator</title>
+<meta charset="utf-8">
+<link type="application/atom+xml" href="/blog/feed.xml" rel="self"/>
+<link rel="shortcut icon" type="image/ico" href="/blog/favicon.ico">
+<link rel="stylesheet" type="text/css" href="main.css">
+<link rel="stylesheet" href="https://unpkg.com/@highlightjs/cdn-assets@11.8.0/styles/default.min.css">
+<script src="https://unpkg.com/@highlightjs/cdn-assets@11.8.0/highlight.min.js"></script>
+<!-- From https://github.com/odin-lang/odin-lang.org/blob/6f48c2cfb094a42dffd34143884fa958bd9c0ba2/themes/odin/layouts/partials/head.html#L71 -->
+<script src="https://unpkg.com/@highlightjs/cdn-assets@11.8.0/languages/x86asm.min.js"></script>
+<script>
+  window.onload = function() {
+      hljs.registerLanguage("odin", function(e) {
+      return {
+          aliases: ["odin", "odinlang", "odin-lang"],
+          keywords: {
+              keyword: "auto_cast bit_field bit_set break case cast context continue defer distinct do dynamic else enum fallthrough for foreign if import in map matrix not_in or_else or_return package proc return struct switch transmute type_of typeid union using when where",
+              literal: "true false nil",
+              built_in: "abs align_of cap clamp complex conj expand_to_tuple imag jmag kmag len max min offset_of quaternion real size_of soa_unzip soa_zip swizzle type_info_of type_of typeid_of"
+          },
+          illegal: "</",
+          contains: [e.C_LINE_COMMENT_MODE, e.C_BLOCK_COMMENT_MODE, {
+              className: "string",
+              variants: [e.QUOTE_STRING_MODE, {
+                  begin: "'",
+                  end: "[^\\\\]'"
+              }, {
+                  begin: "`",
+                  end: "`"
+              }]
+          }, {
+              className: "number",
+              variants: [{
+                  begin: e.C_NUMBER_RE + "[ijk]",
+                  relevance: 1
+              }, e.C_NUMBER_MODE]
+          }]
+      }
+    });
+
+    hljs.highlightAll();
+  }
+</script>
+</head>
+<body>
+
+<div id="banner">
+    <div id="name">
+        <img id="me" src="me.jpeg">
+        <span>Philippe Gaultier</span>
+    </div>
+    <ul>
+      <li> <a href="/blog/body_of_work.html">Body of work</a> </li>
+      <li> <a href="/blog/articles-by-tag.html">Tags</a> </li>
+      <li> <a href="https://github.com/gaultier/resume/raw/master/Philippe_Gaultier_resume_en.pdf">Resume</a> </li>
+      <li> <a href="https://www.linkedin.com/in/philippegaultier/">LinkedIn</a> </li>
+      <li> <a href="https://github.com/gaultier">Github</a> </li>
+      <li> <a href="/blog/feed.xml">Atom feed</a> </li>
+    </ul>
+</div>
+<div class="body">
+
+		<div class="article-prelude">
+			<p><a href="/blog"> ⏴ Back to all articles</a></p>
+
+			<p class="publication-date">Published on 2024-10-29</p>
+		</div>
+		<div class="article-title">
+		<h1>Tip of the day #2: A safer arena allocator</h1>
+		  <span>🏷️ <a href="/blog/articles-by-tag.html#c">C</a>,  <a href="/blog/articles-by-tag.html#allocator">Allocator</a>,  <a href="/blog/articles-by-tag.html#safety">Safety</a></span>
+ </div>
+ <strong>Table of contents</strong>
+<ul>
+
+<li>
+	<a href="#the-standard-arena">The standard arena</a>
+		</li>
+
+<li>
+	<a href="#the-bug">The bug</a>
+		</li>
+
+<li>
+	<a href="#the-solution">The solution</a>
+		</li>
+
+<li>
+	<a href="#variations">Variations</a>
+		</li>
+
+<li>
+	<a href="#see-also">See also</a>
+		</li>
+</ul>
+
+<p>The most transformative action you can do to dramatically improve your code in a programming language where you are in control of the memory is: to use arenas.</p>
+<p>Much has been written about arenas (<a href="https://nullprogram.com/blog/2023/09/27/">1</a>, <a href="https://www.rfleury.com/p/untangling-lifetimes-the-arena-allocator">2</a>). In short, it means grouping multiple allocations with the same lifetime in one batch that gets allocated and deallocated only once.</p>
+<p>Another way to look at it, is that the allocations are append only. They never get freed during their 'life'. The program is split into 'phases'. Typically, each phase has its own arena, and when it reaches its end, the whole arena gets nuked from space and all entities attached to it alongside it. It's a great way to simplify the code, make it faster, and escape from the 'web of pointers' hell.</p>
+<h2 id="the-standard-arena">
+	<a class="title" href="#the-standard-arena">The standard arena</a>
+	<a class="hash-anchor" href="#the-standard-arena" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+</h2>
+<p>A typical arena looks like that:</p>
+<pre><code class="language-c">#include &lt;stdint.h&gt;
+#include &lt;stdio.h&gt;
+#include &lt;sys/mman.h&gt;
+#include &lt;unistd.h&gt;
+
+typedef struct {
+  uint8_t *start;
+  uint8_t *end;
+} Arena;
+
+static Arena arena_make_from_virtual_mem(uint64_t size) {
+  uint8_t *alloc = mmap(nullptr, size, PROT_READ | PROT_WRITE,
+                   MAP_ANON | MAP_PRIVATE, -1, 0);
+  return (Arena){.start = alloc, .end = alloc + size};
+}
+
+static void *
+arena_alloc(Arena *a, uint64_t size, uint64_t align, uint64_t count) {
+  const uint64_t padding = (-(uint64_t)a-&gt;start &amp; (align - 1));
+  const int64_t available = (int64_t)a-&gt;end - (int64_t)a-&gt;start - (int64_t)padding;
+
+  void *res = a-&gt;start + padding;
+
+  a-&gt;start += padding + count * size;
+
+  return memset(res, 0, count * size);
+}
+
+int main() {
+  Arena a = arena_make_from_virtual_mem(4096);
+}
+</code></pre>
+<p>Very simple, just ask the OS to give us a region of virtual memory and off we go (on Windows, the system call is different, but bottom line, there is an equivalent one).</p>
+<h2 id="the-bug">
+	<a class="title" href="#the-bug">The bug</a>
+	<a class="hash-anchor" href="#the-bug" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+</h2>
+<p>Now, since we use a system call directly, sanitizers and runtime checks from the libc allocator do not apply, since we bypass them completely.</p>
+<p>So it turns out that I had a bug in my code: I allocated an array from the arena, and then accidentally wrote paste the bounds of my array (so far, this sounds like a typical story from the C trenches).</p>
+<p>Normally, this would likely (depending on a few factors) write past the memory page that the OS gave us, thus triggering a <code>SIGSEGV</code>.</p>
+<p>However, in that instance, I got unlucky, because my code actually did something like that:</p>
+<pre><code class="language-c">int main() {
+  Arena a = arena_make_from_virtual_mem(4096);
+  Arena b = arena_make_from_virtual_mem(4096);
+
+  // Simulate writing past the arena:
+  a.start + 5000 = 42;
+}
+</code></pre>
+<p>And...the program did not crash. The symptoms were very weird: data was subtly wrong in another place of the program, thus making it very difficult to troubleshoot. That's basically the nightmare scenario for any engineer. A crash would be so much easier.</p>
+<p>But why?</p>
+<p>Well, we basically asked the OS to give us one page of virtual memory when creating the first arena. Right after, we asked for a second page. And most often than not, the OS gives us then a page right after the first page. So from the OS perspective, we allocated <code>2 * 4096 = 8192</code> bytes, and wrote in the middle, so all is good. We wanted to write into the first arena but instead wrote into the second one accidentally.</p>
+<h2 id="the-solution">
+	<a class="title" href="#the-solution">The solution</a>
+	<a class="hash-anchor" href="#the-solution" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+</h2>
+<p>So how do we fix it? What I did was defence in depth:</p>
+<ul>
+<li>Add asserts everywhere I could to check pre and post conditions. I believe that's how I discovered the bug in the first place, when one assert failed, even though it seemed impossible.</li>
+<li>Replace all direct array and pointer accesses with macros that check bounds (like most modern programming languages)</li>
+<li>Tweak how the arena is created to make it safer. That's our tip of the day, so let's see it.</li>
+</ul>
+<p>The idea is not new, most allocators do so in 'hardening' mode. When the arena is created, we place a 'guard page' right before and after the real allocation.</p>
+<p>We mark these guard pages as neither readable nor writable, so any access will trigger a <code>SIGSEGV</code>, even though that's memory owned by our program.</p>
+<p>That way, going slightly past the bounds of the real allocation in either direction, will result in a crash that's easy to diagnose.</p>
+<p>Note that this is a tradeoff:</p>
+<ul>
+<li>It will not catch all out-of-bounds accesses. We could get unlucky and accidentally hit the memory of another arena still. This is a protection that typically helps with off-by-one errors.</li>
+<li>It's very lightweight: the OS only has to maintain an entry in a table, recording that the program owns the two additional pages (per arena). No actualy physicaly memory will be dedicated for them. But, if there are millions of arenas, it could make a difference.</li>
+<li>It's theoritically tunable: nothing prevents us from having larger guard 'regions'. If we are paranoid, we could make the guard region 64 Gib before and after the real allocation of 4096 bytes, if we wish. That's the power of virtual memory.</li>
+<li>The granularity is still the page (typically 4096 bytes, something larger). We cannot easily prevent out-of-bounds accesses within a page.</li>
+<li>The original implementation at the beginning of the article did not have to bother with the size of a page. But this implementation has to, which slightly complicates the logic (but not by much).</li>
+</ul>
+<p>So here it is:</p>
+<pre><code class="language-c">static Arena arena_make_from_virtual_mem(uint64_t size) {
+  uint64_t page_size = (uint64_t)sysconf(_SC_PAGE_SIZE);
+  uint64_t alloc_real_size = round_up_multiple_of(size, page_size);
+
+  // Page guard before + after.
+  uint64_t mmap_size = alloc_real_size + 2 * page_size;
+
+  uint8_t *alloc = mmap(nullptr, mmap_size, PROT_READ | PROT_WRITE,
+                   MAP_ANON | MAP_PRIVATE, -1, 0);
+
+  uint64_t page_guard_before = (uint64_t)alloc;
+
+  alloc += page_size;
+  uint64_t page_guard_after = (uint64_t)alloc + alloc_real_size;
+
+  mprotect((void *)page_guard_before, page_size, PROT_NONE);
+  mprotect((void *)page_guard_after, page_size, PROT_NONE);
+
+  return (Arena){.start = alloc, .end = alloc + size};
+}
+</code></pre>
+<p>We get the page size with <code>sysconf</code>. Again, that's required because we will use the system call <code>mprotect</code> to change the permissions on parts of the memory, and <code>mprotect</code> expects a page-aligned memory range.</p>
+<p>Since an allocation is at least one page, even if the user asked for an arena of size <code>1</code>, we first round the user allocation size up, to the next page size. E.g. for a page size of <code>4096</code>: <code>1 -&gt; 4096</code>, <code>4095 -&gt; 4096</code>, <code>4096 -&gt; 4096</code>, <code>4097</code> -&gt; <code>8192</code>.</p>
+<p>Then, in one <code>mmap</code> call, we allocate all the memory we need including the two guard pages. For a brief moment, all the memory is readable and writable. The very next thing we do is mark the first page and last page as neither readable nor writable. We then return the arena, and the user is none the wiser.</p>
+<p>Wouldn't it be simpler to issue <code>3</code> mmap calls with the right permissions from the get go? Well, yes, but there is no guarantee that the OS would give us a contiguous region of memory across these 3 calls. On Linux, we can give hints, but still there is no guarantee. Remember, our program is one of many running concurrently, and could get interrupted for some time between these <code>mmap</code> calls, the whole OS could go to sleep, etc. What we want is an atomic operation, thus, one <code>mmap</code> call.</p>
+<p>So that's it, a poor man Adress Sanitizer in a few lines of code.</p>
+<h2 id="variations">
+	<a class="title" href="#variations">Variations</a>
+	<a class="hash-anchor" href="#variations" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+</h2>
+<p>If we are really paranoid, we could change how the arena works, to make every allocation get a new, separate page from the OS. That means that creating the arena would do nothing, and allocating from the arena would do the real allocation. This approach is, to me, indistinguishable from a general purpose allocator a la <code>malloc</code> from libc, just one that's very naive, and probably much slower.</p>
+<p>But, if there is a pesky out-of-bound bug pestering you, that could be worth trying.</p>
+<h2 id="see-also">
+	<a class="title" href="#see-also">See also</a>
+	<a class="hash-anchor" href="#see-also" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+</h2>
+<p>I wrote in the past about adding memory profiling to this kind of arena allocator: <a href="https://gaultier.github.io/blog/roll_your_own_memory_profiling.html">Roll your own memory profiling: it's actually not hard</a>.</p>
+<p><a href="/blog"> ⏴ Back to all articles</a></p>
+
+<blockquote id="donate">
+  <p>If you enjoy what you're reading, you want to support me, and can afford it: <a href="https://paypal.me/philigaultier?country.x=DE&locale.x=en_US">Donate</a></p>
+</blockquote>
+
+<blockquote>
+  <p>
+    This blog is <a href="https://github.com/gaultier/blog">open-source</a>!
+    If you find a problem, please open a Github issue.
+    The content of this blog as well as the code snippets are under the <a href="https://en.wikipedia.org/wiki/BSD_licenses#3-clause_license_(%22BSD_License_2.0%22,_%22Revised_BSD_License%22,_%22New_BSD_License%22,_or_%22Modified_BSD_License%22)">BSD-3 License</a> which I also usually use for all my personal projects. It's basically free for every use but you have to mention me as the original author.
+  </p>
+</blockquote>
+
+</div>
+</body>
+</html>
