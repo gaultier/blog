@@ -56,7 +56,7 @@ Now, since we use a system call directly, sanitizers and runtime checks from the
 
 So it turns out that I had a bug in my code: I allocated an array from the arena, and then accidentally wrote past the bounds of my array (so far, this sounds like a typical story from the C trenches). 
 
-Normally, this would likely (depending on a few factors) write past the memory page that the OS gave us, thus triggering a `SIGSEGV`.
+Normally, this would likely (depending on a few factors, like where in the arena was this allocation located, how big was it, and by how many bytes did the write go past the bounds, etc) write past the memory page that the OS gave us, thus triggering a `SIGSEGV`.
 
 However, in that instance, I got unlucky, because my code actually did something like that:
 

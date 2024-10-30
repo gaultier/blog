@@ -142,7 +142,7 @@ int main() {
 </h2>
 <p>Now, since we use a system call directly, sanitizers and runtime checks from the libc allocator do not apply, since we bypass them completely. In a way, it is also a feature: it means that our program will behave exactly the same on all OSes, have the exact same memory layout, and use the exact same amount of memory. It does not depend on the libc or allocator.</p>
 <p>So it turns out that I had a bug in my code: I allocated an array from the arena, and then accidentally wrote past the bounds of my array (so far, this sounds like a typical story from the C trenches).</p>
-<p>Normally, this would likely (depending on a few factors) write past the memory page that the OS gave us, thus triggering a <code>SIGSEGV</code>.</p>
+<p>Normally, this would likely (depending on a few factors, like where in the arena was this allocation located, how big was it, and by how many bytes did the write go past the bounds, etc) write past the memory page that the OS gave us, thus triggering a <code>SIGSEGV</code>.</p>
 <p>However, in that instance, I got unlucky, because my code actually did something like that:</p>
 <pre><code class="language-c">int main() {
   Arena a = arena_make_from_virtual_mem(4096);
