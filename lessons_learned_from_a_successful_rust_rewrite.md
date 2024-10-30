@@ -191,7 +191,7 @@ With lots of C libraries, the user can provide its own allocator at runtime, whi
 Additionally, all of the aforementioned issues about cleaning up resources would have been instantly fixed by using an [arena allocator](http://localhost:8000/blog/tip_of_the_day_2.html), which is not at all idiomatic in Rust and does not integrate with the standard library. Again, C, Zig, and Odin all support arenas natively. I really longed for an arena while chasing subtle memory leaks.
 
 
-## Complexity
+### Complexity
 
 Whilst reading the docs for `UnsafeCell` for the fourth time, and pondering whether I should use that or `RefCell`, while just having been burnt by the pitfalls of `MaybeUninit`, I reall asked myself what life choices had led me to this. 
 
