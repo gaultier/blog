@@ -51,7 +51,7 @@ fn main() {
 }
 ```
 
-You might think that this code is dumb and obviously wrong, but in a big real codebase, this is not so easy to spot, especially when these operations are hidden inside helper functions.
+You might think that this code is dumb and obviously wrong, but in a big real codebase, this is not so easy to spot, especially when these operations are hidden inside helper functions or layers and layers of abstraction, as Rust loves to do.
 
 `cargo run` is content with that. But the Rust compiler can and will assume that there is only one mutable pointer to `x`, and make optimizations, and generate machine code, based on that.
 
