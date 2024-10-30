@@ -193,6 +193,8 @@ Additionally, all of the aforementioned issues about cleaning up resources would
 
 ### Complexity
 
+From the start, I decided I would not touch async Rust with a ten-foot pole, and I did not miss it at all, for this project.
+
 Whilst reading the docs for `UnsafeCell` for the fourth time, and pondering whether I should use that or `RefCell`, while just having been burnt by the pitfalls of `MaybeUninit`, I reall asked myself what life choices had led me to this. 
 
 Pure Rust is already very complex, but add to it the whole layer that is mainly there to deal with FFI, and it really becomes a beast.
