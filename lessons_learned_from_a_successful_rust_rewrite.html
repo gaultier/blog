@@ -251,7 +251,8 @@ mod test {
 }
 </code></pre>
 <p>A Rust developer first instinct would be to use RAII by creating a wrapper object which implements <code>Drop</code> and automatically calls the cleanup function.
-However, we wanted to write our tests using the public C API of the library like a normal C application would, and it would not have access to this Rust feature.</p>
+However, we wanted to write our tests using the public C API of the library like a normal C application would, and it would not have access to this Rust feature.
+Also, it can become unwieldy when there are tens of types that have an allocation/deallocation function. It's a lot of boilerplate!</p>
 <p>And often, there is complicated logic with lots of code paths, and we need to ensure that the cleanup is always called. In C, this is typically done with <code>goto</code> to an <code>end:</code> label that always cleans up the resources. But Rust does not support this form of <code>goto</code>.</p>
 <p>So we solved it with the <a href="https://docs.rs/scopeguard/latest/scopeguard/">defer</a> crate in Rust and implementing a <a href="https://www.gingerbill.org/article/2015/08/19/defer-in-cpp/">defer</a> statement in C++.</p>
 <p>However, the Rust borrow checker really does not like the <code>defer</code> pattern. Typically, a cleanup function will take as its argument as <code>&amp;mut</code> reference and that precludes the rest of the code to also store and use a second <code>&amp;mut</code> reference to the same value. So we could not always use <code>defer</code> on the Rust side.</p>

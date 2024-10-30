@@ -170,6 +170,7 @@ mod test {
 
 A Rust developer first instinct would be to use RAII by creating a wrapper object which implements `Drop` and automatically calls the cleanup function.
 However, we wanted to write our tests using the public C API of the library like a normal C application would, and it would not have access to this Rust feature.
+Also, it can become unwieldy when there are tens of types that have an allocation/deallocation function. It's a lot of boilerplate!
 
 And often, there is complicated logic with lots of code paths, and we need to ensure that the cleanup is always called. In C, this is typically done with `goto` to an `end:` label that always cleans up the resources. But Rust does not support this form of `goto`.
 
