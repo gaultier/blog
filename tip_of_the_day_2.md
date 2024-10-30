@@ -154,7 +154,7 @@ There's a whole class of attacks where the first step is to make the program all
 
 So, the mitigation is to place all allocations of the same type in one bucket (supposedly, it's a separate memory region with guard pages before and after). When an object of type `X` is allocated, then freed, and then the program allocates an object of type `Y`, of roughly the same size, a typical allocator will reuse the memory of `X`. This Apple allocator would give memory from a separate bucket, from a completely different memory region.
 
-What I don't know, is whether or not there are runtime checks as well, for example when casting one object from one type to another e.g. with `reinterpret_cast` in C++. It seems that this allocator would have the information needed at runtime to do so, which could be an interesting feature.
+What I don't know, is whether or not there are runtime checks as well, for example when casting one object from one type to another e.g. from `X` to `void*`, back to `X`, with `reinterpret_cast` in C++. It seems that this allocator would have the information needed at runtime to do so, which could be an interesting feature.
 
 Now, having one bucket per type turns out to be too slow in reality, and consumes too much memory, according to Apple developers, so as a trade-off, this allocator groups a handful a different types in one bucket. This is a typical trade-off between performance and security.
 
