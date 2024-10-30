@@ -279,7 +279,7 @@ Also, it can become unwieldy when there are tens of types that have an allocatio
 	<a class="hash-anchor" href="#no-support-for-custom-memory-allocators" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h3>
 <p>With lots of C libraries, the user can provide its own allocator at runtime, which is often very useful. In Rust, the developer can only pick the global allocator at compile time. So we did not attempt to offer this feature in the library API.</p>
-<p>Additionally, all of the aforementioned issues about cleaning up resources would have been instantly fixed by using an <a href="http://localhost:8000/blog/tip_of_the_day_2.html">arena allocator</a>, which is not at all idiomatic in Rust and does not integrate with the standard library (even though there are crates for it). Again, Zig and Odin all support arenas natively, and it's trivial to implement and use them in C. I really longed for an arena while chasing subtle memory leaks.</p>
+<p>Additionally, all of the aforementioned issues about cleaning up resources would have been instantly fixed by using an <a href="/blog/tip_of_the_day_2.html">arena allocator</a>, which is not at all idiomatic in Rust and does not integrate with the standard library (even though there are crates for it). Again, Zig and Odin all support arenas natively, and it's trivial to implement and use them in C. I really longed for an arena while chasing subtle memory leaks.</p>
 <h3 id="complexity">
 	<a class="title" href="#complexity">Complexity</a>
 	<a class="hash-anchor" href="#complexity" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
