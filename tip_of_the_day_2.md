@@ -2,6 +2,8 @@ Title: Tip of the day #2: A safer arena allocator
 Tags: C, Allocator, Safety
 ---
 
+*Discussions: [/r/programming](https://old.reddit.com/r/programming/comments/1gfiif5/tip_of_the_day_2_a_safer_arena_allocator/)*
+
 The most transformative action you can do to dramatically improve your code in a programming language where you are in control of the memory is: to use arenas.
 
 Much has been written about arenas ([1](https://nullprogram.com/blog/2023/09/27/), [2](https://www.rfleury.com/p/untangling-lifetimes-the-arena-allocator)). In short, it means grouping multiple allocations with the same lifetime in one batch that gets allocated and deallocated only once.

@@ -105,6 +105,7 @@
 		</li>
 </ul>
 
+<p><em>Discussions: <a href="https://old.reddit.com/r/programming/comments/1gfiif5/tip_of_the_day_2_a_safer_arena_allocator/">/r/programming</a></em></p>
 <p>The most transformative action you can do to dramatically improve your code in a programming language where you are in control of the memory is: to use arenas.</p>
 <p>Much has been written about arenas (<a href="https://nullprogram.com/blog/2023/09/27/">1</a>, <a href="https://www.rfleury.com/p/untangling-lifetimes-the-arena-allocator">2</a>). In short, it means grouping multiple allocations with the same lifetime in one batch that gets allocated and deallocated only once.</p>
 <p>Another way to look at it, is that the allocations are append only. They never get freed during their 'life'. The program is split into 'phases'. Typically, each phase has its own arena, and when it reaches its end, the whole arena gets nuked from space along with all entities allocated from it. It's a great way to simplify the code, make it faster, and escape from the 'web of pointers' hell.</p>
