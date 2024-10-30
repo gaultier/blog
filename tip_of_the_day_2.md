@@ -164,7 +164,7 @@ Still, this is an interesting approach, and could be implemented in our context 
 
 ## See also
 
-*Astute readers have also mentioned using canaries and teaching Address Sanitizer to be aware of our custom arena allocator so that it does these checks for us. That's super cool! See the linked discussions at the start.*
+*Astute readers have also mentioned: using canaries as well, putting the real data at the start or end of the page to catch out-of-bounds accesses respectively before and after the allocation, and finally, teaching Address Sanitizer to be aware of our custom arena allocator so that it does these checks for us. That's super cool! See the linked discussions at the start.*
 
 I wrote in the past about adding memory profiling an arena allocator: [Roll your own memory profiling: it's actually not hard](/blog/roll_your_own_memory_profiling.html).
 
