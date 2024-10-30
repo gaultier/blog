@@ -154,7 +154,7 @@ So, the mitigation is to place all allocations of the same type in one bucket (s
 
 What I don't know, is whether or not there are runtime checks as well, for example when casting one object from one type to another e.g. with `reinterpret_cast` in C++. It seems that this allocator would have the information needed at runtime to do so, which could be an interesting feature.
 
-Now, having one bucket per type turns out to be too slow in reality, and consumes too much memory, so as a tradeoff, this allocator groups a handful a different types in one bucket. This is a typical tradeoff between performance and security.
+Now, having one bucket per type turns out to be too slow in reality, and consumes too much memory, according to Apple developers, so as a tradeoff, this allocator groups a handful a different types in one bucket. This is a typical tradeoff between performance and security.
 
 Still, this is an interesting approach, and could be implemented in our context by having one arena store all entities of one type, i.e. one arena is one bucket.
 
