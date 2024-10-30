@@ -201,7 +201,7 @@ help: &lt;2883&gt; was later invalidated at offsets [0x0..0x8] by a Unique retag
     = help: however, note that Miri does not aim to support every FFI function out there; for instance, we will not support APIs for things such as GUIs, scripting languages, or databases
 </code></pre>
 <p>If you are using a library that has parts written in C or assembly, which is usual for cryptography libraries, or video compression, etc, you are out of luck.</p>
-<p>So we resorted to add a feature flag to split the codebase between parts that use this library and parts that don't. And Miri only runs tests with the feature disabled.</p>
+<p>So we resorted to add a feature flag to split the codebase between parts that use this problematic library and parts that don't. And Miri only runs tests with the feature disabled.</p>
 <p>That means that there is a lot of <code>unsafe</code> code that is simply not being checked right now. Bummer.</p>
 <p>Perhaps there could be a fallback implementation for these libraries that's entirely implemented in software (and in pure Rust). But that's not really feasible for most libraries to maintain two implementations just for Rust developers.</p>
 <p>I resorted to run the problematic tests in <code>valgrind</code>, like I used to do with pure C/C++ code. It does not detect many things that Miri would, for example having more than one mutable pointer to the same value, which is perfectly fine in C/C++/Assembly, but not Rust.</p>

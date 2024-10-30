@@ -106,7 +106,7 @@ No, I am talking about code that Miri cannot run, period:
 
 If you are using a library that has parts written in C or assembly, which is usual for cryptography libraries, or video compression, etc, you are out of luck.
 
-So we resorted to add a feature flag to split the codebase between parts that use this library and parts that don't. And Miri only runs tests with the feature disabled. 
+So we resorted to add a feature flag to split the codebase between parts that use this problematic library and parts that don't. And Miri only runs tests with the feature disabled. 
 
 That means that there is a lot of `unsafe` code that is simply not being checked right now. Bummer.
 
