@@ -140,13 +140,13 @@ So that's it, a poor man Adress Sanitizer in a few lines of code.
 
 ## Variations
 
-## The paranoid approach
+### The paranoid approach
 
 If we are really paranoid, we could change how the arena works, to make every allocation get a new, separate page from the OS. That means that creating the arena would do nothing, and allocating from the arena would do the real allocation. This approach is, to me, indistinguishable from a general purpose allocator a la `malloc` from libc, just one that's very naive, and probably much slower.
 
 But, if there is a pesky out-of-bound bug pestering you, that could be worth trying.
 
-## The bucket per type approach
+### The bucket per type approach
 
 On [Apple platforms](https://www.youtube.com/watch?v=t7EJTO0-reg), the libc allocator has a hardening mode that can be enabled at compile time. It stems from the realization that many security vulnerabilities rely on type confusion: The program thinks it is handling an entity of type `X`, but due to a logic bug, or the attacker meddling, or the allocator reusing freshly freed memory from another place in the program, it is actually of another type `Y`. This results in an entity being in an 'impossible' state which is great for an attacker. Also, reusing a previously allocated-then-freed object with a different type, without zero-initializing it, can leak secrets or information about the state of the program, to an attacker.
 
