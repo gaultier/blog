@@ -4,13 +4,13 @@ Tags: Rust, C++, Rewrite
 
 I have written about my on-going rewrite-it-to-Rust effort at work: [1](/blog/you_inherited_a_legacy_cpp_codebase_now_what.md), [2](/blog/how_to_rewrite_a_cpp_codebase_successfully.md), [3](/blog/rust_c++_interop_trick.html). And now it's finished. Let's have a look back at what worked, what didn't, and what can be done about it.
 
-For context, I have written projects in pure Rust before, so I won't mention all of the usual Rust complaints, like learning it is hard, they did not affect me during this project.
+For context, I have written projects in pure Rust before, so I won't mention all of the usual Rust complaints, like "learning it is hard", they did not affect me during this project.
 
 ## What worked well
 
 The rewrite was done incrementally, in a stop-and-go fashion. At some point, as I expected, we had to add brand new features while the rewrite was on-going and that was very smooth with this approach. Contrast this with the (wrong) approach of starting a new codebase from scratch in parallel, and then the feature has to be implemented twice.
 
-The new code is much, much simpler and easier to reason about. It is roughly the same number of lines of code as the old C++ codebase, or slightly more. Some people think that equivalent Rust code will be much shorter (I have heard ratios of 1/2 or 2/3), but in my experience, it's not really the case. C++ can be incredibly verbose in some instances, but Rust also. And the C++ code will often ignore some errors that the Rust compiler forces the developer to handle, which is a good thing, but also makes the codebase slightly bigger.
+The new code is much, much simpler and easier to reason about. It is roughly the same number of lines of code as the old C++ codebase, or slightly more. Some people think that equivalent Rust code will be much shorter (I have heard ratios of 1/2 or 2/3), but in my experience, it's not really the case. C++ can be incredibly verbose in some instances, but Rust as well. And the C++ code will often ignore some errors that the Rust compiler forces the developer to handle, which is a good thing, but also makes the codebase slightly bigger.
 
 Undergoing a rewrite, even a bug-for-bug one like ours, opens many new doors in terms of performance. For example, some fields in C++ were assumed to be of a dynamic size, but we realized that they were always 16 bytes according to business rules, so we stored them in a static array, thus simplifying lots of code and reducing heap allocations. That's not strictly due to Rust, it's just that having this holistic view of the codebase yields many benefits.
 
@@ -219,7 +219,7 @@ If you do not yet know Rust, I recommend for your first project to use pure Rust
 
 I initially considered using Zig or Odin for this rewrite, but I really did not want to use a pre v1.0 language for an enterprise production codebase (and I anticipated that it would be hard to convince other engineers and managers). Now, I am wondering if the experience would have really been worse than with Rust. Perhaps the Rust model is really at odds with the C model (or with the C++ model for that matter) and there is simply too much friction when using both together.
 
-If I have to undertake a similar effort in the future, I think I would go with Zig instead. We'll see. In any case, the next time someone say 'just rewrite it in Rust', point them to this article, and ask them if that changed their mind ;)
+If I have to undertake a similar effort in the future, I think I would strongly consider going with Zig instead. We'll see. In any case, the next time someone say 'just rewrite it in Rust', point them to this article, and ask them if that changed their mind ;)
 
 
 
