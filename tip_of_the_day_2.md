@@ -152,7 +152,7 @@ On [Apple platforms](https://www.youtube.com/watch?v=t7EJTO0-reg), the libc allo
 
 There's a whole class of attacks where the first step is to make the program allocate and free objects many times, of an attacker controlled size, so that the heap is in the right 'shape', with a high statistical chance. Meaning, a few targeted objects are next to each other in the heap, for the attack to occur.
 
-So, the mitigation is to place all allocations of the same type in one bucket (supposedly, it's a separate memory region with guard pages before and after). When an object of type `X` is allocated, then freed, and then the program allocates an object of type `Y`, of roughly the same size, a typical allocator will reuse the memory of `X`. This Apple allocator would give memory from a separate bucket.
+So, the mitigation is to place all allocations of the same type in one bucket (supposedly, it's a separate memory region with guard pages before and after). When an object of type `X` is allocated, then freed, and then the program allocates an object of type `Y`, of roughly the same size, a typical allocator will reuse the memory of `X`. This Apple allocator would give memory from a separate bucket, from a completely different memory region.
 
 What I don't know, is whether or not there are runtime checks as well, for example when casting one object from one type to another e.g. with `reinterpret_cast` in C++. It seems that this allocator would have the information needed at runtime to do so, which could be an interesting feature.
 
