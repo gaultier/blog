@@ -140,10 +140,23 @@ So that's it, a poor man Adress Sanitizer in a few lines of code.
 
 ## Variations
 
+## The paranoid approach
+
 If we are really paranoid, we could change how the arena works, to make every allocation get a new, separate page from the OS. That means that creating the arena would do nothing, and allocating from the arena would do the real allocation. This approach is, to me, indistinguishable from a general purpose allocator a la `malloc` from libc, just one that's very naive, and probably much slower.
 
 But, if there is a pesky out-of-bound bug pestering you, that could be worth trying.
 
+## The bucket per type approach
+
+On [Apple platforms](https://www.youtube.com/watch?v=t7EJTO0-reg), the libc allocator has a hardening mode that can be enabled at compile time. It stems from the realization that many security vulnerabilities rely on type confusion: The program thinks it is handling an entity of type `X`, but due to a logic bug, or the attacker meddling, it is actually of another type `Y`. Think for example of a C union, and the program mutates the wrong fields. This results in an entity being in an 'impossible' state which is great for an attacker. Also, reusing a previously allocated-then-freed object with a different type, without zero-initializing it, can leak memory, and/or also result in the new entity being in an impossible state.
+
+So, the mitigation is to place all allocations of the same type in one bucket (supposedly, it's a separate memory region with guard pages before and after). When an object of type `X` is allocated, then freed, and then the program allocates an object of type `Y`, of roughly the same size, a typical allocator will reuse the memory of `X`. This Apple allocator would give memory from a separate bucket.
+
+What I don't know, is whether or not, there are runtime checks as well, for example when casting one object from one type to another e.g. with `reinterpret_cast` in C++. It seems that this allocator would have the information needed at runtime to do so, which could be an interesting feature.
+
+Now, having one bucket per type turns out to be too slow in reality, and consumes too much memory, so as a tradeoff, this allocator groups a handful a different types in one bucket. This is a typical tradeoff between performance and security.
+
+Still, this is an interesting approach, and could be implemented in our context by having one arena store all entities of one type, i.e. one arena is one bucket.
 
 ## See also
 
