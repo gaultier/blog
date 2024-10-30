@@ -1,5 +1,5 @@
 Title: How to rewrite a C++ codebase successfully
-Tags: C, C++, Rust, Rewrite
+Tags: C, C++, Rust, Rewrite, Safety
 ---
 
 *Not your typical 'Rewrite it in Rust' article.*
