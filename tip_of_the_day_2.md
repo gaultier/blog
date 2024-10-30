@@ -74,7 +74,9 @@ And...the program did not crash. The symptoms were very weird: data was subtly w
 
 But why?
 
-Well, we basically asked the OS to give us one page of virtual memory when creating the first arena. Right after, we asked for a second page. And most often than not, the OS gives us then a page right after the first page. So from the OS perspective, we allocated `2 * 4096 = 8192` bytes, and wrote in the middle, so all is good. We wanted to write into the first arena but instead wrote into the second one accidentally.
+Well, we basically asked the OS to give us one page of virtual memory when creating the first arena. Right after, we asked for a second page. And most often than not, the OS gives us then a page right after the first page. So from the OS perspective, we allocated `2 * 4096 = 8192` bytes, and wrote in the middle, so all is good. We wanted to write into the first arena but instead wrote into the second one accidentally. 
+
+This behavior is however not consistent, running the programs many times will sometimes crash and sometimes not. It all depends if the memory pages for the different arenas are contiguous or not.
 
 ## The solution
 
