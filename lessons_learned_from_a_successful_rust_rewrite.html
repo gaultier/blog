@@ -210,8 +210,7 @@ help: &lt;2883&gt; was later invalidated at offsets [0x0..0x8] by a Unique retag
 	<a class="hash-anchor" href="#i-am-still-chasing-memory-leaks" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h3>
 <p>Our library offers a C API, something like this:</p>
-<pre><code>int handle = 0;
-MYLIB_init(&amp;handle);
+<pre><code>void* handle = MYLIB_init();
 
 // Do some stuff with the handle...
 
