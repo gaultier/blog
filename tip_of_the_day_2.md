@@ -1,5 +1,5 @@
 Title: Tip of the day #2: A safer arena allocator
-Tags: C, Allocator
+Tags: C, Allocator, Safety
 ---
 
 The most transformative action you can do to dramatically improve your code in a programming language where you are in control of the memory is: to use arenas.
