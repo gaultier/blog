@@ -199,6 +199,9 @@ Whilst reading the docs for `UnsafeCell` for the fourth time, and pondering whet
 
 Pure Rust is already very complex, but add to it the whole layer that is mainly there to deal with FFI, and it really becomes a beast.
 
+Some developers in our team straight declined to work on this codebase, mentioning the real or perceived Rust complexity.
+Now, I think that Rust is still mostly easier to learn than C++, but admittedly not by much, especially in this FFI heavy context.
+
 ## Conclusion
 
 I am mostly satisfied with this Rust rewrite, but I was disappointed in some areas, and it overall took much more effort than I anticipated. Using Rust with a lot of C interop feels like using a completely different language than using pure Rust. There is much friction, many pitfalls, and many issues in C++, that Rust claims to have solved, that are in fact not really solved at all.
