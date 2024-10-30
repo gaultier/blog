@@ -80,9 +80,9 @@ This behavior is however not consistent, running the programs many times will so
 
 ## The solution
 
-So how do we fix it? What I did was defence in depth:
+So how do we fix it? What I did was defense in depth:
 
-- Add asserts everywhere I could to check pre and post conditions. I believe that's how I discovered the bug in the first place, when one assert failed, even though it seemed impossible.
+- Add asserts everywhere I could to check pre- and post-conditions. I believe that's how I discovered the bug in the first place, when one assert failed, even though it seemed impossible.
 - Replace all direct array and pointer accesses with macros that check bounds (like most modern programming languages)
 - Tweak how the arena is created to make it safer. That's our tip of the day, so let's see it.
 
@@ -93,11 +93,11 @@ We mark these guard pages as neither readable nor writable, so any access will t
 
 That way, going slightly past the bounds of the real allocation in either direction, will result in a crash that's easy to diagnose.
 
-Note that this is a tradeoff:
+Note that this is a trade-off:
 
 - It will not catch all out-of-bounds accesses. We could get unlucky and accidentally hit the memory of another arena still. This is a protection that typically helps with off-by-one errors.
-- It's very lightweight: the OS only has to maintain an entry in a table, recording that the program owns the two additional pages (per arena). No actualy physicaly memory will be dedicated for them. But, if there are millions of arenas, it could make a difference.
-- It's theoritically tunable: nothing prevents us from having larger guard 'regions'. If we are paranoid, we could make the guard region 64 Gib before and after the real allocation of 4096 bytes, if we wish. That's the power of virtual memory.
+- It's very lightweight: the OS only has to maintain an entry in a table, recording that the program owns the two additional pages (per arena). No actually physical memory will be dedicated for them. But, if there are millions of arenas, it could make a difference.
+- It's theoretically tunable: nothing prevents us from having larger guard 'regions'. If we are paranoid, we could make the guard region 64 Gib before and after the real allocation of 4096 bytes, if we wish. That's the power of virtual memory.
 - The granularity is still the page (typically 4096 bytes, something larger). We cannot easily prevent out-of-bounds accesses within a page.
 - The original implementation at the beginning of the article did not have to bother with the size of a page. But this implementation has to, which slightly complicates the logic (but not by much).
 
@@ -133,7 +133,7 @@ Since an allocation is at least one page, even if the user asked for an arena of
 
 Then, in one `mmap` call, we allocate all the memory we need including the two guard pages. For a brief moment, all the memory is readable and writable. The very next thing we do is mark the first page and last page as neither readable nor writable. We then return the arena, and the user is none the wiser.
 
-Wouldn't it be simpler to issue `3` mmap calls with the right permissions from the get go? Well, yes, but there is no guarantee that the OS would give us a contiguous region of memory across these 3 calls. On Linux, we can give hints, but still there is no guarantee. Remember, our program is one of many running concurrently, and could get interrupted for some time between these `mmap` calls, the whole OS could go to sleep, etc. What we want is an atomic operation, thus, one `mmap` call.
+Wouldn't it be simpler to issue `3` `mmap` calls with the right permissions from the get go? Well, yes, but there is no guarantee that the OS would give us a contiguous region of memory across these 3 calls. On Linux, we can give hints, but still there is no guarantee. Remember, our program is one of many running concurrently, and could get interrupted for some time between these `mmap` calls, the whole OS could go to sleep, etc. What we want is an atomic operation, thus, one `mmap` call.
 
 So that's it, a poor man Adress Sanitizer in a few lines of code.
 
@@ -154,7 +154,7 @@ So, the mitigation is to place all allocations of the same type in one bucket (s
 
 What I don't know, is whether or not there are runtime checks as well, for example when casting one object from one type to another e.g. with `reinterpret_cast` in C++. It seems that this allocator would have the information needed at runtime to do so, which could be an interesting feature.
 
-Now, having one bucket per type turns out to be too slow in reality, and consumes too much memory, according to Apple developers, so as a tradeoff, this allocator groups a handful a different types in one bucket. This is a typical tradeoff between performance and security.
+Now, having one bucket per type turns out to be too slow in reality, and consumes too much memory, according to Apple developers, so as a trade-off, this allocator groups a handful a different types in one bucket. This is a typical trade-off between performance and security.
 
 Still, this is an interesting approach, and could be implemented in our context by having one arena store all entities of one type, i.e. one arena is one bucket.
 
