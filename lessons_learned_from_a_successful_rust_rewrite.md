@@ -34,7 +34,7 @@ This section is surprisingly long and is the most interesting in my opinion. Did
 
 Doing an incremental rewrite from C/C++ to Rust, we had to use a lot of raw pointers and `unsafe{}` blocks. And even when segregating these to the entry point of the library, they proved to be a big pain in the neck.
 
-All the stringent rules of Rust still apply inside these blocks but the compiler just stops checking them for you, so you are on your own. As such, it's so easy to introduce undefined behavior. I honestly think from this experience that it is easier to inadvertently introduce UB in Rust than in C++, and it turn, it's easier in C++ than in C.
+All the stringent rules of Rust still apply inside these blocks but the compiler just stops checking them for you, so you are on your own. As such, it's so easy to introduce undefined behavior. I honestly think from this experience that it is easier to inadvertently introduce Undefined Behavior in Rust than in C++, and it turn, it's easier in C++ than in C.
 
 The main rule in Rust is: `multiple read-only pointers XOR one mutable pointer`. That's what the borrow checker is always pestering you about.
 
@@ -219,7 +219,7 @@ If you do not yet know Rust, I recommend for your first project to use pure Rust
 
 I initially considered using Zig or Odin for this rewrite, but I really did not want to use a pre v1.0 language for an enterprise production codebase (and I anticipated that it would be hard to convince other engineers and managers). Now, I am wondering if the experience would have really been worse than with Rust. Perhaps the Rust model is really at odds with the C model and there is simply too much friction when using both together.
 
-If I have to undertake a similar effort in the future, I think I would go with Zig instead. We'll see.
+If I have to undertake a similar effort in the future, I think I would go with Zig instead. We'll see. In any case, the next time someone say 'just rewrite it in Rust', point them to this article, and ask them if that changed their mind ;)
 
 
 
