@@ -217,7 +217,7 @@ I think that all of these points have been felt by Microsoft and Google, and tha
 
 If you do not yet know Rust, I recommend for your first project to use pure Rust, and stay far away from the whole FFI topic.
 
-I initially considered using Zig or Odin for this rewrite, but I really did not want to use a pre v1.0 language for an enterprise production codebase (and I anticipated that it would be hard to convince other engineers and managers). Now, I am wondering if the experience would have really been worse than with Rust. Perhaps the Rust model is really at odds with the C model and there is simply too much friction when using both together.
+I initially considered using Zig or Odin for this rewrite, but I really did not want to use a pre v1.0 language for an enterprise production codebase (and I anticipated that it would be hard to convince other engineers and managers). Now, I am wondering if the experience would have really been worse than with Rust. Perhaps the Rust model is really at odds with the C model (or with the C++ model for that matter) and there is simply too much friction when using both together.
 
 If I have to undertake a similar effort in the future, I think I would go with Zig instead. We'll see. In any case, the next time someone say 'just rewrite it in Rust', point them to this article, and ask them if that changed their mind ;)
 
