@@ -202,7 +202,7 @@ From the start, I decided I would not touch async Rust with a ten-foot pole, and
 
 Whilst reading the docs for `UnsafeCell` for the fourth time, and pondering whether I should use that or `RefCell`, while just having been burnt by the pitfalls of `MaybeUninit`, I really asked myself what life choices had led me to this. 
 
-Pure Rust is already very complex, but add to it the whole layer that is mainly there to deal with FFI, and it really becomes a beast. Especially for Rust learners.
+Pure Rust is already very complex, but add to it the whole layer that is mainly there to deal with FFI, and it really becomes a beast. Especially for new Rust learners.
 
 Some developers in our team straight declined to work on this codebase, mentioning the real or perceived Rust complexity.
 Now, I think that Rust is still mostly easier to learn than C++, but admittedly not by much, especially in this FFI heavy context.
