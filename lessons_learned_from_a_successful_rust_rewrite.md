@@ -168,7 +168,8 @@ mod test {
 }
 ```
 
-That looks good, right? Straight from a textbook. Unfortunately, the reality is a bit more complex. In a hybrid C++/Rust codebase, some entities have their allocation function in Rust and their deallocation function in C++, not migrated yet. So you can't easily write a `Drop` function in Rust to automatically cleanup the resources by calling the C++ function. That's because the C++ library links against the Rust library, and to make the `Drop` work, it would require linking the Rust tests against the C++ library, which we really did not want to get into. Additionally, we wanted to write our tests using the public C API of the library like a normal C application would, and it would not have access to this Rust feature.
+A Rust developer first instinct would be to use RAII by creating a wrapper object which implements `Drop` and automatically calls the cleanup function.
+However, we wanted to write our tests using the public C API of the library like a normal C application would, and it would not have access to this Rust feature.
 
 And often, there is complicated logic with lots of code paths, and we need to ensure that the cleanup is always called. In C, this is typically done with `goto` to an `end:` label that always cleans up the resources. But Rust does not support this form of `goto`.
 
