@@ -32,7 +32,9 @@ This section is surprisingly long and is the most interesting in my opinion. Did
 
 Doing an incremental rewrite from C/C++ to Rust, we had to use a lot of raw pointers and `unsafe{}` blocks. And even when segregating these to the entry point of the library, they proved to be a big pain in the neck.
 
-All the stringent rules of Rust still apply inside these blocks but the compiler just stops checking them for you, so you are on your own. As such, it's so easy to introduce undefined behavior. The main rule is: `multiple read-only pointers XOR one mutable pointer`. That's what the borrow checker is always pestering you about.
+All the stringent rules of Rust still apply inside these blocks but the compiler just stops checking them for you, so you are on your own. As such, it's so easy to introduce undefined behavior. I honestly think it is easier to inadvertently introduce UB in Rust than in C++, and it turn, it's easier in C++ than in C.
+
+The main rule in Rust is: `multiple read-only pointers XOR one mutable pointer`. That's what the borrow checker is always pestering you about.
 
 But when using raw pointers, it's so easy to silently break, especially when porting C or C++ code as-is, which is mutation heavy:
 
@@ -195,7 +197,7 @@ Additionally, all of the aforementioned issues about cleaning up resources would
 
 From the start, I decided I would not touch async Rust with a ten-foot pole, and I did not miss it at all, for this project.
 
-Whilst reading the docs for `UnsafeCell` for the fourth time, and pondering whether I should use that or `RefCell`, while just having been burnt by the pitfalls of `MaybeUninit`, I reall asked myself what life choices had led me to this. 
+Whilst reading the docs for `UnsafeCell` for the fourth time, and pondering whether I should use that or `RefCell`, while just having been burnt by the pitfalls of `MaybeUninit`, I really asked myself what life choices had led me to this. 
 
 Pure Rust is already very complex, but add to it the whole layer that is mainly there to deal with FFI, and it really becomes a beast.
 
