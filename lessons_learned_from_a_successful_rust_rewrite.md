@@ -112,7 +112,7 @@ That means that there is a lot of `unsafe` code that is simply not being checked
 
 Perhaps there could be a fallback implementation for these libraries that's entirely implemented in software (and in pure Rust). But that's not really feasible for most libraries to maintain two implementations just for Rust developers.
 
-I resorted to run the problematic tests in `valgrind`, like I used to do with pure C/C++ code. It does not detect many things that Miri would, for example having more than one mutable pointer to the same value, which is perfectly fine in C/C++/Assembly, but not Rust.
+I resorted to run the problematic tests in `valgrind`, like I used to do with pure C/C++ code. It does not detect many things that Miri would, for example having more than one mutable pointer to the same value, which is perfectly fine in C/C++/Assembly, but not in Rust.
 
 
 ### I am still chasing memory leaks
