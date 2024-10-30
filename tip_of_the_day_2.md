@@ -87,7 +87,7 @@ So how do we fix it? What I did was defence in depth:
 - Tweak how the arena is created to make it safer. That's our tip of the day, so let's see it.
 
 
-The idea is not new, most allocators do so in 'hardening' mode. When the arena is created, we place a 'guard page' right before and after the real allocation. 
+The idea is not new, most allocators do so in 'hardening' mode: when the arena is created, we place a 'guard page' right before and after the real allocation. 
 
 We mark these guard pages as neither readable nor writable, so any access will trigger a `SIGSEGV`, even though that's memory owned by our program.
 

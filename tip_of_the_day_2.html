@@ -166,7 +166,7 @@ int main() {
 <li>Replace all direct array and pointer accesses with macros that check bounds (like most modern programming languages)</li>
 <li>Tweak how the arena is created to make it safer. That's our tip of the day, so let's see it.</li>
 </ul>
-<p>The idea is not new, most allocators do so in 'hardening' mode. When the arena is created, we place a 'guard page' right before and after the real allocation.</p>
+<p>The idea is not new, most allocators do so in 'hardening' mode: when the arena is created, we place a 'guard page' right before and after the real allocation.</p>
 <p>We mark these guard pages as neither readable nor writable, so any access will trigger a <code>SIGSEGV</code>, even though that's memory owned by our program.</p>
 <p>That way, going slightly past the bounds of the real allocation in either direction, will result in a crash that's easy to diagnose.</p>
 <p>Note that this is a tradeoff:</p>
