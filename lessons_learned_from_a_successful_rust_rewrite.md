@@ -185,7 +185,9 @@ Again, as a comparison, I believe Zig has a builtin C header generation tool.
 
 ### Unstable ABI
 
-I talked about this point in my previous articles so I won't be too long. Basically, all the useful standard library types such as `Option` have no stable ABI, so they have to be replicated manually with the `repr(C)` annotation, so that they can be used from C or C++. This again is a bummer and creates friction.
+I talked about this point in my previous articles so I won't be too long. Basically, all the useful standard library types such as `Option` have no stable ABI, so they have to be replicated manually with the `repr(C)` annotation, so that they can be used from C or C++. This again is a bummer and creates friction. Note that I am equally annoyed at C++ ABI issues for the same reason. 
+
+Many, many hours of hair pulling would be avoided if Rust and C++ adopted like C a [stable ABI](https://daniel.haxx.se/blog/2024/10/30/eighteen-years-of-abi-stability/). 
 
 ### No support for custom memory allocators
 

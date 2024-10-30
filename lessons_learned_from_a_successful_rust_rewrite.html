@@ -268,7 +268,8 @@ mod test {
 	<a class="title" href="#unstable-abi">Unstable ABI</a>
 	<a class="hash-anchor" href="#unstable-abi" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h3>
-<p>I talked about this point in my previous articles so I won't be too long. Basically, all the useful standard library types such as <code>Option</code> have no stable ABI, so they have to be replicated manually with the <code>repr(C)</code> annotation, so that they can be used from C or C++. This again is a bummer and creates friction.</p>
+<p>I talked about this point in my previous articles so I won't be too long. Basically, all the useful standard library types such as <code>Option</code> have no stable ABI, so they have to be replicated manually with the <code>repr(C)</code> annotation, so that they can be used from C or C++. This again is a bummer and creates friction. Note that I am equally annoyed at C++ ABI issues for the same reason.</p>
+<p>Many, many hours of hair pulling would be avoided if Rust and C++ adopted like C a <a href="https://daniel.haxx.se/blog/2024/10/30/eighteen-years-of-abi-stability/">stable ABI</a>.</p>
 <h3 id="no-support-for-custom-memory-allocators">
 	<a class="title" href="#no-support-for-custom-memory-allocators">No support for custom memory allocators</a>
 	<a class="hash-anchor" href="#no-support-for-custom-memory-allocators" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
