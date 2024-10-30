@@ -130,7 +130,7 @@ MYLIB_release(handle);
 
 Under the hood, `MYLIB_init` allocates some memory and `MYLIB_release()` frees it. This is a very usual pattern in C libraries, e.g. `curl_easy_init()/curl_easy_cleanup()`.
 
-So immediately, you are thinking: well, it's easy to forget to call `MYLIB_release` in some code paths, and thus leak memory. And you'd be right. So let's implement something like the curl API to illustrate. We are good principled developers so we write a Rust test for the new implementations:
+So immediately, you are thinking: well, it's easy to forget to call `MYLIB_release` in some code paths, and thus leak memory. And you'd be right. So let's implement them to illustrate. We are good principled developers so we write a Rust test:
 
 ```rust
 #[no_mangle]

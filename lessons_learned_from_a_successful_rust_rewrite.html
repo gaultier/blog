@@ -217,7 +217,7 @@ help: &lt;2883&gt; was later invalidated at offsets [0x0..0x8] by a Unique retag
 MYLIB_release(handle);
 </code></pre>
 <p>Under the hood, <code>MYLIB_init</code> allocates some memory and <code>MYLIB_release()</code> frees it. This is a very usual pattern in C libraries, e.g. <code>curl_easy_init()/curl_easy_cleanup()</code>.</p>
-<p>So immediately, you are thinking: well, it's easy to forget to call <code>MYLIB_release</code> in some code paths, and thus leak memory. And you'd be right. So let's implement something like the curl API to illustrate. We are good principled developers so we write a Rust test for the new implementations:</p>
+<p>So immediately, you are thinking: well, it's easy to forget to call <code>MYLIB_release</code> in some code paths, and thus leak memory. And you'd be right. So let's implement them to illustrate. We are good principled developers so we write a Rust test:</p>
 <pre><code class="language-rust">#[no_mangle]
 pub extern &quot;C&quot; fn MYLIB_init() -&gt; *mut std::ffi::c_void {
     let alloc = Box::leak(Box::new(1usize));
