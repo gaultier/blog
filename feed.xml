@@ -9,6 +9,14 @@
     <id>urn:uuid:9c065c53-31bc-4049-a795-936802a6b1df</id>
 
 	<entry>
+  <title>Lessons learned from a successful Rust rewrite</title>
+  <link href="https://gaultier.github.io/blog/lessons_learned_from_a_successful_rust_rewrite.html"/>
+  <id>urn:uuid:82d0f141-d7cc-5bee-84b0-18bc3e699a9f</id>
+  <updated></updated>
+  <published></published>
+  </entry>
+	
+	<entry>
   <title>Getting started with Scheme by solving an Advent of Code 2018 challenge</title>
   <link href="https://gaultier.github.io/blog/advent_of_code_2018_5.html"/>
   <id>urn:uuid:b3c0c1c1-e36f-51fd-9356-99f8686e7329</id>

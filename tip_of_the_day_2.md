@@ -162,5 +162,5 @@ Still, this is an interesting approach, and could be implemented in our context 
 
 ## See also
 
-I wrote in the past about adding memory profiling an arena allocator: [Roll your own memory profiling: it's actually not hard](https://gaultier.github.io/blog/roll_your_own_memory_profiling.html).
+I wrote in the past about adding memory profiling an arena allocator: [Roll your own memory profiling: it's actually not hard](/blog/roll_your_own_memory_profiling.html).
 
