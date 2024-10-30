@@ -160,7 +160,7 @@
 }
 </code></pre>
 <p>You might think that this code is dumb and obviously wrong, but in a big real codebase, this is not so easy to spot, especially when these operations are hidden inside helper functions or layers and layers of abstraction, as Rust loves to do.</p>
-<p><code>cargo run</code> is content with that. But the Rust compiler can and will assume that there is only one mutable pointer to <code>x</code>, and make optimizations, and generate machine code, based on that.</p>
+<p><code>cargo run</code> is perfectly content with the code above. But the Rust compiler can and will silently assume that there is only one mutable pointer to <code>x</code>, and make optimizations, and generate machine code, based on that.</p>
 <p>The only savior here is <a href="https://github.com/rust-lang/miri">Miri</a>:</p>
 <pre><code class="language-sh">$ cargo +nightly-2024-09-01 miri r
 error: Undefined Behavior: attempting a write access using &lt;2883&gt; at alloc1335[0x0], but that tag does not exist in the borrow stack for this location
