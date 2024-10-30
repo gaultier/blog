@@ -152,7 +152,7 @@ On [Apple platforms](https://www.youtube.com/watch?v=t7EJTO0-reg), the libc allo
 
 So, the mitigation is to place all allocations of the same type in one bucket (supposedly, it's a separate memory region with guard pages before and after). When an object of type `X` is allocated, then freed, and then the program allocates an object of type `Y`, of roughly the same size, a typical allocator will reuse the memory of `X`. This Apple allocator would give memory from a separate bucket.
 
-What I don't know, is whether or not, there are runtime checks as well, for example when casting one object from one type to another e.g. with `reinterpret_cast` in C++. It seems that this allocator would have the information needed at runtime to do so, which could be an interesting feature.
+What I don't know, is whether or not there are runtime checks as well, for example when casting one object from one type to another e.g. with `reinterpret_cast` in C++. It seems that this allocator would have the information needed at runtime to do so, which could be an interesting feature.
 
 Now, having one bucket per type turns out to be too slow in reality, and consumes too much memory, so as a tradeoff, this allocator groups a handful a different types in one bucket. This is a typical tradeoff between performance and security.
 
