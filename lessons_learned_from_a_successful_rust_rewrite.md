@@ -25,6 +25,9 @@ The builtin test framework in Rust is very serviceable. All the ones I used in C
 
 Rust is much more concerned with correctness than C++, so it sparked a lot of useful discussions. For example: oh, the Rust compiler is forcing me to check if this byte array is valid UTF8 when I try to convert it to a string. The old C++ code did no such check. Let's add this check.
 
+
+It felt so good to remove all the CMake files. On all the C or C++ projects I worked on, I never felt that CMake was worth it and I always lost of lot of hours to coerce it into doing what I needed.
+
 ## What did not work so well
 
 This section is surprisingly long and is the most interesting in my opinion. Did Rust hold its promises?
