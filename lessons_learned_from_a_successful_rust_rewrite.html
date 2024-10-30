@@ -284,7 +284,7 @@ Also, it can become unwieldy when there are tens of types that have an allocatio
 	<a class="hash-anchor" href="#complexity" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h3>
 <p>From the start, I decided I would not touch async Rust with a ten-foot pole, and I did not miss it at all, for this project.</p>
-<p>Whilst reading the docs for <code>UnsafeCell</code> for the fourth time, and pondering whether I should use that or <code>RefCell</code>, while just having been burnt by the pitfalls of <code>MaybeUninit</code>, I really asked myself what life choices had led me to this.</p>
+<p>Whilst reading the docs for <code>UnsafeCell</code> for the fourth time, and pondering whether I should use that or <code>RefCell</code>, while just having been burnt by the pitfalls of <code>MaybeUninit</code>, and asking myself if I need <code>Pin</code>, I really asked myself what life choices had led me to this.</p>
 <p>Pure Rust is already very complex, but add to it the whole layer that is mainly there to deal with FFI, and it really becomes a beast. Especially for new Rust learners.</p>
 <p>Some developers in our team straight declined to work on this codebase, mentioning the real or perceived Rust complexity.
 Now, I think that Rust is still mostly easier to learn than C++, but admittedly not by much, especially in this FFI heavy context.</p>
