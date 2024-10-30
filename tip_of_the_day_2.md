@@ -47,7 +47,7 @@ int main() {
 }
 ```
 
-Very simple, just ask the OS to give us a region of virtual memory and off we go (on Windows, the system call is different, but bottom line, there is an equivalent one).
+Very simple, just ask the OS to give us a region of virtual memory and off we go (on Windows, the system call is named differently but is equivalent).
 
 
 ## The bug
