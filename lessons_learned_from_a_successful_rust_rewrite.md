@@ -4,6 +4,8 @@ Tags: Rust, C++, Rewrite
 
 I have written about my on-going rewrite-it-to-Rust effort at work: [1](/blog/you_inherited_a_legacy_cpp_codebase_now_what.md), [2](/blog/how_to_rewrite_a_cpp_codebase_successfully.md). And now it's finished. Let's have a look back at what worked, what didn't, and what can be done about it.
 
+For context, I have written projects in pure Rust before, so I won't mention all of the usual Rust complaints, like learning it is hard, they did not affect me during this project.
+
 ## What worked well
 
 The rewrite was done incrementally, in a stop-and-go fashion. At some point, as I expected, we had to add brand new features while the rewrite was on-going and that was very smooth with this approach. Contrast this with the (wrong) approach of starting a new codebase from scratch in parallel, and then the feature has to be implemented twice.
@@ -199,7 +201,7 @@ From the start, I decided I would not touch async Rust with a ten-foot pole, and
 
 Whilst reading the docs for `UnsafeCell` for the fourth time, and pondering whether I should use that or `RefCell`, while just having been burnt by the pitfalls of `MaybeUninit`, I really asked myself what life choices had led me to this. 
 
-Pure Rust is already very complex, but add to it the whole layer that is mainly there to deal with FFI, and it really becomes a beast.
+Pure Rust is already very complex, but add to it the whole layer that is mainly there to deal with FFI, and it really becomes a beast. Especially for Rust learners.
 
 Some developers in our team straight declined to work on this codebase, mentioning the real or perceived Rust complexity.
 Now, I think that Rust is still mostly easier to learn than C++, but admittedly not by much, especially in this FFI heavy context.
@@ -208,9 +210,11 @@ Now, I think that Rust is still mostly easier to learn than C++, but admittedly 
 
 I am mostly satisfied with this Rust rewrite, but I was disappointed in some areas, and it overall took much more effort than I anticipated. Using Rust with a lot of C interop feels like using a completely different language than using pure Rust. There is much friction, many pitfalls, and many issues in C++, that Rust claims to have solved, that are in fact not really solved at all.
 
-I am deeply grateful to the developers of Rust, Miri, cbindgen, etc. They have done tremendous work. Still, the language and tooling, when doing lots of C FFI, feel immature, almost pre v1.0. If the ergonomics of `unsafe` (which are being worked and slightly improved in the recent versions), the standard library, the docs, the tooling, and the unstable ABI, all improve in the future, it could become a more pleasant experience. 
+I am deeply grateful to the developers of Rust, Miri, cbindgen, etc. They have done tremendous work. Still, the language and tooling, when doing lots of C FFI, feel immature, almost pre v1.0. If the ergonomics of `unsafe` (which are being worked and slightly improved in the recent versions), the standard library, the docs, the tooling, and the unstable ABI, all improve in the future, it could become a more pleasant experience.
 
 I think that all of these points have been felt by Microsoft and Google, and that's why they are investing real money in this area to improve things.
+
+If you do not yet know Rust, I recommend for your first project to use pure Rust, and stay far away from the whole FFI topic.
 
 I initially considered using Zig or Odin for this rewrite, but I really did not want to use a pre v1.0 language for an enterprise production codebase (and I anticipated that it would be hard to convince other engineers and managers). Now, I am wondering if the experience would have really been worse than with Rust. Perhaps the Rust model is really at odds with the C model and there is simply too much friction when using both together.
 
