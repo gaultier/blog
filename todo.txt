@@ -1,2 +1,5 @@
 - [ ] A safer arena allocator
 - [ ] Rust rewrite learnings
+- [ ] HTTP server using arenas
+- [ ] Migration from mbedtls to aws-lc
+- [ ] ASM crypto
