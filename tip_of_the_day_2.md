@@ -6,7 +6,7 @@ The most transformative action you can do to dramatically improve your code in a
 
 Much has been written about arenas ([1](https://nullprogram.com/blog/2023/09/27/), [2](https://www.rfleury.com/p/untangling-lifetimes-the-arena-allocator)). In short, it means grouping multiple allocations with the same lifetime in one batch that gets allocated and deallocated only once.
 
-Another way to look at it, is that the allocations are append only. They never get freed during their 'life'. The program is split into 'phases'. Typically, each phase has its own arena, and when it reaches its end, the whole arena gets nuked from space and all entities attached to it alongside it. It's a great way to simplify the code, make it faster, and escape from the 'web of pointers' hell.
+Another way to look at it, is that the allocations are append only. They never get freed during their 'life'. The program is split into 'phases'. Typically, each phase has its own arena, and when it reaches its end, the whole arena gets nuked from space along with all entities allocated from it. It's a great way to simplify the code, make it faster, and escape from the 'web of pointers' hell.
 
 
 ## The standard arena
