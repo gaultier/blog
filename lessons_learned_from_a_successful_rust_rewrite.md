@@ -53,7 +53,7 @@ You might think that this code is dumb and obviously wrong, but in a big real co
 
 `cargo run` is content with that. But the Rust compiler can and will assume that there is only one mutable pointer to `x`, and make optimizations, and generate machine code, based on that.
 
-The only savior here is Miri:
+The only savior here is [Miri](https://github.com/rust-lang/miri):
 
 ```sh
 $ cargo +nightly-2024-09-01 miri r
