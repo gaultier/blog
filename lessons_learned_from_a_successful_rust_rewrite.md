@@ -41,7 +41,7 @@ All the stringent rules of Rust still apply inside these blocks but the compiler
 
 The main rule in Rust is: `multiple read-only pointers XOR one mutable pointer`. That's what the borrow checker is always pestering you about.
 
-But when using raw pointers, it's so easy to silently break, especially when porting C or C++ code as-is, which is mutation heavy:
+But when using raw pointers, it's so easy to silently break, especially when porting C or C++ code as-is, which is mutation and pointer heavy:
 
 ```rust
 fn main() {
