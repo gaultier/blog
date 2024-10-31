@@ -20,7 +20,7 @@ pretty_env_logger	0.3.1	Sean McArthur <sean@seanmonstar>	https://github.com/sean
 termcolor	1.1.0	Andrew Gallant <jamslam@gmail.com>	https://github.com/BurntSushi/termcolor	MIT OR Unlicense		A simple cross platform library for writing colored text to a terminal.
 ```
 
-And we need to transform this data into a markdown table, something like that:
+Not really readable. We need to transform this data into a [markdown table](https://github.github.com/gfm/#tables-extension-), something like that:
 
 ```
 | First Header  | Second Header |
@@ -31,7 +31,7 @@ And we need to transform this data into a markdown table, something like that:
 
 Technically, markdown tables are an extension to standard markdown (if there is such a thing), but it's very common. So how do we do that?
 
-Once again, I turn to the trusty AWK. It's always been there for me.
+Once again, I turn to the trusty AWK. It's always been there for me. And it's present on every UNIX system out of the box.
 
 AWK neatly handles all the 'decoding' of the CSV format for us, we just need to output the right thing:
 
@@ -39,7 +39,7 @@ AWK neatly handles all the 'decoding' of the CSV format for us, we just need to 
 - Output a delimiting line between the table headers and rows. The markdown table spec states that this delimiter should be at least 3 `-` characters in each cell.
 - Alignement is not a goal, it does not matter for a markdown parser
 
-Here's the full implementation:
+Here's the full implementation (don't forget to mark the file executable). The shebang line instructs AWK to use the tab character `\t` as the delimiter between fields:
 
 ```awk
 #!/usr/bin/env -S awk -F '\t' -f
@@ -47,7 +47,10 @@ Here's the full implementation:
 {
     printf("|");
     for (i = 1; i <= NF; i++) {
-        printf(" %s |", $i)
+        # Note: if a field contains the character `|`, it will mess up the table. 
+        # In this case, we should replace this character by something else e.g. `,`:
+        gsub(/\|/, ",", $i);
+        printf(" %s |", $i);
     } 
     printf("\n");
 } 
@@ -156,3 +159,6 @@ And voila:
 </tr>
 </tbody>
 </table>
+
+
+All in all, very little code. I have a feeling that I will use this approach a lot in the future for reporting or even inspecting data easily.

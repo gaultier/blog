@@ -84,27 +84,30 @@ log	0.4.8	The Rust Project Developers	https://github.com/rust-lang/log	Apache-2.
 pretty_env_logger	0.3.1	Sean McArthur &lt;sean@seanmonstar&gt;	https://github.com/seanmonstar/pretty-env-logger	Apache-2.0 OR MIT		a visually pretty env_logger
 termcolor	1.1.0	Andrew Gallant &lt;jamslam@gmail.com&gt;	https://github.com/BurntSushi/termcolor	MIT OR Unlicense		A simple cross platform library for writing colored text to a terminal.
 </code></pre>
-<p>And we need to transform this data into a markdown table, something like that:</p>
+<p>Not really readable. We need to transform this data into a <a href="https://github.github.com/gfm/#tables-extension-">markdown table</a>, something like that:</p>
 <pre><code>| First Header  | Second Header |
 | ------------- | ------------- |
 | Content Cell  | Content Cell  |
 | Content Cell  | Content Cell  |
 </code></pre>
 <p>Technically, markdown tables are an extension to standard markdown (if there is such a thing), but it's very common. So how do we do that?</p>
-<p>Once again, I turn to the trusty AWK. It's always been there for me.</p>
+<p>Once again, I turn to the trusty AWK. It's always been there for me. And it's present on every UNIX system out of the box.</p>
 <p>AWK neatly handles all the 'decoding' of the CSV format for us, we just need to output the right thing:</p>
 <ul>
 <li>Given a line (which AWK calls 'record'): output each field interleaved with the <code>|</code> character</li>
 <li>Output a delimiting line between the table headers and rows. The markdown table spec states that this delimiter should be at least 3 <code>-</code> characters in each cell.</li>
 <li>Alignement is not a goal, it does not matter for a markdown parser</li>
 </ul>
-<p>Here's the full implementation:</p>
+<p>Here's the full implementation (don't forget to mark the file executable). The shebang line instructs AWK to use the tab character <code>\t</code> as the delimiter between fields:</p>
 <pre><code class="language-awk">#!/usr/bin/env -S awk -F '\t' -f
 
 {
     printf(&quot;|&quot;);
     for (i = 1; i &lt;= NF; i++) {
-        printf(&quot; %s |&quot;, $i)
+        # Note: if a field contains the character `|`, it will mess up the table. 
+        # In this case, we should replace this character by something else e.g. `,`:
+        gsub(/\|/, &quot;,&quot;, $i);
+        printf(&quot; %s |&quot;, $i);
     } 
     printf(&quot;\n&quot;);
 } 
@@ -203,6 +206,7 @@ The for loop then iterates over each field. The second clause will execute only 
 </tr>
 </tbody>
 </table>
+<p>All in all, very little code. I have a feeling that I will use this approach a lot in the future for reporting or even inspecting data easily.</p>
 <p><a href="/blog"> ⏴ Back to all articles</a></p>
 
 <blockquote id="donate">
