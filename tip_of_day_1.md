@@ -1,5 +1,5 @@
 Title: Tip of the day #1: Count lines of Rust code, ignoring tests
-Tags: Rust, Tip of the day
+Tags: Rust, Tip of the day, Awk
 ---
 
 I have a Rust codebase at work. The other day, I was wondering how many lines of code were in there. Whether you use `wc -l ***.rs` or a more fancy tool like `tokei`, there is an issue: this will count the source code *as well as* tests. 
