@@ -165,4 +165,4 @@ And voila:
 </table>
 
 
-All in all, very little code. I have a feeling that I will use this approach a lot in the future for reporting or even inspecting data easily.
+All in all, very little code. I have a feeling that I will use this approach a lot in the future for reporting or even inspecting data easily, for example from a database dump.
