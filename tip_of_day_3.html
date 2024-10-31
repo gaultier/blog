@@ -97,7 +97,7 @@ termcolor	1.1.0	Andrew Gallant &lt;jamslam@gmail.com&gt;	https://github.com/Burn
 <ul>
 <li>Given a line (which AWK calls 'record'): output each field interleaved with the <code>|</code> character</li>
 <li>Output a delimiting line between the table headers and rows. The markdown table spec states that this delimiter should be at least 3 <code>-</code> characters in each cell.</li>
-<li>Alignement is not a goal, it does not matter for a markdown parser. If you want to produce a pretty markdown table, it's easy to add, it simply makes the implementation a bit bigger</li>
+<li>Alignment is not a goal, it does not matter for a markdown parser. If you want to produce a pretty markdown table, it's easy to achieve, it simply makes the implementation a bit bigger</li>
 </ul>
 <p>Here's the full implementation (don't forget to mark the file executable). The shebang line instructs AWK to use the tab character <code>\t</code> as the delimiter between fields:</p>
 <pre><code class="language-awk">#!/usr/bin/env -S awk -F '\t' -f

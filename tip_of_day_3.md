@@ -39,7 +39,7 @@ AWK neatly handles all the 'decoding' of the CSV format for us, we just need to 
 
 - Given a line (which AWK calls 'record'): output each field interleaved with the `|` character
 - Output a delimiting line between the table headers and rows. The markdown table spec states that this delimiter should be at least 3 `-` characters in each cell.
-- Alignement is not a goal, it does not matter for a markdown parser. If you want to produce a pretty markdown table, it's easy to add, it simply makes the implementation a bit bigger
+- Alignment is not a goal, it does not matter for a markdown parser. If you want to produce a pretty markdown table, it's easy to achieve, it simply makes the implementation a bit bigger
 
 Here's the full implementation (don't forget to mark the file executable). The shebang line instructs AWK to use the tab character `\t` as the delimiter between fields:
 
