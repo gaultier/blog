@@ -1,3 +1,7 @@
+Title: Lessons learned from a successful Rust rewrite
+Tags: Rust, C++, Rewrite
+---
+
 *Discussions: [/r/rust](https://old.reddit.com/r/rust/comments/1gflxxh/lessons_learned_from_a_successful_rust_rewrite/?), [/r/programming](https://old.reddit.com/r/programming/comments/1gfljj7/lessons_learned_from_a_successful_rust_rewrite/?), [HN](https://news.ycombinator.com/item?id=41994189), [lobsters](https://lobste.rs/s/n6gciw/lessons_learned_from_successful_rust)*
 
 I have written about my on-going rewrite-it-to-Rust effort at work: [1](/blog/you_inherited_a_legacy_cpp_codebase_now_what.md), [2](/blog/how_to_rewrite_a_cpp_codebase_successfully.md), [3](/blog/rust_c++_interop_trick.html). And now it's finished, meaning it's 100% Rust and 0% C++ - the public C API has not changed, just the implementation, one function at time until the end. Let's have a look back at what worked, what didn't, and what can be done about it.
