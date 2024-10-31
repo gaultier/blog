@@ -10,3 +10,4 @@ Blog implementation:
 - [ ] Last updated date for an article
 - [ ] Link to related articles at the end
 - [ ] Line numbers in code snippets
+- [ ] Search
