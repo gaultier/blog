@@ -2,7 +2,7 @@
   <feed xmlns="http://www.w3.org/2005/Atom">
     <title>Philippe Gaultier's blog</title>
     <link href="https://gaultier.github.io/blog"/>
-    <updated>2024-10-31T16:21:11+01:00</updated>
+    <updated>2024-10-31T16:24:55+01:00</updated>
     <author>
       <name>Philippe Gaultier</name>
     </author>
@@ -164,7 +164,7 @@
   <title>Tip of the day #2: A safer arena allocator</title>
   <link href="https://gaultier.github.io/blog/tip_of_the_day_2.html"/>
   <id>urn:uuid:dd624149-10e7-5563-af44-efda307fa041</id>
-  <updated>2024-10-31T10:12:48+01:00</updated>
+  <updated>2024-10-31T16:22:23+01:00</updated>
   <published>2024-10-29T16:15:48+01:00</published>
   </entry>
 	
@@ -180,7 +180,7 @@
   <title>Tip of the day #3: Convert a CSV to a markdown or HTML table</title>
   <link href="https://gaultier.github.io/blog/tip_of_day_3.html"/>
   <id>urn:uuid:94af4e61-6ac9-52eb-8d33-cdf29b9abf02</id>
-  <updated>2024-10-31T16:21:11+01:00</updated>
+  <updated>2024-10-31T16:24:55+01:00</updated>
   <published>2024-10-31T16:09:02+01:00</published>
   </entry>
 	</feed>
