@@ -2,7 +2,7 @@ Title: Tip of the day #2: A safer arena allocator
 Tags: C, Allocator, Safety
 ---
 
-*Discussions: [/r/programming](https://old.reddit.com/r/programming/comments/1gfiif5/tip_of_the_day_2_a_safer_arena_allocator/)*
+*Discussions: [/r/programming](https://old.reddit.com/r/programming/comments/1gfiif5/tip_of_the_day_2_a_safer_arena_allocator/), [/r/cprogramming](https://old.reddit.com/r/cprogramming/comments/1gfiit0/tip_of_the_day_2_a_safer_arena_allocator/?)*
 
 The most transformative action you can do to dramatically improve your code in a programming language where you are in control of the memory is: to use arenas.
 
