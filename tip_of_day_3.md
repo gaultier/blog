@@ -2,7 +2,7 @@ Title: Tip of the day #3: Convert a CSV to a markdown or HTML table
 Tags: Markdown, CSV, Awk, Tip of the day
 ---
 
-The other day at work, I found myself having to produce a human-readable table of all the dependencies in the project, for auditing purposes.
+The other day at work, I found myself having to produce a human-readable table of all the direct dependencies in the project, for auditing purposes.
 
 There is a [tool](https://github.com/onur/cargo-license) for Rust projects that outputs a TSV (meaning: a CSV where the separator is the tab character) of this data. I just need to convert that to a human readable table in markdown or HTML, and voila!
 
