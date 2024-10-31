@@ -7,7 +7,7 @@ The other day at work, I found myself having to produce a human-readable table o
 There is a tool for Rust projects that outputs a TSV (meaning: a CSV where the separator is the tab character) of this data. I just need to convert that to a human readable table in markdown or HTML, and voila!
 
 
-Here's the output of this tool in my open-source Rust project:
+Here's the output of this tool in my open-source Rust [project](https://github.com/gaultier/kotlin-rs):
 
 ```sh
 $ cargo license --all-features --avoid-build-deps --avoid-dev-deps --direct-deps-only --tsv
