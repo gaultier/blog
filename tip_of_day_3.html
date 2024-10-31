@@ -96,7 +96,7 @@ termcolor	1.1.0	Andrew Gallant &lt;jamslam@gmail.com&gt;	https://github.com/Burn
 <ul>
 <li>Given a line (which AWK calls 'record'): output each field interleaved with the <code>|</code> character</li>
 <li>Output a delimiting line between the table headers and rows. The markdown table spec states that this delimiter should be at least 3 <code>-</code> characters in each cell.</li>
-<li>Alignement is not a goal, it does not matter for a markdown parser</li>
+<li>Alignement is not a goal, it does not matter for a markdown parser. If you want to produce a pretty markdown table, it's easy to add, it simply makes the implementation a bit bigger</li>
 </ul>
 <p>Here's the full implementation (don't forget to mark the file executable). The shebang line instructs AWK to use the tab character <code>\t</code> as the delimiter between fields:</p>
 <pre><code class="language-awk">#!/usr/bin/env -S awk -F '\t' -f
@@ -121,7 +121,9 @@ NR==1 { # Output the delimiting line
 }
 </code></pre>
 <p>The first clause will execute for each line of the input.
-The for loop then iterates over each field. The second clause will execute only for the first line. The same line can trigger multiple clauses, here, the first line of the input will trigger both clauses, whilst the remaining lines will only trigger the first clause.</p>
+The for loop then iterates over each field and outputs the right thing.</p>
+<p>The second clause will execute only for the first line (<code>NR</code> is the line number).</p>
+<p>The same line can trigger multiple clauses, here, the first line of the input will trigger both clauses, whilst the remaining lines will only trigger the first clause.</p>
 <p>So let's run it!</p>
 <pre><code class="language-sh">$ cargo license --all-features --avoid-build-deps --avoid-dev-deps --direct-deps-only --tsv | ./md-table.awk 
 | name | version | authors | repository | license | license_file | description |
