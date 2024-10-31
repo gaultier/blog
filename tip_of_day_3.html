@@ -73,7 +73,8 @@
  </div>
 
 <p>The other day at work, I found myself having to produce a human-readable table of all the direct dependencies in the project, for auditing purposes.</p>
-<p>There is a <a href="https://github.com/onur/cargo-license">tool</a> for Rust projects that outputs a TSV (meaning: a CSV where the separator is the tab character) of this data. I just need to convert that to a human readable table in markdown or HTML, and voila!</p>
+<p>There is a <a href="https://github.com/onur/cargo-license">tool</a> for Rust projects that outputs a TSV (meaning: a CSV where the separator is the tab character) of this data. That's great, but not really readable.</p>
+<p>I just need to convert that to a human readable table in markdown or HTML, and voila!</p>
 <p>Here's the output of this tool in my open-source Rust <a href="https://github.com/gaultier/kotlin-rs">project</a>:</p>
 <pre><code class="language-sh">$ cargo license --all-features --avoid-build-deps --avoid-dev-deps --direct-deps-only --tsv
 name	version	authors	repository	license	license_file	description
