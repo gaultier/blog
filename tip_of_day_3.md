@@ -31,7 +31,7 @@ Not really readable. We need to transform this data into a [markdown table](http
 | Content Cell  | Content Cell  |
 ```
 
-Technically, markdown tables are an extension to standard markdown (if there is such a thing), but it's very common. So how do we do that?
+Technically, markdown tables are an extension to standard markdown (if there is such a thing), but they are very common and supported by all the major platforms e.g. Github, Azure, etc. So how do we do that?
 
 Once again, I turn to the trusty AWK. It's always been there for me. And it's present on every UNIX system out of the box.
 
