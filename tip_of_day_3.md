@@ -1,5 +1,5 @@
 Title: Tip of the day #3: Convert a CSV to a markdown or HTML table
-Tags: Markdown, CSV, Awk, Tip of the day
+Tags: Markdown, Csv, Awk, Tip of the day
 ---
 
 The other day at work, I found myself having to produce a human-readable table of all the direct dependencies in the project, for auditing purposes.
