@@ -4,7 +4,7 @@ Tags: Markdown, Csv, Awk, Tip of the day
 
 The other day at work, I found myself having to produce a human-readable table of all the direct dependencies in the project, for auditing purposes.
 
-There is a [tool](https://github.com/onur/cargo-license) for Rust projects that outputs a TSV (meaning: a CSV where the separator is the tab character) of this data. That's great, but not really fit for consumption by non-technical human. 
+There is a [tool](https://github.com/onur/cargo-license) for Rust projects that outputs a TSV (meaning: a CSV where the separator is the tab character) of this data. That's great, but not really fit for consumption by a non-technical human. 
 
 I just need to convert that to a human readable table in markdown or HTML, and voila!
 
