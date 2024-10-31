@@ -1,3 +1,9 @@
+Ideas for articles:
+
 - [ ] HTTP server using arenas
 - [ ] Migration from mbedtls to aws-lc
 - [ ] ASM crypto
+
+Blog implementation:
+
+- [ ] Use libcmark to simplify parsing
