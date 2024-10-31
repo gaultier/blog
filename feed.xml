@@ -2,20 +2,12 @@
   <feed xmlns="http://www.w3.org/2005/Atom">
     <title>Philippe Gaultier's blog</title>
     <link href="https://gaultier.github.io/blog"/>
-    <updated>2024-10-31T13:08:38+01:00</updated>
+    <updated>2024-10-31T16:09:02+01:00</updated>
     <author>
       <name>Philippe Gaultier</name>
     </author>
     <id>urn:uuid:9c065c53-31bc-4049-a795-936802a6b1df</id>
 
-	<entry>
-  <title>Tip of the day #3: Convert a CSV to a markdown or HTML table</title>
-  <link href="https://gaultier.github.io/blog/tip_of_day_3.html"/>
-  <id>urn:uuid:94af4e61-6ac9-52eb-8d33-cdf29b9abf02</id>
-  <updated></updated>
-  <published></published>
-  </entry>
-	
 	<entry>
   <title>Getting started with Scheme by solving an Advent of Code 2018 challenge</title>
   <link href="https://gaultier.github.io/blog/advent_of_code_2018_5.html"/>
@@ -180,7 +172,15 @@
   <title>Lessons learned from a successful Rust rewrite</title>
   <link href="https://gaultier.github.io/blog/lessons_learned_from_a_successful_rust_rewrite.html"/>
   <id>urn:uuid:82d0f141-d7cc-5bee-84b0-18bc3e699a9f</id>
-  <updated>2024-10-31T13:08:38+01:00</updated>
+  <updated>2024-10-31T16:09:02+01:00</updated>
   <published>2024-10-30T11:46:57+01:00</published>
+  </entry>
+	
+	<entry>
+  <title>Tip of the day #3: Convert a CSV to a markdown or HTML table</title>
+  <link href="https://gaultier.github.io/blog/tip_of_day_3.html"/>
+  <id>urn:uuid:94af4e61-6ac9-52eb-8d33-cdf29b9abf02</id>
+  <updated>2024-10-31T16:09:02+01:00</updated>
+  <published>2024-10-31T16:09:02+01:00</published>
   </entry>
 	</feed>
