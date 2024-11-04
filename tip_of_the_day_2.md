@@ -129,7 +129,7 @@ static Arena arena_make_from_virtual_mem(uint64_t size) {
 }
 ```
 
-We get the page size with `sysconf`. Again, that's required because we will use the system call `mprotect` to change the permissions on parts of the memory, and `mprotect` expects a page-aligned memory range.
+We get the page size with POSIX's `sysconf (3)`. Again, that's required because we will use the system call `mprotect` to change the permissions on parts of the memory, and `mprotect` expects a page-aligned memory range.
 
 Since an allocation is at least one page, even if the user asked for an arena of size `1`, we first round the user allocation size up, to the next page size. E.g. for a page size of `4096`: `1 -> 4096`, `4095 -> 4096`, `4096 -> 4096`, `4097 -> 8192`.
 
