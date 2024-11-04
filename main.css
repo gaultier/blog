@@ -146,18 +146,18 @@ blockquote {
 
 pre {
     background: #FFF3E0 !important;
-    padding: 0.5rem;
     white-space: pre-wrap;
     border: 1px solid grey;
     margin-bottom: 0;
-    min-width: 30%;
+    display: inline-flex;
 }
 
 code {
     background: #FFF3E0 !important;
     line-height: 1.6;
-    padding: 0 .2rem !important;
+    padding: .5rem !important;
     word-wrap: break-word;
+    margin-left: 0.5rem;
 }
 
 table {
@@ -231,4 +231,15 @@ p:has(img):has(em) {
 #donate {
   margin-top: 8rem;
   text-align: center;
+}
+
+.line_numbers_container {
+  width: 3rem;
+  display: flex;
+  flex-direction: column;
+  line-height: 1.6;
+  padding: .1rem;
+  text-align: center;
+  background-color: #FFD180;
+  padding-top: .5rem;
 }

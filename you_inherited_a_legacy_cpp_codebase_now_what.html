@@ -41,6 +41,21 @@
     });
 
     hljs.highlightAll();
+
+      document.querySelectorAll('pre > code').forEach((el, _i) => {
+          if (el.classList.contains('language-sh') || el.classList.contains('language-shell')){ return; }
+
+          var line_count = el.innerText.split('\n').length;
+          line_numbers_container = document.createElement('div');
+          line_numbers_container.classList.add('line_numbers_container');
+
+          for (var i = 1; i <= line_count;i++){
+            var line_number = document.createElement('span');
+            line_number.innerText = i+'';
+            line_numbers_container.append(line_number);
+          }
+          el.parentElement.prepend(line_numbers_container);
+      });
   }
 </script>
 </head>
