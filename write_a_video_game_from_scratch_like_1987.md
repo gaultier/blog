@@ -1721,7 +1721,8 @@ x11_create_window :: proc(
 		root_visual_id = root_visual_id,
 		bitmask        = flags,
 		value1         = BACKGROUND_PIXEL_COLOR,
-		value2         = EVENT_FLAG_EXPOSURE | EVENT_FLAG_BUTTON_RELEASE | EVENT_FLAG_BUTTON_PRESS | EVENT_FLAG_KEY_PRESS | EVENT_FLAG_KEY_RELEASE,
+		value2         = EVENT_FLAG_EXPOSURE | EVENT_FLAG_BUTTON_RELEASE | EVENT_FLAG_BUTTON_PRESS 
+            | EVENT_FLAG_KEY_PRESS | EVENT_FLAG_KEY_RELEASE,
 	}
 
 	{

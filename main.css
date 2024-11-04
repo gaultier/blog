@@ -240,11 +240,12 @@ p:has(img):has(em) {
 }
 
 .line_numbers_container {
-  width: 3rem;
   display: flex;
   flex-direction: column;
   line-height: 1.6;
   padding: .1rem;
+  padding-left: .5rem;
+  padding-right: .5rem;
   text-align: center;
   background-color: #FFE0B2;
   padding-top: .5rem;
