@@ -131,7 +131,7 @@ static Arena arena_make_from_virtual_mem(uint64_t size) {
 
 We get the page size with `sysconf`. Again, that's required because we will use the system call `mprotect` to change the permissions on parts of the memory, and `mprotect` expects a page-aligned memory range.
 
-Since an allocation is at least one page, even if the user asked for an arena of size `1`, we first round the user allocation size up, to the next page size. E.g. for a page size of `4096`: `1 -> 4096`, `4095 -> 4096`, `4096 -> 4096`, `4097` -> `8192`.
+Since an allocation is at least one page, even if the user asked for an arena of size `1`, we first round the user allocation size up, to the next page size. E.g. for a page size of `4096`: `1 -> 4096`, `4095 -> 4096`, `4096 -> 4096`, `4097 -> 8192`.
 
 Then, in one `mmap` call, we allocate all the memory we need including the two guard pages. For a brief moment, all the memory is readable and writable. The very next thing we do is mark the first page and last page as neither readable nor writable. We then return the arena, and the user is none the wiser.
 

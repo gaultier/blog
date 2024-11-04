@@ -154,6 +154,11 @@ pre {
 
 code {
     background: #FFF3E0 !important;
+    padding: .2rem !important;
+}
+
+pre > code {
+    background: #FFF3E0 !important;
     line-height: 1.6;
     padding: .5rem !important;
     word-wrap: break-word;
