@@ -66,7 +66,6 @@ while next != end:
 endwhile
 
 print(remaining_count)
-
 ```
 
 The easy case is when there is no need to merge: `current` simply becomes `next` (and `next` is incremented at the end of the loop iteration).

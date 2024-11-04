@@ -604,7 +604,6 @@ So let's show a red rectangle as a warm-up. The alpha component is completely ig
 
       state.state = STATE_SURFACE_ATTACHED;
     }
-
 ```
 
 Result:
@@ -1393,7 +1392,6 @@ int main() {
     }
   }
 }
-
 ```
 
   </summary>

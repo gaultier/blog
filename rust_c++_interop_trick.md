@@ -121,7 +121,7 @@ pub extern "C" fn RUST_write_comment(user: &mut UserC, comment: *const u8, comme
 
 Now, let's use the tool [cbindgen](https://github.com/mozilla/cbindgen) to generate the C header corresponding to this Rust code:
 
-```
+```sh
 $ cargo install cbindgen
 $ cbindgen -v src/lib.rs --lang=c++ -o ../user-rs-lib.h
 ```
@@ -227,7 +227,7 @@ int main() {
 
 And link (manually) our brand new Rust library to our C++ program:
 
-```
+```sh
 $ clang++ user.cpp ./user-rs-lib/target/debug/libuser_rs_lib.a
 $ ./a.out
 alice (336ff4cec0a2ccbfc0c4e4cb9ba7c152) says: hello, world!
@@ -304,7 +304,6 @@ int main() {
                      reinterpret_cast<const uint8_t *>(msg), sizeof(msg) - 1,
                      get_std_string_pointer_and_length(alice.get_name()));
 }
-
 ```
 
 We re-build, re-run, and lo and behold, the Rust implementation now prints the name:
@@ -444,7 +443,6 @@ void RUST_write_comment(UserC *user,
                         ByteSliceView name);
 
 } // extern "C"
-
 ```
 
 ```rust
@@ -486,7 +484,6 @@ pub extern "C" fn RUST_write_comment(
 
     user.comments_count += 1;
 }
-
 ```
 
 </details>

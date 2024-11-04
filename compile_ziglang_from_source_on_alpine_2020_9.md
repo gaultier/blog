@@ -45,7 +45,7 @@ $ sudo make install
 
 You will now have a `zig` executable in the PATH as well as the zig standard library. You can verify you have now the latest version by doing:
 
-```
+```sh
 $ zig version
 0.6.0+749417a
 ```

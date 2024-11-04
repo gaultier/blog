@@ -43,7 +43,7 @@
     hljs.highlightAll();
 
       document.querySelectorAll('pre > code').forEach((el, _i) => {
-          if (el.classList.contains('language-sh') || el.classList.contains('language-shell')){ return; }
+          if (el.classList.contains('language-sh') || el.classList.contains('language-shell') || el.classList.contains('language-bash')){ return; }
 
           var line_count = el.innerText.trimEnd().split('\n').length;
           line_numbers_container = document.createElement('div');
@@ -307,8 +307,8 @@ assert_eq!(foo(&amp;INPUT), ...);
 <p>I am pretty happy with how this turned out, scanning all C++ and Rust files to find interesting test data in them to build the corpus. I think this was key to move from the initial 20% code coverage with fuzzing (using a few hard-coded corpus files) to 90%. It's fast too.</p>
 <p>Also, it means the corpus gets better each time we had a test (be it in C++ or Rust), for free.</p>
 <p>Does it mean that the corpus will grow to an extreme size? Well, worry not, because LLVM comes with a fuzzing corpus minimizer:</p>
-<pre><code># Minimize the fuzzing corpus (in place).
-cargo +nightly fuzz cmin [...]
+<pre><code class="language-sh"># Minimize the fuzzing corpus (in place).
+$ cargo +nightly fuzz cmin [...]
 </code></pre>
 <p>For each file in the corpus, it feeds it as input to our code, observes which branches are taken, and if a new set of branches is taken, this file remains (or perhaps gets minimized even more, not sure how smart this tool is). Otherwise it is deemed a duplicate and is trimmed.</p>
 <p>So:</p>
@@ -363,7 +363,6 @@ pub struct OwningArrayC&lt;T&gt; {
 pub extern &quot;C&quot; fn make_owning_array_u8(len: usize) -&gt; OwningArrayC&lt;u8&gt; {
     vec![0; len].into()
 }
-
 </code></pre>
 <p>Apparently, Rust developers do not want to commit to a particular ABI for these types, to avoid missing out on some future optimizations. So it means that every Rust struct now needs the equivalent &quot;FFI friendly&quot; struct along with conversion functions (usually implemented as <code>.into()</code> for convenience):</p>
 <pre><code class="language-rust">struct Foo&lt;'a&gt; {
@@ -381,7 +380,7 @@ struct FooC {
 }
 </code></pre>
 <p>Which is cumbersome but still fine, especially since Rust has powerful macros (which I investigated using but did not eventually). However, since Rust also does not have great idiomatic support for custom allocators, we stuck with the standard memory allocator, which meant that each struct with heap-allocated fields has to have a deallocation function:</p>
-<pre><code>#[no_mangle]
+<pre><code class="language-rust">#[no_mangle]
 pub extern &quot;C&quot; fn foo_free(foo: &amp;FooC) {
     ...
 }
@@ -723,7 +722,6 @@ for i = 1,#targets do
 
   os.execute(&quot;ninja -C '&quot; .. build_dir .. &quot;'&quot;)
 end
-
 </code></pre>
 <p>I look forward to only having Rust code and deleting all of this convoluted stuff.</p>
 <p>That's something that people do not mention often when saying that modern C++ is good enough and secure enough. Well, first I disagree with this statement, but more broadly, the C++ toolchain to cross-compile sucks. You only have clang that can cross-compile in theory but in practice you have to resort to the Zig toolchain to automate cross-compiling the standard library etc.</p>

@@ -43,7 +43,7 @@
     hljs.highlightAll();
 
       document.querySelectorAll('pre > code').forEach((el, _i) => {
-          if (el.classList.contains('language-sh') || el.classList.contains('language-shell')){ return; }
+          if (el.classList.contains('language-sh') || el.classList.contains('language-shell') || el.classList.contains('language-bash')){ return; }
 
           var line_count = el.innerText.trimEnd().split('\n').length;
           line_numbers_container = document.createElement('div');
@@ -228,7 +228,7 @@ help: &lt;2883&gt; was later invalidated at offsets [0x0..0x8] by a Unique retag
 	<a class="hash-anchor" href="#i-am-still-chasing-memory-leaks" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h3>
 <p>Our library offers a C API, something like this:</p>
-<pre><code>void* handle = MYLIB_init();
+<pre><code class="language-c">void* handle = MYLIB_init();
 
 // Do some stuff with the handle...
 

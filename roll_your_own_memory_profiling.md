@@ -57,7 +57,6 @@ heap profile:    <in use objects sum>:  <in use bytes sum> [   <space objects su
                                                                              
 MAPPED_LIBRARIES:
 [...]
-
 ```
 
 The first line is a header identifying that this is a heap profile (contrary to a CPU profile which `pprof` can also analyze, which uses a different, binary, format) and gives for each of the four fields we will record, their sum. 
@@ -447,13 +446,12 @@ static void mem_profile_record_alloc(mem_profile_t *profile,
   }
   profile->records[profile->records_len++] = record;
 }
-
 ```
 
 
 Finally, we can dump this profile in the `pprof` textual representation:
 
-```
+```c
 static void mem_profile_write(mem_profile_t *profile, FILE *out) {
   fprintf(out, "heap profile: %lu: %lu [     %lu:    %lu] @ heapprofile\n",
           profile->in_use_objects, profile->in_use_space,

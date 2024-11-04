@@ -43,7 +43,7 @@
     hljs.highlightAll();
 
       document.querySelectorAll('pre > code').forEach((el, _i) => {
-          if (el.classList.contains('language-sh') || el.classList.contains('language-shell')){ return; }
+          if (el.classList.contains('language-sh') || el.classList.contains('language-shell') || el.classList.contains('language-bash')){ return; }
 
           var line_count = el.innerText.trimEnd().split('\n').length;
           line_numbers_container = document.createElement('div');
@@ -118,7 +118,7 @@ plot &quot;out.dat&quot; with lines
 </h2>
 <p>In short, we get a text file where each line contains random ASCII characters. For each line, we must find the first and last digit characters, combine them into an number and at the end output the sum of all these numbers.</p>
 <p>The way we read the data into a variable is through a shell command:</p>
-<pre><code>data = system(&quot;cat in.txt&quot;)
+<pre><code class="language-gnuplot">data = system(&quot;cat in.txt&quot;)
 </code></pre>
 <p>Gnuplot has the <code>plot</code> command to turn input data into a plot, but nothing built-in to read input data into a variable, it seems. No matter, <code>system</code> which spawns a command in a subshell does the trick.</p>
 <p>Since we need to check whether a character is a string, let's define our own little function for it. Yes, Gnuplot has user defined functions! The unfortunate limitation is that the body has to be an expression:</p>
@@ -167,7 +167,6 @@ do for [line in data] {
       }  
     }
   }
-
 </code></pre>
 <p>Finally, we concatenate the two digits (which are still two strings of length 1 at that point) with the <code>.</code> operator, convert it to a number with the <code>+ 0</code> idiom, and increase our sum:</p>
 <pre><code class="language-gnuplot">  num = first . last + 0

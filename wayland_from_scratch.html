@@ -43,7 +43,7 @@
     hljs.highlightAll();
 
       document.querySelectorAll('pre > code').forEach((el, _i) => {
-          if (el.classList.contains('language-sh') || el.classList.contains('language-shell')){ return; }
+          if (el.classList.contains('language-sh') || el.classList.contains('language-shell') || el.classList.contains('language-bash')){ return; }
 
           var line_count = el.innerText.trimEnd().split('\n').length;
           line_numbers_container = document.createElement('div');
@@ -670,7 +670,6 @@ The compositor responds with a series of events, listing the available global ob
 
       state.state = STATE_SURFACE_ATTACHED;
     }
-
 </code></pre>
 <p>Result:</p>
 <p><img src="wayland-screenshot-red.png" alt="Result, red" /></p>
@@ -1437,7 +1436,6 @@ int main() {
     }
   }
 }
-
 </code></pre>
   </summary>
 </details>

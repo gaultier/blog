@@ -606,7 +606,6 @@ x11_create_window :: proc(
 		assert(n_sent == size_of(Request))
 	}
 }
-
 ```
 
 
@@ -1009,7 +1008,7 @@ In `main` we create a new scene and plant mines randomly.
 
 We put this logic in the `reset` helper so that the player can easily restart the game with one keystroke:
 
-```
+```odin
 reset :: proc(scene: ^Scene) {
 	for &entity in scene.displayed_entities {
 		entity = .Covered
@@ -1059,7 +1058,7 @@ The next step is to respond to events.
 
 This is very straightforward. Since the only messages we expect are for keyboard and mouse events, with a fixed size of 32 bytes, we simply read 32 bytes exactly in a blocking fashion. The first byte indicates which kind of event it is:
 
-```
+```odin
 wait_for_x11_events :: proc(socket: os.Socket, scene: ^Scene) {
 	GenericEvent :: struct #packed {
 		code: u8,

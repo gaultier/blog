@@ -43,7 +43,7 @@
     hljs.highlightAll();
 
       document.querySelectorAll('pre > code').forEach((el, _i) => {
-          if (el.classList.contains('language-sh') || el.classList.contains('language-shell')){ return; }
+          if (el.classList.contains('language-sh') || el.classList.contains('language-shell') || el.classList.contains('language-bash')){ return; }
 
           var line_count = el.innerText.trimEnd().split('\n').length;
           line_numbers_container = document.createElement('div');
@@ -101,7 +101,7 @@ pretty_env_logger	0.3.1	Sean McArthur &lt;sean@seanmonstar&gt;	https://github.co
 termcolor	1.1.0	Andrew Gallant &lt;jamslam@gmail.com&gt;	https://github.com/BurntSushi/termcolor	MIT OR Unlicense		A simple cross platform library for writing colored text to a terminal.
 </code></pre>
 <p>Not really readable. We need to transform this data into a <a href="https://github.github.com/gfm/#tables-extension-">markdown table</a>, something like that:</p>
-<pre><code>| First Header  | Second Header |
+<pre><code class="language-markdown">| First Header  | Second Header |
 | ------------- | ------------- |
 | Content Cell  | Content Cell  |
 | Content Cell  | Content Cell  |
@@ -152,7 +152,7 @@ The for loop then iterates over each field and outputs the right thing.</p>
 | termcolor | 1.1.0 | Andrew Gallant &lt;jamslam@gmail.com&gt; | https://github.com/BurntSushi/termcolor | MIT OR Unlicense |  | A simple cross platform library for writing colored text to a terminal. |
 </code></pre>
 <p>Ok, it's hard to really know if that's correct or not. Let's pipe it into <a href="https://github.com/github/cmark-gfm">cmark-gfm</a> to render this markdown table as HTML:</p>
-<pre><code>$ cargo license --all-features --avoid-build-deps --avoid-dev-deps --direct-deps-only --tsv | ./md-table.awk | cmark-gfm -e table
+<pre><code class="language-sh">$ cargo license --all-features --avoid-build-deps --avoid-dev-deps --direct-deps-only --tsv | ./md-table.awk | cmark-gfm -e table
 </code></pre>
 <p>And voila:</p>
 <table>

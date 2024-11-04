@@ -43,7 +43,7 @@
     hljs.highlightAll();
 
       document.querySelectorAll('pre > code').forEach((el, _i) => {
-          if (el.classList.contains('language-sh') || el.classList.contains('language-shell')){ return; }
+          if (el.classList.contains('language-sh') || el.classList.contains('language-shell') || el.classList.contains('language-bash')){ return; }
 
           var line_count = el.innerText.trimEnd().split('\n').length;
           line_numbers_container = document.createElement('div');
@@ -335,7 +335,7 @@ Each sanitizer also has options so it could be useful to inspect them if your pr
 </h2>
 <p><em>This section is very subjective, it's just my strong, biased opinion.</em></p>
 <p>There's a hotly debated topic that I have so far carefully avoided and that's dependency management. So in short, in C++ there's none. Most people resort to using the system package manager, it's easy to notice because their README looks like this:</p>
-<pre><code>On Ubuntu 20.04: `sudo apt install [100 lines of packages]`
+<pre><code class="language-markdown">On Ubuntu 20.04: `sudo apt install [100 lines of packages]`
 
 On macOS: `brew install [100 lines of packages named slightly differently]`
 

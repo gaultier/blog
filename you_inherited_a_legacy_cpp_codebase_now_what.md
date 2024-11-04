@@ -218,7 +218,7 @@ If you go through this on a project, and you found this article helpful, shoot m
 
 There's a hotly debated topic that I have so far carefully avoided and that's dependency management. So in short, in C++ there's none. Most people resort to using the system package manager, it's easy to notice because their README looks like this:
 
-```
+```markdown
 On Ubuntu 20.04: `sudo apt install [100 lines of packages]`
 
 On macOS: `brew install [100 lines of packages named slightly differently]`

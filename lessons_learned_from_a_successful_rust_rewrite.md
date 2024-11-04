@@ -128,7 +128,7 @@ I resorted to run the problematic tests in `valgrind`, like I used to do with pu
 
 Our library offers a C API, something like this:
 
-```
+```c
 void* handle = MYLIB_init();
 
 // Do some stuff with the handle...

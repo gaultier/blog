@@ -29,7 +29,7 @@ In short, we get a text file where each line contains random ASCII characters. F
 
 The way we read the data into a variable is through a shell command:
 
-```
+```gnuplot
 data = system("cat in.txt")
 ```
 
@@ -95,7 +95,6 @@ We do the same for the last character, iterating in reverse order:
       }  
     }
   }
-
 ```
 
 Finally, we concatenate the two digits (which are still two strings of length 1 at that point) with the `.` operator, convert it to a number with the `+ 0` idiom, and increase our sum:

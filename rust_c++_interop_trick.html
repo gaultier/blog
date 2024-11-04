@@ -43,7 +43,7 @@
     hljs.highlightAll();
 
       document.querySelectorAll('pre > code').forEach((el, _i) => {
-          if (el.classList.contains('language-sh') || el.classList.contains('language-shell')){ return; }
+          if (el.classList.contains('language-sh') || el.classList.contains('language-shell') || el.classList.contains('language-bash')){ return; }
 
           var line_count = el.innerText.trimEnd().split('\n').length;
           line_numbers_container = document.createElement('div');
@@ -209,7 +209,7 @@ pub extern &quot;C&quot; fn RUST_write_comment(user: &amp;mut UserC, comment: *c
 }
 </code></pre>
 <p>Now, let's use the tool <a href="https://github.com/mozilla/cbindgen">cbindgen</a> to generate the C header corresponding to this Rust code:</p>
-<pre><code>$ cargo install cbindgen
+<pre><code class="language-sh">$ cargo install cbindgen
 $ cbindgen -v src/lib.rs --lang=c++ -o ../user-rs-lib.h
 </code></pre>
 <p>And we get this C header:</p>
@@ -292,7 +292,7 @@ int main() {
 }
 </code></pre>
 <p>And link (manually) our brand new Rust library to our C++ program:</p>
-<pre><code>$ clang++ user.cpp ./user-rs-lib/target/debug/libuser_rs_lib.a
+<pre><code class="language-sh">$ clang++ user.cpp ./user-rs-lib/target/debug/libuser_rs_lib.a
 $ ./a.out
 alice (336ff4cec0a2ccbfc0c4e4cb9ba7c152) says: hello, world!
 Comment count: 1
@@ -361,7 +361,6 @@ int main() {
                      reinterpret_cast&lt;const uint8_t *&gt;(msg), sizeof(msg) - 1,
                      get_std_string_pointer_and_length(alice.get_name()));
 }
-
 </code></pre>
 <p>We re-build, re-run, and lo and behold, the Rust implementation now prints the name:</p>
 <pre><code>alice (69b7c41491ccfbd28c269ea4091652d) says: hello, world!
@@ -490,7 +489,6 @@ void RUST_write_comment(UserC *user,
                         ByteSliceView name);
 
 } // extern &quot;C&quot;
-
 </code></pre>
 <pre><code class="language-rust">// Path: user-rs-lib/src/lib.rs
 
@@ -530,7 +528,6 @@ pub extern &quot;C&quot; fn RUST_write_comment(
 
     user.comments_count += 1;
 }
-
 </code></pre>
 </details>
 <p><a href="/blog"> ⏴ Back to all articles</a></p>

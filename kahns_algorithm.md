@@ -203,21 +203,21 @@ Alright, now that we know how our graph is represented, on to the algorithm.
 Here's the pseudo-code:
 
 ```
- 1│ L ← Empty list that will contain the sorted elements
- 2│ S ← Set of all nodes with no incoming edge
- 3│ 
- 4│ while S is not empty do
- 5│     remove a node n from S
- 6│     add n to L
- 7│     for each node m with an edge e from n to m do
- 8│         remove edge e from the graph
- 9│         if m has no other incoming edges then
-10│             insert m into S
-11│ 
-12│ if graph has edges then
-13│     return error   (graph has at least one cycle)
-14│ else 
-15│     return L   (a topologically sorted order)
+L ← Empty list that will contain the sorted elements
+S ← Set of all nodes with no incoming edge
+
+while S is not empty do
+    remove a node n from S
+    add n to L
+    for each node m with an edge e from n to m do
+        remove edge e from the graph
+        if m has no other incoming edges then
+            insert m into S
+
+if graph has edges then
+    return error   (graph has at least one cycle)
+else 
+    return L   (a topologically sorted order)
 ```
 
 And in plain English:

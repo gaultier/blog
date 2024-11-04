@@ -43,7 +43,7 @@
     hljs.highlightAll();
 
       document.querySelectorAll('pre > code').forEach((el, _i) => {
-          if (el.classList.contains('language-sh') || el.classList.contains('language-shell')){ return; }
+          if (el.classList.contains('language-sh') || el.classList.contains('language-shell') || el.classList.contains('language-bash')){ return; }
 
           var line_count = el.innerText.trimEnd().split('\n').length;
           line_numbers_container = document.createElement('div');
@@ -120,7 +120,7 @@ $ make -j$(nproc)
 $ sudo make install
 </code></pre>
 <p>You will now have a <code>zig</code> executable in the PATH as well as the zig standard library. You can verify you have now the latest version by doing:</p>
-<pre><code>$ zig version
+<pre><code class="language-sh">$ zig version
 0.6.0+749417a
 </code></pre>
 <p><a href="/blog"> ⏴ Back to all articles</a></p>

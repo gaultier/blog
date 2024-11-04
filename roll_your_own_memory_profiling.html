@@ -43,7 +43,7 @@
     hljs.highlightAll();
 
       document.querySelectorAll('pre > code').forEach((el, _i) => {
-          if (el.classList.contains('language-sh') || el.classList.contains('language-shell')){ return; }
+          if (el.classList.contains('language-sh') || el.classList.contains('language-shell') || el.classList.contains('language-bash')){ return; }
 
           var line_count = el.innerText.trimEnd().split('\n').length;
           line_numbers_container = document.createElement('div');
@@ -166,7 +166,6 @@
                                                                              
 MAPPED_LIBRARIES:
 [...]
-
 </code></pre>
 <p>The first line is a header identifying that this is a heap profile (contrary to a CPU profile which <code>pprof</code> can also analyze, which uses a different, binary, format) and gives for each of the four fields we will record, their sum.</p>
 <p>Then comes one line per entry. Each entry has these four fields that the header just gave us a sum of:</p>
@@ -509,10 +508,9 @@ That part is important to avoid having a huge profile and that's why <code>pprof
   }
   profile-&gt;records[profile-&gt;records_len++] = record;
 }
-
 </code></pre>
 <p>Finally, we can dump this profile in the <code>pprof</code> textual representation:</p>
-<pre><code>static void mem_profile_write(mem_profile_t *profile, FILE *out) {
+<pre><code class="language-c">static void mem_profile_write(mem_profile_t *profile, FILE *out) {
   fprintf(out, &quot;heap profile: %lu: %lu [     %lu:    %lu] @ heapprofile\n&quot;,
           profile-&gt;in_use_objects, profile-&gt;in_use_space,
           profile-&gt;alloc_objects, profile-&gt;alloc_space);

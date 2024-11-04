@@ -231,9 +231,9 @@ Also, it means the corpus gets better each time we had a test (be it in C++ or R
 
 Does it mean that the corpus will grow to an extreme size? Well, worry not, because LLVM comes with a fuzzing corpus minimizer:
 
-```
+```sh
 # Minimize the fuzzing corpus (in place).
-cargo +nightly fuzz cmin [...]
+$ cargo +nightly fuzz cmin [...]
 ```
 
 For each file in the corpus, it feeds it as input to our code, observes which branches are taken, and if a new set of branches is taken, this file remains (or perhaps gets minimized even more, not sure how smart this tool is). Otherwise it is deemed a duplicate and is trimmed.
@@ -297,7 +297,6 @@ pub struct OwningArrayC<T> {
 pub extern "C" fn make_owning_array_u8(len: usize) -> OwningArrayC<u8> {
     vec![0; len].into()
 }
-
 ```
 
 Apparently, Rust developers do not want to commit to a particular ABI for these types, to avoid missing out on some future optimizations. So it means that every Rust struct now needs the equivalent "FFI friendly" struct along with conversion functions (usually implemented as `.into()` for convenience):
@@ -320,7 +319,7 @@ struct FooC {
 
 Which is cumbersome but still fine, especially since Rust has powerful macros (which I investigated using but did not eventually). However, since Rust also does not have great idiomatic support for custom allocators, we stuck with the standard memory allocator, which meant that each struct with heap-allocated fields has to have a deallocation function:
 
-```
+```rust
 #[no_mangle]
 pub extern "C" fn foo_free(foo: &FooC) {
     ...
@@ -738,7 +737,6 @@ for i = 1,#targets do
 
   os.execute("ninja -C '" .. build_dir .. "'")
 end
-
 ```
 
 

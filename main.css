@@ -161,6 +161,7 @@ pre > code {
     background: #FFF3E0 !important;
     line-height: 1.6;
     padding: .5rem !important;
+    padding-right: 1rem !important;
     word-wrap: break-word;
     margin-left: 0.5rem;
 }

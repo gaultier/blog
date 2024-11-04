@@ -24,7 +24,7 @@ termcolor	1.1.0	Andrew Gallant <jamslam@gmail.com>	https://github.com/BurntSushi
 
 Not really readable. We need to transform this data into a [markdown table](https://github.github.com/gfm/#tables-extension-), something like that:
 
-```
+```markdown
 | First Header  | Second Header |
 | ------------- | ------------- |
 | Content Cell  | Content Cell  |
@@ -90,7 +90,7 @@ $ cargo license --all-features --avoid-build-deps --avoid-dev-deps --direct-deps
 
 Ok, it's hard to really know if that's correct or not. Let's pipe it into [cmark-gfm](https://github.com/github/cmark-gfm) to render this markdown table as HTML:
 
-```
+```sh
 $ cargo license --all-features --avoid-build-deps --avoid-dev-deps --direct-deps-only --tsv | ./md-table.awk | cmark-gfm -e table
 ```
 

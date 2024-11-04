@@ -43,7 +43,7 @@
     hljs.highlightAll();
 
       document.querySelectorAll('pre > code').forEach((el, _i) => {
-          if (el.classList.contains('language-sh') || el.classList.contains('language-shell')){ return; }
+          if (el.classList.contains('language-sh') || el.classList.contains('language-shell') || el.classList.contains('language-bash')){ return; }
 
           var line_count = el.innerText.trimEnd().split('\n').length;
           line_numbers_container = document.createElement('div');
@@ -257,12 +257,10 @@ We then use the instruction <code>syscall</code> and check <code>rax</code> for 
 8
 </code></pre>
 <p>Another way to observe system calls made by a program is with <code>strace</code>, which will also prove very useful when troubleshooting. On some BSD, its equivalent is <code>truss</code> or <code>dtruss</code>.</p>
-<pre><code class="language-sh">
-$ strace ./main
+<pre><code class="language-sh">$ strace ./main
 execve(&quot;./main&quot;, [&quot;./main&quot;], 0x7ffc60e6bf10 /* 60 vars */) = 0
 exit(8)                                 = ?
 +++ exited with 8 +++
-
 </code></pre>
 <p>Let's change it back to 0 and continue.</p>
 <h2 id="a-stack-primer">
@@ -310,7 +308,7 @@ exit(8)                                 = ?
   </tbody>
 </table>
 <p>We then pass the address on the stack of the beginning of the string to the <code>write</code> syscall, as well as its length:</p>
-<pre><code>%define SYSCALL_WRITE 1
+<pre><code class="language-asm">%define SYSCALL_WRITE 1
 %define STDOUT 1
 
 print_hello:
@@ -366,7 +364,7 @@ print_hello:
 </blockquote>
 <p>Good catch! The only reason why this program works, is that <code>print_hello</code> is a leaf function, meaning it does not call another function. Remember, the stack needs to be 16 bytes aligned when we do a <code>call</code>!</p>
 <p>So the correct way would be:</p>
-<pre><code>print_hello:
+<pre><code class="language-asm">print_hello:
   push rbp
   mov rbp, rsp
 
@@ -456,7 +454,7 @@ $1 = -112
 $2 = -112
 </code></pre>
 <p>Which translates in assembly to:</p>
-<pre><code>sub rsp, 100
+<pre><code class="language-asm">sub rsp, 100
 and rsp, -16
 </code></pre>
 <p>Finally, following those conventions means that our assembly functions can be safely called from C or other languages following the <a href="https://wiki.osdev.org/System_V_ABI">System V ABI</a>, without any modification, which is great.</p>
@@ -508,7 +506,7 @@ _start:
   syscall
 </code></pre>
 <p>Building and running it under <code>strace</code> shows that it works and we get a socket with the file descriptor <code>3</code> (in this case, it might be different for you if you are following at home):</p>
-<pre><code>$ nasm -f elf64 -g main.nasm &amp;&amp; ld main.o -static -o main 
+<pre><code class="language-sh">$ nasm -f elf64 -g main.nasm &amp;&amp; ld main.o -static -o main 
 $ strace ./main
 execve(&quot;./main&quot;, [&quot;./main&quot;], 0x7ffe54dfe550 /* 60 vars */) = 0
 socket(AF_UNIX, SOCK_STREAM, 0)         = 3
@@ -631,7 +629,6 @@ static sun_path:data
   cld ; Move forward
   mov ecx, 19 ; Length is 19 with the null terminator.
   rep movsb ; Copy.
-
 </code></pre>
 <blockquote>
 <p><code>ecx</code> is the 32 bit form of the register <code>rcx</code>, meaning we only set here the lower 32 bits of the 64 bit register. <a href="https://wiki.osdev.org/CPU_Registers_x86-64">This handy table</a> lists all of the forms for all of the registers. But be cautious of the pitfall case of only setting a value in part of a register, and then using the whole register later. The rest of the bits that have not been set will contain some past value, which is hard to troubleshoot. The solution is to use <code>movzx</code> to zero extend, meaning setting the rest of the bits to 0. A good way to visualize this is to use <code>info registers</code> within gdb, and that will display for each register the value for each of its forms, e.g. for <code>rcx</code>, it will display the value for <code>rcx</code>, <code>ecx</code>, <code>cx</code>, <code>ch</code>, <code>cl</code>.</p>
@@ -684,7 +681,6 @@ static x11_connect_to_server:function
   add rsp, 112
   pop rbp
   ret
-
 </code></pre>
 <p>We are ready to talk to the X11 server!</p>
 <h2 id="sending-data-over-the-socket">

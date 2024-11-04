@@ -43,7 +43,7 @@
     hljs.highlightAll();
 
       document.querySelectorAll('pre > code').forEach((el, _i) => {
-          if (el.classList.contains('language-sh') || el.classList.contains('language-shell')){ return; }
+          if (el.classList.contains('language-sh') || el.classList.contains('language-shell') || el.classList.contains('language-bash')){ return; }
 
           var line_count = el.innerText.trimEnd().split('\n').length;
           line_numbers_container = document.createElement('div');
@@ -297,21 +297,21 @@ But note that this adjacency matrix is a concept, it shows what information is p
 </h2>
 <p><a href="https://en.wikipedia.org/wiki/Topological_sorting#Kahn&#x27;s_algorithm">Kahn's algorithm</a> keeps track of nodes with no incoming edge, and mutates the graph (in our case the adjacency matrix), by removing one edge at a time, until there are no more edges, and builds a list of nodes in the right order, which is the output.</p>
 <p>Here's the pseudo-code:</p>
-<pre><code> 1│ L ← Empty list that will contain the sorted elements
- 2│ S ← Set of all nodes with no incoming edge
- 3│ 
- 4│ while S is not empty do
- 5│     remove a node n from S
- 6│     add n to L
- 7│     for each node m with an edge e from n to m do
- 8│         remove edge e from the graph
- 9│         if m has no other incoming edges then
-10│             insert m into S
-11│ 
-12│ if graph has edges then
-13│     return error   (graph has at least one cycle)
-14│ else 
-15│     return L   (a topologically sorted order)
+<pre><code>L ← Empty list that will contain the sorted elements
+S ← Set of all nodes with no incoming edge
+
+while S is not empty do
+    remove a node n from S
+    add n to L
+    for each node m with an edge e from n to m do
+        remove edge e from the graph
+        if m has no other incoming edges then
+            insert m into S
+
+if graph has edges then
+    return error   (graph has at least one cycle)
+else 
+    return L   (a topologically sorted order)
 </code></pre>
 <p>And in plain English:</p>
 <p><code>Line 1</code>: The result of this algorithm is the list of nodes in the desired order (topological). It starts empty, and we add nodes one-by one during the algorithm. We can simply use an array in our implementation.</p>
