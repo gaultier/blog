@@ -253,4 +253,5 @@ p:has(img):has(em) {
   text-align: center;
   background-color: #FFE0B2;
   padding-top: .5rem;
+  white-space: pre-line;
 }
