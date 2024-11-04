@@ -170,7 +170,7 @@ table {
     border-collapse: collapse;
     overflow-x: scroll;
     max-width: 100%;
-    height: 1000px;
+    max-height: 1000px;
     display: block;
 }
 
