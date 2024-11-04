@@ -41,7 +41,7 @@
       document.querySelectorAll('pre > code').forEach((el, _i) => {
           if (el.classList.contains('language-sh') || el.classList.contains('language-shell')){ return; }
 
-          var line_count = el.innerText.split('\n').length;
+          var line_count = el.innerText.trimEnd().split('\n').length;
           line_numbers_container = document.createElement('div');
           line_numbers_container.classList.add('line_numbers_container');
 
