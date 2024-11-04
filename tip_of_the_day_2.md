@@ -135,7 +135,9 @@ Since an allocation is at least one page, even if the user asked for an arena of
 
 Then, in one `mmap` call, we allocate all the memory we need including the two guard pages. For a brief moment, all the memory is readable and writable. The very next thing we do is mark the first page and last page as neither readable nor writable. We then return the arena, and the user is none the wiser.
 
-Wouldn't it be simpler to issue `3` `mmap` calls with the right permissions from the get go? Well, yes, but there is no guarantee that the OS would give us a contiguous region of memory across these 3 calls. On Linux, we can give hints, but still there is no guarantee. Remember, our program is one of many running concurrently, and could get interrupted for some time between these `mmap` calls, the whole OS could go to sleep, etc. What we want is an atomic operation, thus, one `mmap` call.
+Wouldn't it be simpler to issue 3 `mmap` calls with the right permissions from the get go? Well, yes, but there is no guarantee that the OS would give us a contiguous region of memory across these 3 calls. On Linux, we can give hints, but still there is no guarantee. Remember, our program is one of many running concurrently, and could get interrupted for some time between these `mmap` calls, the whole OS could go to sleep, etc. What we want is an atomic operation, thus, one `mmap` call.
+
+Note, we can alternatively create the whole allocation as `PROT_NONE` and then mark the real (user-visible) allocation as `PROT_READ | PROT_WRITE`, that also works.
 
 So that's it, a poor man Adress Sanitizer in a few lines of code.
 
