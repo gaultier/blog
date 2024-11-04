@@ -202,6 +202,10 @@ a.title {
   color: initial;
 }
 
+details {
+  display: inline-flex;
+}
+
 details:hover {
    cursor: pointer;
 }
