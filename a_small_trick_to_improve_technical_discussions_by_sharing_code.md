@@ -165,6 +165,9 @@ And that's it, just 40 lines of Lua, and easy to extend to support even more hos
 
 ## Addendum: the full code
 
+<details>
+    <summary>The full code</summary>
+
 ```lua
 vim.keymap.set({'v', 'n'}, '<leader>x', ':GitWebUiUrlCopy<CR>')
 vim.api.nvim_create_user_command('GitWebUiUrlCopy', function(arg)
@@ -211,3 +214,4 @@ end,
 {force=true, range=true, nargs=0, desc='Copy to clipboard a URL to a git webui for the current line'})
 ```
 
+</details>

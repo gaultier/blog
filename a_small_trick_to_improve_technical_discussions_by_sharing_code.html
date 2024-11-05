@@ -197,6 +197,8 @@ I assume the git remote URL is a <code>ssh</code> URL here, again it's easy to t
 	<a class="title" href="#addendum-the-full-code">Addendum: the full code</a>
 	<a class="hash-anchor" href="#addendum-the-full-code" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
+<details>
+    <summary>The full code</summary>
 <pre><code class="language-lua">vim.keymap.set({'v', 'n'}, '&lt;leader&gt;x', ':GitWebUiUrlCopy&lt;CR&gt;')
 vim.api.nvim_create_user_command('GitWebUiUrlCopy', function(arg)
   local file_path = vim.fn.expand('%:p')
@@ -241,6 +243,7 @@ vim.api.nvim_create_user_command('GitWebUiUrlCopy', function(arg)
 end,
 {force=true, range=true, nargs=0, desc='Copy to clipboard a URL to a git webui for the current line'})
 </code></pre>
+</details>
 <p><a href="/blog"> ⏴ Back to all articles</a></p>
 
 <blockquote id="donate">
