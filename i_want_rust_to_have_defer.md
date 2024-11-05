@@ -4,7 +4,7 @@ Tags: Rust, C
 
 In a previous article I [mentioned](/blog/lessons_learned_from_a_successful_rust_rewrite.html#i-am-still-chasing-memory-leaks) that we use the `defer` idiom in Rust through a crate, but that it actually rarely gets past the borrow checker. Some comments were <s>doubtful</s> surprised and I did not have an example at hand.
 
-Well, today I hit this issue again so I thought I would document it. 
+Well, today at work I hit this issue again so I thought I would document it. 
 
 I have a Rust API like this:
 

@@ -2,7 +2,7 @@
   <feed xmlns="http://www.w3.org/2005/Atom">
     <title>Philippe Gaultier's blog</title>
     <link href="https://gaultier.github.io/blog"/>
-    <updated>2024-11-05T18:55:54+01:00</updated>
+    <updated>2024-11-05T18:56:43+01:00</updated>
     <author>
       <name>Philippe Gaultier</name>
     </author>
@@ -188,7 +188,7 @@
   <title>I want Rust to have "defer"</title>
   <link href="https://gaultier.github.io/blog/i_want_rust_to_have_defer.html"/>
   <id>urn:uuid:40e5077c-d353-5d64-a0a9-644bcb2752c9</id>
-  <updated>2024-11-05T18:55:54+01:00</updated>
+  <updated>2024-11-05T18:56:43+01:00</updated>
   <published>2024-11-05T18:13:45+01:00</published>
   </entry>
 	</feed>
