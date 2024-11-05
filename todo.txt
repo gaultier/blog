@@ -3,6 +3,7 @@ Ideas for articles:
 - [ ] HTTP server using arenas
 - [ ] Migration from mbedtls to aws-lc
 - [ ] ASM crypto
+- [ ] How this blog is made
 
 Blog implementation:
 
@@ -10,5 +11,5 @@ Blog implementation:
 - [ ] Last updated date for an article
 - [ ] Link to related articles at the end
 - [x] Line numbers in code snippets
-- [ ] Show tags on home page
+- [x] Show tags on home page
 - [ ] Search
