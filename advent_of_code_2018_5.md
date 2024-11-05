@@ -2,6 +2,8 @@ Title: Getting started with Scheme by solving an Advent of Code 2018 challenge
 Tags: Lisp, Scheme, C, Advent of Code
 ---
 
+*Discussions: [/r/scheme](https://old.reddit.com/r/scheme/comments/czyr3t/getting_started_with_scheme_by_solving_an_advent/)*
+
 I started learning [Scheme](https://en.wikipedia.org/wiki/Scheme_(programming_language)) very recently. [Chicken Scheme](http://wiki.call-cc.org/) is a wonderful small and
 performant implementation of Scheme, a programming language in the family of
 LISPs.
