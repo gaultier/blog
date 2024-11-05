@@ -304,4 +304,4 @@ Dum dum duuuum....Yes, we cannot use the `defer` idom here (or at least I did no
 
 So that is why I argue that Rust should get a `defer` statement in the language and the borrow checker should be made aware of this construct to allow this approach to take place.
 
-And that's irrespective of the annoying constraints around freeing memory that Rust allocated.
+And that's irrespective of the annoying constraints around freeing memory that Rust has allocated. Or that the code builds and runs fine even though it is subtly flawed.

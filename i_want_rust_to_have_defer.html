@@ -318,7 +318,7 @@ error[E0502]: cannot borrow `foos.len` as immutable because it is also borrowed 
 </code></pre>
 <p>Dum dum duuuum....Yes, we cannot use the <code>defer</code> idom here (or at least I did not find a way). In some cases it's possible, in lots of cases it's not. Despite the version without defer and with defer being equivalent and the borrow checker being fine with the former and not with the latter.</p>
 <p>So that is why I argue that Rust should get a <code>defer</code> statement in the language and the borrow checker should be made aware of this construct to allow this approach to take place.</p>
-<p>And that's irrespective of the annoying constraints around freeing memory that Rust allocated.</p>
+<p>And that's irrespective of the annoying constraints around freeing memory that Rust has allocated. Or that the code builds and runs fine even though it is subtly flawed.</p>
 <p><a href="/blog"> ⏴ Back to all articles</a></p>
 
 <blockquote id="donate">
