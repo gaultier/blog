@@ -39,18 +39,16 @@
 
     hljs.highlightAll();
 
-      document.querySelectorAll('pre > code').forEach((el, _i) => {
-          if (el.classList.contains('language-sh') || el.classList.contains('language-shell') || el.classList.contains('language-bash')){ return; }
+    document.querySelectorAll('pre > code').forEach((el, _i) => {
+        if (el.classList.contains('language-sh') || el.classList.contains('language-shell') || el.classList.contains('language-bash')){ return; }
 
-          var line_count = el.innerHTML.trimEnd().split('\n').length;
-          line_numbers_container = document.createElement('div');
-          line_numbers_container.classList.add('line_numbers_container');
-
-          for (var i = 1; i <= line_count;i++){
-            line_numbers_container.textContent += i + ' \n';
-          }
-          el.parentElement.prepend(line_numbers_container);
-      });
+        var lines = el.innerHTML.trimEnd().split('\n');
+        var out = [];
+        lines.forEach(function(l, i){
+          out.push('<span class="line-number">' + (i+1).toString() + '</span> ' + l);
+        });
+        el.innerHTML = out.join('\n');
+    });
   }
 </script>
 </head>

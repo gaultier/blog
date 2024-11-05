@@ -174,7 +174,7 @@ pre {
 
 code {
     background: #FFF3E0 !important;
-    padding: .3rem !important;
+    padding: .0rem !important;
 }
 
 pre > code {
@@ -256,11 +256,11 @@ p:has(img):has(em) {
   text-align: center;
 }
 
-.line_numbers_container {
-  display: flex;
-  flex-direction: column;
-  padding: .3rem;
+.line-number {
   background-color: #FFE0B2;
+  width: 1.9rem;
+  padding: .2rem;
+  display: inline-block;
 }
 
 @media only screen and (max-width: 480px) {
