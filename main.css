@@ -130,8 +130,7 @@ figure > figcaption {
 
 img, video {
   max-width: 90%;
-  margin-top: 1rem;
-  margin-bottom: 1rem;
+  padding: 1rem;
   display: block;
   margin: auto;
 }
@@ -178,6 +177,7 @@ code {
     padding-right: .3rem !important;
     background: #FFF3E0 !important;
     word-wrap: break-word;
+    font-size: larger;
 }
 
 code.code-no-line-numbers {

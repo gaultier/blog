@@ -531,6 +531,9 @@ If you want to play with the code here and try to make it faster, go at it!
 
 ## Addendum: the full code
 
+<details>
+  <summary>The full code</summary>
+
 ```js
 const adjacencyMatrix = [
   [0, 0, 1, 0, 0, 0],
@@ -635,4 +638,4 @@ for (let i = employeesTopologicallySorted.length - 2; i >= 0; i -= 1) {
   );
 }
 ```
-
+</details>
