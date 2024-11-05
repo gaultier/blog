@@ -172,7 +172,13 @@ This can have a huge impact on performance since Docker will copy all the files 
 	<a class="hash-anchor" href="#miscellenaous-tricks" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <ul>
-<li>Use <code>sed</code> to quickly edit big files in place. E.g.: you want to insert a line at the top of a Javascript file to skip linter warnings. Instead of doing: <code>printf '/* eslint-disable */\n\n' | cat - foo.js &gt; foo_tmp &amp;&amp; mv foo_tmp foo.js</code>, which involves reading the whole file, copying it, and renaming it, we can do: <code>sed -i '1s#^#/* eslint-disable */ #' foo.js</code> which is simpler.</li>
+<li>Use <code>sed</code> to quickly edit big files in place. E.g.: you want to insert a line at the top of a Javascript file to skip linter warnings. Instead of doing:
+<pre><code>printf '/* eslint-disable */\n\n' | cat - foo.js &gt; foo_tmp &amp;&amp; mv foo_tmp foo.js
+</code></pre>
+which involves reading the whole file, copying it, and renaming it, we can do:
+<pre><code>sed -i '1s#^#/* eslint-disable */ #' foo.js
+</code></pre>
+which is simpler.</li>
 <li>Favor static linking and LTO. This will simplify much of your pipeline because you'll have to deal with fewer files, ideally one statically built executable.</li>
 <li>Use only one Gitlab CI job. That is because the startup time of a job is very high, in the order of minutes. You can achieve task parallelism with other means such as <code>parallel</code> or <code>make -j</code>.</li>
 <li>Parallelize all the things! Some tools do not run tasks in parallel by default, e.g. <code>make</code> and <code>gradle</code>. Make sure you are always using a CI instance with multiple cores and are passing <code>--parallel</code> to Gradle and <code>-j$(nproc)</code> to make. In rare instances you might have to tweak the exact level of parallelism to your particular task for maximum performance. Also, <code>parallel</code> is great for parallelizing tasks.</li>

@@ -62,7 +62,15 @@ In no particular order:
 
 ## Miscellenaous tricks
 
-- Use `sed` to quickly edit big files in place. E.g.: you want to insert a line at the top of a Javascript file to skip linter warnings. Instead of doing: `printf '/* eslint-disable */\n\n' | cat - foo.js > foo_tmp && mv foo_tmp foo.js`, which involves reading the whole file, copying it, and renaming it, we can do: `sed -i '1s#^#/* eslint-disable */ #' foo.js` which is simpler.
+- Use `sed` to quickly edit big files in place. E.g.: you want to insert a line at the top of a Javascript file to skip linter warnings. Instead of doing: 
+    ```
+    printf '/* eslint-disable */\n\n' | cat - foo.js > foo_tmp && mv foo_tmp foo.js
+    ```
+    which involves reading the whole file, copying it, and renaming it, we can do: 
+    ```
+    sed -i '1s#^#/* eslint-disable */ #' foo.js
+    ```
+    which is simpler.
 - Favor static linking and LTO. This will simplify much of your pipeline because you'll have to deal with fewer files, ideally one statically built executable.
 - Use only one Gitlab CI job. That is because the startup time of a job is very high, in the order of minutes. You can achieve task parallelism with other means such as `parallel` or `make -j`.
 - Parallelize all the things! Some tools do not run tasks in parallel by default, e.g. `make` and `gradle`. Make sure you are always using a CI instance with multiple cores and are passing `--parallel` to Gradle and `-j$(nproc)` to make. In rare instances you might have to tweak the exact level of parallelism to your particular task for maximum performance. Also, `parallel` is great for parallelizing tasks.
