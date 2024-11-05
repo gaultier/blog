@@ -267,3 +267,14 @@ p:has(img):has(em) {
 @media only screen and (max-width: 480px) {
    .line-number { display: none; }
 }
+
+details {
+  width: 100%;
+}
+
+summary {
+  width: 100%;
+  text-align: center;
+  font-weight: bold;
+}
+
