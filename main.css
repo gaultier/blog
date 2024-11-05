@@ -146,7 +146,6 @@ body {
     margin: 0;
     font-family: monospace, sans-serif;
     margin-bottom: 5rem;
-    font-size: calc(18px + 0.1vw);
 }
 
 li {
@@ -175,16 +174,12 @@ pre {
 
 code {
     background: #FFF3E0 !important;
-    padding: .2rem !important;
+    padding: .3rem !important;
 }
 
 pre > code {
     background: #FFF3E0 !important;
-    line-height: 1.6;
-    padding: .5rem !important;
-    padding-right: 1rem !important;
     word-wrap: break-word;
-    margin-left: 0.5rem;
 }
 
 table {
@@ -267,12 +262,6 @@ p:has(img):has(em) {
 .line_numbers_container {
   display: flex;
   flex-direction: column;
-  line-height: 1.6;
-  padding: .1rem;
-  padding-left: .5rem;
-  padding-right: .5rem;
-  text-align: center;
+  padding: .3rem;
   background-color: #FFE0B2;
-  padding-top: .5rem;
-  white-space: pre-line;
 }
