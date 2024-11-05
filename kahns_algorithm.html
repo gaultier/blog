@@ -44,7 +44,10 @@
     hljs.highlightAll();
 
     document.querySelectorAll('pre > code').forEach((el, _i) => {
-        if (el.classList.contains('language-sh') || el.classList.contains('language-shell') || el.classList.contains('language-bash')){ return; }
+        if (el.classList.contains('language-sh') || el.classList.contains('language-shell') || el.classList.contains('language-bash')){
+          el.classList.add('code-no-line-numbers');
+          return; 
+        }
 
         var lines = el.innerHTML.trimEnd().split('\n');
         var out = [];
@@ -311,26 +314,21 @@ else
     return L   (a topologically sorted order)
 </code></pre>
 <p>And in plain English:</p>
-<p><code>Line 1</code>: The result of this algorithm is the list of nodes in the desired order (topological). It starts empty, and we add nodes one-by one during the algorithm. We can simply use an array in our implementation.</p>
-<p><code>Line 2</code>: We first collect all nodes with no incoming edge. In terms of adjacency matrix, it means picking columns with only zeroes. The algorithm calls it a set, but we are free in our implementation to use whatever data structure we see fit. It just means a given node appears at most once in it. In our example, this set is: <code>[Zoe, Bella, Miranda]</code>. During the algorithm course, we will add further nodes to this set. Note that this is a working set, not the final result. Also, the order does not matter.</p>
-<p><code>Line 4</code>: Self-explanatory, we continue until the working set is empty and there is no more work to do.</p>
-<p><code>Line 5</code>: We first pick a node with no incoming edge (it does not matter which one). For example, <code>Zoe</code>, and remove it from <code>S</code>. <code>S</code> is now: <code>[Bella, Miranda]</code>.</p>
-<p><code>Line 6</code>: We add this node to the list of topologically sorted nodes, <code>L</code>. It now is: <code>[Zoe]</code>.</p>
-<p><code>Line 7</code>: We then inspect each node that <code>Zoe</code> has an edge to. That means <code>Jane</code> and <code>Angela</code>. In terms of adjacency matrix, we simply read <code>Zoe's</code> row, and inspect cells with a <code>1</code> in it.</p>
-<p><code>Line 8</code>: We remove such an edge, for example, <code>Zoe -&gt; Jane</code>. In terms of adjacency matrix, it means setting the cell on the row <code>Zoe</code> and column <code>Jane</code> to <code>0</code>.</p>
-<p>At this point, the graph looks like this:</p>
-<p><img src="kahns_algorithm_2.svg" alt="Employee hierarchy, step 1" /></p>
-<p><code>Line 9</code>: If <code>Jane</code> does not have another incoming edge, we add it to the set of all nodes with no incoming edge. That's the case here, so <code>S</code> now looks like: <code>[Bella, Miranda, Jane]</code>.</p>
-<p>We know loop to <code>Line 7</code> and handle the node <code>Angela</code> since <code>Jane</code> is taken care of.</p>
-<p><code>Line 7-10</code>: We are now handling the node <code>Angela</code>. We remove the edge <code>Zoe -&gt; Angela</code>. We check whether the node <code>Angela</code> has incoming edges. It does, so we do <strong>not</strong> add it to <code>S</code>.</p>
-<p>The graph is now:</p>
-<p><img src="kahns_algorithm_2_1.svg" alt="Employee hierarchy, step 2" /></p>
-<p>We are now done with the <code>Line 7</code> for loop, so go back to <code>Line 5</code> and pick this time <code>Bella</code>. And so on.</p>
-<p>The graph would now, to the algorithm, look like:</p>
-<p><img src="kahns_algorithm_2_2.svg" alt="Employee hierarchy, step 3" /></p>
+<ul>
+<li>Line 1: The result of this algorithm is the list of nodes in the desired order (topological). It starts empty, and we add nodes one-by one during the algorithm. We can simply use an array in our implementation.</li>
+<li>Line 2: We first collect all nodes with no incoming edge. In terms of adjacency matrix, it means picking columns with only zeroes. The algorithm calls it a set, but we are free in our implementation to use whatever data structure we see fit. It just means a given node appears at most once in it. In our example, this set is: <code>[Zoe, Bella, Miranda]</code>. During the algorithm course, we will add further nodes to this set. Note that this is a working set, not the final result. Also, the order does not matter.</li>
+<li>Line 4: Self-explanatory, we continue until the working set is empty and there is no more work to do.</li>
+<li>Line 5: We first pick a node with no incoming edge (it does not matter which one). For example, <code>Zoe</code>, and remove it from <code>S</code>. <code>S</code> is now: <code>[Bella, Miranda]</code>.</li>
+<li>Line 6: We add this node to the list of topologically sorted nodes, <code>L</code>. It now is: <code>[Zoe]</code>.</li>
+<li>Line 7: We then inspect each node that <code>Zoe</code> has an edge to. That means <code>Jane</code> and <code>Angela</code>. In terms of adjacency matrix, we simply read <code>Zoe's</code> row, and inspect cells with a <code>1</code> in it.</li>
+<li>Line 8: We remove such an edge, for example, <code>Zoe -&gt; Jane</code>. In terms of adjacency matrix, it means setting the cell on the row <code>Zoe</code> and column <code>Jane</code> to <code>0</code>. At this point, the graph looks like this: <img src="kahns_algorithm_2.svg" alt="Employee hierarchy, step 1" /></li>
+<li>Line 9: If <code>Jane</code> does not have another incoming edge, we add it to the set of all nodes with no incoming edge. That's the case here, so <code>S</code> now looks like: <code>[Bella, Miranda, Jane]</code>. We now loop to line 7 and handle the node <code>Angela</code> since <code>Jane</code> is taken care of.</li>
+<li>Line 7-10: We are now handling the node <code>Angela</code>. We remove the edge <code>Zoe -&gt; Angela</code>. We check whether the node <code>Angela</code> has incoming edges. It does, so we do <strong>not</strong> add it to <code>S</code>. The graph is now: <img src="kahns_algorithm_2_1.svg" alt="Employee hierarchy, step 2" />.</li>
+<li>We are now done with the line 7 for loop, so go back to line 5 and pick this time <code>Bella</code>. And so on. The graph would now, to the algorithm, look like: <img src="kahns_algorithm_2_2.svg" alt="Employee hierarchy, step 3" /></li>
+</ul>
 <hr />
 <p>And here are the next steps in images:</p>
-<ul>
+<ol>
 <li><img src="kahns_algorithm_2_3.svg" alt="Employee hierarchy, step 4" /></li>
 <li><img src="kahns_algorithm_2_4.svg" alt="Employee hierarchy, step 5" /></li>
 <li><img src="kahns_algorithm_2_5.svg" alt="Employee hierarchy, step 6" /></li>
@@ -338,11 +336,13 @@ else
 <li><img src="kahns_algorithm_2_7.svg" alt="Employee hierarchy, step 8" /></li>
 <li><img src="kahns_algorithm_2_8.svg" alt="Employee hierarchy, step 9" /></li>
 <li><img src="kahns_algorithm_2_9.svg" alt="Employee hierarchy, step 10" /></li>
-</ul>
+</ol>
 <hr />
-<p><code>Line 12-15</code>: Once the loop at <code>Line 4</code> is finished, we inspect our graph. If there are no more edges, we are done. If there is still an edge, it means there was a cycle in the graph, and we return an error.
-Note that this algorithm is not capable by itself to point out which cycle there was exactly, only that there was one. That's because we mutated the graph by removing edges. If this information was important, we could keep track of which edges we removed in order, and re-add them back, or perhaps apply the algorithm to a copy of the graph (the adjacency matrix is trivial to clone).</p>
-<p>This algorithm is loose concerning the order of some operations, for example, picking a node with no incoming edge, or in which order the nodes in <code>S</code> are stored. That gives room for an implementation to use certain data structures or orders that are faster, but in some cases we want the order to be always the same to solve ties in the stable way and to be reproducible. In order to do that, we simply use the alphabetical order. So in our example above, at <code>Line 5</code>, we picked <code>Zoe</code> out of <code>[Zoe, Bella, Miranda]</code>. Using this method, we would keep the working set <code>S</code> sorted alphabetically and pick <code>Bella</code> out of <code>[Bella, Miranda, Zoe]</code>.</p>
+<ul>
+<li>Line 12-15: Once the loop at line 4 is finished, we inspect our graph. If there are no more edges, we are done. If there is still an edge, it means there was a cycle in the graph, and we return an error.
+Note that this algorithm is not capable by itself to point out which cycle there was exactly, only that there was one. That's because we mutated the graph by removing edges. If this information was important, we could keep track of which edges we removed in order, and re-add them back, or perhaps apply the algorithm to a copy of the graph (the adjacency matrix is trivial to clone).</li>
+</ul>
+<p>This algorithm is loose concerning the order of some operations, for example, picking a node with no incoming edge, or in which order the nodes in <code>S</code> are stored. That gives room for an implementation to use certain data structures or orders that are faster, but in some cases we want the order to be always the same to solve ties in the stable way and to be reproducible. In order to do that, we simply use the alphabetical order. So in our example above, at line 5, we picked <code>Zoe</code> out of <code>[Zoe, Bella, Miranda]</code>. Using this method, we would keep the working set <code>S</code> sorted alphabetically and pick <code>Bella</code> out of <code>[Bella, Miranda, Zoe]</code>.</p>
 <h2 id="implementation">
 	<a class="title" href="#implementation">Implementation</a>
 	<a class="hash-anchor" href="#implementation" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
@@ -365,7 +365,7 @@ const nodes = [&quot;Angela&quot;, &quot;Bella&quot;, &quot;Ellen&quot;, &quot;J
 	<a class="title" href="#helpers">Helpers</a>
 	<a class="hash-anchor" href="#helpers" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h3>
-<p>We need a helper function to check if a node has no incoming edge (<code>Line 9</code> in the algorithm):</p>
+<p>We need a helper function to check if a node has no incoming edge (line 9 in the algorithm):</p>
 <pre><code class="language-js">function hasNodeNoIncomingEdge(adjacencyMatrix, nodeIndex) {
   const column = nodeIndex;
 
@@ -379,7 +379,7 @@ const nodes = [&quot;Angela&quot;, &quot;Bella&quot;, &quot;Ellen&quot;, &quot;J
   return true;
 }
 </code></pre>
-<p>Then, using this helper, we can define a second helper to initially collect all the nodes with no incoming edge (<code>Line 2</code> in the algorithm):</p>
+<p>Then, using this helper, we can define a second helper to initially collect all the nodes with no incoming edge (line 2 in the algorithm):</p>
 <pre><code class="language-js">function getNodesWithNoIncomingEdge(adjacencyMatrix, nodes) {
   return nodes.filter((_, i) =&gt; hasNodeNoIncomingEdge(adjacencyMatrix, i));
 }
@@ -390,7 +390,7 @@ const nodes = [&quot;Angela&quot;, &quot;Bella&quot;, &quot;Ellen&quot;, &quot;J
 <p>And it outputs:</p>
 <pre><code class="language-js">[ 'Bella', 'Miranda', 'Zoe' ]
 </code></pre>
-<p>We need one final helper, to determine if the graph has edges (<code>Line 12</code>), which is straightforward:</p>
+<p>We need one final helper, to determine if the graph has edges (line 12), which is straightforward:</p>
 <pre><code class="language-js">function graphHasEdges(adjacencyMatrix) {
   for (let row = 0; row &lt; adjacencyMatrix.length; row += 1) {
     for (let column = 0; column &lt; adjacencyMatrix.length; column += 1) {

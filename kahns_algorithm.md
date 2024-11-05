@@ -222,60 +222,36 @@ else
 
 And in plain English:
 
-`Line 1`: The result of this algorithm is the list of nodes in the desired order (topological). It starts empty, and we add nodes one-by one during the algorithm. We can simply use an array in our implementation.
-
-`Line 2`: We first collect all nodes with no incoming edge. In terms of adjacency matrix, it means picking columns with only zeroes. The algorithm calls it a set, but we are free in our implementation to use whatever data structure we see fit. It just means a given node appears at most once in it. In our example, this set is: `[Zoe, Bella, Miranda]`. During the algorithm course, we will add further nodes to this set. Note that this is a working set, not the final result. Also, the order does not matter.
-
-`Line 4`: Self-explanatory, we continue until the working set is empty and there is no more work to do.
-
-`Line 5`: We first pick a node with no incoming edge (it does not matter which one). For example, `Zoe`, and remove it from `S`. `S` is now: `[Bella, Miranda]`.
-
-`Line 6`: We add this node to the list of topologically sorted nodes, `L`. It now is: `[Zoe]`.
-
-`Line 7`: We then inspect each node that `Zoe` has an edge to. That means `Jane` and `Angela`. In terms of adjacency matrix, we simply read `Zoe's` row, and inspect cells with a `1` in it.
-
-`Line 8`: We remove such an edge, for example, `Zoe -> Jane`. In terms of adjacency matrix, it means setting the cell on the row `Zoe` and column `Jane` to `0`.
-
-At this point, the graph looks like this:
-
-![Employee hierarchy, step 1](kahns_algorithm_2.svg)
-
-`Line 9`: If `Jane` does not have another incoming edge, we add it to the set of all nodes with no incoming edge. That's the case here, so `S` now looks like: `[Bella, Miranda, Jane]`.
-
-We know loop to `Line 7` and handle the node `Angela` since `Jane` is taken care of.
-
-`Line 7-10`: We are now handling the node `Angela`. We remove the edge `Zoe -> Angela`. We check whether the node `Angela` has incoming edges. It does, so we do **not** add it to `S`. 
-
-
-The graph is now:
-
-![Employee hierarchy, step 2](kahns_algorithm_2_1.svg)
-
-We are now done with the `Line 7` for loop, so go back to `Line 5` and pick this time `Bella`. And so on.
-
-The graph would now, to the algorithm, look like:
-
-![Employee hierarchy, step 3](kahns_algorithm_2_2.svg)
+- Line 1: The result of this algorithm is the list of nodes in the desired order (topological). It starts empty, and we add nodes one-by one during the algorithm. We can simply use an array in our implementation.
+- Line 2: We first collect all nodes with no incoming edge. In terms of adjacency matrix, it means picking columns with only zeroes. The algorithm calls it a set, but we are free in our implementation to use whatever data structure we see fit. It just means a given node appears at most once in it. In our example, this set is: `[Zoe, Bella, Miranda]`. During the algorithm course, we will add further nodes to this set. Note that this is a working set, not the final result. Also, the order does not matter.
+- Line 4: Self-explanatory, we continue until the working set is empty and there is no more work to do.
+- Line 5: We first pick a node with no incoming edge (it does not matter which one). For example, `Zoe`, and remove it from `S`. `S` is now: `[Bella, Miranda]`.
+- Line 6: We add this node to the list of topologically sorted nodes, `L`. It now is: `[Zoe]`.
+- Line 7: We then inspect each node that `Zoe` has an edge to. That means `Jane` and `Angela`. In terms of adjacency matrix, we simply read `Zoe's` row, and inspect cells with a `1` in it.
+- Line 8: We remove such an edge, for example, `Zoe -> Jane`. In terms of adjacency matrix, it means setting the cell on the row `Zoe` and column `Jane` to `0`. At this point, the graph looks like this: ![Employee hierarchy, step 1](kahns_algorithm_2.svg)
+- Line 9: If `Jane` does not have another incoming edge, we add it to the set of all nodes with no incoming edge. That's the case here, so `S` now looks like: `[Bella, Miranda, Jane]`. We now loop to line 7 and handle the node `Angela` since `Jane` is taken care of.
+- Line 7-10: We are now handling the node `Angela`. We remove the edge `Zoe -> Angela`. We check whether the node `Angela` has incoming edges. It does, so we do **not** add it to `S`. The graph is now: ![Employee hierarchy, step 2](kahns_algorithm_2_1.svg).
+- We are now done with the line 7 for loop, so go back to line 5 and pick this time `Bella`. And so on. The graph would now, to the algorithm, look like: ![Employee hierarchy, step 3](kahns_algorithm_2_2.svg)
 
 ---
 
 And here are the next steps in images:
 
-- ![Employee hierarchy, step 4](kahns_algorithm_2_3.svg)
-- ![Employee hierarchy, step 5](kahns_algorithm_2_4.svg)
-- ![Employee hierarchy, step 6](kahns_algorithm_2_5.svg)
-- ![Employee hierarchy, step 7](kahns_algorithm_2_6.svg)
-- ![Employee hierarchy, step 8](kahns_algorithm_2_7.svg)
-- ![Employee hierarchy, step 9](kahns_algorithm_2_8.svg)
-- ![Employee hierarchy, step 10](kahns_algorithm_2_9.svg)
+1. ![Employee hierarchy, step 4](kahns_algorithm_2_3.svg)
+1. ![Employee hierarchy, step 5](kahns_algorithm_2_4.svg)
+1. ![Employee hierarchy, step 6](kahns_algorithm_2_5.svg)
+1. ![Employee hierarchy, step 7](kahns_algorithm_2_6.svg)
+1. ![Employee hierarchy, step 8](kahns_algorithm_2_7.svg)
+1. ![Employee hierarchy, step 9](kahns_algorithm_2_8.svg)
+1. ![Employee hierarchy, step 10](kahns_algorithm_2_9.svg)
 
 ---
 
-`Line 12-15`: Once the loop at `Line 4` is finished, we inspect our graph. If there are no more edges, we are done. If there is still an edge, it means there was a cycle in the graph, and we return an error.
+- Line 12-15: Once the loop at line 4 is finished, we inspect our graph. If there are no more edges, we are done. If there is still an edge, it means there was a cycle in the graph, and we return an error.
 Note that this algorithm is not capable by itself to point out which cycle there was exactly, only that there was one. That's because we mutated the graph by removing edges. If this information was important, we could keep track of which edges we removed in order, and re-add them back, or perhaps apply the algorithm to a copy of the graph (the adjacency matrix is trivial to clone).
 
 
-This algorithm is loose concerning the order of some operations, for example, picking a node with no incoming edge, or in which order the nodes in `S` are stored. That gives room for an implementation to use certain data structures or orders that are faster, but in some cases we want the order to be always the same to solve ties in the stable way and to be reproducible. In order to do that, we simply use the alphabetical order. So in our example above, at `Line 5`, we picked `Zoe` out of `[Zoe, Bella, Miranda]`. Using this method, we would keep the working set `S` sorted alphabetically and pick `Bella` out of `[Bella, Miranda, Zoe]`.
+This algorithm is loose concerning the order of some operations, for example, picking a node with no incoming edge, or in which order the nodes in `S` are stored. That gives room for an implementation to use certain data structures or orders that are faster, but in some cases we want the order to be always the same to solve ties in the stable way and to be reproducible. In order to do that, we simply use the alphabetical order. So in our example above, at line 5, we picked `Zoe` out of `[Zoe, Bella, Miranda]`. Using this method, we would keep the working set `S` sorted alphabetically and pick `Bella` out of `[Bella, Miranda, Zoe]`.
 
 
 ## Implementation
@@ -302,7 +278,7 @@ const nodes = ["Angela", "Bella", "Ellen", "Jane", "Miranda", "Zoe"];
  
 ### Helpers
 
-We need a helper function to check if a node has no incoming edge (`Line 9` in the algorithm):
+We need a helper function to check if a node has no incoming edge (line 9 in the algorithm):
 
 ```js
 function hasNodeNoIncomingEdge(adjacencyMatrix, nodeIndex) {
@@ -319,7 +295,7 @@ function hasNodeNoIncomingEdge(adjacencyMatrix, nodeIndex) {
 }
 ```
 
-Then, using this helper, we can define a second helper to initially collect all the nodes with no incoming edge (`Line 2` in the algorithm):
+Then, using this helper, we can define a second helper to initially collect all the nodes with no incoming edge (line 2 in the algorithm):
 
 ```js
 function getNodesWithNoIncomingEdge(adjacencyMatrix, nodes) {
@@ -339,7 +315,7 @@ And it outputs:
 [ 'Bella', 'Miranda', 'Zoe' ]
 ```
 
-We need one final helper, to determine if the graph has edges (`Line 12`), which is straightforward:
+We need one final helper, to determine if the graph has edges (line 12), which is straightforward:
 
 ```js
 function graphHasEdges(adjacencyMatrix) {

@@ -40,7 +40,10 @@
     hljs.highlightAll();
 
     document.querySelectorAll('pre > code').forEach((el, _i) => {
-        if (el.classList.contains('language-sh') || el.classList.contains('language-shell') || el.classList.contains('language-bash')){ return; }
+        if (el.classList.contains('language-sh') || el.classList.contains('language-shell') || el.classList.contains('language-bash')){
+          el.classList.add('code-no-line-numbers');
+          return; 
+        }
 
         var lines = el.innerHTML.trimEnd().split('\n');
         var out = [];

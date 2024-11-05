@@ -175,13 +175,15 @@ pre {
 code {
     background: #FFF3E0 !important;
     padding: .0rem !important;
-    padding-right: .5rem !important;
-}
-
-pre > code {
+    padding-right: .3rem !important;
     background: #FFF3E0 !important;
     word-wrap: break-word;
 }
+
+code.code-no-line-numbers {
+  padding: .5rem !important;
+}
+
 
 table {
     border-collapse: collapse;
@@ -263,6 +265,7 @@ p:has(img):has(em) {
   padding: .2rem;
   display: inline-block;
   text-align: center;
+  padding: .2rem;
 }
 
 @media only screen and (max-width: 450px) {
