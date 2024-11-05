@@ -2,6 +2,7 @@ Title: Roll your own memory profiling: it's actually not hard
 Tags: C, Allocator, Profiling, Pprof
 ---
 
+*Discussions: [/r/c_programming](https://old.reddit.com/r/C_Programming/comments/182rnqw/roll_your_own_memory_profiling_its_actually_not/)*
 
 *Or: An exploration of the [pprof](https://github.com/gperftools/gperftools) memory profiler and its textual format for fun an profit.*
 
