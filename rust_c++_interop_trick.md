@@ -2,7 +2,7 @@ Title: A small trick for simple Rust/C++ interop
 Tags: Rust, C++
 ---
 
-*Discussions: [Reddit](https://www.reddit.com/r/rust/comments/1fkpbfk/a_small_trick_for_simple_rustc_interop/), [HN](https://news.ycombinator.com/item?id=41593661).*
+*Discussions: [/r/rust](https://www.reddit.com/r/rust/comments/1fkpbfk/a_small_trick_for_simple_rustc_interop/), [HN](https://news.ycombinator.com/item?id=41593661).*
 
 I am [rewriting](/blog/how_to_rewrite_a_cpp_codebase_successfully.html) a gnarly [C++ codebase](/blog/you_inherited_a_legacy_cpp_codebase_now_what.html) in Rust at work.
 

@@ -114,7 +114,7 @@
 		</li>
 </ul>
 
-<p><em>Discussions: <a href="https://www.reddit.com/r/rust/comments/1fkpbfk/a_small_trick_for_simple_rustc_interop/">Reddit</a>, <a href="https://news.ycombinator.com/item?id=41593661">HN</a>.</em></p>
+<p><em>Discussions: <a href="https://www.reddit.com/r/rust/comments/1fkpbfk/a_small_trick_for_simple_rustc_interop/">/r/rust</a>, <a href="https://news.ycombinator.com/item?id=41593661">HN</a>.</em></p>
 <p>I am <a href="/blog/how_to_rewrite_a_cpp_codebase_successfully.html">rewriting</a> a gnarly <a href="/blog/you_inherited_a_legacy_cpp_codebase_now_what.html">C++ codebase</a> in Rust at work.</p>
 <p>Due to the heavy use of callbacks (sigh), Rust sometimes calls C++ and C++ sometimes calls Rust. This done by having both sides expose a C API for the functions they want the other side to be able to call.</p>
 <p>This is for functions; but what about C++ methods? Here is a trick to rewrite one C++ method at a time, without headaches. And by the way, this works whatever the language you are rewriting the project in, it does not have to be Rust!</p>

@@ -2,7 +2,7 @@ Title: Learn Wayland by writing a GUI from scratch
 Tags: C, Wayland, GUI, X11
 ---
 
-*This article has been discussed on [Hacker News](https://news.ycombinator.com/item?id=37876896) and [Lobsters](https://lobste.rs/s/385e2w/learn_wayland_by_writing_gui_from_scratch).*
+*Discussions: [Hacker News](https://news.ycombinator.com/item?id=37876896), [Lobsters](https://lobste.rs/s/385e2w/learn_wayland_by_writing_gui_from_scratch).*
 
 [Wayland](https://wayland.freedesktop.org/) is all the rage those days. Distributions left and right switch to it, many readers of my previous article on [writing a X11 GUI from scratch in x86_64 assembly](/blog/x11_x64.html) asked for a follow-up article about Wayland, and I now run Wayland on my desktop. So here we go, let's write a (very simple) GUI program with Wayland, without any libraries, this time in C. 
 
