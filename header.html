@@ -39,8 +39,8 @@
 
     hljs.highlightAll();
 
-    document.querySelectorAll('pre > code').forEach((el, _i) => {
-        if (el.classList.contains('language-sh') || el.classList.contains('language-shell') || el.classList.contains('language-bash')){
+    document.querySelectorAll('code').forEach((el, _i) => {
+        if (0 == el.classList.length || el.classList.contains('language-sh') || el.classList.contains('language-shell') || el.classList.contains('language-bash')){
           el.classList.add('code-no-line-numbers');
           return; 
         }

@@ -167,8 +167,6 @@ pre {
     background: #FFF3E0 !important;
     white-space: pre-wrap;
     border: 1px solid grey;
-    margin-bottom: 0;
-    display: inline-flex;
 }
 
 code {
@@ -180,8 +178,12 @@ code {
     font-size: larger;
 }
 
-code.code-no-line-numbers {
+pre > code.code-no-line-numbers {
   padding: .5rem !important;
+}
+
+code.code-no-line-numbers {
+  padding: .1rem;
 }
 
 
