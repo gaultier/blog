@@ -172,6 +172,10 @@ pre {
     display: inline-flex;
 }
 
+.moz-reader-content pre {
+    display: inline-flex !important;
+}
+
 code {
     background: #FFF3E0 !important;
     padding: .3rem !important;
