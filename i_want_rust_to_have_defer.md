@@ -82,7 +82,7 @@ int main() {
 I build it with all the warnings enabled, run it with sanitizers on, and/or in valgrind, all good.
 
 
-> If I feel fancy (and non-portable), I can even automate the freeing of the memory in C with `__atribute(cleanup)`, like `defer` (ominous sounds). But let's not, today. Let's focus on the Rust side.
+> If I feel fancy (and non-portable), I can even automate the freeing of the memory in C with `__attribute(cleanup)`, like `defer` (ominous sounds). But let's not, today. Let's focus on the Rust side.
 
 
 

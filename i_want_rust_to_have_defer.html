@@ -148,7 +148,7 @@ int main() {
 </code></pre>
 <p>I build it with all the warnings enabled, run it with sanitizers on, and/or in valgrind, all good.</p>
 <blockquote>
-<p>If I feel fancy (and non-portable), I can even automate the freeing of the memory in C with <code>__atribute(cleanup)</code>, like <code>defer</code> (ominous sounds). But let's not, today. Let's focus on the Rust side.</p>
+<p>If I feel fancy (and non-portable), I can even automate the freeing of the memory in C with <code>__attribute(cleanup)</code>, like <code>defer</code> (ominous sounds). But let's not, today. Let's focus on the Rust side.</p>
 </blockquote>
 <p>Now, we are principled developers who test their code (right?). So let's write a Rust test for it. We expect it to be exactly the same as the C code:</p>
 <pre><code class="language-rust">#[cfg(test)]
