@@ -265,5 +265,5 @@ p:has(img):has(em) {
 }
 
 @media only screen and (max-width: 480px) {
-   .line_numbers_container{ display: none; }
+   .line-number { display: none; }
 }
