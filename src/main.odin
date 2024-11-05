@@ -502,19 +502,34 @@ generate_home_page :: proc(
 	)
 
 	for a in articles {
+		assert(len(a.tags) > 0)
+
 		if a.output_file_name == "body_of_work.html" {continue}
 
 		fmt.sbprintf(
 			&sb,
 			`
 	<li>
-		<span class="date">%s</span>
-		<a href="/blog/%s">%s</a>
-	</li>`,
+		<div class="home-link"> 
+			<span class="date">%s</span>
+			<a href="/blog/%s">%s</a>
+		</div>
+		<div>🏷️
+	`,
 			datetime_to_date(a.creation_date),
 			a.output_file_name,
 			a.title,
 		)
+		for tag, i in a.tags {
+			id := make_html_friendly_id(tag)
+			fmt.sbprintf(&sb, ` <a href="/blog/articles-by-tag.html#%s">%s</a>`, id, tag)
+
+			if i < len(a.tags) - 1 {
+				strings.write_string(&sb, ", ")
+			}
+		}
+		fmt.sbprint(&sb, "</div></li>")
+
 	}
 
 	strings.write_string(&sb, " </ul>\n </div>\n")

@@ -70,10 +70,16 @@ p {
 }
 
 .articles > ul > li {
+  display: inline-flex;
+  justify-content: space-between;
   margin: 1rem 0;
 }
 
-.articles > ul > li > a {
+.home-link {
+  margin-right: 2rem;
+}
+
+.home-link > a {
   text-decoration: none;
   color: #E65100;
   font-weight: bold;
