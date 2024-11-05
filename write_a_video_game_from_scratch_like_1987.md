@@ -3,7 +3,7 @@ Tags: C, X11, Video game, Odin, Optimization
 ---
 
 
-> This article has been discussed on [Hacker News](https://news.ycombinator.com/item?id=40737370) and [Reddit](https://old.reddit.com/r/programming/comments/1dkahjw/lets_write_a_video_game_from_scratch_like_its_1987/)
+*Discussions: [Hacker News](https://news.ycombinator.com/item?id=40737370) and [/r/programming](https://old.reddit.com/r/programming/comments/1dkahjw/lets_write_a_video_game_from_scratch_like_its_1987/)*
 
 In a [previous article](/blog/x11_x64.html) I've done the 'Hello, world!' of GUIs in assembly: A black window with a white text, using X11 without any libraries, just talking directly over a socket. 
 

@@ -2,6 +2,8 @@ Title: How to rewrite a C++ codebase successfully
 Tags: C, C++, Rust, Rewrite, Safety
 ---
 
+*Discussions: [/r/programming](https://old.reddit.com/r/programming/comments/1clfhzm/how_to_rewrite_a_c_codebase_successfully/), [/r/rust](https://old.reddit.com/r/rust/comments/1clfhqz/how_to_rewrite_a_c_codebase_successfully/)*
+
 *Not your typical 'Rewrite it in Rust' article.*
 
 I recently wrote about [inheriting a legacy C++ codebase](/blog/you_inherited_a_legacy_cpp_codebase_now_what.html). At some point, although I cannot pinpoint exactly when, a few things became clear to me:
