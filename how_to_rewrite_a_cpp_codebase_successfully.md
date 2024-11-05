@@ -2,7 +2,7 @@ Title: How to rewrite a C++ codebase successfully
 Tags: C, C++, Rust, Rewrite, Safety
 ---
 
-*Discussions: [/r/programming](https://old.reddit.com/r/programming/comments/1clfhzm/how_to_rewrite_a_c_codebase_successfully/), [/r/rust](https://old.reddit.com/r/rust/comments/1clfhqz/how_to_rewrite_a_c_codebase_successfully/)*
+*Discussions: [/r/programming](https://old.reddit.com/r/programming/comments/1clfhzm/how_to_rewrite_a_c_codebase_successfully/), [/r/rust](https://old.reddit.com/r/rust/comments/1clfhqz/how_to_rewrite_a_c_codebase_successfully/), [Lobsters](https://lobste.rs/s/a6gffu/how_rewrite_c_codebase_successfully)*
 
 *Not your typical 'Rewrite it in Rust' article.*
 
