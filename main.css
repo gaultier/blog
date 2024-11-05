@@ -172,10 +172,6 @@ pre {
     display: inline-flex;
 }
 
-.moz-reader-content pre {
-    display: inline-flex !important;
-}
-
 code {
     background: #FFF3E0 !important;
     padding: .3rem !important;
@@ -265,4 +261,8 @@ p:has(img):has(em) {
   flex-direction: column;
   padding: .3rem;
   background-color: #FFE0B2;
+}
+
+@media only screen and (max-width: 480px) {
+   .line_numbers_container{ display: none; }
 }
