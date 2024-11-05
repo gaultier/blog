@@ -119,8 +119,10 @@ termcolor	1.1.0	Andrew Gallant &lt;jamslam@gmail.com&gt;	https://github.com/Burn
 {
     printf(&quot;|&quot;);
     for (i = 1; i &lt;= NF; i++) {
-        # Note: if a field contains the character `|`, it will mess up the table. 
-        # In this case, we should replace this character by something else e.g. `,`:
+        # Note: if a field contains the character `|`,
+        # it will mess up the table.
+        # In this case, we should replace this character
+        # by something else e.g. `,`:
         gsub(/\|/, &quot;,&quot;, $i);
         printf(&quot; %s |&quot;, $i);
     } 

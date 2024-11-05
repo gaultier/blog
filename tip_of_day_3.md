@@ -49,8 +49,10 @@ Here's the full implementation (don't forget to mark the file executable). The s
 {
     printf("|");
     for (i = 1; i <= NF; i++) {
-        # Note: if a field contains the character `|`, it will mess up the table. 
-        # In this case, we should replace this character by something else e.g. `,`:
+        # Note: if a field contains the character `|`,
+        # it will mess up the table.
+        # In this case, we should replace this character
+        # by something else e.g. `,`:
         gsub(/\|/, ",", $i);
         printf(" %s |", $i);
     } 
