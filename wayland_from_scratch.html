@@ -8,9 +8,9 @@
 <link rel="shortcut icon" type="image/ico" href="/blog/favicon.ico">
 <link rel="stylesheet" type="text/css" href="main.css">
 <link rel="stylesheet" href="https://unpkg.com/@highlightjs/cdn-assets@11.8.0/styles/default.min.css">
-<script src="https://unpkg.com/@highlightjs/cdn-assets@11.8.0/highlight.min.js"></script>
+<script src="https://unpkg.com/@highlightjs/cdn-assets@11.8.0/highlight.min.js" async fetchpriority="low"></script>
 <!-- From https://github.com/odin-lang/odin-lang.org/blob/6f48c2cfb094a42dffd34143884fa958bd9c0ba2/themes/odin/layouts/partials/head.html#L71 -->
-<script src="https://unpkg.com/@highlightjs/cdn-assets@11.8.0/languages/x86asm.min.js"></script>
+<script src="https://unpkg.com/@highlightjs/cdn-assets@11.8.0/languages/x86asm.min.js" async fetchpriority="low"></script>
 <script>
   window.onload = function() {
       hljs.registerLanguage("odin", function(e) {
@@ -148,6 +148,7 @@
 		</li>
 </ul>
 
+<p><em>This article has been discussed on <a href="https://news.ycombinator.com/item?id=37876896">Hacker News</a> and <a href="https://lobste.rs/s/385e2w/learn_wayland_by_writing_gui_from_scratch">Lobsters</a>.</em></p>
 <p><a href="https://wayland.freedesktop.org/">Wayland</a> is all the rage those days. Distributions left and right switch to it, many readers of my previous article on <a href="/blog/x11_x64.html">writing a X11 GUI from scratch in x86_64 assembly</a> asked for a follow-up article about Wayland, and I now run Wayland on my desktop. So here we go, let's write a (very simple) GUI program with Wayland, without any libraries, this time in C.</p>
 <p>Here is what we are working towards:</p>
 <p><img src="wayland-screenshot-tiled1.png" alt="Result" /></p>
@@ -157,7 +158,6 @@
 <blockquote>
 <p>If you spot an error, please open a <a href="https://github.com/gaultier/blog">Github issue</a>!</p>
 </blockquote>
-<p><em>This article has been discussed on <a href="https://news.ycombinator.com/item?id=37876896">Hacker News</a> and <a href="https://lobste.rs/s/385e2w/learn_wayland_by_writing_gui_from_scratch">Lobsters</a>.</em></p>
 <h2 id="what-do-we-need">
 	<a class="title" href="#what-do-we-need">What do we need?</a>
 	<a class="hash-anchor" href="#what-do-we-need" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
