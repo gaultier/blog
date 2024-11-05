@@ -368,20 +368,21 @@ generate_html_article :: proc(
 	)
 
 	if len(article.tags) > 0 {
-		strings.write_string(&html_sb, "  <span>🏷️")
+		strings.write_string(&html_sb, "  <div class=\"tags\">")
 	}
 
-	for tag, i in article.tags {
+	for tag in article.tags {
 		id := make_html_friendly_id(tag)
-		fmt.sbprintf(&html_sb, ` <a href="/blog/articles-by-tag.html#%s">%s</a>`, id, tag)
-
-		if i < len(article.tags) - 1 {
-			strings.write_string(&html_sb, ", ")
-		}
+		fmt.sbprintf(
+			&html_sb,
+			` <a href="/blog/articles-by-tag.html#%s" class="tag">%s</a>`,
+			id,
+			tag,
+		)
 	}
 
 	if len(article.tags) > 0 {
-		strings.write_string(&html_sb, "</span>\n")
+		strings.write_string(&html_sb, "</div>\n")
 	}
 	strings.write_string(&html_sb, " </div>\n")
 
@@ -514,19 +515,20 @@ generate_home_page :: proc(
 			<span class="date">%s</span>
 			<a href="/blog/%s">%s</a>
 		</div>
-		<div>🏷️
+		<div class="tags">
 	`,
 			datetime_to_date(a.creation_date),
 			a.output_file_name,
 			a.title,
 		)
-		for tag, i in a.tags {
+		for tag in a.tags {
 			id := make_html_friendly_id(tag)
-			fmt.sbprintf(&sb, ` <a href="/blog/articles-by-tag.html#%s">%s</a>`, id, tag)
-
-			if i < len(a.tags) - 1 {
-				strings.write_string(&sb, ", ")
-			}
+			fmt.sbprintf(
+				&sb,
+				` <a href="/blog/articles-by-tag.html#%s" class="tag">%s</a>`,
+				id,
+				tag,
+			)
 		}
 		fmt.sbprint(&sb, "</div></li>")
 
@@ -607,8 +609,7 @@ generate_page_articles_by_tag :: proc(
 		slice.sort_by(articles_for_tag[:], compare_articles_by_creation_date_asc)
 		tag_id := make_html_friendly_id(tag)
 
-		fmt.sbprintf(&sb, `<li id="%s">%s<ul>
-		`, tag_id, tag)
+		fmt.sbprintf(&sb, `<li id="%s"><span class="tag">%s</span><ul>`, tag_id, tag)
 
 		for a in articles_for_tag {
 			fmt.sbprintf(

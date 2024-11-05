@@ -73,16 +73,31 @@ p {
   display: inline-flex;
   justify-content: space-between;
   margin: 1rem 0;
+  align-items: center;
 }
 
 .home-link {
-  margin-right: 5rem;
+  margin-right: 2rem;
 }
 
 .home-link > a {
   text-decoration: none;
   color: #E65100;
   font-weight: bold;
+}
+
+.tag {
+  border-radius: 10px;
+  background-color: #BDBDBD;
+  padding: 0.1rem 0.5rem;
+  color: white;
+  text-decoration: none;
+  margin: .2rem;
+}
+
+.tags {
+  display: inline-flex;
+  flex-wrap: wrap;
 }
 
 .date {
