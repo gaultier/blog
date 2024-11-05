@@ -6,8 +6,6 @@ In a previous article I [mentioned](/blog/lessons_learned_from_a_successful_rust
 
 Well, today I hit this issue again so I thought I would document it. 
 
-## The situation
-
 I have a Rust API like this:
 
 ```rust
@@ -58,7 +56,7 @@ int32_t MYLIB_get_foos(struct Foo **out_foos, uintptr_t *out_foos_count);
 
 ```
 
-use it from C so:
+I can now use it from C so:
 
 ```c
 #include "mylib.h"
@@ -88,7 +86,7 @@ I build it with all the warnings enabled, run it with sanitizers on, and/or in v
 
 
 
-Now, we are principled developers who test their code (right?). So let's write a Rust test for it. It should be exactly the same as the C code, right?
+Now, we are principled developers who test their code (right?). So let's write a Rust test for it. We expect it to be exactly the same as the C code:
 
 ```rust
 #[cfg(test)]
@@ -209,6 +207,8 @@ pub struct OwningArrayC<T> {
 ```
 
 It clearly signifies to the caller that they are in charge of freeing the memory, and also it carries the capacity of the `Vec` with it, so it's not lost.
+
+In our codebase at work, this struct is used a lot.
 
 So let's adapt the function, and also add a function in the API to free it for convenience:
 
