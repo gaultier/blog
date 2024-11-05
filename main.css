@@ -175,6 +175,7 @@ pre {
 code {
     background: #FFF3E0 !important;
     padding: .0rem !important;
+    padding-right: .5rem !important;
 }
 
 pre > code {
@@ -264,7 +265,7 @@ p:has(img):has(em) {
   text-align: center;
 }
 
-@media only screen and (max-width: 480px) {
+@media only screen and (max-width: 450px) {
    .line-number { display: none; }
 }
 
