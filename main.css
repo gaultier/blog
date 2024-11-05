@@ -261,6 +261,7 @@ p:has(img):has(em) {
   width: 1.9rem;
   padding: .2rem;
   display: inline-block;
+  text-align: center;
 }
 
 @media only screen and (max-width: 480px) {
