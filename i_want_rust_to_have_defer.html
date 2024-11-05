@@ -210,8 +210,8 @@ brk(0x213c0000)                         = 0x213c0000
 </code></pre>
 <p>Note the irony that we do not need to have a third-party dependency on the <code>libc</code> crate to allocate with <code>malloc</code> being called under the hood, but we do need it to free the memory with <code>free</code>. Anyway. Where was I.</p>
 <p>Right, Rust wants to free the memory it allocated. Ok. Let's do that I guess.</p>
-<p>The only problem is that to do so properly, we ought to use <code>Vec::from_raw_parts</code> and let the <code>Vec</code> free the memory when it gets dropped at the end of the scope. The only problem is: This function requires the pointer, the length, <em>and the capacity</em>. Wait, but we lost the capacity when we returned the pointer + length to the caller, which <em>does not care one bit about the capacity</em>!</p>
-<p>Let's first try the <s>hacky</s> easy way by pretending that the memory is allocated by a <code>Box</code>, which only needs the pointer, just like <code>free()</code>:</p>
+<p>The only problem is that to do so properly, we ought to use <code>Vec::from_raw_parts</code> and let the <code>Vec</code> free the memory when it gets dropped at the end of the scope. The only problem is: This function requires the pointer, the length, <em>and the capacity</em>. Wait, but we lost the capacity when we returned the pointer + length to the caller in <code>MYLIB_get_foos()</code>, and the caller <em>does not care one bit about the capacity</em>! It's irrelevant to them! At work, the mobile developers using our library rightfully asked: wait, what is this <code>cap</code> field? Why do I care?</p>
+<p>So, let's first try to dodge the problem the <s>hacky</s> easy way by pretending that the memory is allocated by a <code>Box</code>, which only needs the pointer, just like <code>free()</code>:</p>
 <pre><code class="language-rust">    #[test]
     fn test_get_foos() {
         ...
@@ -240,7 +240,7 @@ pub struct OwningArrayC&lt;T&gt; {
 }
 </code></pre>
 <p>It clearly signifies to the caller that they are in charge of freeing the memory, and also it carries the capacity of the <code>Vec</code> with it, so it's not lost.</p>
-<p>In our codebase at work, this struct is used a lot.</p>
+<p>In our project, this struct is used a lot.</p>
 <p>So let's adapt the function, and also add a function in the API to free it for convenience:</p>
 <pre><code class="language-rust">#[no_mangle]
 pub extern &quot;C&quot; fn MYLIB_get_foos(out_foos: &amp;mut OwningArrayC&lt;Foo&gt;) -&gt; i32 {
@@ -316,8 +316,9 @@ error[E0502]: cannot borrow `foos.len` as immutable because it is also borrowed 
    |       - mutable borrow might be used here, when `_guard` is dropped and runs the `Drop` code for type `ScopeGuard`
    |
 </code></pre>
-<p>Ta ta tam....Yes, we cannot use the <code>defer</code> idom here (or at least I did not find a way). In some cases it's possible, in lots of cases it's not. Despite the version without defer and with defer being equivalent and the borrow checker being fine with the former and not with the latter.</p>
+<p>Dum dum duuuum....Yes, we cannot use the <code>defer</code> idom here (or at least I did not find a way). In some cases it's possible, in lots of cases it's not. Despite the version without defer and with defer being equivalent and the borrow checker being fine with the former and not with the latter.</p>
 <p>So that is why I argue that Rust should get a <code>defer</code> statement in the language and the borrow checker should be made aware of this construct to allow this approach to take place.</p>
+<p>And that's irrespective of the annoying constraints around freeing memory that Rust allocated.</p>
 <p><a href="/blog"> ⏴ Back to all articles</a></p>
 
 <blockquote id="donate">

@@ -166,9 +166,9 @@ Note the irony that we do not need to have a third-party dependency on the `libc
 
 Right, Rust wants to free the memory it allocated. Ok. Let's do that I guess. 
 
-The only problem is that to do so properly, we ought to use `Vec::from_raw_parts` and let the `Vec` free the memory when it gets dropped at the end of the scope. The only problem is: This function requires the pointer, the length, *and the capacity*. Wait, but we lost the capacity when we returned the pointer + length to the caller, which *does not care one bit about the capacity*!
+The only problem is that to do so properly, we ought to use `Vec::from_raw_parts` and let the `Vec` free the memory when it gets dropped at the end of the scope. The only problem is: This function requires the pointer, the length, *and the capacity*. Wait, but we lost the capacity when we returned the pointer + length to the caller in `MYLIB_get_foos()`, and the caller *does not care one bit about the capacity*! It's irrelevant to them! At work, the mobile developers using our library rightfully asked: wait, what is this `cap` field? Why do I care? 
 
-Let's first try the <s>hacky</s> easy way by pretending that the memory is allocated by a `Box`, which only needs the pointer, just like `free()`:
+So, let's first try to dodge the problem the <s>hacky</s> easy way by pretending that the memory is allocated by a `Box`, which only needs the pointer, just like `free()`:
 
 ```rust
     #[test]
@@ -208,7 +208,7 @@ pub struct OwningArrayC<T> {
 
 It clearly signifies to the caller that they are in charge of freeing the memory, and also it carries the capacity of the `Vec` with it, so it's not lost.
 
-In our codebase at work, this struct is used a lot.
+In our project, this struct is used a lot.
 
 So let's adapt the function, and also add a function in the API to free it for convenience:
 
@@ -300,6 +300,8 @@ error[E0502]: cannot borrow `foos.len` as immutable because it is also borrowed 
 ```
 
 
-Ta ta tam....Yes, we cannot use the `defer` idom here (or at least I did not find a way). In some cases it's possible, in lots of cases it's not. Despite the version without defer and with defer being equivalent and the borrow checker being fine with the former and not with the latter.
+Dum dum duuuum....Yes, we cannot use the `defer` idom here (or at least I did not find a way). In some cases it's possible, in lots of cases it's not. Despite the version without defer and with defer being equivalent and the borrow checker being fine with the former and not with the latter.
 
 So that is why I argue that Rust should get a `defer` statement in the language and the borrow checker should be made aware of this construct to allow this approach to take place.
+
+And that's irrespective of the annoying constraints around freeing memory that Rust allocated.
