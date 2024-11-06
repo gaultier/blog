@@ -1,4 +1,4 @@
-Title: Perhaps Rust needs "defer" and a fresh take on FFI allocations
+Title: Perhaps Rust needs "defer" and a fresh take on allocations
 Tags: Rust, C
 ---
 
