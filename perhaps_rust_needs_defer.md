@@ -370,9 +370,6 @@ But what can we do otherwise? Are there any alternatives?
 
     fn main() {
       let f = foo_init();
-      if f.is_null() {
-          panic!("whomp whomp");
-      }
       
       'free: {
         if foo_bar(f) {

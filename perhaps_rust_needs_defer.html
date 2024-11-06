@@ -406,9 +406,6 @@ fn foo_free(_: *mut ()) {}
 
 fn main() {
   let f = foo_init();
-  if f.is_null() {
-      panic!(&quot;whomp whomp&quot;);
-  }
   
   'free: {
     if foo_bar(f) {
