@@ -397,7 +397,7 @@ But what can we do otherwise? Are there any alternatives?
 
 Rust + FFI is nasty and has a lot of friction. I went at work through all these steps I went through in this article, and this happens a lot.
 
-The crux of the issue is that there is a lot of knowledge to keep in our heads, lots of easy ways to shoot ourselves in the foot, and we have to reconcile what various tools tell us: even if the compiler is happy, the tests might not be. Even the tests are happy, Miri might not be. Even if we think we have done the right thing, we discover later, buried deep in the docs, that in fact, we didn't. 
+The crux of the issue is that there is a lot of knowledge to keep in our heads, lots of easy ways to shoot ourselves in the foot, and we have to reconcile what various tools tell us: even if the compiler is happy, the tests might not be. Even the tests are happy, Miri might not be. Even if we think we have done the right thing, we discover later, buried deep in the docs, that in fact, we didn't. It's definitely for experts only.
 
 This should not be so hard! Won't somebody think of the <s>children</s> Rust FFI users?
 
