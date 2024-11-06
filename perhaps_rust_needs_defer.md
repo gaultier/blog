@@ -391,7 +391,7 @@ But what can we do otherwise? Are there any alternatives?
     ```
     It's very nifty, but I am not sure I would enjoy reading and writing this kind of code, especially with multiple levels of nesting. Again, it does not scale very well. But it's something.
 - We can work-around the borrow-checker to still use `defer` by refactoring our code to make it happy. Again, tedious and not always possible. One thing that possibly works is using handles (numerical ids) instead of pointers, so that they are `Copy` and the borrow checker does not see an issue with sharing/copying them. Like file descriptors work in Unix. The potential downside here is that it creates global state since some component has to bookkeep these handles and their mapping to the real pointer. But it's a [common](https://floooh.github.io/2018/06/17/handles-vs-pointers.html) pattern in gamedev.
-- Perhaps the borrow checker can be improved upon without adding `defer` to the language, 'just'(tm) by making it smarter?
+- Perhaps the borrow checker can be improved upon without adding `defer` to the language, 'just' by making it smarter?
 - We can use arenas everywhere and sail away in the sunset, leaving all these nasty problems behind us
 - Rust can stabilize various nightly APIs and tools, like custom allocators and sanitizers, to make development simpler
 
