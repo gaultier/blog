@@ -1,6 +1,8 @@
-Title: Perhaps Rust needs "defer" and a fresh take on allocations
+Title: Perhaps Rust needs "defer"
 Tags: Rust, C
 ---
+
+*Or, how FFI in Rust is a pain in the neck.*
 
 In a previous article I [mentioned](/blog/lessons_learned_from_a_successful_rust_rewrite.html#i-am-still-chasing-memory-leaks) that we use the `defer` idiom in Rust through a crate, but that it actually rarely gets past the borrow checker. Some comments were <s>claiming this issue does not exist</s> surprised and I did not have an example at hand.
 
