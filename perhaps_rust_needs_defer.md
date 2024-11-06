@@ -413,3 +413,32 @@ The crux of the issue is that there is a lot of knowledge to keep in our heads, 
 
 This should not be so hard! Won't somebody think of the <s>children</s> Rust FFI users?
 
+
+## Addendum: One more gotcha
+
+Rust guarantees that the underlying pointer in `Vec` is not null. And `OwningArrayC` mirrors `Vec`, so it should be the same, right? Well consider this C code:
+
+```c
+int main() {
+    OwningArrayC_Foo foos = {0};
+    if (some_condition) {
+         MYLIB_get_foos(&foos);
+    }
+    MYLIB_free_foos(&foos);
+}
+```
+
+In this case, `MYLIB_free_foos` actually can receive an argument with a null pointer, which would then trigger and assert inside `Vec::from_raw_parts`. So we should check that in `MY_LIB_free_foos`:
+
+```rust
+#[no_mangle]
+pub extern "C" fn MYLIB_free_foos(foos: &mut OwningArrayC<Foo>) {
+    if !foos.data.is_null() {
+        unsafe {
+            let _ = Vec::from_raw_parts(foos.data, foos.len, foos.cap);
+        }
+    }
+}
+```
+
+It might be a bit surprising to a pure Rust developer given the `Vec` guarantees, but since the C side could pass anything, we must be defensive.
