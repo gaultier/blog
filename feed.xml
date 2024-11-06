@@ -2,7 +2,7 @@
   <feed xmlns="http://www.w3.org/2005/Atom">
     <title>Philippe Gaultier's blog</title>
     <link href="https://gaultier.github.io/blog"/>
-    <updated>2024-11-06T09:14:31+01:00</updated>
+    <updated>2024-11-06T09:15:32+01:00</updated>
     <author>
       <name>Philippe Gaultier</name>
     </author>
@@ -188,7 +188,7 @@
   <title>Perhaps Rust needs "defer" and a fresh take on FFI allocations</title>
   <link href="https://gaultier.github.io/blog/perhaps_rust_needs_defer.html"/>
   <id>urn:uuid:55eb4918-5851-5a25-80d5-d350aad8971b</id>
-  <updated>2024-11-06T09:14:31+01:00</updated>
+  <updated>2024-11-06T09:15:32+01:00</updated>
   <published>2024-11-06T08:33:45+01:00</published>
   </entry>
 	</feed>

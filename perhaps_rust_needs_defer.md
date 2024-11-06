@@ -267,7 +267,7 @@ pub extern "C" fn MYLIB_get_foos(out_foos: &mut OwningArrayC<Foo>) -> i32 {
 
 #[no_mangle]
 pub extern "C" fn MYLIB_free_foos(foos: &mut OwningArrayC<Foo>) {
-    if !foos.cap > 0 {
+    if foos.cap > 0 {
         unsafe {
             let _ = Vec::from_raw_parts(foos.data, foos.len, foos.cap);
         }
