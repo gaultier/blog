@@ -395,7 +395,7 @@ But what can we do otherwise? Are there any alternatives?
 
 ## Conclusion
 
-Rust + FFI is nasty and has a lot of friction. I went at work through all these steps I went through in this article, and this happens a lot. 
+Rust + FFI is nasty and has a lot of friction. I went at work through all these steps I went through in this article, and this happens a lot.
 
 The crux of the issue is that there is a lot of knowledge to keep in your head, lots of easy ways to shoot yourself in the foot, and I have to reconcile what various tools tell you: even if the compiler is happy, the tests might not be. Even the tests are happy, Miri might not be. Even if I think I have done the right thing, I discover buried deep in the docs that in fact I didn't. 
 
