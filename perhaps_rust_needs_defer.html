@@ -182,8 +182,8 @@ int main() {
   }
 }
 </code></pre>
-<p><em>This code has a subtle mistake (can you spot it?), so keep on reading.</em></p>
 <p>I build it with all the warnings enabled, run it with sanitizers on, and/or in Valgrind, all good.</p>
+<p><em>This code has a subtle mistake (can you spot it?), so keep on reading.</em></p>
 <blockquote>
 <p>If we feel fancy (and non-portable), we can even automate the freeing of the memory in C with <code>__attribute(cleanup)</code>, like <code>defer</code> (ominous sounds). But let's not, today. Let's focus on the Rust side.</p>
 </blockquote>
