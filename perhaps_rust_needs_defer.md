@@ -4,6 +4,8 @@ Tags: Rust, C
 
 *Or, how FFI in Rust is a pain in the neck.*
 
+*Discussions: [/r/rust](https://old.reddit.com/r/rust/comments/1gktuw6/perhaps_rust_needs_defer/?), [/r/programming](https://old.reddit.com/r/programming/comments/1gktum4/perhaps_rust_needs_defer/?)*
+
 In a previous article I [mentioned](/blog/lessons_learned_from_a_successful_rust_rewrite.html#i-am-still-chasing-memory-leaks) that we use the `defer` idiom in Rust through a crate, but that it actually rarely gets past the borrow checker. Some comments were <s>claiming this issue does not exist</s> surprised and I did not have an example at hand.
 
 Well, today at work I hit this issue again so I thought I would document it. And the whole experience showcases well how working in Rust with lots of FFI interop feels like.
