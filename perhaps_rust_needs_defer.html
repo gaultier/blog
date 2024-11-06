@@ -289,7 +289,7 @@ brk(0x213c0000)                         = 0x213c0000
  incorrect layout on deallocation: alloc59029 has size 16 and alignment 8, but gave size 8 and alignment 8
 ...
 </code></pre>
-<p>Let's take a second to marvel at the fact that Rust, probably the programming language the most strict at compile time, the if-it-builds-it-runs-dude-I-swear language, seems to work at compile time and at run time, but only fails when run under an experimental analyzer that only works in nightly and does not support lots of FFI patterns.</p>
+<p>Let's take a second to marvel at the fact that Rust, probably the programming language the most strict at compile time, the if-it-builds-it-runs-dude-I-swear language, seems to work at compile time and at run time, but only fails when run under an experimental analyzer that only works in nightly and does not support lots of FFI patterns, which is the place where you need Miri the most!</p>
 <p>That's the power of Undefined Behavior and <code>unsafe{}</code>. Again: audit all of your <code>unsafe</code> blocks, and be very suspicious of any third-party code that uses <code>unsafe</code>. I think Rust developers on average do not realize the harm that it is very easy to inflict to your program by using <code>unsafe</code> unwisely even if everything seems fine.</p>
 <p>Anyways, I guess we have to refactor our whole C API to do it the Rust Way(tm)!</p>
 <h2 id="third-attempt-to-free-the-memory-properly">

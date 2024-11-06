@@ -223,7 +223,7 @@ $ cargo +nightly miri test
 ...
 ```
 
-Let's take a second to marvel at the fact that Rust, probably the programming language the most strict at compile time, the if-it-builds-it-runs-dude-I-swear language, seems to work at compile time and at run time, but only fails when run under an experimental analyzer that only works in nightly and does not support lots of FFI patterns.
+Let's take a second to marvel at the fact that Rust, probably the programming language the most strict at compile time, the if-it-builds-it-runs-dude-I-swear language, seems to work at compile time and at run time, but only fails when run under an experimental analyzer that only works in nightly and does not support lots of FFI patterns, which is the place where you need Miri the most!
 
 That's the power of Undefined Behavior and `unsafe{}`. Again: audit all of your `unsafe` blocks, and be very suspicious of any third-party code that uses `unsafe`. I think Rust developers on average do not realize the harm that it is very easy to inflict to your program by using `unsafe` unwisely even if everything seems fine.
 
