@@ -199,6 +199,15 @@ Hmm, ok... So I guess the only way to not trigger Undefined Behavior on the C si
 
 Let's ignore for now that this will surprise every C developer out there that have been doing `if (NULL != ptr) free(ptr)` for 50 years now.
 
+I also tried to investigate how `drop` is implemented for `Vec` to understand what's going on and I stopped at this function in `core/src/alloc/mod.rs`:
+
+```rust
+    unsafe fn deallocate(&self, ptr: NonNull<u8>, layout: Layout);
+```
+
+Not sure where the implementation is located. Ok, let's move on.
+
+
 
 Let's stay on the safe side and assume that we ought to use `Vec::from_raw_parts` and let the `Vec` free the memory when it gets dropped at the end of the scope. The only problem is: This function requires the pointer, the length, *and the capacity*. Wait, but we lost the capacity when we returned the pointer + length to the caller in `MYLIB_get_foos()`, and the caller *does not care one bit about the capacity*! It's irrelevant to them! At work, the mobile developers using our library rightfully asked: wait, what is this `cap` field? Why do I care? What do I do with it? If you are used to manually managing your own memory, this is a very old concept, but if you are used to a Garbage Collector, it's very much new.
 
