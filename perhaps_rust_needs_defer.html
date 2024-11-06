@@ -211,6 +211,7 @@ test tests::test_get_foos ... ok
 error: memory leaked: alloc59029 (Rust heap, size: 16, align: 8), allocated here:
 ...
 </code></pre>
+<p>Note that the standard test runner does not report memory leaks, unfortunately. If Miri does not work for a given use case, and we still want to check that there are no leaks, we have to reach for nightly sanitizers or Valgrind.</p>
 <h2 id="first-attempt-to-free-the-memory-properly">
 	<a class="title" href="#first-attempt-to-free-the-memory-properly">First attempt to free the memory properly</a>
 	<a class="hash-anchor" href="#first-attempt-to-free-the-memory-properly" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>

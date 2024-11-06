@@ -125,6 +125,8 @@ error: memory leaked: alloc59029 (Rust heap, size: 16, align: 8), allocated here
 ...
 ```
 
+Note that the standard test runner does not report memory leaks, unfortunately. If Miri does not work for a given use case, and we still want to check that there are no leaks, we have to reach for nightly sanitizers or Valgrind.
+
 ## First attempt to free the memory properly
 
 Great, so let's free it at the end of the test, like C does, with `free` from libc, which we add as a dependency:
