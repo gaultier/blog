@@ -181,7 +181,7 @@ int main() {
   }
 }
 </code></pre>
-<p>I build it with all the warnings enabled, run it with sanitizers on, and/or in valgrind, all good.</p>
+<p>I build it with all the warnings enabled, run it with sanitizers on, and/or in Valgrind, all good.</p>
 <blockquote>
 <p>If we feel fancy (and non-portable), we can even automate the freeing of the memory in C with <code>__attribute(cleanup)</code>, like <code>defer</code> (ominous sounds). But let's not, today. Let's focus on the Rust side.</p>
 </blockquote>
@@ -390,7 +390,7 @@ error[E0502]: cannot borrow `foos.len` as immutable because it is also borrowed 
    |       - mutable borrow might be used here, when `_guard` is dropped and runs the `Drop` code for type `ScopeGuard`
    |
 </code></pre>
-<p>Dum dum duuuum....Yes, we cannot use the <code>defer</code> idom here (or at least I did not find a way). In some cases it's possible, in lots of cases it's not. The borrow checker considers that the <code>defer</code> block holds an exclusive mutable reference and the rest of the code cannot use that reference in any way.</p>
+<p>Dum dum duuuum....Yes, we cannot use the <code>defer</code> idiom here (or at least I did not find a way). In some cases it's possible, in lots of cases it's not. The borrow checker considers that the <code>defer</code> block holds an exclusive mutable reference and the rest of the code cannot use that reference in any way.</p>
 <p>Despite the fact, that the version without defer, and with defer, are semantically equivalent and the borrow checker is fine with the former and not with the latter.</p>
 <h2 id="possible-solutions">
 	<a class="title" href="#possible-solutions">Possible solutions</a>
@@ -399,7 +399,7 @@ error[E0502]: cannot borrow `foos.len` as immutable because it is also borrowed 
 <p>So that is why I argue that Rust should get a <code>defer</code> statement in the language and the borrow checker should be made aware of this construct to allow this approach to take place.</p>
 <p>But what can we do otherwise? Are there any alternatives?</p>
 <ul>
-<li>We can be very careful and make sure we deallocate everything by hand in every code paths. Obivously that doesn't scale to team size, code complexity, etc. And it's unfortunate since using a defer-like approach in C with <code>__attribute(cleanup)</code> and in C++ by implementing our <a href="https://www.gingerbill.org/article/2015/08/19/defer-in-cpp/">own</a> <code>defer</code> is trivial. And even Go which is garbage-collected has a first-class <code>defer</code>.</li>
+<li>We can be very careful and make sure we deallocate everything by hand in every code paths. Obviously that doesn't scale to team size, code complexity, etc. And it's unfortunate since using a defer-like approach in C with <code>__attribute(cleanup)</code> and in C++ by implementing our <a href="https://www.gingerbill.org/article/2015/08/19/defer-in-cpp/">own</a> <code>defer</code> is trivial. And even Go which is garbage-collected has a first-class <code>defer</code>.</li>
 <li>We can use a goto-like approach, as a reader <a href="https://lobste.rs/s/n6gciw/lessons_learned_from_successful_rust#c_8pzmqg">suggested</a> in a previous article, even though Rust does not have <code>goto</code> per se:
 <pre><code class="language-rust">fn foo_init() -&gt; *mut () { &amp;mut () }
 fn foo_bar(_: *mut ()) -&gt; bool { false }
