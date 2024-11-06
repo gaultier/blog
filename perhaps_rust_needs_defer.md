@@ -424,6 +424,8 @@ int main() {
     if (some_condition) {
          MYLIB_get_foos(&foos);
     }
+
+    // `foos.data` is null here in some code paths.
     MYLIB_free_foos(&foos);
 }
 ```

@@ -457,6 +457,8 @@ It's very nifty, but I am not sure I would enjoy reading and writing this kind o
     if (some_condition) {
          MYLIB_get_foos(&amp;foos);
     }
+
+    // `foos.data` is null here in some code paths.
     MYLIB_free_foos(&amp;foos);
 }
 </code></pre>
