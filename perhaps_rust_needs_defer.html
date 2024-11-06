@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Perhaps Rust needs "defer"</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link type="application/atom+xml" href="/blog/feed.xml" rel="self"/>
+<link rel="shortcut icon" type="image/ico" href="/blog/favicon.ico">
+<link rel="stylesheet" type="text/css" href="main.css">
+<link rel="stylesheet" href="https://unpkg.com/@highlightjs/cdn-assets@11.8.0/styles/default.min.css">
+<script src="highlight.min.js"></script>
+<!-- From https://github.com/odin-lang/odin-lang.org/blob/6f48c2cfb094a42dffd34143884fa958bd9c0ba2/themes/odin/layouts/partials/head.html#L71 -->
+<script src="x86asm.min.js"></script>
+<script>
+  window.onload = function() {
+      hljs.registerLanguage("odin", function(e) {
+      return {
+          aliases: ["odin", "odinlang", "odin-lang"],
+          keywords: {
+              keyword: "auto_cast bit_field bit_set break case cast context continue defer distinct do dynamic else enum fallthrough for foreign if import in map matrix not_in or_else or_return package proc return struct switch transmute type_of typeid union using when where",
+              literal: "true false nil",
+              built_in: "abs align_of cap clamp complex conj expand_to_tuple imag jmag kmag len max min offset_of quaternion real size_of soa_unzip soa_zip swizzle type_info_of type_of typeid_of"
+          },
+          illegal: "</",
+          contains: [e.C_LINE_COMMENT_MODE, e.C_BLOCK_COMMENT_MODE, {
+              className: "string",
+              variants: [e.QUOTE_STRING_MODE, {
+                  begin: "'",
+                  end: "[^\\\\]'"
+              }, {
+                  begin: "`",
+                  end: "`"
+              }]
+          }, {
+              className: "number",
+              variants: [{
+                  begin: e.C_NUMBER_RE + "[ijk]",
+                  relevance: 1
+              }, e.C_NUMBER_MODE]
+          }]
+      }
+    });
+
+    hljs.highlightAll();
+
+    document.querySelectorAll('code').forEach((el, _i) => {
+        if (0 == el.classList.length || el.classList.contains('language-sh') || el.classList.contains('language-shell') || el.classList.contains('language-bash')){
+          el.classList.add('code-no-line-numbers');
+          return; 
+        }
+
+        var lines = el.innerHTML.trimEnd().split('\n');
+        var out = [];
+        lines.forEach(function(l, i){
+          out.push('<span class="line-number">' + (i+1).toString() + '</span> ' + l);
+        });
+        el.innerHTML = out.join('\n');
+    });
+  }
+</script>
+</head>
+<body>
+
+<div id="banner">
+    <div id="name">
+        <img id="me" src="me.jpeg">
+        <span>Philippe Gaultier</span>
+    </div>
+    <ul>
+      <li> <a href="/blog/body_of_work.html">Body of work</a> </li>
+      <li> <a href="/blog/articles-by-tag.html">Tags</a> </li>
+      <li> <a href="https://github.com/gaultier/resume/raw/master/Philippe_Gaultier_resume_en.pdf">Resume</a> </li>
+      <li> <a href="https://www.linkedin.com/in/philippegaultier/">LinkedIn</a> </li>
+      <li> <a href="https://github.com/gaultier">Github</a> </li>
+      <li> <a href="/blog/feed.xml">Atom feed</a> </li>
+    </ul>
+</div>
+<div class="body">
+
+		<div class="article-prelude">
+			<p><a href="/blog"> ⏴ Back to all articles</a></p>
+
+			<p class="publication-date">Published on </p>
+		</div>
+		<div class="article-title">
+		<h1>Perhaps Rust needs "defer"</h1>
+		  <div class="tags"> <a href="/blog/articles-by-tag.html#rust" class="tag">Rust</a> <a href="/blog/articles-by-tag.html#c" class="tag">C</a></div>
+ </div>
+
+<p>In a previous article I <a href="/blog/lessons_learned_from_a_successful_rust_rewrite.html#i-am-still-chasing-memory-leaks">mentioned</a> that we use the <code>defer</code> idiom in Rust through a crate, but that it actually rarely gets past the borrow checker. Some comments were <s>doubtful</s> surprised and I did not have an example at hand.</p>
+<p>Well, today at work I hit this issue again so I thought I would document it.</p>
+<p>I have a Rust API like this:</p>
+<pre><code class="language-rust">#[repr(C)]
+pub struct Foo {
+    value: usize,
+}
+
+#[no_mangle]
+pub extern &quot;C&quot; fn MYLIB_get_foos(out_foos: *mut *mut Foo, out_foos_count: &amp;mut usize) -&gt; i32 {
+    let res = vec![Foo { value: 42 }, Foo { value: 99 }];
+    *out_foos_count = res.len();
+    unsafe { *out_foos = res.leak().as_mut_ptr() };
+    0
+}
+</code></pre>
+<p>It allocates and returns an dynamically allocated array as a pointer and a length. Of course in reality, <code>Foo</code> has many fields and the values are not known in advance but decoded from the network.</p>
+<p>I tell Cargo this is a static library:</p>
+<pre><code class="language-toml"># Cargo.toml
+
+[lib]
+crate-type = [&quot;staticlib&quot;]
+</code></pre>
+<p>It's a straightforward API, so I generate the corresponding C header with cbindgen:</p>
+<pre><code class="language-sh">$ cbindgen -v src/lib.rs --lang=c -o mylib.h
+</code></pre>
+<p>And I get:</p>
+<pre><code class="language-c">#include &lt;stdarg.h&gt;
+#include &lt;stdbool.h&gt;
+#include &lt;stdint.h&gt;
+#include &lt;stdlib.h&gt;
+
+typedef struct Foo {
+  uintptr_t value;
+} Foo;
+
+int32_t MYLIB_get_foos(struct Foo **out_foos, uintptr_t *out_foos_count);
+
+</code></pre>
+<p>I can now use it from C so:</p>
+<pre><code class="language-c">#include &quot;mylib.h&quot;
+#include &lt;assert.h&gt;
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+
+int main() {
+  Foo *foos = NULL;
+  size_t foos_count = 0;
+  assert(0 == MYLIB_get_foos(&amp;foos, &amp;foos_count));
+
+  for (size_t i = 0; i &lt; foos_count; i++) {
+    printf(&quot;%lu\n&quot;, foos[i].value);
+  }
+
+  if (NULL != foos) {
+    free(foos);
+  }
+}
+</code></pre>
+<p>I build it with all the warnings enabled, run it with sanitizers on, and/or in valgrind, all good.</p>
+<blockquote>
+<p>If I feel fancy (and non-portable), I can even automate the freeing of the memory in C with <code>__attribute(cleanup)</code>, like <code>defer</code> (ominous sounds). But let's not, today. Let's focus on the Rust side.</p>
+</blockquote>
+<p>Now, we are principled developers who test their code (right?). So let's write a Rust test for it. We expect it to be exactly the same as the C code:</p>
+<pre><code class="language-rust">#[cfg(test)]
+mod tests {
+    #[test]
+    fn test_get_foos() {
+        let mut foos = std::ptr::null_mut();
+        let mut foos_count = 0;
+        assert_eq!(0, super::MYLIB_get_foos(&amp;mut foos, &amp;mut foos_count));
+    }
+}
+</code></pre>
+<p>And it passes:</p>
+<pre><code class="language-sh">$ cargo test
+...
+running 1 test
+test tests::test_get_foos ... ok
+...
+</code></pre>
+<p>Of course, we have not yet freed anything, so we expect Miri to complain, and it does:</p>
+<pre><code class="language-sh">$ cargo +nightly miri test
+...
+error: memory leaked: alloc59029 (Rust heap, size: 16, align: 8), allocated here:
+...
+</code></pre>
+<p>Great, so let's free it at the end of the test, like C does, with <code>free</code> from libc, which we add as a dependency:</p>
+<pre><code class="language-rust">
+    #[test]
+    fn test_get_foos() {
+        ..
+
+        if !foos.is_null() {
+            unsafe { libc::free(foos as *mut std::ffi::c_void) };
+        }
+    }
+</code></pre>
+<p>The test passes, great. Let's try with Miri:</p>
+<pre><code class="language-sh">$ cargo +nightly miri test
+...
+ error: Undefined Behavior: deallocating alloc59029, which is Rust heap memory, using C heap deallocation operation
+...
+</code></pre>
+<p>Hmm...ok...Well that's a bit weird because what Rust does when the <code>Vec</code> is allocated, is to call out to <code>malloc</code> from libc, as we can see with <code>strace</code>:</p>
+<pre><code class="language-sh">$ strace -k -v -e brk ./a.out
+...
+brk(0x213c0000)                         = 0x213c0000
+ &gt; /usr/lib64/libc.so.6(brk+0xb) [0x10fa9b]
+ &gt; /usr/lib64/libc.so.6(__sbrk+0x6b) [0x118cab]
+ &gt; /usr/lib64/libc.so.6(__default_morecore@GLIBC_2.2.5+0x15) [0xa5325]
+ &gt; /usr/lib64/libc.so.6(sysmalloc+0x57b) [0xa637b]
+ &gt; /usr/lib64/libc.so.6(_int_malloc+0xd39) [0xa7399]
+ &gt; /usr/lib64/libc.so.6(tcache_init.part.0+0x36) [0xa7676]
+ &gt; /usr/lib64/libc.so.6(__libc_malloc+0x125) [0xa7ef5]
+ &gt; /home/pg/scratch/rust-blog2/a.out(alloc::alloc::alloc+0x6a) [0x4a145a]
+ &gt; /home/pg/scratch/rust-blog2/a.out(alloc::alloc::Global::alloc_impl+0x140) [0x4a15a0]
+ &gt; /home/pg/scratch/rust-blog2/a.out(alloc::alloc::exchange_malloc+0x3a) [0x4a139a]
+ &gt; /home/pg/scratch/rust-blog2/a.out(MYLIB_get_foos+0x26) [0x407cc6]
+ &gt; /home/pg/scratch/rust-blog2/a.out(main+0x2b) [0x407bfb]
+</code></pre>
+<p>Note the irony that we do not need to have a third-party dependency on the <code>libc</code> crate to allocate with <code>malloc</code> being called under the hood, but we do need it to free the memory with <code>free</code>. Anyway. Where was I.</p>
+<p>Right, Rust wants to free the memory it allocated. Ok. Let's do that I guess.</p>
+<p>The only problem is that to do so properly, we ought to use <code>Vec::from_raw_parts</code> and let the <code>Vec</code> free the memory when it gets dropped at the end of the scope. The only problem is: This function requires the pointer, the length, <em>and the capacity</em>. Wait, but we lost the capacity when we returned the pointer + length to the caller in <code>MYLIB_get_foos()</code>, and the caller <em>does not care one bit about the capacity</em>! It's irrelevant to them! At work, the mobile developers using our library rightfully asked: wait, what is this <code>cap</code> field? Why do I care?</p>
+<p>So, let's first try to dodge the problem the <s>hacky</s> easy way by pretending that the memory is allocated by a <code>Box</code>, which only needs the pointer, just like <code>free()</code>:</p>
+<pre><code class="language-rust">    #[test]
+    fn test_get_foos() {
+        ...
+
+        if !foos.is_null() {
+            unsafe {
+                let _ = Box::from_raw(foos);
+            }
+        }
+    }
+</code></pre>
+<p>It builds. The test passes. And Miri is unhappy. I guess you know the drill by now:</p>
+<pre><code class="language-sh">$ cargo +nightly miri test
+...
+ incorrect layout on deallocation: alloc59029 has size 16 and alignment 8, but gave size 8 and alignment 8
+...
+</code></pre>
+<p>Let's take a second to marvel at the fact that Rust, probably the programming language the most strict at compile time, the if-it-builds-it-runs-dude-I-swear language, seems to work at compile time and at run time, but only fails when run under an experimental analyzer that only works in nightly and does not support lots of FFI patterns. Anyways, I guess we have to refactor our whole API!</p>
+<p>So, in our codebase at work, we have defined this type:</p>
+<pre><code class="language-rust">/// Owning Array i.e. `Vec&lt;T&gt;` in Rust or `std::vector&lt;T&gt;` in C++.
+#[repr(C)]
+pub struct OwningArrayC&lt;T&gt; {
+    pub data: *mut T,
+    pub len: usize,
+    pub cap: usize,
+}
+</code></pre>
+<p>It clearly signifies to the caller that they are in charge of freeing the memory, and also it carries the capacity of the <code>Vec</code> with it, so it's not lost.</p>
+<p>In our project, this struct is used a lot.</p>
+<p>So let's adapt the function, and also add a function in the API to free it for convenience:</p>
+<pre><code class="language-rust">#[no_mangle]
+pub extern &quot;C&quot; fn MYLIB_get_foos(out_foos: &amp;mut OwningArrayC&lt;Foo&gt;) -&gt; i32 {
+    let res = vec![Foo { value: 42 }, Foo { value: 99 }];
+    let len = res.len();
+    let cap = res.capacity();
+
+    *out_foos = OwningArrayC {
+        data: res.leak().as_mut_ptr(),
+        len,
+        cap,
+    };
+    0
+}
+
+#[no_mangle]
+pub extern &quot;C&quot; fn MYLIB_free_foos(foos: &amp;mut OwningArrayC&lt;Foo&gt;) {
+    if !foos.data.is_null() {
+        unsafe {
+            let _ = Vec::from_raw_parts(foos.data, foos.len, foos.cap);
+        }
+    }
+}
+</code></pre>
+<p>Let's also re-generate the C header, adapt the C code, rebuild it, etc...</p>
+<p>Back to the Rust test:</p>
+<pre><code class="language-rust">#[cfg(test)]
+mod tests {
+    #[test]
+    fn test_get_foos() {
+        let mut foos = crate::OwningArrayC {
+            data: std::ptr::null_mut(),
+            len: 0,
+            cap: 0,
+        };
+        assert_eq!(0, super::MYLIB_get_foos(&amp;mut foos));
+        println!(&quot;foos: {}&quot;, foos.len);
+        super::MYLIB_free_foos(&amp;mut foos);
+    }
+}
+</code></pre>
+<p>And now, Miri is happy. Urgh. So, back to what we set out to do originally, <code>defer</code>.</p>
+<p>Let's use the <code>scopeguard</code> crate which provides a <code>defer!</code> macro, in the test, to automatically free the memory:</p>
+<pre><code class="language-rust">    #[test]
+    fn test_get_foos() {
+        let mut foos = crate::OwningArrayC {
+            data: std::ptr::null_mut(),
+            len: 0,
+            cap: 0,
+        };
+        assert_eq!(0, super::MYLIB_get_foos(&amp;mut foos));
+        defer! {
+            super::MYLIB_free_foos(&amp;mut foos);
+        }
+
+        println!(&quot;foos: {}&quot;, foos.len);
+    }
+</code></pre>
+<p>And we get a compile error:</p>
+<pre><code class="language-sh">$ cargo test
+error[E0502]: cannot borrow `foos.len` as immutable because it is also borrowed as mutable
+  --&gt; src/lib.rs:54:30
+   |
+50 | /         defer! {
+51 | |             super::MYLIB_free_foos(&amp;mut foos);
+   | |                                         ---- first borrow occurs due to use of `foos` in closure
+52 | |         }
+   | |_________- mutable borrow occurs here
+53 |
+54 |           println!(&quot;foos: {}&quot;, foos.len);
+   |                                ^^^^^^^^ immutable borrow occurs here
+55 |       }
+   |       - mutable borrow might be used here, when `_guard` is dropped and runs the `Drop` code for type `ScopeGuard`
+   |
+</code></pre>
+<p>Dum dum duuuum....Yes, we cannot use the <code>defer</code> idom here (or at least I did not find a way). In some cases it's possible, in lots of cases it's not. Despite the version without defer and with defer being equivalent and the borrow checker being fine with the former and not with the latter.</p>
+<p>So that is why I argue that Rust should get a <code>defer</code> statement in the language and the borrow checker should be made aware of this construct to allow this approach to take place.</p>
+<p>And that's irrespective of the annoying constraints around freeing memory that Rust has allocated. Or that the code builds and runs fine even though it is subtly flawed.</p>
+<p><a href="/blog"> ⏴ Back to all articles</a></p>
+
+<blockquote id="donate">
+  <p>If you enjoy what you're reading, you want to support me, and can afford it: <a href="https://paypal.me/philigaultier?country.x=DE&locale.x=en_US">Support me</a>. That allows me to write more cool articles!</p>
+</blockquote>
+
+<blockquote>
+  <p>
+    This blog is <a href="https://github.com/gaultier/blog">open-source</a>!
+    If you find a problem, please open a Github issue.
+    The content of this blog as well as the code snippets are under the <a href="https://en.wikipedia.org/wiki/BSD_licenses#3-clause_license_(%22BSD_License_2.0%22,_%22Revised_BSD_License%22,_%22New_BSD_License%22,_or_%22Modified_BSD_License%22)">BSD-3 License</a> which I also usually use for all my personal projects. It's basically free for every use but you have to mention me as the original author.
+  </p>
+</blockquote>
+
+</div>
+</body>
+</html>
