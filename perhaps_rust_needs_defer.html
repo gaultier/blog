@@ -399,7 +399,7 @@ error[E0502]: cannot borrow `foos.len` as immutable because it is also borrowed 
 <p>So that is why I argue that Rust should get a <code>defer</code> statement in the language and the borrow checker should be made aware of this construct to allow this approach to take place.</p>
 <p>But what can we do otherwise? Are there any alternatives?</p>
 <ul>
-<li>We can be very careful and make sure we deallocate everything by hand in every code paths. Obivously that doesn't scale to team size, code complexity, etc. And it's unfortunate since using a defer-like approach in C with <code>__attribute(cleanup)</code> and in C++ by implementing our <a href="https://www.gingerbill.org/article/2015/08/19/defer-in-cpp/">own</a> <code>defer</code> is trivial.</li>
+<li>We can be very careful and make sure we deallocate everything by hand in every code paths. Obivously that doesn't scale to team size, code complexity, etc. And it's unfortunate since using a defer-like approach in C with <code>__attribute(cleanup)</code> and in C++ by implementing our <a href="https://www.gingerbill.org/article/2015/08/19/defer-in-cpp/">own</a> <code>defer</code> is trivial. And even Go which is garbage-collected has a first-class <code>defer</code>.</li>
 <li>We can use a goto-like approach, as a reader <a href="https://lobste.rs/s/n6gciw/lessons_learned_from_successful_rust#c_8pzmqg">suggested</a> in a previous article, even though Rust does not have <code>goto</code> per se:
 <pre><code class="language-rust">fn foo_init() -&gt; *mut () { &amp;mut () }
 fn foo_bar(_: *mut ()) -&gt; bool { false }

@@ -358,7 +358,7 @@ So that is why I argue that Rust should get a `defer` statement in the language 
 
 But what can we do otherwise? Are there any alternatives?
 
-- We can be very careful and make sure we deallocate everything by hand in every code paths. Obivously that doesn't scale to team size, code complexity, etc. And it's unfortunate since using a defer-like approach in C with `__attribute(cleanup)` and in C++ by implementing our [own](https://www.gingerbill.org/article/2015/08/19/defer-in-cpp/) `defer` is trivial.
+- We can be very careful and make sure we deallocate everything by hand in every code paths. Obivously that doesn't scale to team size, code complexity, etc. And it's unfortunate since using a defer-like approach in C with `__attribute(cleanup)` and in C++ by implementing our [own](https://www.gingerbill.org/article/2015/08/19/defer-in-cpp/) `defer` is trivial. And even Go which is garbage-collected has a first-class `defer`.
 - We can use a goto-like approach, as a reader [suggested](https://lobste.rs/s/n6gciw/lessons_learned_from_successful_rust#c_8pzmqg) in a previous article, even though Rust does not have `goto` per se:
     ```rust
     fn foo_init() -> *mut () { &mut () }
