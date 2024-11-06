@@ -324,7 +324,7 @@ pub extern &quot;C&quot; fn MYLIB_get_foos(out_foos: &amp;mut OwningArrayC&lt;Fo
 
 #[no_mangle]
 pub extern &quot;C&quot; fn MYLIB_free_foos(foos: &amp;mut OwningArrayC&lt;Foo&gt;) {
-    if !foos.data.is_null() {
+    if !foos.cap &gt; 0 {
         unsafe {
             let _ = Vec::from_raw_parts(foos.data, foos.len, foos.cap);
         }
