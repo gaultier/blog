@@ -132,9 +132,7 @@ Great, so let's free it at the end of the test, like C does, with `free` from li
     fn test_get_foos() {
         ..
 
-        if !foos.is_null() {
-            unsafe { libc::free(foos as *mut std::ffi::c_void) };
-        }
+        unsafe { libc::free(foos as *mut std::ffi::c_void) };
     }
 ```
 

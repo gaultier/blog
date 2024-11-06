@@ -220,9 +220,7 @@ error: memory leaked: alloc59029 (Rust heap, size: 16, align: 8), allocated here
     fn test_get_foos() {
         ..
 
-        if !foos.is_null() {
-            unsafe { libc::free(foos as *mut std::ffi::c_void) };
-        }
+        unsafe { libc::free(foos as *mut std::ffi::c_void) };
     }
 </code></pre>
 <p>The test passes, great. Let's try with Miri:</p>
