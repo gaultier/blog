@@ -363,7 +363,7 @@ So that is why I argue that Rust should get a `defer` statement in the language 
 
 But what can we do otherwise? Are there any alternatives?
 
-- We can be very careful and make sure we deallocate everything by hand in every code paths. Obviously that doesn't scale to team size, code complexity, etc. And it's unfortunate since using a defer-like approach in C with `__attribute(cleanup)` and in C++ by implementing our [own](https://www.gingerbill.org/article/2015/08/19/defer-in-cpp/) `defer` is trivial. And even Go which is garbage-collected has a first-class `defer`.
+- We can be very careful and make sure we deallocate everything by hand in every code paths. Obviously that doesn't scale to team size, code complexity, etc. And it's unfortunate since using a defer-like approach in C with `__attribute(cleanup)` and in C++ by implementing our [own](https://www.gingerbill.org/article/2015/08/19/defer-in-cpp/) `defer` is trivial. And even Go which is garbage-collected has a first-class `defer`. So not being able to do so in Rust is unfortunate.
 - We can use a goto-like approach, as a reader [suggested](https://lobste.rs/s/n6gciw/lessons_learned_from_successful_rust#c_8pzmqg) in a previous article, even though Rust does not have `goto` per se:
     ```rust
     fn foo_init() -> *mut () { &mut () }
@@ -389,7 +389,7 @@ But what can we do otherwise? Are there any alternatives?
       foo_free(f);
     }
     ```
-    It's very nifty, but I am not sure I would enjoy reading and writing this kind of code everywhere, especially with multiple levels of nesting. Again, it does not scale very well. But it's something.
+    It's very nifty, but I am not sure I would enjoy reading and writing this kind of code, especially with multiple levels of nesting. Again, it does not scale very well. But it's something.
 - We can work-around the borrow-checker to still use `defer` by refactoring our code to make it happy. Again, tedious and not always possible. One thing that possibly works is using handles (numerical ids) instead of pointers, so that they are `Copy` and the borrow checker does not see an issue with sharing/copying them. Like file descriptors work in Unix. The potential downside here is that it creates global state since some component has to bookkeep these handles and their mapping to the real pointer. But it's a [common](https://floooh.github.io/2018/06/17/handles-vs-pointers.html) pattern in gamedev.
 - Perhaps the borrow checker can be improved upon without adding `defer` to the language, 'just'(tm) by making it smarter?
 - We can use arenas everywhere and sail away in the sunset, leaving all these nasty problems behind us
