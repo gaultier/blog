@@ -430,7 +430,7 @@ int main() {
 }
 ```
 
-In this case, `MYLIB_free_foos` actually can receive an argument with a null pointer, which would then trigger and assert inside `Vec::from_raw_parts`. So we should check that in `MY_LIB_free_foos`:
+In this case, `MYLIB_free_foos` actually can receive an argument with a null pointer (the `data` field), which would then trigger and assert inside `Vec::from_raw_parts`. So we should check that in `MY_LIB_free_foos`:
 
 ```rust
 #[no_mangle]
