@@ -304,7 +304,9 @@ And now, Miri is happy. Urgh. So, back to what we set out to do originally, `def
 
 The test is trivial right now but in real code, there are many code paths that sometimes allocate, sometimes not, with validation interleaved, and early returns, so we'd really like if we could statically demonstrate that the memory is always correctly freed. To ourselves, to auditors, etc.
 
-One example at work of such hairy code is: building a linked list (in Rust), fetching more from the network based on the content of the last node in the list, and appending the additional data to the linked list, until some flag is detected in the encoded data. Oh, and there is also validation of the incoming data, so you might have to return early with a partially constructed list. And there are many such examples like this, where the memory is often allocated/deallocated with a C API and it's not always possible to use RAII. So `defer` comes in handy.
+One example at work of such hairy code is: building a linked list (in Rust), fetching more from the network based on the content of the last node in the list, and appending the additional data to the linked list, until some flag is detected in the encoded data. Oh, and there is also validation of the incoming data, so you might have to return early with a partially constructed list which should be properly cleaned up.
+
+And there are many such examples like this, where the memory is often allocated/deallocated with a C API and it's not always possible to use RAII. So `defer` comes in handy.
 
 ---
 
