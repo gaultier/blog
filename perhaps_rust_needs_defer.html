@@ -80,16 +80,47 @@
 		<div class="article-prelude">
 			<p><a href="/blog"> ⏴ Back to all articles</a></p>
 
-			<p class="publication-date">Published on </p>
+			<p class="publication-date">Published on 2024-11-06</p>
 		</div>
 		<div class="article-title">
 		<h1>Perhaps Rust needs "defer"</h1>
 		  <div class="tags"> <a href="/blog/articles-by-tag.html#rust" class="tag">Rust</a> <a href="/blog/articles-by-tag.html#c" class="tag">C</a></div>
  </div>
+ <strong>Table of contents</strong>
+<ul>
 
-<p>In a previous article I <a href="/blog/lessons_learned_from_a_successful_rust_rewrite.html#i-am-still-chasing-memory-leaks">mentioned</a> that we use the <code>defer</code> idiom in Rust through a crate, but that it actually rarely gets past the borrow checker. Some comments were <s>doubtful</s> surprised and I did not have an example at hand.</p>
-<p>Well, today at work I hit this issue again so I thought I would document it.</p>
-<p>I have a Rust API like this:</p>
+<li>
+	<a href="#setting-the-stage">Setting the stage</a>
+		</li>
+
+<li>
+	<a href="#first-attempt-to-free-the-memory-properly">First attempt to free the memory properly</a>
+		</li>
+
+<li>
+	<a href="#second-attempt-to-free-the-memory-properly">Second attempt to free the memory properly</a>
+		</li>
+
+<li>
+	<a href="#third-attempt-to-free-the-memory-properly">Third attempt to free the memory properly</a>
+		</li>
+
+<li>
+	<a href="#defer">Defer</a>
+		</li>
+
+<li>
+	<a href="#possible-solutions">Possible solutions</a>
+		</li>
+</ul>
+
+<p>In a previous article I <a href="/blog/lessons_learned_from_a_successful_rust_rewrite.html#i-am-still-chasing-memory-leaks">mentioned</a> that we use the <code>defer</code> idiom in Rust through a crate, but that it actually rarely gets past the borrow checker. Some comments were <s>claiming this issue does not exist</s> surprised and I did not have an example at hand.</p>
+<p>Well, today at work I hit this issue again so I thought I would document it. And the whole experience showcases well how working in Rust with lots of FFI interop feels like.</p>
+<h2 id="setting-the-stage">
+	<a class="title" href="#setting-the-stage">Setting the stage</a>
+	<a class="hash-anchor" href="#setting-the-stage" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+</h2>
+<p>So, I have a Rust API like this:</p>
 <pre><code class="language-rust">#[repr(C)]
 pub struct Foo {
     value: usize,
@@ -103,7 +134,7 @@ pub extern &quot;C&quot; fn MYLIB_get_foos(out_foos: *mut *mut Foo, out_foos_cou
     0
 }
 </code></pre>
-<p>It allocates and returns an dynamically allocated array as a pointer and a length. Of course in reality, <code>Foo</code> has many fields and the values are not known in advance but decoded from the network.</p>
+<p>It allocates and returns an dynamically allocated array as a pointer and a length. Of course in reality, <code>Foo</code> has many fields and the values are not known in advance but what happens is that we send messages to a Smartcard to ask it to send us a piece of data residing on it, and it replies with some encoded messages that our library decodes and returns to the user.</p>
 <p>I tell Cargo this is a static library:</p>
 <pre><code class="language-toml"># Cargo.toml
 
@@ -150,6 +181,7 @@ int main() {
 <blockquote>
 <p>If I feel fancy (and non-portable), I can even automate the freeing of the memory in C with <code>__attribute(cleanup)</code>, like <code>defer</code> (ominous sounds). But let's not, today. Let's focus on the Rust side.</p>
 </blockquote>
+<p><em>This code has a subtle mistake (can you spot it?), so keep on reading.</em></p>
 <p>Now, we are principled developers who test their code (right?). So let's write a Rust test for it. We expect it to be exactly the same as the C code:</p>
 <pre><code class="language-rust">#[cfg(test)]
 mod tests {
@@ -174,6 +206,10 @@ test tests::test_get_foos ... ok
 error: memory leaked: alloc59029 (Rust heap, size: 16, align: 8), allocated here:
 ...
 </code></pre>
+<h2 id="first-attempt-to-free-the-memory-properly">
+	<a class="title" href="#first-attempt-to-free-the-memory-properly">First attempt to free the memory properly</a>
+	<a class="hash-anchor" href="#first-attempt-to-free-the-memory-properly" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+</h2>
 <p>Great, so let's free it at the end of the test, like C does, with <code>free</code> from libc, which we add as a dependency:</p>
 <pre><code class="language-rust">
     #[test]
@@ -191,7 +227,7 @@ error: memory leaked: alloc59029 (Rust heap, size: 16, align: 8), allocated here
  error: Undefined Behavior: deallocating alloc59029, which is Rust heap memory, using C heap deallocation operation
 ...
 </code></pre>
-<p>Hmm...ok...Well that's a bit weird because what Rust does when the <code>Vec</code> is allocated, is to call out to <code>malloc</code> from libc, as we can see with <code>strace</code>:</p>
+<p>Hmm...ok...Well that's a bit weird, because what Rust does, when the <code>Vec</code> is allocated, is to call out to <code>malloc</code> from libc, as we can see with <code>strace</code>:</p>
 <pre><code class="language-sh">$ strace -k -v -e brk ./a.out
 ...
 brk(0x213c0000)                         = 0x213c0000
@@ -208,9 +244,32 @@ brk(0x213c0000)                         = 0x213c0000
  &gt; /home/pg/scratch/rust-blog2/a.out(MYLIB_get_foos+0x26) [0x407cc6]
  &gt; /home/pg/scratch/rust-blog2/a.out(main+0x2b) [0x407bfb]
 </code></pre>
-<p>Note the irony that we do not need to have a third-party dependency on the <code>libc</code> crate to allocate with <code>malloc</code> being called under the hood, but we do need it to free the memory with <code>free</code>. Anyway. Where was I.</p>
-<p>Right, Rust wants to free the memory it allocated. Ok. Let's do that I guess.</p>
-<p>The only problem is that to do so properly, we ought to use <code>Vec::from_raw_parts</code> and let the <code>Vec</code> free the memory when it gets dropped at the end of the scope. The only problem is: This function requires the pointer, the length, <em>and the capacity</em>. Wait, but we lost the capacity when we returned the pointer + length to the caller in <code>MYLIB_get_foos()</code>, and the caller <em>does not care one bit about the capacity</em>! It's irrelevant to them! At work, the mobile developers using our library rightfully asked: wait, what is this <code>cap</code> field? Why do I care?</p>
+<p><em>Depending on your system, the call stack and specific system call may vary. It depends on the libc implementation, but point being, <code>malloc</code> from libc gets called by Rust.</em></p>
+<p>Note the irony that we do not need to have a third-party dependency on the <code>libc</code> crate to allocate with <code>malloc</code> (being called under the hood), but we do need it, in order to deallocate the memory with <code>free</code>. Perhaps it's by design. Anyway. Where was I.</p>
+<p>The docs for <code>Vec</code> indeed state:</p>
+<blockquote>
+<p>In general, Vec’s allocation details are very subtle — if you intend to allocate memory using a Vec and use it for something else (either to pass to unsafe code, or to build your own memory-backed collection), be sure to deallocate this memory by using from_raw_parts to recover the Vec and then dropping it.</p>
+</blockquote>
+<p>But a few sentences later it also says:</p>
+<blockquote>
+<p>That is, the reported capacity is completely accurate, and can be relied on. It can even be used to manually free the memory allocated by a Vec if desired.</p>
+</blockquote>
+<p>So now I am confused, am I allowed to <code>free()</code> the <code>Vec</code>'s pointer directly or not?</p>
+<p>By the way, we also spot in the same docs that there was no way to correctly free the <code>Vec</code> by calling <code>free()</code> on the pointer without knowing the capacity because:</p>
+<blockquote>
+<p>The pointer will never be null, so this type is null-pointer-optimized. However, the pointer might not actually point to allocated memory.</p>
+</blockquote>
+<p>Hmm, ok... So I guess the only way to not trigger Undefined Behavior on the C side when freeing, would be to keep the <code>capacity</code> of the <code>Vec</code> around and do:</p>
+<pre><code class="language-c">  if (capacity &gt; 0) {
+    free(foos);
+  }
+</code></pre>
+<p>Let's ignore for now that this will surprise every C developer out there that has been doing <code>if (NULL != ptr) free(ptr)</code> for decades.</p>
+<p>Let's stay on the safe side and assume that we ought to use <code>Vec::from_raw_parts</code> and let the <code>Vec</code> free the memory when it gets dropped at the end of the scope. The only problem is: This function requires the pointer, the length, <em>and the capacity</em>. Wait, but we lost the capacity when we returned the pointer + length to the caller in <code>MYLIB_get_foos()</code>, and the caller <em>does not care one bit about the capacity</em>! It's irrelevant to them! At work, the mobile developers using our library rightfully asked: wait, what is this <code>cap</code> field? Why do I care? What do I do with it? If you are used to manually managing your own memory, this is a very old concept, but if you are used to a Garbage Collector, it's very much new.</p>
+<h2 id="second-attempt-to-free-the-memory-properly">
+	<a class="title" href="#second-attempt-to-free-the-memory-properly">Second attempt to free the memory properly</a>
+	<a class="hash-anchor" href="#second-attempt-to-free-the-memory-properly" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+</h2>
 <p>So, let's first try to dodge the problem the <s>hacky</s> easy way by pretending that the memory is allocated by a <code>Box</code>, which only needs the pointer, just like <code>free()</code>:</p>
 <pre><code class="language-rust">    #[test]
     fn test_get_foos() {
@@ -223,13 +282,20 @@ brk(0x213c0000)                         = 0x213c0000
         }
     }
 </code></pre>
-<p>It builds. The test passes. And Miri is unhappy. I guess you know the drill by now:</p>
+<p>That's I think the first instinct for a C developer. Whatever way the memory was heap allocated, be it with <code>malloc</code>, <code>calloc</code>, <code>realloc</code>, be it for one struct or for a whole array, we want to free it with one call, passing it the base pointer.</p>
+<p>So this Rust code builds. The test passes. And Miri is unhappy. I guess you know the drill by now:</p>
 <pre><code class="language-sh">$ cargo +nightly miri test
 ...
  incorrect layout on deallocation: alloc59029 has size 16 and alignment 8, but gave size 8 and alignment 8
 ...
 </code></pre>
-<p>Let's take a second to marvel at the fact that Rust, probably the programming language the most strict at compile time, the if-it-builds-it-runs-dude-I-swear language, seems to work at compile time and at run time, but only fails when run under an experimental analyzer that only works in nightly and does not support lots of FFI patterns. Anyways, I guess we have to refactor our whole API!</p>
+<p>Let's take a second to marvel at the fact that Rust, probably the programming language the most strict at compile time, the if-it-builds-it-runs-dude-I-swear language, seems to work at compile time and at run time, but only fails when run under an experimental analyzer that only works in nightly and does not support lots of FFI patterns.</p>
+<p>That's the power of Undefined Behavior and <code>unsafe{}</code>. Again: audit all of your <code>unsafe</code> blocks, and be very suspicious of any third-party code that uses <code>unsafe</code>. I think Rust developers on average do not realize the harm that it is very easy to inflict to your program by using <code>unsafe</code> even if it looks fine.</p>
+<p>Anyways, I guess we have to refactor our whole C API to do it the Rust Way(tm)!</p>
+<h2 id="third-attempt-to-free-the-memory-properly">
+	<a class="title" href="#third-attempt-to-free-the-memory-properly">Third attempt to free the memory properly</a>
+	<a class="hash-anchor" href="#third-attempt-to-free-the-memory-properly" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+</h2>
 <p>So, in our codebase at work, we have defined this type:</p>
 <pre><code class="language-rust">/// Owning Array i.e. `Vec&lt;T&gt;` in Rust or `std::vector&lt;T&gt;` in C++.
 #[repr(C)]
@@ -265,7 +331,7 @@ pub extern &quot;C&quot; fn MYLIB_free_foos(foos: &amp;mut OwningArrayC&lt;Foo&g
     }
 }
 </code></pre>
-<p>Let's also re-generate the C header, adapt the C code, rebuild it, etc...</p>
+<p>Let's also re-generate the C header, adapt the C code, rebuild it, communicate with the various projects that use our C API to make them adapt, etc...</p>
 <p>Back to the Rust test:</p>
 <pre><code class="language-rust">#[cfg(test)]
 mod tests {
@@ -283,6 +349,13 @@ mod tests {
 }
 </code></pre>
 <p>And now, Miri is happy. Urgh. So, back to what we set out to do originally, <code>defer</code>.</p>
+<h2 id="defer">
+	<a class="title" href="#defer">Defer</a>
+	<a class="hash-anchor" href="#defer" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+</h2>
+<p>The test is trivial right now but in real code, there are many code paths that sometimes allocate, sometimes not, with validation interleaved, and early returns, so we'd really like if we could statically demonstrate that the memory is always correctly freed.</p>
+<p>One example at work of such code is: building a linked list (in Rust), fetching more from the network based on the content of the last node in the list, and appending the additional data to the linked list, until some flag is detected in the encoded data. Oh, and there is also validation of the incoming data, so you might have to return early with a partially constructed list. And there are many such examples like this, where the memory is often allocated/deallocated with a C API and it's not always possible to use RAII. So <code>defer</code> comes in handy.</p>
+<hr />
 <p>Let's use the <code>scopeguard</code> crate which provides a <code>defer!</code> macro, in the test, to automatically free the memory:</p>
 <pre><code class="language-rust">    #[test]
     fn test_get_foos() {
@@ -316,9 +389,47 @@ error[E0502]: cannot borrow `foos.len` as immutable because it is also borrowed 
    |       - mutable borrow might be used here, when `_guard` is dropped and runs the `Drop` code for type `ScopeGuard`
    |
 </code></pre>
-<p>Dum dum duuuum....Yes, we cannot use the <code>defer</code> idom here (or at least I did not find a way). In some cases it's possible, in lots of cases it's not. Despite the version without defer and with defer being equivalent and the borrow checker being fine with the former and not with the latter.</p>
+<p>Dum dum duuuum....Yes, we cannot use the <code>defer</code> idom here (or at least I did not find a way). In some cases it's possible, in lots of cases it's not. The borrow checker considers that the <code>defer</code> block holds an exclusive mutable reference and the rest of the code cannot use that reference in any way.</p>
+<p>Despite the fact, that the version without defer, and with defer, are semantically equivalent and the borrow checker is fine with the former and not with the latter.</p>
+<h2 id="possible-solutions">
+	<a class="title" href="#possible-solutions">Possible solutions</a>
+	<a class="hash-anchor" href="#possible-solutions" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+</h2>
 <p>So that is why I argue that Rust should get a <code>defer</code> statement in the language and the borrow checker should be made aware of this construct to allow this approach to take place.</p>
-<p>And that's irrespective of the annoying constraints around freeing memory that Rust has allocated. Or that the code builds and runs fine even though it is subtly flawed.</p>
+<p>But what can we do otherwise? Are there any alternatives?</p>
+<ul>
+<li>We can be very careful and make sure we deallocate everything by hand in every code paths. Obivously that doesn't scale to team size, code complexity, etc. And it's unfortunate since using a defer-like approach in C with <code>__attribute(cleanup)</code> and in C++ by implementing our <a href="https://www.gingerbill.org/article/2015/08/19/defer-in-cpp/">own</a> <code>defer</code> is trivial.</li>
+<li>We can use a goto-like approach, as a reader <a href="https://lobste.rs/s/n6gciw/lessons_learned_from_successful_rust#c_8pzmqg">suggested</a> in a previous article, even though Rust does not have <code>goto</code> per se:
+<pre><code class="language-rust">fn foo_init() -&gt; *mut () { &amp;mut () }
+fn foo_bar(_: *mut ()) -&gt; bool { false }
+fn foo_baz(_: *mut ()) -&gt; bool { true }
+fn foo_free(_: *mut ()) {}
+
+fn main() {
+  let f = foo_init();
+  if f.is_null() {
+      panic!(&quot;whomp whomp&quot;);
+  }
+  
+  'free: {
+    if foo_bar(f) {
+        break 'free;
+    }
+    
+    if foo_baz(f) {
+        break 'free;
+    }
+    
+    // ...
+  };
+  
+  foo_free(f);
+}
+</code></pre>
+It's very nifty, but I am not sure I would enjoy reading and writing this kind of code everywhere, especially with nesting. Again, it does not scale very well. But it's something.</li>
+<li>We can work-around the borrow-checker to still use <code>defer</code> by refactoring our code to make it happy. Again, tedious and not always possible. One thing that possibly works is using handles (numerical ids) instead of pointers, so that they are <code>Copy</code> and the borrow checker does not see an issue with sharing/copying them. Like file descriptors work in Unix. The issue here is that it creates global state since some component has to bookkeep these handles and their mapping to the real pointer. But it's a <a href="https://floooh.github.io/2018/06/17/handles-vs-pointers.html">common</a> pattern in gamedev.</li>
+<li>Perhaps the borrow checker can be improved upon without adding <code>defer</code> to the language?</li>
+</ul>
 <p><a href="/blog"> ⏴ Back to all articles</a></p>
 
 <blockquote id="donate">

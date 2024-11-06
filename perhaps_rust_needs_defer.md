@@ -2,9 +2,11 @@ Title: Perhaps Rust needs "defer"
 Tags: Rust, C
 ---
 
-In a previous article I [mentioned](/blog/lessons_learned_from_a_successful_rust_rewrite.html#i-am-still-chasing-memory-leaks) that we use the `defer` idiom in Rust through a crate, but that it actually rarely gets past the borrow checker. Some comments were <s>doubtful</s> surprised and I did not have an example at hand.
+In a previous article I [mentioned](/blog/lessons_learned_from_a_successful_rust_rewrite.html#i-am-still-chasing-memory-leaks) that we use the `defer` idiom in Rust through a crate, but that it actually rarely gets past the borrow checker. Some comments were <s>claiming this issue does not exist</s> surprised and I did not have an example at hand.
 
 Well, today at work I hit this issue again so I thought I would document it. And the whole experience showcases well how working in Rust with lots of FFI interop feels like.
+
+## Setting the stage
 
 So, I have a Rust API like this:
 
@@ -85,6 +87,7 @@ I build it with all the warnings enabled, run it with sanitizers on, and/or in v
 > If I feel fancy (and non-portable), I can even automate the freeing of the memory in C with `__attribute(cleanup)`, like `defer` (ominous sounds). But let's not, today. Let's focus on the Rust side.
 
 
+*This code has a subtle mistake (can you spot it?), so keep on reading.*
 
 Now, we are principled developers who test their code (right?). So let's write a Rust test for it. We expect it to be exactly the same as the C code:
 
@@ -118,6 +121,8 @@ $ cargo +nightly miri test
 error: memory leaked: alloc59029 (Rust heap, size: 16, align: 8), allocated here:
 ...
 ```
+
+## First attempt to free the memory properly
 
 Great, so let's free it at the end of the test, like C does, with `free` from libc, which we add as a dependency:
 
@@ -166,9 +171,35 @@ brk(0x213c0000)                         = 0x213c0000
 
 Note the irony that we do not need to have a third-party dependency on the `libc` crate to allocate with `malloc` (being called under the hood), but we do need it, in order to deallocate the memory with `free`. Perhaps it's by design. Anyway. Where was I.
 
-Right, Rust wants to free the memory it allocated. Ok. Let's do that I guess. 
 
-The only problem is that to do so properly, we ought to use `Vec::from_raw_parts` and let the `Vec` free the memory when it gets dropped at the end of the scope. The only problem is: This function requires the pointer, the length, *and the capacity*. Wait, but we lost the capacity when we returned the pointer + length to the caller in `MYLIB_get_foos()`, and the caller *does not care one bit about the capacity*! It's irrelevant to them! At work, the mobile developers using our library rightfully asked: wait, what is this `cap` field? Why do I care? 
+The docs for `Vec` indeed state:
+
+> In general, Vec’s allocation details are very subtle — if you intend to allocate memory using a Vec and use it for something else (either to pass to unsafe code, or to build your own memory-backed collection), be sure to deallocate this memory by using from_raw_parts to recover the Vec and then dropping it.
+
+But a few sentences later it also says:
+
+> That is, the reported capacity is completely accurate, and can be relied on. It can even be used to manually free the memory allocated by a Vec if desired.
+
+So now I am confused, am I allowed to `free()` the `Vec`'s pointer directly or not?
+
+By the way, we also spot in the same docs that there was no way to correctly free the `Vec` by calling `free()` on the pointer without knowing the capacity because:
+
+> The pointer will never be null, so this type is null-pointer-optimized. However, the pointer might not actually point to allocated memory. 
+
+Hmm, ok... So I guess the only way to not trigger Undefined Behavior on the C side when freeing, would be to keep the `capacity` of the `Vec` around and do:
+
+```c
+  if (capacity > 0) {
+    free(foos);
+  }
+```
+
+Let's ignore for now that this will surprise every C developer out there that has been doing `if (NULL != ptr) free(ptr)` for decades.
+
+
+Let's stay on the safe side and assume that we ought to use `Vec::from_raw_parts` and let the `Vec` free the memory when it gets dropped at the end of the scope. The only problem is: This function requires the pointer, the length, *and the capacity*. Wait, but we lost the capacity when we returned the pointer + length to the caller in `MYLIB_get_foos()`, and the caller *does not care one bit about the capacity*! It's irrelevant to them! At work, the mobile developers using our library rightfully asked: wait, what is this `cap` field? Why do I care? What do I do with it? If you are used to manually managing your own memory, this is a very old concept, but if you are used to a Garbage Collector, it's very much new.
+
+## Second attempt to free the memory properly
 
 So, let's first try to dodge the problem the <s>hacky</s> easy way by pretending that the memory is allocated by a `Box`, which only needs the pointer, just like `free()`:
 
@@ -201,6 +232,9 @@ Let's take a second to marvel at the fact that Rust, probably the programming la
 That's the power of Undefined Behavior and `unsafe{}`. Again: audit all of your `unsafe` blocks, and be very suspicious of any third-party code that uses `unsafe`. I think Rust developers on average do not realize the harm that it is very easy to inflict to your program by using `unsafe` even if it looks fine.
 
 Anyways, I guess we have to refactor our whole C API to do it the Rust Way(tm)! 
+
+
+## Third attempt to free the memory properly
 
 So, in our codebase at work, we have defined this type:
 
