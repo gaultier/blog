@@ -462,7 +462,7 @@ It's very nifty, but I am not sure I would enjoy reading and writing this kind o
     MYLIB_free_foos(&amp;foos);
 }
 </code></pre>
-<p>In this case, <code>MYLIB_free_foos</code> actually can receive an argument with a null pointer (the <code>data</code> field), which would then trigger and assert inside <code>Vec::from_raw_parts</code>. So we should check that in <code>MY_LIB_free_foos</code>:</p>
+<p>In this case, <code>MYLIB_free_foos</code> actually can receive an argument with a null pointer (the <code>data</code> field), which would then trigger an assert inside <code>Vec::from_raw_parts</code>. So we should check that in <code>MY_LIB_free_foos</code>:</p>
 <pre><code class="language-rust">#[no_mangle]
 pub extern &quot;C&quot; fn MYLIB_free_foos(foos: &amp;mut OwningArrayC&lt;Foo&gt;) {
     if !foos.data.is_null() {
