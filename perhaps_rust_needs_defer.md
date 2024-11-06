@@ -83,13 +83,14 @@ int main() {
 }
 ```
 
+*This code has a subtle mistake (can you spot it?), so keep on reading.*
+
 I build it with all the warnings enabled, run it with sanitizers on, and/or in Valgrind, all good.
 
 
 > If we feel fancy (and non-portable), we can even automate the freeing of the memory in C with `__attribute(cleanup)`, like `defer` (ominous sounds). But let's not, today. Let's focus on the Rust side.
 
 
-*This code has a subtle mistake (can you spot it?), so keep on reading.*
 
 Now, we are principled developers who test their code (right?). So let's write a Rust test for it. We expect it to be exactly the same as the C code:
 
