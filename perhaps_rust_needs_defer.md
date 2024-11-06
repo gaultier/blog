@@ -127,7 +127,7 @@ error: memory leaked: alloc59029 (Rust heap, size: 16, align: 8), allocated here
 
 Note that the standard test runner does not report memory leaks, unfortunately. If Miri does not work for a given use case, and we still want to check that there are no leaks, we have to reach for nightly sanitizers or Valgrind.
 
-## First attempt to free the memory properly
+## First attempt at freeing the memory properly
 
 Great, so let's free it at the end of the test, like C does, with `free` from libc, which we add as a dependency:
 
@@ -211,7 +211,7 @@ Not sure where the implementation is located... Ok, let's move on.
 
 Let's stay on the safe side and assume that we ought to use `Vec::from_raw_parts` and let the `Vec` free the memory when it gets dropped at the end of the scope. The only problem is: This function requires the pointer, the length, *and the capacity*. Wait, but we lost the capacity when we returned the pointer + length to the caller in `MYLIB_get_foos()`, and the caller *does not care one bit about the capacity*! It's irrelevant to them! At work, the mobile developers using our library rightfully asked: wait, what is this `cap` field? Why do I care? What do I do with it? If you are used to manually managing your own memory, this is a very old concept, but if you are used to a Garbage Collector, it's very much new.
 
-## Second attempt to free the memory properly
+## Second attempt at freeing the memory properly
 
 So, let's first try to dodge the problem the <s>hacky</s> simple way by pretending that the memory is allocated by a `Box`, which only needs the pointer, just like `free()`:
 
@@ -244,7 +244,7 @@ That's the power of Undefined Behavior and `unsafe{}`. Again: audit all of your 
 Anyways, I guess we have to refactor our whole C API to do it the Rust Way(tm)! 
 
 
-## Third attempt to free the memory properly
+## Third attempt at freeing the memory properly
 
 So, in our codebase at work, we have defined this type:
 
