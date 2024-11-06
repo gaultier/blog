@@ -218,7 +218,7 @@ error: memory leaked: alloc59029 (Rust heap, size: 16, align: 8), allocated here
 <pre><code class="language-rust">
     #[test]
     fn test_get_foos() {
-        ..
+        ...
 
         unsafe { libc::free(foos as *mut std::ffi::c_void) };
     }
