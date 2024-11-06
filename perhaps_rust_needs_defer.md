@@ -205,7 +205,7 @@ I also tried to investigate how `drop` is implemented for `Vec` to understand wh
     unsafe fn deallocate(&self, ptr: NonNull<u8>, layout: Layout);
 ```
 
-Not sure where the implementation is located. Ok, let's move on.
+Not sure where the implementation is located... Ok, let's move on.
 
 
 
