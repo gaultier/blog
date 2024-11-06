@@ -422,7 +422,7 @@ fn main() {
   foo_free(f);
 }
 </code></pre>
-It's very nifty, but I am not sure I would enjoy reading and writing this kind of code everywhere, especially with nesting. Again, it does not scale very well. But it's something.</li>
+It's very nifty, but I am not sure I would enjoy reading and writing this kind of code everywhere, especially with multiple levels of nesting. Again, it does not scale very well. But it's something.</li>
 <li>We can work-around the borrow-checker to still use <code>defer</code> by refactoring our code to make it happy. Again, tedious and not always possible. One thing that possibly works is using handles (numerical ids) instead of pointers, so that they are <code>Copy</code> and the borrow checker does not see an issue with sharing/copying them. Like file descriptors work in Unix. The issue here is that it creates global state since some component has to bookkeep these handles and their mapping to the real pointer. But it's a <a href="https://floooh.github.io/2018/06/17/handles-vs-pointers.html">common</a> pattern in gamedev.</li>
 <li>Perhaps the borrow checker can be improved upon without adding <code>defer</code> to the language?</li>
 <li>We can use arenas everywhere and sail away in the sunset, leaving all these nasty problems behind us</li>
