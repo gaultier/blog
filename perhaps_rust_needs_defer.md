@@ -201,7 +201,7 @@ Let's stay on the safe side and assume that we ought to use `Vec::from_raw_parts
 
 ## Second attempt to free the memory properly
 
-So, let's first try to dodge the problem the <s>hacky</s> easy way by pretending that the memory is allocated by a `Box`, which only needs the pointer, just like `free()`:
+So, let's first try to dodge the problem the <s>hacky</s> simple way by pretending that the memory is allocated by a `Box`, which only needs the pointer, just like `free()`:
 
 ```rust
     #[test]

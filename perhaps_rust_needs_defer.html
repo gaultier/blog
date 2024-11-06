@@ -270,7 +270,7 @@ brk(0x213c0000)                         = 0x213c0000
 	<a class="title" href="#second-attempt-to-free-the-memory-properly">Second attempt to free the memory properly</a>
 	<a class="hash-anchor" href="#second-attempt-to-free-the-memory-properly" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
-<p>So, let's first try to dodge the problem the <s>hacky</s> easy way by pretending that the memory is allocated by a <code>Box</code>, which only needs the pointer, just like <code>free()</code>:</p>
+<p>So, let's first try to dodge the problem the <s>hacky</s> simple way by pretending that the memory is allocated by a <code>Box</code>, which only needs the pointer, just like <code>free()</code>:</p>
 <pre><code class="language-rust">    #[test]
     fn test_get_foos() {
         ...
