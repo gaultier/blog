@@ -268,7 +268,7 @@ brk(0x213c0000)                         = 0x213c0000
     free(foos);
   }
 </code></pre>
-<p>Let's ignore for now that this will surprise every C developer out there that has been doing <code>if (NULL != ptr) free(ptr)</code> for decades.</p>
+<p>Let's ignore for now that this will surprise every C developer out there that have been doing <code>if (NULL != ptr) free(ptr)</code> for decades.</p>
 <p>Let's stay on the safe side and assume that we ought to use <code>Vec::from_raw_parts</code> and let the <code>Vec</code> free the memory when it gets dropped at the end of the scope. The only problem is: This function requires the pointer, the length, <em>and the capacity</em>. Wait, but we lost the capacity when we returned the pointer + length to the caller in <code>MYLIB_get_foos()</code>, and the caller <em>does not care one bit about the capacity</em>! It's irrelevant to them! At work, the mobile developers using our library rightfully asked: wait, what is this <code>cap</code> field? Why do I care? What do I do with it? If you are used to manually managing your own memory, this is a very old concept, but if you are used to a Garbage Collector, it's very much new.</p>
 <h2 id="second-attempt-to-free-the-memory-properly">
 	<a class="title" href="#second-attempt-to-free-the-memory-properly">Second attempt to free the memory properly</a>
