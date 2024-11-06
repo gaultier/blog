@@ -251,7 +251,7 @@ pub struct OwningArrayC<T> {
 
 It clearly signifies to the caller that they are in charge of freeing the memory, and also it carries the capacity of the `Vec` with it, so it's not lost.
 
-In our project, this struct is used a lot.
+In our project, this struct is used a lot. We also define a struct for non owning arrays (slices), etc.
 
 So let's adapt the function, and also add a function in the API to free it for convenience:
 
