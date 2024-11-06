@@ -208,15 +208,13 @@ So, let's first try to dodge the problem the <s>hacky</s> simple way by pretendi
     fn test_get_foos() {
         ...
 
-        if !foos.is_null() {
-            unsafe {
-                let _ = Box::from_raw(foos);
-            }
+        unsafe {
+            let _ = Box::from_raw(foos);
         }
     }
 ```
 
-That's I think the first instinct for a C developer. Whatever way the memory was heap allocated, be it with `malloc`, `calloc`, `realloc`, be it for one struct or for a whole array, we want to free it with one call, passing it the base pointer. 
+That's I think the first instinct for a C developer. Whatever way the memory was heap allocated, be it with `malloc`, `calloc`, `realloc`, be it for one struct or for a whole array, we want to free it with one call, passing it the base pointer. Let's ignore for a moment the docs that state that sometimes the pointer is heap-allocated and sometimes not.
 
 So this Rust code builds. The test passes. And Miri is unhappy. I guess you know the drill by now:
 
@@ -229,7 +227,7 @@ $ cargo +nightly miri test
 
 Let's take a second to marvel at the fact that Rust, probably the programming language the most strict at compile time, the if-it-builds-it-runs-dude-I-swear language, seems to work at compile time and at run time, but only fails when run under an experimental analyzer that only works in nightly and does not support lots of FFI patterns.
 
-That's the power of Undefined Behavior and `unsafe{}`. Again: audit all of your `unsafe` blocks, and be very suspicious of any third-party code that uses `unsafe`. I think Rust developers on average do not realize the harm that it is very easy to inflict to your program by using `unsafe` even if it looks fine.
+That's the power of Undefined Behavior and `unsafe{}`. Again: audit all of your `unsafe` blocks, and be very suspicious of any third-party code that uses `unsafe`. I think Rust developers on average do not realize the harm that it is very easy to inflict to your program by using `unsafe` unwisely even if everything seems fine.
 
 Anyways, I guess we have to refactor our whole C API to do it the Rust Way(tm)! 
 
