@@ -275,14 +275,12 @@ brk(0x213c0000)                         = 0x213c0000
     fn test_get_foos() {
         ...
 
-        if !foos.is_null() {
-            unsafe {
-                let _ = Box::from_raw(foos);
-            }
+        unsafe {
+            let _ = Box::from_raw(foos);
         }
     }
 </code></pre>
-<p>That's I think the first instinct for a C developer. Whatever way the memory was heap allocated, be it with <code>malloc</code>, <code>calloc</code>, <code>realloc</code>, be it for one struct or for a whole array, we want to free it with one call, passing it the base pointer.</p>
+<p>That's I think the first instinct for a C developer. Whatever way the memory was heap allocated, be it with <code>malloc</code>, <code>calloc</code>, <code>realloc</code>, be it for one struct or for a whole array, we want to free it with one call, passing it the base pointer. Let's ignore for a moment the docs that state that sometimes the pointer is heap-allocated and sometimes not.</p>
 <p>So this Rust code builds. The test passes. And Miri is unhappy. I guess you know the drill by now:</p>
 <pre><code class="language-sh">$ cargo +nightly miri test
 ...
@@ -290,7 +288,7 @@ brk(0x213c0000)                         = 0x213c0000
 ...
 </code></pre>
 <p>Let's take a second to marvel at the fact that Rust, probably the programming language the most strict at compile time, the if-it-builds-it-runs-dude-I-swear language, seems to work at compile time and at run time, but only fails when run under an experimental analyzer that only works in nightly and does not support lots of FFI patterns.</p>
-<p>That's the power of Undefined Behavior and <code>unsafe{}</code>. Again: audit all of your <code>unsafe</code> blocks, and be very suspicious of any third-party code that uses <code>unsafe</code>. I think Rust developers on average do not realize the harm that it is very easy to inflict to your program by using <code>unsafe</code> even if it looks fine.</p>
+<p>That's the power of Undefined Behavior and <code>unsafe{}</code>. Again: audit all of your <code>unsafe</code> blocks, and be very suspicious of any third-party code that uses <code>unsafe</code>. I think Rust developers on average do not realize the harm that it is very easy to inflict to your program by using <code>unsafe</code> unwisely even if everything seems fine.</p>
 <p>Anyways, I guess we have to refactor our whole C API to do it the Rust Way(tm)!</p>
 <h2 id="third-attempt-to-free-the-memory-properly">
 	<a class="title" href="#third-attempt-to-free-the-memory-properly">Third attempt to free the memory properly</a>
