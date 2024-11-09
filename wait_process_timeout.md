@@ -142,9 +142,14 @@ So we still have one signal handler but the rest of our program does not deal wi
 
 ### Fourth approach: process descriptors
 
-In the recent years, people have worked hard to introduce ways to treat process identifiers ('pid') as bog-standard file descriptors, like files or sockets. After all, that's what sparked our whole investigation: we wanted to use `poll` and it did not work on a pid. 
+In the recent years, people realized that process identifiers (`pid`s) have a number of problems:
+
+- PIDs are recycled and the space is small, so collisions will happen. Typically, a process spawns a child process, some work happens, and then the parent decides to send a signal to the pid of the child. But it turns out that the child already terminated (unbeknownst to the parent) and another process took its place with the same PID. So now the parent is sending signals, or communicating with, a process that it thinks is its original child but is in fact something completely different. Chaos and security issues ensue. Now, in our very simple case, that would not really happen, and additionally, a process can only kill its children. But imagine that you are implementing the init process with PID 1, e.g. systemd: every single process is your child! Or think of the case of reparenting a process. Or sending a certain PID to another process. It becomes hairy and it's a very real problem.
+- Data races are hard to escape (see the previous point)
+
+And they have worked hard to introduce a better concept: process descriptors, which are (almost) bog-standard file descriptors, like files or sockets. After all, that's what sparked our whole investigation: we wanted to use `poll` and it did not work on a pid. Pids and signals do not compose well, but file descriptors do.
 
 So, Linux and FreeBSD have introduced the same concepts but with slightly different APIs (unfortunately):
 
 - A child process can be created with `clone3(..., CLONE_PIDFD)` or `pdfork()` which returns a process descriptor which is almost like a normal file descriptor. On Linux, a process descriptor can also be obtained from a pid with `pidfd_open(pid)` e.g. if a normal `fork` was done.
-- 
+- A 
