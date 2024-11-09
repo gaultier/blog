@@ -258,4 +258,4 @@ So what's the best approach then in a complex program? Let's recap:
 - If you only care about BSDs (or accept to use `libkqueue` on Linux), use `kqueue` because it works out of the box with PIDs, you avoid signals completely, and it's used in all the big libraries out of there e.g. `libuv`
 - If you only care about Linux and are already using `io_uring`, use `io_uring`
 
-I often think 
+I often look at complex code and think: what are the chances that this is correct? What are the chances that I missed something? Is there a way to make it simplistic that it is obviously correct? And how can I limit the blast of a bug I wrote?
