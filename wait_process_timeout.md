@@ -141,3 +141,10 @@ TODO
 So we still have one signal handler but the rest of our program does not deal with programs in any way (well, except to kill the child when the timeout triggers, but that's invisible). That's better. Now, wouldn't it be nice if we could avoid signals *entirely*?
 
 ### Fourth approach: process descriptors
+
+In the recent years, people have worked hard to introduce ways to treat process identifiers ('pid') as bog-standard file descriptors, like files or sockets. After all, that's what sparked our whole investigation: we wanted to use `poll` and it did not work on a pid. 
+
+So, Linux and FreeBSD have introduced the same concepts but with slightly different APIs (unfortunately):
+
+- A child process can be created with `clone3(..., CLONE_PIDFD)` or `pdfork()` which returns a process descriptor which is almost like a normal file descriptor. On Linux, a process descriptor can also be obtained from a pid with `pidfd_open(pid)` e.g. if a normal `fork` was done.
+- 
