@@ -25,21 +25,15 @@ Immediately, we notice something: even though there are a bazillion ways to wait
 
 # The old-school way: sigsuspend
 
-That's how `timeout` from coreutils implements it. This is quite simple on paper: This is a system call that suspends the process until a selected set of signals triggers, and it is used in `timeout` so:
+That's how `timeout` from coreutils implements it. This is quite simple on paper:
+
+1. We opt-in to receive a `SIGCHLD` signal when the child processes finishes with: `signal(SIGCHLD, on_chld_signal)` where `on_chld_signal` is a function pointer we provide. Even if does not do anything in this case.
+2. We schedule a `SIGALARM` signal with `alarm` or more preferrably `setitimer` which can take a duration in microseconds whereas `alarm` can only handle seconds
+3. We wait for either signal with `sigsuspend` which suspends the program until a given set of signals arrive
+4. We should not forget to `wait` on the child process to avoid leaving zombie processes behind
+
+A barebone implemention:
 
 ```c
-      while ((wait_result = waitpid (monitored_pid, &status, WNOHANG)) == 0)
-        sigsuspend (&orig_set);  /* Wait with cleanup signals unblocked.  */
+TODO
 ```
-
-This is a very compact way to do:
-
-```c
-    while(true) {
-        sigsuspend (&orig_set);
-        if (0 == waitpid (monitored_pid, &status, WNOHANG)) { break; }
-    }
-```
-
-
-We wait with `waitpid` in a non-blocking way (thanks to `WNOHANG`) on the child process, and 
