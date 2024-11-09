@@ -150,6 +150,8 @@ So we still have one signal handler but the rest of our program does not deal wi
 
 ### Fourth approach: process descriptors
 
+*Recommended reading about this topic: [1](https://lwn.net/Articles/801319/) and [2](https://lwn.net/Articles/794707/).*
+
 In the recent years, people realized that process identifiers (`pid`s) have a number of problems:
 
 - PIDs are recycled and the space is small, so collisions will happen. Typically, a process spawns a child process, some work happens, and then the parent decides to send a signal to the pid of the child. But it turns out that the child already terminated (unbeknownst to the parent) and another process took its place with the same PID. So now the parent is sending signals, or communicating with, a process that it thinks is its original child but is in fact something completely different. Chaos and security issues ensue. Now, in our very simple case, that would not really happen, and additionally, a process can only kill its children. But imagine that you are implementing the init process with PID 1, e.g. systemd: every single process is your child! Or think of the case of reparenting a process. Or sending a certain PID to another process. It becomes hairy and it's a very real problem.
@@ -244,3 +246,5 @@ TODO
 ## Sixth approach: Linux's io_uring
 
 TODO
+
+## Conclusion
