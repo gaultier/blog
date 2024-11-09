@@ -25,10 +25,17 @@ This is best practice in distributed systems, and we often need to do the same o
 
 So let's implement our own! As we'll see, it's much less straightforward, and thus more interesting, than I thought. It's a whirlwind tour through Unix deeps.
 
-## What are we working toward?
+## What are we building?
+
+I call the tool we are building `ueb` for: micro exponential backoff. It does not have any options.
 
 ```sh
-$ TODO
+# This returns immediately since it succeeds on the first try.
+$ ueb true
+
+# This retries indefinitely since it always fails
+$ eb false
+
 ```
 
 So how do we implement it?
