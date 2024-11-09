@@ -2,7 +2,11 @@ Title: What is the best way to wait on a process with timeout?
 Tags: Unix, Signals, C, Linux, FreeBSD
 ---
 
-I often need to launch a program in the terminal in a retry loop. Maybe because it's flaky, or because it tries to contact a remote service that is not available. Think `ssh` on a machine that's booting up, or running end-to-end tests where the server is in a container that's starting up, for example in CI.
+I often need to launch a program in the terminal in a retry loop. Maybe because it's flaky, or because it tries to contact a remote service that is not available. A few scenarios:
+
+- ssh to a starting machine
+- `psql` to a (re)starting database
+- Ensuring that a network service started fine with netcat
 
 It's a common problem, so much so that there are two utilities that I usually reach for: 
 
@@ -19,9 +23,9 @@ This will all sound familiar to people who develop distributed systems: they hav
 This is best practice in distributed systems, and we often need to do the same on the command line. But the two aforementioned tools only do one or two of the above points. 
 
 
-So let's implement our own! As we'll see, it's much less straightforward, and thus more interesting, than I thought.
+So let's implement our own! As we'll see, it's much less straightforward, and thus more interesting, than I thought. It's a whirlwind tour through Unix deeps.
 
-## Demo
+## What are we working toward?
 
 ```sh
 $ TODO
@@ -258,4 +262,8 @@ So what's the best approach then in a complex program? Let's recap:
 - If you only care about BSDs (or accept to use `libkqueue` on Linux), use `kqueue` because it works out of the box with PIDs, you avoid signals completely, and it's used in all the big libraries out of there e.g. `libuv`
 - If you only care about Linux and are already using `io_uring`, use `io_uring`
 
-I often look at complex code and think: what are the chances that this is correct? What are the chances that I missed something? Is there a way to make it simplistic that it is obviously correct? And how can I limit the blast of a bug I wrote?
+I often look at complex code and think: what are the chances that this is correct? What are the chances that I missed something? Is there a way to make it simplistic that it is obviously correct? And how can I limit the blast of a bug I wrote? 
+
+Process descriptors or `kqueue` seem to me so straightforward, so obviously correct, that I would definitely favour them over signals. 
+
+
