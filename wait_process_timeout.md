@@ -32,8 +32,16 @@ That's how `timeout` from coreutils implements it. This is quite simple on paper
 3. We wait for either signal with `sigsuspend` which suspends the program until a given set of signals arrive
 4. We should not forget to `wait` on the child process to avoid leaving zombie processes behind
 
-A barebone implemention:
+A barebone implementation:
 
 ```c
 TODO
 ```
+
+
+Now, I don't *love* this approach:
+
+- I find signals hard. It's basically a global `goto` to a completely different location
+- A sigal handler is forced to use global mutable state, which is better avoided if possible
+- Lots of functions are not 'signal-safe', and that has led to security vulnerabilities in the past e.g. in [ssh](TODO). In short, non-atomic operations are not signal safe because they might be suspended in the middle, thus leaving an inconsistent state behind. Thus, we have to read documentation very carefully to ensure that we only call signal safe functions in our signal handler, and cherry on the cake, that varies from platform to platform.
+- Signals do not compose well with other Unix entities such as file descriptors and sockets. For example, we cannot `poll` them. This led to Linux introducting `signalfd` to get a file descriptor out of a set of signals so that we can now use all the usual functions. However that is Linux specific, for example FreeBSD does not implement it.
