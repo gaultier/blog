@@ -127,3 +127,17 @@ I like this implementation. It's pretty easy to convince ourselves looking at th
 We still have to deal with signals though. Could we reduce their imprint on our code?
 
 ## Third approach: Self pipe trick
+
+This is a really nifty, quite well known trick at this point, where we bridge the world of signals with the world of file descriptors with the `pipe(2)` system call. 
+
+Usually, pipes are a form of inter-process communication, and here we do not want to communicate with the child process (since it could be any program, and most programs do not get chatty with their parent process). What we do is: in the signal handler for `SIGCHLD`, we simply write (anything) to our own pipe. We know this is signal-safe so it's good. 
+
+And you know what's cool with pipes? They are simply a file descriptor which we can `poll`. With a timeout. Nice! Here goes:
+
+```c
+TODO
+```
+
+So we still have one signal handler but the rest of our program does not deal with programs in any way (well, except to kill the child when the timeout triggers, but that's invisible). That's better. Now, wouldn't it be nice if we could avoid signals *entirely*?
+
+### Fourth approach: process descriptors
