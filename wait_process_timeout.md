@@ -27,7 +27,7 @@ So let's implement our own! As we'll see, it's much less straightforward, and th
 
 ## What are we building?
 
-I call the tool we are building `ueb` for: micro exponential backoff. It does not have any options.
+I call the tool we are building `ueb` for: micro exponential backoff. It does up to 10 retries, with a waiting period in between that starts at an arbitrary 128 ms and doubles every retry. The timeout for the subprocess is an arbitrary 2s. In a real tool, these numbers would probably be exposed as command line options but there's no time, what have to demo it:
 
 ```sh
 # This returns immediately since it succeeds on the first try.
