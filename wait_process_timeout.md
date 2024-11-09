@@ -147,9 +147,92 @@ In the recent years, people realized that process identifiers (`pid`s) have a nu
 - PIDs are recycled and the space is small, so collisions will happen. Typically, a process spawns a child process, some work happens, and then the parent decides to send a signal to the pid of the child. But it turns out that the child already terminated (unbeknownst to the parent) and another process took its place with the same PID. So now the parent is sending signals, or communicating with, a process that it thinks is its original child but is in fact something completely different. Chaos and security issues ensue. Now, in our very simple case, that would not really happen, and additionally, a process can only kill its children. But imagine that you are implementing the init process with PID 1, e.g. systemd: every single process is your child! Or think of the case of reparenting a process. Or sending a certain PID to another process. It becomes hairy and it's a very real problem.
 - Data races are hard to escape (see the previous point)
 
-And they have worked hard to introduce a better concept: process descriptors, which are (almost) bog-standard file descriptors, like files or sockets. After all, that's what sparked our whole investigation: we wanted to use `poll` and it did not work on a pid. Pids and signals do not compose well, but file descriptors do.
+And they have worked hard to introduce a better concept: process descriptors, which are (almost) bog-standard file descriptors, like files or sockets. After all, that's what sparked our whole investigation: we wanted to use `poll` and it did not work on a pid. Pids and signals do not compose well, but file descriptors do. Also, just like file descriptors, process descriptors are per-process. If I open a file with `open()` and get the file descriptor `3`, it is scoped to my process. Another process can `close(3)` and it will refer to their own file descriptotr, and not affect my file descriptor. That's great, we get isolation, so bugs in our code do not affect other processes.
 
 So, Linux and FreeBSD have introduced the same concepts but with slightly different APIs (unfortunately):
 
 - A child process can be created with `clone3(..., CLONE_PIDFD)` or `pdfork()` which returns a process descriptor which is almost like a normal file descriptor. On Linux, a process descriptor can also be obtained from a pid with `pidfd_open(pid)` e.g. if a normal `fork` was done.
-- A 
+- We wait on the process descriptor with `poll(..., timeout)` (or `select`, or `epoll`, etc)
+- We kill the child process using the process descriptor with `pidfd_send_signal` (Linux) or `close` (FreeBSD) or `pdkill` (FreeBSD)
+- We wait on the zombie child process again using the process descriptor to get its exit status
+
+And voila, no signals! Isolation! Composability! Life can be nice like this sometimes. It's just unfortunate that there isn't a cross-platform API for that.
+
+Here's the Linux implementation:
+
+```c
+#define _GNU_SOURCE
+#include <errno.h>
+#include <poll.h>
+#include <stdint.h>
+#include <sys/syscall.h>
+#include <sys/wait.h>
+#include <unistd.h>
+
+int main(int argc, char *argv[]) {
+  (void)argc;
+
+  uint32_t sleep_ms = 128 * 1000;
+
+  for (int retry = 0; retry < 10; retry += 1) {
+    int child_pid = fork();
+    if (-1 == child_pid) {
+      return errno;
+    }
+
+    if (0 == child_pid) { // Child
+      argv += 1;
+      if (-1 == execvp(argv[0], argv)) {
+        return errno;
+      }
+      __builtin_unreachable();
+    }
+
+    // Parent.
+
+    int child_fd = (int)syscall(SYS_pidfd_open, child_pid, 0);
+    if (-1 == child_fd) {
+      return errno;
+    }
+
+    struct pollfd poll_fd = {
+        .fd = child_fd,
+        .events = POLLHUP | POLLIN,
+    };
+    // Wait for the child to finish with a timeout.
+    if (-1 == poll(&poll_fd, 1, 2000)) {
+      return errno;
+    }
+
+    // Maybe kill the child (the child might have terminated by itself even if
+    // poll(2) timed-out).
+    if (-1 == syscall(SYS_pidfd_send_signal, child_fd, SIGKILL, NULL, 0)) {
+      return errno;
+    }
+
+    siginfo_t siginfo = {0};
+    // Get exit status of child & reap zombie.
+    if (-1 == waitid(P_PIDFD, (id_t)child_fd, &siginfo, WEXITED)) {
+      return errno;
+    }
+
+    if (WIFEXITED(siginfo.si_status) && 0 == WEXITSTATUS(siginfo.si_status)) {
+      return 0;
+    }
+
+    sleep_ms *= 2;
+    usleep(sleep_ms);
+
+    close(child_fd);
+  }
+}
+```
+
+
+## Fifth approach: BSD's kqueue
+
+TODO
+
+## Sixth approach: Linux's io_uring
+
+TODO
