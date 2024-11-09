@@ -21,6 +21,14 @@ This is best practice in distributed systems, and we often need to do the same o
 
 So let's implement our own! As we'll see, it's much less straightforward, and thus more interesting, than I thought.
 
+## Demo
+
+```sh
+$ TODO
+```
+
+So how do we implement it?
+
 Immediately, we notice something: even though there are a bazillion ways to wait on a child process to finish (`wait`, `wait3`, `wait4`, `waitid`, `waitpid`), none of them take a timeout as an argument. This has sparked numerous questions online ([1](https://stackoverflow.com/questions/18542089/how-to-wait-on-child-process-to-finish-with-time-limit), [2](https://stackoverflow.com/questions/18476138/is-there-a-version-of-the-wait-system-call-that-sets-a-timeout)). So let's explore a few different ways to achieve this on Unix.
 
 # The old-school way: sigsuspend
