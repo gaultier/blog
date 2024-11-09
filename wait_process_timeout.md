@@ -45,5 +45,85 @@ Now, I don't *love* this approach:
 - A sigal handler is forced to use global mutable state, which is better avoided if possible
 - Lots of functions are not 'signal-safe', and that has led to security vulnerabilities in the past e.g. in [ssh](TODO). In short, non-atomic operations are not signal safe because they might be suspended in the middle, thus leaving an inconsistent state behind. Thus, we have to read documentation very carefully to ensure that we only call signal safe functions in our signal handler, and cherry on the cake, that varies from platform to platform.
 - Signals do not compose well with other Unix entities such as file descriptors and sockets. For example, we cannot `poll` them. This led to Linux introducting `signalfd` to get a file descriptor out of a set of signals so that we can now use all the usual functions. However that is Linux specific, for example FreeBSD does not implement it.
-- Different signals have different default behaviors, and this gets inherited in child processes, so you cannot assume anything in your program and have to be very defensive. Who knows what the parent process, e.g. the shell, set as the signal mask?
-- They are many libc functions and system calls relating to signals and that's a lot to learn. A non-exhaustive list e.g. on Linux: `kill(1), alarm(2), kill(2), pause(2), sigaction(2), signalfd(2),  sigpending(2),  sigprocmask(2),   sigsuspend(2),  bsd_signal(3),  killpg(3),  raise(3),  siginterrupt(3), sigqueue(3), sigsetops(3), sigvec(3), sysv_signal(3), signal(7)`. 
+- Different signals have different default behaviors, and this gets inherited in child processes, so you cannot assume anything in your program and have to be very defensive. Who knows what the parent process, e.g. the shell, set as the signal mask? If you read through the whole implementation of the `timeout` program, a lot of the code is dedicated to setting signal masks in the parent, forking, immediately changing the signal mask in the child and the parent, etc. Now, I believe modern Unices offer more control than `fork()` about what signal mask the child should be created with, so maybe it got better. Still, it's a lot of stuff to know.
+- They are many libc functions and system calls relating to signals and that's a lot to learn. A non-exhaustive list e.g. on Linux: `kill(1), alarm(2), kill(2), pause(2), sigaction(2), signalfd(2),  sigpending(2),  sigprocmask(2),   sigsuspend(2),  bsd_signal(3),  killpg(3),  raise(3),  siginterrupt(3), sigqueue(3), sigsetops(3), sigvec(3), sysv_signal(3), signal(7)`. Oh wait, I forgot `sigemptyset(3)` and  `sigaddset(3)`. And I'm sure I forgot about a few!
+
+So, let's stick with signals for a bit but simplify our current approach.
+
+## Second way: sigtimedwait
+
+Wouldn't it be great if we could wait on a signal, say, `SIGCHLD`, with a timeout? Oh look, a system call that does exactly that *and* is standardized by POSIX. Cool! I am not quite sure why the `timeout` program does not use it, but we sure as hell can. My only guess would be that it wants to support old Unices that did not have this system call. 
+
+Anyways, here's a very straightforward implementation:
+
+```c
+#define _GNU_SOURCE
+#include <errno.h>
+#include <signal.h>
+#include <stdint.h>
+#include <sys/wait.h>
+#include <unistd.h>
+
+void on_sigchld(int sig) { (void)sig; }
+
+int main(int argc, char *argv[]) {
+  (void)argc;
+  signal(SIGCHLD, on_sigchld);
+
+  uint32_t sleep_ms = 128;
+
+  for (int retry = 0; retry < 10; retry += 1) {
+    int child_pid = fork();
+    if (-1 == child_pid) {
+      return errno;
+    }
+
+    if (0 == child_pid) { // Child
+      argv += 1;
+      if (-1 == execvp(argv[0], argv)) {
+        return errno;
+      }
+      __builtin_unreachable();
+    }
+
+    sigset_t sigset = {0};
+    sigemptyset(&sigset);
+    sigaddset(&sigset, SIGCHLD);
+
+    siginfo_t siginfo = {0};
+
+    struct timespec timeout = {
+        .tv_sec = sleep_ms / 1000,
+        .tv_nsec = (sleep_ms % 1000) * 1000 * 1000,
+    };
+
+    int sig = sigtimedwait(&sigset, &siginfo, &timeout);
+    if (-1 == sig && EAGAIN != errno) { // Error
+      return errno;
+    }
+    if (-1 != sig) { // Child finished.
+      if (WIFEXITED(siginfo.si_status) && 0 == WEXITSTATUS(siginfo.si_status)) {
+        return 0;
+      }
+    }
+
+    if (-1 == kill(child_pid, SIGKILL)) {
+      return errno;
+    }
+
+    if (-1 == wait(NULL)) {
+      return errno;
+    }
+
+    sleep_ms *= 2;
+    usleep(sleep_ms * 1000);
+  }
+  return 1;
+}
+```
+
+I like this implementation. It's pretty easy to convince ourselves looking at the code that it is obviously correct, and that's a very important factor for me.
+
+We still have to deal with signals though. Could we reduce their imprint on our code?
+
+## Third approach: Self pipe trick
