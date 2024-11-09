@@ -248,3 +248,14 @@ TODO
 TODO
 
 ## Conclusion
+
+I find signals and spawning child process to be the hardest parts of Unix. Evidently this is not a rare opinion, looking at the development in these areas: process descriptors, the various expansions to the venerable `fork` with `vfork`, `clone`, `clone3`, `clone6`, etc. 
+
+So what's the best approach then in a complex program? Let's recap:
+
+- If you need maximum portability and are not afraid of signals and their pitfalls, use `sigsuspend`
+- If you favor correctness and work with recent Linux and FreeBSD versions, use process descriptors with shims to get the same API on all OSes. That's probably my favorite option.
+- If you only care about BSDs (or accept to use `libkqueue` on Linux), use `kqueue` because it works out of the box with PIDs, you avoid signals completely, and it's used in all the big libraries out of there e.g. `libuv`
+- If you only care about Linux and are already using `io_uring`, use `io_uring`
+
+I often think 
