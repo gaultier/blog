@@ -384,7 +384,10 @@ A small note: To `poll` a process descriptor, Linux wants us to use `POLLIN` whe
 
 ## Fifth approach: BSD's kqueue
 
-TODO
+It feels like cheating, but MacOS and the BSDs have had `kqueue` for decades which works out of the box with PIDs. It works as you'd expect:
+
+```c
+```
 
 ## Sixth approach: Linux's io_uring
 
