@@ -165,7 +165,7 @@ $ ueb createdb my_great_database -h 0.0.0.0 -U postgres
 <p>So how do we implement it?</p>
 <p>Immediately, we notice something: even though there are a bazillion ways to wait on a child process to finish (<code>wait</code>, <code>wait3</code>, <code>wait4</code>, <code>waitid</code>, <code>waitpid</code>), none of them take a timeout as an argument. This has sparked numerous questions online (<a href="https://stackoverflow.com/questions/18542089/how-to-wait-on-child-process-to-finish-with-time-limit">1</a>, <a href="https://stackoverflow.com/questions/18476138/is-there-a-version-of-the-wait-system-call-that-sets-a-timeout">2</a>), with in my opinion unsatisfactory answers. So let's explore this rabbit hole.</p>
 <p>We'd like the pseudo-code to be something like:</p>
-<pre><code>wait_ms := 128
+<pre><code class="language-pseudocode">wait_ms := 128
 
 for retry in 0..&lt;10:
     child_pid := run_command_in_subprocess(cmd)
