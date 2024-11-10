@@ -2,7 +2,7 @@
   <feed xmlns="http://www.w3.org/2005/Atom">
     <title>Philippe Gaultier's blog</title>
     <link href="https://gaultier.github.io/blog"/>
-    <updated>2024-11-10T22:25:25+01:00</updated>
+    <updated>2024-11-10T22:26:19+01:00</updated>
     <author>
       <name>Philippe Gaultier</name>
     </author>
@@ -196,7 +196,7 @@
   <title>What is the best way to wait on a process with timeout?</title>
   <link href="https://gaultier.github.io/blog/wait_process_timeout.html"/>
   <id>urn:uuid:353d5c3d-c587-5669-851e-e5d4146f8859</id>
-  <updated>2024-11-10T22:25:25+01:00</updated>
+  <updated>2024-11-10T22:26:19+01:00</updated>
   <published>2024-11-09T16:04:32+01:00</published>
   </entry>
 	</feed>

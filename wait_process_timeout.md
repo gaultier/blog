@@ -24,7 +24,7 @@ This will all sound familiar to people who develop distributed systems: they hav
 - With jitter, although this point also seemed the least important since most of us use non real-time operating systems which introduce some jitter anytime we sleep or wait on something with a timeout. The AWS article makes a point that in highly contended systems, the jitter parameter is very important, but for the scope of this article I'll leave it out.
 
 
-This is best practice in distributed systems, and we often need to do the same on the command line. But the two aforementioned tools only parts of the above points:
+This is best practice in distributed systems, and we often need to do the same on the command line. But the two aforementioned tools only do that partially:
 
 - `timeout` does not retry
 - `eb` does not have a timeout
