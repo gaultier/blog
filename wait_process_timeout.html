@@ -564,7 +564,7 @@ int main(int argc, char *argv[]) {
 <li>If you only care about Linux and are afraid of using <code>io_uring</code>, use <code>signalfd</code> + <code>poll</code></li>
 </ul>
 <p>I often look at complex code and think: what are the chances that this is correct? What are the chances that I missed something? Is there a way to make it simplistic that it is obviously correct? And how can I limit the blast of a bug I wrote?</p>
-<p>Process descriptors seem to me so straightforward, so obviously correct, that I would definitely favour them over signals. If they are not available to me, I would perhaps use <code>kqueue</code> instead, because it means my program can be extended easily to watch for over types of entities.</p>
+<p>Process descriptors seem to me so straightforward, so obviously correct, that I would definitely favour them over signals. They simply remove entire classes of bugs. If these are not available to me, I would perhaps use <code>kqueue</code> instead, because it means my program can be extended easily to watch for over types of entities.</p>
 <p><a href="/blog"> ⏴ Back to all articles</a></p>
 
 <blockquote id="donate">
