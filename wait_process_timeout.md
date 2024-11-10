@@ -522,7 +522,7 @@ So, if it was not enough that each major OS has its own way to watch many differ
 
 Anyways, their own system is called [port](https://www.illumos.org/man/3C/port_create) (or is it ports?) and it looks so similar to `kqueue` it's almost painful. And weirdly, they support all the different kinds of entities that `kqueue` supports *except* PIDs! And I am not sure that they support process descriptors either e.g. `pidfd_open`. However, they have an extensive compatibility layer for Linux so perhaps they do there.
 
-## Sixth approach: Linux's io_uring
+## Seventh approach: Linux's io_uring
 
 `io_uring` is the last candidate to enter the already packed ring (eh) of different-yet-similar ways to do 'I/O multiplexing', meaning to wait with a timeout on various kinds of entities to do interesting 'stuff'. We queue a system call e.g. `wait`, as well as a timeout, and we wait for either to complete. If `wait` completed first and the exit status is a success, we exit. Otherwise, we retry. Familiar stuff at this point. `io_uring` essentially makes every system call asynchronous with a uniform API. That's exactly what we want!
 

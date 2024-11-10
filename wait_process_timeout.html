@@ -128,7 +128,7 @@
 </li>
 
 <li>
-	<a href="#sixth-approach-linux-s-io-uring">Sixth approach: Linux's io_uring</a>
+	<a href="#seventh-approach-linux-s-io-uring">Seventh approach: Linux's io_uring</a>
 		</li>
 
 <li>
@@ -622,9 +622,9 @@ int main(int argc, char *argv[]) {
 </h3>
 <p>So, if it was not enough that each major OS has its own way to watch many different kinds of entities (Windows has its own thing called <a href="https://learn.microsoft.com/en-us/windows/win32/fileio/i-o-completion-ports">I/O completion ports</a>, MacOS &amp; BSDs have <code>kqueue</code>, Linux has <code>epoll</code>), Solaris/Illumos shows up and says: Watch me do my own thing. Well actually I do not know the chronology, they might in fact have been first, and some Illumos kernel developers (namely Brian Cantrill in the fabulous <a href="https://www.youtube.com/watch?v=wTVfAMRj-7E">Cantrillogy</a>) have admitted that it would have been better for everyone if they also had adopted <code>kqueue</code>.</p>
 <p>Anyways, their own system is called <a href="https://www.illumos.org/man/3C/port_create">port</a> (or is it ports?) and it looks so similar to <code>kqueue</code> it's almost painful. And weirdly, they support all the different kinds of entities that <code>kqueue</code> supports <em>except</em> PIDs! And I am not sure that they support process descriptors either e.g. <code>pidfd_open</code>. However, they have an extensive compatibility layer for Linux so perhaps they do there.</p>
-<h2 id="sixth-approach-linux-s-io-uring">
-	<a class="title" href="#sixth-approach-linux-s-io-uring">Sixth approach: Linux's io_uring</a>
-	<a class="hash-anchor" href="#sixth-approach-linux-s-io-uring" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+<h2 id="seventh-approach-linux-s-io-uring">
+	<a class="title" href="#seventh-approach-linux-s-io-uring">Seventh approach: Linux's io_uring</a>
+	<a class="hash-anchor" href="#seventh-approach-linux-s-io-uring" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p><code>io_uring</code> is the last candidate to enter the already packed ring (eh) of different-yet-similar ways to do 'I/O multiplexing', meaning to wait with a timeout on various kinds of entities to do interesting 'stuff'. We queue a system call e.g. <code>wait</code>, as well as a timeout, and we wait for either to complete. If <code>wait</code> completed first and the exit status is a success, we exit. Otherwise, we retry. Familiar stuff at this point. <code>io_uring</code> essentially makes every system call asynchronous with a uniform API. That's exactly what we want!</p>
 <p>Hold your horses son. You know what people say about things too good to be true?</p>
