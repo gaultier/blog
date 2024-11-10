@@ -559,12 +559,12 @@ int main(int argc, char *argv[]) {
 </code></pre>
 <p>The only surprising thing, perhaps, is that a <code>kqueue</code> is stateful, so once the child process exited by itself or was killed, we have to remove the watcher on its PID, since the next time we spawn a child process, the PID will very likely be different. <code>kqueue</code> offers the flag <code>EV_ONESHOT</code>, which automatically deletes the event from the queue once it has been consumed by us. However, it would not help in all cases: if the timeout triggers, no event was consumed, and we have to kill the child process, which creates an event in the queue! So we have to always consume/delete the event from the queue right before we retry, with a second <code>kevent</code> call. That's the same situation as with the self-pipe approach where we unconditionally <code>read</code> from the pipe to 'clear' it before retrying.</p>
 <p>I love that <code>kqueue</code> works with every kind of Unix entity: file descriptor, pipes, PIDs, Vnodes, sockets, etc. Even signals! However, I am not sure that I love its statefulness. I find the <code>poll</code> API simpler, since it's stateless. But perhaps this behavior is necessary for some corner cases or for performance to avoid the linear scanning that <code>poll</code> entails? It's interesting to observe that Linux's <code>epoll</code> went the same route as <code>kqueue</code> with a similar API, however, <code>epoll</code> can only watch plain file descriptors.</p>
-<p>On Linux, we can make this code work by using <code>libkqueue</code> which acts as a emulation layer, using <code>epoll</code> or <code>poll</code> under the hood.</p>
 <h3 id="a-parenthensis-libkqueue">
 	<a class="title" href="#a-parenthensis-libkqueue">A parenthensis: libkqueue</a>
 	<a class="hash-anchor" href="#a-parenthensis-libkqueue" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h3>
-<p>So, I've briefly mentioned that there is this library, <a href="https://github.com/mheily/libkqueue">libkqueue</a>, that acts as a compatibility layer to be able to use <code>kqueue</code> on all major operating systems, mainly Windows, Linux, and even Solaris/Illumos!</p>
+<p><code>kqueue</code> is only for MacOS and BSDs....Or is it?</p>
+<p>There is this library, <a href="https://github.com/mheily/libkqueue">libkqueue</a>, that acts as a compatibility layer to be able to use <code>kqueue</code> on all major operating systems, mainly Windows, Linux, and even Solaris/Illumos!</p>
 <p>So...How do they do it then? How can we, on an OS like Linux, watch a PID with the <code>kqueue</code> API, when the OS does not support that functionality (neither with <code>poll</code> or <code>epoll</code>)? Well, the solution is actually very simple:</p>
 <ul>
 <li>On Linux 5.3+, they use <code>pidfd_open</code> + <code>poll/epoll</code>. Hey, we just did that a few sections above!</li>

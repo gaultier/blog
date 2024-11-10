@@ -502,11 +502,12 @@ The only surprising thing, perhaps, is that a `kqueue` is stateful, so once the 
 
 I love that `kqueue` works with every kind of Unix entity: file descriptor, pipes, PIDs, Vnodes, sockets, etc. Even signals! However, I am not sure that I love its statefulness. I find the `poll` API simpler, since it's stateless. But perhaps this behavior is necessary for some corner cases or for performance to avoid the linear scanning that `poll` entails? It's interesting to observe that Linux's `epoll` went the same route as `kqueue` with a similar API, however, `epoll` can only watch plain file descriptors.
 
-On Linux, we can make this code work by using `libkqueue` which acts as a emulation layer, using `epoll` or `poll` under the hood.
 
 ### A parenthensis: libkqueue
 
-So, I've briefly mentioned that there is this library, [libkqueue](https://github.com/mheily/libkqueue), that acts as a compatibility layer to be able to use `kqueue` on all major operating systems, mainly Windows, Linux, and even Solaris/Illumos!
+`kqueue` is only for MacOS and BSDs....Or is it?
+
+There is this library, [libkqueue](https://github.com/mheily/libkqueue), that acts as a compatibility layer to be able to use `kqueue` on all major operating systems, mainly Windows, Linux, and even Solaris/Illumos!
 
 So...How do they do it then? How can we, on an OS like Linux, watch a PID with the `kqueue` API, when the OS does not support that functionality (neither with `poll` or `epoll`)? Well, the solution is actually very simple:
 
