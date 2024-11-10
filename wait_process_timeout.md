@@ -379,6 +379,8 @@ int main(int argc, char *argv[]) {
 }
 ```
 
+A small note: To `poll` a process descriptor, Linux wants us to use `POLLIN` whereas FreeBSD wants us to use `POLLHUP`. So we use `POLLHUP | POLLIN` since there are no side-effects to use both.
+
 
 ## Fifth approach: BSD's kqueue
 
