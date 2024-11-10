@@ -502,7 +502,7 @@ The only surprising thing, perhaps, is that a `kqueue` is stateful, so once the 
 
 I love that `kqueue` works with every kind of Unix entity: file descriptor, pipes, PIDs, Vnodes, sockets, etc. Even signals! However, I am not sure that I love its statefulness. I find the `poll` API simpler, since it's stateless. But perhaps this behavior is necessary for some corner cases or for performance to avoid the linear scanning that `poll` entails? It's interesting to observe that Linux's `epoll` went the same route as `kqueue` with a similar API, however, `epoll` can only watch plain file descriptors.
 
-On Linux, we can make this code work by using `libkqueue` which acts as a emulation layer, using `epoll` or such under the hood.
+On Linux, we can make this code work by using `libkqueue` which acts as a emulation layer, using `epoll` or `poll` under the hood.
 
 ### A parenthensis: libkqueue
 
