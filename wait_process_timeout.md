@@ -562,4 +562,4 @@ Finally, I regret that there is so much fragmentation across all operating syste
 ## Addendum: The code
 
 The code is available [here](https://github.com/gaultier/c/tree/master/ueb). It does not have any dependencies except libc. All of these programs are in the worst case 27 KiB in size, with debug symbols enabled and linking statically to musl. They do not allocate any memory themselves.
-For comparison, [eb](https://github.com/rye/eb) has 24 dependencies and is 1.2 MiB! 
+For comparison, [eb](https://github.com/rye/eb) has 24 dependencies and is 1.2 MiB! That's roughly 50x times more.
