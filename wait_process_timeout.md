@@ -18,7 +18,7 @@ It's a common problem, so much so that there are two utilities that I usually re
 
 This will all sound familiar to people who develop distributed systems: they have long known that this is [best practice](https://aws.amazon.com/blogs/architecture/exponential-backoff-and-jitter/) to retry an operation:
 
-- With a timeout (either constant or adaptative).
+- With a timeout (either constant or adaptive).
 - A bounded number of times e.g. 10.
 - With a waiting time between each retry, either a constant one or a increasing one e.g. with exponential backoff.
 - With jitter, although this point also seemed the least important since most of us use non real-time operating systems which introduce some jitter anytime we sleep or wait on something with a timeout. The AWS article makes a point that in highly contended systems, the jitter parameter is very important, but for the scope of this article I'll leave it out.
@@ -34,7 +34,7 @@ So let's implement our own that does both! As we'll see, it's much less straight
 
 ## What are we building?
 
-I call the tool we are building `ueb` for: micro exponential backoff. It does up to 10 retries, with a waiting period in between that starts at an arbitrary 128 ms and doubles every retry. The timeout for the subprocess is the same as the sleep time, so that it's adaptative and we give the subprocess a longer and longer time to finish successfully. These numbers would probably be exposed as command line options in a real polished program, but there's no time, what have to demo it:
+I call the tool we are building `ueb` for: micro exponential backoff. It does up to 10 retries, with a waiting period in between that starts at an arbitrary 128 ms and doubles every retry. The timeout for the subprocess is the same as the sleep time, so that it's adaptive and we give the subprocess a longer and longer time to finish successfully. These numbers would probably be exposed as command line options in a real polished program, but there's no time, what have to demo it:
 
 ```sh
 # This returns immediately since it succeeds on the first try.
@@ -117,16 +117,16 @@ exit(1)
 That's how `timeout` from coreutils [implements](https://git.savannah.gnu.org/gitweb/?p=coreutils.git;a=blob;f=src/timeout.c;h=5600ce42957dcf117785f6a361ef72ac9c2df352;hb=HEAD) it. This is quite simple on paper:
 
 1. We opt-in to receive a `SIGCHLD` signal when the child processes finishes with: `signal(SIGCHLD, on_chld_signal)` where `on_chld_signal` is a function pointer we provide. Even if the signal handler does not do anything in this case.
-2. We schedule a `SIGALARM` signal with `alarm` or more preferrably `setitimer` which can take a duration in microseconds whereas `alarm` can only handle seconds. There's also `timer_create/timer_settime` which handles nanoseconds. It depends what the OS and hardware support.
+2. We schedule a `SIGALARM` signal with `alarm` or more preferably `setitimer` which can take a duration in microseconds whereas `alarm` can only handle seconds. There's also `timer_create/timer_settime` which handles nanoseconds. It depends what the OS and hardware support.
 3. We wait for either signal with `sigsuspend` which suspends the program until a given set of signals arrive.
 4. We should not forget to `wait` on the child process to avoid leaving zombie processes behind.
 
 The reality is grimmer, looking through the `timeout` implementation:
 
-- We could have inherited any signal mask from our parent so we need to explictly unblock the signals we are interested in.
+- We could have inherited any signal mask from our parent so we need to explicitly unblock the signals we are interested in.
 - Signals can be sent to a process group we need to handle that case.
 - We have to avoid entering a 'signal loop'.
-- Our process can be implicitly multithreaded due to some `timer_settime` implementations, therefore a `SIGALRM` signal sent to a process group, can be result in the signal being sent multiple times to a process (I am directly quoting the code comments from the `timeout` program here).
+- Our process can be implicitly multi-threaded due to some `timer_settime` implementations, therefore a `SIGALRM` signal sent to a process group, can be result in the signal being sent multiple times to a process (I am directly quoting the code comments from the `timeout` program here).
 - When using `timer_create`, we need to take care of cleaning it up with `timer_delete`, lest we have a resource leak when retrying.
 - The signal handler may be called concurrently and we have to be aware of that.
 - Depending on the timer implementation we chose, we are susceptible to clock adjustments for example going back. E.g. `setitimer` only offers the `CLOCK_REALTIME` clock option for counting time, which is just the wall clock. We'd like something like `CLOCK_MONOTONIC` or `CLOCK_MONOTONIC_RAW` (the latter being Linux specific).
@@ -135,7 +135,7 @@ The reality is grimmer, looking through the `timeout` implementation:
 So... I don't *love* this approach:
 
 - I find signals hard. It's basically a global `goto` to a completely different location.
-- A sigal handler is forced to use global mutable state, which is better avoided if possible, and it does not play nice with threads.
+- A signal handler is forced to use global mutable state, which is better avoided if possible, and it does not play nice with threads.
 - Lots of functions are not 'signal-safe', and that has led to security vulnerabilities in the past e.g. in [ssh](https://www.qualys.com/2024/07/01/cve-2024-6387/regresshion.txt). In short, non-atomic operations are not signal safe because they might be suspended in the middle, thus leaving an inconsistent state behind. Thus, we have to read documentation very carefully to ensure that we only call signal safe functions in our signal handler, and cherry on the cake, that varies from platform to platform, or even between libc versions on the same platform.
 - Signals do not compose well with other Unix entities such as file descriptors and sockets. For example, we cannot `poll` on signals. There are platform specific solutions though, keep on reading.
 - Different signals have different default behaviors, and this gets inherited in child processes, so you cannot assume anything in your program and have to be very defensive. Who knows what the parent process, e.g. the shell, set as the signal mask? If you read through the whole implementation of the `timeout` program, a lot of the code is dedicated to setting signal masks in the parent, forking, immediately changing the signal mask in the child and the parent, etc. Now, I believe modern Unices offer more control than `fork()` about what signal mask the child should be created with, so maybe it got better. Still, it's a lot of stuff to know.
@@ -327,7 +327,7 @@ Ok, next!
 
 In the recent years (starting with Linux 5.3 and FreeBSD 13.2), people realized that process identifiers (`pid`s) have a number of problems:
 
-- PIDs are recycled and the space is small, so collisions will happen. Typically, a process spawns a child process, some work happens, and then the parent decides to send a signal to the pid of the child. But it turns out that the child already terminated (unbeknownst to the parent) and another process took its place with the same PID. So now the parent is sending signals, or communicating with, a process that it thinks is its original child but is in fact something completely different. Chaos and security issues ensue. Now, in our very simple case, that would not really happen, but perhaps the root user is running our program, or, imagine that you are implementing the init process with PID 1, e.g. systemd: you can kill any process on the machine! Or think of the case of reparenting a process. Or sending a certain PID to another process and they send a signal to it at some point in the future. It becomes hairy and it's a very real problem.
+- PIDs are recycled and the space is small, so collisions will happen. Typically, a process spawns a child process, some work happens, and then the parent decides to send a signal to the PID of the child. But it turns out that the child already terminated (unbeknownst to the parent) and another process took its place with the same PID. So now the parent is sending signals, or communicating with, a process that it thinks is its original child but is in fact something completely different. Chaos and security issues ensue. Now, in our very simple case, that would not really happen, but perhaps the root user is running our program, or, imagine that you are implementing the init process with PID 1, e.g. systemd: you can kill any process on the machine! Or think of the case of re-parenting a process. Or sending a certain PID to another process and they send a signal to it at some point in the future. It becomes hairy and it's a very real problem.
 - Data races are hard to escape (see the previous point).
 - It's easy to accidentally send a signal to all processes with `kill(0, SIGKILL)` or `kill(-1, SIGKILL)` if the developer has not checked that all previous operations succeeded. This is a classic mistake: 
   ```c
@@ -503,7 +503,7 @@ The only surprising thing, perhaps, is that a `kqueue` is stateful, so once the 
 I love that `kqueue` works with every kind of Unix entity: file descriptor, pipes, PIDs, Vnodes, sockets, etc. Even signals! However, I am not sure that I love its statefulness. I find the `poll` API simpler, since it's stateless. But perhaps this behavior is necessary for some corner cases or for performance to avoid the linear scanning that `poll` entails? It's interesting to observe that Linux's `epoll` went the same route as `kqueue` with a similar API, however, `epoll` can only watch plain file descriptors.
 
 
-### A parenthensis: libkqueue
+### A parenthesis: libkqueue
 
 `kqueue` is only for MacOS and BSDs....Or is it?
 
@@ -550,4 +550,4 @@ So what's the best approach then in a complex program? Let's recap:
 
 I often look at complex code and think: what are the chances that this is correct? What are the chances that I missed something? Is there a way to make it simplistic that it is obviously correct? And how can I limit the blast of a bug I wrote? Will I understand this code in 3 months?
 
-Process descriptors seem to me so straightforward, so obviously correct, that I would definitely favour them over signals. They simply remove entire classes of bugs. If these are not available to me, I would perhaps use `kqueue` instead (with `libkqueue` emulation when necessary), because it means my program can be extended easily to watch for over types of entities and I like that the API is very straighforward: one call to create the queue and one call to use it.
+Process descriptors seem to me so straightforward, so obviously correct, that I would definitely favor them over signals. They simply remove entire classes of bugs. If these are not available to me, I would perhaps use `kqueue` instead (with `libkqueue` emulation when necessary), because it means my program can be extended easily to watch for over types of entities and I like that the API is very straightforward: one call to create the queue and one call to use it.
