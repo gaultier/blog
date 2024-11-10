@@ -167,9 +167,9 @@ for retry in 0..&lt;10:
 exit(1)
 </code></pre>
 <p><em>There is a degenerate case where the give command to run is wrong (e.g. typo in the parameters) or the executable does not exist, and our program will happily retry it to the bitter end. But there is solace: this is bounded by the number of retries (10). That's why we do not retry forever.</em></p>
-<h1 id="the-old-school-way-sigsuspend">
-	<a class="title" href="#the-old-school-way-sigsuspend">The old-school way: sigsuspend</a>
-	<a class="hash-anchor" href="#the-old-school-way-sigsuspend" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+<h1 id="first-way-old-school-sigsuspend">
+	<a class="title" href="#first-way-old-school-sigsuspend">First way: old-school sigsuspend</a>
+	<a class="hash-anchor" href="#first-way-old-school-sigsuspend" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h1>
 <p>That's how <code>timeout</code> from coreutils implements it. This is quite simple on paper:</p>
 <ol>

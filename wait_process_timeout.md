@@ -90,7 +90,7 @@ exit(1)
 
 *There is a degenerate case where the give command to run is wrong (e.g. typo in the parameters) or the executable does not exist, and our program will happily retry it to the bitter end. But there is solace: this is bounded by the number of retries (10). That's why we do not retry forever.*
 
-# The old-school way: sigsuspend
+# First way: old-school sigsuspend
 
 That's how `timeout` from coreutils implements it. This is quite simple on paper:
 
