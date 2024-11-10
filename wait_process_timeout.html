@@ -363,8 +363,7 @@ or for a file descriptor to become ready, then an atomic test  is  needed  to  p
 race  conditions.  (Suppose the signal handler sets a global flag and returns.  Then a
 test of this global flag followed by a call of select() could hang indefinitely if the
 signal arrived just after the test but just before the call.  By  contrast,  pselect()
-allows one to first block signals, handle the signals that have come in, then call ps‐
-elect() with the desired sigmask, avoiding the race.)</p>
+allows one to first block signals, handle the signals that have come in, then call pselect() with the desired sigmask, avoiding the race.)</p>
 </blockquote>
 </li>
 </ul>
