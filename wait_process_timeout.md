@@ -1,4 +1,4 @@
-Title: What is the best way to wait on a process with timeout?
+Title: What is the best way to wait on a process with a timeout?
 Tags: Unix, Signals, C, Linux, FreeBSD, Illumos, MacOS
 ---
 
