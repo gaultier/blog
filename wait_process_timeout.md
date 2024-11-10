@@ -295,6 +295,7 @@ There are a few catches with this implementation:
   > signal arrived just after the test but just before the call.  By  contrast,  pselect()
   > allows one to first block signals, handle the signals that have come in, then call ps‐
   > elect() with the desired sigmask, avoiding the race.)
+
   I do not think it is strictly necessary in our case, but it's just easier to get convinced that the code is correct with it than without it.
 
 
