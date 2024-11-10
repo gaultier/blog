@@ -535,4 +535,4 @@ So what's the best approach then in a complex program? Let's recap:
 
 I often look at complex code and think: what are the chances that this is correct? What are the chances that I missed something? Is there a way to make it simplistic that it is obviously correct? And how can I limit the blast of a bug I wrote? 
 
-Process descriptors seem to me so straightforward, so obviously correct, that I would definitely favour them over signals. They simply remove entire classes of bugs. If these are not available to me, I would perhaps use `kqueue` instead, because it means my program can be extended easily to watch for over types of entities.
+Process descriptors seem to me so straightforward, so obviously correct, that I would definitely favour them over signals. They simply remove entire classes of bugs. If these are not available to me, I would perhaps use `kqueue` instead (with `libkqueue` emulation when necessary), because it means my program can be extended easily to watch for over types of entities.
