@@ -2,20 +2,12 @@
   <feed xmlns="http://www.w3.org/2005/Atom">
     <title>Philippe Gaultier's blog</title>
     <link href="https://gaultier.github.io/blog"/>
-    <updated>2024-11-07T08:49:12+01:00</updated>
+    <updated>2024-11-10T23:58:59+01:00</updated>
     <author>
       <name>Philippe Gaultier</name>
     </author>
     <id>urn:uuid:9c065c53-31bc-4049-a795-936802a6b1df</id>
 
-	<entry>
-  <title>Way too many ways to wait on a child process with a timeout</title>
-  <link href="https://gaultier.github.io/blog/way_too_many_ways_to_wait_for_a_child_process_with_a_timeout.html"/>
-  <id>urn:uuid:38fa76b5-00c5-5e17-9753-74b7d0ea1ec0</id>
-  <updated></updated>
-  <published></published>
-  </entry>
-	
 	<entry>
   <title>Getting started with Scheme by solving an Advent of Code 2018 challenge</title>
   <link href="https://gaultier.github.io/blog/advent_of_code_2018_5.html"/>
@@ -198,5 +190,13 @@
   <id>urn:uuid:55eb4918-5851-5a25-80d5-d350aad8971b</id>
   <updated>2024-11-07T08:49:12+01:00</updated>
   <published>2024-11-06T08:33:45+01:00</published>
+  </entry>
+	
+	<entry>
+  <title>Way too many ways to wait on a child process with a timeout</title>
+  <link href="https://gaultier.github.io/blog/way_too_many_ways_to_wait_for_a_child_process_with_a_timeout.html"/>
+  <id>urn:uuid:38fa76b5-00c5-5e17-9753-74b7d0ea1ec0</id>
+  <updated>2024-11-10T23:58:59+01:00</updated>
+  <published>2024-11-10T23:58:59+01:00</published>
   </entry>
 	</feed>
