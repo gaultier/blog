@@ -296,6 +296,7 @@ In the recent years, people realized that process identifiers (`pid`s) have a nu
 
 - PIDs are recycled and the space is small, so collisions will happen. Typically, a process spawns a child process, some work happens, and then the parent decides to send a signal to the pid of the child. But it turns out that the child already terminated (unbeknownst to the parent) and another process took its place with the same PID. So now the parent is sending signals, or communicating with, a process that it thinks is its original child but is in fact something completely different. Chaos and security issues ensue. Now, in our very simple case, that would not really happen, and additionally, a process can only kill its children. But imagine that you are implementing the init process with PID 1, e.g. systemd: every single process is your child! Or think of the case of reparenting a process. Or sending a certain PID to another process. It becomes hairy and it's a very real problem.
 - Data races are hard to escape (see the previous point)
+- It's easy to accidentally send a signal to all processes with `kill(0, SIGKILL)` or `kill(-1, SIGKILL)`
 
 And they have worked hard to introduce a better concept: process descriptors, which are (almost) bog-standard file descriptors, like files or sockets. After all, that's what sparked our whole investigation: we wanted to use `poll` and it did not work on a pid. Pids and signals do not compose well, but file descriptors do. Also, just like file descriptors, process descriptors are per-process. If I open a file with `open()` and get the file descriptor `3`, it is scoped to my process. Another process can `close(3)` and it will refer to their own file descriptotr, and not affect my file descriptor. That's great, we get isolation, so bugs in our code do not affect other processes.
 
@@ -306,7 +307,7 @@ So, Linux and FreeBSD have introduced the same concepts but with slightly differ
 - We kill the child process using the process descriptor with `pidfd_send_signal` (Linux) or `close` (FreeBSD) or `pdkill` (FreeBSD)
 - We wait on the zombie child process again using the process descriptor to get its exit status
 
-And voila, no signals! Isolation! Composability! Life can be nice like this sometimes. It's just unfortunate that there isn't a cross-platform API for that.
+And voila, no signals! Isolation! Composability! (Almost) No PIDs in our program! Life can be nice like this sometimes. It's just unfortunate that there isn't a cross-platform API for that.
 
 Here's the Linux implementation:
 
@@ -322,7 +323,7 @@ Here's the Linux implementation:
 int main(int argc, char *argv[]) {
   (void)argc;
 
-  uint32_t sleep_ms = 128;
+  uint32_t wait_ms = 128;
 
   for (int retry = 0; retry < 10; retry += 1) {
     int child_pid = fork();
@@ -350,7 +351,7 @@ int main(int argc, char *argv[]) {
         .events = POLLHUP | POLLIN,
     };
     // Wait for the child to finish with a timeout.
-    if (-1 == poll(&poll_fd, 1, 2000)) {
+    if (-1 == poll(&poll_fd, 1, (int)wait_ms)) {
       return errno;
     }
 
@@ -370,8 +371,8 @@ int main(int argc, char *argv[]) {
       return 0;
     }
 
-    sleep_ms *= 2;
-    usleep(sleep_ms * 1000);
+    wait_ms *= 2;
+    usleep(wait_ms * 1000);
 
     close(child_fd);
   }
