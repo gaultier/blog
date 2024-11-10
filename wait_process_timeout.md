@@ -317,7 +317,9 @@ This is a short one: on Linux, there is a system call that does exactly the same
 
 Cool, but also....Was it really necessary to introduce a system call for that? I guess the advantage is that we do not have to provide a signal handler at all and it is clearer than the self-pipe trick. 
 
-Next!
+I would prefer extending `poll` to support things other than file descriptors, instead of converting everything a file descriptor to be able to use `poll`. 
+
+Ok, next!
 
 ### Fifth approach: process descriptors
 
