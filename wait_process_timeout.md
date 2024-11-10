@@ -335,7 +335,7 @@ And the kernel developers have worked hard to introduce a better concept: proces
 
 So, Linux and FreeBSD have introduced the same concepts but with slightly different APIs (unfortunately), and I have no idea about other OSes:
 
-- A child process can be created with `clone3(..., CLONE_PIDFD)` (Linux) or `pdfork()` (FreeBSD) which returns a process descriptor which is almost like a normal file descriptor. On Linux, a process descriptor can also be obtained from a PID with `pidfd_open(pid)` e.g. if a normal `fork` was done.
+- A child process can be created with `clone3(..., CLONE_PIDFD)` (Linux) or `pdfork()` (FreeBSD) which returns a process descriptor which is almost like a normal file descriptor. On Linux, a process descriptor can also be obtained from a PID with `pidfd_open(pid)` e.g. after a normal `fork` was done.
 - We wait on the process descriptor with `poll(..., timeout)` (or `select`, or `epoll`, etc)
 - We kill the child process using the process descriptor with `pidfd_send_signal` (Linux) or `close` (FreeBSD) or `pdkill` (FreeBSD)
 - We wait on the zombie child process again using the process descriptor to get its exit status
