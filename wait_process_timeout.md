@@ -288,7 +288,12 @@ There's one catch: contrary to `sigtimedwait`, `poll` does not give us the exit 
 
 So, this trick is clever, but wouldn't it be nice if we could avoid signals *entirely*?
 
-### Fourth approach: process descriptors
+### Fourth approach: Linux's signalfd
+
+This is a short one: on Linux, there is a system call that does exactly the same as the self-pipe trick: from a signal, it gives us a file descriptor that we can `poll`. Cool, but also....Was it really necessary to introduce a system call for that? I guess the advantage is that we do not have to provide a signal handler at all and it is clearer than the self-pipe trick. 
+Next!
+
+### Fifth approach: process descriptors
 
 *Recommended reading about this topic: [1](https://lwn.net/Articles/801319/) and [2](https://lwn.net/Articles/794707/).*
 
@@ -382,9 +387,9 @@ int main(int argc, char *argv[]) {
 A small note: To `poll` a process descriptor, Linux wants us to use `POLLIN` whereas FreeBSD wants us to use `POLLHUP`. So we use `POLLHUP | POLLIN` since there are no side-effects to use both.
 
 
-## Fifth approach: BSD's kqueue
+## Sixth approach: MacOS's and BSD's kqueue
 
-It feels like cheating, but MacOS and the BSDs have had `kqueue` for decades which works out of the box with PIDs. It works as you'd expect:
+It feels like cheating, but MacOS and the BSDs have had `kqueue` for decades which works out of the box with PIDs. It's similar to `poll` or `epoll` on Linux:
 
 ```c
 #include <errno.h>
@@ -462,7 +467,9 @@ int main(int argc, char *argv[]) {
 
 The only surprising thing, perhaps, is that `kqueue` is stateful, so once the child process exited by itself or was killed, we have to remove the watcher on its PID, since the next time we spawn a child process, the PID will very likely be different. `kqueue` offers the flag `EV_ONESHOT`, which automatically deletes the event from the queue once it has been consumed. However, it would not help in all cases: if the timeout triggers, we have to kill the child process, which creates an event in the queue! So we have to always delete the event from the queue right before we retry.
 
-I love that `kqueue` works with every kind of Unix entity: file descriptor, pipes, PIDs, Vnodes, sockets, etc. However, I am not sure that I love its statefulness. I find the `poll` approach simpler, since it's stateless.
+I love that `kqueue` works with every kind of Unix entity: file descriptor, pipes, PIDs, Vnodes, sockets, etc. However, I am not sure that I love its statefulness. I find the `poll` approach simpler, since it's stateless. But perhaps this behavior is necessary for some corner cases?
+
+On Linux, we can make this code work by using `libkqueue` which acts as a emulation layer, using `epoll` or such under the hood.
 
 ## Sixth approach: Linux's io_uring
 
