@@ -206,10 +206,87 @@ Usually, pipes are a form of inter-process communication, and here we do not wan
 And you know what's cool with pipes? They are simply a file descriptor which we can `poll`. With a timeout. Nice! Here goes:
 
 ```c
-TODO
+#define _GNU_SOURCE
+#include <errno.h>
+#include <poll.h>
+#include <signal.h>
+#include <stdint.h>
+#include <sys/wait.h>
+#include <unistd.h>
+
+static int pipe_fd[2] = {0};
+void on_sigchld(int sig) {
+  (void)sig;
+  char dummy = 0;
+  write(pipe_fd[1], &dummy, 1);
+}
+
+int main(int argc, char *argv[]) {
+  (void)argc;
+
+  if (-1 == pipe(pipe_fd)) {
+    return errno;
+  }
+
+  signal(SIGCHLD, on_sigchld);
+
+  uint32_t wait_ms = 128;
+
+  for (int retry = 0; retry < 10; retry += 1) {
+    int child_pid = fork();
+    if (-1 == child_pid) {
+      return errno;
+    }
+
+    if (0 == child_pid) { // Child
+      argv += 1;
+      if (-1 == execvp(argv[0], argv)) {
+        return errno;
+      }
+      __builtin_unreachable();
+    }
+
+    struct pollfd poll_fd = {
+        .fd = pipe_fd[0],
+        .events = POLLIN,
+    };
+    // Wait for the child to finish with a timeout.
+    int ret = poll(&poll_fd, 1, (int)wait_ms);
+    if (-1 == ret && EINTR != errno) {
+      return errno;
+    }
+    if (1 == ret) {
+      char dummy = 0;
+      read(pipe_fd[0], &dummy, 1);
+      int status = 0;
+      if (-1 == wait(&status)) {
+        return errno;
+      }
+      if (WIFEXITED(status) && 0 == WEXITSTATUS(status)) {
+        return 0;
+      }
+    }
+
+    if (-1 == kill(child_pid, SIGKILL)) {
+      return errno;
+    }
+
+    if (-1 == wait(NULL)) {
+      return errno;
+    }
+
+    usleep(wait_ms * 1000);
+    wait_ms *= 2;
+  }
+  return 1;
+}
 ```
 
-So we still have one signal handler but the rest of our program does not deal with programs in any way (well, except to kill the child when the timeout triggers, but that's invisible). That's better. Now, wouldn't it be nice if we could avoid signals *entirely*?
+So we still have one signal handler but the rest of our program does not deal with programs in any way (well, except to kill the child when the timeout triggers, but that's invisible). 
+
+There's one catch: contrary to `sigtimedwait`, `poll` does not give us the exit status of the child, we have to get it with `wait`. Which is fine, but we cannot call `kill` unconditionally and then `wait`, because the exit status would then show that the child process was killed, even though we sent a KILL signal to the child process that already finished by itself. That was surprising to me. So we only inspect the status returned by `wait` if the self-pipe is readable, meaning, if the child finished by itself.
+
+That's better. Now, wouldn't it be nice if we could avoid signals *entirely*?
 
 ### Fourth approach: process descriptors
 
