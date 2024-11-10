@@ -548,6 +548,10 @@ So what's the best approach then in a complex program? Let's recap:
 - If you only care about bleeding edge Linux, are already using `io_uring` in your code, and are bold enough to add `wait` support to `io_uring`, you can use `io_uring` (once you have merged it in mainline Linux!).
 - If you only care about Linux and are afraid of using `io_uring`, you can use `signalfd` + `poll`.
 
-I often look at complex code and think: what are the chances that this is correct? What are the chances that I missed something? Is there a way to make it simplistic that it is obviously correct? And how can I limit the blast of a bug I wrote? Will I understand this code in 3 months? When dealing with signals, I was constantly finding weird corner cases and timing issues leading to data races.
+I often look at complex code and think: what are the chances that this is correct? What are the chances that I missed something? Is there a way to make it simplistic that it is obviously correct? And how can I limit the blast of a bug I wrote? Will I understand this code in 3 months? When dealing with signals, I was constantly finding weird corner cases and timing issues leading to data races. 
+
+And to be fair to the OS developers that have to implement them: I do not think they did a bad job! I am sure it's super hard to implement! It's just that the whole concept and the available APIs are very easy to misuse. It's a good illustration of how a good API, the right abstraction, can enable great programs, and a poor API, the wrong abstraction, can create bugs in many programs for decades. 
+
+And OS developers have noticed and are working on new, better abstractions!
 
 Process descriptors seem to me so straightforward, so obviously correct, that I would definitely favor them over signals. They simply remove entire classes of bugs. If these are not available to me, I would perhaps use `kqueue` instead (with `libkqueue` emulation when necessary), because it means my program can be extended easily to watch for over types of entities and I like that the API is very straightforward: one call to create the queue and one call to use it.
