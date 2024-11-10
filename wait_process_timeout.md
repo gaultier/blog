@@ -95,7 +95,7 @@ exit(1)
 That's how `timeout` from coreutils implements it. This is quite simple on paper:
 
 1. We opt-in to receive a `SIGCHLD` signal when the child processes finishes with: `signal(SIGCHLD, on_chld_signal)` where `on_chld_signal` is a function pointer we provide. Even if the signal handler does not do anything in this case.
-2. We schedule a `SIGALARM` signal with `alarm` or more preferrably `setitimer` which can take a duration in microseconds whereas `alarm` can only handle seconds. There's also `timer_create/timer_settime` which handles nanoseconds.
+2. We schedule a `SIGALARM` signal with `alarm` or more preferrably `setitimer` which can take a duration in microseconds whereas `alarm` can only handle seconds. There's also `timer_create/timer_settime` which handles nanoseconds. It depends what the OS supports.
 3. We wait for either signal with `sigsuspend` which suspends the program until a given set of signals arrive
 4. We should not forget to `wait` on the child process to avoid leaving zombie processes behind
 
