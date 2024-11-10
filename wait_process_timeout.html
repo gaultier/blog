@@ -156,7 +156,7 @@ $ ueb sh -c 'date --iso-8601=ns; export R=$(($RANDOM % 5)); echo $R; exit $R'
 
 # Some more practical examples.
 $ ueb ssh &lt;some_ip&gt;
-$ ueb createdb my_great_database
+$ ueb createdb my_great_database -h 0.0.0.0 -U postgres
 </code></pre>
 <p>If you want to monitor the retries and the sleeps, you can use <code>strace</code> or <code>dtrace</code>, but that is very variable on which system call is in use (which is implementation, OS, and architecture dependent). Example:</p>
 <pre><code class="language-sh">$ strace -e rt_sigtimedwait,clock_nanosleep ueb sleep 1
