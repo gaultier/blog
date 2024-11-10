@@ -30,7 +30,7 @@ This is best practice in distributed systems, and we often need to do the same o
 - `eb` does not have a timeout.
 
 
-So let's implement our own that does both! As we'll see, it's much less straightforward, and thus more interesting, than I thought. It's a whirlwind tour through Unix deeps. If you're interested in systems programming, Operating Systems, multiplexed I/O, weird historical APIs, and all the ways you can shoot yourself in the foot with just a few system calls, you're in the right place!
+So let's implement our own that does both! As we'll see, it's much less straightforward, and thus more interesting, than I thought. It's a whirlwind tour through Unix deeps. If you're interested in systems programming, Operating Systems, multiplexed I/O, data races, weird historical APIs, and all the ways you can shoot yourself in the foot with just a few system calls, you're in the right place!
 
 ## What are we building?
 
