@@ -7,6 +7,7 @@ I often need to launch a program in the terminal in a retry loop. Maybe because 
 - ssh to a starting machine
 - `psql` to a (re)starting database
 - Ensuring that a network service started fine with netcat
+- Filesystem commands over NFS
 
 It's a common problem, so much so that there are two utilities that I usually reach for: 
 
@@ -15,32 +16,70 @@ It's a common problem, so much so that there are two utilities that I usually re
 
 This will all sound familiar to people who develop distributed systems: they have long known that this is [best practice](https://aws.amazon.com/blogs/architecture/exponential-backoff-and-jitter/) to retry an operation:
 
-- With a timeout
+- With a timeout (either constant or adaptative)
 - A bounded number of times e.g. 10
 - With a waiting time between each retry, either a constant one or a increasing one e.g. with exponential backoff
-- With jitter (although this point also seemed the least important since most of us use non real-time operating systems which introduce some jitter anytime we sleep or wait on something with a timeout)
-
-This is best practice in distributed systems, and we often need to do the same on the command line. But the two aforementioned tools only do one or two of the above points. 
+- With jitter, although this point also seemed the least important since most of us use non real-time operating systems which introduce some jitter anytime we sleep or wait on something with a timeout. The AWS article makes a point that in highly contended systems, the jitter parameter is very important, but for the scope of this article I'll leave it out.
 
 
-So let's implement our own! As we'll see, it's much less straightforward, and thus more interesting, than I thought. It's a whirlwind tour through Unix deeps.
+This is best practice in distributed systems, and we often need to do the same on the command line. But the two aforementioned tools only parts of the above points:
+
+- `timeout` does not retry
+- `eb` does not have a timeout
+
+
+So let's implement our own that does both! As we'll see, it's much less straightforward, and thus more interesting, than I thought. It's a whirlwind tour through Unix deeps.
 
 ## What are we building?
 
-I call the tool we are building `ueb` for: micro exponential backoff. It does up to 10 retries, with a waiting period in between that starts at an arbitrary 128 ms and doubles every retry. The timeout for the subprocess is an arbitrary 2s. In a real tool, these numbers would probably be exposed as command line options but there's no time, what have to demo it:
+I call the tool we are building `ueb` for: micro exponential backoff. It does up to 10 retries, with a waiting period in between that starts at an arbitrary 128 ms and doubles every retry. The timeout for the subprocess is the same as the sleep time, so that it's adaptative and we give the subprocess a longer and longer time to finish successfully. These numbers would probably be exposed as command line options in a real polished program, but there's no time, what have to demo it:
 
 ```sh
 # This returns immediately since it succeeds on the first try.
 $ ueb true
 
-# This retries indefinitely since it always fails
-$ eb false
+# This retries 10 times since the command always fails, waiting more and more time between each try, and finally returns the last exit code of the command (1).
+$ ueb false
 
+# This retries a few times (~ 4 times), until the waiting time exceeds the duration of the sub-program. It exits with `0` since from the POV of our program, the sub-program finally finished in its alloted time.
+$ ueb sleep 1
+
+# Some more practical examples.
+$ ueb ssh <some_ip>
+$ ueb createdb my_great_database
 ```
+
+Note that the sub-command should be idempotent, otherwise we might create a given resource twice, or the command might have succeeded right after our timeout triggered but also right before we killed it, so our program thinks it timed out and thus need to be retried. There is this small data race window, which is completely fine if the command is idempotent but will erroneously retry the command to the bitter end otherwise. There is also the case where the sub-command does stuff over the network for example creating a resource, it succeeds, but the ACK is never received due to network issues. The sub-command will think it failed and retry. Again, fairly standard stuff in distributed systems but I thought it was worth mentioning.
 
 So how do we implement it?
 
 Immediately, we notice something: even though there are a bazillion ways to wait on a child process to finish (`wait`, `wait3`, `wait4`, `waitid`, `waitpid`), none of them take a timeout as an argument. This has sparked numerous questions online ([1](https://stackoverflow.com/questions/18542089/how-to-wait-on-child-process-to-finish-with-time-limit), [2](https://stackoverflow.com/questions/18476138/is-there-a-version-of-the-wait-system-call-that-sets-a-timeout)). So let's explore a few different ways to achieve this on Unix.
+
+We'd like the pseudo-code to be something like:
+
+```
+wait_ms := 128
+
+for retry in 0..<10:
+    child_pid := run_command_in_subprocess(cmd)
+
+    ret := wait_for_process_to_finish_with_timeout_ms(child_pid, wait_ms)
+    if (did_process_finish_successfully(ret)):
+        exit(0)
+        
+    // In case of a timeout, we need to kill the child process and retry.
+    kill(child_pid, SIGKILL)
+
+    // Reap zombie process to avoid a resource leak.
+    waitpid(child_pid)
+
+    sleep_ms(wait_ms);
+
+    wait_ms *= 2;
+
+// All retries exhausted, exit with an error code.
+exit(1)
+```
 
 # The old-school way: sigsuspend
 
@@ -89,7 +128,7 @@ int main(int argc, char *argv[]) {
   (void)argc;
   signal(SIGCHLD, on_sigchld);
 
-  uint32_t sleep_ms = 128;
+  uint32_t wait_ms = 128;
 
   for (int retry = 0; retry < 10; retry += 1) {
     int child_pid = fork();
@@ -112,8 +151,8 @@ int main(int argc, char *argv[]) {
     siginfo_t siginfo = {0};
 
     struct timespec timeout = {
-        .tv_sec = sleep_ms / 1000,
-        .tv_nsec = (sleep_ms % 1000) * 1000 * 1000,
+        .tv_sec = wait_ms / 1000,
+        .tv_nsec = (wait_ms % 1000) * 1000 * 1000,
     };
 
     int sig = sigtimedwait(&sigset, &siginfo, &timeout);
@@ -134,8 +173,8 @@ int main(int argc, char *argv[]) {
       return errno;
     }
 
-    sleep_ms *= 2;
-    usleep(sleep_ms * 1000);
+    usleep(wait_ms * 1000);
+    wait_ms *= 2;
   }
   return 1;
 }
