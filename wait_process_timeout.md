@@ -112,7 +112,7 @@ exit(1)
 
 *There is a degenerate case where the give command to run is wrong (e.g. typo in the parameters) or the executable does not exist, and our program will happily retry it to the bitter end. But there is solace: this is bounded by the number of retries (10). That's why we do not retry forever.*
 
-# First way: old-school sigsuspend
+## First way: old-school sigsuspend
 
 That's how `timeout` from coreutils [implements](https://git.savannah.gnu.org/gitweb/?p=coreutils.git;a=blob;f=src/timeout.c;h=5600ce42957dcf117785f6a361ef72ac9c2df352;hb=HEAD) it. This is quite simple on paper:
 
