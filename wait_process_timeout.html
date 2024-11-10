@@ -596,14 +596,14 @@ int main(int argc, char *argv[]) {
 <p>I find signals and spawning child process to be the hardest parts of Unix. Evidently this is not a rare opinion, looking at the development in these areas: process descriptors, the various expansions to the venerable <code>fork</code> with <code>vfork</code>, <code>clone</code>, <code>clone3</code>, <code>clone6</code>, a bazillion different ways to do I/O multiplexing, etc.</p>
 <p>So what's the best approach then in a complex program? Let's recap:</p>
 <ul>
-<li>If you need maximum portability and are not afraid of signals and their pitfalls, use <code>sigsuspend</code>.</li>
-<li>If you are not afraid of signals and want a simpler API, use <code>sigtimedwait</code>.</li>
-<li>If you favor correctness and work with recent Linux and FreeBSD versions, use process descriptors with shims to get the same API on all OSes. That's probably my favorite option.</li>
-<li>If you only care about MacOS and BSDs (or accept to use <code>libkqueue</code> on Linux), use <code>kqueue</code> because it works out of the box with PIDs, you avoid signals completely, and it's used in all the big libraries out of there e.g. <code>libuv</code>.</li>
-<li>If you only care about Linux and are already using <code>io_uring</code>, use <code>io_uring</code>.</li>
-<li>If you only care about Linux and are afraid of using <code>io_uring</code>, use <code>signalfd</code> + <code>poll</code>.</li>
+<li>If you need maximum portability and are a Unix wizard, you can use <code>sigsuspend</code>.</li>
+<li>If you are not afraid of signals, want a simpler API that still widely supported, and the use case is very specific (like ours), you can use <code>sigtimedwait</code>.</li>
+<li>If you favor correctness and work with recent Linux and FreeBSD versions, you can use process descriptors with shims to get the same API on both OSes. That's probably my favorite option if it's applicable.</li>
+<li>If you only care about MacOS and BSDs (or accept to use <code>libkqueue</code> on Linux), you can use <code>kqueue</code> because it works out of the box with PIDs, you avoid signals completely, and it's used in all the big libraries out of there e.g. <code>libuv</code>.</li>
+<li>If you only care about bleeding edge Linux, are already using <code>io_uring</code> in your code, and are bold enough to add <code>wait</code> support to <code>io_uring</code>, you can use <code>io_uring</code> (once you have merged it in mainline Linux!).</li>
+<li>If you only care about Linux and are afraid of using <code>io_uring</code>, you can use <code>signalfd</code> + <code>poll</code>.</li>
 </ul>
-<p>I often look at complex code and think: what are the chances that this is correct? What are the chances that I missed something? Is there a way to make it simplistic that it is obviously correct? And how can I limit the blast of a bug I wrote?</p>
+<p>I often look at complex code and think: what are the chances that this is correct? What are the chances that I missed something? Is there a way to make it simplistic that it is obviously correct? And how can I limit the blast of a bug I wrote? Will I understand this code in 3 months?</p>
 <p>Process descriptors seem to me so straightforward, so obviously correct, that I would definitely favour them over signals. They simply remove entire classes of bugs. If these are not available to me, I would perhaps use <code>kqueue</code> instead (with <code>libkqueue</code> emulation when necessary), because it means my program can be extended easily to watch for over types of entities and I like that the API is very straighforward: just two calls.</p>
 <p><a href="/blog"> ⏴ Back to all articles</a></p>
 

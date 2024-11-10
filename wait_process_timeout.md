@@ -541,13 +541,13 @@ I find signals and spawning child process to be the hardest parts of Unix. Evide
 
 So what's the best approach then in a complex program? Let's recap:
 
-- If you need maximum portability and are not afraid of signals and their pitfalls, use `sigsuspend`.
-- If you are not afraid of signals and want a simpler API, use `sigtimedwait`.
-- If you favor correctness and work with recent Linux and FreeBSD versions, use process descriptors with shims to get the same API on all OSes. That's probably my favorite option.
-- If you only care about MacOS and BSDs (or accept to use `libkqueue` on Linux), use `kqueue` because it works out of the box with PIDs, you avoid signals completely, and it's used in all the big libraries out of there e.g. `libuv`.
-- If you only care about Linux and are already using `io_uring`, use `io_uring`.
-- If you only care about Linux and are afraid of using `io_uring`, use `signalfd` + `poll`.
+- If you need maximum portability and are a Unix wizard, you can use `sigsuspend`.
+- If you are not afraid of signals, want a simpler API that still widely supported, and the use case is very specific (like ours), you can use `sigtimedwait`.
+- If you favor correctness and work with recent Linux and FreeBSD versions, you can use process descriptors with shims to get the same API on both OSes. That's probably my favorite option if it's applicable.
+- If you only care about MacOS and BSDs (or accept to use `libkqueue` on Linux), you can use `kqueue` because it works out of the box with PIDs, you avoid signals completely, and it's used in all the big libraries out of there e.g. `libuv`.
+- If you only care about bleeding edge Linux, are already using `io_uring` in your code, and are bold enough to add `wait` support to `io_uring`, you can use `io_uring` (once you have merged it in mainline Linux!).
+- If you only care about Linux and are afraid of using `io_uring`, you can use `signalfd` + `poll`.
 
-I often look at complex code and think: what are the chances that this is correct? What are the chances that I missed something? Is there a way to make it simplistic that it is obviously correct? And how can I limit the blast of a bug I wrote? 
+I often look at complex code and think: what are the chances that this is correct? What are the chances that I missed something? Is there a way to make it simplistic that it is obviously correct? And how can I limit the blast of a bug I wrote? Will I understand this code in 3 months?
 
 Process descriptors seem to me so straightforward, so obviously correct, that I would definitely favour them over signals. They simply remove entire classes of bugs. If these are not available to me, I would perhaps use `kqueue` instead (with `libkqueue` emulation when necessary), because it means my program can be extended easily to watch for over types of entities and I like that the API is very straighforward: just two calls.
