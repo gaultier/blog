@@ -387,7 +387,80 @@ A small note: To `poll` a process descriptor, Linux wants us to use `POLLIN` whe
 It feels like cheating, but MacOS and the BSDs have had `kqueue` for decades which works out of the box with PIDs. It works as you'd expect:
 
 ```c
+#include <errno.h>
+#include <signal.h>
+#include <stdint.h>
+#include <sys/event.h>
+#include <sys/wait.h>
+#include <unistd.h>
+
+int main(int argc, char *argv[]) {
+  (void)argc;
+
+  uint32_t wait_ms = 128;
+  int queue = kqueuex(KQUEUE_CLOEXEC);
+
+  for (int retry = 0; retry < 10; retry += 1) {
+    int child_pid = fork();
+    if (-1 == child_pid) {
+      return errno;
+    }
+
+    if (0 == child_pid) { // Child
+      argv += 1;
+      if (-1 == execvp(argv[0], argv)) {
+        return errno;
+      }
+      __builtin_unreachable();
+    }
+
+    struct kevent change_list = {
+        .ident = child_pid,
+        .filter = EVFILT_PROC,
+        .fflags = NOTE_EXIT,
+        .flags = EV_ADD | EV_CLEAR,
+    };
+
+    struct kevent event_list = {0};
+
+    struct timespec timeout = {
+        .tv_sec = wait_ms / 1000,
+        .tv_nsec = (wait_ms % 1000) * 1000 * 1000,
+    };
+
+    int ret = kevent(queue, &change_list, 1, &event_list, 1, &timeout);
+    if (-1 == ret) { // Error
+      return errno;
+    }
+    if (1 == ret) { // Child finished.
+      int status = 0;
+      if (-1 == wait(&status)) {
+        return errno;
+      }
+      if (WIFEXITED(status) && 0 == WEXITSTATUS(status)) {
+        return 0;
+      }
+    }
+
+    kill(child_pid, SIGKILL);
+    wait(NULL);
+
+    change_list = (struct kevent){
+        .ident = child_pid,
+        .filter = EVFILT_PROC,
+        .fflags = NOTE_EXIT,
+        .flags = EV_DELETE,
+    };
+    kevent(queue, &change_list, 1, NULL, 0, NULL);
+
+    usleep(wait_ms * 1000);
+    wait_ms *= 2;
+  }
+  return 1;
+}
 ```
+
+The only surprising thing, perhaps, is that `kqueue` is stateful, so once the child process exited by itself or was killed, we have to remove the watcher on its PID, since the next time we spawn a child process, the PID will very likely be different. `kqueue` offers the flag `EV_ONESHOT`, which automatically deletes the event from the queue once it has been consumed. However, it would not help in all cases: if the timeout triggers, we have to kill the child process, which creates an event in the queue! So we have to always delete the event from the queue right before we retry.
 
 ## Sixth approach: Linux's io_uring
 
