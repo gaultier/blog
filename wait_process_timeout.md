@@ -311,7 +311,7 @@ There are a few catches with this implementation:
 
 So, this trick is clever, but wouldn't it be nice if we could avoid signals *entirely*?
 
-### Fourth approach: Linux's signalfd
+## Fourth approach: Linux's signalfd
 
 This is a short one: on Linux, there is a system call that does exactly the same as the self-pipe trick: from a signal, it gives us a file descriptor that we can `poll`. So, we can entirely remove our pipe and signal handler and instead `poll` the file descriptor that `signalfd` gives us.
 
@@ -321,7 +321,7 @@ I would prefer extending `poll` to support things other than file descriptors, i
 
 Ok, next!
 
-### Fifth approach: process descriptors
+## Fifth approach: process descriptors
 
 *Recommended reading about this topic: [1](https://lwn.net/Articles/801319/) and [2](https://lwn.net/Articles/794707/).*
 

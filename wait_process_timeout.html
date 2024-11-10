@@ -103,7 +103,7 @@
 
 <li>
 	<a href="#third-approach-self-pipe-trick">Third approach: Self pipe trick</a>
-		<ul>
+		</li>
 
 <li>
 	<a href="#fourth-approach-linux-s-signalfd">Fourth approach: Linux's signalfd</a>
@@ -112,8 +112,6 @@
 <li>
 	<a href="#fifth-approach-process-descriptors">Fifth approach: process descriptors</a>
 		</li>
-</ul>
-</li>
 
 <li>
 	<a href="#sixth-approach-macos-s-and-bsd-s-kqueue">Sixth approach: MacOS's and BSD's kqueue</a>
@@ -424,18 +422,18 @@ with the desired sigmask, avoiding the race.)</p>
 </li>
 </ul>
 <p>So, this trick is clever, but wouldn't it be nice if we could avoid signals <em>entirely</em>?</p>
-<h3 id="fourth-approach-linux-s-signalfd">
+<h2 id="fourth-approach-linux-s-signalfd">
 	<a class="title" href="#fourth-approach-linux-s-signalfd">Fourth approach: Linux's signalfd</a>
 	<a class="hash-anchor" href="#fourth-approach-linux-s-signalfd" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
-</h3>
+</h2>
 <p>This is a short one: on Linux, there is a system call that does exactly the same as the self-pipe trick: from a signal, it gives us a file descriptor that we can <code>poll</code>. So, we can entirely remove our pipe and signal handler and instead <code>poll</code> the file descriptor that <code>signalfd</code> gives us.</p>
 <p>Cool, but also....Was it really necessary to introduce a system call for that? I guess the advantage is we do not care about signals at all, and it is clearer than the self-pipe trick.</p>
 <p>I would prefer extending <code>poll</code> to support things other than file descriptors, instead of converting everything a file descriptor to be able to use <code>poll</code>.</p>
 <p>Ok, next!</p>
-<h3 id="fifth-approach-process-descriptors">
+<h2 id="fifth-approach-process-descriptors">
 	<a class="title" href="#fifth-approach-process-descriptors">Fifth approach: process descriptors</a>
 	<a class="hash-anchor" href="#fifth-approach-process-descriptors" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
-</h3>
+</h2>
 <p><em>Recommended reading about this topic: <a href="https://lwn.net/Articles/801319/">1</a> and <a href="https://lwn.net/Articles/794707/">2</a>.</em></p>
 <p>In the recent years (starting with Linux 5.3 and FreeBSD 13.2), people realized that process identifiers (<code>pid</code>s) have a number of problems:</p>
 <ul>
