@@ -272,14 +272,7 @@ int main(int argc, char *argv[]) {
         .fd = pipe_fd[0],
         .events = POLLIN,
     };
-    sigset_t sigset = {0};
-    sigemptyset(&sigset);
-    sigaddset(&sigset, SIGCHLD);
 
-    struct timespec timeout = {
-        .tv_sec = wait_ms / 1000,
-        .tv_nsec = (wait_ms % 1000) * 1000 * 1000,
-    };
     // Wait for the child to finish with a timeout.
     poll(&poll_fd, 1, (int)wait_ms);
 
