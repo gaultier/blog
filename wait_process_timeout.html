@@ -649,6 +649,7 @@ int main(int argc, char *argv[]) {
 <p>And to be fair to the OS developers that have to implement them: I do not think they did a bad job! I am sure it's super hard to implement! It's just that the whole concept and the available APIs are very easy to misuse. It's a good illustration of how a good API, the right abstraction, can enable great programs, and a poor API, the wrong abstraction, can be the root cause of various bugs in many programs for decades.</p>
 <p>And OS developers have noticed and are working on new, better abstractions!</p>
 <p>Process descriptors seem to me so straightforward, so obviously correct, that I would definitely favor them over signals. They simply remove entire classes of bugs. If these are not available to me, I would perhaps use <code>kqueue</code> instead (with <code>libkqueue</code> emulation when necessary), because it means my program can be extended easily to watch for over types of entities and I like that the API is very straightforward: one call to create the queue and one call to use it.</p>
+<p>Finally, I regret that there is so much fragmentation across all operating systems. Perhaps <code>io_uring</code> will become more than a Linuxism and spread to Windows, MacOS, the BSDs, and Illumos in the future?</p>
 <p><a href="/blog"> ⏴ Back to all articles</a></p>
 
 <blockquote id="donate">

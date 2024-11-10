@@ -555,3 +555,6 @@ And to be fair to the OS developers that have to implement them: I do not think 
 And OS developers have noticed and are working on new, better abstractions!
 
 Process descriptors seem to me so straightforward, so obviously correct, that I would definitely favor them over signals. They simply remove entire classes of bugs. If these are not available to me, I would perhaps use `kqueue` instead (with `libkqueue` emulation when necessary), because it means my program can be extended easily to watch for over types of entities and I like that the API is very straightforward: one call to create the queue and one call to use it.
+
+
+Finally, I regret that there is so much fragmentation across all operating systems. Perhaps `io_uring` will become more than a Linuxism and spread to Windows, MacOS, the BSDs, and Illumos in the future?
