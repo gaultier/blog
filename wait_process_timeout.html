@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>What is the best way to wait on a process with timeout?</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link type="application/atom+xml" href="/blog/feed.xml" rel="self"/>
+<link rel="shortcut icon" type="image/ico" href="/blog/favicon.ico">
+<link rel="stylesheet" type="text/css" href="main.css">
+<link rel="stylesheet" href="https://unpkg.com/@highlightjs/cdn-assets@11.8.0/styles/default.min.css">
+<script src="highlight.min.js"></script>
+<!-- From https://github.com/odin-lang/odin-lang.org/blob/6f48c2cfb094a42dffd34143884fa958bd9c0ba2/themes/odin/layouts/partials/head.html#L71 -->
+<script src="x86asm.min.js"></script>
+<script>
+  window.onload = function() {
+      hljs.registerLanguage("odin", function(e) {
+      return {
+          aliases: ["odin", "odinlang", "odin-lang"],
+          keywords: {
+              keyword: "auto_cast bit_field bit_set break case cast context continue defer distinct do dynamic else enum fallthrough for foreign if import in map matrix not_in or_else or_return package proc return struct switch transmute type_of typeid union using when where",
+              literal: "true false nil",
+              built_in: "abs align_of cap clamp complex conj expand_to_tuple imag jmag kmag len max min offset_of quaternion real size_of soa_unzip soa_zip swizzle type_info_of type_of typeid_of"
+          },
+          illegal: "</",
+          contains: [e.C_LINE_COMMENT_MODE, e.C_BLOCK_COMMENT_MODE, {
+              className: "string",
+              variants: [e.QUOTE_STRING_MODE, {
+                  begin: "'",
+                  end: "[^\\\\]'"
+              }, {
+                  begin: "`",
+                  end: "`"
+              }]
+          }, {
+              className: "number",
+              variants: [{
+                  begin: e.C_NUMBER_RE + "[ijk]",
+                  relevance: 1
+              }, e.C_NUMBER_MODE]
+          }]
+      }
+    });
+
+    hljs.highlightAll();
+
+    document.querySelectorAll('code').forEach((el, _i) => {
+        if (0 == el.classList.length || el.classList.contains('language-sh') || el.classList.contains('language-shell') || el.classList.contains('language-bash')){
+          el.classList.add('code-no-line-numbers');
+          return; 
+        }
+
+        var lines = el.innerHTML.trimEnd().split('\n');
+        var out = [];
+        lines.forEach(function(l, i){
+          out.push('<span class="line-number">' + (i+1).toString() + '</span> ' + l);
+        });
+        el.innerHTML = out.join('\n');
+    });
+  }
+</script>
+</head>
+<body>
+
+<div id="banner">
+    <div id="name">
+        <img id="me" src="me.jpeg">
+        <span>Philippe Gaultier</span>
+    </div>
+    <ul>
+      <li> <a href="/blog/body_of_work.html">Body of work</a> </li>
+      <li> <a href="/blog/articles-by-tag.html">Tags</a> </li>
+      <li> <a href="https://github.com/gaultier/resume/raw/master/Philippe_Gaultier_resume_en.pdf">Resume</a> </li>
+      <li> <a href="https://www.linkedin.com/in/philippegaultier/">LinkedIn</a> </li>
+      <li> <a href="https://github.com/gaultier">Github</a> </li>
+      <li> <a href="/blog/feed.xml">Atom feed</a> </li>
+    </ul>
+</div>
+<div class="body">
+
+		<div class="article-prelude">
+			<p><a href="/blog"> ⏴ Back to all articles</a></p>
+
+			<p class="publication-date">Published on 2024-11-09</p>
+		</div>
+		<div class="article-title">
+		<h1>What is the best way to wait on a process with timeout?</h1>
+		  <div class="tags"> <a href="/blog/articles-by-tag.html#unix" class="tag">Unix</a> <a href="/blog/articles-by-tag.html#signals" class="tag">Signals</a> <a href="/blog/articles-by-tag.html#c" class="tag">C</a> <a href="/blog/articles-by-tag.html#linux" class="tag">Linux</a> <a href="/blog/articles-by-tag.html#freebsd" class="tag">FreeBSD</a></div>
+ </div>
+ <strong>Table of contents</strong>
+<ul>
+
+<li>
+	<a href="#what-are-we-building">What are we building?</a>
+		</li>
+</ul>
+
+<p>I often need to launch a program in the terminal in a retry loop. Maybe because it's flaky, or because it tries to contact a remote service that is not available. A few scenarios:</p>
+<ul>
+<li>ssh to a starting machine</li>
+<li><code>psql</code> to a (re)starting database</li>
+<li>Ensuring that a network service started fine with netcat</li>
+<li>Filesystem commands over NFS</li>
+</ul>
+<p>It's a common problem, so much so that there are two utilities that I usually reach for:</p>
+<ul>
+<li><a href="https://www.gnu.org/software/coreutils/manual/html_node/timeout-invocation.html">timeout</a> from GNU coreutils, which launches a command with a timeout (useful if the command itself does not have a <code>--timeout</code> option)</li>
+<li><a href="https://github.com/rye/eb">eb</a> which runs a command with a certain number of times with an exponential backoff. That's useful to avoid hammering a server with connection attempts for example.</li>
+</ul>
+<p>This will all sound familiar to people who develop distributed systems: they have long known that this is <a href="https://aws.amazon.com/blogs/architecture/exponential-backoff-and-jitter/">best practice</a> to retry an operation:</p>
+<ul>
+<li>With a timeout (either constant or adaptative)</li>
+<li>A bounded number of times e.g. 10</li>
+<li>With a waiting time between each retry, either a constant one or a increasing one e.g. with exponential backoff</li>
+<li>With jitter, although this point also seemed the least important since most of us use non real-time operating systems which introduce some jitter anytime we sleep or wait on something with a timeout. The AWS article makes a point that in highly contended systems, the jitter parameter is very important, but for the scope of this article I'll leave it out.</li>
+</ul>
+<p>This is best practice in distributed systems, and we often need to do the same on the command line. But the two aforementioned tools only parts of the above points:</p>
+<ul>
+<li><code>timeout</code> does not retry</li>
+<li><code>eb</code> does not have a timeout</li>
+</ul>
+<p>So let's implement our own that does both! As we'll see, it's much less straightforward, and thus more interesting, than I thought. It's a whirlwind tour through Unix deeps.</p>
+<h2 id="what-are-we-building">
+	<a class="title" href="#what-are-we-building">What are we building?</a>
+	<a class="hash-anchor" href="#what-are-we-building" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+</h2>
+<p>I call the tool we are building <code>ueb</code> for: micro exponential backoff. It does up to 10 retries, with a waiting period in between that starts at an arbitrary 128 ms and doubles every retry. The timeout for the subprocess is the same as the sleep time, so that it's adaptative and we give the subprocess a longer and longer time to finish successfully. These numbers would probably be exposed as command line options in a real polished program, but there's no time, what have to demo it:</p>
+<pre><code class="language-sh"># This returns immediately since it succeeds on the first try.
+$ ueb true
+
+# This retries 10 times since the command always fails, waiting more and more time between each try, and finally returns the last exit code of the command (1).
+$ ueb false
+
+# This retries a few times (~ 4 times), until the waiting time exceeds the duration of the sub-program. It exits with `0` since from the POV of our program, the sub-program finally finished in its alloted time.
+$ ueb sleep 1
+
+# Some more practical examples.
+$ ueb ssh &lt;some_ip&gt;
+$ ueb createdb my_great_database
+</code></pre>
+<p>If you want to monitor the retries and the sleeps, you can use <code>strace</code> or <code>dtrace</code>, but that is very variable on which system call is in use (which is implementation, OS, and architecture dependent). Example:</p>
+<pre><code class="language-sh">$ strace -e rt_sigtimedwait,clock_nanosleep ueb sleep 1
+</code></pre>
+<p>Note that the sub-command should be idempotent, otherwise we might create a given resource twice, or the command might have succeeded right after our timeout triggered but also right before we killed it, so our program thinks it timed out and thus need to be retried. There is this small data race window, which is completely fine if the command is idempotent but will erroneously retry the command to the bitter end otherwise. There is also the case where the sub-command does stuff over the network for example creating a resource, it succeeds, but the ACK is never received due to network issues. The sub-command will think it failed and retry. Again, fairly standard stuff in distributed systems but I thought it was worth mentioning.</p>
+<p>So how do we implement it?</p>
+<p>Immediately, we notice something: even though there are a bazillion ways to wait on a child process to finish (<code>wait</code>, <code>wait3</code>, <code>wait4</code>, <code>waitid</code>, <code>waitpid</code>), none of them take a timeout as an argument. This has sparked numerous questions online (<a href="https://stackoverflow.com/questions/18542089/how-to-wait-on-child-process-to-finish-with-time-limit">1</a>, <a href="https://stackoverflow.com/questions/18476138/is-there-a-version-of-the-wait-system-call-that-sets-a-timeout">2</a>). So let's explore a few different ways to achieve this on Unix.</p>
+<p>We'd like the pseudo-code to be something like:</p>
+<pre><code>wait_ms := 128
+
+for retry in 0..&lt;10:
+    child_pid := run_command_in_subprocess(cmd)
+
+    ret := wait_for_process_to_finish_with_timeout_ms(child_pid, wait_ms)
+    if (did_process_finish_successfully(ret)):
+        exit(0)
+        
+    // In case of a timeout, we need to kill the child process and retry.
+    kill(child_pid, SIGKILL)
+
+    // Reap zombie process to avoid a resource leak.
+    waitpid(child_pid)
+
+    sleep_ms(wait_ms);
+
+    wait_ms *= 2;
+
+// All retries exhausted, exit with an error code.
+exit(1)
+</code></pre>
+<p><em>There is a degenerate case where the give command to run is wrong (e.g. typo in the parameters) or the executable does not exist, and our program will happily retry it to the bitter end. But there is solace: this is bounded by the number of retries (10). That's why we do not retry forever.</em></p>
+<h1 id="the-old-school-way-sigsuspend">
+	<a class="title" href="#the-old-school-way-sigsuspend">The old-school way: sigsuspend</a>
+	<a class="hash-anchor" href="#the-old-school-way-sigsuspend" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+</h1>
+<p>That's how <code>timeout</code> from coreutils implements it. This is quite simple on paper:</p>
+<ol>
+<li>We opt-in to receive a <code>SIGCHLD</code> signal when the child processes finishes with: <code>signal(SIGCHLD, on_chld_signal)</code> where <code>on_chld_signal</code> is a function pointer we provide. Even if does not do anything in this case.</li>
+<li>We schedule a <code>SIGALARM</code> signal with <code>alarm</code> or more preferrably <code>setitimer</code> which can take a duration in microseconds whereas <code>alarm</code> can only handle seconds. There's also <code>timer_create/timer_settime</code> which handles nanoseconds.</li>
+<li>We wait for either signal with <code>sigsuspend</code> which suspends the program until a given set of signals arrive</li>
+<li>We should not forget to <code>wait</code> on the child process to avoid leaving zombie processes behind</li>
+</ol>
+<p>The reality is grimmer, looking through the <code>timeout</code> implementation:</p>
+<ul>
+<li>We could have inherited any signal mask from our parent so we need to explictly unblock the signals we are interested in</li>
+<li>Signals can be sent to a process group we need to handle that case</li>
+<li>We have to avoid entering a 'signal loop'</li>
+<li>Our process can be implicitly multithreaded due to some <code>timer_settime</code> implementations, therefore a <code>SIGALRM</code> signal sent to a process group, can be result in the signal being sent multiple times to a process (I am directly quoting the code comments from the <code>timeout</code> program here)</li>
+<li>When using <code>timer_create</code>, we need to take care of cleaning it up with <code>timer_delete</code>, lest we have a resource leak when retrying</li>
+<li>The signal handler may be called concurrently and we have to be aware of that</li>
+<li>Depending on the timer implementation we chose, we are susceptible to clock adjustments for example going back. E.g. <code>setitimer</code> only offers the <code>CLOCK_REALTIME</code> clock option for counting time, which is just the wall clock. We'd like something like <code>CLOCK_MONOTONIC</code> or <code>CLOCK_MONOTONIC_RAW</code> (the latter being Linux specific).</li>
+</ul>
+<p>So... I don't <em>love</em> this approach:</p>
+<ul>
+<li>I find signals hard. It's basically a global <code>goto</code> to a completely different location</li>
+<li>A sigal handler is forced to use global mutable state, which is better avoided if possible, and it does not play nice with threads</li>
+<li>Lots of functions are not 'signal-safe', and that has led to security vulnerabilities in the past e.g. in <a href="TODO">ssh</a>. In short, non-atomic operations are not signal safe because they might be suspended in the middle, thus leaving an inconsistent state behind. Thus, we have to read documentation very carefully to ensure that we only call signal safe functions in our signal handler, and cherry on the cake, that varies from platform to platform.</li>
+<li>Signals do not compose well with other Unix entities such as file descriptors and sockets. For example, we cannot <code>poll</code> them. This led to Linux introducting <code>signalfd</code> to get a file descriptor out of a set of signals so that we can now use all the usual functions. However that is Linux specific, for example FreeBSD does not implement it.</li>
+<li>Different signals have different default behaviors, and this gets inherited in child processes, so you cannot assume anything in your program and have to be very defensive. Who knows what the parent process, e.g. the shell, set as the signal mask? If you read through the whole implementation of the <code>timeout</code> program, a lot of the code is dedicated to setting signal masks in the parent, forking, immediately changing the signal mask in the child and the parent, etc. Now, I believe modern Unices offer more control than <code>fork()</code> about what signal mask the child should be created with, so maybe it got better. Still, it's a lot of stuff to know.</li>
+<li>They are many libc functions and system calls relating to signals and that's a lot to learn. A non-exhaustive list e.g. on Linux: <code>kill(1), alarm(2), kill(2), pause(2), sigaction(2), signalfd(2),  sigpending(2),  sigprocmask(2),   sigsuspend(2),  bsd_signal(3),  killpg(3),  raise(3),  siginterrupt(3), sigqueue(3), sigsetops(3), sigvec(3), sysv_signal(3), signal(7)</code>. Oh wait, I forgot <code>sigemptyset(3)</code> and  <code>sigaddset(3)</code>. And I'm sure I forgot about a few!</li>
+</ul>
+<p>So, let's stick with signals for a bit but simplify our current approach.</p>
+<h2 id="second-way-sigtimedwait">
+	<a class="title" href="#second-way-sigtimedwait">Second way: sigtimedwait</a>
+	<a class="hash-anchor" href="#second-way-sigtimedwait" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+</h2>
+<p>Wouldn't it be great if we could wait on a signal, say, <code>SIGCHLD</code>, with a timeout? Oh look, a system call that does exactly that <em>and</em> is standardized by POSIX. Cool! I am not quite sure why the <code>timeout</code> program does not use it, but we sure as hell can. My only guess would be that it wants to support old Unices that did not have this system call.</p>
+<p>Anyways, here's a very straightforward implementation:</p>
+<pre><code class="language-c">#define _GNU_SOURCE
+#include &lt;errno.h&gt;
+#include &lt;signal.h&gt;
+#include &lt;stdint.h&gt;
+#include &lt;sys/wait.h&gt;
+#include &lt;unistd.h&gt;
+
+void on_sigchld(int sig) { (void)sig; }
+
+int main(int argc, char *argv[]) {
+  (void)argc;
+  signal(SIGCHLD, on_sigchld);
+
+  uint32_t wait_ms = 128;
+
+  for (int retry = 0; retry &lt; 10; retry += 1) {
+    int child_pid = fork();
+    if (-1 == child_pid) {
+      return errno;
+    }
+
+    if (0 == child_pid) { // Child
+      argv += 1;
+      if (-1 == execvp(argv[0], argv)) {
+        return errno;
+      }
+      __builtin_unreachable();
+    }
+
+    sigset_t sigset = {0};
+    sigemptyset(&amp;sigset);
+    sigaddset(&amp;sigset, SIGCHLD);
+
+    siginfo_t siginfo = {0};
+
+    struct timespec timeout = {
+        .tv_sec = wait_ms / 1000,
+        .tv_nsec = (wait_ms % 1000) * 1000 * 1000,
+    };
+
+    int sig = sigtimedwait(&amp;sigset, &amp;siginfo, &amp;timeout);
+    if (-1 == sig &amp;&amp; EAGAIN != errno) { // Error
+      return errno;
+    }
+    if (-1 != sig) { // Child finished.
+      if (WIFEXITED(siginfo.si_status) &amp;&amp; 0 == WEXITSTATUS(siginfo.si_status)) {
+        return 0;
+      }
+    }
+
+    if (-1 == kill(child_pid, SIGKILL)) {
+      return errno;
+    }
+
+    if (-1 == wait(NULL)) {
+      return errno;
+    }
+
+    usleep(wait_ms * 1000);
+    wait_ms *= 2;
+  }
+  return 1;
+}
+</code></pre>
+<p>I like this implementation. It's pretty easy to convince ourselves looking at the code that it is obviously correct, and that's a very important factor for me.</p>
+<p>We still have to deal with signals though. Could we reduce their imprint on our code?</p>
+<h2 id="third-approach-self-pipe-trick">
+	<a class="title" href="#third-approach-self-pipe-trick">Third approach: Self pipe trick</a>
+	<a class="hash-anchor" href="#third-approach-self-pipe-trick" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+</h2>
+<p>This is a really nifty, quite well known trick at this point, where we bridge the world of signals with the world of file descriptors with the <code>pipe(2)</code> system call.</p>
+<p>Usually, pipes are a form of inter-process communication, and here we do not want to communicate with the child process (since it could be any program, and most programs do not get chatty with their parent process). What we do is: in the signal handler for <code>SIGCHLD</code>, we simply write (anything) to our own pipe. We know this is signal-safe so it's good.</p>
+<p>And you know what's cool with pipes? They are simply a file descriptor which we can <code>poll</code>. With a timeout. Nice! Here goes:</p>
+<pre><code class="language-c">#define _GNU_SOURCE
+#include &lt;errno.h&gt;
+#include &lt;poll.h&gt;
+#include &lt;signal.h&gt;
+#include &lt;stdint.h&gt;
+#include &lt;sys/wait.h&gt;
+#include &lt;unistd.h&gt;
+
+static int pipe_fd[2] = {0};
+void on_sigchld(int sig) {
+  (void)sig;
+  char dummy = 0;
+  write(pipe_fd[1], &amp;dummy, 1);
+}
+
+int main(int argc, char *argv[]) {
+  (void)argc;
+
+  if (-1 == pipe(pipe_fd)) {
+    return errno;
+  }
+
+  signal(SIGCHLD, on_sigchld);
+
+  uint32_t wait_ms = 128;
+
+  for (int retry = 0; retry &lt; 10; retry += 1) {
+    int child_pid = fork();
+    if (-1 == child_pid) {
+      return errno;
+    }
+
+    if (0 == child_pid) { // Child
+      argv += 1;
+      if (-1 == execvp(argv[0], argv)) {
+        return errno;
+      }
+      __builtin_unreachable();
+    }
+
+    struct pollfd poll_fd = {
+        .fd = pipe_fd[0],
+        .events = POLLIN,
+    };
+    // Wait for the child to finish with a timeout.
+    int ret = poll(&amp;poll_fd, 1, (int)wait_ms);
+    if (-1 == ret &amp;&amp; EINTR != errno) {
+      return errno;
+    }
+    if (1 == ret) {
+      char dummy = 0;
+      read(pipe_fd[0], &amp;dummy, 1);
+      int status = 0;
+      if (-1 == wait(&amp;status)) {
+        return errno;
+      }
+      if (WIFEXITED(status) &amp;&amp; 0 == WEXITSTATUS(status)) {
+        return 0;
+      }
+    }
+
+    if (-1 == kill(child_pid, SIGKILL)) {
+      return errno;
+    }
+
+    if (-1 == wait(NULL)) {
+      return errno;
+    }
+
+    usleep(wait_ms * 1000);
+    wait_ms *= 2;
+  }
+  return 1;
+}
+</code></pre>
+<p>So we still have one signal handler but the rest of our program does not deal with programs in any way (well, except to kill the child when the timeout triggers, but that's invisible).</p>
+<p>There's one catch: contrary to <code>sigtimedwait</code>, <code>poll</code> does not give us the exit status of the child, we have to get it with <code>wait</code>. Which is fine, but we cannot call <code>kill</code> unconditionally and then <code>wait</code>, because the exit status would then show that the child process was killed, even though we sent a KILL signal to the child process that already finished by itself. That was surprising to me. So we only inspect the status returned by <code>wait</code> if the self-pipe is readable, meaning, if the child finished by itself.</p>
+<p>So, this trick is clever, but wouldn't it be nice if we could avoid signals <em>entirely</em>?</p>
+<h3 id="fourth-approach-linux-s-signalfd">
+	<a class="title" href="#fourth-approach-linux-s-signalfd">Fourth approach: Linux's signalfd</a>
+	<a class="hash-anchor" href="#fourth-approach-linux-s-signalfd" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+</h3>
+<p>This is a short one: on Linux, there is a system call that does exactly the same as the self-pipe trick: from a signal, it gives us a file descriptor that we can <code>poll</code>. Cool, but also....Was it really necessary to introduce a system call for that? I guess the advantage is that we do not have to provide a signal handler at all and it is clearer than the self-pipe trick.
+Next!</p>
+<h3 id="fifth-approach-process-descriptors">
+	<a class="title" href="#fifth-approach-process-descriptors">Fifth approach: process descriptors</a>
+	<a class="hash-anchor" href="#fifth-approach-process-descriptors" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+</h3>
+<p><em>Recommended reading about this topic: <a href="https://lwn.net/Articles/801319/">1</a> and <a href="https://lwn.net/Articles/794707/">2</a>.</em></p>
+<p>In the recent years, people realized that process identifiers (<code>pid</code>s) have a number of problems:</p>
+<ul>
+<li>PIDs are recycled and the space is small, so collisions will happen. Typically, a process spawns a child process, some work happens, and then the parent decides to send a signal to the pid of the child. But it turns out that the child already terminated (unbeknownst to the parent) and another process took its place with the same PID. So now the parent is sending signals, or communicating with, a process that it thinks is its original child but is in fact something completely different. Chaos and security issues ensue. Now, in our very simple case, that would not really happen, and additionally, a process can only kill its children. But imagine that you are implementing the init process with PID 1, e.g. systemd: every single process is your child! Or think of the case of reparenting a process. Or sending a certain PID to another process. It becomes hairy and it's a very real problem.</li>
+<li>Data races are hard to escape (see the previous point)</li>
+<li>It's easy to accidentally send a signal to all processes with <code>kill(0, SIGKILL)</code> or <code>kill(-1, SIGKILL)</code></li>
+</ul>
+<p>And the kernel developers have worked hard to introduce a better concept: process descriptors, which are (almost) bog-standard file descriptors, like files or sockets. After all, that's what sparked our whole investigation: we wanted to use <code>poll</code> and it did not work on a pid. Pids and signals do not compose well, but file descriptors do. Also, just like file descriptors, process descriptors are per-process. If I open a file with <code>open()</code> and get the file descriptor <code>3</code>, it is scoped to my process. Another process can <code>close(3)</code> and it will refer to their own file descriptotr, and not affect my file descriptor. That's great, we get isolation, so bugs in our code do not affect other processes.</p>
+<p>So, Linux and FreeBSD have introduced the same concepts but with slightly different APIs (unfortunately):</p>
+<ul>
+<li>A child process can be created with <code>clone3(..., CLONE_PIDFD)</code> or <code>pdfork()</code> which returns a process descriptor which is almost like a normal file descriptor. On Linux, a process descriptor can also be obtained from a pid with <code>pidfd_open(pid)</code> e.g. if a normal <code>fork</code> was done.</li>
+<li>We wait on the process descriptor with <code>poll(..., timeout)</code> (or <code>select</code>, or <code>epoll</code>, etc)</li>
+<li>We kill the child process using the process descriptor with <code>pidfd_send_signal</code> (Linux) or <code>close</code> (FreeBSD) or <code>pdkill</code> (FreeBSD)</li>
+<li>We wait on the zombie child process again using the process descriptor to get its exit status</li>
+</ul>
+<p>And voila, no signals! Isolation! Composability! (Almost) No PIDs in our program! Life can be nice like this sometimes. It's just unfortunate that there isn't a cross-platform API for that.</p>
+<p>Here's the Linux implementation:</p>
+<pre><code class="language-c">#define _GNU_SOURCE
+#include &lt;errno.h&gt;
+#include &lt;poll.h&gt;
+#include &lt;stdint.h&gt;
+#include &lt;sys/syscall.h&gt;
+#include &lt;sys/wait.h&gt;
+#include &lt;unistd.h&gt;
+
+int main(int argc, char *argv[]) {
+  (void)argc;
+
+  uint32_t wait_ms = 128;
+
+  for (int retry = 0; retry &lt; 10; retry += 1) {
+    int child_pid = fork();
+    if (-1 == child_pid) {
+      return errno;
+    }
+
+    if (0 == child_pid) { // Child
+      argv += 1;
+      if (-1 == execvp(argv[0], argv)) {
+        return errno;
+      }
+      __builtin_unreachable();
+    }
+
+    // Parent.
+
+    int child_fd = (int)syscall(SYS_pidfd_open, child_pid, 0);
+    if (-1 == child_fd) {
+      return errno;
+    }
+
+    struct pollfd poll_fd = {
+        .fd = child_fd,
+        .events = POLLHUP | POLLIN,
+    };
+    // Wait for the child to finish with a timeout.
+    if (-1 == poll(&amp;poll_fd, 1, (int)wait_ms)) {
+      return errno;
+    }
+
+    // Maybe kill the child (the child might have terminated by itself even if
+    // poll(2) timed-out).
+    if (-1 == syscall(SYS_pidfd_send_signal, child_fd, SIGKILL, NULL, 0)) {
+      return errno;
+    }
+
+    siginfo_t siginfo = {0};
+    // Get exit status of child &amp; reap zombie.
+    if (-1 == waitid(P_PIDFD, (id_t)child_fd, &amp;siginfo, WEXITED)) {
+      return errno;
+    }
+
+    if (WIFEXITED(siginfo.si_status) &amp;&amp; 0 == WEXITSTATUS(siginfo.si_status)) {
+      return 0;
+    }
+
+    wait_ms *= 2;
+    usleep(wait_ms * 1000);
+
+    close(child_fd);
+  }
+}
+</code></pre>
+<p>A small note: To <code>poll</code> a process descriptor, Linux wants us to use <code>POLLIN</code> whereas FreeBSD wants us to use <code>POLLHUP</code>. So we use <code>POLLHUP | POLLIN</code> since there are no side-effects to use both.</p>
+<h2 id="sixth-approach-macos-s-and-bsd-s-kqueue">
+	<a class="title" href="#sixth-approach-macos-s-and-bsd-s-kqueue">Sixth approach: MacOS's and BSD's kqueue</a>
+	<a class="hash-anchor" href="#sixth-approach-macos-s-and-bsd-s-kqueue" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+</h2>
+<p>It feels like cheating, but MacOS and the BSDs have had <code>kqueue</code> for decades which works out of the box with PIDs. It's similar to <code>poll</code> or <code>epoll</code> on Linux:</p>
+<pre><code class="language-c">#include &lt;errno.h&gt;
+#include &lt;signal.h&gt;
+#include &lt;stdint.h&gt;
+#include &lt;sys/event.h&gt;
+#include &lt;sys/wait.h&gt;
+#include &lt;unistd.h&gt;
+
+int main(int argc, char *argv[]) {
+  (void)argc;
+
+  uint32_t wait_ms = 128;
+  int queue = kqueuex(KQUEUE_CLOEXEC);
+
+  for (int retry = 0; retry &lt; 10; retry += 1) {
+    int child_pid = fork();
+    if (-1 == child_pid) {
+      return errno;
+    }
+
+    if (0 == child_pid) { // Child
+      argv += 1;
+      if (-1 == execvp(argv[0], argv)) {
+        return errno;
+      }
+      __builtin_unreachable();
+    }
+
+    struct kevent change_list = {
+        .ident = child_pid,
+        .filter = EVFILT_PROC,
+        .fflags = NOTE_EXIT,
+        .flags = EV_ADD | EV_CLEAR,
+    };
+
+    struct kevent event_list = {0};
+
+    struct timespec timeout = {
+        .tv_sec = wait_ms / 1000,
+        .tv_nsec = (wait_ms % 1000) * 1000 * 1000,
+    };
+
+    int ret = kevent(queue, &amp;change_list, 1, &amp;event_list, 1, &amp;timeout);
+    if (-1 == ret) { // Error
+      return errno;
+    }
+    if (1 == ret) { // Child finished.
+      int status = 0;
+      if (-1 == wait(&amp;status)) {
+        return errno;
+      }
+      if (WIFEXITED(status) &amp;&amp; 0 == WEXITSTATUS(status)) {
+        return 0;
+      }
+    }
+
+    kill(child_pid, SIGKILL);
+    wait(NULL);
+
+    change_list = (struct kevent){
+        .ident = child_pid,
+        .filter = EVFILT_PROC,
+        .fflags = NOTE_EXIT,
+        .flags = EV_DELETE,
+    };
+    kevent(queue, &amp;change_list, 1, NULL, 0, NULL);
+
+    usleep(wait_ms * 1000);
+    wait_ms *= 2;
+  }
+  return 1;
+}
+</code></pre>
+<p>The only surprising thing, perhaps, is that <code>kqueue</code> is stateful, so once the child process exited by itself or was killed, we have to remove the watcher on its PID, since the next time we spawn a child process, the PID will very likely be different. <code>kqueue</code> offers the flag <code>EV_ONESHOT</code>, which automatically deletes the event from the queue once it has been consumed. However, it would not help in all cases: if the timeout triggers, we have to kill the child process, which creates an event in the queue! So we have to always delete the event from the queue right before we retry.</p>
+<p>I love that <code>kqueue</code> works with every kind of Unix entity: file descriptor, pipes, PIDs, Vnodes, sockets, etc. However, I am not sure that I love its statefulness. I find the <code>poll</code> approach simpler, since it's stateless. But perhaps this behavior is necessary for some corner cases?</p>
+<p>On Linux, we can make this code work by using <code>libkqueue</code> which acts as a emulation layer, using <code>epoll</code> or such under the hood.</p>
+<h2 id="sixth-approach-linux-s-io-uring">
+	<a class="title" href="#sixth-approach-linux-s-io-uring">Sixth approach: Linux's io_uring</a>
+	<a class="hash-anchor" href="#sixth-approach-linux-s-io-uring" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+</h2>
+<p>TODO</p>
+<h2 id="conclusion">
+	<a class="title" href="#conclusion">Conclusion</a>
+	<a class="hash-anchor" href="#conclusion" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+</h2>
+<p>I find signals and spawning child process to be the hardest parts of Unix. Evidently this is not a rare opinion, looking at the development in these areas: process descriptors, the various expansions to the venerable <code>fork</code> with <code>vfork</code>, <code>clone</code>, <code>clone3</code>, <code>clone6</code>, etc.</p>
+<p>So what's the best approach then in a complex program? Let's recap:</p>
+<ul>
+<li>If you need maximum portability and are not afraid of signals and their pitfalls, use <code>sigsuspend</code></li>
+<li>If you are not afraid of signals and want a simpler API, use <code>sigtimedwait</code></li>
+<li>If you favor correctness and work with recent Linux and FreeBSD versions, use process descriptors with shims to get the same API on all OSes. That's probably my favorite option.</li>
+<li>If you only care about MacOS and BSDs (or accept to use <code>libkqueue</code> on Linux), use <code>kqueue</code> because it works out of the box with PIDs, you avoid signals completely, and it's used in all the big libraries out of there e.g. <code>libuv</code></li>
+<li>If you only care about Linux and are already using <code>io_uring</code>, use <code>io_uring</code></li>
+<li>If you only care about Linux and are afraid of using <code>io_uring</code>, use <code>signalfd</code> + <code>poll</code></li>
+</ul>
+<p>I often look at complex code and think: what are the chances that this is correct? What are the chances that I missed something? Is there a way to make it simplistic that it is obviously correct? And how can I limit the blast of a bug I wrote?</p>
+<p>Process descriptors or <code>kqueue</code> seem to me so straightforward, so obviously correct, that I would definitely favour them over signals.</p>
+<p><a href="/blog"> ⏴ Back to all articles</a></p>
+
+<blockquote id="donate">
+  <p>If you enjoy what you're reading, you want to support me, and can afford it: <a href="https://paypal.me/philigaultier?country.x=DE&locale.x=en_US">Support me</a>. That allows me to write more cool articles!</p>
+</blockquote>
+
+<blockquote>
+  <p>
+    This blog is <a href="https://github.com/gaultier/blog">open-source</a>!
+    If you find a problem, please open a Github issue.
+    The content of this blog as well as the code snippets are under the <a href="https://en.wikipedia.org/wiki/BSD_licenses#3-clause_license_(%22BSD_License_2.0%22,_%22Revised_BSD_License%22,_%22New_BSD_License%22,_or_%22Modified_BSD_License%22)">BSD-3 License</a> which I also usually use for all my personal projects. It's basically free for every use but you have to mention me as the original author.
+  </p>
+</blockquote>
+
+</div>
+</body>
+</html>
