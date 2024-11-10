@@ -174,7 +174,7 @@ exit(1)
 <p>That's how <code>timeout</code> from coreutils implements it. This is quite simple on paper:</p>
 <ol>
 <li>We opt-in to receive a <code>SIGCHLD</code> signal when the child processes finishes with: <code>signal(SIGCHLD, on_chld_signal)</code> where <code>on_chld_signal</code> is a function pointer we provide. Even if the signal handler does not do anything in this case.</li>
-<li>We schedule a <code>SIGALARM</code> signal with <code>alarm</code> or more preferrably <code>setitimer</code> which can take a duration in microseconds whereas <code>alarm</code> can only handle seconds. There's also <code>timer_create/timer_settime</code> which handles nanoseconds.</li>
+<li>We schedule a <code>SIGALARM</code> signal with <code>alarm</code> or more preferrably <code>setitimer</code> which can take a duration in microseconds whereas <code>alarm</code> can only handle seconds. There's also <code>timer_create/timer_settime</code> which handles nanoseconds. It depends what the OS supports.</li>
 <li>We wait for either signal with <code>sigsuspend</code> which suspends the program until a given set of signals arrive</li>
 <li>We should not forget to <code>wait</code> on the child process to avoid leaving zombie processes behind</li>
 </ol>
