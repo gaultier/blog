@@ -526,7 +526,7 @@ Anyways, their own system is called [port](https://www.illumos.org/man/3C/port_c
 
 `io_uring` is the last candidate to enter the already packed ring (eh) of different-yet-similar ways to do 'I/O multiplexing', meaning to wait with a timeout on various kinds of entities to do interesting 'stuff'. We queue a system call e.g. `wait`, as well as a timeout, and we wait for either to complete. If `wait` completed first and the exit status is a success, we exit. Otherwise, we retry. Familiar stuff at this point. `io_uring` essentially makes every system call asynchronous with a uniform API. That's exactly what we want!
 
-However.
+Hold your horses son. You know what people say about things too good to be true?
 
 `io_uring` does not support all system calls, far from it (after all, there are hundreds of them). In October of this year (2024), they just added [support](https://github.com/axboe/liburing/wiki/What's-new-with-io_uring-in-6.11-and-6.12#add-support-for-bindlisten) for `bind` and `listen`! So you see where this is going: `wait` is [not supported](https://github.com/axboe/liburing/blob/liburing-2.8/src/include/liburing/io_uring.h#L204). That's unfortunate! It'd be perfect! Perhaps it will be added in the future and I can complete this section.
 
