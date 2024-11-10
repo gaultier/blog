@@ -8,8 +8,8 @@ I often need to launch a program in the terminal in a retry loop. Maybe because 
 
 - ssh to a (re)starting machine.
 - `psql` to a (re)starting database.
-- Ensuring that a network service started fine with netcat.
-- Filesystem commands over NFS.
+- Ensuring that a network service started fine with `netcat`.
+- File system commands over NFS.
 
 It's a common problem, so much so that there are two utilities that I usually reach for: 
 
