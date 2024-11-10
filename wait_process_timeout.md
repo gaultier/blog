@@ -412,7 +412,7 @@ int main(int argc, char *argv[]) {
 
 A small note: To `poll` a process descriptor, Linux wants us to use `POLLIN` whereas FreeBSD wants us to use `POLLHUP`. So we use `POLLHUP | POLLIN` since there are no side-effects to use both. 
 
-Another small note: a process descriptor, just like a file descriptor, takes up resources on the kernel side and we can reach the limit of open file desciptors for our program so it's good practice to `close` it as soon as possible to free up resources. For us, that's right before retrying. On FreeBSD, closing the process descriptor also kills the process, so it's very short, just one system call. On Linux, we need to do both.
+Another small note: a process descriptor, just like a file descriptor, takes up resources on the kernel side and we can reach some system limits, so it's good practice to `close` it as soon as possible to free up resources. For us, that's right before retrying. On FreeBSD, closing the process descriptor also kills the process, so it's very short, just one system call. On Linux, we need to do both.
 
 
 ## Sixth approach: MacOS's and BSD's kqueue
