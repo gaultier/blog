@@ -565,7 +565,7 @@ int main(int argc, char *argv[]) {
 <p>So, I've briefly mentioned that there is this library, <a href="https://github.com/mheily/libkqueue">libkqueue</a>, that acts as a compatibility layer to be able to use <code>kqueue</code> on all major operating systems, mainly Windows, Linux, and even Solaris/Illumos!</p>
 <p>So...How do they do it then? How can we, on an OS like Linux, watch a PID with the <code>kqueue</code> API, when the OS does not support that functionality (neither with <code>poll</code> or <code>epoll</code>)? Well, the solution is actually very simple:</p>
 <ul>
-<li>On Linux 5.3+, they use <code>pidfd_open</code>. Hey, we know this little guy!</li>
+<li>On Linux 5.3+, they use <code>pidfd_open</code> + <code>poll/epoll</code>. Hey, we just did that a few sections above!</li>
 <li>On older versions of Linux, they handle the signals, like GNU's <code>timeout</code>. It has a number of known shortcomings which is testament to the hardships of using signals. To just quote one piece:
 <blockquote>
 <p>Because the Linux kernel coalesces SIGCHLD (and other signals), the only way to reliably determine if a monitored process has exited, is to loop through all PIDs registered by any kqueue when we receive a SIGCHLD. This involves many calls to waitid(2) and may have a negative performance impact.</p>

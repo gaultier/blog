@@ -505,7 +505,7 @@ So, I've briefly mentioned that there is this library, [libkqueue](https://githu
 
 So...How do they do it then? How can we, on an OS like Linux, watch a PID with the `kqueue` API, when the OS does not support that functionality (neither with `poll` or `epoll`)? Well, the solution is actually very simple:
 
-- On Linux 5.3+, they use `pidfd_open`. Hey, we know this little guy!
+- On Linux 5.3+, they use `pidfd_open` + `poll/epoll`. Hey, we just did that a few sections above!
 - On older versions of Linux, they handle the signals, like GNU's `timeout`. It has a number of known shortcomings which is testament to the hardships of using signals. To just quote one piece: 
   > Because the Linux kernel coalesces SIGCHLD (and other signals), the only way to reliably determine if a monitored process has exited, is to loop through all PIDs registered by any kqueue when we receive a SIGCHLD. This involves many calls to waitid(2) and may have a negative performance impact.
 
