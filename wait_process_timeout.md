@@ -282,7 +282,7 @@ int main(int argc, char *argv[]) {
 }
 ```
 
-So we still have one signal handler but the rest of our program does not deal with programs in any way (well, except to kill the child when the timeout triggers, but that's invisible). 
+So we still have one signal handler but the rest of our program does not deal with signals in any way (well, except to kill the child when the timeout triggers, but that's invisible). 
 
 There's one catch: contrary to `sigtimedwait`, `poll` does not give us the exit status of the child, we have to get it with `wait`. Which is fine, but we cannot call `kill` unconditionally and then `wait`, because the exit status would then show that the child process was killed, even though we sent a KILL signal to the child process that already finished by itself. That was surprising to me. So we only inspect the status returned by `wait` if the self-pipe is readable, meaning, if the child finished by itself.
 
