@@ -2,6 +2,8 @@ Title: What is the best way to wait on a process with timeout?
 Tags: Unix, Signals, C, Linux, FreeBSD
 ---
 
+*Windows is not covered at all in this article.*
+
 I often need to launch a program in the terminal in a retry loop. Maybe because it's flaky, or because it tries to contact a remote service that is not available. A few scenarios:
 
 - ssh to a (re)starting machine
@@ -293,7 +295,8 @@ There are a few catches with this implementation:
   > race  conditions.  (Suppose the signal handler sets a global flag and returns.  Then a
   > test of this global flag followed by a call of select() could hang indefinitely if the
   > signal arrived just after the test but just before the call.  By  contrast,  pselect()
-  > allows one to first block signals, handle the signals that have come in, then call pselect() with the desired sigmask, avoiding the race.)
+  > allows one to first block signals, handle the signals that have come in, then call pselect() 
+  > with the desired sigmask, avoiding the race.)
 
 
 So, this trick is clever, but wouldn't it be nice if we could avoid signals *entirely*?
@@ -315,7 +318,7 @@ In the recent years, people realized that process identifiers (`pid`s) have a nu
 
 And the kernel developers have worked hard to introduce a better concept: process descriptors, which are (almost) bog-standard file descriptors, like files or sockets. After all, that's what sparked our whole investigation: we wanted to use `poll` and it did not work on a pid. Pids and signals do not compose well, but file descriptors do. Also, just like file descriptors, process descriptors are per-process. If I open a file with `open()` and get the file descriptor `3`, it is scoped to my process. Another process can `close(3)` and it will refer to their own file descriptotr, and not affect my file descriptor. That's great, we get isolation, so bugs in our code do not affect other processes.
 
-So, Linux and FreeBSD have introduced the same concepts but with slightly different APIs (unfortunately):
+So, Linux and FreeBSD have introduced the same concepts but with slightly different APIs (unfortunately), and I have no idea about other OSes:
 
 - A child process can be created with `clone3(..., CLONE_PIDFD)` or `pdfork()` which returns a process descriptor which is almost like a normal file descriptor. On Linux, a process descriptor can also be obtained from a pid with `pidfd_open(pid)` e.g. if a normal `fork` was done.
 - We wait on the process descriptor with `poll(..., timeout)` (or `select`, or `epoll`, etc)

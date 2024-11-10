@@ -94,6 +94,7 @@
 		</li>
 </ul>
 
+<p><em>Windows is not covered at all in this article.</em></p>
 <p>I often need to launch a program in the terminal in a retry loop. Maybe because it's flaky, or because it tries to contact a remote service that is not available. A few scenarios:</p>
 <ul>
 <li>ssh to a (re)starting machine</li>
@@ -363,7 +364,8 @@ or for a file descriptor to become ready, then an atomic test  is  needed  to  p
 race  conditions.  (Suppose the signal handler sets a global flag and returns.  Then a
 test of this global flag followed by a call of select() could hang indefinitely if the
 signal arrived just after the test but just before the call.  By  contrast,  pselect()
-allows one to first block signals, handle the signals that have come in, then call pselect() with the desired sigmask, avoiding the race.)</p>
+allows one to first block signals, handle the signals that have come in, then call pselect()
+with the desired sigmask, avoiding the race.)</p>
 </blockquote>
 </li>
 </ul>
@@ -386,7 +388,7 @@ Next!</p>
 <li>It's easy to accidentally send a signal to all processes with <code>kill(0, SIGKILL)</code> or <code>kill(-1, SIGKILL)</code></li>
 </ul>
 <p>And the kernel developers have worked hard to introduce a better concept: process descriptors, which are (almost) bog-standard file descriptors, like files or sockets. After all, that's what sparked our whole investigation: we wanted to use <code>poll</code> and it did not work on a pid. Pids and signals do not compose well, but file descriptors do. Also, just like file descriptors, process descriptors are per-process. If I open a file with <code>open()</code> and get the file descriptor <code>3</code>, it is scoped to my process. Another process can <code>close(3)</code> and it will refer to their own file descriptotr, and not affect my file descriptor. That's great, we get isolation, so bugs in our code do not affect other processes.</p>
-<p>So, Linux and FreeBSD have introduced the same concepts but with slightly different APIs (unfortunately):</p>
+<p>So, Linux and FreeBSD have introduced the same concepts but with slightly different APIs (unfortunately), and I have no idea about other OSes:</p>
 <ul>
 <li>A child process can be created with <code>clone3(..., CLONE_PIDFD)</code> or <code>pdfork()</code> which returns a process descriptor which is almost like a normal file descriptor. On Linux, a process descriptor can also be obtained from a pid with <code>pidfd_open(pid)</code> e.g. if a normal <code>fork</code> was done.</li>
 <li>We wait on the process descriptor with <code>poll(..., timeout)</code> (or <code>select</code>, or <code>epoll</code>, etc)</li>
