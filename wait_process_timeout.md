@@ -6,28 +6,28 @@ Tags: Unix, Signals, C, Linux, FreeBSD, Illumos, MacOS
 
 I often need to launch a program in the terminal in a retry loop. Maybe because it's flaky, or because it tries to contact a remote service that is not available. A few scenarios:
 
-- ssh to a (re)starting machine
-- `psql` to a (re)starting database
-- Ensuring that a network service started fine with netcat
-- Filesystem commands over NFS
+- ssh to a (re)starting machine.
+- `psql` to a (re)starting database.
+- Ensuring that a network service started fine with netcat.
+- Filesystem commands over NFS.
 
 It's a common problem, so much so that there are two utilities that I usually reach for: 
 
-- [timeout](https://www.gnu.org/software/coreutils/manual/html_node/timeout-invocation.html) from GNU coreutils, which launches a command with a timeout (useful if the command itself does not have a `--timeout` option)
+- [timeout](https://www.gnu.org/software/coreutils/manual/html_node/timeout-invocation.html) from GNU coreutils, which launches a command with a timeout (useful if the command itself does not have a `--timeout` option).
 - [eb](https://github.com/rye/eb) which runs a command with a certain number of times with an exponential backoff. That's useful to avoid hammering a server with connection attempts for example.
 
 This will all sound familiar to people who develop distributed systems: they have long known that this is [best practice](https://aws.amazon.com/blogs/architecture/exponential-backoff-and-jitter/) to retry an operation:
 
-- With a timeout (either constant or adaptative)
-- A bounded number of times e.g. 10
-- With a waiting time between each retry, either a constant one or a increasing one e.g. with exponential backoff
+- With a timeout (either constant or adaptative).
+- A bounded number of times e.g. 10.
+- With a waiting time between each retry, either a constant one or a increasing one e.g. with exponential backoff.
 - With jitter, although this point also seemed the least important since most of us use non real-time operating systems which introduce some jitter anytime we sleep or wait on something with a timeout. The AWS article makes a point that in highly contended systems, the jitter parameter is very important, but for the scope of this article I'll leave it out.
 
 
 This is best practice in distributed systems, and we often need to do the same on the command line. But the two aforementioned tools only do that partially:
 
-- `timeout` does not retry
-- `eb` does not have a timeout
+- `timeout` does not retry.
+- `eb` does not have a timeout.
 
 
 So let's implement our own that does both! As we'll see, it's much less straightforward, and thus more interesting, than I thought. It's a whirlwind tour through Unix deeps and how various operating systems fare in that regard.
@@ -123,19 +123,19 @@ That's how `timeout` from coreutils [implements](https://git.savannah.gnu.org/gi
 
 The reality is grimmer, looking through the `timeout` implementation:
 
-- We could have inherited any signal mask from our parent so we need to explictly unblock the signals we are interested in
-- Signals can be sent to a process group we need to handle that case
-- We have to avoid entering a 'signal loop'
-- Our process can be implicitly multithreaded due to some `timer_settime` implementations, therefore a `SIGALRM` signal sent to a process group, can be result in the signal being sent multiple times to a process (I am directly quoting the code comments from the `timeout` program here)
-- When using `timer_create`, we need to take care of cleaning it up with `timer_delete`, lest we have a resource leak when retrying
-- The signal handler may be called concurrently and we have to be aware of that
+- We could have inherited any signal mask from our parent so we need to explictly unblock the signals we are interested in.
+- Signals can be sent to a process group we need to handle that case.
+- We have to avoid entering a 'signal loop'.
+- Our process can be implicitly multithreaded due to some `timer_settime` implementations, therefore a `SIGALRM` signal sent to a process group, can be result in the signal being sent multiple times to a process (I am directly quoting the code comments from the `timeout` program here).
+- When using `timer_create`, we need to take care of cleaning it up with `timer_delete`, lest we have a resource leak when retrying.
+- The signal handler may be called concurrently and we have to be aware of that.
 - Depending on the timer implementation we chose, we are susceptible to clock adjustments for example going back. E.g. `setitimer` only offers the `CLOCK_REALTIME` clock option for counting time, which is just the wall clock. We'd like something like `CLOCK_MONOTONIC` or `CLOCK_MONOTONIC_RAW` (the latter being Linux specific).
 
 
 So... I don't *love* this approach:
 
-- I find signals hard. It's basically a global `goto` to a completely different location
-- A sigal handler is forced to use global mutable state, which is better avoided if possible, and it does not play nice with threads
+- I find signals hard. It's basically a global `goto` to a completely different location.
+- A sigal handler is forced to use global mutable state, which is better avoided if possible, and it does not play nice with threads.
 - Lots of functions are not 'signal-safe', and that has led to security vulnerabilities in the past e.g. in [ssh](https://www.qualys.com/2024/07/01/cve-2024-6387/regresshion.txt). In short, non-atomic operations are not signal safe because they might be suspended in the middle, thus leaving an inconsistent state behind. Thus, we have to read documentation very carefully to ensure that we only call signal safe functions in our signal handler, and cherry on the cake, that varies from platform to platform, or even between libc versions on the same platform.
 - Signals do not compose well with other Unix entities such as file descriptors and sockets. For example, we cannot `poll` on signals. There are platform specific solutions though, keep on reading.
 - Different signals have different default behaviors, and this gets inherited in child processes, so you cannot assume anything in your program and have to be very defensive. Who knows what the parent process, e.g. the shell, set as the signal mask? If you read through the whole implementation of the `timeout` program, a lot of the code is dedicated to setting signal masks in the parent, forking, immediately changing the signal mask in the child and the parent, etc. Now, I believe modern Unices offer more control than `fork()` about what signal mask the child should be created with, so maybe it got better. Still, it's a lot of stuff to know.
@@ -323,7 +323,7 @@ Next!
 In the recent years (starting with Linux 5.3 and FreeBSD 13.2), people realized that process identifiers (`pid`s) have a number of problems:
 
 - PIDs are recycled and the space is small, so collisions will happen. Typically, a process spawns a child process, some work happens, and then the parent decides to send a signal to the pid of the child. But it turns out that the child already terminated (unbeknownst to the parent) and another process took its place with the same PID. So now the parent is sending signals, or communicating with, a process that it thinks is its original child but is in fact something completely different. Chaos and security issues ensue. Now, in our very simple case, that would not really happen, but perhaps the root user is running our program, or, imagine that you are implementing the init process with PID 1, e.g. systemd: you can kill any process on the machine! Or think of the case of reparenting a process. Or sending a certain PID to another process and they send a signal to it at some point in the future. It becomes hairy and it's a very real problem.
-- Data races are hard to escape (see the previous point)
+- Data races are hard to escape (see the previous point).
 - It's easy to accidentally send a signal to all processes with `kill(0, SIGKILL)` or `kill(-1, SIGKILL)` if the developer has not checked that all previous operations succeeded. This is a classic mistake: 
   ```c
   int child_pid = fork();  // This fork fails and returns -1.
@@ -336,9 +336,9 @@ And the kernel developers have worked hard to introduce a better concept: proces
 So, Linux and FreeBSD have introduced the same concepts but with slightly different APIs (unfortunately), and I have no idea about other OSes:
 
 - A child process can be created with `clone3(..., CLONE_PIDFD)` (Linux) or `pdfork()` (FreeBSD) which returns a process descriptor which is almost like a normal file descriptor. On Linux, a process descriptor can also be obtained from a PID with `pidfd_open(pid)` e.g. after a normal `fork` was done (but there is a risk of a data race in some cases!). Once we have the process descriptor, we do not need the PID anymore.
-- We wait on the process descriptor with `poll(..., timeout)` (or `select`, or `epoll`, etc)
-- We kill the child process using the process descriptor with `pidfd_send_signal` (Linux) or `close` (FreeBSD) or `pdkill` (FreeBSD)
-- We wait on the zombie child process again using the process descriptor to get its exit status
+- We wait on the process descriptor with `poll(..., timeout)` (or `select`, or `epoll`, etc).
+- We kill the child process using the process descriptor with `pidfd_send_signal` (Linux) or `close` (FreeBSD) or `pdkill` (FreeBSD).
+- We wait on the zombie child process again using the process descriptor to get its exit status.
 
 And voila, no signals! Isolation! Composability! (Almost) No PIDs in our program! Life can be nice sometimes. It's just unfortunate that there isn't a cross-platform API for that.
 
@@ -526,12 +526,12 @@ I find signals and spawning child process to be the hardest parts of Unix. Evide
 
 So what's the best approach then in a complex program? Let's recap:
 
-- If you need maximum portability and are not afraid of signals and their pitfalls, use `sigsuspend`
-- If you are not afraid of signals and want a simpler API, use `sigtimedwait`
+- If you need maximum portability and are not afraid of signals and their pitfalls, use `sigsuspend`.
+- If you are not afraid of signals and want a simpler API, use `sigtimedwait`.
 - If you favor correctness and work with recent Linux and FreeBSD versions, use process descriptors with shims to get the same API on all OSes. That's probably my favorite option.
-- If you only care about MacOS and BSDs (or accept to use `libkqueue` on Linux), use `kqueue` because it works out of the box with PIDs, you avoid signals completely, and it's used in all the big libraries out of there e.g. `libuv`
-- If you only care about Linux and are already using `io_uring`, use `io_uring`
-- If you only care about Linux and are afraid of using `io_uring`, use `signalfd` + `poll`
+- If you only care about MacOS and BSDs (or accept to use `libkqueue` on Linux), use `kqueue` because it works out of the box with PIDs, you avoid signals completely, and it's used in all the big libraries out of there e.g. `libuv`.
+- If you only care about Linux and are already using `io_uring`, use `io_uring`.
+- If you only care about Linux and are afraid of using `io_uring`, use `signalfd` + `poll`.
 
 I often look at complex code and think: what are the chances that this is correct? What are the chances that I missed something? Is there a way to make it simplistic that it is obviously correct? And how can I limit the blast of a bug I wrote? 
 
