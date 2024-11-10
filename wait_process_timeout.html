@@ -593,7 +593,7 @@ int main(int argc, char *argv[]) {
 	<a class="title" href="#conclusion">Conclusion</a>
 	<a class="hash-anchor" href="#conclusion" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
-<p>I find signals and spawning child process to be the hardest parts of Unix. Evidently this is not a rare opinion, looking at the development in these areas: process descriptors, the various expansions to the venerable <code>fork</code> with <code>vfork</code>, <code>clone</code>, <code>clone3</code>, <code>clone6</code>, etc.</p>
+<p>I find signals and spawning child process to be the hardest parts of Unix. Evidently this is not a rare opinion, looking at the development in these areas: process descriptors, the various expansions to the venerable <code>fork</code> with <code>vfork</code>, <code>clone</code>, <code>clone3</code>, <code>clone6</code>, a bazillion different ways to do I/O multiplexing, etc.</p>
 <p>So what's the best approach then in a complex program? Let's recap:</p>
 <ul>
 <li>If you need maximum portability and are not afraid of signals and their pitfalls, use <code>sigsuspend</code>.</li>

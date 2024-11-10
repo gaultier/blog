@@ -537,7 +537,7 @@ Another caveat: some cloud providers e.g. Google Cloud disable `io_uring` due to
 
 ## Conclusion
 
-I find signals and spawning child process to be the hardest parts of Unix. Evidently this is not a rare opinion, looking at the development in these areas: process descriptors, the various expansions to the venerable `fork` with `vfork`, `clone`, `clone3`, `clone6`, etc. 
+I find signals and spawning child process to be the hardest parts of Unix. Evidently this is not a rare opinion, looking at the development in these areas: process descriptors, the various expansions to the venerable `fork` with `vfork`, `clone`, `clone3`, `clone6`, a bazillion different ways to do I/O multiplexing, etc. 
 
 So what's the best approach then in a complex program? Let's recap:
 
