@@ -587,7 +587,7 @@ int main(int argc, char *argv[]) {
 <p><code>io_uring</code> is the last candidate to enter the already packed ring (eh) of different-yet-similar ways to do 'I/O multiplexing', meaning to wait with a timeout on various kinds of entities to do interesting 'stuff'. We queue a system call e.g. <code>wait</code>, as well as a timeout, and we wait for either to complete. If <code>wait</code> completed first and the exit status is a success, we exit. Otherwise, we retry. Familiar stuff at this point. <code>io_uring</code> essentially makes every system call asynchronous with a uniform API. That's exactly what we want!</p>
 <p>Hold your horses son. You know what people say about things too good to be true?</p>
 <p><code>io_uring</code> does not support all system calls, far from it (after all, there are hundreds of them). In October of this year (2024), they just added <a href="https://github.com/axboe/liburing/wiki/What&#x27;s-new-with-io_uring-in-6.11-and-6.12#add-support-for-bindlisten">support</a> for <code>bind</code> and <code>listen</code>! So you see where this is going: <code>wait</code> is <a href="https://github.com/axboe/liburing/blob/liburing-2.8/src/include/liburing/io_uring.h#L204">not supported</a>. That's unfortunate! It'd be perfect! Perhaps it will be added in the future and I can complete this section.</p>
-<p>One caveat for io_uring: it's only support on modern kernels (5.1+).</p>
+<p>One caveat for io_uring: it's only supported on modern kernels (5.1+).</p>
 <p>Another caveat: some cloud providers e.g. Google Cloud disable <code>io_uring</code> due to security concerns when running untrusted code. So it's not ubiquitous.</p>
 <h2 id="conclusion">
 	<a class="title" href="#conclusion">Conclusion</a>

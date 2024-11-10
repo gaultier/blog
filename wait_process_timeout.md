@@ -531,7 +531,7 @@ Hold your horses son. You know what people say about things too good to be true?
 `io_uring` does not support all system calls, far from it (after all, there are hundreds of them). In October of this year (2024), they just added [support](https://github.com/axboe/liburing/wiki/What's-new-with-io_uring-in-6.11-and-6.12#add-support-for-bindlisten) for `bind` and `listen`! So you see where this is going: `wait` is [not supported](https://github.com/axboe/liburing/blob/liburing-2.8/src/include/liburing/io_uring.h#L204). That's unfortunate! It'd be perfect! Perhaps it will be added in the future and I can complete this section.
 
 
-One caveat for io_uring: it's only support on modern kernels (5.1+).
+One caveat for io_uring: it's only supported on modern kernels (5.1+).
 
 Another caveat: some cloud providers e.g. Google Cloud disable `io_uring` due to security concerns when running untrusted code. So it's not ubiquitous.
 
