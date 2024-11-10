@@ -84,7 +84,7 @@
 		</div>
 		<div class="article-title">
 		<h1>What is the best way to wait on a process with timeout?</h1>
-		  <div class="tags"> <a href="/blog/articles-by-tag.html#unix" class="tag">Unix</a> <a href="/blog/articles-by-tag.html#signals" class="tag">Signals</a> <a href="/blog/articles-by-tag.html#c" class="tag">C</a> <a href="/blog/articles-by-tag.html#linux" class="tag">Linux</a> <a href="/blog/articles-by-tag.html#freebsd" class="tag">FreeBSD</a></div>
+		  <div class="tags"> <a href="/blog/articles-by-tag.html#unix" class="tag">Unix</a> <a href="/blog/articles-by-tag.html#signals" class="tag">Signals</a> <a href="/blog/articles-by-tag.html#c" class="tag">C</a> <a href="/blog/articles-by-tag.html#linux" class="tag">Linux</a> <a href="/blog/articles-by-tag.html#freebsd" class="tag">FreeBSD</a> <a href="/blog/articles-by-tag.html#illumos" class="tag">Illumos</a> <a href="/blog/articles-by-tag.html#macos" class="tag">MacOS</a></div>
  </div>
  <strong>Table of contents</strong>
 <ul>
@@ -556,8 +556,28 @@ int main(int argc, char *argv[]) {
 }
 </code></pre>
 <p>The only surprising thing, perhaps, is that a <code>kqueue</code> is stateful, so once the child process exited by itself or was killed, we have to remove the watcher on its PID, since the next time we spawn a child process, the PID will very likely be different. <code>kqueue</code> offers the flag <code>EV_ONESHOT</code>, which automatically deletes the event from the queue once it has been consumed by us. However, it would not help in all cases: if the timeout triggers, no event was consumed, and we have to kill the child process, which creates an event in the queue! So we have to always consume/delete the event from the queue right before we retry, with a second <code>kevent</code> call.</p>
-<p>I love that <code>kqueue</code> works with every kind of Unix entity: file descriptor, pipes, PIDs, Vnodes, sockets, etc. However, I am not sure that I love its statefulness. I find the <code>poll</code> approach simpler, since it's stateless. But perhaps this behavior is necessary for some corner cases?</p>
+<p>I love that <code>kqueue</code> works with every kind of Unix entity: file descriptor, pipes, PIDs, Vnodes, sockets, etc. However, I am not sure that I love its statefulness. I find the <code>poll</code> approach simpler, since it's stateless. But perhaps this behavior is necessary for some corner cases or for performance to avoid the linear scanning that <code>polls</code> entails? It's interesting to observe that Linux's <code>epoll</code> went the same route as <code>kqueue</code> with a similar API, but <code>epoll</code> cannot watch PIDs.</p>
 <p>On Linux, we can make this code work by using <code>libkqueue</code> which acts as a emulation layer, using <code>epoll</code> or such under the hood.</p>
+<h3 id="a-parenthensis-libkqueue">
+	<a class="title" href="#a-parenthensis-libkqueue">A parenthensis: libkqueue</a>
+	<a class="hash-anchor" href="#a-parenthensis-libkqueue" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+</h3>
+<p>So, I've briefly mentioned that there is this library, <a href="https://github.com/mheily/libkqueue">libkqueue</a>, that acts as a compatibility layer to be able to use <code>kqueue</code> on all major operating systems, mainly Windows, Linux, and even Solaris/Illumos!</p>
+<p>So...How do they do it then? How can we, on an OS like Linux, watch a PID with the <code>kqueue</code> API, when the OS does not support that functionality (neither with <code>poll</code> or <code>epoll</code>)? Well, the solution is actually very simple:</p>
+<ul>
+<li>On Linux 5.3+, they use <code>pidfd_open</code>. Hey, we know this little guy!</li>
+<li>On older versions of Linux, they handle the signals, like GNU's <code>timeout</code>. It has a number of known shortcomings which is testament to the hardships of using signals. To just quote one piece:
+<blockquote>
+<p>Because the Linux kernel coalesces SIGCHLD (and other signals), the only way to reliably determine if a monitored process has exited, is to loop through all PIDs registered by any kqueue when we receive a SIGCHLD. This involves many calls to waitid(2) and may have a negative performance impact.</p>
+</blockquote>
+</li>
+</ul>
+<h3 id="another-parenthesis-solaris-illumos-s-ports">
+	<a class="title" href="#another-parenthesis-solaris-illumos-s-ports">Another parenthesis: Solaris/Illumos's ports</a>
+	<a class="hash-anchor" href="#another-parenthesis-solaris-illumos-s-ports" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+</h3>
+<p>So, if it was not enough that each major OS has its own way to watch many different kinds of entities (Windows has its own thing called <a href="https://learn.microsoft.com/en-us/windows/win32/fileio/i-o-completion-ports">I/O completion ports</a>, MacOS &amp; BSDs have <code>kqueue</code>, Linux has <code>epoll</code>), Solaris/Illumos shows up and says: Watch me do my own thing. Well actually I do not know the chronology, they might in fact have been first, and some Illumos kernel developers (namely Brian Cantrill in the fabulous <a href="https://www.youtube.com/watch?v=wTVfAMRj-7E">Cantrillogy</a>) have admitted that it would have been better for everyone if they also had adopted <code>kqueue</code>.</p>
+<p>Anyways, their own system is called <a href="https://www.illumos.org/man/3C/port_create">port</a> (or is it ports?) and it looks so similar to <code>kqueue</code> it's almost painful. And weirdly, they support all the different kinds of entities that <code>kqueue</code> supports <em>except</em> PIDs! And I am not sure that they support process descriptors either e.g. <code>pidfd_open</code>. However, they have an extensive compatibility layer for Linux so perhaps they do there.</p>
 <h2 id="sixth-approach-linux-s-io-uring">
 	<a class="title" href="#sixth-approach-linux-s-io-uring">Sixth approach: Linux's io_uring</a>
 	<a class="hash-anchor" href="#sixth-approach-linux-s-io-uring" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>

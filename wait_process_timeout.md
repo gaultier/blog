@@ -1,5 +1,5 @@
 Title: What is the best way to wait on a process with timeout?
-Tags: Unix, Signals, C, Linux, FreeBSD
+Tags: Unix, Signals, C, Linux, FreeBSD, Illumos, MacOS
 ---
 
 *Windows is not covered at all in this article.*
@@ -495,9 +495,26 @@ int main(int argc, char *argv[]) {
 
 The only surprising thing, perhaps, is that a `kqueue` is stateful, so once the child process exited by itself or was killed, we have to remove the watcher on its PID, since the next time we spawn a child process, the PID will very likely be different. `kqueue` offers the flag `EV_ONESHOT`, which automatically deletes the event from the queue once it has been consumed by us. However, it would not help in all cases: if the timeout triggers, no event was consumed, and we have to kill the child process, which creates an event in the queue! So we have to always consume/delete the event from the queue right before we retry, with a second `kevent` call.
 
-I love that `kqueue` works with every kind of Unix entity: file descriptor, pipes, PIDs, Vnodes, sockets, etc. However, I am not sure that I love its statefulness. I find the `poll` approach simpler, since it's stateless. But perhaps this behavior is necessary for some corner cases?
+I love that `kqueue` works with every kind of Unix entity: file descriptor, pipes, PIDs, Vnodes, sockets, etc. However, I am not sure that I love its statefulness. I find the `poll` approach simpler, since it's stateless. But perhaps this behavior is necessary for some corner cases or for performance to avoid the linear scanning that `polls` entails? It's interesting to observe that Linux's `epoll` went the same route as `kqueue` with a similar API, but `epoll` cannot watch PIDs.
 
 On Linux, we can make this code work by using `libkqueue` which acts as a emulation layer, using `epoll` or such under the hood.
+
+### A parenthensis: libkqueue
+
+So, I've briefly mentioned that there is this library, [libkqueue](https://github.com/mheily/libkqueue), that acts as a compatibility layer to be able to use `kqueue` on all major operating systems, mainly Windows, Linux, and even Solaris/Illumos!
+
+So...How do they do it then? How can we, on an OS like Linux, watch a PID with the `kqueue` API, when the OS does not support that functionality (neither with `poll` or `epoll`)? Well, the solution is actually very simple:
+
+- On Linux 5.3+, they use `pidfd_open`. Hey, we know this little guy!
+- On older versions of Linux, they handle the signals, like GNU's `timeout`. It has a number of known shortcomings which is testament to the hardships of using signals. To just quote one piece: 
+  > Because the Linux kernel coalesces SIGCHLD (and other signals), the only way to reliably determine if a monitored process has exited, is to loop through all PIDs registered by any kqueue when we receive a SIGCHLD. This involves many calls to waitid(2) and may have a negative performance impact.
+
+
+### Another parenthesis: Solaris/Illumos's ports
+
+So, if it was not enough that each major OS has its own way to watch many different kinds of entities (Windows has its own thing called [I/O completion ports](https://learn.microsoft.com/en-us/windows/win32/fileio/i-o-completion-ports), MacOS & BSDs have `kqueue`, Linux has `epoll`), Solaris/Illumos shows up and says: Watch me do my own thing. Well actually I do not know the chronology, they might in fact have been first, and some Illumos kernel developers (namely Brian Cantrill in the fabulous [Cantrillogy](https://www.youtube.com/watch?v=wTVfAMRj-7E)) have admitted that it would have been better for everyone if they also had adopted `kqueue`.
+
+Anyways, their own system is called [port](https://www.illumos.org/man/3C/port_create) (or is it ports?) and it looks so similar to `kqueue` it's almost painful. And weirdly, they support all the different kinds of entities that `kqueue` supports *except* PIDs! And I am not sure that they support process descriptors either e.g. `pidfd_open`. However, they have an extensive compatibility layer for Linux so perhaps they do there.
 
 ## Sixth approach: Linux's io_uring
 
