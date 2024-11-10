@@ -558,3 +558,8 @@ Process descriptors seem to me so straightforward, so obviously correct, that I 
 
 
 Finally, I regret that there is so much fragmentation across all operating systems. Perhaps `io_uring` will become more than a Linuxism and spread to Windows, MacOS, the BSDs, and Illumos in the future?
+
+## Addendum: The code
+
+The code is available [here](https://github.com/gaultier/c/tree/master/ueb). It does not have any dependencies except libc. All of these programs are just 27 KiB in size, with debug symbols enabled and linking statically to musl. They do not allocate any memory themselves!
+For comparison, [eb](https://github.com/rye/eb) has 24 dependencies and is 1.2 MiB! 
