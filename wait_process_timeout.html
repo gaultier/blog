@@ -223,7 +223,7 @@ exit(1)
 	<a class="title" href="#second-way-sigtimedwait">Second way: sigtimedwait</a>
 	<a class="hash-anchor" href="#second-way-sigtimedwait" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
-<p>Wouldn't it be great if we could wait on a signal, say, <code>SIGCHLD</code>, with a timeout? Oh look, a system call that does exactly that <em>and</em> is standardized by POSIX 2001. Cool! I am not quite sure why the <code>timeout</code> program does not use it, but we sure as hell can. My only guess would be that it wants to support old Unices that did not have this system call.</p>
+<p>Wouldn't it be great if we could wait on a signal, say, <code>SIGCHLD</code>, with a timeout? Oh look, a system call that does exactly that <em>and</em> is standardized by POSIX 2001. Cool! I am not quite sure why the <code>timeout</code> program does not use it, but we sure as hell can. My only guess would be that they want to support old Unices that did not have this system call.</p>
 <p>Anyways, here's a very straightforward implementation:</p>
 <pre><code class="language-c">#define _GNU_SOURCE
 #include &lt;errno.h&gt;

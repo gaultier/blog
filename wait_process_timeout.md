@@ -145,7 +145,7 @@ So, let's stick with signals for a bit but simplify our current approach.
 
 ## Second way: sigtimedwait
 
-Wouldn't it be great if we could wait on a signal, say, `SIGCHLD`, with a timeout? Oh look, a system call that does exactly that *and* is standardized by POSIX 2001. Cool! I am not quite sure why the `timeout` program does not use it, but we sure as hell can. My only guess would be that it wants to support old Unices that did not have this system call. 
+Wouldn't it be great if we could wait on a signal, say, `SIGCHLD`, with a timeout? Oh look, a system call that does exactly that *and* is standardized by POSIX 2001. Cool! I am not quite sure why the `timeout` program does not use it, but we sure as hell can. My only guess would be that they want to support old Unices that did not have this system call. 
 
 Anyways, here's a very straightforward implementation:
 
