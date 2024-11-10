@@ -192,7 +192,7 @@ exit(1)
 	<a class="title" href="#first-way-old-school-sigsuspend">First way: old-school sigsuspend</a>
 	<a class="hash-anchor" href="#first-way-old-school-sigsuspend" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h1>
-<p>That's how <code>timeout</code> from coreutils implements it. This is quite simple on paper:</p>
+<p>That's how <code>timeout</code> from coreutils <a href="https://git.savannah.gnu.org/gitweb/?p=coreutils.git;a=blob;f=src/timeout.c;h=5600ce42957dcf117785f6a361ef72ac9c2df352;hb=HEAD">implements</a> it. This is quite simple on paper:</p>
 <ol>
 <li>We opt-in to receive a <code>SIGCHLD</code> signal when the child processes finishes with: <code>signal(SIGCHLD, on_chld_signal)</code> where <code>on_chld_signal</code> is a function pointer we provide. Even if the signal handler does not do anything in this case.</li>
 <li>We schedule a <code>SIGALARM</code> signal with <code>alarm</code> or more preferrably <code>setitimer</code> which can take a duration in microseconds whereas <code>alarm</code> can only handle seconds. There's also <code>timer_create/timer_settime</code> which handles nanoseconds. It depends what the OS and hardware support.</li>

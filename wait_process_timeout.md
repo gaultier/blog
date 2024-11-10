@@ -114,7 +114,7 @@ exit(1)
 
 # First way: old-school sigsuspend
 
-That's how `timeout` from coreutils implements it. This is quite simple on paper:
+That's how `timeout` from coreutils [implements](https://git.savannah.gnu.org/gitweb/?p=coreutils.git;a=blob;f=src/timeout.c;h=5600ce42957dcf117785f6a361ef72ac9c2df352;hb=HEAD) it. This is quite simple on paper:
 
 1. We opt-in to receive a `SIGCHLD` signal when the child processes finishes with: `signal(SIGCHLD, on_chld_signal)` where `on_chld_signal` is a function pointer we provide. Even if the signal handler does not do anything in this case.
 2. We schedule a `SIGALARM` signal with `alarm` or more preferrably `setitimer` which can take a duration in microseconds whereas `alarm` can only handle seconds. There's also `timer_create/timer_settime` which handles nanoseconds. It depends what the OS and hardware support.
