@@ -320,7 +320,7 @@ Next!
 
 *Recommended reading about this topic: [1](https://lwn.net/Articles/801319/) and [2](https://lwn.net/Articles/794707/).*
 
-In the recent years, people realized that process identifiers (`pid`s) have a number of problems:
+In the recent years (starting with Linux 5.3 and FreeBSD 13.2), people realized that process identifiers (`pid`s) have a number of problems:
 
 - PIDs are recycled and the space is small, so collisions will happen. Typically, a process spawns a child process, some work happens, and then the parent decides to send a signal to the pid of the child. But it turns out that the child already terminated (unbeknownst to the parent) and another process took its place with the same PID. So now the parent is sending signals, or communicating with, a process that it thinks is its original child but is in fact something completely different. Chaos and security issues ensue. Now, in our very simple case, that would not really happen, but perhaps the root user is running our program, or, imagine that you are implementing the init process with PID 1, e.g. systemd: you can kill any process on the machine! Or think of the case of reparenting a process. Or sending a certain PID to another process and they send a signal to it at some point in the future. It becomes hairy and it's a very real problem.
 - Data races are hard to escape (see the previous point)
