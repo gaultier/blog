@@ -462,6 +462,8 @@ int main(int argc, char *argv[]) {
 
 The only surprising thing, perhaps, is that `kqueue` is stateful, so once the child process exited by itself or was killed, we have to remove the watcher on its PID, since the next time we spawn a child process, the PID will very likely be different. `kqueue` offers the flag `EV_ONESHOT`, which automatically deletes the event from the queue once it has been consumed. However, it would not help in all cases: if the timeout triggers, we have to kill the child process, which creates an event in the queue! So we have to always delete the event from the queue right before we retry.
 
+I love that `kqueue` works with every kind of Unix entity: file descriptor, pipes, PIDs, Vnodes, sockets, etc. However, I am not sure that I love its statefulness. I find the `poll` approach simpler, since it's stateless.
+
 ## Sixth approach: Linux's io_uring
 
 TODO
