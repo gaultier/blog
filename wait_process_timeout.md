@@ -331,11 +331,11 @@ In the recent years, people realized that process identifiers (`pid`s) have a nu
   kill(child_pid, SIGKILL); // Effectively: kill(-1, SIGKILL)
   ```
 
-And the kernel developers have worked hard to introduce a better concept: process descriptors, which are (almost) bog-standard file descriptors, like files or sockets. After all, that's what sparked our whole investigation: we wanted to use `poll` and it did not work on a pid. Pids and signals do not compose well, but file descriptors do. Also, just like file descriptors, process descriptors are per-process. If I open a file with `open()` and get the file descriptor `3`, it is scoped to my process. Another process can `close(3)` and it will refer to their own file descriptotr, and not affect my file descriptor. That's great, we get isolation, so bugs in our code do not affect other processes.
+And the kernel developers have worked hard to introduce a better concept: process descriptors, which are (almost) bog-standard file descriptors, like files or sockets. After all, that's what sparked our whole investigation: we wanted to use `poll` and it did not work on a PID. PIDs and signals do not compose well, but file descriptors do. Also, just like file descriptors, process descriptors are per-process. If I open a file with `open()` and get the file descriptor `3`, it is scoped to my process. Another process can `close(3)` and it will refer to their own file descriptotr, and not affect my file descriptor. That's great, we get isolation, so bugs in our code do not affect other processes.
 
 So, Linux and FreeBSD have introduced the same concepts but with slightly different APIs (unfortunately), and I have no idea about other OSes:
 
-- A child process can be created with `clone3(..., CLONE_PIDFD)` or `pdfork()` which returns a process descriptor which is almost like a normal file descriptor. On Linux, a process descriptor can also be obtained from a pid with `pidfd_open(pid)` e.g. if a normal `fork` was done.
+- A child process can be created with `clone3(..., CLONE_PIDFD)` or `pdfork()` which returns a process descriptor which is almost like a normal file descriptor. On Linux, a process descriptor can also be obtained from a PID with `pidfd_open(pid)` e.g. if a normal `fork` was done.
 - We wait on the process descriptor with `poll(..., timeout)` (or `select`, or `epoll`, etc)
 - We kill the child process using the process descriptor with `pidfd_send_signal` (Linux) or `close` (FreeBSD) or `pdkill` (FreeBSD)
 - We wait on the zombie child process again using the process descriptor to get its exit status
