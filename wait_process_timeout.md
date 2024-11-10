@@ -71,10 +71,10 @@ $ ueb ssh <some_ip>
 $ ueb createdb my_great_database -h 0.0.0.0 -U postgres
 ```
 
-If you want to monitor the retries and the sleeps, you can use `strace` or `dtrace`, but that is very variable on which system call is in use (which is implementation, OS, and architecture dependent). Example:
+If you want to monitor the retries and the sleeps, you can use `strace` or `dtrace`:
 
 ```sh
-$ strace -e rt_sigtimedwait,clock_nanosleep ueb sleep 1
+$ strace ueb sleep 1
 ```
 
 
