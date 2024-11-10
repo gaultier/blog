@@ -1,5 +1,5 @@
 Title: Roll your own memory profiling: it's actually not hard
-Tags: C, Allocator, Profiling, Pprof
+Tags: C, Allocator, Profiling, Pprof, Linux
 ---
 
 *Discussions: [/r/c_programming](https://old.reddit.com/r/C_Programming/comments/182rnqw/roll_your_own_memory_profiling_its_actually_not/)*
