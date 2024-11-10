@@ -287,7 +287,7 @@ There are a few catches with this implementation:
 
 - Contrary to `sigtimedwait`, `poll` does not give us the exit status of the child, we have to get it with `wait`. Which is fine.
 - In the case that the timeout fired, we `kill` the child process. However, the child process, being forcefully ended, will result in a `SIGCHLD` signal being sent to our program. Which will then trigger our signal handler, which will then write a value to the pipe. So we need to unconditionally read from the pipe. If we only read from the pipe if the child ended by itself, that will result in the pipe and the child process being desynced.
-- We use `ppoll` instead of `poll`. `ppoll` prevents a set of signals, in this case `SIGCHLD`, from interrupting the polling. That's to avoid some data races, quoting from the man page for `pselect` which is analogous to `ppoll`: 
+- We use `ppoll` instead of `poll`. `ppoll` prevents a set of signals, in this case `SIGCHLD`, from interrupting the polling. That's to avoid some data races. I do not think it is strictly necessary in our case, but it's just easier to get convinced that the code is correct with it than without it. Quoting from the man page for `pselect` which is analogous to `ppoll`: 
   > The  reason  that pselect() is needed is that if one wants to wait for either a signal
   > or for a file descriptor to become ready, then an atomic test  is  needed  to  prevent
   > race  conditions.  (Suppose the signal handler sets a global flag and returns.  Then a
@@ -295,8 +295,6 @@ There are a few catches with this implementation:
   > signal arrived just after the test but just before the call.  By  contrast,  pselect()
   > allows one to first block signals, handle the signals that have come in, then call ps‐
   > elect() with the desired sigmask, avoiding the race.)
-
-  I do not think it is strictly necessary in our case, but it's just easier to get convinced that the code is correct with it than without it.
 
 
 So, this trick is clever, but wouldn't it be nice if we could avoid signals *entirely*?
