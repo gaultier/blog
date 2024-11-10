@@ -482,7 +482,7 @@ int main(int argc, char *argv[]) {
 	<a class="title" href="#sixth-approach-macos-s-and-bsd-s-kqueue">Sixth approach: MacOS's and BSD's kqueue</a>
 	<a class="hash-anchor" href="#sixth-approach-macos-s-and-bsd-s-kqueue" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
-<p>It feels like cheating, but MacOS and the BSDs have had <code>kqueue</code> for decades which works out of the box with PIDs. It's similar to <code>poll</code> or <code>epoll</code> on Linux:</p>
+<p>It feels like cheating, but MacOS and the BSDs have had <code>kqueue</code> for decades which works out of the box with PIDs. It's a bit similar to <code>poll</code> or <code>epoll</code> on Linux:</p>
 <pre><code class="language-c">#include &lt;errno.h&gt;
 #include &lt;signal.h&gt;
 #include &lt;stdint.h&gt;

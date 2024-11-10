@@ -417,7 +417,7 @@ Another small note: a process descriptor, just like a file descriptor, takes up 
 
 ## Sixth approach: MacOS's and BSD's kqueue
 
-It feels like cheating, but MacOS and the BSDs have had `kqueue` for decades which works out of the box with PIDs. It's similar to `poll` or `epoll` on Linux:
+It feels like cheating, but MacOS and the BSDs have had `kqueue` for decades which works out of the box with PIDs. It's a bit similar to `poll` or `epoll` on Linux:
 
 ```c
 #include <errno.h>
