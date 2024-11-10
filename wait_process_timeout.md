@@ -4,7 +4,7 @@ Tags: Unix, Signals, C, Linux, FreeBSD
 
 I often need to launch a program in the terminal in a retry loop. Maybe because it's flaky, or because it tries to contact a remote service that is not available. A few scenarios:
 
-- ssh to a starting machine
+- ssh to a (re)starting machine
 - `psql` to a (re)starting database
 - Ensuring that a network service started fine with netcat
 - Filesystem commands over NFS
