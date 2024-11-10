@@ -340,7 +340,7 @@ So, Linux and FreeBSD have introduced the same concepts but with slightly differ
 - We kill the child process using the process descriptor with `pidfd_send_signal` (Linux) or `close` (FreeBSD) or `pdkill` (FreeBSD)
 - We wait on the zombie child process again using the process descriptor to get its exit status
 
-And voila, no signals! Isolation! Composability! (Almost) No PIDs in our program! Life can be nice like this sometimes. It's just unfortunate that there isn't a cross-platform API for that.
+And voila, no signals! Isolation! Composability! (Almost) No PIDs in our program! Life can be nice sometimes. It's just unfortunate that there isn't a cross-platform API for that.
 
 Here's the Linux implementation:
 

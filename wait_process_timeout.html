@@ -410,7 +410,7 @@ kill(child_pid, SIGKILL); // Effectively: kill(-1, SIGKILL)
 <li>We kill the child process using the process descriptor with <code>pidfd_send_signal</code> (Linux) or <code>close</code> (FreeBSD) or <code>pdkill</code> (FreeBSD)</li>
 <li>We wait on the zombie child process again using the process descriptor to get its exit status</li>
 </ul>
-<p>And voila, no signals! Isolation! Composability! (Almost) No PIDs in our program! Life can be nice like this sometimes. It's just unfortunate that there isn't a cross-platform API for that.</p>
+<p>And voila, no signals! Isolation! Composability! (Almost) No PIDs in our program! Life can be nice sometimes. It's just unfortunate that there isn't a cross-platform API for that.</p>
 <p>Here's the Linux implementation:</p>
 <pre><code class="language-c">#define _GNU_SOURCE
 #include &lt;errno.h&gt;
