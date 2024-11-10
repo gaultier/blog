@@ -384,7 +384,8 @@ with the desired sigmask, avoiding the race.)</p>
 	<a class="title" href="#fourth-approach-linux-s-signalfd">Fourth approach: Linux's signalfd</a>
 	<a class="hash-anchor" href="#fourth-approach-linux-s-signalfd" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h3>
-<p>This is a short one: on Linux, there is a system call that does exactly the same as the self-pipe trick: from a signal, it gives us a file descriptor that we can <code>poll</code>. Cool, but also....Was it really necessary to introduce a system call for that? I guess the advantage is that we do not have to provide a signal handler at all and it is clearer than the self-pipe trick.
+<p>This is a short one: on Linux, there is a system call that does exactly the same as the self-pipe trick: from a signal, it gives us a file descriptor that we can <code>poll</code>. So, we can entirely remove our pipe and signal handler and instead <code>poll</code> the file descriptor that <code>signalfd</code> gives us.</p>
+<p>Cool, but also....Was it really necessary to introduce a system call for that? I guess the advantage is that we do not have to provide a signal handler at all and it is clearer than the self-pipe trick.
 Next!</p>
 <h3 id="fifth-approach-process-descriptors">
 	<a class="title" href="#fifth-approach-process-descriptors">Fifth approach: process descriptors</a>
