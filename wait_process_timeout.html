@@ -477,7 +477,7 @@ int main(int argc, char *argv[]) {
 }
 </code></pre>
 <p>A small note: To <code>poll</code> a process descriptor, Linux wants us to use <code>POLLIN</code> whereas FreeBSD wants us to use <code>POLLHUP</code>. So we use <code>POLLHUP | POLLIN</code> since there are no side-effects to use both.</p>
-<p>Another small note: a process descriptor, just like a file descriptor, takes up resources on the kernel side and we can reach some system limits, so it's good practice to <code>close</code> it as soon as possible to free up resources. For us, that's right before retrying. On FreeBSD, closing the process descriptor also kills the process, so it's very short, just one system call. On Linux, we need to do both.</p>
+<p>Another small note: a process descriptor, just like a file descriptor, takes up resources on the kernel side and we can reach some system limits (or even the memory limit), so it's good practice to <code>close</code> it as soon as possible to free up resources. For us, that's right before retrying. On FreeBSD, closing the process descriptor also kills the process, so it's very short, just one system call. On Linux, we need to do both.</p>
 <h2 id="sixth-approach-macos-s-and-bsd-s-kqueue">
 	<a class="title" href="#sixth-approach-macos-s-and-bsd-s-kqueue">Sixth approach: MacOS's and BSD's kqueue</a>
 	<a class="hash-anchor" href="#sixth-approach-macos-s-and-bsd-s-kqueue" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
