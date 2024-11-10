@@ -321,30 +321,29 @@ int main(int argc, char *argv[]) {
         .fd = pipe_fd[0],
         .events = POLLIN,
     };
+    sigset_t sigset = {0};
+    sigemptyset(&amp;sigset);
+    sigaddset(&amp;sigset, SIGCHLD);
+
+    struct timespec timeout = {
+        .tv_sec = wait_ms / 1000,
+        .tv_nsec = (wait_ms % 1000) * 1000 * 1000,
+    };
     // Wait for the child to finish with a timeout.
-    int ret = poll(&amp;poll_fd, 1, (int)wait_ms);
-    if (-1 == ret &amp;&amp; EINTR != errno) {
-      return errno;
-    }
-    if (1 == ret) {
-      char dummy = 0;
-      read(pipe_fd[0], &amp;dummy, 1);
-      int status = 0;
-      if (-1 == wait(&amp;status)) {
-        return errno;
-      }
-      if (WIFEXITED(status) &amp;&amp; 0 == WEXITSTATUS(status)) {
-        return 0;
-      }
-    }
-
-    if (-1 == kill(child_pid, SIGKILL)) {
+    int ret = ppoll(&amp;poll_fd, 1, &amp;timeout, &amp;sigset);
+    if (-1 == ret) {
       return errno;
     }
 
-    if (-1 == wait(NULL)) {
-      return errno;
+    kill(child_pid, SIGKILL);
+    int status = 0;
+    wait(&amp;status);
+    if (WIFEXITED(status) &amp;&amp; 0 == WEXITSTATUS(status)) {
+      return 0;
     }
+
+    char dummy = 0;
+    read(pipe_fd[0], &amp;dummy, 1);
 
     usleep(wait_ms * 1000);
     wait_ms *= 2;
@@ -353,7 +352,22 @@ int main(int argc, char *argv[]) {
 }
 </code></pre>
 <p>So we still have one signal handler but the rest of our program does not deal with signals in any way (well, except to kill the child when the timeout triggers, but that's invisible).</p>
-<p>There's one catch: contrary to <code>sigtimedwait</code>, <code>poll</code> does not give us the exit status of the child, we have to get it with <code>wait</code>. Which is fine, but we cannot call <code>kill</code> unconditionally and then <code>wait</code>, because the exit status would then show that the child process was killed, even though we sent a KILL signal to the child process that already finished by itself. That was surprising to me. So we only inspect the status returned by <code>wait</code> if the self-pipe is readable, meaning, if the child finished by itself.</p>
+<p>There are a few catches with this implementation:</p>
+<ul>
+<li>Contrary to <code>sigtimedwait</code>, <code>poll</code> does not give us the exit status of the child, we have to get it with <code>wait</code>. Which is fine.</li>
+<li>In the case that the timeout fired, we <code>kill</code> the child process. However, the child process, being forcefully ended, will result in a <code>SIGCHLD</code> signal being sent to our program. Which will then trigger our signal handler, which will then write a value to the pipe. So we need to unconditionally read from the pipe. If we only read from the pipe if the child ended by itself, that will result in the pipe and the child process being desynced.</li>
+<li>We use <code>ppoll</code> over <code>poll</code> which blocks the <code>SIGCHLD</code> signal from interrupting the poll. That's to avoid some data races, quoting from the man page for <code>pselect</code> which is analogous to <code>ppoll</code>:
+<blockquote>
+<p>The  reason  that pselect() is needed is that if one wants to wait for either a signal
+or for a file descriptor to become ready, then an atomic test  is  needed  to  prevent
+race  conditions.  (Suppose the signal handler sets a global flag and returns.  Then a
+test of this global flag followed by a call of select() could hang indefinitely if the
+signal arrived just after the test but just before the call.  By  contrast,  pselect()
+allows one to first block signals, handle the signals that have come in, then call ps‐
+elect() with the desired sigmask, avoiding the race.)</p>
+</blockquote>
+</li>
+</ul>
 <p>So, this trick is clever, but wouldn't it be nice if we could avoid signals <em>entirely</em>?</p>
 <h3 id="fourth-approach-linux-s-signalfd">
 	<a class="title" href="#fourth-approach-linux-s-signalfd">Fourth approach: Linux's signalfd</a>
