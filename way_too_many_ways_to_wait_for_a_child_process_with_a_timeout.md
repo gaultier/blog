@@ -398,7 +398,7 @@ int main(int argc, char *argv[]) {
 }
 ```
 
-Voila, no signals!
+Voila, no signals and no global state!
 
 ## Fourth approach: Linux's signalfd
 
