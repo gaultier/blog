@@ -332,7 +332,7 @@ So the improved approach is as follows:
 5. When the child finishes, it automatically closes the write end which in turn triggers an event in `poll`.
 6. We cleanup before retrying (if needed)
 
-So in a way, it's not really a *self*-pipe, it's more like a pipe between the parent and the child, and nothing gets written to it, it's just used by the child to signal it's done when it closes it. Which is useful for many cases outside of our little program.
+So in a way, it's not really a *self*-pipe, it's more of a pipe between the parent and the child, and nothing gets written to it, it's just used by the child to signal it's done when it closes it. Which is useful for many cases outside of our little program.
 
 Here is the code:
 
