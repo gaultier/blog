@@ -4,7 +4,7 @@ Tags: Unix, Signals, C, Linux, FreeBSD, Illumos, MacOS
 
 *Windows is not covered at all in this article.*
 
-*Discussions: [/r/programming](https://old.reddit.com/r/programming/comments/1godk0x/way_too_many_ways_to_wait_on_a_child_process_with/), [HN](https://news.ycombinator.com/item?id=42103200)*
+*Discussions: [/r/programming](https://old.reddit.com/r/programming/comments/1godk0x/way_too_many_ways_to_wait_on_a_child_process_with/), [HN](https://news.ycombinator.com/item?id=42103200), [Lobsters](https://lobste.rs/s/2awfwc/way_too_many_ways_wait_on_child_process)*
 
 I often need to launch a program in the terminal in a retry loop. Maybe because it's flaky, or because it tries to contact a remote service that is not available. A few scenarios:
 
