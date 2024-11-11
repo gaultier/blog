@@ -2,7 +2,7 @@
   <feed xmlns="http://www.w3.org/2005/Atom">
     <title>Philippe Gaultier's blog</title>
     <link href="https://gaultier.github.io/blog"/>
-    <updated>2024-11-11T11:46:48+01:00</updated>
+    <updated>2024-11-11T11:47:03+01:00</updated>
     <author>
       <name>Philippe Gaultier</name>
     </author>
@@ -196,7 +196,7 @@
   <title>Way too many ways to wait on a child process with a timeout</title>
   <link href="https://gaultier.github.io/blog/way_too_many_ways_to_wait_for_a_child_process_with_a_timeout.html"/>
   <id>urn:uuid:38fa76b5-00c5-5e17-9753-74b7d0ea1ec0</id>
-  <updated>2024-11-11T11:46:48+01:00</updated>
+  <updated>2024-11-11T11:47:03+01:00</updated>
   <published>2024-11-10T23:58:59+01:00</published>
   </entry>
 	</feed>
