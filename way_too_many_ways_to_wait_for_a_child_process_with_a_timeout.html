@@ -635,7 +635,6 @@ int main(int argc, char *argv[]) {
 <p>Alternatively, we can only queue the <code>waitid</code> and use <code>io_uring_wait_cqe_timeout</code> to mimick <code>poll(..., timeout)</code>:</p>
 <pre><code class="language-c">#define _DEFAULT_SOURCE
 #include &lt;liburing.h&gt;
-#include &lt;stdio.h&gt;
 #include &lt;sys/wait.h&gt;
 #include &lt;unistd.h&gt;
 
@@ -683,9 +682,6 @@ int main(int argc, char *argv[]) {
 
     int ret = io_uring_wait_cqe_timeout(&amp;ring, &amp;cqe, &amp;ts);
 
-    printf(&quot;ret=%d res=%d user_data=%llu status=%d exited=%d exit_status=%d\n&quot;,
-           ret, cqe ? cqe-&gt;res : 0, cqe ? cqe-&gt;user_data : 0, si.si_status,
-           WIFEXITED(si.si_status), WEXITSTATUS(si.si_status));
     // If child exited successfully: the end.
     if (ret == 0 &amp;&amp; cqe-&gt;res &gt;= 0 &amp;&amp; cqe-&gt;user_data == 1 &amp;&amp;
         WIFEXITED(si.si_status) &amp;&amp; 0 == WEXITSTATUS(si.si_status)) {

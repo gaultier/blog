@@ -533,7 +533,6 @@ Alternatively, we can only queue the `waitid` and use `io_uring_wait_cqe_timeout
 ```c
 #define _DEFAULT_SOURCE
 #include <liburing.h>
-#include <stdio.h>
 #include <sys/wait.h>
 #include <unistd.h>
 
@@ -581,9 +580,6 @@ int main(int argc, char *argv[]) {
 
     int ret = io_uring_wait_cqe_timeout(&ring, &cqe, &ts);
 
-    printf("ret=%d res=%d user_data=%llu status=%d exited=%d exit_status=%d\n",
-           ret, cqe ? cqe->res : 0, cqe ? cqe->user_data : 0, si.si_status,
-           WIFEXITED(si.si_status), WEXITSTATUS(si.si_status));
     // If child exited successfully: the end.
     if (ret == 0 && cqe->res >= 0 && cqe->user_data == 1 &&
         WIFEXITED(si.si_status) && 0 == WEXITSTATUS(si.si_status)) {
