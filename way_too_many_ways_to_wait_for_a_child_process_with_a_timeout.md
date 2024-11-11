@@ -221,9 +221,9 @@ I like this implementation. It's pretty easy to convince ourselves looking at th
 
 We still have to deal with signals though. Could we reduce their imprint on our code?
 
-## Third approach: Self pipe trick
+## Third approach: Self-pipe trick
 
-This is a really nifty, quite well known trick at this point, where we bridge the world of signals with the world of file descriptors with the `pipe(2)` system call. 
+This is a really nifty, quite well known [trick](https://cr.yp.to/docs/selfpipe.html) at this point, where we bridge the world of signals with the world of file descriptors with the `pipe(2)` system call. 
 
 Usually, pipes are a form of inter-process communication, and here we do not want to communicate with the child process (since it could be any program, and most programs do not get chatty with their parent process). What we do is: in the signal handler for `SIGCHLD`, we simply write (anything) to our own pipe. We know this is signal-safe so it's good. 
 
@@ -315,7 +315,7 @@ So, this trick is clever, but wouldn't it be nice if we could avoid signals *ent
 
 ## Fourth approach: Linux's signalfd
 
-This is a short one: on Linux, there is a system call that does exactly the same as the [self-pipe trick](https://cr.yp.to/docs/selfpipe.html): from a signal, it gives us a file descriptor that we can `poll`. So, we can entirely remove our pipe and signal handler and instead `poll` the file descriptor that `signalfd` gives us.
+This is a short one: on Linux, there is a system call that does exactly the same as the self-pipe trick: from a signal, it gives us a file descriptor that we can `poll`. So, we can entirely remove our pipe and signal handler and instead `poll` the file descriptor that `signalfd` gives us.
 
 Cool, but also....Was it really necessary to introduce a system call for that? I guess the advantage is we do not care about signals at all, and it is clearer than the self-pipe trick. 
 
