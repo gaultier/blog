@@ -493,7 +493,7 @@ int main(int argc, char *argv[]) {
 
     struct pollfd poll_fd = {
         .fd = pipe_fd[0],
-        .events = POLLIN,
+        .events = POLLHUP | POLLIN,
     };
 
     // Wait for the child to finish with a timeout.
