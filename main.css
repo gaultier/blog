@@ -62,11 +62,13 @@ p {
 }
 
 .body {
-  margin: 1rem;
+  margin: .7rem;
 }
 
 .articles > ul {
   list-style: none;
+  width: 100%;
+  padding: 0;
 }
 
 .articles > ul > li {
@@ -76,7 +78,7 @@ p {
 }
 
 .home-link {
-  margin-right: 2rem;
+  margin-right: 1rem;
 }
 
 .home-link > a {
