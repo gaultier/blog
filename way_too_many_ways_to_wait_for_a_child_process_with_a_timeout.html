@@ -452,7 +452,7 @@ with the desired sigmask, avoiding the race.)</p>
 <li>When the child finishes, it automatically closes the write end which in turn triggers an event in <code>poll</code>.</li>
 <li>We cleanup before retrying (if needed)</li>
 </ol>
-<p>So in a way, it's not really a <em>self</em>-pipe, it's more precisely a pipe between the parent and the child, and nothing gets written to it, it's just used by the child to signal it's done when it closes it. Which is useful for many cases outside of our little program.</p>
+<p>So in a way, it's not really a <em>self</em>-pipe, it's more precisely a pipe between the parent and the child, and nothing gets written or read, it's just used by the child to signal it's done when it closes its end. Which is useful for many cases outside of our little program.</p>
 <p>Here is the code:</p>
 <pre><code class="language-c">#define _GNU_SOURCE
 #include &lt;errno.h&gt;
