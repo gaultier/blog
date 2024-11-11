@@ -315,7 +315,7 @@ So, this trick is clever, but wouldn't it be nice if we could avoid signals *ent
 
 ## Fourth approach: Linux's signalfd
 
-This is a short one: on Linux, there is a system call that does exactly the same as the self-pipe trick: from a signal, it gives us a file descriptor that we can `poll`. So, we can entirely remove our pipe and signal handler and instead `poll` the file descriptor that `signalfd` gives us.
+This is a short one: on Linux, there is a system call that does exactly the same as the [self-pipe trick](https://cr.yp.to/docs/selfpipe.html): from a signal, it gives us a file descriptor that we can `poll`. So, we can entirely remove our pipe and signal handler and instead `poll` the file descriptor that `signalfd` gives us.
 
 Cool, but also....Was it really necessary to introduce a system call for that? I guess the advantage is we do not care about signals at all, and it is clearer than the self-pipe trick. 
 
