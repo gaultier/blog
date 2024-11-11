@@ -313,11 +313,95 @@ There are a few catches with this implementation:
 
 So, this trick is clever, but wouldn't it be nice if we could avoid signals *entirely*?
 
+
+### A simpler self-pipe trick
+
+An astute reader pointed out that this trick can be simplified to not deal with signals at all and instead leverage two facts:
+
+- A child inherits the open file descriptors of the parent (including the ones from a pipe)
+- When a process exits, the OS automatically closes its file descriptors
+
+Behind the scenes, at the OS level, there is a reference count for a file descriptor shared by multiple processes. It gets decremented when doing `close(fd)` or by a process terminating. When this count reaches 0, it is closed for real. And you know what system call can watch for a file descriptor closing? Good old `poll`!
+
+So the improved approach is as follows:
+
+1. Each retry, we create a new pipe. 
+2. We fork.
+3. The parent closes the write-end pipe and the child closes the read-end pipe. Effectively, the parent owns the read-end and the child owns the write-end.
+4. The parent polls on the read-end.
+5. When the child finishes, it automatically closes the write-end which in turn triggers an event in `poll`.
+
+Here is the code:
+
+```c
+#define _GNU_SOURCE
+#include <errno.h>
+#include <poll.h>
+#include <stdint.h>
+#include <sys/wait.h>
+#include <unistd.h>
+
+int main(int argc, char *argv[]) {
+  (void)argc;
+
+  uint32_t wait_ms = 128;
+
+  for (int retry = 0; retry < 10; retry += 1) {
+    int pipe_fd[2] = {0};
+    if (-1 == pipe(pipe_fd)) {
+      return errno;
+    }
+
+    int child_pid = fork();
+    if (-1 == child_pid) {
+      return errno;
+    }
+
+    if (0 == child_pid) { // Child
+      // Close the read end of the pipe.
+      close(pipe_fd[0]);
+
+      argv += 1;
+      if (-1 == execvp(argv[0], argv)) {
+        return errno;
+      }
+      __builtin_unreachable();
+    }
+
+    // Close the write end of the pipe.
+    close(pipe_fd[1]);
+
+    struct pollfd poll_fd = {
+        .fd = pipe_fd[0],
+        .events = POLLIN,
+    };
+
+    // Wait for the child to finish with a timeout.
+    poll(&poll_fd, 1, (int)wait_ms);
+
+    kill(child_pid, SIGKILL);
+    int status = 0;
+    wait(&status);
+    if (WIFEXITED(status) && 0 == WEXITSTATUS(status)) {
+      return 0;
+    }
+
+    close(pipe_fd[0]);
+
+    usleep(wait_ms * 1000);
+    wait_ms *= 2;
+  }
+  return 1;
+}
+```
+
+Voila, no signals!
+
 ## Fourth approach: Linux's signalfd
 
 This is a short one: on Linux, there is a system call that does exactly the same as the self-pipe trick: from a signal, it gives us a file descriptor that we can `poll`. So, we can entirely remove our pipe and signal handler and instead `poll` the file descriptor that `signalfd` gives us.
 
-Cool, but also....Was it really necessary to introduce a system call for that? I guess the advantage is we do not care about signals at all, and it is clearer than the self-pipe trick. 
+Cool, but also....Was it really necessary to introduce a system call for that? I guess the advantage is clarity. 
 
 I would prefer extending `poll` to support things other than file descriptors, instead of converting everything a file descriptor to be able to use `poll`. 
 
