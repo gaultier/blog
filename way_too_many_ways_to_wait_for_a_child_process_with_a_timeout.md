@@ -316,7 +316,7 @@ So, this trick is clever, but wouldn't it be nice if we could avoid signals *ent
 
 ### A simpler self-pipe trick
 
-An astute reader pointed out that this trick can be simplified to not deal with signals at all and instead leverage two facts:
+An astute reader [pointed out](https://hachyderm.io/@markd/113461301892152667) that this trick can be simplified to not deal with signals at all and instead leverage two facts:
 
 - A child inherits the open file descriptors of the parent (including the ones from a pipe)
 - When a process exits, the OS automatically closes its file descriptors

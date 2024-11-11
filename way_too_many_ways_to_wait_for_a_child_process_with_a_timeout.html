@@ -437,7 +437,7 @@ with the desired sigmask, avoiding the race.)</p>
 	<a class="title" href="#a-simpler-self-pipe-trick">A simpler self-pipe trick</a>
 	<a class="hash-anchor" href="#a-simpler-self-pipe-trick" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h3>
-<p>An astute reader pointed out that this trick can be simplified to not deal with signals at all and instead leverage two facts:</p>
+<p>An astute reader <a href="https://hachyderm.io/@markd/113461301892152667">pointed out</a> that this trick can be simplified to not deal with signals at all and instead leverage two facts:</p>
 <ul>
 <li>A child inherits the open file descriptors of the parent (including the ones from a pipe)</li>
 <li>When a process exits, the OS automatically closes its file descriptors</li>
