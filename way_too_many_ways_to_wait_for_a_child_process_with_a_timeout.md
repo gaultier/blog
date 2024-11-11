@@ -327,9 +327,9 @@ So the improved approach is as follows:
 
 1. Each retry, we create a new pipe. 
 2. We fork.
-3. The parent closes the write-end pipe and the child closes the read-end pipe. Effectively, the parent owns the read-end and the child owns the write-end.
-4. The parent polls on the read-end.
-5. When the child finishes, it automatically closes the write-end which in turn triggers an event in `poll`.
+3. The parent closes the write end pipe and the child closes the read end pipe. Effectively, the parent owns the read end and the child owns the write end.
+4. The parent polls on the read end.
+5. When the child finishes, it automatically closes the write end which in turn triggers an event in `poll`.
 
 So in a way, it's not really a *self*-pipe, it's more like a pipe between the parent and the child, and nothing gets written to it, it's just used by the child to signal it's done when it closes it. Which is useful for many cases outside of our little program.
 
