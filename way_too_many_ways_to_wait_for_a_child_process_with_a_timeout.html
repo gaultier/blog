@@ -631,8 +631,83 @@ int main(int argc, char *argv[]) {
 	<a class="hash-anchor" href="#seventh-approach-linux-s-io-uring" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p><code>io_uring</code> is the last candidate to enter the already packed ring (eh) of different-yet-similar ways to do 'I/O multiplexing', meaning to wait with a timeout on various kinds of entities to do interesting 'stuff'. We queue a system call e.g. <code>wait</code>, as well as a timeout, and we wait for either to complete. If <code>wait</code> completed first and the exit status is a success, we exit. Otherwise, we retry. Familiar stuff at this point. <code>io_uring</code> essentially makes every system call asynchronous with a uniform API. That's exactly what we want!</p>
-<p>Hold your horses son. You know what people say about things too good to be true?</p>
-<p><code>io_uring</code> does not support all system calls, far from it (after all, there are hundreds of them). In October of this year (2024), they just added <a href="https://github.com/axboe/liburing/wiki/What&#x27;s-new-with-io_uring-in-6.11-and-6.12#add-support-for-bindlisten">support</a> for <code>bind</code> and <code>listen</code>! So you see where this is going: <code>wait</code> is <a href="https://github.com/axboe/liburing/blob/liburing-2.8/src/include/liburing/io_uring.h#L204">not supported</a>. That's unfortunate! It'd be perfect! Perhaps it will be added in the future and I can complete this section.</p>
+<p>Incidentally, that's exactly what <code>liburing</code> does in a unit test. Alternatively, we can only queue the <code>waitid</code> and use <code>io_uring_wait_cqe_timeout</code> to mimick <code>poll(..., timeout)</code>:</p>
+<pre><code class="language-c">#define _DEFAULT_SOURCE
+#include &lt;liburing.h&gt;
+#include &lt;stdio.h&gt;
+#include &lt;sys/wait.h&gt;
+#include &lt;unistd.h&gt;
+
+int main(int argc, char *argv[]) {
+  (void)argc;
+
+  struct io_uring ring = {0};
+  if (io_uring_queue_init(2, &amp;ring,
+                          IORING_SETUP_SINGLE_ISSUER |
+                              IORING_SETUP_DEFER_TASKRUN) &lt; 0) {
+    return 1;
+  }
+
+  uint32_t wait_ms = 128;
+
+  for (int retry = 0; retry &lt; 10; retry += 1) {
+    int child_pid = fork();
+    if (-1 == child_pid) {
+      return errno;
+    }
+
+    if (0 == child_pid) { // Child
+      argv += 1;
+      if (-1 == execvp(argv[0], argv)) {
+        return errno;
+      }
+      __builtin_unreachable();
+    }
+
+    struct io_uring_sqe *sqe = NULL;
+
+    // Queue `waitid`.
+    sqe = io_uring_get_sqe(&amp;ring);
+    siginfo_t si = {0};
+    io_uring_prep_waitid(sqe, P_PID, (id_t)child_pid, &amp;si, WEXITED, 0);
+    sqe-&gt;user_data = 1;
+
+    io_uring_submit(&amp;ring);
+
+    struct __kernel_timespec ts = {
+        .tv_sec = wait_ms / 1000,
+        .tv_nsec = (wait_ms % 1000) * 1000 * 1000,
+    };
+    struct io_uring_cqe *cqe = NULL;
+
+    int ret = io_uring_wait_cqe_timeout(&amp;ring, &amp;cqe, &amp;ts);
+
+    printf(&quot;ret=%d res=%d user_data=%llu status=%d exited=%d exit_status=%d\n&quot;,
+           ret, cqe ? cqe-&gt;res : 0, cqe ? cqe-&gt;user_data : 0, si.si_status,
+           WIFEXITED(si.si_status), WEXITSTATUS(si.si_status));
+    // If child exited successfully: the end.
+    if (ret == 0 &amp;&amp; cqe-&gt;res &gt;= 0 &amp;&amp; cqe-&gt;user_data == 1 &amp;&amp;
+        WIFEXITED(si.si_status) &amp;&amp; 0 == WEXITSTATUS(si.si_status)) {
+      return 0;
+    }
+    if (ret == 0) {
+      io_uring_cqe_seen(&amp;ring, cqe);
+    } else {
+      kill(child_pid, SIGKILL);
+      // Drain the CQE.
+      ret = io_uring_wait_cqe(&amp;ring, &amp;cqe);
+      io_uring_cqe_seen(&amp;ring, cqe);
+    }
+
+    wait(NULL);
+
+    wait_ms *= 2;
+    usleep(wait_ms * 1000);
+  }
+  return 1;
+}
+</code></pre>
+<p>The only difficulty here is in case of timeout: we kill the child directly, and we need to consume and discard the <code>waitid</code> entry in the completion queue. Just like <code>kqueue</code>.</p>
 <p>One caveat for io_uring: it's only supported on modern kernels (5.1+).</p>
 <p>Another caveat: some cloud providers e.g. Google Cloud disable <code>io_uring</code> due to security concerns when running untrusted code. So it's not ubiquitous.</p>
 <h2 id="conclusion">
