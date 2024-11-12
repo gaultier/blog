@@ -138,6 +138,14 @@
 		</li>
 
 <li>
+	<a href="#eigth-approach-threads">Eigth approach: Threads</a>
+		</li>
+
+<li>
+	<a href="#nineth-approach-active-polling">Nineth approach: Active polling.</a>
+		</li>
+
+<li>
 	<a href="#conclusion">Conclusion</a>
 		</li>
 
@@ -796,6 +804,27 @@ int main(int argc, char *argv[]) {
 <p>The only difficulty here is in case of timeout: we kill the child directly, and we need to consume and discard the <code>waitid</code> entry in the completion queue. Just like <code>kqueue</code>.</p>
 <p>One caveat for io_uring: it's only supported on modern kernels (5.1+).</p>
 <p>Another caveat: some cloud providers e.g. Google Cloud disable <code>io_uring</code> due to security concerns when running untrusted code. So it's not ubiquitous.</p>
+<h2 id="eigth-approach-threads">
+	<a class="title" href="#eigth-approach-threads">Eigth approach: Threads</a>
+	<a class="hash-anchor" href="#eigth-approach-threads" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+</h2>
+<p>Readers have <a href="https://news.ycombinator.com/vote?id=42107420&amp;how=up&amp;auth=20ac3216e63a60ca250d82b6a051d7dfaa9f18c9&amp;goto=item%3Fid%3D42103200#42107420">pointed out</a> that threads are also a solution, albeit a suboptimal one. Here's the approach:</p>
+<ol>
+<li>Spawn a thread, it will be in charge of spawning the child process, storing the child PID in a global thread-safe variable (e.g. protected by a mutex). It then <code>wait</code>s on the child in a blocking way.</li>
+<li>If the child exits, <code>wait</code> will return the status, which is also written in a global thread-safe variable, and the thread ends.</li>
+<li>In the main thread, wait on the other thread with a timeout, e.g. with <code>pthread_timedjoin_np</code>.</li>
+<li>If the child did not exit successfully, this is the same as usual: kill, wait, sleep, and retry.</li>
+</ol>
+<p>If the threads library supports returning a value from a thread, like <code>pthread</code> or C11 threads do, that could be used to return the exit status of the child to simplify the code a bit.</p>
+<p>Also, we could make the thread spawning logic a bit more efficient by not spawning a new thread for each retry, if we wanted to. Instead, we communicate with the other thread with a queue or such to instruct it to spawn the child again. It's more complex though.</p>
+<p>Now, this approach works but is kind of cumbersome (as noted by the readers), because threads interact in surprising ways with signals (yay, another thing to watch out for!) so we may have to set up signal masks to block/ignore some, and we must take care of not introducing data-races due to the global variables.</p>
+<p>Unless the problem is embarassingly parallel and the threads share nothing (e.g.: dividing an array into pieces and each thread gets its own piece to work on), I am reminded of the adage: &quot;You had two problems. You reach out for X. You now have 3 problems&quot;. And threads are often the X.</p>
+<p>Still, it's a useful tool in the toolbox.</p>
+<h2 id="nineth-approach-active-polling">
+	<a class="title" href="#nineth-approach-active-polling">Nineth approach: Active polling.</a>
+	<a class="hash-anchor" href="#nineth-approach-active-polling" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+</h2>
+<p>That's looping in user code with micro-sleeping to actively poll on the child status in a non-blocking way, for example using <code>wait(..., WNOHANG)</code>. Unless you have a very bizzare use case and you know what you are doing, please do not do this. This is unnecessary, bad for power consumption, and all we achieve is noticing late that the child ended. This approach is just here for completeness.</p>
 <h2 id="conclusion">
 	<a class="title" href="#conclusion">Conclusion</a>
 	<a class="hash-anchor" href="#conclusion" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>

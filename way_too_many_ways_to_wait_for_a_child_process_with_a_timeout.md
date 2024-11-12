@@ -698,6 +698,32 @@ One caveat for io_uring: it's only supported on modern kernels (5.1+).
 
 Another caveat: some cloud providers e.g. Google Cloud disable `io_uring` due to security concerns when running untrusted code. So it's not ubiquitous.
 
+## Eigth approach: Threads
+
+Readers have [pointed out](https://news.ycombinator.com/vote?id=42107420&how=up&auth=20ac3216e63a60ca250d82b6a051d7dfaa9f18c9&goto=item%3Fid%3D42103200#42107420) that threads are also a solution, albeit a suboptimal one. Here's the approach:
+
+
+1. Spawn a thread, it will be in charge of spawning the child process, storing the child PID in a global thread-safe variable (e.g. protected by a mutex). It then `wait`s on the child in a blocking way.
+1. If the child exits, `wait` will return the status, which is also written in a global thread-safe variable, and the thread ends.
+1. In the main thread, wait on the other thread with a timeout, e.g. with `pthread_timedjoin_np`.
+1. If the child did not exit successfully, this is the same as usual: kill, wait, sleep, and retry.
+
+
+If the threads library supports returning a value from a thread, like `pthread` or C11 threads do, that could be used to return the exit status of the child to simplify the code a bit.
+
+Also, we could make the thread spawning logic a bit more efficient by not spawning a new thread for each retry, if we wanted to. Instead, we communicate with the other thread with a queue or such to instruct it to spawn the child again. It's more complex though.
+
+Now, this approach works but is kind of cumbersome (as noted by the readers), because threads interact in surprising ways with signals (yay, another thing to watch out for!) so we may have to set up signal masks to block/ignore some, and we must take care of not introducing data-races due to the global variables.
+
+Unless the problem is embarassingly parallel and the threads share nothing (e.g.: dividing an array into pieces and each thread gets its own piece to work on), I am reminded of the adage: "You had two problems. You reach out for X. You now have 3 problems". And threads are often the X.
+
+Still, it's a useful tool in the toolbox.
+
+
+## Nineth approach: Active polling.
+
+That's looping in user code with micro-sleeping to actively poll on the child status in a non-blocking way, for example using `wait(..., WNOHANG)`. Unless you have a very bizzare use case and you know what you are doing, please do not do this. This is unnecessary, bad for power consumption, and all we achieve is noticing late that the child ended. This approach is just here for completeness.
+
 ## Conclusion
 
 I find signals and spawning child process to be the hardest parts of Unix. Evidently this is not a rare opinion, looking at the development in these areas: process descriptors, the various expansions to the venerable `fork` with `vfork`, `clone`, `clone3`, `clone6`, a bazillion different ways to do I/O multiplexing, etc. 
