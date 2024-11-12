@@ -611,7 +611,7 @@ So, if it was not enough that each major OS has its own way to watch many differ
 
 Anyways, their own system is called [port](https://www.illumos.org/man/3C/port_create) (or is it ports?) and it looks so similar to `kqueue` it's almost painful. And weirdly, they support all the different kinds of entities that `kqueue` supports *except* PIDs! And I am not sure that they support process descriptors either e.g. `pidfd_open`. However, they have an extensive compatibility layer for Linux so perhaps they do there.
 
-*EDIT: Illumos has [Pctlfd](https://illumos.org/man/3PROC/Pctlfd) which seems to give a file descriptor for a given process, and this file descriptor could then be used `port_create`, I suppose.*
+*EDIT: Illumos has [Pctlfd](https://illumos.org/man/3PROC/Pctlfd) which seems to give a file descriptor for a given process, and this file descriptor could then be used `port_create` or `poll`.*
 
 ## Seventh approach: Linux's io_uring
 
