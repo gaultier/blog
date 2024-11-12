@@ -611,6 +611,8 @@ So, if it was not enough that each major OS has its own way to watch many differ
 
 Anyways, their own system is called [port](https://www.illumos.org/man/3C/port_create) (or is it ports?) and it looks so similar to `kqueue` it's almost painful. And weirdly, they support all the different kinds of entities that `kqueue` supports *except* PIDs! And I am not sure that they support process descriptors either e.g. `pidfd_open`. However, they have an extensive compatibility layer for Linux so perhaps they do there.
 
+*EDIT: Illumos has [Pctlfd](https://illumos.org/man/3PROC/Pctlfd) which seems to give a file descriptor for a given process, and this file descriptor could then be used `port_create`, I suppose.*
+
 ## Seventh approach: Linux's io_uring
 
 `io_uring` is the last candidate to enter the already packed ring (eh) of different-yet-similar ways to do 'I/O multiplexing', meaning to wait with a timeout on various kinds of entities to do interesting 'stuff'. We queue a system call e.g. `wait`, as well as a timeout, and we wait for either to complete. If `wait` completed first and the exit status is a success, we exit. Otherwise, we retry. Familiar stuff at this point. `io_uring` essentially makes every system call asynchronous with a uniform API. That's exactly what we want! `io_uring` only exposes `waitid` and only in very recent versions, which is completely fine.
@@ -720,7 +722,7 @@ Unless the problem is embarassingly parallel and the threads share nothing (e.g.
 Still, it's a useful tool in the toolbox.
 
 
-## Nineth approach: Active polling.
+## Ninth approach: Active polling.
 
 That's looping in user code with micro-sleeping to actively poll on the child status in a non-blocking way, for example using `wait(..., WNOHANG)`. Unless you have a very bizzare use case and you know what you are doing, please do not do this. This is unnecessary, bad for power consumption, and all we achieve is noticing late that the child ended. This approach is just here for completeness.
 

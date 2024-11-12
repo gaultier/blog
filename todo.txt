@@ -3,7 +3,9 @@ Ideas for articles:
 - [ ] HTTP server using arenas
 - [ ] Migration from mbedtls to aws-lc
 - [ ] ASM crypto
-- [ ] How this blog is made
+- [ ] How this blog is made. Line numbers in code snippers.
+- [ ] Banjo chords
+- [ ] Dtrace VM
 
 Blog implementation:
 
