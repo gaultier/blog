@@ -62,6 +62,8 @@ p {
 }
 
 .body {
+  font-size: 1.2rem;
+  line-height: 2rem;
   margin: .7rem;
 }
 
@@ -176,7 +178,6 @@ code {
     padding-right: .3rem !important;
     background: #FFF3E0 !important;
     word-wrap: break-word;
-    font-size: larger;
 }
 
 pre > code.code-no-line-numbers {
