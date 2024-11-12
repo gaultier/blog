@@ -274,6 +274,7 @@ p:has(img):has(em) {
 
 @media only screen and (max-width: 450px) {
    .line-number { display: none; }
+   code { padding-left: 0.3rem !important; }
 }
 
 details {
