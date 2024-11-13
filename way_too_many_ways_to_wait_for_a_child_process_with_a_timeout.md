@@ -1,5 +1,5 @@
 Title: Way too many ways to wait on a child process with a timeout
-Tags: Unix, Signals, C, Linux, FreeBSD, Illumos, MacOS
+Tags: Unix, Signals, C, Linux, FreeBSD, illumos, MacOS
 ---
 
 *Windows is not covered at all in this article.*
@@ -596,7 +596,7 @@ I love that `kqueue` works with every kind of Unix entity: file descriptor, pipe
 
 `kqueue` is only for MacOS and BSDs....Or is it?
 
-There is this library, [libkqueue](https://github.com/mheily/libkqueue), that acts as a compatibility layer to be able to use `kqueue` on all major operating systems, mainly Windows, Linux, and even Solaris/Illumos!
+There is this library, [libkqueue](https://github.com/mheily/libkqueue), that acts as a compatibility layer to be able to use `kqueue` on all major operating systems, mainly Windows, Linux, and even Solaris/illumos!
 
 So...How do they do it then? How can we, on an OS like Linux, watch a PID with the `kqueue` API, when the OS does not support that functionality (neither with `poll` or `epoll`)? Well, the solution is actually very simple:
 
@@ -605,13 +605,13 @@ So...How do they do it then? How can we, on an OS like Linux, watch a PID with t
   > Because the Linux kernel coalesces SIGCHLD (and other signals), the only way to reliably determine if a monitored process has exited, is to loop through all PIDs registered by any kqueue when we receive a SIGCHLD. This involves many calls to waitid(2) and may have a negative performance impact.
 
 
-### Another parenthesis: Solaris/Illumos's ports
+### Another parenthesis: Solaris/illumos's ports
 
-So, if it was not enough that each major OS has its own way to watch many different kinds of entities (Windows has its own thing called [I/O completion ports](https://learn.microsoft.com/en-us/windows/win32/fileio/i-o-completion-ports), MacOS & BSDs have `kqueue`, Linux has `epoll`), Solaris/Illumos shows up and says: Watch me do my own thing. Well actually I do not know the chronology, they might in fact have been first, and some Illumos kernel developers (namely Brian Cantrill in the fabulous [Cantrillogy](https://www.youtube.com/watch?v=wTVfAMRj-7E)) have admitted that it would have been better for everyone if they also had adopted `kqueue`.
+So, if it was not enough that each major OS has its own way to watch many different kinds of entities (Windows has its own thing called [I/O completion ports](https://learn.microsoft.com/en-us/windows/win32/fileio/i-o-completion-ports), MacOS & BSDs have `kqueue`, Linux has `epoll`), Solaris/illumos shows up and says: Watch me do my own thing. Well actually I do not know the chronology, they might in fact have been first, and some illumos kernel developers (namely Brian Cantrill in the fabulous [Cantrillogy](https://www.youtube.com/watch?v=wTVfAMRj-7E)) have admitted that it would have been better for everyone if they also had adopted `kqueue`.
 
 Anyways, their own system is called [port](https://www.illumos.org/man/3C/port_create) (or is it ports?) and it looks so similar to `kqueue` it's almost painful. And weirdly, they support all the different kinds of entities that `kqueue` supports *except* PIDs! And I am not sure that they support process descriptors either e.g. `pidfd_open`. However, they have an extensive compatibility layer for Linux so perhaps they do there.
 
-*EDIT: Illumos has [Pctlfd](https://illumos.org/man/3PROC/Pctlfd) which seems to give a file descriptor for a given process, and this file descriptor could then be used `port_create` or `poll`.*
+*EDIT: illumos has [Pctlfd](https://illumos.org/man/3PROC/Pctlfd) which seems to give a file descriptor for a given process, and this file descriptor could then be used `port_create` or `poll`.*
 
 ## Seventh approach: Linux's io_uring
 
@@ -748,7 +748,7 @@ And OS developers have noticed and are working on new, better abstractions!
 Process descriptors seem to me so straightforward, so obviously correct, that I would definitely favor them over signals. They simply remove entire classes of bugs. If these are not available to me, I would perhaps use `kqueue` instead (with `libkqueue` emulation when necessary), because it means my program can be extended easily to watch for over types of entities and I like that the API is very straightforward: one call to create the queue and one call to use it.
 
 
-Finally, I regret that there is so much fragmentation across all operating systems. Perhaps `io_uring` will become more than a Linuxism and spread to Windows, MacOS, the BSDs, and Illumos in the future?
+Finally, I regret that there is so much fragmentation across all operating systems. Perhaps `io_uring` will become more than a Linuxism and spread to Windows, MacOS, the BSDs, and illumos in the future?
 
 ## Addendum: The code
 

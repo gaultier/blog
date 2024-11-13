@@ -84,7 +84,7 @@
 		</div>
 		<div class="article-title">
 		<h1>Way too many ways to wait on a child process with a timeout</h1>
-		  <div class="tags"> <a href="/blog/articles-by-tag.html#unix" class="tag">Unix</a> <a href="/blog/articles-by-tag.html#signals" class="tag">Signals</a> <a href="/blog/articles-by-tag.html#c" class="tag">C</a> <a href="/blog/articles-by-tag.html#linux" class="tag">Linux</a> <a href="/blog/articles-by-tag.html#freebsd" class="tag">FreeBSD</a> <a href="/blog/articles-by-tag.html#illumos" class="tag">Illumos</a> <a href="/blog/articles-by-tag.html#macos" class="tag">MacOS</a></div>
+		  <div class="tags"> <a href="/blog/articles-by-tag.html#unix" class="tag">Unix</a> <a href="/blog/articles-by-tag.html#signals" class="tag">Signals</a> <a href="/blog/articles-by-tag.html#c" class="tag">C</a> <a href="/blog/articles-by-tag.html#linux" class="tag">Linux</a> <a href="/blog/articles-by-tag.html#freebsd" class="tag">FreeBSD</a> <a href="/blog/articles-by-tag.html#illumos" class="tag">illumos</a> <a href="/blog/articles-by-tag.html#macos" class="tag">MacOS</a></div>
  </div>
  <strong>Table of contents</strong>
 <ul>
@@ -128,7 +128,7 @@
 		</li>
 
 <li>
-	<a href="#another-parenthesis-solaris-illumos-s-ports">Another parenthesis: Solaris/Illumos's ports</a>
+	<a href="#another-parenthesis-solaris-illumos-s-ports">Another parenthesis: Solaris/illumos's ports</a>
 		</li>
 </ul>
 </li>
@@ -707,7 +707,7 @@ int main(int argc, char *argv[]) {
 	<a class="hash-anchor" href="#a-parenthesis-libkqueue" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h3>
 <p><code>kqueue</code> is only for MacOS and BSDs....Or is it?</p>
-<p>There is this library, <a href="https://github.com/mheily/libkqueue">libkqueue</a>, that acts as a compatibility layer to be able to use <code>kqueue</code> on all major operating systems, mainly Windows, Linux, and even Solaris/Illumos!</p>
+<p>There is this library, <a href="https://github.com/mheily/libkqueue">libkqueue</a>, that acts as a compatibility layer to be able to use <code>kqueue</code> on all major operating systems, mainly Windows, Linux, and even Solaris/illumos!</p>
 <p>So...How do they do it then? How can we, on an OS like Linux, watch a PID with the <code>kqueue</code> API, when the OS does not support that functionality (neither with <code>poll</code> or <code>epoll</code>)? Well, the solution is actually very simple:</p>
 <ul>
 <li>On Linux 5.3+, they use <code>pidfd_open</code> + <code>poll/epoll</code>. Hey, we just did that a few sections above!</li>
@@ -718,12 +718,12 @@ int main(int argc, char *argv[]) {
 </li>
 </ul>
 <h3 id="another-parenthesis-solaris-illumos-s-ports">
-	<a class="title" href="#another-parenthesis-solaris-illumos-s-ports">Another parenthesis: Solaris/Illumos's ports</a>
+	<a class="title" href="#another-parenthesis-solaris-illumos-s-ports">Another parenthesis: Solaris/illumos's ports</a>
 	<a class="hash-anchor" href="#another-parenthesis-solaris-illumos-s-ports" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h3>
-<p>So, if it was not enough that each major OS has its own way to watch many different kinds of entities (Windows has its own thing called <a href="https://learn.microsoft.com/en-us/windows/win32/fileio/i-o-completion-ports">I/O completion ports</a>, MacOS &amp; BSDs have <code>kqueue</code>, Linux has <code>epoll</code>), Solaris/Illumos shows up and says: Watch me do my own thing. Well actually I do not know the chronology, they might in fact have been first, and some Illumos kernel developers (namely Brian Cantrill in the fabulous <a href="https://www.youtube.com/watch?v=wTVfAMRj-7E">Cantrillogy</a>) have admitted that it would have been better for everyone if they also had adopted <code>kqueue</code>.</p>
+<p>So, if it was not enough that each major OS has its own way to watch many different kinds of entities (Windows has its own thing called <a href="https://learn.microsoft.com/en-us/windows/win32/fileio/i-o-completion-ports">I/O completion ports</a>, MacOS &amp; BSDs have <code>kqueue</code>, Linux has <code>epoll</code>), Solaris/illumos shows up and says: Watch me do my own thing. Well actually I do not know the chronology, they might in fact have been first, and some illumos kernel developers (namely Brian Cantrill in the fabulous <a href="https://www.youtube.com/watch?v=wTVfAMRj-7E">Cantrillogy</a>) have admitted that it would have been better for everyone if they also had adopted <code>kqueue</code>.</p>
 <p>Anyways, their own system is called <a href="https://www.illumos.org/man/3C/port_create">port</a> (or is it ports?) and it looks so similar to <code>kqueue</code> it's almost painful. And weirdly, they support all the different kinds of entities that <code>kqueue</code> supports <em>except</em> PIDs! And I am not sure that they support process descriptors either e.g. <code>pidfd_open</code>. However, they have an extensive compatibility layer for Linux so perhaps they do there.</p>
-<p><em>EDIT: Illumos has <a href="https://illumos.org/man/3PROC/Pctlfd">Pctlfd</a> which seems to give a file descriptor for a given process, and this file descriptor could then be used <code>port_create</code> or <code>poll</code>.</em></p>
+<p><em>EDIT: illumos has <a href="https://illumos.org/man/3PROC/Pctlfd">Pctlfd</a> which seems to give a file descriptor for a given process, and this file descriptor could then be used <code>port_create</code> or <code>poll</code>.</em></p>
 <h2 id="seventh-approach-linux-s-io-uring">
 	<a class="title" href="#seventh-approach-linux-s-io-uring">Seventh approach: Linux's io_uring</a>
 	<a class="hash-anchor" href="#seventh-approach-linux-s-io-uring" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
@@ -844,7 +844,7 @@ int main(int argc, char *argv[]) {
 <p>And to be fair to the OS developers that have to implement them: I do not think they did a bad job! I am sure it's super hard to implement! It's just that the whole concept and the available APIs are very easy to misuse. It's a good illustration of how a good API, the right abstraction, can enable great programs, and a poor API, the wrong abstraction, can be the root cause of various bugs in many programs for decades.</p>
 <p>And OS developers have noticed and are working on new, better abstractions!</p>
 <p>Process descriptors seem to me so straightforward, so obviously correct, that I would definitely favor them over signals. They simply remove entire classes of bugs. If these are not available to me, I would perhaps use <code>kqueue</code> instead (with <code>libkqueue</code> emulation when necessary), because it means my program can be extended easily to watch for over types of entities and I like that the API is very straightforward: one call to create the queue and one call to use it.</p>
-<p>Finally, I regret that there is so much fragmentation across all operating systems. Perhaps <code>io_uring</code> will become more than a Linuxism and spread to Windows, MacOS, the BSDs, and Illumos in the future?</p>
+<p>Finally, I regret that there is so much fragmentation across all operating systems. Perhaps <code>io_uring</code> will become more than a Linuxism and spread to Windows, MacOS, the BSDs, and illumos in the future?</p>
 <h2 id="addendum-the-code">
 	<a class="title" href="#addendum-the-code">Addendum: The code</a>
 	<a class="hash-anchor" href="#addendum-the-code" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
