@@ -448,6 +448,7 @@ It's very nifty, but I am not sure I would enjoy reading and writing this kind o
 <p>Rust + FFI is nasty and has a lot of friction. I went at work through all these steps I went through in this article, and this happens a lot.</p>
 <p>The crux of the issue is that there is a lot of knowledge to keep in our heads, lots of easy ways to shoot ourselves in the foot, and we have to reconcile what various tools tell us: even if the compiler is happy, the tests might not be. Even the tests are happy, Miri might not be. Even if we think we have done the right thing, we discover later, buried deep in the docs, that in fact, we didn't. It's definitely for experts only.</p>
 <p>This should not be so hard! Won't somebody think of the <s>children</s> Rust FFI users?</p>
+<p>EDIT: It's been <a href="https://chaos.social/@filmroellchen/113464336212759405">pointed</a> out to me that there are two on-going internal discussions by the Rust developers about this topic to possibly reserve the <code>defer</code> keyword for future use and maybe one day add this facility to the language: <a href="https://internals.rust-lang.org/t/pre-rfc-defer-statement/16644">1</a>, <a href="https://internals.rust-lang.org/t/a-defer-discussion/20387/71">2</a>.</p>
 <h2 id="addendum-one-more-gotcha">
 	<a class="title" href="#addendum-one-more-gotcha">Addendum: One more gotcha</a>
 	<a class="hash-anchor" href="#addendum-one-more-gotcha" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>

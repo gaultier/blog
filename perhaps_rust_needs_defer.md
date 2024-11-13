@@ -416,6 +416,8 @@ The crux of the issue is that there is a lot of knowledge to keep in our heads, 
 This should not be so hard! Won't somebody think of the <s>children</s> Rust FFI users?
 
 
+EDIT: It's been [pointed](https://chaos.social/@filmroellchen/113464336212759405) out to me that there are two on-going internal discussions by the Rust developers about this topic to possibly reserve the `defer` keyword for future use and maybe one day add this facility to the language: [1](https://internals.rust-lang.org/t/pre-rfc-defer-statement/16644), [2](https://internals.rust-lang.org/t/a-defer-discussion/20387/71).
+
 ## Addendum: One more gotcha
 
 Rust guarantees that the underlying pointer in `Vec` is not null. And `OwningArrayC` mirrors `Vec`, so it should be the same, right? Well consider this C code:
