@@ -7,6 +7,7 @@ Ideas for articles:
 - [ ] Banjo chords
 - [ ] Dtrace VM
 - [ ] Wireguard UI
+- [ ] From BIOS to bootloader to kernel to userspace
 
 Blog implementation:
 
