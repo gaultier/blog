@@ -2,10 +2,11 @@ Ideas for articles:
 
 - [ ] HTTP server using arenas
 - [ ] Migration from mbedtls to aws-lc
-- [ ] ASM crypto
-- [ ] How this blog is made. Line numbers in code snippers.
+- [ ] ~~ASM crypto~~
+- [ ] How this blog is made. Line numbers in code snippets.
 - [ ] Banjo chords
 - [ ] Dtrace VM
+- [ ] Wireguard UI
 
 Blog implementation:
 
