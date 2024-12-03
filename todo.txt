@@ -8,6 +8,7 @@ Ideas for articles:
 - [ ] Dtrace VM
 - [ ] Wireguard UI
 - [ ] From BIOS to bootloader to kernel to userspace
+- [ ] A faster HTTP parser than NodeJS's one
 
 Blog implementation:
 
