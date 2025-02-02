@@ -202,7 +202,8 @@ figcaption {
 
 td, th {
     border: 1px solid black;
-    padding: 0.5rem
+    padding: 0.5rem;
+    text-align: center;
 }
 
 th {
