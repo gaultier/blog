@@ -12,7 +12,7 @@ Well, let's take a tour of all the OS APIs to handle timers.
 
 ## Windows: SetTimer
 
-This will be brief because I do not develop on Windows. The official documentation mentions the `SetTimer` function from Win32 and you pass it a timeout and a callback. Super simple.
+This will be brief because I do not develop on Windows. The official documentation mentions the `SetTimer` function from Win32 and you pass it a timeout and a callback. Alternatively, since Windows applications come with a built-in event queue, an event of type `WM_TIMER` gets emitted and can be consumed from the queue. Simple, and it composes with other OS events, I like it.
 
 ## POSIX: timer_create, timer_settime
 
@@ -201,6 +201,19 @@ This approach is reminiscent of this part from the [man page](https://www.man7.o
 ## Conclusion
 
 Writing cross-platform C code usually means writing code for Windows and for Unix. But for multiplexed I/O, and for timers, each Unix has its own idea of what's the Right Way(tm). 
+
+Tu sum up:
+
+| OS API                 | Windows | macOS | Linux | FreeBSD | NetBSD | OpenBSD | Illumos |
+|------------------------|---------|-------|-------|---------|--------|---------|---------|
+| SetTimer               | ✓       |       |       |         |        |         |         |
+| ~POSIX timers~         |         | ✓     | ✓     | ✓       | ✓      | ✓       | ✓       |
+| timerfd                |         |       | ✓     | ✓       | ✓      |         | ✓       |
+| kevent timer           |         |       |       | ✓       | ✓      | ✓       |         |
+| port_create timer      |         |       |       |         |        |         | ✓       |
+| dispatch_source_create |         | ✓     |       |         |        |         |         |
+| Userspace timers       | ✓       | ✓     | ✓     | ✓       | ✓      | ✓       | ✓       |
+
 
 For performant multiplexed I/O, that means that we have to have a code path for each OS (using `epoll` on Linux, `kqueue` on macOS and BSDs, event ports on Illumos, I/O completion ports on Windows). 
 
