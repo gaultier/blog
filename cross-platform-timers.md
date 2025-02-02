@@ -269,9 +269,64 @@ I do not currently have access to an Apple computer so I have not tried it. All 
 
 `io_uring` is a fascinating Linux-only approach to essentially make every blocking system call... non-blocking. A syscall is enqueued into a ring buffer shared between userspace and the kernel, as a 'request', and at some point in time, a 'response' is enqueued by the kernel into a separate ring buffer that our program can read. It's simple, it's composable, it's great. 
 
-At the beginning I said that a blocking 'sleep' was not enough, because our program cannot do any work while sleeping. `io_uring` renders this moot: we can enqueue a sleep, do some work, for example enqueue other syscalls, and whenever our sleep finishes, we can dequeue it from the second ring buffer, and voila: we just implemented a timer.
+At the beginning I said that a blocking 'sleep' was not enough, because our program cannot do any work while sleeping. `io_uring` renders this moot: we can (conceptually) enqueue a sleep, do some work, for example enqueue other syscalls, and whenever our sleep finishes, we can dequeue it from the second ring buffer, and voila: we just implemented a timer.
 
 It's so simple it's brilliant! Sadly, it's Linux only, only for recent-ish kernels, and some cloud providers disable this facility.
+
+Let's see it in action:
+
+```c
+#include <assert.h>
+#include <liburing.h>
+#include <liburing/io_uring.h>
+#include <stdio.h>
+
+int main() {
+  struct io_uring ring = {0};
+  if (io_uring_queue_init(10, &ring, IORING_SETUP_SINGLE_ISSUER) < 0) {
+    return 1;
+  }
+
+  // Queue `sleep`.
+  struct io_uring_sqe *sqe = NULL;
+  for (int i = 1; i <= 10; i++) {
+    sqe = io_uring_get_sqe(&ring);
+    struct __kernel_timespec ts = {.tv_nsec = i * 50 * 1000 * 1000};
+    io_uring_prep_timeout(sqe, &ts, 1, IORING_TIMEOUT_ETIME_SUCCESS);
+    sqe->user_data = i;
+    assert(1 == io_uring_submit(&ring));
+  }
+
+  for (int i = 0; i < 10; i++) {
+    struct io_uring_cqe *cqe = NULL;
+
+    int ret = io_uring_wait_cqe(&ring, &cqe);
+    assert(0 == ret);
+    assert(-ETIME == cqe->res);
+
+    struct timespec now = {0};
+    clock_gettime(CLOCK_REALTIME, &now);
+    printf("[%ld.%03ld] timer %lld triggered\n", now.tv_sec,
+           now.tv_nsec / 1000 / 1000, cqe->user_data);
+    io_uring_cqe_seen(&ring, cqe);
+  }
+}
+```
+
+And it outputs:
+
+```
+[1738532785.771] timer 1 triggered
+[1738532785.821] timer 2 triggered
+[1738532785.871] timer 3 triggered
+[1738532785.921] timer 4 triggered
+[1738532785.971] timer 5 triggered
+[1738532786.021] timer 6 triggered
+[1738532786.071] timer 7 triggered
+[1738532786.121] timer 8 triggered
+[1738532786.171] timer 9 triggered
+[1738532786.221] timer 10 triggered
+```
 
 ## All OSes: timers fully implemented in userspace
 

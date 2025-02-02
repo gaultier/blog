@@ -372,8 +372,57 @@ as its notification mechanism.</p>
 	<a class="hash-anchor" href="#linux-io-uring" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p><code>io_uring</code> is a fascinating Linux-only approach to essentially make every blocking system call... non-blocking. A syscall is enqueued into a ring buffer shared between userspace and the kernel, as a 'request', and at some point in time, a 'response' is enqueued by the kernel into a separate ring buffer that our program can read. It's simple, it's composable, it's great.</p>
-<p>At the beginning I said that a blocking 'sleep' was not enough, because our program cannot do any work while sleeping. <code>io_uring</code> renders this moot: we can enqueue a sleep, do some work, for example enqueue other syscalls, and whenever our sleep finishes, we can dequeue it from the second ring buffer, and voila: we just implemented a timer.</p>
+<p>At the beginning I said that a blocking 'sleep' was not enough, because our program cannot do any work while sleeping. <code>io_uring</code> renders this moot: we can (conceptually) enqueue a sleep, do some work, for example enqueue other syscalls, and whenever our sleep finishes, we can dequeue it from the second ring buffer, and voila: we just implemented a timer.</p>
 <p>It's so simple it's brilliant! Sadly, it's Linux only, only for recent-ish kernels, and some cloud providers disable this facility.</p>
+<p>Let's see it in action:</p>
+<pre><code class="language-c">#include &lt;assert.h&gt;
+#include &lt;liburing.h&gt;
+#include &lt;liburing/io_uring.h&gt;
+#include &lt;stdio.h&gt;
+
+int main() {
+  struct io_uring ring = {0};
+  if (io_uring_queue_init(10, &amp;ring, IORING_SETUP_SINGLE_ISSUER) &lt; 0) {
+    return 1;
+  }
+
+  // Queue `sleep`.
+  struct io_uring_sqe *sqe = NULL;
+  for (int i = 1; i &lt;= 10; i++) {
+    sqe = io_uring_get_sqe(&amp;ring);
+    struct __kernel_timespec ts = {.tv_nsec = i * 50 * 1000 * 1000};
+    io_uring_prep_timeout(sqe, &amp;ts, 1, IORING_TIMEOUT_ETIME_SUCCESS);
+    sqe-&gt;user_data = i;
+    assert(1 == io_uring_submit(&amp;ring));
+  }
+
+  for (int i = 0; i &lt; 10; i++) {
+    struct io_uring_cqe *cqe = NULL;
+
+    int ret = io_uring_wait_cqe(&amp;ring, &amp;cqe);
+    assert(0 == ret);
+    assert(-ETIME == cqe-&gt;res);
+
+    struct timespec now = {0};
+    clock_gettime(CLOCK_REALTIME, &amp;now);
+    printf(&quot;[%ld.%03ld] timer %lld triggered\n&quot;, now.tv_sec,
+           now.tv_nsec / 1000 / 1000, cqe-&gt;user_data);
+    io_uring_cqe_seen(&amp;ring, cqe);
+  }
+}
+</code></pre>
+<p>And it outputs:</p>
+<pre><code>[1738532785.771] timer 1 triggered
+[1738532785.821] timer 2 triggered
+[1738532785.871] timer 3 triggered
+[1738532785.921] timer 4 triggered
+[1738532785.971] timer 5 triggered
+[1738532786.021] timer 6 triggered
+[1738532786.071] timer 7 triggered
+[1738532786.121] timer 8 triggered
+[1738532786.171] timer 9 triggered
+[1738532786.221] timer 10 triggered
+</code></pre>
 <h2 id="all-oses-timers-fully-implemented-in-userspace">
 	<a class="title" href="#all-oses-timers-fully-implemented-in-userspace">All OSes: timers fully implemented in userspace</a>
 	<a class="hash-anchor" href="#all-oses-timers-fully-implemented-in-userspace" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
