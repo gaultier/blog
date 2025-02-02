@@ -224,7 +224,10 @@ int main() {
     for (int i = 0; i &lt; res; i++) {
       struct epoll_event event = events[i];
       if (event.events &amp; EPOLLIN) {
-        printf(&quot;timer %d triggered\n&quot;, event.data.fd);
+        struct timespec now = {0};
+        clock_gettime(CLOCK_REALTIME, &amp;now);
+        printf(&quot;[%ld.%03ld] timer %d triggered\n&quot;, now.tv_sec,
+               now.tv_nsec / 1000 / 1000, event.data.fd);
         close(event.data.fd);
       }
     }
@@ -232,15 +235,15 @@ int main() {
 }
 </code></pre>
 <p>And it prints:</p>
-<pre><code>timer 5 triggered
-timer 6 triggered
-timer 7 triggered
-timer 8 triggered
-timer 9 triggered
-timer 10 triggered
-timer 11 triggered
-timer 12 triggered
-timer 13 triggered
+<pre><code>[1738530944.233] timer 5 triggered
+[1738530944.283] timer 6 triggered
+[1738530944.333] timer 7 triggered
+[1738530944.383] timer 8 triggered
+[1738530944.433] timer 9 triggered
+[1738530944.483] timer 10 triggered
+[1738530944.533] timer 11 triggered
+[1738530944.583] timer 12 triggered
+[1738530944.633] timer 13 triggered
 </code></pre>
 <p>The only gotcha, which is mentioned by the man page, is that we need to remember to <code>read(2)</code> from the timer whenever it triggers. That only matters for repeating timers (also sometimes called interval timers).</p>
 <p>There's even an additional benefit with this API: thanks to <code>ProcFS</code>, timers appear on the file system under <code>/proc/&lt;pid&gt;/fd/</code>, so troubleshooting is a bit easier.</p>

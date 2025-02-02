@@ -113,7 +113,10 @@ int main() {
     for (int i = 0; i < res; i++) {
       struct epoll_event event = events[i];
       if (event.events & EPOLLIN) {
-        printf("timer %d triggered\n", event.data.fd);
+        struct timespec now = {0};
+        clock_gettime(CLOCK_REALTIME, &now);
+        printf("[%ld.%03ld] timer %d triggered\n", now.tv_sec,
+               now.tv_nsec / 1000 / 1000, event.data.fd);
         close(event.data.fd);
       }
     }
@@ -124,15 +127,15 @@ int main() {
 And it prints:
 
 ```
-timer 5 triggered
-timer 6 triggered
-timer 7 triggered
-timer 8 triggered
-timer 9 triggered
-timer 10 triggered
-timer 11 triggered
-timer 12 triggered
-timer 13 triggered
+[1738530944.233] timer 5 triggered
+[1738530944.283] timer 6 triggered
+[1738530944.333] timer 7 triggered
+[1738530944.383] timer 8 triggered
+[1738530944.433] timer 9 triggered
+[1738530944.483] timer 10 triggered
+[1738530944.533] timer 11 triggered
+[1738530944.583] timer 12 triggered
+[1738530944.633] timer 13 triggered
 ```
 
 The only gotcha, which is mentioned by the man page, is that we need to remember to `read(2)` from the timer whenever it triggers. That only matters for repeating timers (also sometimes called interval timers).
