@@ -599,6 +599,11 @@ precision.</p>
 </table>
 <p>For performant multiplexed I/O, that means that we have to have a code path for each OS (using <code>epoll</code> on Linux, <code>kqueue</code> on macOS and BSDs, event ports on Illumos, I/O completion ports on Windows).</p>
 <p>For timers, it seems that the easiest approach is to implement them fully in userspace, as long as we have an efficient data structure to keep them around.</p>
+<p>Key takeaways:</p>
+<ul>
+<li>Signals are evil, do not use them, unless the OS offers a sane API to make them manageable.</li>
+<li>If it can be done in userspace efficiently, that's the easiest way to implement something cross-platform.</li>
+</ul>
 <section class="footnotes" data-footnotes>
 <ol>
 <li id="fn-1">
