@@ -1,12 +1,14 @@
-Title: The missing API for cross-platform timers
+Title: The missing cross-platform API for timers
 Tags: Unix, Signals, C, Linux, FreeBSD, Illumos, MacOS, Windows, OpenBSD, NetBSD, Timers
 ---
 
 Most serious programs will need to trigger some action at a delayed point in time, often repeatedly: set timeouts, clean up temporary files or entries in the database, send keep-alives, garbage-collect unused entities, etc. All while doing some work in the meantime. A blocking `sleep` won't cut it! For example, JavaScript has `setTimeout`. But how does it work under the hood? How does each OS handle that?
 
-Lately I found myself in need of doing just that, repeatedly sending a keep-alive to a remote peer in some network protocol, in C. And I wanted to do it in a cross-platform way. And to my surprise, I could not find a (sane) libc function or a syscall to do so, that is the same on all Unices! 
+Lately, I have found myself in need of doing just that, repeatedly sending a keep-alive over the network to many remote peers, in C. My program has an event loop, a la NodeJS or Redis. It is doing lots of file I/O, network I/O, and handling timers, all in a single thread, in a non-blocking way.
 
-Each had their own weird way to do it, as I discovered. I am used to Windows being the odd kid in its corner doing its thing, but usually, Unices (thanks to POSIX) agree on a simple API to do something. There's the elephant in the room, of course, with epoll/kqueue/event ports...Which is such a pain that numerous libraries have sprung up to paper over the differences and offer The Once API To Rule Them All: libuv, libev, libevent, etc. So, are timers the same painful ordeal?
+And I wanted to do all that in a cross-platform way. And to my surprise, I could not find a (sane) libc function or syscall to create a timer, and that is the same on all Unices! 
+
+Each Unix variant had its own weird way to do it, as I discovered. I am used to Windows being the odd kid in its corner doing its thing, but usually, Unices (thanks to POSIX) agree on a simple API to do something. There's the elephant in the room, of course, with epoll/kqueue/event ports...Which is such a pain that numerous libraries have sprung up to paper over the differences and offer The *One API To Rule Them All*: libuv, libev, libevent, etc. So, are timers the same painful ordeal?
 
 Well, let's take a tour of all the OS APIs to handle them.
 
@@ -22,6 +24,7 @@ POSIX has one API for timers, and it sucks. A timer is created with `timer_creat
 - They are affected by the signal mask of the parent (e.g.: the shell, the service runner, etc)
 - They behave confusingly with child processes. Normally, a signal mask is inherited by the child. But some signal-triggering APIs (e.g.: `timer_settime`)  explicitly prevent child processes from inheriting their signals. I guess we'll have to read the fine prints in the man page!
 - It's hard to write complex programs with signals in mind due to their global nature. Code of our own, or in a library we use, could block some signals for some period of time, unbeknownst to us. Or simply modify the signal mask of the process, so we can never assume that the signal mask has a given value.
+- A signal handler has to use global variables, there is no way to pass it a pointer to some data.
 - Most functions are not async-signal-safe and should not be used from within a signal handler but no compiler warns about that and most example code is wrong. This is exacerbated by the fact that a given function may be async-signal safe on some OS but not on another. Or for some version of this OS but not for another version. This has caused real [security vulnerabilities](https://www.qualys.com/2024/07/01/cve-2024-6387/regresshion.txt) in the past.
 
 I'll just quote here the Linux man page for [timer_create](https://www.man7.org/linux/man-pages/man2/timer_create.2.html):
@@ -36,7 +39,9 @@ I'll just quote here the Linux man page for [timer_create](https://www.man7.org/
 Enough said.
 
 
-And this is really tricky to get right. For example, `malloc` is not async-signal-safe. Well, you think, let's just remember to not use it in signal handlers! Done! Feeling confident, we happen to call `qsort` in our signal handler. Should be fine, right? We just sort some data... Well, we just introduced a security vulnerability!
+And this is really tricky to get right. For example, `malloc` is not async-signal-safe. By the way, you have to go out of your way to find this out, because the man page (at least on my system) does not mention anything about signals or async safety.
+
+Well, you think, let's just remember to not use `malloc` in signal handlers! Done! Feeling confident, we happen to call `qsort` in our signal handler. Should be fine, right? We just sort some data in-place... Well, we just introduced a security vulnerability!
 
 That's because in glibc, the innocent looking `qsort` [calls](https://www.qualys.com/2024/01/30/qsort.txt) `malloc` under the hood! (And that was, in the past, the cause of `qsort` segfaulting, which I find hilarious): 
 
@@ -48,7 +53,7 @@ That's because in glibc, the innocent looking `qsort` [calls](https://www.qualys
 > major drawback: it does not sort in-place -- it malloc()ates a copy of
 > the array of elements to be sorted.
 
-So...let's accept that writing signal handlers correctly is not feasible for us mere humans. Many people have concluded the same in the past and have created better OS APIs that do not involve timers at all. Let's look into that.
+So...let's accept that writing signal handlers correctly is not feasible for us mere mortals. Many people have concluded the same in the past and have created better OS APIs that do not involve signals at all. Let's look into that.
 
 ## Linux: timerfd_create, timerfd_settime
 
@@ -193,7 +198,7 @@ I was at this moment reminded of a [sentence](https://smartos.org/man/7/timerfd)
 
 So, what `libuv` does is quite simple in fact:
 
-When a timer is created, add it to a data structure (it's a min-heap, i.e. a binary tree that is easy to implement and is designed to get the smallest element in a set quickly).
+When a timer is created, add it to a data structure (it's a [min-heap](https://en.wikipedia.org/wiki/Binary_heap), i.e. a binary tree that is easy to implement and is designed to get the smallest element in a set quickly).
 
 A typical event loop tick first gets the current time from the OS. Then, it computes the timeout to pass to poll/epoll/kqueue/etc.  If there are no active timers, it's easy, there is no timeout (that means that the program will block indefinitely until some I/O happens).
 

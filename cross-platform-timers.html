@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>The missing API for cross-platform timers</title>
+<title>The missing cross-platform API for timers</title>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link type="application/atom+xml" href="/blog/feed.xml" rel="self"/>
@@ -83,7 +83,7 @@
 			<p class="publication-date">Published on 2025-02-02</p>
 		</div>
 		<div class="article-title">
-		<h1>The missing API for cross-platform timers</h1>
+		<h1>The missing cross-platform API for timers</h1>
 		  <div class="tags"> <a href="/blog/articles-by-tag.html#unix" class="tag">Unix</a> <a href="/blog/articles-by-tag.html#signals" class="tag">Signals</a> <a href="/blog/articles-by-tag.html#c" class="tag">C</a> <a href="/blog/articles-by-tag.html#linux" class="tag">Linux</a> <a href="/blog/articles-by-tag.html#freebsd" class="tag">FreeBSD</a> <a href="/blog/articles-by-tag.html#illumos" class="tag">Illumos</a> <a href="/blog/articles-by-tag.html#macos" class="tag">MacOS</a> <a href="/blog/articles-by-tag.html#windows" class="tag">Windows</a> <a href="/blog/articles-by-tag.html#openbsd" class="tag">OpenBSD</a> <a href="/blog/articles-by-tag.html#netbsd" class="tag">NetBSD</a> <a href="/blog/articles-by-tag.html#timers" class="tag">Timers</a></div>
  </div>
  <strong>Table of contents</strong>
@@ -127,8 +127,9 @@
 </ul>
 
 <p>Most serious programs will need to trigger some action at a delayed point in time, often repeatedly: set timeouts, clean up temporary files or entries in the database, send keep-alives, garbage-collect unused entities, etc. All while doing some work in the meantime. A blocking <code>sleep</code> won't cut it! For example, JavaScript has <code>setTimeout</code>. But how does it work under the hood? How does each OS handle that?</p>
-<p>Lately I found myself in need of doing just that, repeatedly sending a keep-alive to a remote peer in some network protocol, in C. And I wanted to do it in a cross-platform way. And to my surprise, I could not find a (sane) libc function or a syscall to do so, that is the same on all Unices!</p>
-<p>Each had their own weird way to do it, as I discovered. I am used to Windows being the odd kid in its corner doing its thing, but usually, Unices (thanks to POSIX) agree on a simple API to do something. There's the elephant in the room, of course, with epoll/kqueue/event ports...Which is such a pain that numerous libraries have sprung up to paper over the differences and offer The Once API To Rule Them All: libuv, libev, libevent, etc. So, are timers the same painful ordeal?</p>
+<p>Lately, I have found myself in need of doing just that, repeatedly sending a keep-alive over the network to many remote peers, in C. My program has an event loop, a la NodeJS or Redis. It is doing lots of file I/O, network I/O, and handling timers, all in a single thread, in a non-blocking way.</p>
+<p>And I wanted to do all that in a cross-platform way. And to my surprise, I could not find a (sane) libc function or syscall to create a timer, and that is the same on all Unices!</p>
+<p>Each Unix variant had its own weird way to do it, as I discovered. I am used to Windows being the odd kid in its corner doing its thing, but usually, Unices (thanks to POSIX) agree on a simple API to do something. There's the elephant in the room, of course, with epoll/kqueue/event ports...Which is such a pain that numerous libraries have sprung up to paper over the differences and offer The <em>One API To Rule Them All</em>: libuv, libev, libevent, etc. So, are timers the same painful ordeal?</p>
 <p>Well, let's take a tour of all the OS APIs to handle them.</p>
 <h2 id="windows-settimer">
 	<a class="title" href="#windows-settimer">Windows: SetTimer</a>
@@ -145,6 +146,7 @@
 <li>They are affected by the signal mask of the parent (e.g.: the shell, the service runner, etc)</li>
 <li>They behave confusingly with child processes. Normally, a signal mask is inherited by the child. But some signal-triggering APIs (e.g.: <code>timer_settime</code>)  explicitly prevent child processes from inheriting their signals. I guess we'll have to read the fine prints in the man page!</li>
 <li>It's hard to write complex programs with signals in mind due to their global nature. Code of our own, or in a library we use, could block some signals for some period of time, unbeknownst to us. Or simply modify the signal mask of the process, so we can never assume that the signal mask has a given value.</li>
+<li>A signal handler has to use global variables, there is no way to pass it a pointer to some data.</li>
 <li>Most functions are not async-signal-safe and should not be used from within a signal handler but no compiler warns about that and most example code is wrong. This is exacerbated by the fact that a given function may be async-signal safe on some OS but not on another. Or for some version of this OS but not for another version. This has caused real <a href="https://www.qualys.com/2024/07/01/cve-2024-6387/regresshion.txt">security vulnerabilities</a> in the past.</li>
 </ul>
 <p>I'll just quote here the Linux man page for <a href="https://www.man7.org/linux/man-pages/man2/timer_create.2.html">timer_create</a>:</p>
@@ -154,7 +156,8 @@
   Nevertheless, we use printf() here [...]. */
 </code></pre>
 <p>Enough said.</p>
-<p>And this is really tricky to get right. For example, <code>malloc</code> is not async-signal-safe. Well, you think, let's just remember to not use it in signal handlers! Done! Feeling confident, we happen to call <code>qsort</code> in our signal handler. Should be fine, right? We just sort some data... Well, we just introduced a security vulnerability!</p>
+<p>And this is really tricky to get right. For example, <code>malloc</code> is not async-signal-safe. By the way, you have to go out of your way to find this out, because the man page (at least on my system) does not mention anything about signals or async safety.</p>
+<p>Well, you think, let's just remember to not use <code>malloc</code> in signal handlers! Done! Feeling confident, we happen to call <code>qsort</code> in our signal handler. Should be fine, right? We just sort some data in-place... Well, we just introduced a security vulnerability!</p>
 <p>That's because in glibc, the innocent looking <code>qsort</code> <a href="https://www.qualys.com/2024/01/30/qsort.txt">calls</a> <code>malloc</code> under the hood! (And that was, in the past, the cause of <code>qsort</code> segfaulting, which I find hilarious):</p>
 <blockquote>
 <p>to our great surprise, we discovered
@@ -165,7 +168,7 @@ But merge sort suffers from one
 major drawback: it does not sort in-place -- it malloc()ates a copy of
 the array of elements to be sorted.</p>
 </blockquote>
-<p>So...let's accept that writing signal handlers correctly is not feasible for us mere humans. Many people have concluded the same in the past and have created better OS APIs that do not involve timers at all. Let's look into that.</p>
+<p>So...let's accept that writing signal handlers correctly is not feasible for us mere mortals. Many people have concluded the same in the past and have created better OS APIs that do not involve signals at all. Let's look into that.</p>
 <h2 id="linux-timerfd-create-timerfd-settime">
 	<a class="title" href="#linux-timerfd-create-timerfd-settime">Linux: timerfd_create, timerfd_settime</a>
 	<a class="hash-anchor" href="#linux-timerfd-create-timerfd-settime" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
@@ -300,7 +303,7 @@ arguably unnecessary: portable code can [...] use the timeout value
 present in poll(2) [...].</p>
 </blockquote>
 <p>So, what <code>libuv</code> does is quite simple in fact:</p>
-<p>When a timer is created, add it to a data structure (it's a min-heap, i.e. a binary tree that is easy to implement and is designed to get the smallest element in a set quickly).</p>
+<p>When a timer is created, add it to a data structure (it's a <a href="https://en.wikipedia.org/wiki/Binary_heap">min-heap</a>, i.e. a binary tree that is easy to implement and is designed to get the smallest element in a set quickly).</p>
 <p>A typical event loop tick first gets the current time from the OS. Then, it computes the timeout to pass to poll/epoll/kqueue/etc.  If there are no active timers, it's easy, there is no timeout (that means that the program will block indefinitely until some I/O happens).</p>
 <p>If there are active timers, get the 'smallest' one, meaning: the first that would trigger. The OS timeout is thus <code>now - timer.value</code>.
 Whenever a timer expires, it is removed from the min-heap. Simple, (relatively) efficient. The only caveat is that <code>epoll</code> only offers a millisecond precision for the timeout parameter so that's also the precision of <code>libuv</code> timers.</p>
