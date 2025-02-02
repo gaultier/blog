@@ -208,7 +208,11 @@ This approach is reminiscent of this part from the [man page](https://www.man7.o
 >    timeout as a fairly portable way to sleep with subsecond
 >    precision.
 
-That way, we can 'sleep' while we also do meaningful work, for example network I/O.
+That way, we can 'sleep' while we also do meaningful work, for example network I/O. If some I/O completes before a timer triggers, we'll get notified by the OS and we can react to it. Then, during the next event loop tick, we'll compute a shorter timeout than the first one (since some time elapsed).
+
+If no I/O happens at all, the OS will wake us up when our timeout is elapsed.
+
+In short, we have multiplexed multiple timers using one system call (and a min-heap to remember what timers are on-going and when will the next one trigger).
 
 ## Conclusion
 
