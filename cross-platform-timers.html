@@ -177,6 +177,71 @@ the array of elements to be sorted.</p>
 That's the whole idea behind <code>timerfd_create</code> and <code>timerfd_settime</code>. We create a timer, we get a file descriptor back.</p>
 <p>In the previous article, we saw that Linux added similar APIs for signals with <code>signalfd</code> and processes with <code>pidfd_open</code>, so there is a consistent effort to indeed make everything a file.</p>
 <p>That means that using the venerable <code>poll(2)</code>, we can wait on an array of very diverse things: sockets, files, signals, timers, processes, pipes, etc. This is great! That's simple (one API for all OS entities) and composable (handling an additional OS entity does not force our program to undergo big changes, and we can wait on diverse OS entities using the same API).</p>
+<p>Let's see it in action by creating 10 timers and waiting for them to trigger:</p>
+<pre><code class="language-c">#include &lt;assert.h&gt;
+#include &lt;inttypes.h&gt;
+#include &lt;stdio.h&gt;
+#include &lt;sys/epoll.h&gt;
+#include &lt;sys/timerfd.h&gt;
+#include &lt;unistd.h&gt;
+
+int main() {
+  int queue = epoll_create(1 /* Ignored */);
+  assert(-1 != queue);
+
+  int res = 0;
+
+  for (int i = 0; i &lt; 10; i++) {
+    res = timerfd_create(CLOCK_MONOTONIC, TFD_NONBLOCK);
+    assert(-1 != res);
+
+    int fd = res;
+    struct itimerspec ts = {.it_value.tv_nsec = i * 50 * 1000 * 1000};
+    res = timerfd_settime(fd, 0, &amp;ts, NULL);
+    assert(-1 != res);
+
+    struct epoll_event ev = {
+        .events = EPOLLIN,
+        .data.fd = fd,
+    };
+    res = epoll_ctl(queue, EPOLL_CTL_ADD, fd, &amp;ev);
+    assert(-1 != res);
+  }
+
+  int timeout_ms = 1000;
+
+  struct epoll_event events[10] = {0};
+  int events_len = 10;
+
+  for (;;) {
+    res = epoll_wait(queue, events, events_len, timeout_ms);
+    assert(-1 != res);
+
+    if (0 == res) { // The end.
+      return 0;
+    }
+
+    for (int i = 0; i &lt; res; i++) {
+      struct epoll_event event = events[i];
+      if (event.events &amp; EPOLLIN) {
+        printf(&quot;timer %d triggered\n&quot;, event.data.fd);
+        close(event.data.fd);
+      }
+    }
+  }
+}
+</code></pre>
+<p>And it prints:</p>
+<pre><code>timer 5 triggered
+timer 6 triggered
+timer 7 triggered
+timer 8 triggered
+timer 9 triggered
+timer 10 triggered
+timer 11 triggered
+timer 12 triggered
+timer 13 triggered
+</code></pre>
 <p>The only gotcha, which is mentioned by the man page, is that we need to remember to <code>read(2)</code> from the timer whenever it triggers. That only matters for repeating timers (also sometimes called interval timers).</p>
 <p>There's even an additional benefit with this API: thanks to <code>ProcFS</code>, timers appear on the file system under <code>/proc/&lt;pid&gt;/fd/</code>, so troubleshooting is a bit easier.</p>
 <p>However, it's unfortunate that this is a Linux-only API...or is it really?</p>

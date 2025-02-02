@@ -2,7 +2,7 @@
   <feed xmlns="http://www.w3.org/2005/Atom">
     <title>Philippe Gaultier's blog</title>
     <link href="https://gaultier.github.io/blog"/>
-    <updated>2025-02-02T21:26:07+01:00</updated>
+    <updated>2025-02-02T21:29:20+01:00</updated>
     <author>
       <name>Philippe Gaultier</name>
     </author>
@@ -204,7 +204,7 @@
   <title>The missing cross-platform API for timers</title>
   <link href="https://gaultier.github.io/blog/cross-platform-timers.html"/>
   <id>urn:uuid:a287365b-c165-5afb-ac3f-eea831894669</id>
-  <updated>2025-02-02T21:26:07+01:00</updated>
+  <updated>2025-02-02T21:29:20+01:00</updated>
   <published>2025-02-02T17:37:35+01:00</published>
   </entry>
 	</feed>

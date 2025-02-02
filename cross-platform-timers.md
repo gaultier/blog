@@ -64,6 +64,77 @@ In the previous article, we saw that Linux added similar APIs for signals with `
 
 That means that using the venerable `poll(2)`, we can wait on an array of very diverse things: sockets, files, signals, timers, processes, pipes, etc. This is great! That's simple (one API for all OS entities) and composable (handling an additional OS entity does not force our program to undergo big changes, and we can wait on diverse OS entities using the same API).
 
+Let's see it in action by creating 10 timers and waiting for them to trigger:
+
+```c
+#include <assert.h>
+#include <inttypes.h>
+#include <stdio.h>
+#include <sys/epoll.h>
+#include <sys/timerfd.h>
+#include <unistd.h>
+
+int main() {
+  int queue = epoll_create(1 /* Ignored */);
+  assert(-1 != queue);
+
+  int res = 0;
+
+  for (int i = 0; i < 10; i++) {
+    res = timerfd_create(CLOCK_MONOTONIC, TFD_NONBLOCK);
+    assert(-1 != res);
+
+    int fd = res;
+    struct itimerspec ts = {.it_value.tv_nsec = i * 50 * 1000 * 1000};
+    res = timerfd_settime(fd, 0, &ts, NULL);
+    assert(-1 != res);
+
+    struct epoll_event ev = {
+        .events = EPOLLIN,
+        .data.fd = fd,
+    };
+    res = epoll_ctl(queue, EPOLL_CTL_ADD, fd, &ev);
+    assert(-1 != res);
+  }
+
+  int timeout_ms = 1000;
+
+  struct epoll_event events[10] = {0};
+  int events_len = 10;
+
+  for (;;) {
+    res = epoll_wait(queue, events, events_len, timeout_ms);
+    assert(-1 != res);
+
+    if (0 == res) { // The end.
+      return 0;
+    }
+
+    for (int i = 0; i < res; i++) {
+      struct epoll_event event = events[i];
+      if (event.events & EPOLLIN) {
+        printf("timer %d triggered\n", event.data.fd);
+        close(event.data.fd);
+      }
+    }
+  }
+}
+```
+
+And it prints:
+
+```
+timer 5 triggered
+timer 6 triggered
+timer 7 triggered
+timer 8 triggered
+timer 9 triggered
+timer 10 triggered
+timer 11 triggered
+timer 12 triggered
+timer 13 triggered
+```
+
 The only gotcha, which is mentioned by the man page, is that we need to remember to `read(2)` from the timer whenever it triggers. That only matters for repeating timers (also sometimes called interval timers).
 
 There's even an additional benefit with this API: thanks to `ProcFS`, timers appear on the file system under `/proc/<pid>/fd/`, so troubleshooting is a bit easier.
