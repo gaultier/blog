@@ -38,7 +38,7 @@ Enough said.
 
 And this is really tricky to get right. For example, `malloc` is not async-signal-safe. Well, you think, let's just remember to not use it in signal handlers! Done! Feeling confident, we happen to call `qsort` in our signal handler. Should be fine, right? We just sort some data... Well, we just introduced a security vulnerability!
 
-That's because in glibc, the innocent looking `qsort` calls `malloc` under the hood! (And that was, in the past, the cause of `qsort` segfaulting, which I find hilarious). To quote https://www.qualys.com/2024/01/30/qsort.txt :
+That's because in glibc, the innocent looking `qsort` [calls](https://www.qualys.com/2024/01/30/qsort.txt) `malloc` under the hood! (And that was, in the past, the cause of `qsort` segfaulting, which I find hilarious): 
 
 > to our great surprise, we discovered
 > that the glibc's qsort() is not, in fact, a quick sort by default, but a
@@ -46,18 +46,18 @@ That's because in glibc, the innocent looking `qsort` calls `malloc` under the h
 > [...]
 > But merge sort suffers from one
 > major drawback: it does not sort in-place -- it malloc()ates a copy of
-> the array of elements to be sorted
+> the array of elements to be sorted.
 
-So...let's accept that writing signal handlers is not for doable for us mere humans. Many people have concluded the same in the past and have created better APIs that do not involve timers at all. Let's look into that.
+So...let's accept that writing signal handlers correctly is not feasible for us mere humans. Many people have concluded the same in the past and have created better OS APIs that do not involve timers at all. Let's look into that.
 
 ## Linux: timerfd_create, timerfd_settime
 
-So, we all heard the saying: In Unix, everything is a file (descriptor). So, what if a timer was also a file (descriptor)? And we could ask the OS to notify our program whenever there is data to read (i.e.: when our timer triggers), like with a file or a socket? 
-That's the whole idea behind `timerfd_create` and `timerfd_settime`. We create a timer, we get a file descriptor back. We can `poll(2)` or `epoll_wait(2)` it along with other file descriptors. 
+So, we all heard the saying: In Unix, everything is a file. So, what if a timer was also a file (descriptor)? And we could ask the OS to notify our program whenever there is data to read (i.e.: when our timer triggers), like with a file or a socket? 
+That's the whole idea behind `timerfd_create` and `timerfd_settime`. We create a timer, we get a file descriptor back.
 
-In the previous article, we saw that Linux added similar APIs for signals with `signalfd` and processes with `pidfd_open`, so this is consistent. 
+In the previous article, we saw that Linux added similar APIs for signals with `signalfd` and processes with `pidfd_open`, so there is a consistent effort to indeed make everything a file. 
 
-That means that using the venerable `poll(2)`, we can wait on an array of very diverse things: sockets, files, signals, timers, processes, pipes, etc. This is great! That's composability.
+That means that using the venerable `poll(2)`, we can wait on an array of very diverse things: sockets, files, signals, timers, processes, pipes, etc. This is great! That's simple (one API for all OS entities) and composable (handling an additional OS entity does not force our program to undergo big changes, and we can wait on diverse OS entities using the same API).
 
 The only gotcha, which is mentioned by the man page, is that we need to remember to `read(2)` from the timer whenever it triggers. That only matters for repeating timers (also sometimes called interval timers).
 
@@ -67,10 +67,8 @@ However, it's unfortunate that this is a Linux-only API...or is it really?
     > The timerfd facility was	originally ported to FreeBSD's Linux  compati-
     > bility  layer  [...] in FreeBSD 12.0.
     > It  was	revised	 and  adapted  to   be	 native	  [...] in FreeBSD 14.0.
-
-    Ah, so it can be used natively starting with FreeBSD 14! 
 - Illumos has it [too](https://smartos.org/man/3c/timerfd_create).
-- NetBSD has it [too](https://man.netbsd.org/timerfd_create.2)
+- NetBSD has it [too](https://man.netbsd.org/timerfd_create.2):
     > The timerfd interface first appeared in NetBSD 10.  It is compatible with
     > the timerfd interface that appeared in Linux 2.6.25.
 - OpenBSD does not seem to have it.
@@ -101,35 +99,37 @@ Disappointing!
 
 ## Illumos: port_create
 
-So, Illumos (in)famously has its own API for multiplexing events from disjoint sources, that is different from `kqueue`, and some Illumos developers have publicly stated they wished they had adopted `kqueue` back in the day.
+So, Illumos (in)famously has its own API for multiplexing events from disjoint sources, that is different from `kqueue`, and some Illumos developers have publicly stated they now wished they had adopted `kqueue` back in the day.
 
-Anyways, similarly to kqueue, their API (`port_create`) also supports timers! From the [man page](https://illumos.org/man/3C/port_create)
+Anyways, similarly to kqueue, their API (`port_create`) also supports timers! From the [man page](https://illumos.org/man/3C/port_create):
 
 > PORT_SOURCE_TIMER events represent one or more timer expirations for a
 > given timer.  A timer is associated with a port by specifying SIGEV_PORT
 > as its notification mechanism.
 
-Interestingly, the timer is created using the POSIX API that normally triggers a signal upon timer expiration, but thanks to `port_create`, the signal is instead turned into an event ports notification, as if it was a file descriptor. I think it's pretty clever, because that means that historical code creating timers need not be modified. In other words, it makes the POSIX API sane.
+Interestingly, the timer is created using the POSIX API that normally triggers a signal upon timer expiration, but thanks to `port_create`, the signal is instead turned into an event ports notification, as if it was a file descriptor. I think it's pretty clever, because that means that historical code creating timers need not be modified. In other words, it makes the POSIX API sane by circumventing signals and integrating it into a more modern facility to make it composable with other OS entities.
 
 ## macOS: dispatch_source_create
 
-Apple developers, in their infinite wisdom, decided to not support timers in `kqueue` and invented their own thing (of course).
+Apple developers, in their infinite wisdom, decided to support `kqueue` but not kqueue timers, and invented their own thing instead.
 
 It's called [dispatch_source_create](https://man.archlinux.org/man/dispatch_source_create.3.en) and it supports timers with `DISPATCH_SOURCE_TYPE_TIMER`. 
 
-I do not currently develop on macOS so I have not tried it.
+I do not currently have access to an Apple computer so I have not tried it. All I know is that [Grand Central Dispatch/libdispatch](https://en.wikipedia.org/wiki/Grand_Central_Dispatch) is an effort to have applications have an event queue and thread pool managed for them by the OS. It's more of a task system, actually. All of this seems to me somewhat redundant with `kqueue` (which, on Apple platforms, came first!), but I am not an Apple engineer. 
+
+`libdispatch` has technically been ported to many platforms but I suppose this is just like `libkqueue` on Linux: it exposes the familiar API, but under the hood, it translates all calls to the OS-specific API, so for all intents and purposes, this syscall is macOS specific (well, and iOS, tvOS, IpadOS, etc, but let's group them all into a 'macOS' bucket).
 
 ## Linux: io_uring
 
-`io_uring` is a fascinating Linux-only approach to essentially make every blocking system call...non-blocking. A syscall is enqueued into a ring buffer shared between userspace and the kernel, as a 'request', and at some point in time, a 'response' is enqueued by the kernel into a separate ring buffer that our program can read. It's simple, it's composable, it's great. 
+`io_uring` is a fascinating Linux-only approach to essentially make every blocking system call... non-blocking. A syscall is enqueued into a ring buffer shared between userspace and the kernel, as a 'request', and at some point in time, a 'response' is enqueued by the kernel into a separate ring buffer that our program can read. It's simple, it's composable, it's great. 
 
-At the beginning I said that a blocking 'sleep' was not enough, because our program cannot do any work while sleeping. `io_uring` renders this moot: we can enqueue a sleep, do some work, for example enqueue other syscalls, and whenever our sleep finishes, we can dequeue it from the second ring buffer, and voila: we have a timer.
+At the beginning I said that a blocking 'sleep' was not enough, because our program cannot do any work while sleeping. `io_uring` renders this moot: we can enqueue a sleep, do some work, for example enqueue other syscalls, and whenever our sleep finishes, we can dequeue it from the second ring buffer, and voila: we just implemented a timer.
 
 It's so simple it's brilliant! Sadly, it's Linux only, only for recent-ish kernels, and some cloud providers disable this facility.
 
 ## All OSes: timers fully implemented in userspace
 
-Frustrated by my research, not having found one sane API that exists on all Unices, I wondered: How does `libuv`, the C library powering all of the asynchronous I/O for NodeJS, do it? I knew they supported [timers](https://docs.libuv.org/en/v1.x/timer.html). And they support all OSes, even the most obscure ones like AIX. Surely, they have found the best OS API!
+Frustrated by my research, not having found one sane API that exists on all Unices, I wondered: How does `libuv`, the C library powering all of the asynchronous I/O for NodeJS, do it? I knew they support [timers](https://docs.libuv.org/en/v1.x/timer.html). And they support all OSes, even the most obscure ones like AIX. Surely, they have found the best OS API!
 
 Let's make a super simple C program using libuv timers (loosely adapted from their test suite):
 
@@ -145,7 +145,7 @@ int main() {
   uv_timer_t once_timers[10] = {0};
   int r = 0;
 
-  /* Let 10 timers time out in 500 ms total. */
+  /* Start 10 timers. */
   for (int i = 0; i < 10; i++) {
     r = uv_timer_init(uv_default_loop(), &once_timers[i]);
     assert(0 == r);
@@ -157,9 +157,11 @@ int main() {
 }
 ```
 
-We create 10 timers with increasing durations, and run the event loop. Of course, in a real program, we would also do real work while the timers run, e.g. network I/O.
+We create 10 timers with increasing durations, and run the event loop. When a timer triggers, our callback is called by `libuv`.
 
-Let's compile our program and look at what syscalls are being done (here I am on Linux but we'll soon seen it does not matter one bit):
+Of course, in a real program, we would also do real work while the timers run, e.g. network I/O.
+
+Let's compile our program and look at what syscalls are being done (here I am on Linux but we'll soon seen it does not matter at all):
 
 ```sh
 $ cc uv-timers.c -luv
@@ -182,7 +184,7 @@ write(1, "timer 0x27432560 triggered\n", 27timer 0x27432560 triggered
 
 Huh, no call to `timerfd_create` or something like this, just... `epoll_pwait` which is basically just `epoll_wait`, which is basically just a faster `poll`. And no events, just a timeout... So... are `libuv` timers fully implemented in userspace?
 
-I was at this moment reminded of a [sentence](https://smartos.org/man/7/timerfd) I had read from a Illumos man page (there is a surprisingly big overlap of people behind Illumos and `libuv`):
+I was at this moment reminded of a [sentence](https://smartos.org/man/7/timerfd) I had read from a Illumos man page (there is a surprisingly big overlap of people developing Illumos and `libuv`):
 
 > timerfd is a Linux-borne facility for creating POSIX timers and receiving
 > their subsequent events via a file descriptor.  The facility itself is
@@ -191,9 +193,9 @@ I was at this moment reminded of a [sentence](https://smartos.org/man/7/timerfd)
 
 So, what `libuv` does is quite simple in fact:
 
-When a timer is created, add it to a data structure (it's a min-heap, i.e. a binary tree that is easy to implement and makes it fast to get the smallest element in a set).
+When a timer is created, add it to a data structure (it's a min-heap, i.e. a binary tree that is easy to implement and is designed to get the smallest element in a set quickly).
 
-A typical event loop tick first gets the current time from the OS. Then, it computes the timeout to pass to poll/epoll/kqueue/etc.  If there are no active timers, it's easy, the timeout is `-1` meaning none (that means that if the program will block indefinitely until some I/O happens).
+A typical event loop tick first gets the current time from the OS. Then, it computes the timeout to pass to poll/epoll/kqueue/etc.  If there are no active timers, it's easy, there is no timeout (that means that the program will block indefinitely until some I/O happens).
 
 If there are active timers, get the 'smallest' one, meaning: the first that would trigger. The OS timeout is thus `now - timer.value`. 
 Whenever a timer expires, it is removed from the min-heap. Simple, (relatively) efficient. The only caveat is that `epoll` only offers a millisecond precision for the timeout parameter so that's also the precision of `libuv` timers.
@@ -206,6 +208,7 @@ This approach is reminiscent of this part from the [man page](https://www.man7.o
 >    timeout as a fairly portable way to sleep with subsecond
 >    precision.
 
+That way, we can 'sleep' while we also do meaningful work, for example network I/O.
 
 ## Conclusion
 
