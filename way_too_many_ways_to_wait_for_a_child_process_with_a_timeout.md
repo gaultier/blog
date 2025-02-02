@@ -1,5 +1,5 @@
 Title: Way too many ways to wait on a child process with a timeout
-Tags: Unix, Signals, C, Linux, FreeBSD, illumos, MacOS
+Tags: Unix, Signals, C, Linux, FreeBSD, Illumos, MacOS
 ---
 
 *Windows is not covered at all in this article.*
