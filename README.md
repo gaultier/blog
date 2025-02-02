@@ -5,7 +5,7 @@ https://gaultier.github.io/blog/
 
 Requirements: 
 - [Odin](https://github.com/odin-lang/Odin.git)
-- `cmark`
+- [cmark-gfm](https://github.com/github/cmark-gfm)
 - `git`
 
 E.g.: `apt install cmark git`
