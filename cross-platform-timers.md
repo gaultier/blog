@@ -10,11 +10,11 @@ Each had their own weird way to do it, as I discovered! I am used to Windows bei
 
 Well, let's take a tour of all the OS APIs to handle timers.
 
-## Windows
+## Windows: SetTimer
 
 This will be brief because I do not develop on Windows. The official documentation mentions the `SetTimer` function from Win32 and you pass it a timeout and a callback. Super simple.
 
-## POSIX
+## POSIX: timer_create, timer_settime
 
 POSIX has one API for timers, and it sucks. A timer is created with `timer_create`, which does initially nothing, and the timer is started with a timeout using `timer_settime`. When the timeout is reached, a signal is sent to the program. And that's the problematic part. Signals are *very* problematic, as seen in my [previous article](/blog/way_too_many_ways_to_wait_for_a_child_process_with_a_timeout.html):
 
@@ -48,5 +48,69 @@ major drawback: it does not sort in-place -- it malloc()ates a copy of
 the array of elements to be sorted
 
 So...let's accept that writing signal handlers is not for doable for us mere humans. Many people have concluded the same in the past and have created better APIs that do not involve timers at all. Let's look into that.
+
+## Linux: timerfd_create, timerfd_settime
+
+So, we all heard the saying: In Unix, everything is a file (descriptor). So, what if a timer was also a file (descriptor)? And we could ask the OS to notify our program whenever there is data to read (i.e.: when our timer triggers), like with a file or a socket? 
+That's the whole idea behind `timerfd_create` and `timerfd_settime`. We create a timer, we get a file descriptor back. We can `poll(2)` or `epoll_wait(2)` it along with other file descriptors. 
+
+In the previous article, we saw that Linux added similar APIs for signals with `signalfd` and processes with `pidfd_open`, so this is consistent. 
+
+That means that using the venerable `poll(2)`, we can wait on an array of very diverse things: sockets, files, signals, timers, processes, pipes, etc. This is great! That's composability.
+
+The only gotcha, which is mentioned by the man page, is that we need to remember to `read(2)` from the timer whenever it triggers. That only matters for repeating timers (also sometimes calles interval timers).
+
+However, it's unfortunate that this is a Linux-only API...or is it really?
+
+- FreeBSD has it [too](https://man.freebsd.org/cgi/man.cgi?query=timerfd&sektion=2&format=html):
+    > The timerfd facility was	originally ported to FreeBSD's Linux  compati-
+    > bility  layer  by  Dmitry Chagin	<dchagin@FreeBSD.org> in FreeBSD 12.0.
+    > It  was	revised	 and  adapted  to   be	 native	  by   Jake   Freeland
+    > <jfree@FreeBSD.org> in FreeBSD 14.0.
+    Ah, so it can be used natively starting with FreeBSD 14! 
+- Illumos has it [too](https://smartos.org/man/3c/timerfd_create).
+- NetBSD has it [too](https://man.netbsd.org/timerfd_create.2)
+    > The timerfd interface first appeared in NetBSD 10.  It is compatible with
+    > the timerfd interface that appeared in Linux 2.6.25.
+- OpenBSD does not seem to have it.
+- macOS does not seem to have it.
+
+So, pretty good, but not ubiquitous. The search continues.
+
+## BSD: kevent
+
+`kqueue` might be my favorite OS API: it can watch any OS entity for changes with just one call. Even timers! As it is often the case for BSD-borne APIs, they are well designed and well documented. The man page says:
+
+> EVFILT_TIMER   Establishes an arbitrary timer identified by ident. 
+
+That's great, we do not even have to use various APIs to  create the timer, set the time, read from the timer, etc.
+
+What about the portability?
+
+- FreeBSD has it
+- NetBSD has it
+- OpenBSD has it
+- macOS does not have it
+
+The last point is disappointing. macOS has kqueue due to its BSD heritage. But the [man page](https://developer.apple.com/library/archive/documentation/System/Conceptual/ManPages_iPhoneOS/man2/kqueue.2.html) explicitly states that this particular feature is not supported:
+
+> EVFILT_TIMER   This filter is currently unsupported.
+
+Disappointing!
+
+## Illumos: port_create
+
+So, Illumos (in)famously has its own API for multiplexing events from disjoint sources, that is different from `kqueue`, and some Illumos developers have publicly stated they wished they had adopted `kqueue` back in the day.
+
+Anyways, similarly to kqueue, their API (`port_create`) also supports timers! From the [man page](https://illumos.org/man/3C/port_create)
+
+> PORT_SOURCE_TIMER events represent one or more timer expirations for a
+> given timer.  A timer is associated with a port by specifying SIGEV_PORT
+> as its notification mechanism.
+
+Interestingly, the timer is created using the POSIX API that normally triggers a signal upon timer expiration, but thanks to `port_create`, the signal is instead turned into an event ports notification, as if it was a file descriptor. I think it's pretty clever, because that means that historical code creating timers need not be modified. In other words, it makes the POSIX API sane.
+
+
+ 
 
 
