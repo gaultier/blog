@@ -81,6 +81,7 @@ p {
 
 .home-link {
   margin-right: 1rem;
+  flex-basis: 70%;
 }
 
 .home-link > a {
