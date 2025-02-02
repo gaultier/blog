@@ -1,4 +1,4 @@
-Title: The missing cross-platform API for timers
+Title: The missing cross-platform OS API for timers
 Tags: Unix, Signals, C, Linux, FreeBSD, Illumos, MacOS, Windows, OpenBSD, NetBSD, Timers
 ---
 
