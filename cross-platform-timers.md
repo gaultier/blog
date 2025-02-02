@@ -20,9 +20,9 @@ POSIX has one API for timers, and it sucks. A timer is created with `timer_creat
 
 - They do not compose with other OS primitives. This forces numerous syscalls to have a normal version and a signal-aware version that can block some signals for its duration: `poll/ppoll`, `select/pselect`, etc.
 - They are affected by the signal mask of the parent (e.g.: the shell, the service runner, etc)
-- They behave confusingly with child processes. Normally, a signal mask is inherited by the child. But some signal-triggering APIs (e.g.: `timer_settime`) are explicitly **not** inherited by child processes.
-- It's hard to write complex programs with signals in mind due to their global nature. Code of our own or in a library we use could block some signals for some period of time, unbeknownst to us.
-- Most functions are not async-signal-safe and should not be used from within a signal handler but no compiler warns about that and most example code is wrong. This is exacerbated by the fact that a given function may be async-signal safe on some OS but not on another. Or for some version of this OS but not for another version. This has caused really security vulnerabilities in the past.
+- They behave confusingly with child processes. Normally, a signal mask is inherited by the child. But some signal-triggering APIs (e.g.: `timer_settime`)  explicitly prevent child processes from inheriting their signals. I guess we'll have to read the fine prints in the man page!
+- It's hard to write complex programs with signals in mind due to their global nature. Code of our own, or in a library we use, could block some signals for some period of time, unbeknownst to us. Or simply modify the signal mask of the process, so we can never assume that the signal mask has a given value.
+- Most functions are not async-signal-safe and should not be used from within a signal handler but no compiler warns about that and most example code is wrong. This is exacerbated by the fact that a given function may be async-signal safe on some OS but not on another. Or for some version of this OS but not for another version. This has caused real [security vulnerabilities](https://www.qualys.com/2024/07/01/cve-2024-6387/regresshion.txt) in the past.
 
 I'll just quote here the Linux man page for [timer_create](https://www.man7.org/linux/man-pages/man2/timer_create.2.html):
 
