@@ -385,7 +385,7 @@ write(1, "timer 0x27432560 triggered\n", 27timer 0x27432560 triggered
 
 Huh, no call to `timerfd_create` or something like this, just... `epoll_pwait` which is basically just `epoll_wait`, which is basically just a faster `poll`. And no events, just a timeout... So... are `libuv` timers fully implemented in userspace?
 
-I was at this moment reminded of a [sentence](https://smartos.org/man/7/timerfd) I had read from a Illumos man page (there is a surprisingly big overlap of people developing Illumos and `libuv`):
+I was at this moment reminded of a [sentence](https://smartos.org/man/7/timerfd) I had read from a Illumos man page (there is a surprisingly big overlap of people developing Illumos and `libuv` due to the Sun -> Joyent history):
 
 > timerfd is a Linux-borne facility for creating POSIX timers and receiving
 > their subsequent events via a file descriptor.  The facility itself is
