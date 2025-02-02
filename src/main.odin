@@ -16,7 +16,16 @@ feed_uuid_str :: "9c065c53-31bc-4049-a795-936802a6b1df"
 base_url :: "https://gaultier.github.io/blog"
 back_link :: "<p><a href=\"/blog\"> ⏴ Back to all articles</a></p>\n"
 html_prelude_fmt :: "<!DOCTYPE html>\n<html>\n<head>\n<title>%s</title>\n"
-cmark_command :: []string{"cmark", "--unsafe", "-t", "html"}
+cmark_command :: []string {
+	"cmark-gfm",
+	"-e",
+	"table",
+	"-e",
+	"strikethrough",
+	"--unsafe",
+	"-t",
+	"html",
+}
 metadata_delimiter :: "---"
 
 Article :: struct {
