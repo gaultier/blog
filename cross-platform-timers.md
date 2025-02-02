@@ -110,6 +110,94 @@ Anyways, similarly to kqueue, their API (`port_create`) also supports timers! Fr
 
 Interestingly, the timer is created using the POSIX API that normally triggers a signal upon timer expiration, but thanks to `port_create`, the signal is instead turned into an event ports notification, as if it was a file descriptor. I think it's pretty clever, because that means that historical code creating timers need not be modified. In other words, it makes the POSIX API sane.
 
+## macOS: dispatch_source_create
+
+Apple developers, in their infinite wisdom, decided to not support timers in `kqueue` and invented their own thing (of course).
+
+It's called [dispatch_source_create](https://man.archlinux.org/man/dispatch_source_create.3.en) and it supports timers with `DISPATCH_SOURCE_TYPE_TIMER`. 
+
+I do not currently develop on macOS so I have not tried it.
+
+## All OSes: timers fully implemented in userspace
+
+Frustrated by my research, not having found one sane API that exists on all Unices, I wondered: How does `libuv`, the C library powering all of the asynchronous I/O for NodeJS, do it? I knew they supported [timers](https://docs.libuv.org/en/v1.x/timer.html). And they support all OSes, even the most obscure ones like AIX. Surely, they have found the best OS API!
+
+Let's make a super simple C program using libuv timers (loosely adapted from their test suite):
+
+```c
+#include <assert.h>
+#include <uv.h>
+
+static void once_cb(uv_timer_t *handle) {
+  printf("timer %#x triggered\n", handle);
+}
+
+int main() {
+  uv_timer_t once_timers[10] = {0};
+  int r = 0;
+
+  /* Let 10 timers time out in 500 ms total. */
+  for (int i = 0; i < 10; i++) {
+    r = uv_timer_init(uv_default_loop(), &once_timers[i]);
+    assert(0 == r);
+    r = uv_timer_start(&once_timers[i], once_cb, i * i * 50, 0);
+    assert(0 == r);
+  }
+
+  uv_run(uv_default_loop(), UV_RUN_DEFAULT);
+}
+```
+
+We create 10 timers with increasing durations, and run the event loop. Of course, in a real program, we would also do real work while the timers run, e.g. network I/O.
+
+Let's compile our program and look at what syscalls are being done (here I am on Linux but we'll soon seen it does not matter one bit):
+
+```sh
+$ cc uv-timers.c -luv
+$ strace ./a.out
+[...]
+epoll_pwait(3, [], 1024, 49, NULL, 8)   = 0
+write(1, "timer 0x27432398 triggered\n", 27timer 0x27432398 triggered
+) = 27
+epoll_pwait(3, [], 1024, 149, NULL, 8)  = 0
+write(1, "timer 0x27432430 triggered\n", 27timer 0x27432430 triggered
+) = 27
+epoll_pwait(3, [], 1024, 249, NULL, 8)  = 0
+write(1, "timer 0x274324c8 triggered\n", 27timer 0x274324c8 triggered
+) = 27
+epoll_pwait(3, [], 1024, 349, NULL, 8)  = 0
+write(1, "timer 0x27432560 triggered\n", 27timer 0x27432560 triggered
+) = 27
+[...]
+```
+
+Huh, no call to `timerfd_create` or something like this, just... `epoll_pwait` which is basically just `epoll_wait`, which is basically just a faster `poll`. And no events, just a timeout... So... are `libuv` timers fully implemented in userspace?
+
+I was at this moment reminded of a [sentence](https://smartos.org/man/7/timerfd) I had read from a Illumos manpage (there is a surprisingly big overlap of people behind Illumos and `libuv`):
+
+> timerfd is a Linux-borne facility for creating POSIX timers and receiving
+> their subsequent events via a file descriptor.  The facility itself is
+> arguably unnecessary: portable code can [...] use the timeout value
+> present in poll(2) [...].
+
+So, what `libuv` does is quite simple in fact:
+
+When a timer is created, add it to a data structure (it's a min-heap, i.e. a binary tree that is easy to implement and makes it fast to get the smallest element in a set).
+
+A typical event loop tick first gets the current time from the OS. Then, it computes the timeout to pass to poll/epoll/kqueue/etc.  If there are no active timers, it's easy, the timeout is `-1` meaning none (that means that if the program will block indefinitely until some I/O happens).
+
+If there are active timers, get the 'smallest' one, meaning: the first that would trigger. The OS timeout is thus `now - timer.value`. 
+Whenever a timer expires, it is removed from the min-heap. Simple, (relatively) efficient. The only caveat is that `epoll` only offers a millisecond precision for the timeout parameter so that's also the precision of `libuv` timers.
+
+This approach is reminiscent of this part from the [man page](https://www.man7.org/linux/man-pages/man2/select.2.html) of `select` (which is basically `poll` with more limitations):
+
+>    Emulating usleep(3)
+>    Before the advent of usleep(3), some code employed a call to
+>    select() with all three sets empty, nfds zero, and a non-NULL
+>    timeout as a fairly portable way to sleep with subsecond
+>    precision.
+
+
 
  
 
