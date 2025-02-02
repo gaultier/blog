@@ -101,6 +101,7 @@ p {
 .tags {
   display: inline-flex;
   flex-wrap: wrap;
+  flex-shrink: 5;
 }
 
 .date {
@@ -212,6 +213,7 @@ th {
 
 h1 {
     margin: 3rem 2rem 3rem 0;
+    flex-basis: 90%;
 }
 
 h2, h3, h4, h5, h6 {
