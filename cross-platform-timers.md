@@ -1,14 +1,14 @@
 Title: The missing API for cross-platform timers
-Tags: Unix, Signals, C, Linux, FreeBSD, illumos, MacOS, Windows
+Tags: Unix, Signals, C, Linux, FreeBSD, illumos, MacOS, Windows, OpenBSD, NetBSD, Timers
 ---
 
-Most serious programs will need to trigger some action at a delayed point in time, often repeateadly: set timeouts, clean up temporary files or entries in the database, send keep-alives, etc. All while doing some work in the meantime. A blocking `sleep` won't cut it! For example, Javascript has `setTimeout`. But how does it work under the hood? How does each OS handle that?
+Most serious programs will need to trigger some action at a delayed point in time, often repeateadly: set timeouts, clean up temporary files or entries in the database, send keep-alives, garbage-collect unused entities, etc. All while doing some work in the meantime. A blocking `sleep` won't cut it! For example, Javascript has `setTimeout`. But how does it work under the hood? How does each OS handle that?
 
 Lately I found myself in need of doing just that, repeatedly sending a keep-alive to a remote peer in some network protocol, in C. And I wanted to do it in a cross-platform way. And to my surprise, I could not find a (sane) libc function or a syscall to do so, that is the same on all Unices! 
 
-Each had their own weird way to do it, as I discovered! I am used to Windows being the odd kid in its corner doing its thing, but usually, Unices agree on a simple API to do something. There's the elephant in the room, of course, with epoll/kqueue/event ports...Which is such a pain that numerous libraries have sprung up to paper over the differences and offer The Once API To Rule Them All: libuv, libev, libevent, etc.
+Each had their own weird way to do it, as I discovered. I am used to Windows being the odd kid in its corner doing its thing, but usually, Unices (thanks to POSIX) agree on a simple API to do something. There's the elephant in the room, of course, with epoll/kqueue/event ports...Which is such a pain that numerous libraries have sprung up to paper over the differences and offer The Once API To Rule Them All: libuv, libev, libevent, etc. So, are timers the same painful ordeal?
 
-Well, let's take a tour of all the OS APIs to handle timers.
+Well, let's take a tour of all the OS APIs to handle them.
 
 ## Windows: SetTimer
 
@@ -118,6 +118,14 @@ It's called [dispatch_source_create](https://man.archlinux.org/man/dispatch_sour
 
 I do not currently develop on macOS so I have not tried it.
 
+## Linux: io_uring
+
+io_uring is a fascinating Linux-only approach to essentially make every blocking system call...non-blocking. A syscall is enqueued into a ring buffer shared between userspace and the kernel, as a 'request', and at some point in time, a 'response' is enqueued by the kernel into a separate ring buffer that our program can read. It's simple, it's composable, it's great. 
+
+At the beginning I said that a blocking 'sleep' was not enough, because our program cannot do any work while sleeping. `io_uring` renders this moot: we can enqueue a sleep, do some work, for example enqueue other syscalls, and whenever our sleep finishes, we can dequeue it from the second ring buffer, and voila: we have a timer.
+
+It's so simple it's brilliant! Sadly, it's Linux only, only for recent-ish kernels, and some cloud providers disable this facility.
+
 ## All OSes: timers fully implemented in userspace
 
 Frustrated by my research, not having found one sane API that exists on all Unices, I wondered: How does `libuv`, the C library powering all of the asynchronous I/O for NodeJS, do it? I knew they supported [timers](https://docs.libuv.org/en/v1.x/timer.html). And they support all OSes, even the most obscure ones like AIX. Surely, they have found the best OS API!
@@ -212,6 +220,7 @@ Tu sum up:
 | kevent timer           |         |       |       | ✓       | ✓      | ✓       |         |
 | port_create timer      |         |       |       |         |        |         | ✓       |
 | dispatch_source_create |         | ✓     |       |         |        |         |         |
+| io_uring sleep         |         |       | ✓     |         |        |         |         |
 | Userspace timers       | ✓       | ✓     | ✓     | ✓       | ✓      | ✓       | ✓       |
 
 
