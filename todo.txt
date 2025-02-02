@@ -13,6 +13,7 @@ Ideas for articles:
 Blog implementation:
 
 - [ ] Use libcmark to simplify parsing
+- [ ] Process each article in parallel
 - [ ] Last updated date for an article
 - [ ] Link to related articles at the end
 - [x] Line numbers in code snippets
