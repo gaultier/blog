@@ -1,8 +1,8 @@
 Title: The missing API for cross-platform timers
-Tags: Unix, Signals, C, Linux, FreeBSD, illumos, MacOS, Windows, OpenBSD, NetBSD, Timers
+Tags: Unix, Signals, C, Linux, FreeBSD, Illumos, MacOS, Windows, OpenBSD, NetBSD, Timers
 ---
 
-Most serious programs will need to trigger some action at a delayed point in time, often repeateadly: set timeouts, clean up temporary files or entries in the database, send keep-alives, garbage-collect unused entities, etc. All while doing some work in the meantime. A blocking `sleep` won't cut it! For example, Javascript has `setTimeout`. But how does it work under the hood? How does each OS handle that?
+Most serious programs will need to trigger some action at a delayed point in time, often repeatedly: set timeouts, clean up temporary files or entries in the database, send keep-alives, garbage-collect unused entities, etc. All while doing some work in the meantime. A blocking `sleep` won't cut it! For example, JavaScript has `setTimeout`. But how does it work under the hood? How does each OS handle that?
 
 Lately I found myself in need of doing just that, repeatedly sending a keep-alive to a remote peer in some network protocol, in C. And I wanted to do it in a cross-platform way. And to my surprise, I could not find a (sane) libc function or a syscall to do so, that is the same on all Unices! 
 
@@ -16,12 +16,13 @@ This will be brief because I do not develop on Windows. The official documentati
 
 ## POSIX: timer_create, timer_settime
 
-POSIX has one API for timers, and it sucks. A timer is created with `timer_create`, which does initially nothing, and the timer is started with a timeout using `timer_settime`. When the timeout is reached, a signal is sent to the program. And that's the problematic part. Signals are *very* problematic, as seen in my [previous article](/blog/way_too_many_ways_to_wait_for_a_child_process_with_a_timeout.html):
+POSIX has one API for timers, and it sucks. A timer is created with `timer_create`, which does initially nothing, and the timer is started with a timeout using `timer_settime`. When the timeout is reached, a signal is sent to the program. And that's the issue. Signals are *very* problematic, as seen in my [previous article](/blog/way_too_many_ways_to_wait_for_a_child_process_with_a_timeout.html):
 
-- They do not compose with any other OS primitive
-- They behave confusingly with child processes
+- They do not compose with other OS primitives. This forces numerous syscalls to have a normal version and a signal-aware version that can block some signals for its duration: `poll/ppoll`, `select/pselect`, etc.
+- They are affected by the signal mask of the parent (e.g.: the shell, the service runner, etc)
+- They behave confusingly with child processes. Normally, a signal mask is inherited by the child. But some signal-triggering APIs (e.g.: `timer_settime`) are explicitly **not** inherited by child processes.
 - It's hard to write complex programs with signals in mind due to their global nature. Code of our own or in a library we use could block some signals for some period of time, unbeknownst to us.
-- Most functions are not async-signal-safe and should not be used from within a signal handler but no compiler warns about that and most example code is wrong. This is exarcerbated by the fact that a given function may be async-signal safe on some OS but not on another. Or for some version of this OS but not for another version. This has caused really security vulnerabilities in the past.
+- Most functions are not async-signal-safe and should not be used from within a signal handler but no compiler warns about that and most example code is wrong. This is exacerbated by the fact that a given function may be async-signal safe on some OS but not on another. Or for some version of this OS but not for another version. This has caused really security vulnerabilities in the past.
 
 I'll just quote here the Linux man page for [timer_create](https://www.man7.org/linux/man-pages/man2/timer_create.2.html):
 
@@ -40,12 +41,12 @@ And this is really tricky to get right. For example, `malloc` is not async-signa
 That's because in glibc, the innocent looking `qsort` calls `malloc` under the hood! (And that was, in the past, the cause of `qsort` segfaulting, which I find hilarious). To quote https://www.qualys.com/2024/01/30/qsort.txt :
 
 > to our great surprise, we discovered
-that the glibc's qsort() is not, in fact, a quick sort by default, but a
-merge sort (in stdlib/msort.c).
-[...]
-But merge sort suffers from one
-major drawback: it does not sort in-place -- it malloc()ates a copy of
-the array of elements to be sorted
+> that the glibc's qsort() is not, in fact, a quick sort by default, but a
+> merge sort (in stdlib/msort.c).
+> [...]
+> But merge sort suffers from one
+> major drawback: it does not sort in-place -- it malloc()ates a copy of
+> the array of elements to be sorted
 
 So...let's accept that writing signal handlers is not for doable for us mere humans. Many people have concluded the same in the past and have created better APIs that do not involve timers at all. Let's look into that.
 
@@ -58,15 +59,15 @@ In the previous article, we saw that Linux added similar APIs for signals with `
 
 That means that using the venerable `poll(2)`, we can wait on an array of very diverse things: sockets, files, signals, timers, processes, pipes, etc. This is great! That's composability.
 
-The only gotcha, which is mentioned by the man page, is that we need to remember to `read(2)` from the timer whenever it triggers. That only matters for repeating timers (also sometimes calles interval timers).
+The only gotcha, which is mentioned by the man page, is that we need to remember to `read(2)` from the timer whenever it triggers. That only matters for repeating timers (also sometimes called interval timers).
 
 However, it's unfortunate that this is a Linux-only API...or is it really?
 
 - FreeBSD has it [too](https://man.freebsd.org/cgi/man.cgi?query=timerfd&sektion=2&format=html):
     > The timerfd facility was	originally ported to FreeBSD's Linux  compati-
-    > bility  layer  by  Dmitry Chagin	<dchagin@FreeBSD.org> in FreeBSD 12.0.
-    > It  was	revised	 and  adapted  to   be	 native	  by   Jake   Freeland
-    > <jfree@FreeBSD.org> in FreeBSD 14.0.
+    > bility  layer  [...] in FreeBSD 12.0.
+    > It  was	revised	 and  adapted  to   be	 native	  [...] in FreeBSD 14.0.
+
     Ah, so it can be used natively starting with FreeBSD 14! 
 - Illumos has it [too](https://smartos.org/man/3c/timerfd_create).
 - NetBSD has it [too](https://man.netbsd.org/timerfd_create.2)
@@ -77,7 +78,7 @@ However, it's unfortunate that this is a Linux-only API...or is it really?
 
 So, pretty good, but not ubiquitous. The search continues.
 
-## BSD: kevent
+## BSD: kqueue/kevent
 
 `kqueue` might be my favorite OS API: it can watch any OS entity for changes with just one call. Even timers! As it is often the case for BSD-borne APIs, they are well designed and well documented. The man page says:
 
@@ -120,7 +121,7 @@ I do not currently develop on macOS so I have not tried it.
 
 ## Linux: io_uring
 
-io_uring is a fascinating Linux-only approach to essentially make every blocking system call...non-blocking. A syscall is enqueued into a ring buffer shared between userspace and the kernel, as a 'request', and at some point in time, a 'response' is enqueued by the kernel into a separate ring buffer that our program can read. It's simple, it's composable, it's great. 
+`io_uring` is a fascinating Linux-only approach to essentially make every blocking system call...non-blocking. A syscall is enqueued into a ring buffer shared between userspace and the kernel, as a 'request', and at some point in time, a 'response' is enqueued by the kernel into a separate ring buffer that our program can read. It's simple, it's composable, it's great. 
 
 At the beginning I said that a blocking 'sleep' was not enough, because our program cannot do any work while sleeping. `io_uring` renders this moot: we can enqueue a sleep, do some work, for example enqueue other syscalls, and whenever our sleep finishes, we can dequeue it from the second ring buffer, and voila: we have a timer.
 
@@ -181,7 +182,7 @@ write(1, "timer 0x27432560 triggered\n", 27timer 0x27432560 triggered
 
 Huh, no call to `timerfd_create` or something like this, just... `epoll_pwait` which is basically just `epoll_wait`, which is basically just a faster `poll`. And no events, just a timeout... So... are `libuv` timers fully implemented in userspace?
 
-I was at this moment reminded of a [sentence](https://smartos.org/man/7/timerfd) I had read from a Illumos manpage (there is a surprisingly big overlap of people behind Illumos and `libuv`):
+I was at this moment reminded of a [sentence](https://smartos.org/man/7/timerfd) I had read from a Illumos man page (there is a surprisingly big overlap of people behind Illumos and `libuv`):
 
 > timerfd is a Linux-borne facility for creating POSIX timers and receiving
 > their subsequent events via a file descriptor.  The facility itself is
