@@ -438,7 +438,7 @@ To sum up:
 
 For performant multiplexed I/O, that means that we have to have a code path for each OS (using `epoll` on Linux, `kqueue` on macOS and BSDs, event ports on Illumos, I/O completion ports on Windows). 
 
-For timers, it seems that the easiest approach is to implement them fully in userspace, as long as we have an efficient data structure to keep them around.
+For timers, it seems that the easiest approach is to implement them fully in userspace, as long as we have an efficient data structure to manage them.
  
 
 
