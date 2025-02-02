@@ -159,7 +159,72 @@ So, pretty good, but not ubiquitous. The search continues.
 
 > EVFILT_TIMER   Establishes an arbitrary timer identified by ident. 
 
-That's great, we do not even have to use various APIs to  create the timer, set the time, read from the timer, etc.
+That's great, we do not even have to use various APIs to  create the timer, set the time, read from the timer, etc. 
+
+Let's see it in action:
+
+```c
+#include <assert.h>
+#include <stdio.h>
+#include <sys/event.h>
+#include <sys/time.h>
+
+int main() {
+  int queue = kqueue();
+  assert(-1 != queue);
+
+  int res = 0;
+
+  struct kevent changelist[10] = {0};
+  for (int i = 0; i < 10; i++) {
+    changelist[i] = (struct kevent){
+        .ident = i + 1,
+        .flags = EV_ADD | EV_ONESHOT,
+        .data = i * 50,
+        .filter = EVFILT_TIMER,
+    };
+  }
+
+  res = kevent(queue, changelist, 10, NULL, 0, 0);
+  assert(-1 != res);
+
+  struct kevent eventlist[10] = {0};
+  struct timespec timeout = {.tv_sec = 1};
+  for (;;) {
+    res = kevent(queue, NULL, 0, eventlist, 10, &timeout);
+    assert(-1 != res);
+
+    if (0 == res) { // The end.
+      return 0;
+    }
+
+    for (int i = 0; i < res; i++) {
+      struct kevent event = eventlist[i];
+      if (event.filter & EVFILT_TIMER) {
+        struct timespec now = {0};
+        clock_gettime(CLOCK_REALTIME, &now);
+        printf("[%ld.%03ld] timer %ld triggered\n", now.tv_sec,
+               now.tv_nsec / 1000 / 1000, event.ident);
+      }
+    }
+  }
+}
+```
+
+And it prints:
+
+```
+[1738380963.984] timer 1 triggered
+[1738380964.034] timer 2 triggered
+[1738380964.084] timer 3 triggered
+[1738380964.134] timer 4 triggered
+[1738380964.184] timer 5 triggered
+[1738380964.234] timer 6 triggered
+[1738380964.284] timer 7 triggered
+[1738380964.334] timer 8 triggered
+[1738380964.384] timer 9 triggered
+[1738380964.434] timer 10 triggered
+```
 
 What about the portability?
 
