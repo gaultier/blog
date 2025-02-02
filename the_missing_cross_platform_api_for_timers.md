@@ -237,7 +237,7 @@ What about the portability?
 - OpenBSD has it
 - macOS does not have it
 
-The last point is disappointing. macOS has kqueue due to its BSD heritage. But the [man page](https://developer.apple.com/library/archive/documentation/System/Conceptual/ManPages_iPhoneOS/man2/kqueue.2.html) explicitly states that this particular feature is not supported:
+The last point is unfortunate. macOS has kqueue due to its BSD heritage. But the [man page](https://developer.apple.com/library/archive/documentation/System/Conceptual/ManPages_iPhoneOS/man2/kqueue.2.html) explicitly states that this particular feature is not supported:
 
 > EVFILT_TIMER   This filter is currently unsupported.
 
