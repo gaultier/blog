@@ -178,12 +178,12 @@ That's the whole idea behind <code>timerfd_create</code> and <code>timerfd_setti
 <p>In the previous article, we saw that Linux added similar APIs for signals with <code>signalfd</code> and processes with <code>pidfd_open</code>, so there is a consistent effort to indeed make everything a file.</p>
 <p>That means that using the venerable <code>poll(2)</code>, we can wait on an array of very diverse things: sockets, files, signals, timers, processes, pipes, etc. This is great! That's simple (one API for all OS entities) and composable (handling an additional OS entity does not force our program to undergo big changes, and we can wait on diverse OS entities using the same API).</p>
 <p>The only gotcha, which is mentioned by the man page, is that we need to remember to <code>read(2)</code> from the timer whenever it triggers. That only matters for repeating timers (also sometimes called interval timers).</p>
+<p>There's even an additional benefit with this API: thanks to <code>ProcFS</code>, timers appear on the file system under <code>/proc/&lt;pid&gt;/fd/</code>, so troubleshooting is a bit easier.</p>
 <p>However, it's unfortunate that this is a Linux-only API...or is it really?</p>
 <ul>
 <li>FreeBSD has it <a href="https://man.freebsd.org/cgi/man.cgi?query=timerfd&amp;sektion=2&amp;format=html">too</a>:
 <blockquote>
-<p>The timerfd facility was	originally ported to FreeBSD's Linux  compati-
-bility  layer  [...] in FreeBSD 12.0.
+<p>The timerfd facility was	originally ported to FreeBSD's Linux  compatibility  layer  [...] in FreeBSD 12.0.
 It  was	revised	 and  adapted  to   be	 native	  [...] in FreeBSD 14.0.</p>
 </blockquote>
 </li>

@@ -66,11 +66,12 @@ That means that using the venerable `poll(2)`, we can wait on an array of very d
 
 The only gotcha, which is mentioned by the man page, is that we need to remember to `read(2)` from the timer whenever it triggers. That only matters for repeating timers (also sometimes called interval timers).
 
+There's even an additional benefit with this API: thanks to `ProcFS`, timers appear on the file system under `/proc/<pid>/fd/`, so troubleshooting is a bit easier.
+
 However, it's unfortunate that this is a Linux-only API...or is it really?
 
 - FreeBSD has it [too](https://man.freebsd.org/cgi/man.cgi?query=timerfd&sektion=2&format=html):
-    > The timerfd facility was	originally ported to FreeBSD's Linux  compati-
-    > bility  layer  [...] in FreeBSD 12.0.
+    > The timerfd facility was	originally ported to FreeBSD's Linux  compatibility  layer  [...] in FreeBSD 12.0.
     > It  was	revised	 and  adapted  to   be	 native	  [...] in FreeBSD 14.0.
 - Illumos has it [too](https://smartos.org/man/3c/timerfd_create).
 - NetBSD has it [too](https://man.netbsd.org/timerfd_create.2):
