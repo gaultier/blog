@@ -22,6 +22,8 @@ cmark_command :: []string {
 	"table",
 	"-e",
 	"strikethrough",
+	"-e",
+	"footnotes",
 	"--unsafe",
 	"-t",
 	"html",

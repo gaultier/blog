@@ -223,13 +223,16 @@ To sum up:
 | OS API                 | Windows | macOS | Linux | FreeBSD | NetBSD | OpenBSD | Illumos |
 |------------------------|---------|-------|-------|---------|--------|---------|---------|
 | SetTimer               | ✓       |       |       |         |        |         |         |
-| ~POSIX timers~         |         | ✓     | ✓     | ✓       | ✓      | ✓       | ✓       |
+| POSIX timers [^1]      |         | ✓     | ✓     | ✓       | ✓      | ✓       | ✓       |
 | timerfd                |         |       | ✓     | ✓       | ✓      |         | ✓       |
 | kevent timer           |         |       |       | ✓       | ✓      | ✓       |         |
 | port_create timer      |         |       |       |         |        |         | ✓       |
 | dispatch_source_create |         | ✓     |       |         |        |         |         |
-| io_uring sleep         |         |       | ✓     |         |        |         |         |
+| io_uring sleep [^2]    |         |       | ✓     |         |        |         |         |
 | Userspace timers       | ✓       | ✓     | ✓     | ✓       | ✓      | ✓       | ✓       |
+
+[^1]: Do not recommend using in non-trivial programs.
+[^2]: Not always enabled.
 
 
 For performant multiplexed I/O, that means that we have to have a code path for each OS (using `epoll` on Linux, `kqueue` on macOS and BSDs, event ports on Illumos, I/O completion ports on Windows). 
