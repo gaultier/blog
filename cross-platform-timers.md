@@ -162,7 +162,7 @@ So, pretty good, but not ubiquitous. The search continues.
 
 > EVFILT_TIMER   Establishes an arbitrary timer identified by ident. 
 
-That's great, we do not even have to use various APIs to  create the timer, set the time, read from the timer, etc. 
+That's great, we do not even have to use various APIs to  create the timer, set the time, read from the timer, etc. We do not even have to destroy the timer ourselves, thanks to the `EV_ONESHOT` flag.
 
 Let's see it in action:
 
@@ -185,6 +185,7 @@ int main() {
         .flags = EV_ADD | EV_ONESHOT,
         .data = i * 50,
         .filter = EVFILT_TIMER,
+        .fflags = NOTE_MSECONDS,
     };
   }
 

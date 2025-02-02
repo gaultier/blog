@@ -274,7 +274,7 @@ the timerfd interface that appeared in Linux 2.6.25.</p>
 <blockquote>
 <p>EVFILT_TIMER   Establishes an arbitrary timer identified by ident.</p>
 </blockquote>
-<p>That's great, we do not even have to use various APIs to  create the timer, set the time, read from the timer, etc.</p>
+<p>That's great, we do not even have to use various APIs to  create the timer, set the time, read from the timer, etc. We do not even have to destroy the timer ourselves, thanks to the <code>EV_ONESHOT</code> flag.</p>
 <p>Let's see it in action:</p>
 <pre><code class="language-c">#include &lt;assert.h&gt;
 #include &lt;stdio.h&gt;
@@ -294,6 +294,7 @@ int main() {
         .flags = EV_ADD | EV_ONESHOT,
         .data = i * 50,
         .filter = EVFILT_TIMER,
+        .fflags = NOTE_MSECONDS,
     };
   }
 
