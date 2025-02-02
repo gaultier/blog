@@ -480,7 +480,7 @@ arguably unnecessary: portable code can [...] use the timeout value
 present in poll(2) [...].</p>
 </blockquote>
 <p>So, what <code>libuv</code> does is quite simple in fact:</p>
-<p>When a timer is created, add it to a data structure (it's a <a href="https://en.wikipedia.org/wiki/Binary_heap">min-heap</a>, i.e. a binary tree that is easy to implement and is designed to get the smallest element in a set quickly).</p>
+<p>When a timer is created, it is added to an efficient data structure. It's a <a href="https://en.wikipedia.org/wiki/Binary_heap">min-heap</a>, i.e. a binary tree that is easy to implement and is designed to get the smallest element in a set quickly. It is typically used to implement priority queues, which is what this bookkeeping of user-space timers really is.</p>
 <p>A typical event loop tick first gets the current time from the OS. Then, it computes the timeout to pass to poll/epoll/kqueue/etc.  If there are no active timers, it's easy, there is no timeout (that means that the program will block indefinitely until some I/O happens).</p>
 <p>If there are active timers, get the 'smallest' one, meaning: the first that would trigger. The OS timeout is thus <code>now - timer.value</code>.
 Whenever a timer expires, it is removed from the min-heap. Simple, (relatively) efficient. The only caveat is that <code>epoll</code> only offers a millisecond precision for the timeout parameter so that's also the precision of <code>libuv</code> timers.</p>

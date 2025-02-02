@@ -394,7 +394,7 @@ I was at this moment reminded of a [sentence](https://smartos.org/man/7/timerfd)
 
 So, what `libuv` does is quite simple in fact:
 
-When a timer is created, add it to a data structure (it's a [min-heap](https://en.wikipedia.org/wiki/Binary_heap), i.e. a binary tree that is easy to implement and is designed to get the smallest element in a set quickly).
+When a timer is created, it is added to an efficient data structure. It's a [min-heap](https://en.wikipedia.org/wiki/Binary_heap), i.e. a binary tree that is easy to implement and is designed to get the smallest element in a set quickly. It is typically used to implement priority queues, which is what this bookkeeping of user-space timers really is.
 
 A typical event loop tick first gets the current time from the OS. Then, it computes the timeout to pass to poll/epoll/kqueue/etc.  If there are no active timers, it's easy, there is no timeout (that means that the program will block indefinitely until some I/O happens).
 
