@@ -216,9 +216,9 @@ In short, we have multiplexed multiple timers using one system call (and a min-h
 
 ## Conclusion
 
-Writing cross-platform C code usually means writing code for Windows and for Unix. But for multiplexed I/O, and for timers, each Unix has its own idea of what's the Right Way(tm). 
+Writing cross-platform C code typically means writing two code paths: one for Windows and one for Unix. But for multiplexed I/O, and for timers, each Unix has its own idea of what's the Right Way(tm). 
 
-Tu sum up:
+To sum up:
 
 | OS API                 | Windows | macOS | Linux | FreeBSD | NetBSD | OpenBSD | Illumos |
 |------------------------|---------|-------|-------|---------|--------|---------|---------|
