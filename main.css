@@ -37,19 +37,22 @@ p {
   gap: .5rem;
 }
 
-#banner > ul > li {
-  padding: .5rem .2rem;
-}
-
 #banner > ul > li > a:hover {
   background-color: #FFA726;
 }
 
 #banner > ul > li > a {
   text-decoration: none;
-  padding: .5rem;
   border-radius: 8px;
   border: 15px;
+  padding: 0;
+  display: inline-block;
+  padding: .2rem;
+}
+
+#banner > ul > li > a > svg {
+  width: 2rem;
+  height: 2rem;
 }
 
 #me {
@@ -152,7 +155,7 @@ body {
 }
 
 li {
-    padding: .5rem .2rem;
+    margin: .5rem;
 }
 
 blockquote {
