@@ -18,4 +18,5 @@ Blog implementation:
 - [ ] Link to related articles at the end
 - [x] Line numbers in code snippets
 - [x] Show tags on home page
+- [ ] Do not update XML feed timestamps if there are no changes
 - [ ] Search
