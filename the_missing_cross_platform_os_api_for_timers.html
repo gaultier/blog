@@ -526,6 +526,7 @@ precision.</p>
 <p>That way, we can 'sleep' while we also do meaningful work, for example network I/O. If some I/O completes before a timer triggers, we'll get notified by the OS and we can react to it. Then, during the next event loop tick, we'll compute a shorter timeout than the first one (since some time elapsed).</p>
 <p>If no I/O happens at all, the OS will wake us up when our timeout is elapsed.</p>
 <p>In short, we have multiplexed multiple timers using one system call (and a min-heap to remember what timers are on-going and when will the next one trigger).</p>
+<p><em>Addendum</em>: A reader has pointed out that <a href="https://github.com/WebKit/WebKit/blob/main/Source/WebCore/platform/Timer.cpp">Webkit</a> does exactly the same.</p>
 <h2 id="conclusion">
 	<a class="title" href="#conclusion">Conclusion</a>
 	<a class="hash-anchor" href="#conclusion" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>

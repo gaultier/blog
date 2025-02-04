@@ -415,6 +415,8 @@ If no I/O happens at all, the OS will wake us up when our timeout is elapsed.
 
 In short, we have multiplexed multiple timers using one system call (and a min-heap to remember what timers are on-going and when will the next one trigger).
 
+*Addendum*: A reader has pointed out that [Webkit](https://github.com/WebKit/WebKit/blob/main/Source/WebCore/platform/Timer.cpp) does exactly the same.
+
 ## Conclusion
 
 Writing cross-platform C code typically means writing two code paths: one for Windows and one for Unix. But for multiplexed I/O, and for timers, each Unix has its own idea of what's the Right Way(tm). 
