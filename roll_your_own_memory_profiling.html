@@ -485,7 +485,7 @@ int main(){
 </code></pre>
 <p>Now we can record the allocation proper, upserting the new record into our existing list of records, trying to find an existing record with the same call stack.
 That part is important to avoid having a huge profile and that's why <code>pprof</code> made this design decision.</p>
-<p>The code is slightly length because we need to roll our own arrays here in this minimal example, but in a real application you'd have your own array structure and helper functions, most likely:</p>
+<p>The code is slightly lengthy because we need to roll our own arrays here in this minimal example, but in a real application you'd have your own array structure and helper functions, most likely:</p>
 <pre><code class="language-c">static void mem_profile_record_alloc(mem_profile_t *profile,
                                      uint64_t objects_count,
                                      uint64_t bytes_count) {

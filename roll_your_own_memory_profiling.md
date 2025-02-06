@@ -390,7 +390,7 @@ static uint8_t record_call_stack(uint64_t *dst, uint64_t cap) {
 Now we can record the allocation proper, upserting the new record into our existing list of records, trying to find an existing record with the same call stack.
 That part is important to avoid having a huge profile and that's why `pprof` made this design decision.
 
-The code is slightly length because we need to roll our own arrays here in this minimal example, but in a real application you'd have your own array structure and helper functions, most likely:
+The code is slightly lengthy because we need to roll our own arrays here in this minimal example, but in a real application you'd have your own array structure and helper functions, most likely:
 
 ```c
 static void mem_profile_record_alloc(mem_profile_t *profile,
