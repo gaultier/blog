@@ -237,13 +237,10 @@ What about the portability?
 - FreeBSD has it
 - NetBSD has it
 - OpenBSD has it
-- macOS does not have it
+- macOS has it
 
-The last point is unfortunate. macOS has kqueue due to its BSD heritage. But the [man page](https://developer.apple.com/library/archive/documentation/System/Conceptual/ManPages_iPhoneOS/man2/kqueue.2.html) explicitly states that this particular feature is not supported:
-
-> EVFILT_TIMER   This filter is currently unsupported.
-
-Disappointing!
+*A past version of this section mentioned that this was not implemented on macOS. This used to be the case way back in the day, but an astute reader pointed out that Apple added this functionality at some point around macOS 10.9 (circa 2013).
+Great news, and thanks, nice reader!*
 
 ## Illumos: port_create
 

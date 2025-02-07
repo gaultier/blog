@@ -372,13 +372,10 @@ int main() {
 <li>FreeBSD has it</li>
 <li>NetBSD has it</li>
 <li>OpenBSD has it</li>
-<li>macOS does not have it</li>
+<li>macOS has it</li>
 </ul>
-<p>The last point is unfortunate. macOS has kqueue due to its BSD heritage. But the <a href="https://developer.apple.com/library/archive/documentation/System/Conceptual/ManPages_iPhoneOS/man2/kqueue.2.html">man page</a> explicitly states that this particular feature is not supported:</p>
-<blockquote>
-<p>EVFILT_TIMER   This filter is currently unsupported.</p>
-</blockquote>
-<p>Disappointing!</p>
+<p><em>A past version of this section mentioned that this was not implemented on macOS. This used to be the case way back in the day, but an astute reader pointed out that Apple added this functionality at some point around macOS 10.9 (circa 2013).
+Great news, and thanks, nice reader!</em></p>
 <h2 id="illumos-port-create">
 	<a class="title" href="#illumos-port-create">Illumos: port_create</a>
 	<a class="hash-anchor" href="#illumos-port-create" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
