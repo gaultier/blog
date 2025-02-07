@@ -201,6 +201,8 @@ code.code-no-line-numbers {
 table {
     border-collapse: collapse;
     word-break: break-word;
+    /* Center. */
+    margin: auto;
 }
 
 figcaption {
