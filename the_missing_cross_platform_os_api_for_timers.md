@@ -427,7 +427,7 @@ To sum up:
 | SetTimer               | ✓       |       |       |         |        |         |         |
 | POSIX timers [^1]      |         | ✓     | ✓     | ✓       | ✓      | ✓       | ✓       |
 | timerfd                |         |       | ✓     | ✓       | ✓      |         | ✓       |
-| kevent timer           |         |       |       | ✓       | ✓      | ✓       |         |
+| kevent timer           |         | ✓     |       | ✓       | ✓      | ✓       |         |
 | port_create timer      |         |       |       |         |        |         | ✓       |
 | dispatch_source_create |         | ✓     |       |         |        |         |         |
 | io_uring sleep [^2]    |         |       | ✓     |         |        |         |         |
