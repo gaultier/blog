@@ -167,7 +167,7 @@
             // [...]
         }
 </code></pre>
-<p>Which works! And the same syntax can be done to the <code>Ok</code> branch (per the link above) if needed. Note that this is a partial type annotation: we only care about the <code>Err</code> part of the <code>Result</code> type.</p>
+<p>Which works! And the same syntax can be applied to the <code>Ok</code> branch (per the link above) if needed. Note that this is a partial type annotation: we only care about the <code>Err</code> part of the <code>Result</code> type.</p>
 <p>That was a TIL for me. It's a bit of a weird syntax here. It's usually the syntax for type annotations on methods (more on that in a second).</p>
 <p>Anyways, there's a much better way to solve this issue. We can simply  annotate the resulting variable outside of the whole match pattern, so that <code>rustc</code> knows which <code>try_into</code> method we are using:</p>
 <pre><code class="language-rust">    let value: [u8; 33] = match left.try_into() {

@@ -68,7 +68,7 @@ Alright, so after some [searching around](https://users.rust-lang.org/t/type-ann
         }
 ```
 
-Which works! And the same syntax can be done to the `Ok` branch (per the link above) if needed. Note that this is a partial type annotation: we only care about the `Err` part of the `Result` type.
+Which works! And the same syntax can be applied to the `Ok` branch (per the link above) if needed. Note that this is a partial type annotation: we only care about the `Err` part of the `Result` type.
 
 That was a TIL for me. It's a bit of a weird syntax here. It's usually the syntax for type annotations on methods (more on that in a second).
 
