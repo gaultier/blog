@@ -176,7 +176,18 @@
           // [...]
         }
 </code></pre>
-<p>Another approach that works is to annotate the <code>try_into()</code> function with the type, but it's even noisier than annotating the <code>Err</code> branch:</p>
+<p>Or alternatively, as pointed out by a perceptive reader, annotate the <code>err</code> variable inside the body for the <code>Err</code> branch:</p>
+<pre><code class="language-rust">    let value = match left.try_into() {
+        Ok(v) =&gt; v,
+        Err(err) =&gt; {
+            let err: TryFromSliceError = err; // &lt;= Here.
+            let err_s = err.to_string();
+            eprintln!(&quot;failed to decode data, wrong length: {}&quot;, err_s);
+            return Err(Error::InvalidData);
+        }
+    };
+</code></pre>
+<p>Another approach that works is to annotate the <code>try_into()</code> function with the type, but I find it even noisier than annotating the <code>Err</code> branch:</p>
 <pre><code class="language-rust">    let value = match TryInto::&lt;[u8; 33]&gt;::try_into(left) {
         Ok(v) =&gt; v,
         Err(err) =&gt; {

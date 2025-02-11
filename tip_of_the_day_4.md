@@ -82,7 +82,21 @@ Anyways, there's a much better way to solve this issue. We can simply  annotate 
         }
 ```
 
-Another approach that works is to annotate the `try_into()` function with the type, but it's even noisier than annotating the `Err` branch:
+Or alternatively, as pointed out by a perceptive reader, annotate the `err` variable inside the body for the `Err` branch:
+
+```rust
+    let value = match left.try_into() {
+        Ok(v) => v,
+        Err(err) => {
+            let err: TryFromSliceError = err; // <= Here.
+            let err_s = err.to_string();
+            eprintln!("failed to decode data, wrong length: {}", err_s);
+            return Err(Error::InvalidData);
+        }
+    };
+```
+
+Another approach that works is to annotate the `try_into()` function with the type, but I find it even noisier than annotating the `Err` branch:
 
 ```rust
     let value = match TryInto::<[u8; 33]>::try_into(left) {
