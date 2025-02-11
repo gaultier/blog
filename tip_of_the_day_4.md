@@ -68,11 +68,11 @@ Alright, so after some [searching around](https://users.rust-lang.org/t/type-ann
         }
 ```
 
-Which works! And the same syntax applies to the `Ok` branch (per the link above). 
+Which works! And the same syntax can be done to the `Ok` branch (per the link above) if needed. Note that this is a partial type annotation: we only care about the `Err` part of the `Result` type.
 
-That was a TIL for me. It's a bit of a weird syntax.
+That was a TIL for me. It's a bit of a weird syntax here. It's usually the syntax for type annotations on methods (more on that in a second).
 
-Anyways, here's a much better way to solve this issue: to annotate the resulting variable from the match, so that `rustc` knows which `try_into` method we are using:
+Anyways, there's a much better way to solve this issue. We can simply  annotate the resulting variable outside of the whole match pattern, so that `rustc` knows which `try_into` method we are using:
 
 ```rust
     let value: [u8; 33] = match left.try_into() {
@@ -92,7 +92,7 @@ Another approach that works is to annotate the `try_into()` function with the ty
         }
 ```
 
-Astute readers will think at this point that all of this is unnecessary: let's just have the *magic traits(tm)* do their magic. We do not convert the error to a string, we simply `eprintln!` call `err.fmt()` under the hood, since `TryFromSliceError` implements the `Display` trait:
+Astute readers will think at this point that all of this is unnecessary: let's just have the *magic traits(tm)* do their wizardry. We do not convert the error to a string, we simply let `eprintln!` call `err.fmt()` under the hood, since `TryFromSliceError` implements the `Display` trait (which is why we could convert it to a `String` with `.to_string()`):
 
 ```rust
     let value = match left.try_into() {
@@ -107,9 +107,9 @@ Astute readers will think at this point that all of this is unnecessary: let's j
 That works but in my case I really needed to convert the error to a `String`, to be able to pass it to C, which does not know anything about fancy traits.
 
 
-I find this issue interesting because it encapsulates well the joy and pain of writing Rust: match patterns are really handy, but they sometimes lead to weird syntax not found elsewhere inthe Rust language (maybe due to the OCaml heritage?). Type inference is nice but sometimes the compiler/language server fails at inferring things you think they should really know. Traits and `into/try_into` are found everywhere in Rust code, but it's hard to know what type is being converted to what, especially when these are chained several times.
+I find this issue interesting because it encapsulates well the joy and pain of writing Rust: match patterns are really handy, but they sometimes lead to weird syntax not found elsewhere in the Rust language (maybe due to the OCaml heritage?). Type inference is nice but sometimes the compiler/language server fails at inferring things you'd think they should really be able to infer. Traits and `into/try_into` are found everywhere in Rust code, but it's hard to know what type is being converted to what, especially when these are chained several times without any type annotation whatsoever.
 
-By the way, here's a tip I heard some time ago: if you want to know the real type of a variable that's obscured by type inferrence, just add a type annotation that's obviously wrong, and the compiler will show the correct type. That's how I guessed the `TryFromSliceError` type. Let's add a bogus `bool` type annotation:
+By the way, here's a tip I heard some time ago: if you want to know the real type of a variable that's obscured by type inferrence, just add a type annotation that's obviously wrong, and the compiler will show the correct type. That's how I pinpointed the `TryFromSliceError` type. Let's add a bogus `bool` type annotation:
 
 ```rust
     let value = match left.try_into() {
@@ -129,4 +129,4 @@ error[E0271]: type mismatch resolving `<[u8; 33] as TryFrom<&[u8]>>::Error == bo
    |                            ^^^^^^^^ expected `bool`, found `TryFromSliceError`
 ```
 
-So...it *does* know the type of `err`... You naughty compiler, you!
+So...it *does* actually know the type of `err`... You naughty compiler, playing games with me!
