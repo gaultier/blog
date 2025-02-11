@@ -194,7 +194,7 @@
 </code></pre>
 <p>That works but in my case I really needed to convert the error to a <code>String</code>, to be able to pass it to C, which does not know anything about fancy traits.</p>
 <p>I find this issue interesting because it encapsulates well the joy and pain of writing Rust: match patterns are really handy, but they sometimes lead to weird syntax not found elsewhere in the Rust language (maybe due to the OCaml heritage?). Type inference is nice but sometimes the compiler/language server fails at inferring things you'd think they should really be able to infer. Traits and <code>into/try_into</code> are found everywhere in Rust code, but it's hard to know what type is being converted to what, especially when these are chained several times without any type annotation whatsoever.</p>
-<p>By the way, here's a tip I heard some time ago: if you want to know the real type of a variable that's obscured by type inferrence, just add a type annotation that's obviously wrong, and the compiler will show the correct type. That's how I pinpointed the <code>TryFromSliceError</code> type. Let's add a bogus <code>bool</code> type annotation:</p>
+<p>By the way, here's a tip I heard some time ago: if you want to know the real type of a variable that's obscured by type inference, just add a type annotation that's obviously wrong, and the compiler will show the correct type. That's how I pinpointed the <code>TryFromSliceError</code> type. Let's add a bogus <code>bool</code> type annotation:</p>
 <pre><code class="language-rust">    let value = match left.try_into() {
         Ok(v) =&gt; v,
         Err::&lt;_, bool&gt;(err) =&gt; {
@@ -209,7 +209,7 @@
    |                            ^^^^^^^^ expected `bool`, found `TryFromSliceError`
 </code></pre>
 <p>So...it <em>does</em> actually know the type of <code>err</code>... You naughty compiler, playing games with me! It reminds me of this picture:</p>
-<p><img src="coffee_or_tea.png" alt="Coffee or tea" /></p>
+<p><img style="height:50rem" src="coffee_or_tea.png">Coffee or tea?</img></p>
 <p><a href="/blog"> ⏴ Back to all articles</a></p>
 
 <blockquote id="donate">

@@ -109,7 +109,7 @@ That works but in my case I really needed to convert the error to a `String`, to
 
 I find this issue interesting because it encapsulates well the joy and pain of writing Rust: match patterns are really handy, but they sometimes lead to weird syntax not found elsewhere in the Rust language (maybe due to the OCaml heritage?). Type inference is nice but sometimes the compiler/language server fails at inferring things you'd think they should really be able to infer. Traits and `into/try_into` are found everywhere in Rust code, but it's hard to know what type is being converted to what, especially when these are chained several times without any type annotation whatsoever.
 
-By the way, here's a tip I heard some time ago: if you want to know the real type of a variable that's obscured by type inferrence, just add a type annotation that's obviously wrong, and the compiler will show the correct type. That's how I pinpointed the `TryFromSliceError` type. Let's add a bogus `bool` type annotation:
+By the way, here's a tip I heard some time ago: if you want to know the real type of a variable that's obscured by type inference, just add a type annotation that's obviously wrong, and the compiler will show the correct type. That's how I pinpointed the `TryFromSliceError` type. Let's add a bogus `bool` type annotation:
 
 ```rust
     let value = match left.try_into() {
@@ -131,4 +131,4 @@ error[E0271]: type mismatch resolving `<[u8; 33] as TryFrom<&[u8]>>::Error == bo
 
 So...it *does* actually know the type of `err`... You naughty compiler, playing games with me! It reminds me of this picture:
 
-![Coffee or tea](coffee_or_tea.png)
+<img style="height:50rem" src="coffee_or_tea.png">Coffee or tea?</img>
