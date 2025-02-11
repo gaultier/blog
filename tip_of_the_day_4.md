@@ -1,4 +1,4 @@
-Title: Tip of the day #4: Type annotations in Rust on match patterns
+Title: Tip of the day #4: Type annotations on Rust match patterns
 Tags: Rust
 ---
 
