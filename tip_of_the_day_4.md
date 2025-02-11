@@ -129,4 +129,6 @@ error[E0271]: type mismatch resolving `<[u8; 33] as TryFrom<&[u8]>>::Error == bo
    |                            ^^^^^^^^ expected `bool`, found `TryFromSliceError`
 ```
 
-So...it *does* actually know the type of `err`... You naughty compiler, playing games with me!
+So...it *does* actually know the type of `err`... You naughty compiler, playing games with me! It reminds me of this picture:
+
+![Coffee or tea](coffee_or_tea.png)

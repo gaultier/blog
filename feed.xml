@@ -2,7 +2,7 @@
   <feed xmlns="http://www.w3.org/2005/Atom">
     <title>Philippe Gaultier's blog</title>
     <link href="https://gaultier.github.io/blog"/>
-    <updated>2025-02-11T16:47:52+01:00</updated>
+    <updated>2025-02-11T16:54:47+01:00</updated>
     <author>
       <name>Philippe Gaultier</name>
     </author>
@@ -212,7 +212,7 @@
   <title>Tip of the day #4: Type annotations on Rust match patterns</title>
   <link href="https://gaultier.github.io/blog/tip_of_the_day_4.html"/>
   <id>urn:uuid:c4aa2dc8-0d40-5ce8-9b46-ac6c7f41dea6</id>
-  <updated>2025-02-11T16:47:52+01:00</updated>
+  <updated>2025-02-11T16:54:47+01:00</updated>
   <published>2025-02-11T16:47:16+01:00</published>
   </entry>
 	</feed>
