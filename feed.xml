@@ -2,20 +2,12 @@
   <feed xmlns="http://www.w3.org/2005/Atom">
     <title>Philippe Gaultier's blog</title>
     <link href="https://gaultier.github.io/blog"/>
-    <updated>2025-02-07T13:27:46+01:00</updated>
+    <updated>2025-02-11T16:47:16+01:00</updated>
     <author>
       <name>Philippe Gaultier</name>
     </author>
     <id>urn:uuid:9c065c53-31bc-4049-a795-936802a6b1df</id>
 
-	<entry>
-  <title>Tip of the day #4: Type annotations in Rust on match patterns</title>
-  <link href="https://gaultier.github.io/blog/tip_of_the_day_4.html"/>
-  <id>urn:uuid:c4aa2dc8-0d40-5ce8-9b46-ac6c7f41dea6</id>
-  <updated></updated>
-  <published></published>
-  </entry>
-	
 	<entry>
   <title>Getting started with Scheme by solving an Advent of Code 2018 challenge</title>
   <link href="https://gaultier.github.io/blog/advent_of_code_2018_5.html"/>
@@ -214,5 +206,13 @@
   <id>urn:uuid:87e0c181-0c40-53af-954a-0dffe1881278</id>
   <updated>2025-02-07T13:27:46+01:00</updated>
   <published>2025-02-02T23:11:55+01:00</published>
+  </entry>
+	
+	<entry>
+  <title>Tip of the day #4: Type annotations in Rust on match patterns</title>
+  <link href="https://gaultier.github.io/blog/tip_of_the_day_4.html"/>
+  <id>urn:uuid:c4aa2dc8-0d40-5ce8-9b46-ac6c7f41dea6</id>
+  <updated>2025-02-11T16:47:16+01:00</updated>
+  <published>2025-02-11T16:47:16+01:00</published>
   </entry>
 	</feed>
