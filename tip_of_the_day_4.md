@@ -76,6 +76,14 @@ Which works! And the same syntax can be applied to the `Ok` branch (per the link
 
 That was a TIL for me. It's a bit of a weird syntax here. It's usually the syntax for type annotations on methods (more on that in a second).
 
+You can be even more verbose by mentioning the whole type, if you want to:
+
+```rust
+    let value = match left.try_into() {
+        Ok(v) => v,
+        Result::<_, TryFromSliceError>::Err(err) => {
+```
+
 ---
 
 Anyways, there's a much better way to solve this issue. We can simply  annotate the resulting variable outside of the whole match pattern, so that `rustc` knows which `try_into` method we are using:
