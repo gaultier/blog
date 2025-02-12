@@ -23,10 +23,10 @@ This will be brief because I do not develop on Windows. The official documentati
 Readers with experience with `SetTimer` have pointed out that `SetTimer` has flaws:
 
 - An invisible window must be created to get a message queue, which is opt-in.
-- The parameter size is limited for `SetTimer` which can be an issue.
+- The parameter size is limited which can be an issue.
 - The event `WM_TIMER` is low-priority so any other events, say mouse events, will take precedence.
 
-As an alternative, there is a jungle of *other* timer APIs (and again, I mention them in passing as someone who does not develop on Windows):
+Worry not, there are alternatives (and again, I mention them in passing as someone who does not develop on Windows):
 
 - [CreateThreadpoolTimer](https://learn.microsoft.com/en-us/windows/win32/api/threadpoolapiset/nf-threadpoolapiset-createthreadpooltimer) which works with the threadpool every Win32 process gets by default
 - [CreateWaitableTimer](https://learn.microsoft.com/en-us/windows/win32/api/synchapi/nf-synchapi-createwaitabletimerw) does not need a window, and can be shared between processes to do inter-process synchronization. Which is pretty nifty. And a timer created by this function can be referred by name.
