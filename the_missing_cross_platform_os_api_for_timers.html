@@ -122,7 +122,13 @@
 
 <li>
 	<a href="#windows-settimer">Windows: SetTimer</a>
+		<ul>
+
+<li>
+	<a href="#readers-suggestions-createwaitabletimer-createthreadpooltimer-createtimerqueuetimer">Readers suggestions: CreateWaitableTimer, CreateThreadpoolTimer, CreateTimerQueueTimer</a>
 		</li>
+</ul>
+</li>
 
 <li>
 	<a href="#posix-timer-create-timer-settime">POSIX: timer_create, timer_settime</a>
@@ -157,7 +163,7 @@
 		</li>
 </ul>
 
-<p><em>Discussions: <a href="https://old.reddit.com/r/programming/comments/1igik53/the_missing_crossplatform_os_api_for_timers/">/r/programming</a></em></p>
+<p><em>Discussions: <a href="https://old.reddit.com/r/programming/comments/1igik53/the_missing_crossplatform_os_api_for_timers/">/r/programming</a>, <a href="https://gaultier.github.io/blog/the_missing_cross_platform_os_api_for_timers.html">HN</a></em></p>
 <p>Most serious programs will need to trigger some action at a delayed point in time, often repeatedly: set timeouts, clean up temporary files or entries in the database, send keep-alives, garbage-collect unused entities, etc. All while doing some work in the meantime. A blocking <code>sleep</code> won't cut it! For example, JavaScript has <code>setTimeout</code>. But how does it work under the hood? How does each OS handle that?</p>
 <p>Lately, I have found myself in need of doing just that, repeatedly sending a keep-alive over the network to many remote peers, in C. My program has an event loop, a la NodeJS or Redis. It is doing lots of file I/O, network I/O, and handling timers, all in a single thread, in a non-blocking way.</p>
 <p>And I wanted to do all that in a cross-platform way. And to my surprise, I could not find a (sane) libc function or syscall to create a timer, and that is the same on all Unices!</p>
@@ -167,7 +173,22 @@
 	<a class="title" href="#windows-settimer">Windows: SetTimer</a>
 	<a class="hash-anchor" href="#windows-settimer" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
-<p>This will be brief because I do not develop on Windows. The official documentation mentions the <code>SetTimer</code> function from Win32 and you pass it a timeout and a callback. Alternatively, since Windows applications come with a built-in event queue, an event of type <code>WM_TIMER</code> gets emitted and can be consumed from the queue. Simple, and it composes with other OS events, I like it.</p>
+<p>This will be brief because I do not develop on Windows. The official documentation mentions the <a href="https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-settimer">SetTimer</a> function from Win32 and you pass it a timeout and a callback. Alternatively, since Windows applications come with a built-in event queue, an event of type <code>WM_TIMER</code> gets emitted and can be consumed from the queue. Simple, and it composes with other OS events, I like it.</p>
+<h3 id="readers-suggestions-createwaitabletimer-createthreadpooltimer-createtimerqueuetimer">
+	<a class="title" href="#readers-suggestions-createwaitabletimer-createthreadpooltimer-createtimerqueuetimer">Readers suggestions: CreateWaitableTimer, CreateThreadpoolTimer, CreateTimerQueueTimer</a>
+	<a class="hash-anchor" href="#readers-suggestions-createwaitabletimer-createthreadpooltimer-createtimerqueuetimer" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+</h3>
+<p>Readers with experience with <code>SetTimer</code> have pointed out that <code>SetTimer</code> has flaws:</p>
+<ul>
+<li>An invisible window must be created to get a message queue, which is opt-in.</li>
+<li>The parameter size is limited for <code>SetTimer</code> which can be an issue.</li>
+<li>The event <code>WM_TIMER</code> is low-priority so any other events, say mouse events, will take precedence.</li>
+</ul>
+<p>As an alternative, there is a jungle of <em>other</em> timer APIs (and again, I mention them in passing as someone who does not develop on Windows):</p>
+<ul>
+<li><a href="https://learn.microsoft.com/en-us/windows/win32/api/threadpoolapiset/nf-threadpoolapiset-createthreadpooltimer">CreateThreadpoolTimer</a> which works with the threadpool every Win32 process gets by default</li>
+<li><a href="https://learn.microsoft.com/en-us/windows/win32/api/synchapi/nf-synchapi-createwaitabletimerw">CreateWaitableTimer</a> does not need a window, and can be shared between processes to do inter-process synchronization. Which is pretty nifty. And a timer created by this function can be referred by name.</li>
+</ul>
 <h2 id="posix-timer-create-timer-settime">
 	<a class="title" href="#posix-timer-create-timer-settime">POSIX: timer_create, timer_settime</a>
 	<a class="hash-anchor" href="#posix-timer-create-timer-settime" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>

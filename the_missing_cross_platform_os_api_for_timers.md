@@ -2,7 +2,7 @@ Title: The missing cross-platform OS API for timers
 Tags: Unix, Signals, C, Linux, FreeBSD, Illumos, MacOS, Windows, OpenBSD, NetBSD, Timers
 ---
 
-*Discussions: [/r/programming](https://old.reddit.com/r/programming/comments/1igik53/the_missing_crossplatform_os_api_for_timers/)*
+*Discussions: [/r/programming](https://old.reddit.com/r/programming/comments/1igik53/the_missing_crossplatform_os_api_for_timers/), [HN](https://gaultier.github.io/blog/the_missing_cross_platform_os_api_for_timers.html)*
 
 Most serious programs will need to trigger some action at a delayed point in time, often repeatedly: set timeouts, clean up temporary files or entries in the database, send keep-alives, garbage-collect unused entities, etc. All while doing some work in the meantime. A blocking `sleep` won't cut it! For example, JavaScript has `setTimeout`. But how does it work under the hood? How does each OS handle that?
 
@@ -16,7 +16,21 @@ Well, let's take a tour of all the OS APIs to handle them.
 
 ## Windows: SetTimer
 
-This will be brief because I do not develop on Windows. The official documentation mentions the `SetTimer` function from Win32 and you pass it a timeout and a callback. Alternatively, since Windows applications come with a built-in event queue, an event of type `WM_TIMER` gets emitted and can be consumed from the queue. Simple, and it composes with other OS events, I like it.
+This will be brief because I do not develop on Windows. The official documentation mentions the [SetTimer](https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-settimer) function from Win32 and you pass it a timeout and a callback. Alternatively, since Windows applications come with a built-in event queue, an event of type `WM_TIMER` gets emitted and can be consumed from the queue. Simple, and it composes with other OS events, I like it.
+
+### Readers suggestions: CreateWaitableTimer, CreateThreadpoolTimer, CreateTimerQueueTimer
+
+Readers with experience with `SetTimer` have pointed out that `SetTimer` has flaws:
+
+- An invisible window must be created to get a message queue, which is opt-in.
+- The parameter size is limited for `SetTimer` which can be an issue.
+- The event `WM_TIMER` is low-priority so any other events, say mouse events, will take precedence.
+
+As an alternative, there is a jungle of *other* timer APIs (and again, I mention them in passing as someone who does not develop on Windows):
+
+- [CreateThreadpoolTimer](https://learn.microsoft.com/en-us/windows/win32/api/threadpoolapiset/nf-threadpoolapiset-createthreadpooltimer) which works with the threadpool every Win32 process gets by default
+- [CreateWaitableTimer](https://learn.microsoft.com/en-us/windows/win32/api/synchapi/nf-synchapi-createwaitabletimerw) does not need a window, and can be shared between processes to do inter-process synchronization. Which is pretty nifty. And a timer created by this function can be referred by name.
+
 
 ## POSIX: timer_create, timer_settime
 
