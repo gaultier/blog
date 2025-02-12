@@ -2,7 +2,7 @@ Title: The missing cross-platform OS API for timers
 Tags: Unix, Signals, C, Linux, FreeBSD, Illumos, MacOS, Windows, OpenBSD, NetBSD, Timers
 ---
 
-*Discussions: [/r/programming](https://old.reddit.com/r/programming/comments/1igik53/the_missing_crossplatform_os_api_for_timers/), [HN](https://gaultier.github.io/blog/the_missing_cross_platform_os_api_for_timers.html)*
+*Discussions: [/r/programming](https://old.reddit.com/r/programming/comments/1igik53/the_missing_crossplatform_os_api_for_timers/), [HN](https://news.ycombinator.com/item?id=42915437)*
 
 Most serious programs will need to trigger some action at a delayed point in time, often repeatedly: set timeouts, clean up temporary files or entries in the database, send keep-alives, garbage-collect unused entities, etc. All while doing some work in the meantime. A blocking `sleep` won't cut it! For example, JavaScript has `setTimeout`. But how does it work under the hood? How does each OS handle that?
 
