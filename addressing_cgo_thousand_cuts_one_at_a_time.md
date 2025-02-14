@@ -702,3 +702,184 @@ So, we went from ~100s to ~1s, roughly a 100x improvement. Pretty pretty good if
 ## Conclusion
 
 Cgo is rocky, but there are no real blocking issues, just lots of small pains. Half the cure if being aware of the ailment, as the saying goes. So armed with this knowledge, I wish you god speed with your Cgo projects!
+
+## Addendum: the full code
+
+<details>
+  <summary>The full code</summary>
+
+`c/Makefile`
+
+```make
+libapi.a: api.o
+	$(AR) -rcs libapi.a api.o
+
+api.o: api.c
+	$(CC) $(CFLAGS) api.c -c
+```
+
+`c/api.c`
+
+```c
+#include "api.h"
+#include <assert.h>
+#include <inttypes.h>
+#include <stdio.h>
+#include <string.h>
+
+Animal animal_make_dog() {
+  return (Animal){
+      .kind = ANIMAL_KIND_DOG,
+      .dog_tail = 42,
+  };
+}
+
+Animal animal_make_cat() {
+  return (Animal){
+      .kind = ANIMAL_KIND_CAT,
+      .cat_name =
+          {
+              .data = strdup("kitty"),
+              .len = 5,
+          },
+  };
+}
+
+void animal_print(Animal *animal) {
+  switch (animal->kind) {
+  case ANIMAL_KIND_DOG:
+    printf("Dog: %" PRIu16 "\n", animal->dog_tail);
+    break;
+  case ANIMAL_KIND_CAT:
+    printf("Cat: %.*s\n", (int)animal->cat_name.len, animal->cat_name.data);
+    break;
+  default:
+    assert(0 && "unreachable");
+  }
+}
+
+uint16_t animal_dog_get_tail(Animal *animal) {
+  assert(ANIMAL_KIND_DOG == animal->kind);
+  return animal->dog_tail;
+}
+
+String animal_cat_get_name(Animal *animal) {
+  assert(ANIMAL_KIND_CAT == animal->kind);
+  return animal->cat_name;
+}
+```
+
+`c/api.h`
+
+```c
+#pragma once
+#include <stdint.h>
+
+typedef struct {
+  char *data;
+  uint64_t len;
+} String;
+
+typedef enum {
+  ANIMAL_KIND_DOG,
+  ANIMAL_KIND_CAT,
+} AnimalKind;
+
+typedef struct {
+  AnimalKind kind;
+  union {
+    String cat_name;   // Only for `ANIMAL_KIND_CAT`.
+    uint16_t dog_tail; // Only for `ANIMAL_KIND_DOG`.
+  };
+} Animal;
+
+Animal animal_make_dog();
+
+Animal animal_make_cat();
+
+void animal_print(Animal *animal);
+
+uint16_t animal_dog_get_tail(Animal *animal);
+
+String animal_cat_get_name(Animal *animal);
+```
+
+`app/app.go`
+
+```go
+package app
+
+// NOTE: Do not use -Wall.
+
+// #cgo CFLAGS: -g -O2 -I${SRCDIR}/../c/
+// #cgo LDFLAGS: ${SRCDIR}/../c/libapi.a
+// #include <api.h>
+// void initial_setup();
+import "C"
+
+func init() {
+	C.initial_setup()
+}
+
+func AnimalDogKind() int {
+	return C.ANIMAL_KIND_DOG
+}
+
+func AnimalMakeDog() C.Animal {
+	return C.animal_make_dog()
+}
+
+func DoStuff() {
+	dog := C.animal_make_dog()
+	C.animal_print(&dog)
+
+}
+```
+
+`app/app_test.go`
+
+```go
+package app
+
+import "testing"
+
+func TestAnimalMakeDog(t *testing.T) {
+	dog := AnimalMakeDog()
+	if int(dog.kind) != AnimalDogKind() {
+		panic("wrong kind")
+	}
+}
+```
+
+`app/cfuncs.go`
+
+```go
+package app
+
+/*
+void initial_setup(){}
+*/
+import "C"
+```
+
+`main.go`
+
+```go
+package main
+
+import "cgo/app"
+
+func main() {
+	app.DoStuff()
+}
+```
+
+`go.mod`
+
+```
+module cgo
+
+go 1.23.1
+```
+
+</details>
