@@ -156,11 +156,14 @@ Here's the very tedious way, by hand:
 
 ```go
 // app/app.go
+func DoStuff() {
+    // [...]
 
 	cat_ptr := unsafe.Pointer(&cat)
 	cat_name_ptr := unsafe.Add(cat_ptr, 8)
 	cat_name_len_ptr := unsafe.Add(cat_name_ptr, 8)
 	fmt.Println(*(*C.uint64_t)(cat_name_len_ptr))
+}
 ```
 
 And we get:
@@ -206,9 +209,12 @@ And now we have a sane Go code:
 
 ```go
 // app/app.go
+func DoStuff() {
+    // [...]
 
 	cat_name := C.animal_cat_get_name(&cat)
 	fmt.Println(cat_name.len)
+}
 ```
 
 And as a bonus, whenever the layout of `Animal` changes, for example the order of fields gets changed, or a new field gets added which changes the alignment and thus the padding (here it's not the case because the alignment is already 8 which is the maximum, but in other cases it could happen), the C code gets recompiled, it does the right thing automatically, and everything works as expected. 
@@ -229,6 +235,8 @@ Anyways, converting C slices (pointer + length) to Go is straightforward using t
 
 ```go
 // app/app.go
+func DoStuff() {
+    // [...]
 
 	cat_name := C.animal_cat_get_name(&cat)
 	slice := unsafe.Slice(cat_name.data, cat_name.len)
@@ -236,6 +244,7 @@ Anyways, converting C slices (pointer + length) to Go is straightforward using t
 
 	fmt.Println(slice)
 	fmt.Println(str)
+}
 ```
 
 And it does what we expect:
@@ -269,10 +278,13 @@ And let's mutate!
 
 ```go
 // app/app.go
+func DoStuff() {
+    // [...]
 
 	slice[0] -= 32 // Poor man's uppercase.
 	fmt.Println(slice)
 	fmt.Println(str)
+}
 ```
 
 And we get the additional output:
