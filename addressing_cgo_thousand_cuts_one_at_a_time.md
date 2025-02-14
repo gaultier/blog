@@ -587,7 +587,7 @@ import "C"
 
 So picture me, building my Go program (a web service) using Cgo. Locally, it builds very quickly, due to Rust and Go caching. 
 
-Now, time to build in Docker to be able to deploy it:
+Now, time to build in Docker to be able to test my changes:
 
 ```sh
 $ time docker build [...]
