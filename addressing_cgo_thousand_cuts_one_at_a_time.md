@@ -221,6 +221,10 @@ And as a bonus, whenever the layout of `Animal` changes, for example the order o
 
 So my recommendation: never role-play as a compiler, just use getters and setters for unions and let the C compiler do the dirty work.
 
+
+My ask to the Go team: document more clearly this case. I don't expect Go to have (tagged) unions anytime soon, so that's the best we can do.
+
+
 ## Slices vs Strings
 
 Quick Go trivia question: what's the difference between `[]byte` (a slice of bytes) and `string` (which is a slice of bytes underneath)?
@@ -317,16 +321,92 @@ Kitty
 # Works fine!
 ```
 
-Nope...so what can we do about it? In my case I had almost no strings to deal with, buth here's my recommendation:
+Nope...so what can we do about it? In my real-life program I have almost no strings to deal with, buth here's my recommendation:
 
 - In Go, do not use `unsafe.String`, just use `unsafe.Slice` and accept that it's mutable data everywhere in the program
 - If you really want to use `unsafe.String`, make sure that the string data returned by the C code is immutable **at the OS level**, so either:
   + It's a constant string placed in the read-only segment
   + The string data is allocated in its own virtual memory page and the page permissions are changed to read-only before returning the pointer to Go
+- In C, do not expose string data directly to Go, only expose opaque values (`void*`), and mutations are only done by calling a C function. That way, the Go caller simply cannot use `unsafe.String` (I guess they could with lots of casts, but that's not in the realm of *honest mistake* anymore).
 
+
+My ask to the Go team: attempt to develop more advanced checks to detect this issue at runtime.
 
 
 ## Test a C function in Go tests
+
+We are principled programmers who write tests. Let's write a test to ensure that `animal_make_dog()` does indeed create a dog, i.e. the kind if `ANIMAL_KIND_DOG`:
+
+```go
+// app/app_test.go
+
+package app
+
+import "testing"
+import "C"
+
+func TestAnimalMakeDog(t *testing.T) {
+	dog := C.animal_make_dog()
+	_ = dog
+}
+```
+
+Let's run it:
+
+```sh
+$ go test ./app/
+use of cgo in test app_test.go not supported
+```
+
+Ah...yeah this is a known limitation. 
+
+Solution: wrap the C function in a Go one.
+
+```
+// app/app.go
+
+func AnimalDogKind() int {
+	return C.ANIMAL_KIND_DOG
+}
+
+func AnimalMakeDog() C.Animal {
+	return C.animal_make_dog()
+}
+```
+
+And we now have a passing Go test:
+
+```go
+// app/app_test.go
+
+package app
+
+import "testing"
+
+func TestAnimalMakeDog(t *testing.T) {
+	dog := AnimalMakeDog()
+	if int(dog.kind) != AnimalDogKind() {
+		panic("wrong kind")
+	}
+}
+```
+
+```sh
+$ go test ./app/ -count=1 -v
+=== RUN   TestAnimalMakeDog
+--- PASS: TestAnimalMakeDog (0.00s)
+PASS
+ok  	cgo/app	0.003s
+```
+
+So...that works, and also: that's annoying boilerplate that no one wants to have to write. And if you're feeling smug, thinking your favorite LLM will do the right thing for you, I can tell you I tried and the LLM generated the wrong version with the test trying to use Cgo directly.
+
+My recommendation: 
+
+- Test the C code in C directly (or Rust, or whatever language it is)
+- There is some glue code sometimes that is only useful to the Go codebase, and that's written in C. In that case wrap each C utility function in a Go one and write a Go test, hopefully it's not that much.
+
+My ask to the Go team: let's allow the use of Cgo in tests.
 
 ## The Go compiler does not detect changes
 
