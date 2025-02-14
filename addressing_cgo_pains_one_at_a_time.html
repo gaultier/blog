@@ -487,7 +487,7 @@ ok  	cgo/app	0.003s
 	<a class="hash-anchor" href="#the-go-compiler-does-not-detect-changes" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>People are used to say: Go builds so fast! And yes, it's not a slow compiler, but if you have ever built the Go compiler from scratch, you will have noticed it takes a significant amount of time still. What Go is really good at, is caching: it's really smart at detecting what changed, and only rebuilding that. And that's great! Until it isn't.</p>
-<p>Sometimes, changes to the Cgo build flags, or to the <code>.a</code> library, were not detected by Go. I could not really reproduce these issues reliably, but they happen often.</p>
+<p>Sometimes, changes to the Cgo build flags, or to the <code>.a</code> library, were not detected by Go. I could not really reproduce these issues reliably, but they do happen.</p>
 <p>Solution: force a clean build with <code>go build -a</code>.</p>
 <h2 id="false-positive-warnings">
 	<a class="title" href="#false-positive-warnings">False positive warnings</a>
