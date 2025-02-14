@@ -732,6 +732,55 @@ This point is close to being a deal-breaker for me. Debugging is really importan
 **My ask for the Go team:**: Well, ideally both debuggers would work fully with CGO. But since this issue is known for years...I don't have much hope.
 
 
+### Strace, bpftrace
+
+It's the same issue manifesting in a different way: it's not just debuggers than do not understand the call stack, it's also `strace`:
+
+```sh
+$ strace -k -e write ./cgo
+--- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=438876, si_uid=1000} ---
+ > /usr/lib64/libc.so.6(pthread_sigmask@GLIBC_2.2.5+0x48) [0x783b8]
+ > /home/pg/scratch/cgo/cgo(_cgo_sys_thread_start+0x7e) [0x4727ee]
+ > /home/pg/scratch/cgo/cgo(runtime.asmcgocall.abi0+0x9c) [0x46c01c]
+write(1, "Dog: 42\n", 8Dog: 42
+)                = 8
+ > /usr/lib64/libc.so.6(__write+0x4d) [0xe853d]
+ > /usr/lib64/libc.so.6(_IO_file_write@@GLIBC_2.2.5+0x34) [0x68fa4]
+ > /usr/lib64/libc.so.6(new_do_write+0x5c) [0x6711c]
+ > /usr/lib64/libc.so.6(_IO_do_write@@GLIBC_2.2.5+0x20) [0x67fb0]
+ > /usr/lib64/libc.so.6(_IO_file_overflow@@GLIBC_2.2.5+0x11a) [0x6852a]
+ > /usr/lib64/libc.so.6(_IO_default_xsputn+0x74) [0x6a624]
+ > /usr/lib64/libc.so.6(_IO_file_xsputn@@GLIBC_2.2.5+0x117) [0x69127]
+ > /usr/lib64/libc.so.6(__printf_buffer_flush_to_file+0xc8) [0x36448]
+ > /usr/lib64/libc.so.6(__printf_buffer_to_file_done+0x1b) [0x3650b]
+ > /usr/lib64/libc.so.6(__vfprintf_internal+0xaa) [0x41bea]
+ > /usr/lib64/libc.so.6(printf+0xb2) [0x35bf2]
+ > /home/pg/scratch/cgo/cgo(animal_print+0x38) [0x472da0]
+ > /home/pg/scratch/cgo/cgo(runtime.asmcgocall.abi0+0x63) [0x46bfe3]
+ > No DWARF information found
++++ exited with 0 +++
+```
+
+Same as gdb, the call stack stops at the Cgo FFI boundary.
+
+But surprisingly, `bpftrace` seems to work:
+
+```sh
+$ sudo bpftrace -e 'uprobe:./cgo:animal_print {print(ustack(perf, 64))}' -c ./cgo
+Attaching 1 probe...
+Dog: 42
+
+	472d68 animal_print+0 (./cgo)
+	46bfe4 runtime.asmcgocall.abi0+100 (./cgo)
+	46361f runtime.cgocall+127 (./cgo)
+	471e3f cgo/app._Cfunc_animal_print.abi0+63 (./cgo)
+	471f75 cgo/app.DoStuff+85 (./cgo)
+	47228f main.main+15 (./cgo)
+	437a07 runtime.main+583 (./cgo)
+	46c301 runtime.goexit.abi0+1 (./cgo)
+```
+
+So, let's use `bpftrace`, I guess.
 
 
 ## Cross-compile
