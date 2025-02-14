@@ -694,11 +694,11 @@ That time includes `cargo build --release`, `go build`, and `docker build`. Most
 So, we went from ~100s to ~1s, roughly a 100x improvement. Pretty pretty good if you ask me.
 
 
-**My recommendation:**: Never build in Docker if you can help it. Build locally and copy the one static executable into the Docker image.
+**My recommendation:**: Never build in Docker if you can avoid it. Build locally and copy the one static executable into the Docker image.
 
 **My ask for the Go team**: None actually, they have done an amazing job on the build system to support this use-case, and on the documentation.
 
 
 ## Conclusion
 
-Cgo is rocky, but there are no blocking issues, just lots of small pains. Half of the cure if being aware of the ailment. So armed with this knowledge, I wish you godspeed with your Cgo projects!
+Cgo is rocky, but there are no real blocking issues, just lots of small pains. Half the cure if being aware of the ailment, as the saying goes. So armed with this knowledge, I wish you god speed with your Cgo projects!
