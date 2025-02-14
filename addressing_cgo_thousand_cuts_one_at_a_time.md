@@ -177,7 +177,7 @@ Cat: kitty
 5
 ```
 
-Ok, we are a C compiler now. Back to computing fields offsets by hand! I sure hope you do not forget about alignement! And keep the offsets in sync with the C struct when its layout changes!
+Ok, we are a C compiler now. Back to computing fields offsets by hand! I sure hope you do not forget about alignment! And keep the offsets in sync with the C struct when its layout changes!
 
 Well we all agree this sucks, but that's all what the `unsafe` package offers. Cherry on the cake, every pointer in this code has the same type: `unsafe.Pointer`, even though the first one really is a `Animal*`, the second one is a `String*`, and the third one is a `uint64_t*`. Not great. 
 
@@ -422,7 +422,7 @@ Solution: force a clean build with `go build -a`.
 
 ## False positive warnings
 
-So, let's run some C code once at startup, when the package gets initialized:
+Sometimes we need to run some C code once at startup, when the package gets initialized:
 
 ```Go
 // app/app.go
@@ -443,7 +443,7 @@ func init() {
 [...]
 ```
 
-And the C function `initial_setup` is defined in a second file in the same Go package (this is not strictly nessecary but it will turn out to be useful to showcase something later):
+And the C function `initial_setup` is defined in a second file in the same Go package (this is not strictly necessary but it will turn out to be useful to showcase something later):
 
 ```go
 // app/cfuncs.go
@@ -493,7 +493,7 @@ Some searching around turns up this [Github issue](https://github.com/golang/go/
 
 **My ask to the Go team:** Let's please fix the false positives and allow people to enable some basic warnings. `-Wall` is the bare minimum!
 
-## Whitespace is significant
+## White space is significant
 
 Let's go back to the `app/cfuncs.go` we just created that builds fine:
 
@@ -581,7 +581,7 @@ import "C"
 [...]
 ```
 
-**My recommendation:** If you get a hairy and weird error, compare the whitespace with official code examples.
+**My recommendation:** If you get a hairy and weird error, compare the white space with official code examples.
 
 **My ask to the Go team:** Can we please fix this? Or at least document it? There is zero mention of this pitfall anywhere, as far as I can see.
 
@@ -605,7 +605,7 @@ That's why I am convinced that Docker is not meant to build stuff. Only to run s
 
 I think the original intent was to do a clean build inside Docker because developers feared that the local environment was somehow tainted and/or that the compiler would mess up with the caching and result in a borked build. But modern compilers are, from my perspective, really good at identifying changes, correctly caching what did not change, and rebuilding with the correct build flags, what does need to be rebuilt.
 
-So in my opinion, the ideal Docker build process is: a single static executable is built locally, relying on caching of previous builds (or possibly in CI, remote intermediate artifacts). Then, it is copied inside the image which, again ideally, for security purposes, is very barebone. The dockerfile can look like this:
+So in my opinion, the ideal Docker build process is: a single static executable is built locally, relying on caching of previous builds (or possibly in CI, remote intermediate artifacts). Then, it is copied inside the image which, again ideally, for security purposes, is very bare bone. The dockerfile can look like this:
 
 ```dockerfile
 FROM gcr.io/distroless/static:nonroot
@@ -634,7 +634,7 @@ The work on Zig is fantastic, please consider supporting them!
 
 So, how does it look like? Let's assume we want to target `x86_64-linux-musl`, built statically, since we use a distroless image that does not come with a libc. The benefit is that our service looks like any other Go service without Cgo.
 
-We could also target a specific glibc version and deploy on a LTS version of ubuntu, debian, etc. Zig supports that.
+We could also target a specific glibc version and deploy on a LTS version of Ubuntu, Debian, etc. Zig supports that.
 
 First, we cross-compile our C code:
 
@@ -667,7 +667,7 @@ $ file cgo
 cgo: ELF 64-bit LSB executable, x86-64, version 1 (SYSV), statically linked, Go BuildID=gTeiH1YL9FSvJJ2euuGd/P0s07MkwoQlcaBA6EXDD/NOYPaeKuxUZ0cnLxfpC9/YeAu_C7s53nGjPEKZDYI, with debug_info, not stripped
 ```
 
-Tadam!
+Ta dam!
 
 Time to build a native ARM image? No problem:
 
