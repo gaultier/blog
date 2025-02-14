@@ -1,5 +1,5 @@
 Title: Addressing CGO thousand cuts one at a time
-Tags: Go, C, Make, Rust, Zig, Docker
+Tags: Go, C, Make, Rust, Zig, Docker, Cross-compilation
 ---
 
 Rust? Go? Cgo!
