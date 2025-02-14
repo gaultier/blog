@@ -274,7 +274,7 @@ Animal animal_make_cat() {
 }
 ```
 
-And let's mutate!
+Let's mutate all the things!
 
 ```go
 // app/app.go
