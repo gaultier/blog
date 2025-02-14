@@ -33,7 +33,7 @@ The Go code then links this library.
 
 ## CGO does not have unions
 
-This is known to Go developers: Go does not have unions, also known as tagged unions, sum types, rich enums, etc. But C does have them, and Go needs to generate Go types for each C type, so that we can use them! So what does it do? Let's have a look.
+This is known to Go developers: Go does not have tagged unions, also called sum types, algebraic data types, etc. But C, and Rust, do have them, and Go needs to generate Go types for each C type, so that we can use them! So what does it do? Let's have a look.
 
 So, here is a (very useful) C tagged union:
 
