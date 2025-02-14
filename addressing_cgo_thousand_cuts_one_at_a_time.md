@@ -676,9 +676,13 @@ $ file ./cgo
 ./cgo: ELF 64-bit LSB executable, ARM aarch64, version 1 (SYSV), statically linked, Go BuildID=QRDa72MrAj44K3mt54PK/_aJwgCwTO37mKpnfElWN/0TEmGFNLMEZCx3Zv_PKs/lgDlIHFQ6-LxhCOsdhQI, with debug_info, not stripped
 ```
 
-If you've done *any* work with cross-compilation, you know that this is magic.
+If you've done *any* work with cross-compilation, you know that this is magic. It's supposed to take weeks to make it work, dammit!
+
+
+> Note: Rust code typically needs libunwind for printing a backtrace, so it needs to be cross-compiled and linked as well. But no worries, Zig has you covered, it ships with libunwind sources and will, just like musl, build it for your target, and cache the results! Just add `-lunwind` to the `zig cc` invocation, and voila.
 
 Oh, and what about the speed now? Here is a full Docker build with my real-life program (Rust + Go):
+
 
 ```sh
 $ make docker-build
@@ -687,7 +691,7 @@ Executed in    1.47 secs
 
 That time includes `cargo build --release`, `go build`, and `docker build`. Most of the time is spent copying the giant executable (around 72 MiB!) into the Docker image since neither Rust nor Go are particularly good at producing small executables.
 
-So, we want from ~100s to ~1s, roughly a 100x improvement. Pretty pretty good if you ask me.
+So, we went from ~100s to ~1s, roughly a 100x improvement. Pretty pretty good if you ask me.
 
 
 **My recommendation:**: Never build in Docker if you can help it. Build locally and copy the one static executable into the Docker image.
