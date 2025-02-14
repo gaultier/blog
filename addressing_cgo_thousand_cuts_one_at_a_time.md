@@ -215,9 +215,103 @@ And as a bonus, whenever the layout of `Animal` changes, for example the order o
 
 So my recommendation: never role-play as a compiler, just use getters and setters for unions and let the C compiler do the dirty work.
 
-## The Go compiler does not detect changes
+## Slices vs Strings
+
+Quick Go trivia question: what's the difference between `[]byte` (a slice of bytes) and `string` (which is a slice of bytes underneath)?
+
+...
+
+
+The former is mutable while the latter is immutable.
+Yes, I might have learned that while writing this article.
+
+Anyways, converting C slices (pointer + length) to Go is straightforward using the `unsafe` package in modern Go (it used to be much hairier in older Go versions):
+
+```go
+// app/app.go
+
+	cat_name := C.animal_cat_get_name(&cat)
+	slice := unsafe.Slice(cat_name.data, cat_name.len)
+	str := unsafe.String((*byte)(unsafe.Pointer(cat_name.data)), cat_name.len)
+
+	fmt.Println(slice)
+	fmt.Println(str)
+```
+
+And it does what we expect:
+
+```sh
+$ go run .
+Dog: 42
+Cat: kitty
+[107 105 116 116 121]
+kitty
+```
+
+Ok, but just reading them is boring, let's try to mutate them. First, we need to allocate a fresh string in C, otherwise the string constant will be located in the read-only part of the executable, mapped to read-only page, and we will segfault when trying to mutate it. So we modify `animal_make_cat`:
+
+```c
+// c/api.c
+
+Animal animal_make_cat() {
+  return (Animal){
+      .kind = ANIMAL_KIND_CAT,
+      .cat_name =
+          {
+              .data = strdup("kitty"), // <= Heap allocation here.
+              .len = 5,
+          },
+  };
+}
+```
+
+And let's mutate!
+
+```go
+// app/app.go
+
+	slice[0] -= 32 // Poor man's uppercase.
+	fmt.Println(slice)
+	fmt.Println(str)
+```
+
+And we get the additional output:
+
+```
+[75 105 116 116 121]
+Kitty
+```
+
+But wait, this is undefined behavior! The string *did* get mutated! The Go compiler generates code based on the assumption that strings are immutable, so our program *may* break in very unexpected ways.
+
+Maybe the runtime Cgo checks will detect it?
+
+```
+$ GODEBUG=cgocheck=1 go run .
+[...]
+[75 105 116 116 121]
+Kitty
+# Works fine!
+
+$ GOEXPERIMENT=cgocheck2 go run . 
+[...]
+[75 105 116 116 121]
+Kitty
+# Works fine!
+```
+
+Nope...so what can we do about it? In my case I had almost no strings to deal with, buth here's my recommendation:
+
+- In Go, do not use `unsafe.String`, just use `unsafe.Slice` and accept that it's mutable data everywhere in the program
+- If you really want to use `unsafe.String`, make sure that the string data returned by the C code is immutable **at the OS level**, so either:
+  + It's a constant string placed in the read-only segment
+  + The string data is allocated in its own virtual memory page and the page permissions are changed to read-only before returning the pointer to Go
+
+
 
 ## Test a C function in Go tests
+
+## The Go compiler does not detect changes
 
 ## Cross-compile
 
@@ -225,6 +319,5 @@ So my recommendation: never role-play as a compiler, just use getters and setter
 
 ## Runtime checks
 
-## Convert slices between Go and C
 
 
