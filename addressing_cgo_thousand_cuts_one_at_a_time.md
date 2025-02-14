@@ -296,6 +296,11 @@ Kitty
 
 But wait, this is undefined behavior! The string *did* get mutated! The Go compiler generates code based on the assumption that strings are immutable, so our program *may* break in very unexpected ways.
 
+The docs for `unsafe.String` state:
+
+> // Since Go strings are immutable, the bytes passed to String
+> // must not be modified as long as the returned string value exists.
+
 Maybe the runtime Cgo checks will detect it?
 
 ```
