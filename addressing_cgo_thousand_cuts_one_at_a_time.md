@@ -174,7 +174,7 @@ Cat: kitty
 
 Ok, we are a C compiler now. Back to computing fields offsets by hand! I sure hope you do not forget about alignement! And keep the offsets in sync with the C struct when its layout changes!
 
-Well we all agree this sucks, but that's all what the `unsafe` package offers. Cherry on the cake, every pointer in this code has the same type: `unsafe.Pointer`, even though the first one is a `Animal*`, the second one is a `String*`, and the third one is a `uint64_t*`. Not great. 
+Well we all agree this sucks, but that's all what the `unsafe` package offers. Cherry on the cake, every pointer in this code has the same type: `unsafe.Pointer`, even though the first one really is a `Animal*`, the second one is a `String*`, and the third one is a `uint64_t*`. Not great. 
 
 
 So the solution is: treat C unions as opaque values in Go, and only access them with C functions (essentially, getters and setters):
