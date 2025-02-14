@@ -219,10 +219,10 @@ func DoStuff() {
 
 And as a bonus, whenever the layout of `Animal` changes, for example the order of fields gets changed, or a new field gets added which changes the alignment and thus the padding (here it's not the case because the alignment is already 8 which is the maximum, but in other cases it could happen), the C code gets recompiled, it does the right thing automatically, and everything works as expected. 
 
-So my recommendation: never role-play as a compiler, just use getters and setters for unions and let the C compiler do the dirty work.
+*My recommendation:* never role-play as a compiler, just use getters and setters for unions and let the C compiler do the dirty work.
 
 
-My ask to the Go team: document more clearly this case. I don't expect Go to have (tagged) unions anytime soon, so that's the best we can do.
+*My ask to the Go team:* document more clearly this case. I don't expect Go to have (tagged) unions anytime soon, so that's the best we can do.
 
 
 ## Slices vs Strings
@@ -321,7 +321,9 @@ Kitty
 # Works fine!
 ```
 
-Nope...so what can we do about it? In my real-life program I have almost no strings to deal with, buth here's my recommendation:
+Nope...so what can we do about it? In my real-life program I have almost no strings to deal with, but some programs will.
+
+*My recommendation:*
 
 - In Go, do not use `unsafe.String`, just use `unsafe.Slice` and accept that it's mutable data everywhere in the program
 - If you really want to use `unsafe.String`, make sure that the string data returned by the C code is immutable **at the OS level**, so either:
@@ -330,7 +332,7 @@ Nope...so what can we do about it? In my real-life program I have almost no stri
 - In C, do not expose string data directly to Go, only expose opaque values (`void*`), and mutations are only done by calling a C function. That way, the Go caller simply cannot use `unsafe.String` (I guess they could with lots of casts, but that's not in the realm of *honest mistake* anymore).
 
 
-My ask to the Go team: attempt to develop more advanced checks to detect this issue at runtime.
+*My ask to the Go team:* attempt to develop more advanced checks to detect this issue at runtime.
 
 
 ## Test a C function in Go tests
@@ -399,14 +401,14 @@ PASS
 ok  	cgo/app	0.003s
 ```
 
-So...that works, and also: that's annoying boilerplate that no one wants to have to write. And if you're feeling smug, thinking your favorite LLM will do the right thing for you, I can tell you I tried and the LLM generated the wrong version with the test trying to use Cgo directly.
+So...that works, and also: that's annoying boilerplate that no one wants to have to write. And if you're feeling smug, thinking your favorite LLM will do the right thing for you, I can tell you I tried and the LLM generated the wrong thing, with the test trying to use Cgo directly.
 
-My recommendation: 
+*My recommendation:* 
 
 - Test the C code in C directly (or Rust, or whatever language it is)
 - There is some glue code sometimes that is only useful to the Go codebase, and that's written in C. In that case wrap each C utility function in a Go one and write a Go test, hopefully it's not that much.
 
-My ask to the Go team: let's allow the use of Cgo in tests.
+*My ask to the Go team:* let's allow the use of Cgo in tests.
 
 ## The Go compiler does not detect changes
 
