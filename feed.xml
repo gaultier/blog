@@ -2,7 +2,7 @@
   <feed xmlns="http://www.w3.org/2005/Atom">
     <title>Philippe Gaultier's blog</title>
     <link href="https://gaultier.github.io/blog"/>
-    <updated>2025-02-14T09:48:35+01:00</updated>
+    <updated>2025-02-14T09:50:15+01:00</updated>
     <author>
       <name>Philippe Gaultier</name>
     </author>
@@ -220,7 +220,7 @@
   <title>Addressing CGO thousand cuts one at a time</title>
   <link href="https://gaultier.github.io/blog/addressing_cgo_thousand_cuts_one_at_a_time.html"/>
   <id>urn:uuid:37b77d35-e0ca-525f-84df-dbc904ed3dfa</id>
-  <updated>2025-02-14T09:48:35+01:00</updated>
+  <updated>2025-02-14T09:50:15+01:00</updated>
   <published>2025-02-14T08:47:05+01:00</published>
   </entry>
 	</feed>

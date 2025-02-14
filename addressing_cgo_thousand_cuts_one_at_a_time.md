@@ -211,7 +211,7 @@ And now we have a sane Go code:
 	fmt.Println(cat_name.len)
 ```
 
-And as a bonus, whenever the layout of `Animal` changes, for example the order of fields gets changed, or a new field gets added which changes the alignment and thus the padding (here it's not the case because the alignment is already 8 which is the maximum, but in other cases it could happen), the C code gets recompiled, it does the right thing,  and everything works as expected. 
+And as a bonus, whenever the layout of `Animal` changes, for example the order of fields gets changed, or a new field gets added which changes the alignment and thus the padding (here it's not the case because the alignment is already 8 which is the maximum, but in other cases it could happen), the C code gets recompiled, it does the right thing automatically, and everything works as expected. 
 
 So my recommendation: never role-play as a compiler, just use getters and setters for unions.
 
