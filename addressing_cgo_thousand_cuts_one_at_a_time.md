@@ -31,9 +31,9 @@ The Go code then links this library.
 
 ## CGO does not have unions
 
-This is known to Go developers: Go does not have unions, also known as tagged unions, sum types, rich enums, etc. But Go needs to generate Go types for each C type, so that we can use them!
+This is known to Go developers: Go does not have unions, also known as tagged unions, sum types, rich enums, etc. But Go needs to generate Go types for each C type, so that we can use them! So what does it do for C unions? Let's have a look.
 
-So, here is a C tagged union:
+So, here is a (very useful) C tagged union:
 
 ```c
 // c/api.h
@@ -127,8 +127,6 @@ func DoStuff() {
 
 	cat := C.animal_make_cat()
 	C.animal_print(&cat)
-
-	fmt.Println(dog.anon0)
 }
 ```
 
