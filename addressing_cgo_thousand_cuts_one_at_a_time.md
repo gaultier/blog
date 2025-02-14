@@ -681,7 +681,7 @@ $ file ./cgo
 If you've done *any* work with cross-compilation, you know that this is magic. It's supposed to take weeks to make it work, dammit!
 
 
-> Note: Rust code typically needs libunwind for printing a backtrace, so it needs to be cross-compiled and linked as well. But no worries, Zig has you covered, it ships with libunwind sources and will, just like musl, build it for your target, and cache the results! Just add `-lunwind` to the `zig cc` invocation, and voila.
+> Note: Rust code typically needs libunwind for printing a backtrace, so it needs to be cross-compiled and linked as well. But no worries, Zig has you covered, it ships with libunwind sources and will, just like with musl, build it for your target, and cache the results! Just add `-lunwind` to the `zig cc` invocation, and voila.
 
 Oh, and what about the speed now? Here is a full Docker build with my real-life program (Rust + Go):
 
@@ -703,7 +703,7 @@ So, we went from ~100s to ~1s, roughly a 100x improvement. Pretty pretty good if
 
 ## Conclusion
 
-Cgo is rocky, but there are no real blocking issues, just lots of small pains. Half the cure if being aware of the ailment, as the saying goes. So armed with this knowledge, I wish you god speed with your Cgo projects!
+Cgo is rocky, but there are no real blocking issues, just lots of small pains. Half the cure is being aware of the ailment, as the saying goes. So armed with this knowledge, I wish you god speed with your Cgo projects!
 
 ## Addendum: the full code
 
