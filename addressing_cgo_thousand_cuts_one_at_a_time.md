@@ -29,9 +29,11 @@ The C code is in the `c` directory, we build a static library `libapi.a` from it
 
 The Go code then links this library.
 
+*The full code can be found at the end of this article.*
+
 ## CGO does not have unions
 
-This is known to Go developers: Go does not have unions, also known as tagged unions, sum types, rich enums, etc. But Go needs to generate Go types for each C type, so that we can use them! So what does it do for C unions? Let's have a look.
+This is known to Go developers: Go does not have unions, also known as tagged unions, sum types, rich enums, etc. But C does have them, and Go needs to generate Go types for each C type, so that we can use them! So what does it do? Let's have a look.
 
 So, here is a (very useful) C tagged union:
 
