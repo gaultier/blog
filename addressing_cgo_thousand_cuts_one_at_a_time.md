@@ -335,7 +335,7 @@ My ask to the Go team: attempt to develop more advanced checks to detect this is
 
 ## Test a C function in Go tests
 
-We are principled programmers who write tests. Let's write a test to ensure that `animal_make_dog()` does indeed create a dog, i.e. the kind if `ANIMAL_KIND_DOG`:
+We are principled programmers who write tests. Let's write a test to ensure that `animal_make_dog()` does indeed create a dog, i.e. the kind is `ANIMAL_KIND_DOG`:
 
 ```go
 // app/app_test.go
