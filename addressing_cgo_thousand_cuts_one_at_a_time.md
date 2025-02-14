@@ -414,7 +414,7 @@ So...that works, and also: that's annoying boilerplate that no one wants to have
 
 People are used to say: Go builds so fast! And yes, it's not a slow compiler, but if you have ever built the Go compiler from scratch, you will have noticed it takes a significant amount of time still. What Go is really good at, is caching: it's really smart at detecting what changed, and only rebuilding that. And that's great! Until it isn't. 
 
-Sometimes, changes to the Cgo build flags, or a new `.a` library, were not detected by Go. I could not really reproduce these issues reliably, but they happen often.
+Sometimes, changes to the Cgo build flags, or to the `.a` library, were not detected by Go. I could not really reproduce these issues reliably, but they happen often.
 
 Solution: force a clean build with `go build -a`. 
 
@@ -491,9 +491,9 @@ Some searching around turns up this [Github issue](https://github.com/golang/go/
 
 **My ask to the Go team:** Let's please fix the false positives and allow people to enable some basic warnings. `-Wall` is the bare minimum!
 
-## White space is significant
+## Whitespace is significant
 
-Let's go back to the `app/cfuncs.go` we just created:
+Let's go back to the `app/cfuncs.go` we just created that builds fine:
 
 ```go
 package app
@@ -559,9 +559,9 @@ app/app.go:3:6: error: expected '=', ',', ';', 'asm' or '__attribute__' before '
       |      ^
 ```
 
-That's because when seeing a `#cgo` directive in the comments, the Go compiler assumes this is all C code, and passes it to the C compiler, which chokes on it.
+That's because when seeing a `#cgo` directive in the comments, the Go compiler parses what it recognizes, passes the rest to the C compiler, which chokes on it.
 
-Solution: insert a blank line between the comment and the `#cgo` directive:
+Solution: insert a blank line between the comment and the `#cgo` directive to avoid that:
 
 ```go
 // app/app.go
