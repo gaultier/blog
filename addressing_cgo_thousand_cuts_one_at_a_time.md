@@ -412,9 +412,136 @@ So...that works, and also: that's annoying boilerplate that no one wants to have
 
 ## The Go compiler does not detect changes
 
-## Cross-compile
+People are used to say: Go builds so fast! And yes, it's not a slow compiler, but if you have ever built the Go compiler from scratch, you will have noticed it takes a significant amount of time still. What Go is really good at, is caching: it's really smart at detecting what changed, and only rebuilding that. And that's great! Until it isn't. 
+
+Sometimes, changes to the Cgo build flags, or a new `.a` library, were not detected by Go. I could not really reproduce these issues reliably, but they happen often.
+
+Solution: force a clean build with `go build -a`. 
 
 ## False positive warnings
+
+So, let's run some C code once at startup, when the package gets initialized:
+
+```Go
+// app/app.go
+
+package app
+
+// #cgo CFLAGS: -g -O2 -I${SRCDIR}/../c/
+// #cgo LDFLAGS: ${SRCDIR}/../c/libapi.a
+// #include <api.h>
+// void initial_setup();
+import "C"
+
+func init() {
+	C.initial_setup()
+}
+
+
+[...]
+```
+
+And the C function `initial_setup` is defined in a second file in the same Go package (this is not strictly nessecary but it will turn out to be useful to showcase something later):
+
+```go
+// app/cfuncs.go
+
+package app
+
+/*
+void initial_setup(){
+    // Do some useful stuff.
+}
+*/
+import "C"
+```
+
+Yes, we can write C code directly in Go files. Inside comments. Not, it's not weird at all.
+
+We build, everything is fine:
+
+```sh
+$ go build .
+```
+
+Since we are serious programmers, we want to enable C warnings, right? Let's add `-Wall` to the `CFLAGS`:
+
+```go
+// app/app.go
+
+[...]
+// #cgo CFLAGS: -Wall -g -O2 -I${SRCDIR}/../c/    <= We add -Wall
+[...]
+```
+
+We re-build, and get this nice error:
+
+```go
+ $ go build .
+# cgo/app
+cgo-gcc-prolog: In function ‘_cgo_13d20cc583d0_Cfunc_initial_setup’:
+cgo-gcc-prolog:78:49: warning: unused variable ‘_cgo_a’ [-Wunused-variable]
+```
+
+Wait, we do not have *any* variable in `initial_setup`, how come a variable is unused?
+
+Some searching around turns up this [Github issue](https://github.com/golang/go/issues/6883#issuecomment-383800123,) where the official recommendation is: do not use `-Wall`, it creates false positives. Ok.
+
+**My recommendation:** Write C code in C files and enable all the warnings you want.
+
+**My ask to the Go team:** Let's please fix the false positives and allow people to enable some basic warnings. `-Wall` is the bare minimum!
+
+## White space is significant
+
+Let's go back to the `app/cfuncs.go` we just created:
+
+```go
+package app
+
+/*
+void initial_setup(){}
+*/
+import "C"
+```
+
+Let's add one empty line near the end:
+
+```go
+
+package app
+
+/*
+void initial_setup(){}
+*/
+
+import "C"
+```
+
+Let's build:
+
+```sh
+$ go build .
+# cgo
+/home/pg/Downloads/go/pkg/tool/linux_amd64/link: running gcc failed: exit status 1
+/usr/bin/gcc -m64 -o $WORK/b001/exe/a.out -Wl,--export-dynamic-symbol=_cgo_panic -Wl,--export-dynamic-symbol=_cgo_topofstack -Wl,--export-dynamic-symbol=crosscall2 -Wl,--compress-debug-sections=zlib /tmp/go-link-2748897775/go.o /tmp/go-link-2748897775/000000.o /tmp/go-link-2748897775/000001.o /tmp/go-link-2748897775/000002.o /tmp/go-link-2748897775/000003.o /tmp/go-link-2748897775/000004.o /tmp/go-link-2748897775/000005.o /tmp/go-link-2748897775/000006.o /tmp/go-link-2748897775/000007.o /tmp/go-link-2748897775/000008.o /tmp/go-link-2748897775/000009.o /tmp/go-link-2748897775/000010.o /tmp/go-link-2748897775/000011.o /tmp/go-link-2748897775/000012.o /tmp/go-link-2748897775/000013.o /tmp/go-link-2748897775/000014.o /tmp/go-link-2748897775/000015.o /tmp/go-link-2748897775/000016.o -O2 -g /home/pg/scratch/cgo/app/../c/libapi.a -O2 -g -lpthread -no-pie
+/usr/bin/ld: /tmp/go-link-2748897775/000001.o: in function `_cgo_f1a74d84225f_Cfunc_initial_setup':
+/tmp/go-build/cgo-gcc-prolog:80:(.text+0x53): undefined reference to `initial_setup'
+collect2: error: ld returned 1 exit status
+```
+
+Ok...not much to say here.
+
+
+Here's another example:
+
+
+
+**My recommendation:** If you get a hairy and weird error, compare the whitespace with offical code examples.
+
+**My ask to the Go team:** Can we please fix this?
+
+## Cross-compile
+
 
 ## Runtime checks
 
