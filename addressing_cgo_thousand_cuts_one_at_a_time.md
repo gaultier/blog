@@ -599,9 +599,9 @@ That's in seconds. Every. Single. Time. Urgh.
 
 The issue is that little to no caching is being leveraged by either compiler. Dependencies are fetched from the internet, and essentially, a clean release build is performed. That takes a looong time. Past developers tried to fix this by volume mounting host directories inside Docker but apparently, they missed a few.
 
-That's why I am convinced that docker is not meant to build stuff. Only to run stuff. I have seen the same problem with C++ codebases being built in Docker, with Rust codebases being built in Docker, etc.
+That's why I am convinced that docker is not meant to build stuff. Only to run stuff. I have seen the same problem with C++ codebases being built in Docker, with Rust codebases being built in Docker, etc. I think the original intent was to do a clean build inside Docker because developers feared that the local environment was somehow tainted and/or that the compiler would mess up with the caching and result in a borked build. But modern compilers are, from my perspective, really good at identifying changes, correctly caching what did not change, and rebuilding with the correct build flags, what does need to be rebuilt.
 
-Ideally, a single static executable is built locally, relying on caching of previous builds. Then, it is copied inside the image which, again ideally, for security purposes, is very barebone. The dockerfile can look like this:
+So in my opinion, the ideal docker build process is: a single static executable is built locally, relying on caching of previous builds. Then, it is copied inside the image which, again ideally, for security purposes, is very barebone. The dockerfile can look like this:
 
 ```dockerfile
 FROM gcr.io/distroless/static:nonroot
