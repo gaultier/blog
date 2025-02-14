@@ -676,3 +676,13 @@ Executed in    1.47 secs
 That time includes `cargo build --release`, `go build`, and `docker build`. Most of the time is spent copying the giant executable (around 72 MiB!) into the docker image since neither Rust nor Go are particularly good at producing small executables.
 
 So, we want from ~100s to ~1s, roughly a 100x improvement. Pretty pretty good if you ask me.
+
+
+**My recommendation:**: Never build in docker if you can help it. Build locally and copy the one static executable into the docker image.
+
+**My ask for the Go team**: None actually, they have done an amazing job on the build system to support this use-case, and on the documentation.
+
+
+## Conclusion
+
+Cgo is rocky, but there are no blocking issues, just lots of small pains. Half of the cure if being aware of the ailment. So armed with this knowledge, I wish you godspeed with your Cgo projects!
