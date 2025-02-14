@@ -585,7 +585,7 @@ import "C"
 
 ## Cross-compile
 
-So picture me, building my Go program (a web service) using Cgo. Locally, it builds very quickly, due to Go caching (when it works). 
+So picture me, building my Go program (a web service) using Cgo. Locally, it builds very quickly, due to Rust and Go caching. 
 
 Now, time to build in Docker to be able to deploy it:
 
@@ -595,9 +595,13 @@ $ time docker build [...]
 Total execution time 101.664413146
 ```
 
-Every. Single. Time. Urgh.
+That's in seconds. Every. Single. Time. Urgh.
 
-That's why I am convinced that docker is not meant to build stuff. Ideally, a single static executable is built locally, relying on caching of previous builds. Then, it is copied inside the image which, again ideally, for security purposes, is very barebone. The dockerfile can look like this:
+The issue is that little to no caching is being leveraged by either compiler. Dependencies are fetched from the internet, and essentially, a clean release build is performed. That takes a looong time. Past developers tried to fix this by volume mounting host directories inside Docker but apparently, they missed a few.
+
+That's why I am convinced that docker is not meant to build stuff. Only to run stuff. I have seen the same problem with C++ codebases being built in Docker, with Rust codebases being built in Docker, etc.
+
+Ideally, a single static executable is built locally, relying on caching of previous builds. Then, it is copied inside the image which, again ideally, for security purposes, is very barebone. The dockerfile can look like this:
 
 ```dockerfile
 FROM gcr.io/distroless/static:nonroot
