@@ -8,7 +8,7 @@ I maintain a Go codebase at work which does most of its work through a Rust libr
 
 Also, Cgo has many weird limitations and surprises. Fortunately, over the two years or so I have been working in this project, I have (re-)discovered solutions for most of these issues. Let's go through them, and hopefully the next time you use Cgo, you'll have a smooth experience.
 
-*From Go's perspective, Rust is invisible, the C library looks like a pure C library (and indeed it used to be 100% C++ before it got incrementally rewritten to Rust). So I will use C snippets in this article, because that's what the public C header of the library looks like.*
+*From Go's perspective, Rust is invisible, the C library looks like a pure C library (and indeed it used to be 100% C++ before it got incrementally rewritten to Rust). So I will use C snippets in this article, because that's what the public C header of the library looks like, and not everybody knows Rust, but most people know a C-like language.*
 
 Let's create a sample app:
 
