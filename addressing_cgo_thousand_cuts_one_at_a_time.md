@@ -1,4 +1,4 @@
-Title: Addressing CGO thousand cuts one at a time
+Title: Addressing CGO's thousand cuts, one at a time
 Tags: Go, C, Rust, Zig, Docker, Cross-compilation, Musl
 ---
 
