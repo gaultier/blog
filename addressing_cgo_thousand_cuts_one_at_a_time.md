@@ -222,7 +222,7 @@ And as a bonus, whenever the layout of `Animal` changes, for example the order o
 **My recommendation:** never role-play as a compiler, just use getters and setters for unions and let the C compiler do the dirty work.
 
 
-**My ask to the Go team:** document more clearly this case. I don't expect Go to have (tagged) unions anytime soon, so that's the best we can do.
+**My ask to the Go team:** mention the approach with getters and setters in the docs. The only thing the [docs](https://pkg.go.dev/cmd/cgo) have to say about unions right now is: `As Go doesn't have support for C's union type in the general case, C's union types are represented as a Go byte array with the same length`. And I don't expect Go to have (tagged) unions anytime soon, so that's the best we can do.
 
 
 ## Slices vs Strings
