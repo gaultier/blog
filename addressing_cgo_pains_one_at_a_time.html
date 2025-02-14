@@ -413,7 +413,7 @@ Kitty
 <p><strong>My recommendation:</strong></p>
 <ul>
 <li>In Go, do not use <code>unsafe.String</code>, just use <code>unsafe.Slice</code> and accept that it's mutable everywhere in the program</li>
-<li>If you really want to use <code>unsafe.String</code>, make sure that the string data returned by the C code is immutable <strong>at the OS level</strong>, so either:
+<li>If you really want to use <code>unsafe.String</code>, make sure that the string data returned by the C code is immutable, <strong>enforced by the OS</strong>, so either:
 <ul>
 <li>It's a constant string placed in the read-only segment</li>
 <li>The string data is allocated in its own virtual memory page and the page permissions are changed to read-only before returning the pointer to Go</li>

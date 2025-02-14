@@ -328,7 +328,7 @@ Nope...so what can we do about it? In my real-life program I have almost no stri
 **My recommendation:**
 
 - In Go, do not use `unsafe.String`, just use `unsafe.Slice` and accept that it's mutable everywhere in the program
-- If you really want to use `unsafe.String`, make sure that the string data returned by the C code is immutable **at the OS level**, so either:
+- If you really want to use `unsafe.String`, make sure that the string data returned by the C code is immutable, **enforced by the OS**, so either:
   + It's a constant string placed in the read-only segment
   + The string data is allocated in its own virtual memory page and the page permissions are changed to read-only before returning the pointer to Go
 - In C, do not expose string data directly to Go, only expose opaque values (`void*`), and mutations are only done by calling a C function. That way, the Go caller simply cannot use `unsafe.String` (I guess they could with lots of casts, but that's not in the realm of a *honest mistake* anymore).
