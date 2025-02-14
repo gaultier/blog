@@ -532,13 +532,56 @@ collect2: error: ld returned 1 exit status
 Ok...not much to say here.
 
 
-Here's another example:
+Here's another example. We add a comment about not using `-Wall`:
 
+```go
+// app/app.go
 
+package app
 
-**My recommendation:** If you get a hairy and weird error, compare the whitespace with offical code examples.
+// NOTE: Do not use -Wall.
+// #cgo CFLAGS: -g -O2 -I${SRCDIR}/../c/
+// #cgo LDFLAGS: ${SRCDIR}/../c/libapi.a
+// #include <api.h>
+// void initial_setup();
+import "C"
 
-**My ask to the Go team:** Can we please fix this?
+[...]
+```
+
+We rebuild, and boom:
+
+```sh
+$ go build .
+# cgo/app
+app/app.go:3:6: error: expected '=', ',', ';', 'asm' or '__attribute__' before ':' token
+    3 | // NOTE: Do not use -Wall.
+      |      ^
+```
+
+That's because when seeing a `#cgo` directive in the comments, the Go compiler assumes this is all C code, and passes it to the C compiler, which chokes on it.
+
+Solution: insert a blank line between the comment and the `#cgo` directive:
+
+```go
+// app/app.go
+
+package app
+
+// NOTE: Do not use -Wall.
+
+// #cgo CFLAGS: -g -O2 -I${SRCDIR}/../c/
+// #cgo LDFLAGS: ${SRCDIR}/../c/libapi.a
+// #include <api.h>
+// void initial_setup();
+import "C"
+
+[...]
+```
+
+**My recommendation:** If you get a hairy and weird error, compare the whitespace with official code examples.
+
+**My ask to the Go team:** Can we please fix this? Or at least document it? There is zero mention of this pitfall anywhere, as far as I can see.
 
 ## Cross-compile
 
