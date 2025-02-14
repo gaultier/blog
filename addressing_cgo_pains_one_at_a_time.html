@@ -412,7 +412,7 @@ Kitty
 <p>Nope...so what can we do about it? In my real-life program I have almost no strings to deal with, but some programs will.</p>
 <p><strong>My recommendation:</strong></p>
 <ul>
-<li>In Go, do not use <code>unsafe.String</code>, just use <code>unsafe.Slice</code> and accept that it's mutable data everywhere in the program</li>
+<li>In Go, do not use <code>unsafe.String</code>, just use <code>unsafe.Slice</code> and accept that it's mutable everywhere in the program</li>
 <li>If you really want to use <code>unsafe.String</code>, make sure that the string data returned by the C code is immutable <strong>at the OS level</strong>, so either:
 <ul>
 <li>It's a constant string placed in the read-only segment</li>
