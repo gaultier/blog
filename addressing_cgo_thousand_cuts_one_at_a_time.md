@@ -298,8 +298,8 @@ But wait, this is undefined behavior! The string *did* get mutated! The Go compi
 
 The docs for `unsafe.String` state:
 
-> // Since Go strings are immutable, the bytes passed to String
-> // must not be modified as long as the returned string value exists.
+> Since Go strings are immutable, the bytes passed to String
+> must not be modified as long as the returned string value exists.
 
 Maybe the runtime Cgo checks will detect it?
 
