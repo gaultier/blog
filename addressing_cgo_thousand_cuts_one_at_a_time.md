@@ -477,7 +477,7 @@ Since we are serious programmers, we want to enable C warnings, right? Let's add
 We re-build, and get this nice error:
 
 ```go
- $ go build .
+$ go build .
 # cgo/app
 cgo-gcc-prolog: In function ‘_cgo_13d20cc583d0_Cfunc_initial_setup’:
 cgo-gcc-prolog:78:49: warning: unused variable ‘_cgo_a’ [-Wunused-variable]
@@ -662,13 +662,13 @@ $ CC="zig cc --target=aarch64-linux-musl" make -C ./c
 $ CGO_ENABLED=1 CC='zig cc --target=aarch64-linux-musl -static' GOOS=linux GOARCH=arm64 go build .
 $ file ./cgo
 ./cgo: ELF 64-bit LSB executable, ARM aarch64, version 1 (SYSV), statically linked, Go BuildID=QRDa72MrAj44K3mt54PK/_aJwgCwTO37mKpnfElWN/0TEmGFNLMEZCx3Zv_PKs/lgDlIHFQ6-LxhCOsdhQI, with debug_info, not stripped
-``
+```
 
 If you've done *any* work with cross-compilation, you know that this is magic.
 
 Oh, and what about the speed now? Here is a full docker build with my real-life program (Rust + Go):
 
-```
+```sh
 $ make docker-build
 Executed in    1.47 secs
 ```
