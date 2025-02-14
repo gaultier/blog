@@ -409,7 +409,7 @@ $ GOEXPERIMENT=cgocheck2 go run .
 Kitty
 # Works fine!
 </code></pre>
-<p>Nope...so what can we do about it? In my real-life program I have almost no strings to deal with, but some programs will.</p>
+<p>Nope... so what can we do about it? In my real-life program I have almost no strings to deal with, but some programs will.</p>
 <p><strong>My recommendation:</strong></p>
 <ul>
 <li>In Go, do not use <code>unsafe.String</code>, just use <code>unsafe.Slice</code> and accept that it's mutable everywhere in the program</li>
@@ -443,7 +443,7 @@ func TestAnimalMakeDog(t *testing.T) {
 <pre><code class="language-sh">$ go test ./app/
 use of cgo in test app_test.go not supported
 </code></pre>
-<p>Ah...yeah this is a <a href="https://go.dev/wiki/cgo">known limitation</a>: <code>_test.go files can’t use cgo.</code>.</p>
+<p>Ah... yeah this is a <a href="https://go.dev/wiki/cgo">known limitation</a>: <code>_test.go files can’t use cgo.</code>.</p>
 <p>Solution: wrap the C function in a Go one.</p>
 <pre><code>// app/app.go
 
@@ -475,7 +475,7 @@ func TestAnimalMakeDog(t *testing.T) {
 PASS
 ok  	cgo/app	0.003s
 </code></pre>
-<p>So...that works, and also: that's annoying boilerplate that no one wants to have to write. And if you're feeling smug, thinking your favorite LLM will do the right thing for you, I can tell you I tried and the LLM generated the wrong thing, with the test trying to use Cgo directly.</p>
+<p>So... that works, and also: that's annoying boilerplate that no one wants to have to write. And if you're feeling smug, thinking your favorite LLM will do the right thing for you, I can tell you I tried and the LLM generated the wrong thing, with the test trying to use Cgo directly.</p>
 <p><strong>My recommendation:</strong></p>
 <ul>
 <li>Test the C code in C directly (or Rust, or whatever language it is)</li>
@@ -575,7 +575,7 @@ import &quot;C&quot;
 /tmp/go-build/cgo-gcc-prolog:80:(.text+0x53): undefined reference to `initial_setup'
 collect2: error: ld returned 1 exit status
 </code></pre>
-<p>Ok...not much to say here.</p>
+<p>Ok... not much to say here.</p>
 <p>Here's another example. We add a comment about not using <code>-Wall</code>:</p>
 <pre><code class="language-go">// app/app.go
 

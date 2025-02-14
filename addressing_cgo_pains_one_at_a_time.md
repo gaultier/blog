@@ -323,7 +323,7 @@ Kitty
 # Works fine!
 ```
 
-Nope...so what can we do about it? In my real-life program I have almost no strings to deal with, but some programs will.
+Nope... so what can we do about it? In my real-life program I have almost no strings to deal with, but some programs will.
 
 **My recommendation:**
 
@@ -362,7 +362,7 @@ $ go test ./app/
 use of cgo in test app_test.go not supported
 ```
 
-Ah...yeah this is a [known limitation](https://go.dev/wiki/cgo): `_test.go files can’t use cgo.`. 
+Ah... yeah this is a [known limitation](https://go.dev/wiki/cgo): `_test.go files can’t use cgo.`. 
 
 Solution: wrap the C function in a Go one.
 
@@ -403,7 +403,7 @@ PASS
 ok  	cgo/app	0.003s
 ```
 
-So...that works, and also: that's annoying boilerplate that no one wants to have to write. And if you're feeling smug, thinking your favorite LLM will do the right thing for you, I can tell you I tried and the LLM generated the wrong thing, with the test trying to use Cgo directly.
+So... that works, and also: that's annoying boilerplate that no one wants to have to write. And if you're feeling smug, thinking your favorite LLM will do the right thing for you, I can tell you I tried and the LLM generated the wrong thing, with the test trying to use Cgo directly.
 
 **My recommendation:** 
 
@@ -531,7 +531,7 @@ $ go build .
 collect2: error: ld returned 1 exit status
 ```
 
-Ok...not much to say here.
+Ok... not much to say here.
 
 
 Here's another example. We add a comment about not using `-Wall`:
