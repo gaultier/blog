@@ -1,4 +1,4 @@
-Title: Addressing CGO's pains, one at a time
+Title: Addressing CGO pains, one at a time
 Tags: Go, C, Rust, Zig, Docker, Cross-compilation, Musl
 ---
 
