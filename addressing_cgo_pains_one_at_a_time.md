@@ -852,7 +852,7 @@ So, we went from ~100s to ~1s, roughly a 100x improvement. Pretty pretty good if
 
 ## Conclusion
 
-Cgo is rocky, but there are no real blocking issues, just lots of small pains. Half the cure is being aware of the ailment, as the saying goes. So armed with this knowledge, I wish you god speed with your Cgo projects!
+Cgo is rocky, but there are no real blocking issues, apart from the debugging pain point, mostly lots of small pains. Half the cure is being aware of the ailment, as the saying goes. So armed with this knowledge, I wish you god speed with your Cgo projects!
 
 ## Addendum: the full code
 
