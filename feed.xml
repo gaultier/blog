@@ -2,20 +2,12 @@
   <feed xmlns="http://www.w3.org/2005/Atom">
     <title>Philippe Gaultier's blog</title>
     <link href="https://gaultier.github.io/blog"/>
-    <updated>2025-02-12T07:54:44+01:00</updated>
+    <updated>2025-02-14T13:14:11+01:00</updated>
     <author>
       <name>Philippe Gaultier</name>
     </author>
     <id>urn:uuid:9c065c53-31bc-4049-a795-936802a6b1df</id>
 
-	<entry>
-  <title>Addressing CGO's pains, one at a time</title>
-  <link href="https://gaultier.github.io/blog/addressing_cgo_pains_one_at_a_time.html"/>
-  <id>urn:uuid:07006a7b-7a02-50db-aa27-568407c1f588</id>
-  <updated></updated>
-  <published></published>
-  </entry>
-	
 	<entry>
   <title>Getting started with Scheme by solving an Advent of Code 2018 challenge</title>
   <link href="https://gaultier.github.io/blog/advent_of_code_2018_5.html"/>
@@ -222,5 +214,13 @@
   <id>urn:uuid:c4aa2dc8-0d40-5ce8-9b46-ac6c7f41dea6</id>
   <updated>2025-02-12T07:54:44+01:00</updated>
   <published>2025-02-11T16:47:16+01:00</published>
+  </entry>
+	
+	<entry>
+  <title>Addressing CGO's pains, one at a time</title>
+  <link href="https://gaultier.github.io/blog/addressing_cgo_pains_one_at_a_time.html"/>
+  <id>urn:uuid:07006a7b-7a02-50db-aa27-568407c1f588</id>
+  <updated>2025-02-14T13:14:11+01:00</updated>
+  <published>2025-02-14T13:14:11+01:00</published>
   </entry>
 	</feed>
