@@ -599,11 +599,11 @@ That's in seconds. Every. Single. Time. Urgh.
 
 The issue is that little to no caching is being leveraged by either compiler. Dependencies are fetched from the internet, and essentially, a clean release build is performed. That takes a looong time. Past developers tried to fix this by volume mounting host directories inside Docker but apparently, they missed a few.
 
-That's why I am convinced that Docker is not meant to build stuff. Only to run stuff. I have seen the same problem with C++ codebases being built in Docker, with Rust codebases being built in Docker, etc. In the worst cases it would take over an hour to build, and developers resorted to duplicate the deployment setup to be able to run (and thus test) the app locally, completely bypassing Docker.
+That's why I am convinced that Docker is not meant to build stuff. Only to run stuff. I have seen the same problem with C++ codebases being built in Docker, with Rust codebases being built in Docker, etc. Even with JavaScript/Typescript codebases built in docker (these were for some reason often the slowest to build). In the worst cases it would take over an hour to build, and developers resorted to duplicate the deployment setup to be able to run (and thus test) the app locally, completely bypassing Docker.
 
 I think the original intent was to do a clean build inside Docker because developers feared that the local environment was somehow tainted and/or that the compiler would mess up with the caching and result in a borked build. But modern compilers are, from my perspective, really good at identifying changes, correctly caching what did not change, and rebuilding with the correct build flags, what does need to be rebuilt.
 
-So in my opinion, the ideal Docker build process is: a single static executable is built locally, relying on caching of previous builds. Then, it is copied inside the image which, again ideally, for security purposes, is very barebone. The dockerfile can look like this:
+So in my opinion, the ideal Docker build process is: a single static executable is built locally, relying on caching of previous builds (or possibly in CI, remote intermediate artifacts). Then, it is copied inside the image which, again ideally, for security purposes, is very barebone. The dockerfile can look like this:
 
 ```dockerfile
 FROM gcr.io/distroless/static:nonroot
@@ -615,9 +615,9 @@ COPY --chown=nonroot:nonroot app.exe .
 CMD ["/home/nonroot/app.exe"]
 ```
 
-It's fast, simple, secure. But, to make it work, regardless of the host, we need to cross compile.
+It's fast, simple, secure. But, to make it work, regardless of the host, we need to cross-compile.
 
-Go is praised for its uncomplicated cross compiling support. But this goes out of the window when Cgo is enabled. Let's try:
+Go is praised for its uncomplicated cross-compiling support. But this goes out of the window when Cgo is enabled. Let's try:
 
 ```sh 
 $ GOOS=linux GOARCH=arm go build  .
@@ -628,16 +628,22 @@ It fails. But fortunately, Go still supports cross-compiling with Cgo as long as
 
 After some experimentation, my favorite way is to use [Zig](https://dev.to/kristoff/zig-makes-go-cross-compilation-just-work-29ho) for that. That way it works the same way for people using macOS, Linux, be it on ARM, on x86_64, etc. And it makes it trivial to build native Docker images for ARM without changing the whole build system or installing additional tools.
 
-The work on Zig is fantastic, please consider supporting them. 
+The work on Zig is fantastic, please consider supporting them!
 
 So, how does it look like? Let's assume we want to target `x86_64-linux-musl`, built statically, since we use a distroless image that does not come with a libc. The benefit is that our service looks like any other Go service without Cgo.
 
 We could also target a specific glibc version and deploy on a LTS version of ubuntu, debian, etc. Zig supports that.
 
-First, we compile our C code:
+First, we cross-compile our C code:
 
-``sh
+```sh
 $ CC="zig cc --target=x86_64-linux-musl" make -C ./c
+```
+
+Or, bring your own cross-compiler, you don't have to use Zig:
+
+```
+$ CC=musl-gcc make -C ./c
 ```
 
 If we have Rust code, we do instead:
