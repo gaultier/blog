@@ -585,8 +585,94 @@ import "C"
 
 ## Cross-compile
 
+So picture me, building my Go program (a web service) using Cgo. Locally, it builds very quickly, due to Go caching (when it works). 
 
-## Runtime checks
+Now, time to build in Docker to be able to deploy it:
 
+```sh
+$ time docker build [...]
+[...]
+Total execution time 101.664413146
+```
 
+Every. Single. Time. Urgh.
 
+That's why I am convinced that docker is not meant to build stuff. Ideally, a single static executable is built locally, relying on caching of previous builds. Then, it is copied inside the image which, again ideally, for security purposes, is very barebone. The dockerfile can look like this:
+
+```dockerfile
+FROM gcr.io/distroless/static:nonroot
+USER nonroot
+WORKDIR /home/nonroot
+
+COPY --chown=nonroot:nonroot app.exe .
+
+CMD ["/home/nonroot/app.exe"]
+```
+
+It's fast, simple, secure. But, to make it work, regardless of the host, we need to cross compile.
+
+Go is praised for its uncomplicated cross compiling support. But this goes out of the window when Cgo is enabled. Let's try:
+
+```sh 
+$ GOOS=linux GOARCH=arm go build  .
+cgo/app: build constraints exclude all Go files in /home/pg/scratch/cgo/app
+```
+
+It fails. But fortunately, Go still supports cross-compiling with Cgo as long as we provide it with a cross-compiler.
+
+After some experimentation, my favorite way is to use [Zig](https://dev.to/kristoff/zig-makes-go-cross-compilation-just-work-29ho) for that. That way it works the same way for people using macOS, Linux, be it on ARM, on x86_64, etc. And it makes it trivial to build native docker images for ARM without changing the whole build system or installing additional tools.
+
+The work on Zig is fantastic, please consider supporting them. 
+
+So, how does it look like? Let's assume we want to target `x86_64-linux-musl`, built statically, since we use a distroless image that does not come with a libc. The benefit is that our service looks like any other Go service without Cgo.
+
+We could also target a specific glibc version and deploy on a LTS version of ubuntu, debian, etc. Zig supports that.
+
+First, we compile our C code:
+
+``sh
+$ CC="zig cc --target=x86_64-linux-musl" make -C ./c
+```
+
+If we have Rust code, we do instead:
+
+```sh
+$ rustup target add x86_64-unknown-linux-musl
+$ cargo build --release --all-features --target=x86_64-unknown-linux-musl
+```
+
+Then we build our Go code using the Zig C compiler. I put the non cross-compiling build commands just before for comparison:
+
+```sh
+$ go build .
+$ file cgo
+cgo: ELF 64-bit LSB executable, x86-64, version 1 (SYSV), dynamically linked, interpreter /lib64/ld-linux-x86-64.so.2, BuildID[sha1]=9d5da9b6a211c5635a83e4a8a346ff605f7b6e3b, for GNU/Linux 3.2.0, with debug_info, not stripped
+
+$ CGO_ENABLED=1 CC='zig cc --target=x86_64-linux-musl -static' GOOS=linux GOARCH=amd64 go build .
+$ file cgo
+cgo: ELF 64-bit LSB executable, x86-64, version 1 (SYSV), statically linked, Go BuildID=gTeiH1YL9FSvJJ2euuGd/P0s07MkwoQlcaBA6EXDD/NOYPaeKuxUZ0cnLxfpC9/YeAu_C7s53nGjPEKZDYI, with debug_info, not stripped
+```
+
+Tadam!
+
+Time to build a native ARM image? No problem:
+
+```sh
+$ CC="zig cc --target=aarch64-linux-musl" make -C ./c
+$ CGO_ENABLED=1 CC='zig cc --target=aarch64-linux-musl -static' GOOS=linux GOARCH=arm64 go build .
+$ file ./cgo
+./cgo: ELF 64-bit LSB executable, ARM aarch64, version 1 (SYSV), statically linked, Go BuildID=QRDa72MrAj44K3mt54PK/_aJwgCwTO37mKpnfElWN/0TEmGFNLMEZCx3Zv_PKs/lgDlIHFQ6-LxhCOsdhQI, with debug_info, not stripped
+``
+
+If you've done *any* work with cross-compilation, you know that this is magic.
+
+Oh, and what about the speed now? Here is a full docker build with my real-life program (Rust + Go):
+
+```
+$ make docker-build
+Executed in    1.47 secs
+```
+
+That time includes `cargo build --release`, `go build`, and `docker build`. Most of the time is spent copying the giant executable (around 72 MiB!) into the docker image since neither Rust nor Go are particularly good at producing small executables.
+
+So, we want from ~100s to ~1s, roughly a 100x improvement. Pretty pretty good if you ask me.
