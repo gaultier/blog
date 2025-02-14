@@ -599,9 +599,11 @@ That's in seconds. Every. Single. Time. Urgh.
 
 The issue is that little to no caching is being leveraged by either compiler. Dependencies are fetched from the internet, and essentially, a clean release build is performed. That takes a looong time. Past developers tried to fix this by volume mounting host directories inside Docker but apparently, they missed a few.
 
-That's why I am convinced that docker is not meant to build stuff. Only to run stuff. I have seen the same problem with C++ codebases being built in Docker, with Rust codebases being built in Docker, etc. I think the original intent was to do a clean build inside Docker because developers feared that the local environment was somehow tainted and/or that the compiler would mess up with the caching and result in a borked build. But modern compilers are, from my perspective, really good at identifying changes, correctly caching what did not change, and rebuilding with the correct build flags, what does need to be rebuilt.
+That's why I am convinced that Docker is not meant to build stuff. Only to run stuff. I have seen the same problem with C++ codebases being built in Docker, with Rust codebases being built in Docker, etc. In the worst cases it would take over an hour to build, and developers resorted to duplicate the deployment setup to be able to run (and thus test) the app locally, completely bypassing Docker.
 
-So in my opinion, the ideal docker build process is: a single static executable is built locally, relying on caching of previous builds. Then, it is copied inside the image which, again ideally, for security purposes, is very barebone. The dockerfile can look like this:
+I think the original intent was to do a clean build inside Docker because developers feared that the local environment was somehow tainted and/or that the compiler would mess up with the caching and result in a borked build. But modern compilers are, from my perspective, really good at identifying changes, correctly caching what did not change, and rebuilding with the correct build flags, what does need to be rebuilt.
+
+So in my opinion, the ideal Docker build process is: a single static executable is built locally, relying on caching of previous builds. Then, it is copied inside the image which, again ideally, for security purposes, is very barebone. The dockerfile can look like this:
 
 ```dockerfile
 FROM gcr.io/distroless/static:nonroot
@@ -624,7 +626,7 @@ cgo/app: build constraints exclude all Go files in /home/pg/scratch/cgo/app
 
 It fails. But fortunately, Go still supports cross-compiling with Cgo as long as we provide it with a cross-compiler.
 
-After some experimentation, my favorite way is to use [Zig](https://dev.to/kristoff/zig-makes-go-cross-compilation-just-work-29ho) for that. That way it works the same way for people using macOS, Linux, be it on ARM, on x86_64, etc. And it makes it trivial to build native docker images for ARM without changing the whole build system or installing additional tools.
+After some experimentation, my favorite way is to use [Zig](https://dev.to/kristoff/zig-makes-go-cross-compilation-just-work-29ho) for that. That way it works the same way for people using macOS, Linux, be it on ARM, on x86_64, etc. And it makes it trivial to build native Docker images for ARM without changing the whole build system or installing additional tools.
 
 The work on Zig is fantastic, please consider supporting them. 
 
@@ -670,19 +672,19 @@ $ file ./cgo
 
 If you've done *any* work with cross-compilation, you know that this is magic.
 
-Oh, and what about the speed now? Here is a full docker build with my real-life program (Rust + Go):
+Oh, and what about the speed now? Here is a full Docker build with my real-life program (Rust + Go):
 
 ```sh
 $ make docker-build
 Executed in    1.47 secs
 ```
 
-That time includes `cargo build --release`, `go build`, and `docker build`. Most of the time is spent copying the giant executable (around 72 MiB!) into the docker image since neither Rust nor Go are particularly good at producing small executables.
+That time includes `cargo build --release`, `go build`, and `docker build`. Most of the time is spent copying the giant executable (around 72 MiB!) into the Docker image since neither Rust nor Go are particularly good at producing small executables.
 
 So, we want from ~100s to ~1s, roughly a 100x improvement. Pretty pretty good if you ask me.
 
 
-**My recommendation:**: Never build in docker if you can help it. Build locally and copy the one static executable into the docker image.
+**My recommendation:**: Never build in Docker if you can help it. Build locally and copy the one static executable into the Docker image.
 
 **My ask for the Go team**: None actually, they have done an amazing job on the build system to support this use-case, and on the documentation.
 
