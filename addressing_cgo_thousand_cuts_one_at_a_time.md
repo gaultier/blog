@@ -331,7 +331,7 @@ Nope...so what can we do about it? In my real-life program I have almost no stri
 - If you really want to use `unsafe.String`, make sure that the string data returned by the C code is immutable **at the OS level**, so either:
   + It's a constant string placed in the read-only segment
   + The string data is allocated in its own virtual memory page and the page permissions are changed to read-only before returning the pointer to Go
-- In C, do not expose string data directly to Go, only expose opaque values (`void*`), and mutations are only done by calling a C function. That way, the Go caller simply cannot use `unsafe.String` (I guess they could with lots of casts, but that's not in the realm of *honest mistake* anymore).
+- In C, do not expose string data directly to Go, only expose opaque values (`void*`), and mutations are only done by calling a C function. That way, the Go caller simply cannot use `unsafe.String` (I guess they could with lots of casts, but that's not in the realm of a *honest mistake* anymore).
 
 
 **My ask to the Go team:** attempt to develop more advanced checks to detect this issue at runtime.
@@ -362,7 +362,7 @@ $ go test ./app/
 use of cgo in test app_test.go not supported
 ```
 
-Ah...yeah this is a known limitation. 
+Ah...yeah this is a [known limitation](https://go.dev/wiki/cgo): `_test.go files can’t use cgo.`. 
 
 Solution: wrap the C function in a Go one.
 
