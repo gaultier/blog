@@ -167,7 +167,45 @@ Benchmark 1: ./a.out ./NetBSD-9.4-amd64.iso ~/Downloads/NetBSD-9.4-amd64.iso.tor
 
 That's better but still not great. We could apply the tweaks suggested by Intel, but that probably would not give us the order of magnitude improvement we need.
 
-So...did you know that in all likelihood, 
+So...did you know that in all likelihood, your CPU has dedicated silicon to accelerate SHA computations? Let's use that!
+
+## SHA1 with the Intel SHA extension
+
+Despite the name, Intel as well as AMD CPUs have been shipping with this extension, since around 2017. It adds a few SIMD instructions dedicated to compute SHA1 (and SHA256, and other variants). Note that ARM also has an equivalent (albeit incompatible, of course) extension so the same can be done there.
+
+The advantage is that the structure of the code can remain the same: we still are using 128 bits SIMD registers, still computing 64 bytes at a time for SHA. It's just that a few operations get faster. How fast you ask?
+
+```sh
+$ hyperfine --warmup 3 './a.out ./NetBSD-9.4-amd64.iso ~/Downloads/NetBSD-9.4-amd64.iso.torrent'
+Benchmark 1: ./a.out ./NetBSD-9.4-amd64.iso ~/Downloads/NetBSD-9.4-amd64.iso.torrent
+  Time (mean ± σ):     858.7 ms ±  40.4 ms    [User: 802.5 ms, System: 53.9 ms]
+  Range (min … max):   821.3 ms … 944.1 ms    10 runs
+```
+
+Now that's what I'm talking about. Around a 10x speed-up! And now we are running under a second.
+
+What about a release build, for comparison?
+
+
+This is non SIMD version with `-O2 -march=native`, using auto-vectorization:
+
+```sh
+$ hyperfine --warmup 3 './a.out ./NetBSD-9.4-amd64.iso ~/Downloads/NetBSD-9.4-amd64.iso.torrent'
+Benchmark 1: ./a.out ./NetBSD-9.4-amd64.iso ~/Downloads/NetBSD-9.4-amd64.iso.torrent
+  Time (mean ± σ):     617.8 ms ±  20.9 ms    [User: 573.6 ms, System: 42.2 ms]
+  Range (min … max):   598.7 ms … 669.1 ms    10 runs
+```
+
+And this is the code using the SHA extension, again with `-O2 -march=native`:
+
+```sh
+$ hyperfine --warmup 3 './a.out ./NetBSD-9.4-amd64.iso ~/Downloads/NetBSD-9.4-amd64.iso.torrent'
+Benchmark 1: ./a.out ./NetBSD-9.4-amd64.iso ~/Downloads/NetBSD-9.4-amd64.iso.torrent
+  Time (mean ± σ):     281.2 ms ±   5.4 ms    [User: 240.6 ms, System: 39.6 ms]
+  Range (min … max):   276.1 ms … 294.3 ms    10 runs
+```
+
+Unsurprisingly, 
 
 -------------------------
 
@@ -197,7 +235,6 @@ $ hyperfine --warmup 3 './a.out ./NetBSD-9.4-amd64.iso ~/Downloads/NetBSD-9.4-am
 Benchmark 1: ./a.out ./NetBSD-9.4-amd64.iso ~/Downloads/NetBSD-9.4-amd64.iso.torrent
   Time (mean ± σ):     617.8 ms ±  20.9 ms    [User: 573.6 ms, System: 42.2 ms]
   Range (min … max):   598.7 ms … 669.1 ms    10 runs
- 
 ```
 
 ## Debug + ASAN, HW
