@@ -58,7 +58,7 @@ Let's first review the simple non-SIMD C version to understand the baseline.
 
 ## Standard C
 
-To isolate the issue, I have created a simple benchmark program. It reads the `.torrent` file, and the dowload file, in my case the `.iso` NetBSD image. Every chunk gets hashed and this gets compared with the expected value (a SHA1 hash, or digest, is 20 bytes long). To simplify, I skip the decoding of the `.torrent` file, and harcode where exactly in the file are the expected hashes. The only difficulty is that the last piece might be shorter than the others.
+To isolate the issue, I have created a simple benchmark program. It reads the `.torrent` file, and the dowload file, in my case the `.iso` NetBSD image. Every chunk gets hashed and this gets compared with the expected value (a SHA1 hash, or digest, is 20 bytes long). To simplify, I skip the decoding of the `.torrent` file, and harcode the piece length, as well as where exactly in the file are the expected hashes. The only difficulty is that the last piece might be shorter than the others.
 
 ```c
 #include <fcntl.h>
@@ -389,7 +389,7 @@ void SHA1Final(uint8_t digest[SHA1_DIGEST_LENGTH], SHA1_CTX *context) {
 }
 ```
 
-<details
+</details>
 
 The `SHA1_xxx` functions are lifted from [OpenBSD](https://github.com/openssh/openssh-portable/blob/9e5bd74a85192c00a842f63d7ab788713b4284c3/openbsd-compat/sha1.c) (there are similar variants, e.g. from [Sqlite](https://sqlite.org/src/file/ext/misc/sha1.c), etc - they are all nearly identical), and when compiled in non-optimized mode with Address Sanitizer, we get this timing:
 
@@ -410,18 +410,22 @@ So what can we do about it?
 
 - We can build the SHA1 code separately with optimizations on, always (and potentially without Address Sanitizer). That's a bit annoying, because I currently do a Unity build meaning there is only one compilation unit. So having suddenly multiple compilation units with different build flags makes the build system more complex. And clang has annotations to *lower* the optimization level for one function but not to *raise* it.
 - We can compute the hash of each chunk in parallel for example in a thread pool, since each chunk is independent. That works and that's what [libtorrent did/does](https://blog.libtorrent.org/2011/11/multi-threaded-piece-hashing/), but that assumes that the target computer has cores to spare, and it creates some complexity:
-  + We need to implement a thread pool (spawning a new thread for each chunk will not perform well) and pick a reasonable amount of cores
-  + We need a M:N scheduling logic to compute the hash of M chunks on N threads. It could be a work-stealing queue backed by a thread-pool, or read the whole file in memory and split the data in equal parts for each thread to plow through (but beware that the data for each thread is aligned with the chunk size!). This seems complex.
+  + We need to implement a thread pool (spawning a new thread for each chunk will not perform well) and pick a reasonable thread pool size given the number of cores, in a cross-platform way
+  + We need a M:N scheduling logic to compute the hash of M chunks on N threads. It could be a work-stealing queue where each thread picks the next item when its finished with its chunk, or we read the whole file in memory and split the data in equal parts for each thread to plow through (but beware that the data for each thread must be aligned with the chunk size!)
+  + We would have high contention: in the real program, we update a bitfield to know which chunk is valid or not, and every thread would contend on this (perhaps more so with the work-stealing queue than with the 'split in equal parts' approach).
 - We can implement SHA1 with SIMD. That way, it's much faster regardless of the build level. Essentially, we do not rely on the compiler auto-vectorization that only occurs at higher optimization levels, we do it directly. It has the nice advantage that we have guaranteed performance even when using a different compiler, or an older compiler that cannot do auto-vectorization properly, or if a new compiler version comes along and auto-vectorization broke for this code. Since it uses lots of heuristics, this may happen.
 
 
-So let's do SIMD! The nice thing about it is that we can always in the future *also* compute hashes in parallel, as well as use SIMD; the two approaches compose well together.
+So let's do SIMD and learn cool new stuff! The nice thing about it is that we can always in the future *also* compute hashes in parallel, as well as use SIMD; the two approaches compose well together. I am reminded of an old adage: 
+
+> You can't have multiple cores until you've shown you can use one efficiently.
 
 ## SHA1 with SSE
 
-[This](http://arctic.org/~dean/crypto/sha1.html) is an implementation from the early 2000s in the public domain. Yes, SSE, which is the forst widespread SIMD instruction set, is from the nineties to early 2000s. More than 25 years ago! There's basically no reason to write non-SIMD code for performance sensitive code for a SIMD-friendly problem - every CPU we care about has SIMD! Well, we have two write separate implementations for x64 and ARM, that's the downside. But still! 
+[This](http://arctic.org/~dean/crypto/sha1.html) is an implementation from the early 2000s in the public domain. Yes, SSE, which is the first widespread SIMD instruction set, is from the nineties to early 2000s. More than 25 years ago! There's basically no reason to write non-SIMD code for performance sensitive code for a SIMD-friendly problem - every CPU we care about has SIMD! Well, we have two write separate implementations for x64 and ARM, that's the downside. But still! 
 
 Intel references this implementation on their [website](https://www.intel.com/content/www/us/en/developer/articles/technical/improving-the-performance-of-the-secure-hash-algorithm-1.html). According to Intel, it was fundamental work at the time and influenced them. It's also not the fastest SSE implementation, the very article from Intel is about some performance enhancements they found for this code, but it has the advantage that if you have a processor from 2004 or after, it works, and it's simple.
+
 
 <details>
     <summary>SHA1 with SSE</summary>
@@ -751,15 +755,45 @@ static void sha1_sse_step(uint32_t *restrict H, const uint32_t *restrict inputu,
 }
 
 ```
+
 </details>
 
-It works 4 bytes at a time instead of one byte at a time with the pure standard C approach. So predictably, we observe roughly a 4x speed-up (still in debug + Address Sanitizer mode):
+
+Our `is_chunk_valid` function now becomes:
+
+```c
+static bool is_chunk_valid(uint8_t *chunk, uint64_t chunk_len,
+                           uint8_t digest_expected[20]) {
+  SHA1_CTX ctx = {0};
+  SHA1Init(&ctx);
+
+  // Process as many 4 bytes chunks as possible.
+  uint64_t len_rounded_down = (chunk_len / 64) * 64;
+  uint64_t rem = chunk_len % 64;
+  uint64_t steps = len_rounded_down / 64;
+  sha1_sse_step(ctx.state, chunk, steps);
+
+  // Process the excess.
+  memcpy(ctx.buffer, chunk + len_rounded_down, rem);
+
+  ctx.count = chunk_len * 8;
+
+  uint8_t digest_actual[20] = {0};
+  SHA1Final(digest_actual, &ctx);
+
+  return !memcmp(digest_actual, digest_expected, 20);
+}
+```
+
+As it is often the case with SIMD code, we process the data in groups of N (here N=4) bytes at a time, and the few excess bytes at the end use the normal non-SIMD code path.
+
+So predictably, we observe roughly a 4x speed-up (still in debug + Address Sanitizer mode):
 
 ```sh
 $ hyperfine --warmup 3 './a.out ./NetBSD-9.4-amd64.iso ~/Downloads/NetBSD-9.4-amd64.iso.torrent'
 Benchmark 1: ./a.out ./NetBSD-9.4-amd64.iso ~/Downloads/NetBSD-9.4-amd64.iso.torrent
-  Time (mean ± σ):      7.748 s ±  0.119 s    [User: 7.665 s, System: 0.057 s]
-  Range (min … max):    7.635 s …  8.062 s    10 runs
+  Time (mean ± σ):      8.093 s ±  0.272 s    [User: 8.010 s, System: 0.060 s]
+  Range (min … max):    7.784 s …  8.684 s    10 runs
 ```
 
 That's better but still not great. We could apply the tweaks suggested by Intel, but that probably would not give us the order of magnitude improvement we need.

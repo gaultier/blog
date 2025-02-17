@@ -173,6 +173,7 @@ blockquote {
   max-width: 80%;
   color: #4c566a;
   padding: .1rem;
+  text-align: center;
 }
 
 pre {
