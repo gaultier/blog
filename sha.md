@@ -27,3 +27,32 @@ Benchmark 1: ./a.out ./NetBSD-9.4-amd64.iso ~/Downloads/NetBSD-9.4-amd64.iso.tor
   Range (min … max):   598.7 ms … 669.1 ms    10 runs
  
 ```
+
+## Debug + ASAN, HW
+
+```sh
+$ hyperfine --warmup 3 './a.out ./NetBSD-9.4-amd64.iso ~/Downloads/NetBSD-9.4-amd64.iso.torrent'
+Benchmark 1: ./a.out ./NetBSD-9.4-amd64.iso ~/Downloads/NetBSD-9.4-amd64.iso.torrent
+  Time (mean ± σ):     858.7 ms ±  40.4 ms    [User: 802.5 ms, System: 53.9 ms]
+  Range (min … max):   821.3 ms … 944.1 ms    10 runs
+```
+
+## Debug, HW
+
+```sh
+ $ hyperfine --warmup 3 './a.out ./NetBSD-9.4-amd64.iso ~/Downloads/NetBSD-9.4-amd64.iso.torrent'
+Benchmark 1: ./a.out ./NetBSD-9.4-amd64.iso ~/Downloads/NetBSD-9.4-amd64.iso.torrent
+  Time (mean ± σ):     799.5 ms ±  46.8 ms    [User: 751.0 ms, System: 43.4 ms]
+  Range (min … max):   762.3 ms … 870.8 ms    10 runs
+ 
+```
+
+## Release, HW
+
+```
+$ hyperfine --warmup 3 './a.out ./NetBSD-9.4-amd64.iso ~/Downloads/NetBSD-9.4-amd64.iso.torrent'
+Benchmark 1: ./a.out ./NetBSD-9.4-amd64.iso ~/Downloads/NetBSD-9.4-amd64.iso.torrent
+  Time (mean ± σ):     281.2 ms ±   5.4 ms    [User: 240.6 ms, System: 39.6 ms]
+  Range (min … max):   276.1 ms … 294.3 ms    10 runs
+ 
+```
