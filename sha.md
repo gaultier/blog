@@ -1,5 +1,5 @@
 Title: Making my debug build viable with a 30 times speed-up
-Tags: LLVM, Zig, Alpine
+Tags: C, SIMD, SHA1, Adress Sanitizer, Torrent
 ---
 
 
