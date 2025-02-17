@@ -121,35 +121,35 @@
 <ul>
 
 <li>
-	<a href="#setting-the-stage">Setting the stage</a>
+	<a href="#1-setting-the-stage">Setting the stage</a>
 		</li>
 
 <li>
-	<a href="#first-attempt-at-freeing-the-memory-properly">First attempt at freeing the memory properly</a>
+	<a href="#2-first-attempt-at-freeing-the-memory-properly">First attempt at freeing the memory properly</a>
 		</li>
 
 <li>
-	<a href="#second-attempt-at-freeing-the-memory-properly">Second attempt at freeing the memory properly</a>
+	<a href="#3-second-attempt-at-freeing-the-memory-properly">Second attempt at freeing the memory properly</a>
 		</li>
 
 <li>
-	<a href="#third-attempt-at-freeing-the-memory-properly">Third attempt at freeing the memory properly</a>
+	<a href="#4-third-attempt-at-freeing-the-memory-properly">Third attempt at freeing the memory properly</a>
 		</li>
 
 <li>
-	<a href="#defer">Defer</a>
+	<a href="#5-defer">Defer</a>
 		</li>
 
 <li>
-	<a href="#possible-solutions">Possible solutions</a>
+	<a href="#6-possible-solutions">Possible solutions</a>
 		</li>
 
 <li>
-	<a href="#conclusion">Conclusion</a>
+	<a href="#7-conclusion">Conclusion</a>
 		</li>
 
 <li>
-	<a href="#addendum-one-more-gotcha">Addendum: One more gotcha</a>
+	<a href="#8-addendum-one-more-gotcha">Addendum: One more gotcha</a>
 		</li>
 </ul>
 
@@ -157,9 +157,9 @@
 <p><em>Discussions: <a href="https://old.reddit.com/r/rust/comments/1gktuw6/perhaps_rust_needs_defer/?">/r/rust</a>, <a href="https://old.reddit.com/r/programming/comments/1gktum4/perhaps_rust_needs_defer/?">/r/programming</a>, <a href="https://news.ycombinator.com/item?id=42058091">HN</a>, <a href="https://lobste.rs/s/2ka0ps/perhaps_rust_needs_defer">lobsters</a></em></p>
 <p>In a previous article I <a href="/blog/lessons_learned_from_a_successful_rust_rewrite.html#i-am-still-chasing-memory-leaks">mentioned</a> that we use the <code>defer</code> idiom in Rust through a crate, but that it actually rarely gets past the borrow checker. Some comments were <s>claiming this issue does not exist</s> surprised and I did not have an example at hand.</p>
 <p>Well, today at work I hit this issue again so I thought I would document it. And the whole experience showcases well how working in Rust with lots of FFI interop feels like.</p>
-<h2 id="setting-the-stage">
-	<a class="title" href="#setting-the-stage">Setting the stage</a>
-	<a class="hash-anchor" href="#setting-the-stage" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+<h2 id="1-setting-the-stage">
+	<a class="title" href="#1-setting-the-stage">Setting the stage</a>
+	<a class="hash-anchor" href="#1-setting-the-stage" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>So, I have a Rust API like this:</p>
 <pre><code class="language-rust">#[repr(C)]
@@ -248,9 +248,9 @@ error: memory leaked: alloc59029 (Rust heap, size: 16, align: 8), allocated here
 ...
 </code></pre>
 <p>Note that the standard test runner does not report memory leaks, unfortunately. If Miri does not work for a given use case, and we still want to check that there are no leaks, we have to reach for nightly sanitizers or Valgrind.</p>
-<h2 id="first-attempt-at-freeing-the-memory-properly">
-	<a class="title" href="#first-attempt-at-freeing-the-memory-properly">First attempt at freeing the memory properly</a>
-	<a class="hash-anchor" href="#first-attempt-at-freeing-the-memory-properly" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+<h2 id="2-first-attempt-at-freeing-the-memory-properly">
+	<a class="title" href="#2-first-attempt-at-freeing-the-memory-properly">First attempt at freeing the memory properly</a>
+	<a class="hash-anchor" href="#2-first-attempt-at-freeing-the-memory-properly" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>Great, so let's free it at the end of the test, like C does, with <code>free</code> from libc, which we add as a dependency:</p>
 <pre><code class="language-rust">
@@ -310,9 +310,9 @@ brk(0x213c0000)                         = 0x213c0000
 </code></pre>
 <p>Not sure where the implementation is located... Ok, let's move on.</p>
 <p>Let's stay on the safe side and assume that we ought to use <code>Vec::from_raw_parts</code> and let the <code>Vec</code> free the memory when it gets dropped at the end of the scope. The only problem is: This function requires the pointer, the length, <em>and the capacity</em>. Wait, but we lost the capacity when we returned the pointer + length to the caller in <code>MYLIB_get_foos()</code>, and the caller <em>does not care one bit about the capacity</em>! It's irrelevant to them! At work, the mobile developers using our library rightfully asked: wait, what is this <code>cap</code> field? Why do I care? What do I do with it? If you are used to manually managing your own memory, this is a very old concept, but if you are used to a Garbage Collector, it's very much new.</p>
-<h2 id="second-attempt-at-freeing-the-memory-properly">
-	<a class="title" href="#second-attempt-at-freeing-the-memory-properly">Second attempt at freeing the memory properly</a>
-	<a class="hash-anchor" href="#second-attempt-at-freeing-the-memory-properly" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+<h2 id="3-second-attempt-at-freeing-the-memory-properly">
+	<a class="title" href="#3-second-attempt-at-freeing-the-memory-properly">Second attempt at freeing the memory properly</a>
+	<a class="hash-anchor" href="#3-second-attempt-at-freeing-the-memory-properly" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>So, let's first try to dodge the problem the <s>hacky</s> simple way by pretending that the memory is allocated by a <code>Box</code>, which only needs the pointer, just like <code>free()</code>:</p>
 <pre><code class="language-rust">    #[test]
@@ -334,9 +334,9 @@ brk(0x213c0000)                         = 0x213c0000
 <p>Let's take a second to marvel at the fact that Rust, probably the programming language the most strict at compile time, the if-it-builds-it-runs-dude-I-swear language, seems to work at compile time and at run time, but only fails when run under an experimental analyzer that only works in nightly and does not support lots of FFI patterns, which is the place where you need Miri the most!</p>
 <p>That's the power of Undefined Behavior and <code>unsafe{}</code>. Again: audit all of your <code>unsafe</code> blocks, and be very suspicious of any third-party code that uses <code>unsafe</code>. I think Rust developers on average do not realize the harm that it is very easy to inflict to your program by using <code>unsafe</code> unwisely even if everything seems fine.</p>
 <p>Anyways, I guess we have to refactor our whole C API to do it the Rust Way(tm)!</p>
-<h2 id="third-attempt-at-freeing-the-memory-properly">
-	<a class="title" href="#third-attempt-at-freeing-the-memory-properly">Third attempt at freeing the memory properly</a>
-	<a class="hash-anchor" href="#third-attempt-at-freeing-the-memory-properly" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+<h2 id="4-third-attempt-at-freeing-the-memory-properly">
+	<a class="title" href="#4-third-attempt-at-freeing-the-memory-properly">Third attempt at freeing the memory properly</a>
+	<a class="hash-anchor" href="#4-third-attempt-at-freeing-the-memory-properly" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>So, in our codebase at work, we have defined this type:</p>
 <pre><code class="language-rust">/// Owning Array i.e. `Vec&lt;T&gt;` in Rust or `std::vector&lt;T&gt;` in C++.
@@ -391,9 +391,9 @@ mod tests {
 }
 </code></pre>
 <p>And now, Miri is happy. Urgh. So, back to what we set out to do originally, <code>defer</code>.</p>
-<h2 id="defer">
-	<a class="title" href="#defer">Defer</a>
-	<a class="hash-anchor" href="#defer" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+<h2 id="5-defer">
+	<a class="title" href="#5-defer">Defer</a>
+	<a class="hash-anchor" href="#5-defer" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>The test is trivial right now but in real code, there are many code paths that sometimes allocate, sometimes not, with validation interleaved, and early returns, so we'd really like if we could statically demonstrate that the memory is always correctly freed. To ourselves, to auditors, etc.</p>
 <p>One example at work of such hairy code is: building a linked list (in Rust), fetching more from the network based on the content of the last node in the list, and appending the additional data to the linked list, until some flag is detected in the encoded data. Oh, and there is also validation of the incoming data, so you might have to return early with a partially constructed list which should be properly cleaned up.</p>
@@ -434,9 +434,9 @@ error[E0502]: cannot borrow `foos.len` as immutable because it is also borrowed 
 </code></pre>
 <p>Dum dum duuuum....Yes, we cannot use the <code>defer</code> idiom here (or at least I did not find a way). In some cases it's possible, in lots of cases it's not. The borrow checker considers that the <code>defer</code> block holds an exclusive mutable reference and the rest of the code cannot use that reference in any way.</p>
 <p>Despite the fact, that the version without defer, and with defer, are semantically equivalent and the borrow checker is fine with the former and not with the latter.</p>
-<h2 id="possible-solutions">
-	<a class="title" href="#possible-solutions">Possible solutions</a>
-	<a class="hash-anchor" href="#possible-solutions" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+<h2 id="6-possible-solutions">
+	<a class="title" href="#6-possible-solutions">Possible solutions</a>
+	<a class="hash-anchor" href="#6-possible-solutions" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>So that is why I argue that Rust should get a <code>defer</code> statement in the language and the borrow checker should be made aware of this construct to allow this approach to take place.</p>
 <p>But what can we do otherwise? Are there any alternatives?</p>
@@ -472,17 +472,17 @@ It's very nifty, but I am not sure I would enjoy reading and writing this kind o
 <li>We can use arenas everywhere and sail away in the sunset, leaving all these nasty problems behind us</li>
 <li>Rust can stabilize various nightly APIs and tools, like custom allocators and sanitizers, to make development simpler</li>
 </ul>
-<h2 id="conclusion">
-	<a class="title" href="#conclusion">Conclusion</a>
-	<a class="hash-anchor" href="#conclusion" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+<h2 id="7-conclusion">
+	<a class="title" href="#7-conclusion">Conclusion</a>
+	<a class="hash-anchor" href="#7-conclusion" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>Rust + FFI is nasty and has a lot of friction. I went at work through all these steps I went through in this article, and this happens a lot.</p>
 <p>The crux of the issue is that there is a lot of knowledge to keep in our heads, lots of easy ways to shoot ourselves in the foot, and we have to reconcile what various tools tell us: even if the compiler is happy, the tests might not be. Even the tests are happy, Miri might not be. Even if we think we have done the right thing, we discover later, buried deep in the docs, that in fact, we didn't. It's definitely for experts only.</p>
 <p>This should not be so hard! Won't somebody think of the <s>children</s> Rust FFI users?</p>
 <p>EDIT: It's been <a href="https://chaos.social/@filmroellchen/113464336212759405">pointed</a> out to me that there are two on-going internal discussions by the Rust developers about this topic to possibly reserve the <code>defer</code> keyword for future use and maybe one day add this facility to the language: <a href="https://internals.rust-lang.org/t/pre-rfc-defer-statement/16644">1</a>, <a href="https://internals.rust-lang.org/t/a-defer-discussion/20387/71">2</a>.</p>
-<h2 id="addendum-one-more-gotcha">
-	<a class="title" href="#addendum-one-more-gotcha">Addendum: One more gotcha</a>
-	<a class="hash-anchor" href="#addendum-one-more-gotcha" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+<h2 id="8-addendum-one-more-gotcha">
+	<a class="title" href="#8-addendum-one-more-gotcha">Addendum: One more gotcha</a>
+	<a class="hash-anchor" href="#8-addendum-one-more-gotcha" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>Rust guarantees that the underlying pointer in <code>Vec</code> is not null. And <code>OwningArrayC</code> mirrors <code>Vec</code>, so it should be the same, right? Well consider this C code:</p>
 <pre><code class="language-c">int main() {

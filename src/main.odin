@@ -39,8 +39,9 @@ Article :: struct {
 }
 
 Title :: struct {
-	content: string,
-	level:   int,
+	content:   string,
+	level:     int,
+	unique_id: u32,
 }
 
 datetime_to_date :: proc(datetime: string) -> string {
@@ -178,6 +179,7 @@ make_html_friendly_id :: proc(input: string, allocator := context.allocator) -> 
 
 decorate_markdown_with_title_ids :: proc(markdown: string) -> string {
 	inside_code_section := false
+	unique_id := 0
 
 	builder := strings.builder_make_len_cap(0, len(markdown) * 2)
 
@@ -219,7 +221,14 @@ decorate_markdown_with_title_ids :: proc(markdown: string) -> string {
 		assert(1 <= title_level && title_level <= 6)
 
 		title_content := strings.trim_space(line[title_level:])
-		title_id := make_html_friendly_id(title_content)
+		unique_id += 1
+		title_id_raw := fmt.aprintf(
+			"%d-%s",
+			unique_id,
+			title_content,
+			allocator = context.temp_allocator,
+		)
+		title_id := make_html_friendly_id(title_id_raw)
 
 		fmt.sbprintf(
 			&builder,
@@ -243,6 +252,7 @@ decorate_markdown_with_title_ids :: proc(markdown: string) -> string {
 toc_lex_titles :: proc(markdown: string, allocator := context.allocator) -> []Title {
 	titles := make([dynamic]Title, allocator)
 
+	unique_id := u32(0)
 	inside_code_section := false
 	markdown_ptr := markdown
 	for line in strings.split_lines_iterator(&markdown_ptr) {
@@ -269,7 +279,8 @@ toc_lex_titles :: proc(markdown: string, allocator := context.allocator) -> []Ti
 		assert(1 <= title_level && title_level <= 6)
 
 		title_content := strings.trim_space(line[title_level:])
-		append(&titles, Title{content = title_content, level = title_level})
+		unique_id += 1
+		append(&titles, Title{content = title_content, level = title_level, unique_id = unique_id})
 	}
 
 	return titles[:]
@@ -279,7 +290,13 @@ toc_write :: proc(sb: ^strings.Builder, titles: []Title) -> []Title {
 	if len(titles) == 0 {return {}}
 
 	title := titles[0]
-	id := make_html_friendly_id(title.content)
+	title_id_raw := fmt.aprintf(
+		"%d-%s",
+		title.unique_id,
+		title.content,
+		allocator = context.temp_allocator,
+	)
+	id := make_html_friendly_id(title_id_raw)
 
 	fmt.sbprintf(sb, `
 <li>

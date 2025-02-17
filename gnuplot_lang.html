@@ -121,15 +121,15 @@
 <ul>
 
 <li>
-	<a href="#the-problem">The problem</a>
+	<a href="#1-the-problem">The problem</a>
 		</li>
 
 <li>
-	<a href="#closing-thoughts">Closing thoughts</a>
+	<a href="#2-closing-thoughts">Closing thoughts</a>
 		</li>
 
 <li>
-	<a href="#addendum-the-full-code">Addendum: The full code</a>
+	<a href="#3-addendum-the-full-code">Addendum: The full code</a>
 		</li>
 </ul>
 
@@ -143,9 +143,9 @@ plot &quot;out.dat&quot; with lines
 <p>The software engineering advice that I heard a long time ago and left a mark on me is: <strong>Find a way to visualize your problem.</strong></p>
 <p>So Gnuplot is definitely worth of a spot in a Software Engineer's toolbox.</p>
 <p>However, few know that Gnuplot is actually also Turing complete programming language. It is similar in syntax to Perl or Awk. So I scratched an itch and solved a <a href="https://adventofcode.com/2023/day/1">problem</a> with it.</p>
-<h2 id="the-problem">
-	<a class="title" href="#the-problem">The problem</a>
-	<a class="hash-anchor" href="#the-problem" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+<h2 id="1-the-problem">
+	<a class="title" href="#1-the-problem">The problem</a>
+	<a class="hash-anchor" href="#1-the-problem" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>In short, we get a text file where each line contains random ASCII characters. For each line, we must find the first and last digit characters, combine them into an number and at the end output the sum of all these numbers.</p>
 <p>The way we read the data into a variable is through a shell command:</p>
@@ -206,9 +206,9 @@ do for [line in data] {
 <p>We just have to print the sum at the end:</p>
 <pre><code class="language-gnuplot">print(sum)
 </code></pre>
-<h2 id="closing-thoughts">
-	<a class="title" href="#closing-thoughts">Closing thoughts</a>
-	<a class="hash-anchor" href="#closing-thoughts" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+<h2 id="2-closing-thoughts">
+	<a class="title" href="#2-closing-thoughts">Closing thoughts</a>
+	<a class="hash-anchor" href="#2-closing-thoughts" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>Pretty straightforward, isn't it? Well, no. The language is weirdly restrictive, for example <code>sum += num</code> does not parse. <code>for</code> and <code>while</code> loops cannot for some reason be used interchangeably due to the weird <code>do</code> prefix for for-loops. Very few builtin functions are available.
 There does not seem to be basic data structures such as arrays and maps. Every variable is global. And so on.</p>
@@ -216,9 +216,9 @@ There does not seem to be basic data structures such as arrays and maps. Every v
 <p>Awk, Lua or Perl are honestly better in every way, to pick relatively simple, dynamic languages that people usually reach to for Unixy text transformations. And these will have better tooling, such as a debugger. Heck, even shell scripting is probably easier and more straightforward, and that's a low bar.</p>
 <p>Everything points to the fact that Gnuplot expects it's input data in some prearranged tabular form, and just wants to plot it, not transform it. That means that another (real) programming language is expected to do prior work and Gnuplot is at the end of the data pipeline as a 'dumb' visualization tool. I can also see how the limited language can still be useful for Physicists or Mathematicians to write simple numerical, pure functions e.g. <code>f(x) = x*2 + 1</code>.</p>
 <p>I'll investigate Julia and perhaps R in the future, which are in the same niche of science/data visualization but are full programming languages with plentiful tooling.</p>
-<h2 id="addendum-the-full-code">
-	<a class="title" href="#addendum-the-full-code">Addendum: The full code</a>
-	<a class="hash-anchor" href="#addendum-the-full-code" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+<h2 id="3-addendum-the-full-code">
+	<a class="title" href="#3-addendum-the-full-code">Addendum: The full code</a>
+	<a class="hash-anchor" href="#3-addendum-the-full-code" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>Run with <code>gnuplot my_file.dem</code>.</p>
 <pre><code class="language-gnuplot">data = system(&quot;cat in.txt&quot;)
