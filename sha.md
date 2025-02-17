@@ -2,6 +2,8 @@ Title: Making my debug build usable with a 30x speed-up
 Tags: C, SIMD, SHA1, Adress Sanitizer, Torrent
 ---
 
+*SIMD and silicon to the rescue.*
+
 
 I am writing a torrent application, to download and serve torrent files, in C. A torrent download is made of chunks, typically 1 MiB or 2 MiB.  At start-up, the program reads the downloaded file chunk by chunk, computes its [SHA1](https://en.wikipedia.org/wiki/SHA-1) hash, and marks this chunk as downloaded if the actual hash is indeed the expected hash. We get from the `.torrent` file the expected hash of each chunk.
 
@@ -456,11 +458,7 @@ Intel references this implementation on their [website](https://www.intel.com/co
 I really am a SIMD beginner but I found a few interesting nuggets of wisdom here:
 
 - Just like the SIMD-less implementation, the loops are unrolled
-- [[TODO: Check]] Going from big-endian to little-endian was originally done 4 `uint16_t` at a time in this version with the intrisics `_mm_shufflehi_epi16` and `_mm_shufflelo_epi16`. However, the underlying instruction (`PSHUFB`) evolved to do that on 4 `uint32_t` later on with the intrisic `__builtin_ia32_pshufhw`, as Intel mentions on their page:
-  > There are a few other improvements worth mentioning. The use of SSSE3 instruction PSHUFB allows efficient conversion between big- and little-endian data formats for rounds 1 to 16, where values of W[i] are read from the message data, 4 values are converted by a single PSHUFB instruction. 
-
-  So due to its age, this code does some things suboptimally since they were added to later versions of SSE.
-- The way this shuffle works is by providing a bit mask that indicates which bits to copy from the source to the destination, and where to place them:
+- Going from little-endian to big-endian (or back) is done with a SIMD shuffle. The way it works is by providing a bit mask that indicates which bits to copy from the source to the destination, and where to place them:
     ```c
       // `0x1b` == `0b0001_1011`.
       // Will result in:
@@ -471,7 +469,8 @@ I really am a SIMD beginner but I found a few interesting nuggets of wisdom here
       // I.e.: Transform state to big-endian.
       ABCD = _mm_shuffle_epi32(ABCD, 0x1B);
     ```
-    It's nifty because we can copy the data in and out of SIMD registers, while also doing the endianness conversion, in one operation.
+    It's nifty because we can copy the data in and out of SIMD registers, while also doing the endianness conversion, in one operation. And this approach also works from a SIMD register to another SIMD register.
+- Typical SIMD code processes the data in groups of N bytes at a time, and the few excess bytes at the end use the normal SIMD-less code path. Here, we have to deal with an additional grouping: SHA processes data in chunks of 64 bytes and the last chunk is padded to be 64 bytes if it is too short. Hence, for the last short chunk we use the SIMD-less code path. We could try to be clever about doing the padding, and re-using the SIMD code path for this last chunk, but it's not going to really make a difference in practice when we are dealing with megabytes or gigabytes of data.
 
 ### The code
 
@@ -834,7 +833,6 @@ static bool is_chunk_valid(uint8_t *chunk, uint64_t chunk_len,
 }
 ```
 
-As it is often the case with SIMD code, we process the data in groups of N (here N=16) bytes at a time, and the few excess bytes (<= 15) at the end use the normal SIMD-less code path.
 
 ### Results
 
@@ -847,7 +845,7 @@ Benchmark 1: ./a.out ./NetBSD-9.4-amd64.iso ~/Downloads/NetBSD-9.4-amd64.iso.tor
   Range (min … max):    7.784 s …  8.684 s    10 runs
 ```
 
-That's better but still not great. We could apply the tweaks suggested by Intel, but that probably would not give us the order of magnitude improvement we need. They cite x1.2 to x1.5 improvements. 
+That's better but still not great. We could apply the tweaks suggested by Intel, but that probably would not give us the order of magnitude improvement we need. They cite x1.2 to x1.5 improvements. We need more.
 
 By the way... did you know that in all likelihood, your CPU has dedicated silicon to accelerate SHA computations? Let's use that! We paid for it, we get to use it!
 
@@ -855,15 +853,15 @@ By the way... did you know that in all likelihood, your CPU has dedicated silico
 
 Despite the 'Intel' name, Intel as well as AMD CPUs have been shipping with this extension, since around 2017. It adds a few SIMD instructions dedicated to compute SHA1 (and SHA256, and other variants). Note that ARM also has an equivalent (albeit incompatible, of course) extension so the same can be done there. 
 
-*There is an irony here, because 2017 is the year where the first SHA1 public collision was published, which pushed many developers to move away from SHA1...*
+*There is an irony here, because 2017 is the year where the first SHA1 public collision was published, which incited many developers to move away from SHA1...*
 
-The advantage is that the structure of the code can remain the same: we still are using 128 bits SIMD registers, still computing chunks of 64 bytes at a time for SHA. It's just that a few operations get faster and the code is generally shorter and clearer.
+The advantage is that the structure of the code can remain the same: we still are using 128 bits SIMD registers, still computing SHA chunks of 64 bytes at a time for SHA. It's just that a few operations get faster and the code is generally shorter and clearer.
 
 The implementation is a pure work of art, and comes from this [Github repository](https://github.com/noloader/SHA-Intrinsics/blob/master/sha1-x86.c). I have commented lots of it.
 
 ### Explanations
 
-- The unit of work in SSE is 128 bits (or `uint32_t[4]`). Unfortunately, the SHA1 state that we are continuously updating, and from which the final digest is extracted, is **5** uint32_t as seen in the SIMD-less version:
+- The unit of work here is still 128 bits (or `uint32_t[4]`). Unfortunately, the SHA1 state that we are continuously updating, and from which the final digest is extracted, is **5** `uint32_t` as seen in the SIMD-less version:
   ```c
     typedef struct {
       uint32_t state[5]; // <= This field.
