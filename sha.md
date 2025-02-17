@@ -24,7 +24,7 @@ $ du -h ./NetBSD-9.4-amd64.iso
 485M	./NetBSD-9.4-amd64.iso
 ```
 
-But when I build my code in debug mode (no optimizations) with Adress Sanitizer, to detect various issues early, startup takes **20 to 30 seconds!** That's unbearable, especially when working in the debugger and inspecting some code that runs after the startup.
+But when I build my code in debug mode (no optimizations) with Adress Sanitizer, to detect various issues early, startup takes **20 to 30 seconds!** That's unbearable, especially when working in the debugger and inspecting some code that runs after the startup. We'd like to finish this verification under 1 second ideally. And making it fast is important, because until it finishes, we do not know which chunks we need to download.
 
 Let's see how we can speed it up.
 
@@ -32,7 +32,7 @@ Let's see how we can speed it up.
 
 It's important to note that to reduce third-party dependencies, the SHA1 code is vendored in the source tree and comes from OpenSSL (there are similar variants, e.g. from OpenBSD, but not really with signficant differences). It is plain C code, not using SIMD or such.
 
-For a while I simply renounced using a debug build, instead I use minimal optimizations (`-O1`) with Adress Sanitizer (a.k.a Asan). It was much faster, but lots of functions and variables got optimized away, and the debugging experience was thus subpar. I needed to make my debug + Asan build viable.  The debug build without Asan is much faster: the startup 'only' takes around 2 seconds. But Asan is very valuable, I want to be able to use it! And 2 seconds is still too long.
+For a while, due to this slowness, I simply gave up using a debug build, instead I use minimal optimizations (`-O1`) with Adress Sanitizer (a.k.a Asan). It was much faster, but lots of functions and variables got optimized away, and the debugging experience was thus subpar. I needed to make my debug + Asan build viable.  The debug build without Asan is much faster: the startup 'only' takes around 2 seconds. But Asan is very valuable, I want to be able to use it! And 2 seconds is still too long. Reducing the iteration cycle is often the deciding factor for software quality in my experience.
 
 What's vexing is that from first principles, we know it should/could be much, much faster:
 
@@ -43,12 +43,12 @@ Benchmark 1: sha1sum ./NetBSD-9.4-amd64.iso
   Range (min … max):   293.7 ms … 304.2 ms    10 runs
 ```
 
-Granted, computing the hash for the whole file should be slightly faster than computing the hash for N chunks, because the final step for SHA1 is about padding the data to make it 64 bytes aligned and extracing the digest value from the state computed so far with some bit operations. But still, the order of magnitude could/should be ~300 milliseconds, not ~30 seconds!
+Granted, computing the hash for the whole file should be slightly faster than computing the hash for N chunks, because the final step for SHA1 is about padding the data to make it 64 bytes aligned and extracing the digest value from the state computed so far with some bit operations. But still.
 
 
 Why is it so slow then? I can see on CPU profiles that the SHA1 function takes all of the startup time. The SHA1 code is simplistic, it does not use any SIMD or intrisics directly. And that's fine, because when it's compiled with optimizations on, the compiler does a pretty good job at optimizing and auto-vectorizing the code, and it's really fast, around ~300 ms. But the issue is that this code is working one byte at a time. And Adress Sanitizer, with its nice runtime and bounds checks, makes each memory access **very** expensive. So we accidentally wrote a stress-test for Asan.
 
-Let's first review the simple version.
+Let's first review the simple non-SIMD C version.
 
 ## Standard C
 
