@@ -450,7 +450,7 @@ Intel references this implementation on their [website](https://www.intel.com/co
 I really am a SIMD beginner but I found a few interesting nuggets of wisdom here:
 
 - Just like the non SIMD implementation, the loops are unrolled
-- Going from big-endian to little-endian was originally done 4 `uint16_t` at a time in this version with the intrisics `_mm_shufflehi_epi16` and `_mm_shufflelo_epi16`. However, the underlying instruction (`PSHUFB`) evolved to do that on 4 `uint32_t` later on with the intrisic `__builtin_ia32_pshufhw`, as Intel mentions on their page:
+- [[TODO: Check]] Going from big-endian to little-endian was originally done 4 `uint16_t` at a time in this version with the intrisics `_mm_shufflehi_epi16` and `_mm_shufflelo_epi16`. However, the underlying instruction (`PSHUFB`) evolved to do that on 4 `uint32_t` later on with the intrisic `__builtin_ia32_pshufhw`, as Intel mentions on their page:
   > There are a few other improvements worth mentioning. The use of SSSE3 instruction PSHUFB allows efficient conversion between big- and little-endian data formats for rounds 1 to 16, where values of W[i] are read from the message data, 4 values are converted by a single PSHUFB instruction. 
 
   So due to its age, this code does some things suboptimally since they were added to later versions of SSE.
@@ -817,7 +817,7 @@ static bool is_chunk_valid(uint8_t *chunk, uint64_t chunk_len,
   SHA1_CTX ctx = {0};
   SHA1Init(&ctx);
 
-  // Process as many 16 bytes chunks as possible.
+  // Process as many SHA 64 bytes chunks as possible.
   uint64_t len_rounded_down = (chunk_len / 64) * 64;
   uint64_t rem = chunk_len % 64;
   uint64_t steps = len_rounded_down / 64;
@@ -826,6 +826,7 @@ static bool is_chunk_valid(uint8_t *chunk, uint64_t chunk_len,
   // Process the excess.
   memcpy(ctx.buffer, chunk + len_rounded_down, rem);
 
+  // `count` is in bits: multiple the number of bytes by 8.
   ctx.count = chunk_len * 8;
 
   uint8_t digest_actual[20] = {0};
@@ -835,9 +836,11 @@ static bool is_chunk_valid(uint8_t *chunk, uint64_t chunk_len,
 }
 ```
 
-As it is often the case with SIMD code, we process the data in groups of N (here N=4) bytes at a time, and the few excess (0, 1, 2 or 3) bytes  at the end use the normal non-SIMD code path.
+As it is often the case with SIMD code, we process the data in groups of N (here N=16) bytes at a time, and the few excess bytes (<= 15) at the end use the normal non-SIMD code path.
 
-So predictably, we observe roughly a 4x speed-up (still in debug + Address Sanitizer mode):
+### Results
+
+So predictably, since we now process 4 `uint32_t` at a time instead of one, we observe roughly a 4x speed-up (still in debug + Address Sanitizer mode):
 
 ```sh
 $ hyperfine --warmup 3 './a.out ./NetBSD-9.4-amd64.iso ~/Downloads/NetBSD-9.4-amd64.iso.torrent'
@@ -857,6 +860,8 @@ Despite the 'Intel' name, Intel as well as AMD CPUs have been shipping with this
 The advantage is that the structure of the code can remain the same: we still are using 128 bits SIMD registers, still computing chunks of 64 bytes at a time for SHA. It's just that a few operations get faster.
 
 The implementation comes from this [Github repository](https://github.com/noloader/SHA-Intrinsics/blob/master/sha1-x86.c). I have commented most of it to add explanations.
+
+### The code
 
 <details>
     <summary>SHA1 with the Intel SHA extension</summary>
@@ -1082,6 +1087,31 @@ static void sha1_sha_ext(uint32_t state[5], const uint8_t data[],
 </details>
 
 
+Our `is_chunk_valid` function is practically identical to the last section:
+
+```c
+static bool is_chunk_valid(uint8_t *chunk, uint64_t chunk_len,
+                           uint8_t digest_expected[20]) {
+  SHA1_CTX ctx = {0};
+  SHA1Init(&ctx);
+
+  // Process as many SHA 64 bytes chunks as possible.
+  uint64_t len_rounded_down = (chunk_len / 64) * 64;
+  uint64_t rem = chunk_len % 64;
+  sha1_sha_ext(ctx.state, chunk, (uint32_t)len_rounded_down);
+
+  memcpy(ctx.buffer, chunk + len_rounded_down, rem);
+
+  ctx.count = chunk_len * 8;
+
+  uint8_t digest_actual[20] = {0};
+  SHA1Final(digest_actual, &ctx);
+
+  return !memcmp(digest_actual, digest_expected, 20);
+}
+```
+
+### Results
 
 How fast you ask?
 
@@ -1134,83 +1164,6 @@ Benchmark 1: ./a.out ./NetBSD-9.4-amd64.iso ~/Downloads/NetBSD-9.4-amd64.iso.tor
 
 So, the performance is essentially identical to our version. Pretty good.
 
+## Conclusion
 
-
--------------------------
-
-## Debug + ASAN, SW
-
-```sh
-$ hyperfine --warmup 3 './a.out ./NetBSD-9.4-amd64.iso ~/Downloads/NetBSD-9.4-amd64.iso.torrent'
-Benchmark 1: ./a.out ./NetBSD-9.4-amd64.iso ~/Downloads/NetBSD-9.4-amd64.iso.torrent
-  Time (mean ± σ):     26.312 s ±  0.734 s    [User: 26.164 s, System: 0.066 s]
-  Range (min … max):   25.366 s … 27.780 s    10 runs
-```
- 
-## Debug, SW
-
-```sh
-$ hyperfine --warmup 3 './a.out ./NetBSD-9.4-amd64.iso ~/Downloads/NetBSD-9.4-amd64.iso.torrent'
-Benchmark 1: ./a.out ./NetBSD-9.4-amd64.iso ~/Downloads/NetBSD-9.4-amd64.iso.torrent
- ⠸ Current estimate: 2.338 s      ██████████████████████████████████████████████████████████████  Time (mean ± σ):      2.344 s ±  0.054 s    [User: 2.292 s, System: 0.046 s]
-  Range (min … max):    2.268 s …  2.403 s    10 runs
-```
-
-## Release, SW
-
-
-```sh
-$ hyperfine --warmup 3 './a.out ./NetBSD-9.4-amd64.iso ~/Downloads/NetBSD-9.4-amd64.iso.torrent'
-Benchmark 1: ./a.out ./NetBSD-9.4-amd64.iso ~/Downloads/NetBSD-9.4-amd64.iso.torrent
-  Time (mean ± σ):     617.8 ms ±  20.9 ms    [User: 573.6 ms, System: 42.2 ms]
-  Range (min … max):   598.7 ms … 669.1 ms    10 runs
-```
-
-## Debug + ASAN, HW
-
-```sh
-$ hyperfine --warmup 3 './a.out ./NetBSD-9.4-amd64.iso ~/Downloads/NetBSD-9.4-amd64.iso.torrent'
-Benchmark 1: ./a.out ./NetBSD-9.4-amd64.iso ~/Downloads/NetBSD-9.4-amd64.iso.torrent
-  Time (mean ± σ):     858.7 ms ±  40.4 ms    [User: 802.5 ms, System: 53.9 ms]
-  Range (min … max):   821.3 ms … 944.1 ms    10 runs
-```
-
-## Debug, HW
-
-```sh
- $ hyperfine --warmup 3 './a.out ./NetBSD-9.4-amd64.iso ~/Downloads/NetBSD-9.4-amd64.iso.torrent'
-Benchmark 1: ./a.out ./NetBSD-9.4-amd64.iso ~/Downloads/NetBSD-9.4-amd64.iso.torrent
-  Time (mean ± σ):     799.5 ms ±  46.8 ms    [User: 751.0 ms, System: 43.4 ms]
-  Range (min … max):   762.3 ms … 870.8 ms    10 runs
- 
-```
-
-## Release, HW
-
-```
-$ hyperfine --warmup 3 './a.out ./NetBSD-9.4-amd64.iso ~/Downloads/NetBSD-9.4-amd64.iso.torrent'
-Benchmark 1: ./a.out ./NetBSD-9.4-amd64.iso ~/Downloads/NetBSD-9.4-amd64.iso.torrent
-  Time (mean ± σ):     281.2 ms ±   5.4 ms    [User: 240.6 ms, System: 39.6 ms]
-  Range (min … max):   276.1 ms … 294.3 ms    10 runs
- 
-```
-
-## Release, libcrypto
-
-```sh
- $ hyperfine --warmup 3 './a.out ./NetBSD-9.4-amd64.iso ~/Downloads/NetBSD-9.4-amd64.iso.torrent'
-Benchmark 1: ./a.out ./NetBSD-9.4-amd64.iso ~/Downloads/NetBSD-9.4-amd64.iso.torrent
-  Time (mean ± σ):     281.5 ms ±   3.9 ms    [User: 245.7 ms, System: 35.1 ms]
-  Range (min … max):   276.3 ms … 288.9 ms    10 runs
-```
-
-## Debug + Address Sanitizer, SSE (no SHA extension)
-
-```sh
-$ hyperfine --warmup 3 './a.out ./NetBSD-9.4-amd64.iso ~/Downloads/NetBSD-9.4-amd64.iso.torrent'
-Benchmark 1: ./a.out ./NetBSD-9.4-amd64.iso ~/Downloads/NetBSD-9.4-amd64.iso.torrent
-  Time (mean ± σ):      7.748 s ±  0.119 s    [User: 7.665 s, System: 0.057 s]
-  Range (min … max):    7.635 s …  8.062 s    10 runs
-```
-
-~ x4 speed-up since we process 4 `uint32_t` at a time instead of 1.
+[[TODO]]
