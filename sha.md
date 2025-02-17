@@ -128,8 +128,6 @@ int main(int argc, char *argv[]) {
 
 The `SHA1_xxx` functions are lifted from OpenSSL (there are similar variants, e.g. from OpenBSD), and when compiled in non-optimized mode with Asan, we get this timing:
 
-## Debug + ASAN, SW
-
 ```sh
 $ hyperfine --warmup 3 './a.out ./NetBSD-9.4-amd64.iso ~/Downloads/NetBSD-9.4-amd64.iso.torrent'
 Benchmark 1: ./a.out ./NetBSD-9.4-amd64.iso ~/Downloads/NetBSD-9.4-amd64.iso.torrent
@@ -137,7 +135,7 @@ Benchmark 1: ./a.out ./NetBSD-9.4-amd64.iso ~/Downloads/NetBSD-9.4-amd64.iso.tor
   Range (min … max):   25.366 s … 27.780 s    10 runs
 ```
 
-I experimented with doing a `read` syscall for each chunk (that's what `sha1sum` does) versus using `mmap`, and there was no difference, so this is not a factor.
+I experimented with doing a `read` syscall for each chunk (that's what `sha1sum` does) versus using `mmap`, and there was no difference; additionally the system time is nothing compared to user time, so I/O is not the limiting factor - SHA1 computation is.
 
 ---
 
@@ -150,6 +148,7 @@ So what can we do about it?
 - We can implement SHA1 with SIMD. That way, it's much faster regardless of the build level. Essentially, we do not rely on the compiler auto-vectorization that only occurs at higher optimization levels, we do it directly. It has the nice advantage that we have guaranteed performance even when using a different compiler, or an older compiler that cannot do auto-vectorization properly, or if a new compiler version comes along and auto-vectorization broke for this code. Since it uses lots of heuristics, this may happen.
 
 
+So let's do SIMD!
 
 ## SHA1 with SSE
 
@@ -157,7 +156,18 @@ So what can we do about it?
 
 Intel references it on their [website](https://www.intel.com/content/www/us/en/developer/articles/technical/improving-the-performance-of-the-secure-hash-algorithm-1.html). According to Intel, it was fundamental work at the time and influenced them. It's also not the fastest SSE implementation, the very article from Intel is about some performance enhancements they found for this code, but it has the advantage that if you have a processor from 2004 or after, it works, and it's simple.
 
-It works 4 bytes at a time instead of one byte at a time with the pure standard C approach. 
+It works 4 bytes at a time instead of one byte at a time with the pure standard C approach. So predictably, we observe roughly a 4x speed-up:
+
+```sh
+$ hyperfine --warmup 3 './a.out ./NetBSD-9.4-amd64.iso ~/Downloads/NetBSD-9.4-amd64.iso.torrent'
+Benchmark 1: ./a.out ./NetBSD-9.4-amd64.iso ~/Downloads/NetBSD-9.4-amd64.iso.torrent
+  Time (mean ± σ):      7.748 s ±  0.119 s    [User: 7.665 s, System: 0.057 s]
+  Range (min … max):    7.635 s …  8.062 s    10 runs
+```
+
+That's better but still not great. We could apply the tweaks suggested by Intel, but that probably would not give us the order of magnitude improvement we need.
+
+So...did you know that in all likelihood, 
 
 -------------------------
 
