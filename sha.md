@@ -26,7 +26,7 @@ $ du -h ./NetBSD-9.4-amd64.iso
 485M	./NetBSD-9.4-amd64.iso
 ```
 
-But when I build my code in debug mode (no optimizations) with Adress Sanitizer, to detect various issues early, startup takes **20 to 30 seconds!** That's unbearable, especially when working in the debugger and inspecting some code that runs after the startup. We'd like to finish this verification under 1 second ideally. And making it fast is important, because until it finishes, we do not know which pieces we need to download.
+But when I build my code in debug mode (no optimizations) with Adress Sanitizer, to detect various issues early, startup takes **20 to 30 seconds** (roughly ~ **18 KiB/s**)! That's unbearable, especially when working in the debugger and inspecting some code that runs after the startup. We'd like to finish this verification under 1 second ideally. And making it fast is important, because until it finishes, we do not know which pieces we need to download.
 
 Let's see how we can speed it up.
 
@@ -427,7 +427,7 @@ Benchmark 1: ./a.out ./NetBSD-9.4-amd64.iso ~/Downloads/NetBSD-9.4-amd64.iso.tor
   Range (min … max):   25.366 s … 27.780 s    10 runs
 ```
 
-This is consistent with our torrent program.
+This is consistent with our real-life torrent program.
 
 I experimented with doing a `read` syscall for each piece (that's what `sha1sum` does) versus using `mmap`, and there was no difference; additionally the system time is nothing compared to user time, so I/O is not the limiting factor - SHA1 computation is, as confirmed by the CPU profile.
 
@@ -439,7 +439,7 @@ So what can we do about it?
 - We can compute the hash of each piece in parallel for example in a thread pool, since each piece is independent. That works and that's what [libtorrent did/does](https://blog.libtorrent.org/2011/11/multi-threaded-piece-hashing/), but that assumes that the target computer has cores to spare, and it creates some complexity:
   + We need to implement a thread pool (spawning a new thread for each piece will not perform well) and pick a reasonable thread pool size given the number of cores, in a cross-platform way
   + We need a M:N scheduling logic to compute the hash of M pieces on N threads. It could be a work-stealing queue where each thread picks the next item when its finished with its piece, or we read the whole file in memory and split the data in equal parts for each thread to plow through (but beware that the data for each thread must be aligned with the piece size!)
-  + We would have high contention: in the real program, we update a bitfield to know which piece is valid or not, and every thread would contend on this (perhaps more so with the work-stealing queue than with the 'split in equal parts' approach).
+  + We would have high contention: in the real program, right after we checked the actual hash against the expected hash, we update a bitfield to remember which piece is valid or not. Every thread would contend on this (probably more so with the work-stealing approach than with the 'split in equal parts' approach where we could avoid locking and contention entirely).
 - We can implement SHA1 with SIMD. That way, it's much faster regardless of the build level. Essentially, we do not rely on the compiler auto-vectorization that only occurs at higher optimization levels, we do it directly. It has the nice advantage that we have guaranteed performance even when using a different compiler, or an older compiler that cannot do auto-vectorization properly, or if a new compiler version comes along and auto-vectorization broke for this code. Since it uses lots of heuristics, this may happen.
 
 
@@ -845,19 +845,19 @@ Benchmark 1: ./a.out ./NetBSD-9.4-amd64.iso ~/Downloads/NetBSD-9.4-amd64.iso.tor
   Range (min … max):    7.784 s …  8.684 s    10 runs
 ```
 
-That's better but still not great. We could apply the tweaks suggested by Intel, but that probably would not give us the order of magnitude improvement we need. They cite x1.2 to x1.5 improvements. We need more.
+That's better but still not great. We could apply the tweaks suggested by Intel, but that probably would not give us the order of magnitude improvement we need. They cite x1.2 to x1.5 improvements in their article. We need more.
 
-By the way... did you know that in all likelihood, your CPU has dedicated silicon to accelerate SHA computations? Let's use that! We paid for it, we get to use it!
+Speaking of Intel... did you know that in all likelihood, your CPU has dedicated silicon to accelerate SHA computations? Let's use that! We paid for it, we get to use it!
 
 ## Intel SHA extension
 
 Despite the 'Intel' name, Intel as well as AMD CPUs have been shipping with this [extension](https://en.wikipedia.org/wiki/Intel_SHA_extensions), since around 2017. It adds a few SIMD instructions dedicated to compute SHA1 (and SHA256, and other variants). Note that ARM also has an equivalent (albeit incompatible, of course) extension so the same can be done there. 
 
-*There is an irony here, because 2017 is the year where the first SHA1 public collision was published, which incited many developers to move away from SHA1...*
+*There is an irony here, because 2017 is also the year where the first SHA1 public collision was published, which incited many developers to move away from SHA1...*
 
-The advantage is that the structure of the code can remain the same: we still are using 128 bits SIMD registers, still computing SHA chunks of 64 bytes at a time for SHA. It's just that a few operations get faster and the code is generally shorter and clearer.
+The advantage is that the structure of the code can remain the same: we still are using 128 bits SIMD registers, still computing SHA chunks of 64 bytes at a time. It's just that a few operations get faster and the code is generally shorter and clearer.
 
-The implementation is a pure work of art, and comes from this [Github repository](https://github.com/noloader/SHA-Intrinsics/blob/master/sha1-x86.c). I have commented lots of it.
+The implementation is a pure work of art, and comes from this [Github repository](https://github.com/noloader/SHA-Intrinsics/blob/master/sha1-x86.c). I have commented lots of it for clarity.
 
 ### Explanations
 
@@ -1158,7 +1158,7 @@ Now that's what I'm talking about. Around a 10x speed-up compared to the basic S
 What about a release build (without Address Sanitizer), for comparison?
 
 
-This is SIMD-less version with `-O2 -march=native`, benefiting from some auto-vectorization:
+This is the SIMD-less version with `-O2 -march=native`, benefiting from some auto-vectorization:
 
 ```sh
 $ hyperfine --warmup 3 './a.out ./NetBSD-9.4-amd64.iso ~/Downloads/NetBSD-9.4-amd64.iso.torrent'
@@ -1167,7 +1167,7 @@ Benchmark 1: ./a.out ./NetBSD-9.4-amd64.iso ~/Downloads/NetBSD-9.4-amd64.iso.tor
   Range (min … max):   598.7 ms … 669.1 ms    10 runs
 ```
 
-That's **~ 802 Mib/s**.
+That's ~ **802 Mib/s**.
 
 And this is the code using the SHA extension, again with `-O2 -march=native`:
 
@@ -1178,17 +1178,19 @@ Benchmark 1: ./a.out ./NetBSD-9.4-amd64.iso ~/Downloads/NetBSD-9.4-amd64.iso.tor
   Range (min … max):   276.1 ms … 294.3 ms    10 runs
 ```
 
-That's **~ 1.8 Gib/s**.
+That's ~ **1.8 Gib/s**.
 
 Unsurprisingly, when inspecting the generated assembly code for the SIMD-less version, the auto-vectorization is *very* limited and does not use the SHA extension (compilers are smart, but not *that* smart).
 
-As such, it's still very impressive that it reaches such a high performance. My guess is that the compiler does a good job at analyzing data dependencies and reordering statements to maximize utilization. Also, SHA1 does a lot of bit rotation, and the compiler makes heavy use of the `ror` and `shr` instructions to do just that instead of doing multiple naive bit operations in the unoptimized code. 
+As such, it's still very impressive that it reaches such a high performance. My guess is that the compiler does a good job at analyzing data dependencies and reordering statements to maximize utilization. Also, SHA1 does a lot of bit rotation, and the compiler makes heavy use of the `ror` and `shr` instructions to do just that instead of doing multiple naive bit operations like in the unoptimized code. 
 
 The version using the SHA extension performs very well, be it in debug + Address Sanitizer mode, or release mode.
 
 Also, in both versions, as the SHA code got much faster, we start to see on the CPU profile `mmap` show up, as confirmed by the `system time` part becoming a fifth of the whole runtime.
 
-That means that we are starting to be limited by I/O. Which is good!
+That means that we are starting to be limited by I/O. Which is good! 
+
+I tried to give the OS some hints to improve a bit on that front with `madvise(file_download_data, file_download_size, MADV_SEQUENTIAL | MADV_WILLNEED)`, but it did not have any impact on the timings.
 
 ## SHA using OpenSSL
 
@@ -1214,12 +1216,14 @@ I can see really low-level tricks like `prefetcht0` to ask for the prefetcher to
 
 I have not talked about AVX2, AVX512, etc. These could be fun to implement and benchmark. If you are interested in this kind of thing, the OpenSSL project (and the various clones and forks) has a [Perl script](https://github.com/aws/aws-lc/blob/7518c784f4d6a8933345d9192b82ecc19bea4403/crypto/fipsmodule/sha/asm/sha1-x86_64.pl) to generate assembly code to do SHA1 with various variants of SIMD and SHA extension. I think the numbers are pretty dated but it's a goldmine of information.
 
+Oh, and I almost forgot: we can compute SHA1 on the [GPU](https://github.com/cr-marcstevens/sha1_gpu_nearcollisionattacks)!
+
 ## Conclusion
 
-That was a fun deep dive about performance, SIMD, and a deprecated hash algorithm that is still in use in many applications. 
+That was a fun deep dive about performance, SIMD, and a deprecated hash algorithm that is still in use in many applications (e.g. Git). 
 
 What I have learned is that Address Sanitizer really likes SIMD code because it reduces significantly the runtime checks it has to do, and thus the performance impact is greatly reduced.
 
-SIMD code is like a math puzzle, it's weird and fun. I'm happy to do have had my first contact with it.
+SIMD code is like a math puzzle, it's weird and fun. I'm happy that I finally had my first real contact with it.
 
 And it's wild to see different implementations range from 30s to 300 ms (a factor of 100!) to do the same thing. Also, optimizers these days are god damn impressive. 
