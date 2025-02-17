@@ -1194,7 +1194,7 @@ I tried to give the OS some hints to improve a bit on that front with `madvise(f
 
 ## SHA using OpenSSL
 
-The whole point of this article is to do SHA computations from scratch and avoid dependencies. Let's see how OpenSSL (in this case, [aws-lc](https://github.com/aws/aws-lc) but I don't believe they change that part at all) fares out of curiosity. 
+The whole point of this article is to do SHA computations from scratch and avoid dependencies. Let's see how OpenSSL (in this case, [aws-lc](https://github.com/aws/aws-lc) but I don't believe they changed that part at all) fares out of curiosity. 
 
 ```sh
  $ hyperfine --warmup 3 './a.out ./NetBSD-9.4-amd64.iso ~/Downloads/NetBSD-9.4-amd64.iso.torrent'
