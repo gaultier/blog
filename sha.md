@@ -50,13 +50,13 @@ Granted, computing the hash for the whole file should be slightly faster than co
 
 Why is it so slow then? I can see on CPU profiles that the SHA1 function takes all of the startup time:
 
-![CPU Profile of the non SIMD code, debug + Address Sanitizer build](cpu_profile_sha1_sw_debug_asan.svg)
+![CPU Profile of the SIMD-less code, debug + Address Sanitizer build](cpu_profile_sha1_sw_debug_asan.svg)
 
 The SHA1 code is simplistic, it does not use any SIMD or intrisics directly. And that's fine, because when it's compiled with optimizations on, the compiler does a pretty good job at optimizing, and it's really fast, around ~300 ms. But the issue is that this code is working one byte at a time. And Adress Sanitizer, with its nice runtime and bounds checks, makes each memory access **very** expensive. So we basically have just written a worst-case stress-test for Address Sanitizer.
 
-Let's first review the simple non-SIMD C version to understand the baseline.
+Let's first review the simple SIMD-less C version to understand the baseline.
 
-## Standard C
+## Non-SIMD
 
 To isolate the issue, I have created a simple benchmark program. It reads the `.torrent` file, and the dowload file, in my case the `.iso` NetBSD image. Every chunk gets hashed and this gets compared with the expected value (a SHA1 hash, or digest, is 20 bytes long). To simplify, I skip the decoding of the `.torrent` file, and harcode the piece length, as well as where exactly in the file are the expected hashes. The only difficulty is that the last piece might be shorter than the others.
 
@@ -144,11 +144,11 @@ int main(int argc, char *argv[]) {
 ```
 
 
-A few interesting points:
+### Explanation
 
 - SHA works on 64 bytes chunk (and the last chunk is padded if it is too short).
-- The non SIMD SHA implementation operates on one `uint32_t` at a time.
-- SHA expects data in big-endian but nearly all CPU nowadays are little-endian so we need to swap the bytes. It is done here with lots of clever bit tricks, one `uint32_t` at a time.
+- This SIMD-less SHA implementation operates on one `uint32_t` at a time.
+- SHA expects data in big-endian but nearly all CPU nowadays are little-endian so we need to swap the bytes to do SHA computations, and back when storing the intermediate results (the SHA state). It is done here with lots of clever bit tricks, one `uint32_t` at a time.
 - The main loop operating on the 64 bytes chunk is unrolled, which avoids having conditionals in the middle of the loop, which might tank performance due to mispredicated branches. The algorithm lends itself to that really well:
   ```
     for i from 0 to 79
@@ -162,6 +162,8 @@ A few interesting points:
               [..]
   ```
   So it's trivial to unroll. We'll see that every implementation does the unrolling.
+
+### The code
 
 <details>
   <summary>Non-SIMD SHA1</summary>
@@ -410,7 +412,11 @@ void SHA1Final(uint8_t digest[SHA1_DIGEST_LENGTH], SHA1_CTX *context) {
 
 </details>
 
-The `SHA1_xxx` functions are lifted from [OpenBSD](https://github.com/openssh/openssh-portable/blob/9e5bd74a85192c00a842f63d7ab788713b4284c3/openbsd-compat/sha1.c) (there are similar variants, e.g. from [Sqlite](https://sqlite.org/src/file/ext/misc/sha1.c), etc - they are all nearly identical), and when compiled in non-optimized mode with Address Sanitizer, we get this timing:
+The `SHA1_xxx` functions are lifted from [OpenBSD](https://github.com/openssh/openssh-portable/blob/9e5bd74a85192c00a842f63d7ab788713b4284c3/openbsd-compat/sha1.c) (there are similar variants, e.g. from [Sqlite](https://sqlite.org/src/file/ext/misc/sha1.c), etc - they are all nearly identical)
+
+### Results
+
+When compiled in non-optimized mode with Address Sanitizer, we get this timing:
 
 ```sh
 $ hyperfine --warmup 3 './a.out ./NetBSD-9.4-amd64.iso ~/Downloads/NetBSD-9.4-amd64.iso.torrent'
@@ -423,7 +429,7 @@ This is consistent with our torrent program.
 
 I experimented with doing a `read` syscall for each chunk (that's what `sha1sum` does) versus using `mmap`, and there was no difference; additionally the system time is nothing compared to user time, so I/O is not the limiting factor - SHA1 computation is, as confirmed by the CPU profile.
 
----
+### Possible optimizations
 
 So what can we do about it?
 
@@ -439,9 +445,9 @@ So let's do SIMD and learn cool new stuff! The nice thing about it is that we ca
 
 > You can't have multiple cores until you've shown you can use one efficiently.
 
-## SHA1 with SSE
+## SIMD (SSE)
 
-[This](http://arctic.org/~dean/crypto/sha1.html) is an implementation from the early 2000s in the public domain. Yes, SSE, which is the first widespread SIMD instruction set, is from the nineties to early 2000s. More than 25 years ago! There's basically no reason to write non-SIMD code for performance sensitive code for a SIMD-friendly problem - every CPU we care about has SIMD! Well, we have two write separate implementations for x64 and ARM, that's the downside. But still! 
+[This](http://arctic.org/~dean/crypto/sha1.html) is an implementation from the early 2000s in the public domain. Yes, SSE, which is the first widespread SIMD instruction set, is from the nineties to early 2000s. More than 25 years ago! There's basically no reason to write SIMD-less code for performance sensitive code for a SIMD-friendly problem - every CPU we care about has SIMD! Well, we have two write separate implementations for x64 and ARM, that's the downside. But still! 
 
 Intel references this implementation on their [website](https://www.intel.com/content/www/us/en/developer/articles/technical/improving-the-performance-of-the-secure-hash-algorithm-1.html). According to Intel, it was fundamental work at the time and influenced them. It's also not the fastest SSE implementation, the very article from Intel is about some performance enhancements they found for this code, but it has the advantage that if you have a processor from 2004 or after, it works, and it's simple.
 
@@ -449,7 +455,7 @@ Intel references this implementation on their [website](https://www.intel.com/co
 
 I really am a SIMD beginner but I found a few interesting nuggets of wisdom here:
 
-- Just like the non SIMD implementation, the loops are unrolled
+- Just like the SIMD-less implementation, the loops are unrolled
 - [[TODO: Check]] Going from big-endian to little-endian was originally done 4 `uint16_t` at a time in this version with the intrisics `_mm_shufflehi_epi16` and `_mm_shufflelo_epi16`. However, the underlying instruction (`PSHUFB`) evolved to do that on 4 `uint32_t` later on with the intrisic `__builtin_ia32_pshufhw`, as Intel mentions on their page:
   > There are a few other improvements worth mentioning. The use of SSSE3 instruction PSHUFB allows efficient conversion between big- and little-endian data formats for rounds 1 to 16, where values of W[i] are read from the message data, 4 values are converted by a single PSHUFB instruction. 
 
@@ -465,15 +471,7 @@ I really am a SIMD beginner but I found a few interesting nuggets of wisdom here
       // I.e.: Transform state to big-endian.
       ABCD = _mm_shuffle_epi32(ABCD, 0x1B);
     ```
-- The unit of work in SSE is 128 bits (or `uint32_t[4]`). Unfortunately, the SHA1 state that we are continuously updating, and from which the final digest is extracted, is **5** uint32_t as seen in the non SIMD version:
-  ```c
-    typedef struct {
-      uint32_t state[5]; // <= This field.
-      uint64_t count;
-      uint8_t buffer[SHA1_BLOCK_LENGTH];
-    } SHA1_CTX;
-  ```
-  So we are in a pickle since it does not fit neatly. In this version it is not really visible but in the next version, we'll see that we have to do one SIMD operation on the first 4 `uint32_t`, named `ABCD`, and another one with the last `uint32_t`, named `E`. So this second operation is a bit wasteful: our 128 bits only contain 1/4 of useful data, and our CPU does computations on a bunch of zeroes which will be thrown away.
+    It's nifty because we can copy the data in and out of SIMD registers, while also doing the endianness conversion, in one operation.
 
 ### The code
 
@@ -836,7 +834,7 @@ static bool is_chunk_valid(uint8_t *chunk, uint64_t chunk_len,
 }
 ```
 
-As it is often the case with SIMD code, we process the data in groups of N (here N=16) bytes at a time, and the few excess bytes (<= 15) at the end use the normal non-SIMD code path.
+As it is often the case with SIMD code, we process the data in groups of N (here N=16) bytes at a time, and the few excess bytes (<= 15) at the end use the normal SIMD-less code path.
 
 ### Results
 
@@ -853,7 +851,7 @@ That's better but still not great. We could apply the tweaks suggested by Intel,
 
 By the way... did you know that in all likelihood, your CPU has dedicated silicon to accelerate SHA computations? Let's use that! We paid for it, we get to use it!
 
-## SHA1 with the Intel SHA extension
+## Intel SHA extension
 
 Despite the 'Intel' name, Intel as well as AMD CPUs have been shipping with this extension, since around 2017. It adds a few SIMD instructions dedicated to compute SHA1 (and SHA256, and other variants). Note that ARM also has an equivalent (albeit incompatible, of course) extension so the same can be done there. 
 
@@ -861,7 +859,42 @@ Despite the 'Intel' name, Intel as well as AMD CPUs have been shipping with this
 
 The advantage is that the structure of the code can remain the same: we still are using 128 bits SIMD registers, still computing chunks of 64 bytes at a time for SHA. It's just that a few operations get faster and the code is generally shorter and clearer.
 
-The implementation is a pure work of art, and comes from this [Github repository](https://github.com/noloader/SHA-Intrinsics/blob/master/sha1-x86.c). I have commented most of it to add explanations.
+The implementation is a pure work of art, and comes from this [Github repository](https://github.com/noloader/SHA-Intrinsics/blob/master/sha1-x86.c). I have commented lots of it.
+
+### Explanations
+
+- The unit of work in SSE is 128 bits (or `uint32_t[4]`). Unfortunately, the SHA1 state that we are continuously updating, and from which the final digest is extracted, is **5** uint32_t as seen in the SIMD-less version:
+  ```c
+    typedef struct {
+      uint32_t state[5]; // <= This field.
+      uint64_t count;
+      uint8_t buffer[SHA1_BLOCK_LENGTH];
+    } SHA1_CTX;
+  ```
+  So we are in a pickle since it does not fit neatly in one SIMD register.  Thus, we have to do one SIMD operation on the first 4 `uint32_t`, named `ABCD`, and another one with the last `uint32_t`, named `E`. So this second operation is a bit wasteful: our 128 bits only contain 1/4 of useful data, and our CPU does computations on a bunch of zeroes which will be thrown away. But there is no other way: SIMD uses a different set of registers, it would be very unefficient to copy data in and out of these all the time.
+- Endianess conversion is done with one SIMD instruction, same as before (so 4 `uint32_t` at a time). 
+  + We need to do convert from little-endian to big-endian when loading the data that we are going to hash, and the intermediate state computed so far
+  + We need to convert from big-endian to little-endian  at the end of processing a 64 byte chunk, to store the computed state back to a plain array of 5 `uint32_t`.
+- The SHA Intel extension provides 4 operations:
+  + `sha1rnds4` to compute the next `ABCD` state
+  + `sha1nexte`: to compute the next `E` state (remember, `E` is alone in its 128 bits register)
+  + `sha1msg1` and `sha1msg2`: they perform the SHA1 computations solely based on the input data
+  Thus we alternate between SHA1 computations with `sha1msg1/sha1msg2`, and state calculations with `sha1rnds4/sha1nexte`, always 4 bytes at a time.
+- What's a 'SHA computation'? It's basically a recombination, or shuffling, of the input. For example, `sha1msg1` in pseudo-code does:
+  ```
+    W0 <- SRC1[127:96] ;
+    W1 <- SRC1[95:64] ;
+    W2 <- SRC1[63: 32] ;
+    W3 <- SRC1[31: 0] ;
+    W4 <- SRC2[127:96] ;
+    W5 <- SRC2[95:64] ;
+    DEST[127:96] <- W2 XOR W0;
+    DEST[95:64] <- W3 XOR W1;
+    DEST[63:32] <- W4 XOR W2;
+    DEST[31:0] <- W5 XOR W3;
+  ```
+  The first 16 rounds, we do that on the input data (i.e. the download file). But for the remaining rounds (SHA1 does 80 rounds), the input is computations from previous rounds.
+  `sha1msg2` does slightly different computations but still very similar.
 
 ### The code
 
@@ -1079,6 +1112,7 @@ static void sha1_sha_ext(uint32_t state[5], const uint8_t data[],
   // Convert back to little-endian.
   ABCD = _mm_shuffle_epi32(ABCD, 0x1B);
   _mm_storeu_si128((__m128i *)(void *)state, ABCD);
+  // Convert back to little-endian.
   state[4] = (uint32_t)_mm_extract_epi32(E0, 3);
 }
 
@@ -1127,7 +1161,7 @@ Now that's what I'm talking about. Around a 10x speed-up compared to the basic S
 What about a release build (without Address Sanitizer), for comparison?
 
 
-This is non SIMD version with `-O2 -march=native`, using auto-vectorization:
+This is SIMD-less version with `-O2 -march=native`, using auto-vectorization:
 
 ```sh
 $ hyperfine --warmup 3 './a.out ./NetBSD-9.4-amd64.iso ~/Downloads/NetBSD-9.4-amd64.iso.torrent'
@@ -1145,7 +1179,7 @@ Benchmark 1: ./a.out ./NetBSD-9.4-amd64.iso ~/Downloads/NetBSD-9.4-amd64.iso.tor
   Range (min … max):   276.1 ms … 294.3 ms    10 runs
 ```
 
-Unsurprisingly, when inspecting the generated assembly code for the non SIMD version, the auto-vectorization is *very* limited and does not use the SHA extension (compilers are smart, but not *that* smart).
+Unsurprisingly, when inspecting the generated assembly code for the SIMD-less version, the auto-vectorization is *very* limited and does not use the SHA extension (compilers are smart, but not *that* smart).
 
 As such, it's still very impressive that it reaches such a high performance. My guess is that the compiler does a good job at analyzing data dependencies and reordering statements to maximize utilization.
 
