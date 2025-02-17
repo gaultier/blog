@@ -875,6 +875,7 @@ The implementation is a pure work of art, and comes from this [Github repository
   + `sha1rnds4` to compute the next `ABCD` state
   + `sha1nexte`: to compute the next `E` state (remember, `E` is alone in its 128 bits register)
   + `sha1msg1` and `sha1msg2`: they perform the SHA1 computations solely based on the input data
+
   Thus we alternate between SHA1 computations with `sha1msg1/sha1msg2`, and state calculations with `sha1rnds4/sha1nexte`, always 4 bytes at a time.
 - What's a 'SHA computation'? It's basically a recombination, or shuffling, of the input. For example, `sha1msg1` in pseudo-code does:
   ```
@@ -889,7 +890,7 @@ The implementation is a pure work of art, and comes from this [Github repository
     DEST[63:32] <- W4 XOR W2;
     DEST[31:0] <- W5 XOR W3;
   ```
-  The first 16 rounds, we do that on the input data (i.e. the download file). But for the remaining rounds (SHA1 does 80 rounds), the input is computations from previous rounds.
+  The first 16 rounds, we do that on the input data (i.e. the download file). But for the remaining rounds (SHA1 does 80 rounds for a 64 byte chunk), the input is computations from previous rounds.
   `sha1msg2` does slightly different computations but still very similar.
 
 ### The code
@@ -1157,7 +1158,7 @@ Now that's what I'm talking about. Around a 10x speed-up compared to the basic S
 What about a release build (without Address Sanitizer), for comparison?
 
 
-This is SIMD-less version with `-O2 -march=native`, using auto-vectorization:
+This is SIMD-less version with `-O2 -march=native`, benefitting from some auto-vectorization:
 
 ```sh
 $ hyperfine --warmup 3 './a.out ./NetBSD-9.4-amd64.iso ~/Downloads/NetBSD-9.4-amd64.iso.torrent'
@@ -1165,6 +1166,8 @@ Benchmark 1: ./a.out ./NetBSD-9.4-amd64.iso ~/Downloads/NetBSD-9.4-amd64.iso.tor
   Time (mean ± σ):     617.8 ms ±  20.9 ms    [User: 573.6 ms, System: 42.2 ms]
   Range (min … max):   598.7 ms … 669.1 ms    10 runs
 ```
+
+Thats **~ 802 Mib/s**.
 
 And this is the code using the SHA extension, again with `-O2 -march=native`:
 
@@ -1175,15 +1178,21 @@ Benchmark 1: ./a.out ./NetBSD-9.4-amd64.iso ~/Downloads/NetBSD-9.4-amd64.iso.tor
   Range (min … max):   276.1 ms … 294.3 ms    10 runs
 ```
 
+That's **~ 1.8 Gib/s**.
+
 Unsurprisingly, when inspecting the generated assembly code for the SIMD-less version, the auto-vectorization is *very* limited and does not use the SHA extension (compilers are smart, but not *that* smart).
 
-As such, it's still very impressive that it reaches such a high performance. My guess is that the compiler does a good job at analyzing data dependencies and reordering statements to maximize utilization.
+As such, it's still very impressive that it reaches such a high performance. My guess is that the compiler does a good job at analyzing data dependencies and reordering statements to maximize utilization. Also, SHA1 does a lot of bit rotation, and the compiler makes heavy use of the `ror` and `shr` instructions to do just that instead of doing multiple naive bit operations in the un-optimized code. 
 
 The version using the SHA extension performs very well, be it in debug + Address Sanitizer mode, or release mode.
 
+Also, in both versions, as the SHA code gots much faster, we start to see on the CPU profile `mmap` show up, as confirmed by the `system time` part becoming a fifth of the whole runtime.
+
+That means that we are starting to be limited by I/O. Which is good!
+
 ## SHA using OpenSSL
 
-The whole point of this article is to do SHA computations from scratch and avoid dependencies. Let's see how OpenSSL fares out of curiosity. It is the stock`libcrypto` (OpenSSL ships two libraries, `libcrypto` and `libssl`) found on my system, assumably compiled in release mode:
+The whole point of this article is to do SHA computations from scratch and avoid dependencies. Let's see how OpenSSL (in this case, [aws-lc](https://github.com/aws/aws-lc) but I don't believe they change that part at all) fares out of curiosity. 
 
 ```sh
  $ hyperfine --warmup 3 './a.out ./NetBSD-9.4-amd64.iso ~/Downloads/NetBSD-9.4-amd64.iso.torrent'
@@ -1194,6 +1203,23 @@ Benchmark 1: ./a.out ./NetBSD-9.4-amd64.iso ~/Downloads/NetBSD-9.4-amd64.iso.tor
 
 So, the performance is essentially identical to our version. Pretty good.
 
+OpenSSL picks at runtime the best code path based on what features the CPU supports. Interestingly on my system, even when compiled with `-march=native`, it does not decide to use the SHA extension, and instead goes for hand-optimized SIMD. That's mind-blowing that this SIMD code performs as well that dedicated silicon, including the cycles spent on the runtime check. So props to the developers!
+
+
+I can see really low-level tricks like `prefetcht0` to ask for the prefetcher to cache some data ahead of time to reduce latency.
+
+
+
+## Additional improvements
+
+I have not talked about AVX2, AVX512, etc. These could be fun to implement and benchmark. If you are interested in this kind of thing, the OpenSSL project (and the various clones and forks) has a [Perl script](https://github.com/aws/aws-lc/blob/7518c784f4d6a8933345d9192b82ecc19bea4403/crypto/fipsmodule/sha/asm/sha1-x86_64.pl) to generate assembly code to do SHA1 with various variants of SIMD and SHA extension. I think the numbers are pretty dated but it's a goldmine of information.
+
 ## Conclusion
 
-[[TODO]]
+That was a fun deep dive about performance, SIMD, and a deprecated hash algorithm that is still in use in many applications. 
+
+What I have learned is that Address Sanitizer really likes SIMD code because it reduces significantly the runtime checks it has to do, and thus the performance impact is greatly reduced.
+
+SIMD code is like a math puzzle, it's weird and fun. I'm happy to do have had my first contact with it.
+
+And it's wild to see different implementations range from 30s to 300 ms (a factor of 100!) to do the same thing. Also, optimizers these days are god damn impressive. 

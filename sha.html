@@ -187,6 +187,10 @@
 		</li>
 
 <li>
+	<a href="#additional-improvements">Additional improvements</a>
+		</li>
+
+<li>
 	<a href="#conclusion">Conclusion</a>
 		</li>
 </ul>
@@ -1019,24 +1023,30 @@ Benchmark 1: ./a.out ./NetBSD-9.4-amd64.iso ~/Downloads/NetBSD-9.4-amd64.iso.tor
 	<a class="hash-anchor" href="#explanations" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h3>
 <ul>
-<li>The unit of work here is still 128 bits (or <code>uint32_t[4]</code>). Unfortunately, the SHA1 state that we are continuously updating, and from which the final digest is extracted, is <strong>5</strong> <code>uint32_t</code> as seen in the SIMD-less version:
+<li>
+<p>The unit of work here is still 128 bits (or <code>uint32_t[4]</code>). Unfortunately, the SHA1 state that we are continuously updating, and from which the final digest is extracted, is <strong>5</strong> <code>uint32_t</code> as seen in the SIMD-less version:</p>
 <pre><code class="language-c">  typedef struct {
     uint32_t state[5]; // &lt;= This field.
     uint64_t count;
     uint8_t buffer[SHA1_BLOCK_LENGTH];
   } SHA1_CTX;
 </code></pre>
-So we are in a pickle since it does not fit neatly in one SIMD register.  Thus, we have to do one SIMD operation on the first 4 <code>uint32_t</code>, named <code>ABCD</code>, and another one with the last <code>uint32_t</code>, named <code>E</code>. So this second operation is a bit wasteful: our 128 bits only contain 1/4 of useful data, and our CPU does computations on a bunch of zeroes which will be thrown away. But there is no other way: SIMD uses a different set of registers from the standard ones. We want to stay in SIMD land as much as possible, that's where the performance is.</li>
-<li>Endianness conversion is done with one SIMD instruction, same as before (so 4 <code>uint32_t</code> at a time).</li>
-<li>The SHA Intel extension provides 4 operations:
+<p>So we are in a pickle since it does not fit neatly in one SIMD register.  Thus, we have to do one SIMD operation on the first 4 <code>uint32_t</code>, named <code>ABCD</code>, and another one with the last <code>uint32_t</code>, named <code>E</code>. So this second operation is a bit wasteful: our 128 bits only contain 1/4 of useful data, and our CPU does computations on a bunch of zeroes which will be thrown away. But there is no other way: SIMD uses a different set of registers from the standard ones. We want to stay in SIMD land as much as possible, that's where the performance is.</p>
+</li>
+<li>
+<p>Endianness conversion is done with one SIMD instruction, same as before (so 4 <code>uint32_t</code> at a time).</p>
+</li>
+<li>
+<p>The SHA Intel extension provides 4 operations:</p>
 <ul>
 <li><code>sha1rnds4</code> to compute the next <code>ABCD</code> state</li>
 <li><code>sha1nexte</code>: to compute the next <code>E</code> state (remember, <code>E</code> is alone in its 128 bits register)</li>
-<li><code>sha1msg1</code> and <code>sha1msg2</code>: they perform the SHA1 computations solely based on the input data
-Thus we alternate between SHA1 computations with <code>sha1msg1/sha1msg2</code>, and state calculations with <code>sha1rnds4/sha1nexte</code>, always 4 bytes at a time.</li>
+<li><code>sha1msg1</code> and <code>sha1msg2</code>: they perform the SHA1 computations solely based on the input data</li>
 </ul>
+<p>Thus we alternate between SHA1 computations with <code>sha1msg1/sha1msg2</code>, and state calculations with <code>sha1rnds4/sha1nexte</code>, always 4 bytes at a time.</p>
 </li>
-<li>What's a 'SHA computation'? It's basically a recombination, or shuffling, of the input. For example, <code>sha1msg1</code> in pseudo-code does:
+<li>
+<p>What's a 'SHA computation'? It's basically a recombination, or shuffling, of the input. For example, <code>sha1msg1</code> in pseudo-code does:</p>
 <pre><code>  W0 &lt;- SRC1[127:96] ;
   W1 &lt;- SRC1[95:64] ;
   W2 &lt;- SRC1[63: 32] ;
@@ -1048,8 +1058,9 @@ Thus we alternate between SHA1 computations with <code>sha1msg1/sha1msg2</code>,
   DEST[63:32] &lt;- W4 XOR W2;
   DEST[31:0] &lt;- W5 XOR W3;
 </code></pre>
-The first 16 rounds, we do that on the input data (i.e. the download file). But for the remaining rounds (SHA1 does 80 rounds), the input is computations from previous rounds.
-<code>sha1msg2</code> does slightly different computations but still very similar.</li>
+<p>The first 16 rounds, we do that on the input data (i.e. the download file). But for the remaining rounds (SHA1 does 80 rounds for a 64 byte chunk), the input is computations from previous rounds.
+<code>sha1msg2</code> does slightly different computations but still very similar.</p>
+</li>
 </ul>
 <h3 id="the-code">
 	<a class="title" href="#the-code">The code</a>
@@ -1306,37 +1317,51 @@ Benchmark 1: ./a.out ./NetBSD-9.4-amd64.iso ~/Downloads/NetBSD-9.4-amd64.iso.tor
 </code></pre>
 <p>Now that's what I'm talking about. Around a 10x speed-up compared to the basic SSE implementation! And now we are running under a second. Also the variability is much reduced which is nice.</p>
 <p>What about a release build (without Address Sanitizer), for comparison?</p>
-<p>This is SIMD-less version with <code>-O2 -march=native</code>, using auto-vectorization:</p>
+<p>This is SIMD-less version with <code>-O2 -march=native</code>, benefitting from some auto-vectorization:</p>
 <pre><code class="language-sh">$ hyperfine --warmup 3 './a.out ./NetBSD-9.4-amd64.iso ~/Downloads/NetBSD-9.4-amd64.iso.torrent'
 Benchmark 1: ./a.out ./NetBSD-9.4-amd64.iso ~/Downloads/NetBSD-9.4-amd64.iso.torrent
   Time (mean ± σ):     617.8 ms ±  20.9 ms    [User: 573.6 ms, System: 42.2 ms]
   Range (min … max):   598.7 ms … 669.1 ms    10 runs
 </code></pre>
+<p>Thats **~ 802 Mib/s**.</p>
 <p>And this is the code using the SHA extension, again with <code>-O2 -march=native</code>:</p>
 <pre><code class="language-sh">$ hyperfine --warmup 3 './a.out ./NetBSD-9.4-amd64.iso ~/Downloads/NetBSD-9.4-amd64.iso.torrent'
 Benchmark 1: ./a.out ./NetBSD-9.4-amd64.iso ~/Downloads/NetBSD-9.4-amd64.iso.torrent
   Time (mean ± σ):     281.2 ms ±   5.4 ms    [User: 240.6 ms, System: 39.6 ms]
   Range (min … max):   276.1 ms … 294.3 ms    10 runs
 </code></pre>
+<p>That's **~ 1.8 Gib/s**.</p>
 <p>Unsurprisingly, when inspecting the generated assembly code for the SIMD-less version, the auto-vectorization is <em>very</em> limited and does not use the SHA extension (compilers are smart, but not <em>that</em> smart).</p>
-<p>As such, it's still very impressive that it reaches such a high performance. My guess is that the compiler does a good job at analyzing data dependencies and reordering statements to maximize utilization.</p>
+<p>As such, it's still very impressive that it reaches such a high performance. My guess is that the compiler does a good job at analyzing data dependencies and reordering statements to maximize utilization. Also, SHA1 does a lot of bit rotation, and the compiler makes heavy use of the <code>ror</code> and <code>shr</code> instructions to do just that instead of doing multiple naive bit operations in the un-optimized code.</p>
 <p>The version using the SHA extension performs very well, be it in debug + Address Sanitizer mode, or release mode.</p>
+<p>Also, in both versions, as the SHA code gots much faster, we start to see on the CPU profile <code>mmap</code> show up, as confirmed by the <code>system time</code> part becoming a fifth of the whole runtime.</p>
+<p>That means that we are starting to be limited by I/O. Which is good!</p>
 <h2 id="sha-using-openssl">
 	<a class="title" href="#sha-using-openssl">SHA using OpenSSL</a>
 	<a class="hash-anchor" href="#sha-using-openssl" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
-<p>The whole point of this article is to do SHA computations from scratch and avoid dependencies. Let's see how OpenSSL fares out of curiosity. It is the stock<code>libcrypto</code> (OpenSSL ships two libraries, <code>libcrypto</code> and <code>libssl</code>) found on my system, assumably compiled in release mode:</p>
+<p>The whole point of this article is to do SHA computations from scratch and avoid dependencies. Let's see how OpenSSL (in this case, <a href="https://github.com/aws/aws-lc">aws-lc</a> but I don't believe they change that part at all) fares out of curiosity.</p>
 <pre><code class="language-sh"> $ hyperfine --warmup 3 './a.out ./NetBSD-9.4-amd64.iso ~/Downloads/NetBSD-9.4-amd64.iso.torrent'
 Benchmark 1: ./a.out ./NetBSD-9.4-amd64.iso ~/Downloads/NetBSD-9.4-amd64.iso.torrent
   Time (mean ± σ):     281.5 ms ±   3.9 ms    [User: 245.7 ms, System: 35.1 ms]
   Range (min … max):   276.3 ms … 288.9 ms    10 runs
 </code></pre>
 <p>So, the performance is essentially identical to our version. Pretty good.</p>
+<p>OpenSSL picks at runtime the best code path based on what features the CPU supports. Interestingly on my system, even when compiled with <code>-march=native</code>, it does not decide to use the SHA extension, and instead goes for hand-optimized SIMD. That's mind-blowing that this SIMD code performs as well that dedicated silicon, including the cycles spent on the runtime check. So props to the developers!</p>
+<p>I can see really low-level tricks like <code>prefetcht0</code> to ask for the prefetcher to cache some data ahead of time to reduce latency.</p>
+<h2 id="additional-improvements">
+	<a class="title" href="#additional-improvements">Additional improvements</a>
+	<a class="hash-anchor" href="#additional-improvements" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+</h2>
+<p>I have not talked about AVX2, AVX512, etc. These could be fun to implement and benchmark. If you are interested in this kind of thing, the OpenSSL project (and the various clones and forks) has a <a href="https://github.com/aws/aws-lc/blob/7518c784f4d6a8933345d9192b82ecc19bea4403/crypto/fipsmodule/sha/asm/sha1-x86_64.pl">Perl script</a> to generate assembly code to do SHA1 with various variants of SIMD and SHA extension. I think the numbers are pretty dated but it's a goldmine of information.</p>
 <h2 id="conclusion">
 	<a class="title" href="#conclusion">Conclusion</a>
 	<a class="hash-anchor" href="#conclusion" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
-<p>[[TODO]]</p>
+<p>That was a fun deep dive about performance, SIMD, and a deprecated hash algorithm that is still in use in many applications.</p>
+<p>What I have learned is that Address Sanitizer really likes SIMD code because it reduces significantly the runtime checks it has to do, and thus the performance impact is greatly reduced.</p>
+<p>SIMD code is like a math puzzle, it's weird and fun. I'm happy to do have had my first contact with it.</p>
+<p>And it's wild to see different implementations range from 30s to 300 ms (a factor of 100!) to do the same thing. Also, optimizers these days are god damn impressive.</p>
 <p><a href="/blog"> ⏴ Back to all articles</a></p>
 
 <blockquote id="donate">
