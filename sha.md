@@ -218,11 +218,11 @@ Benchmark 1: ./a.out ./NetBSD-9.4-amd64.iso ~/Downloads/NetBSD-9.4-amd64.iso.tor
   Range (min … max):   276.1 ms … 294.3 ms    10 runs
 ```
 
-Unsurprisingly, when inspecting the generated assembly code for the non SIMD version, the auto-vectorization is *very* limited and does not use the SHA extension.
+Unsurprisingly, when inspecting the generated assembly code for the non SIMD version, the auto-vectorization is *very* limited and does not use the SHA extension (compilers are smart, but not *that* smart).
 
-As such, it's very impressive that it reaches such a high performance. My guess is that the compiler does a good job at analyzing data dependencies and reordering statements to maximize throughput.
+As such, it's still very impressive that it reaches such a high performance. My guess is that the compiler does a good job at analyzing data dependencies and reordering statements to maximize utilization.
 
-The version using the SHA extension performs very well be it in debug + Asan mode, or release mode.
+The version using the SHA extension performs very well, be it in debug + Asan mode, or release mode.
 
 ## SHA using OpenSSL
 
