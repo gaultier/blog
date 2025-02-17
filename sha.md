@@ -855,11 +855,13 @@ By the way... did you know that in all likelihood, your CPU has dedicated silico
 
 ## SHA1 with the Intel SHA extension
 
-Despite the 'Intel' name, Intel as well as AMD CPUs have been shipping with this extension, since around 2017. It adds a few SIMD instructions dedicated to compute SHA1 (and SHA256, and other variants). Note that ARM also has an equivalent (albeit incompatible, of course) extension so the same can be done there.
+Despite the 'Intel' name, Intel as well as AMD CPUs have been shipping with this extension, since around 2017. It adds a few SIMD instructions dedicated to compute SHA1 (and SHA256, and other variants). Note that ARM also has an equivalent (albeit incompatible, of course) extension so the same can be done there. 
 
-The advantage is that the structure of the code can remain the same: we still are using 128 bits SIMD registers, still computing chunks of 64 bytes at a time for SHA. It's just that a few operations get faster.
+*There is an irony here, because 2017 is the year where the first SHA1 public collision was published, which pushed many developers to move away from SHA1...*
 
-The implementation comes from this [Github repository](https://github.com/noloader/SHA-Intrinsics/blob/master/sha1-x86.c). I have commented most of it to add explanations.
+The advantage is that the structure of the code can remain the same: we still are using 128 bits SIMD registers, still computing chunks of 64 bytes at a time for SHA. It's just that a few operations get faster and the code is generally shorter and clearer.
+
+The implementation is a pure work of art, and comes from this [Github repository](https://github.com/noloader/SHA-Intrinsics/blob/master/sha1-x86.c). I have commented most of it to add explanations.
 
 ### The code
 
@@ -881,13 +883,7 @@ static void sha1_sha_ext(uint32_t state[5], const uint8_t data[],
   ABCD = _mm_loadu_si128((const __m128i *)(void *)state);
   E0 = _mm_set_epi32((int)state[4], 0, 0, 0);
 
-  // `0x1b` == `0b0001_1011`.
-  // Will result in:
-  // [31:0] == [127:96] (due to bits [1:0] being `11`).
-  // [63:32] == [95:64] (due to bits [3:2] being `10`).
-  // [95:64] == [63:32] (due to bits [5:4] being `01`).
-  // [127:96] == [31:0] (due to bits [7:6] being `00`).
-  // I.e.: Transform state to big-endian.
+  // Transform state to big-endian.
   ABCD = _mm_shuffle_epi32(ABCD, 0x1B);
 
   while (length >= 64) {
@@ -899,14 +895,7 @@ static void sha1_sha_ext(uint32_t state[5], const uint8_t data[],
     // Load first 16 bytes of data in `MSG0`.
     MSG0 = _mm_loadu_si128((const __m128i *)(void *)(data + 0));
 
-    // for each byte in src:
-    //    Bit 7: \n
-    //    1: Clear the corresponding byte in the destination. \n
-    //    0: Copy the selected source byte to the corresponding byte in the
-    //    destination. \n
-    //    Bits [6:4] Reserved.  \n
-    //    Bits [3:0] select the source byte to be copied.
-    //    Since MASK is `0..=15`, we copy MSG0 and transorm it to big endian in one operation.
+  // Convert MSG0 to big-endian.
     MSG0 = _mm_shuffle_epi8(MSG0, MASK);
     E0 = _mm_add_epi32(E0, MSG0);
     E1 = ABCD;
