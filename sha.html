@@ -169,7 +169,7 @@
 		</li>
 
 <li>
-	<a href="#debug-plus-asan-sse-no-sha-extension">Debug + Asan, SSE (no SHA extension)</a>
+	<a href="#debug-plus-address-sanitizer-sse-no-sha-extension">Debug + Address Sanitizer, SSE (no SHA extension)</a>
 		</li>
 </ul>
 
@@ -195,7 +195,7 @@
 </h2>
 <p>It's important to note that to reduce third-party dependencies, the SHA1 code is vendored in the source tree and comes from OpenBSD. It is plain C code, not using SIMD or such. It's good because I can read it and understand it.</p>
 <p>I untertained depending on OpenSSL or such, but it feels wasteful to pull in such a hugh amount of code just for SHA1. And building OpenSSL ourselves, to tweak the build flags, means depending on Perl (and Go, in the case of aws-lc). And now I need to pick between OpenSSL, LibreSSL, BoringSSL, aws-lc, etc. And upgrade it when the weekly security vulnerability gets announced. I don't want any of it, if I can help it. Also I want to understand from top to bottom what code I depend on.</p>
-<p>For a while, due to this slowness, I simply gave up using a debug build, instead I use minimal optimizations (<code>-O1</code>) with Adress Sanitizer (a.k.a Asan). It was much faster, but lots of functions and variables got optimized away, and the debugging experience was thus subpar. I needed to make my debug + Asan build viable.  The debug build without Asan is much faster: the startup 'only' takes around 2 seconds. But Asan is very valuable, I want to be able to use it! And 2 seconds is still too long. Reducing the iteration cycle is often the deciding factor for software quality in my experience.</p>
+<p>For a while, due to this slowness, I simply gave up using a debug build, instead I use minimal optimizations (<code>-O1</code>) with Adress Sanitizer (a.k.a Address Sanitizer). It was much faster, but lots of functions and variables got optimized away, and the debugging experience was thus subpar. I needed to make my debug + Address Sanitizer build viable.  The debug build without Address Sanitizer is much faster: the startup 'only' takes around 2 seconds. But Address Sanitizer is very valuable, I want to be able to use it! And 2 seconds is still too long. Reducing the iteration cycle is often the deciding factor for software quality in my experience.</p>
 <p>What's vexing is that from first principles, we know it could/should be much, much faster:</p>
 <pre><code class="language-sh">$ hyperfine --shell=none --warmup 3 'sha1sum ./NetBSD-9.4-amd64.iso'
 Benchmark 1: sha1sum ./NetBSD-9.4-amd64.iso
@@ -204,9 +204,9 @@ Benchmark 1: sha1sum ./NetBSD-9.4-amd64.iso
 </code></pre>
 <p>Granted, computing the hash for the whole file should be slightly faster than computing the hash for N chunks, because the final step for SHA1 is about padding the data to make it 64 bytes aligned and extracing the digest value from the state computed so far with some bit operations. But still, it's a marginal difference.</p>
 <p>Why is it so slow then? I can see on CPU profiles that the SHA1 function takes all of the startup time:</p>
-<p><img src="cpu_profile_sha1_sw_debug_asan.svg" alt="CPU Profile of the non SIMD code, debug + Asan build" /></p>
-<p>The SHA1 code is simplistic, it does not use any SIMD or intrisics directly. And that's fine, because when it's compiled with optimizations on, the compiler does a pretty good job at optimizing and auto-vectorizing the code, and it's really fast, around ~300 ms. But the issue is that this code is working one byte at a time. And Adress Sanitizer, with its nice runtime and bounds checks, makes each memory access <strong>very</strong> expensive. So we accidentally wrote a stress-test for Asan.</p>
-<p>Let's first review the simple non-SIMD C version.</p>
+<p><img src="cpu_profile_sha1_sw_debug_asan.svg" alt="CPU Profile of the non SIMD code, debug + Address Sanitizer build" /></p>
+<p>The SHA1 code is simplistic, it does not use any SIMD or intrisics directly. And that's fine, because when it's compiled with optimizations on, the compiler does a pretty good job at optimizing, and it's really fast, around ~300 ms. But the issue is that this code is working one byte at a time. And Adress Sanitizer, with its nice runtime and bounds checks, makes each memory access <strong>very</strong> expensive. So we basically have just written a worst-case stress-test for Address Sanitizer.</p>
+<p>Let's first review the simple non-SIMD C version to understand the baseline.</p>
 <h2 id="standard-c">
 	<a class="title" href="#standard-c">Standard C</a>
 	<a class="hash-anchor" href="#standard-c" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
@@ -214,7 +214,7 @@ Benchmark 1: sha1sum ./NetBSD-9.4-amd64.iso
 <p>To isolate the issue, I have created a simple benchmark program. It reads the <code>.torrent</code> file, and the dowload file, in my case the <code>.iso</code> NetBSD image. Every chunk gets hashed and this gets compared with the expected value (a SHA1 hash, or digest, is 20 bytes long). To simplify, I skip the decoding of the <code>.torrent</code> file, and harcode where exactly in the file are the expected hashes. The only difficulty is that the last piece might be shorter than the others.</p>
 <pre><code class="language-c">#include &lt;fcntl.h&gt;
 #include &lt;inttypes.h&gt;
-#include &lt;openssl/sha.h&gt;
+#include &quot;sha1_sw.c&quot;
 #include &lt;stdbool.h&gt;
 #include &lt;string.h&gt;
 #include &lt;sys/mman.h&gt;
@@ -295,248 +295,249 @@ int main(int argc, char *argv[]) {
 </code></pre>
 <details>
   <summary>Non-SIMD SHA1</summary>
-```c
+<pre><code class="language-c">// sha1_sw.c
+
 /*	$OpenBSD: sha1.c,v 1.27 2019/06/07 22:56:36 dtucker Exp $	*/
-<p>/*</p>
-<ul>
-<li>SHA-1 in C</li>
-<li>By Steve Reid <a href="mailto:steve@edmweb.com">steve@edmweb.com</a></li>
-<li>100% Public Domain</li>
-<li></li>
-<li>Test Vectors (from FIPS PUB 180-1)</li>
-<li>&quot;abc&quot;</li>
-<li>A9993E36 4706816A BA3E2571 7850C26C 9CD0D89D</li>
-<li>&quot;abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq&quot;</li>
-<li>84983E44 1C3BD26E BAAE4AA1 F95129E5 E54670F1</li>
-<li>A million repetitions of &quot;a&quot;</li>
-<li>34AA973C D4C4DAA4 F61EEB2B DBAD2731 6534016F
-*/</li>
-</ul>
-<p>#include &lt;string.h&gt;
-#include &lt;sys/types.h&gt;</p>
-<p>#define SHA1_BLOCK_LENGTH 64
+
+/*
+ * SHA-1 in C
+ * By Steve Reid &lt;steve@edmweb.com&gt;
+ * 100% Public Domain
+ *
+ * Test Vectors (from FIPS PUB 180-1)
+ * &quot;abc&quot;
+ *   A9993E36 4706816A BA3E2571 7850C26C 9CD0D89D
+ * &quot;abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq&quot;
+ *   84983E44 1C3BD26E BAAE4AA1 F95129E5 E54670F1
+ * A million repetitions of &quot;a&quot;
+ *   34AA973C D4C4DAA4 F61EEB2B DBAD2731 6534016F
+ */
+
+#include &lt;inttypes.h&gt;
+#include &lt;string.h&gt;
+
+#define SHA1_BLOCK_LENGTH 64
 #define SHA1_DIGEST_LENGTH 20
-#define SHA1_DIGEST_STRING_LENGTH (SHA1_DIGEST_LENGTH * 2 + 1)</p>
-<p>typedef struct {
-u_int32_t state[5];
-u_int64_t count;
-u_int8_t buffer[SHA1_BLOCK_LENGTH];
+#define SHA1_DIGEST_STRING_LENGTH (SHA1_DIGEST_LENGTH * 2 + 1)
+
+typedef struct {
+  uint32_t state[5];
+  uint64_t count;
+  uint8_t buffer[SHA1_BLOCK_LENGTH];
 } SHA1_CTX;
-#define rol(value, bits) (((value) &lt;&lt; (bits)) | ((value) &gt;&gt; (32 - (bits))))</p>
-<p>/*</p>
-<ul>
-<li>blk0() and blk() perform the initial expand.</li>
-<li>I got the idea of expanding during the round function from SSLeay
-*/
-#if BYTE_ORDER == LITTLE_ENDIAN
-#define blk0(i)                                                                <br />
-  (block-&gt;l[i] = (rol(block-&gt;l[i], 24) &amp; 0xFF00FF00) |                         <br />
-(rol(block-&gt;l[i], 8) &amp; 0x00FF00FF))
-#else
-#define blk0(i) block-&gt;l[i]
-#endif
-#define blk(i)                                                                 <br />
-  (block-&gt;l[i &amp; 15] = rol(block-&gt;l[(i + 13) &amp; 15] ^ block-&gt;l[(i + 8) &amp; 15] ^   <br />
-block-&gt;l[(i + 2) &amp; 15] ^ block-&gt;l[i &amp; 15],       <br />
-1))</li>
-</ul>
-<p>/*</p>
-<ul>
-<li>(R0+R1), R2, R3, R4 are the different operations (rounds) used in SHA1
-*/
-#define R0(v, w, x, y, z, i)                                                   <br />
-  z += ((w &amp; (x ^ y)) ^ y) + blk0(i) + 0x5A827999 + rol(v, 5);                 <br />
+#define rol(value, bits) (((value) &lt;&lt; (bits)) | ((value) &gt;&gt; (32 - (bits))))
+
+/*
+ * blk0() and blk() perform the initial expand.
+ * I got the idea of expanding during the round function from SSLeay
+ */
+#define blk0(i)                                                                \
+  (block-&gt;l[i] = (rol(block-&gt;l[i], 24) &amp; 0xFF00FF00) |                         \
+                 (rol(block-&gt;l[i], 8) &amp; 0x00FF00FF))
+#define blk(i)                                                                 \
+  (block-&gt;l[i &amp; 15] = rol(block-&gt;l[(i + 13) &amp; 15] ^ block-&gt;l[(i + 8) &amp; 15] ^   \
+                              block-&gt;l[(i + 2) &amp; 15] ^ block-&gt;l[i &amp; 15],       \
+                          1))
+
+/*
+ * (R0+R1), R2, R3, R4 are the different operations (rounds) used in SHA1
+ */
+#define R0(v, w, x, y, z, i)                                                   \
+  z += ((w &amp; (x ^ y)) ^ y) + blk0(i) + 0x5A827999 + rol(v, 5);                 \
   w = rol(w, 30);
-#define R1(v, w, x, y, z, i)                                                   <br />
-  z += ((w &amp; (x ^ y)) ^ y) + blk(i) + 0x5A827999 + rol(v, 5);                  <br />
+#define R1(v, w, x, y, z, i)                                                   \
+  z += ((w &amp; (x ^ y)) ^ y) + blk(i) + 0x5A827999 + rol(v, 5);                  \
   w = rol(w, 30);
-#define R2(v, w, x, y, z, i)                                                   <br />
-  z += (w ^ x ^ y) + blk(i) + 0x6ED9EBA1 + rol(v, 5);                          <br />
+#define R2(v, w, x, y, z, i)                                                   \
+  z += (w ^ x ^ y) + blk(i) + 0x6ED9EBA1 + rol(v, 5);                          \
   w = rol(w, 30);
-#define R3(v, w, x, y, z, i)                                                   <br />
-  z += (((w | x) &amp; y) | (w &amp; x)) + blk(i) + 0x8F1BBCDC + rol(v, 5);            <br />
+#define R3(v, w, x, y, z, i)                                                   \
+  z += (((w | x) &amp; y) | (w &amp; x)) + blk(i) + 0x8F1BBCDC + rol(v, 5);            \
   w = rol(w, 30);
-#define R4(v, w, x, y, z, i)                                                   <br />
-  z += (w ^ x ^ y) + blk(i) + 0xCA62C1D6 + rol(v, 5);                          <br />
-  w = rol(w, 30);</li>
-</ul>
-<p>typedef union {
-u_int8_t c[64];
-u_int32_t l[16];
-} CHAR64LONG16;</p>
-<p>/*</p>
-<ul>
-<li>Hash a single 512-bit block. This is the core of the algorithm.
-*/
-void SHA1Transform(u_int32_t state[5],
-const u_int8_t buffer[SHA1_BLOCK_LENGTH]) {
-u_int32_t a, b, c, d, e;
-u_int8_t workspace[SHA1_BLOCK_LENGTH];
-CHAR64LONG16 *block = (CHAR64LONG16 *)workspace;</li>
-</ul>
-<p>(void)memcpy(block, buffer, SHA1_BLOCK_LENGTH);</p>
-<p>/* Copy context-&gt;state[] to working vars */
-a = state[0];
-b = state[1];
-c = state[2];
-d = state[3];
-e = state[4];</p>
-<p>/* 4 rounds of 20 operations each. Loop unrolled. */
-R0(a, b, c, d, e, 0);
-R0(e, a, b, c, d, 1);
-R0(d, e, a, b, c, 2);
-R0(c, d, e, a, b, 3);
-R0(b, c, d, e, a, 4);
-R0(a, b, c, d, e, 5);
-R0(e, a, b, c, d, 6);
-R0(d, e, a, b, c, 7);
-R0(c, d, e, a, b, 8);
-R0(b, c, d, e, a, 9);
-R0(a, b, c, d, e, 10);
-R0(e, a, b, c, d, 11);
-R0(d, e, a, b, c, 12);
-R0(c, d, e, a, b, 13);
-R0(b, c, d, e, a, 14);
-R0(a, b, c, d, e, 15);
-R1(e, a, b, c, d, 16);
-R1(d, e, a, b, c, 17);
-R1(c, d, e, a, b, 18);
-R1(b, c, d, e, a, 19);
-R2(a, b, c, d, e, 20);
-R2(e, a, b, c, d, 21);
-R2(d, e, a, b, c, 22);
-R2(c, d, e, a, b, 23);
-R2(b, c, d, e, a, 24);
-R2(a, b, c, d, e, 25);
-R2(e, a, b, c, d, 26);
-R2(d, e, a, b, c, 27);
-R2(c, d, e, a, b, 28);
-R2(b, c, d, e, a, 29);
-R2(a, b, c, d, e, 30);
-R2(e, a, b, c, d, 31);
-R2(d, e, a, b, c, 32);
-R2(c, d, e, a, b, 33);
-R2(b, c, d, e, a, 34);
-R2(a, b, c, d, e, 35);
-R2(e, a, b, c, d, 36);
-R2(d, e, a, b, c, 37);
-R2(c, d, e, a, b, 38);
-R2(b, c, d, e, a, 39);
-R3(a, b, c, d, e, 40);
-R3(e, a, b, c, d, 41);
-R3(d, e, a, b, c, 42);
-R3(c, d, e, a, b, 43);
-R3(b, c, d, e, a, 44);
-R3(a, b, c, d, e, 45);
-R3(e, a, b, c, d, 46);
-R3(d, e, a, b, c, 47);
-R3(c, d, e, a, b, 48);
-R3(b, c, d, e, a, 49);
-R3(a, b, c, d, e, 50);
-R3(e, a, b, c, d, 51);
-R3(d, e, a, b, c, 52);
-R3(c, d, e, a, b, 53);
-R3(b, c, d, e, a, 54);
-R3(a, b, c, d, e, 55);
-R3(e, a, b, c, d, 56);
-R3(d, e, a, b, c, 57);
-R3(c, d, e, a, b, 58);
-R3(b, c, d, e, a, 59);
-R4(a, b, c, d, e, 60);
-R4(e, a, b, c, d, 61);
-R4(d, e, a, b, c, 62);
-R4(c, d, e, a, b, 63);
-R4(b, c, d, e, a, 64);
-R4(a, b, c, d, e, 65);
-R4(e, a, b, c, d, 66);
-R4(d, e, a, b, c, 67);
-R4(c, d, e, a, b, 68);
-R4(b, c, d, e, a, 69);
-R4(a, b, c, d, e, 70);
-R4(e, a, b, c, d, 71);
-R4(d, e, a, b, c, 72);
-R4(c, d, e, a, b, 73);
-R4(b, c, d, e, a, 74);
-R4(a, b, c, d, e, 75);
-R4(e, a, b, c, d, 76);
-R4(d, e, a, b, c, 77);
-R4(c, d, e, a, b, 78);
-R4(b, c, d, e, a, 79);</p>
-<p>/* Add the working vars back into context.state[] */
-state[0] += a;
-state[1] += b;
-state[2] += c;
-state[3] += d;
-state[4] += e;</p>
-<p>/* Wipe variables */
-a = b = c = d = e = 0;
-}</p>
-<p>/*</p>
-<ul>
-<li>SHA1Init - Initialize new context
-*/
-void SHA1Init(SHA1_CTX *context) {</li>
-</ul>
-<p>/* SHA1 initialization constants */
-context-&gt;count = 0;
-context-&gt;state[0] = 0x67452301;
-context-&gt;state[1] = 0xEFCDAB89;
-context-&gt;state[2] = 0x98BADCFE;
-context-&gt;state[3] = 0x10325476;
-context-&gt;state[4] = 0xC3D2E1F0;
-}</p>
-<p>/*</p>
-<ul>
-<li>Run your data through this.
-*/
-void SHA1Update(SHA1_CTX *context, const u_int8_t *data, size_t len) {
-size_t i, j;</li>
-</ul>
-<p>j = (size_t)((context-&gt;count &gt;&gt; 3) &amp; 63);
-context-&gt;count += ((u_int64_t)len &lt;&lt; 3);
-if ((j + len) &gt; 63) {
-(void)memcpy(&amp;context-&gt;buffer[j], data, (i = 64 - j));
-SHA1Transform(context-&gt;state, context-&gt;buffer);
-for (; i + 63 &lt; len; i += 64)
-SHA1Transform(context-&gt;state, (u_int8_t *)&amp;data[i]);
-j = 0;
-} else {
-i = 0;
+#define R4(v, w, x, y, z, i)                                                   \
+  z += (w ^ x ^ y) + blk(i) + 0xCA62C1D6 + rol(v, 5);                          \
+  w = rol(w, 30);
+
+typedef union {
+  uint8_t c[64];
+  uint32_t l[16];
+} CHAR64LONG16;
+
+/*
+ * Hash a single 512-bit block. This is the core of the algorithm.
+ */
+void SHA1Transform(uint32_t state[5], const uint8_t buffer[SHA1_BLOCK_LENGTH]) {
+  uint32_t a, b, c, d, e;
+  uint8_t workspace[SHA1_BLOCK_LENGTH];
+  CHAR64LONG16 *block = (CHAR64LONG16 *)workspace;
+
+  (void)memcpy(block, buffer, SHA1_BLOCK_LENGTH);
+
+  /* Copy context-&gt;state[] to working vars */
+  a = state[0];
+  b = state[1];
+  c = state[2];
+  d = state[3];
+  e = state[4];
+
+  /* 4 rounds of 20 operations each. Loop unrolled. */
+  R0(a, b, c, d, e, 0);
+  R0(e, a, b, c, d, 1);
+  R0(d, e, a, b, c, 2);
+  R0(c, d, e, a, b, 3);
+  R0(b, c, d, e, a, 4);
+  R0(a, b, c, d, e, 5);
+  R0(e, a, b, c, d, 6);
+  R0(d, e, a, b, c, 7);
+  R0(c, d, e, a, b, 8);
+  R0(b, c, d, e, a, 9);
+  R0(a, b, c, d, e, 10);
+  R0(e, a, b, c, d, 11);
+  R0(d, e, a, b, c, 12);
+  R0(c, d, e, a, b, 13);
+  R0(b, c, d, e, a, 14);
+  R0(a, b, c, d, e, 15);
+  R1(e, a, b, c, d, 16);
+  R1(d, e, a, b, c, 17);
+  R1(c, d, e, a, b, 18);
+  R1(b, c, d, e, a, 19);
+  R2(a, b, c, d, e, 20);
+  R2(e, a, b, c, d, 21);
+  R2(d, e, a, b, c, 22);
+  R2(c, d, e, a, b, 23);
+  R2(b, c, d, e, a, 24);
+  R2(a, b, c, d, e, 25);
+  R2(e, a, b, c, d, 26);
+  R2(d, e, a, b, c, 27);
+  R2(c, d, e, a, b, 28);
+  R2(b, c, d, e, a, 29);
+  R2(a, b, c, d, e, 30);
+  R2(e, a, b, c, d, 31);
+  R2(d, e, a, b, c, 32);
+  R2(c, d, e, a, b, 33);
+  R2(b, c, d, e, a, 34);
+  R2(a, b, c, d, e, 35);
+  R2(e, a, b, c, d, 36);
+  R2(d, e, a, b, c, 37);
+  R2(c, d, e, a, b, 38);
+  R2(b, c, d, e, a, 39);
+  R3(a, b, c, d, e, 40);
+  R3(e, a, b, c, d, 41);
+  R3(d, e, a, b, c, 42);
+  R3(c, d, e, a, b, 43);
+  R3(b, c, d, e, a, 44);
+  R3(a, b, c, d, e, 45);
+  R3(e, a, b, c, d, 46);
+  R3(d, e, a, b, c, 47);
+  R3(c, d, e, a, b, 48);
+  R3(b, c, d, e, a, 49);
+  R3(a, b, c, d, e, 50);
+  R3(e, a, b, c, d, 51);
+  R3(d, e, a, b, c, 52);
+  R3(c, d, e, a, b, 53);
+  R3(b, c, d, e, a, 54);
+  R3(a, b, c, d, e, 55);
+  R3(e, a, b, c, d, 56);
+  R3(d, e, a, b, c, 57);
+  R3(c, d, e, a, b, 58);
+  R3(b, c, d, e, a, 59);
+  R4(a, b, c, d, e, 60);
+  R4(e, a, b, c, d, 61);
+  R4(d, e, a, b, c, 62);
+  R4(c, d, e, a, b, 63);
+  R4(b, c, d, e, a, 64);
+  R4(a, b, c, d, e, 65);
+  R4(e, a, b, c, d, 66);
+  R4(d, e, a, b, c, 67);
+  R4(c, d, e, a, b, 68);
+  R4(b, c, d, e, a, 69);
+  R4(a, b, c, d, e, 70);
+  R4(e, a, b, c, d, 71);
+  R4(d, e, a, b, c, 72);
+  R4(c, d, e, a, b, 73);
+  R4(b, c, d, e, a, 74);
+  R4(a, b, c, d, e, 75);
+  R4(e, a, b, c, d, 76);
+  R4(d, e, a, b, c, 77);
+  R4(c, d, e, a, b, 78);
+  R4(b, c, d, e, a, 79);
+
+  /* Add the working vars back into context.state[] */
+  state[0] += a;
+  state[1] += b;
+  state[2] += c;
+  state[3] += d;
+  state[4] += e;
+
+  /* Wipe variables */
+  a = b = c = d = e = 0;
 }
-(void)memcpy(&amp;context-&gt;buffer[j], &amp;data[i], len - i);
-}</p>
-<p>/*</p>
-<ul>
-<li>Add padding and return the message digest.
-*/
+
+/*
+ * SHA1Init - Initialize new context
+ */
+void SHA1Init(SHA1_CTX *context) {
+
+  /* SHA1 initialization constants */
+  context-&gt;count = 0;
+  context-&gt;state[0] = 0x67452301;
+  context-&gt;state[1] = 0xEFCDAB89;
+  context-&gt;state[2] = 0x98BADCFE;
+  context-&gt;state[3] = 0x10325476;
+  context-&gt;state[4] = 0xC3D2E1F0;
+}
+
+/*
+ * Run your data through this.
+ */
+void SHA1Update(SHA1_CTX *context, const uint8_t *data, size_t len) {
+  size_t i, j;
+
+  j = (size_t)((context-&gt;count &gt;&gt; 3) &amp; 63);
+  context-&gt;count += ((uint64_t)len &lt;&lt; 3);
+  if ((j + len) &gt; 63) {
+    (void)memcpy(&amp;context-&gt;buffer[j], data, (i = 64 - j));
+    SHA1Transform(context-&gt;state, context-&gt;buffer);
+    for (; i + 63 &lt; len; i += 64)
+      SHA1Transform(context-&gt;state, (uint8_t *)&amp;data[i]);
+    j = 0;
+  } else {
+    i = 0;
+  }
+  (void)memcpy(&amp;context-&gt;buffer[j], &amp;data[i], len - i);
+}
+
+/*
+ * Add padding and return the message digest.
+ */
 void SHA1Pad(SHA1_CTX *context) {
-u_int8_t finalcount[8];
-u_int i;</li>
-</ul>
-<p>for (i = 0; i &lt; 8; i++) {
-finalcount[i] = (u_int8_t)((context-&gt;count &gt;&gt; ((7 - (i &amp; 7)) * 8)) &amp;
-255); /* Endian independent */
-}
-SHA1Update(context, (u_int8_t *)&quot;\200&quot;, 1);
-while ((context-&gt;count &amp; 504) != 448)
-SHA1Update(context, (u_int8_t <em>)&quot;\0&quot;, 1);
-SHA1Update(context, finalcount, 8); /</em> Should cause a SHA1Transform() */
-}</p>
-<p>void SHA1Final(u_int8_t digest[SHA1_DIGEST_LENGTH], SHA1_CTX *context) {
-u_int i;</p>
-<p>SHA1Pad(context);
-for (i = 0; i &lt; SHA1_DIGEST_LENGTH; i++) {
-digest[i] =
-(u_int8_t)((context-&gt;state[i &gt;&gt; 2] &gt;&gt; ((3 - (i &amp; 3)) * 8)) &amp; 255);
-}
-explicit_bzero(context, sizeof(*context));
-}</p>
-<pre><code>&lt;details
+  uint8_t finalcount[8];
+  size_t i;
 
-The `SHA1_xxx` functions are lifted from [OpenBSD](https://github.com/openssh/openssh-portable/blob/9e5bd74a85192c00a842f63d7ab788713b4284c3/openbsd-compat/sha1.c) (there are similar variants, e.g. from [Sqlite](https://sqlite.org/src/file/ext/misc/sha1.c), etc - they are all nearly identical), and when compiled in non-optimized mode with Asan, we get this timing:
+  for (i = 0; i &lt; 8; i++) {
+    finalcount[i] = (uint8_t)((context-&gt;count &gt;&gt; ((7 - (i &amp; 7)) * 8)) &amp;
+                              255); /* Endian independent */
+  }
+  SHA1Update(context, (uint8_t *)&quot;\200&quot;, 1);
+  while ((context-&gt;count &amp; 504) != 448)
+    SHA1Update(context, (uint8_t *)&quot;\0&quot;, 1);
+  SHA1Update(context, finalcount, 8); /* Should cause a SHA1Transform() */
+}
 
-```sh
-$ hyperfine --warmup 3 './a.out ./NetBSD-9.4-amd64.iso ~/Downloads/NetBSD-9.4-amd64.iso.torrent'
+void SHA1Final(uint8_t digest[SHA1_DIGEST_LENGTH], SHA1_CTX *context) {
+  size_t i;
+
+  SHA1Pad(context);
+  for (i = 0; i &lt; SHA1_DIGEST_LENGTH; i++) {
+    digest[i] =
+        (uint8_t)((context-&gt;state[i &gt;&gt; 2] &gt;&gt; ((3 - (i &amp; 3)) * 8)) &amp; 255);
+  }
+  explicit_bzero(context, sizeof(*context));
+}
+</code></pre>
+<details
+<p>The <code>SHA1_xxx</code> functions are lifted from <a href="https://github.com/openssh/openssh-portable/blob/9e5bd74a85192c00a842f63d7ab788713b4284c3/openbsd-compat/sha1.c">OpenBSD</a> (there are similar variants, e.g. from <a href="https://sqlite.org/src/file/ext/misc/sha1.c">Sqlite</a>, etc - they are all nearly identical), and when compiled in non-optimized mode with Address Sanitizer, we get this timing:</p>
+<pre><code class="language-sh">$ hyperfine --warmup 3 './a.out ./NetBSD-9.4-amd64.iso ~/Downloads/NetBSD-9.4-amd64.iso.torrent'
 Benchmark 1: ./a.out ./NetBSD-9.4-amd64.iso ~/Downloads/NetBSD-9.4-amd64.iso.torrent
   Time (mean ± σ):     26.312 s ±  0.734 s    [User: 26.164 s, System: 0.066 s]
   Range (min … max):   25.366 s … 27.780 s    10 runs
@@ -889,7 +890,7 @@ static void sha1_sse_step(uint32_t *restrict H, const uint32_t *restrict inputu,
 
 </code></pre>
 </details>
-<p>It works 4 bytes at a time instead of one byte at a time with the pure standard C approach. So predictably, we observe roughly a 4x speed-up (still in debug + Asan mode):</p>
+<p>It works 4 bytes at a time instead of one byte at a time with the pure standard C approach. So predictably, we observe roughly a 4x speed-up (still in debug + Address Sanitizer mode):</p>
 <pre><code class="language-sh">$ hyperfine --warmup 3 './a.out ./NetBSD-9.4-amd64.iso ~/Downloads/NetBSD-9.4-amd64.iso.torrent'
 Benchmark 1: ./a.out ./NetBSD-9.4-amd64.iso ~/Downloads/NetBSD-9.4-amd64.iso.torrent
   Time (mean ± σ):      7.748 s ±  0.119 s    [User: 7.665 s, System: 0.057 s]
@@ -909,7 +910,7 @@ Benchmark 1: ./a.out ./NetBSD-9.4-amd64.iso ~/Downloads/NetBSD-9.4-amd64.iso.tor
   Range (min … max):   821.3 ms … 944.1 ms    10 runs
 </code></pre>
 <p>Now that's what I'm talking about. Around a 10x speed-up compared to the basic SSE implementation! And now we are running under a second.</p>
-<p>What about a release build (without Asan), for comparison?</p>
+<p>What about a release build (without Address Sanitizer), for comparison?</p>
 <p>This is non SIMD version with <code>-O2 -march=native</code>, using auto-vectorization:</p>
 <pre><code class="language-sh">$ hyperfine --warmup 3 './a.out ./NetBSD-9.4-amd64.iso ~/Downloads/NetBSD-9.4-amd64.iso.torrent'
 Benchmark 1: ./a.out ./NetBSD-9.4-amd64.iso ~/Downloads/NetBSD-9.4-amd64.iso.torrent
@@ -924,7 +925,7 @@ Benchmark 1: ./a.out ./NetBSD-9.4-amd64.iso ~/Downloads/NetBSD-9.4-amd64.iso.tor
 </code></pre>
 <p>Unsurprisingly, when inspecting the generated assembly code for the non SIMD version, the auto-vectorization is <em>very</em> limited and does not use the SHA extension (compilers are smart, but not <em>that</em> smart).</p>
 <p>As such, it's still very impressive that it reaches such a high performance. My guess is that the compiler does a good job at analyzing data dependencies and reordering statements to maximize utilization.</p>
-<p>The version using the SHA extension performs very well, be it in debug + Asan mode, or release mode.</p>
+<p>The version using the SHA extension performs very well, be it in debug + Address Sanitizer mode, or release mode.</p>
 <h2 id="sha-using-openssl">
 	<a class="title" href="#sha-using-openssl">SHA using OpenSSL</a>
 	<a class="hash-anchor" href="#sha-using-openssl" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
@@ -1002,9 +1003,9 @@ Benchmark 1: ./a.out ./NetBSD-9.4-amd64.iso ~/Downloads/NetBSD-9.4-amd64.iso.tor
   Time (mean ± σ):     281.5 ms ±   3.9 ms    [User: 245.7 ms, System: 35.1 ms]
   Range (min … max):   276.3 ms … 288.9 ms    10 runs
 </code></pre>
-<h2 id="debug-plus-asan-sse-no-sha-extension">
-	<a class="title" href="#debug-plus-asan-sse-no-sha-extension">Debug + Asan, SSE (no SHA extension)</a>
-	<a class="hash-anchor" href="#debug-plus-asan-sse-no-sha-extension" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+<h2 id="debug-plus-address-sanitizer-sse-no-sha-extension">
+	<a class="title" href="#debug-plus-address-sanitizer-sse-no-sha-extension">Debug + Address Sanitizer, SSE (no SHA extension)</a>
+	<a class="hash-anchor" href="#debug-plus-address-sanitizer-sse-no-sha-extension" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <pre><code class="language-sh">$ hyperfine --warmup 3 './a.out ./NetBSD-9.4-amd64.iso ~/Downloads/NetBSD-9.4-amd64.iso.torrent'
 Benchmark 1: ./a.out ./NetBSD-9.4-amd64.iso ~/Downloads/NetBSD-9.4-amd64.iso.torrent

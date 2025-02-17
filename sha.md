@@ -34,7 +34,7 @@ It's important to note that to reduce third-party dependencies, the SHA1 code is
 
 I untertained depending on OpenSSL or such, but it feels wasteful to pull in such a hugh amount of code just for SHA1. And building OpenSSL ourselves, to tweak the build flags, means depending on Perl (and Go, in the case of aws-lc). And now I need to pick between OpenSSL, LibreSSL, BoringSSL, aws-lc, etc. And upgrade it when the weekly security vulnerability gets announced. I don't want any of it, if I can help it. Also I want to understand from top to bottom what code I depend on. 
 
-For a while, due to this slowness, I simply gave up using a debug build, instead I use minimal optimizations (`-O1`) with Adress Sanitizer (a.k.a Asan). It was much faster, but lots of functions and variables got optimized away, and the debugging experience was thus subpar. I needed to make my debug + Asan build viable.  The debug build without Asan is much faster: the startup 'only' takes around 2 seconds. But Asan is very valuable, I want to be able to use it! And 2 seconds is still too long. Reducing the iteration cycle is often the deciding factor for software quality in my experience.
+For a while, due to this slowness, I simply gave up using a debug build, instead I use minimal optimizations (`-O1`) with Adress Sanitizer (a.k.a Address Sanitizer). It was much faster, but lots of functions and variables got optimized away, and the debugging experience was thus subpar. I needed to make my debug + Address Sanitizer build viable.  The debug build without Address Sanitizer is much faster: the startup 'only' takes around 2 seconds. But Address Sanitizer is very valuable, I want to be able to use it! And 2 seconds is still too long. Reducing the iteration cycle is often the deciding factor for software quality in my experience.
 
 What's vexing is that from first principles, we know it could/should be much, much faster:
 
@@ -50,11 +50,11 @@ Granted, computing the hash for the whole file should be slightly faster than co
 
 Why is it so slow then? I can see on CPU profiles that the SHA1 function takes all of the startup time:
 
-![CPU Profile of the non SIMD code, debug + Asan build](cpu_profile_sha1_sw_debug_asan.svg)
+![CPU Profile of the non SIMD code, debug + Address Sanitizer build](cpu_profile_sha1_sw_debug_asan.svg)
 
-The SHA1 code is simplistic, it does not use any SIMD or intrisics directly. And that's fine, because when it's compiled with optimizations on, the compiler does a pretty good job at optimizing and auto-vectorizing the code, and it's really fast, around ~300 ms. But the issue is that this code is working one byte at a time. And Adress Sanitizer, with its nice runtime and bounds checks, makes each memory access **very** expensive. So we accidentally wrote a stress-test for Asan.
+The SHA1 code is simplistic, it does not use any SIMD or intrisics directly. And that's fine, because when it's compiled with optimizations on, the compiler does a pretty good job at optimizing, and it's really fast, around ~300 ms. But the issue is that this code is working one byte at a time. And Adress Sanitizer, with its nice runtime and bounds checks, makes each memory access **very** expensive. So we basically have just written a worst-case stress-test for Address Sanitizer.
 
-Let's first review the simple non-SIMD C version.
+Let's first review the simple non-SIMD C version to understand the baseline.
 
 ## Standard C
 
@@ -63,7 +63,7 @@ To isolate the issue, I have created a simple benchmark program. It reads the `.
 ```c
 #include <fcntl.h>
 #include <inttypes.h>
-#include <openssl/sha.h>
+#include "sha1_sw.c"
 #include <stdbool.h>
 #include <string.h>
 #include <sys/mman.h>
@@ -146,7 +146,10 @@ int main(int argc, char *argv[]) {
 
 <details>
   <summary>Non-SIMD SHA1</summary>
+
 ```c
+// sha1_sw.c
+
 /*	$OpenBSD: sha1.c,v 1.27 2019/06/07 22:56:36 dtucker Exp $	*/
 
 /*
@@ -163,17 +166,17 @@ int main(int argc, char *argv[]) {
  *   34AA973C D4C4DAA4 F61EEB2B DBAD2731 6534016F
  */
 
+#include <inttypes.h>
 #include <string.h>
-#include <sys/types.h>
 
 #define SHA1_BLOCK_LENGTH 64
 #define SHA1_DIGEST_LENGTH 20
 #define SHA1_DIGEST_STRING_LENGTH (SHA1_DIGEST_LENGTH * 2 + 1)
 
 typedef struct {
-  u_int32_t state[5];
-  u_int64_t count;
-  u_int8_t buffer[SHA1_BLOCK_LENGTH];
+  uint32_t state[5];
+  uint64_t count;
+  uint8_t buffer[SHA1_BLOCK_LENGTH];
 } SHA1_CTX;
 #define rol(value, bits) (((value) << (bits)) | ((value) >> (32 - (bits))))
 
@@ -181,13 +184,9 @@ typedef struct {
  * blk0() and blk() perform the initial expand.
  * I got the idea of expanding during the round function from SSLeay
  */
-#if BYTE_ORDER == LITTLE_ENDIAN
 #define blk0(i)                                                                \
   (block->l[i] = (rol(block->l[i], 24) & 0xFF00FF00) |                         \
                  (rol(block->l[i], 8) & 0x00FF00FF))
-#else
-#define blk0(i) block->l[i]
-#endif
 #define blk(i)                                                                 \
   (block->l[i & 15] = rol(block->l[(i + 13) & 15] ^ block->l[(i + 8) & 15] ^   \
                               block->l[(i + 2) & 15] ^ block->l[i & 15],       \
@@ -213,17 +212,16 @@ typedef struct {
   w = rol(w, 30);
 
 typedef union {
-  u_int8_t c[64];
-  u_int32_t l[16];
+  uint8_t c[64];
+  uint32_t l[16];
 } CHAR64LONG16;
 
 /*
  * Hash a single 512-bit block. This is the core of the algorithm.
  */
-void SHA1Transform(u_int32_t state[5],
-                   const u_int8_t buffer[SHA1_BLOCK_LENGTH]) {
-  u_int32_t a, b, c, d, e;
-  u_int8_t workspace[SHA1_BLOCK_LENGTH];
+void SHA1Transform(uint32_t state[5], const uint8_t buffer[SHA1_BLOCK_LENGTH]) {
+  uint32_t a, b, c, d, e;
+  uint8_t workspace[SHA1_BLOCK_LENGTH];
   CHAR64LONG16 *block = (CHAR64LONG16 *)workspace;
 
   (void)memcpy(block, buffer, SHA1_BLOCK_LENGTH);
@@ -345,16 +343,16 @@ void SHA1Init(SHA1_CTX *context) {
 /*
  * Run your data through this.
  */
-void SHA1Update(SHA1_CTX *context, const u_int8_t *data, size_t len) {
+void SHA1Update(SHA1_CTX *context, const uint8_t *data, size_t len) {
   size_t i, j;
 
   j = (size_t)((context->count >> 3) & 63);
-  context->count += ((u_int64_t)len << 3);
+  context->count += ((uint64_t)len << 3);
   if ((j + len) > 63) {
     (void)memcpy(&context->buffer[j], data, (i = 64 - j));
     SHA1Transform(context->state, context->buffer);
     for (; i + 63 < len; i += 64)
-      SHA1Transform(context->state, (u_int8_t *)&data[i]);
+      SHA1Transform(context->state, (uint8_t *)&data[i]);
     j = 0;
   } else {
     i = 0;
@@ -366,33 +364,34 @@ void SHA1Update(SHA1_CTX *context, const u_int8_t *data, size_t len) {
  * Add padding and return the message digest.
  */
 void SHA1Pad(SHA1_CTX *context) {
-  u_int8_t finalcount[8];
-  u_int i;
+  uint8_t finalcount[8];
+  size_t i;
 
   for (i = 0; i < 8; i++) {
-    finalcount[i] = (u_int8_t)((context->count >> ((7 - (i & 7)) * 8)) &
-                               255); /* Endian independent */
+    finalcount[i] = (uint8_t)((context->count >> ((7 - (i & 7)) * 8)) &
+                              255); /* Endian independent */
   }
-  SHA1Update(context, (u_int8_t *)"\200", 1);
+  SHA1Update(context, (uint8_t *)"\200", 1);
   while ((context->count & 504) != 448)
-    SHA1Update(context, (u_int8_t *)"\0", 1);
+    SHA1Update(context, (uint8_t *)"\0", 1);
   SHA1Update(context, finalcount, 8); /* Should cause a SHA1Transform() */
 }
 
-void SHA1Final(u_int8_t digest[SHA1_DIGEST_LENGTH], SHA1_CTX *context) {
-  u_int i;
+void SHA1Final(uint8_t digest[SHA1_DIGEST_LENGTH], SHA1_CTX *context) {
+  size_t i;
 
   SHA1Pad(context);
   for (i = 0; i < SHA1_DIGEST_LENGTH; i++) {
     digest[i] =
-        (u_int8_t)((context->state[i >> 2] >> ((3 - (i & 3)) * 8)) & 255);
+        (uint8_t)((context->state[i >> 2] >> ((3 - (i & 3)) * 8)) & 255);
   }
   explicit_bzero(context, sizeof(*context));
 }
 ```
+
 <details
 
-The `SHA1_xxx` functions are lifted from [OpenBSD](https://github.com/openssh/openssh-portable/blob/9e5bd74a85192c00a842f63d7ab788713b4284c3/openbsd-compat/sha1.c) (there are similar variants, e.g. from [Sqlite](https://sqlite.org/src/file/ext/misc/sha1.c), etc - they are all nearly identical), and when compiled in non-optimized mode with Asan, we get this timing:
+The `SHA1_xxx` functions are lifted from [OpenBSD](https://github.com/openssh/openssh-portable/blob/9e5bd74a85192c00a842f63d7ab788713b4284c3/openbsd-compat/sha1.c) (there are similar variants, e.g. from [Sqlite](https://sqlite.org/src/file/ext/misc/sha1.c), etc - they are all nearly identical), and when compiled in non-optimized mode with Address Sanitizer, we get this timing:
 
 ```sh
 $ hyperfine --warmup 3 './a.out ./NetBSD-9.4-amd64.iso ~/Downloads/NetBSD-9.4-amd64.iso.torrent'
@@ -754,7 +753,7 @@ static void sha1_sse_step(uint32_t *restrict H, const uint32_t *restrict inputu,
 ```
 </details>
 
-It works 4 bytes at a time instead of one byte at a time with the pure standard C approach. So predictably, we observe roughly a 4x speed-up (still in debug + Asan mode):
+It works 4 bytes at a time instead of one byte at a time with the pure standard C approach. So predictably, we observe roughly a 4x speed-up (still in debug + Address Sanitizer mode):
 
 ```sh
 $ hyperfine --warmup 3 './a.out ./NetBSD-9.4-amd64.iso ~/Downloads/NetBSD-9.4-amd64.iso.torrent'
@@ -782,7 +781,7 @@ Benchmark 1: ./a.out ./NetBSD-9.4-amd64.iso ~/Downloads/NetBSD-9.4-amd64.iso.tor
 
 Now that's what I'm talking about. Around a 10x speed-up compared to the basic SSE implementation! And now we are running under a second.
 
-What about a release build (without Asan), for comparison?
+What about a release build (without Address Sanitizer), for comparison?
 
 
 This is non SIMD version with `-O2 -march=native`, using auto-vectorization:
@@ -807,7 +806,7 @@ Unsurprisingly, when inspecting the generated assembly code for the non SIMD ver
 
 As such, it's still very impressive that it reaches such a high performance. My guess is that the compiler does a good job at analyzing data dependencies and reordering statements to maximize utilization.
 
-The version using the SHA extension performs very well, be it in debug + Asan mode, or release mode.
+The version using the SHA extension performs very well, be it in debug + Address Sanitizer mode, or release mode.
 
 ## SHA using OpenSSL
 
@@ -892,7 +891,7 @@ Benchmark 1: ./a.out ./NetBSD-9.4-amd64.iso ~/Downloads/NetBSD-9.4-amd64.iso.tor
   Range (min … max):   276.3 ms … 288.9 ms    10 runs
 ```
 
-## Debug + Asan, SSE (no SHA extension)
+## Debug + Address Sanitizer, SSE (no SHA extension)
 
 ```sh
 $ hyperfine --warmup 3 './a.out ./NetBSD-9.4-amd64.iso ~/Downloads/NetBSD-9.4-amd64.iso.torrent'
