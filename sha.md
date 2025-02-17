@@ -25,13 +25,31 @@ $ du -h ./NetBSD-9.4-amd64.iso
 
 But when I build my code in debug mode (no optimizations) with Adress Sanitizer, to detect various issues early, startup takes **20 to 30 seconds!** That's unbearable, especially when working in the debugger and inspecting some code that runs after the startup. For a while I simply renounced using a debug build, instead I use minimal optimizations (`-O1`) with Adress Sanitizer. It was much faster, but lots of functions and variables got optimized away, and the debugging experience was thus subpar. I needed to make my debug + Asan build viable.  The debug build without Asan is much faster: 'only' around 2 seconds. But Asan is very valuable, I want to be able to use it! And 2 seconds is still too long.
 
+What's vexing is that from first principles, we know it should/could be much, much faster:
+
+```sh
+```
+
 Why is it so slow then? I can see on CPU profiles that the SHA1 function takes all of the startup time. The SHA1 code is simplistic, it does not use any SIMD or intrisics directly. And that's fine, because when it's compiled with optimizations on, the compiler does a pretty good job at auto-vectorizing most of the code, and it's reallt fast. But the issue is that this code is working one byte at a time. And Adress Sanitizer, with its nice runtime and bounds checks, makes each memory access **very** expensive.
 
 So what can we do then?
 
 - We can build the SHA1 code separately with optimizations on, always (and potentially without Address Sanitizer). That's a bit annoying, because I currently do a Unity build meaning there is only one compilation unit. So having suddenly multiple compilation units with different build flags makes the build system more complex. And clang has annotations to *lower* the optimization level for one function but not to *raise* it.
-- We can implement SHA1 with SIMD. That way, it's much faster regardless of the build level. Essentially, we do not rely on the compiler auto-vectorization that only occurs at higher optimization levels, we do it directly. It has the nice advantage that we have guaranteed performance even when using an older compiler that cannot do auto-vectorization properly, or if a new compiler version comes along and auto-vectorization broke for this code. Since it uses lots of heuristics, this may happen.
+- We can compute the hash of each chunk in parallel for example in a thread pool, since each chunk is independent. That works, but that assumes that the target computer is multicore, and it forces some complexity:
+  + We need to implement a thread pool (spawning a new thread for each chunk will not perform well) and pick a reasonable amount of cores
+  + We need a M:N scheduling logic to compute the hash of M chunks on N threads. It could be a work-stealing queue backed by a thread-pool, or read the whole file in memory and split the data in equal parts for each thread to plow through (but beware that the data for each thread is aligned with the chunk size!). This seems complex.
+- We can implement SHA1 with SIMD. That way, it's much faster regardless of the build level. Essentially, we do not rely on the compiler auto-vectorization that only occurs at higher optimization levels, we do it directly. It has the nice advantage that we have guaranteed performance even when using a different compiler, or an older compiler that cannot do auto-vectorization properly, or if a new compiler version comes along and auto-vectorization broke for this code. Since it uses lots of heuristics, this may happen.
 
+
+To isolate the issue, I have created a simple benchmark program. It reads the `.torrent` file, and the dowload file, in my case the `.iso` NetBSD image. Every chunk
+
+## SHA1 with SSE
+
+[This](http://arctic.org/~dean/crypto/sha1.html) is an implementation from the early 2000s in the public domain. 
+
+Intel references it on their [website](https://www.intel.com/content/www/us/en/developer/articles/technical/improving-the-performance-of-the-secure-hash-algorithm-1.html). According to Intel, it was fundamental work at the time and influenced them. It's also not the fastest SSE implementation, the very article from Intel is about some performance enhancements they found for this code, but it has the advantage that if you have a processor from 2004 or after, it works, and it's simple.
+
+It works 4 bytes at a time instead of one byte at a time with the pure standard C approach. 
 
 -------------------------
 
