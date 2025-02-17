@@ -2,7 +2,7 @@ Title: Making my debug build usable with a 30x speed-up
 Tags: C, SIMD, SHA1, Adress Sanitizer, Torrent
 ---
 
-*SIMD and silicon to the rescue.*
+*SIMD and dedicated silicon to the rescue.*
 
 
 I am writing a torrent application, to download and serve torrent files, in C. A torrent download is made of chunks, typically 1 MiB or 2 MiB.  At start-up, the program reads the downloaded file chunk by chunk, computes its [SHA1](https://en.wikipedia.org/wiki/SHA-1) hash, and marks this chunk as downloaded if the actual hash is indeed the expected hash. We get from the `.torrent` file the expected hash of each chunk.
@@ -851,7 +851,7 @@ By the way... did you know that in all likelihood, your CPU has dedicated silico
 
 ## Intel SHA extension
 
-Despite the 'Intel' name, Intel as well as AMD CPUs have been shipping with this extension, since around 2017. It adds a few SIMD instructions dedicated to compute SHA1 (and SHA256, and other variants). Note that ARM also has an equivalent (albeit incompatible, of course) extension so the same can be done there. 
+Despite the 'Intel' name, Intel as well as AMD CPUs have been shipping with this [extension](https://en.wikipedia.org/wiki/Intel_SHA_extensions), since around 2017. It adds a few SIMD instructions dedicated to compute SHA1 (and SHA256, and other variants). Note that ARM also has an equivalent (albeit incompatible, of course) extension so the same can be done there. 
 
 *There is an irony here, because 2017 is the year where the first SHA1 public collision was published, which incited many developers to move away from SHA1...*
 

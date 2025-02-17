@@ -195,7 +195,7 @@
 		</li>
 </ul>
 
-<p><em>SIMD and silicon to the rescue.</em></p>
+<p><em>SIMD and dedicated silicon to the rescue.</em></p>
 <p>I am writing a torrent application, to download and serve torrent files, in C. A torrent download is made of chunks, typically 1 MiB or 2 MiB.  At start-up, the program reads the downloaded file chunk by chunk, computes its <a href="https://en.wikipedia.org/wiki/SHA-1">SHA1</a> hash, and marks this chunk as downloaded if the actual hash is indeed the expected hash. We get from the <code>.torrent</code> file the expected hash of each chunk.</p>
 <p>When we have not downloaded anything yet, the file is completely empty (but still of the right size - we use <code>ftruncate(2)</code> to size it properly even if empty from the get go), and nearly every chunk has the wrong hash. Some chunks will accidentally have the right hash, since they are all zeroes in the file we are downloading - good news then, with this approach we do not even have to download them at all!. If we continue an interrupted download (for example we computer restarted), some chunks will have the right hash, and some not. When the download is complete, all chunks will have the correct hash. That way, we know what what chunks we need to download, if any.</p>
 <p>I read that some torrent clients prefer to skip this verification at startup because they persist their state in a separate file (perhaps a sqlite database), while downloading chunks. However I favor doing a from scratch verification at startup for a few reasons, over the 'state file' approach:</p>
@@ -1014,7 +1014,7 @@ Benchmark 1: ./a.out ./NetBSD-9.4-amd64.iso ~/Downloads/NetBSD-9.4-amd64.iso.tor
 	<a class="title" href="#intel-sha-extension">Intel SHA extension</a>
 	<a class="hash-anchor" href="#intel-sha-extension" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
-<p>Despite the 'Intel' name, Intel as well as AMD CPUs have been shipping with this extension, since around 2017. It adds a few SIMD instructions dedicated to compute SHA1 (and SHA256, and other variants). Note that ARM also has an equivalent (albeit incompatible, of course) extension so the same can be done there.</p>
+<p>Despite the 'Intel' name, Intel as well as AMD CPUs have been shipping with this <a href="https://en.wikipedia.org/wiki/Intel_SHA_extensions">extension</a>, since around 2017. It adds a few SIMD instructions dedicated to compute SHA1 (and SHA256, and other variants). Note that ARM also has an equivalent (albeit incompatible, of course) extension so the same can be done there.</p>
 <p><em>There is an irony here, because 2017 is the year where the first SHA1 public collision was published, which incited many developers to move away from SHA1...</em></p>
 <p>The advantage is that the structure of the code can remain the same: we still are using 128 bits SIMD registers, still computing SHA chunks of 64 bytes at a time for SHA. It's just that a few operations get faster and the code is generally shorter and clearer.</p>
 <p>The implementation is a pure work of art, and comes from this <a href="https://github.com/noloader/SHA-Intrinsics/blob/master/sha1-x86.c">Github repository</a>. I have commented lots of it.</p>
