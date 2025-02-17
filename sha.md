@@ -137,6 +137,8 @@ Benchmark 1: ./a.out ./NetBSD-9.4-amd64.iso ~/Downloads/NetBSD-9.4-amd64.iso.tor
   Range (min … max):   25.366 s … 27.780 s    10 runs
 ```
 
+I experimented with doing a `read` syscall for each chunk (that's what `sha1sum` does) versus using `mmap`, and there was no difference, so this is not a factor.
+
 ---
 
 So what can we do about it?
