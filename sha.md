@@ -28,11 +28,118 @@ But when I build my code in debug mode (no optimizations) with Adress Sanitizer,
 What's vexing is that from first principles, we know it should/could be much, much faster:
 
 ```sh
+$ hyperfine --shell=none --warmup 3 'sha1sum ./NetBSD-9.4-amd64.iso'
+Benchmark 1: sha1sum ./NetBSD-9.4-amd64.iso
+  Time (mean ± σ):     297.7 ms ±   3.2 ms    [User: 235.8 ms, System: 60.9 ms]
+  Range (min … max):   293.7 ms … 304.2 ms    10 runs
 ```
+
+Granted, computing the hash for the whole file should be slightly faster, than computing the hash for N chunks, because the final step for SHA1 is about padding the data to make it 64 bytes aligned and extracing the digest value from the state computed so far. But still, the order of magnitude could/should be ~300 milliseconds, not ~30 seconds!
+
 
 Why is it so slow then? I can see on CPU profiles that the SHA1 function takes all of the startup time. The SHA1 code is simplistic, it does not use any SIMD or intrisics directly. And that's fine, because when it's compiled with optimizations on, the compiler does a pretty good job at auto-vectorizing most of the code, and it's reallt fast. But the issue is that this code is working one byte at a time. And Adress Sanitizer, with its nice runtime and bounds checks, makes each memory access **very** expensive.
 
-So what can we do then?
+## Standard C
+
+To isolate the issue, I have created a simple benchmark program. It reads the `.torrent` file, and the dowload file, in my case the `.iso` NetBSD image. Every chunk gets hashed and this gets compared with the expected value. To simplify, I skip the decoding of the `.torrent` file, and harcode where exactly in the file are the expected hashes. The only difficulty is that the last piece might be shorter than the others.
+
+```c
+#include <fcntl.h>
+#include <inttypes.h>
+#include <openssl/sha.h>
+#include <stdbool.h>
+#include <string.h>
+#include <sys/mman.h>
+#include <sys/stat.h>
+#include <unistd.h>
+
+static bool is_chunk_valid(uint8_t *chunk, uint64_t chunk_len,
+                           uint8_t digest_expected[20]) {
+  SHA_CTX ctx = {0};
+  SHA1_Init(&ctx);
+
+  SHA1_Update(&ctx, chunk, chunk_len);
+
+  uint8_t digest_actual[20] = {0};
+  SHA1_Final(digest_actual, &ctx);
+
+  return !memcmp(digest_actual, digest_expected, 20);
+}
+
+int main(int argc, char *argv[]) {
+  if (3 != argc) {
+    return 1;
+  }
+
+  int file_download = open(argv[1], O_RDONLY, 0600);
+  if (!file_download) {
+    return 1;
+  }
+
+  struct stat st_download = {0};
+  if (-1 == fstat(file_download, &st_download)) {
+    return 1;
+  }
+  size_t file_download_size = (size_t)st_download.st_size;
+
+  uint8_t *file_download_data = mmap(NULL, file_download_size, PROT_READ,
+                                     MAP_FILE | MAP_PRIVATE, file_download, 0);
+  if (!file_download_data) {
+    return 1;
+  }
+
+  int file_torrent = open(argv[2], O_RDONLY, 0600);
+  if (!file_torrent) {
+    return 1;
+  }
+
+  struct stat st_torrent = {0};
+  if (-1 == fstat(file_torrent, &st_torrent)) {
+    return 1;
+  }
+  size_t file_torrent_size = (size_t)st_torrent.st_size;
+
+  uint8_t *file_torrent_data = mmap(NULL, file_torrent_size, PROT_READ,
+                                    MAP_FILE | MAP_PRIVATE, file_torrent, 0);
+  if (!file_torrent_data) {
+    return 1;
+  }
+  // HACK
+  uint64_t file_torrent_data_offset = 237;
+  file_torrent_data += file_torrent_data_offset;
+  file_torrent_size -= file_torrent_data_offset - 1;
+
+  uint64_t piece_length = 262144;
+  uint64_t pieces_count = file_download_size / piece_length +
+                          ((0 == file_download_size % piece_length) ? 0 : 1);
+  for (uint64_t i = 0; i < pieces_count; i++) {
+    uint8_t *data = file_download_data + i * piece_length;
+    uint64_t piece_length_real = ((i + 1) == pieces_count)
+                                     ? (file_download_size - i * piece_length)
+                                     : piece_length;
+    uint8_t *digest_expected = file_torrent_data + i * 20;
+
+    if (!is_chunk_valid(data, piece_length_real, digest_expected)) {
+      return 1;
+    }
+  }
+}
+```
+
+The `SHA1_xxx` functions are lifted from OpenSSL (there are similar variants, e.g. from OpenBSD), and when compiled in non-optimized mode with Asan, we get this timing:
+
+## Debug + ASAN, SW
+
+```sh
+$ hyperfine --warmup 3 './a.out ./NetBSD-9.4-amd64.iso ~/Downloads/NetBSD-9.4-amd64.iso.torrent'
+Benchmark 1: ./a.out ./NetBSD-9.4-amd64.iso ~/Downloads/NetBSD-9.4-amd64.iso.torrent
+  Time (mean ± σ):     26.312 s ±  0.734 s    [User: 26.164 s, System: 0.066 s]
+  Range (min … max):   25.366 s … 27.780 s    10 runs
+```
+
+---
+
+So what can we do about it?
 
 - We can build the SHA1 code separately with optimizations on, always (and potentially without Address Sanitizer). That's a bit annoying, because I currently do a Unity build meaning there is only one compilation unit. So having suddenly multiple compilation units with different build flags makes the build system more complex. And clang has annotations to *lower* the optimization level for one function but not to *raise* it.
 - We can compute the hash of each chunk in parallel for example in a thread pool, since each chunk is independent. That works, but that assumes that the target computer is multicore, and it forces some complexity:
@@ -41,7 +148,6 @@ So what can we do then?
 - We can implement SHA1 with SIMD. That way, it's much faster regardless of the build level. Essentially, we do not rely on the compiler auto-vectorization that only occurs at higher optimization levels, we do it directly. It has the nice advantage that we have guaranteed performance even when using a different compiler, or an older compiler that cannot do auto-vectorization properly, or if a new compiler version comes along and auto-vectorization broke for this code. Since it uses lots of heuristics, this may happen.
 
 
-To isolate the issue, I have created a simple benchmark program. It reads the `.torrent` file, and the dowload file, in my case the `.iso` NetBSD image. Every chunk
 
 ## SHA1 with SSE
 
