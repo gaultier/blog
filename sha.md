@@ -9,7 +9,7 @@ I am writing a torrent application, to download and serve torrent files, in C. A
 
 When we have not downloaded anything yet, the file is completely empty (but still of the right size - we use `ftruncate(2)` to size it properly even if empty from the get go), and nearly every chunk has the wrong hash. Some chunks will accidentally have the right hash, since they are all zeroes in the file we are downloading - good news then, with this approach we do not even have to download them at all!. If we continue an interrupted download (for example we computer restarted), some chunks will have the right hash, and some not. When the download is complete, all chunks will have the correct hash. That way, we know what what chunks we need to download, if any.
 
-I read that some torrent clients prefer to skip this verification at startup because they persist their state in a separate file (perhaps a sqlite database), while downloading chunks. However I favor doing a from scratch verification at startup for a few reasons, over the 'state file' approach:
+I read that some torrent clients prefer to skip this verification at startup because they persist their state in a separate file (perhaps a Sqlite database), while downloading chunks. However I favor doing a from scratch verification at startup for a few reasons, over the 'state file' approach:
 
 - We might have crashed in the middle of a previous download, before updating the state file, and the persisted state is out-of-sync with the download
 - There may have been data corruption at the disk level (not everybody runs ZFS and can detect that!)
@@ -19,7 +19,7 @@ I read that some torrent clients prefer to skip this verification at startup bec
 For this reason I do not have a state file at all. It's simpler and a whole class of out-of-sync issues disappears.
 
 
-So I have this big [NetBSD image](https://netbsd.org/mirrors/torrents/) torrent that I primarly test with (by the way, thank you NetBSD maintainers for that!). It's not that big:
+So I have this big [NetBSD image](https://netbsd.org/mirrors/torrents/) torrent that I primarily test with (by the way, thank you NetBSD maintainers for that!). It's not that big:
 
 ```sh
 $ du -h ./NetBSD-9.4-amd64.iso 
@@ -34,9 +34,9 @@ Let's see how we can speed it up.
 
 It's important to note that to reduce third-party dependencies, the SHA1 code is vendored in the source tree and comes from OpenBSD. It is plain C code, not using SIMD or such. It's good because I can read it and understand it.
 
-I untertained depending on OpenSSL or such, but it feels wasteful to pull in such a hugh amount of code just for SHA1. And building OpenSSL ourselves, to tweak the build flags, means depending on Perl (and Go, in the case of aws-lc). And now I need to pick between OpenSSL, LibreSSL, BoringSSL, aws-lc, etc. And upgrade it when the weekly security vulnerability gets announced. I don't want any of it, if I can help it. Also I want to understand from top to bottom what code I depend on. 
+I entertained depending on OpenSSL or such, but it feels wasteful to pull in such a huge amount of code just for SHA1. And building OpenSSL ourselves, to tweak the build flags, means depending on Perl (and Go, in the case of aws-lc). And now I need to pick between OpenSSL, LibreSSL, BoringSSL, aws-lc, etc. And upgrade it when the weekly security vulnerability gets announced. I don't want any of it, if I can help it. Also I want to understand from top to bottom what code I depend on. 
 
-For a while, due to this slowness, I simply gave up using a debug build, instead I use minimal optimizations (`-O1`) with Adress Sanitizer (a.k.a Address Sanitizer). It was much faster, but lots of functions and variables got optimized away, and the debugging experience was thus subpar. I needed to make my debug + Address Sanitizer build viable.  The debug build without Address Sanitizer is much faster: the startup 'only' takes around 2 seconds. But Address Sanitizer is very valuable, I want to be able to use it! And 2 seconds is still too long. Reducing the iteration cycle is often the deciding factor for software quality in my experience.
+For a while, due to this slowness, I simply gave up using a debug build, instead I use minimal optimizations (`-O1`) with Adress Sanitizer (a.k.a Address Sanitizer). It was much faster, but lots of functions and variables got optimized away, and the debugging experience was thus sub par. I needed to make my debug + Address Sanitizer build viable.  The debug build without Address Sanitizer is much faster: the startup 'only' takes around 2 seconds. But Address Sanitizer is very valuable, I want to be able to use it! And 2 seconds is still too long. Reducing the iteration cycle is often the deciding factor for software quality in my experience.
 
 What's vexing is that from first principles, we know it could/should be much, much faster:
 
@@ -47,20 +47,20 @@ Benchmark 1: sha1sum ./NetBSD-9.4-amd64.iso
   Range (min … max):   293.7 ms … 304.2 ms    10 runs
 ```
 
-Granted, computing the hash for the whole file should be slightly faster than computing the hash for N chunks, because the final step for SHA1 is about padding the data to make it 64 bytes aligned and extracing the digest value from the state computed so far with some bit operations. But still, it's a marginal difference.
+Granted, computing the hash for the whole file should be slightly faster than computing the hash for N chunks, because the final step for SHA1 is about padding the data to make it 64 bytes aligned and extracting the digest value from the state computed so far with some bit operations. But still, it's a marginal difference.
 
 
 Why is it so slow then? I can see on CPU profiles that the SHA1 function takes all of the startup time:
 
 ![CPU Profile of the SIMD-less code, debug + Address Sanitizer build](cpu_profile_sha1_sw_debug_asan.svg)
 
-The SHA1 code is simplistic, it does not use any SIMD or intrisics directly. And that's fine, because when it's compiled with optimizations on, the compiler does a pretty good job at optimizing, and it's really fast, around ~300 ms. But the issue is that this code is working one byte at a time. And Adress Sanitizer, with its nice runtime and bounds checks, makes each memory access **very** expensive. So we basically have just written a worst-case stress-test for Address Sanitizer.
+The SHA1 code is simplistic, it does not use any SIMD or intrinsics directly. And that's fine, because when it's compiled with optimizations on, the compiler does a pretty good job at optimizing, and it's really fast, around ~300 ms. But the issue is that this code is working one byte at a time. And Adress Sanitizer, with its nice runtime and bounds checks, makes each memory access **very** expensive. So we basically have just written a worst-case stress-test for Address Sanitizer.
 
 Let's first review the simple SIMD-less C version to understand the baseline.
 
 ## Non-SIMD
 
-To isolate the issue, I have created a simple benchmark program. It reads the `.torrent` file, and the dowload file, in my case the `.iso` NetBSD image. Every chunk gets hashed and this gets compared with the expected value (a SHA1 hash, or digest, is 20 bytes long). To simplify, I skip the decoding of the `.torrent` file, and harcode the piece length, as well as where exactly in the file are the expected hashes. The only difficulty is that the last piece might be shorter than the others.
+To isolate the issue, I have created a simple benchmark program. It reads the `.torrent` file, and the download file, in my case the `.iso` NetBSD image. Every chunk gets hashed and this gets compared with the expected value (a SHA1 hash, or digest, is 20 bytes long). To simplify, I skip the decoding of the `.torrent` file, and hard-code the piece length, as well as where exactly in the file are the expected hashes. The only difficulty is that the last piece might be shorter than the others.
 
 ```c
 #include <fcntl.h>
@@ -148,10 +148,10 @@ int main(int argc, char *argv[]) {
 
 ### Explanation
 
-- SHA works on 64 bytes chunk (and the last chunk is padded if it is too short).
-- This SIMD-less SHA implementation operates on one `uint32_t` at a time.
+- SHA1 works on 64 bytes chunk (and the last chunk is padded if it is too short).
+- This SIMD-less SHA1 implementation operates on one `uint32_t` at a time.
 - SHA expects data in big-endian but nearly all CPU nowadays are little-endian so we need to swap the bytes when loading the input data to do SHA computations, and back when storing the intermediate results (the SHA state). It is done here with lots of clever bit tricks, one `uint32_t` at a time.
-- The main loop operating on the 64 bytes chunk is unrolled, which avoids having conditionals in the middle of the loop, which might tank performance due to mispredicated branches. The algorithm lends itself to that really well:
+- The main loop operating on the 64 bytes chunk is unrolled, which avoids having conditionals in the middle of the loop, which might tank performance due to mispredicted branches. The algorithm lends itself to that really well:
   ```
     for i from 0 to 79
             if 0 ≤ i ≤ 19 then
@@ -1144,7 +1144,7 @@ static bool is_chunk_valid(uint8_t *chunk, uint64_t chunk_len,
 
 ### Results
 
-How fast you ask?
+How fast?
 
 ```sh
  $ hyperfine --warmup 3 './a.out ./NetBSD-9.4-amd64.iso ~/Downloads/NetBSD-9.4-amd64.iso.torrent'
@@ -1158,7 +1158,7 @@ Now that's what I'm talking about. Around a 10x speed-up compared to the basic S
 What about a release build (without Address Sanitizer), for comparison?
 
 
-This is SIMD-less version with `-O2 -march=native`, benefitting from some auto-vectorization:
+This is SIMD-less version with `-O2 -march=native`, benefiting from some auto-vectorization:
 
 ```sh
 $ hyperfine --warmup 3 './a.out ./NetBSD-9.4-amd64.iso ~/Downloads/NetBSD-9.4-amd64.iso.torrent'
@@ -1167,7 +1167,7 @@ Benchmark 1: ./a.out ./NetBSD-9.4-amd64.iso ~/Downloads/NetBSD-9.4-amd64.iso.tor
   Range (min … max):   598.7 ms … 669.1 ms    10 runs
 ```
 
-Thats **~ 802 Mib/s**.
+That's **~ 802 Mib/s**.
 
 And this is the code using the SHA extension, again with `-O2 -march=native`:
 
@@ -1182,11 +1182,11 @@ That's **~ 1.8 Gib/s**.
 
 Unsurprisingly, when inspecting the generated assembly code for the SIMD-less version, the auto-vectorization is *very* limited and does not use the SHA extension (compilers are smart, but not *that* smart).
 
-As such, it's still very impressive that it reaches such a high performance. My guess is that the compiler does a good job at analyzing data dependencies and reordering statements to maximize utilization. Also, SHA1 does a lot of bit rotation, and the compiler makes heavy use of the `ror` and `shr` instructions to do just that instead of doing multiple naive bit operations in the un-optimized code. 
+As such, it's still very impressive that it reaches such a high performance. My guess is that the compiler does a good job at analyzing data dependencies and reordering statements to maximize utilization. Also, SHA1 does a lot of bit rotation, and the compiler makes heavy use of the `ror` and `shr` instructions to do just that instead of doing multiple naive bit operations in the unoptimized code. 
 
 The version using the SHA extension performs very well, be it in debug + Address Sanitizer mode, or release mode.
 
-Also, in both versions, as the SHA code gots much faster, we start to see on the CPU profile `mmap` show up, as confirmed by the `system time` part becoming a fifth of the whole runtime.
+Also, in both versions, as the SHA code got much faster, we start to see on the CPU profile `mmap` show up, as confirmed by the `system time` part becoming a fifth of the whole runtime.
 
 That means that we are starting to be limited by I/O. Which is good!
 
