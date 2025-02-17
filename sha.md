@@ -144,6 +144,25 @@ int main(int argc, char *argv[]) {
 ```
 
 
+A few interesting points:
+
+- SHA works on 64 bytes chunk (and the last chunk is padded if it is too short).
+- The non SIMD SHA implementation operates on one `uint32_t` at a time.
+- SHA expects data in big-endian but nearly all CPU nowadays are little-endian so we need to swap the bytes. It is done here with lots of clever bit tricks, one `uint32_t` at a time.
+- The main loop operating on the 64 bytes chunk is unrolled, which avoids having conditionals in the middle of the loop, which might tank performance due to mispredicated branches. The algorithm lends itself to that really well:
+  ```
+    for i from 0 to 79
+            if 0 ≤ i ≤ 19 then
+              [..]
+            else if 20 ≤ i ≤ 39
+              [..]
+            else if 40 ≤ i ≤ 59
+              [..]
+            else if 60 ≤ i ≤ 79
+              [..]
+  ```
+  So it's trivial to unroll. We'll see that every implementation does the unrolling.
+
 <details>
   <summary>Non-SIMD SHA1</summary>
 
@@ -426,6 +445,37 @@ So let's do SIMD and learn cool new stuff! The nice thing about it is that we ca
 
 Intel references this implementation on their [website](https://www.intel.com/content/www/us/en/developer/articles/technical/improving-the-performance-of-the-secure-hash-algorithm-1.html). According to Intel, it was fundamental work at the time and influenced them. It's also not the fastest SSE implementation, the very article from Intel is about some performance enhancements they found for this code, but it has the advantage that if you have a processor from 2004 or after, it works, and it's simple.
 
+### Explanation
+
+I really am a SIMD beginner but I found a few interesting nuggets of wisdom here:
+
+- Just like the non SIMD implementation, the loops are unrolled
+- Going from big-endian to little-endian was originally done 4 `uint16_t` at a time in this version with the intrisics `_mm_shufflehi_epi16` and `_mm_shufflelo_epi16`. However, the underlying instruction (`PSHUFB`) evolved to do that on 4 `uint32_t` later on with the intrisic `__builtin_ia32_pshufhw`, as Intel mentions on their page:
+  > There are a few other improvements worth mentioning. The use of SSSE3 instruction PSHUFB allows efficient conversion between big- and little-endian data formats for rounds 1 to 16, where values of W[i] are read from the message data, 4 values are converted by a single PSHUFB instruction. 
+
+  So due to its age, this code does some things suboptimally since they were added to later versions of SSE.
+- The way this shuffle works is by providing a bit mask that indicates which bits to copy from the source to the destination, and where to place them:
+    ```c
+      // `0x1b` == `0b0001_1011`.
+      // Will result in:
+      // [31:0] == [127:96] (due to bits [1:0] being `11`).
+      // [63:32] == [95:64] (due to bits [3:2] being `10`).
+      // [95:64] == [63:32] (due to bits [5:4] being `01`).
+      // [127:96] == [31:0] (due to bits [7:6] being `00`).
+      // I.e.: Transform state to big-endian.
+      ABCD = _mm_shuffle_epi32(ABCD, 0x1B);
+    ```
+- The unit of work in SSE is 128 bits (or `uint32_t[4]`). Unfortunately, the SHA1 state that we are continuously updating, and from which the final digest is extracted, is **5** uint32_t as seen in the non SIMD version:
+  ```c
+    typedef struct {
+      uint32_t state[5]; // <= This field.
+      uint64_t count;
+      uint8_t buffer[SHA1_BLOCK_LENGTH];
+    } SHA1_CTX;
+  ```
+  So we are in a pickle since it does not fit neatly. In this version it is not really visible but in the next version, we'll see that we have to do one SIMD operation on the first 4 `uint32_t`, named `ABCD`, and another one with the last `uint32_t`, named `E`. So this second operation is a bit wasteful: our 128 bits only contain 1/4 of useful data, and our CPU does computations on a bunch of zeroes which will be thrown away.
+
+### The code
 
 <details>
     <summary>SHA1 with SSE</summary>
@@ -767,7 +817,7 @@ static bool is_chunk_valid(uint8_t *chunk, uint64_t chunk_len,
   SHA1_CTX ctx = {0};
   SHA1Init(&ctx);
 
-  // Process as many 4 bytes chunks as possible.
+  // Process as many 16 bytes chunks as possible.
   uint64_t len_rounded_down = (chunk_len / 64) * 64;
   uint64_t rem = chunk_len % 64;
   uint64_t steps = len_rounded_down / 64;
@@ -785,7 +835,7 @@ static bool is_chunk_valid(uint8_t *chunk, uint64_t chunk_len,
 }
 ```
 
-As it is often the case with SIMD code, we process the data in groups of N (here N=4) bytes at a time, and the few excess bytes at the end use the normal non-SIMD code path.
+As it is often the case with SIMD code, we process the data in groups of N (here N=4) bytes at a time, and the few excess (0, 1, 2 or 3) bytes  at the end use the normal non-SIMD code path.
 
 So predictably, we observe roughly a 4x speed-up (still in debug + Address Sanitizer mode):
 
@@ -798,22 +848,251 @@ Benchmark 1: ./a.out ./NetBSD-9.4-amd64.iso ~/Downloads/NetBSD-9.4-amd64.iso.tor
 
 That's better but still not great. We could apply the tweaks suggested by Intel, but that probably would not give us the order of magnitude improvement we need.
 
-So... did you know that in all likelihood, your CPU has dedicated silicon to accelerate SHA computations? Let's use that! We paid for it, we get to use it!
+By the way... did you know that in all likelihood, your CPU has dedicated silicon to accelerate SHA computations? Let's use that! We paid for it, we get to use it!
 
 ## SHA1 with the Intel SHA extension
 
-Despite the name, Intel as well as AMD CPUs have been shipping with this extension, since around 2017. It adds a few SIMD instructions dedicated to compute SHA1 (and SHA256, and other variants). Note that ARM also has an equivalent (albeit incompatible, of course) extension so the same can be done there.
+Despite the 'Intel' name, Intel as well as AMD CPUs have been shipping with this extension, since around 2017. It adds a few SIMD instructions dedicated to compute SHA1 (and SHA256, and other variants). Note that ARM also has an equivalent (albeit incompatible, of course) extension so the same can be done there.
 
-The advantage is that the structure of the code can remain the same: we still are using 128 bits SIMD registers, still computing 64 bytes at a time for SHA. It's just that a few operations get faster. How fast you ask?
+The advantage is that the structure of the code can remain the same: we still are using 128 bits SIMD registers, still computing chunks of 64 bytes at a time for SHA. It's just that a few operations get faster.
 
-```sh
-$ hyperfine --warmup 3 './a.out ./NetBSD-9.4-amd64.iso ~/Downloads/NetBSD-9.4-amd64.iso.torrent'
-Benchmark 1: ./a.out ./NetBSD-9.4-amd64.iso ~/Downloads/NetBSD-9.4-amd64.iso.torrent
-  Time (mean ± σ):     858.7 ms ±  40.4 ms    [User: 802.5 ms, System: 53.9 ms]
-  Range (min … max):   821.3 ms … 944.1 ms    10 runs
+The implementation comes from this [Github repository](https://github.com/noloader/SHA-Intrinsics/blob/master/sha1-x86.c). I have commented most of it to add explanations.
+
+<details>
+    <summary>SHA1 with the Intel SHA extension</summary>
+
+```c
+// Process as many 64 bytes chunks as possible.
+[[maybe_unused]]
+static void sha1_sha_ext(uint32_t state[5], const uint8_t data[],
+                         uint32_t length) {
+  __m128i ABCD, ABCD_SAVE, E0, E0_SAVE, E1;
+  __m128i MSG0, MSG1, MSG2, MSG3;
+  const __m128i MASK =
+      // As 16 u8: `0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15`.
+      _mm_set_epi64x(0x0001020304050607ULL, 0x08090a0b0c0d0e0fULL);
+
+  /* Load initial values */
+  ABCD = _mm_loadu_si128((const __m128i *)(void *)state);
+  E0 = _mm_set_epi32((int)state[4], 0, 0, 0);
+
+  // `0x1b` == `0b0001_1011`.
+  // Will result in:
+  // [31:0] == [127:96] (due to bits [1:0] being `11`).
+  // [63:32] == [95:64] (due to bits [3:2] being `10`).
+  // [95:64] == [63:32] (due to bits [5:4] being `01`).
+  // [127:96] == [31:0] (due to bits [7:6] being `00`).
+  // I.e.: Transform state to big-endian.
+  ABCD = _mm_shuffle_epi32(ABCD, 0x1B);
+
+  while (length >= 64) {
+    /* Save current state  */
+    ABCD_SAVE = ABCD;
+    E0_SAVE = E0;
+
+    /* Rounds 0-3 */
+    // Load first 16 bytes of data in `MSG0`.
+    MSG0 = _mm_loadu_si128((const __m128i *)(void *)(data + 0));
+
+    // for each byte in src:
+    //    Bit 7: \n
+    //    1: Clear the corresponding byte in the destination. \n
+    //    0: Copy the selected source byte to the corresponding byte in the
+    //    destination. \n
+    //    Bits [6:4] Reserved.  \n
+    //    Bits [3:0] select the source byte to be copied.
+    //    Since MASK is `0..=15`, we copy MSG0 and transorm it to big endian in one operation.
+    MSG0 = _mm_shuffle_epi8(MSG0, MASK);
+    E0 = _mm_add_epi32(E0, MSG0);
+    E1 = ABCD;
+    //  Perform 4 rounds of SHA1 operation.
+    ABCD = (__m128i)_mm_sha1rnds4_epu32(ABCD, E0, 0);
+
+    /* Rounds 4-7 */
+    MSG1 = _mm_loadu_si128((const __m128i *)(void *)(data + 16));
+    MSG1 = _mm_shuffle_epi8(MSG1, MASK);
+    // Compute the SHA1 state variable E after 4 rounds.
+    // It is added to the source operand (`E1`).
+    E1 = _mm_sha1nexte_epu32(E1, MSG1);
+    E0 = ABCD;
+
+    //  Perform 4 rounds of SHA1 operation.
+    ABCD = (__m128i)_mm_sha1rnds4_epu32(ABCD, E1, 0);
+    // Perform the intermediate calculation for the next four SHA1 message dwords (128 bits).
+    MSG0 = _mm_sha1msg1_epu32(MSG0, MSG1);
+
+    /* Rounds 8-11 */
+    MSG2 = _mm_loadu_si128((const __m128i *)(void *)(data + 32));
+    MSG2 = _mm_shuffle_epi8(MSG2, MASK);
+    E0 = _mm_sha1nexte_epu32(E0, MSG2);
+    E1 = ABCD;
+    ABCD = (__m128i)_mm_sha1rnds4_epu32(ABCD, E0, 0);
+    MSG1 = _mm_sha1msg1_epu32(MSG1, MSG2);
+    MSG0 = _mm_xor_si128(MSG0, MSG2);
+
+    /* Rounds 12-15 */
+    MSG3 = _mm_loadu_si128((const __m128i *)(void *)(data + 48));
+    MSG3 = _mm_shuffle_epi8(MSG3, MASK);
+    E1 = _mm_sha1nexte_epu32(E1, MSG3);
+    E0 = ABCD;
+    // Perform a final calculation for the next four SHA1 message dwords.
+    MSG0 = _mm_sha1msg2_epu32(MSG0, MSG3);
+    ABCD = (__m128i)_mm_sha1rnds4_epu32(ABCD, E1, 0);
+    MSG2 = _mm_sha1msg1_epu32(MSG2, MSG3);
+    MSG1 = _mm_xor_si128(MSG1, MSG3);
+
+    /* Rounds 16-19 */
+    E0 = _mm_sha1nexte_epu32(E0, MSG0);
+    E1 = ABCD;
+    MSG1 = _mm_sha1msg2_epu32(MSG1, MSG0);
+    ABCD = (__m128i)_mm_sha1rnds4_epu32(ABCD, E0, 0);
+    MSG3 = _mm_sha1msg1_epu32(MSG3, MSG0);
+    MSG2 = _mm_xor_si128(MSG2, MSG0);
+
+    /* Rounds 20-23 */
+    E1 = _mm_sha1nexte_epu32(E1, MSG1);
+    E0 = ABCD;
+    MSG2 = _mm_sha1msg2_epu32(MSG2, MSG1);
+    ABCD = (__m128i)_mm_sha1rnds4_epu32(ABCD, E1, 1);
+    MSG0 = _mm_sha1msg1_epu32(MSG0, MSG1);
+    MSG3 = _mm_xor_si128(MSG3, MSG1);
+
+    /* Rounds 24-27 */
+    E0 = _mm_sha1nexte_epu32(E0, MSG2);
+    E1 = ABCD;
+    MSG3 = _mm_sha1msg2_epu32(MSG3, MSG2);
+    ABCD = (__m128i)_mm_sha1rnds4_epu32(ABCD, E0, 1);
+    MSG1 = _mm_sha1msg1_epu32(MSG1, MSG2);
+    MSG0 = _mm_xor_si128(MSG0, MSG2);
+
+    /* Rounds 28-31 */
+    E1 = _mm_sha1nexte_epu32(E1, MSG3);
+    E0 = ABCD;
+    MSG0 = _mm_sha1msg2_epu32(MSG0, MSG3);
+    ABCD = (__m128i)_mm_sha1rnds4_epu32(ABCD, E1, 1);
+    MSG2 = _mm_sha1msg1_epu32(MSG2, MSG3);
+    MSG1 = _mm_xor_si128(MSG1, MSG3);
+
+    /* Rounds 32-35 */
+    E0 = _mm_sha1nexte_epu32(E0, MSG0);
+    E1 = ABCD;
+    MSG1 = _mm_sha1msg2_epu32(MSG1, MSG0);
+    ABCD = (__m128i)_mm_sha1rnds4_epu32(ABCD, E0, 1);
+    MSG3 = _mm_sha1msg1_epu32(MSG3, MSG0);
+    MSG2 = _mm_xor_si128(MSG2, MSG0);
+
+    /* Rounds 36-39 */
+    E1 = _mm_sha1nexte_epu32(E1, MSG1);
+    E0 = ABCD;
+    MSG2 = _mm_sha1msg2_epu32(MSG2, MSG1);
+    ABCD = (__m128i)_mm_sha1rnds4_epu32(ABCD, E1, 1);
+    MSG0 = _mm_sha1msg1_epu32(MSG0, MSG1);
+    MSG3 = _mm_xor_si128(MSG3, MSG1);
+
+    /* Rounds 40-43 */
+    E0 = _mm_sha1nexte_epu32(E0, MSG2);
+    E1 = ABCD;
+    MSG3 = _mm_sha1msg2_epu32(MSG3, MSG2);
+    ABCD = (__m128i)_mm_sha1rnds4_epu32(ABCD, E0, 2);
+    MSG1 = _mm_sha1msg1_epu32(MSG1, MSG2);
+    MSG0 = _mm_xor_si128(MSG0, MSG2);
+
+    /* Rounds 44-47 */
+    E1 = _mm_sha1nexte_epu32(E1, MSG3);
+    E0 = ABCD;
+    MSG0 = _mm_sha1msg2_epu32(MSG0, MSG3);
+    ABCD = (__m128i)_mm_sha1rnds4_epu32(ABCD, E1, 2);
+    MSG2 = _mm_sha1msg1_epu32(MSG2, MSG3);
+    MSG1 = _mm_xor_si128(MSG1, MSG3);
+
+    /* Rounds 48-51 */
+    E0 = _mm_sha1nexte_epu32(E0, MSG0);
+    E1 = ABCD;
+    MSG1 = _mm_sha1msg2_epu32(MSG1, MSG0);
+    ABCD = (__m128i)_mm_sha1rnds4_epu32(ABCD, E0, 2);
+    MSG3 = _mm_sha1msg1_epu32(MSG3, MSG0);
+    MSG2 = _mm_xor_si128(MSG2, MSG0);
+
+    /* Rounds 52-55 */
+    E1 = _mm_sha1nexte_epu32(E1, MSG1);
+    E0 = ABCD;
+    MSG2 = _mm_sha1msg2_epu32(MSG2, MSG1);
+    ABCD = (__m128i)_mm_sha1rnds4_epu32(ABCD, E1, 2);
+    MSG0 = _mm_sha1msg1_epu32(MSG0, MSG1);
+    MSG3 = _mm_xor_si128(MSG3, MSG1);
+
+    /* Rounds 56-59 */
+    E0 = _mm_sha1nexte_epu32(E0, MSG2);
+    E1 = ABCD;
+    MSG3 = _mm_sha1msg2_epu32(MSG3, MSG2);
+    ABCD = (__m128i)_mm_sha1rnds4_epu32(ABCD, E0, 2);
+    MSG1 = _mm_sha1msg1_epu32(MSG1, MSG2);
+    MSG0 = _mm_xor_si128(MSG0, MSG2);
+
+    /* Rounds 60-63 */
+    E1 = _mm_sha1nexte_epu32(E1, MSG3);
+    E0 = ABCD;
+    MSG0 = _mm_sha1msg2_epu32(MSG0, MSG3);
+    ABCD = (__m128i)_mm_sha1rnds4_epu32(ABCD, E1, 3);
+    MSG2 = _mm_sha1msg1_epu32(MSG2, MSG3);
+    MSG1 = _mm_xor_si128(MSG1, MSG3);
+
+    /* Rounds 64-67 */
+    E0 = _mm_sha1nexte_epu32(E0, MSG0);
+    E1 = ABCD;
+    MSG1 = _mm_sha1msg2_epu32(MSG1, MSG0);
+    ABCD = (__m128i)_mm_sha1rnds4_epu32(ABCD, E0, 3);
+    MSG3 = _mm_sha1msg1_epu32(MSG3, MSG0);
+    MSG2 = _mm_xor_si128(MSG2, MSG0);
+
+    /* Rounds 68-71 */
+    E1 = _mm_sha1nexte_epu32(E1, MSG1);
+    E0 = ABCD;
+    MSG2 = _mm_sha1msg2_epu32(MSG2, MSG1);
+    ABCD = (__m128i)_mm_sha1rnds4_epu32(ABCD, E1, 3);
+    MSG3 = _mm_xor_si128(MSG3, MSG1);
+
+    /* Rounds 72-75 */
+    E0 = _mm_sha1nexte_epu32(E0, MSG2);
+    E1 = ABCD;
+    MSG3 = _mm_sha1msg2_epu32(MSG3, MSG2);
+    ABCD = (__m128i)_mm_sha1rnds4_epu32(ABCD, E0, 3);
+
+    /* Rounds 76-79 */
+    E1 = _mm_sha1nexte_epu32(E1, MSG3);
+    E0 = ABCD;
+    ABCD = (__m128i)_mm_sha1rnds4_epu32(ABCD, E1, 3);
+
+    /* Combine state */
+    E0 = _mm_sha1nexte_epu32(E0, E0_SAVE);
+    ABCD = _mm_add_epi32(ABCD, ABCD_SAVE);
+
+    data += 64;
+    length -= 64;
+  }
+
+  /* Save state */
+  ABCD = _mm_shuffle_epi32(ABCD, 0x1B);
+  _mm_storeu_si128((__m128i *)(void *)state, ABCD);
+  state[4] = (uint32_t)_mm_extract_epi32(E0, 3);
+}
+
 ```
 
-Now that's what I'm talking about. Around a 10x speed-up compared to the basic SSE implementation! And now we are running under a second.
+</details>
+
+
+
+How fast you ask?
+
+```sh
+ $ hyperfine --warmup 3 './a.out ./NetBSD-9.4-amd64.iso ~/Downloads/NetBSD-9.4-amd64.iso.torrent'
+Benchmark 1: ./a.out ./NetBSD-9.4-amd64.iso ~/Downloads/NetBSD-9.4-amd64.iso.torrent
+  Time (mean ± σ):     866.9 ms ±  17.4 ms    [User: 809.6 ms, System: 54.4 ms]
+  Range (min … max):   839.7 ms … 901.4 ms    10 runs
+```
+
+Now that's what I'm talking about. Around a 10x speed-up compared to the basic SSE implementation! And now we are running under a second. Also the variability is much reduced which is nice.
 
 What about a release build (without Address Sanitizer), for comparison?
 
@@ -934,4 +1213,4 @@ Benchmark 1: ./a.out ./NetBSD-9.4-amd64.iso ~/Downloads/NetBSD-9.4-amd64.iso.tor
   Range (min … max):    7.635 s …  8.062 s    10 runs
 ```
 
-~ x4 speed-up since we process 4 bytes at a time instead of 1.
+~ x4 speed-up since we process 4 `uint32_t` at a time instead of 1.
