@@ -56,3 +56,13 @@ Benchmark 1: ./a.out ./NetBSD-9.4-amd64.iso ~/Downloads/NetBSD-9.4-amd64.iso.tor
   Range (min … max):   276.1 ms … 294.3 ms    10 runs
  
 ```
+
+## Release, libcrypto
+
+```sh
+ $ hyperfine --warmup 3 './a.out ./NetBSD-9.4-amd64.iso ~/Downloads/NetBSD-9.4-amd64.iso.torrent'
+Benchmark 1: ./a.out ./NetBSD-9.4-amd64.iso ~/Downloads/NetBSD-9.4-amd64.iso.torrent
+  Time (mean ± σ):     281.5 ms ±   3.9 ms    [User: 245.7 ms, System: 35.1 ms]
+  Range (min … max):   276.3 ms … 288.9 ms    10 runs
+ 
+```
