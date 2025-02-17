@@ -1,15 +1,15 @@
 Title: Making my debug build usable with a 30x speed-up
-Tags: C, SIMD, SHA1, Adress Sanitizer, Torrent
+Tags: C, SIMD, SHA1, Torrent, Optimization
 ---
 
 *SIMD and dedicated silicon to the rescue.*
 
 
-I am writing a torrent application, to download and serve torrent files, in C. A torrent download is made of chunks, typically 1 MiB or 2 MiB.  At start-up, the program reads the downloaded file chunk by chunk, computes its [SHA1](https://en.wikipedia.org/wiki/SHA-1) hash, and marks this chunk as downloaded if the actual hash is indeed the expected hash. We get from the `.torrent` file the expected hash of each chunk.
+I am writing a torrent application, to download and serve torrent files, in C. A torrent download is made of pieces, typically 1 MiB or 2 MiB.  At start-up, the program reads the downloaded file piece by piece, computes its [SHA1](https://en.wikipedia.org/wiki/SHA-1) hash, and marks this piece as downloaded if the actual hash is indeed the expected hash. We get from the `.torrent` file the expected hash of each piece.
 
-When we have not downloaded anything yet, the file is completely empty (but still of the right size - we use `ftruncate(2)` to size it properly even if empty from the get go), and nearly every chunk has the wrong hash. Some chunks will accidentally have the right hash, since they are all zeroes in the file we are downloading - good news then, with this approach we do not even have to download them at all!. If we continue an interrupted download (for example we computer restarted), some chunks will have the right hash, and some not. When the download is complete, all chunks will have the correct hash. That way, we know what what chunks we need to download, if any.
+When we have not downloaded anything yet, the file is completely empty (but still of the right size - we use `ftruncate(2)` to size it properly even if empty from the get go), and nearly every piece has the wrong hash. Some pieces will accidentally have the right hash, since they are all zeroes in the file we are downloading - good news then, with this approach we do not even have to download them at all!. If we continue an interrupted download (for example we computer restarted), some pieces will have the right hash, and some not. When the download is complete, all pieces will have the correct hash. That way, we know what what pieces we need to download, if any.
 
-I read that some torrent clients prefer to skip this verification at startup because they persist their state in a separate file (perhaps a Sqlite database), while downloading chunks. However I favor doing a from scratch verification at startup for a few reasons, over the 'state file' approach:
+I read that some torrent clients prefer to skip this verification at startup because they persist their state in a separate file (perhaps a Sqlite database), while downloading pieces. However I favor doing a from scratch verification at startup for a few reasons, over the 'state file' approach:
 
 - We might have crashed in the middle of a previous download, before updating the state file, and the persisted state is out-of-sync with the download
 - There may have been data corruption at the disk level (not everybody runs ZFS and can detect that!)
@@ -26,7 +26,7 @@ $ du -h ./NetBSD-9.4-amd64.iso
 485M	./NetBSD-9.4-amd64.iso
 ```
 
-But when I build my code in debug mode (no optimizations) with Adress Sanitizer, to detect various issues early, startup takes **20 to 30 seconds!** That's unbearable, especially when working in the debugger and inspecting some code that runs after the startup. We'd like to finish this verification under 1 second ideally. And making it fast is important, because until it finishes, we do not know which chunks we need to download.
+But when I build my code in debug mode (no optimizations) with Adress Sanitizer, to detect various issues early, startup takes **20 to 30 seconds!** That's unbearable, especially when working in the debugger and inspecting some code that runs after the startup. We'd like to finish this verification under 1 second ideally. And making it fast is important, because until it finishes, we do not know which pieces we need to download.
 
 Let's see how we can speed it up.
 
@@ -47,7 +47,7 @@ Benchmark 1: sha1sum ./NetBSD-9.4-amd64.iso
   Range (min … max):   293.7 ms … 304.2 ms    10 runs
 ```
 
-Granted, computing the hash for the whole file should be slightly faster than computing the hash for N chunks, because the final step for SHA1 is about padding the data to make it 64 bytes aligned and extracting the digest value from the state computed so far with some bit operations. But still, it's a marginal difference.
+Granted, computing the hash for the whole file should be slightly faster than computing the hash for N pieces, because the final step for SHA1 is about padding the data to make it 64 bytes aligned and extracting the digest value from the state computed so far with some bit operations. But still, it's a marginal difference.
 
 
 Why is it so slow then? I can see on CPU profiles that the SHA1 function takes all of the startup time:
@@ -60,7 +60,7 @@ Let's first review the simple SIMD-less C version to understand the baseline.
 
 ## Non-SIMD
 
-To isolate the issue, I have created a simple benchmark program. It reads the `.torrent` file, and the download file, in my case the `.iso` NetBSD image. Every chunk gets hashed and this gets compared with the expected value (a SHA1 hash, or digest, is 20 bytes long). To simplify, I skip the decoding of the `.torrent` file, and hard-code the piece length, as well as where exactly in the file are the expected hashes. The only difficulty is that the last piece might be shorter than the others.
+To isolate the issue, I have created a simple benchmark program. It reads the `.torrent` file, and the download file, in my case the `.iso` NetBSD image. Every piece gets hashed and this gets compared with the expected value (a SHA1 hash, or digest, is 20 bytes long). To simplify, I skip the decoding of the `.torrent` file, and hard-code the piece length, as well as where exactly in the file are the expected hashes. The only difficulty is that the last piece might be shorter than the others.
 
 ```c
 #include <fcntl.h>
@@ -72,12 +72,12 @@ To isolate the issue, I have created a simple benchmark program. It reads the `.
 #include <sys/stat.h>
 #include <unistd.h>
 
-static bool is_chunk_valid(uint8_t *chunk, uint64_t chunk_len,
+static bool is_piece_valid(uint8_t *piece, uint64_t piece_len,
                            uint8_t digest_expected[20]) {
   SHA_CTX ctx = {0};
   SHA1_Init(&ctx);
 
-  SHA1_Update(&ctx, chunk, chunk_len);
+  SHA1_Update(&ctx, piece, piece_len);
 
   uint8_t digest_actual[20] = {0};
   SHA1_Final(digest_actual, &ctx);
@@ -138,7 +138,7 @@ int main(int argc, char *argv[]) {
                                      : piece_length;
     uint8_t *digest_expected = file_torrent_data + i * 20;
 
-    if (!is_chunk_valid(data, piece_length_real, digest_expected)) {
+    if (!is_piece_valid(data, piece_length_real, digest_expected)) {
       return 1;
     }
   }
@@ -429,17 +429,17 @@ Benchmark 1: ./a.out ./NetBSD-9.4-amd64.iso ~/Downloads/NetBSD-9.4-amd64.iso.tor
 
 This is consistent with our torrent program.
 
-I experimented with doing a `read` syscall for each chunk (that's what `sha1sum` does) versus using `mmap`, and there was no difference; additionally the system time is nothing compared to user time, so I/O is not the limiting factor - SHA1 computation is, as confirmed by the CPU profile.
+I experimented with doing a `read` syscall for each piece (that's what `sha1sum` does) versus using `mmap`, and there was no difference; additionally the system time is nothing compared to user time, so I/O is not the limiting factor - SHA1 computation is, as confirmed by the CPU profile.
 
 ### Possible optimizations
 
 So what can we do about it?
 
 - We can build the SHA1 code separately with optimizations on, always (and potentially without Address Sanitizer). That's a bit annoying, because I currently do a Unity build meaning there is only one compilation unit. So having suddenly multiple compilation units with different build flags makes the build system more complex. And clang has annotations to *lower* the optimization level for one function but not to *raise* it.
-- We can compute the hash of each chunk in parallel for example in a thread pool, since each chunk is independent. That works and that's what [libtorrent did/does](https://blog.libtorrent.org/2011/11/multi-threaded-piece-hashing/), but that assumes that the target computer has cores to spare, and it creates some complexity:
-  + We need to implement a thread pool (spawning a new thread for each chunk will not perform well) and pick a reasonable thread pool size given the number of cores, in a cross-platform way
-  + We need a M:N scheduling logic to compute the hash of M chunks on N threads. It could be a work-stealing queue where each thread picks the next item when its finished with its chunk, or we read the whole file in memory and split the data in equal parts for each thread to plow through (but beware that the data for each thread must be aligned with the chunk size!)
-  + We would have high contention: in the real program, we update a bitfield to know which chunk is valid or not, and every thread would contend on this (perhaps more so with the work-stealing queue than with the 'split in equal parts' approach).
+- We can compute the hash of each piece in parallel for example in a thread pool, since each piece is independent. That works and that's what [libtorrent did/does](https://blog.libtorrent.org/2011/11/multi-threaded-piece-hashing/), but that assumes that the target computer has cores to spare, and it creates some complexity:
+  + We need to implement a thread pool (spawning a new thread for each piece will not perform well) and pick a reasonable thread pool size given the number of cores, in a cross-platform way
+  + We need a M:N scheduling logic to compute the hash of M pieces on N threads. It could be a work-stealing queue where each thread picks the next item when its finished with its piece, or we read the whole file in memory and split the data in equal parts for each thread to plow through (but beware that the data for each thread must be aligned with the piece size!)
+  + We would have high contention: in the real program, we update a bitfield to know which piece is valid or not, and every thread would contend on this (perhaps more so with the work-stealing queue than with the 'split in equal parts' approach).
 - We can implement SHA1 with SIMD. That way, it's much faster regardless of the build level. Essentially, we do not rely on the compiler auto-vectorization that only occurs at higher optimization levels, we do it directly. It has the nice advantage that we have guaranteed performance even when using a different compiler, or an older compiler that cannot do auto-vectorization properly, or if a new compiler version comes along and auto-vectorization broke for this code. Since it uses lots of heuristics, this may happen.
 
 
@@ -806,25 +806,25 @@ static void sha1_sse_step(uint32_t *restrict H, const uint32_t *restrict inputu,
 </details>
 
 
-Our `is_chunk_valid` function now becomes:
+Our `is_piece_valid` function now becomes:
 
 ```c
-static bool is_chunk_valid(uint8_t *chunk, uint64_t chunk_len,
+static bool is_piece_valid(uint8_t *piece, uint64_t piece_len,
                            uint8_t digest_expected[20]) {
   SHA1_CTX ctx = {0};
   SHA1Init(&ctx);
 
-  // Process as many SHA 64 bytes chunks as possible.
-  uint64_t len_rounded_down = (chunk_len / 64) * 64;
-  uint64_t rem = chunk_len % 64;
+  // Process as many SHA 64 bytes pieces as possible.
+  uint64_t len_rounded_down = (piece_len / 64) * 64;
+  uint64_t rem = piece_len % 64;
   uint64_t steps = len_rounded_down / 64;
-  sha1_sse_step(ctx.state, chunk, steps);
+  sha1_sse_step(ctx.state, piece, steps);
 
   // Process the excess.
-  memcpy(ctx.buffer, chunk + len_rounded_down, rem);
+  memcpy(ctx.buffer, piece + len_rounded_down, rem);
 
   // `count` is in bits: multiple the number of bytes by 8.
-  ctx.count = chunk_len * 8;
+  ctx.count = piece_len * 8;
 
   uint8_t digest_actual[20] = {0};
   SHA1Final(digest_actual, &ctx);
@@ -1118,22 +1118,22 @@ static void sha1_sha_ext(uint32_t state[5], const uint8_t data[],
 </details>
 
 
-Our `is_chunk_valid` function is practically identical to the last section:
+Our `is_piece_valid` function is practically identical to the last section:
 
 ```c
-static bool is_chunk_valid(uint8_t *chunk, uint64_t chunk_len,
+static bool is_piece_valid(uint8_t *piece, uint64_t piece_len,
                            uint8_t digest_expected[20]) {
   SHA1_CTX ctx = {0};
   SHA1Init(&ctx);
 
-  // Process as many SHA 64 bytes chunks as possible.
-  uint64_t len_rounded_down = (chunk_len / 64) * 64;
-  uint64_t rem = chunk_len % 64;
-  sha1_sha_ext(ctx.state, chunk, (uint32_t)len_rounded_down);
+  // Process as many SHA 64 bytes pieces as possible.
+  uint64_t len_rounded_down = (piece_len / 64) * 64;
+  uint64_t rem = piece_len % 64;
+  sha1_sha_ext(ctx.state, piece, (uint32_t)len_rounded_down);
 
-  memcpy(ctx.buffer, chunk + len_rounded_down, rem);
+  memcpy(ctx.buffer, piece + len_rounded_down, rem);
 
-  ctx.count = chunk_len * 8;
+  ctx.count = piece_len * 8;
 
   uint8_t digest_actual[20] = {0};
   SHA1Final(digest_actual, &ctx);
