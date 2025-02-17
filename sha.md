@@ -150,7 +150,7 @@ int main(int argc, char *argv[]) {
 
 - SHA works on 64 bytes chunk (and the last chunk is padded if it is too short).
 - This SIMD-less SHA implementation operates on one `uint32_t` at a time.
-- SHA expects data in big-endian but nearly all CPU nowadays are little-endian so we need to swap the bytes to do SHA computations, and back when storing the intermediate results (the SHA state). It is done here with lots of clever bit tricks, one `uint32_t` at a time.
+- SHA expects data in big-endian but nearly all CPU nowadays are little-endian so we need to swap the bytes when loading the input data to do SHA computations, and back when storing the intermediate results (the SHA state). It is done here with lots of clever bit tricks, one `uint32_t` at a time.
 - The main loop operating on the 64 bytes chunk is unrolled, which avoids having conditionals in the middle of the loop, which might tank performance due to mispredicated branches. The algorithm lends itself to that really well:
   ```
     for i from 0 to 79
@@ -869,10 +869,8 @@ The implementation is a pure work of art, and comes from this [Github repository
       uint8_t buffer[SHA1_BLOCK_LENGTH];
     } SHA1_CTX;
   ```
-  So we are in a pickle since it does not fit neatly in one SIMD register.  Thus, we have to do one SIMD operation on the first 4 `uint32_t`, named `ABCD`, and another one with the last `uint32_t`, named `E`. So this second operation is a bit wasteful: our 128 bits only contain 1/4 of useful data, and our CPU does computations on a bunch of zeroes which will be thrown away. But there is no other way: SIMD uses a different set of registers, it would be very unefficient to copy data in and out of these all the time.
-- Endianess conversion is done with one SIMD instruction, same as before (so 4 `uint32_t` at a time). 
-  + We need to do convert from little-endian to big-endian when loading the data that we are going to hash, and the intermediate state computed so far
-  + We need to convert from big-endian to little-endian  at the end of processing a 64 byte chunk, to store the computed state back to a plain array of 5 `uint32_t`.
+  So we are in a pickle since it does not fit neatly in one SIMD register.  Thus, we have to do one SIMD operation on the first 4 `uint32_t`, named `ABCD`, and another one with the last `uint32_t`, named `E`. So this second operation is a bit wasteful: our 128 bits only contain 1/4 of useful data, and our CPU does computations on a bunch of zeroes which will be thrown away. But there is no other way: SIMD uses a different set of registers from the standard ones. We want to stay in SIMD land as much as possible, that's where the performance is.
+- Endianness conversion is done with one SIMD instruction, same as before (so 4 `uint32_t` at a time). 
 - The SHA Intel extension provides 4 operations:
   + `sha1rnds4` to compute the next `ABCD` state
   + `sha1nexte`: to compute the next `E` state (remember, `E` is alone in its 128 bits register)

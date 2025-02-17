@@ -319,7 +319,7 @@ int main(int argc, char *argv[]) {
 <ul>
 <li>SHA works on 64 bytes chunk (and the last chunk is padded if it is too short).</li>
 <li>This SIMD-less SHA implementation operates on one <code>uint32_t</code> at a time.</li>
-<li>SHA expects data in big-endian but nearly all CPU nowadays are little-endian so we need to swap the bytes to do SHA computations, and back when storing the intermediate results (the SHA state). It is done here with lots of clever bit tricks, one <code>uint32_t</code> at a time.</li>
+<li>SHA expects data in big-endian but nearly all CPU nowadays are little-endian so we need to swap the bytes when loading the input data to do SHA computations, and back when storing the intermediate results (the SHA state). It is done here with lots of clever bit tricks, one <code>uint32_t</code> at a time.</li>
 <li>The main loop operating on the 64 bytes chunk is unrolled, which avoids having conditionals in the middle of the loop, which might tank performance due to mispredicated branches. The algorithm lends itself to that really well:
 <pre><code>  for i from 0 to 79
           if 0 ≤ i ≤ 19 then
@@ -1019,20 +1019,15 @@ Benchmark 1: ./a.out ./NetBSD-9.4-amd64.iso ~/Downloads/NetBSD-9.4-amd64.iso.tor
 	<a class="hash-anchor" href="#explanations" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h3>
 <ul>
-<li>The unit of work here is still 128 bits (or <code>uint32_t[4]</code>). Unfortunately, the SHA1 state that we are continuously updating, and from which the final digest is extracted, is <strong>5</strong> uint32_t as seen in the SIMD-less version:
+<li>The unit of work here is still 128 bits (or <code>uint32_t[4]</code>). Unfortunately, the SHA1 state that we are continuously updating, and from which the final digest is extracted, is <strong>5</strong> <code>uint32_t</code> as seen in the SIMD-less version:
 <pre><code class="language-c">  typedef struct {
     uint32_t state[5]; // &lt;= This field.
     uint64_t count;
     uint8_t buffer[SHA1_BLOCK_LENGTH];
   } SHA1_CTX;
 </code></pre>
-So we are in a pickle since it does not fit neatly in one SIMD register.  Thus, we have to do one SIMD operation on the first 4 <code>uint32_t</code>, named <code>ABCD</code>, and another one with the last <code>uint32_t</code>, named <code>E</code>. So this second operation is a bit wasteful: our 128 bits only contain 1/4 of useful data, and our CPU does computations on a bunch of zeroes which will be thrown away. But there is no other way: SIMD uses a different set of registers, it would be very unefficient to copy data in and out of these all the time.</li>
-<li>Endianess conversion is done with one SIMD instruction, same as before (so 4 <code>uint32_t</code> at a time).
-<ul>
-<li>We need to do convert from little-endian to big-endian when loading the data that we are going to hash, and the intermediate state computed so far</li>
-<li>We need to convert from big-endian to little-endian  at the end of processing a 64 byte chunk, to store the computed state back to a plain array of 5 <code>uint32_t</code>.</li>
-</ul>
-</li>
+So we are in a pickle since it does not fit neatly in one SIMD register.  Thus, we have to do one SIMD operation on the first 4 <code>uint32_t</code>, named <code>ABCD</code>, and another one with the last <code>uint32_t</code>, named <code>E</code>. So this second operation is a bit wasteful: our 128 bits only contain 1/4 of useful data, and our CPU does computations on a bunch of zeroes which will be thrown away. But there is no other way: SIMD uses a different set of registers from the standard ones. We want to stay in SIMD land as much as possible, that's where the performance is.</li>
+<li>Endianness conversion is done with one SIMD instruction, same as before (so 4 <code>uint32_t</code> at a time).</li>
 <li>The SHA Intel extension provides 4 operations:
 <ul>
 <li><code>sha1rnds4</code> to compute the next <code>ABCD</code> state</li>
