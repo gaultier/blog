@@ -32,11 +32,11 @@ Let's see how we can speed it up.
 
 It's important to note that to reduce third-party dependencies, the SHA1 code is vendored in the source tree and comes from OpenBSD. It is plain C code, not using SIMD or such. It's good because I can read it and understand it.
 
-I untertained depending on OpenSSL or such, but it feels wasteful to pull in such a hugh amount of code just for SHA1. And building OpenSSL ourselves, to tweak the build flags, means depending on Perl (and Go, in the case of aws-lc). And now I need to pick between OpenSSL, LibreSSL, BoringSSL, aws-lc, etc. And upgrade it when the weekly security vulnerability gets announced. I don't want any of it, if I can help it. Also I want to understand from top to bottom what code I depend on.
+I untertained depending on OpenSSL or such, but it feels wasteful to pull in such a hugh amount of code just for SHA1. And building OpenSSL ourselves, to tweak the build flags, means depending on Perl (and Go, in the case of aws-lc). And now I need to pick between OpenSSL, LibreSSL, BoringSSL, aws-lc, etc. And upgrade it when the weekly security vulnerability gets announced. I don't want any of it, if I can help it. Also I want to understand from top to bottom what code I depend on. 
 
 For a while, due to this slowness, I simply gave up using a debug build, instead I use minimal optimizations (`-O1`) with Adress Sanitizer (a.k.a Asan). It was much faster, but lots of functions and variables got optimized away, and the debugging experience was thus subpar. I needed to make my debug + Asan build viable.  The debug build without Asan is much faster: the startup 'only' takes around 2 seconds. But Asan is very valuable, I want to be able to use it! And 2 seconds is still too long. Reducing the iteration cycle is often the deciding factor for software quality in my experience.
 
-What's vexing is that from first principles, we know it should/could be much, much faster:
+What's vexing is that from first principles, we know it could/should be much, much faster:
 
 ```sh
 $ hyperfine --shell=none --warmup 3 'sha1sum ./NetBSD-9.4-amd64.iso'
@@ -45,10 +45,14 @@ Benchmark 1: sha1sum ./NetBSD-9.4-amd64.iso
   Range (min … max):   293.7 ms … 304.2 ms    10 runs
 ```
 
-Granted, computing the hash for the whole file should be slightly faster than computing the hash for N chunks, because the final step for SHA1 is about padding the data to make it 64 bytes aligned and extracing the digest value from the state computed so far with some bit operations. But still.
+Granted, computing the hash for the whole file should be slightly faster than computing the hash for N chunks, because the final step for SHA1 is about padding the data to make it 64 bytes aligned and extracing the digest value from the state computed so far with some bit operations. But still, it's a marginal difference.
 
 
-Why is it so slow then? I can see on CPU profiles that the SHA1 function takes all of the startup time. The SHA1 code is simplistic, it does not use any SIMD or intrisics directly. And that's fine, because when it's compiled with optimizations on, the compiler does a pretty good job at optimizing and auto-vectorizing the code, and it's really fast, around ~300 ms. But the issue is that this code is working one byte at a time. And Adress Sanitizer, with its nice runtime and bounds checks, makes each memory access **very** expensive. So we accidentally wrote a stress-test for Asan.
+Why is it so slow then? I can see on CPU profiles that the SHA1 function takes all of the startup time:
+
+![CPU Profile of the non SIMD code, debug + Asan build](cpu_profile_sha1_sw_debug_asan.svg)
+
+The SHA1 code is simplistic, it does not use any SIMD or intrisics directly. And that's fine, because when it's compiled with optimizations on, the compiler does a pretty good job at optimizing and auto-vectorizing the code, and it's really fast, around ~300 ms. But the issue is that this code is working one byte at a time. And Adress Sanitizer, with its nice runtime and bounds checks, makes each memory access **very** expensive. So we accidentally wrote a stress-test for Asan.
 
 Let's first review the simple non-SIMD C version.
 
