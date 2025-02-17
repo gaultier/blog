@@ -1,13 +1,13 @@
-Title: Making my debug build viable with a 30 times speed-up
+Title: Making my debug build usable with a 30x speed-up
 Tags: C, SIMD, SHA1, Adress Sanitizer, Torrent
 ---
 
 
-I am writing a torrent application, to download and serve torrent files, in C. A torrent download is made of chunks, typically 1 MiB or 2 MiB.  At start-up, the program reads the downloaded file chunk by chunk, computes its [SHA1](https://en.wikipedia.org/wiki/SHA-1) hash, and marks this chunk as downloaded if the hash is the expected hash. Indeed, the `.torrent` file contains for each chunk the expected hash.
+I am writing a torrent application, to download and serve torrent files, in C. A torrent download is made of chunks, typically 1 MiB or 2 MiB.  At start-up, the program reads the downloaded file chunk by chunk, computes its [SHA1](https://en.wikipedia.org/wiki/SHA-1) hash, and marks this chunk as downloaded if the actual hash is indeed the expected hash. We get from the `.torrent` file the expected hash of each chunk.
 
-When we have not downloaded anything yet, the file is completely empty (but still of the right size - we use `ftruncate(2)` to size it properly even if empty), and nearly every chunk has the wrong hash. Some chunks will still have the right hash, since they are all zeroes in the file we are downloading - good news then, with this approach we do not even have to download them at all!). If we continue an interrupted download (for example we computer restarted), some chunks will have the right hash, and some not. When the download is complete, all chunks will have the correct hash. That way, we know what what chunks we need to download, if any.
+When we have not downloaded anything yet, the file is completely empty (but still of the right size - we use `ftruncate(2)` to size it properly even if empty from the get go), and nearly every chunk has the wrong hash. Some chunks will accidentally have the right hash, since they are all zeroes in the file we are downloading - good news then, with this approach we do not even have to download them at all!. If we continue an interrupted download (for example we computer restarted), some chunks will have the right hash, and some not. When the download is complete, all chunks will have the correct hash. That way, we know what what chunks we need to download, if any.
 
-Some torrent clients prefer to skip this verification at startup because they persist their state in a separate file (perhaps a sqlite database), while downloading chunks. However I favor doing a from scratch verification at startup for a few reasons, over the 'state file' approach:
+I read that some torrent clients prefer to skip this verification at startup because they persist their state in a separate file (perhaps a sqlite database), while downloading chunks. However I favor doing a from scratch verification at startup for a few reasons, over the 'state file' approach:
 
 - We might have crashed in the middle of a previous download, before updating the state file, and the persisted state is out-of-sync with the download
 - There may have been data corruption at the disk level (not everybody runs ZFS and can detect that!)
@@ -17,7 +17,7 @@ Some torrent clients prefer to skip this verification at startup because they pe
 For this reason I do not have a state file at all. It's simpler and a whole class of out-of-sync issues disappears.
 
 
-So I have this big [NetBSD image](https://netbsd.org/mirrors/torrents/) torrent that I primarly test with. It's not that big:
+So I have this big [NetBSD image](https://netbsd.org/mirrors/torrents/) torrent that I primarly test with (by the way, thank you NetBSD maintainers for that!). It's not that big:
 
 ```sh
 $ du -h ./NetBSD-9.4-amd64.iso 
@@ -30,7 +30,7 @@ Let's see how we can speed it up.
 
 ## Why is it a problem at all?
 
-It's important to note that to reduce third-party dependencies, the SHA1 code is vendored in the source tree and comes from OpenSSL (there are similar variants, e.g. from OpenBSD, but not really with signficant differences). It is plain C code, not using SIMD or such.
+It's important to note that to reduce third-party dependencies, the SHA1 code is vendored in the source tree and comes from OpenSSL (there are similar variants, e.g. from OpenBSD, but not really with signficant differences). It is plain C code, not using SIMD or such. I untertained depending on OpenSSL or such, but it feels wasteful to pull in such a hugh amount of code just for SHA1. And building OpenSSL ourselves, to tweak the build flags, means depending on Perl (and Go, in the case of aws-lc). And now I need to pick between OpenSSL, LibreSSL, BoringSSL, aws-lc, etc. I don't want any of it if I can help it. Also I want to understand from top to bottom what code I depend on.
 
 For a while, due to this slowness, I simply gave up using a debug build, instead I use minimal optimizations (`-O1`) with Adress Sanitizer (a.k.a Asan). It was much faster, but lots of functions and variables got optimized away, and the debugging experience was thus subpar. I needed to make my debug + Asan build viable.  The debug build without Asan is much faster: the startup 'only' takes around 2 seconds. But Asan is very valuable, I want to be able to use it! And 2 seconds is still too long. Reducing the iteration cycle is often the deciding factor for software quality in my experience.
 
