@@ -1,3 +1,39 @@
+Title: Making my debug build viable with a 30 times speed-up
+Tags: LLVM, Zig, Alpine
+---
+
+
+I am writing a torrent application. A download is made of chunks, typically 1 MiB or 2 MiB.  At start-up, it reads the downloaded file chunk by chunk, computes its SHA1 hash, and marks this chunk as downloaded if the hash is the expected hash. Indeed, the `.torrent` file contains for each chunk the expected hash. 
+
+When we have not downloaded anything, the file is completely empty and nearly every chunk has the wrong hash (some chunks will still have the right hash, since they are all zeroes in the file we are downloading - good news then, with this approach we do not even have to download them at all!). If we continue an interrupted download (for example we computer restarted), some chunks will have the right hash, and some not. When the download is complete, all chunks will have the correct hash.
+
+Some torrent clients prefer to skip this verification at startup because they persist their state in a separate file (perhaps a sqlite database), while downloading chunks. However I favor doing a from scratch verification at startup for a few reasons, over the 'state file' approach:
+
+- We might have crashed in the middle of a previous download, before updating the state file, and the persisted state is out-of-sync with the download
+- There may have been data corruption at the disk level (not everybody runs ZFS and can detect that!)
+- We can continue a partial downloaded started with a different torrent client
+- Some other program might have corrupted/modified the download, unbeknownst to us and our state file
+
+For this reason I do not have a state file at all. It's simpler and a whole class of out-of-sync issues disappear.
+
+So I have this big [NetBSD image](https://netbsd.org/mirrors/torrents/) torrent that I primarly test with. It's not that big:
+
+```sh
+$ du -h ./NetBSD-9.4-amd64.iso 
+485M	./NetBSD-9.4-amd64.iso
+```
+
+But when I build my code in debug mode (no optimizations) with Adress Sanitizer, to detect various issues early, startup takes **20 to 30 seconds!** That's unbearable, especially when working in the debugger and inspecting some code that runs after the startup. For a while I simply renounced using a debug build, instead I use minimal optimizations (`-O1`) with Adress Sanitizer. It was much faster, but lots of functions and variables got optimized away, and the debugging experience was thus subpar. I needed to make my debug + Asan build viable.  The debug build without Asan is much faster: 'only' around 2 seconds. But Asan is very valuable, I want to be able to use it! And 2 seconds is still too long.
+
+Why is it so slow then? I can see on CPU profiles that the SHA1 function takes all of the startup time. The SHA1 code is simplistic, it does not use any SIMD or intrisics directly. And that's fine, because when it's compiled with optimizations on, the compiler does a pretty good job at auto-vectorizing most of the code, and it's reallt fast. But the issue is that this code is working one byte at a time. And Adress Sanitizer, with its nice runtime and bounds checks, makes each memory access **very** expensive.
+
+So what can we do then?
+
+- We can build the SHA1 code separately with optimizations on, always (and potentially without Address Sanitizer). That's a bit annoying, because I currently do a Unity build meaning there is only one compilation unit. So having suddenly multiple compilation units with different build flags makes the build system more complex. And clang has annotations to *lower* the optimization level for one function but not to *raise* it.
+- We can implement SHA1 with SIMD. That way, it's much faster regardless of the build level. Essentially, we do not rely on the compiler auto-vectorization that only occurs at higher optimization levels, we do it directly. It has the nice advantage that we have guaranteed performance even when using an older compiler that cannot do auto-vectorization properly, or if a new compiler version comes along and auto-vectorization broke for this code. Since it uses lots of heuristics, this may happen.
+
+
+-------------------------
 
 ## Debug + ASAN, SW
 
@@ -66,3 +102,14 @@ Benchmark 1: ./a.out ./NetBSD-9.4-amd64.iso ~/Downloads/NetBSD-9.4-amd64.iso.tor
   Range (min … max):   276.3 ms … 288.9 ms    10 runs
  
 ```
+
+## Debug + Asan, SSE (no SHA extension)
+
+```sh
+$ hyperfine --warmup 3 './a.out ./NetBSD-9.4-amd64.iso ~/Downloads/NetBSD-9.4-amd64.iso.torrent'
+Benchmark 1: ./a.out ./NetBSD-9.4-amd64.iso ~/Downloads/NetBSD-9.4-amd64.iso.torrent
+  Time (mean ± σ):      7.748 s ±  0.119 s    [User: 7.665 s, System: 0.057 s]
+  Range (min … max):    7.635 s …  8.062 s    10 runs
+```
+
+~ x4 speed-up since we process 4 bytes at a time instead of 1.
