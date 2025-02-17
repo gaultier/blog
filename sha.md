@@ -32,7 +32,7 @@ Let's see how we can speed it up.
 
 It's important to note that to reduce third-party dependencies, the SHA1 code is vendored in the source tree and comes from OpenBSD. It is plain C code, not using SIMD or such. It's good because I can read it and understand it.
 
-I untertained depending on OpenSSL or such, but it feels wasteful to pull in such a hugh amount of code just for SHA1. And building OpenSSL ourselves, to tweak the build flags, means depending on Perl (and Go, in the case of aws-lc). And now I need to pick between OpenSSL, LibreSSL, BoringSSL, aws-lc, etc. I don't want any of it if I can help it. Also I want to understand from top to bottom what code I depend on.
+I untertained depending on OpenSSL or such, but it feels wasteful to pull in such a hugh amount of code just for SHA1. And building OpenSSL ourselves, to tweak the build flags, means depending on Perl (and Go, in the case of aws-lc). And now I need to pick between OpenSSL, LibreSSL, BoringSSL, aws-lc, etc. And upgrade it when the weekly security vulnerability gets announced. I don't want any of it, if I can help it. Also I want to understand from top to bottom what code I depend on.
 
 For a while, due to this slowness, I simply gave up using a debug build, instead I use minimal optimizations (`-O1`) with Adress Sanitizer (a.k.a Asan). It was much faster, but lots of functions and variables got optimized away, and the debugging experience was thus subpar. I needed to make my debug + Asan build viable.  The debug build without Asan is much faster: the startup 'only' takes around 2 seconds. But Asan is very valuable, I want to be able to use it! And 2 seconds is still too long. Reducing the iteration cycle is often the deciding factor for software quality in my experience.
 

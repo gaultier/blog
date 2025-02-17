@@ -2,7 +2,7 @@
   <feed xmlns="http://www.w3.org/2005/Atom">
     <title>Philippe Gaultier's blog</title>
     <link href="https://gaultier.github.io/blog"/>
-    <updated>2025-02-17T18:17:13+01:00</updated>
+    <updated>2025-02-17T18:18:18+01:00</updated>
     <author>
       <name>Philippe Gaultier</name>
     </author>
@@ -228,7 +228,7 @@
   <title>Making my debug build usable with a 30x speed-up</title>
   <link href="https://gaultier.github.io/blog/sha.html"/>
   <id>urn:uuid:83060163-5412-574b-8364-861e2a2dd00a</id>
-  <updated>2025-02-17T18:17:13+01:00</updated>
+  <updated>2025-02-17T18:18:18+01:00</updated>
   <published>2025-02-17T09:20:47+01:00</published>
   </entry>
 	</feed>
