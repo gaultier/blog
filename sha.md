@@ -137,7 +137,256 @@ int main(int argc, char *argv[]) {
 }
 ```
 
-The `SHA1_xxx` functions are lifted from OpenSSL (there are similar variants, e.g. from OpenBSD), and when compiled in non-optimized mode with Asan, we get this timing:
+
+<details>
+  <summary>Non-SIMD SHA1</summary>
+```c
+/*	$OpenBSD: sha1.c,v 1.27 2019/06/07 22:56:36 dtucker Exp $	*/
+
+/*
+ * SHA-1 in C
+ * By Steve Reid <steve@edmweb.com>
+ * 100% Public Domain
+ *
+ * Test Vectors (from FIPS PUB 180-1)
+ * "abc"
+ *   A9993E36 4706816A BA3E2571 7850C26C 9CD0D89D
+ * "abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq"
+ *   84983E44 1C3BD26E BAAE4AA1 F95129E5 E54670F1
+ * A million repetitions of "a"
+ *   34AA973C D4C4DAA4 F61EEB2B DBAD2731 6534016F
+ */
+
+#include <string.h>
+#include <sys/types.h>
+
+#define SHA1_BLOCK_LENGTH 64
+#define SHA1_DIGEST_LENGTH 20
+#define SHA1_DIGEST_STRING_LENGTH (SHA1_DIGEST_LENGTH * 2 + 1)
+
+typedef struct {
+  u_int32_t state[5];
+  u_int64_t count;
+  u_int8_t buffer[SHA1_BLOCK_LENGTH];
+} SHA1_CTX;
+#define rol(value, bits) (((value) << (bits)) | ((value) >> (32 - (bits))))
+
+/*
+ * blk0() and blk() perform the initial expand.
+ * I got the idea of expanding during the round function from SSLeay
+ */
+#if BYTE_ORDER == LITTLE_ENDIAN
+#define blk0(i)                                                                \
+  (block->l[i] = (rol(block->l[i], 24) & 0xFF00FF00) |                         \
+                 (rol(block->l[i], 8) & 0x00FF00FF))
+#else
+#define blk0(i) block->l[i]
+#endif
+#define blk(i)                                                                 \
+  (block->l[i & 15] = rol(block->l[(i + 13) & 15] ^ block->l[(i + 8) & 15] ^   \
+                              block->l[(i + 2) & 15] ^ block->l[i & 15],       \
+                          1))
+
+/*
+ * (R0+R1), R2, R3, R4 are the different operations (rounds) used in SHA1
+ */
+#define R0(v, w, x, y, z, i)                                                   \
+  z += ((w & (x ^ y)) ^ y) + blk0(i) + 0x5A827999 + rol(v, 5);                 \
+  w = rol(w, 30);
+#define R1(v, w, x, y, z, i)                                                   \
+  z += ((w & (x ^ y)) ^ y) + blk(i) + 0x5A827999 + rol(v, 5);                  \
+  w = rol(w, 30);
+#define R2(v, w, x, y, z, i)                                                   \
+  z += (w ^ x ^ y) + blk(i) + 0x6ED9EBA1 + rol(v, 5);                          \
+  w = rol(w, 30);
+#define R3(v, w, x, y, z, i)                                                   \
+  z += (((w | x) & y) | (w & x)) + blk(i) + 0x8F1BBCDC + rol(v, 5);            \
+  w = rol(w, 30);
+#define R4(v, w, x, y, z, i)                                                   \
+  z += (w ^ x ^ y) + blk(i) + 0xCA62C1D6 + rol(v, 5);                          \
+  w = rol(w, 30);
+
+typedef union {
+  u_int8_t c[64];
+  u_int32_t l[16];
+} CHAR64LONG16;
+
+/*
+ * Hash a single 512-bit block. This is the core of the algorithm.
+ */
+void SHA1Transform(u_int32_t state[5],
+                   const u_int8_t buffer[SHA1_BLOCK_LENGTH]) {
+  u_int32_t a, b, c, d, e;
+  u_int8_t workspace[SHA1_BLOCK_LENGTH];
+  CHAR64LONG16 *block = (CHAR64LONG16 *)workspace;
+
+  (void)memcpy(block, buffer, SHA1_BLOCK_LENGTH);
+
+  /* Copy context->state[] to working vars */
+  a = state[0];
+  b = state[1];
+  c = state[2];
+  d = state[3];
+  e = state[4];
+
+  /* 4 rounds of 20 operations each. Loop unrolled. */
+  R0(a, b, c, d, e, 0);
+  R0(e, a, b, c, d, 1);
+  R0(d, e, a, b, c, 2);
+  R0(c, d, e, a, b, 3);
+  R0(b, c, d, e, a, 4);
+  R0(a, b, c, d, e, 5);
+  R0(e, a, b, c, d, 6);
+  R0(d, e, a, b, c, 7);
+  R0(c, d, e, a, b, 8);
+  R0(b, c, d, e, a, 9);
+  R0(a, b, c, d, e, 10);
+  R0(e, a, b, c, d, 11);
+  R0(d, e, a, b, c, 12);
+  R0(c, d, e, a, b, 13);
+  R0(b, c, d, e, a, 14);
+  R0(a, b, c, d, e, 15);
+  R1(e, a, b, c, d, 16);
+  R1(d, e, a, b, c, 17);
+  R1(c, d, e, a, b, 18);
+  R1(b, c, d, e, a, 19);
+  R2(a, b, c, d, e, 20);
+  R2(e, a, b, c, d, 21);
+  R2(d, e, a, b, c, 22);
+  R2(c, d, e, a, b, 23);
+  R2(b, c, d, e, a, 24);
+  R2(a, b, c, d, e, 25);
+  R2(e, a, b, c, d, 26);
+  R2(d, e, a, b, c, 27);
+  R2(c, d, e, a, b, 28);
+  R2(b, c, d, e, a, 29);
+  R2(a, b, c, d, e, 30);
+  R2(e, a, b, c, d, 31);
+  R2(d, e, a, b, c, 32);
+  R2(c, d, e, a, b, 33);
+  R2(b, c, d, e, a, 34);
+  R2(a, b, c, d, e, 35);
+  R2(e, a, b, c, d, 36);
+  R2(d, e, a, b, c, 37);
+  R2(c, d, e, a, b, 38);
+  R2(b, c, d, e, a, 39);
+  R3(a, b, c, d, e, 40);
+  R3(e, a, b, c, d, 41);
+  R3(d, e, a, b, c, 42);
+  R3(c, d, e, a, b, 43);
+  R3(b, c, d, e, a, 44);
+  R3(a, b, c, d, e, 45);
+  R3(e, a, b, c, d, 46);
+  R3(d, e, a, b, c, 47);
+  R3(c, d, e, a, b, 48);
+  R3(b, c, d, e, a, 49);
+  R3(a, b, c, d, e, 50);
+  R3(e, a, b, c, d, 51);
+  R3(d, e, a, b, c, 52);
+  R3(c, d, e, a, b, 53);
+  R3(b, c, d, e, a, 54);
+  R3(a, b, c, d, e, 55);
+  R3(e, a, b, c, d, 56);
+  R3(d, e, a, b, c, 57);
+  R3(c, d, e, a, b, 58);
+  R3(b, c, d, e, a, 59);
+  R4(a, b, c, d, e, 60);
+  R4(e, a, b, c, d, 61);
+  R4(d, e, a, b, c, 62);
+  R4(c, d, e, a, b, 63);
+  R4(b, c, d, e, a, 64);
+  R4(a, b, c, d, e, 65);
+  R4(e, a, b, c, d, 66);
+  R4(d, e, a, b, c, 67);
+  R4(c, d, e, a, b, 68);
+  R4(b, c, d, e, a, 69);
+  R4(a, b, c, d, e, 70);
+  R4(e, a, b, c, d, 71);
+  R4(d, e, a, b, c, 72);
+  R4(c, d, e, a, b, 73);
+  R4(b, c, d, e, a, 74);
+  R4(a, b, c, d, e, 75);
+  R4(e, a, b, c, d, 76);
+  R4(d, e, a, b, c, 77);
+  R4(c, d, e, a, b, 78);
+  R4(b, c, d, e, a, 79);
+
+  /* Add the working vars back into context.state[] */
+  state[0] += a;
+  state[1] += b;
+  state[2] += c;
+  state[3] += d;
+  state[4] += e;
+
+  /* Wipe variables */
+  a = b = c = d = e = 0;
+}
+
+/*
+ * SHA1Init - Initialize new context
+ */
+void SHA1Init(SHA1_CTX *context) {
+
+  /* SHA1 initialization constants */
+  context->count = 0;
+  context->state[0] = 0x67452301;
+  context->state[1] = 0xEFCDAB89;
+  context->state[2] = 0x98BADCFE;
+  context->state[3] = 0x10325476;
+  context->state[4] = 0xC3D2E1F0;
+}
+
+/*
+ * Run your data through this.
+ */
+void SHA1Update(SHA1_CTX *context, const u_int8_t *data, size_t len) {
+  size_t i, j;
+
+  j = (size_t)((context->count >> 3) & 63);
+  context->count += ((u_int64_t)len << 3);
+  if ((j + len) > 63) {
+    (void)memcpy(&context->buffer[j], data, (i = 64 - j));
+    SHA1Transform(context->state, context->buffer);
+    for (; i + 63 < len; i += 64)
+      SHA1Transform(context->state, (u_int8_t *)&data[i]);
+    j = 0;
+  } else {
+    i = 0;
+  }
+  (void)memcpy(&context->buffer[j], &data[i], len - i);
+}
+
+/*
+ * Add padding and return the message digest.
+ */
+void SHA1Pad(SHA1_CTX *context) {
+  u_int8_t finalcount[8];
+  u_int i;
+
+  for (i = 0; i < 8; i++) {
+    finalcount[i] = (u_int8_t)((context->count >> ((7 - (i & 7)) * 8)) &
+                               255); /* Endian independent */
+  }
+  SHA1Update(context, (u_int8_t *)"\200", 1);
+  while ((context->count & 504) != 448)
+    SHA1Update(context, (u_int8_t *)"\0", 1);
+  SHA1Update(context, finalcount, 8); /* Should cause a SHA1Transform() */
+}
+
+void SHA1Final(u_int8_t digest[SHA1_DIGEST_LENGTH], SHA1_CTX *context) {
+  u_int i;
+
+  SHA1Pad(context);
+  for (i = 0; i < SHA1_DIGEST_LENGTH; i++) {
+    digest[i] =
+        (u_int8_t)((context->state[i >> 2] >> ((3 - (i & 3)) * 8)) & 255);
+  }
+  explicit_bzero(context, sizeof(*context));
+}
+```
+<details
+
+The `SHA1_xxx` functions are lifted from [OpenBSD](https://github.com/openssh/openssh-portable/blob/9e5bd74a85192c00a842f63d7ab788713b4284c3/openbsd-compat/sha1.c) (there are similar variants, e.g. from [Sqlite](https://sqlite.org/src/file/ext/misc/sha1.c), etc - they are all nearly identical), and when compiled in non-optimized mode with Asan, we get this timing:
 
 ```sh
 $ hyperfine --warmup 3 './a.out ./NetBSD-9.4-amd64.iso ~/Downloads/NetBSD-9.4-amd64.iso.torrent'
@@ -155,19 +404,349 @@ I experimented with doing a `read` syscall for each chunk (that's what `sha1sum`
 So what can we do about it?
 
 - We can build the SHA1 code separately with optimizations on, always (and potentially without Address Sanitizer). That's a bit annoying, because I currently do a Unity build meaning there is only one compilation unit. So having suddenly multiple compilation units with different build flags makes the build system more complex. And clang has annotations to *lower* the optimization level for one function but not to *raise* it.
-- We can compute the hash of each chunk in parallel for example in a thread pool, since each chunk is independent. That works, but that assumes that the target computer is multicore, and it forces some complexity:
+- We can compute the hash of each chunk in parallel for example in a thread pool, since each chunk is independent. That works and that's what [libtorrent did/does](https://blog.libtorrent.org/2011/11/multi-threaded-piece-hashing/), but that assumes that the target computer has cores to spare, and it creates some complexity:
   + We need to implement a thread pool (spawning a new thread for each chunk will not perform well) and pick a reasonable amount of cores
   + We need a M:N scheduling logic to compute the hash of M chunks on N threads. It could be a work-stealing queue backed by a thread-pool, or read the whole file in memory and split the data in equal parts for each thread to plow through (but beware that the data for each thread is aligned with the chunk size!). This seems complex.
 - We can implement SHA1 with SIMD. That way, it's much faster regardless of the build level. Essentially, we do not rely on the compiler auto-vectorization that only occurs at higher optimization levels, we do it directly. It has the nice advantage that we have guaranteed performance even when using a different compiler, or an older compiler that cannot do auto-vectorization properly, or if a new compiler version comes along and auto-vectorization broke for this code. Since it uses lots of heuristics, this may happen.
 
 
-So let's do SIMD! The nice thing about it is that we can always *also* compute hashes in parallel as well as use SIMD; the two approaches compose well together.
+So let's do SIMD! The nice thing about it is that we can always in the future *also* compute hashes in parallel, as well as use SIMD; the two approaches compose well together.
 
 ## SHA1 with SSE
 
 [This](http://arctic.org/~dean/crypto/sha1.html) is an implementation from the early 2000s in the public domain. Yes, SSE, which is the forst widespread SIMD instruction set, is from the nineties to early 2000s. More than 25 years ago! There's basically no reason to write non-SIMD code for performance sensitive code for a SIMD-friendly problem - every CPU we care about has SIMD! Well, we have two write separate implementations for x64 and ARM, that's the downside. But still! 
 
 Intel references this implementation on their [website](https://www.intel.com/content/www/us/en/developer/articles/technical/improving-the-performance-of-the-secure-hash-algorithm-1.html). According to Intel, it was fundamental work at the time and influenced them. It's also not the fastest SSE implementation, the very article from Intel is about some performance enhancements they found for this code, but it has the advantage that if you have a processor from 2004 or after, it works, and it's simple.
+
+<details>
+    <summary>SHA1 with SSE</summary>
+
+```c
+typedef union {
+  uint32_t u32[4];
+  __m128i u128;
+} v4si __attribute__((aligned(16)));
+
+static const v4si K00_19 = {
+    .u32 = {0x5a827999, 0x5a827999, 0x5a827999, 0x5a827999}};
+static const v4si K20_39 = {
+    .u32 = {0x6ed9eba1, 0x6ed9eba1, 0x6ed9eba1, 0x6ed9eba1}};
+static const v4si K40_59 = {
+    .u32 = {0x8f1bbcdc, 0x8f1bbcdc, 0x8f1bbcdc, 0x8f1bbcdc}};
+static const v4si K60_79 = {
+    .u32 = {0xca62c1d6, 0xca62c1d6, 0xca62c1d6, 0xca62c1d6}};
+
+#define UNALIGNED 1
+#if UNALIGNED
+#define load(p) _mm_loadu_si128(p)
+#else
+#define load(p) (*p)
+#endif
+
+/*
+        the first 16 bytes only need byte swapping
+
+        prepared points to 4x uint32_t, 16-byte aligned
+
+        W points to the 4 dwords which need preparing --
+        and is overwritten with the swapped bytes
+*/
+#define prep00_15(prep, W)                                                     \
+  do {                                                                         \
+    __m128i r1, r2;                                                            \
+                                                                               \
+    r1 = (W);                                                                  \
+    if (1) {                                                                   \
+      r1 = _mm_shufflehi_epi16(r1, _MM_SHUFFLE(2, 3, 0, 1));                   \
+      r1 = _mm_shufflelo_epi16(r1, _MM_SHUFFLE(2, 3, 0, 1));                   \
+      r2 = _mm_slli_epi16(r1, 8);                                              \
+      r1 = _mm_srli_epi16(r1, 8);                                              \
+      r1 = _mm_or_si128(r1, r2);                                               \
+      (W) = r1;                                                                \
+    }                                                                          \
+    (prep).u128 = _mm_add_epi32(K00_19.u128, r1);                              \
+  } while (0)
+
+/*
+        for each multiple of 4, t, we want to calculate this:
+
+        W[t+0] = rol(W[t-3] ^ W[t-8] ^ W[t-14] ^ W[t-16], 1);
+        W[t+1] = rol(W[t-2] ^ W[t-7] ^ W[t-13] ^ W[t-15], 1);
+        W[t+2] = rol(W[t-1] ^ W[t-6] ^ W[t-12] ^ W[t-14], 1);
+        W[t+3] = rol(W[t]   ^ W[t-5] ^ W[t-11] ^ W[t-13], 1);
+
+        we'll actually calculate this:
+
+        W[t+0] = rol(W[t-3] ^ W[t-8] ^ W[t-14] ^ W[t-16], 1);
+        W[t+1] = rol(W[t-2] ^ W[t-7] ^ W[t-13] ^ W[t-15], 1);
+        W[t+2] = rol(W[t-1] ^ W[t-6] ^ W[t-12] ^ W[t-14], 1);
+        W[t+3] = rol(  0    ^ W[t-5] ^ W[t-11] ^ W[t-13], 1);
+        W[t+3] ^= rol(W[t+0], 1);
+
+        the parameters are:
+
+        W0 = &W[t-16];
+        W1 = &W[t-12];
+        W2 = &W[t- 8];
+        W3 = &W[t- 4];
+
+        and on output:
+                prepared = W0 + K
+                W0 = W[t]..W[t+3]
+*/
+
+/* note that there is a step here where i want to do a rol by 1, which
+ * normally would look like this:
+ *
+ * r1 = psrld r0,$31
+ * r0 = pslld r0,$1
+ * r0 = por r0,r1
+ *
+ * but instead i do this:
+ *
+ * r1 = pcmpltd r0,zero
+ * r0 = paddd r0,r0
+ * r0 = psub r0,r1
+ *
+ * because pcmpltd and paddd are availabe in both MMX units on
+ * efficeon, pentium-m, and opteron but shifts are available in
+ * only one unit.
+ */
+#define prep(prep, XW0, XW1, XW2, XW3, K)                                      \
+  do {                                                                         \
+    __m128i r0, r1, r2, r3;                                                    \
+                                                                               \
+    /* load W[t-4] 16-byte aligned, and shift */                               \
+    r3 = _mm_srli_si128((XW3), 4);                                             \
+    r0 = (XW0);                                                                \
+    /* get high 64-bits of XW0 into low 64-bits */                             \
+    r1 = _mm_shuffle_epi32((XW0), _MM_SHUFFLE(1, 0, 3, 2));                    \
+    /* load high 64-bits of r1 */                                              \
+    r1 = _mm_unpacklo_epi64(r1, (XW1));                                        \
+    r2 = (XW2);                                                                \
+                                                                               \
+    r0 = _mm_xor_si128(r1, r0);                                                \
+    r2 = _mm_xor_si128(r3, r2);                                                \
+    r0 = _mm_xor_si128(r2, r0);                                                \
+    /* unrotated W[t]..W[t+2] in r0 ... still need W[t+3] */                   \
+                                                                               \
+    r2 = _mm_slli_si128(r0, 12);                                               \
+    r1 = _mm_cmplt_epi32(r0, _mm_setzero_si128());                             \
+    r0 = _mm_add_epi32(r0, r0); /* shift left by 1 */                          \
+    r0 = _mm_sub_epi32(r0, r1); /* r0 has W[t]..W[t+2] */                      \
+                                                                               \
+    r3 = _mm_srli_epi32(r2, 30);                                               \
+    r2 = _mm_slli_epi32(r2, 2);                                                \
+                                                                               \
+    r0 = _mm_xor_si128(r0, r3);                                                \
+    r0 = _mm_xor_si128(r0, r2); /* r0 now has W[t+3] */                        \
+                                                                               \
+    (XW0) = r0;                                                                \
+    (prep).u128 = _mm_add_epi32(r0, (K).u128);                                 \
+  } while (0)
+
+static inline uint32_t f00_19(uint32_t x, uint32_t y, uint32_t z) {
+  /* FIPS 180-2 says this: (x & y) ^ (~x & z)
+   * but we can calculate it in fewer steps.
+   */
+  return ((y ^ z) & x) ^ z;
+}
+
+static inline uint32_t f20_39(uint32_t x, uint32_t y, uint32_t z) {
+  return (x ^ z) ^ y;
+}
+
+static inline uint32_t f40_59(uint32_t x, uint32_t y, uint32_t z) {
+  /* FIPS 180-2 says this: (x & y) ^ (x & z) ^ (y & z)
+   * but we can calculate it in fewer steps.
+   */
+  return (x & z) | ((x | z) & y);
+}
+
+static inline uint32_t f60_79(uint32_t x, uint32_t y, uint32_t z) {
+  return f20_39(x, y, z);
+}
+
+#define step(nn_mm, xa, xb, xc, xd, xe, xt, input)                             \
+  do {                                                                         \
+    (xt) = (input) + f##nn_mm((xb), (xc), (xd));                               \
+    (xb) = rol((xb), 30);                                                      \
+    (xt) += ((xe) + rol((xa), 5));                                             \
+  } while (0)
+
+[[maybe_unused]]
+static void sha1_sse_step(uint32_t *restrict H, const uint32_t *restrict inputu,
+                          size_t num_steps) {
+  const __m128i *restrict input = (const __m128i *)inputu;
+  __m128i W0, W1, W2, W3;
+  v4si prep0, prep1, prep2;
+  uint32_t a, b, c, d, e, t;
+
+  a = H[0];
+  b = H[1];
+  c = H[2];
+  d = H[3];
+  e = H[4];
+
+  /* i've tried arranging the SSE2 code to be 4, 8, 12, and 16
+   * steps ahead of the integer code.  12 steps ahead seems
+   * to produce the best performance. -dean
+   */
+  W0 = load(&input[0]);
+  prep00_15(prep0, W0); /* prepare for 00 through 03 */
+  W1 = load(&input[1]);
+  prep00_15(prep1, W1); /* prepare for 04 through 07 */
+  W2 = load(&input[2]);
+  prep00_15(prep2, W2); /* prepare for 08 through 11 */
+  for (;;) {
+    W3 = load(&input[3]);
+    step(00_19, a, b, c, d, e, t, prep0.u32[0]); /* 00 */
+    step(00_19, t, a, b, c, d, e, prep0.u32[1]); /* 01 */
+    step(00_19, e, t, a, b, c, d, prep0.u32[2]); /* 02 */
+    step(00_19, d, e, t, a, b, c, prep0.u32[3]); /* 03 */
+    prep00_15(prep0, W3);
+    step(00_19, c, d, e, t, a, b, prep1.u32[0]); /* 04 */
+    step(00_19, b, c, d, e, t, a, prep1.u32[1]); /* 05 */
+    step(00_19, a, b, c, d, e, t, prep1.u32[2]); /* 06 */
+    step(00_19, t, a, b, c, d, e, prep1.u32[3]); /* 07 */
+    prep(prep1, W0, W1, W2, W3, K00_19);         /* prepare for 16 through 19 */
+    step(00_19, e, t, a, b, c, d, prep2.u32[0]); /* 08 */
+    step(00_19, d, e, t, a, b, c, prep2.u32[1]); /* 09 */
+    step(00_19, c, d, e, t, a, b, prep2.u32[2]); /* 10 */
+    step(00_19, b, c, d, e, t, a, prep2.u32[3]); /* 11 */
+    prep(prep2, W1, W2, W3, W0, K20_39);         /* prepare for 20 through 23 */
+    step(00_19, a, b, c, d, e, t, prep0.u32[0]); /* 12 */
+    step(00_19, t, a, b, c, d, e, prep0.u32[1]); /* 13 */
+    step(00_19, e, t, a, b, c, d, prep0.u32[2]); /* 14 */
+    step(00_19, d, e, t, a, b, c, prep0.u32[3]); /* 15 */
+    prep(prep0, W2, W3, W0, W1, K20_39);
+    step(00_19, c, d, e, t, a, b, prep1.u32[0]); /* 16 */
+    step(00_19, b, c, d, e, t, a, prep1.u32[1]); /* 17 */
+    step(00_19, a, b, c, d, e, t, prep1.u32[2]); /* 18 */
+    step(00_19, t, a, b, c, d, e, prep1.u32[3]); /* 19 */
+
+    prep(prep1, W3, W0, W1, W2, K20_39);
+    step(20_39, e, t, a, b, c, d, prep2.u32[0]); /* 20 */
+    step(20_39, d, e, t, a, b, c, prep2.u32[1]); /* 21 */
+    step(20_39, c, d, e, t, a, b, prep2.u32[2]); /* 22 */
+    step(20_39, b, c, d, e, t, a, prep2.u32[3]); /* 23 */
+    prep(prep2, W0, W1, W2, W3, K20_39);
+    step(20_39, a, b, c, d, e, t, prep0.u32[0]); /* 24 */
+    step(20_39, t, a, b, c, d, e, prep0.u32[1]); /* 25 */
+    step(20_39, e, t, a, b, c, d, prep0.u32[2]); /* 26 */
+    step(20_39, d, e, t, a, b, c, prep0.u32[3]); /* 27 */
+    prep(prep0, W1, W2, W3, W0, K20_39);
+    step(20_39, c, d, e, t, a, b, prep1.u32[0]); /* 28 */
+    step(20_39, b, c, d, e, t, a, prep1.u32[1]); /* 29 */
+    step(20_39, a, b, c, d, e, t, prep1.u32[2]); /* 30 */
+    step(20_39, t, a, b, c, d, e, prep1.u32[3]); /* 31 */
+    prep(prep1, W2, W3, W0, W1, K40_59);
+    step(20_39, e, t, a, b, c, d, prep2.u32[0]); /* 32 */
+    step(20_39, d, e, t, a, b, c, prep2.u32[1]); /* 33 */
+    step(20_39, c, d, e, t, a, b, prep2.u32[2]); /* 34 */
+    step(20_39, b, c, d, e, t, a, prep2.u32[3]); /* 35 */
+    prep(prep2, W3, W0, W1, W2, K40_59);
+    step(20_39, a, b, c, d, e, t, prep0.u32[0]); /* 36 */
+    step(20_39, t, a, b, c, d, e, prep0.u32[1]); /* 37 */
+    step(20_39, e, t, a, b, c, d, prep0.u32[2]); /* 38 */
+    step(20_39, d, e, t, a, b, c, prep0.u32[3]); /* 39 */
+
+    prep(prep0, W0, W1, W2, W3, K40_59);
+    step(40_59, c, d, e, t, a, b, prep1.u32[0]); /* 40 */
+    step(40_59, b, c, d, e, t, a, prep1.u32[1]); /* 41 */
+    step(40_59, a, b, c, d, e, t, prep1.u32[2]); /* 42 */
+    step(40_59, t, a, b, c, d, e, prep1.u32[3]); /* 43 */
+    prep(prep1, W1, W2, W3, W0, K40_59);
+    step(40_59, e, t, a, b, c, d, prep2.u32[0]); /* 44 */
+    step(40_59, d, e, t, a, b, c, prep2.u32[1]); /* 45 */
+    step(40_59, c, d, e, t, a, b, prep2.u32[2]); /* 46 */
+    step(40_59, b, c, d, e, t, a, prep2.u32[3]); /* 47 */
+    prep(prep2, W2, W3, W0, W1, K40_59);
+    step(40_59, a, b, c, d, e, t, prep0.u32[0]); /* 48 */
+    step(40_59, t, a, b, c, d, e, prep0.u32[1]); /* 49 */
+    step(40_59, e, t, a, b, c, d, prep0.u32[2]); /* 50 */
+    step(40_59, d, e, t, a, b, c, prep0.u32[3]); /* 51 */
+    prep(prep0, W3, W0, W1, W2, K60_79);
+    step(40_59, c, d, e, t, a, b, prep1.u32[0]); /* 52 */
+    step(40_59, b, c, d, e, t, a, prep1.u32[1]); /* 53 */
+    step(40_59, a, b, c, d, e, t, prep1.u32[2]); /* 54 */
+    step(40_59, t, a, b, c, d, e, prep1.u32[3]); /* 55 */
+    prep(prep1, W0, W1, W2, W3, K60_79);
+    step(40_59, e, t, a, b, c, d, prep2.u32[0]); /* 56 */
+    step(40_59, d, e, t, a, b, c, prep2.u32[1]); /* 57 */
+    step(40_59, c, d, e, t, a, b, prep2.u32[2]); /* 58 */
+    step(40_59, b, c, d, e, t, a, prep2.u32[3]); /* 59 */
+
+    prep(prep2, W1, W2, W3, W0, K60_79);
+    step(60_79, a, b, c, d, e, t, prep0.u32[0]); /* 60 */
+    step(60_79, t, a, b, c, d, e, prep0.u32[1]); /* 61 */
+    step(60_79, e, t, a, b, c, d, prep0.u32[2]); /* 62 */
+    step(60_79, d, e, t, a, b, c, prep0.u32[3]); /* 63 */
+    prep(prep0, W2, W3, W0, W1, K60_79);
+    step(60_79, c, d, e, t, a, b, prep1.u32[0]); /* 64 */
+    step(60_79, b, c, d, e, t, a, prep1.u32[1]); /* 65 */
+    step(60_79, a, b, c, d, e, t, prep1.u32[2]); /* 66 */
+    step(60_79, t, a, b, c, d, e, prep1.u32[3]); /* 67 */
+    prep(prep1, W3, W0, W1, W2, K60_79);
+    step(60_79, e, t, a, b, c, d, prep2.u32[0]); /* 68 */
+    step(60_79, d, e, t, a, b, c, prep2.u32[1]); /* 69 */
+    step(60_79, c, d, e, t, a, b, prep2.u32[2]); /* 70 */
+    step(60_79, b, c, d, e, t, a, prep2.u32[3]); /* 71 */
+
+    --num_steps;
+    if (num_steps == 0)
+      break;
+
+    input += 4;
+    W0 = load(&input[0]);
+    prep00_15(prep2, W0); /* prepare for next 00 through 03 */
+    W1 = load(&input[1]);
+    step(60_79, a, b, c, d, e, t, prep0.u32[0]); /* 72 */
+    step(60_79, t, a, b, c, d, e, prep0.u32[1]); /* 73 */
+    step(60_79, e, t, a, b, c, d, prep0.u32[2]); /* 74 */
+    step(60_79, d, e, t, a, b, c, prep0.u32[3]); /* 75 */
+    prep0 = prep2;        /* top of loop expects this in prep0 */
+    prep00_15(prep2, W1); /* prepare for next 04 through 07 */
+    W2 = load(&input[2]);
+    step(60_79, c, d, e, t, a, b, prep1.u32[0]); /* 76 */
+    step(60_79, b, c, d, e, t, a, prep1.u32[1]); /* 77 */
+    step(60_79, a, b, c, d, e, t, prep1.u32[2]); /* 78 */
+    step(60_79, t, a, b, c, d, e, prep1.u32[3]); /* 79 */
+    prep1 = prep2;        /* top of loop expects this in prep1 */
+    prep00_15(prep2, W2); /* prepare for next 08 through 11 */
+    /* e, t, a, b, c, d */
+    H[0] += e;
+    H[1] += t;
+    H[2] += a;
+    H[3] += b;
+    H[4] += c;
+
+    a = H[0];
+    b = H[1];
+    c = H[2];
+    d = H[3];
+    e = H[4];
+  }
+  /* no more input to prepare */
+  step(60_79, a, b, c, d, e, t, prep0.u32[0]); /* 72 */
+  step(60_79, t, a, b, c, d, e, prep0.u32[1]); /* 73 */
+  step(60_79, e, t, a, b, c, d, prep0.u32[2]); /* 74 */
+  step(60_79, d, e, t, a, b, c, prep0.u32[3]); /* 75 */
+  /* no more input to prepare */
+  step(60_79, c, d, e, t, a, b, prep1.u32[0]); /* 76 */
+  step(60_79, b, c, d, e, t, a, prep1.u32[1]); /* 77 */
+  step(60_79, a, b, c, d, e, t, prep1.u32[2]); /* 78 */
+  step(60_79, t, a, b, c, d, e, prep1.u32[3]); /* 79 */
+  /* e, t, a, b, c, d */
+  H[0] += e;
+  H[1] += t;
+  H[2] += a;
+  H[3] += b;
+  H[4] += c;
+}
+
+```
+</details>
 
 It works 4 bytes at a time instead of one byte at a time with the pure standard C approach. So predictably, we observe roughly a 4x speed-up (still in debug + Asan mode):
 
