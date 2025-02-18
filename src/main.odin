@@ -142,7 +142,7 @@ GitStat :: struct {
 }
 
 get_articles_creation_and_modification_date :: proc() -> (res: []GitStat, err: os2.Error) {
-	_, stdout_bin, stderr_bin := os2.process_exec(
+	state, stdout_bin, stderr_bin := os2.process_exec(
 		{command = []string{"git", "log", "--format='%aI'", "--name-only", "'*.md'"}},
 		context.temp_allocator,
 	) or_return
@@ -150,6 +150,9 @@ get_articles_creation_and_modification_date :: proc() -> (res: []GitStat, err: o
 		fmt.printf("git command failed: %s\n", string(stderr_bin))
 	}
 	stdout := strings.trim_space(string(stdout_bin))
+	if len(stdout_bin) == 0 {
+		panic(fmt.aprintf("empty git output: state=%v", state))
+	}
 
 	lines := strings.split_lines(stdout, context.temp_allocator)
 
