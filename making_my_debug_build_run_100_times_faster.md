@@ -1230,4 +1230,4 @@ And it's wild to see different implementations range from 30s to 300 ms (a facto
 
 If you want to learn more about SIMD, I recommend this [talk](https://www.youtube.com/watch?v=6BIfqfC1i7U) from the Titanfall developers at GDC where they explain how they use a lot of SIMD in their game engine, but also their thought process to go from a standard procedural code to a SIMD version:
 
-![GDC talk](simd_talk.png)
+<img style="height:30rem" src="simd_talk.png" alt="GDC talk"/>
