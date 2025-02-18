@@ -1,4 +1,4 @@
-Title: Making my debug build usable with a 30x speed-up
+Title: Making my debug build run 100x faster to make it finally usable
 Tags: C, SIMD, SHA1, Torrent, Optimization
 ---
 
