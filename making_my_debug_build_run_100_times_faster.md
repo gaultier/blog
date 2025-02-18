@@ -1228,7 +1228,7 @@ That was a fun deep dive about performance, SIMD, and a deprecated hash algorith
 
 What I have learned is that Address Sanitizer really likes SIMD code because it reduces significantly the runtime checks it has to do, and thus the performance impact is greatly reduced. It is often recommended to do fuzzing with Address Sanitizer on, so performance matters here.
 
-SIMD code is like a math puzzle, it's weird and fun. I'm happy that I finally had my first real contact with it. It has the useful property to have a very stable performance across runs.
+SIMD code is like a math puzzle, it's weird and fun. I'm happy that I finally had my first real contact with it. It has the useful property to have a very stable performance across runs. I hope I did not get anything wrong in this article.
 
 And it's wild to see different implementations range from 30s to 300 ms (a factor of 100!) to do the same thing. Also, optimizers these days are god damn impressive. 
 
