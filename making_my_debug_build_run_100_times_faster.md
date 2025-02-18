@@ -1153,7 +1153,7 @@ Benchmark 1: ./a.out ./NetBSD-9.4-amd64.iso ~/Downloads/NetBSD-9.4-amd64.iso.tor
   Range (min … max):   839.7 ms … 901.4 ms    10 runs
 ```
 
-Now that's what I'm talking about. Around a 10x speed-up compared to the basic SSE implementation! And now we are running under a second. Also the variability is much reduced which is nice.
+Now that's what I'm talking about, ~ **571 MiB/s**. Around a 10x speed-up compared to the basic SSE implementation! And now we are running under a second. Also the variability is much reduced which is nice.
 
 What about a release build (without Address Sanitizer), for comparison?
 
@@ -1188,7 +1188,13 @@ The version using the SHA extension performs very well, be it in debug + Address
 
 Also, in both versions, as the SHA1 code got much faster, we start to see on the CPU profile `mmap` show up, as confirmed by the `system time` part becoming a fifth of the whole runtime.
 
-That means that we are starting to be limited by I/O. Which is good! 
+That means that we are starting to be limited by I/O. Which is good!  Using `hdparm` to measure my disk performance, I get:
+
+```
+ Timing buffered disk reads: 6518 MB in  3.00 seconds = 2171.34 MB/sec
+```
+
+Since our benchmark first warms up a few times, we know that the file data is in the cache, so `buffered disk reads` seems like a good metric to go by. Thus, our program performance is near the disk I/O limit for cached reads. Sounds pretty good to me!
 
 I tried to give the OS some hints to improve a bit on that front with `madvise(file_download_data, file_download_size, MADV_SEQUENTIAL | MADV_WILLNEED)`, but it did not have any impact on the timings.
 
