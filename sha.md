@@ -851,11 +851,11 @@ Speaking of Intel... did you know that in all likelihood, your CPU has dedicated
 
 ## Intel SHA extension
 
-Despite the 'Intel' name, Intel as well as AMD CPUs have been shipping with this [extension](https://en.wikipedia.org/wiki/Intel_SHA_extensions), since around 2017. It adds a few SIMD instructions dedicated to compute SHA1 (and SHA256, and other variants). Note that ARM also has an equivalent (albeit incompatible, of course) extension so the same can be done there. 
+Despite the 'Intel' name, Intel as well as AMD CPUs have been shipping with this [extension](https://en.wikipedia.org/wiki/Intel_SHA_extensions), since around 2016-2017. It adds a few SIMD instructions dedicated to compute SHA1 (and SHA256, and other variants). Note that ARM also has an equivalent (albeit incompatible, of course) extension so the same can be done there. 
 
 *There is an irony here, because 2017 is also the year where the first SHA1 public collision was published, which incited many developers to move away from SHA1...*
 
-The advantage is that the structure of the code can remain the same: we still are using 128 bits SIMD registers, still computing SHA chunks of 64 bytes at a time. It's just that a few operations get faster and the code is generally shorter and clearer.
+The advantage is that the structure of the code can remain the same: we still are using 128 bits SIMD registers, still computing SHA chunks of 64 bytes at a time. It's just that a few operations get faster and the code is generally shorter and clearer, and the main part is branchless.
 
 The implementation is a pure work of art, and comes from this [Github repository](https://github.com/noloader/SHA-Intrinsics/blob/master/sha1-x86.c). I have commented lots of it for clarity.
 

@@ -1014,9 +1014,9 @@ Benchmark 1: ./a.out ./NetBSD-9.4-amd64.iso ~/Downloads/NetBSD-9.4-amd64.iso.tor
 	<a class="title" href="#11-intel-sha-extension">Intel SHA extension</a>
 	<a class="hash-anchor" href="#11-intel-sha-extension" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
-<p>Despite the 'Intel' name, Intel as well as AMD CPUs have been shipping with this <a href="https://en.wikipedia.org/wiki/Intel_SHA_extensions">extension</a>, since around 2017. It adds a few SIMD instructions dedicated to compute SHA1 (and SHA256, and other variants). Note that ARM also has an equivalent (albeit incompatible, of course) extension so the same can be done there.</p>
+<p>Despite the 'Intel' name, Intel as well as AMD CPUs have been shipping with this <a href="https://en.wikipedia.org/wiki/Intel_SHA_extensions">extension</a>, since around 2016-2017. It adds a few SIMD instructions dedicated to compute SHA1 (and SHA256, and other variants). Note that ARM also has an equivalent (albeit incompatible, of course) extension so the same can be done there.</p>
 <p><em>There is an irony here, because 2017 is also the year where the first SHA1 public collision was published, which incited many developers to move away from SHA1...</em></p>
-<p>The advantage is that the structure of the code can remain the same: we still are using 128 bits SIMD registers, still computing SHA chunks of 64 bytes at a time. It's just that a few operations get faster and the code is generally shorter and clearer.</p>
+<p>The advantage is that the structure of the code can remain the same: we still are using 128 bits SIMD registers, still computing SHA chunks of 64 bytes at a time. It's just that a few operations get faster and the code is generally shorter and clearer, and the main part is branchless.</p>
 <p>The implementation is a pure work of art, and comes from this <a href="https://github.com/noloader/SHA-Intrinsics/blob/master/sha1-x86.c">Github repository</a>. I have commented lots of it for clarity.</p>
 <h3 id="12-explanations">
 	<a class="title" href="#12-explanations">Explanations</a>
