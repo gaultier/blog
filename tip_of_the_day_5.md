@@ -28,7 +28,7 @@ $ staticcheck  ./...
 
 I even tried the `-a` flag for `go install` to force a clean build (since `go install` fetches the sources and builds them) to no avail.
 
-**Solution:** following https://go.dev/doc/manage-install, I installed the specific version of Go I needed and used that to install the tool:
+**Solution:** following [https://go.dev/doc/manage-install](https://go.dev/doc/manage-install), I installed the specific version of Go I needed and used that to install the tool:
 
 
 ```sh
