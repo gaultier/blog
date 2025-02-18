@@ -5,6 +5,9 @@ Tags: C, SIMD, SHA1, Torrent, Optimization
 *SIMD and dedicated silicon to the rescue.*
 
 
+*Discussions: [/r/C_Programming](https://old.reddit.com/r/C_Programming/comments/1is8aog/making_my_debug_build_run_100x_faster_so_that_it/), [HN](https://news.ycombinator.com/item?id=43087482)*
+
+
 I am writing a torrent application, to download and serve torrent files, in C, because it's fun. A torrent download is made of thousands of pieces of the same size, typically a few hundred KiB to a few MiB.  At start-up, the program reads the downloaded file from disk piece by piece, computes the [SHA1](https://en.wikipedia.org/wiki/SHA-1) hash of the piece, and marks this piece as downloaded if the actual hash is indeed the expected hash. We get from the `.torrent` file the expected hash of each piece.
 
 When we have not downloaded anything yet, the file is completely empty (but still of the right size - we use `ftruncate(2)` to size it properly even if empty from the get go), and nearly every piece has the wrong hash. Some pieces will accidentally have the right hash, since they are all zeroes in the file we are downloading - good news then, with this approach we do not even have to download them at all!. If we continue an interrupted download (for example the computer restarted), some pieces will have the right hash, and some not. When the download is complete, all pieces will have the correct hash. That way, we know what what pieces we need to download, if any.
