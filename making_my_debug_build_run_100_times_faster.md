@@ -1182,7 +1182,7 @@ That's ~ **1.8 Gib/s**.
 
 Unsurprisingly, when inspecting the generated assembly code for the SIMD-less version, the auto-vectorization is *very* limited and does not use the SHA extension (compilers are smart, but not *that* smart).
 
-As such, it's still very impressive that it reaches such a high performance. My guess is that the compiler does a good job at analyzing data dependencies and reordering statements to maximize utilization. Also, SHA1 does a lot of bit rotation, and the compiler makes heavy use of the `ror` and `shr` instructions to do just that instead of doing multiple naive bit operations like in the unoptimized code. 
+As such, it's still very impressive that it reaches such a high performance. My guess is that the compiler does a good job at analyzing data dependencies and reordering statements to maximize utilization. Also, SHA1 does a lot of bit rotation, and the compiler makes heavy use of the `ror`, `rol`, and `shr` instructions to do just that instead of doing multiple naive bit operations like in the unoptimized code. 
 
 The version using the SHA extension performs very well, be it in debug + Address Sanitizer mode, or release mode.
 

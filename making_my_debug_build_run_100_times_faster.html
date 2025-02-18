@@ -1332,7 +1332,7 @@ Benchmark 1: ./a.out ./NetBSD-9.4-amd64.iso ~/Downloads/NetBSD-9.4-amd64.iso.tor
 </code></pre>
 <p>That's ~ <strong>1.8 Gib/s</strong>.</p>
 <p>Unsurprisingly, when inspecting the generated assembly code for the SIMD-less version, the auto-vectorization is <em>very</em> limited and does not use the SHA extension (compilers are smart, but not <em>that</em> smart).</p>
-<p>As such, it's still very impressive that it reaches such a high performance. My guess is that the compiler does a good job at analyzing data dependencies and reordering statements to maximize utilization. Also, SHA1 does a lot of bit rotation, and the compiler makes heavy use of the <code>ror</code> and <code>shr</code> instructions to do just that instead of doing multiple naive bit operations like in the unoptimized code.</p>
+<p>As such, it's still very impressive that it reaches such a high performance. My guess is that the compiler does a good job at analyzing data dependencies and reordering statements to maximize utilization. Also, SHA1 does a lot of bit rotation, and the compiler makes heavy use of the <code>ror</code>, <code>rol</code>, and <code>shr</code> instructions to do just that instead of doing multiple naive bit operations like in the unoptimized code.</p>
 <p>The version using the SHA extension performs very well, be it in debug + Address Sanitizer mode, or release mode.</p>
 <p>Also, in both versions, as the SHA1 code got much faster, we start to see on the CPU profile <code>mmap</code> show up, as confirmed by the <code>system time</code> part becoming a fifth of the whole runtime.</p>
 <p>That means that we are starting to be limited by I/O. Which is good!</p>
