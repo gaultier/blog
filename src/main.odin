@@ -147,7 +147,7 @@ get_articles_creation_and_modification_date :: proc() -> (res: []GitStat, err: o
 		context.temp_allocator,
 	) or_return
 	if len(stderr_bin) > 0 {
-		fmt.printf("git command failed: %s\n", string(stderr_bin))
+		fmt.printf("git command stderr: %v %s\n", state, string(stderr_bin))
 	}
 	stdout := strings.trim_space(string(stdout_bin))
 	if len(stdout_bin) == 0 {
