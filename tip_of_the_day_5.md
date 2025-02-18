@@ -40,4 +40,4 @@ $ staticcheck  -tags=integration_tests ./... # Works!
 
 That was a TIL for me.
 
-Note that Go 1.24 supports the project listing tools directly in go.mod which would probably solve this issue directly.
+Note that Go 1.24 supports the project listing tools directly in `go.mod` which would probably solve this issue directly.

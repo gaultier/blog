@@ -2,7 +2,7 @@
   <feed xmlns="http://www.w3.org/2005/Atom">
     <title>Philippe Gaultier's blog</title>
     <link href="https://gaultier.github.io/blog"/>
-    <updated>2025-02-18T12:03:36+01:00</updated>
+    <updated>2025-02-18T12:04:27+01:00</updated>
     <author>
       <name>Philippe Gaultier</name>
     </author>
@@ -236,7 +236,7 @@
   <title>Tip of the day #5: Install Go tools with a specific version</title>
   <link href="https://gaultier.github.io/blog/tip_of_the_day_5.html"/>
   <id>urn:uuid:39a7f948-a91a-5dea-8f36-8c8aaf8d01b6</id>
-  <updated>2025-02-18T12:03:36+01:00</updated>
+  <updated>2025-02-18T12:04:27+01:00</updated>
   <published>2025-02-18T12:02:06+01:00</published>
   </entry>
 	</feed>
