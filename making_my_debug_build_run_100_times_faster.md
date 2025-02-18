@@ -5,7 +5,7 @@ Tags: C, SIMD, SHA1, Torrent, Optimization
 *SIMD and dedicated silicon to the rescue.*
 
 
-I am writing a torrent application, to download and serve torrent files, in C, because it's fun. A torrent download is made of thousands of pieces of the same size, typically 1 MiB or 2 MiB.  At start-up, the program reads the downloaded file from disk piece by piece, computes the [SHA1](https://en.wikipedia.org/wiki/SHA-1) hash of the piece, and marks this piece as downloaded if the actual hash is indeed the expected hash. We get from the `.torrent` file the expected hash of each piece.
+I am writing a torrent application, to download and serve torrent files, in C, because it's fun. A torrent download is made of thousands of pieces of the same size, typically a few hundred KiB to a few MiB.  At start-up, the program reads the downloaded file from disk piece by piece, computes the [SHA1](https://en.wikipedia.org/wiki/SHA-1) hash of the piece, and marks this piece as downloaded if the actual hash is indeed the expected hash. We get from the `.torrent` file the expected hash of each piece.
 
 When we have not downloaded anything yet, the file is completely empty (but still of the right size - we use `ftruncate(2)` to size it properly even if empty from the get go), and nearly every piece has the wrong hash. Some pieces will accidentally have the right hash, since they are all zeroes in the file we are downloading - good news then, with this approach we do not even have to download them at all!. If we continue an interrupted download (for example the computer restarted), some pieces will have the right hash, and some not. When the download is complete, all pieces will have the correct hash. That way, we know what what pieces we need to download, if any.
 
@@ -60,7 +60,7 @@ Let's first review the simple SIMD-less C version to understand the baseline.
 
 ## Non-SIMD implementation
 
-To isolate the issue, I have created a simple benchmark program. It reads the `.torrent` file, and the download file, in my case the `.iso` NetBSD image. Every piece gets hashed and this gets compared with the expected value (a SHA1 hash, or digest, is 20 bytes long). To simplify, I skip the decoding of the `.torrent` file, and hard-code the piece length, as well as where exactly in the file are the expected hashes. The only difficulty is that the last piece might be shorter than the others.
+To isolate the issue, I have created a simple benchmark program. It reads the `.torrent` file, and the download file, in my case the `.iso` NetBSD image. Every piece gets hashed and this gets compared with the expected value (a SHA1 hash, or digest, is 20 bytes long). To simplify this example, I skip the decoding of the `.torrent` file, and hard-code the piece length, as well as where exactly in the file are the expected hashes. The only difficulty is that the last piece might be shorter than the others so we need to compute its exact length to avoid going out of bounds:
 
 ```c
 #include <fcntl.h>
@@ -124,8 +124,10 @@ int main(int argc, char *argv[]) {
     return 1;
   }
   // HACK
+  // The piece hashes begin at offset 237 in the file.
   uint64_t file_torrent_data_offset = 237;
   file_torrent_data += file_torrent_data_offset;
+  // The last character in the file must be ignored because it's the bencode dictionary closing character 'e'.
   file_torrent_size -= file_torrent_data_offset - 1;
 
   uint64_t piece_length = 262144;
@@ -148,8 +150,11 @@ int main(int argc, char *argv[]) {
 
 ### Explanation
 
-- SHA1 works on 64 bytes chunk (and the last chunk is padded if it is too short).
-- This SIMD-less SHA1 implementation operates on one `uint32_t` at a time.
+- SHA1 works in 3 stages: 
+  + State initialization with `SHA1_Init`: the state is 5 `uint32_t` which are set to magic values defined by the standard.
+  + Processing with `SHA1_Update`: processing works on 64 bytes chunks. The result of the processing of a chunk is that the state is updated to new values. For a given chunk, SHA1 does 80 rounds of computation. Incoming data is buffered into the current chunk until it reaches 64 bytes, and that's when the real computation kicks in with `SHA1_Transform`. This API allows for reading and hashing data in a streaming fashion.
+  + Padding and finalization with `SHA1_Final`: the last chunk is padded to 64 bytes if it is too short, processed, and the digest (the final 20 bytes we are after) is extracted from the state.
+- For a given 64 bytes chunk, this SIMD-less SHA1 computation operates on one `uint32_t` at a time. That's because 64 bytes is also 512 bits, which is also 16 `uint32_t`. The SHA1 algorithm and some implementations support architectures where 1 byte is *not* 8 bits. But knowing that 1 byte *is indeed* 8 bits on our architecture unlocks a ton of performance as we'll see.
 - SHA1 expects data in big-endian but nearly all CPU nowadays are little-endian so we need to swap the bytes when loading the input data to do SHA1 computations, and back when storing the intermediate results (the SHA1 state). It is done here with lots of clever bit tricks, one `uint32_t` at a time.
 - The main loop operating on the 64 bytes chunk is unrolled, which avoids having conditionals in the middle of the loop, which might tank performance due to mispredicted branches. The algorithm lends itself to that really well:
   ```
@@ -435,7 +440,7 @@ I experimented with doing a `read` syscall for each piece (that's what `sha1sum`
 
 So what can we do about it?
 
-- We can build the SHA1 code separately with optimizations on, always (and potentially without Address Sanitizer). That's a bit annoying, because I currently do a Unity build meaning there is only one compilation unit. So having suddenly multiple compilation units with different build flags makes the build system more complex. And clang has annotations to *lower* the optimization level for one function but not to *raise* it.
+- We can build the SHA1 code separately with optimizations on, always (and potentially without Address Sanitizer). That's a bit annoying, because I currently do a Unity build meaning there is only one compilation unit. So having suddenly multiple compilation units with different build flags makes the build system more complex. And clang has [annotations](https://clang.llvm.org/docs/AttributeReference.html#optnone) to *lower* the optimization level for one function but not to *raise* it.
 - We can compute the hash of each piece in parallel for example in a thread pool, since each piece is independent. That works and that's what [libtorrent did/does](https://blog.libtorrent.org/2011/11/multi-threaded-piece-hashing/), but that assumes that the target computer has cores to spare, and it creates some complexity:
   + We need to implement a thread pool (spawning a new thread for each piece will not perform well) and pick a reasonable thread pool size given the number of cores, in a cross-platform way
   + We need a M:N scheduling logic to compute the hash of M pieces on N threads. It could be a work-stealing queue where each thread picks the next item when its finished with its piece, or we read the whole file in memory and split the data in equal parts for each thread to plow through (but beware that the data for each thread must be aligned with the piece size!)
@@ -469,8 +474,8 @@ I really am a SIMD beginner but I found a few interesting nuggets of wisdom here
       // I.e.: Transform state to big-endian.
       ABCD = _mm_shuffle_epi32(ABCD, 0x1B);
     ```
-    It's nifty because we can copy the data in and out of SIMD registers, while also doing the endianness conversion, in one operation. And this approach also works from a SIMD register to another SIMD register.
-- Typical SIMD code processes the data in groups of N bytes at a time, and the few excess bytes at the end use the normal SIMD-less code path. Here, we have to deal with an additional grouping: SHA1 processes data in chunks of 64 bytes and the last chunk is padded to be 64 bytes if it is too short. Hence, for the last short chunk we use the SIMD-less code path. We could try to be clever about doing the padding, and re-using the SIMD code path for this last chunk, but it's not going to really make a difference in practice when we are dealing with megabytes or gigabytes of data.
+    It's nifty because we can copy the data in and out of SIMD registers, while also doing the endianness conversion, in one operation that typically compiles down to one assembly instruction. And this approach also works from a SIMD register to another SIMD register.
+- Typical SIMD code processes the data in groups of N bytes at a time, and the few excess bytes at the end use the normal SIMD-less code path. Here, we have to deal with an additional grouping: SHA1 processes data in chunks of 64 bytes and the last chunk is padded to be 64 bytes if it is too short. Hence, for the last short chunk we use the SIMD-less code path. We could try to be clever about doing the padding, and re-using the SIMD code path for this last chunk, since 64 bytes is a nice round number that is SIMD friendly, but this last chunk is not going to really make a difference in practice when we are dealing with megabytes or gigabytes of data.
 
 ### The code
 
@@ -814,7 +819,7 @@ static bool is_piece_valid(uint8_t *piece, uint64_t piece_len,
   SHA1_CTX ctx = {0};
   SHA1Init(&ctx);
 
-  // Process as many SHA1 64 bytes pieces as possible.
+  // Process as many SHA1 64 bytes chunks as possible.
   uint64_t len_rounded_down = (piece_len / 64) * 64;
   uint64_t rem = piece_len % 64;
   uint64_t steps = len_rounded_down / 64;
@@ -1126,7 +1131,7 @@ static bool is_piece_valid(uint8_t *piece, uint64_t piece_len,
   SHA1_CTX ctx = {0};
   SHA1Init(&ctx);
 
-  // Process as many SHA1 64 bytes pieces as possible.
+  // Process as many SHA1 64 bytes chunks as possible.
   uint64_t len_rounded_down = (piece_len / 64) * 64;
   uint64_t rem = piece_len % 64;
   sha1_sha_ext(ctx.state, piece, (uint32_t)len_rounded_down);

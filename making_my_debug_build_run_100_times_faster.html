@@ -196,7 +196,7 @@
 </ul>
 
 <p><em>SIMD and dedicated silicon to the rescue.</em></p>
-<p>I am writing a torrent application, to download and serve torrent files, in C, because it's fun. A torrent download is made of thousands of pieces of the same size, typically 1 MiB or 2 MiB.  At start-up, the program reads the downloaded file from disk piece by piece, computes the <a href="https://en.wikipedia.org/wiki/SHA-1">SHA1</a> hash of the piece, and marks this piece as downloaded if the actual hash is indeed the expected hash. We get from the <code>.torrent</code> file the expected hash of each piece.</p>
+<p>I am writing a torrent application, to download and serve torrent files, in C, because it's fun. A torrent download is made of thousands of pieces of the same size, typically a few hundred KiB to a few MiB.  At start-up, the program reads the downloaded file from disk piece by piece, computes the <a href="https://en.wikipedia.org/wiki/SHA-1">SHA1</a> hash of the piece, and marks this piece as downloaded if the actual hash is indeed the expected hash. We get from the <code>.torrent</code> file the expected hash of each piece.</p>
 <p>When we have not downloaded anything yet, the file is completely empty (but still of the right size - we use <code>ftruncate(2)</code> to size it properly even if empty from the get go), and nearly every piece has the wrong hash. Some pieces will accidentally have the right hash, since they are all zeroes in the file we are downloading - good news then, with this approach we do not even have to download them at all!. If we continue an interrupted download (for example the computer restarted), some pieces will have the right hash, and some not. When the download is complete, all pieces will have the correct hash. That way, we know what what pieces we need to download, if any.</p>
 <p>I read that some torrent clients prefer to skip this verification at startup because they persist their state in a separate file (perhaps a Sqlite database), each time a new piece is downloaded (and its hash is verified). However I favor doing a from scratch verification at startup for a few reasons, over the 'state file' approach:</p>
 <ul>
@@ -234,7 +234,7 @@ Benchmark 1: sha1sum ./NetBSD-9.4-amd64.iso
 	<a class="title" href="#2-non-simd-implementation">Non-SIMD implementation</a>
 	<a class="hash-anchor" href="#2-non-simd-implementation" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
-<p>To isolate the issue, I have created a simple benchmark program. It reads the <code>.torrent</code> file, and the download file, in my case the <code>.iso</code> NetBSD image. Every piece gets hashed and this gets compared with the expected value (a SHA1 hash, or digest, is 20 bytes long). To simplify, I skip the decoding of the <code>.torrent</code> file, and hard-code the piece length, as well as where exactly in the file are the expected hashes. The only difficulty is that the last piece might be shorter than the others.</p>
+<p>To isolate the issue, I have created a simple benchmark program. It reads the <code>.torrent</code> file, and the download file, in my case the <code>.iso</code> NetBSD image. Every piece gets hashed and this gets compared with the expected value (a SHA1 hash, or digest, is 20 bytes long). To simplify this example, I skip the decoding of the <code>.torrent</code> file, and hard-code the piece length, as well as where exactly in the file are the expected hashes. The only difficulty is that the last piece might be shorter than the others so we need to compute its exact length to avoid going out of bounds:</p>
 <pre><code class="language-c">#include &lt;fcntl.h&gt;
 #include &lt;inttypes.h&gt;
 #include &quot;sha1_sw.c&quot;
@@ -296,8 +296,10 @@ int main(int argc, char *argv[]) {
     return 1;
   }
   // HACK
+  // The piece hashes begin at offset 237 in the file.
   uint64_t file_torrent_data_offset = 237;
   file_torrent_data += file_torrent_data_offset;
+  // The last character in the file must be ignored because it's the bencode dictionary closing character 'e'.
   file_torrent_size -= file_torrent_data_offset - 1;
 
   uint64_t piece_length = 262144;
@@ -321,8 +323,14 @@ int main(int argc, char *argv[]) {
 	<a class="hash-anchor" href="#3-explanation" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h3>
 <ul>
-<li>SHA1 works on 64 bytes chunk (and the last chunk is padded if it is too short).</li>
-<li>This SIMD-less SHA1 implementation operates on one <code>uint32_t</code> at a time.</li>
+<li>SHA1 works in 3 stages:
+<ul>
+<li>State initialization with <code>SHA1_Init</code>: the state is 5 <code>uint32_t</code> which are set to magic values defined by the standard.</li>
+<li>Processing with <code>SHA1_Update</code>: processing works on 64 bytes chunks. The result of the processing of a chunk is that the state is updated to new values. For a given chunk, SHA1 does 80 rounds of computation. Incoming data is buffered into the current chunk until it reaches 64 bytes, and that's when the real computation kicks in with <code>SHA1_Transform</code>. This API allows for reading and hashing data in a streaming fashion.</li>
+<li>Padding and finalization with <code>SHA1_Final</code>: the last chunk is padded to 64 bytes if it is too short, processed, and the digest (the final 20 bytes we are after) is extracted from the state.</li>
+</ul>
+</li>
+<li>For a given 64 bytes chunk, this SIMD-less SHA1 computation operates on one <code>uint32_t</code> at a time. That's because 64 bytes is also 512 bits, which is also 16 <code>uint32_t</code>. The SHA1 algorithm and some implementations support architectures where 1 byte is <em>not</em> 8 bits. But knowing that 1 byte <em>is indeed</em> 8 bits on our architecture unlocks a ton of performance as we'll see.</li>
 <li>SHA1 expects data in big-endian but nearly all CPU nowadays are little-endian so we need to swap the bytes when loading the input data to do SHA1 computations, and back when storing the intermediate results (the SHA1 state). It is done here with lots of clever bit tricks, one <code>uint32_t</code> at a time.</li>
 <li>The main loop operating on the 64 bytes chunk is unrolled, which avoids having conditionals in the middle of the loop, which might tank performance due to mispredicted branches. The algorithm lends itself to that really well:
 <pre><code>  for i from 0 to 79
@@ -603,7 +611,7 @@ Benchmark 1: ./a.out ./NetBSD-9.4-amd64.iso ~/Downloads/NetBSD-9.4-amd64.iso.tor
 </h3>
 <p>So what can we do about it?</p>
 <ul>
-<li>We can build the SHA1 code separately with optimizations on, always (and potentially without Address Sanitizer). That's a bit annoying, because I currently do a Unity build meaning there is only one compilation unit. So having suddenly multiple compilation units with different build flags makes the build system more complex. And clang has annotations to <em>lower</em> the optimization level for one function but not to <em>raise</em> it.</li>
+<li>We can build the SHA1 code separately with optimizations on, always (and potentially without Address Sanitizer). That's a bit annoying, because I currently do a Unity build meaning there is only one compilation unit. So having suddenly multiple compilation units with different build flags makes the build system more complex. And clang has <a href="https://clang.llvm.org/docs/AttributeReference.html#optnone">annotations</a> to <em>lower</em> the optimization level for one function but not to <em>raise</em> it.</li>
 <li>We can compute the hash of each piece in parallel for example in a thread pool, since each piece is independent. That works and that's what <a href="https://blog.libtorrent.org/2011/11/multi-threaded-piece-hashing/">libtorrent did/does</a>, but that assumes that the target computer has cores to spare, and it creates some complexity:
 <ul>
 <li>We need to implement a thread pool (spawning a new thread for each piece will not perform well) and pick a reasonable thread pool size given the number of cores, in a cross-platform way</li>
@@ -640,8 +648,8 @@ Benchmark 1: ./a.out ./NetBSD-9.4-amd64.iso ~/Downloads/NetBSD-9.4-amd64.iso.tor
   // I.e.: Transform state to big-endian.
   ABCD = _mm_shuffle_epi32(ABCD, 0x1B);
 </code></pre>
-It's nifty because we can copy the data in and out of SIMD registers, while also doing the endianness conversion, in one operation. And this approach also works from a SIMD register to another SIMD register.</li>
-<li>Typical SIMD code processes the data in groups of N bytes at a time, and the few excess bytes at the end use the normal SIMD-less code path. Here, we have to deal with an additional grouping: SHA1 processes data in chunks of 64 bytes and the last chunk is padded to be 64 bytes if it is too short. Hence, for the last short chunk we use the SIMD-less code path. We could try to be clever about doing the padding, and re-using the SIMD code path for this last chunk, but it's not going to really make a difference in practice when we are dealing with megabytes or gigabytes of data.</li>
+It's nifty because we can copy the data in and out of SIMD registers, while also doing the endianness conversion, in one operation that typically compiles down to one assembly instruction. And this approach also works from a SIMD register to another SIMD register.</li>
+<li>Typical SIMD code processes the data in groups of N bytes at a time, and the few excess bytes at the end use the normal SIMD-less code path. Here, we have to deal with an additional grouping: SHA1 processes data in chunks of 64 bytes and the last chunk is padded to be 64 bytes if it is too short. Hence, for the last short chunk we use the SIMD-less code path. We could try to be clever about doing the padding, and re-using the SIMD code path for this last chunk, since 64 bytes is a nice round number that is SIMD friendly, but this last chunk is not going to really make a difference in practice when we are dealing with megabytes or gigabytes of data.</li>
 </ul>
 <h3 id="9-the-code">
 	<a class="title" href="#9-the-code">The code</a>
@@ -980,7 +988,7 @@ static void sha1_sse_step(uint32_t *restrict H, const uint32_t *restrict inputu,
   SHA1_CTX ctx = {0};
   SHA1Init(&amp;ctx);
 
-  // Process as many SHA1 64 bytes pieces as possible.
+  // Process as many SHA1 64 bytes chunks as possible.
   uint64_t len_rounded_down = (piece_len / 64) * 64;
   uint64_t rem = piece_len % 64;
   uint64_t steps = len_rounded_down / 64;
@@ -1290,7 +1298,7 @@ static void sha1_sha_ext(uint32_t state[5], const uint8_t data[],
   SHA1_CTX ctx = {0};
   SHA1Init(&amp;ctx);
 
-  // Process as many SHA1 64 bytes pieces as possible.
+  // Process as many SHA1 64 bytes chunks as possible.
   uint64_t len_rounded_down = (piece_len / 64) * 64;
   uint64_t rem = piece_len % 64;
   sha1_sha_ext(ctx.state, piece, (uint32_t)len_rounded_down);
