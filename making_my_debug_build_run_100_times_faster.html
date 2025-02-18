@@ -183,7 +183,7 @@
 </li>
 
 <li>
-	<a href="#15-sha-using-openssl">SHA using OpenSSL</a>
+	<a href="#15-sha1-using-openssl">SHA1 using OpenSSL</a>
 		</li>
 
 <li>
@@ -323,7 +323,7 @@ int main(int argc, char *argv[]) {
 <ul>
 <li>SHA1 works on 64 bytes chunk (and the last chunk is padded if it is too short).</li>
 <li>This SIMD-less SHA1 implementation operates on one <code>uint32_t</code> at a time.</li>
-<li>SHA expects data in big-endian but nearly all CPU nowadays are little-endian so we need to swap the bytes when loading the input data to do SHA computations, and back when storing the intermediate results (the SHA state). It is done here with lots of clever bit tricks, one <code>uint32_t</code> at a time.</li>
+<li>SHA1 expects data in big-endian but nearly all CPU nowadays are little-endian so we need to swap the bytes when loading the input data to do SHA1 computations, and back when storing the intermediate results (the SHA1 state). It is done here with lots of clever bit tricks, one <code>uint32_t</code> at a time.</li>
 <li>The main loop operating on the 64 bytes chunk is unrolled, which avoids having conditionals in the middle of the loop, which might tank performance due to mispredicted branches. The algorithm lends itself to that really well:
 <pre><code>  for i from 0 to 79
           if 0 ≤ i ≤ 19 then
@@ -641,7 +641,7 @@ Benchmark 1: ./a.out ./NetBSD-9.4-amd64.iso ~/Downloads/NetBSD-9.4-amd64.iso.tor
   ABCD = _mm_shuffle_epi32(ABCD, 0x1B);
 </code></pre>
 It's nifty because we can copy the data in and out of SIMD registers, while also doing the endianness conversion, in one operation. And this approach also works from a SIMD register to another SIMD register.</li>
-<li>Typical SIMD code processes the data in groups of N bytes at a time, and the few excess bytes at the end use the normal SIMD-less code path. Here, we have to deal with an additional grouping: SHA processes data in chunks of 64 bytes and the last chunk is padded to be 64 bytes if it is too short. Hence, for the last short chunk we use the SIMD-less code path. We could try to be clever about doing the padding, and re-using the SIMD code path for this last chunk, but it's not going to really make a difference in practice when we are dealing with megabytes or gigabytes of data.</li>
+<li>Typical SIMD code processes the data in groups of N bytes at a time, and the few excess bytes at the end use the normal SIMD-less code path. Here, we have to deal with an additional grouping: SHA1 processes data in chunks of 64 bytes and the last chunk is padded to be 64 bytes if it is too short. Hence, for the last short chunk we use the SIMD-less code path. We could try to be clever about doing the padding, and re-using the SIMD code path for this last chunk, but it's not going to really make a difference in practice when we are dealing with megabytes or gigabytes of data.</li>
 </ul>
 <h3 id="9-the-code">
 	<a class="title" href="#9-the-code">The code</a>
@@ -980,7 +980,7 @@ static void sha1_sse_step(uint32_t *restrict H, const uint32_t *restrict inputu,
   SHA1_CTX ctx = {0};
   SHA1Init(&amp;ctx);
 
-  // Process as many SHA 64 bytes pieces as possible.
+  // Process as many SHA1 64 bytes pieces as possible.
   uint64_t len_rounded_down = (piece_len / 64) * 64;
   uint64_t rem = piece_len % 64;
   uint64_t steps = len_rounded_down / 64;
@@ -1009,14 +1009,14 @@ Benchmark 1: ./a.out ./NetBSD-9.4-amd64.iso ~/Downloads/NetBSD-9.4-amd64.iso.tor
   Range (min … max):    7.784 s …  8.684 s    10 runs
 </code></pre>
 <p>That's better but still not great. We could apply the tweaks suggested by Intel, but that probably would not give us the order of magnitude improvement we need. They cite x1.2 to x1.5 improvements in their article. We need more.</p>
-<p>Speaking of Intel... did you know that in all likelihood, your CPU has dedicated silicon to accelerate SHA computations? Let's use that! We paid for it, we get to use it!</p>
+<p>Speaking of Intel... did you know that in all likelihood, your CPU has dedicated silicon to accelerate SHA1 computations? Let's use that! We paid for it, we get to use it!</p>
 <h2 id="11-intel-sha-extension">
 	<a class="title" href="#11-intel-sha-extension">Intel SHA extension</a>
 	<a class="hash-anchor" href="#11-intel-sha-extension" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>Despite the 'Intel' name, Intel as well as AMD CPUs have been shipping with this <a href="https://en.wikipedia.org/wiki/Intel_SHA_extensions">extension</a>, since around 2016-2017. It adds a few SIMD instructions dedicated to compute SHA1 (and SHA256, and other variants). Note that ARM also has an equivalent (albeit incompatible, of course) extension so the same can be done there.</p>
 <p><em>There is an irony here, because 2017 is also the year where the first SHA1 public collision was published, which incited many developers to move away from SHA1...</em></p>
-<p>The advantage is that the structure of the code can remain the same: we still are using 128 bits SIMD registers, still computing SHA chunks of 64 bytes at a time. It's just that a few operations get faster and the code is generally shorter and clearer, and the main part is branchless.</p>
+<p>The advantage is that the structure of the code can remain the same: we still are using 128 bits SIMD registers, still computing SHA1 chunks of 64 bytes at a time. It's just that a few operations get faster and the code is generally shorter and clearer, and the main part is branchless.</p>
 <p>The implementation is a pure work of art, and comes from this <a href="https://github.com/noloader/SHA-Intrinsics/blob/master/sha1-x86.c">Github repository</a>. I have commented lots of it for clarity.</p>
 <h3 id="12-explanations">
 	<a class="title" href="#12-explanations">Explanations</a>
@@ -1290,7 +1290,7 @@ static void sha1_sha_ext(uint32_t state[5], const uint8_t data[],
   SHA1_CTX ctx = {0};
   SHA1Init(&amp;ctx);
 
-  // Process as many SHA 64 bytes pieces as possible.
+  // Process as many SHA1 64 bytes pieces as possible.
   uint64_t len_rounded_down = (piece_len / 64) * 64;
   uint64_t rem = piece_len % 64;
   sha1_sha_ext(ctx.state, piece, (uint32_t)len_rounded_down);
@@ -1334,14 +1334,14 @@ Benchmark 1: ./a.out ./NetBSD-9.4-amd64.iso ~/Downloads/NetBSD-9.4-amd64.iso.tor
 <p>Unsurprisingly, when inspecting the generated assembly code for the SIMD-less version, the auto-vectorization is <em>very</em> limited and does not use the SHA extension (compilers are smart, but not <em>that</em> smart).</p>
 <p>As such, it's still very impressive that it reaches such a high performance. My guess is that the compiler does a good job at analyzing data dependencies and reordering statements to maximize utilization. Also, SHA1 does a lot of bit rotation, and the compiler makes heavy use of the <code>ror</code> and <code>shr</code> instructions to do just that instead of doing multiple naive bit operations like in the unoptimized code.</p>
 <p>The version using the SHA extension performs very well, be it in debug + Address Sanitizer mode, or release mode.</p>
-<p>Also, in both versions, as the SHA code got much faster, we start to see on the CPU profile <code>mmap</code> show up, as confirmed by the <code>system time</code> part becoming a fifth of the whole runtime.</p>
+<p>Also, in both versions, as the SHA1 code got much faster, we start to see on the CPU profile <code>mmap</code> show up, as confirmed by the <code>system time</code> part becoming a fifth of the whole runtime.</p>
 <p>That means that we are starting to be limited by I/O. Which is good!</p>
 <p>I tried to give the OS some hints to improve a bit on that front with <code>madvise(file_download_data, file_download_size, MADV_SEQUENTIAL | MADV_WILLNEED)</code>, but it did not have any impact on the timings.</p>
-<h2 id="15-sha-using-openssl">
-	<a class="title" href="#15-sha-using-openssl">SHA using OpenSSL</a>
-	<a class="hash-anchor" href="#15-sha-using-openssl" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+<h2 id="15-sha1-using-openssl">
+	<a class="title" href="#15-sha1-using-openssl">SHA1 using OpenSSL</a>
+	<a class="hash-anchor" href="#15-sha1-using-openssl" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
-<p>The whole point of this article is to do SHA computations from scratch and avoid dependencies. Let's see how OpenSSL (in this case, <a href="https://github.com/aws/aws-lc">aws-lc</a> but I don't believe they changed that part at all) fares out of curiosity.</p>
+<p>The whole point of this article is to do SHA1 computations from scratch and avoid dependencies. Let's see how OpenSSL (in this case, <a href="https://github.com/aws/aws-lc">aws-lc</a> but I don't believe they changed that part at all) fares out of curiosity.</p>
 <pre><code class="language-sh"> $ hyperfine --warmup 3 './a.out ./NetBSD-9.4-amd64.iso ~/Downloads/NetBSD-9.4-amd64.iso.torrent'
 Benchmark 1: ./a.out ./NetBSD-9.4-amd64.iso ~/Downloads/NetBSD-9.4-amd64.iso.torrent
   Time (mean ± σ):     281.5 ms ±   3.9 ms    [User: 245.7 ms, System: 35.1 ms]
