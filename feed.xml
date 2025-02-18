@@ -2,12 +2,20 @@
   <feed xmlns="http://www.w3.org/2005/Atom">
     <title>Philippe Gaultier's blog</title>
     <link href="https://gaultier.github.io/blog"/>
-    <updated>2025-02-18T09:34:25+01:00</updated>
+    <updated>2025-02-18T09:43:09+01:00</updated>
     <author>
       <name>Philippe Gaultier</name>
     </author>
     <id>urn:uuid:9c065c53-31bc-4049-a795-936802a6b1df</id>
 
+	<entry>
+  <title>Tip of the day #5: Install Go tools with a specific version</title>
+  <link href="https://gaultier.github.io/blog/tip_of_the_day_5.html"/>
+  <id>urn:uuid:39a7f948-a91a-5dea-8f36-8c8aaf8d01b6</id>
+  <updated></updated>
+  <published></published>
+  </entry>
+	
 	<entry>
   <title>Getting started with Scheme by solving an Advent of Code 2018 challenge</title>
   <link href="https://gaultier.github.io/blog/advent_of_code_2018_5.html"/>
@@ -228,7 +236,7 @@
   <title>Making my debug build run 100x faster so that it is finally usable</title>
   <link href="https://gaultier.github.io/blog/making_my_debug_build_run_100_times_faster.html"/>
   <id>urn:uuid:a5f75104-e439-59db-b54f-c7f65d76b339</id>
-  <updated>2025-02-18T09:34:25+01:00</updated>
+  <updated>2025-02-18T09:43:09+01:00</updated>
   <published>2025-02-18T08:07:55+01:00</published>
   </entry>
 	</feed>
