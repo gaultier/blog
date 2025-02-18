@@ -5,15 +5,15 @@ Tags: C, SIMD, SHA1, Torrent, Optimization
 *SIMD and dedicated silicon to the rescue.*
 
 
-I am writing a torrent application, to download and serve torrent files, in C. A torrent download is made of pieces, typically 1 MiB or 2 MiB.  At start-up, the program reads the downloaded file piece by piece, computes its [SHA1](https://en.wikipedia.org/wiki/SHA-1) hash, and marks this piece as downloaded if the actual hash is indeed the expected hash. We get from the `.torrent` file the expected hash of each piece.
+I am writing a torrent application, to download and serve torrent files, in C, because it's fun. A torrent download is made of thousands of pieces of the same size, typically 1 MiB or 2 MiB.  At start-up, the program reads the downloaded file from disk piece by piece, computes the [SHA1](https://en.wikipedia.org/wiki/SHA-1) hash of the piece, and marks this piece as downloaded if the actual hash is indeed the expected hash. We get from the `.torrent` file the expected hash of each piece.
 
-When we have not downloaded anything yet, the file is completely empty (but still of the right size - we use `ftruncate(2)` to size it properly even if empty from the get go), and nearly every piece has the wrong hash. Some pieces will accidentally have the right hash, since they are all zeroes in the file we are downloading - good news then, with this approach we do not even have to download them at all!. If we continue an interrupted download (for example we computer restarted), some pieces will have the right hash, and some not. When the download is complete, all pieces will have the correct hash. That way, we know what what pieces we need to download, if any.
+When we have not downloaded anything yet, the file is completely empty (but still of the right size - we use `ftruncate(2)` to size it properly even if empty from the get go), and nearly every piece has the wrong hash. Some pieces will accidentally have the right hash, since they are all zeroes in the file we are downloading - good news then, with this approach we do not even have to download them at all!. If we continue an interrupted download (for example the computer restarted), some pieces will have the right hash, and some not. When the download is complete, all pieces will have the correct hash. That way, we know what what pieces we need to download, if any.
 
-I read that some torrent clients prefer to skip this verification at startup because they persist their state in a separate file (perhaps a Sqlite database), while downloading pieces. However I favor doing a from scratch verification at startup for a few reasons, over the 'state file' approach:
+I read that some torrent clients prefer to skip this verification at startup because they persist their state in a separate file (perhaps a Sqlite database), each time a new piece is downloaded (and its hash is verified). However I favor doing a from scratch verification at startup for a few reasons, over the 'state file' approach:
 
 - We might have crashed in the middle of a previous download, before updating the state file, and the persisted state is out-of-sync with the download
 - There may have been data corruption at the disk level (not everybody runs ZFS and can detect that!)
-- We can continue a partial downloaded started with a different torrent client
+- We can continue a partial download started with a different torrent client - no need for format interoperability. The downloaded file is the source of truth.
 - Some other program might have corrupted/modified the download, unbeknownst to us and our state file
 
 For this reason I do not have a state file at all. It's simpler and a whole class of out-of-sync issues disappears.
@@ -26,17 +26,17 @@ $ du -h ./NetBSD-9.4-amd64.iso
 485M	./NetBSD-9.4-amd64.iso
 ```
 
-But when I build my code in debug mode (no optimizations) with Adress Sanitizer, to detect various issues early, startup takes **20 to 30 seconds** (roughly ~ **18 KiB/s**)! That's unbearable, especially when working in the debugger and inspecting some code that runs after the startup. We'd like to finish this verification under 1 second ideally. And making it fast is important, because until it finishes, we do not know which pieces we need to download.
+But when I build my code in debug mode (no optimizations) with Address Sanitizer, to detect various issues early, startup takes **20 to 30 seconds** (hashing at roughly ~ **18 KiB/s**)! That's unbearable, especially when working in the debugger and inspecting some code that runs after the startup. We'd like to finish this verification under 1 second ideally. And making it fast is important, because until it finishes, we do not know which pieces we need to download so that blocks everything.
 
 Let's see how we can speed it up.
 
-## Why is it a problem at all?
+## Why is it a problem at all and how did it come to be?
 
-It's important to note that to reduce third-party dependencies, the SHA1 code is vendored in the source tree and comes from OpenBSD. It is plain C code, not using SIMD or such. It's good because I can read it and understand it.
+It's important to note that in my case, to reduce third-party dependencies, the SHA1 code is vendored in the source tree and comes from OpenBSD. It is plain C code, not using SIMD or such. It's good because I can read it and understand it.
 
-I entertained depending on OpenSSL or such, but it feels wasteful to pull in such a huge amount of code just for SHA1. And building OpenSSL ourselves, to tweak the build flags, means depending on Perl (and Go, in the case of aws-lc). And now I need to pick between OpenSSL, LibreSSL, BoringSSL, aws-lc, etc. And upgrade it when the weekly security vulnerability gets announced. I don't want any of it, if I can help it. Also I want to understand from top to bottom what code I depend on. 
+I entertained depending on OpenSSL or such, but it feels wasteful to pull in such a huge amount of code just for SHA1. And building OpenSSL ourselves, to tweak the build flags, means depending on Perl (and Go, in the case of aws-lc), and a lot of stuff. And now I need to pick between OpenSSL, LibreSSL, BoringSSL, aws-lc, etc. And upgrade it when the weekly security vulnerability gets announced. I don't want any of it, if I can help it. Also I want to understand from top to bottom what code I depend on. 
 
-For a while, due to this slowness, I simply gave up using a debug build, instead I use minimal optimizations (`-O1`) with Adress Sanitizer (a.k.a Address Sanitizer). It was much faster, but lots of functions and variables got optimized away, and the debugging experience was thus sub par. I needed to make my debug + Address Sanitizer build viable.  The debug build without Address Sanitizer is much faster: the startup 'only' takes around 2 seconds. But Address Sanitizer is very valuable, I want to be able to use it! And 2 seconds is still too long. Reducing the iteration cycle is often the deciding factor for software quality in my experience.
+For a while, due to this slowness, I simply gave up using a debug build, instead I use minimal optimizations (`-O1`) with Address Sanitizer. It was much faster, but lots of functions and variables got optimized away, and the debugging experience was thus sub par. I needed to make my debug + Address Sanitizer build viable.  The debug build without Address Sanitizer is much faster: the startup 'only' takes around 2 seconds. But Address Sanitizer is very valuable, I want to be able to use it! And 2 seconds is still too long. Reducing the iteration cycle is often the deciding factor for software quality in my experience.
 
 What's vexing is that from first principles, we know it could/should be much, much faster:
 
@@ -54,7 +54,7 @@ Why is it so slow then? I can see on CPU profiles that the SHA1 function takes a
 
 ![CPU Profile of the SIMD-less code, debug + Address Sanitizer build](cpu_profile_sha1_sw_debug_asan.svg)
 
-The SHA1 code is simplistic, it does not use any SIMD or intrinsics directly. And that's fine, because when it's compiled with optimizations on, the compiler does a pretty good job at optimizing, and it's really fast, around ~300 ms. But the issue is that this code is working one byte at a time. And Adress Sanitizer, with its nice runtime and bounds checks, makes each memory access **very** expensive. So we basically have just written a worst-case stress-test for Address Sanitizer.
+The SHA1 code is simplistic, it does not use any SIMD or intrinsics directly. And that's fine, because when it's compiled with optimizations on, the compiler does a pretty good job at optimizing, and it's really fast, around ~300 ms. But the issue is that this code is working one byte at a time. And Address Sanitizer, with its nice runtime and bounds checks, makes each memory access **very** expensive. So we basically have just written a worst-case stress-test for Address Sanitizer.
 
 Let's first review the simple SIMD-less C version to understand the baseline.
 
