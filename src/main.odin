@@ -82,58 +82,6 @@ parse_metadata :: proc(markdown: string, path: string) -> (title: string, tags: 
 	return
 }
 
-run_sub_process_and_get_stdout :: proc(
-	command: []string,
-	stdin: []byte,
-) -> (
-	stdout: string,
-	err: os2.Error,
-) {
-	stdin_w: ^os2.File
-	stdin_r: ^os2.File
-	if len(stdin) > 0 {
-		stdin_r, stdin_w = os2.pipe() or_return
-	}
-
-	stdout_r, stdout_w := os2.pipe() or_return
-	desc := os2.Process_Desc {
-		command = command,
-		stdout  = stdout_w,
-		stdin   = stdin_r,
-	}
-
-	process := os2.process_start(desc) or_return
-	os2.close(stdin_r)
-	os2.close(stdout_w)
-	defer _ = os2.process_close(process)
-
-	if stdin_w != nil {
-		for cur := 0; cur < len(stdin); {
-			n_written := os2.write(stdin_w, stdin[cur:]) or_return
-			if n_written == 0 {break}
-			cur += n_written
-		}
-		os2.close(stdin_w)
-	}
-
-
-	stdout_sb := strings.builder_make()
-	for {
-		buf := [4096]u8{}
-		read_n := os2.read(stdout_r, buf[:]) or_break
-		if read_n == 0 {break}
-
-		strings.write_bytes(&stdout_sb, buf[:read_n])
-	}
-
-	process_state := os2.process_wait(process) or_return
-	if !process_state.success {
-		return {}, .Unknown
-	}
-
-	return strings.to_string(stdout_sb), nil
-}
-
 
 GitStat :: struct {
 	creation_date:     string,
@@ -142,11 +90,11 @@ GitStat :: struct {
 }
 
 get_articles_creation_and_modification_date :: proc() -> (res: []GitStat, err: os2.Error) {
-	stdout := run_sub_process_and_get_stdout(
-		[]string{"git", "log", "--format='%aI'", "--name-only", "--", "'*.md'"},
-		{},
+	state, stdout_bin, stderr := os2.process_exec(
+		{command = []string{"git", "log", "--format='%aI'", "--name-only", "'*.md'"}},
+		context.temp_allocator,
 	) or_return
-	stdout = strings.trim_space(stdout)
+	stdout := strings.trim_space(string(stdout_bin))
 
 	lines := strings.split_lines(stdout, context.temp_allocator)
 
@@ -401,12 +349,18 @@ generate_html_article :: proc(
 
 	decorated_markdown := decorate_markdown_with_title_ids(article_content)
 
-	cmark_output, os2_err := run_sub_process_and_get_stdout(
-		cmark_command,
-		transmute([]u8)decorated_markdown,
+	state, cmark_stdout_bin, cmark_stderr_bin, os2_err := os2.process_exec(
+		{command = cmark_command},
+		context.temp_allocator,
 	)
 	if os2_err != nil {
-		panic(fmt.aprintf("failed to run cmark: %v", os2.error_string(os2_err)))
+		panic(
+			fmt.aprintf(
+				"failed to run cmark: %v %s",
+				os2.error_string(os2_err),
+				string(cmark_stderr_bin),
+			),
+		)
 	}
 
 	html_sb := strings.builder_make()
@@ -450,7 +404,7 @@ generate_html_article :: proc(
 	append_article_toc(&html_sb, article_content, article.title)
 
 	strings.write_rune(&html_sb, '\n')
-	strings.write_string(&html_sb, cmark_output)
+	strings.write_bytes(&html_sb, cmark_stdout_bin)
 	strings.write_string(&html_sb, back_link)
 	strings.write_string(&html_sb, footer)
 
@@ -602,9 +556,8 @@ generate_home_page :: proc(
 		) or_return
 		decorated_markdown := decorate_markdown_with_title_ids(markdown_content)
 
-		cmark_stdout, os2_err := run_sub_process_and_get_stdout(
-			cmark_command,
-			transmute([]u8)decorated_markdown,
+		state, cmark_stdout_bin, cmark_stderr_bin, os2_err := os2.process_exec(
+			{command = cmark_command, stdin = transmute([]u8)decorated_markdown},
 		)
 		if os2_err != nil {
 			panic(fmt.aprintf("failed to run cmark %v", os2_err))
