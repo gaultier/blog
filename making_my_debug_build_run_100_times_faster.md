@@ -1,4 +1,4 @@
-Title: Making my debug build run 100x faster to make it finally usable
+Title: Making my debug build run 100x faster so that it is finally usable
 Tags: C, SIMD, SHA1, Torrent, Optimization
 ---
 
@@ -150,11 +150,14 @@ int main(int argc, char *argv[]) {
 
 ### Explanation
 
-- SHA1 works in 3 stages: 
-  + State initialization with `SHA1_Init`: the state is 5 `uint32_t` which are set to magic values defined by the standard.
-  + Processing with `SHA1_Update`: processing works on 64 bytes chunks. The result of the processing of a chunk is that the state is updated to new values. For a given chunk, SHA1 does 80 rounds of computation. Incoming data is buffered into the current chunk until it reaches 64 bytes, and that's when the real computation kicks in with `SHA1_Transform`. This API allows for reading and hashing data in a streaming fashion.
-  + Padding and finalization with `SHA1_Final`: the last chunk is padded to 64 bytes if it is too short, processed, and the digest (the final 20 bytes we are after) is extracted from the state.
-- For a given 64 bytes chunk, this SIMD-less SHA1 computation operates on one `uint32_t` at a time. That's because 64 bytes is also 512 bits, which is also 16 `uint32_t`. The SHA1 algorithm and some implementations support architectures where 1 byte is *not* 8 bits. But knowing that 1 byte *is indeed* 8 bits on our architecture unlocks a ton of performance as we'll see.
+- In Intel words, what is SHA1?
+  > SHA-1 produces a 160 bit (20 byte) hash value (digest), taking as an input a sequence of 1 or more 512 bit (64 byte) data blocks. The original source data also requires some padding according to the standard. The data is treated as an array of big-endian 32-bit values. Processing each of the 64-byte input blocks consists of 80 iterations also known as rounds.
+
+  In this implementation:
+  + State initialization is done with `SHA1_Init`: the state is an array of 5 `uint32_t`, set to magic values defined by the standard.
+  + Processing is done with `SHA1_Update`: processing works on chunks of 64 bytes. The result of the processing of a chunk is that the state is updated to new values. Incoming data is buffered into the current chunk until it reaches 64 bytes, and that's when the real computation kicks in with `SHA1_Transform`. This API allows for reading and hashing data in a streaming fashion by repeatedly calling `SHA1_Update`.
+  + Padding and finalization is done with `SHA1_Final`: the last chunk is padded to 64 bytes if it is too short, processed, and the digest (the final 20 bytes we are after) is the current state, after endianness conversion.
+- The SHA1 algorithm and some implementations support architectures where 1 byte is *not* 8 bits. But knowing that 1 byte *is indeed* 8 bits on our architecture unlocks a ton of performance as we'll see.
 - SHA1 expects data in big-endian but nearly all CPU nowadays are little-endian so we need to swap the bytes when loading the input data to do SHA1 computations, and back when storing the intermediate results (the SHA1 state). It is done here with lots of clever bit tricks, one `uint32_t` at a time.
 - The main loop operating on the 64 bytes chunk is unrolled, which avoids having conditionals in the middle of the loop, which might tank performance due to mispredicted branches. The algorithm lends itself to that really well:
   ```
@@ -168,7 +171,7 @@ int main(int argc, char *argv[]) {
             else if 60 ≤ i ≤ 79
               [..]
   ```
-  So it's trivial to unroll. We'll see that every implementation does the unrolling.
+  So it's trivial to unroll each section. We'll see that every implementation does the unrolling.
 
 ### The code
 
@@ -454,7 +457,7 @@ So let's do SIMD and learn cool new stuff! The nice thing about it is that we ca
 
 ## SIMD (SSE) implementation
 
-[This](http://arctic.org/~dean/crypto/sha1.html) is an implementation from the early 2000s in the public domain. Yes, SSE, which is the first widespread SIMD instruction set, is from the nineties to early 2000s. More than 25 years ago! There's basically no reason to write SIMD-less code for performance sensitive code for a SIMD-friendly problem - every CPU we care about has SIMD! Well, we have two write separate implementations for x64 and ARM, that's the downside. But still! 
+[This](http://arctic.org/~dean/crypto/sha1.html) is an implementation from the early 2000s in the public domain. Yes, SSE, which is the first widespread SIMD instruction set, is from the nineties to early 2000s. More than 25 years ago! There's basically no reason to write SIMD-less code for performance sensitive code for a SIMD-friendly problem - every CPU we care about has SIMD! Well, we have two write separate implementations for x64 and ARM, and there were lots of additions to SSE over the years, that's the downside.
 
 Intel references this implementation on their [website](https://www.intel.com/content/www/us/en/developer/articles/technical/improving-the-performance-of-the-secure-hash-algorithm-1.html). According to Intel, it was fundamental work at the time and influenced them. It's also not the fastest SSE implementation, the very article from Intel is about some performance enhancements they found for this code, but it has the advantage that if you have a processor from 2004 or after, it works, and it's simple.
 
@@ -474,7 +477,7 @@ I really am a SIMD beginner but I found a few interesting nuggets of wisdom here
       // I.e.: Transform state to big-endian.
       ABCD = _mm_shuffle_epi32(ABCD, 0x1B);
     ```
-    It's nifty because we can copy the data in and out of SIMD registers, while also doing the endianness conversion, in one operation that typically compiles down to one assembly instruction. And this approach also works from a SIMD register to another SIMD register.
+    It's nifty because we can copy the data in and out of SIMD registers, while also doing the endianness conversion, in one operation that typically compiles down to one assembly instruction. And this approach also works from a SIMD register to another SIMD register or inside the same register.
 - Typical SIMD code processes the data in groups of N bytes at a time, and the few excess bytes at the end use the normal SIMD-less code path. Here, we have to deal with an additional grouping: SHA1 processes data in chunks of 64 bytes and the last chunk is padded to be 64 bytes if it is too short. Hence, for the last short chunk we use the SIMD-less code path. We could try to be clever about doing the padding, and re-using the SIMD code path for this last chunk, since 64 bytes is a nice round number that is SIMD friendly, but this last chunk is not going to really make a difference in practice when we are dealing with megabytes or gigabytes of data.
 
 ### The code
@@ -852,7 +855,7 @@ Benchmark 1: ./a.out ./NetBSD-9.4-amd64.iso ~/Downloads/NetBSD-9.4-amd64.iso.tor
 
 That's better but still not great. We could apply the tweaks suggested by Intel, but that probably would not give us the order of magnitude improvement we need. They cite x1.2 to x1.5 improvements in their article. We need more.
 
-Speaking of Intel... did you know that in all likelihood, your CPU has dedicated silicon to accelerate SHA1 computations? Let's use that! We paid for it, we get to use it!
+So... did you know that in all likelihood, your CPU has dedicated silicon to accelerate SHA1 computations? Let's use that! We paid for it, we get to use it!
 
 ## Intel SHA extension implementation
 
@@ -866,22 +869,14 @@ The implementation is a pure work of art, and comes from this [Github repository
 
 ### Explanations
 
-- The unit of work here is still 128 bits (or `uint32_t[4]`). Unfortunately, the SHA1 state that we are continuously updating, and from which the final digest is extracted, is **5** `uint32_t` as seen in the SIMD-less version:
-  ```c
-    typedef struct {
-      uint32_t state[5]; // <= This field.
-      uint64_t count;
-      uint8_t buffer[SHA1_BLOCK_LENGTH];
-    } SHA1_CTX;
-  ```
-  So we are in a pickle since it does not fit neatly in one SIMD register.  Thus, we have to do one SIMD operation on the first 4 `uint32_t`, named `ABCD`, and another one with the last `uint32_t`, named `E`. So this second operation is a bit wasteful: our 128 bits only contain 1/4 of useful data, and our CPU does computations on a bunch of zeroes which will be thrown away. But there is no other way: SIMD uses a different set of registers from the standard ones. We want to stay in SIMD land as much as possible, that's where the performance is.
+- The unit of work here is still 128 bits (or 4 `uint32_t`). Unfortunately, the SHA1 state that we are continuously updating, and from which the final digest is extracted, is **5** `uint32_t`. So we are in a pickle since it does not fit neatly in one SIMD register.  Thus, we have to do one SIMD operation on the first 4 `uint32_t`, named `ABCD`, and another one with the last `uint32_t`, named `E`. So this second operation is a bit wasteful: our 128 bits only contain 1/4 of useful data, and our CPU does computations on a bunch of zeroes which will be thrown away. But there is no other way: SIMD uses a different set of registers from the standard ones. We want to stay in SIMD land as much as possible, that's where the performance is.
 - Endianness conversion is done with one SIMD instruction, same as before (so 4 `uint32_t` at a time). 
 - The SHA Intel extension provides 4 operations:
   + `sha1rnds4` to compute the next `ABCD` state
   + `sha1nexte`: to compute the next `E` state (remember, `E` is alone in its 128 bits register)
   + `sha1msg1` and `sha1msg2`: they perform the SHA1 computations solely based on the input data
 
-  Thus we alternate between SHA1 computations with `sha1msg1/sha1msg2`, and state calculations with `sha1rnds4/sha1nexte`, always 4 bytes at a time.
+  Thus we alternate between SHA1 computations with `sha1msg1/sha1msg2`, and state calculations with `sha1rnds4/sha1nexte`, always 4 `uint32_t` at a time.
 - What's a "SHA computation"? It's basically a recombination, or shuffling, of its input. For example, `sha1msg1` in pseudo-code does:
   ```
     W0 <- SRC1[127:96] ;
