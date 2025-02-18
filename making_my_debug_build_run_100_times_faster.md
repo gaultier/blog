@@ -58,7 +58,7 @@ The SHA1 code is simplistic, it does not use any SIMD or intrinsics directly. An
 
 Let's first review the simple SIMD-less C version to understand the baseline.
 
-## Non-SIMD
+## Non-SIMD implementation
 
 To isolate the issue, I have created a simple benchmark program. It reads the `.torrent` file, and the download file, in my case the `.iso` NetBSD image. Every piece gets hashed and this gets compared with the expected value (a SHA1 hash, or digest, is 20 bytes long). To simplify, I skip the decoding of the `.torrent` file, and hard-code the piece length, as well as where exactly in the file are the expected hashes. The only difficulty is that the last piece might be shorter than the others.
 
@@ -447,7 +447,7 @@ So let's do SIMD and learn cool new stuff! The nice thing about it is that we ca
 
 > You can't have multiple cores until you've shown you can use one efficiently.
 
-## SIMD (SSE)
+## SIMD (SSE) implementation
 
 [This](http://arctic.org/~dean/crypto/sha1.html) is an implementation from the early 2000s in the public domain. Yes, SSE, which is the first widespread SIMD instruction set, is from the nineties to early 2000s. More than 25 years ago! There's basically no reason to write SIMD-less code for performance sensitive code for a SIMD-friendly problem - every CPU we care about has SIMD! Well, we have two write separate implementations for x64 and ARM, that's the downside. But still! 
 
@@ -849,7 +849,7 @@ That's better but still not great. We could apply the tweaks suggested by Intel,
 
 Speaking of Intel... did you know that in all likelihood, your CPU has dedicated silicon to accelerate SHA1 computations? Let's use that! We paid for it, we get to use it!
 
-## Intel SHA extension
+## Intel SHA extension implementation
 
 Despite the 'Intel' name, Intel as well as AMD CPUs have been shipping with this [extension](https://en.wikipedia.org/wiki/Intel_SHA_extensions), since around 2016-2017. It adds a few SIMD instructions dedicated to compute SHA1 (and SHA256, and other variants). Note that ARM also has an equivalent (albeit incompatible, of course) extension so the same can be done there. 
 
@@ -1192,7 +1192,7 @@ That means that we are starting to be limited by I/O. Which is good!
 
 I tried to give the OS some hints to improve a bit on that front with `madvise(file_download_data, file_download_size, MADV_SEQUENTIAL | MADV_WILLNEED)`, but it did not have any impact on the timings.
 
-## SHA1 using OpenSSL
+## OpenSSL hand crafted assembly implementation
 
 The whole point of this article is to do SHA1 computations from scratch and avoid dependencies. Let's see how OpenSSL (in this case, [aws-lc](https://github.com/aws/aws-lc) but I don't believe they changed that part at all) fares out of curiosity. 
 
@@ -1208,8 +1208,7 @@ So, the performance is essentially identical to our version. Pretty good.
 OpenSSL picks at runtime the best code path based on what features the CPU supports. Interestingly on my system, even when compiled with `-march=native`, it does not decide to use the SHA extension, and instead goes for hand-optimized SIMD. That's mind-blowing that this SIMD code performs as well that dedicated silicon, including the cycles spent on the runtime check. So props to the developers!
 
 
-I can see really low-level tricks like `prefetcht0` to ask for the prefetcher to cache some data ahead of time to reduce latency.
-
+I can see really low-level tricks like `prefetcht0` to ask for the prefetcher to cache some data ahead of time to reduce latency. And they mention they had help from some folks at Intel.
 
 
 ## Additional improvements
@@ -1224,6 +1223,11 @@ That was a fun deep dive about performance, SIMD, and a deprecated hash algorith
 
 What I have learned is that Address Sanitizer really likes SIMD code because it reduces significantly the runtime checks it has to do, and thus the performance impact is greatly reduced.
 
-SIMD code is like a math puzzle, it's weird and fun. I'm happy that I finally had my first real contact with it.
+SIMD code is like a math puzzle, it's weird and fun. I'm happy that I finally had my first real contact with it. It has the useful property to have a very stable performance across runs.
 
 And it's wild to see different implementations range from 30s to 300 ms (a factor of 100!) to do the same thing. Also, optimizers these days are god damn impressive. 
+
+
+If you want to learn more about SIMD, I recommend this [talk](https://www.youtube.com/watch?v=6BIfqfC1i7U) from the Titanfall developers at GDC where they explain how they use a lot of SIMD in their game engine, but also their thought process to go from a standard procedural code to a SIMD version:
+
+![GDC talk](simd_talk.png)

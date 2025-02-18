@@ -125,7 +125,7 @@
 		</li>
 
 <li>
-	<a href="#2-non-simd">Non-SIMD</a>
+	<a href="#2-non-simd-implementation">Non-SIMD implementation</a>
 		<ul>
 
 <li>
@@ -147,7 +147,7 @@
 </li>
 
 <li>
-	<a href="#7-simd-sse">SIMD (SSE)</a>
+	<a href="#7-simd-sse-implementation">SIMD (SSE) implementation</a>
 		<ul>
 
 <li>
@@ -165,7 +165,7 @@
 </li>
 
 <li>
-	<a href="#11-intel-sha-extension">Intel SHA extension</a>
+	<a href="#11-intel-sha-extension-implementation">Intel SHA extension implementation</a>
 		<ul>
 
 <li>
@@ -183,7 +183,7 @@
 </li>
 
 <li>
-	<a href="#15-sha1-using-openssl">SHA1 using OpenSSL</a>
+	<a href="#15-openssl-hand-crafted-assembly-implementation">OpenSSL hand crafted assembly implementation</a>
 		</li>
 
 <li>
@@ -230,9 +230,9 @@ Benchmark 1: sha1sum ./NetBSD-9.4-amd64.iso
 <p><img src="cpu_profile_sha1_sw_debug_asan.svg" alt="CPU Profile of the SIMD-less code, debug + Address Sanitizer build" /></p>
 <p>The SHA1 code is simplistic, it does not use any SIMD or intrinsics directly. And that's fine, because when it's compiled with optimizations on, the compiler does a pretty good job at optimizing, and it's really fast, around ~300 ms. But the issue is that this code is working one byte at a time. And Adress Sanitizer, with its nice runtime and bounds checks, makes each memory access <strong>very</strong> expensive. So we basically have just written a worst-case stress-test for Address Sanitizer.</p>
 <p>Let's first review the simple SIMD-less C version to understand the baseline.</p>
-<h2 id="2-non-simd">
-	<a class="title" href="#2-non-simd">Non-SIMD</a>
-	<a class="hash-anchor" href="#2-non-simd" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+<h2 id="2-non-simd-implementation">
+	<a class="title" href="#2-non-simd-implementation">Non-SIMD implementation</a>
+	<a class="hash-anchor" href="#2-non-simd-implementation" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>To isolate the issue, I have created a simple benchmark program. It reads the <code>.torrent</code> file, and the download file, in my case the <code>.iso</code> NetBSD image. Every piece gets hashed and this gets compared with the expected value (a SHA1 hash, or digest, is 20 bytes long). To simplify, I skip the decoding of the <code>.torrent</code> file, and hard-code the piece length, as well as where exactly in the file are the expected hashes. The only difficulty is that the last piece might be shorter than the others.</p>
 <pre><code class="language-c">#include &lt;fcntl.h&gt;
@@ -617,9 +617,9 @@ Benchmark 1: ./a.out ./NetBSD-9.4-amd64.iso ~/Downloads/NetBSD-9.4-amd64.iso.tor
 <blockquote>
 <p>You can't have multiple cores until you've shown you can use one efficiently.</p>
 </blockquote>
-<h2 id="7-simd-sse">
-	<a class="title" href="#7-simd-sse">SIMD (SSE)</a>
-	<a class="hash-anchor" href="#7-simd-sse" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+<h2 id="7-simd-sse-implementation">
+	<a class="title" href="#7-simd-sse-implementation">SIMD (SSE) implementation</a>
+	<a class="hash-anchor" href="#7-simd-sse-implementation" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p><a href="http://arctic.org/~dean/crypto/sha1.html">This</a> is an implementation from the early 2000s in the public domain. Yes, SSE, which is the first widespread SIMD instruction set, is from the nineties to early 2000s. More than 25 years ago! There's basically no reason to write SIMD-less code for performance sensitive code for a SIMD-friendly problem - every CPU we care about has SIMD! Well, we have two write separate implementations for x64 and ARM, that's the downside. But still!</p>
 <p>Intel references this implementation on their <a href="https://www.intel.com/content/www/us/en/developer/articles/technical/improving-the-performance-of-the-secure-hash-algorithm-1.html">website</a>. According to Intel, it was fundamental work at the time and influenced them. It's also not the fastest SSE implementation, the very article from Intel is about some performance enhancements they found for this code, but it has the advantage that if you have a processor from 2004 or after, it works, and it's simple.</p>
@@ -1010,9 +1010,9 @@ Benchmark 1: ./a.out ./NetBSD-9.4-amd64.iso ~/Downloads/NetBSD-9.4-amd64.iso.tor
 </code></pre>
 <p>That's better but still not great. We could apply the tweaks suggested by Intel, but that probably would not give us the order of magnitude improvement we need. They cite x1.2 to x1.5 improvements in their article. We need more.</p>
 <p>Speaking of Intel... did you know that in all likelihood, your CPU has dedicated silicon to accelerate SHA1 computations? Let's use that! We paid for it, we get to use it!</p>
-<h2 id="11-intel-sha-extension">
-	<a class="title" href="#11-intel-sha-extension">Intel SHA extension</a>
-	<a class="hash-anchor" href="#11-intel-sha-extension" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+<h2 id="11-intel-sha-extension-implementation">
+	<a class="title" href="#11-intel-sha-extension-implementation">Intel SHA extension implementation</a>
+	<a class="hash-anchor" href="#11-intel-sha-extension-implementation" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>Despite the 'Intel' name, Intel as well as AMD CPUs have been shipping with this <a href="https://en.wikipedia.org/wiki/Intel_SHA_extensions">extension</a>, since around 2016-2017. It adds a few SIMD instructions dedicated to compute SHA1 (and SHA256, and other variants). Note that ARM also has an equivalent (albeit incompatible, of course) extension so the same can be done there.</p>
 <p><em>There is an irony here, because 2017 is also the year where the first SHA1 public collision was published, which incited many developers to move away from SHA1...</em></p>
@@ -1337,9 +1337,9 @@ Benchmark 1: ./a.out ./NetBSD-9.4-amd64.iso ~/Downloads/NetBSD-9.4-amd64.iso.tor
 <p>Also, in both versions, as the SHA1 code got much faster, we start to see on the CPU profile <code>mmap</code> show up, as confirmed by the <code>system time</code> part becoming a fifth of the whole runtime.</p>
 <p>That means that we are starting to be limited by I/O. Which is good!</p>
 <p>I tried to give the OS some hints to improve a bit on that front with <code>madvise(file_download_data, file_download_size, MADV_SEQUENTIAL | MADV_WILLNEED)</code>, but it did not have any impact on the timings.</p>
-<h2 id="15-sha1-using-openssl">
-	<a class="title" href="#15-sha1-using-openssl">SHA1 using OpenSSL</a>
-	<a class="hash-anchor" href="#15-sha1-using-openssl" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+<h2 id="15-openssl-hand-crafted-assembly-implementation">
+	<a class="title" href="#15-openssl-hand-crafted-assembly-implementation">OpenSSL hand crafted assembly implementation</a>
+	<a class="hash-anchor" href="#15-openssl-hand-crafted-assembly-implementation" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>The whole point of this article is to do SHA1 computations from scratch and avoid dependencies. Let's see how OpenSSL (in this case, <a href="https://github.com/aws/aws-lc">aws-lc</a> but I don't believe they changed that part at all) fares out of curiosity.</p>
 <pre><code class="language-sh"> $ hyperfine --warmup 3 './a.out ./NetBSD-9.4-amd64.iso ~/Downloads/NetBSD-9.4-amd64.iso.torrent'
@@ -1349,7 +1349,7 @@ Benchmark 1: ./a.out ./NetBSD-9.4-amd64.iso ~/Downloads/NetBSD-9.4-amd64.iso.tor
 </code></pre>
 <p>So, the performance is essentially identical to our version. Pretty good.</p>
 <p>OpenSSL picks at runtime the best code path based on what features the CPU supports. Interestingly on my system, even when compiled with <code>-march=native</code>, it does not decide to use the SHA extension, and instead goes for hand-optimized SIMD. That's mind-blowing that this SIMD code performs as well that dedicated silicon, including the cycles spent on the runtime check. So props to the developers!</p>
-<p>I can see really low-level tricks like <code>prefetcht0</code> to ask for the prefetcher to cache some data ahead of time to reduce latency.</p>
+<p>I can see really low-level tricks like <code>prefetcht0</code> to ask for the prefetcher to cache some data ahead of time to reduce latency. And they mention they had help from some folks at Intel.</p>
 <h2 id="16-additional-improvements">
 	<a class="title" href="#16-additional-improvements">Additional improvements</a>
 	<a class="hash-anchor" href="#16-additional-improvements" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
@@ -1362,8 +1362,10 @@ Benchmark 1: ./a.out ./NetBSD-9.4-amd64.iso ~/Downloads/NetBSD-9.4-amd64.iso.tor
 </h2>
 <p>That was a fun deep dive about performance, SIMD, and a deprecated hash algorithm that is still in use in many applications (e.g. Git).</p>
 <p>What I have learned is that Address Sanitizer really likes SIMD code because it reduces significantly the runtime checks it has to do, and thus the performance impact is greatly reduced.</p>
-<p>SIMD code is like a math puzzle, it's weird and fun. I'm happy that I finally had my first real contact with it.</p>
+<p>SIMD code is like a math puzzle, it's weird and fun. I'm happy that I finally had my first real contact with it. It has the useful property to have a very stable performance across runs.</p>
 <p>And it's wild to see different implementations range from 30s to 300 ms (a factor of 100!) to do the same thing. Also, optimizers these days are god damn impressive.</p>
+<p>If you want to learn more about SIMD, I recommend this <a href="https://www.youtube.com/watch?v=6BIfqfC1i7U">talk</a> from the Titanfall developers at GDC where they explain how they use a lot of SIMD in their game engine, but also their thought process to go from a standard procedural code to a SIMD version:</p>
+<p><img src="simd_talk.png" alt="GDC talk" /></p>
 <p><a href="/blog"> ⏴ Back to all articles</a></p>
 
 <blockquote id="donate">
