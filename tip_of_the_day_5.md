@@ -11,6 +11,8 @@ $ go version
 go version go1.23.6 linux/amd64
 ```
 
+Indeed the project was specifying `go 1.23.6` in `go.mod`.
+
 Even after removing the staticcheck binary and re-installing it I still had the same issue:
 
 ```sh

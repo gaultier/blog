@@ -111,7 +111,7 @@
 		<div class="article-prelude">
 			<p><a href="/blog"> ⏴ Back to all articles</a></p>
 
-			<p class="publication-date">Published on </p>
+			<p class="publication-date">Published on 2025-02-18</p>
 		</div>
 		<div class="article-title">
 		<h1>Tip of the day #5: Install Go tools with a specific version</h1>
@@ -124,6 +124,7 @@
 $ go version
 go version go1.23.6 linux/amd64
 </code></pre>
+<p>Indeed the project was specifying <code>go 1.23.6</code> in <code>go.mod</code>.</p>
 <p>Even after removing the staticcheck binary and re-installing it I still had the same issue:</p>
 <pre><code class="language-sh">$ which staticcheck
 /home/pg/go/bin/staticcheck
