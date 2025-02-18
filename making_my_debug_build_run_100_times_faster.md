@@ -882,7 +882,7 @@ The implementation is a pure work of art, and comes from this [Github repository
   + `sha1msg1` and `sha1msg2`: they perform the SHA1 computations solely based on the input data
 
   Thus we alternate between SHA1 computations with `sha1msg1/sha1msg2`, and state calculations with `sha1rnds4/sha1nexte`, always 4 bytes at a time.
-- What's a 'SHA computation'? It's basically a recombination, or shuffling, of the input. For example, `sha1msg1` in pseudo-code does:
+- What's a "SHA computation"? It's basically a recombination, or shuffling, of its input. For example, `sha1msg1` in pseudo-code does:
   ```
     W0 <- SRC1[127:96] ;
     W1 <- SRC1[95:64] ;
@@ -1226,7 +1226,7 @@ Oh, and I almost forgot: we can compute SHA1 on the [GPU](https://github.com/cr-
 
 That was a fun deep dive about performance, SIMD, and a deprecated hash algorithm that is still in use in many applications (e.g. Git). 
 
-What I have learned is that Address Sanitizer really likes SIMD code because it reduces significantly the runtime checks it has to do, and thus the performance impact is greatly reduced.
+What I have learned is that Address Sanitizer really likes SIMD code because it reduces significantly the runtime checks it has to do, and thus the performance impact is greatly reduced. It is often recommended to do fuzzing with Address Sanitizer on, so performance matters here.
 
 SIMD code is like a math puzzle, it's weird and fun. I'm happy that I finally had my first real contact with it. It has the useful property to have a very stable performance across runs.
 
