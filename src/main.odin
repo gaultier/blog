@@ -135,24 +135,57 @@ run_sub_process_and_get_stdout :: proc(
 }
 
 
-get_creation_and_modification_date_for_article :: proc(
-	path: string,
-) -> (
-	creation_date: string,
+GitStat :: struct {
+	creation_date:     string,
 	modification_date: string,
-	err: os2.Error,
-) {
+	path_rel:          string,
+}
+
+get_articles_creation_and_modification_date :: proc() -> (res: []GitStat, err: os2.Error) {
 	stdout := run_sub_process_and_get_stdout(
-		[]string{"git", "log", "--format='%aI'", "--", path},
+		[]string{"git", "log", "--format='%aI'", "--name-only", "--", "'*.md'"},
 		{},
 	) or_return
 	stdout = strings.trim_space(stdout)
 
-	lines := strings.split_lines(stdout)
-	modification_date = strings.clone(strings.trim(lines[0], "' \n"))
-	creation_date = strings.clone(strings.trim(lines[len(lines) - 1], "' \n"))
+	lines := strings.split_lines(stdout, context.temp_allocator)
 
-	return
+	stats_by_path := make(map[string]GitStat, allocator = context.temp_allocator)
+
+	date: string
+	path_rel: string
+
+	for line, i in lines {
+		if i % 3 == 0 {
+			assert(strings.starts_with(line, "20"))
+			date = strings.clone(strings.trim(lines[0], "' \n"))
+		} else if i % 3 == 1 {
+			assert(line == "")
+		} else if i % 3 == 2 {
+			path_rel = line
+
+			git_stat, ok := &stats_by_path[path_rel]
+			if !ok {
+				stats_by_path[path_rel] = GitStat {
+					path_rel          = strings.clone(path_rel),
+					modification_date = date,
+				}
+			} else {
+				assert(git_stat.path_rel != "")
+				assert(git_stat.modification_date != "")
+				git_stat.creation_date = date
+			}
+			date = ""
+			path_rel = ""
+		}
+	}
+
+	git_stats := make([dynamic]GitStat)
+	for _, v in stats_by_path {
+		append(&git_stats, v)
+	}
+
+	return git_stats[:], nil
 }
 
 make_html_friendly_id :: proc(input: string, allocator := context.allocator) -> string {
@@ -430,35 +463,33 @@ generate_html_article :: proc(
 }
 
 generate_article :: proc(
-	markdown_file_path: string,
+	git_stat: GitStat,
 	header: string,
 	footer: string,
 ) -> (
 	article: Article,
 	err: os.Error,
 ) {
-	assert(len(markdown_file_path) > 0)
-	assert(filepath.ext(markdown_file_path) == ".md")
+	assert(len(git_stat.path_rel) > 0)
+	assert(filepath.ext(git_stat.path_rel) == ".md")
+	assert(len(git_stat.creation_date) > 0)
+	assert(len(git_stat.modification_date) > 0)
 	assert(len(header) > 0)
 	assert(len(footer) > 0)
 
 	defer free_all(context.temp_allocator)
 
 	original_markdown_content := transmute(string)os.read_entire_file_from_filename_or_err(
-		markdown_file_path,
+		git_stat.path_rel,
 		allocator = context.temp_allocator,
 	) or_return
 
-	stem := filepath.stem(markdown_file_path)
+	stem := filepath.stem(git_stat.path_rel)
 
-	article.title, article.tags = parse_metadata(original_markdown_content, markdown_file_path)
+	article.title, article.tags = parse_metadata(original_markdown_content, git_stat.path_rel)
 
-	os2_err: os2.Error
-	article.creation_date, article.modification_date, os2_err =
-		get_creation_and_modification_date_for_article(markdown_file_path)
-	if os2_err != nil {
-		panic(fmt.aprintf("failed to run git: %v", os2.error_string(os2_err)))
-	}
+	article.creation_date = git_stat.creation_date
+	article.modification_date = git_stat.modification_date
 
 	article.output_file_name = strings.concatenate([]string{stem, ".html"})
 
@@ -483,15 +514,16 @@ generate_all_articles_in_directory :: proc(
 	cwd := os.open(".") or_return
 	defer os.close(cwd)
 
-	files := os.read_dir(cwd, 0) or_return
+	git_stats, os2_err := get_articles_creation_and_modification_date()
+	if os2_err != nil {
+		panic(fmt.aprintf("failed to run git: %v", os2.error_string(os2_err)))
+	}
 
-	for f in files {
-		if f.is_dir {continue}
-		if filepath.ext(f.name) != ".md" {continue}
-		if f.name == "index.md" {continue}
-		if f.name == "README.md" {continue}
+	for git_stat in git_stats {
+		if git_stat.path_rel == "index.md" {continue}
+		if git_stat.path_rel == "README.md" {continue}
 
-		article := generate_article(f.name, header, footer) or_return
+		article := generate_article(git_stat, header, footer) or_return
 		append(&articles_dyn, article)
 	}
 

@@ -5,3 +5,4 @@ zig-out
 README.html
 src.bin
 *.gz
+*.bin
