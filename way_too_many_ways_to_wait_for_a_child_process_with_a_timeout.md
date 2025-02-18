@@ -80,7 +80,7 @@ $ strace ueb sleep 1
 ```
 
 
-Note that the sub-command should be idempotent, otherwise we might create a given resource twice, or the command might have succeeded right after our timeout triggered but also right before we killed it, so our program thinks it timed out and thus need to be retried. There is this small data race window, which is completely fine if the command is idempotent but will erroneously retry the command to the bitter end otherwise. There is also the case where the sub-command does stuff over the network for example creating a resource, it succeeds, but the ACK is never received due to network issues. The sub-command will think it failed and retry. Again, fairly standard stuff in distributed systems but I thought it was worth mentioning.
+Note that the sub-command should be idempotent, otherwise we might create a given resource twice, or the command might have succeeded right after our timeout triggered but also right before we killed it, so our program thinks it timed out and thus needs to be retried. There is this small data race window, which is completely fine if the command is idempotent but will erroneously retry the command to the bitter end otherwise. There is also the case where the sub-command does stuff over the network for example creating a resource, it succeeds, but the ACK is never received due to network issues. The sub-command will think it failed and retry. Again, fairly standard stuff in distributed systems but I thought it was worth mentioning.
 
 So how do we implement it?
 
