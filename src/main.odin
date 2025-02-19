@@ -243,7 +243,6 @@ get_articles_creation_and_modification_date :: proc() -> ([]GitStat, os2.Error) 
 				}
 			}
 
-			_ = action
 			git_stat, present := &stats_by_path[new_path]
 			if !present {
 				stats_by_path[new_path] = GitStat {
