@@ -139,7 +139,6 @@ GitStat :: struct {
 	creation_date:     string,
 	modification_date: string,
 	path_rel:          string,
-	tombstone:         bool,
 }
 
 get_articles_creation_and_modification_date :: proc() -> ([]GitStat, os2.Error) {
@@ -173,7 +172,12 @@ get_articles_creation_and_modification_date :: proc() -> ([]GitStat, os2.Error) 
 	stdout := strings.trim_space(string(stdout_bin))
 	assert(stdout != "")
 
-	stats_by_path := make(map[string]GitStat, allocator = context.temp_allocator)
+	GitStatInternal :: struct {
+		creation_date:     string,
+		modification_date: string,
+		tombstone:         bool,
+	}
+	stats_by_path := make(map[string]GitStatInternal, allocator = context.temp_allocator)
 
 	// Sample git output:
 	// 2024-10-31T16:09:02+01:00
@@ -238,15 +242,12 @@ get_articles_creation_and_modification_date :: proc() -> ([]GitStat, os2.Error) 
 			{
 				git_stat, present := &stats_by_path[new_path]
 				if !present {
-					stats_by_path[new_path] = GitStat {
-						// In 99% of the cases, it's *not* a rename and thus the `new_path` should be used.
-						path_rel          = new_path,
+					stats_by_path[new_path] = GitStatInternal {
 						// We inspect commits from newest to oldest so the first commit for a file is the newest i.e. the modification date.
 						modification_date = date,
 						creation_date     = date,
 					}
 				} else {
-					assert(git_stat.path_rel != "")
 					assert(git_stat.modification_date != "")
 					// Keep updating the creation date, when we reach the end of the commit log, it has the right value.
 					git_stat.creation_date = date
@@ -260,8 +261,7 @@ get_articles_creation_and_modification_date :: proc() -> ([]GitStat, os2.Error) 
 
 			if action == 'R' {
 				// Mark the old path as 'deleted'.
-				stats_by_path[old_path] = GitStat {
-					path_rel          = old_path,
+				stats_by_path[old_path] = GitStatInternal {
 					modification_date = date,
 					tombstone         = true,
 				}
@@ -277,8 +277,8 @@ get_articles_creation_and_modification_date :: proc() -> ([]GitStat, os2.Error) 
 	}
 
 	git_stats := make([dynamic]GitStat)
-	for _, v in stats_by_path {
-		assert(v.path_rel != "")
+	for k, v in stats_by_path {
+		assert(k != "")
 		assert(v.creation_date != "")
 		assert(v.modification_date != "")
 		assert(v.creation_date <= v.modification_date)
@@ -288,7 +288,7 @@ get_articles_creation_and_modification_date :: proc() -> ([]GitStat, os2.Error) 
 			append(
 				&git_stats,
 				GitStat {
-					path_rel = strings.clone(v.path_rel),
+					path_rel = strings.clone(k),
 					creation_date = strings.clone(v.creation_date),
 					modification_date = strings.clone(v.modification_date),
 				},
