@@ -143,7 +143,7 @@ GitStat :: struct {
 
 get_articles_creation_and_modification_date :: proc() -> (res: []GitStat, err: os2.Error) {
 	stdout_bin := run_sub_process_and_get_stdout(
-		[]string{"git", "log", "--format='%aI'", "--name-only", "*.md"},
+		[]string{"git", "log", "--format='%aI'", "--name-only", "--no-merges", "*.md"},
 		{},
 	) or_return
 	// if len(stderr_bin) > 0 {
@@ -174,15 +174,9 @@ get_articles_creation_and_modification_date :: proc() -> (res: []GitStat, err: o
 		// Empty line
 		{
 			// Peek.
-			stdout_bck := stdout
-			line, ok := strings.split_lines_iterator(&stdout_bck)
+			line, ok := strings.split_lines_iterator(&stdout)
 			assert(ok)
-			// Normally: empty line before files but in some cases
-			// e.g. a merge, there are no files.
-			if line != "" do continue
-
-			// Commit.
-			stdout = stdout_bck
+			assert(line == "")
 		}
 
 		// Files.
