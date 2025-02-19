@@ -550,9 +550,6 @@ generate_all_articles_in_directory :: proc(
 
 	articles_dyn := make([dynamic]Article)
 
-	cwd := os.open(".") or_return
-	defer os.close(cwd)
-
 	git_stats, os2_err := get_articles_creation_and_modification_date()
 	if os2_err != nil {
 		panic(fmt.aprintf("failed to run git: %v", os2.error_string(os2_err)))
@@ -562,7 +559,7 @@ generate_all_articles_in_directory :: proc(
 		if git_stat.path_rel == "index.md" {continue}
 		if git_stat.path_rel == "README.md" {continue}
 
-		article := generate_article(git_stat, header, footer) or_return
+		article := generate_article(git_stat, header, footer) or_continue
 		append(&articles_dyn, article)
 	}
 
