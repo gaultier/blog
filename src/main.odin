@@ -259,7 +259,7 @@ get_articles_creation_and_modification_date :: proc() -> ([]GitStat, os2.Error) 
 			// Case being: these two things are orthogonal.
 
 			if action == 'R' {
-				// Mark as 'deleted'.
+				// Mark the old path as 'deleted'.
 				stats_by_path[old_path] = GitStat {
 					path_rel          = old_path,
 					modification_date = date,
