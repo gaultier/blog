@@ -172,7 +172,7 @@ Benchmark 1: ./master.bin
 </code></pre>
 <p>The publication date is the creation date, that is: the date of the first Git commit for this file. So we ask Git for the list of commits for this file (they are provided by default from newest to oldest, so we <code>--reverse</code> the list), take the first one with <code>head</code>, done. It's simple.</p>
 <p><em>Note: My initial approach was to get the creation and modification date from the file system, but it's incorrect, as soon as you work on more than one machine. The way Git works is that when you pull commits that created a file, it creates the file on the file system and does not try to hack the creation date. Thus the file creation date is the time of the Git pull, not the date of the commit that first created it.</em></p>
-<p>As I added more and more features to this blog, like a list of article by tags, a home page that automatically lists all of the articles, a RSS feed, the 'last modified' date for an article, etc, I outgrew the makefile approach and wrote a small <a href="https://github.com/gaultier/blog/blob/master/src/main.odin">program</a> (initially in Zig, then in Odin) to do all that. But the core approach remained:</p>
+<p>As I added more and more features to this blog, like a list of article by tags, a home page that automatically lists all of the articles, a RSS feed, the 'last modified' date for an article, etc, I outgrew the Makefile approach and wrote a small <a href="https://github.com/gaultier/blog/blob/master/src/main.odin">program</a> (initially in Zig, then in Odin) to do all that. But the core approach remained:</p>
 <ul>
 <li>List all markdown files in the current directory (i.e. <code>ls *.md</code>, the Makefile did that for us with <code>%.md</code>)</li>
 <li>For each markdown file, sequentially:
@@ -193,7 +193,7 @@ Benchmark 1: ./master.bin
  94.85    0.479290        3928       122           waitid
 [...]
 </code></pre>
-<p>So ~ <strong>95 %</strong> of the running time is spent waiting on a subprocess. It's mainly git - we also run <code>cmark</code> as a subprocess but it's really really fast so git is the culprit. We could investigate with <code>strace</code> which process we are waiting on but the CPU profile already points the finger at git and cmark is not even visible there.</p>
+<p>So ~ <strong>95 %</strong> of the running time is spent waiting on a subprocess. It's mainly git - we also run <code>cmark</code> as a subprocess but it's really really fast so git is the culprit. We could investigate with <code>strace</code> which process we are waiting on but the CPU profile already points the finger at Git and <code>cmark</code> is not even visible there.</p>
 <p>At this point it's important to mention that this program is a very simplistic static site generator: it is stateless and processes every markdown file in the repository one by one. You could say that it's a regression compared to the Makefile because <code>make</code> has built-in parallelism with <code>-j</code> and change detection. But in reality, change detection in make is primitive and I often wanted to reprocess everything because of a change that applies to every file. For example, I reworded the <code>Donate</code> section at the end of each article (wink wink), or the header, or the footer, etc.</p>
 <p>Also, I really am fond of this 'pure function' approach. There is no caching issue to debug, no complicated code to write, no data races, no async callbacks, etc. Perhaps I will revisit this at a later point; but as long as the simple approach works fast enough, it's fine.</p>
 <p>My performance target was to process every file within 1s, or possibly even 0.5s.</p>
@@ -240,7 +240,7 @@ Executed in   73.69 millis    fish           external
 <li><code>--format='%aI'</code> to get the date in ISO format</li>
 <li><code>--name-status</code> to know which files this commit added (<code>A</code>), modified (<code>M</code>), deleted (<code>D</code>), or renamed (<code>R</code>)</li>
 <li><code>--no-merges</code> to skip merge commits since they do not directly affect any file</li>
-<li><code>--diff-filter=AMRD</code> to only get commits that add/modify/delete/rename files. We are not interested in commits changing the permissions on a file, or modifying symlinks, etc.</li>
+<li><code>--diff-filter=AMRD</code> to only get commits that add/modify/delete/rename files. We are not interested in commits changing the permissions on a file, or modifying symbolic links, etc.</li>
 </ul>
 <p>With these options we get even better numbers:</p>
 <pre><code class="language-sh">$ time git log --format='%aI' --name-status --no-merges --diff-filter=AMDR  -- '*.md' | wc -c
@@ -472,7 +472,7 @@ Summary
 <p>Around 11 times faster, and well within our ideal target of 500 ms ! And all we had to do was convert many <code>git log</code> invocations (one per markdown file) to just one. Pretty simple change, located in one function. Almost all of the complexity is due to parsing Git custom text output and skipping over irrelevant commits. We don't really have a choice either: that's all Git provides to query the commit log. The alternatives are all worse:</p>
 <ul>
 <li>Parse directly the Git object files - no thank you</li>
-<li>Use a library (e.g. libgit2) and hope that it offers a saner interface to query the commit log</li>
+<li>Use a library (e.g. <code>libgit2</code>) and hope that it offers a saner interface to query the commit log</li>
 </ul>
 <p>I wonder if there is a better way...</p>
 <h2 id="5-fossil">

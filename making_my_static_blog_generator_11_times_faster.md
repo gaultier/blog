@@ -42,7 +42,7 @@ The publication date is the creation date, that is: the date of the first Git co
 
 *Note: My initial approach was to get the creation and modification date from the file system, but it's incorrect, as soon as you work on more than one machine. The way Git works is that when you pull commits that created a file, it creates the file on the file system and does not try to hack the creation date. Thus the file creation date is the time of the Git pull, not the date of the commit that first created it.*
 
-As I added more and more features to this blog, like a list of article by tags, a home page that automatically lists all of the articles, a RSS feed, the 'last modified' date for an article, etc, I outgrew the makefile approach and wrote a small [program](https://github.com/gaultier/blog/blob/master/src/main.odin) (initially in Zig, then in Odin) to do all that. But the core approach remained: 
+As I added more and more features to this blog, like a list of article by tags, a home page that automatically lists all of the articles, a RSS feed, the 'last modified' date for an article, etc, I outgrew the Makefile approach and wrote a small [program](https://github.com/gaultier/blog/blob/master/src/main.odin) (initially in Zig, then in Odin) to do all that. But the core approach remained: 
 
 - List all markdown files in the current directory (i.e. `ls *.md`, the Makefile did that for us with `%.md`) 
 - For each markdown file, sequentially:
@@ -66,7 +66,7 @@ $ strace --summary-only ./src.bin
 [...]
 ```
 
-So ~ **95 %** of the running time is spent waiting on a subprocess. It's mainly git - we also run `cmark` as a subprocess but it's really really fast so git is the culprit. We could investigate with `strace` which process we are waiting on but the CPU profile already points the finger at git and cmark is not even visible there.
+So ~ **95 %** of the running time is spent waiting on a subprocess. It's mainly git - we also run `cmark` as a subprocess but it's really really fast so git is the culprit. We could investigate with `strace` which process we are waiting on but the CPU profile already points the finger at Git and `cmark` is not even visible there.
 
 At this point it's important to mention that this program is a very simplistic static site generator: it is stateless and processes every markdown file in the repository one by one. You could say that it's a regression compared to the Makefile because `make` has built-in parallelism with `-j` and change detection. But in reality, change detection in make is primitive and I often wanted to reprocess everything because of a change that applies to every file. For example, I reworded the `Donate` section at the end of each article (wink wink), or the header, or the footer, etc.
 
@@ -123,7 +123,7 @@ Hence we pass to `git log`:
 - `--format='%aI'` to get the date in ISO format
 - `--name-status` to know which files this commit added (`A`), modified (`M`), deleted (`D`), or renamed (`R`)
 - `--no-merges` to skip merge commits since they do not directly affect any file
-- `--diff-filter=AMRD` to only get commits that add/modify/delete/rename files. We are not interested in commits changing the permissions on a file, or modifying symlinks, etc.
+- `--diff-filter=AMRD` to only get commits that add/modify/delete/rename files. We are not interested in commits changing the permissions on a file, or modifying symbolic links, etc.
 
 With these options we get even better numbers:
 
@@ -379,7 +379,7 @@ Summary
 Around 11 times faster, and well within our ideal target of 500 ms ! And all we had to do was convert many `git log` invocations (one per markdown file) to just one. Pretty simple change, located in one function. Almost all of the complexity is due to parsing Git custom text output and skipping over irrelevant commits. We don't really have a choice either: that's all Git provides to query the commit log. The alternatives are all worse:
 
 - Parse directly the Git object files - no thank you
-- Use a library (e.g. libgit2) and hope that it offers a saner interface to query the commit log 
+- Use a library (e.g. `libgit2`) and hope that it offers a saner interface to query the commit log 
 
 I wonder if there is a better way...
 
