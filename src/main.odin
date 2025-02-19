@@ -559,6 +559,9 @@ generate_all_articles_in_directory :: proc(
 		if git_stat.path_rel == "index.md" {continue}
 		if git_stat.path_rel == "README.md" {continue}
 
+		// Reading the markdown for an article might fail because of a file
+		// having been renamed (e.g. `sha.md` -> `making_my_debug_build_run_100_times_faster.md`).
+		// In this case, ignore the git stat entry since it is stale, and continue.
 		article := generate_article(git_stat, header, footer) or_continue
 		append(&articles_dyn, article)
 	}
