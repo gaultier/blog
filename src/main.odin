@@ -139,6 +139,7 @@ GitStat :: struct {
 	creation_date:     string,
 	modification_date: string,
 	path_rel:          string,
+	tombstone:         bool,
 }
 
 get_articles_creation_and_modification_date :: proc() -> (res: []GitStat, err: os2.Error) {
@@ -150,8 +151,8 @@ get_articles_creation_and_modification_date :: proc() -> (res: []GitStat, err: o
 		"--format='%aI'",
 		// Ignore merge commits since they do not carry useful information.
 		"--no-merges",
-		// Only interested in creation, modification, renaming.
-		"--diff-filter=AMR",
+		// Only interested in creation, modification, renaming, deletion.
+		"--diff-filter=AMRD",
 		// Show which modification took place:
 		// A: added, M: modified, RXXX: renamed (with percentage score), etc.
 		"--name-status",
@@ -216,7 +217,7 @@ get_articles_creation_and_modification_date :: proc() -> (res: []GitStat, err: o
 				assert(ok)
 				assert(action_part != "")
 				action = action_part[0]
-				assert(action == 'A' || action == 'M' || action == 'R')
+				assert(action == 'A' || action == 'M' || action == 'R' || action == 'D')
 			}
 
 			old_path: string
@@ -251,6 +252,20 @@ get_articles_creation_and_modification_date :: proc() -> (res: []GitStat, err: o
 				assert(git_stat.modification_date != "")
 				git_stat.creation_date = date
 			}
+
+			if action == 'R' {
+				stats_by_path[old_path] = GitStat {
+					path_rel          = strings.clone(old_path),
+					// We inspect commits from newest to oldest so the first commit for a file is the newest i.e. the modification date.
+					modification_date = date,
+					tombstone         = true,
+				}
+
+				(&stats_by_path[new_path]).creation_date = date
+			}
+			if action == 'D' {
+				(&stats_by_path[new_path]).tombstone = true
+			}
 		}
 	}
 
@@ -262,7 +277,9 @@ get_articles_creation_and_modification_date :: proc() -> (res: []GitStat, err: o
 		assert(v.modification_date != "")
 		assert(v.creation_date <= v.modification_date)
 
-		append(&git_stats, v)
+		if !v.tombstone {
+			append(&git_stats, v)
+		}
 	}
 
 	return git_stats[:], nil
