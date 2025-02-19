@@ -143,6 +143,9 @@ GitStat :: struct {
 }
 
 get_articles_creation_and_modification_date :: proc() -> ([]GitStat, os2.Error) {
+	free_all(context.temp_allocator)
+	defer free_all(context.temp_allocator)
+
 	state, stdout_bin, stderr_bin, err := os2.process_exec(
 		{
 			command = []string {
@@ -244,7 +247,7 @@ get_articles_creation_and_modification_date :: proc() -> ([]GitStat, os2.Error) 
 			git_stat, present := &stats_by_path[new_path]
 			if !present {
 				stats_by_path[new_path] = GitStat {
-					path_rel          = strings.clone(new_path),
+					path_rel          = new_path,
 					// We inspect commits from newest to oldest so the first commit for a file is the newest i.e. the modification date.
 					modification_date = date,
 				}
@@ -256,7 +259,7 @@ get_articles_creation_and_modification_date :: proc() -> ([]GitStat, os2.Error) 
 
 			if action == 'R' {
 				stats_by_path[old_path] = GitStat {
-					path_rel          = strings.clone(old_path),
+					path_rel          = old_path,
 					// We inspect commits from newest to oldest so the first commit for a file is the newest i.e. the modification date.
 					modification_date = date,
 					tombstone         = true,
@@ -279,7 +282,14 @@ get_articles_creation_and_modification_date :: proc() -> ([]GitStat, os2.Error) 
 		assert(v.creation_date <= v.modification_date)
 
 		if !v.tombstone {
-			append(&git_stats, v)
+			append(
+				&git_stats,
+				GitStat {
+					path_rel = strings.clone(v.path_rel),
+					creation_date = strings.clone(v.creation_date),
+					modification_date = strings.clone(v.modification_date),
+				},
+			)
 		}
 	}
 
