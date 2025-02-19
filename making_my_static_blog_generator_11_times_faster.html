@@ -121,29 +121,44 @@
 <ul>
 
 <li>
-	<a href="#1-when-there-s-one-there-s-many">When there's one, there's many</a>
+	<a href="#1-the-investigation">The investigation</a>
 		</li>
 
 <li>
-	<a href="#2-the-new-implementation">The new implementation</a>
+	<a href="#2-when-there-s-one-there-s-many">When there's one, there's many</a>
 		</li>
 
 <li>
-	<a href="#3-fossil">Fossil</a>
+	<a href="#3-the-new-implementation">The new implementation</a>
 		</li>
 
 <li>
-	<a href="#4-conclusion">Conclusion</a>
+	<a href="#4-fossil">Fossil</a>
+		</li>
+
+<li>
+	<a href="#5-conclusion">Conclusion</a>
 		</li>
 </ul>
 
+<p>This blog is statically generated from Markdown files. It used to be fast, but nowadays it's not:</p>
+<pre><code class="language-sh"> $ hyperfine --warmup 2 ./master.bin 
+Benchmark 1: ./master.bin
+  Time (mean ± σ):      1.873 s ±  0.053 s    [User: 1.351 s, System: 0.486 s]
+  Range (min … max):    1.806 s …  1.983 s    10 runs
+</code></pre>
+<p>~ 2 seconds is not the end of the world, but it's just enough to be annoying when doing lots of edit-view cycles. Worse, it seemed to become slower and slower as I wrote more articles. So today I finally dedicated some time to tackle this problem.</p>
+<h2 id="1-the-investigation">
+	<a class="title" href="#1-the-investigation">The investigation</a>
+	<a class="hash-anchor" href="#1-the-investigation" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+</h2>
 <p>In the early days of this blog, there were only a few articles, and the build process was a simple Makefile, something like this (simplified):</p>
 <pre><code class="language-make">%.html: %.md header.html footer.html
         cat header.html &gt;&gt; $@
         pandoc --toc $&lt; &gt;&gt; $@
         cat footer.html &gt;&gt; $@
 </code></pre>
-<p>For each markdown file, say <code>wayland_from_scratch.md</code>, we transform the markdown into HTML (at the time with <code>pandoc</code>, now with <code>cmark</code>) and save that in a file <code>wayland_from_scratch.html</code>, with a HTML header prepended and footer appended.</p>
+<p>For each markdown file, say <code>wayland_from_scratch.md</code>, we transform the markdown into HTML (at the time with <code>pandoc</code>, which proved to be super slow, now with <code>cmark</code> which is extremely fast) and save that in a file <code>wayland_from_scratch.html</code>, with a HTML header prepended and footer appended.</p>
 <p>Later on, I added the publication date:</p>
 <pre><code class="language-make">%.html: %.md header.html footer.html
         cat header.html &gt;&gt; $@
@@ -158,35 +173,37 @@
 <li>List all markdown files in the current directory (i.e. <code>ls *.md</code>, the Makefile did that for us with <code>%.md</code>)</li>
 <li>For each markdown file, sequentially:
 <ul>
-<li>Run <code>git log ... article.md</code> to get the first and last commit date (respectively 'created at' and 'modified at')</li>
+<li>Run <code>git log article.md</code> to get date of the first and last commits for this file (respectively 'created at' and 'modified at')</li>
 <li>Convert the markdown content to HTML</li>
 <li>Save this HTML to <code>article.html</code></li>
 </ul>
 </li>
 </ul>
-<p>For long time, it was all good. It was single-threaded, but plenty fast. So I wrote more and more articles. But a few days ago, I noticed that it was getting a bit slow...Just enough for me to wait during the edit-view cycle:</p>
-<pre><code class="language-sh"> $ hyperfine --warmup 2 ./master.bin 
-Benchmark 1: ./master.bin
-  Time (mean ± σ):      1.873 s ±  0.053 s    [User: 1.351 s, System: 0.486 s]
-  Range (min … max):    1.806 s …  1.983 s    10 runs
-</code></pre>
-<p>~ 2 seconds is not the end of the world, but it's just enough to be annoying. So what's going on? Let's profile it:</p>
+<p>For long time, it was all good. It was single-threaded, but plenty fast. So I wrote more and more articles. But now it's too slow. Why? Let's profile it:</p>
 <p><img src="making_my_static_blog_generator_11_times_faster_profile_before.svg" alt="Profile before the optimization" /></p>
-<p>Yeah...I think it might be git, guys... Doing <code>git log</code> for each article, sequentially, is probably not such a good idea.</p>
-<p>At this point it's important to mention that this program is a very simplistic static site generator: it is stateless and processes every markdown file in the repository one by one. You could say that it's a regression compared to the Makefile because <code>make</code> has built-in parallelism with <code>-j</code> and change detection. But in reality, change detection in make is primitive and I often found myself forcing a clean build with <code>make -B</code> because I tweaked something in the logic that applies to every file. For example, I reworded the <code>Donate</code> section at the end of each article (wink wink) and every single file should anyway be regenerated. Same with the header, footer, etc.</p>
+<p>Yeah...I think it might be git, guys...</p>
+<p>Another way to confirm this is with <code>strace</code>:</p>
+<pre><code class="language-sh">$ strace --summary-only ./src.bin
+% time     seconds  usecs/call     calls    errors syscall
+------ ----------- ----------- --------- --------- ----------------
+ 94.85    0.479290        3928       122           waitid
+[...]
+</code></pre>
+<p>So ~ <strong>95 %</strong> of the running time is spent waiting on a subprocess. It's mainly git - we also run <code>cmark</code> as a subprocess but it's really really fast so git is the culprit. We could investigate with <code>strace</code> which process we are waiting on but the CPU profile already points the finger at git and cmark is not even visible there.</p>
+<p>At this point it's important to mention that this program is a very simplistic static site generator: it is stateless and processes every markdown file in the repository one by one. You could say that it's a regression compared to the Makefile because <code>make</code> has built-in parallelism with <code>-j</code> and change detection. But in reality, change detection in make is primitive and I often wanted to reprocess everything because of a change that applies to every file. For example, I reworded the <code>Donate</code> section at the end of each article (wink wink), or the header, or the footer, etc.</p>
 <p>Also, I really am fond of this 'pure function' approach. There is no caching issue to debug, no complicated code to write, no data races, no async callbacks, etc. Perhaps I will revisit this at a later point; but as long as the simple approach works fast enough, it's fine.</p>
-<p>Anyways, I had to do something about it, because it was going to become slower and slower with each new article and commit. My target was to do to process every markdown file within 1s, or possibly even 0.5s.</p>
+<p>My performance target was to process every file within 1s, or possibly even 0.5s.</p>
 <p>I could see a few options:</p>
 <ul>
-<li>Do not block on <code>git log</code>. We can use a thread pool, or a <a href="/blog/way_too_many_ways_to_wait_for_a_child_process_with_a_timeout.html">asynchronous approach</a> to spawn all the git processes at once, and wait for all of them to finish. But it's complex.</li>
+<li>Do not block on <code>git log</code>. We can use a thread pool, or an <a href="/blog/way_too_many_ways_to_wait_for_a_child_process_with_a_timeout.html">asynchronous approach</a> to spawn all the git processes at once, and wait for all of them to finish. But it's more complex.</li>
 <li>Make <code>git log</code> faster somehow.</li>
 <li>Implement caching so that only the changed markdown files get regenerated.</li>
 </ul>
 <p>The last option was my preferred one because it did not force me to re-architect the whole program.</p>
-<p>Note that the other two are sill on the table if our experiment does not work out.</p>
-<h2 id="1-when-there-s-one-there-s-many">
-	<a class="title" href="#1-when-there-s-one-there-s-many">When there's one, there's many</a>
-	<a class="hash-anchor" href="#1-when-there-s-one-there-s-many" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+<p>Note that the other two options are sill on the table regardless of whether our experiment works out or not.</p>
+<h2 id="2-when-there-s-one-there-s-many">
+	<a class="title" href="#2-when-there-s-one-there-s-many">When there's one, there's many</a>
+	<a class="hash-anchor" href="#2-when-there-s-one-there-s-many" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>My intuition was to do a deep dive in the <code>git log</code> options, to see if I could instruct it to do less work. But then something struck me: we invoke <code>git log</code> to get all commits for one markdown file (even though we only are interested in the first and last, but that's the only interface Git provides us as far as I know). What if we invoked it once <em>for all markdown files</em>? Yes, the output might be a bit big... How big? Is it really faster? Let's measure!</p>
 <p>Conceptually we can simply do <code>git log '*.md'</code> and parse the output. We can refine that approach later with more options, but that's the gist of it:</p>
@@ -198,18 +215,18 @@ Executed in   73.69 millis    fish           external
    usr time   61.04 millis  738.00 micros   60.30 millis
    sys time   15.95 millis  191.00 micros   15.76 millis
 </code></pre>
-<p>So it's much faster than doing it per file, and also it's entire output is ~ 186 KiB. And these numbers should grow very slowly because each new commit only adds ~ 100 bytes to the output.</p>
+<p>So it's much faster than doing it per file, and also it's entire output is ~ 186 KiB. And these numbers should grow very slowly because each new commit only adds 20-100 bytes to the output.</p>
 <p>Looks like we got our solution. There is one added benefit: we do not need to list all <code>.md</code> files in the directory at startup. Git gives us this information (in my case there are no markdown files <em>not</em> tracked by Git).</p>
 <p>Mike Acton and <a href="https://en.wikipedia.org/wiki/Data-oriented_design">Data Oriented Design</a> are right once again:</p>
 <blockquote>
 <p>Rule of thumb: When there is one, there is many. <sup class="footnote-ref"><a href="#fn-1" id="fnref-1" data-footnote-ref>1</a></sup></p>
 </blockquote>
 <p>Or: try to think in terms of arrays, not in terms of one isolated object at a time.</p>
-<h2 id="2-the-new-implementation">
-	<a class="title" href="#2-the-new-implementation">The new implementation</a>
-	<a class="hash-anchor" href="#2-the-new-implementation" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+<h2 id="3-the-new-implementation">
+	<a class="title" href="#3-the-new-implementation">The new implementation</a>
+	<a class="hash-anchor" href="#3-the-new-implementation" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
-<p>We only want for each commit:</p>
+<p>We only want git to tell us, for each commit:</p>
 <ul>
 <li>The date</li>
 <li>Which files were affected</li>
@@ -242,10 +259,10 @@ M       you_inherited_a_legacy_cpp_codebase_now_what.md                         
 R100    cross-platform-timers.md        the_missing_cross_platform_api_for_timers.md | [2] Rename with the (unneeded) confidence score.
 [...]                                                                                | Etc.
 </code></pre>
-<p>Parsing this commit log is tedious but not extremely difficult (why doesn't every mainstream command line tool have a <code>--json</code> option in 2025?).</p>
+<p>Parsing this commit log is tedious but not extremely difficult.</p>
 <p>We maintain a map while inspecting each commit: <code>map&lt;Path, (creation_date, modification_date, tombstone)&gt;</code>.</p>
-<p>In case of a rename or delete, we set the <code>tombstone</code> to <code>true</code>. Why not remove the entry from the map directly? Well, we are inspecting the list of commits from newest to oldest.</p>
-<p>So first we'll encounter the delete/rename commit, and then a number of add/modify commits for this file. When we are done, we need to remember that this markdown file should be ignored, otherwise, we'll try to open it, read it, and convert it to HTML, but we'll get a <code>ENOENT</code> error because it does not exist anymore on disk. We could avoid having this tombstone field and just bail on <code>ENOENT</code>, that's a matter of taste I guess, but this field was useful for debugging initially.</p>
+<p>In case of a rename or delete, we set the <code>tombstone</code> to <code>true</code>. Why not remove the entry from the map directly? Well, we are inspecting the list of commits from newest to oldest.
+So first we'll encounter the delete/rename commit for this file, and then later in the stream, a number of add/modify commits. When we are done, we need to remember that this markdown file should be ignored, otherwise, we'll try to open it, read it, and convert it to HTML, but we'll get a <code>ENOENT</code> error because it does not exist anymore on disk. We could avoid having this tombstone field and just bail on <code>ENOENT</code>, that's a matter of taste I guess, but this field was useful to me to ensure that the parsing code is correct.</p>
 <details>
   <summary>Odin implementation</summary>
 <pre><code class="language-odin">GitStat :: struct {
@@ -433,9 +450,9 @@ Summary
 <li>Use a library (e.g. libgit2) and hope that offers a saner interface to query the commit log</li>
 </ul>
 <p>I wonder if there is a better way...</p>
-<h2 id="3-fossil">
-	<a class="title" href="#3-fossil">Fossil</a>
-	<a class="hash-anchor" href="#3-fossil" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+<h2 id="4-fossil">
+	<a class="title" href="#4-fossil">Fossil</a>
+	<a class="hash-anchor" href="#4-fossil" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p><a href="https://fossil-scm.org">fossil</a> is an alternative version control system created by the same folks that created, and are still working on, SQLite. Naturally, a fossil repository is basically just one SQLite database file. That sounds very <em>queryable</em>!</p>
 <p>Let's import our git repository into a Fossil repository and enter the SQLite prompt:</p>
@@ -475,9 +492,9 @@ Benchmark 1: fossil sql -R new-repo.fossil &quot;[...]&quot;
 <p>But the golden ticket idea is really to store everything inside SQLite. Suddenly, we can query anything! And there is no weird parsing needed - SQLite supports various export formats and (some? all?) fossil commands support the <code>--sql</code> option to show you which SQL query they use to get the information. After all, the only thing the <code>fossil</code> command line does in this case, is craft a SQL query and run int on the SQLite database.</p>
 <p>It's quite magical to me that I can within a few seconds import my years-long git repository into a SQLite database and start querying it, and the performance is great.</p>
 <p>Now I am not <em>quite</em> ready yet to move to Fossil, and the import is a one time thing as far as I know, so it is not a viable option for the problem at hand as long as git is the source of truth. But still, while I was trying to tackle <code>git log</code> into submission, I was thinking the whole time: why can't I do an arbitrary query of git data? Generally, the more generic approach is slower than the ad-hoc one, but here it's not even the case. Fossil is for this use case objectively more powerful, more generic, <em>and</em> faster.</p>
-<h2 id="4-conclusion">
-	<a class="title" href="#4-conclusion">Conclusion</a>
-	<a class="hash-anchor" href="#4-conclusion" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+<h2 id="5-conclusion">
+	<a class="title" href="#5-conclusion">Conclusion</a>
+	<a class="hash-anchor" href="#5-conclusion" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>The issue was effectively a N+1 query problem. We issued a separate 'query' (in this case, <code>git log</code>) for each markdown file, in a sequential blocking fashion. This approach worked until it didn't because the number of entities (i.e. articles, and commits) grew over time.</p>
 <p>The solution is instead to do only one query for all entities. It may return a bit more data that we need, but that's much faster, and scales better, than the original version.</p>

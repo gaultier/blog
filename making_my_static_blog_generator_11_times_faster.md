@@ -2,6 +2,20 @@ Title: Making my static blog generator 11 times faster
 Tags: Optimization, Git, Odin, Fossil
 ---
 
+
+This blog is statically generated from Markdown files. It used to be fast, but nowadays it's not:
+
+```sh
+ $ hyperfine --warmup 2 ./master.bin 
+Benchmark 1: ./master.bin
+  Time (mean ± σ):      1.873 s ±  0.053 s    [User: 1.351 s, System: 0.486 s]
+  Range (min … max):    1.806 s …  1.983 s    10 runs
+```
+
+~ 2 seconds is not the end of the world, but it's just enough to be annoying when doing lots of edit-view cycles. Worse, it seemed to become slower and slower as I wrote more articles. So today I finally dedicated some time to tackle this problem.
+
+## The investigation
+
 In the early days of this blog, there were only a few articles, and the build process was a simple Makefile, something like this (simplified):
 
 ```make
@@ -11,7 +25,7 @@ In the early days of this blog, there were only a few articles, and the build pr
         cat footer.html >> $@
 ```
 
-For each markdown file, say `wayland_from_scratch.md`, we transform the markdown into HTML (at the time with `pandoc`, now with `cmark`) and save that in a file `wayland_from_scratch.html`, with a HTML header prepended and footer appended.
+For each markdown file, say `wayland_from_scratch.md`, we transform the markdown into HTML (at the time with `pandoc`, which proved to be super slow, now with `cmark` which is extremely fast) and save that in a file `wayland_from_scratch.html`, with a HTML header prepended and footer appended.
 
 
 Later on, I added the publication date:
@@ -32,40 +46,43 @@ As I added more and more features to this blog, like a list of article by tags, 
 
 - List all markdown files in the current directory (i.e. `ls *.md`, the Makefile did that for us with `%.md`) 
 - For each markdown file, sequentially:
-  + Run `git log ... article.md` to get the first and last commit date (respectively 'created at' and 'modified at') 
+  + Run `git log article.md` to get date of the first and last commits for this file (respectively 'created at' and 'modified at') 
   + Convert the markdown content to HTML
   + Save this HTML to `article.html`
 
-For long time, it was all good. It was single-threaded, but plenty fast. So I wrote more and more articles. But a few days ago, I noticed that it was getting a bit slow...Just enough for me to wait during the edit-view cycle:
-
-```sh
- $ hyperfine --warmup 2 ./master.bin 
-Benchmark 1: ./master.bin
-  Time (mean ± σ):      1.873 s ±  0.053 s    [User: 1.351 s, System: 0.486 s]
-  Range (min … max):    1.806 s …  1.983 s    10 runs
-```
-
-~ 2 seconds is not the end of the world, but it's just enough to be annoying. So what's going on? Let's profile it:
+For long time, it was all good. It was single-threaded, but plenty fast. So I wrote more and more articles. But now it's too slow. Why? Let's profile it:
 
 ![Profile before the optimization](making_my_static_blog_generator_11_times_faster_profile_before.svg)
 
-Yeah...I think it might be git, guys... Doing `git log` for each article, sequentially, is probably not such a good idea. 
+Yeah...I think it might be git, guys...
 
-At this point it's important to mention that this program is a very simplistic static site generator: it is stateless and processes every markdown file in the repository one by one. You could say that it's a regression compared to the Makefile because `make` has built-in parallelism with `-j` and change detection. But in reality, change detection in make is primitive and I often found myself forcing a clean build with `make -B` because I tweaked something in the logic that applies to every file. For example, I reworded the `Donate` section at the end of each article (wink wink) and every single file should anyway be regenerated. Same with the header, footer, etc.
+Another way to confirm this is with `strace`:
+
+```sh
+$ strace --summary-only ./src.bin
+% time     seconds  usecs/call     calls    errors syscall
+------ ----------- ----------- --------- --------- ----------------
+ 94.85    0.479290        3928       122           waitid
+[...]
+```
+
+So ~ **95 %** of the running time is spent waiting on a subprocess. It's mainly git - we also run `cmark` as a subprocess but it's really really fast so git is the culprit. We could investigate with `strace` which process we are waiting on but the CPU profile already points the finger at git and cmark is not even visible there.
+
+At this point it's important to mention that this program is a very simplistic static site generator: it is stateless and processes every markdown file in the repository one by one. You could say that it's a regression compared to the Makefile because `make` has built-in parallelism with `-j` and change detection. But in reality, change detection in make is primitive and I often wanted to reprocess everything because of a change that applies to every file. For example, I reworded the `Donate` section at the end of each article (wink wink), or the header, or the footer, etc.
 
 Also, I really am fond of this 'pure function' approach. There is no caching issue to debug, no complicated code to write, no data races, no async callbacks, etc. Perhaps I will revisit this at a later point; but as long as the simple approach works fast enough, it's fine.
 
-Anyways, I had to do something about it, because it was going to become slower and slower with each new article and commit. My target was to do to process every markdown file within 1s, or possibly even 0.5s.
+My performance target was to process every file within 1s, or possibly even 0.5s.
 
 I could see a few options:
 
-- Do not block on `git log`. We can use a thread pool, or a [asynchronous approach](/blog/way_too_many_ways_to_wait_for_a_child_process_with_a_timeout.html) to spawn all the git processes at once, and wait for all of them to finish. But it's complex.
+- Do not block on `git log`. We can use a thread pool, or an [asynchronous approach](/blog/way_too_many_ways_to_wait_for_a_child_process_with_a_timeout.html) to spawn all the git processes at once, and wait for all of them to finish. But it's more complex.
 - Make `git log` faster somehow.
 - Implement caching so that only the changed markdown files get regenerated.
 
 The last option was my preferred one because it did not force me to re-architect the whole program.
 
-Note that the other two are sill on the table if our experiment does not work out.
+Note that the other two options are sill on the table regardless of whether our experiment works out or not.
 
 ## When there's one, there's many
 
@@ -83,7 +100,7 @@ Executed in   73.69 millis    fish           external
    sys time   15.95 millis  191.00 micros   15.76 millis
 ```
 
-So it's much faster than doing it per file, and also it's entire output is ~ 186 KiB. And these numbers should grow very slowly because each new commit only adds ~ 100 bytes to the output.
+So it's much faster than doing it per file, and also it's entire output is ~ 186 KiB. And these numbers should grow very slowly because each new commit only adds 20-100 bytes to the output.
 
 Looks like we got our solution. There is one added benefit: we do not need to list all `.md` files in the directory at startup. Git gives us this information (in my case there are no markdown files *not* tracked by Git).
 
@@ -96,7 +113,7 @@ Or: try to think in terms of arrays, not in terms of one isolated object at a ti
 
 ## The new implementation
 
-We only want for each commit: 
+We only want git to tell us, for each commit: 
 
 - The date
 - Which files were affected
@@ -137,13 +154,12 @@ R100    cross-platform-timers.md        the_missing_cross_platform_api_for_timer
 ```
 
 
-Parsing this commit log is tedious but not extremely difficult (why doesn't every mainstream command line tool have a `--json` option in 2025?).
+Parsing this commit log is tedious but not extremely difficult.
 
 We maintain a map while inspecting each commit: `map<Path, (creation_date, modification_date, tombstone)>`. 
 
 In case of a rename or delete, we set the `tombstone` to `true`. Why not remove the entry from the map directly? Well, we are inspecting the list of commits from newest to oldest.
-
-So first we'll encounter the delete/rename commit, and then a number of add/modify commits for this file. When we are done, we need to remember that this markdown file should be ignored, otherwise, we'll try to open it, read it, and convert it to HTML, but we'll get a `ENOENT` error because it does not exist anymore on disk. We could avoid having this tombstone field and just bail on `ENOENT`, that's a matter of taste I guess, but this field was useful for debugging initially.
+So first we'll encounter the delete/rename commit for this file, and then later in the stream, a number of add/modify commits. When we are done, we need to remember that this markdown file should be ignored, otherwise, we'll try to open it, read it, and convert it to HTML, but we'll get a `ENOENT` error because it does not exist anymore on disk. We could avoid having this tombstone field and just bail on `ENOENT`, that's a matter of taste I guess, but this field was useful to me to ensure that the parsing code is correct.
 
 <details>
   <summary>Odin implementation</summary>
