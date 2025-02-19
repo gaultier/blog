@@ -189,13 +189,11 @@ get_articles_creation_and_modification_date :: proc() -> ([]GitStat, os2.Error) 
 		// Date
 		date: string
 		{
-			line, ok := strings.split_lines_iterator(&stdout)
-			if !ok do break
+			line := strings.split_lines_iterator(&stdout) or_break
 
 			assert(strings.starts_with(line, "'20"))
 			line_without_quotes := line[1:len(line) - 1]
 			date = strings.clone(strings.trim(line_without_quotes, "' \n"))
-			assert(ok)
 		}
 
 		// Empty line
@@ -208,27 +206,17 @@ get_articles_creation_and_modification_date :: proc() -> ([]GitStat, os2.Error) 
 
 		// Files.
 		for {
-			// Peek.
-			stdout_bck := stdout
-			line: string
+			if strings.starts_with(stdout, "'20") do break
 
-			{
-				ok := false
-				line, ok = strings.split_lines_iterator(&stdout_bck)
-				if !ok do break
-
-				// Reached the next entry?
-				if strings.starts_with(line, "'20") do break
-
-				// Commit.
-				stdout = stdout_bck
-			}
+			line := strings.split_lines_iterator(&stdout) or_break
+			assert(line != "")
 
 			action: u8
 			{
 				action_part, ok := strings.split_iterator(&line, "\t")
 				assert(ok)
 				assert(action_part != "")
+				// Get rid of the rename percentage score e.g. `R100`.
 				action = action_part[0]
 				assert(action == 'A' || action == 'M' || action == 'R' || action == 'D')
 			}
@@ -236,19 +224,17 @@ get_articles_creation_and_modification_date :: proc() -> ([]GitStat, os2.Error) 
 			old_path: string
 			new_path: string
 			{
-				path, ok := strings.split_iterator(&line, "\t")
+				ok: bool
+				old_path, ok = strings.split_iterator(&line, "\t")
 				assert(ok)
-				assert(path != "")
+				assert(old_path != "")
 
 				if action == 'R' {
-					old_path = path
-
 					new_path, ok = strings.split_iterator(&line, "\t")
 					assert(ok)
 					assert(new_path != "")
 				} else {
-					old_path = path
-					new_path = path
+					new_path = old_path
 				}
 			}
 
