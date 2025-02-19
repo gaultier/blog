@@ -502,7 +502,6 @@ generate_html_article :: proc(
 	assert(len(footer) > 0)
 
 	context.allocator = context.temp_allocator
-	defer free_all(context.allocator)
 
 	metadata_split := strings.split_n(markdown, metadata_delimiter + "\n", 2)
 	article_content := metadata_split[1]
@@ -585,6 +584,7 @@ generate_article :: proc(
 	assert(len(header) > 0)
 	assert(len(footer) > 0)
 
+	free_all(context.temp_allocator)
 	defer free_all(context.temp_allocator)
 
 	original_markdown_content := transmute(string)os.read_entire_file_from_filename_or_err(
@@ -647,6 +647,7 @@ generate_home_page :: proc(
 	assert(len(footer) > 0)
 
 	context.allocator = context.temp_allocator
+	free_all(context.temp_allocator)
 	defer free_all(context.allocator)
 
 	slice.sort_by(articles, compare_articles_by_creation_date_desc)
@@ -737,6 +738,7 @@ generate_page_articles_by_tag :: proc(
 	assert(len(footer) > 0)
 
 	context.allocator = context.temp_allocator
+	free_all(context.temp_allocator)
 	defer free_all(context.allocator)
 
 	articles_by_tag := make(map[string][dynamic]Article)
@@ -840,6 +842,7 @@ generate_rss_feed :: proc(articles: []Article) -> (err: os.Error) {
 	assert(len(articles) > 0)
 
 	context.allocator = context.temp_allocator
+	free_all(context.temp_allocator)
 	defer free_all(context.allocator)
 
 	slice.sort_by(articles, compare_articles_by_creation_date_asc)
