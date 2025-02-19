@@ -9,6 +9,14 @@
     <id>urn:uuid:9c065c53-31bc-4049-a795-936802a6b1df</id>
 
 	<entry>
+  <title>Making my static blog generator 11 times faster</title>
+  <link href="https://gaultier.github.io/blog/making_my_static_blog_generator_11_times_faster.html"/>
+  <id>urn:uuid:d29b6ec2-f895-5f2f-896f-2f343766fc85</id>
+  <updated></updated>
+  <published></published>
+  </entry>
+	
+	<entry>
   <title>Getting started with Scheme by solving an Advent of Code 2018 challenge</title>
   <link href="https://gaultier.github.io/blog/advent_of_code_2018_5.html"/>
   <id>urn:uuid:b3c0c1c1-e36f-51fd-9356-99f8686e7329</id>
