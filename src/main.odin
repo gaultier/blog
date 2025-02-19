@@ -143,8 +143,20 @@ GitStat :: struct {
 
 get_articles_creation_and_modification_date :: proc() -> (res: []GitStat, err: os2.Error) {
 	stdout_bin := run_sub_process_and_get_stdout(
-		[]string{"git", "log", "--format='%aI'", "--name-only", "--no-merges", "*.md"},
-		{},
+	[]string {
+		"git",
+		"log",
+		// Print the date in ISO format.
+		"--format='%aI'",
+		// Print for each commit the paths affected.
+		"--name-only",
+		// Ignore merge commits since they do not carry useful information.
+		"--no-merges",
+		// Ignore renamed files to avoid stale paths.
+		"--diff-filter=r",
+		"*.md",
+	},
+	{},
 	) or_return
 	// if len(stderr_bin) > 0 {
 	// 	fmt.printf("git command stderr: %v %s\n", state, string(stderr_bin))
@@ -554,10 +566,7 @@ generate_all_articles_in_directory :: proc(
 		if git_stat.path_rel == "index.md" {continue}
 		if git_stat.path_rel == "README.md" {continue}
 
-		// Reading the markdown for an article might fail because of a file
-		// having been renamed (e.g. `sha.md` -> `making_my_debug_build_run_100_times_faster.md`).
-		// In this case, ignore the git stat entry since it is stale, and continue.
-		article := generate_article(git_stat, header, footer) or_continue
+		article := generate_article(git_stat, header, footer) or_return
 		append(&articles_dyn, article)
 	}
 
