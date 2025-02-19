@@ -279,7 +279,7 @@ p:has(img):has(em) {
 
 .line-number {
   background-color: #FFE0B2;
-  width: 1.9rem;
+  width: 2.2rem;
   padding: .2rem;
   display: inline-block;
   text-align: center;
