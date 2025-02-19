@@ -226,39 +226,51 @@ get_articles_creation_and_modification_date :: proc() -> ([]GitStat, os2.Error) 
 				assert(ok)
 				assert(old_path != "")
 
-				if action == 'R' {
+				if action == 'R' { 	// Rename has two operands.
 					new_path, ok = strings.split_iterator(&line, "\t")
 					assert(ok)
 					assert(new_path != "")
-				} else {
+				} else { 	// The others have only one.
 					new_path = old_path
 				}
 			}
 
-			git_stat, present := &stats_by_path[new_path]
-			if !present {
-				stats_by_path[new_path] = GitStat {
-					path_rel          = new_path,
-					// We inspect commits from newest to oldest so the first commit for a file is the newest i.e. the modification date.
-					modification_date = date,
+			{
+				git_stat, present := &stats_by_path[new_path]
+				if !present {
+					stats_by_path[new_path] = GitStat {
+						// In 99% of the cases, it's *not* a rename and thus the `new_path` should be used.
+						path_rel          = new_path,
+						// We inspect commits from newest to oldest so the first commit for a file is the newest i.e. the modification date.
+						modification_date = date,
+						creation_date     = date,
+					}
+				} else {
+					assert(git_stat.path_rel != "")
+					assert(git_stat.modification_date != "")
+					// Keep updating the creation date, when we reach the end of the commit log, it has the right value.
+					git_stat.creation_date = date
 				}
-			} else {
-				assert(git_stat.path_rel != "")
-				assert(git_stat.modification_date != "")
-				git_stat.creation_date = date
 			}
 
+			// We handle the action separately from the fact that this is the first commit we see for the path.
+			// Because a file could have only one commit which is a rename.
+			// Or its first commit is a rename but then there additional commits to modify it. 
+			// Case being: these two things are orthogonal.
+
 			if action == 'R' {
+				// Mark as 'deleted'.
 				stats_by_path[old_path] = GitStat {
 					path_rel          = old_path,
-					// We inspect commits from newest to oldest so the first commit for a file is the newest i.e. the modification date.
 					modification_date = date,
 					tombstone         = true,
 				}
 
+				// The creation date of the new path is the date of the rename operation.
 				(&stats_by_path[new_path]).creation_date = date
 			}
 			if action == 'D' {
+				// Mark as 'deleted'.
 				(&stats_by_path[new_path]).tombstone = true
 			}
 		}
