@@ -284,15 +284,13 @@ get_articles_creation_and_modification_date :: proc() -> ([]GitStat, os2.Error) 
 		assert(v.creation_date <= v.modification_date)
 
 		if !v.tombstone {
-			fmt.printf("%v\n", v)
-			append(
-				&git_stats,
-				GitStat {
-					path_rel = strings.clone(k),
-					creation_date = strings.clone(v.creation_date),
-					modification_date = strings.clone(v.modification_date),
-				},
-			)
+			git_stat := GitStat {
+				path_rel          = strings.clone(k),
+				creation_date     = strings.clone(v.creation_date),
+				modification_date = strings.clone(v.modification_date),
+			}
+			fmt.printf("%v\n", git_stat)
+			append(&git_stats, git_stat)
 		}
 	}
 

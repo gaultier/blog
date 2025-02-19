@@ -111,7 +111,7 @@ Mike Acton and [Data Oriented Design](https://en.wikipedia.org/wiki/Data-oriente
 Or: try to think in terms of arrays, not in terms of one isolated object at a time.
 
 
-## The new implementation
+## The new approach
 
 We only want git to tell us, for each commit: 
 
@@ -161,178 +161,187 @@ We maintain a map while inspecting each commit: `map<Path, (creation_date, modif
 In case of a rename or delete, we set the `tombstone` to `true`. Why not remove the entry from the map directly? Well, we are inspecting the list of commits from newest to oldest.
 So first we'll encounter the delete/rename commit for this file, and then later in the stream, a number of add/modify commits. When we are done, we need to remember that this markdown file should be ignored, otherwise, we'll try to open it, read it, and convert it to HTML, but we'll get a `ENOENT` error because it does not exist anymore on disk. We could avoid having this tombstone field and just bail on `ENOENT`, that's a matter of taste I guess, but this field was useful to me to ensure that the parsing code is correct.
 
-<details>
-  <summary>Odin implementation</summary>
+## The new implementation
 
 ```odin
 GitStat :: struct {
-    creation_date:     string,
-    modification_date: string,
-    path_rel:          string,
-    tombstone:         bool,
+	creation_date:     string,
+	modification_date: string,
+	path_rel:          string,
 }
 
 get_articles_creation_and_modification_date :: proc() -> ([]GitStat, os2.Error) {
-    free_all(context.temp_allocator)
-    defer free_all(context.temp_allocator)
+	free_all(context.temp_allocator)
+	defer free_all(context.temp_allocator)
 
-    state, stdout_bin, stderr_bin, err := os2.process_exec(
-        {
-            command = []string {
-                "git",
-                "log",
-                // Print the date in ISO format.
-                "--format='%aI'",
-                // Ignore merge commits since they do not carry useful information.
-                "--no-merges",
-                // Only interested in creation, modification, renaming, deletion.
-                "--diff-filter=AMRD",
-                // Show which modification took place:
-                // A: added, M: modified, RXXX: renamed (with percentage score), etc.
-                "--name-status",
-                "*.md",
-            },
-        },
-        context.temp_allocator,
-    )
-    if err != nil {
-        fmt.eprintf("git failed: %d %v %s", state, err, string(stderr_bin))
-        panic("git failed")
-    }
+	state, stdout_bin, stderr_bin, err := os2.process_exec(
+		{
+			command = []string {
+				"git",
+				"log",
+				// Print the date in ISO format.
+				"--format='%aI'",
+				// Ignore merge commits since they do not carry useful information.
+				"--no-merges",
+				// Only interested in creation, modification, renaming, deletion.
+				"--diff-filter=AMRD",
+				// Show which modification took place:
+				// A: added, M: modified, RXXX: renamed (with percentage score), etc.
+				"--name-status",
+				"*.md",
+			},
+		},
+		context.temp_allocator,
+	)
+	if err != nil {
+		fmt.eprintf("git failed: %d %v %s", state, err, string(stderr_bin))
+		panic("git failed")
+	}
 
-    stdout := strings.trim_space(string(stdout_bin))
-    assert(stdout != "")
+	stdout := strings.trim_space(string(stdout_bin))
+	assert(stdout != "")
 
-    stats_by_path := make(map[string]GitStat, allocator = context.temp_allocator)
+	GitStatInternal :: struct {
+		creation_date:     string,
+		modification_date: string,
+		tombstone:         bool,
+	}
+	stats_by_path := make(map[string]GitStatInternal, allocator = context.temp_allocator)
 
-    // For each commit.
-    for {
-        // Date
-        date: string
-        {
-            line := strings.split_lines_iterator(&stdout) or_break
+	// Sample git output:
+	// 2024-10-31T16:09:02+01:00
+	// 
+	// M       lessons_learned_from_a_successful_rust_rewrite.md
+	// A       tip_of_day_3.md
+	// 2025-02-18T08:07:55+01:00
+	//
+	// R100    sha.md  making_my_debug_build_run_100_times_faster.md
 
-            assert(strings.starts_with(line, "'20"))
-            line_without_quotes := line[1:len(line) - 1]
-            date = strings.clone(strings.trim(line_without_quotes, "' \n"))
-        }
+	// For each commit.
+	for {
+		// Date
+		date: string
+		{
+			line := strings.split_lines_iterator(&stdout) or_break
 
-        // Empty line
-        {
-            // Peek.
-            line, ok := strings.split_lines_iterator(&stdout)
-            assert(ok)
-            assert(line == "")
-        }
+			assert(strings.starts_with(line, "'20"))
+			line_without_quotes := line[1:len(line) - 1]
+			date = strings.clone(strings.trim(line_without_quotes, "' \n"))
+		}
 
-        // Files.
-        for {
-            // Start of a new commit?
-            if strings.starts_with(stdout, "'20") do break
+		// Empty line
+		{
+			// Peek.
+			line, ok := strings.split_lines_iterator(&stdout)
+			assert(ok)
+			assert(line == "")
+		}
 
-            line := strings.split_lines_iterator(&stdout) or_break
-            assert(line != "")
+		// Files.
+		for {
+			// Start of a new commit?
+			if strings.starts_with(stdout, "'20") do break
 
-            action := line[0]
-            assert(action == 'A' || action == 'M' || action == 'R' || action == 'D')
+			line := strings.split_lines_iterator(&stdout) or_break
+			assert(line != "")
 
-            old_path: string
-            new_path: string
-            {
-                // Skip the 'action' part.
-                _, ok := strings.split_iterator(&line, "\t")
-                assert(ok)
+			action := line[0]
+			assert(action == 'A' || action == 'M' || action == 'R' || action == 'D')
 
-                old_path, ok = strings.split_iterator(&line, "\t")
-                assert(ok)
-                assert(old_path != "")
+			old_path: string
+			new_path: string
+			{
+				// Skip the 'action' part.
+				_, ok := strings.split_iterator(&line, "\t")
+				assert(ok)
 
-                if action == 'R' {     // Rename has two operands.
-                    new_path, ok = strings.split_iterator(&line, "\t")
-                    assert(ok)
-                    assert(new_path != "")
-                } else {     // The others have only one.
-                    new_path = old_path
-                }
-            }
+				old_path, ok = strings.split_iterator(&line, "\t")
+				assert(ok)
+				assert(old_path != "")
 
-            {
-                git_stat, present := &stats_by_path[new_path]
-                if !present {
-                    stats_by_path[new_path] = GitStat {
-                        // In 99% of the cases, it's *not* a rename and thus the 'new_path' should be used.
-                        path_rel          = new_path,
-                        // We inspect commits from newest to oldest so the first commit for a file is the newest i.e. the modification date.
-                        modification_date = date,
-                        creation_date     = date,
-                    }
-                } else {
-                    assert(git_stat.path_rel != "")
-                    assert(git_stat.modification_date != "")
-                    // Keep updating the creation date, when we reach the end of the commit log, it has the right value.
-                    git_stat.creation_date = date
-                }
-            }
+				if action == 'R' { 	// Rename has two operands.
+					new_path, ok = strings.split_iterator(&line, "\t")
+					assert(ok)
+					assert(new_path != "")
+				} else { 	// The others have only one.
+					new_path = old_path
+				}
+			}
 
-            // We handle the action separately from the fact that this is the first commit we see for the path.
-            // Because a file could have only one commit which is a rename.
-            // Or its first commit is a rename but then there additional commits to modify it. 
-            // Case being: these two things are orthogonal.
+			{
+				git_stat, present := &stats_by_path[new_path]
+				if !present {
+					stats_by_path[new_path] = GitStatInternal {
+						// We inspect commits from newest to oldest so the first commit for a file is the newest i.e. the modification date.
+						modification_date = date,
+						creation_date     = date,
+					}
+				} else {
+					assert(git_stat.modification_date != "")
+					// Keep updating the creation date, when we reach the end of the commit log, it has the right value.
+					git_stat.creation_date = date
+				}
+			}
 
-            if action == 'R' {
-                // Mark the old path as 'deleted'.
-                stats_by_path[old_path] = GitStat {
-                    path_rel          = old_path,
-                    modification_date = date,
-                    tombstone         = true,
-                }
+			// We handle the action separately from the fact that this is the first commit we see for the path.
+			// Because a file could have only one commit which is a rename.
+			// Or its first commit is a rename but then there additional commits to modify it. 
+			// Case being: these two things are orthogonal.
 
-                // The creation date of the new path is the date of the rename operation.
-                (&stats_by_path[new_path]).creation_date = date
-            }
-            if action == 'D' {
-                // Mark as 'deleted'.
-                (&stats_by_path[new_path]).tombstone = true
-            }
-        }
-    }
+			if action == 'R' {
+				// Mark the old path as 'deleted'.
+				stats_by_path[old_path] = GitStatInternal {
+					modification_date = date,
+					tombstone         = true,
+				}
 
-    git_stats := make([dynamic]GitStat)
-    for _, v in stats_by_path {
-        fmt.printf("%v\n", v)
-        assert(v.path_rel != "")
-        assert(v.creation_date != "")
-        assert(v.modification_date != "")
-        assert(v.creation_date <= v.modification_date)
+				// The creation date of the new path is the date of the rename operation.
+				(&stats_by_path[new_path]).creation_date = date
+			}
+			if action == 'D' {
+				// Mark as 'deleted'.
+				(&stats_by_path[new_path]).tombstone = true
+			}
+		}
+	}
 
-        if !v.tombstone {
-            append(
-                &git_stats,
-                GitStat {
-                    path_rel = strings.clone(v.path_rel),
-                    creation_date = strings.clone(v.creation_date),
-                    modification_date = strings.clone(v.modification_date),
-                },
-            )
-        }
-    }
+	git_stats := make([dynamic]GitStat)
+	for k, v in stats_by_path {
+		assert(k != "")
+		assert(v.creation_date != "")
+		assert(v.modification_date != "")
+		assert(v.creation_date <= v.modification_date)
 
-    return git_stats[:], nil
+		if !v.tombstone {
+			git_stat := GitStat {
+				path_rel          = strings.clone(k),
+				creation_date     = strings.clone(v.creation_date),
+				modification_date = strings.clone(v.modification_date),
+			}
+			fmt.printf("%v\n", git_stat)
+			append(&git_stats, git_stat)
+		}
+	}
+
+	return git_stats[:], nil
 }
 ```
 
-</details
+A few things of interest:
+
+- Odin has first class support for allocators so we allocate everything in this function with the temporary allocator. It is backed by an arena and emptied at the start and end of the function. The final result is allocated with the standard allocator. That way, even if Git starts spewing lots of data, as soon as we exit the function, all of that is gone, in one call, and the the program carries on with only the necessary data heap-allocated.
+- In this program, the main allocator and the temporary allocator are both arenas. The memory usage is a constant ~ 4 MiB, mainly located in the Odin standard library.
+- A `map` is a bit of an overkill for ~30 entries, but it's fine, and we expect the number of articles to grow
 
 ---
 
-We can log what we parsed, for example only the articles that matter (tombstone == false):
+We can log the final result:
 
 ```
-GitStat{creation_date = "2023-10-12T13:19:53+02:00", modification_date = "2024-11-05T15:49:57+01:00", path_rel = "wayland_from_scratch.md", tombstone = false}
-GitStat{creation_date = "2024-10-29T13:46:14+01:00", modification_date = "2024-10-31T16:20:34+01:00", path_rel = "tip_of_day_1.md", tombstone = false}
-GitStat{creation_date = "2023-12-01T15:15:26+01:00", modification_date = "2024-11-04T09:24:17+01:00", path_rel = "gnuplot_lang.md", tombstone = false}
-GitStat{creation_date = "2024-09-10T12:59:04+02:00", modification_date = "2024-09-12T12:14:42+02:00", path_rel = "odin_and_musl.md", tombstone = false}
-GitStat{creation_date = "2024-11-10T23:58:59+01:00", modification_date = "2025-02-18T08:22:33+01:00", path_rel = "way_too_many_ways_to_wait_for_a_child_process_with_a_timeout.md", tombstone = false}
+[...]
+GitStat{creation_date = "2020-09-07T20:49:20+02:00", modification_date = "2024-11-04T09:24:17+01:00", path_rel = "compile_ziglang_from_source_on_alpine_2020_9.md"}
+GitStat{creation_date = "2024-09-10T12:59:04+02:00", modification_date = "2024-09-12T12:14:42+02:00", path_rel = "odin_and_musl.md"}
+GitStat{creation_date = "2023-11-23T11:26:11+01:00", modification_date = "2025-02-06T20:55:27+01:00", path_rel = "roll_your_own_memory_profiling.md"}
 [...]
 ```
 

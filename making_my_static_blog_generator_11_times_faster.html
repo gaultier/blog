@@ -129,15 +129,19 @@
 		</li>
 
 <li>
-	<a href="#3-the-new-implementation">The new implementation</a>
+	<a href="#3-the-new-approach">The new approach</a>
 		</li>
 
 <li>
-	<a href="#4-fossil">Fossil</a>
+	<a href="#4-the-new-implementation">The new implementation</a>
 		</li>
 
 <li>
-	<a href="#5-conclusion">Conclusion</a>
+	<a href="#5-fossil">Fossil</a>
+		</li>
+
+<li>
+	<a href="#6-conclusion">Conclusion</a>
 		</li>
 </ul>
 
@@ -222,9 +226,9 @@ Executed in   73.69 millis    fish           external
 <p>Rule of thumb: When there is one, there is many. <sup class="footnote-ref"><a href="#fn-1" id="fnref-1" data-footnote-ref>1</a></sup></p>
 </blockquote>
 <p>Or: try to think in terms of arrays, not in terms of one isolated object at a time.</p>
-<h2 id="3-the-new-implementation">
-	<a class="title" href="#3-the-new-implementation">The new implementation</a>
-	<a class="hash-anchor" href="#3-the-new-implementation" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+<h2 id="3-the-new-approach">
+	<a class="title" href="#3-the-new-approach">The new approach</a>
+	<a class="hash-anchor" href="#3-the-new-approach" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>We only want git to tell us, for each commit:</p>
 <ul>
@@ -263,171 +267,184 @@ R100    cross-platform-timers.md        the_missing_cross_platform_api_for_timer
 <p>We maintain a map while inspecting each commit: <code>map&lt;Path, (creation_date, modification_date, tombstone)&gt;</code>.</p>
 <p>In case of a rename or delete, we set the <code>tombstone</code> to <code>true</code>. Why not remove the entry from the map directly? Well, we are inspecting the list of commits from newest to oldest.
 So first we'll encounter the delete/rename commit for this file, and then later in the stream, a number of add/modify commits. When we are done, we need to remember that this markdown file should be ignored, otherwise, we'll try to open it, read it, and convert it to HTML, but we'll get a <code>ENOENT</code> error because it does not exist anymore on disk. We could avoid having this tombstone field and just bail on <code>ENOENT</code>, that's a matter of taste I guess, but this field was useful to me to ensure that the parsing code is correct.</p>
-<details>
-  <summary>Odin implementation</summary>
+<h2 id="4-the-new-implementation">
+	<a class="title" href="#4-the-new-implementation">The new implementation</a>
+	<a class="hash-anchor" href="#4-the-new-implementation" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+</h2>
 <pre><code class="language-odin">GitStat :: struct {
-    creation_date:     string,
-    modification_date: string,
-    path_rel:          string,
-    tombstone:         bool,
+	creation_date:     string,
+	modification_date: string,
+	path_rel:          string,
 }
 
 get_articles_creation_and_modification_date :: proc() -&gt; ([]GitStat, os2.Error) {
-    free_all(context.temp_allocator)
-    defer free_all(context.temp_allocator)
+	free_all(context.temp_allocator)
+	defer free_all(context.temp_allocator)
 
-    state, stdout_bin, stderr_bin, err := os2.process_exec(
-        {
-            command = []string {
-                &quot;git&quot;,
-                &quot;log&quot;,
-                // Print the date in ISO format.
-                &quot;--format='%aI'&quot;,
-                // Ignore merge commits since they do not carry useful information.
-                &quot;--no-merges&quot;,
-                // Only interested in creation, modification, renaming, deletion.
-                &quot;--diff-filter=AMRD&quot;,
-                // Show which modification took place:
-                // A: added, M: modified, RXXX: renamed (with percentage score), etc.
-                &quot;--name-status&quot;,
-                &quot;*.md&quot;,
-            },
-        },
-        context.temp_allocator,
-    )
-    if err != nil {
-        fmt.eprintf(&quot;git failed: %d %v %s&quot;, state, err, string(stderr_bin))
-        panic(&quot;git failed&quot;)
-    }
+	state, stdout_bin, stderr_bin, err := os2.process_exec(
+		{
+			command = []string {
+				&quot;git&quot;,
+				&quot;log&quot;,
+				// Print the date in ISO format.
+				&quot;--format='%aI'&quot;,
+				// Ignore merge commits since they do not carry useful information.
+				&quot;--no-merges&quot;,
+				// Only interested in creation, modification, renaming, deletion.
+				&quot;--diff-filter=AMRD&quot;,
+				// Show which modification took place:
+				// A: added, M: modified, RXXX: renamed (with percentage score), etc.
+				&quot;--name-status&quot;,
+				&quot;*.md&quot;,
+			},
+		},
+		context.temp_allocator,
+	)
+	if err != nil {
+		fmt.eprintf(&quot;git failed: %d %v %s&quot;, state, err, string(stderr_bin))
+		panic(&quot;git failed&quot;)
+	}
 
-    stdout := strings.trim_space(string(stdout_bin))
-    assert(stdout != &quot;&quot;)
+	stdout := strings.trim_space(string(stdout_bin))
+	assert(stdout != &quot;&quot;)
 
-    stats_by_path := make(map[string]GitStat, allocator = context.temp_allocator)
+	GitStatInternal :: struct {
+		creation_date:     string,
+		modification_date: string,
+		tombstone:         bool,
+	}
+	stats_by_path := make(map[string]GitStatInternal, allocator = context.temp_allocator)
 
-    // For each commit.
-    for {
-        // Date
-        date: string
-        {
-            line := strings.split_lines_iterator(&amp;stdout) or_break
+	// Sample git output:
+	// 2024-10-31T16:09:02+01:00
+	// 
+	// M       lessons_learned_from_a_successful_rust_rewrite.md
+	// A       tip_of_day_3.md
+	// 2025-02-18T08:07:55+01:00
+	//
+	// R100    sha.md  making_my_debug_build_run_100_times_faster.md
 
-            assert(strings.starts_with(line, &quot;'20&quot;))
-            line_without_quotes := line[1:len(line) - 1]
-            date = strings.clone(strings.trim(line_without_quotes, &quot;' \n&quot;))
-        }
+	// For each commit.
+	for {
+		// Date
+		date: string
+		{
+			line := strings.split_lines_iterator(&amp;stdout) or_break
 
-        // Empty line
-        {
-            // Peek.
-            line, ok := strings.split_lines_iterator(&amp;stdout)
-            assert(ok)
-            assert(line == &quot;&quot;)
-        }
+			assert(strings.starts_with(line, &quot;'20&quot;))
+			line_without_quotes := line[1:len(line) - 1]
+			date = strings.clone(strings.trim(line_without_quotes, &quot;' \n&quot;))
+		}
 
-        // Files.
-        for {
-            // Start of a new commit?
-            if strings.starts_with(stdout, &quot;'20&quot;) do break
+		// Empty line
+		{
+			// Peek.
+			line, ok := strings.split_lines_iterator(&amp;stdout)
+			assert(ok)
+			assert(line == &quot;&quot;)
+		}
 
-            line := strings.split_lines_iterator(&amp;stdout) or_break
-            assert(line != &quot;&quot;)
+		// Files.
+		for {
+			// Start of a new commit?
+			if strings.starts_with(stdout, &quot;'20&quot;) do break
 
-            action := line[0]
-            assert(action == 'A' || action == 'M' || action == 'R' || action == 'D')
+			line := strings.split_lines_iterator(&amp;stdout) or_break
+			assert(line != &quot;&quot;)
 
-            old_path: string
-            new_path: string
-            {
-                // Skip the 'action' part.
-                _, ok := strings.split_iterator(&amp;line, &quot;\t&quot;)
-                assert(ok)
+			action := line[0]
+			assert(action == 'A' || action == 'M' || action == 'R' || action == 'D')
 
-                old_path, ok = strings.split_iterator(&amp;line, &quot;\t&quot;)
-                assert(ok)
-                assert(old_path != &quot;&quot;)
+			old_path: string
+			new_path: string
+			{
+				// Skip the 'action' part.
+				_, ok := strings.split_iterator(&amp;line, &quot;\t&quot;)
+				assert(ok)
 
-                if action == 'R' {     // Rename has two operands.
-                    new_path, ok = strings.split_iterator(&amp;line, &quot;\t&quot;)
-                    assert(ok)
-                    assert(new_path != &quot;&quot;)
-                } else {     // The others have only one.
-                    new_path = old_path
-                }
-            }
+				old_path, ok = strings.split_iterator(&amp;line, &quot;\t&quot;)
+				assert(ok)
+				assert(old_path != &quot;&quot;)
 
-            {
-                git_stat, present := &amp;stats_by_path[new_path]
-                if !present {
-                    stats_by_path[new_path] = GitStat {
-                        // In 99% of the cases, it's *not* a rename and thus the 'new_path' should be used.
-                        path_rel          = new_path,
-                        // We inspect commits from newest to oldest so the first commit for a file is the newest i.e. the modification date.
-                        modification_date = date,
-                        creation_date     = date,
-                    }
-                } else {
-                    assert(git_stat.path_rel != &quot;&quot;)
-                    assert(git_stat.modification_date != &quot;&quot;)
-                    // Keep updating the creation date, when we reach the end of the commit log, it has the right value.
-                    git_stat.creation_date = date
-                }
-            }
+				if action == 'R' { 	// Rename has two operands.
+					new_path, ok = strings.split_iterator(&amp;line, &quot;\t&quot;)
+					assert(ok)
+					assert(new_path != &quot;&quot;)
+				} else { 	// The others have only one.
+					new_path = old_path
+				}
+			}
 
-            // We handle the action separately from the fact that this is the first commit we see for the path.
-            // Because a file could have only one commit which is a rename.
-            // Or its first commit is a rename but then there additional commits to modify it. 
-            // Case being: these two things are orthogonal.
+			{
+				git_stat, present := &amp;stats_by_path[new_path]
+				if !present {
+					stats_by_path[new_path] = GitStatInternal {
+						// We inspect commits from newest to oldest so the first commit for a file is the newest i.e. the modification date.
+						modification_date = date,
+						creation_date     = date,
+					}
+				} else {
+					assert(git_stat.modification_date != &quot;&quot;)
+					// Keep updating the creation date, when we reach the end of the commit log, it has the right value.
+					git_stat.creation_date = date
+				}
+			}
 
-            if action == 'R' {
-                // Mark the old path as 'deleted'.
-                stats_by_path[old_path] = GitStat {
-                    path_rel          = old_path,
-                    modification_date = date,
-                    tombstone         = true,
-                }
+			// We handle the action separately from the fact that this is the first commit we see for the path.
+			// Because a file could have only one commit which is a rename.
+			// Or its first commit is a rename but then there additional commits to modify it. 
+			// Case being: these two things are orthogonal.
 
-                // The creation date of the new path is the date of the rename operation.
-                (&amp;stats_by_path[new_path]).creation_date = date
-            }
-            if action == 'D' {
-                // Mark as 'deleted'.
-                (&amp;stats_by_path[new_path]).tombstone = true
-            }
-        }
-    }
+			if action == 'R' {
+				// Mark the old path as 'deleted'.
+				stats_by_path[old_path] = GitStatInternal {
+					modification_date = date,
+					tombstone         = true,
+				}
 
-    git_stats := make([dynamic]GitStat)
-    for _, v in stats_by_path {
-        fmt.printf(&quot;%v\n&quot;, v)
-        assert(v.path_rel != &quot;&quot;)
-        assert(v.creation_date != &quot;&quot;)
-        assert(v.modification_date != &quot;&quot;)
-        assert(v.creation_date &lt;= v.modification_date)
+				// The creation date of the new path is the date of the rename operation.
+				(&amp;stats_by_path[new_path]).creation_date = date
+			}
+			if action == 'D' {
+				// Mark as 'deleted'.
+				(&amp;stats_by_path[new_path]).tombstone = true
+			}
+		}
+	}
 
-        if !v.tombstone {
-            append(
-                &amp;git_stats,
-                GitStat {
-                    path_rel = strings.clone(v.path_rel),
-                    creation_date = strings.clone(v.creation_date),
-                    modification_date = strings.clone(v.modification_date),
-                },
-            )
-        }
-    }
+	git_stats := make([dynamic]GitStat)
+	for k, v in stats_by_path {
+		assert(k != &quot;&quot;)
+		assert(v.creation_date != &quot;&quot;)
+		assert(v.modification_date != &quot;&quot;)
+		assert(v.creation_date &lt;= v.modification_date)
 
-    return git_stats[:], nil
+		if !v.tombstone {
+			git_stat := GitStat {
+				path_rel          = strings.clone(k),
+				creation_date     = strings.clone(v.creation_date),
+				modification_date = strings.clone(v.modification_date),
+			}
+			fmt.printf(&quot;%v\n&quot;, git_stat)
+			append(&amp;git_stats, git_stat)
+		}
+	}
+
+	return git_stats[:], nil
 }
 </code></pre>
-</details
+<p>A few things of interest:</p>
+<ul>
+<li>Odin has first class support for allocators so we allocate everything in this function with the temporary allocator. It is backed by an arena and emptied at the start and end of the function. The final result is allocated with the standard allocator. That way, even if Git starts spewing lots of data, as soon as we exit the function, all of that is gone, in one call, and the the program carries on with only the necessary data heap-allocated.</li>
+<li>In this program, the main allocator and the temporary allocator are both arenas. The memory usage is a constant ~ 4 MiB, mainly located in the Odin standard library.</li>
+<li>A <code>map</code> is a bit of an overkill for ~30 entries, but it's fine, and we expect the number of articles to grow</li>
+</ul>
 <hr />
-<p>We can log what we parsed, for example only the articles that matter (tombstone == false):</p>
-<pre><code>GitStat{creation_date = &quot;2023-10-12T13:19:53+02:00&quot;, modification_date = &quot;2024-11-05T15:49:57+01:00&quot;, path_rel = &quot;wayland_from_scratch.md&quot;, tombstone = false}
-GitStat{creation_date = &quot;2024-10-29T13:46:14+01:00&quot;, modification_date = &quot;2024-10-31T16:20:34+01:00&quot;, path_rel = &quot;tip_of_day_1.md&quot;, tombstone = false}
-GitStat{creation_date = &quot;2023-12-01T15:15:26+01:00&quot;, modification_date = &quot;2024-11-04T09:24:17+01:00&quot;, path_rel = &quot;gnuplot_lang.md&quot;, tombstone = false}
-GitStat{creation_date = &quot;2024-09-10T12:59:04+02:00&quot;, modification_date = &quot;2024-09-12T12:14:42+02:00&quot;, path_rel = &quot;odin_and_musl.md&quot;, tombstone = false}
-GitStat{creation_date = &quot;2024-11-10T23:58:59+01:00&quot;, modification_date = &quot;2025-02-18T08:22:33+01:00&quot;, path_rel = &quot;way_too_many_ways_to_wait_for_a_child_process_with_a_timeout.md&quot;, tombstone = false}
+<p>We can log the final result:</p>
+<pre><code>[...]
+GitStat{creation_date = &quot;2020-09-07T20:49:20+02:00&quot;, modification_date = &quot;2024-11-04T09:24:17+01:00&quot;, path_rel = &quot;compile_ziglang_from_source_on_alpine_2020_9.md&quot;}
+GitStat{creation_date = &quot;2024-09-10T12:59:04+02:00&quot;, modification_date = &quot;2024-09-12T12:14:42+02:00&quot;, path_rel = &quot;odin_and_musl.md&quot;}
+GitStat{creation_date = &quot;2023-11-23T11:26:11+01:00&quot;, modification_date = &quot;2025-02-06T20:55:27+01:00&quot;, path_rel = &quot;roll_your_own_memory_profiling.md&quot;}
 [...]
 </code></pre>
 <p>Alright, so how does our new implementation fare compared to the old one?</p>
@@ -450,9 +467,9 @@ Summary
 <li>Use a library (e.g. libgit2) and hope that offers a saner interface to query the commit log</li>
 </ul>
 <p>I wonder if there is a better way...</p>
-<h2 id="4-fossil">
-	<a class="title" href="#4-fossil">Fossil</a>
-	<a class="hash-anchor" href="#4-fossil" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+<h2 id="5-fossil">
+	<a class="title" href="#5-fossil">Fossil</a>
+	<a class="hash-anchor" href="#5-fossil" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p><a href="https://fossil-scm.org">fossil</a> is an alternative version control system created by the same folks that created, and are still working on, SQLite. Naturally, a fossil repository is basically just one SQLite database file. That sounds very <em>queryable</em>!</p>
 <p>Let's import our git repository into a Fossil repository and enter the SQLite prompt:</p>
@@ -492,9 +509,9 @@ Benchmark 1: fossil sql -R new-repo.fossil &quot;[...]&quot;
 <p>But the golden ticket idea is really to store everything inside SQLite. Suddenly, we can query anything! And there is no weird parsing needed - SQLite supports various export formats and (some? all?) fossil commands support the <code>--sql</code> option to show you which SQL query they use to get the information. After all, the only thing the <code>fossil</code> command line does in this case, is craft a SQL query and run int on the SQLite database.</p>
 <p>It's quite magical to me that I can within a few seconds import my years-long git repository into a SQLite database and start querying it, and the performance is great.</p>
 <p>Now I am not <em>quite</em> ready yet to move to Fossil, and the import is a one time thing as far as I know, so it is not a viable option for the problem at hand as long as git is the source of truth. But still, while I was trying to tackle <code>git log</code> into submission, I was thinking the whole time: why can't I do an arbitrary query of git data? Generally, the more generic approach is slower than the ad-hoc one, but here it's not even the case. Fossil is for this use case objectively more powerful, more generic, <em>and</em> faster.</p>
-<h2 id="5-conclusion">
-	<a class="title" href="#5-conclusion">Conclusion</a>
-	<a class="hash-anchor" href="#5-conclusion" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+<h2 id="6-conclusion">
+	<a class="title" href="#6-conclusion">Conclusion</a>
+	<a class="hash-anchor" href="#6-conclusion" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>The issue was effectively a N+1 query problem. We issued a separate 'query' (in this case, <code>git log</code>) for each markdown file, in a sequential blocking fashion. This approach worked until it didn't because the number of entities (i.e. articles, and commits) grew over time.</p>
 <p>The solution is instead to do only one query for all entities. It may return a bit more data that we need, but that's much faster, and scales better, than the original version.</p>
