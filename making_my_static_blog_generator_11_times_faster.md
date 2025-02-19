@@ -42,7 +42,7 @@ The publication date is the creation date, that is: the date of the first Git co
 
 *Note: My initial approach was to get the creation and modification date from the file system, but it's incorrect, as soon as you work on more than one machine. The way Git works is that when you pull commits that created a file, it creates the file on the file system and does not try to hack the creation date. Thus the file creation date is the time of the Git pull, not the date of the commit that first created it.*
 
-As I added more and more features to this blog, like a list of article by tags, a home page that automatically lists all of the articles, a RSS feed, the 'last modified' date for an article, etc, I outgrew the Makefile approach and wrote a small [program](https://github.com/gaultier/blog/blob/master/src/main.odin) (initially in Zig, then in Odin) to do all that. But the core approach remained: 
+As I added more and more features to this blog, like a list of article by tags, a home page that automatically lists all of the articles, a RSS feed, the 'last modified' date for an article, etc, I outgrew the Makefile approach and wrote a small [program](https://github.com/gaultier/blog/blob/master/src/main.odin) (initially in Zig, then in [Odin](https://odin-lang.org/)) to do all that. But the core approach remained: 
 
 - List all markdown files in the current directory (e.g. `ls *.md`, the Makefile did that for us with `%.md`) 
 - For each markdown file, sequentially:
