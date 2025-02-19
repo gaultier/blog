@@ -347,6 +347,17 @@ GitStat{creation_date = "2023-11-23T11:26:11+01:00", modification_date = "2025-0
 
 Alright, so how does our new implementation fare compared to the old one?
 
+
+First, we can confirm with `strace` that the time spent on waiting for subprocesses (mainly Git) shrinked:
+
+```sh
+$ strace --summary-only ./src.bin
+% time     seconds  usecs/call     calls    errors syscall
+------ ----------- ----------- --------- --------- ----------------
+ 56.59    0.043176         674        64           waitid
+ [...]
+```
+
 ```sh
  $ hyperfine --warmup 2 './src-main.bin' './src.bin'
 Benchmark 1: ./src-main.bin
@@ -361,6 +372,7 @@ Summary
   ./src.bin ran
    11.17 ± 0.48 times faster than ./src-main.bin
 ```
+
 
 Around 11 times faster, and well within our ideal target of 500 ms ! And all we had to do was convert many `git log` invocations (one per markdown file) to just one. Pretty simple change, located in one function. Almost all of the complexity is due to parsing Git custom text output and skipping over irrelevant commits. We don't really have a choice either: that's all Git provides to query the commit log. The alternatives are all worse:
 

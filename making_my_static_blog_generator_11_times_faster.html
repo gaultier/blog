@@ -448,6 +448,13 @@ GitStat{creation_date = &quot;2023-11-23T11:26:11+01:00&quot;, modification_date
 [...]
 </code></pre>
 <p>Alright, so how does our new implementation fare compared to the old one?</p>
+<p>First, we can confirm with <code>strace</code> that the time spent on waiting for subprocesses (mainly Git) shrinked:</p>
+<pre><code class="language-sh">$ strace --summary-only ./src.bin
+% time     seconds  usecs/call     calls    errors syscall
+------ ----------- ----------- --------- --------- ----------------
+ 56.59    0.043176         674        64           waitid
+ [...]
+</code></pre>
 <pre><code class="language-sh"> $ hyperfine --warmup 2 './src-main.bin' './src.bin'
 Benchmark 1: ./src-main.bin
   Time (mean ± σ):      1.773 s ±  0.022 s    [User: 1.267 s, System: 0.472 s]
