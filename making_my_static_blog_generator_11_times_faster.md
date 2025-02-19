@@ -25,7 +25,7 @@ In the early days of this blog, there were only a few articles, and the build pr
         cat footer.html >> $@
 ```
 
-For each markdown file, say `wayland_from_scratch.md`, we transform the markdown into HTML (at the time with `pandoc`, which proved to be super slow, now with `cmark` which is extremely fast) and save that in a file `wayland_from_scratch.html`, with a HTML header prepended and footer appended.
+For each markdown file, say `wayland_from_scratch.md`, we transform the markdown into HTML (at the time with `pandoc`, which proved to be super slow, now with `cmark` which is extremely fast) and save that in the file `wayland_from_scratch.html`, with a HTML header prepended and footer appended.
 
 
 Later on, I added the publication date:
@@ -44,9 +44,9 @@ The publication date is the creation date, that is: the date of the first Git co
 
 As I added more and more features to this blog, like a list of article by tags, a home page that automatically lists all of the articles, a RSS feed, the 'last modified' date for an article, etc, I outgrew the Makefile approach and wrote a small [program](https://github.com/gaultier/blog/blob/master/src/main.odin) (initially in Zig, then in Odin) to do all that. But the core approach remained: 
 
-- List all markdown files in the current directory (i.e. `ls *.md`, the Makefile did that for us with `%.md`) 
+- List all markdown files in the current directory (e.g. `ls *.md`, the Makefile did that for us with `%.md`) 
 - For each markdown file, sequentially:
-  + Run `git log article.md` to get date of the first and last commits for this file (respectively 'created at' and 'modified at') 
+  + Run `git log article.md` to get the date of the first and last commits for this file (respectively 'created at' and 'modified at') 
   + Convert the markdown content to HTML
   + Save this HTML to `article.html`
 
@@ -54,7 +54,7 @@ For long time, it was all good. It was single-threaded, but plenty fast. So I wr
 
 ![Profile before the optimization](making_my_static_blog_generator_11_times_faster_profile_before.svg)
 
-Yeah...I think it might be git, guys...
+Yeah...I think it might be [git] [git] [git] [git] [git] [git] [git] [git]...
 
 Another way to confirm this is with `strace`:
 
@@ -66,19 +66,19 @@ $ strace --summary-only ./src.bin
 [...]
 ```
 
-So ~ **95 %** of the running time is spent waiting on a subprocess. It's mainly git - we also run `cmark` as a subprocess but it's really really fast so git is the culprit. We could investigate with `strace` which process we are waiting on but the CPU profile already points the finger at Git and `cmark` is not even visible there.
+So ~ **95 %** of the running time is spent waiting on a subprocess. It's mainly git - we also run `cmark` as a subprocess but it's really really fast. We could further investigate with `strace` which process we are waiting on but the CPU profile already points the finger at Git and `cmark` is not even visible on it.
 
-At this point it's important to mention that this program is a very simplistic static site generator: it is stateless and processes every markdown file in the repository one by one. You could say that it's a regression compared to the Makefile because `make` has built-in parallelism with `-j` and change detection. But in reality, change detection in make is primitive and I often wanted to reprocess everything because of a change that applies to every file. For example, I reworded the `Donate` section at the end of each article (wink wink), or the header, or the footer, etc.
+At this point it's important to mention that this program is a very simplistic static site generator: it is stateless and processes every markdown file in the repository one by one. You could say that it's a regression compared to the Makefile because `make` has built-in parallelism with `-j` and change detection. But in reality, change detection in make is primitive and I often want to reprocess everything because of a change that applies to every file. For example, I reword the `Donate` section at the end of each article (wink wink), or the header, or the footer, etc.
 
-Also, I really am fond of this 'pure function' approach. There is no caching issue to debug, no complicated code to write, no data races, no async callbacks, etc. Perhaps I will revisit this at a later point; but as long as the simple approach works fast enough, it's fine.
+Also, I really am fond of this 'pure function' approach. There is no caching issue to debug, no complicated code to write, no data races, no async callbacks, etc.
 
 My performance target was to process every file within 1s, or possibly even 0.5s.
 
 I could see a few options:
 
 - Do not block on `git log`. We can use a thread pool, or an [asynchronous approach](/blog/way_too_many_ways_to_wait_for_a_child_process_with_a_timeout.html) to spawn all the git processes at once, and wait for all of them to finish. But it's more complex.
-- Make `git log` faster somehow.
 - Implement caching so that only the changed markdown files get regenerated.
+- Make `git log` faster somehow.
 
 The last option was my preferred one because it did not force me to re-architect the whole program.
 
@@ -160,6 +160,8 @@ We maintain a map while inspecting each commit: `map<Path, (creation_date, modif
 
 In case of a rename or delete, we set the `tombstone` to `true`. Why not remove the entry from the map directly? Well, we are inspecting the list of commits from newest to oldest.
 So first we'll encounter the delete/rename commit for this file, and then later in the stream, a number of add/modify commits. When we are done, we need to remember that this markdown file should be ignored, otherwise, we'll try to open it, read it, and convert it to HTML, but we'll get a `ENOENT` error because it does not exist anymore on disk. We could avoid having this tombstone field and just bail on `ENOENT`, that's a matter of taste I guess, but this field was useful to me to ensure that the parsing code is correct.
+
+Alternatively, we could pass `--reverse` to `git log` and parse the commits in chronological order. When we see a delete/rename commit for a file, we can safely remove the entry from the map since no more commits about this file should show up after that.
 
 ## The new implementation
 
@@ -329,8 +331,8 @@ get_articles_creation_and_modification_date :: proc() -> ([]GitStat, os2.Error) 
 
 A few things of interest:
 
-- Odin has first class support for allocators so we allocate everything in this function with the temporary allocator. It is backed by an arena and emptied at the start and end of the function. The final result is allocated with the standard allocator. That way, even if Git starts spewing lots of data, as soon as we exit the function, all of that is gone, in one call, and the the program carries on with only the necessary data heap-allocated.
-- In this program, the main allocator and the temporary allocator are both arenas. The memory usage is a constant ~ 4 MiB, mainly located in the Odin standard library.
+- Odin has first class support for allocators so we allocate everything in this function with the temporary allocator. It is backed by an arena and emptied at the start and end of the function. Only the final result is allocated with the standard allocator. That way, even if Git starts spewing lots of data, as soon as we exit the function, all of that is gone, in one call, and the the program carries on with only the necessary data heap-allocated.
+- In this program, the main allocator and the temporary allocator are both arenas. The memory usage is a constant ~ 4 MiB, mainly located in the Odin standard library. The memory usage of my code is around ~ 65 KiB.
 - A `map` is a bit of an overkill for ~30 entries, but it's fine, and we expect the number of articles to grow
 
 ---
@@ -437,7 +439,7 @@ I do not use Fossil, but I eye it from time to time - generally when I need to e
 
 But the golden ticket idea is really to store everything inside SQLite. Suddenly, we can query anything! And there is no weird parsing needed - SQLite supports various export formats and (some? all?) fossil commands support the `--sql` option to show you which SQL query they use to get the information. After all, the only thing the `fossil` command line does in this case, is craft a SQL query and run int on the SQLite database.
 
-It's quite magical to me that I can within a few seconds import my years-long git repository into a SQLite database and start querying it, and the performance is great.
+It's quite magical to me that I can within a few seconds import my 6 years-long git repository into a SQLite database and start querying it, and the performance is great.
 
 Now I am not *quite* ready yet to move to Fossil, and the import is a one time thing as far as I know, so it is not a viable option for the problem at hand as long as git is the source of truth. But still, while I was trying to tackle `git log` into submission, I was thinking the whole time: why can't I do an arbitrary query of git data? Generally, the more generic approach is slower than the ad-hoc one, but here it's not even the case. Fossil is for this use case objectively more powerful, more generic, *and* faster.
 
@@ -460,10 +462,13 @@ And:
 
 > If you have different data, you have a different problem. [^3]
 
-It also does not help that any querying in Git is ad-hoc and outputs a weird text format that we have to tediously parse. Please everyone, let's add the option to output structured data in our command line programs, damn it! String programming is no fun at all.
+It also does not help that any querying in Git is ad-hoc and outputs a weird text format that we have to tediously parse. Please everyone, let's add the option to output structured data in our command line programs, damn it! String programming is no fun at all - that's why I moved away from concatenating the output of shell commands in a Makefile, to a real programming language, to do the static generation.
 
 
-All in all, I am pleased with my solution - I can now see any edit materialize *instantly*. To the next 5 years of blogging, till I need to revisit the performance of this function!
+All in all, I am pleased with my solution - I can now see any edit materialize *instantly*. It's a bit funny that my previous article was about SIMD and inspecting assembly instructions, while this issue is so obvious and high-level in retrospect.
+
+
+To the next 5 years of blogging, till I need to revisit the performance of this function!
 
 
 

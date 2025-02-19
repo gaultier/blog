@@ -162,7 +162,7 @@ Benchmark 1: ./master.bin
         pandoc --toc $&lt; &gt;&gt; $@
         cat footer.html &gt;&gt; $@
 </code></pre>
-<p>For each markdown file, say <code>wayland_from_scratch.md</code>, we transform the markdown into HTML (at the time with <code>pandoc</code>, which proved to be super slow, now with <code>cmark</code> which is extremely fast) and save that in a file <code>wayland_from_scratch.html</code>, with a HTML header prepended and footer appended.</p>
+<p>For each markdown file, say <code>wayland_from_scratch.md</code>, we transform the markdown into HTML (at the time with <code>pandoc</code>, which proved to be super slow, now with <code>cmark</code> which is extremely fast) and save that in the file <code>wayland_from_scratch.html</code>, with a HTML header prepended and footer appended.</p>
 <p>Later on, I added the publication date:</p>
 <pre><code class="language-make">%.html: %.md header.html footer.html
         cat header.html &gt;&gt; $@
@@ -174,10 +174,10 @@ Benchmark 1: ./master.bin
 <p><em>Note: My initial approach was to get the creation and modification date from the file system, but it's incorrect, as soon as you work on more than one machine. The way Git works is that when you pull commits that created a file, it creates the file on the file system and does not try to hack the creation date. Thus the file creation date is the time of the Git pull, not the date of the commit that first created it.</em></p>
 <p>As I added more and more features to this blog, like a list of article by tags, a home page that automatically lists all of the articles, a RSS feed, the 'last modified' date for an article, etc, I outgrew the Makefile approach and wrote a small <a href="https://github.com/gaultier/blog/blob/master/src/main.odin">program</a> (initially in Zig, then in Odin) to do all that. But the core approach remained:</p>
 <ul>
-<li>List all markdown files in the current directory (i.e. <code>ls *.md</code>, the Makefile did that for us with <code>%.md</code>)</li>
+<li>List all markdown files in the current directory (e.g. <code>ls *.md</code>, the Makefile did that for us with <code>%.md</code>)</li>
 <li>For each markdown file, sequentially:
 <ul>
-<li>Run <code>git log article.md</code> to get date of the first and last commits for this file (respectively 'created at' and 'modified at')</li>
+<li>Run <code>git log article.md</code> to get the date of the first and last commits for this file (respectively 'created at' and 'modified at')</li>
 <li>Convert the markdown content to HTML</li>
 <li>Save this HTML to <code>article.html</code></li>
 </ul>
@@ -185,7 +185,7 @@ Benchmark 1: ./master.bin
 </ul>
 <p>For long time, it was all good. It was single-threaded, but plenty fast. So I wrote more and more articles. But now it's too slow. Why? Let's profile it:</p>
 <p><img src="making_my_static_blog_generator_11_times_faster_profile_before.svg" alt="Profile before the optimization" /></p>
-<p>Yeah...I think it might be git, guys...</p>
+<p>Yeah...I think it might be [git] [git] [git] [git] [git] [git] [git] [git]...</p>
 <p>Another way to confirm this is with <code>strace</code>:</p>
 <pre><code class="language-sh">$ strace --summary-only ./src.bin
 % time     seconds  usecs/call     calls    errors syscall
@@ -193,15 +193,15 @@ Benchmark 1: ./master.bin
  94.85    0.479290        3928       122           waitid
 [...]
 </code></pre>
-<p>So ~ <strong>95 %</strong> of the running time is spent waiting on a subprocess. It's mainly git - we also run <code>cmark</code> as a subprocess but it's really really fast so git is the culprit. We could investigate with <code>strace</code> which process we are waiting on but the CPU profile already points the finger at Git and <code>cmark</code> is not even visible there.</p>
-<p>At this point it's important to mention that this program is a very simplistic static site generator: it is stateless and processes every markdown file in the repository one by one. You could say that it's a regression compared to the Makefile because <code>make</code> has built-in parallelism with <code>-j</code> and change detection. But in reality, change detection in make is primitive and I often wanted to reprocess everything because of a change that applies to every file. For example, I reworded the <code>Donate</code> section at the end of each article (wink wink), or the header, or the footer, etc.</p>
-<p>Also, I really am fond of this 'pure function' approach. There is no caching issue to debug, no complicated code to write, no data races, no async callbacks, etc. Perhaps I will revisit this at a later point; but as long as the simple approach works fast enough, it's fine.</p>
+<p>So ~ <strong>95 %</strong> of the running time is spent waiting on a subprocess. It's mainly git - we also run <code>cmark</code> as a subprocess but it's really really fast. We could further investigate with <code>strace</code> which process we are waiting on but the CPU profile already points the finger at Git and <code>cmark</code> is not even visible on it.</p>
+<p>At this point it's important to mention that this program is a very simplistic static site generator: it is stateless and processes every markdown file in the repository one by one. You could say that it's a regression compared to the Makefile because <code>make</code> has built-in parallelism with <code>-j</code> and change detection. But in reality, change detection in make is primitive and I often want to reprocess everything because of a change that applies to every file. For example, I reword the <code>Donate</code> section at the end of each article (wink wink), or the header, or the footer, etc.</p>
+<p>Also, I really am fond of this 'pure function' approach. There is no caching issue to debug, no complicated code to write, no data races, no async callbacks, etc.</p>
 <p>My performance target was to process every file within 1s, or possibly even 0.5s.</p>
 <p>I could see a few options:</p>
 <ul>
 <li>Do not block on <code>git log</code>. We can use a thread pool, or an <a href="/blog/way_too_many_ways_to_wait_for_a_child_process_with_a_timeout.html">asynchronous approach</a> to spawn all the git processes at once, and wait for all of them to finish. But it's more complex.</li>
-<li>Make <code>git log</code> faster somehow.</li>
 <li>Implement caching so that only the changed markdown files get regenerated.</li>
+<li>Make <code>git log</code> faster somehow.</li>
 </ul>
 <p>The last option was my preferred one because it did not force me to re-architect the whole program.</p>
 <p>Note that the other two options are sill on the table regardless of whether our experiment works out or not.</p>
@@ -267,6 +267,7 @@ R100    cross-platform-timers.md        the_missing_cross_platform_api_for_timer
 <p>We maintain a map while inspecting each commit: <code>map&lt;Path, (creation_date, modification_date, tombstone)&gt;</code>.</p>
 <p>In case of a rename or delete, we set the <code>tombstone</code> to <code>true</code>. Why not remove the entry from the map directly? Well, we are inspecting the list of commits from newest to oldest.
 So first we'll encounter the delete/rename commit for this file, and then later in the stream, a number of add/modify commits. When we are done, we need to remember that this markdown file should be ignored, otherwise, we'll try to open it, read it, and convert it to HTML, but we'll get a <code>ENOENT</code> error because it does not exist anymore on disk. We could avoid having this tombstone field and just bail on <code>ENOENT</code>, that's a matter of taste I guess, but this field was useful to me to ensure that the parsing code is correct.</p>
+<p>Alternatively, we could pass <code>--reverse</code> to <code>git log</code> and parse the commits in chronological order. When we see a delete/rename commit for a file, we can safely remove the entry from the map since no more commits about this file should show up after that.</p>
 <h2 id="4-the-new-implementation">
 	<a class="title" href="#4-the-new-implementation">The new implementation</a>
 	<a class="hash-anchor" href="#4-the-new-implementation" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
@@ -435,8 +436,8 @@ get_articles_creation_and_modification_date :: proc() -&gt; ([]GitStat, os2.Erro
 </code></pre>
 <p>A few things of interest:</p>
 <ul>
-<li>Odin has first class support for allocators so we allocate everything in this function with the temporary allocator. It is backed by an arena and emptied at the start and end of the function. The final result is allocated with the standard allocator. That way, even if Git starts spewing lots of data, as soon as we exit the function, all of that is gone, in one call, and the the program carries on with only the necessary data heap-allocated.</li>
-<li>In this program, the main allocator and the temporary allocator are both arenas. The memory usage is a constant ~ 4 MiB, mainly located in the Odin standard library.</li>
+<li>Odin has first class support for allocators so we allocate everything in this function with the temporary allocator. It is backed by an arena and emptied at the start and end of the function. Only the final result is allocated with the standard allocator. That way, even if Git starts spewing lots of data, as soon as we exit the function, all of that is gone, in one call, and the the program carries on with only the necessary data heap-allocated.</li>
+<li>In this program, the main allocator and the temporary allocator are both arenas. The memory usage is a constant ~ 4 MiB, mainly located in the Odin standard library. The memory usage of my code is around ~ 65 KiB.</li>
 <li>A <code>map</code> is a bit of an overkill for ~30 entries, but it's fine, and we expect the number of articles to grow</li>
 </ul>
 <hr />
@@ -515,7 +516,7 @@ Benchmark 1: fossil sql -R new-repo.fossil &quot;[...]&quot;
 <p>Damn that's fast.</p>
 <p>I do not use Fossil, but I eye it from time to time - generally when I need to extract some piece of information from Git and I discover it does not let me, or when I see the Gitlab bill  my (ex-) company pays, or when the Jira page takes more than 10 seconds to load... yeah, Fossil is the complete package, with issues, forums, a web UI, a timeline, a wiki, a chat... it has it all!</p>
 <p>But the golden ticket idea is really to store everything inside SQLite. Suddenly, we can query anything! And there is no weird parsing needed - SQLite supports various export formats and (some? all?) fossil commands support the <code>--sql</code> option to show you which SQL query they use to get the information. After all, the only thing the <code>fossil</code> command line does in this case, is craft a SQL query and run int on the SQLite database.</p>
-<p>It's quite magical to me that I can within a few seconds import my years-long git repository into a SQLite database and start querying it, and the performance is great.</p>
+<p>It's quite magical to me that I can within a few seconds import my 6 years-long git repository into a SQLite database and start querying it, and the performance is great.</p>
 <p>Now I am not <em>quite</em> ready yet to move to Fossil, and the import is a one time thing as far as I know, so it is not a viable option for the problem at hand as long as git is the source of truth. But still, while I was trying to tackle <code>git log</code> into submission, I was thinking the whole time: why can't I do an arbitrary query of git data? Generally, the more generic approach is slower than the ad-hoc one, but here it's not even the case. Fossil is for this use case objectively more powerful, more generic, <em>and</em> faster.</p>
 <h2 id="6-conclusion">
 	<a class="title" href="#6-conclusion">Conclusion</a>
@@ -533,8 +534,9 @@ Benchmark 1: fossil sql -R new-repo.fossil &quot;[...]&quot;
 <blockquote>
 <p>If you have different data, you have a different problem. <sup class="footnote-ref"><a href="#fn-3" id="fnref-3" data-footnote-ref>3</a></sup></p>
 </blockquote>
-<p>It also does not help that any querying in Git is ad-hoc and outputs a weird text format that we have to tediously parse. Please everyone, let's add the option to output structured data in our command line programs, damn it! String programming is no fun at all.</p>
-<p>All in all, I am pleased with my solution - I can now see any edit materialize <em>instantly</em>. To the next 5 years of blogging, till I need to revisit the performance of this function!</p>
+<p>It also does not help that any querying in Git is ad-hoc and outputs a weird text format that we have to tediously parse. Please everyone, let's add the option to output structured data in our command line programs, damn it! String programming is no fun at all - that's why I moved away from concatenating the output of shell commands in a Makefile, to a real programming language, to do the static generation.</p>
+<p>All in all, I am pleased with my solution - I can now see any edit materialize <em>instantly</em>. It's a bit funny that my previous article was about SIMD and inspecting assembly instructions, while this issue is so obvious and high-level in retrospect.</p>
+<p>To the next 5 years of blogging, till I need to revisit the performance of this function!</p>
 <section class="footnotes" data-footnotes>
 <ol>
 <li id="fn-1">
