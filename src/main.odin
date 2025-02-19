@@ -86,7 +86,7 @@ run_sub_process_and_get_stdout :: proc(
 	command: []string,
 	stdin: []byte,
 ) -> (
-	stdout: string,
+	stdout: []byte,
 	err: os2.Error,
 ) {
 	stdin_w: ^os2.File
@@ -117,13 +117,13 @@ run_sub_process_and_get_stdout :: proc(
 	}
 
 
-	stdout_sb := strings.builder_make()
+	stdout_sb := make([dynamic]u8, 0, 4096)
 	for {
 		buf := [4096]u8{}
 		read_n := os2.read(stdout_r, buf[:]) or_break
 		if read_n == 0 {break}
 
-		strings.write_bytes(&stdout_sb, buf[:read_n])
+		append(&stdout_sb, ..buf[:read_n])
 	}
 
 	process_state := os2.process_wait(process) or_return
@@ -131,7 +131,7 @@ run_sub_process_and_get_stdout :: proc(
 		return {}, .Unknown
 	}
 
-	return strings.to_string(stdout_sb), nil
+	return stdout_sb[:], nil
 }
 
 
@@ -142,36 +142,65 @@ GitStat :: struct {
 }
 
 get_articles_creation_and_modification_date :: proc() -> (res: []GitStat, err: os2.Error) {
-	state, stdout_bin, stderr_bin := os2.process_exec(
-		{command = []string{"git", "log", "--format='%aI'", "--name-only", "'*.md'"}},
-		context.temp_allocator,
+	stdout_bin := run_sub_process_and_get_stdout(
+		[]string{"git", "log", "--format='%aI'", "--name-only", "*.md"},
+		{},
 	) or_return
-	if len(stderr_bin) > 0 {
-		fmt.printf("git command stderr: %v %s\n", state, string(stderr_bin))
-	}
+	// if len(stderr_bin) > 0 {
+	// 	fmt.printf("git command stderr: %v %s\n", state, string(stderr_bin))
+	// }
 	stdout := strings.trim_space(string(stdout_bin))
-	if len(stdout_bin) == 0 {
-		panic(fmt.aprintf("empty git output: state=%v", state))
+	if len(stdout) == 0 {
+		panic("empty git output")
 	}
 
-	lines := strings.split_lines(stdout, context.temp_allocator)
 
 	stats_by_path := make(map[string]GitStat, allocator = context.temp_allocator)
 
-	date: string
-	path_rel: string
+	// For each entry.
+	for {
+		// Date
+		date: string
+		{
+			line, ok := strings.split_lines_iterator(&stdout)
+			if !ok do break
 
-	for line, i in lines {
-		if i % 3 == 0 {
-			assert(strings.starts_with(line, "20"))
-			date = strings.clone(strings.trim(lines[0], "' \n"))
-		} else if i % 3 == 1 {
-			assert(line == "")
-		} else if i % 3 == 2 {
-			path_rel = line
+			assert(strings.starts_with(line, "'20"))
+			line_without_quotes := line[1:len(line) - 1]
+			date = strings.clone(strings.trim(line_without_quotes, "' \n"))
+			assert(ok)
+		}
 
-			git_stat, ok := &stats_by_path[path_rel]
-			if !ok {
+		// Empty line
+		{
+			// Peek.
+			stdout_bck := stdout
+			line, ok := strings.split_lines_iterator(&stdout_bck)
+			assert(ok)
+			// Normally: empty line before files but in some cases
+			// e.g. a merge, there are no files.
+			if line != "" do continue
+
+			// Commit.
+			stdout = stdout_bck
+		}
+
+		// Files.
+		for {
+			// Peek.
+			stdout_bck := stdout
+			line, ok := strings.split_lines_iterator(&stdout_bck)
+			if !ok do break
+
+			// Reached the next entry?
+			if strings.starts_with(line, "'20") do break
+
+			// Commit.
+			stdout = stdout_bck
+			path_rel := strings.clone(line)
+
+			git_stat, present := &stats_by_path[path_rel]
+			if !present {
 				stats_by_path[path_rel] = GitStat {
 					path_rel          = strings.clone(path_rel),
 					modification_date = date,
@@ -181,13 +210,17 @@ get_articles_creation_and_modification_date :: proc() -> (res: []GitStat, err: o
 				assert(git_stat.modification_date != "")
 				git_stat.creation_date = date
 			}
-			date = ""
-			path_rel = ""
 		}
 	}
 
 	git_stats := make([dynamic]GitStat)
 	for _, v in stats_by_path {
+		fmt.printf("%v\n", v)
+		assert(v.path_rel != "")
+		assert(v.creation_date != "")
+		assert(v.modification_date != "")
+		assert(v.creation_date <= v.modification_date)
+
 		append(&git_stats, v)
 	}
 
@@ -407,7 +440,7 @@ generate_html_article :: proc(
 
 	decorated_markdown := decorate_markdown_with_title_ids(article_content)
 
-	cmark_output, os2_err := run_sub_process_and_get_stdout(
+	cmark_output_bin, os2_err := run_sub_process_and_get_stdout(
 		cmark_command,
 		transmute([]u8)decorated_markdown,
 	)
@@ -456,7 +489,7 @@ generate_html_article :: proc(
 	append_article_toc(&html_sb, article_content, article.title)
 
 	strings.write_rune(&html_sb, '\n')
-	strings.write_string(&html_sb, cmark_output)
+	strings.write_string(&html_sb, string(cmark_output_bin))
 	strings.write_string(&html_sb, back_link)
 	strings.write_string(&html_sb, footer)
 
@@ -608,14 +641,14 @@ generate_home_page :: proc(
 		) or_return
 		decorated_markdown := decorate_markdown_with_title_ids(markdown_content)
 
-		cmark_stdout, os2_err := run_sub_process_and_get_stdout(
+		cmark_stdout_bin, os2_err := run_sub_process_and_get_stdout(
 			cmark_command,
 			transmute([]u8)decorated_markdown,
 		)
 		if os2_err != nil {
 			panic(fmt.aprintf("failed to run cmark %v", os2_err))
 		}
-		strings.write_string(&sb, cmark_stdout)
+		strings.write_string(&sb, string(cmark_stdout_bin))
 	}
 	strings.write_string(&sb, footer)
 
