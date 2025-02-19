@@ -278,13 +278,13 @@ get_articles_creation_and_modification_date :: proc() -> ([]GitStat, os2.Error) 
 
 	git_stats := make([dynamic]GitStat)
 	for _, v in stats_by_path {
-		fmt.printf("%v\n", v)
 		assert(v.path_rel != "")
 		assert(v.creation_date != "")
 		assert(v.modification_date != "")
 		assert(v.creation_date <= v.modification_date)
 
 		if !v.tombstone {
+			fmt.printf("%v\n", v)
 			append(
 				&git_stats,
 				GitStat {

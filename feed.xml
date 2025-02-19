@@ -2,20 +2,12 @@
   <feed xmlns="http://www.w3.org/2005/Atom">
     <title>Philippe Gaultier's blog</title>
     <link href="https://gaultier.github.io/blog"/>
-    <updated>2025-02-18T12:07:06+01:00</updated>
+    <updated>2025-02-19T15:13:54+01:00</updated>
     <author>
       <name>Philippe Gaultier</name>
     </author>
     <id>urn:uuid:9c065c53-31bc-4049-a795-936802a6b1df</id>
 
-	<entry>
-  <title>Making my static blog generator 11 times faster</title>
-  <link href="https://gaultier.github.io/blog/making_my_static_blog_generator_11_times_faster.html"/>
-  <id>urn:uuid:d29b6ec2-f895-5f2f-896f-2f343766fc85</id>
-  <updated></updated>
-  <published></published>
-  </entry>
-	
 	<entry>
   <title>Getting started with Scheme by solving an Advent of Code 2018 challenge</title>
   <link href="https://gaultier.github.io/blog/advent_of_code_2018_5.html"/>
@@ -246,5 +238,13 @@
   <id>urn:uuid:39a7f948-a91a-5dea-8f36-8c8aaf8d01b6</id>
   <updated>2025-02-18T12:07:06+01:00</updated>
   <published>2025-02-18T12:02:06+01:00</published>
+  </entry>
+	
+	<entry>
+  <title>Making my static blog generator 11 times faster</title>
+  <link href="https://gaultier.github.io/blog/making_my_static_blog_generator_11_times_faster.html"/>
+  <id>urn:uuid:d29b6ec2-f895-5f2f-896f-2f343766fc85</id>
+  <updated>2025-02-19T15:13:54+01:00</updated>
+  <published>2025-02-19T15:13:54+01:00</published>
   </entry>
 	</feed>

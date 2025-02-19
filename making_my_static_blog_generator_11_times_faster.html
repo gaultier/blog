@@ -111,12 +111,27 @@
 		<div class="article-prelude">
 			<p><a href="/blog"> ⏴ Back to all articles</a></p>
 
-			<p class="publication-date">Published on </p>
+			<p class="publication-date">Published on 2025-02-19</p>
 		</div>
 		<div class="article-title">
 		<h1>Making my static blog generator 11 times faster</h1>
 		  <div class="tags"> <a href="/blog/articles-by-tag.html#optimization" class="tag">Optimization</a> <a href="/blog/articles-by-tag.html#git" class="tag">Git</a> <a href="/blog/articles-by-tag.html#odin" class="tag">Odin</a></div>
  </div>
+ <strong>Table of contents</strong>
+<ul>
+
+<li>
+	<a href="#1-when-there-s-one-there-s-many">When there's one, there's many</a>
+		</li>
+
+<li>
+	<a href="#2-the-new-implementation">The new implementation</a>
+		</li>
+
+<li>
+	<a href="#3-fossil">Fossil</a>
+		</li>
+</ul>
 
 <p>In the early days of this blog, there were only a few articles, and the build process was a simple makefile, something like this (simplified):</p>
 <pre><code class="language-make">%.html: %.md header.html footer.html
@@ -133,10 +148,11 @@
         cat footer.html &gt;&gt; $@
 </code></pre>
 <p>The publication date is the creation date, that is: the date of the first Git commit for this file. So we ask Git for the list of commits for this file (they are provided by default from newest to oldest, so we <code>--reverse</code> the list), take the first one with <code>head</code>, done. It's simple.</p>
-<p>As I added more and more features to this blog, like a list of article by tags, a home page that automatically lists all of the articles, a RSS feed, the 'last modified' date for an article, etc, I outgrew the makefile approach and wrote a small program (initially in Zig, then in Odin) to do all that. But the core approach remained:</p>
+<p><em>Note: My initial approach was to get the creation and modification date from the file system, but it's incorrect, as soon as you work on more than one machine. The way Git works is that when you pull commits that created a file, it creates the file and does not try to hack the creation date. Thus the file creation date is the time of the Git pull, not the date of the commit that first created it.</em></p>
+<p>As I added more and more features to this blog, like a list of article by tags, a home page that automatically lists all of the articles, a RSS feed, the 'last modified' date for an article, etc, I outgrew the makefile approach and wrote a small <a href="https://github.com/gaultier/blog/blob/master/src/main.odin">program</a> (initially in Zig, then in Odin) to do all that. But the core approach remained:</p>
 <ul>
 <li>List all markdown files in the current directory (i.e. <code>ls *.md</code>, make does that for us with <code>%.md</code>)</li>
-<li>For each:
+<li>For each markdown file, sequentially:
 <ul>
 <li>Run <code>git log ... article.md</code> to get the first and last commit date (respectively 'created at' and 'modified at')</li>
 <li>Convert the markdown content to HTML</li>
@@ -144,7 +160,288 @@
 </ul>
 </li>
 </ul>
-<p>For long time, it was all good. I wrote more and more articles. But a few days ago, I noticed that it was getting a bit slow...Just enough for me to wait during the edit-view cycle:</p>
+<p>For long time, it was all good. It was single-threaded, but plenty fast. So I wrote more and more articles. But a few days ago, I noticed that it was getting a bit slow...Just enough for me to wait during the edit-view cycle:</p>
+<pre><code class="language-sh"> $ hyperfine --warmup 2 ./master.bin 
+Benchmark 1: ./master.bin
+  Time (mean ± σ):      1.873 s ±  0.053 s    [User: 1.351 s, System: 0.486 s]
+  Range (min … max):    1.806 s …  1.983 s    10 runs
+</code></pre>
+<p>~ 2 seconds is not the end of the world, but it's just enough to be annoying. So what's going on? Let's profile it:</p>
+<p><img src="making_my_static_blog_generator_11_times_faster_profile_before.svg" alt="Profile before the optimization" /></p>
+<p>Yeah...I think doing <code>git log</code> for each article, sequentially, might not be such a good idea.</p>
+<p>At this point it's important to mention that this program is a very simplistic static site generator: it is stateless and processes every markdown file in the repository. You could say that it's a regression compared to the Makefile. But in reality, I was most of the time forcing a clean build with <code>make -B</code> because I tweaked something in the logic that applies to every file (for example, I tweaked the wording in the <code>Donate</code> section at the end of each article ;) ) and every single file should anyway be regenerated.
+Also, I like this 'pure function' approach. There is no caching issue to debug, no complicated code to write, etc. Perhaps I will revisit this at a later point; but as long as the simple approach works fast enough, it's good enough for me.</p>
+<p>So I had to do something about it, because it was going to become slower and slower with each new article. My target was to do the whole thing in 1s, or possibly even 0.5s.</p>
+<p>I could see a few options:</p>
+<ul>
+<li>Do not block on <code>git log</code>. We can use a thread pool, or a <a href="/blog/way_too_many_ways_to_wait_for_a_child_process_with_a_timeout.html">asynchronous approach</a> to spawn all the git processes at once, and wait for all of them to finish.</li>
+<li>Make <code>git log</code> faster</li>
+<li>Implement caching so that only the changed markdown files get regenerated.</li>
+</ul>
+<p>The last option was my preferred one because it did not force me to re-architect the whole program.</p>
+<h2 id="1-when-there-s-one-there-s-many">
+	<a class="title" href="#1-when-there-s-one-there-s-many">When there's one, there's many</a>
+	<a class="hash-anchor" href="#1-when-there-s-one-there-s-many" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+</h2>
+<p>My intuition was to do a deep dive in the <code>git log</code> options, to see if I could instruct it to do less work. But then something struck me: we invoke <code>git log</code> to get all commits for one markdown file (even though we only are interested in the first and last, but that's all what Git provides us). What if we invoked it once <em>for all markdown files</em>? Yes, the output might be a bit big... Let's try!</p>
+<p>Conceptually we can simply do <code>git log '*.md'</code> and parse the output. We can refine that approach later, but that's the gist of it.</p>
+<p>Let's see if that's feasible:</p>
+<pre><code class="language-sh"> $ time git log '*.md' | wc -c
+191196
+
+________________________________________________________
+Executed in   73.69 millis    fish           external
+   usr time   61.04 millis  738.00 micros   60.30 millis
+   sys time   15.95 millis  191.00 micros   15.76 millis
+</code></pre>
+<p>So it's much faster than doing it per file, and also it's entire output is ~ 186 KiB. And these numbers should grow very slowly because each new commit only adds ~ 100 bytes to the output.</p>
+<p>Looks like we got our solution.</p>
+<p>Mike Acton and Data Oriented Design are right once again:</p>
+<img src="mike_acton_dod.png"/>
+<h2 id="2-the-new-implementation">
+	<a class="title" href="#2-the-new-implementation">The new implementation</a>
+	<a class="hash-anchor" href="#2-the-new-implementation" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+</h2>
+<p>We only want for each commit:</p>
+<ul>
+<li>The date</li>
+<li>Which files were affected</li>
+</ul>
+<p>Hence we pass to <code>git log</code>:</p>
+<ul>
+<li><code>--format='%aI'</code> to get the date in ISO format</li>
+<li><code>--name-status</code> to know which files this commit added (<code>A</code>), modified (<code>M</code>), deleted (<code>D</code>), or renamed (<code>R</code>)</li>
+<li><code>--no-merges</code> to skip merge commits since they do not directly affect any file</li>
+<li><code>--diff-filter=AMRD</code> to only get commits that add/modify/delete/rename files. We are not interested in commits changing the mode of a file, or symlinks, etc.</li>
+</ul>
+<p>With these options we get even better numbers:</p>
+<pre><code class="language-sh">$ time git log --format='%aI' --name-status --no-merges --diff-filter=AMDR  -- '*.md' | wc -c
+77832
+
+________________________________________________________
+Executed in  108.38 millis    fish           external
+   usr time   83.70 millis  231.00 micros   83.47 millis
+   sys time   27.99 millis  786.00 micros   27.20 millis
+</code></pre>
+<p>The output looks like this (I annotated each part along with the commit number):</p>
+<pre><code>2024-11-05T15:43:44+01:00                                                               | [1] A commit starts with the date.
+                                                                                        | [1] Empty line
+M       how_to_rewrite_a_cpp_codebase_successfully.md                                   | [1] A list of 1 or more files affected by this commit.
+M       write_a_video_game_from_scratch_like_1987.md                                    | [1] It starts with a letter describing the action.
+M       x11_x64.md                                                                      | [1] Here it's all modifications.
+M       you_inherited_a_legacy_cpp_codebase_now_what.md                                 | [1]
+2025-02-02T22:54:23+01:00                                                               | [2] The second entry starts.
+                                                                                        | [2] 
+R100    cross-platform-timers.md        the_missing_cross_platform_api_for_timers.md    | [2] Rename followed by the confidence score (which we do not care about).
+[...]                                                                                   | Etc.
+</code></pre>
+<p>Parsing this commit log is tedious but not extremely difficult (why doesn't every mainstream command line tool have a <code>--json</code> option in 2025?).</p>
+<p>We maintain a map while inspecting each commit: <code>map&lt;Path, (creation_date, modification_date, tombstone)&gt;</code>.</p>
+<p>In case of a rename or delete, we set the <code>tombstone</code> to <code>true</code>. Why not remove the entry from the map directly? Well, we are inspecting the list of commits from newest to oldest.</p>
+<p>So first we'll encounter the delete/rename commit, and then a number of add/modify commits for this file. When we are done, we need to remember that this markdown file should be ignored, otherwise, we'll try to open it, read it, and convert it to HTML, but we'll get a <code>ENOENT</code> error. We could not maintain a tombstone and just bail on <code>ENOENT</code>, that's a matter of taste I guess.</p>
+<details>
+  <summary>Odin implementation</summary>
+<pre><code class="language-odin">GitStat :: struct {
+	creation_date:     string,
+	modification_date: string,
+	path_rel:          string,
+	tombstone:         bool,
+}
+
+get_articles_creation_and_modification_date :: proc() -&gt; ([]GitStat, os2.Error) {
+	free_all(context.temp_allocator)
+	defer free_all(context.temp_allocator)
+
+	state, stdout_bin, stderr_bin, err := os2.process_exec(
+		{
+			command = []string {
+				&quot;git&quot;,
+				&quot;log&quot;,
+				// Print the date in ISO format.
+				&quot;--format='%aI'&quot;,
+				// Ignore merge commits since they do not carry useful information.
+				&quot;--no-merges&quot;,
+				// Only interested in creation, modification, renaming, deletion.
+				&quot;--diff-filter=AMRD&quot;,
+				// Show which modification took place:
+				// A: added, M: modified, RXXX: renamed (with percentage score), etc.
+				&quot;--name-status&quot;,
+				&quot;*.md&quot;,
+			},
+		},
+		context.temp_allocator,
+	)
+	if err != nil {
+		fmt.eprintf(&quot;git failed: %d %v %s&quot;, state, err, string(stderr_bin))
+		panic(&quot;git failed&quot;)
+	}
+
+	stdout := strings.trim_space(string(stdout_bin))
+	assert(stdout != &quot;&quot;)
+
+	stats_by_path := make(map[string]GitStat, allocator = context.temp_allocator)
+
+	// Sample git output:
+	// 2024-10-31T16:09:02+01:00
+	// 
+	// M       lessons_learned_from_a_successful_rust_rewrite.md
+	// A       tip_of_day_3.md
+	// 2025-02-18T08:07:55+01:00
+	//
+	// R100    sha.md  making_my_debug_build_run_100_times_faster.md
+
+	// For each commit.
+	for {
+		// Date
+		date: string
+		{
+			line := strings.split_lines_iterator(&amp;stdout) or_break
+
+			assert(strings.starts_with(line, &quot;'20&quot;))
+			line_without_quotes := line[1:len(line) - 1]
+			date = strings.clone(strings.trim(line_without_quotes, &quot;' \n&quot;))
+		}
+
+		// Empty line
+		{
+			// Peek.
+			line, ok := strings.split_lines_iterator(&amp;stdout)
+			assert(ok)
+			assert(line == &quot;&quot;)
+		}
+
+		// Files.
+		for {
+			// Start of a new commit?
+			if strings.starts_with(stdout, &quot;'20&quot;) do break
+
+			line := strings.split_lines_iterator(&amp;stdout) or_break
+			assert(line != &quot;&quot;)
+
+			action := line[0]
+			assert(action == 'A' || action == 'M' || action == 'R' || action == 'D')
+
+			old_path: string
+			new_path: string
+			{
+				// Skip the 'action' part.
+				_, ok := strings.split_iterator(&amp;line, &quot;\t&quot;)
+				assert(ok)
+
+				old_path, ok = strings.split_iterator(&amp;line, &quot;\t&quot;)
+				assert(ok)
+				assert(old_path != &quot;&quot;)
+
+				if action == 'R' { 	// Rename has two operands.
+					new_path, ok = strings.split_iterator(&amp;line, &quot;\t&quot;)
+					assert(ok)
+					assert(new_path != &quot;&quot;)
+				} else { 	// The others have only one.
+					new_path = old_path
+				}
+			}
+
+			{
+				git_stat, present := &amp;stats_by_path[new_path]
+				if !present {
+					stats_by_path[new_path] = GitStat {
+						// In 99% of the cases, it's *not* a rename and thus the `new_path` should be used.
+						path_rel          = new_path,
+						// We inspect commits from newest to oldest so the first commit for a file is the newest i.e. the modification date.
+						modification_date = date,
+						creation_date     = date,
+					}
+				} else {
+					assert(git_stat.path_rel != &quot;&quot;)
+					assert(git_stat.modification_date != &quot;&quot;)
+					// Keep updating the creation date, when we reach the end of the commit log, it has the right value.
+					git_stat.creation_date = date
+				}
+			}
+
+			// We handle the action separately from the fact that this is the first commit we see for the path.
+			// Because a file could have only one commit which is a rename.
+			// Or its first commit is a rename but then there additional commits to modify it. 
+			// Case being: these two things are orthogonal.
+
+			if action == 'R' {
+				// Mark the old path as 'deleted'.
+				stats_by_path[old_path] = GitStat {
+					path_rel          = old_path,
+					modification_date = date,
+					tombstone         = true,
+				}
+
+				// The creation date of the new path is the date of the rename operation.
+				(&amp;stats_by_path[new_path]).creation_date = date
+			}
+			if action == 'D' {
+				// Mark as 'deleted'.
+				(&amp;stats_by_path[new_path]).tombstone = true
+			}
+		}
+	}
+
+	git_stats := make([dynamic]GitStat)
+	for _, v in stats_by_path {
+		fmt.printf(&quot;%v\n&quot;, v)
+		assert(v.path_rel != &quot;&quot;)
+		assert(v.creation_date != &quot;&quot;)
+		assert(v.modification_date != &quot;&quot;)
+		assert(v.creation_date &lt;= v.modification_date)
+
+		if !v.tombstone {
+			append(
+				&amp;git_stats,
+				GitStat {
+					path_rel = strings.clone(v.path_rel),
+					creation_date = strings.clone(v.creation_date),
+					modification_date = strings.clone(v.modification_date),
+				},
+			)
+		}
+	}
+
+	return git_stats[:], nil
+}
+</code></pre>
+</details
+<p>Alright, so how does our new implementation fare compared to the old one?</p>
+<pre><code class="language-sh"> $ hyperfine --warmup 2 './src-main.bin' './src.bin'
+Benchmark 1: ./src-main.bin
+  Time (mean ± σ):      1.773 s ±  0.022 s    [User: 1.267 s, System: 0.472 s]
+  Range (min … max):    1.748 s …  1.816 s    10 runs
+ 
+Benchmark 2: ./src.bin
+  Time (mean ± σ):     158.7 ms ±   6.6 ms    [User: 128.4 ms, System: 133.7 ms]
+  Range (min … max):   151.7 ms … 175.6 ms    18 runs
+ 
+Summary
+  ./src.bin ran
+   11.17 ± 0.48 times faster than ./src-main.bin
+</code></pre>
+<p>Around 11 times faster, and well within our ideal target of 500 ms ! And all we had to do was convert many <code>git log</code> invocations (one per markdown file) to just one. Pretty simple change, located in one function. Almost all of the complexity is due to parsing Git custom text output and skipping over irrelevant commits. We don't really have a choice either: that's all Git provides to query the commit log. The alternatives are all worse:</p>
+<ul>
+<li>Parse directly the Git object files - no thank you</li>
+<li>Use a library (e.g. libgit2) and hope that offers a sane interface to query the commit log</li>
+</ul>
+<p>I wonder if there is a better way...</p>
+<h2 id="3-fossil">
+	<a class="title" href="#3-fossil">Fossil</a>
+	<a class="hash-anchor" href="#3-fossil" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+</h2>
+<p><a href="https://fossil-scm.org">fossil</a> is an alternative version control system created by the same folks that created, and are still working on, SQLite. Naturally, a fossil repository is basically just one SQLite database file. That sounds very <em>queryable</em>:</p>
+<pre><code class="language-sql">SELECT 
+    f.name as filename,
+    datetime(min(e.mtime)) as creation_date,
+    datetime(max(e.mtime)) as last_modified
+FROM repository.filename f
+JOIN repository.mlink m ON f.fnid = m.fnid
+JOIN repository.event e ON m.mid = e.objid
+WHERE filename LIKE '%.md'
+GROUP BY f.name
+ORDER BY f.name;
+</code></pre>
 <p><a href="/blog"> ⏴ Back to all articles</a></p>
 
 <blockquote id="donate">

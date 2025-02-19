@@ -51,12 +51,16 @@ Benchmark 1: ./master.bin
 
 Yeah...I think doing `git log` for each article, sequentially, might not be such a good idea. 
 
-So I had to do something about it, because it was going to become slower and slower with each new article. My target was 1s, or possible even 0.5s.
+At this point it's important to mention that this program is a very simplistic static site generator: it is stateless and processes every markdown file in the repository. You could say that it's a regression compared to the Makefile. But in reality, I was most of the time forcing a clean build with `make -B` because I tweaked something in the logic that applies to every file (for example, I tweaked the wording in the `Donate` section at the end of each article ;) ) and every single file should anyway be regenerated.
+Also, I like this 'pure function' approach. There is no caching issue to debug, no complicated code to write, etc. Perhaps I will revisit this at a later point; but as long as the simple approach works fast enough, it's good enough for me.
 
-I could see two main options:
+So I had to do something about it, because it was going to become slower and slower with each new article. My target was to do the whole thing in 1s, or possibly even 0.5s.
+
+I could see a few options:
 
 - Do not block on `git log`. We can use a thread pool, or a [asynchronous approach](/blog/way_too_many_ways_to_wait_for_a_child_process_with_a_timeout.html) to spawn all the git processes at once, and wait for all of them to finish.
 - Make `git log` faster
+- Implement caching so that only the changed markdown files get regenerated.
 
 The last option was my preferred one because it did not force me to re-architect the whole program.
 
@@ -84,7 +88,9 @@ Looks like we got our solution.
 
 Mike Acton and Data Oriented Design are right once again:
 
-<img src="mike_acton_dod.png"/>
+![Rule of thumb: When there is one, there is many.](mike_acton_dod_2.png)
+
+*Or: try to think in terms of arrays, not in terms of one isolated object at a time.*
 
 
 ## The new implementation
@@ -309,6 +315,17 @@ get_articles_creation_and_modification_date :: proc() -> ([]GitStat, os2.Error) 
 
 </details
 
+We can log what we parsed, for example only the articles that matter (tombstone == false):
+
+```
+GitStat{creation_date = "2023-10-12T13:19:53+02:00", modification_date = "2024-11-05T15:49:57+01:00", path_rel = "wayland_from_scratch.md", tombstone = false}
+GitStat{creation_date = "2024-10-29T13:46:14+01:00", modification_date = "2024-10-31T16:20:34+01:00", path_rel = "tip_of_day_1.md", tombstone = false}
+GitStat{creation_date = "2023-12-01T15:15:26+01:00", modification_date = "2024-11-04T09:24:17+01:00", path_rel = "gnuplot_lang.md", tombstone = false}
+GitStat{creation_date = "2024-09-10T12:59:04+02:00", modification_date = "2024-09-12T12:14:42+02:00", path_rel = "odin_and_musl.md", tombstone = false}
+GitStat{creation_date = "2024-11-10T23:58:59+01:00", modification_date = "2025-02-18T08:22:33+01:00", path_rel = "way_too_many_ways_to_wait_for_a_child_process_with_a_timeout.md", tombstone = false}
+[...]
+```
+
 Alright, so how does our new implementation fare compared to the old one?
 
 ```sh
@@ -326,7 +343,83 @@ Summary
    11.17 ± 0.48 times faster than ./src-main.bin
 ```
 
-Around 11 times faster, and well within our ideal target of 500 ms !
+Around 11 times faster, and well within our ideal target of 500 ms ! And all we had to do was convert many `git log` invocations (one per markdown file) to just one. Pretty simple change, located in one function. Almost all of the complexity is due to parsing Git custom text output and skipping over irrelevant commits. We don't really have a choice either: that's all Git provides to query the commit log. The alternatives are all worse:
+
+- Parse directly the Git object files - no thank you
+- Use a library (e.g. libgit2) and hope that offers a sane interface to query the commit log
+
+I wonder if there is a better way...
+
+## Fossil
+
+[fossil](https://fossil-scm.org) is an alternative version control system created by the same folks that created, and are still working on, SQLite. Naturally, a fossil repository is basically just one SQLite database file. That sounds very *queryable*!
+
+Let's import our git repository into a Fossil repository and entee the SQLite prompt:
+
+```sh
+$ git fast-export --all | fossil import --git new-repo.fossil
+$ file new-repo.fossil 
+new-repo.fossil: SQLite 3.x database (Fossil repository), [...]
+$ fossil sql -R new-repo.fossil
+```
+
+There are lots of tables in this database. We craft this query after a few trials and errors (don't know if it is optimal or not):
+
+```sql
+sqlite> .mode json
+sqlite> SELECT 
+            f.name as filename,
+            datetime(min(e.mtime)) as creation_date,
+            datetime(max(e.mtime)) as last_modified
+        FROM repository.filename f
+        JOIN repository.mlink m ON f.fnid = m.fnid
+        JOIN repository.event e ON m.mid = e.objid
+        WHERE filename LIKE '%.md'
+        GROUP BY f.name
+        ORDER BY f.name;
+```
+
+Which outputs what we want:
+
+```
+[...]
+{"filename":"body_of_work.md","creation_date":"2023-12-19 13:27:40","last_modified":"2024-11-05 15:11:55"},
+{"filename":"communicate_by_sharing_code.md","creation_date":"2024-03-07 09:48:39","last_modified":"2024-03-07 10:14:09"},
+{"filename":"compile_ziglang_from_source_on_alpine_2020_9.md","creation_date":"2020-09-07 18:49:20","last_modified":"2024-11-04 08:24:17"},
+[...]
+```
+
+Note that this does not filter out deleted/removed files yet. I'm sure that it can be done by tweaking the query a bit, but there's not time! We need to measure it's running time!
+
+```sh
+$ hyperfine --shell=none 'fossil sql -R new-repo.fossil "SELECT [...]"'
+Benchmark 1: fossil sql -R new-repo.fossil "[...]"
+  Time (mean ± σ):       3.0 ms ±   0.5 ms    [User: 1.5 ms, System: 1.4 ms]
+  Range (min … max):     2.2 ms …   5.6 ms    776 runs
+```
+
+Damn that's fast.
+
+I do not use Fossil, but I eye it from time to time - generally when I need to extract some piece of information from Git and I discover it does not let me, or when I see the Gitlab bill  my (ex-) company pays, or when the Jira page takes more than 10 seconds to load... yeah, Fossil is the complete package, with issues, forums, a web UI, a timeline, a wiki, a chat... it has it all!
+
+But the golden ticket idea is really to store everything inside SQLite. Suddenly, we can query anything! And there is no weird parsing needed - SQLite supports various export formats and (some? all?) fossil commands support the `--sql` option to show you which SQL query they use to get the information. After all, the only thing the `fossil` command line does in this case, is query the SQLite database!
+
+It's quite magical to me that I can within a few seconds import my years-long git repository into a SQLite database and start querying it, and the performance is great.
+
+## Conclusion
+
+The issue was effectively a N+1 query problem. We issued a separate 'query' (in this case, `git log`) for each markdown file, in a sequential blocking fashion. This approach worked until it didn't because the number of entities (i.e. articles, and commits) grew over time. 
+
+The solution is instead to do only one query for all entities. It may return a bit more data that we need, but that's much faster, and scales better, than the original version.
+
+It's obvious in retrospect but it's easy to let it happen when the 'codebase' (a big word for only one source code file that started as a basic Makefile) is a few years old, it's only looked at briefly from time to time, and the initial implementation did not really allow for the correct approach - who wants to parse the `git log` output in the Makefile language? Furthermore, the initial approach was fine because it only looked at the creation date, so we could do `git log --reverse | head -n1` which is faster than sifting through the whole commit log. However, as it is always the case, requirements (again, a big word for my taste concerning what should my personal blog look like) change and the modification date had to also be extracted from git. This forced us, with the current Git functionality, to scan through the whole commit log, for each file, which became too slow.
+
+As Mike Acton and Data Oriented Design state: 
+
+![Different problems require different solutions.](mike_acton_dod_2.png)
+
+It also does not help that any querying in Git is ad-hoc and outputs a weird text format that we have to tediously parse. Please output structured data, damn it! String programming is no fun at all.
+
 
 
 
