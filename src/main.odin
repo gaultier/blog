@@ -152,8 +152,11 @@ get_articles_creation_and_modification_date :: proc() -> (res: []GitStat, err: o
 		"--name-only",
 		// Ignore merge commits since they do not carry useful information.
 		"--no-merges",
-		// Ignore renamed files to avoid stale paths.
-		"--diff-filter=r",
+		// Only interested in creation, modification, renaming.
+		"--diff-filter=AMR",
+		// Show which modification took place:
+		// A: added, M: modified, RXXX: renamed (with percentage score), etc.
+		"--name-status",
 		"*.md",
 	},
 	{},
