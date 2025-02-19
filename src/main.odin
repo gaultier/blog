@@ -175,6 +175,15 @@ get_articles_creation_and_modification_date :: proc() -> ([]GitStat, os2.Error) 
 
 	stats_by_path := make(map[string]GitStat, allocator = context.temp_allocator)
 
+	// Sample git output:
+	// 2024-10-31T16:09:02+01:00
+	// 
+	// M       lessons_learned_from_a_successful_rust_rewrite.md
+	// A       tip_of_day_3.md
+	// 2025-02-18T08:07:55+01:00
+	//
+	// R100    sha.md  making_my_debug_build_run_100_times_faster.md
+
 	// For each entry.
 	for {
 		// Date
