@@ -197,6 +197,7 @@ get_articles_creation_and_modification_date :: proc() -> (res: []GitStat, err: o
 			if !present {
 				stats_by_path[path_rel] = GitStat {
 					path_rel          = strings.clone(path_rel),
+					// We inspect commits from newest to oldest so the first commit for a file is the newest i.e. the modification date.
 					modification_date = date,
 				}
 			} else {
