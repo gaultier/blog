@@ -184,7 +184,7 @@ get_articles_creation_and_modification_date :: proc() -> ([]GitStat, os2.Error) 
 	//
 	// R100    sha.md  making_my_debug_build_run_100_times_faster.md
 
-	// For each entry.
+	// For each commit.
 	for {
 		// Date
 		date: string
@@ -206,25 +206,22 @@ get_articles_creation_and_modification_date :: proc() -> ([]GitStat, os2.Error) 
 
 		// Files.
 		for {
+			// Start of a new commit?
 			if strings.starts_with(stdout, "'20") do break
 
 			line := strings.split_lines_iterator(&stdout) or_break
 			assert(line != "")
 
-			action: u8
-			{
-				action_part, ok := strings.split_iterator(&line, "\t")
-				assert(ok)
-				assert(action_part != "")
-				// Get rid of the rename percentage score e.g. `R100`.
-				action = action_part[0]
-				assert(action == 'A' || action == 'M' || action == 'R' || action == 'D')
-			}
+			action := line[0]
+			assert(action == 'A' || action == 'M' || action == 'R' || action == 'D')
 
 			old_path: string
 			new_path: string
 			{
-				ok: bool
+				// Skip the 'action' part.
+				_, ok := strings.split_iterator(&line, "\t")
+				assert(ok)
+
 				old_path, ok = strings.split_iterator(&line, "\t")
 				assert(ok)
 				assert(old_path != "")
