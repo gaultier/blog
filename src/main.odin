@@ -142,32 +142,33 @@ GitStat :: struct {
 	tombstone:         bool,
 }
 
-get_articles_creation_and_modification_date :: proc() -> (res: []GitStat, err: os2.Error) {
-	stdout_bin := run_sub_process_and_get_stdout(
-	[]string {
-		"git",
-		"log",
-		// Print the date in ISO format.
-		"--format='%aI'",
-		// Ignore merge commits since they do not carry useful information.
-		"--no-merges",
-		// Only interested in creation, modification, renaming, deletion.
-		"--diff-filter=AMRD",
-		// Show which modification took place:
-		// A: added, M: modified, RXXX: renamed (with percentage score), etc.
-		"--name-status",
-		"*.md",
-	},
-	{},
-	) or_return
-	// if len(stderr_bin) > 0 {
-	// 	fmt.printf("git command stderr: %v %s\n", state, string(stderr_bin))
-	// }
-	stdout := strings.trim_space(string(stdout_bin))
-	if len(stdout) == 0 {
-		panic("empty git output")
+get_articles_creation_and_modification_date :: proc() -> ([]GitStat, os2.Error) {
+	state, stdout_bin, stderr_bin, err := os2.process_exec(
+		{
+			command = []string {
+				"git",
+				"log",
+				// Print the date in ISO format.
+				"--format='%aI'",
+				// Ignore merge commits since they do not carry useful information.
+				"--no-merges",
+				// Only interested in creation, modification, renaming, deletion.
+				"--diff-filter=AMRD",
+				// Show which modification took place:
+				// A: added, M: modified, RXXX: renamed (with percentage score), etc.
+				"--name-status",
+				"*.md",
+			},
+		},
+		context.temp_allocator,
+	)
+	if err != nil {
+		fmt.eprintf("git failed: %d %v %s", state, err, string(stderr_bin))
+		panic("git failed")
 	}
 
+	stdout := strings.trim_space(string(stdout_bin))
+	assert(stdout != "")
 
 	stats_by_path := make(map[string]GitStat, allocator = context.temp_allocator)
 
