@@ -148,8 +148,6 @@ get_articles_creation_and_modification_date :: proc() -> (res: []GitStat, err: o
 		"log",
 		// Print the date in ISO format.
 		"--format='%aI'",
-		// Print for each commit the paths affected.
-		"--name-only",
 		// Ignore merge commits since they do not carry useful information.
 		"--no-merges",
 		// Only interested in creation, modification, renaming.
@@ -198,20 +196,53 @@ get_articles_creation_and_modification_date :: proc() -> (res: []GitStat, err: o
 		for {
 			// Peek.
 			stdout_bck := stdout
-			line, ok := strings.split_lines_iterator(&stdout_bck)
-			if !ok do break
+			line: string
 
-			// Reached the next entry?
-			if strings.starts_with(line, "'20") do break
+			{
+				ok := false
+				line, ok = strings.split_lines_iterator(&stdout_bck)
+				if !ok do break
 
-			// Commit.
-			stdout = stdout_bck
-			path_rel := strings.clone(line)
+				// Reached the next entry?
+				if strings.starts_with(line, "'20") do break
 
-			git_stat, present := &stats_by_path[path_rel]
+				// Commit.
+				stdout = stdout_bck
+			}
+
+			action: u8
+			{
+				action_part, ok := strings.split_iterator(&line, "\t")
+				assert(ok)
+				assert(action_part != "")
+				action = action_part[0]
+				assert(action == 'A' || action == 'M' || action == 'R')
+			}
+
+			old_path: string
+			new_path: string
+			{
+				path, ok := strings.split_iterator(&line, "\t")
+				assert(ok)
+				assert(path != "")
+
+				if action == 'R' {
+					old_path = path
+
+					new_path, ok = strings.split_iterator(&line, "\t")
+					assert(ok)
+					assert(new_path != "")
+				} else {
+					old_path = path
+					new_path = path
+				}
+			}
+
+			_ = action
+			git_stat, present := &stats_by_path[new_path]
 			if !present {
-				stats_by_path[path_rel] = GitStat {
-					path_rel          = strings.clone(path_rel),
+				stats_by_path[new_path] = GitStat {
+					path_rel          = strings.clone(new_path),
 					// We inspect commits from newest to oldest so the first commit for a file is the newest i.e. the modification date.
 					modification_date = date,
 				}
