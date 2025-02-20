@@ -267,7 +267,6 @@ get_articles_creation_and_modification_date :: proc() -> ([]GitStat, os2.Error) 
 			creation_date     = strings.clone(v.creation_date),
 			modification_date = strings.clone(v.modification_date),
 		}
-		fmt.printf("%v\n", git_stat)
 		append(&git_stats, git_stat)
 	}
 
@@ -578,7 +577,7 @@ generate_article :: proc(
 	article.output_file_name = strings.concatenate([]string{stem, ".html"})
 
 	generate_html_article(original_markdown_content, article, header, footer) or_return
-	fmt.printf("generated %s %v\n", article.output_file_name, article.tags)
+	fmt.printf("generated article: %v\n", article)
 
 	return
 }
