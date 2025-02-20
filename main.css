@@ -246,7 +246,7 @@ details {
   display: inline-flex;
 }
 
-details:hover {
+summary:hover {
   cursor: pointer;
 }
 
