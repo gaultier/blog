@@ -227,6 +227,17 @@ get_articles_creation_and_modification_date :: proc() -> ([]GitStat, os2.Error) 
 				}
 			}
 
+
+			if action == 'D' {
+				delete_key(&stats_by_path, old_path)
+				continue
+			}
+
+			if action == 'R' {
+				delete_key(&stats_by_path, old_path)
+				// Still need to insert the new entry in the map below.
+			}
+
 			_, v, inserted, err := map_entry(&stats_by_path, new_path)
 			assert(err == nil)
 
@@ -239,16 +250,6 @@ get_articles_creation_and_modification_date :: proc() -> ([]GitStat, os2.Error) 
 				assert(v.creation_date <= v.modification_date)
 				// Keep updating the modification date, when we reach the end of the commit log, it has the right value.
 				v.modification_date = date
-			}
-
-
-			// We handle the action separately from the fact that this is the first commit we see for the path.
-			// Because a file could have only one commit which is a rename.
-			// Or its first commit is a rename but then there additional commits to modify it. 
-			// Case being: these two things are orthogonal.
-
-			if action == 'R' || action == 'D' {
-				delete_key(&stats_by_path, old_path)
 			}
 		}
 	}
