@@ -152,25 +152,20 @@ get_articles_creation_and_modification_date :: proc() -> ([]GitStat, os2.Error) 
 				// Show which modification took place:
 				// A: added, M: modified, RXXX: renamed (with percentage score), etc.
 				"--name-status",
+				"--reverse",
 				"*.md",
 			},
 		},
 		context.temp_allocator,
 	)
-	if err != nil {
-		fmt.eprintf("git failed: %d %v %s", state, err, string(stderr_bin))
-		panic("git failed")
-	}
+	_ = state
+	_ = stderr_bin
+	assert(err == nil)
 
 	stdout := strings.trim_space(string(stdout_bin))
 	assert(stdout != "")
 
-	GitStatInternal :: struct {
-		creation_date:     string,
-		modification_date: string,
-		tombstone:         bool,
-	}
-	stats_by_path := make(map[string]GitStatInternal, allocator = context.temp_allocator)
+	stats_by_path := make(map[string]GitStat, allocator = context.temp_allocator)
 
 	// Sample git output:
 	// 2024-10-31T16:09:02+01:00
@@ -240,8 +235,10 @@ get_articles_creation_and_modification_date :: proc() -> ([]GitStat, os2.Error) 
 				v.creation_date = date
 			} else {
 				assert(v.modification_date != "")
-				// Keep updating the creation date, when we reach the end of the commit log, it has the right value.
-				v.creation_date = date
+				assert(v.creation_date != "")
+				assert(v.creation_date <= v.modification_date)
+				// Keep updating the modification date, when we reach the end of the commit log, it has the right value.
+				v.modification_date = date
 			}
 
 
@@ -250,19 +247,8 @@ get_articles_creation_and_modification_date :: proc() -> ([]GitStat, os2.Error) 
 			// Or its first commit is a rename but then there additional commits to modify it. 
 			// Case being: these two things are orthogonal.
 
-			if action == 'R' {
-				// Mark the old path as 'deleted'.
-				stats_by_path[old_path] = GitStatInternal {
-					modification_date = date,
-					tombstone         = true,
-				}
-
-				// The creation date of the new path is the date of the rename operation.
-				v.creation_date = date
-			}
-			if action == 'D' {
-				// Mark as 'deleted'.
-				v.tombstone = true
+			if action == 'R' || action == 'D' {
+				delete_key(&stats_by_path, old_path)
 			}
 		}
 	}
@@ -274,15 +260,13 @@ get_articles_creation_and_modification_date :: proc() -> ([]GitStat, os2.Error) 
 		assert(v.modification_date != "")
 		assert(v.creation_date <= v.modification_date)
 
-		if !v.tombstone {
-			git_stat := GitStat {
-				path_rel          = strings.clone(k),
-				creation_date     = strings.clone(v.creation_date),
-				modification_date = strings.clone(v.modification_date),
-			}
-			fmt.printf("%v\n", git_stat)
-			append(&git_stats, git_stat)
+		git_stat := GitStat {
+			path_rel          = strings.clone(k),
+			creation_date     = strings.clone(v.creation_date),
+			modification_date = strings.clone(v.modification_date),
 		}
+		fmt.printf("%v\n", git_stat)
+		append(&git_stats, git_stat)
 	}
 
 	return git_stats[:], nil
