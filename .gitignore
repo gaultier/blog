@@ -6,3 +6,4 @@ README.html
 src.bin
 *.gz
 *.bin
+perf.data*

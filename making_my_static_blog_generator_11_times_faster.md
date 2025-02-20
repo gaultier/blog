@@ -379,7 +379,17 @@ Summary
 ```
 
 
-Around 11 times faster, and well within our ideal target of 500 ms ! And all we had to do was convert many `git log` invocations (one per markdown file) to just one. Pretty simple change, located in one function. Almost all of the complexity is due to parsing Git custom text output and skipping over irrelevant commits. We don't really have a choice either: that's all Git provides to query the commit log. The alternatives are all worse:
+Around 11 times faster, and well within our ideal target of 500 ms ! And all we had to do was convert many `git log` invocations (one per markdown file) to just one. 
+
+
+Here's the CPU profile now:
+
+<object alt="CPU profile after the optimization" data="making_my_static_blog_generator_11_times_faster_profile_after.svg" type="image/svg+xml"></object>
+
+---
+
+
+Overall it's a pretty simple change, located in one function. Almost all of the complexity is due to parsing Git custom text output and skipping over irrelevant commits. We don't really have a choice either: that's all Git provides to query the commit log. The alternatives are all worse:
 
 - Parse directly the Git object files - no thank you
 - Use a library (e.g. `libgit2`) and hope that it offers a saner interface to query the commit log 
@@ -476,6 +486,5 @@ To the next 5 years of blogging, till I need to revisit the performance of this 
 [^1]: [CppCon 2014: Mike Acton "Data-Oriented Design and C++"](https://www.youtube.com/watch?v=rX0ItVEVjHc&t=14m33s)
 [^2]: [CppCon 2014: Mike Acton "Data-Oriented Design and C++"](https://www.youtube.com/watch?v=rX0ItVEVjHc&t=13m13s)
 [^3]: [CppCon 2014: Mike Acton "Data-Oriented Design and C++"](https://www.youtube.com/watch?v=rX0ItVEVjHc&t=13m21s)
-
 
 

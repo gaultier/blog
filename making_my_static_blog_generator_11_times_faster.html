@@ -470,7 +470,11 @@ Summary
   ./src.bin ran
    11.17 ± 0.48 times faster than ./src-main.bin
 </code></pre>
-<p>Around 11 times faster, and well within our ideal target of 500 ms ! And all we had to do was convert many <code>git log</code> invocations (one per markdown file) to just one. Pretty simple change, located in one function. Almost all of the complexity is due to parsing Git custom text output and skipping over irrelevant commits. We don't really have a choice either: that's all Git provides to query the commit log. The alternatives are all worse:</p>
+<p>Around 11 times faster, and well within our ideal target of 500 ms ! And all we had to do was convert many <code>git log</code> invocations (one per markdown file) to just one.</p>
+<p>Here's the CPU profile now:</p>
+<p><object alt="CPU profile after the optimization" data="making_my_static_blog_generator_11_times_faster_profile_after.svg" type="image/svg+xml"></object></p>
+<hr />
+<p>Overall it's a pretty simple change, located in one function. Almost all of the complexity is due to parsing Git custom text output and skipping over irrelevant commits. We don't really have a choice either: that's all Git provides to query the commit log. The alternatives are all worse:</p>
 <ul>
 <li>Parse directly the Git object files - no thank you</li>
 <li>Use a library (e.g. <code>libgit2</code>) and hope that it offers a saner interface to query the commit log</li>
