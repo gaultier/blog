@@ -70,8 +70,6 @@ p {
 }
 
 .body {
-  font-size: 1.2rem;
-  line-height: 2rem;
   margin: .7rem;
 }
 
@@ -183,6 +181,7 @@ pre {
 }
 
 code {
+    font-size: .9rem;
     background: #FFF3E0 !important;
     padding: .0rem !important;
     padding-right: .3rem !important;
@@ -278,12 +277,11 @@ p:has(img):has(em) {
 }
 
 .line-number {
-  background-color: #FFE0B2;
-  width: 2.2rem;
-  padding: .2rem;
+  width: 2rem;
   display: inline-block;
-  text-align: center;
+  text-align: right;
   padding: .2rem;
+  margin-right: 1.2rem;
 }
 
 @media only screen and (max-width: 450px) {
