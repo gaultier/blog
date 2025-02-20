@@ -306,7 +306,13 @@ summary {
   font-weight: bold;
 }
 
+.footnotes::before {
+  content: "Footnotes:";
+}
+
 .footnotes {
   border-top: 1px solid grey;
-  margin: 1rem;
+  border-bottom: 1px solid grey;
+  padding: 1rem;
+  margin: 2rem 1rem;
 }
