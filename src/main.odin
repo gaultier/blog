@@ -368,7 +368,7 @@ decorate_markdown_with_title_ids :: proc(markdown: string) -> string {
 }
 
 toc_lex_titles :: proc(markdown: string, allocator := context.allocator) -> []Title {
-	titles := make([dynamic]Title, allocator)
+	titles := make([dynamic]Title, 0, 50, allocator)
 
 	unique_id := u32(0)
 	inside_code_section := false
