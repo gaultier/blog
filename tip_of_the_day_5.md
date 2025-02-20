@@ -1,5 +1,5 @@
 Title: Tip of the day #5: Install Go tools with a specific version
-Tags: Go
+Tags: Go, Tip of the day
 ---
 
  I had an issue with Go tools around versioning, and here's how I solved it. It could be useful to others. This was the error:

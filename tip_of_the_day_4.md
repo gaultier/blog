@@ -1,5 +1,5 @@
 Title: Tip of the day #4: Type annotations on Rust match patterns
-Tags: Rust
+Tags: Rust, Tip of the day
 ---
 
 *Discussions: [/r/rust](https://old.reddit.com/r/rust/comments/1in1wyr/tip_of_the_day_4_type_annotations_on_rust_match/)*
