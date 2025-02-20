@@ -506,9 +506,7 @@ generate_html_article :: proc(
 		cmark_command,
 		transmute([]u8)decorated_markdown,
 	)
-	if os2_err != nil {
-		panic(fmt.aprintf("failed to run cmark: %v", os2.error_string(os2_err)))
-	}
+	assert(os2_err == nil)
 
 	html_sb := strings.builder_make()
 
@@ -614,9 +612,7 @@ generate_all_articles_in_directory :: proc(
 	articles_dyn := make([dynamic]Article)
 
 	git_stats, os2_err := get_articles_creation_and_modification_date()
-	if os2_err != nil {
-		panic(fmt.aprintf("failed to run git: %v", os2.error_string(os2_err)))
-	}
+	assert(os2_err == nil)
 
 	for git_stat in git_stats {
 		if git_stat.path_rel == "index.md" {continue}
@@ -706,9 +702,8 @@ generate_home_page :: proc(
 			cmark_command,
 			transmute([]u8)decorated_markdown,
 		)
-		if os2_err != nil {
-			panic(fmt.aprintf("failed to run cmark %v", os2_err))
-		}
+		assert(os2_err == nil)
+
 		strings.write_string(&sb, string(cmark_stdout_bin))
 	}
 	strings.write_string(&sb, footer)
@@ -912,7 +907,6 @@ main :: proc() {
 	}
 	context.temp_allocator = virtual.arena_allocator(&tmp_arena)
 
-	if err := run(); err != nil {
-		panic(fmt.aprintf("%v", err))
-	}
+	err := run()
+	assert(err == nil)
 }
