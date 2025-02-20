@@ -189,7 +189,9 @@ code {
 }
 
 object {
-  width: 50%;
+  padding: 1rem .5rem;
+  max-width: 95%;
+  min-width: 60%;
   display: block;
   margin: auto;
 }

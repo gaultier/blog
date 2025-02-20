@@ -2,7 +2,7 @@
   <feed xmlns="http://www.w3.org/2005/Atom">
     <title>Philippe Gaultier's blog</title>
     <link href="https://gaultier.github.io/blog"/>
-    <updated>2025-02-20T09:31:27+01:00</updated>
+    <updated>2025-02-20T09:33:46+01:00</updated>
     <author>
       <name>Philippe Gaultier</name>
     </author>
@@ -244,7 +244,7 @@
   <title>Making my static blog generator 11 times faster</title>
   <link href="https://gaultier.github.io/blog/making_my_static_blog_generator_11_times_faster.html"/>
   <id>urn:uuid:d29b6ec2-f895-5f2f-896f-2f343766fc85</id>
-  <updated>2025-02-20T09:31:27+01:00</updated>
+  <updated>2025-02-20T09:33:46+01:00</updated>
   <published>2025-02-19T15:13:54+01:00</published>
   </entry>
 	</feed>

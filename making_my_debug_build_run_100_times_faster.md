@@ -55,7 +55,7 @@ Granted, computing the hash for the whole file should be slightly faster than co
 
 Why is it so slow then? I can see on CPU profiles that the SHA1 function takes all of the startup time:
 
-![CPU Profile of the SIMD-less code, debug + Address Sanitizer build](cpu_profile_sha1_sw_debug_asan.svg)
+<object alt="CPU Profile of the SIMD-less code, debug + Address Sanitizer build" data="cpu_profile_sha1_sw_debug_asan.svg" type="image/svg+xml"></object>
 
 The SHA1 code is simplistic, it does not use any SIMD or intrinsics directly. And that's fine, because when it's compiled with optimizations on, the compiler does a pretty good job at optimizing, and it's really fast, around ~300 ms. But the issue is that this code is working one byte at a time. And Address Sanitizer, with its nice runtime and bounds checks, makes each memory access **very** expensive. So we basically have just written a worst-case stress-test for Address Sanitizer.
 

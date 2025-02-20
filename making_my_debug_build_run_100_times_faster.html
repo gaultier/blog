@@ -228,7 +228,7 @@ Benchmark 1: sha1sum ./NetBSD-9.4-amd64.iso
 </code></pre>
 <p>Granted, computing the hash for the whole file should be slightly faster than computing the hash for N pieces, because the final step for SHA1 is about padding the data to make it 64 bytes aligned and extracting the digest value from the state computed so far with some bit operations. But still, it's a marginal difference.</p>
 <p>Why is it so slow then? I can see on CPU profiles that the SHA1 function takes all of the startup time:</p>
-<p><img src="cpu_profile_sha1_sw_debug_asan.svg" alt="CPU Profile of the SIMD-less code, debug + Address Sanitizer build" /></p>
+<p><object alt="CPU Profile of the SIMD-less code, debug + Address Sanitizer build" data="cpu_profile_sha1_sw_debug_asan.svg" type="image/svg+xml"></object></p>
 <p>The SHA1 code is simplistic, it does not use any SIMD or intrinsics directly. And that's fine, because when it's compiled with optimizations on, the compiler does a pretty good job at optimizing, and it's really fast, around ~300 ms. But the issue is that this code is working one byte at a time. And Address Sanitizer, with its nice runtime and bounds checks, makes each memory access <strong>very</strong> expensive. So we basically have just written a worst-case stress-test for Address Sanitizer.</p>
 <p>Let's first review the simple SIMD-less C version to understand the baseline.</p>
 <h2 id="2-non-simd-implementation">

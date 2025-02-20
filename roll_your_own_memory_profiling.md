@@ -527,7 +527,7 @@ And we can even generate a flamegraph for it leveraging the great [OG flamegraph
 $ pprof --collapsed ./a.out heap.profile | flamegraph.pl > out.svg
 ```
 
-![Flamegraph](mem_prof_flamegraph.svg)
+<object data="mem_prof_flamegraph.svg" type="image/svg+xml"></object>
 
 
 ## Variations and limitations
