@@ -15,6 +15,4 @@ Blog implementation:
 
 - [ ] Use libcmark to simplify parsing
 - [ ] Link to related articles at the end
-- [x] Line numbers in code snippets
-- [x] Show tags on home page
 - [ ] Search
