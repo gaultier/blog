@@ -143,6 +143,10 @@
 <li>
 	<a href="#6-conclusion">Conclusion</a>
 		</li>
+
+<li>
+	<a href="#7-addendum">Addendum</a>
+		</li>
 </ul>
 
 <p>This blog is statically generated from Markdown files. It used to be fast, but nowadays it's not:</p>
@@ -539,6 +543,18 @@ Benchmark 1: fossil sql -R new-repo.fossil &quot;[...]&quot;
 <p>It also does not help that any querying in Git is ad-hoc and outputs a weird text format that we have to tediously parse. Please everyone, let's add the option to output structured data in our command line programs, damn it! String programming is no fun at all - that's why I moved away from concatenating the output of shell commands in a Makefile, to a real programming language, to do the static generation.</p>
 <p>All in all, I am pleased with my solution - I can now see any edit materialize <em>instantly</em>. It's a bit funny that my previous article was about SIMD and inspecting assembly instructions, while this issue is so obvious and high-level in retrospect.</p>
 <p>To the next 5 years of blogging, till I need to revisit the performance of this function!</p>
+<h2 id="7-addendum">
+	<a class="title" href="#7-addendum">Addendum</a>
+	<a class="hash-anchor" href="#7-addendum" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+</h2>
+<p>Running <code>git gc</code> and <code>git prune</code> also helps because all unreachable objects are removed, so git has to do less work scanning and parsing them on disk.</p>
+<p>Having done that, we get almost twice as fast:</p>
+<pre><code class="language-sh">$ hyperfine --shell=none --warmup 2 './src.bin'
+Benchmark 1: ./src.bin
+  Time (mean ± σ):      89.7 ms ±   2.6 ms    [User: 63.6 ms, System: 59.5 ms]
+  Range (min … max):    85.0 ms …  94.3 ms    31 runs
+</code></pre>
+<p>But we have to remember to run it frequently or set up a periodic job that does it for us.</p>
 <section class="footnotes" data-footnotes>
 <ol>
 <li id="fn-1">

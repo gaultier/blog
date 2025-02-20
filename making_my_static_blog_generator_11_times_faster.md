@@ -486,3 +486,18 @@ To the next 5 years of blogging, till I need to revisit the performance of this 
 [^3]: [CppCon 2014: Mike Acton "Data-Oriented Design and C++"](https://www.youtube.com/watch?v=rX0ItVEVjHc&t=13m21s)
 
 
+
+## Addendum
+
+Running `git gc` and `git prune` also helps because all unreachable objects are removed, so git has to do less work scanning and parsing them on disk.
+
+Having done that, we get almost twice as fast:
+
+```sh
+$ hyperfine --shell=none --warmup 2 './src.bin'
+Benchmark 1: ./src.bin
+  Time (mean ± σ):      89.7 ms ±   2.6 ms    [User: 63.6 ms, System: 59.5 ms]
+  Range (min … max):    85.0 ms …  94.3 ms    31 runs
+```
+
+But we have to remember to run it frequently or set up a periodic job that does it for us.
