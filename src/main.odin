@@ -52,23 +52,16 @@ datetime_to_date :: proc(datetime: string) -> string {
 parse_metadata :: proc(markdown: string, path: string) -> (title: string, tags: []string) {
 	metadata_lines := strings.split_lines_n(markdown, 4)
 
-	if len(metadata_lines) < 4 {
-		panic(fmt.aprintf("file %s missing metadata", path))
-	}
-	if metadata_lines[2] != metadata_delimiter {
-		panic(fmt.aprintf("file %s missing metadata delimiter", path))
-	}
+	assert(len(metadata_lines) >= 4)
+	assert(metadata_lines[2] == metadata_delimiter)
 
 	title_line_split := strings.split_n(metadata_lines[0], ": ", 2)
-	if len(title_line_split) != 2 {
-		panic(fmt.aprintf("file %s has a malformed metadata title", path))
-	}
+	assert(len(title_line_split) == 2)
+
 	title = strings.clone(strings.trim_space(title_line_split[1]))
 
 	tags_line_split := strings.split_n(metadata_lines[1], ": ", 2)
-	if len(tags_line_split) != 2 {
-		panic(fmt.aprintf("file %s has a malformed metadata tags", path))
-	}
+	assert(len(tags_line_split) == 2)
 	tags_split := strings.split(tags_line_split[1], ", ")
 
 	tags = make([]string, len(tags_split))
@@ -813,7 +806,6 @@ compare_articles_by_creation_date_desc :: proc(a: Article, b: Article) -> bool {
 }
 
 generate_rss_feed_for_article :: proc(sb: ^strings.Builder, article: Article) {
-
 	base_uuid, err := uuid.read(feed_uuid_str)
 	assert(err == nil)
 	article_uuid := legacy.generate_v5_string(base_uuid, article.output_file_name)
@@ -900,12 +892,10 @@ main :: proc() {
 	{
 		arena_size := uint(1) * mem.Megabyte
 		mmaped, err := virtual.reserve_and_commit(arena_size)
-		if err != nil {
-			panic(fmt.aprintf("failed to mmap %v", err))
-		}
-		if err = virtual.arena_init_buffer(&arena, mmaped); err != nil {
-			panic(fmt.aprintf("failed to create main arena %v", err))
-		}
+		assert(err == nil)
+
+		err = virtual.arena_init_buffer(&arena, mmaped)
+		assert(err == nil)
 	}
 	context.allocator = virtual.arena_allocator(&arena)
 
@@ -915,12 +905,10 @@ main :: proc() {
 	{
 		tmp_arena_size := uint(1) * mem.Megabyte
 		tmp_mmaped, err := virtual.reserve_and_commit(tmp_arena_size)
-		if err != nil {
-			panic(fmt.aprintf("failed to create mmap %v", err))
-		}
-		if err = virtual.arena_init_buffer(&tmp_arena, tmp_mmaped); err != nil {
-			panic(fmt.aprintf("failed to create temp arena %v", err))
-		}
+		assert(err == nil)
+
+		err = virtual.arena_init_buffer(&tmp_arena, tmp_mmaped)
+		assert(err == nil)
 	}
 	context.temp_allocator = virtual.arena_allocator(&tmp_arena)
 
