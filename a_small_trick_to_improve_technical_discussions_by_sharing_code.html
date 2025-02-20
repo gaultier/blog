@@ -150,19 +150,18 @@ end,
 <pre><code class="language-lua">  local line_start = arg.line1
   local line_end = arg.line2
 </code></pre>
-<p>And we also need to get the path to the current file:</p>
-<pre><code class="language-lua">  local file_path = vim.fn.expand('%:p')
+<p>And we also need to get the absolute path to the current file:</p>
+<pre><code class="language-lua">  local file_path_abs = vim.fn.expand('%:p')
 </code></pre>
 <p><em>From this point on explanations are git specific, but I'm sure other VCSes have similar features.</em></p>
 <p>Note that since the current directory might be one or several directories deep relative to the root of the git repository, we need to fix this path, because the git web UI expects a path from the root of the git repository.</p>
-<p>The easiest way to do so is using <code>git ls-files</code>, e.g. if we are in <code>./src/</code> and the file is <code>main.c</code>, <code>git ls-files main.c</code> returns <code>./src/main.c</code>. That's very handy to avoid any complex path manipulations.</p>
+<p>The easiest way to do so is using <code>git ls-files --full-name</code> to convert the absolute path to the path from the root of the repostory.</p>
 <p>There are many ways in Neovim to call out to a command in a subprocess, here's one of them, to get the output of the command:</p>
-<pre><code class="language-lua">  local cmd_handle = io.popen('git ls-files ' .. file_path)
-  local file_path_relative_to_git_root = cmd_handle:read('*a')
-  cmd_handle.close()
-  file_path_relative_to_git_root = string.gsub(file_path_relative_to_git_root, &quot;%s+$&quot;, &quot;&quot;)
+<pre><code class="language-lua">  local file_path_abs = vim.fn.expand('%:p')
+  local file_path_rel_cmd = io.popen('git ls-files --full-name &quot;' .. file_path_abs .. '&quot;')
+  local file_path_relative_to_git_root = file_path_rel_cmd:read('*a')
+  file_path_rel_cmd.close()
 </code></pre>
-<p>We need to right-trim the output which contains a trailing newline.</p>
 <p>We also need to get the git URL of the remote (assuming there is only one, but it's easy to expand the logic to handle multiple):</p>
 <pre><code class="language-lua">  local cmd_handle = io.popen('git remote get-url origin')
   local git_origin = cmd_handle:read('*a')
@@ -216,14 +215,26 @@ I assume the git remote URL is a <code>ssh</code> URL here, again it's easy to t
     break
   end
 </code></pre>
-<p>Finally we stick the result in the system clipboard, and we can even open the url in the default browser using <code>xdg-open</code> (on macOS it'll be <code>open</code>):</p>
-<pre><code class="language-lua">  vim.fn.setreg('+', url)
-  os.execute('xdg-open &quot;' .. url .. '&quot;')
+<p>Finally we stick the result in the system clipboard, and we can even open the url in the default browser (I have only tested that logic on Linux but it <em>should</em> work on other OSes):</p>
+<pre><code class="language-lua">  -- Copy to clipboard.
+  vim.fn.setreg('+', url)
+
+  -- Open URL in the default browser.
+  local os_name = vim.loop.os_uname().sysname
+  if os_name == 'Linux' or os_name == 'FreeBSD' or os_name == 'OpenBSD' or os_name == 'NetBSD' then
+    os.execute('xdg-open &quot;' .. url .. '&quot;')
+  elseif os_name == 'Darwin' then
+    os.execute('open &quot;' .. url .. '&quot;')
+  elseif os_name == 'Windows' then
+    os.execute('start &quot;' .. url .. '&quot;')
+  else
+    print('Unknown os: ' .. os_name)
+  end
 </code></pre>
 <p>We can now map the command to our favorite keystroke, for me space + x, for both normal mode (<code>n</code>) and visual mode (<code>v</code>):</p>
 <pre><code class="language-lua">vim.keymap.set({'v', 'n'}, '&lt;leader&gt;x', ':GitWebUiUrlCopy&lt;CR&gt;')
 </code></pre>
-<p>And that's it, just 40 lines of Lua, and easy to extend to support even more hosting providers.</p>
+<p>And that's it, just 60 lines of Lua, and easy to extend to support even more hosting providers.</p>
 <h2 id="1-addendum-the-full-code">
 	<a class="title" href="#1-addendum-the-full-code">Addendum: the full code</a>
 	<a class="hash-anchor" href="#1-addendum-the-full-code" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
@@ -232,14 +243,13 @@ I assume the git remote URL is a <code>ssh</code> URL here, again it's easy to t
     <summary>The full code</summary>
 <pre><code class="language-lua">vim.keymap.set({'v', 'n'}, '&lt;leader&gt;x', ':GitWebUiUrlCopy&lt;CR&gt;')
 vim.api.nvim_create_user_command('GitWebUiUrlCopy', function(arg)
-  local file_path = vim.fn.expand('%:p')
+  local file_path_abs = vim.fn.expand('%:p')
+  local file_path_rel_cmd = io.popen('git ls-files --full-name &quot;' .. file_path_abs .. '&quot;')
+  local file_path_relative_to_git_root = file_path_rel_cmd:read('*a')
+  file_path_rel_cmd.close()
+
   local line_start = arg.line1
   local line_end = arg.line2
-
-  local cmd_handle = io.popen('git ls-files ' .. file_path)
-  local file_path_relative_to_git_root = cmd_handle:read('*a')
-  cmd_handle.close()
-  file_path_relative_to_git_root = string.gsub(file_path_relative_to_git_root, &quot;%s+$&quot;, &quot;&quot;)
 
   local cmd_handle = io.popen('git remote get-url origin')
   local git_origin = cmd_handle:read('*a')
@@ -269,8 +279,20 @@ vim.api.nvim_create_user_command('GitWebUiUrlCopy', function(arg)
     print('Hosting provider not supported')
   end
 
+  -- Copy to clipboard.
   vim.fn.setreg('+', url)
-  os.execute('xdg-open &quot;' .. url .. '&quot;')
+
+  -- Open URL in the default browser.
+  local os_name = vim.loop.os_uname().sysname
+  if os_name == 'Linux' or os_name == 'FreeBSD' or os_name == 'OpenBSD' or os_name == 'NetBSD' then
+    os.execute('xdg-open &quot;' .. url .. '&quot;')
+  elseif os_name == 'Darwin' then
+    os.execute('open &quot;' .. url .. '&quot;')
+  elseif os_name == 'Windows' then
+    os.execute('start &quot;' .. url .. '&quot;')
+  else
+    print('Unknown os: ' .. os_name)
+  end
 end,
 {force=true, range=true, nargs=0, desc='Copy to clipboard a URL to a git webui for the current line'})
 </code></pre>
