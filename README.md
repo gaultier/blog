@@ -24,7 +24,7 @@ Serve the files locally:
 $ python3 -m http.server -d ..
 ```
 
-Optimize a PNG:
+Optimize a PNG (requires `pngquant`):
 
 ```sh
 $ pngquant foo.png -o foo.tmp && mv foo.tmp foo.png
