@@ -212,7 +212,7 @@
   <title>Tip of the day #4: Type annotations on Rust match patterns</title>
   <link href="https://gaultier.github.io/blog/tip_of_the_day_4.html"/>
   <id>urn:uuid:c4aa2dc8-0d40-5ce8-9b46-ac6c7f41dea6</id>
-  <updated>2025-02-18T08:21:00+01:00</updated>
+  <updated>2025-02-20T11:57:16+01:00</updated>
   <published>2025-02-11T16:47:16+01:00</published>
   </entry>
 	
@@ -236,7 +236,7 @@
   <title>Tip of the day #5: Install Go tools with a specific version</title>
   <link href="https://gaultier.github.io/blog/tip_of_the_day_5.html"/>
   <id>urn:uuid:39a7f948-a91a-5dea-8f36-8c8aaf8d01b6</id>
-  <updated>2025-02-18T12:07:06+01:00</updated>
+  <updated>2025-02-20T11:57:16+01:00</updated>
   <published>2025-02-18T12:02:06+01:00</published>
   </entry>
 	

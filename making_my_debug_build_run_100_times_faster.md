@@ -1,5 +1,5 @@
 Title: Making my debug build run 100x faster so that it is finally usable
-Tags: C, SIMD, SHA1, Torrent, Optimization
+Tags: C, SIMD, SHA1, Torrent, Optimization, x86_64
 ---
 
 *SIMD and dedicated silicon to the rescue.*
