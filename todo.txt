@@ -16,3 +16,4 @@ Blog implementation:
 - [ ] Use libcmark to simplify parsing
 - [ ] Link to related articles at the end
 - [ ] Search
+- [ ] Articles excerpt on the home page?
