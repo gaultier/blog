@@ -96,4 +96,6 @@ My first focus has been making the product more reliable and fast, relentlessly 
 
 My second focus has been security: going through regular threat analysis exercises with the team, adding scanning of dependencies and docker images to every project in order to find vulnerabilities or insecure code patterns, fuzzing, etc.
 
-Indeed, I inherited a C++ codebase where the original author moved on, which was a central part of the company's offering. After investing some time to get it up to modern standards, I convinced stakeholders and developers to incrementally rewrite it in a memory-safe language (Rust). I led this effort by mentoring fellow developers, establishing a roadmap, doing the implementation work, and presenting regular demos of the progress to stakeholders. This software runs on various OSes and architectures including mobile platforms.
+Indeed, I inherited a C++ codebase where the original author moved on, which was a central part of the company's offering. After investing some time to get it up to modern standards, I convinced stakeholders and developers to incrementally rewrite it in a memory-safe language (Rust). I led this effort by mentoring fellow developers, establishing a roadmap, doing the implementation work, and presenting regular demos of the progress to stakeholders. This software runs on various OSes and architectures including mobile platforms, and is now 100% Rust.
+
+I also worked on a lot of Security topics such as SBOM, processes, cryptography, vulnerability detection and response, etc.
