@@ -271,20 +271,18 @@ get_articles_creation_and_modification_date :: proc() -> ([]GitStat, os2.Error) 
 				}
 			}
 
-			{
-				git_stat, present := &stats_by_path[new_path]
-				if !present {
-					stats_by_path[new_path] = GitStatInternal {
-						// We inspect commits from newest to oldest so the first commit for a file is the newest i.e. the modification date.
-						modification_date = date,
-						creation_date     = date,
-					}
-				} else {
-					assert(git_stat.modification_date != "")
-					// Keep updating the creation date, when we reach the end of the commit log, it has the right value.
-					git_stat.creation_date = date
-				}
+			_, v, inserted, err := map_entry(&stats_by_path, new_path)
+			assert(err == nil)
+
+			if inserted {
+				v.modification_date = date
+				v.creation_date = date
+			} else {
+				assert(v.modification_date != "")
+				// Keep updating the creation date, when we reach the end of the commit log, it has the right value.
+				v.creation_date = date
 			}
+
 
 			// We handle the action separately from the fact that this is the first commit we see for the path.
 			// Because a file could have only one commit which is a rename.
@@ -299,11 +297,11 @@ get_articles_creation_and_modification_date :: proc() -> ([]GitStat, os2.Error) 
 				}
 
 				// The creation date of the new path is the date of the rename operation.
-				(&stats_by_path[new_path]).creation_date = date
+				v.creation_date = date
 			}
 			if action == 'D' {
 				// Mark as 'deleted'.
-				(&stats_by_path[new_path]).tombstone = true
+				v.tombstone = true
 			}
 		}
 	}
