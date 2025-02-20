@@ -94,8 +94,6 @@ After 6+ years in my job, I decided I was ready for the next challenge and joine
 
 My first focus has been making the product more reliable and fast, relentlessly optimizing the performance and memory usage to ensure that an entire nation can use this suite of applications 24/7, surviving network disruptions, datacenter disasters, etc; while adding crucial business features such as non-repudiation of payments.
 
-My second focus has been security: going through regular threat analysis exercises with the team, adding scanning of dependencies and docker images to every project in order to find vulnerabilities or insecure code patterns, fuzzing, etc.
+My second focus has been security: going through regular threat analysis exercises with the team, adding scanning of dependencies and docker images to every project in order to find vulnerabilities or insecure code patterns, fuzzing, SBOM, establishing secure processes e.g. for vulnerability responses, reviewing cryptography code, etc.
 
 Indeed, I inherited a C++ codebase where the original author moved on, which was a central part of the company's offering. After investing some time to get it up to modern standards, I convinced stakeholders and developers to incrementally rewrite it in a memory-safe language (Rust). I led this effort by mentoring fellow developers, establishing a roadmap, doing the implementation work, and presenting regular demos of the progress to stakeholders. This software runs on various OSes and architectures including mobile platforms, and is now 100% Rust.
-
-I also worked on a lot of Security topics such as SBOM, processes, cryptography, vulnerability detection and response, etc.
