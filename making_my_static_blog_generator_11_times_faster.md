@@ -52,9 +52,10 @@ As I added more and more features to this blog, like a list of article by tags, 
 
 For long time, it was all good. It was single-threaded, but plenty fast. So I wrote more and more articles. But now it's too slow. Why? Let's profile it:
 
-![Profile before the optimization](making_my_static_blog_generator_11_times_faster_profile_before.svg)
+<object alt="Profile before the optimization" data="making_my_static_blog_generator_11_times_faster_profile_before.svg" type="image/svg+xml" style="width:50%; display: block; margin: auto" />
 
 Yeah...I think it might be [git] [git] [git] [git] [git] [git] [git] [git]...
+
 
 Another way to confirm this is with `strace`:
 
