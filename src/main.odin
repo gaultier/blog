@@ -165,7 +165,7 @@ get_articles_creation_and_modification_date :: proc() -> ([]GitStat, os2.Error) 
 	stdout := strings.trim_space(string(stdout_bin))
 	assert(stdout != "")
 
-	stats_by_path := make(map[string]GitStat, allocator = context.temp_allocator)
+	stats_by_path := make(map[string]GitStat, 100, allocator = context.temp_allocator)
 
 	// Sample git output:
 	// 2024-10-31T16:09:02+01:00
