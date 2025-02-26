@@ -416,7 +416,8 @@ markdown_parse_titles :: proc(markdown: string, allocator := context.allocator) 
 	// Check that we parse markdown without metadata.
 	assert(!strings.starts_with(markdown, "Title:"))
 
-	titles := make([dynamic]Title, 0, 50, allocator)
+	max_titles := 50
+	titles := make([dynamic]Title, 0, max_titles, allocator)
 
 	inside_code_section := false
 	pos := 0
@@ -459,6 +460,7 @@ markdown_parse_titles :: proc(markdown: string, allocator := context.allocator) 
 		}
 		append(&titles, title)
 	}
+	assert(len(titles) <= max_titles)
 
 	// Backpatch `parent` and `sub_content_len` fields.
 	for &title, i in titles {
