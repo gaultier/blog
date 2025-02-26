@@ -477,20 +477,20 @@ markdown_parse_titles :: proc(
 
 	// Backpatch `parent` and `sub_content_len` fields.
 	for &title, i in titles {
-		if i == 0 do continue
+		if i > 0 {
+			previous := &titles[i - 1]
+			previous.sub_content_len = title.title_start - previous.sub_content_start
 
-		previous := &titles[i - 1]
-		previous.sub_content_len = title.title_start - previous.sub_content_start
+			level_diff := previous.level - title.level
 
-		level_diff := previous.level - title.level
-
-		if level_diff > 0 { 	// The current title is a (great-)uncle of the current title.
-			assert(level_diff == 1)
-			title.parent = title.parent.parent
-		} else if level_diff < 0 { 	// The current title is a direct descendant of `previous`.
-			title.parent = previous
-		} else if level_diff == 0 { 	// Sibling.
-			title.parent = previous.parent
+			if level_diff > 0 { 	// The current title is a (great-)uncle of the current title.
+				assert(level_diff == 1)
+				title.parent = title.parent.parent
+			} else if level_diff < 0 { 	// The current title is a direct descendant of `previous`.
+				title.parent = previous
+			} else if level_diff == 0 { 	// Sibling.
+				title.parent = previous.parent
+			}
 		}
 		assert(title.parent.level + 1 == title.level)
 		sa.push_back(&title.parent.children, &title)
@@ -506,63 +506,38 @@ markdown_parse_titles :: proc(
 
 
 // TODO: Use title tree?
-article_write_toc_rec :: proc(sb: ^strings.Builder, titles: []Title) -> []Title {
-	if len(titles) == 0 {return {}} 	// End of recursion.
-
-	title := titles[0]
-	fmt.sbprintf(
-		sb,
-		`
-<li>
-	<a href="#%d-%s">%s</a>
+article_write_toc_rec :: proc(sb: ^strings.Builder, title: ^Title) {
+	strings.write_string(sb, "<ul>\n")
+	if title.level > 1 {
+		fmt.sbprintf(
+			sb,
+			`
+	<li>
+		<a href="#%d-%s">%s</a>
 		`,
-		title.id,
-		title.content_html_friendly,
-		title.content,
-	)
-
-	is_next_title_higher := len(titles) > 1 && titles[1].level > title.level
-	is_next_title_lower := len(titles) > 1 && titles[1].level < title.level
-
-	if is_next_title_lower {
-		assert(titles[1].level + 1 == title.level)
-
-		strings.write_string(sb, "</li>\n")
-
-		// No recursion: return to the caller (parent title) to allow them to close the `<ul>` tag.
-		// The parent will then handle the rest of the titles.
-		// Otherwise said: the current title is a leaf.
-		return titles[1:]
-	} else if is_next_title_higher {
-		assert(titles[1].level - 1 == title.level)
-
-		strings.write_string(sb, "<ul>\n")
-		// Recurse on children.
-		// `remaining` is now a sibling or '(great-)uncle' of ours.
-		remaining := article_write_toc_rec(sb, titles[1:])
-		assert(true if len(remaining) == 0 else remaining[0].level >= title.level)
-
-		// Close the tags that need to be closed.
-		strings.write_string(sb, "</ul>\n")
-		strings.write_string(sb, "</li>\n")
-
-		// And now handle the rest of the titles.
-		return article_write_toc_rec(sb, remaining)
-	} else {
-		// Easy case, next title is a sibling, just close our own `<li>` tag and handle the rest of the titles.
-		strings.write_string(sb, "</li>\n")
-		return article_write_toc_rec(sb, titles[1:])
+			title.id,
+			title.content_html_friendly,
+			title.content,
+		)
 	}
+
+	children := sa.slice(&title.children)
+	for child in children {
+		article_write_toc_rec(sb, child)
+	}
+
+	if title.level > 1 {
+		strings.write_string(sb, "  </li>\n")
+	}
+	strings.write_string(sb, "</ul>\n")
 }
 
 
-article_write_toc :: proc(sb: ^strings.Builder, titles: []Title, article_title: string) {
-	if len(titles) == 0 {return}
+article_write_toc :: proc(sb: ^strings.Builder, root: ^Title) {
+	if root.children.len == 0 {return}
 
 	strings.write_string(sb, " <strong>Table of contents</strong>\n")
-	strings.write_string(sb, "<ul>\n")
-	article_write_toc_rec(sb, titles)
-	strings.write_string(sb, "</ul>\n")
+	article_write_toc_rec(sb, root)
 }
 
 article_generate_html_file :: proc(
@@ -625,7 +600,7 @@ article_generate_html_file :: proc(
 
 	strings.write_string(&html_sb, " </div>\n")
 
-	article_write_toc(&html_sb, article.titles, article.title)
+	article_write_toc(&html_sb, article.titles_tree)
 
 	strings.write_rune(&html_sb, '\n')
 	strings.write_string(&html_sb, string(cmark_output_bin))
@@ -651,13 +626,13 @@ title_print :: proc(title: ^Title, ctx: any) -> bool {
 	return true
 }
 
-title_walk_depth_first :: proc(title: ^Title, cb: TitleWalkCb, ctx: any) -> bool {
+titles_walk_depth_first :: proc(title: ^Title, cb: TitleWalkCb, ctx: any) -> bool {
 	if title == nil {return false}
 
 	if !cb(title, ctx) {return false}
 
 	for child in sa.slice(&title.children) {
-		if !title_walk_depth_first(child, cb, ctx) {return false}
+		if !titles_walk_depth_first(child, cb, ctx) {return false}
 	}
 
 	return true
@@ -698,9 +673,8 @@ article_generate :: proc(
 
 	stem := filepath.stem(git_stat.path_rel)
 	article.output_file_name = strings.concatenate([]string{stem, ".html"})
-	root: ^Title
-	article.titles, root = markdown_parse_titles(content_without_metadata)
-	title_walk_depth_first(root, title_print, nil)
+	article.titles, article.titles_tree = markdown_parse_titles(content_without_metadata)
+	titles_walk_depth_first(article.titles_tree, title_print, nil)
 
 	article_generate_html_file(content_without_metadata, article, header, footer) or_return
 	fmt.printf("generated article: title=%s\n", article.title)
@@ -805,7 +779,7 @@ home_page_generate :: proc(
 		) or_return
 
 		titles, root := markdown_parse_titles(markdown_content)
-		title_walk_depth_first(root, title_print, nil)
+		titles_walk_depth_first(root, title_print, nil)
 		decorated_markdown := article_decorate_markdown_titles_with_id(markdown_content, titles)
 
 		cmark_stdout_bin, os2_err := run_sub_process_with_stdin(
