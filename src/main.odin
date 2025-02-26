@@ -18,6 +18,7 @@ back_link :: "<p><a href=\"/blog\"> ⏴ Back to all articles</a></p>\n"
 html_prelude_fmt :: "<!DOCTYPE html>\n<html>\n<head>\n<title>%s</title>\n"
 cmark_command :: []string {
 	"cmark-gfm",
+	"--validate-utf8",
 	"-e",
 	"table",
 	"-e",
