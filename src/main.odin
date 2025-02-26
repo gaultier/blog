@@ -13,6 +13,7 @@ import "core:strings"
 import "core:unicode"
 
 // Plan:
+// - Reader header & footer
 // - Get all markdown files from git along with their creation/modification date
 // - For each markdown file:
 //   + Read from file
@@ -647,7 +648,6 @@ article_generate :: proc(
 		allocator = context.temp_allocator,
 	) or_return
 
-	stem := filepath.stem(git_stat.path_rel)
 
 	content_without_metadata: string
 	article.title, article.tags, content_without_metadata = article_parse_metadata(
@@ -658,6 +658,7 @@ article_generate :: proc(
 	article.creation_date = git_stat.creation_date
 	article.modification_date = git_stat.modification_date
 
+	stem := filepath.stem(git_stat.path_rel)
 	article.output_file_name = strings.concatenate([]string{stem, ".html"})
 	article.titles = markdown_parse_titles(content_without_metadata)
 
@@ -943,7 +944,6 @@ run :: proc() -> (os_err: os.Error) {
 	home_page_generate(articles, header, footer) or_return
 	tags_page_generate(articles, header, footer) or_return
 	rss_generate(articles) or_return
-
 
 	return
 }
