@@ -166,7 +166,7 @@ GitStat :: struct {
 	path_rel:          string,
 }
 
-get_articles_creation_and_modification_date :: proc() -> ([]GitStat, os2.Error) {
+git_get_articles_creation_and_modification_date :: proc() -> ([]GitStat, os2.Error) {
 	free_all(context.temp_allocator)
 	defer free_all(context.temp_allocator)
 
@@ -655,7 +655,7 @@ generate_all_articles_in_directory :: proc(
 
 	articles_dyn := make([dynamic]Article)
 
-	git_stats, os2_err := get_articles_creation_and_modification_date()
+	git_stats, os2_err := git_get_articles_creation_and_modification_date()
 	assert(os2_err == nil)
 
 	for git_stat in git_stats {
