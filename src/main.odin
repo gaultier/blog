@@ -3,7 +3,6 @@ package main
 import "core:encoding/uuid"
 import "core:encoding/uuid/legacy"
 import "core:fmt"
-import "core:hash"
 import "core:mem"
 import "core:mem/virtual"
 import "core:os"
@@ -42,13 +41,23 @@ Article :: struct {
 TitleId :: u32
 
 Title :: struct {
-	content:   string,
-	level:     int,
-	unique_id: TitleId,
+	content: string,
+	level:   int,
+	id:      TitleId,
+	parent:  ^Title,
 }
 
-make_title_id :: proc(title: string) -> TitleId {
-	return hash.fnv32(transmute([]u8)title)
+// FNV hash of the full title path including direct ancestors.
+title_make_id :: proc(title: ^Title, seed := u32(0x811c9dc5)) -> TitleId {
+	if title == nil {return seed}
+
+	h: u32 = seed
+	for b in transmute([]u8)title.content {
+		h = (h ~ u32(b)) * 0x01000193
+	}
+	h = (h ~ u32('/')) * 0x01000193
+
+	return title_make_id(title.parent, h)
 }
 
 
@@ -346,7 +355,7 @@ decorate_markdown_with_title_ids :: proc(markdown: string) -> string {
 		assert(1 <= title_level && title_level <= 6)
 
 		title_content := strings.trim_space(line[title_level:])
-		unique_id := make_title_id(title_content)
+		unique_id := 0 // FIXME
 		title_id_raw := fmt.aprintf(
 			"%d-%s",
 			unique_id,
@@ -374,7 +383,7 @@ decorate_markdown_with_title_ids :: proc(markdown: string) -> string {
 	return strings.to_string(builder)
 }
 
-toc_lex_titles :: proc(markdown: string, allocator := context.allocator) -> []Title {
+article_parse_titles :: proc(markdown: string, allocator := context.allocator) -> []Title {
 	titles := make([dynamic]Title, 0, 50, allocator)
 
 	inside_code_section := false
@@ -403,12 +412,49 @@ toc_lex_titles :: proc(markdown: string, allocator := context.allocator) -> []Ti
 		assert(1 <= title_level && title_level <= 6)
 
 		title_content := strings.trim_space(line[title_level:])
-		unique_id := make_title_id(title_content)
-		append(&titles, Title{content = title_content, level = title_level, unique_id = unique_id})
+		append(
+			&titles,
+			Title {
+				content = title_content,
+				level   = title_level,
+				/* Other fields backpatched */
+			},
+		)
+	}
+
+	fmt.println(titles)
+	for &title, i in titles {
+		if i == 0 do continue
+
+		previous := &titles[i - 1]
+		level_diff := previous.level - title.level
+		title.parent = previous.parent
+
+		if level_diff > 0 {
+			for _ in 0 ..< level_diff {
+				assert(title.parent != nil)
+				title.parent = title.parent.parent
+			}
+		} else if level_diff < 0 {
+			title.parent = previous
+		}
+	}
+
+	// Debug
+	for &title in titles {
+		title.id = title_make_id(&title)
+		fmt.printf("title: content=%s level=%d id=%d", title.content, title.level, title.id)
+		parent := title.parent
+		for parent != nil {
+			fmt.printf(" -> %s", parent.content)
+			parent = parent.parent
+		}
+		fmt.println("")
 	}
 
 	return titles[:]
 }
+
 
 toc_write :: proc(sb: ^strings.Builder, titles: []Title) -> []Title {
 	if len(titles) == 0 {return {}}
@@ -416,7 +462,7 @@ toc_write :: proc(sb: ^strings.Builder, titles: []Title) -> []Title {
 	title := titles[0]
 	title_id_raw := fmt.aprintf(
 		"%d-%s",
-		title.unique_id,
+		title.id,
 		title.content,
 		allocator = context.temp_allocator,
 	)
@@ -463,7 +509,7 @@ toc_write :: proc(sb: ^strings.Builder, titles: []Title) -> []Title {
 
 
 append_article_toc :: proc(sb: ^strings.Builder, markdown: string, article_title: string) {
-	titles := toc_lex_titles(markdown)
+	titles := article_parse_titles(markdown)
 	if len(titles) == 0 {return}
 
 	strings.write_string(sb, " <strong>Table of contents</strong>\n")
