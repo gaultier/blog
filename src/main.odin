@@ -468,16 +468,17 @@ markdown_parse_titles :: proc(markdown: string, allocator := context.allocator) 
 		previous.sub_content_len = title.title_start - previous.sub_content_start
 
 		level_diff := previous.level - title.level
-		title.parent = previous.parent
 
-		if level_diff > 0 { 	// The current title is a direct descendant of `previous`.
+		if level_diff > 0 { 	// The current title is a (great-)uncle of the current title.
 			assert(level_diff == 1)
-			title.parent = title.parent.parent
 			if title.parent != nil {
+				title.parent = title.parent.parent
 				sa.push_back(&title.parent.children, &title)
 			}
-		} else if level_diff < 0 { 	// The current title is a (great-)uncle of the current title.
+		} else if level_diff < 0 { 	// The current title is a direct descendant of `previous`.
 			title.parent = previous
+		} else if level_diff == 0 { 	// Sibling.
+			title.parent = previous.parent
 		}
 	}
 
