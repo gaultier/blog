@@ -369,6 +369,8 @@ decorate_markdown_titles_with_id :: proc(markdown: string, titles: []Title) -> s
 	title_last := titles[len(titles) - 1]
 	strings.write_string(&sb, markdown[title_last.sub_content_start:])
 
+	assert(len(sb.buf) > len(markdown))
+
 	return strings.to_string(sb)
 }
 
