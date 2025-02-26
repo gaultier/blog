@@ -1,6 +1,5 @@
 package main
 
-import sa "core:container/small_array"
 import "core:encoding/uuid"
 import "core:encoding/uuid/legacy"
 import "core:fmt"
@@ -67,7 +66,8 @@ Title :: struct {
 	level:                 int,
 	id:                    TitleId,
 	parent:                ^Title,
-	children:              sa.Small_Array(16, ^Title),
+	first_child:           ^Title,
+	first_sibling:         ^Title,
 
 	// Needed to convert the markdown titles to HTML titles with ids, interspersed with each section content.
 	// Also since the `content` field is the trimmed original title, we cannot use its length to deduct those.
@@ -493,7 +493,18 @@ markdown_parse_titles :: proc(
 			}
 		}
 		assert(title.parent.level + 1 == title.level)
-		sa.push_back(&title.parent.children, &title)
+
+
+		child := title.parent.first_child
+
+		for child != nil && child.first_sibling != nil {
+			child = child.first_sibling
+		}
+		if child != nil {
+			child.first_sibling = &title
+		} else {
+			title.parent.first_child = &title
+		}
 	}
 
 	// Backpatch `id` field which is a hash of the full path to this node including ancestors.
@@ -507,6 +518,8 @@ markdown_parse_titles :: proc(
 
 // TODO: Use title tree?
 article_write_toc_rec :: proc(sb: ^strings.Builder, title: ^Title) {
+	if title == nil {return}
+
 	if title.level > 1 {
 		fmt.sbprintf(
 			sb,
@@ -520,21 +533,21 @@ article_write_toc_rec :: proc(sb: ^strings.Builder, title: ^Title) {
 		)
 	}
 
-	children := sa.slice(&title.children)
-	if len(children) > 0 {strings.write_string(sb, "<ul>\n")}
-	for child in children {
-		article_write_toc_rec(sb, child)
-	}
-	if len(children) > 0 {strings.write_string(sb, "</ul>\n")}
+
+	if title.first_child != nil {strings.write_string(sb, "<ul>\n")}
+	article_write_toc_rec(sb, title.first_child)
+	if title.first_child != nil {strings.write_string(sb, "</ul>\n")}
 
 	if title.level > 1 {
 		strings.write_string(sb, "  </li>\n")
 	}
+
+	article_write_toc_rec(sb, title.first_sibling)
 }
 
 
 article_write_toc :: proc(sb: ^strings.Builder, root: ^Title) {
-	if root.children.len == 0 {return}
+	if root.first_child == nil {return}
 
 	strings.write_string(sb, " <strong>Table of contents</strong>\n")
 	article_write_toc_rec(sb, root)
@@ -618,25 +631,18 @@ article_generate_html_file :: proc(
 
 TitleWalkCb :: proc(title: ^Title, ctx: any) -> bool
 
-title_print :: proc(title: ^Title, ctx: any) -> bool {
+title_print :: proc(title: ^Title) {
+	if title == nil {return}
+
 	for _ in 0 ..= title.level {
 		fmt.printf("  ")
 	}
 	fmt.printf("title=%s level=%d id=%d\n", title.content, title.level, title.id)
-	return true
+
+	title_print(title.first_child)
+	title_print(title.first_sibling)
 }
 
-titles_walk_depth_first :: proc(title: ^Title, cb: TitleWalkCb, ctx: any) -> bool {
-	if title == nil {return false}
-
-	if !cb(title, ctx) {return false}
-
-	for child in sa.slice(&title.children) {
-		if !titles_walk_depth_first(child, cb, ctx) {return false}
-	}
-
-	return true
-}
 
 article_generate :: proc(
 	git_stat: GitStat,
@@ -674,7 +680,7 @@ article_generate :: proc(
 	stem := filepath.stem(git_stat.path_rel)
 	article.output_file_name = strings.concatenate([]string{stem, ".html"})
 	article.titles, article.titles_tree = markdown_parse_titles(content_without_metadata)
-	titles_walk_depth_first(article.titles_tree, title_print, nil)
+	title_print(article.titles_tree)
 
 	article_generate_html_file(content_without_metadata, article, header, footer) or_return
 	fmt.printf("generated article: title=%s\n", article.title)
@@ -779,7 +785,7 @@ home_page_generate :: proc(
 		) or_return
 
 		titles, root := markdown_parse_titles(markdown_content)
-		titles_walk_depth_first(root, title_print, nil)
+		title_print(root)
 		decorated_markdown := article_decorate_markdown_titles_with_id(markdown_content, titles)
 
 		cmark_stdout_bin, os2_err := run_sub_process_with_stdin(
