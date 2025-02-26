@@ -330,8 +330,8 @@ make_html_friendly_id :: proc(input: string, allocator := context.allocator) -> 
 // Replace plain markdown section title (e.g. `## Lunch and dinner`) by 
 // a HTML title with an id (e.g. `<h2 id="456123-lunch-and-dinner">Lunch and dinner</h2>`),
 // so that the links in the TOC can point to it.
-decorate_markdown_with_title_ids :: proc(markdown: string, titles: []Title) -> string {
-	if len(titles) == 0 {
+decorate_markdown_titles_with_id :: proc(markdown: string, titles: []Title) -> string {
+	if len(titles) == 0 { 	// Nothing to do.
 		return markdown
 	}
 
@@ -539,7 +539,7 @@ generate_html_article :: proc(
 
 	context.allocator = context.temp_allocator
 
-	decorated_markdown := decorate_markdown_with_title_ids(article_content, article.titles)
+	decorated_markdown := decorate_markdown_titles_with_id(article_content, article.titles)
 
 	cmark_output_bin, os2_err := run_sub_process_and_get_stdout(
 		cmark_command,
@@ -742,7 +742,7 @@ generate_home_page :: proc(
 		) or_return
 
 		titles := markdown_parse_titles(markdown_content)
-		decorated_markdown := decorate_markdown_with_title_ids(markdown_content, titles)
+		decorated_markdown := decorate_markdown_titles_with_id(markdown_content, titles)
 
 		cmark_stdout_bin, os2_err := run_sub_process_and_get_stdout(
 			cmark_command,
