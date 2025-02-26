@@ -67,7 +67,7 @@ Title :: struct {
 	level:                 int,
 	id:                    TitleId,
 	parent:                ^Title,
-	children:              sa.Small_Array(16, Title),
+	children:              sa.Small_Array(16, ^Title),
 
 	// Needed to convert the markdown titles to HTML titles with ids, interspersed with each section content.
 	// Also since the `content` field is the trimmed original title, we cannot use its length to deduct those.
@@ -449,17 +449,15 @@ markdown_parse_titles :: proc(markdown: string, allocator := context.allocator) 
 		assert(1 <= title_level && title_level <= 6)
 
 		title_content := strings.trim_space(line[title_level:])
-		append(
-			&titles,
-			Title {
-				content               = title_content,
-				content_html_friendly = html_make_id(title_content),
-				level                 = title_level,
-				sub_content_start     = pos,
-				title_start           = pos - (idx + 1),
-				/* Other fields backpatched. */
-			},
-		)
+		title := Title {
+			content               = title_content,
+			content_html_friendly = html_make_id(title_content),
+			level                 = title_level,
+			sub_content_start     = pos,
+			title_start           = pos - (idx + 1),
+			/* Other fields backpatched. */
+		}
+		append(&titles, title)
 	}
 
 	// Backpatch `parent` and `sub_content_len` fields.
@@ -472,14 +470,13 @@ markdown_parse_titles :: proc(markdown: string, allocator := context.allocator) 
 		level_diff := previous.level - title.level
 		title.parent = previous.parent
 
-		if level_diff > 0 { 	// The current title is a descendant of `previous`.
+		if level_diff > 0 { 	// The current title is a direct descendant of `previous`.
 			assert(level_diff == 1)
-			for _ in 0 ..< level_diff {
-				assert(title.parent != nil)
-				title.parent = title.parent.parent
+			title.parent = title.parent.parent
+			if title.parent != nil {
+				sa.push_back(&title.parent.children, &title)
 			}
-			sa.append(&title.parent.children, title)
-		} else if level_diff < 0 {
+		} else if level_diff < 0 { 	// The current title is a (great-)uncle of the current title.
 			title.parent = previous
 		}
 	}
