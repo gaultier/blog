@@ -36,6 +36,7 @@ Article :: struct {
 	tags:              []string,
 	creation_date:     string,
 	modification_date: string,
+	titles:            []Title,
 }
 
 TitleId :: u32
@@ -66,7 +67,14 @@ datetime_to_date :: proc(datetime: string) -> string {
 	return split[0]
 }
 
-parse_metadata :: proc(markdown: string, path: string) -> (title: string, tags: []string) {
+parse_metadata :: proc(
+	markdown: string,
+	path: string,
+) -> (
+	title: string,
+	tags: []string,
+	content_without_metadata: string,
+) {
 	metadata_lines := strings.split_lines_n(markdown, 4)
 
 	assert(len(metadata_lines) >= 4)
@@ -88,6 +96,9 @@ parse_metadata :: proc(markdown: string, path: string) -> (title: string, tags: 
 	}
 
 	assert(!strings.starts_with(title, "Title:"))
+
+	metadata_split := strings.split_n(markdown, metadata_delimiter + "\n", 2)
+	content_without_metadata = metadata_split[1]
 
 	return
 }
@@ -519,21 +530,18 @@ append_article_toc :: proc(sb: ^strings.Builder, markdown: string, article_title
 }
 
 generate_html_article :: proc(
-	markdown: string,
+	article_content: string,
 	article: Article,
 	header: string,
 	footer: string,
 ) -> (
 	err: os.Error,
 ) {
-	assert(len(markdown) > 0)
+	assert(len(article_content) > 0)
 	assert(len(header) > 0)
 	assert(len(footer) > 0)
 
 	context.allocator = context.temp_allocator
-
-	metadata_split := strings.split_n(markdown, metadata_delimiter + "\n", 2)
-	article_content := metadata_split[1]
 
 	decorated_markdown := decorate_markdown_with_title_ids(article_content)
 
@@ -621,14 +629,19 @@ generate_article :: proc(
 
 	stem := filepath.stem(git_stat.path_rel)
 
-	article.title, article.tags = parse_metadata(original_markdown_content, git_stat.path_rel)
+	content_without_metadata: string
+	article.title, article.tags, content_without_metadata = parse_metadata(
+		original_markdown_content,
+		git_stat.path_rel,
+	)
 
 	article.creation_date = git_stat.creation_date
 	article.modification_date = git_stat.modification_date
 
 	article.output_file_name = strings.concatenate([]string{stem, ".html"})
+	article.titles = article_parse_titles(original_markdown_content)
 
-	generate_html_article(original_markdown_content, article, header, footer) or_return
+	generate_html_article(content_without_metadata, article, header, footer) or_return
 	fmt.printf("generated article: %v\n", article)
 
 	return
