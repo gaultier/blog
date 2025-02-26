@@ -436,6 +436,7 @@ markdown_parse_titles :: proc(markdown: string, allocator := context.allocator) 
 	}
 
 	fmt.println(titles)
+	// Backpatch `parent` field.
 	for &title, i in titles {
 		if i == 0 do continue
 
@@ -453,7 +454,7 @@ markdown_parse_titles :: proc(markdown: string, allocator := context.allocator) 
 		}
 	}
 
-	// Debug
+	// Backpatch `id` field which is a hash of the full path to this node including ancestors.
 	for &title in titles {
 		title.id = title_make_id(&title)
 		fmt.printf("title: content=%s level=%d id=%d", title.content, title.level, title.id)
