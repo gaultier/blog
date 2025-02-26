@@ -493,6 +493,7 @@ markdown_parse_titles :: proc(
 		} else if level_diff == 0 { 	// Sibling.
 			title.parent = previous.parent
 		}
+		assert(title.parent.level + 1 == title.level)
 	}
 
 	// Backpatch `id` field which is a hash of the full path to this node including ancestors.
