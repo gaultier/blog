@@ -461,6 +461,7 @@ markdown_parse_titles :: proc(markdown: string, allocator := context.allocator) 
 }
 
 
+// FIXME: Use title tree.
 toc_write :: proc(sb: ^strings.Builder, titles: []Title) -> []Title {
 	if len(titles) == 0 {return {}}
 
