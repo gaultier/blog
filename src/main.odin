@@ -540,6 +540,11 @@ generate_html_article :: proc(
 	assert(len(article_content) > 0)
 	assert(len(header) > 0)
 	assert(len(footer) > 0)
+	assert(len(article.tags) > 0)
+	assert(len(article.title) > 0)
+	assert(len(article.creation_date) > 0)
+	assert(len(article.modification_date) > 0)
+	assert(len(article.output_file_name) > 0)
 
 	context.allocator = context.temp_allocator
 
