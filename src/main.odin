@@ -487,13 +487,13 @@ markdown_parse_titles :: proc(
 		if level_diff > 0 { 	// The current title is a (great-)uncle of the current title.
 			assert(level_diff == 1)
 			title.parent = title.parent.parent
-			sa.push_back(&title.parent.children, &title)
 		} else if level_diff < 0 { 	// The current title is a direct descendant of `previous`.
 			title.parent = previous
 		} else if level_diff == 0 { 	// Sibling.
 			title.parent = previous.parent
 		}
 		assert(title.parent.level + 1 == title.level)
+		sa.push_back(&title.parent.children, &title)
 	}
 
 	// Backpatch `id` field which is a hash of the full path to this node including ancestors.
