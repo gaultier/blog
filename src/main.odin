@@ -507,7 +507,6 @@ markdown_parse_titles :: proc(
 
 // TODO: Use title tree?
 article_write_toc_rec :: proc(sb: ^strings.Builder, title: ^Title) {
-	strings.write_string(sb, "<ul>\n")
 	if title.level > 1 {
 		fmt.sbprintf(
 			sb,
@@ -522,14 +521,15 @@ article_write_toc_rec :: proc(sb: ^strings.Builder, title: ^Title) {
 	}
 
 	children := sa.slice(&title.children)
+	if len(children) > 0 {strings.write_string(sb, "<ul>\n")}
 	for child in children {
 		article_write_toc_rec(sb, child)
 	}
+	if len(children) > 0 {strings.write_string(sb, "</ul>\n")}
 
 	if title.level > 1 {
 		strings.write_string(sb, "  </li>\n")
 	}
-	strings.write_string(sb, "</ul>\n")
 }
 
 
