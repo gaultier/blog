@@ -85,7 +85,7 @@ datetime_to_date :: proc(datetime: string) -> string {
 // ---
 // The quick brown fox jumps over the lazy dog. Lorem ipsum [...].
 // ```
-parse_metadata :: proc(
+article_parse_metadata :: proc(
 	markdown: string,
 	path: string,
 ) -> (
@@ -478,9 +478,9 @@ markdown_parse_titles :: proc(markdown: string, allocator := context.allocator) 
 }
 
 
-// FIXME: Use title tree?
-toc_write :: proc(sb: ^strings.Builder, titles: []Title) -> []Title {
-	if len(titles) == 0 {return {}}
+// TODO: Use title tree?
+article_write_toc_rec :: proc(sb: ^strings.Builder, titles: []Title) -> []Title {
+	if len(titles) == 0 {return {}} 	// End of recursion.
 
 	title := titles[0]
 	fmt.sbprintf(
@@ -512,7 +512,7 @@ toc_write :: proc(sb: ^strings.Builder, titles: []Title) -> []Title {
 		strings.write_string(sb, "<ul>\n")
 		// Recurse on children.
 		// `remaining` is now a sibling or '(great-)uncle' of ours.
-		remaining := toc_write(sb, titles[1:])
+		remaining := article_write_toc_rec(sb, titles[1:])
 		assert(true if len(remaining) == 0 else remaining[0].level >= title.level)
 
 		// Close the tags that need to be closed.
@@ -520,11 +520,11 @@ toc_write :: proc(sb: ^strings.Builder, titles: []Title) -> []Title {
 		strings.write_string(sb, "</li>\n")
 
 		// And now handle the rest of the titles.
-		return toc_write(sb, remaining)
+		return article_write_toc_rec(sb, remaining)
 	} else {
 		// Easy case, next title is a sibling, just close our own `<li>` tag and handle the rest of the titles.
 		strings.write_string(sb, "</li>\n")
-		return toc_write(sb, titles[1:])
+		return article_write_toc_rec(sb, titles[1:])
 	}
 }
 
@@ -534,7 +534,7 @@ article_write_toc :: proc(sb: ^strings.Builder, titles: []Title, article_title: 
 
 	strings.write_string(sb, " <strong>Table of contents</strong>\n")
 	strings.write_string(sb, "<ul>\n")
-	toc_write(sb, titles)
+	article_write_toc_rec(sb, titles)
 	strings.write_string(sb, "</ul>\n")
 }
 
@@ -644,7 +644,7 @@ article_generate :: proc(
 	stem := filepath.stem(git_stat.path_rel)
 
 	content_without_metadata: string
-	article.title, article.tags, content_without_metadata = parse_metadata(
+	article.title, article.tags, content_without_metadata = article_parse_metadata(
 		original_markdown_content,
 		git_stat.path_rel,
 	)
@@ -662,13 +662,7 @@ article_generate :: proc(
 }
 
 // Note: Only markdown files tracked by `git` are considered.
-generate_all_articles :: proc(
-	header: string,
-	footer: string,
-) -> (
-	articles: []Article,
-	err: os.Error,
-) {
+articles_generate :: proc(header: string, footer: string) -> (articles: []Article, err: os.Error) {
 	assert(len(header) > 0)
 	assert(len(footer) > 0)
 
@@ -939,7 +933,7 @@ run :: proc() -> (os_err: os.Error) {
 	header := transmute(string)os.read_entire_file_from_filename_or_err("header.html") or_return
 	footer := transmute(string)os.read_entire_file_from_filename_or_err("footer.html") or_return
 
-	articles := generate_all_articles(header, footer) or_return
+	articles := articles_generate(header, footer) or_return
 	home_page_generate(articles, header, footer) or_return
 	tags_page_generate(articles, header, footer) or_return
 	rss_generate(articles) or_return
