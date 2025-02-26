@@ -12,6 +12,20 @@ import "core:slice"
 import "core:strings"
 import "core:unicode"
 
+// Plan:
+// - Get all markdown files from git along with their creation/modification date
+// - For each markdown file:
+//   + Read from file
+//   + Split metadata from markdown content
+//   + Parse metadata
+//   + Parse markdown
+//   + Decorate titles (could be done on HTML or on markdown)
+//   + Generate TOC
+//   + Generate HTML
+// - Generate tags page
+// - Generate home page
+// - Generate RSS feed
+
 feed_uuid_str :: "9c065c53-31bc-4049-a795-936802a6b1df"
 base_url :: "https://gaultier.github.io/blog"
 back_link :: "<p><a href=\"/blog\"> ⏴ Back to all articles</a></p>\n"
