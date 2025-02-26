@@ -79,7 +79,8 @@ Title :: struct {
 // FNV hash of the full title path including direct ancestors.
 // Conceptually: for `# A\n##B\n###C\n`, we do: `return fnv_hash("A/B/C")`.
 title_make_id :: proc(title: ^Title, seed := u32(0x811c9dc5)) -> TitleId {
-	if title == nil {return seed}
+	// Reached root?
+	if title == title.parent {return seed}
 
 	h: u32 = seed
 	for b in transmute([]u8)title.content {
@@ -412,7 +413,13 @@ article_decorate_markdown_titles_with_id :: proc(markdown: string, titles: []Tit
 	return strings.to_string(sb)
 }
 
-markdown_parse_titles :: proc(markdown: string, allocator := context.allocator) -> []Title {
+markdown_parse_titles :: proc(
+	markdown: string,
+	allocator := context.allocator,
+) -> (
+	[]Title,
+	^Title,
+) {
 	// Check that we parse markdown without metadata.
 	assert(!strings.starts_with(markdown, "Title:"))
 
@@ -421,6 +428,10 @@ markdown_parse_titles :: proc(markdown: string, allocator := context.allocator) 
 
 	inside_code_section := false
 	pos := 0
+	root := new(Title, allocator)
+	root.level = 1
+	root.parent = root
+
 	for {
 		idx := strings.index_byte(markdown[pos:], '\n')
 		if idx == -1 {break}
@@ -447,7 +458,7 @@ markdown_parse_titles :: proc(markdown: string, allocator := context.allocator) 
 		if !is_begin_markdown_title {continue}
 
 		title_level := strings.count(line, "#")
-		assert(1 <= title_level && title_level <= 6)
+		assert(1 < title_level && title_level <= 6)
 
 		title_content := strings.trim_space(line[title_level:])
 		title := Title {
@@ -456,11 +467,13 @@ markdown_parse_titles :: proc(markdown: string, allocator := context.allocator) 
 			level                 = title_level,
 			sub_content_start     = pos,
 			title_start           = pos - (idx + 1),
+			parent                = root, // May be backpatched.
 			/* Other fields backpatched. */
 		}
 		append(&titles, title)
 	}
 	assert(len(titles) <= max_titles)
+
 
 	// Backpatch `parent` and `sub_content_len` fields.
 	for &title, i in titles {
@@ -473,10 +486,8 @@ markdown_parse_titles :: proc(markdown: string, allocator := context.allocator) 
 
 		if level_diff > 0 { 	// The current title is a (great-)uncle of the current title.
 			assert(level_diff == 1)
-			if title.parent != nil {
-				title.parent = title.parent.parent
-				sa.push_back(&title.parent.children, &title)
-			}
+			title.parent = title.parent.parent
+			sa.push_back(&title.parent.children, &title)
 		} else if level_diff < 0 { 	// The current title is a direct descendant of `previous`.
 			title.parent = previous
 		} else if level_diff == 0 { 	// Sibling.
@@ -489,7 +500,7 @@ markdown_parse_titles :: proc(markdown: string, allocator := context.allocator) 
 		title.id = title_make_id(&title)
 	}
 
-	return titles[:]
+	return titles[:], root
 }
 
 
@@ -628,6 +639,26 @@ article_generate_html_file :: proc(
 	return
 }
 
+
+TitleWalkCb :: proc(title: ^Title, ctx: any) -> bool
+
+title_print :: proc(title: ^Title, ctx: any) -> bool {
+	fmt.printf("title=%s level=%d\n", title.content, title.level)
+	return true
+}
+
+title_walk_depth_first :: proc(title: ^Title, cb: TitleWalkCb, ctx: any) -> bool {
+	if title == nil {return false}
+
+	if !cb(title, ctx) {return false}
+
+	for child in sa.slice(&title.children) {
+		if !title_walk_depth_first(child, cb, ctx) {return false}
+	}
+
+	return true
+}
+
 article_generate :: proc(
 	git_stat: GitStat,
 	header: string,
@@ -663,7 +694,9 @@ article_generate :: proc(
 
 	stem := filepath.stem(git_stat.path_rel)
 	article.output_file_name = strings.concatenate([]string{stem, ".html"})
-	article.titles = markdown_parse_titles(content_without_metadata)
+	root: ^Title
+	article.titles, root = markdown_parse_titles(content_without_metadata)
+	title_walk_depth_first(root, title_print, nil)
 
 	article_generate_html_file(content_without_metadata, article, header, footer) or_return
 	fmt.printf("generated article: %v\n", article)
@@ -767,7 +800,8 @@ home_page_generate :: proc(
 			markdown_file_path,
 		) or_return
 
-		titles := markdown_parse_titles(markdown_content)
+		titles, root := markdown_parse_titles(markdown_content)
+		title_walk_depth_first(root, title_print, nil)
 		decorated_markdown := article_decorate_markdown_titles_with_id(markdown_content, titles)
 
 		cmark_stdout_bin, os2_err := run_sub_process_with_stdin(
