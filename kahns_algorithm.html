@@ -179,9 +179,9 @@
 		</li>
 </ul>
 
-<h2 id="0-introduction">
-	<a class="title" href="#0-introduction">Introduction</a>
-	<a class="hash-anchor" href="#0-introduction" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+<h2 id="4275806978-introduction">
+	<a class="title" href="#4275806978-introduction">Introduction</a>
+	<a class="hash-anchor" href="#4275806978-introduction" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>Graphs are everywhere in Software Engineering, or so we are told by Computer Science teachers and interviewers. But sometimes, they do show up in real problems.</p>
 <p>Not too long ago, I was tasked to create a Web API to create and update a company's hierarchy of employee, and display that on a web page. Basically, who reports to whom.</p>
@@ -200,9 +200,9 @@ Miranda -&gt; Angela
 <p>It opens the door to various invalid inputs: links that form a graph (an employee has multiple managers), multiple roots (e.g. multiple CEOs) or cycles.</p>
 <p>We have to detect those and reject them, such as this one:</p>
 <p><img src="kahns_algorithm_1_invalid.svg" alt="Invalid employee hierarchy" /></p>
-<h2 id="0-the-database">
-	<a class="title" href="#0-the-database">The database</a>
-	<a class="hash-anchor" href="#0-the-database" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+<h2 id="3658996082-the-database">
+	<a class="title" href="#3658996082-the-database">The database</a>
+	<a class="hash-anchor" href="#3658996082-the-database" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>So how do we store all of those people in the database?</p>
 <pre><code class="language-sql">CREATE TABLE IF NOT EXISTS people(name TEXT NOT NULL UNIQUE, manager BIGINT REFERENCES people)
@@ -228,9 +228,9 @@ Miranda -&gt; Angela
 <li>Since the algorithm for the topological sort takes as input an adjacency matrix (more on this later), we can easily detect the invalid case of a node having more than one outgoing edge (i.e. more than one manager, i.e. multiple roots).</li>
 </ul>
 <p>From now one, I will use the graph of employees (where <code>Zoe</code> has two managers) as example since that's a possible input to our API and we need to detect this case.</p>
-<h2 id="0-topological-sort">
-	<a class="title" href="#0-topological-sort">Topological sort</a>
-	<a class="hash-anchor" href="#0-topological-sort" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+<h2 id="3448959225-topological-sort">
+	<a class="title" href="#3448959225-topological-sort">Topological sort</a>
+	<a class="hash-anchor" href="#3448959225-topological-sort" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>From Wikipedia:</p>
 <blockquote>
@@ -278,9 +278,9 @@ Zoe
 </code></pre>
 <p>So, how can we implement something like <code>tsort</code> for our problem at hand? That's where <a href="https://en.wikipedia.org/wiki/Topological_sorting#Kahn&#x27;s_algorithm">Kahn's algorithm</a> comes in to do exactly that: find cycles in the graph and output a topological sort.</p>
 <p><em>Note that that's not the only solution and there are ways to detect cycles without creating a topological sort, but this algorithm seems relatively unknown and does not come up often on the Internet, so let's discover how it works and implement it. I promise, it's not complex.</em></p>
-<h2 id="0-how-to-store-the-graph-in-memory">
-	<a class="title" href="#0-how-to-store-the-graph-in-memory">How to store the graph in memory</a>
-	<a class="hash-anchor" href="#0-how-to-store-the-graph-in-memory" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+<h2 id="1273712339-how-to-store-the-graph-in-memory">
+	<a class="title" href="#1273712339-how-to-store-the-graph-in-memory">How to store the graph in memory</a>
+	<a class="hash-anchor" href="#1273712339-how-to-store-the-graph-in-memory" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>There are many ways to do so, and Kahn's algorithm does not dictate which one to use.</p>
 <p>We'll use an <a href="https://en.wikipedia.org/wiki/Adjacency_matrix">adjacency matrix</a>, because it's simple conceptually, maps well to Kahn's algorithm, and can be optimized if needed.</p>
@@ -322,9 +322,9 @@ But note that this adjacency matrix is a concept, it shows what information is p
 </ul>
 <p>Wikipedia lists others if you are interested, it's a well-known problem.</p>
 <p>Alright, now that we know how our graph is represented, on to the algorithm.</p>
-<h2 id="0-kahn-s-algorithm">
-	<a class="title" href="#0-kahn-s-algorithm">Kahn's algorithm</a>
-	<a class="hash-anchor" href="#0-kahn-s-algorithm" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+<h2 id="1475551869-kahn-s-algorithm">
+	<a class="title" href="#1475551869-kahn-s-algorithm">Kahn's algorithm</a>
+	<a class="hash-anchor" href="#1475551869-kahn-s-algorithm" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p><a href="https://en.wikipedia.org/wiki/Topological_sorting#Kahn&#x27;s_algorithm">Kahn's algorithm</a> keeps track of nodes with no incoming edge, and mutates the graph (in our case the adjacency matrix), by removing one edge at a time, until there are no more edges, and builds a list of nodes in the right order, which is the output.</p>
 <p>Here's the pseudo-code:</p>
@@ -374,9 +374,9 @@ else
 Note that this algorithm is not capable by itself to point out which cycle there was exactly, only that there was one. That's because we mutated the graph by removing edges. If this information was important, we could keep track of which edges we removed in order, and re-add them back, or perhaps apply the algorithm to a copy of the graph (the adjacency matrix is trivial to clone).</li>
 </ul>
 <p>This algorithm is loose concerning the order of some operations, for example, picking a node with no incoming edge, or in which order the nodes in <code>S</code> are stored. That gives room for an implementation to use certain data structures or orders that are faster, but in some cases we want the order to be always the same to solve ties in the stable way and to be reproducible. In order to do that, we simply use the alphabetical order. So in our example above, at line 5, we picked <code>Zoe</code> out of <code>[Zoe, Bella, Miranda]</code>. Using this method, we would keep the working set <code>S</code> sorted alphabetically and pick <code>Bella</code> out of <code>[Bella, Miranda, Zoe]</code>.</p>
-<h2 id="0-implementation">
-	<a class="title" href="#0-implementation">Implementation</a>
-	<a class="hash-anchor" href="#0-implementation" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+<h2 id="3410597752-implementation">
+	<a class="title" href="#3410597752-implementation">Implementation</a>
+	<a class="hash-anchor" href="#3410597752-implementation" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>I implemented this at the time in Go, but I will use for this article the lingua franca of the 2010s, Javascript.</p>
 <p><em>I don't write Javascript these days, I stopped many years ago, so apologies in advance if I am not using all the bells and whistles of 'Modern Javascript', or if the code is not quite idiomatic.</em></p>
@@ -392,9 +392,9 @@ Note that this algorithm is not capable by itself to point out which cycle there
 
 const nodes = [&quot;Angela&quot;, &quot;Bella&quot;, &quot;Ellen&quot;, &quot;Jane&quot;, &quot;Miranda&quot;, &quot;Zoe&quot;];
 </code></pre>
-<h3 id="0-helpers">
-	<a class="title" href="#0-helpers">Helpers</a>
-	<a class="hash-anchor" href="#0-helpers" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+<h3 id="3667958886-helpers">
+	<a class="title" href="#3667958886-helpers">Helpers</a>
+	<a class="hash-anchor" href="#3667958886-helpers" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h3>
 <p>We need a helper function to check if a node has no incoming edge (line 9 in the algorithm):</p>
 <pre><code class="language-js">function hasNodeNoIncomingEdge(adjacencyMatrix, nodeIndex) {
@@ -432,9 +432,9 @@ const nodes = [&quot;Angela&quot;, &quot;Bella&quot;, &quot;Ellen&quot;, &quot;J
   return false;
 }
 </code></pre>
-<h3 id="0-the-algorithm">
-	<a class="title" href="#0-the-algorithm">The algorithm</a>
-	<a class="hash-anchor" href="#0-the-algorithm" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+<h3 id="1391191453-the-algorithm">
+	<a class="title" href="#1391191453-the-algorithm">The algorithm</a>
+	<a class="hash-anchor" href="#1391191453-the-algorithm" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h3>
 <p>We are finally ready to implement the algorithm. It's a straightforward, line by line, translation of the pseudo-code:</p>
 <pre><code class="language-js">function topologicalSort(adjacencyMatrix) {
@@ -474,9 +474,9 @@ const nodes = [&quot;Angela&quot;, &quot;Bella&quot;, &quot;Ellen&quot;, &quot;J
 </code></pre>
 <p>Interestingly, it is not the same order as <code>tsort</code>, but it is indeed a valid topological ordering. That's because there are ties between some nodes and we do not resolve those ties the exact same way <code>tsort</code> does.</p>
 <p>But in our specific case, we just want a valid insertion order in the database, and so this is enough.</p>
-<h3 id="0-inserting-entries-in-the-database">
-	<a class="title" href="#0-inserting-entries-in-the-database">Inserting entries in the database</a>
-	<a class="hash-anchor" href="#0-inserting-entries-in-the-database" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+<h3 id="266987965-inserting-entries-in-the-database">
+	<a class="title" href="#266987965-inserting-entries-in-the-database">Inserting entries in the database</a>
+	<a class="hash-anchor" href="#266987965-inserting-entries-in-the-database" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h3>
 <p>Now, we can produce the SQL code to insert our entries. We operate on a clone of the adjacency matrix for convenience because we later need to know what is the outgoing edge for a given node.</p>
 <p>We handle the special case of the root first, which is the last element, and then we go through the topologically sorted list of employees in reverse order, and insert each one. We use a one liner to get the manager id by name when inserting to avoid many round trips to the database:</p>
@@ -504,9 +504,9 @@ INSERT INTO people SELECT &quot;Miranda&quot;, rowid FROM people WHERE name = &q
 INSERT INTO people SELECT &quot;Jane&quot;, rowid FROM people WHERE name = &quot;Ellen&quot; LIMIT 1;
 INSERT INTO people SELECT &quot;Zoe&quot;, rowid FROM people WHERE name = &quot;Jane&quot; LIMIT 1;
 </code></pre>
-<h3 id="0-detecting-cycles">
-	<a class="title" href="#0-detecting-cycles">Detecting cycles</a>
-	<a class="hash-anchor" href="#0-detecting-cycles" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+<h3 id="1211708065-detecting-cycles">
+	<a class="title" href="#1211708065-detecting-cycles">Detecting cycles</a>
+	<a class="hash-anchor" href="#1211708065-detecting-cycles" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h3>
 <p>As we said earlier, we get that for free, so let's check our implementation against this invalid example:</p>
 <p><img src="kahns_algorithm_4.svg" alt="Employee hierarchy with cycle" /></p>
@@ -531,9 +531,9 @@ const employeesTopologicallySorted = topologicalSort(structuredClone(adjacencyMa
 
 Error: Graph has at least one cycle
 </code></pre>
-<h3 id="0-detecting-multiple-roots">
-	<a class="title" href="#0-detecting-multiple-roots">Detecting multiple roots</a>
-	<a class="hash-anchor" href="#0-detecting-multiple-roots" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+<h3 id="2939355639-detecting-multiple-roots">
+	<a class="title" href="#2939355639-detecting-multiple-roots">Detecting multiple roots</a>
+	<a class="hash-anchor" href="#2939355639-detecting-multiple-roots" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h3>
 <p>One thing that topological sorting does not do for us is to detect the case of multiple roots in the graph, for example:</p>
 <p><img src="kahns_algorithm_3.svg" alt="Employee hierarchy with multiple roots" /></p>
@@ -572,9 +572,9 @@ const nodes = [&quot;Angela&quot;, &quot;Bella&quot;, &quot;Ellen&quot;, &quot;J
 console.log(hasMultipleRoots(adjacencyMatrix));
 </code></pre>
 <p>And we get: <code>true</code>. With our previous (valid) example, we get: <code>false</code>.</p>
-<h2 id="0-playing-with-the-database">
-	<a class="title" href="#0-playing-with-the-database">Playing with the database</a>
-	<a class="hash-anchor" href="#0-playing-with-the-database" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+<h2 id="782257250-playing-with-the-database">
+	<a class="title" href="#782257250-playing-with-the-database">Playing with the database</a>
+	<a class="hash-anchor" href="#782257250-playing-with-the-database" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>We can query each employee along with their manager name so:</p>
 <pre><code class="language-sql">SELECT a.name as employee_name, COALESCE(b.name, '') as manager_name FROM people a LEFT JOIN people b ON a.manager = b.rowid;
@@ -587,16 +587,16 @@ LEFT JOIN people n_plus_2 ON n_plus_1.manager = n_plus_2.rowid
 WHERE employee.name = ?
 </code></pre>
 <p>We can also do this with hairy recursive Common Table Expression (CTE) but I'll leave that to the reader.</p>
-<h2 id="0-closing-thoughts">
-	<a class="title" href="#0-closing-thoughts">Closing thoughts</a>
-	<a class="hash-anchor" href="#0-closing-thoughts" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+<h2 id="3440295979-closing-thoughts">
+	<a class="title" href="#3440295979-closing-thoughts">Closing thoughts</a>
+	<a class="hash-anchor" href="#3440295979-closing-thoughts" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>Graphs and algorithms operating on them do not have to be complicated. Using an adjacency matrix and Kahn's algorithm, we can achieve a lot with little and it remains simple.</p>
 <p>There are many ways to optimize the code in this article; the point was not to write the most efficient code, but to showcase in the clearest, simplest way possible to detect cycles and store a graph/tree in memory and in a database.</p>
 <p>If you want to play with the code here and try to make it faster, go at it!</p>
-<h2 id="0-addendum-the-full-code">
-	<a class="title" href="#0-addendum-the-full-code">Addendum: the full code</a>
-	<a class="hash-anchor" href="#0-addendum-the-full-code" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+<h2 id="1512890027-addendum-the-full-code">
+	<a class="title" href="#1512890027-addendum-the-full-code">Addendum: the full code</a>
+	<a class="hash-anchor" href="#1512890027-addendum-the-full-code" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <details>
   <summary>The full code</summary>

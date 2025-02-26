@@ -170,9 +170,9 @@
 <p><em>Discussions: <a href="https://old.reddit.com/r/rust/comments/1gflxxh/lessons_learned_from_a_successful_rust_rewrite/?">/r/rust</a>, <a href="https://old.reddit.com/r/programming/comments/1gfljj7/lessons_learned_from_a_successful_rust_rewrite/?">/r/programming</a>, <a href="https://news.ycombinator.com/item?id=41994189">HN</a>, <a href="https://lobste.rs/s/n6gciw/lessons_learned_from_successful_rust">lobsters</a></em></p>
 <p>I have written about my on-going rewrite-it-to-Rust effort at work: <a href="/blog/you_inherited_a_legacy_cpp_codebase_now_what.md">1</a>, <a href="/blog/how_to_rewrite_a_cpp_codebase_successfully.md">2</a>, <a href="/blog/rust_c++_interop_trick.html">3</a>. And now it's finished, meaning it's 100% Rust and 0% C++ - the public C API has not changed, just the implementation, one function at time until the end. Let's have a look back at what worked, what didn't, and what can be done about it.</p>
 <p>For context, I have written projects in pure Rust before, so I won't mention all of the usual Rust complaints, like &quot;learning it is hard&quot;, they did not affect me during this project.</p>
-<h2 id="0-what-worked-well">
-	<a class="title" href="#0-what-worked-well">What worked well</a>
-	<a class="hash-anchor" href="#0-what-worked-well" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+<h2 id="1596753652-what-worked-well">
+	<a class="title" href="#1596753652-what-worked-well">What worked well</a>
+	<a class="hash-anchor" href="#1596753652-what-worked-well" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>The rewrite was done incrementally, in a stop-and-go fashion. At some point, as I expected, we had to add brand new features while the rewrite was on-going and that was very smooth with this approach. Contrast this with the (wrong) approach of starting a new codebase from scratch in parallel, and then the feature has to be implemented twice.</p>
 <p>The new code is much, much simpler and easier to reason about. It is roughly the same number of lines of code as the old C++ codebase, or slightly more. Some people think that equivalent Rust code will be much shorter (I have heard ratios of 1/2 or 2/3), but in my experience, it's not really the case. C++ can be incredibly verbose in some instances, but Rust as well. And the C++ code will often ignore some errors that the Rust compiler forces the developer to handle, which is a good thing, but also makes the codebase slightly bigger.</p>
@@ -183,14 +183,14 @@
 <p>The builtin test framework in Rust is very serviceable. All the ones I used in C++ were terrible and took so much time to even compile.</p>
 <p>Rust is much more concerned with correctness than C++, so it sparked a lot of useful discussions. For example: oh, the Rust compiler is forcing me to check if this byte array is valid UTF8 when I try to convert it to a string. The old C++ code did no such check. Let's add this check.</p>
 <p>It felt so good to remove all the CMake files. On all the C or C++ projects I worked on, I never felt that CMake was worth it and I always lost a lot of hours to coerce it into doing what I needed.</p>
-<h2 id="0-what-did-not-work-so-well">
-	<a class="title" href="#0-what-did-not-work-so-well">What did not work so well</a>
-	<a class="hash-anchor" href="#0-what-did-not-work-so-well" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+<h2 id="3041159231-what-did-not-work-so-well">
+	<a class="title" href="#3041159231-what-did-not-work-so-well">What did not work so well</a>
+	<a class="hash-anchor" href="#3041159231-what-did-not-work-so-well" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>This section is surprisingly long and is the most interesting in my opinion. Did Rust hold its promises?</p>
-<h3 id="0-i-am-still-chasing-undefined-behavior">
-	<a class="title" href="#0-i-am-still-chasing-undefined-behavior">I am still chasing Undefined Behavior</a>
-	<a class="hash-anchor" href="#0-i-am-still-chasing-undefined-behavior" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+<h3 id="2006554032-i-am-still-chasing-undefined-behavior">
+	<a class="title" href="#2006554032-i-am-still-chasing-undefined-behavior">I am still chasing Undefined Behavior</a>
+	<a class="hash-anchor" href="#2006554032-i-am-still-chasing-undefined-behavior" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h3>
 <p>Doing an incremental rewrite from C/C++ to Rust, we had to use a lot of raw pointers and <code>unsafe{}</code> blocks. And even when segregating these to the entry point of the library, they proved to be a big pain in the neck.</p>
 <p>All the stringent rules of Rust still apply inside these blocks but the compiler just stops checking them for you, so you are on your own. As such, it's so easy to introduce Undefined Behavior. I honestly think from this experience that it is easier to inadvertently introduce Undefined Behavior in Rust than in C++, and it turn, it's easier in C++ than in C.</p>
@@ -236,9 +236,9 @@ help: &lt;2883&gt; was later invalidated at offsets [0x0..0x8] by a Unique retag
 <p>So, what could have been a compile time error, is now a runtime error. Great. I hope you have 100% test coverage! Thank god there's Miri.</p>
 <p>If you are writing <code>unsafe{}</code> code without Miri checking it, or if you do so without absolutely having to, I think this is foolish. It will blow up in your face.</p>
 <p>Miri is awesome. But...</p>
-<h3 id="0-miri-does-not-always-work-and-i-still-have-to-use-valgrind">
-	<a class="title" href="#0-miri-does-not-always-work-and-i-still-have-to-use-valgrind">Miri does not always work and I still have to use Valgrind</a>
-	<a class="hash-anchor" href="#0-miri-does-not-always-work-and-i-still-have-to-use-valgrind" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+<h3 id="2694732638-miri-does-not-always-work-and-i-still-have-to-use-valgrind">
+	<a class="title" href="#2694732638-miri-does-not-always-work-and-i-still-have-to-use-valgrind">Miri does not always work and I still have to use Valgrind</a>
+	<a class="hash-anchor" href="#2694732638-miri-does-not-always-work-and-i-still-have-to-use-valgrind" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h3>
 <p>I am not talking about some parts of Miri that are experimental. Or the fact that running code under Miri is excruciatingly slow. Or the fact that Miri only works in <code>nightly</code>.</p>
 <p>No, I am talking about code that Miri cannot run, period:</p>
@@ -254,9 +254,9 @@ help: &lt;2883&gt; was later invalidated at offsets [0x0..0x8] by a Unique retag
 <p>That means that there is a lot of <code>unsafe</code> code that is simply not being checked right now. Bummer.</p>
 <p>Perhaps there could be a fallback implementation for these libraries that's entirely implemented in software (and in pure Rust). But that's not really feasible for most libraries to maintain two implementations just for Rust developers.</p>
 <p>I resorted to run the problematic tests in <code>valgrind</code>, like I used to do with pure C/C++ code. It does not detect many things that Miri would, for example having more than one mutable pointer to the same value, which is perfectly fine in C/C++/Assembly, but not in Rust.</p>
-<h3 id="0-i-am-still-chasing-memory-leaks">
-	<a class="title" href="#0-i-am-still-chasing-memory-leaks">I am still chasing memory leaks</a>
-	<a class="hash-anchor" href="#0-i-am-still-chasing-memory-leaks" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+<h3 id="2584141995-i-am-still-chasing-memory-leaks">
+	<a class="title" href="#2584141995-i-am-still-chasing-memory-leaks">I am still chasing memory leaks</a>
+	<a class="hash-anchor" href="#2584141995-i-am-still-chasing-memory-leaks" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h3>
 <p>Our library offers a C API, something like this:</p>
 <pre><code class="language-c">void* handle = MYLIB_init();
@@ -304,41 +304,41 @@ Also, it can become unwieldy when there are tens of types that have an allocatio
 <p>And often, there is complicated logic with lots of code paths, and we need to ensure that the cleanup is always called. In C, this is typically done with <code>goto</code> to an <code>end:</code> label that always cleans up the resources. But Rust does not support this form of <code>goto</code>.</p>
 <p>So we solved it with the <a href="https://docs.rs/scopeguard/latest/scopeguard/">defer</a> crate in Rust and implementing a <a href="https://www.gingerbill.org/article/2015/08/19/defer-in-cpp/">defer</a> statement in C++.</p>
 <p>However, the Rust borrow checker really does not like the <code>defer</code> pattern. Typically, a cleanup function will take as its argument as <code>&amp;mut</code> reference and that precludes the rest of the code to also store and use a second <code>&amp;mut</code> reference to the same value. So we could not always use <code>defer</code> on the Rust side.</p>
-<h3 id="0-cross-compilation-does-not-always-work">
-	<a class="title" href="#0-cross-compilation-does-not-always-work">Cross-compilation does not always work</a>
-	<a class="hash-anchor" href="#0-cross-compilation-does-not-always-work" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+<h3 id="1568320768-cross-compilation-does-not-always-work">
+	<a class="title" href="#1568320768-cross-compilation-does-not-always-work">Cross-compilation does not always work</a>
+	<a class="hash-anchor" href="#1568320768-cross-compilation-does-not-always-work" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h3>
 <p>Same issue as with Miri, using libraries with a Rust API but with parts implemented in C or Assembly will make <code>cargo build --target=...</code> not work out of the box. It won't affect everyone out there, and perhaps it can be worked around by providing a sysroot like in C or C++. But that's a bummer still. For example, I think Zig manages this situation smoothly for most targets, since it ships with a C compiler and standard library, whereas <code>cargo</code> does not.</p>
-<h3 id="0-cbindgen-does-not-always-work">
-	<a class="title" href="#0-cbindgen-does-not-always-work">Cbindgen does not always work</a>
-	<a class="hash-anchor" href="#0-cbindgen-does-not-always-work" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+<h3 id="929959896-cbindgen-does-not-always-work">
+	<a class="title" href="#929959896-cbindgen-does-not-always-work">Cbindgen does not always work</a>
+	<a class="hash-anchor" href="#929959896-cbindgen-does-not-always-work" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h3>
 <p><a href="https://github.com/mozilla/cbindgen">cbindgen</a> is a conventionally used tool to generate a C header from a Rust codebase. It mostly works, until it does not. I hit quite a number of limitations or bugs. I thought of contributing PRs, but I found for most of these issues, a stale open PR, so I didn't. Every time, I thought of dumping <code>cbindgen</code> and writing all of the C prototypes by hand. I think it would have been simpler in the end.</p>
 <p>Again, as a comparison, I believe Zig has a builtin C header generation tool.</p>
-<h3 id="0-unstable-abi">
-	<a class="title" href="#0-unstable-abi">Unstable ABI</a>
-	<a class="hash-anchor" href="#0-unstable-abi" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+<h3 id="3393406502-unstable-abi">
+	<a class="title" href="#3393406502-unstable-abi">Unstable ABI</a>
+	<a class="hash-anchor" href="#3393406502-unstable-abi" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h3>
 <p>I talked about this point in my previous articles so I won't be too long. Basically, all the useful standard library types such as <code>Option</code> have no stable ABI, so they have to be replicated manually with the <code>repr(C)</code> annotation, so that they can be used from C or C++. This again is a bummer and creates friction. Note that I am equally annoyed at C++ ABI issues for the same reason.</p>
 <p>Many, many hours of hair pulling would be avoided if Rust and C++ adopted, like C, a <a href="https://daniel.haxx.se/blog/2024/10/30/eighteen-years-of-abi-stability/">stable ABI</a>.</p>
-<h3 id="0-no-support-for-custom-memory-allocators">
-	<a class="title" href="#0-no-support-for-custom-memory-allocators">No support for custom memory allocators</a>
-	<a class="hash-anchor" href="#0-no-support-for-custom-memory-allocators" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+<h3 id="2235693709-no-support-for-custom-memory-allocators">
+	<a class="title" href="#2235693709-no-support-for-custom-memory-allocators">No support for custom memory allocators</a>
+	<a class="hash-anchor" href="#2235693709-no-support-for-custom-memory-allocators" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h3>
 <p>With lots of C libraries, the user can provide its own allocator at runtime, which is often very useful. In Rust, the developer can only pick the global allocator at compile time. So we did not attempt to offer this feature in the library API.</p>
 <p>Additionally, all of the aforementioned issues about cleaning up resources would have been instantly fixed by using an <a href="/blog/tip_of_the_day_2.html">arena allocator</a>, which is not at all idiomatic in Rust and does not integrate with the standard library (even though there are crates for it). Again, Zig and Odin all support arenas natively, and it's trivial to implement and use them in C. I really longed for an arena while chasing subtle memory leaks.</p>
-<h3 id="0-complexity">
-	<a class="title" href="#0-complexity">Complexity</a>
-	<a class="hash-anchor" href="#0-complexity" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+<h3 id="3763530832-complexity">
+	<a class="title" href="#3763530832-complexity">Complexity</a>
+	<a class="hash-anchor" href="#3763530832-complexity" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h3>
 <p>From the start, I decided I would not touch async Rust with a ten-foot pole, and I did not miss it at all, for this project.</p>
 <p>Whilst reading the docs for <code>UnsafeCell</code> for the fourth time, and pondering whether I should use that or <code>RefCell</code>, while just having been burnt by the pitfalls of <code>MaybeUninit</code>, and asking myself if I need <code>Pin</code>, I really asked myself what life choices had led me to this.</p>
 <p>Pure Rust is already very complex, but add to it the whole layer that is mainly there to deal with FFI, and it really becomes a beast. Especially for new Rust learners.</p>
 <p>Some developers in our team straight declined to work on this codebase, mentioning the real or perceived Rust complexity.
 Now, I think that Rust is still mostly easier to learn than C++, but admittedly not by much, especially in this FFI heavy context.</p>
-<h2 id="0-conclusion">
-	<a class="title" href="#0-conclusion">Conclusion</a>
-	<a class="hash-anchor" href="#0-conclusion" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+<h2 id="3796851539-conclusion">
+	<a class="title" href="#3796851539-conclusion">Conclusion</a>
+	<a class="hash-anchor" href="#3796851539-conclusion" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>I am mostly satisfied with this Rust rewrite, but I was disappointed in some areas, and it overall took much more effort than I anticipated. Using Rust with a lot of C interop feels like using a completely different language than using pure Rust. There is much friction, many pitfalls, and many issues in C++, that Rust claims to have solved, that are in fact not really solved at all.</p>
 <p>I am deeply grateful to the developers of Rust, Miri, cbindgen, etc. They have done tremendous work. Still, the language and tooling, when doing lots of C FFI, feel immature, almost pre v1.0. If the ergonomics of <code>unsafe</code> (which are being worked and slightly improved in the recent versions), the standard library, the docs, the tooling, and the unstable ABI, all improve in the future, it could become a more pleasant experience.</p>

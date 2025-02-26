@@ -42,10 +42,14 @@ Article :: struct {
 TitleId :: u32
 
 Title :: struct {
-	content: string,
-	level:   int,
-	id:      TitleId,
-	parent:  ^Title,
+	content:               string,
+	content_html_friendly: string,
+	level:                 int,
+	id:                    TitleId,
+	parent:                ^Title,
+	title_start:           int,
+	sub_content_start:     int,
+	sub_content_len:       int,
 }
 
 // FNV hash of the full title path including direct ancestors.
@@ -326,82 +330,61 @@ make_html_friendly_id :: proc(input: string, allocator := context.allocator) -> 
 // Replace plain markdown section title (e.g. `## Lunch and dinner`) by 
 // a HTML title with an id (e.g. `<h2 id="456123-lunch-and-dinner"> Lunch and dinner</h2>`).
 decorate_markdown_with_title_ids :: proc(markdown: string, titles: []Title) -> string {
-	inside_code_section := false
+	if len(titles) == 0 {
+		return markdown
+	}
 
-	builder := strings.builder_make_len_cap(0, len(markdown) * 2)
+	sb := strings.builder_make_len_cap(0, len(markdown) * 2)
 
-	markdown_ptr := markdown
-	for line in strings.split_lines_iterator(&markdown_ptr) {
-		is_begin_html_title := strings.starts_with(line, "<h")
-		assert(!is_begin_html_title)
+	title_first := titles[0]
+	strings.write_string(&sb, markdown[0:title_first.title_start])
 
-		is_begin_markdown_title := strings.starts_with(line, "#")
-		is_delimiter_markdown_code_section := strings.starts_with(line, "```")
-
-		if is_delimiter_markdown_code_section && !inside_code_section {
-			inside_code_section = true
-			strings.write_string(&builder, line)
-			strings.write_rune(&builder, '\n')
-			continue
-		}
-
-		if is_delimiter_markdown_code_section && inside_code_section {
-			inside_code_section = false
-			strings.write_string(&builder, line)
-			strings.write_rune(&builder, '\n')
-			continue
-		}
-
-		if inside_code_section {
-			strings.write_string(&builder, line)
-			strings.write_rune(&builder, '\n')
-			continue
-		}
-
-		if !is_begin_markdown_title {
-			strings.write_string(&builder, line)
-			strings.write_rune(&builder, '\n')
-			continue
-		}
-
-		title_level := strings.count(line, "#")
-		assert(1 <= title_level && title_level <= 6)
-
-		title_content := strings.trim_space(line[title_level:])
-		unique_id := 0 // FIXME
-		title_id_raw := fmt.aprintf(
-			"%d-%s",
-			unique_id,
-			title_content,
-			allocator = context.temp_allocator,
-		)
-		title_id := make_html_friendly_id(title_id_raw)
-
+	for title in titles {
 		fmt.sbprintf(
-			&builder,
-			`<h%d id="%s">
-	<a class="title" href="#%s">%s</a>
-	<a class="hash-anchor" href="#%s" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+			&sb,
+			`<h%d id="%d-%s">
+	<a class="title" href="#%d-%s">%s</a>
+	<a class="hash-anchor" href="#%d-%s" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h%d>
 			`,
-			title_level,
-			title_id,
-			title_id,
-			title_content,
-			title_id,
-			title_level,
+			title.level,
+			title.id,
+			title.content_html_friendly,
+			title.id,
+			title.content_html_friendly,
+			title.content,
+			title.id,
+			title.content_html_friendly,
+			title.level,
 		)
-		strings.write_rune(&builder, '\n')
+		strings.write_rune(&sb, '\n')
+
+		strings.write_string(
+			&sb,
+			markdown[title.sub_content_start:title.sub_content_start + title.sub_content_len],
+		)
 	}
-	return strings.to_string(builder)
+
+	title_last := titles[len(titles) - 1]
+	strings.write_string(&sb, markdown[title_last.sub_content_start:])
+
+	return strings.to_string(sb)
 }
 
 markdown_parse_titles :: proc(markdown: string, allocator := context.allocator) -> []Title {
+	// Check we parse markdown without metadata.
+	assert(!strings.starts_with(markdown, "Title:"))
+
 	titles := make([dynamic]Title, 0, 50, allocator)
 
 	inside_code_section := false
-	markdown_ptr := markdown
-	for line in strings.split_lines_iterator(&markdown_ptr) {
+	pos := 0
+	for {
+		idx := strings.index_byte(markdown[pos:], '\n')
+		if idx == -1 {break}
+		line := markdown[pos:pos + idx]
+		pos += idx + 1
+
 		is_begin_html_title := strings.starts_with(line, "<h")
 		assert(!is_begin_html_title)
 
@@ -428,19 +411,24 @@ markdown_parse_titles :: proc(markdown: string, allocator := context.allocator) 
 		append(
 			&titles,
 			Title {
-				content = title_content,
-				level   = title_level,
+				content               = title_content,
+				content_html_friendly = make_html_friendly_id(title_content),
+				level                 = title_level,
+				sub_content_start     = pos,
+				title_start           = pos - (idx + 1),
 				/* Other fields backpatched */
 			},
 		)
 	}
 
 	fmt.println(titles)
-	// Backpatch `parent` field.
+	// Backpatch `parent` and `sub_content_len` fields.
 	for &title, i in titles {
 		if i == 0 do continue
 
 		previous := &titles[i - 1]
+		previous.sub_content_len = title.title_start - previous.sub_content_start
+
 		level_diff := previous.level - title.level
 		title.parent = previous.parent
 
@@ -646,7 +634,7 @@ generate_article :: proc(
 	article.modification_date = git_stat.modification_date
 
 	article.output_file_name = strings.concatenate([]string{stem, ".html"})
-	article.titles = markdown_parse_titles(original_markdown_content)
+	article.titles = markdown_parse_titles(content_without_metadata)
 
 	generate_html_article(content_without_metadata, article, header, footer) or_return
 	fmt.printf("generated article: %v\n", article)
