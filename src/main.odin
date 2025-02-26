@@ -1,5 +1,6 @@
 package main
 
+import sa "core:container/small_array"
 import "core:encoding/uuid"
 import "core:encoding/uuid/legacy"
 import "core:fmt"
@@ -52,9 +53,9 @@ Article :: struct {
 	tags:              []string,
 	creation_date:     string,
 	modification_date: string,
-	// All titles in the order they were found in the markdown.
-	// TODO: Store titles as a tree and do depth-first traversal?
 	titles:            []Title,
+	// Titles as a tree.
+	titles_tree:       ^Title,
 }
 
 // Hash.
@@ -65,8 +66,8 @@ Title :: struct {
 	content_html_friendly: string,
 	level:                 int,
 	id:                    TitleId,
-	// Needed to compute the id as a hash of the full path to this node in the tree.
 	parent:                ^Title,
+	children:              sa.Small_Array(16, Title),
 
 	// Needed to convert the markdown titles to HTML titles with ids, interspersed with each section content.
 	// Also since the `content` field is the trimmed original title, we cannot use its length to deduct those.
@@ -471,11 +472,13 @@ markdown_parse_titles :: proc(markdown: string, allocator := context.allocator) 
 		level_diff := previous.level - title.level
 		title.parent = previous.parent
 
-		if level_diff > 0 {
+		if level_diff > 0 { 	// The current title is a descendant of `previous`.
+			assert(level_diff == 1)
 			for _ in 0 ..< level_diff {
 				assert(title.parent != nil)
 				title.parent = title.parent.parent
 			}
+			sa.append(&title.parent.children, title)
 		} else if level_diff < 0 {
 			title.parent = previous
 		}
