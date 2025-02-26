@@ -36,9 +36,11 @@ Article :: struct {
 	tags:              []string,
 	creation_date:     string,
 	modification_date: string,
+	// All titles in the order they were found in the markdown.
 	titles:            []Title,
 }
 
+// Hash.
 TitleId :: u32
 
 Title :: struct {
@@ -46,7 +48,11 @@ Title :: struct {
 	content_html_friendly: string,
 	level:                 int,
 	id:                    TitleId,
+	// Needed to compute the id as a hash of the full path to this node in the tree.
 	parent:                ^Title,
+
+	// Needed to convert the markdown titles to HTML titles with ids, interspersed with each section content.
+	// Also since the `content` field is the trimmed original title, we cannot use its length to deduct those.
 	title_start:           int,
 	sub_content_start:     int,
 	sub_content_len:       int,
@@ -71,6 +77,13 @@ datetime_to_date :: proc(datetime: string) -> string {
 	return split[0]
 }
 
+// Metadata is in the form:
+// ```
+// Title: My great title
+// Tags: Foo, Bar
+// ---
+// The quick brown fox jumps over the lazy dog. Lorem ipsum [...].
+// ```
 parse_metadata :: proc(
 	markdown: string,
 	path: string,
@@ -166,6 +179,7 @@ GitStat :: struct {
 	path_rel:          string,
 }
 
+// See: https://gaultier.github.io/blog/making_my_static_blog_generator_11_times_faster.html .
 git_get_articles_creation_and_modification_date :: proc() -> ([]GitStat, os2.Error) {
 	free_all(context.temp_allocator)
 	defer free_all(context.temp_allocator)
@@ -305,6 +319,8 @@ git_get_articles_creation_and_modification_date :: proc() -> ([]GitStat, os2.Err
 	return git_stats[:], nil
 }
 
+// Replace non-alphanumeric letters by alphanumeric (and underscore) letters
+// for use in the `id` field of HTML elements.
 make_html_friendly_id :: proc(input: string, allocator := context.allocator) -> string {
 	builder := strings.builder_make_len_cap(0, len(input) * 2, allocator)
 
@@ -461,7 +477,7 @@ markdown_parse_titles :: proc(markdown: string, allocator := context.allocator) 
 }
 
 
-// FIXME: Use title tree.
+// FIXME: Use title tree?
 toc_write :: proc(sb: ^strings.Builder, titles: []Title) -> []Title {
 	if len(titles) == 0 {return {}}
 
@@ -512,7 +528,7 @@ toc_write :: proc(sb: ^strings.Builder, titles: []Title) -> []Title {
 }
 
 
-append_article_toc :: proc(sb: ^strings.Builder, titles: []Title, article_title: string) {
+article_write_toc :: proc(sb: ^strings.Builder, titles: []Title, article_title: string) {
 	if len(titles) == 0 {return}
 
 	strings.write_string(sb, " <strong>Table of contents</strong>\n")
@@ -521,7 +537,7 @@ append_article_toc :: proc(sb: ^strings.Builder, titles: []Title, article_title:
 	strings.write_string(sb, "</ul>\n")
 }
 
-generate_html_article :: proc(
+article_generate_html_file :: proc(
 	article_content: string,
 	article: Article,
 	header: string,
@@ -586,7 +602,7 @@ generate_html_article :: proc(
 	}
 	strings.write_string(&html_sb, " </div>\n")
 
-	append_article_toc(&html_sb, article.titles, article.title)
+	article_write_toc(&html_sb, article.titles, article.title)
 
 	strings.write_rune(&html_sb, '\n')
 	strings.write_string(&html_sb, string(cmark_output_bin))
@@ -601,7 +617,7 @@ generate_html_article :: proc(
 	return
 }
 
-generate_article :: proc(
+article_generate :: proc(
 	git_stat: GitStat,
 	header: string,
 	footer: string,
@@ -638,13 +654,14 @@ generate_article :: proc(
 	article.output_file_name = strings.concatenate([]string{stem, ".html"})
 	article.titles = markdown_parse_titles(content_without_metadata)
 
-	generate_html_article(content_without_metadata, article, header, footer) or_return
+	article_generate_html_file(content_without_metadata, article, header, footer) or_return
 	fmt.printf("generated article: %v\n", article)
 
 	return
 }
 
-generate_all_articles_in_directory :: proc(
+// Note: Only markdown files tracked by `git` are considered.
+generate_all_articles :: proc(
 	header: string,
 	footer: string,
 ) -> (
@@ -660,17 +677,20 @@ generate_all_articles_in_directory :: proc(
 	assert(os2_err == nil)
 
 	for git_stat in git_stats {
+		// The home page is generate separately. The logic is different from an article.
 		if git_stat.path_rel == "index.md" {continue}
+
+		// Skip the readme.
 		if git_stat.path_rel == "README.md" {continue}
 
-		article := generate_article(git_stat, header, footer) or_return
+		article := article_generate(git_stat, header, footer) or_return
 		append(&articles_dyn, article)
 	}
 
 	return articles_dyn[:], nil
 }
 
-generate_home_page :: proc(
+home_page_generate :: proc(
 	articles: []Article,
 	header: string,
 	footer: string,
@@ -685,7 +705,7 @@ generate_home_page :: proc(
 	free_all(context.temp_allocator)
 	defer free_all(context.allocator)
 
-	slice.sort_by(articles, compare_articles_by_creation_date_desc)
+	slice.sort_by(articles, article_cmp_by_creation_date_desc)
 
 	markdown_file_path :: "index.md"
 	html_file_path :: "index.html"
@@ -762,7 +782,7 @@ generate_home_page :: proc(
 	return
 }
 
-generate_page_articles_by_tag :: proc(
+tags_page_generate :: proc(
 	articles: []Article,
 	header: string,
 	footer: string,
@@ -809,7 +829,7 @@ generate_page_articles_by_tag :: proc(
 	for tag in tags_lexicographically_ordered {
 		articles_for_tag := articles_by_tag[tag]
 
-		slice.sort_by(articles_for_tag[:], compare_articles_by_creation_date_asc)
+		slice.sort_by(articles_for_tag[:], article_cmp_by_creation_date_asc)
 		tag_id := make_html_friendly_id(tag)
 
 		fmt.sbprintf(&sb, `<li id="%s"><span class="tag">%s</span><ul>`, tag_id, tag)
@@ -839,15 +859,15 @@ generate_page_articles_by_tag :: proc(
 	return
 }
 
-compare_articles_by_creation_date_asc :: proc(a: Article, b: Article) -> bool {
+article_cmp_by_creation_date_asc :: proc(a: Article, b: Article) -> bool {
 	return a.creation_date < b.creation_date
 }
 
-compare_articles_by_creation_date_desc :: proc(a: Article, b: Article) -> bool {
+article_cmp_by_creation_date_desc :: proc(a: Article, b: Article) -> bool {
 	return a.creation_date > b.creation_date
 }
 
-generate_rss_feed_for_article :: proc(sb: ^strings.Builder, article: Article) {
+article_rss_generate :: proc(sb: ^strings.Builder, article: Article) {
 	base_uuid, err := uuid.read(feed_uuid_str)
 	assert(err == nil)
 	article_uuid := legacy.generate_v5_string(base_uuid, article.output_file_name)
@@ -873,14 +893,14 @@ generate_rss_feed_for_article :: proc(sb: ^strings.Builder, article: Article) {
 	)
 }
 
-generate_rss_feed :: proc(articles: []Article) -> (err: os.Error) {
+rss_generate :: proc(articles: []Article) -> (err: os.Error) {
 	assert(len(articles) > 0)
 
 	context.allocator = context.temp_allocator
 	free_all(context.temp_allocator)
 	defer free_all(context.allocator)
 
-	slice.sort_by(articles, compare_articles_by_creation_date_asc)
+	slice.sort_by(articles, article_cmp_by_creation_date_asc)
 
 	sb := strings.builder_make()
 
@@ -902,7 +922,7 @@ generate_rss_feed :: proc(articles: []Article) -> (err: os.Error) {
 	)
 
 	for a in articles {
-		generate_rss_feed_for_article(&sb, a)
+		article_rss_generate(&sb, a)
 	}
 
 	strings.write_string(&sb, "</feed>")
@@ -918,10 +938,10 @@ run :: proc() -> (os_err: os.Error) {
 	header := transmute(string)os.read_entire_file_from_filename_or_err("header.html") or_return
 	footer := transmute(string)os.read_entire_file_from_filename_or_err("footer.html") or_return
 
-	articles := generate_all_articles_in_directory(header, footer) or_return
-	generate_home_page(articles, header, footer) or_return
-	generate_page_articles_by_tag(articles, header, footer) or_return
-	generate_rss_feed(articles) or_return
+	articles := generate_all_articles(header, footer) or_return
+	home_page_generate(articles, header, footer) or_return
+	tags_page_generate(articles, header, footer) or_return
+	rss_generate(articles) or_return
 
 
 	return
