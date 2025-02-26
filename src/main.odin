@@ -375,7 +375,7 @@ decorate_markdown_titles_with_id :: proc(markdown: string, titles: []Title) -> s
 }
 
 markdown_parse_titles :: proc(markdown: string, allocator := context.allocator) -> []Title {
-	// Check we parse markdown without metadata.
+	// Check that we parse markdown without metadata.
 	assert(!strings.starts_with(markdown, "Title:"))
 
 	titles := make([dynamic]Title, 0, 50, allocator)
@@ -419,7 +419,7 @@ markdown_parse_titles :: proc(markdown: string, allocator := context.allocator) 
 				level                 = title_level,
 				sub_content_start     = pos,
 				title_start           = pos - (idx + 1),
-				/* Other fields backpatched */
+				/* Other fields backpatched. */
 			},
 		)
 	}
@@ -465,18 +465,16 @@ toc_write :: proc(sb: ^strings.Builder, titles: []Title) -> []Title {
 	if len(titles) == 0 {return {}}
 
 	title := titles[0]
-	title_id_raw := fmt.aprintf(
-		"%d-%s",
-		title.id,
-		title.content,
-		allocator = context.temp_allocator,
-	)
-	id := make_html_friendly_id(title_id_raw)
-
-	fmt.sbprintf(sb, `
+	fmt.sbprintf(
+		sb,
+		`
 <li>
-	<a href="#%s">%s</a>
-		`, id, title.content)
+	<a href="#%d-%s">%s</a>
+		`,
+		title.id,
+		title.content_html_friendly,
+		title.content,
+	)
 
 	is_next_title_higher := len(titles) > 1 && titles[1].level > title.level
 	is_next_title_lower := len(titles) > 1 && titles[1].level < title.level
