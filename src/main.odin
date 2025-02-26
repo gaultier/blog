@@ -322,7 +322,7 @@ git_get_articles_creation_and_modification_date :: proc() -> ([]GitStat, os2.Err
 
 // Replace non-alphanumeric letters by alphanumeric (and underscore) letters
 // for use in the `id` field of HTML elements.
-make_html_friendly_id :: proc(input: string, allocator := context.allocator) -> string {
+html_make_id :: proc(input: string, allocator := context.allocator) -> string {
 	builder := strings.builder_make_len_cap(0, len(input) * 2, allocator)
 
 	for c in input {
@@ -345,9 +345,11 @@ make_html_friendly_id :: proc(input: string, allocator := context.allocator) -> 
 }
 
 // Replace plain markdown section title (e.g. `## Lunch and dinner`) by 
-// a HTML title with an id (e.g. `<h2 id="456123-lunch-and-dinner">Lunch and dinner</h2>`),
+// a HTML title with an id (conceptually `<h2 id="456123-lunch-and-dinner">Lunch and dinner</h2>`),
 // so that the links in the TOC can point to it.
-decorate_markdown_titles_with_id :: proc(markdown: string, titles: []Title) -> string {
+// In reality it's a bit more HTML so that each title can be a link to itself, and we can copy
+// this link to the clipboard by clicking on it.
+article_decorate_markdown_titles_with_id :: proc(markdown: string, titles: []Title) -> string {
 	if len(titles) == 0 { 	// Nothing to do.
 		return markdown
 	}
@@ -432,7 +434,7 @@ markdown_parse_titles :: proc(markdown: string, allocator := context.allocator) 
 			&titles,
 			Title {
 				content               = title_content,
-				content_html_friendly = make_html_friendly_id(title_content),
+				content_html_friendly = html_make_id(title_content),
 				level                 = title_level,
 				sub_content_start     = pos,
 				title_start           = pos - (idx + 1),
@@ -441,7 +443,6 @@ markdown_parse_titles :: proc(markdown: string, allocator := context.allocator) 
 		)
 	}
 
-	fmt.println(titles)
 	// Backpatch `parent` and `sub_content_len` fields.
 	for &title, i in titles {
 		if i == 0 do continue
@@ -465,13 +466,6 @@ markdown_parse_titles :: proc(markdown: string, allocator := context.allocator) 
 	// Backpatch `id` field which is a hash of the full path to this node including ancestors.
 	for &title in titles {
 		title.id = title_make_id(&title)
-		fmt.printf("title: content=%s level=%d id=%d", title.content, title.level, title.id)
-		parent := title.parent
-		for parent != nil {
-			fmt.printf(" -> %s", parent.content)
-			parent = parent.parent
-		}
-		fmt.println("")
 	}
 
 	return titles[:]
@@ -557,7 +551,7 @@ article_generate_html_file :: proc(
 
 	context.allocator = context.temp_allocator
 
-	decorated_markdown := decorate_markdown_titles_with_id(article_content, article.titles)
+	decorated_markdown := article_decorate_markdown_titles_with_id(article_content, article.titles)
 
 	cmark_output_bin, os2_err := run_sub_process_and_get_stdout(
 		cmark_command,
@@ -589,7 +583,7 @@ article_generate_html_file :: proc(
 	}
 
 	for tag in article.tags {
-		id := make_html_friendly_id(tag)
+		id := html_make_id(tag)
 		fmt.sbprintf(
 			&html_sb,
 			` <a href="/blog/articles-by-tag.html#%s" class="tag">%s</a>`,
@@ -738,7 +732,7 @@ home_page_generate :: proc(
 			a.title,
 		)
 		for tag in a.tags {
-			id := make_html_friendly_id(tag)
+			id := html_make_id(tag)
 			fmt.sbprintf(
 				&sb,
 				` <a href="/blog/articles-by-tag.html#%s" class="tag">%s</a>`,
@@ -758,7 +752,7 @@ home_page_generate :: proc(
 		) or_return
 
 		titles := markdown_parse_titles(markdown_content)
-		decorated_markdown := decorate_markdown_titles_with_id(markdown_content, titles)
+		decorated_markdown := article_decorate_markdown_titles_with_id(markdown_content, titles)
 
 		cmark_stdout_bin, os2_err := run_sub_process_and_get_stdout(
 			cmark_command,
@@ -825,7 +819,7 @@ tags_page_generate :: proc(
 		articles_for_tag := articles_by_tag[tag]
 
 		slice.sort_by(articles_for_tag[:], article_cmp_by_creation_date_asc)
-		tag_id := make_html_friendly_id(tag)
+		tag_id := html_make_id(tag)
 
 		fmt.sbprintf(&sb, `<li id="%s"><span class="tag">%s</span><ul>`, tag_id, tag)
 
