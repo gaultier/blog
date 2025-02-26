@@ -59,6 +59,7 @@ Title :: struct {
 }
 
 // FNV hash of the full title path including direct ancestors.
+// Conceptually: for `# A\n##B\n###C\n`, we do: `return fnv_hash("A/B/C")`.
 title_make_id :: proc(title: ^Title, seed := u32(0x811c9dc5)) -> TitleId {
 	if title == nil {return seed}
 
