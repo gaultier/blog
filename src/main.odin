@@ -323,7 +323,7 @@ make_html_friendly_id :: proc(input: string, allocator := context.allocator) -> 
 	return strings.trim(strings.to_string(builder), "-")
 }
 
-decorate_markdown_with_title_ids :: proc(markdown: string) -> string {
+decorate_markdown_with_title_ids :: proc(markdown: string, titles: []Title) -> string {
 	inside_code_section := false
 
 	builder := strings.builder_make_len_cap(0, len(markdown) * 2)
@@ -394,7 +394,7 @@ decorate_markdown_with_title_ids :: proc(markdown: string) -> string {
 	return strings.to_string(builder)
 }
 
-article_parse_titles :: proc(markdown: string, allocator := context.allocator) -> []Title {
+markdown_parse_titles :: proc(markdown: string, allocator := context.allocator) -> []Title {
 	titles := make([dynamic]Title, 0, 50, allocator)
 
 	inside_code_section := false
@@ -519,8 +519,7 @@ toc_write :: proc(sb: ^strings.Builder, titles: []Title) -> []Title {
 }
 
 
-append_article_toc :: proc(sb: ^strings.Builder, markdown: string, article_title: string) {
-	titles := article_parse_titles(markdown)
+append_article_toc :: proc(sb: ^strings.Builder, titles: []Title, article_title: string) {
 	if len(titles) == 0 {return}
 
 	strings.write_string(sb, " <strong>Table of contents</strong>\n")
@@ -548,7 +547,7 @@ generate_html_article :: proc(
 
 	context.allocator = context.temp_allocator
 
-	decorated_markdown := decorate_markdown_with_title_ids(article_content)
+	decorated_markdown := decorate_markdown_with_title_ids(article_content, article.titles)
 
 	cmark_output_bin, os2_err := run_sub_process_and_get_stdout(
 		cmark_command,
@@ -594,7 +593,7 @@ generate_html_article :: proc(
 	}
 	strings.write_string(&html_sb, " </div>\n")
 
-	append_article_toc(&html_sb, article_content, article.title)
+	append_article_toc(&html_sb, article.titles, article.title)
 
 	strings.write_rune(&html_sb, '\n')
 	strings.write_string(&html_sb, string(cmark_output_bin))
@@ -644,7 +643,7 @@ generate_article :: proc(
 	article.modification_date = git_stat.modification_date
 
 	article.output_file_name = strings.concatenate([]string{stem, ".html"})
-	article.titles = article_parse_titles(original_markdown_content)
+	article.titles = markdown_parse_titles(original_markdown_content)
 
 	generate_html_article(content_without_metadata, article, header, footer) or_return
 	fmt.printf("generated article: %v\n", article)
@@ -749,7 +748,9 @@ generate_home_page :: proc(
 		markdown_content := transmute(string)os.read_entire_file_from_filename_or_err(
 			markdown_file_path,
 		) or_return
-		decorated_markdown := decorate_markdown_with_title_ids(markdown_content)
+
+		titles := markdown_parse_titles(markdown_content)
+		decorated_markdown := decorate_markdown_with_title_ids(markdown_content, titles)
 
 		cmark_stdout_bin, os2_err := run_sub_process_and_get_stdout(
 			cmark_command,
