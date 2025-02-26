@@ -122,7 +122,7 @@ article_parse_metadata :: proc(
 	return
 }
 
-run_sub_process_and_get_stdout :: proc(
+run_sub_process_with_stdin :: proc(
 	command: []string,
 	stdin: []byte,
 ) -> (
@@ -148,14 +148,14 @@ run_sub_process_and_get_stdout :: proc(
 	defer _ = os2.process_close(process)
 
 	if stdin_w != nil {
+		defer os2.close(stdin_w)
+
 		for cur := 0; cur < len(stdin); {
 			n_written := os2.write(stdin_w, stdin[cur:]) or_return
 			if n_written == 0 {break}
 			cur += n_written
 		}
-		os2.close(stdin_w)
 	}
-
 
 	stdout_sb := make([dynamic]u8, 0, 4096)
 	for {
@@ -554,7 +554,7 @@ article_generate_html_file :: proc(
 
 	decorated_markdown := article_decorate_markdown_titles_with_id(article_content, article.titles)
 
-	cmark_output_bin, os2_err := run_sub_process_and_get_stdout(
+	cmark_output_bin, os2_err := run_sub_process_with_stdin(
 		cmark_command,
 		transmute([]u8)decorated_markdown,
 	)
@@ -750,7 +750,7 @@ home_page_generate :: proc(
 		titles := markdown_parse_titles(markdown_content)
 		decorated_markdown := article_decorate_markdown_titles_with_id(markdown_content, titles)
 
-		cmark_stdout_bin, os2_err := run_sub_process_and_get_stdout(
+		cmark_stdout_bin, os2_err := run_sub_process_with_stdin(
 			cmark_command,
 			transmute([]u8)decorated_markdown,
 		)
