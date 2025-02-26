@@ -38,6 +38,7 @@ Article :: struct {
 	creation_date:     string,
 	modification_date: string,
 	// All titles in the order they were found in the markdown.
+	// TODO: Store titles as a tree and do depth-first traversal?
 	titles:            []Title,
 }
 
