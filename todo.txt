@@ -10,6 +10,7 @@ Ideas for articles:
 - [ ] A faster HTTP parser than NodeJS's one
 - [ ] SHA1 multi-block hash
 - [ ] How CGO calls are implemented in assembly
+- [ ] How I develop Windows applications from the comfort of Linux
 
 Blog implementation:
 
