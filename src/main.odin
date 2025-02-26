@@ -699,7 +699,7 @@ article_generate :: proc(
 	title_walk_depth_first(root, title_print, nil)
 
 	article_generate_html_file(content_without_metadata, article, header, footer) or_return
-	fmt.printf("generated article: %v\n", article)
+	fmt.printf("generated article: title=%s\n", article.title)
 
 	return
 }
