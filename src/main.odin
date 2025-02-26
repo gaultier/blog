@@ -644,7 +644,10 @@ article_generate_html_file :: proc(
 TitleWalkCb :: proc(title: ^Title, ctx: any) -> bool
 
 title_print :: proc(title: ^Title, ctx: any) -> bool {
-	fmt.printf("title=%s level=%d\n", title.content, title.level)
+	for _ in 0 ..= title.level {
+		fmt.printf("  ")
+	}
+	fmt.printf("title=%s level=%d id=%d\n", title.content, title.level, title.id)
 	return true
 }
 
