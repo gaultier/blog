@@ -121,29 +121,29 @@
 <ul>
 
 <li>
-	<a href="#1-the-problem">The problem</a>
+	<a href="#2777386775-the-problem">The problem</a>
 		</li>
 
 <li>
-	<a href="#2-working-with-the-repl-to-iteratively-close-in-on-a-solution">Working with the REPL to iteratively close in on a solution</a>
+	<a href="#2418228817-working-with-the-repl-to-iteratively-close-in-on-a-solution">Working with the REPL to iteratively close in on a solution</a>
 		<ul>
 
 <li>
-	<a href="#3-a-small-detour-pattern-matching">A small detour: pattern matching</a>
+	<a href="#2353890247-a-small-detour-pattern-matching">A small detour: pattern matching</a>
 		</li>
 
 <li>
-	<a href="#4-using-pattern-matching-to-solve-our-problem">Using pattern matching to solve our problem</a>
+	<a href="#4085765843-using-pattern-matching-to-solve-our-problem">Using pattern matching to solve our problem</a>
 		</li>
 </ul>
 </li>
 
 <li>
-	<a href="#5-the-final-solution">The final solution</a>
+	<a href="#913849831-the-final-solution">The final solution</a>
 		</li>
 
 <li>
-	<a href="#6-conclusion">Conclusion</a>
+	<a href="#1417203684-conclusion">Conclusion</a>
 		</li>
 </ul>
 
@@ -159,9 +159,9 @@ parentheses. I hope to show that it is in fact very approachable, easy to work
 with, and even fast to run!</p>
 <p>I will not go through installing Chicken Scheme and learning the basics, because
 it was <a href="http://blog.klipse.tech/scheme/2016/09/11/scheme-tutorial-1.html">already done better than I can</a>.</p>
-<h2 id="1-the-problem">
-	<a class="title" href="#1-the-problem">The problem</a>
-	<a class="hash-anchor" href="#1-the-problem" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+<h2 id="2777386775-the-problem">
+	<a class="title" href="#2777386775-the-problem">The problem</a>
+	<a class="hash-anchor" href="#2777386775-the-problem" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>We have a string looking like this: <code>AabcdZZqQ</code> which represents a chain of
 chemical units. Adjacent units of the same type (i.e letter) and opposite
@@ -169,9 +169,9 @@ polarity (i.e casing) react together and disappear.
 It means we want to remove adjacent characters which are the same letter and have opposite casing, e.g
 <code>Aa</code> and <code>qQ</code> disappear while <code>bc</code> and <code>ZZ</code> remain. Once we are finished, we have: <code>bcdZZ</code>.</p>
 <p>The final output is the number of characters in the final string, i.e, <code>5</code>.</p>
-<h2 id="2-working-with-the-repl-to-iteratively-close-in-on-a-solution">
-	<a class="title" href="#2-working-with-the-repl-to-iteratively-close-in-on-a-solution">Working with the REPL to iteratively close in on a solution</a>
-	<a class="hash-anchor" href="#2-working-with-the-repl-to-iteratively-close-in-on-a-solution" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+<h2 id="2418228817-working-with-the-repl-to-iteratively-close-in-on-a-solution">
+	<a class="title" href="#2418228817-working-with-the-repl-to-iteratively-close-in-on-a-solution">Working with the REPL to iteratively close in on a solution</a>
+	<a class="hash-anchor" href="#2418228817-working-with-the-repl-to-iteratively-close-in-on-a-solution" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>First, let's define our input, which is a string:</p>
 <pre><code class="language-scheme">(define input &quot;aAbxXBctTCz&quot;)
@@ -261,9 +261,9 @@ Chicken Scheme. For example, to get the first element of a list, we use the <cod
 <p>So we need to treat the case of the empty list (both for the first and the
 second argument) explicitly. We could do that by using lots of <code>if</code>, but it is
 more readable and concise to use pattern matching.</p>
-<h3 id="3-a-small-detour-pattern-matching">
-	<a class="title" href="#3-a-small-detour-pattern-matching">A small detour: pattern matching</a>
-	<a class="hash-anchor" href="#3-a-small-detour-pattern-matching" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+<h3 id="2353890247-a-small-detour-pattern-matching">
+	<a class="title" href="#2353890247-a-small-detour-pattern-matching">A small detour: pattern matching</a>
+	<a class="hash-anchor" href="#2353890247-a-small-detour-pattern-matching" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h3>
 <p>Scheme has a minimalist core, so we do not get pattern matching out of
 the box, but we can easily add it with the package <code>matchable</code>. Let's install
@@ -308,9 +308,9 @@ error if we trigger one of them, for example with a list containing several numb
 </code></pre>
 <p>Here we choose to (arbitrarily) return the product of the first elements of both
 list, to show that pattern matching is also a way to do destructuring.</p>
-<h3 id="4-using-pattern-matching-to-solve-our-problem">
-	<a class="title" href="#4-using-pattern-matching-to-solve-our-problem">Using pattern matching to solve our problem</a>
-	<a class="hash-anchor" href="#4-using-pattern-matching-to-solve-our-problem" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+<h3 id="4085765843-using-pattern-matching-to-solve-our-problem">
+	<a class="title" href="#4085765843-using-pattern-matching-to-solve-our-problem">Using pattern matching to solve our problem</a>
+	<a class="hash-anchor" href="#4085765843-using-pattern-matching-to-solve-our-problem" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h3>
 <p>If the second list (the input) is empty, it means we are
 finished, so we return the first list (<code>acc</code>):</p>
@@ -391,9 +391,9 @@ as <code>fold</code> and it ends up very small.</p>
 
 (read-line (open-input-file &quot;/Users/pgaultier/Downloads/aoc5.txt&quot;)) ;; =&gt; &quot;a big string...&quot;
 </code></pre>
-<h2 id="5-the-final-solution">
-	<a class="title" href="#5-the-final-solution">The final solution</a>
-	<a class="hash-anchor" href="#5-the-final-solution" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+<h2 id="913849831-the-final-solution">
+	<a class="title" href="#913849831-the-final-solution">The final solution</a>
+	<a class="hash-anchor" href="#913849831-the-final-solution" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>Here I use the package <code>clojurian</code> (<code>chicken-install clojurian</code>) to have access
 to the <code>-&gt;&gt;</code> macro which makes code more readable. It works like the pipe in the
@@ -508,9 +508,9 @@ acceptable amount of time.</p>
 <p>Yes, of course. However we need to be careful about how strings are implemented
 and what we we do with those. Most runtimes (e.g the JVM) use immutable strings,
 meaning we could end up allocating thousands of big strings, and being quite slow.</p>
-<h2 id="6-conclusion">
-	<a class="title" href="#6-conclusion">Conclusion</a>
-	<a class="hash-anchor" href="#6-conclusion" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+<h2 id="1417203684-conclusion">
+	<a class="title" href="#1417203684-conclusion">Conclusion</a>
+	<a class="hash-anchor" href="#1417203684-conclusion" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>That's it, we solved the fifth Advent of Code challenge in Scheme. The solution
 is under 30 lines of code, is (hopefully) simple and readable, and has a

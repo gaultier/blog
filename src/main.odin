@@ -3,6 +3,7 @@ package main
 import "core:encoding/uuid"
 import "core:encoding/uuid/legacy"
 import "core:fmt"
+import "core:hash"
 import "core:mem"
 import "core:mem/virtual"
 import "core:os"
@@ -38,11 +39,18 @@ Article :: struct {
 	modification_date: string,
 }
 
+TitleId :: u32
+
 Title :: struct {
 	content:   string,
 	level:     int,
-	unique_id: u32,
+	unique_id: TitleId,
 }
+
+make_title_id :: proc(title: string) -> TitleId {
+	return hash.fnv32(transmute([]u8)title)
+}
+
 
 datetime_to_date :: proc(datetime: string) -> string {
 	split := strings.split_n(datetime, "T", 2)
@@ -297,7 +305,6 @@ make_html_friendly_id :: proc(input: string, allocator := context.allocator) -> 
 
 decorate_markdown_with_title_ids :: proc(markdown: string) -> string {
 	inside_code_section := false
-	unique_id := 0
 
 	builder := strings.builder_make_len_cap(0, len(markdown) * 2)
 
@@ -339,7 +346,7 @@ decorate_markdown_with_title_ids :: proc(markdown: string) -> string {
 		assert(1 <= title_level && title_level <= 6)
 
 		title_content := strings.trim_space(line[title_level:])
-		unique_id += 1
+		unique_id := make_title_id(title_content)
 		title_id_raw := fmt.aprintf(
 			"%d-%s",
 			unique_id,
@@ -370,7 +377,6 @@ decorate_markdown_with_title_ids :: proc(markdown: string) -> string {
 toc_lex_titles :: proc(markdown: string, allocator := context.allocator) -> []Title {
 	titles := make([dynamic]Title, 0, 50, allocator)
 
-	unique_id := u32(0)
 	inside_code_section := false
 	markdown_ptr := markdown
 	for line in strings.split_lines_iterator(&markdown_ptr) {
@@ -397,7 +403,7 @@ toc_lex_titles :: proc(markdown: string, allocator := context.allocator) -> []Ti
 		assert(1 <= title_level && title_level <= 6)
 
 		title_content := strings.trim_space(line[title_level:])
-		unique_id += 1
+		unique_id := make_title_id(title_content)
 		append(&titles, Title{content = title_content, level = title_level, unique_id = unique_id})
 	}
 
