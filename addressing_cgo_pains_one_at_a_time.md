@@ -908,7 +908,7 @@ Cgo is rocky, but there are no real blocking issues, apart from the debugging pa
 <details>
   <summary>The full code</summary>
 
-`c/Makefile`
+`c/Makefile:`
 
 ```make
 libapi.a: api.o
@@ -918,7 +918,7 @@ api.o: api.c
 	$(CC) $(CFLAGS) api.c -c
 ```
 
-`c/api.c`
+`c/api.c:`
 
 ```c
 #include "api.h"
@@ -969,7 +969,7 @@ String animal_cat_get_name(Animal *animal) {
 }
 ```
 
-`c/api.h`
+`c/api.h:`
 
 ```c
 #pragma once
@@ -1004,7 +1004,7 @@ uint16_t animal_dog_get_tail(Animal *animal);
 String animal_cat_get_name(Animal *animal);
 ```
 
-`app/app.go`
+`app/app.go:`
 
 ```go
 package app
@@ -1036,7 +1036,7 @@ func DoStuff() {
 }
 ```
 
-`app/app_test.go`
+`app/app_test.go:`
 
 ```go
 package app
@@ -1051,7 +1051,7 @@ func TestAnimalMakeDog(t *testing.T) {
 }
 ```
 
-`app/cfuncs.go`
+`app/cfuncs.go:`
 
 ```go
 package app
@@ -1062,7 +1062,7 @@ void initial_setup(){}
 import "C"
 ```
 
-`main.go`
+`main.go:`
 
 ```go
 package main
@@ -1074,7 +1074,7 @@ func main() {
 }
 ```
 
-`go.mod`
+`go.mod:`
 
 ```
 module cgo

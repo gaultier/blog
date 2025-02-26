@@ -886,14 +886,14 @@ Executed in    1.47 secs
 </h2>
 <details>
   <summary>The full code</summary>
-<p><code>c/Makefile</code></p>
+<p><code>c/Makefile:</code></p>
 <pre><code class="language-make">libapi.a: api.o
 	$(AR) -rcs libapi.a api.o
 
 api.o: api.c
 	$(CC) $(CFLAGS) api.c -c
 </code></pre>
-<p><code>c/api.c</code></p>
+<p><code>c/api.c:</code></p>
 <pre><code class="language-c">#include &quot;api.h&quot;
 #include &lt;assert.h&gt;
 #include &lt;inttypes.h&gt;
@@ -941,7 +941,7 @@ String animal_cat_get_name(Animal *animal) {
   return animal-&gt;cat_name;
 }
 </code></pre>
-<p><code>c/api.h</code></p>
+<p><code>c/api.h:</code></p>
 <pre><code class="language-c">#pragma once
 #include &lt;stdint.h&gt;
 
@@ -973,7 +973,7 @@ uint16_t animal_dog_get_tail(Animal *animal);
 
 String animal_cat_get_name(Animal *animal);
 </code></pre>
-<p><code>app/app.go</code></p>
+<p><code>app/app.go:</code></p>
 <pre><code class="language-go">package app
 
 // NOTE: Do not use -Wall.
@@ -1002,7 +1002,7 @@ func DoStuff() {
 
 }
 </code></pre>
-<p><code>app/app_test.go</code></p>
+<p><code>app/app_test.go:</code></p>
 <pre><code class="language-go">package app
 
 import &quot;testing&quot;
@@ -1014,7 +1014,7 @@ func TestAnimalMakeDog(t *testing.T) {
 	}
 }
 </code></pre>
-<p><code>app/cfuncs.go</code></p>
+<p><code>app/cfuncs.go:</code></p>
 <pre><code class="language-go">package app
 
 /*
@@ -1022,7 +1022,7 @@ void initial_setup(){}
 */
 import &quot;C&quot;
 </code></pre>
-<p><code>main.go</code></p>
+<p><code>main.go:</code></p>
 <pre><code class="language-go">package main
 
 import &quot;cgo/app&quot;
@@ -1031,7 +1031,7 @@ func main() {
 	app.DoStuff()
 }
 </code></pre>
-<p><code>go.mod</code></p>
+<p><code>go.mod:</code></p>
 <pre><code>module cgo
 
 go 1.23.1
