@@ -328,7 +328,8 @@ make_html_friendly_id :: proc(input: string, allocator := context.allocator) -> 
 }
 
 // Replace plain markdown section title (e.g. `## Lunch and dinner`) by 
-// a HTML title with an id (e.g. `<h2 id="456123-lunch-and-dinner"> Lunch and dinner</h2>`).
+// a HTML title with an id (e.g. `<h2 id="456123-lunch-and-dinner">Lunch and dinner</h2>`),
+// so that the links in the TOC can point to it.
 decorate_markdown_with_title_ids :: proc(markdown: string, titles: []Title) -> string {
 	if len(titles) == 0 {
 		return markdown
