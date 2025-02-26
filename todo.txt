@@ -20,8 +20,8 @@ Blog implementation:
   + Results are shown inline
   + Results show (some) surrounding text
   + Results have a link to the page and surrounding html section
-  + Implementation: trigrams in wasm?
+  + Implementation: trigrams in js/wasm? Fuzz search? See https://pkg.odin-lang.org/search.js
   + Search code/data only fetched lazily
-  + Cache invalidation of the search blob e.g. when an article is created/modified?
+  + Cache invalidation of the search blob e.g. when an article is created/modified? => split search code (rarely changes) and data (changes a lot)
 - [ ] Articles excerpt on the home page?
 - [ ] Dark mode
