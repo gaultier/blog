@@ -6,15 +6,21 @@ Ideas for articles:
 - [ ] How this blog is made. Line numbers in code snippets.
 - [ ] Banjo chords
 - [ ] Dtrace VM
-- [ ] Wireguard UI
 - [ ] From BIOS to bootloader to kernel to userspace
 - [ ] A faster HTTP parser than NodeJS's one
 - [ ] SHA1 multi-block hash
+- [ ] How CGO calls are implemented in assembly
 
 Blog implementation:
 
 - [ ] Use libcmark to simplify parsing
 - [ ] Link to related articles at the end
 - [ ] Search
+  + Results are shown inline
+  + Results show (some) surrounding text
+  + Results have a link to the page and surrounding html section
+  + Implementation: trigrams in wasm?
+  + Search code/data only fetched lazily
+  + Cache invalidation of the search blob e.g. when an article is created/modified?
 - [ ] Articles excerpt on the home page?
 - [ ] Dark mode
