@@ -118,6 +118,7 @@ article_parse_metadata :: proc(
 	metadata_split := strings.split_n(markdown, metadata_delimiter + "\n", 2)
 	content_without_metadata = metadata_split[1]
 
+	assert(len(tags) > 0)
 	return
 }
 
@@ -578,10 +579,7 @@ article_generate_html_file :: proc(
 		article.title,
 	)
 
-	if len(article.tags) > 0 {
-		strings.write_string(&html_sb, "  <div class=\"tags\">")
-	}
-
+	strings.write_string(&html_sb, "  <div class=\"tags\">")
 	for tag in article.tags {
 		id := html_make_id(tag)
 		fmt.sbprintf(
@@ -591,10 +589,8 @@ article_generate_html_file :: proc(
 			tag,
 		)
 	}
+	strings.write_string(&html_sb, "</div>\n")
 
-	if len(article.tags) > 0 {
-		strings.write_string(&html_sb, "</div>\n")
-	}
 	strings.write_string(&html_sb, " </div>\n")
 
 	article_write_toc(&html_sb, article.titles, article.title)
