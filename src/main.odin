@@ -472,7 +472,7 @@ markdown_parse_titles :: proc(markdown: string, allocator := context.allocator) 
 	assert(len(titles) <= max_titles)
 
 
-	// Backpatch `parent` and `sub_content_len` fields.
+	// Backpatch `parent`, `sub_content_len` fields.
 	for &title, i in titles {
 		if i > 0 {
 			previous := &titles[i - 1]
@@ -634,23 +634,31 @@ article_generate_html_file :: proc(
 }
 
 
-title_print :: proc(title: ^Title) {
+title_print :: proc(handle: os.Handle, title: ^Title) {
 	if title == nil {return}
 
-	for _ in 0 ..= title.level {
-		fmt.printf("  ")
-	}
-	fmt.printf(
-		"title=%s level=%d id=%d subcontent_start=%d subcontent_len=%d\n",
-		title.content,
-		title.level,
-		title.id,
-		title.sub_content_start,
-		title.sub_content_len,
-	)
+	assert(title.level > 0)
+	if title.level == 1 {
+		fmt.fprintf(handle, ".\n")
+	} else {
+		level := title.level - 2
+		for _ in 0 ..< level {
+			fmt.fprintf(handle, "│   ")
+		}
 
-	title_print(title.first_child)
-	title_print(title.first_sibling)
+		if title.first_sibling == nil {
+			fmt.fprintf(handle, "└")
+		} else {
+			fmt.fprintf(handle, "├")
+		}
+
+		fmt.fprintf(handle, "──")
+
+		fmt.fprintf(handle, " title='%s' level=%d id=%d\n", title.content, title.level, title.id)
+	}
+
+	title_print(handle, title.first_child)
+	title_print(handle, title.first_sibling)
 }
 
 
@@ -690,7 +698,7 @@ article_generate :: proc(
 	stem := filepath.stem(git_stat.path_rel)
 	article.output_file_name = strings.concatenate([]string{stem, ".html"})
 	article.titles = markdown_parse_titles(content_without_metadata)
-	title_print(article.titles)
+	title_print(os.stdout, article.titles)
 
 	article_generate_html_file(content_without_metadata, article, header, footer) or_return
 	fmt.printf("generated article: title=%s\n", article.title)
@@ -795,7 +803,7 @@ home_page_generate :: proc(
 		) or_return
 
 		root := markdown_parse_titles(markdown_content)
-		title_print(root)
+		title_print(os.stdout, root)
 		decorated_markdown := article_decorate_markdown_titles_with_id(markdown_content, root)
 
 		cmark_stdout_bin, os2_err := run_sub_process_with_stdin(
@@ -1027,6 +1035,8 @@ test_parse_titles :: proc(_: ^testing.T) {
 	`
 
 
-	_ = markdown_parse_titles(input)
-
+	root := markdown_parse_titles(input)
+	assert(root != nil)
+	assert(root.first_sibling == nil)
+	assert(root.first_child != nil)
 }
