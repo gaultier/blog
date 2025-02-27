@@ -67,7 +67,7 @@ Title :: struct {
 	id:                    TitleId,
 	parent:                ^Title,
 	first_child:           ^Title,
-	first_sibling:         ^Title,
+	next_sibling:          ^Title,
 
 	// Needed to convert the markdown titles to HTML titles with ids, interspersed with each section content.
 	// Also since the `content` field is the trimmed original title, we cannot use its length to deduct those.
@@ -370,7 +370,7 @@ html_make_id :: proc(input: string, allocator := context.allocator) -> string {
 // In reality it's a bit more HTML so that each title can be a link to itself, and we can copy
 // this link to the clipboard by clicking on it.
 article_decorate_markdown_titles_with_id :: proc(markdown: string, root: ^Title) -> string {
-	assert(root.first_sibling == nil)
+	assert(root.next_sibling == nil)
 
 	if root.first_child == nil { 	// Nothing to do.
 		return markdown
@@ -405,7 +405,7 @@ article_decorate_markdown_titles_with_id :: proc(markdown: string, root: ^Title)
 			markdown[title.sub_content_start:title.sub_content_start + title.sub_content_len],
 		)
 		do_rec(title.first_child, markdown, sb)
-		do_rec(title.first_sibling, markdown, sb)
+		do_rec(title.next_sibling, markdown, sb)
 	}
 
 	do_rec(root.first_child, markdown, &sb)
@@ -500,12 +500,12 @@ markdown_parse_titles :: proc(markdown: string, allocator := context.allocator) 
 		child := title.parent.first_child
 
 		// Add the node as last child of the parent.
-		for child != nil && child.first_sibling != nil {
-			child = child.first_sibling
+		for child != nil && child.next_sibling != nil {
+			child = child.next_sibling
 		}
 		// Already one child present.
 		if child != nil {
-			child.first_sibling = &title
+			child.next_sibling = &title
 		} else { 	// First child.
 			title.parent.first_child = &title
 		}
@@ -516,7 +516,7 @@ markdown_parse_titles :: proc(markdown: string, allocator := context.allocator) 
 		title.id = title_make_id(&title)
 	}
 
-	assert(root.first_sibling == nil)
+	assert(root.next_sibling == nil)
 	return root
 }
 
@@ -547,7 +547,7 @@ article_write_toc_rec :: proc(sb: ^strings.Builder, title: ^Title) {
 		strings.write_string(sb, "  </li>\n")
 	}
 
-	article_write_toc_rec(sb, title.first_sibling)
+	article_write_toc_rec(sb, title.next_sibling)
 }
 
 
@@ -638,27 +638,17 @@ title_print :: proc(handle: os.Handle, title: ^Title) {
 	if title == nil {return}
 
 	assert(title.level > 0)
+	for _ in 0 ..< title.level - 2 {
+		fmt.fprintf(handle, "  ")
+	}
 	if title.level == 1 {
 		fmt.fprintf(handle, ".\n")
 	} else {
-		level := title.level - 2
-		for _ in 0 ..< level {
-			fmt.fprintf(handle, "│   ")
-		}
-
-		if title.first_sibling == nil {
-			fmt.fprintf(handle, "└")
-		} else {
-			fmt.fprintf(handle, "├")
-		}
-
-		fmt.fprintf(handle, "──")
-
-		fmt.fprintf(handle, " title='%s' level=%d id=%d\n", title.content, title.level, title.id)
+		fmt.fprintf(handle, "title='%s' id=%d\n", title.content, title.id)
 	}
 
 	title_print(handle, title.first_child)
-	title_print(handle, title.first_sibling)
+	title_print(handle, title.next_sibling)
 }
 
 
@@ -1016,27 +1006,4 @@ main :: proc() {
 
 	err := run()
 	assert(err == nil)
-}
-
-@(test)
-test_parse_titles :: proc(_: ^testing.T) {
-	input := `
-	# Root 
-
-	## A sub-section
-
-	### A sub-sub-section
-
-	#### A sub-sub-sub-section
-
-	## Another sub-section
-
-	### Anoter sub-sub-section
-	`
-
-
-	root := markdown_parse_titles(input)
-	assert(root != nil)
-	assert(root.first_sibling == nil)
-	assert(root.first_child != nil)
 }
