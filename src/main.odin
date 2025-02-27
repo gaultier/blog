@@ -484,9 +484,12 @@ markdown_parse_titles :: proc(
 			level_diff := previous.level - title.level
 
 			if level_diff > 0 { 	// The current title is a (great-)uncle of the current title.
-				assert(level_diff == 1)
-				title.parent = title.parent.parent
+				for _ in 0 ..< level_diff {
+					assert(title.parent != nil)
+					title.parent = title.parent.parent
+				}
 			} else if level_diff < 0 { 	// The current title is a direct descendant of `previous`.
+				assert(level_diff == -1)
 				title.parent = previous
 			} else if level_diff == 0 { 	// Sibling.
 				title.parent = previous.parent
@@ -497,12 +500,14 @@ markdown_parse_titles :: proc(
 
 		child := title.parent.first_child
 
+		// Add the node as last child of the parent.
 		for child != nil && child.first_sibling != nil {
 			child = child.first_sibling
 		}
+		// Already one child present.
 		if child != nil {
 			child.first_sibling = &title
-		} else {
+		} else { 	// First child.
 			title.parent.first_child = &title
 		}
 	}
