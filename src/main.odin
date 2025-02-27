@@ -10,7 +10,6 @@ import "core:os/os2"
 import "core:path/filepath"
 import "core:slice"
 import "core:strings"
-import "core:testing"
 import "core:unicode"
 
 // Plan:
