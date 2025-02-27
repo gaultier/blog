@@ -489,6 +489,7 @@ markdown_parse_titles :: proc(
 					title.parent = title.parent.parent
 				}
 			} else if level_diff < 0 { 	// The current title is a direct descendant of `previous`.
+				// Check that we do not skip levels e.g. prevent `## Foo\n#### Bar\n`
 				assert(level_diff == -1)
 				title.parent = previous
 			} else if level_diff == 0 { 	// Sibling.
