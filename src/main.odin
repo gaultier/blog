@@ -10,6 +10,7 @@ import "core:os/os2"
 import "core:path/filepath"
 import "core:slice"
 import "core:strings"
+import "core:testing"
 import "core:unicode"
 
 // Plan:
@@ -52,9 +53,8 @@ Article :: struct {
 	tags:              []string,
 	creation_date:     string,
 	modification_date: string,
-	titles:            []Title,
 	// Titles as a tree.
-	titles_tree:       ^Title,
+	titles:            ^Title,
 }
 
 // Hash.
@@ -369,19 +369,20 @@ html_make_id :: proc(input: string, allocator := context.allocator) -> string {
 // so that the links in the TOC can point to it.
 // In reality it's a bit more HTML so that each title can be a link to itself, and we can copy
 // this link to the clipboard by clicking on it.
-article_decorate_markdown_titles_with_id :: proc(markdown: string, titles: []Title) -> string {
-	if len(titles) == 0 { 	// Nothing to do.
+article_decorate_markdown_titles_with_id :: proc(markdown: string, root: ^Title) -> string {
+	assert(root.first_sibling == nil)
+
+	if root.first_child == nil { 	// Nothing to do.
 		return markdown
 	}
-
 	sb := strings.builder_make_len_cap(0, len(markdown) * 2)
+	strings.write_string(&sb, markdown[0:root.first_child.title_start])
 
-	title_first := titles[0]
-	strings.write_string(&sb, markdown[0:title_first.title_start])
+	do_rec :: proc(title: ^Title, markdown: string, sb: ^strings.Builder) {
+		if title == nil {return}
 
-	for title in titles {
 		fmt.sbprintf(
-			&sb,
+			sb,
 			`<h%d id="%d-%s">
 	<a class="title" href="#%d-%s">%s</a>
 	<a class="hash-anchor" href="#%d-%s" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
@@ -397,29 +398,24 @@ article_decorate_markdown_titles_with_id :: proc(markdown: string, titles: []Tit
 			title.content_html_friendly,
 			title.level,
 		)
-		strings.write_rune(&sb, '\n')
+		strings.write_rune(sb, '\n')
 
 		strings.write_string(
-			&sb,
+			sb,
 			markdown[title.sub_content_start:title.sub_content_start + title.sub_content_len],
 		)
+		do_rec(title.first_child, markdown, sb)
+		do_rec(title.first_sibling, markdown, sb)
 	}
 
-	title_last := titles[len(titles) - 1]
-	strings.write_string(&sb, markdown[title_last.sub_content_start:])
+	do_rec(root.first_child, markdown, &sb)
 
-	assert(len(sb.buf) > len(markdown))
+	//assert(len(sb.buf) > len(markdown))
 
 	return strings.to_string(sb)
 }
 
-markdown_parse_titles :: proc(
-	markdown: string,
-	allocator := context.allocator,
-) -> (
-	[]Title,
-	^Title,
-) {
+markdown_parse_titles :: proc(markdown: string, allocator := context.allocator) -> ^Title {
 	// Check that we parse markdown without metadata.
 	assert(!strings.starts_with(markdown, "Title:"))
 
@@ -466,8 +462,9 @@ markdown_parse_titles :: proc(
 			content_html_friendly = html_make_id(title_content),
 			level                 = title_level,
 			sub_content_start     = pos,
+			sub_content_len       = len(markdown) - pos, // Will be backpatched.
 			title_start           = pos - (idx + 1),
-			parent                = root, // May be backpatched.
+			parent                = root, // Will be backpatched.
 			/* Other fields backpatched. */
 		}
 		append(&titles, title)
@@ -479,6 +476,8 @@ markdown_parse_titles :: proc(
 	for &title, i in titles {
 		if i > 0 {
 			previous := &titles[i - 1]
+			assert(previous.sub_content_start > 0)
+			assert(title.title_start > 0)
 			previous.sub_content_len = title.title_start - previous.sub_content_start
 
 			level_diff := previous.level - title.level
@@ -497,7 +496,6 @@ markdown_parse_titles :: proc(
 			}
 		}
 		assert(title.parent.level + 1 == title.level)
-
 
 		child := title.parent.first_child
 
@@ -518,7 +516,8 @@ markdown_parse_titles :: proc(
 		title.id = title_make_id(&title)
 	}
 
-	return titles[:], root
+	assert(root.first_sibling == nil)
+	return root
 }
 
 
@@ -571,7 +570,7 @@ article_generate_html_file :: proc(
 	assert(len(header) > 0)
 	assert(len(footer) > 0)
 	assert(len(article.tags) > 0)
-	assert(len(article.title) > 0)
+	assert(article.titles != nil)
 	assert(len(article.creation_date) > 0)
 	assert(len(article.modification_date) > 0)
 	assert(len(article.output_file_name) > 0)
@@ -619,7 +618,7 @@ article_generate_html_file :: proc(
 
 	strings.write_string(&html_sb, " </div>\n")
 
-	article_write_toc(&html_sb, article.titles_tree)
+	article_write_toc(&html_sb, article.titles)
 
 	strings.write_rune(&html_sb, '\n')
 	strings.write_string(&html_sb, string(cmark_output_bin))
@@ -635,15 +634,20 @@ article_generate_html_file :: proc(
 }
 
 
-TitleWalkCb :: proc(title: ^Title, ctx: any) -> bool
-
 title_print :: proc(title: ^Title) {
 	if title == nil {return}
 
 	for _ in 0 ..= title.level {
 		fmt.printf("  ")
 	}
-	fmt.printf("title=%s level=%d id=%d\n", title.content, title.level, title.id)
+	fmt.printf(
+		"title=%s level=%d id=%d subcontent_start=%d subcontent_len=%d\n",
+		title.content,
+		title.level,
+		title.id,
+		title.sub_content_start,
+		title.sub_content_len,
+	)
 
 	title_print(title.first_child)
 	title_print(title.first_sibling)
@@ -685,8 +689,8 @@ article_generate :: proc(
 
 	stem := filepath.stem(git_stat.path_rel)
 	article.output_file_name = strings.concatenate([]string{stem, ".html"})
-	article.titles, article.titles_tree = markdown_parse_titles(content_without_metadata)
-	title_print(article.titles_tree)
+	article.titles = markdown_parse_titles(content_without_metadata)
+	title_print(article.titles)
 
 	article_generate_html_file(content_without_metadata, article, header, footer) or_return
 	fmt.printf("generated article: title=%s\n", article.title)
@@ -790,9 +794,9 @@ home_page_generate :: proc(
 			markdown_file_path,
 		) or_return
 
-		titles, root := markdown_parse_titles(markdown_content)
+		root := markdown_parse_titles(markdown_content)
 		title_print(root)
-		decorated_markdown := article_decorate_markdown_titles_with_id(markdown_content, titles)
+		decorated_markdown := article_decorate_markdown_titles_with_id(markdown_content, root)
 
 		cmark_stdout_bin, os2_err := run_sub_process_with_stdin(
 			cmark_command,
@@ -1004,4 +1008,25 @@ main :: proc() {
 
 	err := run()
 	assert(err == nil)
+}
+
+@(test)
+test_parse_titles :: proc(_: ^testing.T) {
+	input := `
+	# Root 
+
+	## A sub-section
+
+	### A sub-sub-section
+
+	#### A sub-sub-sub-section
+
+	## Another sub-section
+
+	### Anoter sub-sub-section
+	`
+
+
+	_ = markdown_parse_titles(input)
+
 }
