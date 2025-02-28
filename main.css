@@ -178,14 +178,15 @@ pre {
   background: #FFF3E0 !important;
   white-space: pre-wrap;
   border: 1px solid grey;
+  padding: .5rem !important;
 }
 
 code {
   font-size: .9rem;
   background: #FFF3E0 !important;
-  padding: .5rem !important;
   background: #FFF3E0 !important;
   word-wrap: break-word;
+  padding: 0 !important;
 }
 
 object {
