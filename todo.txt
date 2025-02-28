@@ -11,6 +11,7 @@ Ideas for articles:
 - [ ] SHA1 multi-block hash
 - [ ] How CGO calls are implemented in assembly
 - [ ] How I develop Windows applications from the comfort of Linux
+- [ ] Add a JS/Wasm live running version of the programs described in each article. As a fallback: Video/Gif.
 
 Blog implementation:
 
