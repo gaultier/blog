@@ -129,8 +129,8 @@
 <li>For each article (<code>*.html</code>) file in the directory, we add an entry (<code>&lt;entry&gt;</code>) in the XML document with:
 <ul>
 <li>The link to the article, that's just the filename in my case.</li>
-<li>The 'updated at' field, which is <s>just the <code>mtime</code> of the file locally</s> queried from git</li>
-<li>The 'published at' field, which is <s>just the <code>ctime</code> of the file locally</s> queried from git</li>
+<li>The 'updated at' field, which is <!-- raw HTML omitted -->just the <code>mtime</code> of the file locally<!-- raw HTML omitted --> queried from git</li>
+<li>The 'published at' field, which is <!-- raw HTML omitted -->just the <code>ctime</code> of the file locally<!-- raw HTML omitted --> queried from git</li>
 <li>A UUID. Here I went with UUIDv5 which is simply the sha1 of the file name in the UUID format. It's nifty because it means that the script is stateless and idempotent. If the article is later updated, the UUID remains the same (but the <code>updated at</code> will still hint at the update).</li>
 </ul>
 </li>

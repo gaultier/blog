@@ -1,5 +1,6 @@
 package main
 
+import "core:c"
 import "core:encoding/uuid"
 import "core:encoding/uuid/legacy"
 import "core:fmt"
@@ -45,6 +46,48 @@ cmark_command :: []string {
 	"html",
 }
 metadata_delimiter :: "---"
+
+cmark_strbuf :: struct {
+	mem:   ^rawptr, // FIXME
+	ptr:   cstring,
+	asize: c.int32_t,
+	size:  c.int32_t,
+}
+
+cmark_node :: struct {
+	content:             cmark_strbuf,
+	next:                ^cmark_node,
+	prev:                ^cmark_node,
+	parent:              ^cmark_node,
+	first_child:         ^cmark_node,
+	last_child:          ^cmark_node,
+	user_data:           ^rawptr,
+	user_data_free_func: ^rawptr, // FIXME
+	start_line:          c.int,
+	start_column:        c.int,
+	end_line:            c.int,
+	end_column:          c.int,
+	internal_offset:     c.int,
+	type:                u16,
+	flags:               u16,
+	extension:           ^rawptr, // FIXME
+	ancestor_extension:  ^rawptr, // FIXME
+
+	// TODO: more.
+}
+
+CMARK_OPT_UNSAFE :: 1 << 17
+CMARK_OPT_VALIDATE_UTF8 :: 1 << 9
+CMARK_OPT_FOOTNOTES :: 1 << 13
+
+foreign import cmark "system:libcmark-gfm.a"
+@(default_calling_convention = "c", link_prefix = "cmark_")
+foreign cmark {
+	parse_document :: proc(buffer: [^]u8, len: c.uint, options: c.int) -> ^cmark_node ---
+	render_html :: proc(root: ^cmark_node, options: c.int, extensions: ^rawptr) -> cstring ---
+	// find_syntax_extension :: proc(name: cstring) -> ^rawptr ---
+	// llist_append :: proc(mem: ^rawptr, head: ^rawptr, data: ^rawptr) -> ^rawptr ---
+}
 
 Article :: struct {
 	output_file_name:  string,
@@ -578,11 +621,21 @@ article_generate_html_file :: proc(
 
 	decorated_markdown := article_decorate_markdown_titles_with_id(article_content, article.titles)
 
-	cmark_output_bin, os2_err := run_sub_process_with_stdin(
-		cmark_command,
-		transmute([]u8)decorated_markdown,
+	cmark_parsed := parse_document(
+		raw_data(decorated_markdown),
+		u32(len(decorated_markdown)),
+		CMARK_OPT_UNSAFE | CMARK_OPT_VALIDATE_UTF8 | CMARK_OPT_FOOTNOTES,
 	)
-	assert(os2_err == nil)
+
+	cmark_output_lib := string(render_html(cmark_parsed, 0, nil))
+
+	// cmark_output_bin, os2_err := run_sub_process_with_stdin(
+	// 	cmark_command,
+	// 	transmute([]u8)decorated_markdown,
+	// )
+	// assert(os2_err == nil)
+	// cmark_output_bin_s := string(cmark_output_bin)
+	// assert(cmark_output_bin_s == cmark_output_lib)
 
 	html_sb := strings.builder_make()
 
@@ -620,7 +673,7 @@ article_generate_html_file :: proc(
 	article_write_toc(&html_sb, article.titles)
 
 	strings.write_rune(&html_sb, '\n')
-	strings.write_string(&html_sb, string(cmark_output_bin))
+	strings.write_string(&html_sb, cmark_output_lib)
 	strings.write_string(&html_sb, back_link)
 	strings.write_string(&html_sb, footer)
 
