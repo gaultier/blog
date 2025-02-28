@@ -76,17 +76,23 @@ cmark_node :: struct {
 	// TODO: more.
 }
 
-CMARK_OPT_UNSAFE :: 1 << 17
-CMARK_OPT_VALIDATE_UTF8 :: 1 << 9
-CMARK_OPT_FOOTNOTES :: 1 << 13
+CMARK_OPT_UNSAFE: int : (1 << 17)
+CMARK_OPT_VALIDATE_UTF8: int : (1 << 9)
+CMARK_OPT_FOOTNOTES: int : (1 << 13)
+
+cmark_llist :: struct {
+	next: ^cmark_llist,
+	data: ^rawptr,
+}
 
 foreign import cmark "system:libcmark-gfm.a"
 @(default_calling_convention = "c", link_prefix = "cmark_")
 foreign cmark {
 	parse_document :: proc(buffer: [^]u8, len: c.uint, options: c.int) -> ^cmark_node ---
-	render_html :: proc(root: ^cmark_node, options: c.int, extensions: ^rawptr) -> cstring ---
-	// find_syntax_extension :: proc(name: cstring) -> ^rawptr ---
-	// llist_append :: proc(mem: ^rawptr, head: ^rawptr, data: ^rawptr) -> ^rawptr ---
+	render_html :: proc(root: ^cmark_node, options: c.int, extensions: ^cmark_llist) -> cstring ---
+	find_syntax_extension :: proc(name: cstring) -> ^rawptr ---
+	llist_append :: proc(mem: ^rawptr, head: ^cmark_llist, data: ^rawptr) -> ^cmark_llist ---
+	get_default_mem_allocator :: proc() -> ^rawptr ---
 }
 
 Article :: struct {
@@ -624,10 +630,16 @@ article_generate_html_file :: proc(
 	cmark_parsed := parse_document(
 		raw_data(decorated_markdown),
 		u32(len(decorated_markdown)),
-		CMARK_OPT_UNSAFE | CMARK_OPT_VALIDATE_UTF8 | CMARK_OPT_FOOTNOTES,
+		c.int(CMARK_OPT_UNSAFE | CMARK_OPT_VALIDATE_UTF8 | CMARK_OPT_FOOTNOTES),
 	)
 
-	cmark_output_lib := string(render_html(cmark_parsed, 0, nil))
+	extensions: ^cmark_llist = nil
+	mem := get_default_mem_allocator()
+	extensions = llist_append(mem, extensions, find_syntax_extension("table"))
+	extensions = llist_append(mem, extensions, find_syntax_extension("strikethrough"))
+	extensions = llist_append(mem, extensions, find_syntax_extension("footnotes"))
+
+	cmark_output_lib := string(render_html(cmark_parsed, 0, extensions))
 
 	// cmark_output_bin, os2_err := run_sub_process_with_stdin(
 	// 	cmark_command,
