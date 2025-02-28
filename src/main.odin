@@ -409,7 +409,7 @@ article_decorate_markdown_titles_with_id :: proc(markdown: string, root: ^Title)
 
 	do_rec(root.first_child, markdown, &sb)
 
-	//assert(len(sb.buf) > len(markdown))
+	assert(len(sb.buf) > len(markdown))
 
 	return strings.to_string(sb)
 }
