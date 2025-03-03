@@ -39,9 +39,13 @@ llist :: struct {
 	data: ^rawptr,
 }
 
-foreign import cmark "system:libcmark-gfm.a"
 foreign import gfm "system:libcmark-gfm-extensions.a"
+@(default_calling_convention = "c", link_prefix = "cmark_gfm_")
+foreign gfm {
+	core_extensions_ensure_registered:: proc() ---
+}
 
+foreign import cmark "system:libcmark-gfm.a"
 @(default_calling_convention = "c", link_prefix = "cmark_")
 foreign cmark {
 	parse_document :: proc(buffer: [^]u8, len: c.uint, options: c.int) -> ^node ---
@@ -54,4 +58,5 @@ foreign cmark {
 	parser_feed :: proc(parser: ^rawptr, buf: [^]u8, len: c.uint) ---
 	parser_finish :: proc(parser: ^rawptr) -> ^node ---
 }
+
 

@@ -586,8 +586,7 @@ article_generate_html_file :: proc(
 		mem,
 	)
 
-	// _ = cmark_gfm
-	// gfm_core_extensions_ensure_registered()
+	cmark.core_extensions_ensure_registered()
 	ext_table := cmark.find_syntax_extension("table")
 	assert(ext_table != nil)
 	cmark.parser_attach_syntax_extension(parser, ext_table)
@@ -596,9 +595,9 @@ article_generate_html_file :: proc(
 	assert(ext_strikethrough != nil)
 	cmark.parser_attach_syntax_extension(parser, ext_strikethrough)
 
-	ext_footnotes := cmark.find_syntax_extension("footnotes")
-	assert(ext_footnotes != nil)
-	cmark.parser_attach_syntax_extension(parser, ext_footnotes)
+	// ext_footnotes := cmark.find_syntax_extension("footnotes")
+	// assert(ext_footnotes != nil)
+	// cmark.parser_attach_syntax_extension(parser, ext_footnotes)
 
 	cmark.parser_feed(parser, raw_data(decorated_markdown), u32(len(decorated_markdown)))
 	cmark_parsed := cmark.parser_finish(parser)

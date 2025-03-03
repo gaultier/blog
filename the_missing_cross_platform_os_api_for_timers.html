@@ -522,16 +522,102 @@ precision.</p>
 <!-- raw HTML omitted -->
 <p>Writing cross-platform C code typically means writing two code paths: one for Windows and one for Unix. But for multiplexed I/O, and for timers, each Unix has its own idea of what's the Right Way(tm).</p>
 <p>To sum up:</p>
-<p>| OS API                 | Windows | macOS | Linux | FreeBSD | NetBSD | OpenBSD | Illumos |
-|------------------------|---------|-------|-------|---------|--------|---------|---------|
-| SetTimer               | ✓       |       |       |         |        |         |         |
-| POSIX timers <sup class="footnote-ref"><a href="#fn-1" id="fnref-1" data-footnote-ref>1</a></sup>      |         | ✓     | ✓     | ✓       | ✓      | ✓       | ✓       |
-| timerfd                |         |       | ✓     | ✓       | ✓      |         | ✓       |
-| kevent timer           |         | ✓     |       | ✓       | ✓      | ✓       |         |
-| port_create timer      |         |       |       |         |        |         | ✓       |
-| dispatch_source_create |         | ✓     |       |         |        |         |         |
-| io_uring sleep <sup class="footnote-ref"><a href="#fn-2" id="fnref-2" data-footnote-ref>2</a></sup>    |         |       | ✓     |         |        |         |         |
-| Userspace timers       | ✓       | ✓     | ✓     | ✓       | ✓      | ✓       | ✓       |</p>
+<table>
+<thead>
+<tr>
+<th>OS API</th>
+<th>Windows</th>
+<th>macOS</th>
+<th>Linux</th>
+<th>FreeBSD</th>
+<th>NetBSD</th>
+<th>OpenBSD</th>
+<th>Illumos</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>SetTimer</td>
+<td>✓</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>POSIX timers <sup class="footnote-ref"><a href="#fn-1" id="fnref-1" data-footnote-ref>1</a></sup></td>
+<td></td>
+<td>✓</td>
+<td>✓</td>
+<td>✓</td>
+<td>✓</td>
+<td>✓</td>
+<td>✓</td>
+</tr>
+<tr>
+<td>timerfd</td>
+<td></td>
+<td></td>
+<td>✓</td>
+<td>✓</td>
+<td>✓</td>
+<td></td>
+<td>✓</td>
+</tr>
+<tr>
+<td>kevent timer</td>
+<td></td>
+<td>✓</td>
+<td></td>
+<td>✓</td>
+<td>✓</td>
+<td>✓</td>
+<td></td>
+</tr>
+<tr>
+<td>port_create timer</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td>✓</td>
+</tr>
+<tr>
+<td>dispatch_source_create</td>
+<td></td>
+<td>✓</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>io_uring sleep <sup class="footnote-ref"><a href="#fn-2" id="fnref-2" data-footnote-ref>2</a></sup></td>
+<td></td>
+<td></td>
+<td>✓</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>Userspace timers</td>
+<td>✓</td>
+<td>✓</td>
+<td>✓</td>
+<td>✓</td>
+<td>✓</td>
+<td>✓</td>
+<td>✓</td>
+</tr>
+</tbody>
+</table>
 <p>For performant multiplexed I/O, that means that we have to have a code path for each OS (using <code>epoll</code> on Linux, <code>kqueue</code> on macOS and BSDs, event ports on Illumos, I/O completion ports on Windows).</p>
 <p>For timers, it seems that the easiest approach is to implement them fully in userspace, as long as we have an efficient data structure to manage them.</p>
 <section class="footnotes" data-footnotes>
