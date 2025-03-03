@@ -2,6 +2,7 @@ Title: Making my static blog generator 11 times faster
 Tags: Optimization, Git, Odin, Fossil
 ---
 
+*Stick to the end to see an overall x33 speed-up!*
 
 This blog is statically generated from Markdown files. It used to be fast, but nowadays it's not:
 
@@ -502,9 +503,11 @@ Benchmark 1: ./src.bin
 
 But we have to remember to run it frequently or set up a periodic job that does it for us.
 
+That's a ~21x speed-up from the original time.
+
 ## Addendum 2
 
-Since spawning the `cmark` process, having `cmark` parsing the command line options, over and over, is still taking a good chunk of the time, we can switch to using `libcmark` directly. This is something I wanted to do anyway to extract a table of content, etc from the markdown:
+Since spawning the `cmark` process, having `cmark` parsing the command line options, over and over, is still taking a good chunk of the time, we can switch to using `libcmark` directly. This is something I wanted to do anyway to extract a table of content, etc from the markdown. Since the running time is getting lower and lower, we add `--shell=none` and increase the warm-up to reduce statistical outliers:
 
 ```sh
 $ hyperfine --shell=none --warmup 10 ./src.bin
@@ -513,5 +516,5 @@ Benchmark 1: ./src.bin
   Range (min … max):    53.1 ms …  61.0 ms    55 runs
 ```
 
-*In fine*: a x33 improvement from where we started.
+*In fine*: a x33 speed-up from the original time.
 
