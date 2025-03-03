@@ -57,6 +57,7 @@ foreign cmark {
 	parser_finish :: proc(parser: ^rawptr) -> ^node ---
 	get_arena_mem_allocator :: proc() -> ^rawptr ---
 	arena_reset :: proc() ---
+	iter_new :: proc(node: ^rawptr) -> ^rawptr ---
 }
 
 
