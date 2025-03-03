@@ -1,6 +1,7 @@
 package main
 
 import "cmark"
+import "core:c"
 import "core:encoding/uuid"
 import "core:encoding/uuid/legacy"
 import "core:fmt"
@@ -527,6 +528,45 @@ article_generate_html_file :: proc(
 
 	cmark.parser_feed(parser, raw_data(article_content), u32(len(article_content)))
 	cmark_parsed := cmark.parser_finish(parser)
+
+	it := cmark.iter_new(cmark_parsed)
+
+	for event := cmark.iter_next(it); event != cmark.EVENT_DONE; event = cmark.iter_next(it) {
+		node := cmark.iter_get_node(it)
+
+		if node.type == cmark.NODE_HEADING {
+			fmt.println(node.content.ptr, node.as.heading)
+
+			level := node.as.heading.level
+			content := node.content.ptr
+			content_html_friendly := html_make_id(string(content))
+			id := 0 // FIXME
+
+			new_node := cmark.node_new_with_mem(c.int(cmark.NODE_HTML_INLINE), mem)
+
+			sb := strings.builder_make()
+			fmt.sbprintf(
+				&sb,
+				`<h%d id="%d-%s">
+	<a class="title" href="#%d-%s">%s</a>
+	<a class="hash-anchor" href="#%d-%s" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+</h%d>
+			`,
+				level,
+				id,
+				content_html_friendly,
+				id,
+				content_html_friendly,
+				content,
+				id,
+				content_html_friendly,
+				level,
+			)
+			html := strings.to_string(sb)
+			assert(1 == cmark.node_set_literal(new_node, strings.unsafe_string_to_cstring(html)))
+			assert(1 == cmark.node_replace(node, new_node))
+		}
+	}
 
 	cmark_out := string(cmark.render_html(cmark_parsed, cmark_options, nil))
 
