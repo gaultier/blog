@@ -34,6 +34,8 @@ OPT_UNSAFE: c.int : (1 << 17)
 OPT_VALIDATE_UTF8: c.int : (1 << 9)
 OPT_FOOTNOTES: c.int : (1 << 13)
 
+EVENT_DONE : c.int : 1
+
 llist :: struct {
 	next: ^llist,
 	data: ^rawptr,
@@ -57,7 +59,8 @@ foreign cmark {
 	parser_finish :: proc(parser: ^rawptr) -> ^node ---
 	get_arena_mem_allocator :: proc() -> ^rawptr ---
 	arena_reset :: proc() ---
-	iter_new :: proc(node: ^rawptr) -> ^rawptr ---
+	iter_new :: proc(node: ^node) -> ^rawptr ---
+	iter_get_node :: proc (iter: ^rawptr) -> ^node ---
 }
 
 
