@@ -7,3 +7,4 @@ src.bin
 *.gz
 *.bin
 perf.data*
+*.zst
