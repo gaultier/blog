@@ -32,19 +32,7 @@ feed_uuid_str :: "9c065c53-31bc-4049-a795-936802a6b1df"
 base_url :: "https://gaultier.github.io/blog"
 back_link :: "<p><a href=\"/blog\"> ⏴ Back to all articles</a></p>\n"
 html_prelude_fmt :: "<!DOCTYPE html>\n<html>\n<head>\n<title>%s</title>\n"
-cmark_command :: []string {
-	"cmark-gfm",
-	"--validate-utf8",
-	"-e",
-	"table",
-	"-e",
-	"strikethrough",
-	"-e",
-	"footnotes",
-	"--unsafe",
-	"-t",
-	"html",
-}
+cmark_options := cmark.OPT_UNSAFE | cmark.OPT_VALIDATE_UTF8 | cmark.OPT_FOOTNOTES
 metadata_delimiter :: "---"
 
 Article :: struct {
@@ -139,58 +127,6 @@ article_parse_metadata :: proc(
 
 	assert(len(tags) > 0)
 	return
-}
-
-run_sub_process_with_stdin :: proc(
-	command: []string,
-	stdin: []byte,
-) -> (
-	stdout: []byte,
-	err: os2.Error,
-) {
-	stdin_w: ^os2.File
-	stdin_r: ^os2.File
-	if len(stdin) > 0 {
-		stdin_r, stdin_w = os2.pipe() or_return
-	}
-
-	stdout_r, stdout_w := os2.pipe() or_return
-	desc := os2.Process_Desc {
-		command = command,
-		stdout  = stdout_w,
-		stdin   = stdin_r,
-	}
-
-	process := os2.process_start(desc) or_return
-	os2.close(stdin_r)
-	os2.close(stdout_w)
-	defer _ = os2.process_close(process)
-
-	if stdin_w != nil {
-		defer os2.close(stdin_w)
-
-		for cur := 0; cur < len(stdin); {
-			n_written := os2.write(stdin_w, stdin[cur:]) or_return
-			if n_written == 0 {break}
-			cur += n_written
-		}
-	}
-
-	stdout_sb := make([dynamic]u8, 0, 4096)
-	for {
-		buf := [4096]u8{}
-		read_n := os2.read(stdout_r, buf[:]) or_break
-		if read_n == 0 {break}
-
-		append(&stdout_sb, ..buf[:read_n])
-	}
-
-	process_state := os2.process_wait(process) or_return
-	if !process_state.success {
-		return {}, .Unknown
-	}
-
-	return stdout_sb[:], nil
 }
 
 
@@ -581,8 +517,6 @@ article_generate_html_file :: proc(
 
 	mem := cmark.get_arena_mem_allocator()
 	defer cmark.arena_reset()
-	cmark_options := cmark.OPT_UNSAFE | cmark.OPT_VALIDATE_UTF8 | cmark.OPT_FOOTNOTES
-
 	parser := cmark.parser_new_with_mem(cmark_options, mem)
 
 	ext_table := cmark.find_syntax_extension("table")
@@ -598,14 +532,6 @@ article_generate_html_file :: proc(
 
 	cmark_output_lib := string(cmark.render_html(cmark_parsed, cmark_options, nil))
 
-
-	// cmark_output_bin, os2_err := run_sub_process_with_stdin(
-	// 	cmark_command,
-	// 	transmute([]u8)decorated_markdown,
-	// )
-	// assert(os2_err == nil)
-	// cmark_output_bin_s := string(cmark_output_bin)
-	// assert(cmark_output_bin_s == cmark_output_lib)
 
 	html_sb := strings.builder_make()
 
@@ -818,13 +744,24 @@ home_page_generate :: proc(
 		title_print(os.stdout, root)
 		decorated_markdown := article_decorate_markdown_titles_with_id(markdown_content, root)
 
-		cmark_stdout_bin, os2_err := run_sub_process_with_stdin(
-			cmark_command,
-			transmute([]u8)decorated_markdown,
-		)
-		assert(os2_err == nil)
+		mem := cmark.get_arena_mem_allocator()
+		defer cmark.arena_reset()
 
-		strings.write_string(&sb, string(cmark_stdout_bin))
+		parser := cmark.parser_new_with_mem(cmark_options, mem)
+
+		ext_table := cmark.find_syntax_extension("table")
+		assert(ext_table != nil)
+		cmark.parser_attach_syntax_extension(parser, ext_table)
+
+		ext_strikethrough := cmark.find_syntax_extension("strikethrough")
+		assert(ext_strikethrough != nil)
+		cmark.parser_attach_syntax_extension(parser, ext_strikethrough)
+
+		cmark.parser_feed(parser, raw_data(decorated_markdown), u32(len(decorated_markdown)))
+		cmark_parsed := cmark.parser_finish(parser)
+
+		cmark_output_lib := string(cmark.render_html(cmark_parsed, cmark_options, nil))
+		strings.write_string(&sb, string(cmark_output_lib))
 	}
 	strings.write_string(&sb, footer)
 
