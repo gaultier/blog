@@ -585,7 +585,6 @@ article_generate_html_file :: proc(
 		mem,
 	)
 
-	cmark.core_extensions_ensure_registered()
 	ext_table := cmark.find_syntax_extension("table")
 	assert(ext_table != nil)
 	cmark.parser_attach_syntax_extension(parser, ext_table)
@@ -988,6 +987,7 @@ rss_generate :: proc(articles: []Article) -> (err: os.Error) {
 }
 
 run :: proc() -> (os_err: os.Error) {
+	cmark.core_extensions_ensure_registered()
 
 	header := transmute(string)os.read_entire_file_from_filename_or_err("header.html") or_return
 	footer := transmute(string)os.read_entire_file_from_filename_or_err("footer.html") or_return
