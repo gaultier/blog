@@ -580,10 +580,9 @@ article_generate_html_file :: proc(
 	decorated_markdown := article_decorate_markdown_titles_with_id(article_content, article.titles)
 
 	mem := cmark.get_default_mem_allocator()
-	parser := cmark.parser_new_with_mem(
-		cmark.OPT_UNSAFE | cmark.OPT_VALIDATE_UTF8 | cmark.OPT_FOOTNOTES,
-		mem,
-	)
+	cmark_options := cmark.OPT_UNSAFE | cmark.OPT_VALIDATE_UTF8 | cmark.OPT_FOOTNOTES
+
+	parser := cmark.parser_new_with_mem(cmark_options, mem)
 
 	ext_table := cmark.find_syntax_extension("table")
 	assert(ext_table != nil)
@@ -596,7 +595,7 @@ article_generate_html_file :: proc(
 	cmark.parser_feed(parser, raw_data(decorated_markdown), u32(len(decorated_markdown)))
 	cmark_parsed := cmark.parser_finish(parser)
 
-	cmark_output_lib := string(cmark.render_html(cmark_parsed, 0, nil))
+	cmark_output_lib := string(cmark.render_html(cmark_parsed, cmark_options, nil))
 
 
 	// cmark_output_bin, os2_err := run_sub_process_with_stdin(

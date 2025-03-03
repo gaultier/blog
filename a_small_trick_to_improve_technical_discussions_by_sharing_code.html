@@ -235,8 +235,12 @@ I assume the git remote URL is a <code>ssh</code> URL here, again it's easy to t
 <pre><code class="language-lua">vim.keymap.set({'v', 'n'}, '&lt;leader&gt;x', ':GitWebUiUrlCopy&lt;CR&gt;')
 </code></pre>
 <p>And that's it, just 60 lines of Lua, and easy to extend to support even more hosting providers.</p>
-<!-- raw HTML omitted -->
-<!-- raw HTML omitted -->
+<h2 id="1512890027-addendum-the-full-code">
+	<a class="title" href="#1512890027-addendum-the-full-code">Addendum: the full code</a>
+	<a class="hash-anchor" href="#1512890027-addendum-the-full-code" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+</h2>
+<details>
+    <summary>The full code</summary>
 <pre><code class="language-lua">vim.keymap.set({'v', 'n'}, '&lt;leader&gt;x', ':GitWebUiUrlCopy&lt;CR&gt;')
 vim.api.nvim_create_user_command('GitWebUiUrlCopy', function(arg)
   local file_path_abs = vim.fn.expand('%:p')
@@ -292,7 +296,7 @@ vim.api.nvim_create_user_command('GitWebUiUrlCopy', function(arg)
 end,
 {force=true, range=true, nargs=0, desc='Copy to clipboard a URL to a git webui for the current line'})
 </code></pre>
-<!-- raw HTML omitted -->
+</details>
 <p><a href="/blog"> ⏴ Back to all articles</a></p>
 
 <blockquote id="donate">

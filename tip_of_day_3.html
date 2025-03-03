@@ -188,7 +188,75 @@ The for loop then iterates over each field and outputs the right thing.</p>
 <pre><code class="language-sh">$ cargo license --all-features --avoid-build-deps --avoid-dev-deps --direct-deps-only --tsv | ./md-table.awk | cmark-gfm -e table
 </code></pre>
 <p>And voila:</p>
-<!-- raw HTML omitted -->
+<table>
+<thead>
+<tr>
+<th>name</th>
+<th>version</th>
+<th>authors</th>
+<th>repository</th>
+<th>license</th>
+<th>license_file</th>
+<th>description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>clap</td>
+<td>2.33.0</td>
+<td>Kevin K. <a href="mailto:kbknapp@gmail.com">kbknapp@gmail.com</a></td>
+<td>https://github.com/clap-rs/clap</td>
+<td>MIT</td>
+<td></td>
+<td>A simple to use, efficient, and full-featured Command Line Argument Parser</td>
+</tr>
+<tr>
+<td>heck</td>
+<td>0.3.1</td>
+<td>Without Boats <a href="mailto:woboats@gmail.com">woboats@gmail.com</a></td>
+<td>https://github.com/withoutboats/heck</td>
+<td>Apache-2.0 OR MIT</td>
+<td></td>
+<td>heck is a case conversion library.</td>
+</tr>
+<tr>
+<td>kotlin</td>
+<td>0.1.0</td>
+<td>Philippe Gaultier <a href="mailto:philigaultier@gmail.com">philigaultier@gmail.com</a></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>log</td>
+<td>0.4.8</td>
+<td>The Rust Project Developers</td>
+<td>https://github.com/rust-lang/log</td>
+<td>Apache-2.0 OR MIT</td>
+<td></td>
+<td>A lightweight logging facade for Rust</td>
+</tr>
+<tr>
+<td>pretty_env_logger</td>
+<td>0.3.1</td>
+<td>Sean McArthur <a href="mailto:sean@seanmonstar">sean@seanmonstar</a></td>
+<td>https://github.com/seanmonstar/pretty-env-logger</td>
+<td>Apache-2.0 OR MIT</td>
+<td></td>
+<td>a visually pretty env_logger</td>
+</tr>
+<tr>
+<td>termcolor</td>
+<td>1.1.0</td>
+<td>Andrew Gallant <a href="mailto:jamslam@gmail.com">jamslam@gmail.com</a></td>
+<td>https://github.com/BurntSushi/termcolor</td>
+<td>MIT OR Unlicense</td>
+<td></td>
+<td>A simple cross platform library for writing colored text to a terminal.</td>
+</tr>
+</tbody>
+</table>
 <p>All in all, very little code. I have a feeling that I will use this approach a lot in the future for reporting or even inspecting data easily, for example from a database dump.</p>
 <p><a href="/blog"> ⏴ Back to all articles</a></p>
 
