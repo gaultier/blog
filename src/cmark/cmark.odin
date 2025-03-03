@@ -34,7 +34,10 @@ OPT_UNSAFE: c.int : (1 << 17)
 OPT_VALIDATE_UTF8: c.int : (1 << 9)
 OPT_FOOTNOTES: c.int : (1 << 13)
 
+EVENT_NONE : c.int : 1
 EVENT_DONE : c.int : 1
+EVENT_ENTER : c.int : 2
+EVENT_EXIT : c.int : 3
 
 
 NODE_TYPE_PRESENT : u16 : 0x8000
