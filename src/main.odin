@@ -530,7 +530,7 @@ article_generate_html_file :: proc(
 	cmark.parser_feed(parser, raw_data(decorated_markdown), u32(len(decorated_markdown)))
 	cmark_parsed := cmark.parser_finish(parser)
 
-	cmark_output_lib := string(cmark.render_html(cmark_parsed, cmark_options, nil))
+	cmark_out := string(cmark.render_html(cmark_parsed, cmark_options, nil))
 
 
 	html_sb := strings.builder_make()
@@ -569,7 +569,7 @@ article_generate_html_file :: proc(
 	article_write_toc(&html_sb, article.titles)
 
 	strings.write_rune(&html_sb, '\n')
-	strings.write_string(&html_sb, cmark_output_lib)
+	strings.write_string(&html_sb, cmark_out)
 	strings.write_string(&html_sb, back_link)
 	strings.write_string(&html_sb, footer)
 
@@ -760,8 +760,8 @@ home_page_generate :: proc(
 		cmark.parser_feed(parser, raw_data(decorated_markdown), u32(len(decorated_markdown)))
 		cmark_parsed := cmark.parser_finish(parser)
 
-		cmark_output_lib := string(cmark.render_html(cmark_parsed, cmark_options, nil))
-		strings.write_string(&sb, string(cmark_output_lib))
+		cmark_out := string(cmark.render_html(cmark_parsed, cmark_options, nil))
+		strings.write_string(&sb, string(cmark_out))
 	}
 	strings.write_string(&sb, footer)
 
