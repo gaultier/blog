@@ -51,8 +51,6 @@ foreign cmark {
 	parse_document :: proc(buffer: [^]u8, len: c.uint, options: c.int) -> ^node ---
 	render_html :: proc(root: ^node, options: c.int, extensions: ^llist) -> cstring ---
 	find_syntax_extension :: proc(name: cstring) -> ^rawptr ---
-	llist_append :: proc(mem: ^rawptr, head: ^llist, data: ^rawptr) -> ^llist ---
-	get_default_mem_allocator :: proc() -> ^rawptr ---
 	parser_new_with_mem :: proc(options: c.int, mem: ^rawptr) -> ^rawptr ---
 	parser_attach_syntax_extension :: proc(parser: ^rawptr, extensions: ^rawptr) -> c.int ---
 	parser_feed :: proc(parser: ^rawptr, buf: [^]u8, len: c.uint) ---
