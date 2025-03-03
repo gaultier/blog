@@ -595,10 +595,6 @@ article_generate_html_file :: proc(
 	assert(ext_strikethrough != nil)
 	cmark.parser_attach_syntax_extension(parser, ext_strikethrough)
 
-	// ext_footnotes := cmark.find_syntax_extension("footnotes")
-	// assert(ext_footnotes != nil)
-	// cmark.parser_attach_syntax_extension(parser, ext_footnotes)
-
 	cmark.parser_feed(parser, raw_data(decorated_markdown), u32(len(decorated_markdown)))
 	cmark_parsed := cmark.parser_finish(parser)
 

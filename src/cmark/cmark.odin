@@ -30,9 +30,9 @@ node :: struct {
 	// TODO: more.
 }
 
-OPT_UNSAFE: int : (1 << 17)
-OPT_VALIDATE_UTF8: int : (1 << 9)
-OPT_FOOTNOTES: int : (1 << 13)
+OPT_UNSAFE: c.int : (1 << 17)
+OPT_VALIDATE_UTF8: c.int : (1 << 9)
+OPT_FOOTNOTES: c.int : (1 << 13)
 
 llist :: struct {
 	next: ^llist,
