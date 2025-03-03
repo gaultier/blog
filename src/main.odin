@@ -539,7 +539,8 @@ article_generate_html_file :: proc(
 
 	for {
 		event := cmark.iter_next(it)
-		if event == cmark.EVENT_DONE {break}
+		if event == cmark.event_type.DONE {break}
+		if it.cur.ev_type == cmark.event_type.EXIT {continue}
 
 		node := cmark.iter_get_node(it)
 

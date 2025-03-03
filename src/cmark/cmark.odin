@@ -50,11 +50,6 @@ OPT_UNSAFE: c.int : (1 << 17)
 OPT_VALIDATE_UTF8: c.int : (1 << 9)
 OPT_FOOTNOTES: c.int : (1 << 13)
 
-EVENT_NONE: c.int : 1
-EVENT_DONE: c.int : 1
-EVENT_ENTER: c.int : 2
-EVENT_EXIT: c.int : 3
-
 
 NODE_TYPE_PRESENT: u16 : 0x8000
 NODE_TYPE_BLOCK: u16 : NODE_TYPE_PRESENT | 0x0000
@@ -91,6 +86,24 @@ NODE_LINK: u16 : NODE_TYPE_INLINE | 0x0009
 NODE_IMAGE: u16 : NODE_TYPE_INLINE | 0x000a
 NODE_FOOTNOTE_REFERENCE: u16 : NODE_TYPE_INLINE | 0x000b
 
+event_type :: enum c.int {
+	NONE  = 0,
+	DONE  = 1,
+	ENTER = 2,
+	EXIT  = 3,
+}
+
+iter_state :: struct {
+	ev_type: event_type,
+	node:    ^node,
+}
+iter :: struct {
+	mem:  ^rawptr,
+	root: ^node,
+	cur:  iter_state,
+	next: iter_state,
+}
+
 llist :: struct {
 	next: ^llist,
 	data: ^rawptr,
@@ -114,9 +127,9 @@ foreign cmark {
 	parser_finish :: proc(parser: ^rawptr) -> ^node ---
 	get_arena_mem_allocator :: proc() -> ^rawptr ---
 	arena_reset :: proc() ---
-	iter_new :: proc(node: ^node) -> ^rawptr ---
-	iter_next :: proc(iter: ^rawptr) -> c.int ---
-	iter_get_node :: proc(iter: ^rawptr) -> ^node ---
+	iter_new :: proc(node: ^node) -> ^iter ---
+	iter_next :: proc(iter: ^iter) -> event_type ---
+	iter_get_node :: proc(iter: ^iter) -> ^node ---
 	node_new_with_mem :: proc(type: c.int, mem: ^rawptr) -> ^node ---
 	node_replace :: proc(old_node: ^node, new_node: ^node) -> c.int ---
 	node_set_literal :: proc(node: ^node, content: cstring) -> c.int ---
