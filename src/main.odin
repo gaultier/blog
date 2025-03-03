@@ -1,7 +1,6 @@
 package main
 
 import "cmark"
-import "core:c"
 import "core:encoding/uuid"
 import "core:encoding/uuid/legacy"
 import "core:fmt"
@@ -531,51 +530,73 @@ article_generate_html_file :: proc(
 
 	it := cmark.iter_new(cmark_parsed)
 
-	for event := cmark.iter_next(it); event != cmark.EVENT_DONE; event = cmark.iter_next(it) {
+	root := new(Title)
+	root.level = 1
+	root.parent = root
+
+	max_titles := 50
+	titles := make([dynamic]Title, 0, max_titles)
+
+	for {
+		event := cmark.iter_next(it)
+		if event == cmark.EVENT_DONE {break}
+
 		node := cmark.iter_get_node(it)
 
 		if node.type == cmark.NODE_HEADING {
-			fmt.println(node.content.ptr, node.as.heading)
-
-			level := node.as.heading.level
-			content := node.content.ptr
-			content_html_friendly := html_make_id(string(content))
-			id := 0 // FIXME
-
-			new_node := cmark.node_new_with_mem(c.int(cmark.NODE_HTML_BLOCK), mem)
-
-			sb := strings.builder_make()
-			fmt.sbprintf(
-				&sb,
-				`<h%d id="%d-%s">
-	<a class="title" href="#%d-%s">%s</a>
-	<a class="hash-anchor" href="#%d-%s" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
-</h%d>
-			`,
-				level,
-				id,
-				content_html_friendly,
-				id,
-				content_html_friendly,
-				content,
-				id,
-				content_html_friendly,
-				level,
-			)
-			html := strings.to_string(sb)
-			assert(
-				1 ==
-				cmark.node_set_string_content(new_node, strings.unsafe_string_to_cstring(html)),
-			)
-			new_node.as.html_block_type = 6
-			new_node.parent = node.parent
-			new_node.prev = node.prev
-			new_node.next = node.next
-			new_node.first_child = node.first_child
-			new_node.last_child = node.last_child
-			assert(1 == cmark.node_replace(node, new_node))
+			fmt.println("cmark_iter:", node.content.ptr, node.as.heading)
+			title := Title {
+				content               = string(node.content.ptr),
+				content_html_friendly = html_make_id(string(node.content.ptr)),
+				level                 = int(node.as.heading.level),
+				parent                = root, // Will be backpatched.
+				/* Other fields backpatched. */
+			}
+			append(&titles, title)
 		}
 	}
+	assert(len(titles) <= max_titles)
+
+	// Backpatch `parent`.
+	for &title, i in titles {
+		if i > 0 {
+			previous := &titles[i - 1]
+			level_diff := previous.level - title.level
+
+			if level_diff > 0 { 	// The current title is a (great-)uncle of the current title.
+				for _ in 0 ..< level_diff {
+					assert(title.parent != nil)
+					title.parent = title.parent.parent
+				}
+			} else if level_diff < 0 { 	// The current title is a direct descendant of `previous`.
+				// Check that we do not skip levels e.g. prevent `## Foo\n#### Bar\n`
+				assert(level_diff == -1)
+				title.parent = previous
+			} else if level_diff == 0 { 	// Sibling.
+				title.parent = previous.parent
+			}
+		}
+		assert(title.parent.level + 1 == title.level)
+
+		child := title.parent.first_child
+
+		// Add the node as last child of the parent.
+		for child != nil && child.next_sibling != nil {
+			child = child.next_sibling
+		}
+		// Already one child present.
+		if child != nil {
+			child.next_sibling = &title
+		} else { 	// First child.
+			title.parent.first_child = &title
+		}
+	}
+
+	// Backpatch `id` field which is a hash of the full path to this node including ancestors.
+	for &title in titles {
+		title.id = title_make_id(&title)
+	}
+	title_print(os.stderr, root)
 
 	cmark_out := string(cmark.render_html(cmark_parsed, cmark_options, nil))
 
