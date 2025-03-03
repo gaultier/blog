@@ -117,55 +117,6 @@
 		<h1>Addressing CGO pains, one at a time</h1>
 		  <div class="tags"> <a href="/blog/articles-by-tag.html#go" class="tag">Go</a> <a href="/blog/articles-by-tag.html#c" class="tag">C</a> <a href="/blog/articles-by-tag.html#rust" class="tag">Rust</a> <a href="/blog/articles-by-tag.html#zig" class="tag">Zig</a> <a href="/blog/articles-by-tag.html#docker" class="tag">Docker</a> <a href="/blog/articles-by-tag.html#cross-compilation" class="tag">Cross-compilation</a> <a href="/blog/articles-by-tag.html#musl" class="tag">Musl</a></div>
  </div>
- <strong>Table of contents</strong>
-<ul>
-
-	<li>
-		<a href="#2500525419-cgo-does-not-have-unions">CGO does not have unions</a>
-		  </li>
-
-	<li>
-		<a href="#1510699236-slices-vs-strings">Slices vs Strings</a>
-		  </li>
-
-	<li>
-		<a href="#1045507796-test-a-c-function-in-go-tests">Test a C function in Go tests</a>
-		  </li>
-
-	<li>
-		<a href="#1377417454-the-go-compiler-does-not-detect-changes">The Go compiler does not detect changes</a>
-		  </li>
-
-	<li>
-		<a href="#1226423581-false-positive-warnings">False positive warnings</a>
-		  </li>
-
-	<li>
-		<a href="#716190716-white-space-is-significant">White space is significant</a>
-		  </li>
-
-	<li>
-		<a href="#1161538398-debug-go-and-c-rust">Debug Go and C/Rust</a>
-		<ul>
-
-	<li>
-		<a href="#1317537828-strace-bpftrace">Strace, bpftrace</a>
-		  </li>
-</ul>
-  </li>
-
-	<li>
-		<a href="#1705429708-cross-compile">Cross-compile</a>
-		  </li>
-
-	<li>
-		<a href="#3796851539-conclusion">Conclusion</a>
-		  </li>
-
-	<li>
-		<a href="#1512890027-addendum-the-full-code">Addendum: the full code</a>
-		  </li>
-</ul>
 
 <p>Rust? Go? Cgo!</p>
 <p>I maintain a Go codebase at work which does most of its work through a Rust library that exposes a C API. So they interact via Cgo, Go's FFI mechanism. And it works!</p>
@@ -187,10 +138,7 @@
 <p>The C code is in the <code>c</code> directory, we build a static library <code>libapi.a</code> from it. The public header file is <code>api.h</code>.</p>
 <p>The Go code then links this library.</p>
 <p><em>The full code can be found at the end of this article.</em></p>
-<h2 id="2500525419-cgo-does-not-have-unions">
-	<a class="title" href="#2500525419-cgo-does-not-have-unions">CGO does not have unions</a>
-	<a class="hash-anchor" href="#2500525419-cgo-does-not-have-unions" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
-</h2>
+<h2>CGO does not have unions</h2>
 <p>This is known to Go developers: Go does not have tagged unions, also called sum types, algebraic data types, etc. But C, and Rust, do have them, and Go needs to generate Go types for each C type, so that we can use them! So what does it do? Let's have a look.</p>
 <p>So, here is a (very useful) C tagged union:</p>
 <pre><code class="language-c">// c/api.h
@@ -344,10 +292,7 @@ func DoStuff() {
 <p>And as a bonus, whenever the layout of <code>Animal</code> changes, for example the order of fields gets changed, or a new field gets added which changes the alignment and thus the padding (here it's not the case because the alignment is already 8 which is the maximum, but in other cases it could happen), the C code gets recompiled, it does the right thing automatically, and everything works as expected.</p>
 <p><strong>My recommendation:</strong> never role-play as a compiler, just use getters and setters for unions and let the C compiler do the dirty work.</p>
 <p><strong>My ask to the Go team:</strong> mention the approach with getters and setters in the docs. The only thing the <a href="https://pkg.go.dev/cmd/cgo">docs</a> have to say about unions right now is: <code>As Go doesn't have support for C's union type in the general case, C's union types are represented as a Go byte array with the same length</code>. And I don't expect Go to have (tagged) unions anytime soon, so that's the best we can do.</p>
-<h2 id="1510699236-slices-vs-strings">
-	<a class="title" href="#1510699236-slices-vs-strings">Slices vs Strings</a>
-	<a class="hash-anchor" href="#1510699236-slices-vs-strings" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
-</h2>
+<h2>Slices vs Strings</h2>
 <p>Quick Go trivia question: what's the difference between <code>[]byte</code> (a slice of bytes) and <code>string</code> (which is a slice of bytes underneath)?</p>
 <p>...</p>
 <p>The former is mutable while the latter is immutable.
@@ -432,10 +377,7 @@ Kitty
 <li>In C, do not expose string data directly to Go, only expose opaque values (<code>void*</code>), and mutations are only done by calling a C function. That way, the Go caller simply cannot use <code>unsafe.String</code> (I guess they could with lots of casts, but that's not in the realm of a <em>honest mistake</em> anymore).</li>
 </ul>
 <p><strong>My ask to the Go team:</strong> attempt to develop more advanced checks to detect this issue at runtime.</p>
-<h2 id="1045507796-test-a-c-function-in-go-tests">
-	<a class="title" href="#1045507796-test-a-c-function-in-go-tests">Test a C function in Go tests</a>
-	<a class="hash-anchor" href="#1045507796-test-a-c-function-in-go-tests" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
-</h2>
+<h2>Test a C function in Go tests</h2>
 <p>We are principled programmers who write tests. Let's write a test to ensure that <code>animal_make_dog()</code> does indeed create a dog, i.e. the kind is <code>ANIMAL_KIND_DOG</code>:</p>
 <pre><code class="language-go">// app/app_test.go
 
@@ -492,17 +434,11 @@ ok  	cgo/app	0.003s
 <li>There is some glue code sometimes that is only useful to the Go codebase, and that's written in C. In that case wrap each C utility function in a Go one and write a Go test, hopefully it's not that much.</li>
 </ul>
 <p><strong>My ask to the Go team:</strong> let's allow the use of Cgo in tests.</p>
-<h2 id="1377417454-the-go-compiler-does-not-detect-changes">
-	<a class="title" href="#1377417454-the-go-compiler-does-not-detect-changes">The Go compiler does not detect changes</a>
-	<a class="hash-anchor" href="#1377417454-the-go-compiler-does-not-detect-changes" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
-</h2>
+<h2>The Go compiler does not detect changes</h2>
 <p>People are used to say: Go builds so fast! And yes, it's not a slow compiler, but if you have ever built the Go compiler from scratch, you will have noticed it takes a significant amount of time still. What Go is really good at, is caching: it's really smart at detecting what changed, and only rebuilding that. And that's great! Until it isn't.</p>
 <p>Sometimes, changes to the Cgo build flags, or to the <code>.a</code> library, were not detected by Go. I could not really reproduce these issues reliably, but they do happen.</p>
 <p>Solution: force a clean build with <code>go build -a</code>.</p>
-<h2 id="1226423581-false-positive-warnings">
-	<a class="title" href="#1226423581-false-positive-warnings">False positive warnings</a>
-	<a class="hash-anchor" href="#1226423581-false-positive-warnings" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
-</h2>
+<h2>False positive warnings</h2>
 <p>Sometimes we need to run some C code once at startup, when the package gets initialized:</p>
 <pre><code class="language-Go">// app/app.go
 
@@ -554,10 +490,7 @@ cgo-gcc-prolog:78:49: warning: unused variable ‘_cgo_a’ [-Wunused-variable]
 <p>Some searching around turns up this <a href="https://github.com/golang/go/issues/6883#issuecomment-383800123,">Github issue</a> where the official recommendation is: do not use <code>-Wall</code>, it creates false positives. Ok.</p>
 <p><strong>My recommendation:</strong> Write C code in C files and enable all the warnings you want.</p>
 <p><strong>My ask to the Go team:</strong> Let's please fix the false positives and allow people to enable some basic warnings. <code>-Wall</code> is the bare minimum!</p>
-<h2 id="716190716-white-space-is-significant">
-	<a class="title" href="#716190716-white-space-is-significant">White space is significant</a>
-	<a class="hash-anchor" href="#716190716-white-space-is-significant" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
-</h2>
+<h2>White space is significant</h2>
 <p>Let's go back to the <code>app/cfuncs.go</code> we just created that builds fine:</p>
 <pre><code class="language-go">package app
 
@@ -625,10 +558,7 @@ import &quot;C&quot;
 </code></pre>
 <p><strong>My recommendation:</strong> If you get a hairy and weird error, compare the white space with official code examples.</p>
 <p><strong>My ask to the Go team:</strong> Can we please fix this? Or at least document it? There is zero mention of this pitfall anywhere, as far as I can see.</p>
-<h2 id="1161538398-debug-go-and-c-rust">
-	<a class="title" href="#1161538398-debug-go-and-c-rust">Debug Go and C/Rust</a>
-	<a class="hash-anchor" href="#1161538398-debug-go-and-c-rust" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
-</h2>
+<h2>Debug Go and C/Rust</h2>
 <p>It's very simple, you have two exclusive choices:</p>
 <ul>
 <li>Use a C/Rust debugger (e.g gdb, lldb, etc), which does not understand the Go calling convention so you can see the C/Rust call stack, but it ends at the Cgo FFI boundary, or</li>
@@ -760,10 +690,7 @@ Values returned:
 <p>This point is close to being a deal-breaker for me. Debugging is really important! A language/tech stack is IMHO only as good as we developers can understand and troubleshoot production applications. Can't debug, can't pinpoint where the bug is? Not sure if that program is worth much.</p>
 <p><strong>My recommendation:</strong>: Have both debuggers at hand and locate where the problem is: is it on the Go side or on the C/Rust side? Then use the right debugger to inspect local variables and such. Yes, it's a pity. I guess you can try to build Go code with Gccgo, perhaps gdb understands the full call stack then? My approach was to insert logs everywhere in the code, both Go and Rust, with logs. Not ideal. It's a bit too close to 'printf debugging' to my taste.</p>
 <p><strong>My ask for the Go team:</strong>: Well, ideally both debuggers would work fully with CGO. But since this issue is known for years...I don't have much hope.</p>
-<h3 id="1317537828-strace-bpftrace">
-	<a class="title" href="#1317537828-strace-bpftrace">Strace, bpftrace</a>
-	<a class="hash-anchor" href="#1317537828-strace-bpftrace" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
-</h3>
+<h3>Strace, bpftrace</h3>
 <p>It's the same issue manifesting in a different way: it's not just debuggers than do not understand the call stack, it's also <code>strace</code>:</p>
 <pre><code class="language-sh">$ strace -k -e write ./cgo
 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=438876, si_uid=1000} ---
@@ -804,10 +731,7 @@ Dog: 42
 	46c301 runtime.goexit.abi0+1 (./cgo)
 </code></pre>
 <p>So, let's use <code>bpftrace</code>, I guess.</p>
-<h2 id="1705429708-cross-compile">
-	<a class="title" href="#1705429708-cross-compile">Cross-compile</a>
-	<a class="hash-anchor" href="#1705429708-cross-compile" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
-</h2>
+<h2>Cross-compile</h2>
 <p>So picture me, building my Go program (a web service) using Cgo. Locally, it builds very quickly, due to Rust and Go caching.</p>
 <p>Now, time to build in Docker to be able to test my changes:</p>
 <pre><code class="language-sh">$ time docker build [...]
@@ -875,15 +799,9 @@ Executed in    1.47 secs
 <p>So, we went from ~100s to ~1s, roughly a 100x improvement. Pretty pretty good if you ask me.</p>
 <p><strong>My recommendation:</strong>: Never build in Docker if you can avoid it. Build locally and copy the one static executable into the Docker image.</p>
 <p><strong>My ask for the Go team</strong>: None actually, they have done an amazing job on the build system to support this use-case, and on the documentation.</p>
-<h2 id="3796851539-conclusion">
-	<a class="title" href="#3796851539-conclusion">Conclusion</a>
-	<a class="hash-anchor" href="#3796851539-conclusion" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
-</h2>
+<h2>Conclusion</h2>
 <p>Cgo is rocky, but there are no real blocking issues, apart from the debugging pain point, mostly lots of small pains. Half the cure is being aware of the ailment, as the saying goes. So armed with this knowledge, I wish you god speed with your Cgo projects!</p>
-<h2 id="1512890027-addendum-the-full-code">
-	<a class="title" href="#1512890027-addendum-the-full-code">Addendum: the full code</a>
-	<a class="hash-anchor" href="#1512890027-addendum-the-full-code" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
-</h2>
+<h2>Addendum: the full code</h2>
 <details>
   <summary>The full code</summary>
 <p><code>c/Makefile:</code></p>

@@ -506,18 +506,16 @@ article_generate_html_file :: proc(
 	assert(len(header) > 0)
 	assert(len(footer) > 0)
 	assert(len(article.tags) > 0)
-	assert(article.titles != nil)
 	assert(len(article.creation_date) > 0)
 	assert(len(article.modification_date) > 0)
 	assert(len(article.output_file_name) > 0)
 
 	context.allocator = context.temp_allocator
 
-	decorated_markdown := article_decorate_markdown_titles_with_id(article_content, article.titles)
-
 	mem := cmark.get_arena_mem_allocator()
 	defer cmark.arena_reset()
 	parser := cmark.parser_new_with_mem(cmark_options, mem)
+	// defer cmark.parser_free()
 
 	ext_table := cmark.find_syntax_extension("table")
 	assert(ext_table != nil)
@@ -527,7 +525,7 @@ article_generate_html_file :: proc(
 	assert(ext_strikethrough != nil)
 	cmark.parser_attach_syntax_extension(parser, ext_strikethrough)
 
-	cmark.parser_feed(parser, raw_data(decorated_markdown), u32(len(decorated_markdown)))
+	cmark.parser_feed(parser, raw_data(article_content), u32(len(article_content)))
 	cmark_parsed := cmark.parser_finish(parser)
 
 	cmark_out := string(cmark.render_html(cmark_parsed, cmark_options, nil))
@@ -566,7 +564,7 @@ article_generate_html_file :: proc(
 
 	strings.write_string(&html_sb, " </div>\n")
 
-	article_write_toc(&html_sb, article.titles)
+	// article_write_toc(&html_sb, article.titles)
 
 	strings.write_rune(&html_sb, '\n')
 	strings.write_string(&html_sb, cmark_out)
@@ -635,8 +633,8 @@ article_generate :: proc(
 
 	stem := filepath.stem(git_stat.path_rel)
 	article.output_file_name = strings.concatenate([]string{stem, ".html"})
-	article.titles = markdown_parse_titles(content_without_metadata)
-	title_print(os.stdout, article.titles)
+	// article.titles = markdown_parse_titles(content_without_metadata)
+	// title_print(os.stdout, article.titles)
 
 	article_generate_html_file(content_without_metadata, article, header, footer) or_return
 	fmt.printf("generated article: title=%s\n", article.title)
