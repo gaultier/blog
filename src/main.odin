@@ -542,7 +542,7 @@ article_generate_html_file :: proc(
 			content_html_friendly := html_make_id(string(content))
 			id := 0 // FIXME
 
-			new_node := cmark.node_new_with_mem(c.int(cmark.NODE_HTML_INLINE), mem)
+			new_node := cmark.node_new_with_mem(c.int(cmark.NODE_HTML_BLOCK), mem)
 
 			sb := strings.builder_make()
 			fmt.sbprintf(
@@ -563,7 +563,16 @@ article_generate_html_file :: proc(
 				level,
 			)
 			html := strings.to_string(sb)
-			assert(1 == cmark.node_set_literal(new_node, strings.unsafe_string_to_cstring(html)))
+			assert(
+				1 ==
+				cmark.node_set_string_content(new_node, strings.unsafe_string_to_cstring(html)),
+			)
+			new_node.as.html_block_type = 6
+			new_node.parent = node.parent
+			new_node.prev = node.prev
+			new_node.next = node.next
+			new_node.first_child = node.first_child
+			new_node.last_child = node.last_child
 			assert(1 == cmark.node_replace(node, new_node))
 		}
 	}

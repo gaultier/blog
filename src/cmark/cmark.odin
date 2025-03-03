@@ -19,7 +19,8 @@ footnote :: struct #raw_union {
 }
 
 node_as :: struct #raw_union {
-	heading: heading,
+	heading:         heading,
+	html_block_type: c.int,
 }
 
 node :: struct {
@@ -119,5 +120,6 @@ foreign cmark {
 	node_new_with_mem :: proc(type: c.int, mem: ^rawptr) -> ^node ---
 	node_replace :: proc(old_node: ^node, new_node: ^node) -> c.int ---
 	node_set_literal :: proc(node: ^node, content: cstring) -> c.int ---
+	node_set_string_content :: proc(node: ^node, content: cstring) -> c.int ---
 	enable_safety_checks :: proc(enable: bool) ---
 }
