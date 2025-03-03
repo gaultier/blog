@@ -57,6 +57,8 @@ foreign cmark {
 	parser_attach_syntax_extension :: proc(parser: ^rawptr, extensions: ^rawptr) -> c.int ---
 	parser_feed :: proc(parser: ^rawptr, buf: [^]u8, len: c.uint) ---
 	parser_finish :: proc(parser: ^rawptr) -> ^node ---
+	get_arena_mem_allocator :: proc() -> ^rawptr ---
+	arena_reset :: proc() ---
 }
 
 

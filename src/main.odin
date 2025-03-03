@@ -579,7 +579,8 @@ article_generate_html_file :: proc(
 
 	decorated_markdown := article_decorate_markdown_titles_with_id(article_content, article.titles)
 
-	mem := cmark.get_default_mem_allocator()
+	mem := cmark.get_arena_mem_allocator()
+	defer cmark.arena_reset()
 	cmark_options := cmark.OPT_UNSAFE | cmark.OPT_VALIDATE_UTF8 | cmark.OPT_FOOTNOTES
 
 	parser := cmark.parser_new_with_mem(cmark_options, mem)
