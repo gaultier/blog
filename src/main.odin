@@ -1,7 +1,6 @@
 package main
 
 import "cmark"
-import "core:c"
 import "core:encoding/uuid"
 import "core:encoding/uuid/legacy"
 import "core:fmt"
@@ -582,7 +581,7 @@ article_generate_html_file :: proc(
 
 	mem := cmark.get_default_mem_allocator()
 	parser := cmark.parser_new_with_mem(
-		c.int(cmark.OPT_UNSAFE | cmark.OPT_VALIDATE_UTF8 | cmark.OPT_FOOTNOTES),
+		cmark.OPT_UNSAFE | cmark.OPT_VALIDATE_UTF8 | cmark.OPT_FOOTNOTES,
 		mem,
 	)
 
