@@ -549,7 +549,8 @@ article_generate_html_file :: proc(
 		case cmark.NODE_CODE_BLOCK:
 			fmt.println("NODE_CODE_BLOCK")
 		case cmark.NODE_HTML_BLOCK:
-			fmt.println("NODE_HTML_BLOCK")
+			s := strings.string_from_ptr(node.as.literal.data, int(node.as.literal.len))
+			fmt.println("NODE_HTML_BLOCK", s[:min(len(s), excerpt_len)])
 		case cmark.NODE_CUSTOM_BLOCK:
 			fmt.println("NODE_CUSTOM_BLOCK")
 		case cmark.NODE_PARAGRAPH:
@@ -571,7 +572,8 @@ article_generate_html_file :: proc(
 			s := strings.string_from_ptr(node.as.literal.data, int(node.as.literal.len))
 			fmt.println("NODE_CODE", s[:min(len(s), excerpt_len)])
 		case cmark.NODE_HTML_INLINE:
-			fmt.println("NODE_HTML_INLINE")
+			s := strings.string_from_ptr(node.as.literal.data, int(node.as.literal.len))
+			fmt.println("NODE_HTML_INLINE", s[:min(len(s), excerpt_len)])
 		case cmark.NODE_CUSTOM_INLINE:
 			fmt.println("NODE_CUSTOM_INLINE")
 		case cmark.NODE_EMPH:
