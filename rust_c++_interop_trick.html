@@ -122,7 +122,10 @@
 <p>I am <a href="/blog/how_to_rewrite_a_cpp_codebase_successfully.html">rewriting</a> a gnarly <a href="/blog/you_inherited_a_legacy_cpp_codebase_now_what.html">C++ codebase</a> in Rust at work.</p>
 <p>Due to the heavy use of callbacks (sigh), Rust sometimes calls C++ and C++ sometimes calls Rust. This done by having both sides expose a C API for the functions they want the other side to be able to call.</p>
 <p>This is for functions; but what about C++ methods? Here is a trick to rewrite one C++ method at a time, without headaches. And by the way, this works whatever the language you are rewriting the project in, it does not have to be Rust!</p>
-<h2>The trick</h2>
+<h2 id="2242944609-the-trick">
+	<a class="title" href="#2242944609-the-trick">The trick</a>
+	<a class="hash-anchor" href="#2242944609-the-trick" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+</h2>
 <ol>
 <li>Make the C++ class a <a href="https://en.cppreference.com/w/cpp/language/classes#Standard-layout_class">standard layout class</a>. This is defined by the C++ standard. In layman terms, this makes the C++ class be similar to a plain C struct. With a few allowances, for example the C++ class can still use inheritance and a few other things. Most notably, virtual methods are forbidden. I don't care about this limitation because I never use virtual methods myself and this is my least favorite feature in any programming language.</li>
 <li>Create a Rust struct with the <em>exact</em> same layout as the C++ class.</li>

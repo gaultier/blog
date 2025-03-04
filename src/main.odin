@@ -1,6 +1,7 @@
 package main
 
 import "cmark"
+import "core:c"
 import "core:encoding/uuid"
 import "core:encoding/uuid/legacy"
 import "core:fmt"
@@ -578,14 +579,13 @@ article_generate_html_file :: proc(
 		title_new := strings.to_string(sb)
 		fmt.println("cmark_iter:", node.content.ptr, node.as.heading, id, title_new)
 
-		assert(
-			1 == cmark.node_set_string_content(node, strings.unsafe_string_to_cstring(title_new)),
-		)
+		node_new := cmark.node_new_with_mem(c.int(cmark.NODE_HTML_BLOCK), mem)
+		assert(1 == cmark.node_set_literal(node_new, strings.unsafe_string_to_cstring(title_new)))
+		assert(1 == cmark.node_replace(node, node_new))
 	}
 
 
 	cmark_out := string(cmark.render_html(cmark_parsed, cmark_options, nil))
-
 
 	html_sb := strings.builder_make()
 

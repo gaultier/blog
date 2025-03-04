@@ -145,7 +145,10 @@
 <li><code>eb</code> does not have a timeout.</li>
 </ul>
 <p>So let's implement our own that does both! As we'll see, it's much less straightforward, and thus more interesting, than I thought. It's a whirlwind tour through Unix deeps. If you're interested in systems programming, Operating Systems, multiplexed I/O, data races, weird historical APIs, and all the ways you can shoot yourself in the foot with just a few system calls, you're in the right place!</p>
-<h2>What are we building?</h2>
+<h2 id="1771652340-what-are-we-building">
+	<a class="title" href="#1771652340-what-are-we-building">What are we building?</a>
+	<a class="hash-anchor" href="#1771652340-what-are-we-building" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+</h2>
 <p>I call the tool we are building <code>ueb</code> for: micro exponential backoff. It does up to 10 retries, with a waiting period in between that starts at an arbitrary 128 ms and doubles every retry. The timeout for the subprocess is the same as the sleep time, so that it's adaptive and we give the subprocess a longer and longer time to finish successfully. These numbers would probably be exposed as command line options in a real polished program, but there's no time, what have to demo it:</p>
 <pre><code class="language-sh"># This returns immediately since it succeeds on the first try.
 $ ueb true

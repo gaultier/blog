@@ -135,7 +135,10 @@ It means we want to remove adjacent characters which are the same letter and hav
 <li>In the C solution, we use <code>abs(x) == 32</code> which we could avoid by doing <code>x*x == 32*32</code>.</li>
 </ul>
 <p>This coincided with me listening to an interview from the VLC developers saying they wrote hundred of thousand of lines of (multi platform!) Assembly code by hand in their new AV1 decoder. I thought that was intriguing, who still writes assembly by hand in 2023? Well these guys are no idiots so I should try it as well.</p>
-<h2>The new solution</h2>
+<h2 id="797060299-the-new-solution">
+	<a class="title" href="#797060299-the-new-solution">The new solution</a>
+	<a class="hash-anchor" href="#797060299-the-new-solution" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+</h2>
 <p>I came up with a new algorithm, which on paper does less work. It's one linear pass on the input, and does not allocate.</p>
 <p>Since the result we care about is the number of remaining characters, we simply keep track of the count as we sift through the input.</p>
 <p>We maintain two pointers, <code>current</code> and <code>next</code>, which we compare to decide whether we should merge the characters they point to. 'Merging' means setting the two characters to <code>0</code> (it's basically a tombstone) and lower the count.</p>

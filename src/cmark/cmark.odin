@@ -21,6 +21,7 @@ footnote :: struct #raw_union {
 node_as :: struct #raw_union {
 	heading:         heading,
 	html_block_type: c.int,
+	literal:         chunk,
 }
 
 node :: struct {
@@ -102,6 +103,12 @@ iter :: struct {
 	root: ^node,
 	cur:  iter_state,
 	next: iter_state,
+}
+
+chunk :: struct {
+	data:  [^]u8,
+	len:   i32,
+	alloc: i32,
 }
 
 llist :: struct {

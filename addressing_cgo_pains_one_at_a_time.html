@@ -138,7 +138,10 @@
 <p>The C code is in the <code>c</code> directory, we build a static library <code>libapi.a</code> from it. The public header file is <code>api.h</code>.</p>
 <p>The Go code then links this library.</p>
 <p><em>The full code can be found at the end of this article.</em></p>
-<h2>CGO does not have unions</h2>
+<h2 id="3830231564-cgo-does-not-have-unions">
+	<a class="title" href="#3830231564-cgo-does-not-have-unions">CGO does not have unions</a>
+	<a class="hash-anchor" href="#3830231564-cgo-does-not-have-unions" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+</h2>
 <p>This is known to Go developers: Go does not have tagged unions, also called sum types, algebraic data types, etc. But C, and Rust, do have them, and Go needs to generate Go types for each C type, so that we can use them! So what does it do? Let's have a look.</p>
 <p>So, here is a (very useful) C tagged union:</p>
 <pre><code class="language-c">// c/api.h
