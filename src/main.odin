@@ -79,6 +79,21 @@ title_make_id :: proc(title: ^Title, seed := u32(0x811c9dc5)) -> TitleId {
 	return title_make_id(title.parent, h)
 }
 
+// FNV hash of the full title path including direct ancestors.
+// Conceptually: for `# A\n##B\n###C\n`, we do: `return fnv_hash("A/B/C")`.
+cmark_title_make_id :: proc(title: ^cmark.node, seed := u32(0x811c9dc5)) -> TitleId {
+	// Reached root?
+	if title == nil {return seed}
+
+	h: u32 = seed
+	for b in transmute([]u8)string(title.content.ptr) {
+		h = (h ~ u32(b)) * 0x01000193
+	}
+	h = (h ~ u32('/')) * 0x01000193
+
+	return cmark_title_make_id(title.parent, h)
+}
+
 
 datetime_to_date :: proc(datetime: string) -> string {
 	split := strings.split_n(datetime, "T", 2)
@@ -530,14 +545,6 @@ article_generate_html_file :: proc(
 
 	it := cmark.iter_new(cmark_parsed)
 
-	root := new(Title)
-	root.level = 1
-	root.parent = root
-
-	// Perhaps just attach the computed id (hash) to the markdown nodes in `user_data`?
-	max_titles := 50
-	titles := make([dynamic]Title, 0, max_titles)
-
 	for {
 		event := cmark.iter_next(it)
 		if event == cmark.event_type.DONE {break}
@@ -545,60 +552,13 @@ article_generate_html_file :: proc(
 
 		node := cmark.iter_get_node(it)
 
-		if node.type == cmark.NODE_HEADING {
-			fmt.println("cmark_iter:", node.content.ptr, node.as.heading)
-			title := Title {
-				content               = string(node.content.ptr),
-				content_html_friendly = html_make_id(string(node.content.ptr)),
-				level                 = int(node.as.heading.level),
-				parent                = root, // Will be backpatched.
-				/* Other fields backpatched. */
-			}
-			append(&titles, title)
-		}
-	}
-	assert(len(titles) <= max_titles)
+		if node.type != cmark.NODE_HEADING {continue}
 
-	// Backpatch `parent`.
-	for &title, i in titles {
-		if i > 0 {
-			previous := &titles[i - 1]
-			level_diff := previous.level - title.level
+		id := cmark_title_make_id(node)
+		fmt.println("cmark_iter:", node.content.ptr, node.as.heading, id)
 
-			if level_diff > 0 { 	// The current title is a (great-)uncle of the current title.
-				for _ in 0 ..< level_diff {
-					assert(title.parent != nil)
-					title.parent = title.parent.parent
-				}
-			} else if level_diff < 0 { 	// The current title is a direct descendant of `previous`.
-				// Check that we do not skip levels e.g. prevent `## Foo\n#### Bar\n`
-				assert(level_diff == -1)
-				title.parent = previous
-			} else if level_diff == 0 { 	// Sibling.
-				title.parent = previous.parent
-			}
-		}
-		assert(title.parent.level + 1 == title.level)
-
-		child := title.parent.first_child
-
-		// Add the node as last child of the parent.
-		for child != nil && child.next_sibling != nil {
-			child = child.next_sibling
-		}
-		// Already one child present.
-		if child != nil {
-			child.next_sibling = &title
-		} else { 	// First child.
-			title.parent.first_child = &title
-		}
 	}
 
-	// Backpatch `id` field which is a hash of the full path to this node including ancestors.
-	for &title in titles {
-		title.id = title_make_id(&title)
-	}
-	title_print(os.stderr, root)
 
 	cmark_out := string(cmark.render_html(cmark_parsed, cmark_options, nil))
 
