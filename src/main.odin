@@ -659,6 +659,9 @@ articles_generate :: proc(header: string, footer: string) -> (articles: []Articl
 		// Skip the readme.
 		if git_stat.path_rel == "README.md" {continue}
 
+		// Skip the todo.
+		if git_stat.path_rel == "todo.md" {continue}
+
 		article := article_generate(git_stat, header, footer) or_return
 		append(&articles_dyn, article)
 	}
