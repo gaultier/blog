@@ -194,7 +194,7 @@
 </h3>
 <p>Doing an incremental rewrite from C/C++ to Rust, we had to use a lot of raw pointers and <code>unsafe{}</code> blocks. And even when segregating these to the entry point of the library, they proved to be a big pain in the neck.</p>
 <p>All the stringent rules of Rust still apply inside these blocks but the compiler just stops checking them for you, so you are on your own. As such, it's so easy to introduce Undefined Behavior. I honestly think from this experience that it is easier to inadvertently introduce Undefined Behavior in Rust than in C++, and it turn, it's easier in C++ than in C.</p>
-<p>The main rule in Rust is: <s>multiple read-only pointers XOR one mutable pointer</s> <code>multiple read-only reference XOR one mutable reference</code>. That's what the borrow checker is always pestering you about.</p>
+<p>The main rule in Rust is: <del>multiple read-only pointers XOR one mutable pointer</del> <code>multiple read-only reference XOR one mutable reference</code>. That's what the borrow checker is always pestering you about.</p>
 <p>But when using raw pointers, it's so easy to silently break, especially when porting C or C++ code as-is, which is mutation and pointer heavy:</p>
 <p><em>Note: Astute readers have pointed out that the issue in the snippet below is having multiple mutable references, not pointers, and that using the syntax <code>let a = &amp;raw mut x;</code> in recent Rust versions, or <code>addr_of_mut</code> in older versions, avoids creating multiple mutable references.</em></p>
 <pre><code class="language-rust">fn main() {

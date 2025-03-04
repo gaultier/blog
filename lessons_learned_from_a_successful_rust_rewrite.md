@@ -41,7 +41,7 @@ Doing an incremental rewrite from C/C++ to Rust, we had to use a lot of raw poin
 
 All the stringent rules of Rust still apply inside these blocks but the compiler just stops checking them for you, so you are on your own. As such, it's so easy to introduce Undefined Behavior. I honestly think from this experience that it is easier to inadvertently introduce Undefined Behavior in Rust than in C++, and it turn, it's easier in C++ than in C.
 
-The main rule in Rust is: <s>multiple read-only pointers XOR one mutable pointer</s> `multiple read-only reference XOR one mutable reference`. That's what the borrow checker is always pestering you about.
+The main rule in Rust is: ~~multiple read-only pointers XOR one mutable pointer~~ `multiple read-only reference XOR one mutable reference`. That's what the borrow checker is always pestering you about.
 
 But when using raw pointers, it's so easy to silently break, especially when porting C or C++ code as-is, which is mutation and pointer heavy:
 
