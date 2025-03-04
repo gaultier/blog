@@ -456,8 +456,6 @@ markdown_parse_titles :: proc(markdown: string, allocator := context.allocator) 
 	return root
 }
 
-
-// TODO: Use title tree?
 article_write_toc_rec :: proc(sb: ^strings.Builder, title: ^Title) {
 	if title == nil {return}
 
