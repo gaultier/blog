@@ -557,7 +557,7 @@ article_generate_html_file :: proc(
 		if node == nil {return}
 
 		for _ in 0 ..< depth {
-			fmt.print("  ")
+			fmt.print("\t")
 		}
 
 		switch node.type {
@@ -576,10 +576,9 @@ article_generate_html_file :: proc(
 		case cmark.NODE_CUSTOM_BLOCK:
 			fmt.println("NODE_CUSTOM_BLOCK")
 		case cmark.NODE_PARAGRAPH:
-			s := string(node.content.ptr)
-			fmt.println("NODE_PARAGRAPH", s[:min(len(s), excerpt_len)])
+			fmt.println("NODE_PARAGRAPH")
 		case cmark.NODE_HEADING:
-			fmt.println("NODE_HEADING", node.as.heading.level, node.content.ptr)
+			fmt.println("NODE_HEADING", node.as.heading.level)
 		case cmark.NODE_THEMATIC_BREAK:
 			fmt.println("NODE_THEMATIC_BREAK")
 		case cmark.NODE_FOOTNOTE_DEFINITION:
