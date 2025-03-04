@@ -582,7 +582,8 @@ article_generate_html_file :: proc(
 		case cmark.NODE_FOOTNOTE_DEFINITION:
 			fmt.println("NODE_FOOTNOTE_DEFINITION")
 		case cmark.NODE_TEXT:
-			fmt.println("NODE_TEXT", node.content.ptr)
+			s := strings.string_from_ptr(node.as.literal.data, int(node.as.literal.len))
+			fmt.println("NODE_TEXT", s[:min(len(s), 30)])
 		case cmark.NODE_SOFTBREAK:
 			fmt.println("NODE_SOFTBREAK")
 		case cmark.NODE_LINEBREAK:
@@ -606,8 +607,8 @@ article_generate_html_file :: proc(
 		case:
 			fmt.println("unknown")
 		}
-		cmark_print_node(node.next)
-		cmark_print_node(node.first_child)
+		cmark_print_node(node.next, depth)
+		cmark_print_node(node.first_child, depth + 1)
 	}
 
 	cmark_print_node(cmark_parsed)
