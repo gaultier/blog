@@ -154,10 +154,7 @@ $ wc -l src/***/.rs
 <li><code>END{print(count)}</code>: we print the count at the very end.</li>
 </ul>
 <p>And that's it. AWK is always very nifty.</p>
-<h2 id="4091184562-addendum-exit">
-	<a class="title" href="#4091184562-addendum-exit">Addendum: exit</a>
-	<a class="hash-anchor" href="#4091184562-addendum-exit" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
-</h2>
+<h2>Addendum: exit</h2>
 <p>Originally I implemented it wrongly, like this:</p>
 <pre><code class="language-sh">$ awk '/mod tests/{exit 0} {count += 1} END{print(count)}'  src/***.rs
 </code></pre>

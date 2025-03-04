@@ -551,47 +551,66 @@ article_generate_html_file :: proc(
 	cmark.parser_feed(parser, raw_data(article_content), u32(len(article_content)))
 	cmark_parsed := cmark.parser_finish(parser)
 
-	it := cmark.iter_new(cmark_parsed)
+	cmark_print_node :: proc(node: ^cmark.node, depth: int = 0) {
+		if node == nil {return}
 
-	for {
-		event := cmark.iter_next(it)
-		if event == cmark.event_type.DONE {break}
-		if it.cur.ev_type == cmark.event_type.EXIT {continue}
+		for _ in 0 ..< depth {
+			fmt.print("  ")
+		}
 
-		node := cmark.iter_get_node(it)
-
-		if node.type != cmark.NODE_HEADING {continue}
-
-		id := cmark_title_make_id(node)
-		title_old := string(node.content.ptr)
-		title_html_friendly := html_make_id(title_old)
-		sb := strings.builder_make_len_cap(0, len(title_old) * 3)
-		fmt.sbprintf(
-			&sb,
-			`<h%d id="%d-%s">
-	<a class="title" href="#%d-%s">%s</a>
-	<a class="hash-anchor" href="#%d-%s" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
-</h%d>
-`,
-			node.as.heading.level,
-			id,
-			title_html_friendly,
-			id,
-			title_html_friendly,
-			title_old,
-			id,
-			title_html_friendly,
-			node.as.heading.level,
-		)
-		title_new := strings.to_string(sb)
-		fmt.println("cmark_iter:", node.content.ptr, node.as.heading, id, title_new)
-
-		// node_new := cmark.node_new_with_mem(c.int(cmark.NODE_HTML_BLOCK), mem)
-		node.type = cmark.NODE_HTML_BLOCK
-		assert(1 == cmark.node_set_literal(node, strings.unsafe_string_to_cstring(title_new)))
-		// assert(1 == cmark.node_replace(node, node_new))
+		switch node.type {
+		case cmark.NODE_DOCUMENT:
+			fmt.println("NODE_DOCUMENT")
+		case cmark.NODE_BLOCK_QUOTE:
+			fmt.println("NODE_BLOCK_QUOTE")
+		case cmark.NODE_LIST:
+			fmt.println("NODE_LIST")
+		case cmark.NODE_ITEM:
+			fmt.println("NODE_ITEM")
+		case cmark.NODE_CODE_BLOCK:
+			fmt.println("NODE_CODE_BLOCK")
+		case cmark.NODE_HTML_BLOCK:
+			fmt.println("NODE_HTML_BLOCK")
+		case cmark.NODE_CUSTOM_BLOCK:
+			fmt.println("NODE_CUSTOM_BLOCK")
+		case cmark.NODE_PARAGRAPH:
+			fmt.println("NODE_PARAGRAPH")
+		case cmark.NODE_HEADING:
+			fmt.println("NODE_HEADING", node.content.ptr)
+		case cmark.NODE_THEMATIC_BREAK:
+			fmt.println("NODE_THEMATIC_BREAK")
+		case cmark.NODE_FOOTNOTE_DEFINITION:
+			fmt.println("NODE_FOOTNOTE_DEFINITION")
+		case cmark.NODE_TEXT:
+			fmt.println("NODE_TEXT", node.content.ptr)
+		case cmark.NODE_SOFTBREAK:
+			fmt.println("NODE_SOFTBREAK")
+		case cmark.NODE_LINEBREAK:
+			fmt.println("NODE_LINEBREAK")
+		case cmark.NODE_CODE:
+			fmt.println("NODE_CODE")
+		case cmark.NODE_HTML_INLINE:
+			fmt.println("NODE_HTML_INLINE")
+		case cmark.NODE_CUSTOM_INLINE:
+			fmt.println("NODE_CUSTOM_INLINE")
+		case cmark.NODE_EMPH:
+			fmt.println("NODE_EMPH")
+		case cmark.NODE_STRONG:
+			fmt.println("NODE_STRONG")
+		case cmark.NODE_LINK:
+			fmt.println("NODE_LINK")
+		case cmark.NODE_IMAGE:
+			fmt.println("NODE_IMAGE")
+		case cmark.NODE_FOOTNOTE_REFERENCE:
+			fmt.println("NODE_FOOTNOTE_REFERENCE")
+		case:
+			fmt.println("unknown")
+		}
+		cmark_print_node(node.next)
+		cmark_print_node(node.first_child)
 	}
 
+	cmark_print_node(cmark_parsed)
 
 	cmark_out := string(cmark.render_html(cmark_parsed, cmark_options, nil))
 
