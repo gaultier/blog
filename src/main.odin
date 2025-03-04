@@ -555,8 +555,32 @@ article_generate_html_file :: proc(
 		if node.type != cmark.NODE_HEADING {continue}
 
 		id := cmark_title_make_id(node)
-		fmt.println("cmark_iter:", node.content.ptr, node.as.heading, id)
+		title_old := string(node.content.ptr)
+		title_html_friendly := html_make_id(title_old)
+		sb := strings.builder_make_len_cap(0, len(title_old) * 3)
+		fmt.sbprintf(
+			&sb,
+			`<h%d id="%d-%s">
+	<a class="title" href="#%d-%s">%s</a>
+	<a class="hash-anchor" href="#%d-%s" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+</h%d>
+`,
+			node.as.heading.level,
+			id,
+			title_html_friendly,
+			id,
+			title_html_friendly,
+			title_old,
+			id,
+			title_html_friendly,
+			node.as.heading.level,
+		)
+		title_new := strings.to_string(sb)
+		fmt.println("cmark_iter:", node.content.ptr, node.as.heading, id, title_new)
 
+		assert(
+			1 == cmark.node_set_string_content(node, strings.unsafe_string_to_cstring(title_new)),
+		)
 	}
 
 
