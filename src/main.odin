@@ -534,6 +534,7 @@ article_generate_html_file :: proc(
 	root.level = 1
 	root.parent = root
 
+	// Perhaps just attach the computed id (hash) to the markdown nodes in `user_data`?
 	max_titles := 50
 	titles := make([dynamic]Title, 0, max_titles)
 
