@@ -79,30 +79,6 @@ title_make_id :: proc(title: ^Title, seed := u32(0x811c9dc5)) -> TitleId {
 	return title_make_id(title.parent, h)
 }
 
-// FNV hash of the full title path including direct ancestors.
-// Conceptually: for `# A\n##B\n###C\n`, we do: `return fnv_hash("A/B/C")`.
-cmark_title_make_id :: proc(node: ^cmark.node, current_hash := u32(0x811c9dc5)) -> TitleId {
-	// Reached root?
-	if node == nil {return current_hash}
-
-
-	if node.type != cmark.NODE_HEADING {
-		return cmark_title_make_id(node.parent, current_hash)
-	}
-
-
-	assert(node.type == cmark.NODE_HEADING)
-
-	h: u32 = current_hash
-	for b in transmute([]u8)string(node.content.ptr) {
-		h = (h ~ u32(b)) * 0x01000193
-	}
-	h = (h ~ u32('/')) * 0x01000193
-
-	return cmark_title_make_id(node.parent, h)
-}
-
-
 datetime_to_date :: proc(datetime: string) -> string {
 	split := strings.split_n(datetime, "T", 2)
 	return split[0]
@@ -527,11 +503,14 @@ article_generate_html_file :: proc(
 	assert(len(header) > 0)
 	assert(len(footer) > 0)
 	assert(len(article.tags) > 0)
+	assert(article.titles != nil)
 	assert(len(article.creation_date) > 0)
 	assert(len(article.modification_date) > 0)
 	assert(len(article.output_file_name) > 0)
 
 	context.allocator = context.temp_allocator
+
+	decorated_markdown := article_decorate_markdown_titles_with_id(article_content, article.titles)
 
 	mem := cmark.get_arena_mem_allocator()
 	defer cmark.arena_reset()
@@ -546,7 +525,7 @@ article_generate_html_file :: proc(
 	assert(ext_strikethrough != nil)
 	cmark.parser_attach_syntax_extension(parser, ext_strikethrough)
 
-	cmark.parser_feed(parser, raw_data(article_content), u32(len(article_content)))
+	cmark.parser_feed(parser, raw_data(decorated_markdown), u32(len(decorated_markdown)))
 	cmark_parsed := cmark.parser_finish(parser)
 
 	excerpt_len :: 50
@@ -649,7 +628,7 @@ article_generate_html_file :: proc(
 
 	strings.write_string(&html_sb, " </div>\n")
 
-	// article_write_toc(&html_sb, article.titles)
+	article_write_toc(&html_sb, article.titles)
 
 	strings.write_rune(&html_sb, '\n')
 	strings.write_string(&html_sb, cmark_out)
@@ -718,8 +697,8 @@ article_generate :: proc(
 
 	stem := filepath.stem(git_stat.path_rel)
 	article.output_file_name = strings.concatenate([]string{stem, ".html"})
-	// article.titles = markdown_parse_titles(content_without_metadata)
-	// title_print(os.stdout, article.titles)
+	article.titles = markdown_parse_titles(content_without_metadata)
+	title_print(os.stdout, article.titles)
 
 	article_generate_html_file(content_without_metadata, article, header, footer) or_return
 	fmt.printf("generated article: title=%s\n", article.title)
