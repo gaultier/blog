@@ -136,9 +136,9 @@
 </code></pre>
 <p>But when I build my code in debug mode (no optimizations) with Address Sanitizer, to detect various issues early, startup takes <strong>20 to 30 seconds</strong> (hashing at roughly ~ <strong>18 KiB/s</strong>)! That's unbearable, especially when working in the debugger and inspecting some code that runs after the startup. We'd like to finish this verification under 1 second ideally. And making it fast is important, because until it finishes, we do not know which pieces we need to download so that blocks everything.</p>
 <p>Let's see how we can speed it up.</p>
-<h2 id="262443532-why-is-it-a-problem-at-all-and-how-did-it-come-to-be">
-	<a class="title" href="#262443532-why-is-it-a-problem-at-all-and-how-did-it-come-to-be">Why is it a problem at all and how did it come to be?</a>
-	<a class="hash-anchor" href="#262443532-why-is-it-a-problem-at-all-and-how-did-it-come-to-be" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+<h2 id="2864684395-why-is-it-a-problem-at-all-and-how-did-it-come-to-be">
+	<a class="title" href="#2864684395-why-is-it-a-problem-at-all-and-how-did-it-come-to-be">Why is it a problem at all and how did it come to be?</a>
+	<a class="hash-anchor" href="#2864684395-why-is-it-a-problem-at-all-and-how-did-it-come-to-be" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>It's important to note that in my case, to reduce third-party dependencies, the SHA1 code is vendored in the source tree and comes from OpenBSD. It is plain C code, not using SIMD or such. It's good because I can read it and understand it.</p>
 <p>I entertained depending on OpenSSL or such, but it feels wasteful to pull in such a huge amount of code just for SHA1. And building OpenSSL ourselves, to tweak the build flags, means depending on Perl (and Go, in the case of aws-lc), and a lot of stuff. And now I need to pick between OpenSSL, LibreSSL, BoringSSL, aws-lc, etc. And upgrade it when the weekly security vulnerability gets announced. I don't want any of it, if I can help it. Also I want to understand from top to bottom what code I depend on.</p>

@@ -124,9 +124,9 @@
 <p>And I wanted to do all that in a cross-platform way. And to my surprise, I could not find a (sane) libc function or syscall to create a timer, and that is the same on all Unices!</p>
 <p>Each Unix variant had its own weird way to do it, as I discovered. I am used to Windows being the odd kid in its corner doing its thing, but usually, Unices (thanks to POSIX) agree on a simple API to do something. There's the elephant in the room, of course, with epoll/kqueue/event ports...Which is such a pain that numerous libraries have sprung up to paper over the differences and offer The <em>One API To Rule Them All</em>: libuv, libev, libevent, etc. So, are timers the same painful ordeal?</p>
 <p>Well, let's take a tour of all the OS APIs to handle them.</p>
-<h2 id="791463407-windows-settimer">
-	<a class="title" href="#791463407-windows-settimer">Windows: SetTimer</a>
-	<a class="hash-anchor" href="#791463407-windows-settimer" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+<h2 id="2371048346-windows-settimer">
+	<a class="title" href="#2371048346-windows-settimer">Windows: SetTimer</a>
+	<a class="hash-anchor" href="#2371048346-windows-settimer" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>This will be brief because I do not develop on Windows. The official documentation mentions the <a href="https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-settimer">SetTimer</a> function from Win32 and you pass it a timeout and a callback. Alternatively, since Windows applications come with a built-in event queue, an event of type <code>WM_TIMER</code> gets emitted and can be consumed from the queue. Simple, and it composes with other OS events, I like it.</p>
 <h3>Readers suggestions: CreateWaitableTimer, CreateThreadpoolTimer, CreateTimerQueueTimer</h3>

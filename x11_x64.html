@@ -127,9 +127,9 @@
 <p>I am by no means an expert in assembly or in X11. I just hope to provide an entertaining, approachable article, something a beginner can understand. Something I wished I had found when I was learning those topics. If you spot an error, please open a <a href="https://github.com/gaultier/blog">Github issue</a>!</p>
 </blockquote>
 <p><em>Note: Authentication is optional in the X11 protocol, but some X11 servers e.g. XWayland require it. Authentication is skipped here and is handled in a separate <a href="/blog/write_a_video_game_from_scratch_like_1987.html#authentication">article</a>.</em></p>
-<h2 id="3423175595-what-do-we-need">
-	<a class="title" href="#3423175595-what-do-we-need">What do we need?</a>
-	<a class="hash-anchor" href="#3423175595-what-do-we-need" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+<h2 id="3018859686-what-do-we-need">
+	<a class="title" href="#3018859686-what-do-we-need">What do we need?</a>
+	<a class="hash-anchor" href="#3018859686-what-do-we-need" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>I will be using the <code>nasm</code> assembler which is simple, cross-platform, fast, and has quite a readable syntax.</p>
 <p>For the GUI, I will be using X11 since I am based on Linux and it has some interesting properties that make it easy to do without external libraries. If you are running Wayland, it should work with XWayland out of the box (<em>EDIT: After testing it, I can confirm it does work</em>), and perhaps also on macOS with XQuartz, but I have not tested those (for macOS, remember to tell <code>nasm</code> to use the <code>macho64</code> format, since macOS does not use the ELF format! Also, the stock linker on macOS does not support <code>-static</code>.).</p>

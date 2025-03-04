@@ -123,9 +123,9 @@
 <p>And finally, I hope you will realize this endeavour is not unlike optimizing a program: it requires some time and dedication but you will get tremendous results. Also, almost incidentally, it will be more secure and easier to audit.</p>
 <p>Lastly, remember to measure and profile your changes. If a change has made no improvements, it should be reverted.</p>
 <p><em>This article assumes you are running a POSIX system. Windows developers, this is not the article you are looking for.</em></p>
-<h2 id="1339777509-reduce-the-size-of-everything">
-	<a class="title" href="#1339777509-reduce-the-size-of-everything">Reduce the size of everything</a>
-	<a class="hash-anchor" href="#1339777509-reduce-the-size-of-everything" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+<h2 id="2959153544-reduce-the-size-of-everything">
+	<a class="title" href="#2959153544-reduce-the-size-of-everything">Reduce the size of everything</a>
+	<a class="hash-anchor" href="#2959153544-reduce-the-size-of-everything" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>Almost certainly, your CI pipeline has to download 'something', be it a base docker image, a virtual machine image, some packages, maybe a few company wide scripts. The thing is, you are downloading those every time it runs, 24/7, every day of the year. Even a small size reduction can yield big speed ups. Remember, the network is usually the bottleneck.</p>
 <p>In no particular order:</p>

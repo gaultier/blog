@@ -126,9 +126,9 @@ Benchmark 1: ./master.bin
   Range (min … max):    1.806 s …  1.983 s    10 runs
 </code></pre>
 <p>~ 2 seconds is not the end of the world, but it's just enough to be annoying when doing lots of edit-view cycles. Worse, it seemed to become slower and slower as I wrote more articles. So today I finally dedicated some time to tackle this problem.</p>
-<h2 id="3582977596-the-investigation">
-	<a class="title" href="#3582977596-the-investigation">The investigation</a>
-	<a class="hash-anchor" href="#3582977596-the-investigation" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+<h2 id="1071142523-the-investigation">
+	<a class="title" href="#1071142523-the-investigation">The investigation</a>
+	<a class="hash-anchor" href="#1071142523-the-investigation" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>In the early days of this blog, there were only a few articles, and the build process was a simple Makefile, something like this (simplified):</p>
 <pre><code class="language-make">%.html: %.md header.html footer.html

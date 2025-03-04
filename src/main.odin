@@ -82,17 +82,25 @@ title_make_id :: proc(title: ^Title, seed := u32(0x811c9dc5)) -> TitleId {
 
 // FNV hash of the full title path including direct ancestors.
 // Conceptually: for `# A\n##B\n###C\n`, we do: `return fnv_hash("A/B/C")`.
-cmark_title_make_id :: proc(title: ^cmark.node, seed := u32(0x811c9dc5)) -> TitleId {
+cmark_title_make_id :: proc(node: ^cmark.node, current_hash := u32(0x811c9dc5)) -> TitleId {
 	// Reached root?
-	if title == nil {return seed}
+	if node == nil {return current_hash}
 
-	h: u32 = seed
-	for b in transmute([]u8)string(title.content.ptr) {
+
+	if node.type != cmark.NODE_HEADING {
+		return cmark_title_make_id(node.parent, current_hash)
+	}
+
+
+	assert(node.type == cmark.NODE_HEADING)
+
+	h: u32 = current_hash
+	for b in transmute([]u8)string(node.content.ptr) {
 		h = (h ~ u32(b)) * 0x01000193
 	}
 	h = (h ~ u32('/')) * 0x01000193
 
-	return cmark_title_make_id(title.parent, h)
+	return cmark_title_make_id(node.parent, h)
 }
 
 

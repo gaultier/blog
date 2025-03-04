@@ -124,9 +124,9 @@
 <p>Here's the story of how I did it. If you do not work with Odin but do work a lot with cross-compilation, like I do at work, all of these techniques will be, I believe, very valuable anyway.</p>
 <p><em>Note: ARM64 is sometimes also called AARCH64 interchangeably.</em>
 <em>Note 2: The Rapsberry Pi Zero 1 is based on ARM (32 bits). The Raspberry Pi Zero 2 is based on ARM64 (64 bits). If you have a Raspberry Pi Zero 1, this article still applies, just adjust the target when cross-compiling.</em></p>
-<h2 id="572368778-inciting-incident">
-	<a class="title" href="#572368778-inciting-incident">Inciting incident</a>
-	<a class="hash-anchor" href="#572368778-inciting-incident" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+<h2 id="848107681-inciting-incident">
+	<a class="title" href="#848107681-inciting-incident">Inciting incident</a>
+	<a class="hash-anchor" href="#848107681-inciting-incident" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>The thing is, I work on an Intel Linux laptop and the Zero is a Linux ARM 64 bits piece of hardware. It's also a relatively cheap component with only 512 MiB of RAM and a slow CPU (compared to a modern developer workstation), and based on a very slow SD card, so it's not fast to install the required tools and to build source code on it. Cross-compilation is much easier and faster.</p>
 <p>Odin can cross-compile to it with <code>-target=linux_arm64</code>, so that's great, let's try it:</p>
