@@ -591,7 +591,8 @@ article_generate_html_file :: proc(
 		case cmark.NODE_LINEBREAK:
 			fmt.println("NODE_LINEBREAK")
 		case cmark.NODE_CODE:
-			fmt.println("NODE_CODE")
+			s := strings.string_from_ptr(node.as.literal.data, int(node.as.literal.len))
+			fmt.println("NODE_CODE", s[:min(len(s), excerpt_len)])
 		case cmark.NODE_HTML_INLINE:
 			fmt.println("NODE_HTML_INLINE")
 		case cmark.NODE_CUSTOM_INLINE:

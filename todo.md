@@ -36,3 +36,37 @@ Blog implementation:
   + HTTP2 force push to force the browser to get the new page version?
   + Server sent event to reload the page
 - [ ] Built-in http server
+
+### Full text search reference
+
+[Source](https://swtch.com/~rsc/regexp/regexp4.html).
+
+> Before we can get to regular expression search, it helps to know a little about how word-based full-text search is implemented. The key data structure is called a posting list or inverted index, which lists, for every possible search term, the documents that contain that term.
+> 
+> For example, consider these three very short documents:
+> 
+> (1) Google Code Search
+> (2) Google Code Project Hosting
+> (3) Google Web Search
+> 
+> The inverted index for these three documents looks like:
+> 
+> Code: {1, 2}
+> Google: {1, 2, 3}
+> Hosting: {2}
+> Project: {2}
+> Search: {1, 3}
+> Web: {3}
+> 
+> To find all the documents that contain both Code and Search, you load the index entry for Code {1, 2} and intersect it with the list for Search {1, 3}, producing the list {1}. To find documents that contain Code or Search (or both), you union the lists instead of intersecting them. Since the lists are sorted, these operations run in linear time.
+> 
+> To support phrases, full-text search implementations usually record each occurrence of a word in the posting list, along with its position:
+> 
+> Code: {(1, 2), (2, 2)}
+> Google: {(1, 1), (2, 1), (3, 1)}
+> Hosting: {(2, 4)}
+> Project: {(2, 3)}
+> Search: {(1, 3), (3, 4)}
+> Web: {(3, 2)}
+> 
+> To find the phrase “Code Search”, an implementation first loads the list for Code and then scans the list for Search to find entries that are one word past entries in the Code list. The (1, 2) entry in the Code list and the (1, 3) entry in the Search list are from the same document (1) and have consecutive word numbers (2 and 3), so document 1 contains the phrase “Code Search”. 
