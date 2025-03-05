@@ -21,9 +21,11 @@ import "core:unicode"
 //   + Split metadata from markdown content
 //   + Parse metadata
 //   + Parse markdown
-//   + Decorate titles (could be done on HTML or on markdown)
+//   + Convert markdown to HTML
+//   + Parse titles from HTML
 //   + Generate TOC
-//   + Generate HTML
+//   + Decorate titles (could be done on HTML or on markdown)
+//   + Generate final HTML with header, TOC, decorated content, and footer.
 // - Generate tags page
 // - Generate home page
 // - Generate RSS feed
