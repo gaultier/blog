@@ -300,58 +300,13 @@ html_make_id :: proc(input: string, allocator := context.allocator) -> string {
 	return strings.trim(strings.to_string(builder), "-")
 }
 
-// Replace plain markdown section title (e.g. `## Lunch and dinner`) by 
+
+// Replace a plain HTML title (e.g. `<h2>Lunch and dinner</h2`) by 
 // a HTML title with an id (conceptually `<h2 id="456123-lunch-and-dinner">Lunch and dinner</h2>`),
 // so that the links in the TOC can point to it.
 // In reality it's a bit more HTML so that each title can be a link to itself, and we can copy
 // this link to the clipboard by clicking on it.
-article_decorate_markdown_titles_with_id :: proc(markdown: string, root: ^Title) -> string {
-	assert(root.next_sibling == nil)
-
-	if root.first_child == nil { 	// Nothing to do.
-		return markdown
-	}
-	sb := strings.builder_make_len_cap(0, len(markdown) * 2)
-	strings.write_string(&sb, markdown[0:root.first_child.pos_start])
-
-	do_rec :: proc(title: ^Title, markdown: string, sb: ^strings.Builder) {
-		if title == nil {return}
-
-		fmt.sbprintf(
-			sb,
-			`<h%d id="%d-%s">
-	<a class="title" href="#%d-%s">%s</a>
-	<a class="hash-anchor" href="#%d-%s" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
-</h%d>
-			`,
-			title.level,
-			title.id,
-			title.content_html_friendly,
-			title.id,
-			title.content_html_friendly,
-			title.content,
-			title.id,
-			title.content_html_friendly,
-			title.level,
-		)
-		strings.write_rune(sb, '\n')
-
-		strings.write_string(
-			sb,
-			markdown[title.sub_content_start:title.sub_content_start + title.sub_content_len],
-		)
-		do_rec(title.first_child, markdown, sb)
-		do_rec(title.next_sibling, markdown, sb)
-	}
-
-	do_rec(root.first_child, markdown, &sb)
-
-	assert(len(sb.buf) > len(markdown))
-
-	return strings.to_string(sb)
-}
-
-article_decorate_html_titles_with_id :: proc(content: string, sb: ^strings.Builder, root: ^Title) {
+html_decorate_titles :: proc(content: string, sb: ^strings.Builder, root: ^Title) {
 	assert(root.next_sibling == nil)
 
 	if root.first_child == nil { 	// Nothing to do.
@@ -399,110 +354,6 @@ article_decorate_html_titles_with_id :: proc(content: string, sb: ^strings.Build
 	assert(len(sb.buf) > len(content))
 }
 
-markdown_parse_titles :: proc(markdown: string, allocator := context.allocator) -> ^Title {
-	// Check that we parse markdown without metadata.
-	assert(!strings.starts_with(markdown, "Title:"))
-
-	max_titles := 50
-	titles := make([dynamic]Title, 0, max_titles, allocator)
-
-	inside_code_section := false
-	pos := 0
-	root := new(Title, allocator)
-	root.level = 1
-	root.parent = root
-
-	for {
-		idx := strings.index_byte(markdown[pos:], '\n')
-		if idx == -1 {break}
-		line := markdown[pos:pos + idx]
-		pos += idx + 1
-
-		is_begin_html_title := strings.starts_with(line, "<h")
-		assert(!is_begin_html_title)
-
-		is_begin_markdown_title := strings.starts_with(line, "#")
-		is_delimiter_markdown_code_section := strings.starts_with(line, "```")
-
-		if is_delimiter_markdown_code_section && !inside_code_section {
-			inside_code_section = true
-			continue
-		}
-
-		if is_delimiter_markdown_code_section && inside_code_section {
-			inside_code_section = false
-			continue
-		}
-
-		if inside_code_section {continue}
-		if !is_begin_markdown_title {continue}
-
-		title_level := strings.count(line, "#")
-		assert(1 < title_level && title_level <= 6)
-
-		title_content := strings.trim_space(line[title_level:])
-		title := Title {
-			content               = title_content,
-			content_html_friendly = html_make_id(title_content),
-			level                 = title_level,
-			sub_content_start     = pos,
-			sub_content_len       = len(markdown) - pos, // Will be backpatched.
-			pos_start             = pos - (idx + 1),
-			parent                = root, // Will be backpatched.
-			/* Other fields backpatched. */
-		}
-		append(&titles, title)
-	}
-	assert(len(titles) <= max_titles)
-
-
-	// Backpatch `parent`, `sub_content_len` fields.
-	for &title, i in titles {
-		if i > 0 {
-			previous := &titles[i - 1]
-			assert(previous.sub_content_start > 0)
-			assert(title.pos_start > 0)
-			previous.sub_content_len = title.pos_start - previous.sub_content_start
-
-			level_diff := previous.level - title.level
-
-			if level_diff > 0 { 	// The current title is a (great-)uncle of the current title.
-				for _ in 0 ..< level_diff {
-					assert(title.parent != nil)
-					title.parent = title.parent.parent
-				}
-			} else if level_diff < 0 { 	// The current title is a direct descendant of `previous`.
-				// Check that we do not skip levels e.g. prevent `## Foo\n#### Bar\n`
-				assert(level_diff == -1)
-				title.parent = previous
-			} else if level_diff == 0 { 	// Sibling.
-				title.parent = previous.parent
-			}
-		}
-		assert(title.parent.level + 1 == title.level)
-
-		child := title.parent.first_child
-
-		// Add the node as last child of the parent.
-		for child != nil && child.next_sibling != nil {
-			child = child.next_sibling
-		}
-		// Already one child present.
-		if child != nil {
-			child.next_sibling = &title
-		} else { 	// First child.
-			title.parent.first_child = &title
-		}
-	}
-
-	// Backpatch `id` field which is a hash of the full path to this node including ancestors.
-	for &title in titles {
-		title.id = title_make_id(&title)
-	}
-
-	assert(root.next_sibling == nil)
-	return root
-}
 
 html_parse_titles :: proc(content: string, allocator := context.allocator) -> ^Title {
 	max_titles := 50
@@ -771,7 +622,7 @@ article_generate_html_file :: proc(
 
 	strings.write_rune(&html_sb, '\n')
 
-	article_decorate_html_titles_with_id(cmark_out, &html_sb, titles)
+	html_decorate_titles(cmark_out, &html_sb, titles)
 
 	strings.write_string(&html_sb, back_link)
 	strings.write_string(&html_sb, footer)
@@ -838,8 +689,6 @@ article_generate :: proc(
 
 	stem := filepath.stem(git_stat.path_rel)
 	article.output_file_name = strings.concatenate([]string{stem, ".html"})
-	// article.titles = markdown_parse_titles(content_without_metadata)
-	// title_print(os.stdout, article.titles)
 
 	article_generate_html_file(content_without_metadata, article, header, footer) or_return
 	fmt.printf("generated article: title=%s\n", article.title)
@@ -965,7 +814,7 @@ home_page_generate :: proc(
 		cmark_out := string(cmark.render_html(cmark_parsed, cmark_options, nil))
 		titles := html_parse_titles(cmark_out)
 		title_print(os.stderr, titles)
-		article_decorate_html_titles_with_id(cmark_out, &sb, titles)
+		html_decorate_titles(cmark_out, &sb, titles)
 	}
 	strings.write_string(&sb, footer)
 
