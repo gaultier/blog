@@ -455,6 +455,92 @@ markdown_parse_titles :: proc(markdown: string, allocator := context.allocator) 
 	return root
 }
 
+html_parse_titles :: proc(content: string, allocator := context.allocator) -> ^Title {
+	max_titles := 50
+	titles := make([dynamic]Title, 0, max_titles, allocator)
+
+	pos := 0
+	root := new(Title, allocator)
+	root.level = 1
+	root.parent = root
+
+	for pos < len(content) {
+		idx_start := strings.index(content[pos:], "<h")
+		if idx_start == -1 {break}
+		switch content[pos + idx_start + 2] {
+		case '2' ..= '6':
+			{}
+		case:
+			pos += idx_start + 2
+			continue
+		}
+		idx_end := strings.index(content[pos + idx_start:], "</h")
+		assert(idx_end != -1)
+		s := content[pos + idx_start:][:idx_end]
+		pos += idx_start + idx_end
+
+		assert(strings.starts_with(s, "<h"))
+
+		level := s[2] - '0'
+		assert(1 < level && level <= 6)
+
+		title_content := strings.trim_space(s[4:])
+
+		title := Title {
+			content               = title_content,
+			content_html_friendly = html_make_id(title_content),
+			level                 = int(level),
+			parent                = root, // Will be backpatched.
+		}
+		append(&titles, title)
+	}
+	assert(len(titles) <= max_titles)
+
+
+	// Backpatch `parent`, `sub_content_len` fields.
+	for &title, i in titles {
+		if i > 0 {
+			previous := &titles[i - 1]
+			level_diff := previous.level - title.level
+
+			if level_diff > 0 { 	// The current title is a (great-)uncle of the current title.
+				for _ in 0 ..< level_diff {
+					assert(title.parent != nil)
+					title.parent = title.parent.parent
+				}
+			} else if level_diff < 0 { 	// The current title is a direct descendant of `previous`.
+				// Check that we do not skip levels e.g. prevent `## Foo\n#### Bar\n`
+				assert(level_diff == -1)
+				title.parent = previous
+			} else if level_diff == 0 { 	// Sibling.
+				title.parent = previous.parent
+			}
+		}
+		assert(title.parent.level + 1 == title.level)
+
+		child := title.parent.first_child
+
+		// Add the node as last child of the parent.
+		for child != nil && child.next_sibling != nil {
+			child = child.next_sibling
+		}
+		// Already one child present.
+		if child != nil {
+			child.next_sibling = &title
+		} else { 	// First child.
+			title.parent.first_child = &title
+		}
+	}
+
+	// Backpatch `id` field which is a hash of the full path to this node including ancestors.
+	for &title in titles {
+		title.id = title_make_id(&title)
+	}
+
+	assert(root.next_sibling == nil)
+	return root
+}
+
 article_write_toc_rec :: proc(sb: ^strings.Builder, title: ^Title) {
 	if title == nil {return}
 
@@ -503,14 +589,11 @@ article_generate_html_file :: proc(
 	assert(len(header) > 0)
 	assert(len(footer) > 0)
 	assert(len(article.tags) > 0)
-	assert(article.titles != nil)
 	assert(len(article.creation_date) > 0)
 	assert(len(article.modification_date) > 0)
 	assert(len(article.output_file_name) > 0)
 
 	context.allocator = context.temp_allocator
-
-	decorated_markdown := article_decorate_markdown_titles_with_id(article_content, article.titles)
 
 	mem := cmark.get_arena_mem_allocator()
 	defer cmark.arena_reset()
@@ -525,77 +608,79 @@ article_generate_html_file :: proc(
 	assert(ext_strikethrough != nil)
 	cmark.parser_attach_syntax_extension(parser, ext_strikethrough)
 
-	cmark.parser_feed(parser, raw_data(decorated_markdown), u32(len(decorated_markdown)))
+	cmark.parser_feed(parser, raw_data(article_content), u32(len(article_content)))
 	cmark_parsed := cmark.parser_finish(parser)
 
-	excerpt_len :: 50
+	when false {
+		excerpt_len :: 50
+		cmark_print_node :: proc(node: ^cmark.node, depth: int = 0) {
+			if node == nil {return}
 
-	cmark_print_node :: proc(node: ^cmark.node, depth: int = 0) {
-		if node == nil {return}
+			for _ in 0 ..< depth {
+				fmt.print("\t")
+			}
 
-		for _ in 0 ..< depth {
-			fmt.print("\t")
+			switch node.type {
+			case cmark.NODE_DOCUMENT:
+				fmt.println("NODE_DOCUMENT")
+			case cmark.NODE_BLOCK_QUOTE:
+				fmt.println("NODE_BLOCK_QUOTE")
+			case cmark.NODE_LIST:
+				fmt.println("NODE_LIST")
+			case cmark.NODE_ITEM:
+				fmt.println("NODE_ITEM")
+			case cmark.NODE_CODE_BLOCK:
+				fmt.println("NODE_CODE_BLOCK")
+			case cmark.NODE_HTML_BLOCK:
+				s := strings.string_from_ptr(node.as.literal.data, int(node.as.literal.len))
+				fmt.println("NODE_HTML_BLOCK", s[:min(len(s), excerpt_len)])
+			case cmark.NODE_CUSTOM_BLOCK:
+				fmt.println("NODE_CUSTOM_BLOCK")
+			case cmark.NODE_PARAGRAPH:
+				fmt.println("NODE_PARAGRAPH")
+			case cmark.NODE_HEADING:
+				fmt.println("NODE_HEADING", node.as.heading.level)
+			case cmark.NODE_THEMATIC_BREAK:
+				fmt.println("NODE_THEMATIC_BREAK")
+			case cmark.NODE_FOOTNOTE_DEFINITION:
+				fmt.println("NODE_FOOTNOTE_DEFINITION")
+			case cmark.NODE_TEXT:
+				s := strings.string_from_ptr(node.as.literal.data, int(node.as.literal.len))
+				fmt.println("NODE_TEXT", s[:min(len(s), excerpt_len)])
+			case cmark.NODE_SOFTBREAK:
+				fmt.println("NODE_SOFTBREAK")
+			case cmark.NODE_LINEBREAK:
+				fmt.println("NODE_LINEBREAK")
+			case cmark.NODE_CODE:
+				s := strings.string_from_ptr(node.as.literal.data, int(node.as.literal.len))
+				fmt.println("NODE_CODE", s[:min(len(s), excerpt_len)])
+			case cmark.NODE_HTML_INLINE:
+				s := strings.string_from_ptr(node.as.literal.data, int(node.as.literal.len))
+				fmt.println("NODE_HTML_INLINE", s[:min(len(s), excerpt_len)])
+			case cmark.NODE_CUSTOM_INLINE:
+				fmt.println("NODE_CUSTOM_INLINE")
+			case cmark.NODE_EMPH:
+				fmt.println("NODE_EMPH")
+			case cmark.NODE_STRONG:
+				fmt.println("NODE_STRONG")
+			case cmark.NODE_LINK:
+				fmt.println("NODE_LINK")
+			case cmark.NODE_IMAGE:
+				fmt.println("NODE_IMAGE")
+			case cmark.NODE_FOOTNOTE_REFERENCE:
+				fmt.println("NODE_FOOTNOTE_REFERENCE")
+			case:
+				fmt.println("unknown")
+			}
+			cmark_print_node(node.first_child, depth + 1)
+			cmark_print_node(node.next, depth)
 		}
-
-		switch node.type {
-		case cmark.NODE_DOCUMENT:
-			fmt.println("NODE_DOCUMENT")
-		case cmark.NODE_BLOCK_QUOTE:
-			fmt.println("NODE_BLOCK_QUOTE")
-		case cmark.NODE_LIST:
-			fmt.println("NODE_LIST")
-		case cmark.NODE_ITEM:
-			fmt.println("NODE_ITEM")
-		case cmark.NODE_CODE_BLOCK:
-			fmt.println("NODE_CODE_BLOCK")
-		case cmark.NODE_HTML_BLOCK:
-			s := strings.string_from_ptr(node.as.literal.data, int(node.as.literal.len))
-			fmt.println("NODE_HTML_BLOCK", s[:min(len(s), excerpt_len)])
-		case cmark.NODE_CUSTOM_BLOCK:
-			fmt.println("NODE_CUSTOM_BLOCK")
-		case cmark.NODE_PARAGRAPH:
-			fmt.println("NODE_PARAGRAPH")
-		case cmark.NODE_HEADING:
-			fmt.println("NODE_HEADING", node.as.heading.level)
-		case cmark.NODE_THEMATIC_BREAK:
-			fmt.println("NODE_THEMATIC_BREAK")
-		case cmark.NODE_FOOTNOTE_DEFINITION:
-			fmt.println("NODE_FOOTNOTE_DEFINITION")
-		case cmark.NODE_TEXT:
-			s := strings.string_from_ptr(node.as.literal.data, int(node.as.literal.len))
-			fmt.println("NODE_TEXT", s[:min(len(s), excerpt_len)])
-		case cmark.NODE_SOFTBREAK:
-			fmt.println("NODE_SOFTBREAK")
-		case cmark.NODE_LINEBREAK:
-			fmt.println("NODE_LINEBREAK")
-		case cmark.NODE_CODE:
-			s := strings.string_from_ptr(node.as.literal.data, int(node.as.literal.len))
-			fmt.println("NODE_CODE", s[:min(len(s), excerpt_len)])
-		case cmark.NODE_HTML_INLINE:
-			s := strings.string_from_ptr(node.as.literal.data, int(node.as.literal.len))
-			fmt.println("NODE_HTML_INLINE", s[:min(len(s), excerpt_len)])
-		case cmark.NODE_CUSTOM_INLINE:
-			fmt.println("NODE_CUSTOM_INLINE")
-		case cmark.NODE_EMPH:
-			fmt.println("NODE_EMPH")
-		case cmark.NODE_STRONG:
-			fmt.println("NODE_STRONG")
-		case cmark.NODE_LINK:
-			fmt.println("NODE_LINK")
-		case cmark.NODE_IMAGE:
-			fmt.println("NODE_IMAGE")
-		case cmark.NODE_FOOTNOTE_REFERENCE:
-			fmt.println("NODE_FOOTNOTE_REFERENCE")
-		case:
-			fmt.println("unknown")
-		}
-		cmark_print_node(node.first_child, depth + 1)
-		cmark_print_node(node.next, depth)
+		cmark_print_node(cmark_parsed)
 	}
 
-	cmark_print_node(cmark_parsed)
-
 	cmark_out := string(cmark.render_html(cmark_parsed, cmark_options, nil))
+	titles := html_parse_titles(cmark_out)
+	title_print(os.stderr, titles)
 
 	html_sb := strings.builder_make()
 
@@ -630,7 +715,7 @@ article_generate_html_file :: proc(
 
 	strings.write_string(&html_sb, " </div>\n")
 
-	article_write_toc(&html_sb, article.titles)
+	// article_write_toc(&html_sb, article.titles)
 
 	strings.write_rune(&html_sb, '\n')
 	strings.write_string(&html_sb, cmark_out)
@@ -699,8 +784,8 @@ article_generate :: proc(
 
 	stem := filepath.stem(git_stat.path_rel)
 	article.output_file_name = strings.concatenate([]string{stem, ".html"})
-	article.titles = markdown_parse_titles(content_without_metadata)
-	title_print(os.stdout, article.titles)
+	// article.titles = markdown_parse_titles(content_without_metadata)
+	// title_print(os.stdout, article.titles)
 
 	article_generate_html_file(content_without_metadata, article, header, footer) or_return
 	fmt.printf("generated article: title=%s\n", article.title)
