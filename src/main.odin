@@ -69,7 +69,7 @@ Title :: struct {
 // Conceptually: for `# A\n##B\n###C\n`, we do: `return fnv_hash("A/B/C")`.
 @(private)
 @(require_results)
-title_make_id :: proc(title: ^Title, seed := u32(0x811c9dc5)) -> TitleHash {
+title_compute_hash :: proc(title: ^Title, seed := u32(0x811c9dc5)) -> TitleHash {
 	// Reached root?
 	if title == title.parent {return seed}
 
@@ -79,7 +79,7 @@ title_make_id :: proc(title: ^Title, seed := u32(0x811c9dc5)) -> TitleHash {
 	}
 	h = (h ~ u32('/')) * 0x01000193
 
-	return title_make_id(title.parent, h)
+	return title_compute_hash(title.parent, h)
 }
 
 @(private)
@@ -450,7 +450,7 @@ html_parse_titles :: proc(content: string, allocator := context.allocator) -> ^T
 
 	// Backpatch `id` field which is a hash of the full path to this node including ancestors.
 	for &title in titles {
-		title.hash = title_make_id(&title)
+		title.hash = title_compute_hash(&title)
 	}
 
 	assert(root.next_sibling == nil)
