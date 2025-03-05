@@ -619,7 +619,7 @@ article_generate_html_file :: proc(
 
 	html_sb := strings.builder_make()
 
-	fmt.sbprintf(&html_sb, html_prelude_fmt, article.title)
+	fmt.sbprintf(&html_sb, html_prelude_fmt, html_escape(article.title))
 	strings.write_string(&html_sb, header)
 	fmt.sbprintf(
 		&html_sb,
