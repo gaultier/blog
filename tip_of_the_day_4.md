@@ -179,4 +179,4 @@ error[E0271]: type mismatch resolving `<[u8; 33] as TryFrom<&[u8]>>::Error == bo
 
 So...it *does* actually know the type of `err`... You naughty compiler, playing games with me! It reminds me of this picture:
 
-<img style="height:50rem" src="coffee_or_tea.png" alt="Coffee or tea?">Coffee or tea?</img>
+<img style="height:50rem" src="coffee_or_tea.png" alt="Coffee or tea?">Coffee or tea?

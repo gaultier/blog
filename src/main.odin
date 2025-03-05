@@ -697,7 +697,6 @@ article_generate_html_file :: proc(
 			}
 		}
 	}
-	// assert(err_html == nil)
 	// fmt.println(doc, err_html)
 
 	os.write_entire_file_or_err(
@@ -937,6 +936,7 @@ tags_page_generate :: proc(
 
 
 	sb := strings.builder_make()
+	fmt.sbprintf(&sb, html_prelude_fmt, "Articles by tag")
 	strings.write_string(&sb, header)
 	strings.write_string(&sb, back_link)
 	strings.write_string(&sb, "<h1>Articles by tag</h1>\n")
