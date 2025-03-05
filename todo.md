@@ -16,7 +16,7 @@ Ideas for articles:
 Blog implementation:
 
 - [x] Consider post-processing HTML instead of markdown to simplify e.g. to add title ids
-- [ ] Support markdown syntax in article title in metadata
+- [x] Support markdown syntax in article title in metadata
 - [x] Use libcmark to simplify parsing
 - [ ] Link to related articles at the end (requires post-processing after all articles have been generated)
 - [ ] Search
