@@ -1064,7 +1064,6 @@ int main() {
 }
 ```
 
-  </summary>
 </details>
 
 ### The x64 implementation
@@ -1221,5 +1220,4 @@ _start:
   call exit
 ```
 
-  </summary>
 </details>

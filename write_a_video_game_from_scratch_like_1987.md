@@ -2288,5 +2288,4 @@ test_count_mines_around_cell :: proc(_: ^testing.T) {
 }
 ```
 
-  </summary>
 </details>

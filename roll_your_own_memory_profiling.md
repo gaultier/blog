@@ -776,5 +776,4 @@ int main() {
 }
 ```
 
-  </summary>
 </details>

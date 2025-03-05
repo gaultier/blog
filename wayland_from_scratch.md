@@ -1395,5 +1395,4 @@ int main() {
 }
 ```
 
-  </summary>
 </details>
