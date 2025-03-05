@@ -319,7 +319,7 @@ html_make_id :: proc(input: string, allocator := context.allocator) -> string {
 // In reality it's a bit more HTML so that each title can be a link to itself, and we can copy
 // this link to the clipboard by clicking on it.
 @(private)
-html_decorate_titles :: proc(content: string, sb: ^strings.Builder, root: ^Title) {
+html_write_with_decorated_titles :: proc(content: string, sb: ^strings.Builder, root: ^Title) {
 	assert(root.next_sibling == nil)
 
 	if root.first_child == nil { 	// Nothing to do.
@@ -642,7 +642,7 @@ article_generate_html_file :: proc(
 
 	strings.write_rune(&html_sb, '\n')
 
-	html_decorate_titles(cmark_out, &html_sb, titles)
+	html_write_with_decorated_titles(cmark_out, &html_sb, titles)
 
 	strings.write_string(&html_sb, back_link)
 	strings.write_string(&html_sb, footer)
@@ -841,7 +841,7 @@ home_page_generate :: proc(
 		cmark_out := string(cmark.render_html(cmark_parsed, cmark_options, nil))
 		titles := html_parse_titles(cmark_out)
 		title_print(os.stderr, titles)
-		html_decorate_titles(cmark_out, &sb, titles)
+		html_write_with_decorated_titles(cmark_out, &sb, titles)
 	}
 	strings.write_string(&sb, footer)
 
