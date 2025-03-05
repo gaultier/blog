@@ -771,7 +771,6 @@ article_generate_html_file :: proc(
 
 	strings.write_rune(&html_sb, '\n')
 
-	//strings.write_string(&html_sb, cmark_out)
 	article_decorate_html_titles_with_id(cmark_out, &html_sb, titles)
 
 	strings.write_string(&html_sb, back_link)
@@ -947,10 +946,6 @@ home_page_generate :: proc(
 			markdown_file_path,
 		) or_return
 
-		root := markdown_parse_titles(markdown_content)
-		title_print(os.stdout, root)
-		decorated_markdown := article_decorate_markdown_titles_with_id(markdown_content, root)
-
 		mem := cmark.get_arena_mem_allocator()
 		defer cmark.arena_reset()
 
@@ -964,11 +959,13 @@ home_page_generate :: proc(
 		assert(ext_strikethrough != nil)
 		cmark.parser_attach_syntax_extension(parser, ext_strikethrough)
 
-		cmark.parser_feed(parser, raw_data(decorated_markdown), u32(len(decorated_markdown)))
+		cmark.parser_feed(parser, raw_data(markdown_content), u32(len(markdown_content)))
 		cmark_parsed := cmark.parser_finish(parser)
 
 		cmark_out := string(cmark.render_html(cmark_parsed, cmark_options, nil))
-		strings.write_string(&sb, string(cmark_out))
+		titles := html_parse_titles(cmark_out)
+		title_print(os.stderr, titles)
+		article_decorate_html_titles_with_id(cmark_out, &sb, titles)
 	}
 	strings.write_string(&sb, footer)
 
