@@ -351,6 +351,54 @@ article_decorate_markdown_titles_with_id :: proc(markdown: string, root: ^Title)
 	return strings.to_string(sb)
 }
 
+article_decorate_html_titles_with_id :: proc(content: string, sb: ^strings.Builder, root: ^Title) {
+	assert(root.next_sibling == nil)
+
+	if root.first_child == nil { 	// Nothing to do.
+		strings.write_string(sb, content)
+		return
+	}
+
+	last_title_pos_end := 0
+	do_rec :: proc(
+		title: ^Title,
+		content: string,
+		last_title_pos_end: ^int,
+		sb: ^strings.Builder,
+	) {
+		if title == nil {return}
+		assert(title.pos_end > title.pos_start)
+
+		strings.write_string(sb, content[last_title_pos_end^:title.pos_start])
+		last_title_pos_end^ = title.pos_end
+
+		fmt.sbprintf(
+			sb,
+			`<h%d id="%d-%s">
+	<a class="title" href="#%d-%s">%s</a>
+	<a class="hash-anchor" href="#%d-%s" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>`,
+			title.level,
+			title.id,
+			title.content_html_friendly,
+			title.id,
+			title.content_html_friendly,
+			title.content,
+			title.id,
+			title.content_html_friendly,
+		)
+		strings.write_rune(sb, '\n')
+
+		do_rec(title.first_child, content, last_title_pos_end, sb)
+		do_rec(title.next_sibling, content, last_title_pos_end, sb)
+	}
+
+	do_rec(root.first_child, content, &last_title_pos_end, sb)
+
+
+	strings.write_string(sb, content[last_title_pos_end:])
+	assert(len(sb.buf) > len(content))
+}
+
 markdown_parse_titles :: proc(markdown: string, allocator := context.allocator) -> ^Title {
 	// Check that we parse markdown without metadata.
 	assert(!strings.starts_with(markdown, "Title:"))
@@ -494,6 +542,7 @@ html_parse_titles :: proc(content: string, allocator := context.allocator) -> ^T
 			pos_end               = pos + idx_start + idx_end,
 			parent                = root, // Will be backpatched.
 		}
+		assert(title.pos_end - title.pos_start == len(s))
 		append(&titles, title)
 		pos += idx_start + idx_end
 	}
@@ -721,7 +770,10 @@ article_generate_html_file :: proc(
 	article_write_toc(&html_sb, titles)
 
 	strings.write_rune(&html_sb, '\n')
-	strings.write_string(&html_sb, cmark_out)
+
+	//strings.write_string(&html_sb, cmark_out)
+	article_decorate_html_titles_with_id(cmark_out, &html_sb, titles)
+
 	strings.write_string(&html_sb, back_link)
 	strings.write_string(&html_sb, footer)
 
