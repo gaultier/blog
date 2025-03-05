@@ -1,6 +1,7 @@
 package main
 
 import "cmark"
+import "core:c"
 import "core:encoding/uuid"
 import "core:encoding/uuid/legacy"
 import "core:fmt"
@@ -607,7 +608,21 @@ article_generate_html_file :: proc(
 
 	html_sb := strings.builder_make()
 
-	fmt.sbprintf(&html_sb, html_prelude_fmt, article.title)
+	title_html := string(
+		cmark.markdown_to_html(
+			raw_data(article.title),
+			c.size_t(len(article.title)),
+			cmark_options,
+		),
+	)
+	assert(strings.starts_with(title_html, "<p>"))
+	assert(strings.ends_with(title_html, "</p>\n"))
+	title_html = title_html[3:]
+	assert(!strings.starts_with(title_html, "<p>"))
+	title_html = title_html[:len(title_html) - 5]
+	assert(!strings.ends_with(title_html, "</p>\n"))
+
+	fmt.sbprintf(&html_sb, html_prelude_fmt, title_html)
 	strings.write_string(&html_sb, header)
 	fmt.sbprintf(
 		&html_sb,
@@ -621,7 +636,7 @@ article_generate_html_file :: proc(
 		`,
 		back_link,
 		datetime_to_date(article.creation_date),
-		article.title,
+		title_html,
 	)
 
 	strings.write_string(&html_sb, "  <div class=\"tags\">")

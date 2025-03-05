@@ -125,6 +125,7 @@ foreign gfm {
 foreign import cmark "system:libcmark-gfm.a"
 @(default_calling_convention = "c", link_prefix = "cmark_")
 foreign cmark {
+	markdown_to_html :: proc(buffer: [^]u8, len: c.size_t, options: c.int) -> cstring ---
 	parse_document :: proc(buffer: [^]u8, len: c.uint, options: c.int) -> ^node ---
 	render_html :: proc(root: ^node, options: c.int, extensions: ^llist) -> cstring ---
 	find_syntax_extension :: proc(name: cstring) -> ^rawptr ---
