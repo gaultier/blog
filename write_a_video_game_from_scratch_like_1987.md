@@ -24,9 +24,9 @@ Will it be hundred of megabytes when we finish? How much work is it really? Can 
 ![The game executable running unmodified on FreeBSD (X11) through Linux binary compatibility](game-x11-freebsd.png)
 
 <figure>
-    <video controls>
-      <source src="screencast.mp4" type="video/mp4">
-      <source src="screencast.webm" type="video/webm">
+    <video controls="1">
+      <source src="screencast.mp4" type="video/mp4" />
+      <source src="screencast.webm" type="video/webm" />
       <p>
         Your browser doesn't support this video. Here is a
         <a href="screencast.mp4">link to the video</a> instead.
