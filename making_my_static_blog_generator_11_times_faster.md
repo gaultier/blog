@@ -1,4 +1,4 @@
-Title: Making my static blog generator 11 times faster
+Title: Making my static blog generator <del>11</del> 33 times faster
 Tags: Optimization, Git, Odin, Fossil
 ---
 
