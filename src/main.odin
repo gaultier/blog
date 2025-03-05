@@ -48,13 +48,13 @@ Article :: struct {
 }
 
 // Hash.
-TitleId :: u32
+TitleHash :: u32
 
 Title :: struct {
 	content:         string,
 	content_html_id: string,
 	level:           int,
-	computed_id:     TitleId,
+	hash:            TitleHash,
 	parent:          ^Title,
 	first_child:     ^Title,
 	next_sibling:    ^Title,
@@ -69,7 +69,7 @@ Title :: struct {
 // Conceptually: for `# A\n##B\n###C\n`, we do: `return fnv_hash("A/B/C")`.
 @(private)
 @(require_results)
-title_make_id :: proc(title: ^Title, seed := u32(0x811c9dc5)) -> TitleId {
+title_make_id :: proc(title: ^Title, seed := u32(0x811c9dc5)) -> TitleHash {
 	// Reached root?
 	if title == title.parent {return seed}
 
@@ -344,12 +344,12 @@ html_write_with_decorated_titles :: proc(content: string, sb: ^strings.Builder, 
 	<a class="title" href="#%d-%s">%s</a>
 	<a class="hash-anchor" href="#%d-%s" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>`,
 			title.level,
-			title.computed_id,
+			title.hash,
 			title.content_html_id,
-			title.computed_id,
+			title.hash,
 			title.content_html_id,
 			title.content,
-			title.computed_id,
+			title.hash,
 			title.content_html_id,
 		)
 		strings.write_rune(sb, '\n')
@@ -450,7 +450,7 @@ html_parse_titles :: proc(content: string, allocator := context.allocator) -> ^T
 
 	// Backpatch `id` field which is a hash of the full path to this node including ancestors.
 	for &title in titles {
-		title.computed_id = title_make_id(&title)
+		title.hash = title_make_id(&title)
 	}
 
 	assert(root.next_sibling == nil)
@@ -475,7 +475,7 @@ article_write_toc :: proc(sb: ^strings.Builder, root: ^Title) {
 	<li>
 		<a href="#%d-%s">%s</a>
 		`,
-				title.computed_id,
+				title.hash,
 				title.content_html_id,
 				title.content,
 			)
@@ -665,7 +665,7 @@ title_print :: proc(handle: os.Handle, title: ^Title) {
 	if title.level == 1 {
 		fmt.fprintf(handle, ".\n")
 	} else {
-		fmt.fprintf(handle, "title='%s' id=%d\n", title.content, title.computed_id)
+		fmt.fprintf(handle, "title='%s' id=%d\n", title.content, title.hash)
 	}
 
 	title_print(handle, title.first_child)
