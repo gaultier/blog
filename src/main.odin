@@ -69,6 +69,8 @@ Title :: struct {
 
 // FNV hash of the full title path including direct ancestors.
 // Conceptually: for `# A\n##B\n###C\n`, we do: `return fnv_hash("A/B/C")`.
+@(private)
+@(require_results)
 title_make_id :: proc(title: ^Title, seed := u32(0x811c9dc5)) -> TitleId {
 	// Reached root?
 	if title == title.parent {return seed}
@@ -82,6 +84,8 @@ title_make_id :: proc(title: ^Title, seed := u32(0x811c9dc5)) -> TitleId {
 	return title_make_id(title.parent, h)
 }
 
+@(private)
+@(require_results)
 datetime_to_date :: proc(datetime: string) -> string {
 	split := strings.split_n(datetime, "T", 2)
 	return split[0]
@@ -94,6 +98,8 @@ datetime_to_date :: proc(datetime: string) -> string {
 // ---
 // The quick brown fox jumps over the lazy dog. Lorem ipsum [...].
 // ```
+@(private)
+@(require_results)
 article_parse_metadata :: proc(
 	markdown: string,
 	path: string,
@@ -139,6 +145,8 @@ GitStat :: struct {
 }
 
 // See: https://gaultier.github.io/blog/making_my_static_blog_generator_11_times_faster.html .
+@(private)
+@(require_results)
 git_get_articles_creation_and_modification_date :: proc() -> ([]GitStat, os2.Error) {
 	free_all(context.temp_allocator)
 	defer free_all(context.temp_allocator)
@@ -280,6 +288,8 @@ git_get_articles_creation_and_modification_date :: proc() -> ([]GitStat, os2.Err
 
 // Replace non-alphanumeric letters by alphanumeric (and underscore) letters
 // for use in the `id` field of HTML elements.
+@(private)
+@(require_results)
 html_make_id :: proc(input: string, allocator := context.allocator) -> string {
 	builder := strings.builder_make_len_cap(0, len(input) * 2, allocator)
 
@@ -308,6 +318,7 @@ html_make_id :: proc(input: string, allocator := context.allocator) -> string {
 // so that the links in the TOC can point to it.
 // In reality it's a bit more HTML so that each title can be a link to itself, and we can copy
 // this link to the clipboard by clicking on it.
+@(private)
 html_decorate_titles :: proc(content: string, sb: ^strings.Builder, root: ^Title) {
 	assert(root.next_sibling == nil)
 
@@ -357,6 +368,8 @@ html_decorate_titles :: proc(content: string, sb: ^strings.Builder, root: ^Title
 }
 
 
+@(private)
+@(require_results)
 html_parse_titles :: proc(content: string, allocator := context.allocator) -> ^Title {
 	max_titles := 50
 	titles := make([dynamic]Title, 0, max_titles, allocator)
@@ -446,42 +459,47 @@ html_parse_titles :: proc(content: string, allocator := context.allocator) -> ^T
 	return root
 }
 
-article_write_toc_rec :: proc(sb: ^strings.Builder, title: ^Title) {
-	if title == nil {return}
 
-	if title.level > 1 {
-		fmt.sbprintf(
-			sb,
-			`
-	<li>
-		<a href="#%d-%s">%s</a>
-		`,
-			title.id,
-			title.content_html_friendly,
-			title.content,
-		)
-	}
-
-
-	if title.first_child != nil {strings.write_string(sb, "<ul>\n")}
-	article_write_toc_rec(sb, title.first_child)
-	if title.first_child != nil {strings.write_string(sb, "</ul>\n")}
-
-	if title.level > 1 {
-		strings.write_string(sb, "  </li>\n")
-	}
-
-	article_write_toc_rec(sb, title.next_sibling)
-}
-
-
+@(private)
 article_write_toc :: proc(sb: ^strings.Builder, root: ^Title) {
 	if root.first_child == nil {return}
 
 	strings.write_string(sb, " <strong>Table of contents</strong>\n")
+
+
+	article_write_toc_rec :: proc(sb: ^strings.Builder, title: ^Title) {
+		if title == nil {return}
+
+		if title.level > 1 {
+			fmt.sbprintf(
+				sb,
+				`
+	<li>
+		<a href="#%d-%s">%s</a>
+		`,
+				title.id,
+				title.content_html_friendly,
+				title.content,
+			)
+		}
+
+
+		if title.first_child != nil {strings.write_string(sb, "<ul>\n")}
+		article_write_toc_rec(sb, title.first_child)
+		if title.first_child != nil {strings.write_string(sb, "</ul>\n")}
+
+		if title.level > 1 {
+			strings.write_string(sb, "  </li>\n")
+		}
+
+		article_write_toc_rec(sb, title.next_sibling)
+	}
+
 	article_write_toc_rec(sb, root)
 }
 
+@(private)
+@(require_results)
 article_generate_html_file :: proc(
 	article_content: string,
 	article: Article,
@@ -638,6 +656,7 @@ article_generate_html_file :: proc(
 }
 
 
+@(private)
 title_print :: proc(handle: os.Handle, title: ^Title) {
 	if title == nil {return}
 
@@ -656,6 +675,8 @@ title_print :: proc(handle: os.Handle, title: ^Title) {
 }
 
 
+@(private)
+@(require_results)
 article_generate :: proc(
 	git_stat: GitStat,
 	header: string,
@@ -699,6 +720,8 @@ article_generate :: proc(
 }
 
 // Note: Only markdown files tracked by `git` are considered.
+@(private)
+@(require_results)
 articles_generate :: proc(header: string, footer: string) -> (articles: []Article, err: os.Error) {
 	assert(len(header) > 0)
 	assert(len(footer) > 0)
@@ -725,6 +748,8 @@ articles_generate :: proc(header: string, footer: string) -> (articles: []Articl
 	return articles_dyn[:], nil
 }
 
+@(private)
+@(require_results)
 home_page_generate :: proc(
 	articles: []Article,
 	header: string,
@@ -827,6 +852,8 @@ home_page_generate :: proc(
 	return
 }
 
+@(private)
+@(require_results)
 tags_page_generate :: proc(
 	articles: []Article,
 	header: string,
@@ -904,14 +931,19 @@ tags_page_generate :: proc(
 	return
 }
 
+@(private)
+@(require_results)
 article_cmp_by_creation_date_asc :: proc(a: Article, b: Article) -> bool {
 	return a.creation_date < b.creation_date
 }
 
+@(private)
+@(require_results)
 article_cmp_by_creation_date_desc :: proc(a: Article, b: Article) -> bool {
 	return a.creation_date > b.creation_date
 }
 
+@(private)
 article_rss_generate :: proc(sb: ^strings.Builder, article: Article) {
 	base_uuid, err := uuid.read(feed_uuid_str)
 	assert(err == nil)
@@ -938,6 +970,8 @@ article_rss_generate :: proc(sb: ^strings.Builder, article: Article) {
 	)
 }
 
+@(private)
+@(require_results)
 rss_generate :: proc(articles: []Article) -> (err: os.Error) {
 	assert(len(articles) > 0)
 
@@ -978,6 +1012,8 @@ rss_generate :: proc(articles: []Article) -> (err: os.Error) {
 	return
 }
 
+@(private)
+@(require_results)
 run :: proc() -> (os_err: os.Error) {
 	cmark.core_extensions_ensure_registered()
 	cmark.enable_safety_checks(true) // FIXME
