@@ -3,6 +3,7 @@ package main
 import "cmark"
 import "core:encoding/uuid"
 import "core:encoding/uuid/legacy"
+import "core:encoding/xml"
 import "core:fmt"
 import "core:mem"
 import "core:mem/virtual"
@@ -658,6 +659,45 @@ article_generate_html_file :: proc(
 
 	strings.write_string(&html_sb, back_link)
 	strings.write_string(&html_sb, footer)
+
+	doc, err_html := xml.parse_string(cmark_out)
+	if err_html == nil {
+		for elem in doc.elements {
+			if elem.kind == .Comment {continue}
+
+			searchable_tags := []string {
+				"em",
+				"br",
+				"p",
+				"span",
+				"li",
+				"del",
+				"h1",
+				"h2",
+				"h3",
+				"h4",
+				"h5",
+				"h6",
+				"strong",
+				"b",
+				"blockquote",
+				"td",
+				"th",
+				// TODO: <code>
+			}
+			if !slice.contains(searchable_tags, elem.ident) {
+				fmt.println("[D002] ignoring", elem.ident)
+				continue
+			}
+
+			for v in elem.value {
+				s, ok := v.(string)
+				if !ok {continue}
+				fmt.println("[D001]", elem.ident, s)
+			}
+		}
+	}
+	// fmt.println(doc, err_html)
 
 	os.write_entire_file_or_err(
 		article.output_file_name,
