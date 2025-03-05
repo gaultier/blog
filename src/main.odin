@@ -284,6 +284,20 @@ git_get_articles_creation_and_modification_date :: proc() -> ([]GitStat, os2.Err
 	return git_stats[:], nil
 }
 
+@(private)
+@(require_results)
+html_escape :: proc(input: string, allocator := context.allocator) -> string {
+	s := input
+
+	s, _ = strings.replace_all(s, "&", "&amp;")
+	s, _ = strings.replace_all(s, "<", "&lt;")
+	s, _ = strings.replace_all(s, ">", "&gt;")
+	s, _ = strings.replace_all(s, `"`, "&quot;")
+	s, _ = strings.replace_all(s, "'", "&#39;")
+
+	return s
+}
+
 // Replace non-alphanumeric letters by alphanumeric (and underscore) letters
 // for use in the `id` field of HTML elements.
 @(private)
@@ -959,7 +973,7 @@ article_rss_generate :: proc(sb: ^strings.Builder, article: Article) {
   <published>%s</published>
   </entry>
 	`,
-		article.title,
+		html_escape(article.title),
 		base_url,
 		article.output_file_name,
 		article_uuid_str,

@@ -2,7 +2,7 @@
   <feed xmlns="http://www.w3.org/2005/Atom">
     <title>Philippe Gaultier's blog</title>
     <link href="https://gaultier.github.io/blog"/>
-    <updated>2025-03-03T09:19:12+01:00</updated>
+    <updated>2025-03-05T11:14:44+01:00</updated>
     <author>
       <name>Philippe Gaultier</name>
     </author>
@@ -41,7 +41,7 @@
   </entry>
 	
 	<entry>
-  <title>Cycle detection in graphs does not have to be hard: A lesser known, simple way with Kahn's algorithm</title>
+  <title>Cycle detection in graphs does not have to be hard: A lesser known, simple way with Kahn&#39;s algorithm</title>
   <link href="https://gaultier.github.io/blog/kahns_algorithm.html"/>
   <id>urn:uuid:665ef523-5c28-5dad-8582-587bfea27205</id>
   <updated>2024-11-05T15:22:51+01:00</updated>
@@ -65,7 +65,7 @@
   </entry>
 	
 	<entry>
-  <title>Roll your own memory profiling: it's actually not hard</title>
+  <title>Roll your own memory profiling: it&#39;s actually not hard</title>
   <link href="https://gaultier.github.io/blog/roll_your_own_memory_profiling.html"/>
   <id>urn:uuid:5344c109-864c-5db2-97a9-24834e053169</id>
   <updated>2025-02-20T09:55:36+01:00</updated>
@@ -105,7 +105,7 @@
   </entry>
 	
 	<entry>
-  <title>You've just inherited a legacy C++ codebase, now what?</title>
+  <title>You&#39;ve just inherited a legacy C++ codebase, now what?</title>
   <link href="https://gaultier.github.io/blog/you_inherited_a_legacy_cpp_codebase_now_what.html"/>
   <id>urn:uuid:b9c26cf9-cb85-5ca9-b52f-5cdd535a3b84</id>
   <updated>2024-11-05T15:43:44+01:00</updated>
@@ -129,7 +129,7 @@
   </entry>
 	
 	<entry>
-  <title>Let's write a video game from scratch like it's 1987</title>
+  <title>Let&#39;s write a video game from scratch like it&#39;s 1987</title>
   <link href="https://gaultier.github.io/blog/write_a_video_game_from_scratch_like_1987.html"/>
   <id>urn:uuid:6bea7a85-d449-5f4d-9ab6-7e627c67ba57</id>
   <updated>2025-03-04T20:27:05+01:00</updated>
@@ -185,7 +185,7 @@
   </entry>
 	
 	<entry>
-  <title>Perhaps Rust needs "defer"</title>
+  <title>Perhaps Rust needs &quot;defer&quot;</title>
   <link href="https://gaultier.github.io/blog/perhaps_rust_needs_defer.html"/>
   <id>urn:uuid:55eb4918-5851-5a25-80d5-d350aad8971b</id>
   <updated>2025-03-04T20:27:05+01:00</updated>
@@ -241,10 +241,10 @@
   </entry>
 	
 	<entry>
-  <title>Making my static blog generator <del>11</del> 33 times faster</title>
+  <title>Making my static blog generator &lt;del&gt;11&lt;/del&gt; 33 times faster</title>
   <link href="https://gaultier.github.io/blog/making_my_static_blog_generator_11_times_faster.html"/>
   <id>urn:uuid:d29b6ec2-f895-5f2f-896f-2f343766fc85</id>
-  <updated>2025-03-03T09:19:12+01:00</updated>
+  <updated>2025-03-05T11:14:44+01:00</updated>
   <published>2025-02-19T15:13:54+01:00</published>
   </entry>
 	</feed>
