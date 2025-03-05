@@ -51,20 +51,18 @@ Article :: struct {
 TitleId :: u32
 
 Title :: struct {
-	content:               string,
-	content_html_friendly: string,
-	level:                 int,
-	id:                    TitleId,
-	parent:                ^Title,
-	first_child:           ^Title,
-	next_sibling:          ^Title,
+	content:         string,
+	content_html_id: string,
+	level:           int,
+	computed_id:     TitleId,
+	parent:          ^Title,
+	first_child:     ^Title,
+	next_sibling:    ^Title,
 
 	// Needed to convert the markdown titles to HTML titles with ids, interspersed with each section content.
 	// Also since the `content` field is the trimmed original title, we cannot use its length to deduct those.
-	pos_start:             int,
-	pos_end:               int,
-	sub_content_start:     int,
-	sub_content_len:       int,
+	pos_start:       int,
+	pos_end:         int,
 }
 
 // FNV hash of the full title path including direct ancestors.
@@ -346,13 +344,13 @@ html_write_with_decorated_titles :: proc(content: string, sb: ^strings.Builder, 
 	<a class="title" href="#%d-%s">%s</a>
 	<a class="hash-anchor" href="#%d-%s" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>`,
 			title.level,
-			title.id,
-			title.content_html_friendly,
-			title.id,
-			title.content_html_friendly,
+			title.computed_id,
+			title.content_html_id,
+			title.computed_id,
+			title.content_html_id,
 			title.content,
-			title.id,
-			title.content_html_friendly,
+			title.computed_id,
+			title.content_html_id,
 		)
 		strings.write_rune(sb, '\n')
 
@@ -401,12 +399,12 @@ html_parse_titles :: proc(content: string, allocator := context.allocator) -> ^T
 		title_content := strings.trim_space(s[4:])
 
 		title := Title {
-			content               = title_content,
-			content_html_friendly = html_make_id(title_content),
-			level                 = int(level),
-			pos_start             = pos + idx_start,
-			pos_end               = pos + idx_start + idx_end,
-			parent                = root, // Will be backpatched.
+			content         = title_content,
+			content_html_id = html_make_id(title_content),
+			level           = int(level),
+			pos_start       = pos + idx_start,
+			pos_end         = pos + idx_start + idx_end,
+			parent          = root, // Will be backpatched.
 		}
 		assert(title.pos_end - title.pos_start == len(s))
 		append(&titles, title)
@@ -452,7 +450,7 @@ html_parse_titles :: proc(content: string, allocator := context.allocator) -> ^T
 
 	// Backpatch `id` field which is a hash of the full path to this node including ancestors.
 	for &title in titles {
-		title.id = title_make_id(&title)
+		title.computed_id = title_make_id(&title)
 	}
 
 	assert(root.next_sibling == nil)
@@ -477,8 +475,8 @@ article_write_toc :: proc(sb: ^strings.Builder, root: ^Title) {
 	<li>
 		<a href="#%d-%s">%s</a>
 		`,
-				title.id,
-				title.content_html_friendly,
+				title.computed_id,
+				title.content_html_id,
 				title.content,
 			)
 		}
@@ -667,7 +665,7 @@ title_print :: proc(handle: os.Handle, title: ^Title) {
 	if title.level == 1 {
 		fmt.fprintf(handle, ".\n")
 	} else {
-		fmt.fprintf(handle, "title='%s' id=%d\n", title.content, title.id)
+		fmt.fprintf(handle, "title='%s' id=%d\n", title.content, title.computed_id)
 	}
 
 	title_print(handle, title.first_child)
