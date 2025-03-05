@@ -59,7 +59,8 @@ Title :: struct {
 
 	// Needed to convert the markdown titles to HTML titles with ids, interspersed with each section content.
 	// Also since the `content` field is the trimmed original title, we cannot use its length to deduct those.
-	title_start:           int,
+	pos_start:             int,
+	pos_end:               int,
 	sub_content_start:     int,
 	sub_content_len:       int,
 }
@@ -311,7 +312,7 @@ article_decorate_markdown_titles_with_id :: proc(markdown: string, root: ^Title)
 		return markdown
 	}
 	sb := strings.builder_make_len_cap(0, len(markdown) * 2)
-	strings.write_string(&sb, markdown[0:root.first_child.title_start])
+	strings.write_string(&sb, markdown[0:root.first_child.pos_start])
 
 	do_rec :: proc(title: ^Title, markdown: string, sb: ^strings.Builder) {
 		if title == nil {return}
@@ -398,7 +399,7 @@ markdown_parse_titles :: proc(markdown: string, allocator := context.allocator) 
 			level                 = title_level,
 			sub_content_start     = pos,
 			sub_content_len       = len(markdown) - pos, // Will be backpatched.
-			title_start           = pos - (idx + 1),
+			pos_start             = pos - (idx + 1),
 			parent                = root, // Will be backpatched.
 			/* Other fields backpatched. */
 		}
@@ -412,8 +413,8 @@ markdown_parse_titles :: proc(markdown: string, allocator := context.allocator) 
 		if i > 0 {
 			previous := &titles[i - 1]
 			assert(previous.sub_content_start > 0)
-			assert(title.title_start > 0)
-			previous.sub_content_len = title.title_start - previous.sub_content_start
+			assert(title.pos_start > 0)
+			previous.sub_content_len = title.pos_start - previous.sub_content_start
 
 			level_diff := previous.level - title.level
 
@@ -477,7 +478,6 @@ html_parse_titles :: proc(content: string, allocator := context.allocator) -> ^T
 		idx_end := strings.index(content[pos + idx_start:], "</h")
 		assert(idx_end != -1)
 		s := content[pos + idx_start:][:idx_end]
-		pos += idx_start + idx_end
 
 		assert(strings.starts_with(s, "<h"))
 
@@ -490,14 +490,17 @@ html_parse_titles :: proc(content: string, allocator := context.allocator) -> ^T
 			content               = title_content,
 			content_html_friendly = html_make_id(title_content),
 			level                 = int(level),
+			pos_start             = pos + idx_start,
+			pos_end               = pos + idx_start + idx_end,
 			parent                = root, // Will be backpatched.
 		}
 		append(&titles, title)
+		pos += idx_start + idx_end
 	}
 	assert(len(titles) <= max_titles)
 
 
-	// Backpatch `parent`, `sub_content_len` fields.
+	// Backpatch `parent` field.
 	for &title, i in titles {
 		if i > 0 {
 			previous := &titles[i - 1]
