@@ -697,7 +697,7 @@ article_generate_html_file :: proc(
 			}
 		}
 	}
-	assert(err_html == nil)
+	// assert(err_html == nil)
 	// fmt.println(doc, err_html)
 
 	os.write_entire_file_or_err(

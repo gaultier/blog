@@ -25,8 +25,8 @@ Will it be hundred of megabytes when we finish? How much work is it really? Can 
 
 <figure>
     <video controls>
-      <source src="screencast.mp4" type="video/mp4"></source>
-      <source src="screencast.webm" type="video/webm"></source>
+      <source src="screencast.mp4" type="video/mp4">
+      <source src="screencast.webm" type="video/webm">
       <p>
         Your browser doesn't support this video. Here is a
         <a href="screencast.mp4">link to the video</a> instead.
