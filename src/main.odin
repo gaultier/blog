@@ -715,7 +715,7 @@ article_generate_html_file :: proc(
 
 	strings.write_string(&html_sb, " </div>\n")
 
-	// article_write_toc(&html_sb, article.titles)
+	article_write_toc(&html_sb, titles)
 
 	strings.write_rune(&html_sb, '\n')
 	strings.write_string(&html_sb, cmark_out)
