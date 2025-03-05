@@ -1016,7 +1016,8 @@ rss_generate :: proc(articles: []Article) -> (err: os.Error) {
 @(require_results)
 run :: proc() -> (os_err: os.Error) {
 	cmark.core_extensions_ensure_registered()
-	cmark.enable_safety_checks(true) // FIXME
+	// This costs only 1ms total so we enable it.
+	cmark.enable_safety_checks(true)
 
 	header := transmute(string)os.read_entire_file_from_filename_or_err("header.html") or_return
 	footer := transmute(string)os.read_entire_file_from_filename_or_err("footer.html") or_return
