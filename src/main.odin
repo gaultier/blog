@@ -707,39 +707,42 @@ article_generate_html_file :: proc(
 	strings.write_string(&html_sb, footer)
 
 	doc, err_html := xml.parse_string(cmark_out)
-	assert(err_html == nil)
-	for elem in doc.elements {
-		if elem.kind == .Comment {continue}
+	_ = err_html
+	// assert(err_html == nil)
+	if err != nil {
+		for elem in doc.elements {
+			if elem.kind == .Comment {continue}
 
-		searchable_tags := []string {
-			"em",
-			"br",
-			"p",
-			"span",
-			"li",
-			"del",
-			"h1",
-			"h2",
-			"h3",
-			"h4",
-			"h5",
-			"h6",
-			"strong",
-			"b",
-			"blockquote",
-			"td",
-			"th",
-			// TODO: <code>
-		}
-		if !slice.contains(searchable_tags, elem.ident) {
-			continue
-		}
+			searchable_tags := []string {
+				"em",
+				"br",
+				"p",
+				"span",
+				"li",
+				"del",
+				"h1",
+				"h2",
+				"h3",
+				"h4",
+				"h5",
+				"h6",
+				"strong",
+				"b",
+				"blockquote",
+				"td",
+				"th",
+				// TODO: <code>
+			}
+			if !slice.contains(searchable_tags, elem.ident) {
+				continue
+			}
 
-		for v in elem.value {
-			s, ok := v.(string)
-			if !ok {continue}
-			// fmt.println("[D001]", elem.ident, s)
-			search_index_feed_text(search, s, doc_idx)
+			for v in elem.value {
+				s, ok := v.(string)
+				if !ok {continue}
+				fmt.println("[D001]", elem.ident, s)
+				search_index_feed_text(search, s, doc_idx)
+			}
 		}
 	}
 	// fmt.println(doc, err_html)
@@ -1144,7 +1147,7 @@ run :: proc() -> (os_err: os.Error) {
 	footer := transmute(string)os.read_entire_file_from_filename_or_err("footer.html") or_return
 
 	articles, search := articles_generate(header, footer) or_return
-	fmt.println(search)
+	fmt.println("[D003]", search)
 	home_page_generate(articles, header, footer) or_return
 	tags_page_generate(articles, header, footer) or_return
 	rss_generate(articles) or_return
