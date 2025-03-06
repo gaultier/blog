@@ -707,9 +707,8 @@ article_generate_html_file :: proc(
 	strings.write_string(&html_sb, footer)
 
 	doc, err_html := xml.parse_string(cmark_out)
-	_ = err_html
 	// assert(err_html == nil)
-	if err != nil {
+	if err_html == .None {
 		for elem in doc.elements {
 			if elem.kind == .Comment {continue}
 
@@ -740,7 +739,8 @@ article_generate_html_file :: proc(
 			for v in elem.value {
 				s, ok := v.(string)
 				if !ok {continue}
-				fmt.println("[D001]", elem.ident, s)
+				fmt.println("[D001]", elem.ident)
+				fmt.println("[D001]", s)
 				search_index_feed_text(search, s, doc_idx)
 			}
 		}
