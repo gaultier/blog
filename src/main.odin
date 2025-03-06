@@ -511,6 +511,50 @@ article_write_toc :: proc(sb: ^strings.Builder, root: ^Title) {
 	article_write_toc_rec(sb, root)
 }
 
+Document :: struct {
+	html_file: string,
+}
+
+Trigram :: [3]rune
+
+DocumentIndex :: int
+
+SearchIndex :: struct {
+	document_idx: DocumentIndex,
+	// TODO: Phrase index.
+}
+
+Search :: struct {
+	documents:      [dynamic]Document,
+	inverted_index: map[Trigram][dynamic]SearchIndex,
+}
+
+@(private)
+search_index_feed_text :: proc(search: ^Search, content: string, doc_idx: DocumentIndex) {
+	characters := make([dynamic]rune, 0, len(content), context.temp_allocator)
+
+	for ch in content {
+		append_elem(&characters, ch)
+	}
+
+	if len(characters) < 3 {return}
+
+	for i := 2; i < len(characters); i += 1 {
+		trigram := [3]rune{characters[i - 2], characters[i - 1], characters[i]}
+		search_index_feed_trigram(search, Trigram(trigram), doc_idx)
+	}
+}
+
+@(private)
+search_index_feed_trigram :: proc(search: ^Search, trigram: Trigram, doc_idx: DocumentIndex) {
+	_, v, inserted, err := map_entry(&search.inverted_index, trigram)
+	assert(err == nil)
+	if inserted {
+		v^ = make([dynamic]SearchIndex, 0, 50)
+	}
+	append_elem(v, SearchIndex{document_idx = doc_idx})
+}
+
 @(private)
 @(require_results)
 article_generate_html_file :: proc(
@@ -518,6 +562,8 @@ article_generate_html_file :: proc(
 	article: Article,
 	header: string,
 	footer: string,
+	search: ^Search,
+	doc_idx: DocumentIndex,
 ) -> (
 	err: os.Error,
 ) {
@@ -661,43 +707,41 @@ article_generate_html_file :: proc(
 	strings.write_string(&html_sb, footer)
 
 	doc, err_html := xml.parse_string(cmark_out)
-	if err_html == nil {
-		for elem in doc.elements {
-			if elem.kind == .Comment {continue}
+	assert(err_html == nil)
+	for elem in doc.elements {
+		if elem.kind == .Comment {continue}
 
-			searchable_tags := []string {
-				"em",
-				"br",
-				"p",
-				"span",
-				"li",
-				"del",
-				"h1",
-				"h2",
-				"h3",
-				"h4",
-				"h5",
-				"h6",
-				"strong",
-				"b",
-				"blockquote",
-				"td",
-				"th",
-				// TODO: <code>
-			}
-			if !slice.contains(searchable_tags, elem.ident) {
-				fmt.println("[D002] ignoring", elem.ident)
-				continue
-			}
+		searchable_tags := []string {
+			"em",
+			"br",
+			"p",
+			"span",
+			"li",
+			"del",
+			"h1",
+			"h2",
+			"h3",
+			"h4",
+			"h5",
+			"h6",
+			"strong",
+			"b",
+			"blockquote",
+			"td",
+			"th",
+			// TODO: <code>
+		}
+		if !slice.contains(searchable_tags, elem.ident) {
+			continue
+		}
 
-			for v in elem.value {
-				s, ok := v.(string)
-				if !ok {continue}
-				fmt.println("[D001]", elem.ident, s)
-			}
+		for v in elem.value {
+			s, ok := v.(string)
+			if !ok {continue}
+			// fmt.println("[D001]", elem.ident, s)
+			search_index_feed_text(search, s, doc_idx)
 		}
 	}
-	assert(err_html == nil)
 	// fmt.println(doc, err_html)
 
 	os.write_entire_file_or_err(
@@ -734,6 +778,7 @@ article_generate :: proc(
 	git_stat: GitStat,
 	header: string,
 	footer: string,
+	search: ^Search,
 ) -> (
 	article: Article,
 	err: os.Error,
@@ -765,8 +810,17 @@ article_generate :: proc(
 
 	stem := filepath.stem(git_stat.path_rel)
 	article.output_file_name = strings.concatenate([]string{stem, ".html"})
+	append_elem(&search.documents, Document{html_file = article.output_file_name})
+	doc_idx := len(search.documents) - 1
 
-	article_generate_html_file(content_without_metadata, article, header, footer) or_return
+	article_generate_html_file(
+		content_without_metadata,
+		article,
+		header,
+		footer,
+		search,
+		doc_idx,
+	) or_return
 	fmt.printf("generated article: title=%s\n", article.title)
 
 	return
@@ -775,7 +829,14 @@ article_generate :: proc(
 // Note: Only markdown files tracked by `git` are considered.
 @(private)
 @(require_results)
-articles_generate :: proc(header: string, footer: string) -> (articles: []Article, err: os.Error) {
+articles_generate :: proc(
+	header: string,
+	footer: string,
+) -> (
+	articles: []Article,
+	search: Search,
+	err: os.Error,
+) {
 	assert(len(header) > 0)
 	assert(len(footer) > 0)
 
@@ -783,6 +844,11 @@ articles_generate :: proc(header: string, footer: string) -> (articles: []Articl
 
 	git_stats, os2_err := git_get_articles_creation_and_modification_date()
 	assert(os2_err == nil)
+
+	search = Search {
+		documents      = make([dynamic]Document, 0, len(git_stats)),
+		inverted_index = make(map[Trigram][dynamic]SearchIndex, 10_000),
+	}
 
 	for git_stat in git_stats {
 		// The home page is generate separately. The logic is different from an article.
@@ -794,11 +860,12 @@ articles_generate :: proc(header: string, footer: string) -> (articles: []Articl
 		// Skip the todo.
 		if git_stat.path_rel == "todo.md" {continue}
 
-		article := article_generate(git_stat, header, footer) or_return
+		article := article_generate(git_stat, header, footer, &search) or_return
 		append(&articles_dyn, article)
 	}
 
-	return articles_dyn[:], nil
+
+	return articles_dyn[:], search, nil
 }
 
 @(private)
@@ -1076,7 +1143,8 @@ run :: proc() -> (os_err: os.Error) {
 	header := transmute(string)os.read_entire_file_from_filename_or_err("header.html") or_return
 	footer := transmute(string)os.read_entire_file_from_filename_or_err("footer.html") or_return
 
-	articles := articles_generate(header, footer) or_return
+	articles, search := articles_generate(header, footer) or_return
+	fmt.println(search)
 	home_page_generate(articles, header, footer) or_return
 	tags_page_generate(articles, header, footer) or_return
 	rss_generate(articles) or_return
