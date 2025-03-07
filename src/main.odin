@@ -148,7 +148,7 @@ GitStat :: struct {
 @(require_results)
 git_get_articles_creation_and_modification_date :: proc() -> ([]GitStat, os2.Error) {
 	free_all(context.temp_allocator)
-	defer free_all(context.temp_allocator)
+	// defer free_all(context.temp_allocator)
 
 	state, stdout_bin, stderr_bin, err := os2.process_exec(
 		{
@@ -740,12 +740,15 @@ article_generate_html_file :: proc(
 				s, ok := v.(string)
 				if !ok {continue}
 				fmt.println("[D001]", elem.ident)
-				fmt.println("[D001]", s)
+				fmt.println("[D003]", s)
 				search_index_feed_text(search, s, doc_idx)
 			}
 		}
 	}
 	// fmt.println(doc, err_html)
+
+	assert(article.output_file_name != "")
+	assert(strings.ends_with(article.output_file_name, ".html"))
 
 	os.write_entire_file_or_err(
 		article.output_file_name,
@@ -886,7 +889,7 @@ home_page_generate :: proc(
 
 	context.allocator = context.temp_allocator
 	free_all(context.temp_allocator)
-	defer free_all(context.allocator)
+	// defer free_all(context.allocator)
 
 	slice.sort_by(articles, article_cmp_by_creation_date_desc)
 
@@ -946,7 +949,7 @@ home_page_generate :: proc(
 		) or_return
 
 		mem := cmark.get_arena_mem_allocator()
-		defer cmark.arena_reset()
+		// defer cmark.arena_reset()
 
 		parser := cmark.parser_new_with_mem(cmark_options, mem)
 
@@ -990,7 +993,7 @@ tags_page_generate :: proc(
 
 	context.allocator = context.temp_allocator
 	free_all(context.temp_allocator)
-	defer free_all(context.allocator)
+	// defer free_all(context.allocator)
 
 	articles_by_tag := make(map[string][dynamic]Article)
 
@@ -1101,7 +1104,7 @@ rss_generate :: proc(articles: []Article) -> (err: os.Error) {
 
 	context.allocator = context.temp_allocator
 	free_all(context.temp_allocator)
-	defer free_all(context.allocator)
+	// defer free_all(context.allocator)
 
 	slice.sort_by(articles, article_cmp_by_creation_date_asc)
 
