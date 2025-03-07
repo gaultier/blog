@@ -167,29 +167,24 @@ Miranda -&gt; Angela
 <blockquote>
 <p>A topological sort or topological ordering of a directed graph is a linear ordering of its vertices such that for every directed edge uv from vertex u to vertex v, u comes before v in the ordering. For instance, the vertices of the graph may represent tasks to be performed, and the edges may represent constraints that one task must be performed before another; in this application, a topological ordering is just a valid sequence for the tasks</p>
 </blockquote>
-<p>That's a mouthful but it's not too hard.</p>
-<p>A useful command line utility that's already on your (Unix) machine is <code>tsort</code>, which takes a list of edges as input, and outputs a topological sort. Here is the input in a text file (<code>people.txt</code>):</p>
-<pre><code>Jane Ellen
-Angela Ellen
-Zoe Jane
-Zoe Angela
-Bella Angela
-Miranda Angela
-</code></pre>
-<blockquote>
-<p><code>tsort</code> uses a simple way of defining each edge <code>A -&gt; B</code> on its own line with the syntax: <code>A B</code>. The order of the lines does not matter.</p>
+<p>That's a mouthful but it's not too hard.</p<p><a href="/blog"> ⏴ Back to all articles</a></p>
+
+<blockquote id="donate">
+  <p>If you enjoy what you're reading, you want to support me, and can afford it: <a href="https://paypal.me/philigaultier?country.x=DE&locale.x=en_US">Support me</a>. That allows me to write more cool articles!</p>
 </blockquote>
-<p>And here's the <code>tsort</code> output:</p>
-<pre><code class="language-sh">$ tsort &lt; people.txt
-Bella
-Miranda
-Zoe
-Angela
-Jane
-Ellen
-</code></pre>
-<p>The first 3 elements are the ones with no incoming edge, the Software Engineers, since no one reports to them. Then come their respective managers, Angela and Jane. Finally comes their manager, <code>Ellen</code>.</p>
-<p>So to insert all those people in our <code>people</code> SQL table, we go through that list in reverse order: We can first insert <code>Ellen</code>, then <code>Jane</code>, etc, until we finally insert <code>Bella</code>.</p>
+
+<blockquote>
+  <p>
+    This blog is <a href="https://github.com/gaultier/blog">open-source</a>!
+    If you find a problem, please open a Github issue.
+    The content of this blog as well as the code snippets are under the <a href="https://en.wikipedia.org/wiki/BSD_licenses#3-clause_license_(%22BSD_License_2.0%22,_%22Revised_BSD_License%22,_%22New_BSD_License%22,_or_%22Modified_BSD_License%22)">BSD-3 License</a> which I also usually use for all my personal projects. It's basically free for every use but you have to mention me as the original author.
+  </p>
+</blockquote>
+
+</div>
+</body>
+</html>
+>So to insert all those people in our <code>people</code> SQL table, we go through that list in reverse order: We can first insert <code>Ellen</code>, then <code>Jane</code>, etc, until we finally insert <code>Bella</code>.</p>
 <p>Also, <code>tsort</code> detects cycles, for example if we add the line: <code>Ellen Zoe</code> at the end of <code>people.txt</code>, we get:</p>
 <pre><code class="language-sh">$ tsort &lt; people.txt
 Bella
@@ -237,16 +232,24 @@ Zoe
 </table>
 <p>The way to read this table is:</p>
 <ul>
-<li>For a given row, all the <code>1</code>'s indicate outgoing edges</li>
-<li>For a given column, all the <code>1</code>'s indicate incoming edges</li>
-<li>If there is a <code>1</code> on the diagonal, it means there is an edge going out of a node and going to the same node.</li>
-</ul>
-<p>There are a lot of zeroes in this table. Some may think this is horribly inefficient, which it is, but it really depends on number of nodes, i.e. the number of employees in the organization.
-But note that this adjacency matrix is a concept, it shows what information is present, but not how it is stored.</p>
-<p>For this article, we will store it the naive way, in a 2D array. Here are two optimization ideas I considered but have not had time to experiment with:</p>
-<ul>
-<li>Make this a bitarray. We are already only storing zeroes and ones, so it maps perfectly to this format.</li>
-<li>Since there are a ton of zeroes (in the valid case, a regular employee's row only has one <code>1</code> and the CEO's row is only zeroes), it is very compressible. An easy way would be to use run-length encoding, meaning, instead of <code>0 0 0 0</code>, we just store the number of times the number occurs: <code>4 0</code>. Easy to implement, easy to understand. A row compresses to just a few bytes. And this size would be constant, whatever the size of the organization (i.e. number of employees) is.</li>
+<li>For a given row, all the <cod<p><a href="/blog"> ⏴ Back to all articles</a></p>
+
+<blockquote id="donate">
+  <p>If you enjoy what you're reading, you want to support me, and can afford it: <a href="https://paypal.me/philigaultier?country.x=DE&locale.x=en_US">Support me</a>. That allows me to write more cool articles!</p>
+</blockquote>
+
+<blockquote>
+  <p>
+    This blog is <a href="https://github.com/gaultier/blog">open-source</a>!
+    If you find a problem, please open a Github issue.
+    The content of this blog as well as the code snippets are under the <a href="https://en.wikipedia.org/wiki/BSD_licenses#3-clause_license_(%22BSD_License_2.0%22,_%22Revised_BSD_License%22,_%22New_BSD_License%22,_or_%22Modified_BSD_License%22)">BSD-3 License</a> which I also usually use for all my personal projects. It's basically free for every use but you have to mention me as the original author.
+  </p>
+</blockquote>
+
+</div>
+</body>
+</html>
+mployee's row only has one <code>1</code> and the CEO's row is only zeroes), it is very compressible. An easy way would be to use run-length encoding, meaning, instead of <code>0 0 0 0</code>, we just store the number of times the number occurs: <code>4 0</code>. Easy to implement, easy to understand. A row compresses to just a few bytes. And this size would be constant, whatever the size of the organization (i.e. number of employees) is.</li>
 </ul>
 <p>Wikipedia lists others if you are interested, it's a well-known problem.</p>
 <p>Alright, now that we know how our graph is represented, on to the algorithm.</p>
@@ -492,24 +495,27 @@ WHERE employee.name = ?
 </code></pre>
 <p>We can also do this with hairy recursive Common Table Expression (CTE) but I'll leave that to the reader.</p>
 <h2>Closing thoughts</h2>
-<p>Graphs and algorithms operating on them do not have to be complicated. Using an adjacency matrix and Kahn's algorithm, we can achieve a lot with l<p><a href="/blog"> ⏴ Back to all articles</a></p>
+<p>Graphs and algorithms operating on them do not have to be complicated. Using an adjacency matrix and Kahn's algorithm, we can achieve a lot with little and it remains simple.</p>
+<p>There are many ways to optimize the code in this article; the point was not to write the most efficient code, but to showcase in the clearest, simplest way possible to detect cycles and store a graph/tree in memory and in a database.</p>
+<p>If you want to play with the code here and try to make it faster, go at it!</p>
+<h2>Addendum: the full code</h2>
+<details>
+  <summary>The full code</summary>
+<pre><code class="language-js">const adjacencyMatrix = [
+  [0, 0, 1, 0, 0, 0],
+  [1, 0, 0, 0, 0, 0],
+  [0, 0, 0, 0, 0, 0],
+  [0, 0, 1, 0, 0, 0],
+  [1, 0, 0, 0, 0, 0],
+  [0, 0, 0, 1, 0, 0],
+];
 
-<blockquote id="donate">
-  <p>If you enjoy what you're reading, you want to support me, and can afford it: <a href="https://paypal.me/philigaultier?country.x=DE&locale.x=en_US">Support me</a>. That allows me to write more cool articles!</p>
-</blockquote>
+const nodes = [&quot;Angela&quot;, &quot;Bella&quot;, &quot;Ellen&quot;, &quot;Jane&quot;, &quot;Miranda&quot;, &quot;Zoe&quot;];
 
-<blockquote>
-  <p>
-    This blog is <a href="https://github.com/gaultier/blog">open-source</a>!
-    If you find a problem, please open a Github issue.
-    The content of this blog as well as the code snippets are under the <a href="https://en.wikipedia.org/wiki/BSD_licenses#3-clause_license_(%22BSD_License_2.0%22,_%22Revised_BSD_License%22,_%22New_BSD_License%22,_or_%22Modified_BSD_License%22)">BSD-3 License</a> which I also usually use for all my personal projects. It's basically free for every use but you have to mention me as the original author.
-  </p>
-</blockquote>
+function hasNodeNoIncomingEdge(adjacencyMatrix, nodeIndex) {
+  const column = nodeIndex;
 
-</div>
-</body>
-</html>
- row += 1) {
+  for (let row = 0; row &lt; adjacencyMatrix.length; row += 1) {
     const cell = adjacencyMatrix[row][column];
 
     if (cell != 0) {
@@ -615,6 +621,8 @@ for (let i = employeesTopologicallySorted.length - 2; i &gt;= 0; i -= 1) {
 
 </div>
 </body>
+</html>
+>
 </html>
 ot with little and it remains simple.</p>
 <p>There are many ways to optimize the code in this article; the point was not to write the most efficient code, but to showcase in the clearest, simplest way possible to detect cycles and store a graph/tree in memory and in a database.</p>

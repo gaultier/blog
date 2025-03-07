@@ -159,32 +159,24 @@ $ ueb sleep 1
 
 
 # Run a program that prints the date and time, and exits with a random status code, to see how it works.
-$ ueb sh -c 'date --iso-8601=ns; export R=$(($RANDOM % 5)); echo $R; exit $R'
-2024-11-10T15:48:49,499172093+01:00
-4
-2024-11-10T15:48:49,628818472+01:00
-3
-2024-11-10T15:48:49,886557676+01:00
-4
-2024-11-10T15:48:50,400199626+01:00
-3
-2024-11-10T15:48:51,425937132+01:00
-2
-2024-11-10T15:48:53,475565645+01:00
-2
-2024-11-10T15:48:57,573278508+01:00
-1
-2024-11-10T15:49:05,767338611+01:00
-0
+$ ueb sh -c 'date --iso-8601=ns; export R=$(($RANDOM % 5)); echo $R; exit $R<p><a href="/blog"> ⏴ Back to all articles</a></p>
 
-# Some more practical examples.
-$ ueb ssh &lt;some_ip&gt;
-$ ueb createdb my_great_database -h 0.0.0.0 -U postgres
-</code></pre>
-<p>If you want to monitor the retries and the sleeps, you can use <code>strace</code> or <code>dtrace</code>:</p>
-<pre><code class="language-sh">$ strace ueb sleep 1
-</code></pre>
-<p>Note that the sub-command should be idempotent, otherwise we might create a given resource twice, or the command might have succeeded right after our timeout triggered but also right before we killed it, so our program thinks it timed out and thus needs to be retried. There is this small data race window, which is completely fine if the command is idempotent but will erroneously retry the command to the bitter end otherwise. There is also the case where the sub-command does stuff over the network for example creating a resource, it succeeds, but the ACK is never received due to network issues. The sub-command will think it failed and retry. Again, fairly standard stuff in distributed systems but I thought it was worth mentioning.</p>
+<blockquote id="donate">
+  <p>If you enjoy what you're reading, you want to support me, and can afford it: <a href="https://paypal.me/philigaultier?country.x=DE&locale.x=en_US">Support me</a>. That allows me to write more cool articles!</p>
+</blockquote>
+
+<blockquote>
+  <p>
+    This blog is <a href="https://github.com/gaultier/blog">open-source</a>!
+    If you find a problem, please open a Github issue.
+    The content of this blog as well as the code snippets are under the <a href="https://en.wikipedia.org/wiki/BSD_licenses#3-clause_license_(%22BSD_License_2.0%22,_%22Revised_BSD_License%22,_%22New_BSD_License%22,_or_%22Modified_BSD_License%22)">BSD-3 License</a> which I also usually use for all my personal projects. It's basically free for every use but you have to mention me as the original author.
+  </p>
+</blockquote>
+
+</div>
+</body>
+</html>
+ race window, which is completely fine if the command is idempotent but will erroneously retry the command to the bitter end otherwise. There is also the case where the sub-command does stuff over the network for example creating a resource, it succeeds, but the ACK is never received due to network issues. The sub-command will think it failed and retry. Again, fairly standard stuff in distributed systems but I thought it was worth mentioning.</p>
 <p>So how do we implement it?</p>
 <p>Immediately, we notice something: even though there are a bazillion ways to wait on a child process to finish (<code>wait</code>, <code>wait3</code>, <code>wait4</code>, <code>waitid</code>, <code>waitpid</code>), none of them take a timeout as an argument. This has sparked numerous questions online (<a href="https://stackoverflow.com/questions/18542089/how-to-wait-on-child-process-to-finish-with-time-limit">1</a>, <a href="https://stackoverflow.com/questions/18476138/is-there-a-version-of-the-wait-system-call-that-sets-a-timeout">2</a>), with in my opinion unsatisfactory answers. So let's explore this rabbit hole.</p>
 <p>We'd like the pseudo-code to be something like:</p>
@@ -217,16 +209,24 @@ exit(1)
 <li>We opt-in to receive a <code>SIGCHLD</code> signal when the child processes finishes with: <code>signal(SIGCHLD, on_chld_signal)</code> where <code>on_chld_signal</code> is a function pointer we provide. Even if the signal handler does not do anything in this case.</li>
 <li>We schedule a <code>SIGALARM</code> signal with <code>alarm</code> or more preferably <code>setitimer</code> which can take a duration in microseconds whereas <code>alarm</code> can only handle seconds. There's also <code>timer_create/timer_settime</code> which handles nanoseconds. It depends what the OS and hardware support.</li>
 <li>We wait for either signal with <code>sigsuspend</code> which suspends the program until a given set of signals arrive.</li>
-<li>We should not forget to <code>wait</code> on the child process to avoid leaving zombie processes behind.</li>
-</ol>
-<p>The reality is grimmer, looking through the <code>timeout</code> implementation:</p>
-<ul>
-<li>We could have inherited any signal mask from our parent so we need to explicitly unblock the signals we are interested in.</li>
-<li>Signals can be sent to a process group we need to handle that case.</li>
-<li>We have to avoid entering a 'signal loop'.</li>
-<li>Our process can be implicitly multi-threaded due to some <code>timer_settime</code> implementations, therefore a <code>SIGALRM</code> signal sent to a process group, can be result in the signal being sent multiple times to a process (I am directly quoting the code comments from the <code>timeout</code> program here).</li>
-<li>When using <code>timer_create</code>, we need to take care of cleaning it up with <code>timer_delete</code>, lest we have a resource leak when retrying.</li>
-<li>The signal handler may be called concurrently and we have to be aware of that.</li>
+<li>We should not forget to <code>wait</code> on the child process to avoid leaving zombie processes behind.<<p><a href="/blog"> ⏴ Back to all articles</a></p>
+
+<blockquote id="donate">
+  <p>If you enjoy what you're reading, you want to support me, and can afford it: <a href="https://paypal.me/philigaultier?country.x=DE&locale.x=en_US">Support me</a>. That allows me to write more cool articles!</p>
+</blockquote>
+
+<blockquote>
+  <p>
+    This blog is <a href="https://github.com/gaultier/blog">open-source</a>!
+    If you find a problem, please open a Github issue.
+    The content of this blog as well as the code snippets are under the <a href="https://en.wikipedia.org/wiki/BSD_licenses#3-clause_license_(%22BSD_License_2.0%22,_%22Revised_BSD_License%22,_%22New_BSD_License%22,_or_%22Modified_BSD_License%22)">BSD-3 License</a> which I also usually use for all my personal projects. It's basically free for every use but you have to mention me as the original author.
+  </p>
+</blockquote>
+
+</div>
+</body>
+</html>
+ have to be aware of that.</li>
 <li>Depending on the timer implementation we chose, we are susceptible to clock adjustments for example going back. E.g. <code>setitimer</code> only offers the <code>CLOCK_REALTIME</code> clock option for counting time, which is just the wall clock. We'd like something like <code>CLOCK_MONOTONIC</code> or <code>CLOCK_MONOTONIC_RAW</code> (the latter being Linux specific).</li>
 </ul>
 <p>So... I don't <em>love</em> this approach:</p>
@@ -240,46 +240,24 @@ exit(1)
 </ul>
 <p>So, let's stick with signals for a bit but simplify our current approach.</p>
 <h2>Second way: sigtimedwait</h2>
-<p>Wouldn't it be great if we could wait on a signal, say, <code>SIGCHLD</code>, with a timeout? Oh look, a system call that does exactly that <em>and</em> is standardized by POSIX 2001. Cool! I am not quite sure why the <code>timeout</code> program does not use it, but we sure as hell can. My only guess would be that they want to support old Unices pre 2001, or non POSIX systems.</p>
-<p>Anyways, here's a very straightforward implementation:</p>
-<pre><code class="language-c">#define _GNU_SOURCE
-#include &lt;errno.h&gt;
-#include &lt;signal.h&gt;
-#include &lt;stdint.h&gt;
-#include &lt;sys/wait.h&gt;
-#include &lt;unistd.h&gt;
+<p>Wouldn't it be great if we could wait on a signal, say, <code>SIGCHLD</code>, with a timeout? Oh look, a system call that does exactly that <em>and</em> is standardized by POSIX 2001. Cool! I am not quite sure why the <code>timeout</code> program does not use it, but we sure as hell can. My only guess would be that they want to support old Unices pre 2001, or <p><a href="/blog"> ⏴ Back to all articles</a></p>
 
-void on_sigchld(int sig) { (void)sig; }
+<blockquote id="donate">
+  <p>If you enjoy what you're reading, you want to support me, and can afford it: <a href="https://paypal.me/philigaultier?country.x=DE&locale.x=en_US">Support me</a>. That allows me to write more cool articles!</p>
+</blockquote>
 
-int main(int argc, char *argv[]) {
-  (void)argc;
-  signal(SIGCHLD, on_sigchld);
+<blockquote>
+  <p>
+    This blog is <a href="https://github.com/gaultier/blog">open-source</a>!
+    If you find a problem, please open a Github issue.
+    The content of this blog as well as the code snippets are under the <a href="https://en.wikipedia.org/wiki/BSD_licenses#3-clause_license_(%22BSD_License_2.0%22,_%22Revised_BSD_License%22,_%22New_BSD_License%22,_or_%22Modified_BSD_License%22)">BSD-3 License</a> which I also usually use for all my personal projects. It's basically free for every use but you have to mention me as the original author.
+  </p>
+</blockquote>
 
-  uint32_t wait_ms = 128;
-
-  for (int retry = 0; retry &lt; 10; retry += 1) {
-    int child_pid = fork();
-    if (-1 == child_pid) {
-      return errno;
-    }
-
-    if (0 == child_pid) { // Child
-      argv += 1;
-      if (-1 == execvp(argv[0], argv)) {
-        return errno;
-      }
-      __builtin_unreachable();
-    }
-
-    sigset_t sigset = {0};
-    sigemptyset(&amp;sigset);
-    sigaddset(&amp;sigset, SIGCHLD);
-
-    siginfo_t siginfo = {0};
-
-    struct timespec timeout = {
-        .tv_sec = wait_ms / 1000,
-        .tv_nsec = (wait_ms % 1000) * 1000 * 1000,
+</div>
+</body>
+</html>
+v_nsec = (wait_ms % 1000) * 1000 * 1000,
     };
 
     int sig = sigtimedwait(&amp;sigset, &amp;siginfo, &amp;timeout);

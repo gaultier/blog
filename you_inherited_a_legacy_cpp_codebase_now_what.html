@@ -167,18 +167,24 @@
 <p>In my experience, with this approach, you keep everyone happy and can do the improvements that you really need to do.</p>
 <p>Alright, let's get down to business now!</p>
 <h2>Write down the platforms you support</h2>
-<p>This is so important and not many projects do it. Write in the README (you do have a README, right?). It's just a list of <code>&lt;architecture&gt;-&lt;operating-system&gt;</code> pair, e.g. <code>x86_64-linux</code> or <code>aarch64-darwin</code>, that your codebase officially supports. This is crucial for getting the build working on every one of them but also and we'll see later, removing cruft for platforms you do <em>not</em> support.</p>
-<p>If you want to get fancy, you can even write down which version of the architecture such as ARMV6 vs ARMv7, etc.</p>
-<p>That helps answer important questions such as:</p>
-<ul>
-<li>Can we rely on having hardware support for floats, or SIMD, or SHA256?</li>
-<li>Do we even care about supporting 32 bits?</li>
-<li>Are we ever running on a big-endian platform? (The answer is very likely: no, never did, never will - if you do, please email me with the details because that sounds interesting).</li>
-<li>Can a <code>char</code> be 7 bits?</li>
-</ul>
-<p>And an important point: This list should absolutely include the developers workstations. Which leads me to my next point:</p>
-<h2>Get the build working on your machine</h2>
-<p>You'd be amazed at how many C++ codebase in the wild that are a core part of a successful product earning millions and they basically do not compile. Well, if all the stars are aligned they do. But that's not what I'm talking about. I'm talking about reliably, consistently building on all platforms you support. No fuss, no 'I finally got it building after 3 weeks of hair-pulling' (this brings back some memories). It just works(tm).</p>
+<p>This is so important and not many projects do it. Write in the README (you do have a README, right?). It's just a list of <code>&lt;architecture&gt;-&lt;operating-system&gt;</code> pair, e.g. <code>x86_64-linux</code> or <code>aarch64-darwin</code>, that your codebase officially supports. This is crucial for getting the build working on every one of them but also and we'll see later, removing cruft f<p><a href="/blog"> ⏴ Back to all articles</a></p>
+
+<blockquote id="donate">
+  <p>If you enjoy what you're reading, you want to support me, and can afford it: <a href="https://paypal.me/philigaultier?country.x=DE&locale.x=en_US">Support me</a>. That allows me to write more cool articles!</p>
+</blockquote>
+
+<blockquote>
+  <p>
+    This blog is <a href="https://github.com/gaultier/blog">open-source</a>!
+    If you find a problem, please open a Github issue.
+    The content of this blog as well as the code snippets are under the <a href="https://en.wikipedia.org/wiki/BSD_licenses#3-clause_license_(%22BSD_License_2.0%22,_%22Revised_BSD_License%22,_%22New_BSD_License%22,_or_%22Modified_BSD_License%22)">BSD-3 License</a> which I also usually use for all my personal projects. It's basically free for every use but you have to mention me as the original author.
+  </p>
+</blockquote>
+
+</div>
+</body>
+</html>
+not compile. Well, if all the stars are aligned they do. But that's not what I'm talking about. I'm talking about reliably, consistently building on all platforms you support. No fuss, no 'I finally got it building after 3 weeks of hair-pulling' (this brings back some memories). It just works(tm).</p>
 <p>A small aparte here. I used to be really into Karate. We are talking 3, 4 training sessions a week, etc. And I distinctly remember one of my teachers telling me (picture a wise Asian sifu - hmm actually my teacher was a bald white guy... picture Steve Ballmer then):</p>
 <blockquote>
 <p>You do not yet master this move. Sometimes you do and sometimes you don't, so you don't. When eating with a spoon, do you miss your mouth one out of five times?</p>
@@ -303,10 +309,24 @@ Any other: well you're out of luck buddy. I guess you'll have to pick a mainstre
 <li><em>Nix can serve as a good dependency manager for C++.</em> I must admit that I was beaten into submission by Nix's complexity and slowness. Maybe in a few years when it has matured?</li>
 <li><em>You should not invest so much time in refactoring a legacy codebase if all you are going to do is one bug fix a year.</em> Somewhat agree, but it really is a judgement call. In my experience it's never one and only one bug fix, whatever management says. And all the good things such as removing dead code, sanitizers etc will be valuable even for the odd bug fix and also lead to noticing more bugs and fixing them. As one replier put it: <em>If you are going to own a codebase, then own it for real.</em></li>
 <li><em>It's very risky to remove code, in general you never know for sure if it's being used or not, and if someone relies on this exact behavior in the wild.</em> That's true, that's why I advocate for removing code that is never called using static analysis tools, so that you know <em>for sure</em>. But yes, when in doubt, don't. My pet peeve here are virtual methods that are very resistant to static analysis (since the whole point is to pick which exact method to call at runtime), these usually cannot be as easily removed. Also, talk to your sales people, your product managers, heck even your users if you can. Most of the time, if you ask them whether a given feature or platform is in use or not, you'll get a swift yes or no reply, and you'll know how to proceed. We engineers sometimes forget that a 15 minute talk with people can simplify  so much technical work.</li>
-<li><em>Stick all your code in a LLM and start asking it questions</em>: As a anti LLM person, I must admit that this idea never crossed my mind. However I think it might be worth a shot, if you can do that in a legally safe way, ideally fully locally, and take everything with a grain a salt. I'm genuinely curious to see what answers it comes up with!</li>
-<li><em>There are tools that analyze the code and produce diagrams, class relationships etc to get an overview of the code</em>: I never used these tools but that's a good idea and I will definitely try one in the future</li>
-<li><em>Step 0 should be to add the code in a source control system if that's not the case already</em>: For sure. I was lucky enough to never encounter that, but heck yeah, even the worst source control system is better than no source control system at all. And I say this after having had to use Visual Source Safe, the one where modifying a file means acquiring an exclusive lock on it, that you then have to release manually.</li>
-<li><em>Setting up a CI should be step 1</em>: Fair point, I can totally see this perspective. I am quicker locally, but fair.</li>
+<li><em>Stick all your code in a LLM and start asking it questions</em>: As a anti LLM person, I must admit that this idea never crossed my mind. However I think it mi<p><a href="/blog"> ⏴ Back to all articles</a></p>
+
+<blockquote id="donate">
+  <p>If you enjoy what you're reading, you want to support me, and can afford it: <a href="https://paypal.me/philigaultier?country.x=DE&locale.x=en_US">Support me</a>. That allows me to write more cool articles!</p>
+</blockquote>
+
+<blockquote>
+  <p>
+    This blog is <a href="https://github.com/gaultier/blog">open-source</a>!
+    If you find a problem, please open a Github issue.
+    The content of this blog as well as the code snippets are under the <a href="https://en.wikipedia.org/wiki/BSD_licenses#3-clause_license_(%22BSD_License_2.0%22,_%22Revised_BSD_License%22,_%22New_BSD_License%22,_or_%22Modified_BSD_License%22)">BSD-3 License</a> which I also usually use for all my personal projects. It's basically free for every use but you have to mention me as the original author.
+  </p>
+</blockquote>
+
+</div>
+</body>
+</html>
+ I can totally see this perspective. I am quicker locally, but fair.</li>
 <li><em>Don't be a code beauty queen, just do the fixes you need</em>: Amen.</li>
 <li><em>If you can drop a platform that's barely used to reduce the combinatorial complexity, and that enables you to do major simplifications, go for it</em>: Absolutely. Talk to your sales people and stakeholders and try to convince them. In my case it was ancient FreeBSD versions long out of support, I think we used the security angle to convince everyone to drop them.</li>
 <li><em>Reproducible builds</em>: This topic came up and was quite the debate. Honestly I don't think achieving a fully reproducible build in a typical C++ codebase is realistic. The compiler and standard library version alone are a problem since they usually are not considered in the build inputs. Achieving a reliable build though is definitely realistic. Docker came up on that topic. Now I have used Docker in anger since 2013 and I don't think it brings as much value as people generally think it does. But again - if all you can do is get the code building inside Docker, it's better than nothing at all.</li>

@@ -207,27 +207,24 @@ test tests::test_get_foos ... ok
 <p>Of course, we have not yet freed anything, so we expect Miri to complain, and it does:</p>
 <pre><code class="language-sh">$ cargo +nightly miri test
 ...
-error: memory leaked: alloc59029 (Rust heap, size: 16, align: 8), allocated here:
-...
-</code></pre>
-<p>Note that the standard test runner does not report memory leaks, unfortunately. If Miri does not work for a given use case, and we still want to check that there are no leaks, we have to reach for nightly sanitizers or Valgrind.</p>
-<h2>First attempt at freeing the memory properly</h2>
-<p>Great, so let's free it at the end of the test, like C does, with <code>free</code> from libc, which we add as a dependency:</p>
-<pre><code class="language-rust">
-    #[test]
-    fn test_get_foos() {
-        ...
+error: memory leaked: alloc5<p><a href="/blog"> ⏴ Back to all articles</a></p>
 
-        unsafe { libc::free(foos as *mut std::ffi::c_void) };
-    }
-</code></pre>
-<p>The test passes, great. Let's try with Miri:</p>
-<pre><code class="language-sh">$ cargo +nightly miri test
-...
- error: Undefined Behavior: deallocating alloc59029, which is Rust heap memory, using C heap deallocation operation
-...
-</code></pre>
-<p>Hmm...ok...Well that's a bit weird, because what Rust does, when the <code>Vec</code> is allocated, is to call out to <code>malloc</code> from libc, as we can see with <code>strace</code>:</p>
+<blockquote id="donate">
+  <p>If you enjoy what you're reading, you want to support me, and can afford it: <a href="https://paypal.me/philigaultier?country.x=DE&locale.x=en_US">Support me</a>. That allows me to write more cool articles!</p>
+</blockquote>
+
+<blockquote>
+  <p>
+    This blog is <a href="https://github.com/gaultier/blog">open-source</a>!
+    If you find a problem, please open a Github issue.
+    The content of this blog as well as the code snippets are under the <a href="https://en.wikipedia.org/wiki/BSD_licenses#3-clause_license_(%22BSD_License_2.0%22,_%22Revised_BSD_License%22,_%22New_BSD_License%22,_or_%22Modified_BSD_License%22)">BSD-3 License</a> which I also usually use for all my personal projects. It's basically free for every use but you have to mention me as the original author.
+  </p>
+</blockquote>
+
+</div>
+</body>
+</html>
+Hmm...ok...Well that's a bit weird, because what Rust does, when the <code>Vec</code> is allocated, is to call out to <code>malloc</code> from libc, as we can see with <code>strace</code>:</p>
 <pre><code class="language-sh">$ strace -k -v -e brk ./a.out
 ...
 brk(0x213c0000)                         = 0x213c0000
@@ -265,11 +262,24 @@ brk(0x213c0000)                         = 0x213c0000
   }
 </code></pre>
 <p>Let's ignore for now that this will surprise every C developer out there that have been doing <code>if (NULL != ptr) free(ptr)</code> for 50 years now.</p>
-<p>I also tried to investigate how <code>drop</code> is implemented for <code>Vec</code> to understand what's going on and I stopped at this function in <code>core/src/alloc/mod.rs</code>:</p>
-<pre><code class="language-rust">    unsafe fn deallocate(&amp;self, ptr: NonNull&lt;u8&gt;, layout: Layout);
-</code></pre>
-<p>Not sure where the implementation is located... Ok, let's move on.</p>
-<p>Let's stay on the safe side and assume that we ought to use <code>Vec::from_raw_parts</code> and let the <code>Vec</code> free the memory when it gets dropped at the end of the scope. The only problem is: This function requires the pointer, the length, <em>and the capacity</em>. Wait, but we lost the capacity when we returned the pointer + length to the caller in <code>MYLIB_get_foos()</code>, and the caller <em>does not care one bit about the capacity</em>! It's irrelevant to them! At work, the mobile developers using our library rightfully asked: wait, what is this <code>cap</code> field? Why do I care? What do I do with it? If you are used to manually managing your own memory, this is a very old concept, but if you are used to a Garbage Collector, it's very much new.</p>
+<p>I also tried to invest<p><a href="/blog"> ⏴ Back to all articles</a></p>
+
+<blockquote id="donate">
+  <p>If you enjoy what you're reading, you want to support me, and can afford it: <a href="https://paypal.me/philigaultier?country.x=DE&locale.x=en_US">Support me</a>. That allows me to write more cool articles!</p>
+</blockquote>
+
+<blockquote>
+  <p>
+    This blog is <a href="https://github.com/gaultier/blog">open-source</a>!
+    If you find a problem, please open a Github issue.
+    The content of this blog as well as the code snippets are under the <a href="https://en.wikipedia.org/wiki/BSD_licenses#3-clause_license_(%22BSD_License_2.0%22,_%22Revised_BSD_License%22,_%22New_BSD_License%22,_or_%22Modified_BSD_License%22)">BSD-3 License</a> which I also usually use for all my personal projects. It's basically free for every use but you have to mention me as the original author.
+  </p>
+</blockquote>
+
+</div>
+</body>
+</html>
+fully asked: wait, what is this <code>cap</code> field? Why do I care? What do I do with it? If you are used to manually managing your own memory, this is a very old concept, but if you are used to a Garbage Collector, it's very much new.</p>
 <h2>Second attempt at freeing the memory properly</h2>
 <p>So, let's first try to dodge the problem the <del>hacky</del> simple way by pretending that the memory is allocated by a <code>Box</code>, which only needs the pointer, just like <code>free()</code>:</p>
 <pre><code class="language-rust">    #[test]
@@ -387,24 +397,12 @@ error[E0502]: cannot borrow `foos.len` as immutable because it is also borrowed 
 <p>Despite the fact, that the version without defer, and with defer, are semantically equivalent and the borrow checker is fine with the former and not with the latter.</p>
 <h2>Possible solutions</h2>
 <p>So that is why I argue that Rust should get a <code>defer</code> statement in the language and the borrow checker should be made aware of this construct to allow this approach to take place.</p>
-<p>But what can we do otherwise?<p><a href="/blog"> ⏴ Back to all articles</a></p>
-
-<blockquote id="donate">
-  <p>If you enjoy what you're reading, you want to support me, and can afford it: <a href="https://paypal.me/philigaultier?country.x=DE&locale.x=en_US">Support me</a>. That allows me to write more cool articles!</p>
-</blockquote>
-
-<blockquote>
-  <p>
-    This blog is <a href="https://github.com/gaultier/blog">open-source</a>!
-    If you find a problem, please open a Github issue.
-    The content of this blog as well as the code snippets are under the <a href="https://en.wikipedia.org/wiki/BSD_licenses#3-clause_license_(%22BSD_License_2.0%22,_%22Revised_BSD_License%22,_%22New_BSD_License%22,_or_%22Modified_BSD_License%22)">BSD-3 License</a> which I also usually use for all my personal projects. It's basically free for every use but you have to mention me as the original author.
-  </p>
-</blockquote>
-
-</div>
-</body>
-</html>
- bool { false }
+<p>But what can we do otherwise? Are there any alternatives?</p>
+<ul>
+<li>We can be very careful and make sure we deallocate everything by hand in every code paths. Obviously that doesn't scale to team size, code complexity, etc. And it's unfortunate since using a defer-like approach in C with <code>__attribute(cleanup)</code> and in C++ by implementing our <a href="https://www.gingerbill.org/article/2015/08/19/defer-in-cpp/">own</a> <code>defer</code> is trivial. And even Go which is garbage-collected has a first-class <code>defer</code>. So not being able to do so in Rust is unfortunate.</li>
+<li>We can use a goto-like approach, as a reader <a href="https://lobste.rs/s/n6gciw/lessons_learned_from_successful_rust#c_8pzmqg">suggested</a> in a previous article, even though Rust does not have <code>goto</code> per se:
+<pre><code class="language-rust">fn foo_init() -&gt; *mut () { &amp;mut () }
+fn foo_bar(_: *mut ()) -&gt; bool { false }
 fn foo_baz(_: *mut ()) -&gt; bool { true }
 fn foo_free(_: *mut ()) {}
 
@@ -476,6 +474,8 @@ pub extern &quot;C&quot; fn MYLIB_free_foos(foos: &amp;mut OwningArrayC&lt;Foo&g
 
 </div>
 </body>
+</html>
+>
 </html>
 ely for experts only.</p>
 <p>This should not be so hard! Won't somebody think of the <del>children</del> Rust FFI users?</p>

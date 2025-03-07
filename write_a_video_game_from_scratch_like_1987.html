@@ -424,42 +424,24 @@ test_round_up_4 :: proc(_: ^testing.T) {
 
 	{
 		padding := [2]u8{0, 0}
-		n_sent, err := linux.writev(
-			cast(linux.Fd)socket,
-			[]linux.IO_Vec {
-				{base = &amp;request, len = size_of(Request)},
-				{base = raw_data(AUTH_ENTRY_MAGIC_COOKIE), len = len(AUTH_ENTRY_MAGIC_COOKIE)},
-				{base = raw_data(padding[:]), len = len(padding)},
-				{base = raw_data(auth_token[:]), len = len(auth_token)},
-			},
-		)
-		assert(err == .NONE)
-		assert(
-			n_sent ==
-			size_of(Request) + len(AUTH_ENTRY_MAGIC_COOKIE) + len(padding) + len(auth_token),
-		)
-	}
+		n_sent, err<p><a href="/blog"> ⏴ Back to all articles</a></p>
 
-	StaticResponse :: struct #packed {
-		success:       u8,
-		pad1:          u8,
-		major_version: u16,
-		minor_version: u16,
-		length:        u16,
-	}
+<blockquote id="donate">
+  <p>If you enjoy what you're reading, you want to support me, and can afford it: <a href="https://paypal.me/philigaultier?country.x=DE&locale.x=en_US">Support me</a>. That allows me to write more cool articles!</p>
+</blockquote>
 
-	static_response := StaticResponse{}
-	{
-		n_recv, err := os.recv(socket, mem.ptr_to_bytes(&amp;static_response), 0)
-		assert(err == os.ERROR_NONE)
-		assert(n_recv == size_of(StaticResponse))
-		assert(static_response.success == 1)
-	}
+<blockquote>
+  <p>
+    This blog is <a href="https://github.com/gaultier/blog">open-source</a>!
+    If you find a problem, please open a Github issue.
+    The content of this blog as well as the code snippets are under the <a href="https://en.wikipedia.org/wiki/BSD_licenses#3-clause_license_(%22BSD_License_2.0%22,_%22Revised_BSD_License%22,_%22New_BSD_License%22,_or_%22Modified_BSD_License%22)">BSD-3 License</a> which I also usually use for all my personal projects. It's basically free for every use but you have to mention me as the original author.
+  </p>
+</blockquote>
 
-
-	recv_buf: [1 &lt;&lt; 15]u8 = {}
-	{
-		assert(len(recv_buf) &gt;= cast(u32)static_response.length * 4)
+</div>
+</body>
+</html>
+ cast(u32)static_response.length * 4)
 
 		n_recv, err := os.recv(socket, recv_buf[:], 0)
 		assert(err == os.ERROR_NONE)

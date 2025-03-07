@@ -461,28 +461,24 @@ exit(0)                                 = ?
 <pre><code class="language-x86asm">x11_connect_to_server:
   ; TODO
 </code></pre>
-<p>In assembly, a function is simply a label we can jump to. But for clarity, both for readers of the code and tools, we can add a hint that this is a real function we can call, like this: <code>call x11_connect_to_server</code>. This will improve the call stack for example when using <code>strace -k</code>. This hint has the form (in <code>nasm</code>): <code>static &lt;name of the function&gt;:function</code>.</p>
-<p>Of course, we also need to add our standard function prolog and epilog:</p>
-<pre><code class="language-x86asm">x11_connect_to_server:
-static x11_connect_to_server:function
-  push rbp
-  mov rbp, rsp
-  
-  pop rbp
-  ret
-</code></pre>
-<p>An additional help when reading functions in assembly code is adding comments describing what parameters they accept and what is the return value, if any. Since there is no language level feature for this, we resort to comments:</p>
-<pre><code class="language-x86asm">; Create a UNIX domain socket and connect to the X11 server.
-; @returns The socket file descriptor.
-x11_connect_to_server:
-static x11_connect_to_server:function
-  push rbp
-  mov rbp, rsp
-  
-  pop rbp
-  ret
-</code></pre>
-<p>First, let's move the socket creation logic to our function and call it in the program:</p>
+<p>In assembly, a function is simply a label we can jump to. But for clarity, both for readers of the code and tools, we can add a hint that this is a real function we can call, like this: <code>call x11_connect_to_server</code>. This will improve the call stack for example<p><a href="/blog"> ⏴ Back to all articles</a></p>
+
+<blockquote id="donate">
+  <p>If you enjoy what you're reading, you want to support me, and can afford it: <a href="https://paypal.me/philigaultier?country.x=DE&locale.x=en_US">Support me</a>. That allows me to write more cool articles!</p>
+</blockquote>
+
+<blockquote>
+  <p>
+    This blog is <a href="https://github.com/gaultier/blog">open-source</a>!
+    If you find a problem, please open a Github issue.
+    The content of this blog as well as the code snippets are under the <a href="https://en.wikipedia.org/wiki/BSD_licenses#3-clause_license_(%22BSD_License_2.0%22,_%22Revised_BSD_License%22,_%22New_BSD_License%22,_or_%22Modified_BSD_License%22)">BSD-3 License</a> which I also usually use for all my personal projects. It's basically free for every use but you have to mention me as the original author.
+  </p>
+</blockquote>
+
+</div>
+</body>
+</html>
+ logic to our function and call it in the program:</p>
 <pre><code class="language-x86asm">; Create a UNIX domain socket and connect to the X11 server.
 ; @returns The socket file descriptor.
 x11_connect_to_server:
