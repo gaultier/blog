@@ -211,16 +211,36 @@ static GitStatSlice git_get_articles_stats(PgAllocator *allocator) {
 }
 
 [[nodiscard]]
+static Article article_generate(PgString header, PgString footer,
+                                GitStat git_stat, PgAllocator *allocator) {
+  (void)header;
+  (void)footer;
+  (void)allocator;
+  printf("[D001] generating article: %.*s\n", (int)git_stat.path_rel.len,
+         git_stat.path_rel.data);
+  Article article = {
+      .creation_date = git_stat.creation_date,
+      .modification_date = git_stat.modification_date,
+  };
+  return article;
+}
+
+[[nodiscard]]
 static ArticleSlice articles_generate(PgString header, PgString footer,
                                       PgAllocator *allocator) {
   PG_ASSERT(!pg_string_is_empty(header));
   PG_ASSERT(!pg_string_is_empty(footer));
 
   GitStatSlice git_stats = git_get_articles_stats(allocator);
-  (void)git_stats;
 
   ArticleDyn articles = {0};
   PG_DYN_ENSURE_CAP(&articles, 100, allocator);
+
+  for (u64 i = 0; i < git_stats.len; i++) {
+    GitStat git_stat = PG_SLICE_AT(git_stats, i);
+    Article article = article_generate(header, footer, git_stat, allocator);
+    *PG_DYN_PUSH_WITHIN_CAPACITY(&articles) = article;
+  }
 
   return PG_DYN_SLICE(ArticleSlice, articles);
 }
