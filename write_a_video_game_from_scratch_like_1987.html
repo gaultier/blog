@@ -110,6 +110,7 @@
 
 <div class="article-prelude">
   <p><a href="/blog"> ⏴ Back to all articles</a></p>
+
   <p class="publication-date">Published on 2024-06-20</p>
 </div>
 <div class="article-title">
@@ -118,26 +119,8 @@
   <div class="tags"> <a href="/blog/articles-by-tag.html#C" class="tag">C</a> <a href="/blog/articles-by-tag.html#X11" class="tag">X11</a> <a href="/blog/articles-by-tag.html#Video-game" class="tag">Video game</a> <a href="/blog/articles-by-tag.html#Odin" class="tag">Odin</a></div>
   </div>
 
-<p><a href="/blog"> ⏴ Back to all articles</a></p>
-
-<blockquote id="donate">
-  <p>If you enjoy what you're reading, you want to support me, and can afford it: <a href="https://paypal.me/philigaultier?country.x=DE&locale.x=en_US">Support me</a>. That allows me to write more cool articles!</p>
-</blockquote>
-
-<blockquote>
-  <p>
-    This blog is <a href="https://github.com/gaultier/blog">open-source</a>!
-    If you find a problem, please open a Github issue.
-    The content of this blog as well as the code snippets are under the <a href="https://en.wikipedia.org/wiki/BSD_licenses#3-clause_license_(%22BSD_License_2.0%22,_%22Revised_BSD_License%22,_%22New_BSD_License%22,_or_%22Modified_BSD_License%22)">BSD-3 License</a> which I also usually use for all my personal projects. It's basically free for every use but you have to mention me as the original author.
-  </p>
-</blockquote>
-
-</div>
-</body>
-</html>
->
-</html>
-s: <a href="https://news.ycombinator.com/item?id=40737370">Hacker News</a>, <a href="https://old.reddit.com/r/programming/comments/1dkahjw/lets_write_a_video_game_from_scratch_like_its_1987/">/r/programming</a></em></p>
+<p>--</p>
+<p><em>Discussions: <a href="https://news.ycombinator.com/item?id=40737370">Hacker News</a>, <a href="https://old.reddit.com/r/programming/comments/1dkahjw/lets_write_a_video_game_from_scratch_like_its_1987/">/r/programming</a></em></p>
 <p>In a <a href="/blog/x11_x64.html">previous article</a> I've done the 'Hello, world!' of GUIs in assembly: A black window with a white text, using X11 without any libraries, just talking directly over a socket.</p>
 <p>In a <a href="/blog/wayland_from_scratch.html">later article</a> I've done the same with Wayland in C, displaying a static image.</p>
 <p>I showed that this is not complex and results in a very lean and small application.</p>
@@ -168,10 +151,7 @@ s: <a href="https://news.ycombinator.com/item?id=40737370">Hacker News</a>, <a h
 <blockquote>
 <p>If you spot an error, please open a <a href="https://github.com/gaultier/blog">Github issue</a>! And the source code repository for the game is <a href="https://github.com/gaultier/minesweeper-from-scratch">here</a>.</p>
 </blockquote>
-<h2 id="3232213245-what-we-re-making">
-	<a class="title" href="#3232213245-what-we-re-making">What we're making</a>
-	<a class="hash-anchor" href="#3232213245-what-we-re-making" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
-</h2>
+<h2>What we're making</h2>
 <p>The 11th version of the X protocol was born in 1987 and has not changed since. Since it predates GPUs by a decade or so, its model does not really fit the hardware of today. Still, it's everywhere. Any Unix has a X server, even macOS with XQuartz, and now Windows supports running GUI Linux applications inside WSL! X11 has never been so ubiquitous. The protocol is relatively simple and the entry bar is low: we only need to create a socket and we're off the races. And for 2D applications, there's no need to be a Vulkan wizard or even interact with the GPU. Hell, it will work even without any GPU!</p>
 <p>Everyone writing GUIs these days use a giant pile of libraries, starting with the <del>overly complicated</del> venerable <code>libX11</code> and <code>libxcb</code> libraries, to Qt and SDL.</p>
 <p>Here are the steps we need to take:</p>
@@ -185,10 +165,7 @@ s: <a href="https://news.ycombinator.com/item?id=40737370">Hacker News</a>, <a h
 <p>We will implement this in the <a href="https://odin-lang.org/">Odin programming language</a> which I really enjoy. But if you want to follow along with C or anything really, go for it. All we need is to be able to open a Unix socket, send and receive data on it, and load an image into memory. We will use PNG for that, since Odin has in its standard library support for PNGs, but we could also very easily use a simple format like PPM (like I did in the linked Wayland article) that is trivial to parse. Since Odin has support for both in its standard library, it does not really matter, and I stuck with PNG since it's more space-efficient.</p>
 <p>Finally, if you're into writing X11 applications even with libraries, lots of things in X11 are undocumented or underdocumented, and this article can be a good learning resource. As a bonus, you can also follow along with pure Wayland, using my previous Wayland article.</p>
 <p>Or perhaps you simply enjoy, like me, peeking behind the curtain to understand the magician's tricks. It almost always ends up with: &quot;That's it? That's all there is to it?&quot;.</p>
-<h2 id="2281387754-authentication">
-	<a class="title" href="#2281387754-authentication">Authentication</a>
-	<a class="hash-anchor" href="#2281387754-authentication" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
-</h2>
+<h2>Authentication</h2>
 <p>In previous articles, we connected to the X server without any authentication.</p>
 <p>Let's be a bit more refined: we now also support the X authentication protocol.</p>
 <p>That's because when running under Wayland with XWayland in some desktop environments like Gnome, we have to use authentication.</p>
@@ -352,10 +329,7 @@ AuthEntry :: struct {
 <p>However, we do not want to retain the parsed entries from the file in memory after finding the 16 bytes token, so we <code>defer free_all(allocator)</code>. This is much better than going through each entry and freeing individually each field. We simply free the whole arena in one swoop (but the backing memory remains around to be reused later).</p>
 <p>Furthermore, using this arena places an upper bound (a few MiBs) on the allocations we can do. So if one entry in the file is huge, or malformed, we verifyingly cannot allocate many GiBs of memory. This is good news, because otherwise, the OS will start swapping like crazy and start killing random programs. In my experience it usually kills the window/desktop manager which kills all open windows. Very efficient from the OS perspective, and awful from the user perspective. So it's always good to place an upper bound on all resources including heap memory usage of your program.</p>
 <p>All in all I find Odin's approach very elegant. I usually want the ability to use a different allocator in a given function, but also if I don't care, it will do the right thing and use the standard allocator.</p>
-<h2 id="526064357-opening-a-window">
-	<a class="title" href="#526064357-opening-a-window">Opening a window</a>
-	<a class="hash-anchor" href="#526064357-opening-a-window" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
-</h2>
+<h2>Opening a window</h2>
 <p>This part is almost exactly the same as the first linked article so I'll speed run this.</p>
 <p>First we open a UNIX domain socket:</p>
 <pre><code class="language-odin">connect_x11_socket :: proc() -&gt; os.Socket {
@@ -719,10 +693,7 @@ main :: proc() {
 <p>We now see:</p>
 <p><img src="game-x11-empty-background.png" alt="Empty yellow window" /></p>
 <p>Time to start programming the game itself!</p>
-<h2 id="2589078693-loading-assets">
-	<a class="title" href="#2589078693-loading-assets">Loading assets</a>
-	<a class="hash-anchor" href="#2589078693-loading-assets" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
-</h2>
+<h2>Loading assets</h2>
 <p>What's a game without nice looking pictures <del>stolen from somewhere on the internet</del> ?</p>
 <p>Here is our sprite, the one image containing all our assets:</p>
 <p><img src="game-x11-sprite.png" alt="Our sprite" /></p>
@@ -953,10 +924,7 @@ x11_copy_area :: proc(
 <p>Result:</p>
 <p><img src="game-x11-first-image.png" alt="First images on the screen" /></p>
 <p>We are now ready to focus on the game entities.</p>
-<h2 id="2972734494-the-game-entities">
-	<a class="title" href="#2972734494-the-game-entities">The game entities</a>
-	<a class="hash-anchor" href="#2972734494-the-game-entities" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
-</h2>
+<h2>The game entities</h2>
 <p>We have a few different entities we want to show, each is a 16x16 section of the sprite sheet. Let's define their coordinates to be readable:</p>
 <pre><code class="language-odin">Position :: struct {
 	x: u16,
@@ -1048,10 +1016,7 @@ ASSET_COORDINATES: [Entity_kind]Position = {
 <p>And here is what we get:</p>
 <p><img src="game-x11-first-scene.png" alt="First scene" /></p>
 <p>The next step is to respond to events.</p>
-<h2 id="4044658410-reacting-to-keyboard-and-mouse-events">
-	<a class="title" href="#4044658410-reacting-to-keyboard-and-mouse-events">Reacting to keyboard and mouse events</a>
-	<a class="hash-anchor" href="#4044658410-reacting-to-keyboard-and-mouse-events" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
-</h2>
+<h2>Reacting to keyboard and mouse events</h2>
 <p>This is very straightforward. Since the only messages we expect are for keyboard and mouse events, with a fixed size of 32 bytes, we simply read 32 bytes exactly in a blocking fashion. The first byte indicates which kind of event it is:</p>
 <pre><code class="language-odin">wait_for_x11_events :: proc(socket: os.Socket, scene: ^Scene) {
 	GenericEvent :: struct #packed {
@@ -1135,10 +1100,7 @@ ASSET_COORDINATES: [Entity_kind]Position = {
 <p>If the event is the <code>Enter</code> key, we reset the state of the game and render. X11 differentiates between physical and logical keys on the keyboard but that does not matter here (or I would argue in most games: we are interested in the physical location of the key, not what the user mapped it to).</p>
 <p>If the event is (pressing and) releasing a mouse button, we run the game logic to uncover a cell and render.</p>
 <p>That's it!</p>
-<h2 id="962123213-game-logic-uncover-a-cell">
-	<a class="title" href="#962123213-game-logic-uncover-a-cell">Game logic: uncover a cell</a>
-	<a class="hash-anchor" href="#962123213-game-logic-uncover-a-cell" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
-</h2>
+<h2>Game logic: uncover a cell</h2>
 <p>The last thing to do is implementing the game rules.</p>
 <p>From my faint memory, when uncovering a cell, we have two cases:</p>
 <ul>
@@ -1234,19 +1196,13 @@ locate_entity_by_coordinate :: proc(win_x: u16, win_y: u16) -&gt; (idx: int, row
 </code></pre>
 <p>There are a few helpers here and there that are simple, but otherwise... that's it, that's the end. We're done! All under 1000 lines of code without any tricks or clever things.</p>
 <p><img src="https://github.com/gaultier/minesweeper-from-scratch/raw/master/screenshot.png" alt="Screenshot" /></p>
-<h2 id="3796851539-conclusion">
-	<a class="title" href="#3796851539-conclusion">Conclusion</a>
-	<a class="hash-anchor" href="#3796851539-conclusion" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
-</h2>
+<h2>Conclusion</h2>
 <p>X11 is old and crufty, but also gets out of the way. Once a few utility functions to open the window, receive events, etc have been implemented, it can be forgotten and we can focus all our attention on the game. That's very valuable. How many libraries, frameworks and development environments can say the same?</p>
 <p>I also enjoy that it works with any programming language, any tech stack. Don't need no bindings, no FFI, just send some bytes over the socket. You can even do that in Bash (don't tempt me!).</p>
 <p>I did not implement a few accessory things from the original game, like planting a flag on a cell you suspect has a mine. Feel free to do this at home, it's not much work.</p>
 <p>Finally, give Odin a try, it's great! It's this weird mix of a sane C with a Go-ish syntax and a good standard library.</p>
 <p>I hope that you had as much fun as I did!</p>
-<h2 id="1512890027-addendum-the-full-code">
-	<a class="title" href="#1512890027-addendum-the-full-code">Addendum: the full code</a>
-	<a class="hash-anchor" href="#1512890027-addendum-the-full-code" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
-</h2>
+<h2>Addendum: the full code</h2>
 <details>
   <summary>The full code</summary>
 <pre><code class="language-odin">package main
@@ -2164,6 +2120,114 @@ main :: proc() {
 	for i := 0; i &lt; sprite.height * sprite.width - 3; i += 1 {
 		sprite_data[i * 4 + 0] = sprite.pixels.buf[i * 3 + 2] // R -&gt; B
 		sprite_data[i * 4 + 1] = sprite.pixels.buf[i * 3 + 1] // G -&gt; G
+		sprite_data[i * 4 + 2] = sprite.pixels.buf[i * 3 + 0] // B -&gt; R
+		sprite_data[i * 4 + 3] = 0 // pad
+	}
+
+	auth_token, _ := load_x11_auth_token(context.temp_allocator)
+
+	socket := connect_x11_socket()
+	connection_information := x11_handshake(socket, &amp;auth_token)
+
+	gc_id := next_x11_id(0, connection_information)
+	x11_create_graphical_context(socket, gc_id, connection_information.root_screen.id)
+
+	window_id := next_x11_id(gc_id, connection_information)
+	x11_create_window(
+		socket,
+		window_id,
+		connection_information.root_screen.id,
+		200,
+		200,
+		ENTITIES_COLUMN_COUNT * ENTITIES_WIDTH,
+		ENTITIES_ROW_COUNT * ENTITIES_HEIGHT,
+		connection_information.root_screen.root_visual_id,
+	)
+
+	img_depth: u8 = 24
+	pixmap_id := next_x11_id(window_id, connection_information)
+	x11_create_pixmap(
+		socket,
+		window_id,
+		pixmap_id,
+		cast(u16)sprite.width,
+		cast(u16)sprite.height,
+		img_depth,
+	)
+	scene := Scene {
+		window_id        = window_id,
+		gc_id            = gc_id,
+		sprite_pixmap_id = pixmap_id,
+	}
+	reset(&amp;scene)
+
+	x11_put_image(
+		socket,
+		scene.sprite_pixmap_id,
+		scene.gc_id,
+		cast(u16)sprite.width,
+		cast(u16)sprite.height,
+		0,
+		0,
+		img_depth,
+		sprite_data,
+	)
+
+	x11_map_window(socket, window_id)
+
+	wait_for_x11_events(socket, &amp;scene)
+}
+
+
+@(test)
+test_round_up_4 :: proc(_: ^testing.T) {
+	assert(round_up_4(0) == 0)
+	assert(round_up_4(1) == 4)
+	assert(round_up_4(2) == 4)
+	assert(round_up_4(3) == 4)
+	assert(round_up_4(4) == 4)
+	assert(round_up_4(5) == 8)
+	assert(round_up_4(6) == 8)
+	assert(round_up_4(7) == 8)
+	assert(round_up_4(8) == 8)
+}
+
+@(test)
+test_count_mines_around_cell :: proc(_: ^testing.T) {
+	{
+		mines := [ENTITIES_ROW_COUNT * ENTITIES_COLUMN_COUNT]bool{}
+		mines[row_column_to_idx(0, 0)] = true
+		mines[row_column_to_idx(0, 1)] = true
+		mines[row_column_to_idx(0, 2)] = true
+		mines[row_column_to_idx(1, 2)] = true
+		mines[row_column_to_idx(2, 2)] = true
+		mines[row_column_to_idx(2, 1)] = true
+		mines[row_column_to_idx(2, 0)] = true
+		mines[row_column_to_idx(1, 0)] = true
+
+		assert(count_mines_around_cell(1, 1, mines[:]) == 8)
+	}
+}
+</code></pre>
+</details>
+<p><a href="/blog"> ⏴ Back to all articles</a></p>
+
+<blockquote id="donate">
+  <p>If you enjoy what you're reading, you want to support me, and can afford it: <a href="https://paypal.me/philigaultier?country.x=DE&locale.x=en_US">Support me</a>. That allows me to write more cool articles!</p>
+</blockquote>
+
+<blockquote>
+  <p>
+    This blog is <a href="https://github.com/gaultier/blog">open-source</a>!
+    If you find a problem, please open a Github issue.
+    The content of this blog as well as the code snippets are under the <a href="https://en.wikipedia.org/wiki/BSD_licenses#3-clause_license_(%22BSD_License_2.0%22,_%22Revised_BSD_License%22,_%22New_BSD_License%22,_or_%22Modified_BSD_License%22)">BSD-3 License</a> which I also usually use for all my personal projects. It's basically free for every use but you have to mention me as the original author.
+  </p>
+</blockquote>
+
+</div>
+</body>
+</html>
+&gt; G
 		sprite_data[i * 4 + 2] = sprite.pixels.buf[i * 3 + 0] // B -&gt; R
 		sprite_data[i * 4 + 3] = 0 // pad
 	}

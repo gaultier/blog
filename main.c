@@ -243,11 +243,68 @@ static PgString datetime_to_date(PgString datetime) {
   return cut.ok ? cut.left : datetime;
 }
 
-static void article_generate_html_file(PgString content, Article *article,
+[[nodiscard]] static PgString markdown_to_html(PgString markdown,
+                                               PgAllocator *allocator) {
+  PgStringDyn args = {0};
+  *PG_DYN_PUSH(&args, allocator) = PG_S("--validate-utf8");
+  *PG_DYN_PUSH(&args, allocator) = PG_S("-e");
+  *PG_DYN_PUSH(&args, allocator) = PG_S("table");
+  *PG_DYN_PUSH(&args, allocator) = PG_S("-e");
+  *PG_DYN_PUSH(&args, allocator) = PG_S("strikethrough");
+  *PG_DYN_PUSH(&args, allocator) = PG_S("-e");
+  *PG_DYN_PUSH(&args, allocator) = PG_S("footnotes");
+  *PG_DYN_PUSH(&args, allocator) = PG_S("--unsafe");
+  *PG_DYN_PUSH(&args, allocator) = PG_S("-t");
+  *PG_DYN_PUSH(&args, allocator) = PG_S("html");
+
+  PgRing ring_stdin = pg_ring_make(markdown.len, allocator);
+  PG_ASSERT(ring_stdin.data.data);
+  PG_ASSERT(true == pg_ring_write_slice(&ring_stdin, markdown));
+
+  PgRing ring_stdout = pg_ring_make(512 * PG_KiB, allocator);
+  PG_ASSERT(ring_stdout.data.data);
+
+  PgRing ring_stderr = pg_ring_make(2048, allocator);
+  PG_ASSERT(ring_stderr.data.data);
+
+  PgProcessSpawnOptions options = {
+      .ring_stdin = &ring_stdin,
+      .ring_stdout = &ring_stdout,
+      .ring_stderr = &ring_stderr,
+  };
+  PgProcessResult res_spawn = pg_process_spawn(
+      PG_S("cmark-gfm"), PG_DYN_SLICE(PgStringSlice, args), options, allocator);
+  PG_ASSERT(0 == res_spawn.err);
+
+  PgProcess process = res_spawn.res;
+
+  PG_ASSERT(0 == pg_process_capture_std_io(process));
+
+  PgProcessExitResult res_wait = pg_process_wait(process);
+  PG_ASSERT(0 == res_wait.err);
+
+  PgProcessStatus status = res_wait.res;
+  PG_ASSERT(0 == status.exit_status);
+  PG_ASSERT(0 == status.signal);
+  PG_ASSERT(status.exited);
+  PG_ASSERT(!status.signaled);
+  PG_ASSERT(!status.core_dumped);
+  PG_ASSERT(!status.stopped);
+
+  PgString process_stdout =
+      pg_string_make(pg_ring_read_space(ring_stdout), allocator);
+  PG_ASSERT(true == pg_ring_read_slice(&ring_stdout, process_stdout));
+
+  PG_ASSERT(0 == pg_ring_read_space(ring_stderr));
+
+  return process_stdout;
+}
+
+static void article_generate_html_file(PgString markdown, Article *article,
                                        PgString header, PgString footer,
                                        PgAllocator *allocator) {
   Pgu8Dyn sb = {0};
-  PG_DYN_ENSURE_CAP(&sb, content.len * 3, allocator);
+  PG_DYN_ENSURE_CAP(&sb, markdown.len * 3, allocator);
   PG_DYN_APPEND_SLICE(&sb, PG_S("<!DOCTYPE html>\n<html>\n<head>\n<title>"),
                       allocator);
   PG_DYN_APPEND_SLICE(&sb, pg_html_sanitize(article->title, allocator),
@@ -284,7 +341,8 @@ static void article_generate_html_file(PgString content, Article *article,
   // TODO: toc.
   PG_DYN_APPEND_SLICE(&sb, PG_S("\n"), allocator);
 
-  // TODO: cmark output.
+  PgString cmark_out = markdown_to_html(markdown, allocator);
+  PG_DYN_APPEND_SLICE(&sb, cmark_out, allocator);
 
   PG_DYN_APPEND_SLICE(&sb, PG_S(BACK_LINK), allocator);
   PG_DYN_APPEND_SLICE(&sb, footer, allocator);
@@ -398,7 +456,7 @@ static ArticleSlice articles_generate(PgString header, PgString footer,
 }
 
 int main() {
-  PgArena arena = pg_arena_make_from_virtual_mem(10 * PG_MiB);
+  PgArena arena = pg_arena_make_from_virtual_mem(100 * PG_MiB);
   PgArenaAllocator arena_allocator = pg_make_arena_allocator(&arena);
   PgAllocator *allocator = pg_arena_allocator_as_allocator(&arena_allocator);
 

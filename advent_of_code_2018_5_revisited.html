@@ -110,6 +110,7 @@
 
 <div class="article-prelude">
   <p><a href="/blog"> ⏴ Back to all articles</a></p>
+
   <p class="publication-date">Published on 2023-10-05</p>
 </div>
 <div class="article-title">
@@ -118,26 +119,8 @@
   <div class="tags"> <a href="/blog/articles-by-tag.html#x86-64" class="tag">x86_64</a> <a href="/blog/articles-by-tag.html#Advent-of-Code" class="tag">Advent of Code</a> <a href="/blog/articles-by-tag.html#Optimization" class="tag">Optimization</a> <a href="/blog/articles-by-tag.html#Algorithm" class="tag">Algorithm</a> <a href="/blog/articles-by-tag.html#C" class="tag">C</a> <a href="/blog/articles-by-tag.html#Lisp" class="tag">Lisp</a></div>
   </div>
 
-<p><a href="/blog"> ⏴ Back to all articles</a></p>
-
-<blockquote id="donate">
-  <p>If you enjoy what you're reading, you want to support me, and can afford it: <a href="https://paypal.me/philigaultier?country.x=DE&locale.x=en_US">Support me</a>. That allows me to write more cool articles!</p>
-</blockquote>
-
-<blockquote>
-  <p>
-    This blog is <a href="https://github.com/gaultier/blog">open-source</a>!
-    If you find a problem, please open a Github issue.
-    The content of this blog as well as the code snippets are under the <a href="https://en.wikipedia.org/wiki/BSD_licenses#3-clause_license_(%22BSD_License_2.0%22,_%22Revised_BSD_License%22,_%22New_BSD_License%22,_or_%22Modified_BSD_License%22)">BSD-3 License</a> which I also usually use for all my personal projects. It's basically free for every use but you have to mention me as the original author.
-  </p>
-</blockquote>
-
-</div>
-</body>
-</html>
-/body>
-</html>
- Here it is again:</p>
+<p>--</p>
+<p>A few days ago I was tweaking the appearance of this blog and I stumbled upon my <a href="/blog/advent_of_code_2018_5">first article</a> which is about solving a simple problem from Advent of Code. Here it is again:</p>
 <blockquote>
 <p>We have a string looking like this: <code>AabcdZZqQ</code> which represents a chain of
 chemical units. Adjacent units of the same type (i.e letter) and opposite
@@ -154,10 +137,7 @@ It means we want to remove adjacent characters which are the same letter and hav
 <li>In the C solution, we use <code>abs(x) == 32</code> which we could avoid by doing <code>x*x == 32*32</code>.</li>
 </ul>
 <p>This coincided with me listening to an interview from the VLC developers saying they wrote hundred of thousand of lines of (multi platform!) Assembly code by hand in their new AV1 decoder. I thought that was intriguing, who still writes assembly by hand in 2023? Well these guys are no idiots so I should try it as well.</p>
-<h2 id="2859141830-the-new-solution">
-	<a class="title" href="#2859141830-the-new-solution">The new solution</a>
-	<a class="hash-anchor" href="#2859141830-the-new-solution" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
-</h2>
+<h2>The new solution</h2>
 <p>I came up with a new algorithm, which on paper does less work. It's one linear pass on the input, and does not allocate.</p>
 <p>Since the result we care about is the number of remaining characters, we simply keep track of the count as we sift through the input.</p>
 <p>We maintain two pointers, <code>current</code> and <code>next</code>, which we compare to decide whether we should merge the characters they point to. 'Merging' means setting the two characters to <code>0</code> (it's basically a tombstone) and lower the count.</p>
@@ -204,10 +184,7 @@ print(remaining_count)
 We could memoize this location, but that would basically come down to the Scheme solution, having an output array of the same size as the input.</p>
 <p>Astute readers might have noticed a potential issue with the backwards search: We may underflow the <code>input</code> and go out of bounds! To avoid that, we could clamp <code>current</code>, but the branch misprediction is costly (an earlier implementation of mine did this and that was almost twice as slow!), and we can simplify the code as well as improve the performance by simply prefixing the <code>input</code> with a non-zero value that has no chance of being merged with the rest of the input, say, <code>1</code>.</p>
 <p>Let's implement it in x86_64 assembly!</p>
-<h2 id="2432913330-the-x86-64-implementation">
-	<a class="title" href="#2432913330-the-x86-64-implementation">The x86_64 implementation</a>
-	<a class="hash-anchor" href="#2432913330-the-x86-64-implementation" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
-</h2>
+<h2>The x86_64 implementation</h2>
 <p><em>For a gentle introduction to x64 assembly, go read an <a href="/blog/x11_x64.html">earlier article</a> of mine.</em></p>
 <pre><code class="language-x86asm">BITS 64
 CPU X64
@@ -402,10 +379,7 @@ static solve:function
   pop rbp
   ret
 </code></pre>
-<h2 id="2843714489-benchmarking">
-	<a class="title" href="#2843714489-benchmarking">Benchmarking</a>
-	<a class="hash-anchor" href="#2843714489-benchmarking" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
-</h2>
+<h2>Benchmarking</h2>
 <p>So, did it work? Is it fast? Let's compare the old C solution (also embedding the input data for a fair comparison) with our new Assembly one:</p>
 <pre><code class="language-sh">$ clang -Ofast -g3 -march=native aoc2018_5.c -o aoc2018_5-c
 $ hyperfine --warmup 3 --shell=none ./aoc2018_5 ./aoc2018_5-c
@@ -423,10 +397,7 @@ Summary
     1.95 ± 0.86 times faster than './aoc2018_5-c'
 </code></pre>
 <p>Yes, indeed, almost twice as fast!</p>
-<h2 id="1768815813-learnings">
-	<a class="title" href="#1768815813-learnings">Learnings</a>
-	<a class="hash-anchor" href="#1768815813-learnings" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
-</h2>
+<h2>Learnings</h2>
 <ul>
 <li>Assembly can absolutely be written by hand, although with (much) more effort and a harder time troubleshooting what goes wrong.</li>
 <li>Some tools (profilers, reverse-engineering tools) expect that the assembly they consume came from a C source file and will be confused when it's not the case.</li>
@@ -436,14 +407,8 @@ Summary
 <li>Having a clear idea in pseudo-code of the solution will simplify the implementation in any language.</li>
 <li>Naive assembly is very fast (your CPU is crazy fast when you do not abuse it with badly written interpreted languages, seriously!), but a good compiler will emit better assembly than you if you write C or similar. Unless you are an expert like the VLC guys.</li>
 </ul>
-<h2 id="2879187008-appendix-the-full-code">
-	<a class="title" href="#2879187008-appendix-the-full-code">Appendix: The full code</a>
-	<a class="hash-anchor" href="#2879187008-appendix-the-full-code" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
-</h2>
-<h3 id="2199062290-the-old-c-implementation">
-	<a class="title" href="#2199062290-the-old-c-implementation">The old C implementation</a>
-	<a class="hash-anchor" href="#2199062290-the-old-c-implementation" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
-</h3>
+<h2>Appendix: The full code</h2>
+<h3>The old C implementation</h3>
 <details>
   <summary>The full code</summary>
 <pre><code class="language-c">#include &lt;stdint.h&gt;
@@ -1148,10 +1113,7 @@ int main() {
 }
 </code></pre>
 </details>
-<h3 id="2467435296-the-x64-implementation">
-	<a class="title" href="#2467435296-the-x64-implementation">The x64 implementation</a>
-	<a class="hash-anchor" href="#2467435296-the-x64-implementation" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
-</h3>
+<h3>The x64 implementation</h3>
 <details>
   <summary>The full code</summary>
 <pre><code class="language-x86asm">BITS 64
@@ -1191,6 +1153,134 @@ static write_int:function
   %define BUF rsi
   %define BUF_LEN r10
   %define BUF_END r9
+
+  lea BUF, [rsp+32]
+  mov BUF_LEN, 0
+  lea BUF_END, [rsp]
+  mov N, ARG0
+
+  .loop:
+    mov rcx, 10 ; Divisor.
+    mov rdx, 0 ; Reset rem.
+    div rcx ; rax /= rcx
+
+    add rdx, '0' ; Convert to ascii.
+
+    ; *(end--) = rem
+    dec BUF_END
+    mov [BUF_END], dl
+    
+    inc BUF_LEN
+
+    cmp N, 0
+    jnz .loop
+
+  mov rax, SYSCALL_WRITE
+  mov rdi, 1
+  mov rsi, BUF_END
+  mov rdx, BUF_LEN
+  syscall
+
+
+  %undef ARG0
+  %undef N
+  %undef BUF
+  %undef BUF_LEN
+  %undef BUF_END
+
+  add rsp, 32
+  pop rbp
+  ret
+
+solve:
+static solve:function
+  push rbp
+  mov rbp, rsp
+
+  %define INPUT_LEN r10
+  %define CURRENT r9
+  %define NEXT r11
+  %define REMAINING_COUNT rax
+  %define END r8
+
+  lea CURRENT, [input] 
+  lea NEXT, [input + 1] 
+  mov INPUT_LEN, input_len
+  mov REMAINING_COUNT, INPUT_LEN
+  lea END, [input]
+  add END, INPUT_LEN
+  
+
+.loop:
+  movzx dx, BYTE [CURRENT]
+  movzx cx, BYTE [NEXT]
+  sub dx, cx
+  imul dx, dx
+
+  mov rcx, 32*32
+
+  cmp rdx, rcx
+  jnz .else
+  .then:
+    mov BYTE [CURRENT], 0
+    mov BYTE [NEXT], 0
+
+    sub REMAINING_COUNT, 2
+
+    .reverse_search:
+    dec CURRENT
+    mov dl, [CURRENT]
+    cmp dl, 0
+    jz .reverse_search
+
+
+    jmp .endif
+  .else:
+    mov CURRENT, NEXT
+  .endif:
+
+  inc NEXT
+  cmp NEXT, END
+  jl .loop
+
+  %undef INPUT_LEN
+  %undef CURRENT
+  %undef NEXT
+  %undef REMAINING_COUNT
+  %undef END
+
+
+  pop rbp
+  ret
+
+global _start
+_start:
+  call solve
+
+  mov rdi, rax
+  call write_int_to_stdout
+
+  call exit
+</code></pre>
+</details>
+<p><a href="/blog"> ⏴ Back to all articles</a></p>
+
+<blockquote id="donate">
+  <p>If you enjoy what you're reading, you want to support me, and can afford it: <a href="https://paypal.me/philigaultier?country.x=DE&locale.x=en_US">Support me</a>. That allows me to write more cool articles!</p>
+</blockquote>
+
+<blockquote>
+  <p>
+    This blog is <a href="https://github.com/gaultier/blog">open-source</a>!
+    If you find a problem, please open a Github issue.
+    The content of this blog as well as the code snippets are under the <a href="https://en.wikipedia.org/wiki/BSD_licenses#3-clause_license_(%22BSD_License_2.0%22,_%22Revised_BSD_License%22,_%22New_BSD_License%22,_or_%22Modified_BSD_License%22)">BSD-3 License</a> which I also usually use for all my personal projects. It's basically free for every use but you have to mention me as the original author.
+  </p>
+</blockquote>
+
+</div>
+</body>
+</html>
+9
 
   lea BUF, [rsp+32]
   mov BUF_LEN, 0

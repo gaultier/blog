@@ -110,6 +110,7 @@
 
 <div class="article-prelude">
   <p><a href="/blog"> ⏴ Back to all articles</a></p>
+
   <p class="publication-date">Published on 2024-10-29</p>
 </div>
 <div class="article-title">
@@ -118,33 +119,12 @@
   <div class="tags"> <a href="/blog/articles-by-tag.html#C" class="tag">C</a> <a href="/blog/articles-by-tag.html#Allocator" class="tag">Allocator</a> <a href="/blog/articles-by-tag.html#Safety" class="tag">Safety</a></div>
   </div>
 
-<p><a href="/blog"> ⏴ Back to all articles</a></p>
-
-<blockquote id="donate">
-  <p>If you enjoy what you're reading, you want to support me, and can afford it: <a href="https://paypal.me/philigaultier?country.x=DE&locale.x=en_US">Support me</a>. That allows me to write more cool articles!</p>
-</blockquote>
-
-<blockquote>
-  <p>
-    This blog is <a href="https://github.com/gaultier/blog">open-source</a>!
-    If you find a problem, please open a Github issue.
-    The content of this blog as well as the code snippets are under the <a href="https://en.wikipedia.org/wiki/BSD_licenses#3-clause_license_(%22BSD_License_2.0%22,_%22Revised_BSD_License%22,_%22New_BSD_License%22,_or_%22Modified_BSD_License%22)">BSD-3 License</a> which I also usually use for all my personal projects. It's basically free for every use but you have to mention me as the original author.
-  </p>
-</blockquote>
-
-</div>
-</body>
-</html>
-/body>
-</html>
-a_allocator/?">/r/cprogramming</a></em></p>
+<p>--</p>
+<p><em>Discussions: <a href="https://old.reddit.com/r/programming/comments/1gfiif5/tip_of_the_day_2_a_safer_arena_allocator/">/r/programming</a>, <a href="https://old.reddit.com/r/cprogramming/comments/1gfiit0/tip_of_the_day_2_a_safer_arena_allocator/?">/r/cprogramming</a></em></p>
 <p>The most transformative action you can do to dramatically improve your code in a programming language where you are in control of the memory is: to use arenas.</p>
 <p>Much has been written about arenas (<a href="https://nullprogram.com/blog/2023/09/27/">1</a>, <a href="https://www.rfleury.com/p/untangling-lifetimes-the-arena-allocator">2</a>). In short, it means grouping multiple allocations with the same lifetime in one batch that gets allocated and deallocated only once.</p>
 <p>Another way to look at it, is that the allocations are append only. They never get freed during their 'life'. The program is split into 'phases'. Typically, each phase has its own arena, and when it reaches its end, the whole arena gets nuked from space along with all entities allocated from it. It's a great way to simplify the code, make it faster, and escape from the 'web of pointers' hell.</p>
-<h2 id="3570727127-the-standard-arena">
-	<a class="title" href="#3570727127-the-standard-arena">The standard arena</a>
-	<a class="hash-anchor" href="#3570727127-the-standard-arena" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
-</h2>
+<h2>The standard arena</h2>
 <p>A typical arena looks like that:</p>
 <pre><code class="language-c">#include &lt;stdint.h&gt;
 #include &lt;stdio.h&gt;
@@ -179,10 +159,7 @@ int main() {
 }
 </code></pre>
 <p>Very simple, just ask the OS to give us a region of virtual memory and off we go (on Windows, the system call is named differently but is equivalent).</p>
-<h2 id="366874779-the-bug">
-	<a class="title" href="#366874779-the-bug">The bug</a>
-	<a class="hash-anchor" href="#366874779-the-bug" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
-</h2>
+<h2>The bug</h2>
 <p>Now, since we use a system call directly, sanitizers and runtime checks from the libc allocator do not apply, since we bypass them completely. In a way, it is also a feature: it means that our program will behave exactly the same on all OSes, have the exact same memory layout, and use the exact same amount of memory. It does not depend on the libc or allocator.</p>
 <p>So it turns out that I had a bug in my code: I allocated an array from the arena, and then accidentally wrote past the bounds of my array (so far, this sounds like a typical story from the C trenches).</p>
 <p>Normally, this would likely (depending on a few factors, like where in the arena was this allocation located, how big was it, and by how many bytes did the write go past the bounds, etc) write past the memory page that the OS gave us, thus triggering a <code>SIGSEGV</code>.</p>
@@ -199,10 +176,7 @@ int main() {
 <p>But why?</p>
 <p>Well, we basically asked the OS to give us one page of virtual memory when creating the first arena. Right after, we asked for a second page. And most often than not, the OS gives us then a page right after the first page. So from the OS perspective, we allocated <code>2 * 4096 = 8192</code> bytes, and wrote in the middle, so all is good. We wanted to write into the first arena but instead wrote into the second one accidentally.</p>
 <p>This behavior is however not consistent, running the programs many times will sometimes crash and sometimes not. It all depends if the memory pages for the different arenas are contiguous or not.</p>
-<h2 id="1807516660-the-solution">
-	<a class="title" href="#1807516660-the-solution">The solution</a>
-	<a class="hash-anchor" href="#1807516660-the-solution" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
-</h2>
+<h2>The solution</h2>
 <p>So how do we fix it? What I did was defense in depth:</p>
 <ul>
 <li>Add asserts everywhere I could to check pre- and post-conditions. I believe that's how I discovered the bug in the first place, when one assert failed, even though it seemed impossible.</li>
@@ -248,25 +222,38 @@ int main() {
 <p>Wouldn't it be simpler to issue 3 <code>mmap</code> calls with the right permissions from the get go? Well, yes, but there is no guarantee that the OS would give us a contiguous region of memory across these 3 calls. On Linux, we can give hints, but still there is no guarantee. Remember, our program is one of many running concurrently, and could get interrupted for some time between these <code>mmap</code> calls, the whole OS could go to sleep, etc. What we want is an atomic operation, thus, one <code>mmap</code> call.</p>
 <p>Note, we can alternatively create the whole allocation as <code>PROT_NONE</code> and then mark the real (user-visible) allocation as <code>PROT_READ | PROT_WRITE</code>, that also works.</p>
 <p>So that's it, a poor man Adress Sanitizer in a few lines of code.</p>
-<h2 id="2175727336-variations">
-	<a class="title" href="#2175727336-variations">Variations</a>
-	<a class="hash-anchor" href="#2175727336-variations" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
-</h2>
-<h3 id="3293170840-the-paranoid-approach">
-	<a class="title" href="#3293170840-the-paranoid-approach">The paranoid approach</a>
-	<a class="hash-anchor" href="#3293170840-the-paranoid-approach" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
-</h3>
+<h2>Variations</h2>
+<h3>The paranoid approach</h3>
 <p>If we are really paranoid, we could change how the arena works, to make every allocation get a new, separate page from the OS. That means that creating the arena would do nothing, and allocating from the arena would do the real allocation. This approach is, to me, indistinguishable from a general purpose allocator a la <code>malloc</code> from libc, just one that's very naive, and probably much slower.</p>
 <p>But, if there is a pesky out-of-bound bug pestering you, that could be worth trying.</p>
-<h3 id="332247973-the-bucket-per-type-approach">
-	<a class="title" href="#332247973-the-bucket-per-type-approach">The bucket per type approach</a>
-	<a class="hash-anchor" href="#332247973-the-bucket-per-type-approach" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
-</h3>
+<h3>The bucket per type approach</h3>
 <p>On <a href="https://www.youtube.com/watch?v=t7EJTO0-reg">Apple platforms</a>, the libc allocator has a hardening mode that can be enabled at compile time. It stems from the realization that many security vulnerabilities rely on type confusion: The program thinks it is handling an entity of type <code>X</code>, but due to a logic bug, or the attacker meddling, or the allocator reusing freshly freed memory from another place in the program, it is actually of another type <code>Y</code>. This results in an entity being in an 'impossible' state which is great for an attacker. Also, reusing a previously allocated-then-freed object with a different type, without zero-initializing it, can leak secrets or information about the state of the program, to an attacker.</p>
 <p>There's a whole class of attacks where the first step is to make the program allocate and free objects many times, of an attacker controlled size, so that the heap is in the right 'shape', with a high statistical chance. Meaning, a few targeted objects are next to each other in the heap, for the attack to occur.</p>
 <p>So, the mitigation is to place all allocations of the same type in one bucket (supposedly, it's a separate memory region with guard pages before and after). When an object of type <code>X</code> is allocated, then freed, and then the program allocates an object of type <code>Y</code>, of roughly the same size, a typical allocator will reuse the memory of <code>X</code>. This Apple allocator would give memory from a separate bucket, from a completely different memory region.</p>
 <p>What I don't know, is whether or not there are runtime checks as well, for example when casting one object from one type to another e.g. from <code>X</code> to <code>void*</code>, back to <code>X</code>, with <code>reinterpret_cast</code> in C++. It seems that this allocator would have the information needed at runtime to do so, which could be an interesting feature.</p>
 <p>Now, having one bucket per type turns out to be too slow in reality, and consumes too much memory, according to Apple developers, so this allocator groups a handful a different types in one bucket. This is a typical trade-off between performance and security.</p>
+<p>Still, this is an interesting approach, and could be implemented in our context by having one arena store all entities of one type, i.e. one arena is one bucket.</p>
+<h2>See also</h2>
+<p><em>Astute readers have also mentioned: using canaries in the available space in the arena to detect illegal accesses, putting the real data at the start or end of the page to catch out-of-bounds accesses respectively before and after the allocation, periodic checks for long-running applications, randomizing where the guard pages are placed relative to the allocation, running the tests a number of times to catch inconsistent behavior, and finally, teaching Address Sanitizer to be aware of our custom arena allocator so that it does these checks for us. That's super cool! See the linked discussions at the start.</em></p>
+<p>I wrote in the past about adding memory profiling an arena allocator: <a href="/blog/roll_your_own_memory_profiling.html">Roll your own memory profiling: it's actually not hard</a>.</p>
+<p><a href="/blog"> ⏴ Back to all articles</a></p>
+
+<blockquote id="donate">
+  <p>If you enjoy what you're reading, you want to support me, and can afford it: <a href="https://paypal.me/philigaultier?country.x=DE&locale.x=en_US">Support me</a>. That allows me to write more cool articles!</p>
+</blockquote>
+
+<blockquote>
+  <p>
+    This blog is <a href="https://github.com/gaultier/blog">open-source</a>!
+    If you find a problem, please open a Github issue.
+    The content of this blog as well as the code snippets are under the <a href="https://en.wikipedia.org/wiki/BSD_licenses#3-clause_license_(%22BSD_License_2.0%22,_%22Revised_BSD_License%22,_%22New_BSD_License%22,_or_%22Modified_BSD_License%22)">BSD-3 License</a> which I also usually use for all my personal projects. It's basically free for every use but you have to mention me as the original author.
+  </p>
+</blockquote>
+
+</div>
+</body>
+</html>
+ allocator groups a handful a different types in one bucket. This is a typical trade-off between performance and security.</p>
 <p>Still, this is an interesting approach, and could be implemented in our context by having one arena store all entities of one type, i.e. one arena is one bucket.</p>
 <h2 id="3625827200-see-also">
 	<a class="title" href="#3625827200-see-also">See also</a>
