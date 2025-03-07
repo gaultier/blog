@@ -28,11 +28,10 @@ typedef struct {
   PgString creation_date, modification_date, path_rel;
 } GitStat;
 PG_SLICE(GitStat) GitStatSlice;
+PG_DYN(GitStat) GitStatDyn;
 
 [[nodiscard]]
 static GitStatSlice git_get_articles_stats(PgAllocator *allocator) {
-  GitStatSlice res = {0};
-
   PgStringDyn args = {0};
   *PG_DYN_PUSH(&args, allocator) = PG_S("log");
   // Print the date in ISO format.
@@ -81,7 +80,37 @@ static GitStatSlice git_get_articles_stats(PgAllocator *allocator) {
   PG_ASSERT(true == pg_ring_read_slice(&ring_stdout, process_stdout));
 
   PG_ASSERT(0 == pg_ring_read_space(ring_stderr));
-  return res;
+
+  GitStatDyn stats = {0};
+  PG_DYN_ENSURE_CAP(&stats, 256, allocator);
+
+  // Sample git output:
+  // 2024-10-31T16:09:02+01:00
+  //
+  // M       lessons_learned_from_a_successful_rust_rewrite.md
+  // A       tip_of_day_3.md
+  // 2025-02-18T08:07:55+01:00
+  //
+  // R100    sha.md  making_my_debug_build_run_100_times_faster.md
+
+  // For each commit.
+  PgString remaining = process_stdout;
+  for (;;) {
+    PgString date = {0};
+    {
+      PgStringCut cut = pg_string_cut_byte(remaining, '\n');
+      if (!cut.ok) { // End.
+        break;
+      }
+
+      PG_ASSERT(pg_string_starts_with(cut.left, PG_S("'20")));
+      date = cut.left;
+      date = pg_string_trim(date, '\'');
+      date = pg_string_trim(date, '\n');
+    }
+  }
+
+  return PG_DYN_SLICE(GitStatSlice, stats);
 }
 
 [[nodiscard]]
