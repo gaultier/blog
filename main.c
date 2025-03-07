@@ -26,6 +26,9 @@ PG_SLICE(Article) ArticleSlice;
 
 static ArticleSlice articles_generate(PgString header, PgString footer,
                                       PgAllocator *allocator) {
+  PG_ASSERT(!pg_string_is_empty(header));
+  PG_ASSERT(!pg_string_is_empty(footer));
+
   ArticleDyn articles = {0};
   PG_DYN_ENSURE_CAP(&articles, 100, allocator);
 
@@ -46,4 +49,6 @@ int main() {
       pg_file_read_full_from_path(PG_S("footer.html"), allocator);
   PG_ASSERT(0 == res_footer.err);
   PgString footer = res_footer.res;
+
+  articles_generate(header, footer, allocator);
 }
