@@ -1,5 +1,7 @@
 #include "./submodules/cstd/lib.c"
 
+#define METADATA_DELIMITER "---"
+
 typedef struct {
   u32 value;
 } Sha256Hash;
@@ -222,6 +224,53 @@ static Article article_generate(PgString header, PgString footer,
       .creation_date = git_stat.creation_date,
       .modification_date = git_stat.modification_date,
   };
+
+  PgStringResult res_markdown =
+      pg_file_read_full_from_path(git_stat.path_rel, allocator);
+  PG_ASSERT(0 == res_markdown.err);
+  PgString markdown = res_markdown.res;
+
+  PgStringCut cut = pg_string_cut_string(markdown, PG_S(METADATA_DELIMITER));
+  PG_ASSERT(cut.ok);
+  PgString metadata_str = cut.left;
+  PG_ASSERT(!pg_string_is_empty(metadata_str));
+  PgString article_content = cut.right;
+  PG_ASSERT(!pg_string_is_empty(article_content));
+
+  cut = pg_string_cut_byte(metadata_str, '\n');
+  PG_ASSERT(cut.ok);
+  PgString metadata_title = cut.left;
+  PG_ASSERT(!pg_string_is_empty(metadata_title));
+  PgString metadata_tags = cut.right;
+  PG_ASSERT(!pg_string_is_empty(metadata_tags));
+
+  cut = pg_string_cut_byte(metadata_title, ':');
+  PG_ASSERT(cut.ok);
+  PgString title = pg_string_trim(cut.right, ' ');
+  PG_ASSERT(!pg_string_is_empty(title));
+
+  cut = pg_string_cut_byte(metadata_tags, ':');
+  PG_ASSERT(cut.ok);
+  PgString tags_str = cut.right;
+  PG_ASSERT(!pg_string_is_empty(tags_str));
+
+  PgString remaining = tags_str;
+  PgStringDyn tags = {0};
+  PG_DYN_ENSURE_CAP(&tags, 32, allocator);
+  for (;;) {
+    cut = pg_string_cut_byte(remaining, ',');
+    if (!cut.ok) {
+      break;
+    }
+
+    PgString tag = cut.left;
+    remaining = cut.right;
+
+    *PG_DYN_PUSH_WITHIN_CAPACITY(&tags) = tag;
+  }
+  PG_ASSERT(tags.len > 0);
+  article.tags = PG_DYN_SLICE(PgStringSlice, tags);
+
   return article;
 }
 
