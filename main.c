@@ -30,6 +30,18 @@ typedef struct {
 PG_SLICE(GitStat) GitStatSlice;
 PG_DYN(GitStat) GitStatDyn;
 
+[[nodiscard]] static i64 git_stats_find_by_path_rel(GitStatSlice git_stats,
+                                                    PgString path_rel) {
+  for (u64 i = 0; i < git_stats.len; i++) {
+    GitStat elem = PG_SLICE_AT(git_stats, i);
+    if (pg_string_eq(elem.path_rel, path_rel)) {
+      return (i64)i;
+    }
+  }
+
+  return -1;
+}
+
 [[nodiscard]]
 static GitStatSlice git_get_articles_stats(PgAllocator *allocator) {
   PgStringDyn args = {0};
@@ -154,16 +166,46 @@ static GitStatSlice git_get_articles_stats(PgAllocator *allocator) {
       }
 
       if ('D' == action) {
-        // TODO: delete entry.
+        i64 idx = git_stats_find_by_path_rel(PG_DYN_SLICE(GitStatSlice, stats),
+                                             path_old);
+        PG_ASSERT(idx >= 0);
+        PG_SLICE_SWAP_REMOVE(&stats, idx);
         continue;
       }
 
       if ('R' == action) {
-        // TODO: delete entry.
+        i64 idx = git_stats_find_by_path_rel(PG_DYN_SLICE(GitStatSlice, stats),
+                                             path_old);
+        PG_ASSERT(idx >= 0);
+        PG_SLICE_SWAP_REMOVE(&stats, idx);
+
         // Still need to insert the new entry below.
       }
 
       // TODO: upsert entry.
+      i64 idx = git_stats_find_by_path_rel(PG_DYN_SLICE(GitStatSlice, stats),
+                                           path_new);
+      if (-1 == idx) {
+        GitStat new_entry = {
+            .creation_date = date,
+            .modification_date = date,
+            .path_rel = path_new,
+        };
+        *PG_DYN_PUSH_WITHIN_CAPACITY(&stats) = new_entry;
+      } else {
+        GitStat *entry = PG_SLICE_AT_PTR(&stats, idx);
+        PG_ASSERT(!pg_string_is_empty(entry->creation_date));
+        PG_ASSERT(!pg_string_is_empty(entry->modification_date));
+        PG_ASSERT(
+            PG_STRING_CMP_GREATER !=
+            pg_string_cmp(entry->creation_date, entry->modification_date));
+        // Keep updating the modification date, when we reach the end of the
+        // commit log, it has the right value.
+        entry->modification_date = date;
+        PG_ASSERT(
+            PG_STRING_CMP_GREATER !=
+            pg_string_cmp(entry->creation_date, entry->modification_date));
+      }
     }
   }
 
