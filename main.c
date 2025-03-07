@@ -126,7 +126,9 @@ static GitStatSlice git_get_articles_stats(PgAllocator *allocator) {
       }
 
       PgStringCut cut = pg_string_cut_byte(remaining, '\n');
-      PG_ASSERT(cut.ok);
+      if (!cut.ok) {
+        break;
+      }
       PgString line = cut.left;
       remaining = cut.right;
 
