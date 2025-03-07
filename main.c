@@ -1,6 +1,7 @@
 #include "./submodules/cstd/lib.c"
 
 #define METADATA_DELIMITER "---"
+#define BACK_LINK "<p><a href=\"/blog\"> ⏴ Back to all articles</a></p>\n"
 
 typedef struct {
   u32 value;
@@ -213,6 +214,80 @@ static GitStatSlice git_get_articles_stats(PgAllocator *allocator) {
 }
 
 [[nodiscard]]
+static PgString html_make_id(PgString s, PgAllocator *allocator) {
+  Pgu8Dyn sb = {0};
+  PG_DYN_ENSURE_CAP(&sb, s.len * 2, allocator);
+
+  // TODO: UTF8.
+  for (u64 i = 0; i < s.len; i++) {
+    u8 c = PG_SLICE_AT(s, i);
+
+    if (pg_character_is_alphanumeric(c)) {
+      // TODO: u8 lowered = pg_xxx
+      *PG_DYN_PUSH(&sb, allocator) = c;
+    } else if ('+' == c) {
+      PG_DYN_APPEND_SLICE(&sb, PG_S("plus"), allocator);
+    } else if ('#' == c) {
+      PG_DYN_APPEND_SLICE(&sb, PG_S("sharp"), allocator);
+    } else {
+      *PG_DYN_PUSH(&sb, allocator) = '-';
+    }
+  }
+
+  return PG_DYN_SLICE(PgString, sb);
+}
+
+static void article_generate_html_file(PgString content, Article *article,
+                                       PgString header, PgString footer,
+                                       PgAllocator *allocator) {
+  Pgu8Dyn sb = {0};
+  PG_DYN_ENSURE_CAP(&sb, content.len * 3, allocator);
+  PG_DYN_APPEND_SLICE(&sb, PG_S("<!DOCTYPE html>\n<html>\n<head>\n<title>"),
+                      allocator);
+  PG_DYN_APPEND_SLICE(&sb, pg_html_sanitize(article->title, allocator),
+                      allocator);
+  PG_DYN_APPEND_SLICE(&sb, PG_S("</title>\n"), allocator);
+  PG_DYN_APPEND_SLICE(&sb, header, allocator);
+  PG_DYN_APPEND_SLICE(&sb, PG_S("<div class=\"article-prelude\">\n"),
+                      allocator);
+  PG_DYN_APPEND_SLICE(&sb, PG_S(BACK_LINK), allocator);
+  PG_DYN_APPEND_SLICE(&sb, PG_S("  <p class=\"publication-date\">Published on"),
+                      allocator);
+  // TODO: date.
+  PG_DYN_APPEND_SLICE(&sb, PG_S("</p>\n"), allocator);
+  PG_DYN_APPEND_SLICE(&sb, PG_S("</div>\n"), allocator);
+  PG_DYN_APPEND_SLICE(&sb, PG_S("<div class=\"article-title\">"), allocator);
+  PG_DYN_APPEND_SLICE(&sb, PG_S("<h1>"), allocator);
+  PG_DYN_APPEND_SLICE(&sb, article->title, allocator);
+  PG_DYN_APPEND_SLICE(&sb, PG_S("</h1>"), allocator);
+
+  PG_DYN_APPEND_SLICE(&sb, PG_S("  <div class=\"tags\">"), allocator);
+  for (u64 i = 0; i < article->tags.len; i++) {
+    PgString tag = PG_SLICE_AT(article->tags, i);
+    PgString id = html_make_id(tag, allocator);
+    PG_DYN_APPEND_SLICE(&sb, PG_S(" <a href=\"/blog/articles-by-tag.html#"),
+                        allocator);
+    PG_DYN_APPEND_SLICE(&sb, id, allocator);
+    PG_DYN_APPEND_SLICE(&sb, PG_S("\" class=\"tag\">"), allocator);
+    PG_DYN_APPEND_SLICE(&sb, tag, allocator);
+    PG_DYN_APPEND_SLICE(&sb, PG_S("</a>\n"), allocator);
+  }
+  PG_DYN_APPEND_SLICE(&sb, PG_S("</div>\n"), allocator);
+  PG_DYN_APPEND_SLICE(&sb, PG_S("  </div>\n"), allocator);
+
+  // TODO: toc.
+  PG_DYN_APPEND_SLICE(&sb, PG_S("\n"), allocator);
+
+  // TODO: cmark output.
+
+  PG_DYN_APPEND_SLICE(&sb, PG_S(BACK_LINK), allocator);
+  PG_DYN_APPEND_SLICE(&sb, footer, allocator);
+
+  PgString html = PG_DYN_SLICE(PgString, sb);
+  PG_ASSERT(0 == pg_file_write_full(article->html_file_name, html, allocator));
+}
+
+[[nodiscard]]
 static Article article_generate(PgString header, PgString footer,
                                 GitStat git_stat, PgAllocator *allocator) {
   (void)header;
@@ -272,6 +347,9 @@ static Article article_generate(PgString header, PgString footer,
 
   PgString stem = pg_path_stem(git_stat.path_rel);
   article.html_file_name = pg_string_concat(stem, PG_S(".html"), allocator);
+
+  article_generate_html_file(article_content, &article, header, footer,
+                             allocator);
 
   return article;
 }
