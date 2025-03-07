@@ -262,7 +262,7 @@ static Article article_generate(PgString header, PgString footer,
       break;
     }
 
-    PgString tag = cut.left;
+    PgString tag = pg_string_trim(cut.left, ' ');
     remaining = cut.right;
 
     *PG_DYN_PUSH_WITHIN_CAPACITY(&tags) = tag;
@@ -289,6 +289,23 @@ static ArticleSlice articles_generate(PgString header, PgString footer,
 
   for (u64 i = 0; i < git_stats.len; i++) {
     GitStat git_stat = PG_SLICE_AT(git_stats, i);
+
+    // The home page is generate separately. The logic is different from an
+    // article.
+    if (pg_string_eq(git_stat.path_rel, PG_S("index.md"))) {
+      continue;
+    }
+
+    // Skip the readme.
+    if (pg_string_eq(git_stat.path_rel, PG_S("README.md"))) {
+      continue;
+    }
+
+    // Skip the todo.
+    if (pg_string_eq(git_stat.path_rel, PG_S("todo.md"))) {
+      continue;
+    }
+
     Article article = article_generate(header, footer, git_stat, allocator);
     *PG_DYN_PUSH_WITHIN_CAPACITY(&articles) = article;
   }
