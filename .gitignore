@@ -8,3 +8,4 @@ src.bin
 *.bin
 perf.data*
 *.zst
+vgcore.*

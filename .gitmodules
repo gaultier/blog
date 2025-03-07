@@ -1,0 +1,3 @@
+[submodule "submodules/cstd"]
+	path = submodules/cstd
+	url = https://github.com/gaultier/cstd.git
