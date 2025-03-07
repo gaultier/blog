@@ -121,7 +121,7 @@ static GitStatSlice git_get_articles_stats(PgAllocator *allocator) {
     // Files.
     for (;;) {
       // Start of a new commit?
-      if (pg_string_starts_with(remaining, PG_S("'20'"))) {
+      if (pg_string_starts_with(remaining, PG_S("'20"))) {
         break;
       }
 
