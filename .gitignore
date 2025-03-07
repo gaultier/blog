@@ -9,3 +9,4 @@ src.bin
 perf.data*
 *.zst
 vgcore.*
+main.bin*
