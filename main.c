@@ -217,8 +217,7 @@ static Article article_generate(PgString header, PgString footer,
                                 GitStat git_stat, PgAllocator *allocator) {
   (void)header;
   (void)footer;
-  (void)allocator;
-  printf("[D001] generating article: %.*s\n", (int)git_stat.path_rel.len,
+  printf("generating article: %.*s\n", (int)git_stat.path_rel.len,
          git_stat.path_rel.data);
   Article article = {
       .creation_date = git_stat.creation_date,
@@ -270,6 +269,9 @@ static Article article_generate(PgString header, PgString footer,
   }
   PG_ASSERT(tags.len > 0);
   article.tags = PG_DYN_SLICE(PgStringSlice, tags);
+
+  PgString stem = pg_path_stem(git_stat.path_rel);
+  article.html_file_name = pg_string_concat(stem, PG_S(".html"), allocator);
 
   return article;
 }
