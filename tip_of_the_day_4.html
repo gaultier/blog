@@ -193,21 +193,24 @@
         Err(err) =&gt; {
             let err: TryFromSliceError = err; // &lt;= Here.
             let err_s = err.to_string();
-            eprintln!(&quot;failed to decode data, wrong length: {}&quot;, err_s);
-            return Err(Error::InvalidData);
-        }
-    };
-</code></pre>
-<hr />
-<p>Another reader had a different idea: use a match binding, which mentions the error type explicitly (that only works if the error type is a struct):</p>
-<pre><code class="language-rust">    let value = match left.try_into() {
-        Ok(v) =&gt; v,
-        Err(err @ TryFromSliceError { .. }) =&gt; {
-</code></pre>
-<p>Pretty succinct! This reader mentions this <a href="https://github.com/rust-lang/rfcs/pull/3753">PR</a> to expand this to all types, but that the general feedback is that the 'intuitive' syntax <code>Err(err: Bar) =&gt; {</code> should be possible instead.</p>
-<hr />
-<p>Yet another approach that works is to annotate the <code>try_into()</code> function with the type, but I find it even noisier than annotating the <code>Err</code> branch:</p>
-<pre><code class="language-rust">    let value = match TryInto::&lt;[u8; 33]&gt;::try_into(left) {
+            eprintln!(&quot;failed to decode data, wrong length: {}&quot;, err_<p><a href="/blog"> ⏴ Back to all articles</a></p>
+
+<blockquote id="donate">
+  <p>If you enjoy what you're reading, you want to support me, and can afford it: <a href="https://paypal.me/philigaultier?country.x=DE&locale.x=en_US">Support me</a>. That allows me to write more cool articles!</p>
+</blockquote>
+
+<blockquote>
+  <p>
+    This blog is <a href="https://github.com/gaultier/blog">open-source</a>!
+    If you find a problem, please open a Github issue.
+    The content of this blog as well as the code snippets are under the <a href="https://en.wikipedia.org/wiki/BSD_licenses#3-clause_license_(%22BSD_License_2.0%22,_%22Revised_BSD_License%22,_%22New_BSD_License%22,_or_%22Modified_BSD_License%22)">BSD-3 License</a> which I also usually use for all my personal projects. It's basically free for every use but you have to mention me as the original author.
+  </p>
+</blockquote>
+
+</div>
+</body>
+</html>
+nto::&lt;[u8; 33]&gt;::try_into(left) {
         Ok(v) =&gt; v,
         Err(err) =&gt; {
           // [...]

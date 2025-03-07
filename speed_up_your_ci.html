@@ -157,12 +157,24 @@
 </li>
 <li>Check alternative repositories for a dependency instead of building it from source. It can happen that a certain dependency you need is not in the main repositories of the package manager of your system. You can however inspect other repositories before falling back to building it yourself. On Alpine, you can simply add the URL of the repository to <code>/etc/apk/repositories</code>. For example, in the main Alpine Docker image, the repository <code>https://&lt;mirror-server&gt;/alpine/edge/testing</code> is not enabled. More information <a href="https://wiki.alpinelinux.org/wiki/Enable_Community_Repository">here</a>. Other example: on OpenBSD or FreeBSD, you can opt-in to use the <code>current</code> branch to get the newest and latest changes, and along them the newest dependencies.</li>
 <li>Don't build the static and dynamic variants of the same library (in C or C++). You probably only want one, preferably the static one. Otherwise, you are doing twice the work!</li>
-<li>Fetch statically built binaries instead of building them from source. Go, and sometimes Rust, are great for this. As long as the OS and the architecture are the same, of course. E.g.: you can simply fetch <code>kubectl</code> which is a Go static binary instead of installing lots of Kubernetes packages, if you simply need to talk to a Kubernetes cluster. Naturally, the same goes for single file, dependency-less script: shell, awk, python, lua, perl, and ruby, assuming the interpreter is the right one. But this case is rarer and you might as well vendor the script at this point.</li>
-<li>Groom your 'ignore' files. <code>.gitignore</code> is the mainstream one, but were you aware Docker has the mechanism in the form of a <code>.dockerignore</code> file? My advice: whitelist the files you need, e.g.:
-<pre><code>**/*
-!**/*.js
-</code></pre>
-This can have a huge impact on performance since Docker will copy all the files inside the Docker context directory inside the container (or virtual machine on macOS) and it can be a lot. You don't want to copy build artifacts, images, and so on each time which your image does not need.</li>
+<li>Fetch statically built binaries instead of building them from source. Go, and sometimes Rust, are g<p><a href="/blog"> ⏴ Back to all articles</a></p>
+
+<blockquote id="donate">
+  <p>If you enjoy what you're reading, you want to support me, and can afford it: <a href="https://paypal.me/philigaultier?country.x=DE&locale.x=en_US">Support me</a>. That allows me to write more cool articles!</p>
+</blockquote>
+
+<blockquote>
+  <p>
+    This blog is <a href="https://github.com/gaultier/blog">open-source</a>!
+    If you find a problem, please open a Github issue.
+    The content of this blog as well as the code snippets are under the <a href="https://en.wikipedia.org/wiki/BSD_licenses#3-clause_license_(%22BSD_License_2.0%22,_%22Revised_BSD_License%22,_%22New_BSD_License%22,_or_%22Modified_BSD_License%22)">BSD-3 License</a> which I also usually use for all my personal projects. It's basically free for every use but you have to mention me as the original author.
+  </p>
+</blockquote>
+
+</div>
+</body>
+</html>
+cOS) and it can be a lot. You don't want to copy build artifacts, images, and so on each time which your image does not need.</li>
 <li>Use an empty Docker context if possible: you sometimes want to build an image which does not need any local files. In that case you can completely bypass copying any files into the image with the command: <code>docker build . -f - &lt; Dockerfile</code>.</li>
 <li>Don't update the package manager cache: you typically need to start your Dockerfile by updating the package manager cache, otherwise it will complain the dependencies you want to install are not found. E.g.: <code>RUN apk update &amp;&amp; apk add curl</code>. But did you know it is not always required? You can simply do: <code>RUN apk --no-cache add curl</code> when you know the package exists and you can bypass the cache.</li>
 <li>Silence the tools: most command line applications accept the <code>-q</code> flag which reduces their verbosity. Most of their output is likely to be useless, some CI systems will struggle storing big pipeline logs, and you might be bottlenecked on stdout! Also, it will simplify troubleshooting <em>your</em> build if it is not swamped in thousands of unrelated logs.</li>

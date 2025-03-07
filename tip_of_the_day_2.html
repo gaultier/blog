@@ -174,16 +174,24 @@ int main() {
 </code></pre>
 <p>And...the program did not crash. The symptoms were very weird: data was subtly wrong in another place of the program, thus making it very difficult to troubleshoot. That's basically the nightmare scenario for any engineer. A crash would be so much easier.</p>
 <p>But why?</p>
-<p>Well, we basically asked the OS to give us one page of virtual memory when creating the first arena. Right after, we asked for a second page. And most often than not, the OS gives us then a page right after the first page. So from the OS perspective, we allocated <code>2 * 4096 = 8192</code> bytes, and wrote in the middle, so all is good. We wanted to write into the first arena but instead wrote into the second one accidentally.</p>
-<p>This behavior is however not consistent, running the programs many times will sometimes crash and sometimes not. It all depends if the memory pages for the different arenas are contiguous or not.</p>
-<h2>The solution</h2>
-<p>So how do we fix it? What I did was defense in depth:</p>
-<ul>
-<li>Add asserts everywhere I could to check pre- and post-conditions. I believe that's how I discovered the bug in the first place, when one assert failed, even though it seemed impossible.</li>
-<li>Replace all direct array and pointer accesses with macros that check bounds (like most modern programming languages)</li>
-<li>Tweak how the arena is created to make it safer. That's our tip of the day, so let's see it.</li>
-</ul>
-<p>The idea is not new, most allocators do so in 'hardening' mode: when the arena is created, we place a 'guard page' right before and after the real allocation.</p>
+<p>Well, we basically asked the OS to give us one page of virtual memory when creating the first arena. Right after, we asked for a second page. And most often than not, the OS gives us then a page right after the first page. So from the OS perspective, we allocated <code>2 * 4096 = 8192</code> bytes, and wrote in the middle, so all is good. W<p><a href="/blog"> ⏴ Back to all articles</a></p>
+
+<blockquote id="donate">
+  <p>If you enjoy what you're reading, you want to support me, and can afford it: <a href="https://paypal.me/philigaultier?country.x=DE&locale.x=en_US">Support me</a>. That allows me to write more cool articles!</p>
+</blockquote>
+
+<blockquote>
+  <p>
+    This blog is <a href="https://github.com/gaultier/blog">open-source</a>!
+    If you find a problem, please open a Github issue.
+    The content of this blog as well as the code snippets are under the <a href="https://en.wikipedia.org/wiki/BSD_licenses#3-clause_license_(%22BSD_License_2.0%22,_%22Revised_BSD_License%22,_%22New_BSD_License%22,_or_%22Modified_BSD_License%22)">BSD-3 License</a> which I also usually use for all my personal projects. It's basically free for every use but you have to mention me as the original author.
+  </p>
+</blockquote>
+
+</div>
+</body>
+</html>
+ place a 'guard page' right before and after the real allocation.</p>
 <p>We mark these guard pages as neither readable nor writable, so any access will trigger a <code>SIGSEGV</code>, even though that's memory owned by our program.</p>
 <p>That way, going slightly past the bounds of the real allocation in either direction, will result in a crash that's easy to diagnose.</p>
 <p>Note that this is a trade-off:</p>

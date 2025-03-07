@@ -119,12 +119,24 @@
   <div class="tags"> <a href="/blog/articles-by-tag.html#LLVM" class="tag">LLVM</a> <a href="/blog/articles-by-tag.html#Zig" class="tag">Zig</a></div>
   </div>
 
-<p>--</p>
-<p><em>This article is now outdated but remains for historical reasons.</em></p>
-<p><a href="https://ziglang.org">Ziglang</a>, or <code>Zig</code> for short, is an ambitious programming language addressing important flaws of mainstream languages such as failing to handle memory allocation failures or forgetting to handle an error condition in general.</p>
-<p>It is also fast moving so for most, the latest (HEAD) version will be needed, and most package managers will not have it, so we will compile it from source.</p>
-<p>Since the official Zig compiler is (currently) written in C++ and using the LLVM libraries at a specific version, we will need them as well, and once again, some package managers will not have the exact version you want (10.0.0).</p>
-<p>I find it more reliable to compile LLVM, Clang, LLD, and Zig from source and that is what we will do here. I have found that the official LLVM and Zig instructions differed somewhat, were presenting too many options, and I wanted to have one place to centralize them for my future self.</p>
+<p><a href="/blog"> ⏴ Back to all articles</a></p>
+
+<blockquote id="donate">
+  <p>If you enjoy what you're reading, you want to support me, and can afford it: <a href="https://paypal.me/philigaultier?country.x=DE&locale.x=en_US">Support me</a>. That allows me to write more cool articles!</p>
+</blockquote>
+
+<blockquote>
+  <p>
+    This blog is <a href="https://github.com/gaultier/blog">open-source</a>!
+    If you find a problem, please open a Github issue.
+    The content of this blog as well as the code snippets are under the <a href="https://en.wikipedia.org/wiki/BSD_licenses#3-clause_license_(%22BSD_License_2.0%22,_%22Revised_BSD_License%22,_%22New_BSD_License%22,_or_%22Modified_BSD_License%22)">BSD-3 License</a> which I also usually use for all my personal projects. It's basically free for every use but you have to mention me as the original author.
+  </p>
+</blockquote>
+
+</div>
+</body>
+</html>
+LVM and Zig instructions differed somewhat, were presenting too many options, and I wanted to have one place to centralize them for my future self.</p>
 <p>Incidentally, if you are a lost C++ developer trying to compile LLVM from source, without having ever heard of Zig, well you have stumbled on the right page, you can simply skip the final block about Zig.</p>
 <p>Note that those instructions should work just the same on any Unix system. Feel free to pick the directories you want when cloning the git repositories.</p>
 <pre><code class="language-sh"># The only Alpine specific bit. build-base mainly installs make and a C++ compiler. Python 3 is required by LLVM for some reason.

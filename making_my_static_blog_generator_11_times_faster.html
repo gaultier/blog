@@ -162,11 +162,24 @@ Benchmark 1: ./master.bin
 <pre><code class="language-sh">$ strace --summary-only ./src.bin
 % time     seconds  usecs/call     calls    errors syscall
 ------ ----------- ----------- --------- --------- ----------------
- 94.85    0.479290        3928       122           waitid
-[...]
-</code></pre>
-<p>So ~ <strong>95 %</strong> of the running time is spent waiting on a subprocess. It's mainly git - we also run <code>cmark</code> as a subprocess but it's really really fast. We could further investigate with <code>strace</code> which process we are waiting on but the CPU profile already points the finger at Git and <code>cmark</code> is not even visible on it.</p>
-<p>At this point it's important to mention that this program is a very simplistic static site generator: it is stateless and processes every markdown file in the repository one by one. You could say that it's a regression compared to the Makefile because <code>make</code> has built-in parallelism with <code>-j</code> and change detection. But in reality, change detection in make is primitive and I often want to reprocess everything because of a change that applies to every file. For example, I reword the <code>Donate</code> section at the end of each article (wink wink), or the header, or the footer, etc.</p>
+ 94.85    0.479290        3928    <p><a href="/blog"> ⏴ Back to all articles</a></p>
+
+<blockquote id="donate">
+  <p>If you enjoy what you're reading, you want to support me, and can afford it: <a href="https://paypal.me/philigaultier?country.x=DE&locale.x=en_US">Support me</a>. That allows me to write more cool articles!</p>
+</blockquote>
+
+<blockquote>
+  <p>
+    This blog is <a href="https://github.com/gaultier/blog">open-source</a>!
+    If you find a problem, please open a Github issue.
+    The content of this blog as well as the code snippets are under the <a href="https://en.wikipedia.org/wiki/BSD_licenses#3-clause_license_(%22BSD_License_2.0%22,_%22Revised_BSD_License%22,_%22New_BSD_License%22,_or_%22Modified_BSD_License%22)">BSD-3 License</a> which I also usually use for all my personal projects. It's basically free for every use but you have to mention me as the original author.
+  </p>
+</blockquote>
+
+</div>
+</body>
+</html>
+ I reword the <code>Donate</code> section at the end of each article (wink wink), or the header, or the footer, etc.</p>
 <p>Also, I really am fond of this 'pure function' approach. There is no caching issue to debug, no complicated code to write, no data races, no async callbacks, etc.</p>
 <p>My performance target was to process every file within 1s, or possibly even 0.5s.</p>
 <p>I could see a few options:</p>

@@ -152,19 +152,24 @@ end,
 <p>Note that since the current directory might be one or several directories deep relative to the root of the git repository, we need to fix this path, because the git web UI expects a path from the root of the git repository.</p>
 <p>The easiest way to do so is using <code>git ls-files --full-name</code> to convert the absolute path to the path from the root of the repostory.</p>
 <p>There are many ways in Neovim to call out to a command in a subprocess, here's one of them, to get the output of the command:</p>
-<pre><code class="language-lua">  local file_path_abs = vim.fn.expand('%:p')
-  local file_path_rel_cmd = io.popen('git ls-files --full-name &quot;' .. file_path_abs .. '&quot;')
-  local file_path_relative_to_git_root = file_path_rel_cmd:read('*a')
-  file_path_rel_cmd.close()
-</code></pre>
-<p>We also need to get the git URL of the remote (assuming there is only one, but it's easy to expand the logic to handle multiple):</p>
-<pre><code class="language-lua">  local cmd_handle = io.popen('git remote get-url origin')
-  local git_origin = cmd_handle:read('*a')
-  cmd_handle.close()
-  git_origin = string.gsub(git_origin, &quot;%s+$&quot;, &quot;&quot;)
-</code></pre>
-<p>And the last bit of information we need is to get the current commit.
-In the past, I just used the current branch name, however since this is a moving target, it meant that when opening the link, the code might be completely different than what it was when giving out the link. Using a fixed commit is thus better (assuming no one force pushes and messes with the history):</p>
+<pre><code class="language-lua">  local file_<p><a href="/blog"> ⏴ Back to all articles</a></p>
+
+<blockquote id="donate">
+  <p>If you enjoy what you're reading, you want to support me, and can afford it: <a href="https://paypal.me/philigaultier?country.x=DE&locale.x=en_US">Support me</a>. That allows me to write more cool articles!</p>
+</blockquote>
+
+<blockquote>
+  <p>
+    This blog is <a href="https://github.com/gaultier/blog">open-source</a>!
+    If you find a problem, please open a Github issue.
+    The content of this blog as well as the code snippets are under the <a href="https://en.wikipedia.org/wiki/BSD_licenses#3-clause_license_(%22BSD_License_2.0%22,_%22Revised_BSD_License%22,_%22New_BSD_License%22,_or_%22Modified_BSD_License%22)">BSD-3 License</a> which I also usually use for all my personal projects. It's basically free for every use but you have to mention me as the original author.
+  </p>
+</blockquote>
+
+</div>
+</body>
+</html>
+fixed commit is thus better (assuming no one force pushes and messes with the history):</p>
 <pre><code class="language-lua">  local cmd_handle = io.popen('git rev-parse HEAD')
   local git_commit = cmd_handle:read('*a')
   cmd_handle.close()

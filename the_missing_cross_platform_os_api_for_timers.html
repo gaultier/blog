@@ -143,12 +143,24 @@
 <h2>POSIX: timer_create, timer_settime</h2>
 <p>POSIX has one API for timers, and it sucks. A timer is created with <code>timer_create</code>, which does initially nothing, and the timer is started with a timeout using <code>timer_settime</code>. When the timeout is reached, a signal is sent to the program. And that's the issue. Signals are <em>very</em> problematic, as seen in my <a href="/blog/way_too_many_ways_to_wait_for_a_child_process_with_a_timeout.html">previous article</a>:</p>
 <ul>
-<li>They do not compose with other OS primitives. This forces numerous syscalls to have a normal version and a signal-aware version that can block some signals for its duration: <code>poll/ppoll</code>, <code>select/pselect</code>, etc.</li>
-<li>They are affected by the signal mask of the parent (e.g.: the shell, the service runner, etc)</li>
-<li>They behave confusingly with child processes. Normally, a signal mask is inherited by the child. But some signal-triggering APIs (e.g.: <code>timer_settime</code>)  explicitly prevent child processes from inheriting their signals. I guess we'll have to read the fine prints in the man page!</li>
-<li>It's hard to write complex programs with signals in mind due to their global nature. Code of our own, or in a library we use, could block some signals for some period of time, unbeknownst to us. Or simply modify the signal mask of the process, so we can never assume that the signal mask has a given value.</li>
-<li>A signal handler has to use global variables, there is no way to pass it a pointer to some data.</li>
-<li>Most functions are not async-signal-safe and should not be used from within a signal handler but no compiler warns about that and most example code is wrong. This is exacerbated by the fact that a given function may be async-signal safe on some OS but not on another. Or for some version of this OS but not for another version. This has caused real <a href="https://www.qualys.com/2024/07/01/cve-2024-6387/regresshion.txt">security vulnerabilities</a> in the past.</li>
+<li>They do not compose with other OS primitives. This forces numerous syscalls to have a normal version and a signal-aware version that can block some signals for its duration: <code>poll/p<p><a href="/blog"> ⏴ Back to all articles</a></p>
+
+<blockquote id="donate">
+  <p>If you enjoy what you're reading, you want to support me, and can afford it: <a href="https://paypal.me/philigaultier?country.x=DE&locale.x=en_US">Support me</a>. That allows me to write more cool articles!</p>
+</blockquote>
+
+<blockquote>
+  <p>
+    This blog is <a href="https://github.com/gaultier/blog">open-source</a>!
+    If you find a problem, please open a Github issue.
+    The content of this blog as well as the code snippets are under the <a href="https://en.wikipedia.org/wiki/BSD_licenses#3-clause_license_(%22BSD_License_2.0%22,_%22Revised_BSD_License%22,_%22New_BSD_License%22,_or_%22Modified_BSD_License%22)">BSD-3 License</a> which I also usually use for all my personal projects. It's basically free for every use but you have to mention me as the original author.
+  </p>
+</blockquote>
+
+</div>
+</body>
+</html>
+ignal-safe and should not be used from within a signal handler but no compiler warns about that and most example code is wrong. This is exacerbated by the fact that a given function may be async-signal safe on some OS but not on another. Or for some version of this OS but not for another version. This has caused real <a href="https://www.qualys.com/2024/07/01/cve-2024-6387/regresshion.txt">security vulnerabilities</a> in the past.</li>
 </ul>
 <p>I'll just quote here the Linux man page for <a href="https://www.man7.org/linux/man-pages/man2/timer_create.2.html">timer_create</a>:</p>
 <pre><code> /* Note: calling printf() from a signal handler is not safe
