@@ -137,17 +137,13 @@ static GitStatSlice git_get_articles_stats(PgAllocator *allocator) {
 
       PgString path_old = {0}, path_new = {0};
       {
-        // Skip the 'action' part.
         cut = pg_string_cut_byte(line, '\t');
         PG_ASSERT(cut.ok);
-        line = cut.right;
-
-        cut = pg_string_cut_byte(line, '\t');
-        PG_ASSERT(cut.ok);
-        path_old = cut.left;
+        path_old = cut.right;
         PG_ASSERT(!pg_string_is_empty(path_old));
 
         if ('R' == action) { // 2 operands.
+          cut = pg_string_cut_byte(line, '\t');
           path_new = cut.right;
           PG_ASSERT(!pg_string_is_empty(path_new));
         } else { // 1 operand.
