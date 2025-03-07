@@ -119,7 +119,6 @@
   <div class="tags"> <a href="/blog/articles-by-tag.html#Cplusplus" class="tag">C++</a> <a href="/blog/articles-by-tag.html#C" class="tag">C</a> <a href="/blog/articles-by-tag.html#Legacy" class="tag">Legacy</a> <a href="/blog/articles-by-tag.html#CI" class="tag">CI</a> <a href="/blog/articles-by-tag.html#Git" class="tag">Git</a></div>
   </div>
 
-<p>--</p>
 <p><em>Discussions: <a href="https://news.ycombinator.com/item?id=39549486">Hacker News</a>, <a href="https://lobste.rs/s/lf8b9r/you_ve_just_inherited_legacy_c_codebase">Lobster.rs</a>, <a href="https://old.reddit.com/r/programming/comments/1b3143w/youve_just_inherited_a_legacy_c_codebase_now_what/">/r/programming</a>. I've got great suggestions from the comments, see the addendum at the end!</em></p>
 <p>You were minding your own business, and out of nowhere something fell on your lap. Maybe you started a new job, or perhaps changed teams, or someone experienced just left.</p>
 <p>And now you are responsible for a C++ codebase. It's big, complex, idiosyncratic; you stare too long at it and it breaks in various interesting ways. In a word, legacy.</p>
@@ -333,6 +332,8 @@ Any other: well you're out of luck buddy. I guess you'll have to pick a mainstre
 
 </div>
 </body>
+</html>
+>
 </html>
  In my experience it's never one and only one bug fix, whatever management says. And all the good things such as removing dead code, sanitizers etc will be valuable even for the odd bug fix and also lead to noticing more bugs and fixing them. As one replier put it: <em>If you are going to own a codebase, then own it for real.</em></li>
 <li><em>It's very risky to remove code, in general you never know for sure if it's being used or not, and if someone relies on this exact behavior in the wild.</em> That's true, that's why I advocate for removing code that is never called using static analysis tools, so that you know <em>for sure</em>. But yes, when in doubt, don't. My pet peeve here are virtual methods that are very resistant to static analysis (since the whole point is to pick which exact method to call at runtime), these usually cannot be as easily removed. Also, talk to your sales people, your product managers, heck even your users if you can. Most of the time, if you ask them whether a given feature or platform is in use or not, you'll get a swift yes or no reply, and you'll know how to proceed. We engineers sometimes forget that a 15 minute talk with people can simplify  so much technical work.</li>

@@ -119,7 +119,6 @@
   <div class="tags"> <a href="/blog/articles-by-tag.html#Optimization" class="tag">Optimization</a> <a href="/blog/articles-by-tag.html#Git" class="tag">Git</a> <a href="/blog/articles-by-tag.html#Odin" class="tag">Odin</a></div>
   </div>
 
-<p>--</p>
 <p>This blog is statically generated from Markdown files. It used to be fast, but nowadays it's not:</p>
 <pre><code class="language-sh"> $ hyperfine --warmup 2 ./master.bin 
 Benchmark 1: ./master.bin
@@ -543,6 +542,8 @@ Benchmark 1: ./src.bin
 
 </div>
 </body>
+</html>
+>
 </html>
 of the time, we can switch to using <code>libcmark</code> directly. This is something I wanted to do anyway to extract a table of content, etc from the markdown. Since the running time is getting lower and lower, we add <code>--shell=none</code> and increase the warm-up to reduce statistical outliers:</p>
 <pre><code class="language-sh">$ hyperfine --shell=none --warmup 10 ./src.bin

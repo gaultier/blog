@@ -119,7 +119,6 @@
   <div class="tags"> <a href="/blog/articles-by-tag.html#C" class="tag">C</a> <a href="/blog/articles-by-tag.html#X11" class="tag">X11</a> <a href="/blog/articles-by-tag.html#Video-game" class="tag">Video game</a> <a href="/blog/articles-by-tag.html#Odin" class="tag">Odin</a></div>
   </div>
 
-<p>--</p>
 <p><em>Discussions: <a href="https://news.ycombinator.com/item?id=40737370">Hacker News</a>, <a href="https://old.reddit.com/r/programming/comments/1dkahjw/lets_write_a_video_game_from_scratch_like_its_1987/">/r/programming</a></em></p>
 <p>In a <a href="/blog/x11_x64.html">previous article</a> I've done the 'Hello, world!' of GUIs in assembly: A black window with a white text, using X11 without any libraries, just talking directly over a socket.</p>
 <p>In a <a href="/blog/wayland_from_scratch.html">later article</a> I've done the same with Wayland in C, displaying a static image.</p>
@@ -1775,24 +1774,50 @@ wait_for_x11_events :: proc(socket: os.Socket, scene: ^Scene) {
 	}
 	assert(size_of(GenericEvent) == 32)
 
-	KeyRelea<p><a href="/blog"> ⏴ Back to all articles</a></p>
+	KeyReleaseEvent :: struct #packed {
+		code:            u8,
+		detail:          u8,
+		sequence_number: u16,
+		time:            u32,
+		root_id:         u32,
+		event:           u32,
+		child_id:        u32,
+		root_x:          u16,
+		root_y:          u16,
+		event_x:         u16,
+		event_y:         u16,
+		state:           u16,
+		same_screen:     bool,
+		pad1:            u8,
+	}
+	assert(size_of(KeyReleaseEvent) == 32)
 
-<blockquote id="donate">
-  <p>If you enjoy what you're reading, you want to support me, and can afford it: <a href="https://paypal.me/philigaultier?country.x=DE&locale.x=en_US">Support me</a>. That allows me to write more cool articles!</p>
-</blockquote>
+	ButtonReleaseEvent :: struct #packed {
+		code:        u8,
+		detail:      u8,
+		seq_number:  u16,
+		timestamp:   u32,
+		root:        u32,
+		event:       u32,
+		child:       u32,
+		root_x:      u16,
+		root_y:      u16,
+		event_x:     u16,
+		event_y:     u16,
+		state:       u16,
+		same_screen: bool,
+		pad1:        u8,
+	}
+	assert(size_of(ButtonReleaseEvent) == 32)
 
-<blockquote>
-  <p>
-    This blog is <a href="https://github.com/gaultier/blog">open-source</a>!
-    If you find a problem, please open a Github issue.
-    The content of this blog as well as the code snippets are under the <a href="https://en.wikipedia.org/wiki/BSD_licenses#3-clause_license_(%22BSD_License_2.0%22,_%22Revised_BSD_License%22,_%22New_BSD_License%22,_or_%22Modified_BSD_License%22)">BSD-3 License</a> which I also usually use for all my personal projects. It's basically free for every use but you have to mention me as the original author.
-  </p>
-</blockquote>
+	EVENT_EXPOSURE: u8 : 0xc
+	EVENT_KEY_RELEASE: u8 : 0x3
+	EVENT_BUTTON_RELEASE: u8 : 0x5
 
-</div>
-</body>
-</html>
-enericEvent{}
+	KEYCODE_ENTER: u8 : 36
+
+	for {
+		generic_event := GenericEvent{}
 		n_recv, err := os.recv(socket, mem.ptr_to_bytes(&amp;generic_event), 0)
 		if err == os.EPIPE || n_recv == 0 {
 			os.exit(0) // The end.
@@ -2200,6 +2225,8 @@ test_count_mines_around_cell :: proc(_: ^testing.T) {
 
 </div>
 </body>
+</html>
+>
 </html>
 &gt; G
 		sprite_data[i * 4 + 2] = sprite.pixels.buf[i * 3 + 0] // B -&gt; R

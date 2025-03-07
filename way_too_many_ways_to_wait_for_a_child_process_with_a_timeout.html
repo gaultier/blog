@@ -119,7 +119,6 @@
   <div class="tags"> <a href="/blog/articles-by-tag.html#Unix" class="tag">Unix</a> <a href="/blog/articles-by-tag.html#Signals" class="tag">Signals</a> <a href="/blog/articles-by-tag.html#C" class="tag">C</a> <a href="/blog/articles-by-tag.html#Linux" class="tag">Linux</a> <a href="/blog/articles-by-tag.html#FreeBSD" class="tag">FreeBSD</a> <a href="/blog/articles-by-tag.html#Illumos" class="tag">Illumos</a></div>
   </div>
 
-<p>--</p>
 <p><em>Windows is not covered at all in this article.</em></p>
 <p><em>Discussions: <a href="https://old.reddit.com/r/programming/comments/1godk0x/way_too_many_ways_to_wait_on_a_child_process_with/">/r/programming</a>, <a href="https://news.ycombinator.com/item?id=42103200">HN</a>, <a href="https://lobste.rs/s/2awfwc/way_too_many_ways_wait_on_child_process">Lobsters</a></em></p>
 <p>I often need to launch a program in the terminal in a retry loop. Maybe because it's flaky, or because it tries to contact a remote service that is not available. A few scenarios:</p>
@@ -788,6 +787,8 @@ For comparison, <a href="https://github.com/rye/eb">eb</a> has 24 dependencies a
 
 </div>
 </body>
+</html>
+>
 </html>
 >. Unless you have a very bizzare use case and you know what you are doing, please do not do this. This is unnecessary, bad for power consumption, and all we achieve is noticing late that the child ended. This approach is just here for completeness.</p>
 <h2 id="3796851539-conclusion">

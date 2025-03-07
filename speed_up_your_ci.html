@@ -119,7 +119,6 @@
   <div class="tags"> <a href="/blog/articles-by-tag.html#CI" class="tag">CI</a></div>
   </div>
 
-<p>--</p>
 <p>Every project has a Continuous Integration (CI) pipeline and every one of them complains its CI is too slow. It is more important than you might think; this can be the root cause of many problems, including lackluster productivity, low morale, high barrier of entry for newcomers, and overall suboptimal quality.</p>
 <p>But this need not be. I have compiled here a lengthy list of various ways you can simplify your CI and make it faster, based on my experience on open-source projects and my work experience. I sure wish you will find something in here worth your time.</p>
 <p>And finally, I hope you will realize this endeavour is not unlike optimizing a program: it requires some time and dedication but you will get tremendous results. Also, almost incidentally, it will be more secure and easier to audit.</p>
@@ -219,6 +218,8 @@ which is simpler.</li>
 
 </div>
 </body>
+</html>
+>
 </html>
 of a CI pipeline is in a text format (e.g. Gitlab CI). I would suggest starting here, and teaching developers about these simple tips than really make a difference.</p>
 <p>I would also suggest considering adding strict firewall rules inside CI pipelines, and making sure the setup/teardown of CI runners is very fast. Additionally, I would do everything to avoid a situation where no CI runner is available, preventing developers from working and deploying.</p>

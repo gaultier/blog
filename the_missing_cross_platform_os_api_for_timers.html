@@ -119,7 +119,6 @@
   <div class="tags"> <a href="/blog/articles-by-tag.html#Unix" class="tag">Unix</a> <a href="/blog/articles-by-tag.html#Signals" class="tag">Signals</a> <a href="/blog/articles-by-tag.html#C" class="tag">C</a> <a href="/blog/articles-by-tag.html#Linux" class="tag">Linux</a> <a href="/blog/articles-by-tag.html#FreeBSD" class="tag">FreeBSD</a> <a href="/blog/articles-by-tag.html#Illumos" class="tag">Illumos</a> <a href="/blog/articles-by-tag.html#MacOS" class="tag">MacOS</a> <a href="/blog/articles-by-tag.html#Windows" class="tag">Windows</a> <a href="/blog/articles-by-tag.html#OpenBSD" class="tag">OpenBSD</a> <a href="/blog/articles-by-tag.html#NetBSD" class="tag">NetBSD</a></div>
   </div>
 
-<p>--</p>
 <p><em>Discussions: <a href="https://old.reddit.com/r/programming/comments/1igik53/the_missing_crossplatform_os_api_for_timers/">/r/programming</a>, <a href="https://news.ycombinator.com/item?id=42915437">HN</a></em></p>
 <p>Most serious programs will need to trigger some action at a delayed point in time, often repeatedly: set timeouts, clean up temporary files or entries in the database, send keep-alives, garbage-collect unused entities, etc. All while doing some work in the meantime. A blocking <code>sleep</code> won't cut it! For example, JavaScript has <code>setTimeout</code>. But how does it work under the hood? How does each OS handle that?</p>
 <p>Lately, I have found myself in need of doing just that, repeatedly sending a keep-alive over the network to many remote peers, in C. My program has an event loop, a la NodeJS or Redis. It is doing lots of file I/O, network I/O, and handling timers, all in a single thread, in a non-blocking way.</p>
@@ -352,24 +351,10 @@ as its notification mechanism.</p>
 <p>Apple developers, in their infinite wisdom, decided to support <code>kqueue</code> but not kqueue timers, and invented their own thing instead.</p>
 <p>It's called <a href="https://man.archlinux.org/man/dispatch_source_create.3.en">dispatch_source_create</a> and it supports timers with <code>DISPATCH_SOURCE_TYPE_TIMER</code>.</p>
 <p>I do not currently have access to an Apple computer so I have not tried it. All I know is that <a href="https://en.wikipedia.org/wiki/Grand_Central_Dispatch">Grand Central Dispatch/libdispatch</a> is an effort to have applications have an event queue and thread pool managed for them by the OS. It's more of a task system, actually. All of this seems to me somewhat redundant with <code>kqueue</code> (which, on Apple platforms, came first!), but I am not an Apple engineer.</p>
-<p><code>libdispatch</code> has technically been ported to many platforms but I suppose this is just like <code>libkqueue</code> on Linux: it exposes the familiar API, but under the hood, it translates all calls to the OS-specific API, so for al<p><a href="/blog"> ⏴ Back to all articles</a></p>
-
-<blockquote id="donate">
-  <p>If you enjoy what you're reading, you want to support me, and can afford it: <a href="https://paypal.me/philigaultier?country.x=DE&locale.x=en_US">Support me</a>. That allows me to write more cool articles!</p>
-</blockquote>
-
-<blockquote>
-  <p>
-    This blog is <a href="https://github.com/gaultier/blog">open-source</a>!
-    If you find a problem, please open a Github issue.
-    The content of this blog as well as the code snippets are under the <a href="https://en.wikipedia.org/wiki/BSD_licenses#3-clause_license_(%22BSD_License_2.0%22,_%22Revised_BSD_License%22,_%22New_BSD_License%22,_or_%22Modified_BSD_License%22)">BSD-3 License</a> which I also usually use for all my personal projects. It's basically free for every use but you have to mention me as the original author.
-  </p>
-</blockquote>
-
-</div>
-</body>
-</html>
-mplemented a timer.</p>
+<p><code>libdispatch</code> has technically been ported to many platforms but I suppose this is just like <code>libkqueue</code> on Linux: it exposes the familiar API, but under the hood, it translates all calls to the OS-specific API, so for all intents and purposes, this syscall is macOS specific (well, and iOS, tvOS, IpadOS, etc, but let's group them all into a 'macOS' bucket).</p>
+<h2>Linux: io_uring</h2>
+<p><code>io_uring</code> is a fascinating Linux-only approach to essentially make every blocking system call... non-blocking. A syscall is enqueued into a ring buffer shared between userspace and the kernel, as a 'request', and at some point in time, a 'response' is enqueued by the kernel into a separate ring buffer that our program can read. It's simple, it's composable, it's great.</p>
+<p>At the beginning I said that a blocking 'sleep' was not enough, because our program cannot do any work while sleeping. <code>io_uring</code> renders this moot: we can (conceptually) enqueue a sleep, do some work, for example enqueue other syscalls, and whenever our sleep finishes, we can dequeue it from the second ring buffer, and voila: we just implemented a timer.</p>
 <p>It's so simple it's brilliant! Sadly, it's Linux only, only for recent-ish kernels, and some cloud providers disable this facility.</p>
 <p>Let's see it in action:</p>
 <pre><code class="language-c">#include &lt;assert.h&gt;
@@ -617,6 +602,8 @@ precision.</p>
 
 </div>
 </body>
+</html>
+>
 </html>
 l, the OS will wake us up when our timeout is elapsed.</p>
 <p>In short, we have multiplexed multiple timers using one system call (and a min-heap to remember what timers are on-going and when will the next one trigger).</p>

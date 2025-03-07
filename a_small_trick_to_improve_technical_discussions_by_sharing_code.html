@@ -119,7 +119,6 @@
   <div class="tags"> <a href="/blog/articles-by-tag.html#Lua" class="tag">Lua</a> <a href="/blog/articles-by-tag.html#Neovim" class="tag">Neovim</a></div>
   </div>
 
-<p>--</p>
 <p>This is a big title for a small trick that I've been using daily for years now, in every place I've worked at.</p>
 <p>Whenever there is a technical discussion, a bug hunt, or any disagreement about the codebase, I think it really helps to look at existing code to anchor the debate in reality and make it concrete.</p>
 <p>Copy pasting code, taking screenshots, or screen sharing may work at times but I have found a low-tech solution that's superior: Sharing a link to a region of code in the codebase. It's shorter, easier, and can be used in chats, documentation and PRs.
@@ -211,26 +210,24 @@ I assume the git remote URL is a <code>ssh</code> URL here, again it's easy to t
   end
 </code></pre>
 <p>Finally we stick the result in the system clipboard, and we can even open the url in the default browser (I have only tested that logic on Linux but it <em>should</em> work on other OSes):</p>
-<pre><code class="language-lua">  -- Copy to clipboard.
-  vim.fn.setreg('+', url)
+<pre><code class="language-lua">  -- Copy to clip<p><a href="/blog"> ⏴ Back to all articles</a></p>
 
-  -- Open URL in the default browser.
-  local os_name = vim.loop.os_uname().sysname
-  if os_name == 'Linux' or os_name == 'FreeBSD' or os_name == 'OpenBSD' or os_name == 'NetBSD' then
-    os.execute('xdg-open &quot;' .. url .. '&quot;')
-  elseif os_name == 'Darwin' then
-    os.execute('open &quot;' .. url .. '&quot;')
-  elseif os_name == 'Windows' then
-    os.execute('start &quot;' .. url .. '&quot;')
-  else
-    print('Unknown os: ' .. os_name)
-  end
-</code></pre>
-<p>We can now map the command to our favorite keystroke, for me space + x, for both normal mode (<code>n</code>) and visual mode (<code>v</code>):</p>
-<pre><code class="language-lua">vim.keymap.set({'v', 'n'}, '&lt;leader&gt;x', ':GitWebUiUrlCopy&lt;CR&gt;')
-</code></pre>
-<p>And that's it, just 60 lines of Lua, and easy to extend to support even more hosting providers.</p>
-<h2>Addendum: the full code</h2>
+<blockquote id="donate">
+  <p>If you enjoy what you're reading, you want to support me, and can afford it: <a href="https://paypal.me/philigaultier?country.x=DE&locale.x=en_US">Support me</a>. That allows me to write more cool articles!</p>
+</blockquote>
+
+<blockquote>
+  <p>
+    This blog is <a href="https://github.com/gaultier/blog">open-source</a>!
+    If you find a problem, please open a Github issue.
+    The content of this blog as well as the code snippets are under the <a href="https://en.wikipedia.org/wiki/BSD_licenses#3-clause_license_(%22BSD_License_2.0%22,_%22Revised_BSD_License%22,_%22New_BSD_License%22,_or_%22Modified_BSD_License%22)">BSD-3 License</a> which I also usually use for all my personal projects. It's basically free for every use but you have to mention me as the original author.
+  </p>
+</blockquote>
+
+</div>
+</body>
+</html>
+ code</h2>
 <details>
     <summary>The full code</summary>
 <pre><code class="language-lua">vim.keymap.set({'v', 'n'}, '&lt;leader&gt;x', ':GitWebUiUrlCopy&lt;CR&gt;')
