@@ -108,44 +108,34 @@
 </div>
 <div class="body">
 
-		<div class="article-prelude">
-			<p><a href="/blog"> ⏴ Back to all articles</a></p>
+<div class="article-prelude">
+  <p><a href="/blog"> ⏴ Back to all articles</a></p>
+  <p class="publication-date">Published on 2020-09-21T08:37:07+02:00</p>
+</div>
+<div class="article-title">
+<h1>Adventures in CI land, or how to speed up your CI</h1>
 
-			<p class="publication-date">Published on 2020-09-21</p>
-		</div>
-		<div class="article-title">
-		<h1>Adventures in CI land, or how to speed up your CI</h1>
-		  <div class="tags"> <a href="/blog/articles-by-tag.html#ci" class="tag">CI</a> <a href="/blog/articles-by-tag.html#optimization" class="tag">Optimization</a></div>
- </div>
- <strong>Table of contents</strong>
-<ul>
+  <div class="tags"> <a href="/blog/articles-by-tag.html#CI" class="tag">CI</a></div>
+  </div>
 
-	<li>
-		<a href="#2959153544-reduce-the-size-of-everything">Reduce the size of everything</a>
-		  </li>
+<p><a href="/blog"> ⏴ Back to all articles</a></p>
 
-	<li>
-		<a href="#1630662642-be-lazy-don-t-do-things-you-don-t-need-to-do">Be lazy: Don't do things you don't need to do</a>
-		  </li>
+<blockquote id="donate">
+  <p>If you enjoy what you're reading, you want to support me, and can afford it: <a href="https://paypal.me/philigaultier?country.x=DE&locale.x=en_US">Support me</a>. That allows me to write more cool articles!</p>
+</blockquote>
 
-	<li>
-		<a href="#618219166-miscellenaous-tricks">Miscellenaous tricks</a>
-		  </li>
+<blockquote>
+  <p>
+    This blog is <a href="https://github.com/gaultier/blog">open-source</a>!
+    If you find a problem, please open a Github issue.
+    The content of this blog as well as the code snippets are under the <a href="https://en.wikipedia.org/wiki/BSD_licenses#3-clause_license_(%22BSD_License_2.0%22,_%22Revised_BSD_License%22,_%22New_BSD_License%22,_or_%22Modified_BSD_License%22)">BSD-3 License</a> which I also usually use for all my personal projects. It's basically free for every use but you have to mention me as the original author.
+  </p>
+</blockquote>
 
-	<li>
-		<a href="#3119426742-a-note-on-security">A note on security</a>
-		  </li>
-
-	<li>
-		<a href="#2259479887-i-am-a-devops-engineer-what-can-i-do">I am a DevOps Engineer, what can I do?</a>
-		  </li>
-
-	<li>
-		<a href="#3019505966-closing-words">Closing words</a>
-		  </li>
-</ul>
-
-<p>Every project has a Continuous Integration (CI) pipeline and every one of them complains its CI is too slow. It is more important than you might think; this can be the root cause of many problems, including lackluster productivity, low morale, high barrier of entry for newcomers, and overall suboptimal quality.</p>
+</div>
+</body>
+</html>
+many problems, including lackluster productivity, low morale, high barrier of entry for newcomers, and overall suboptimal quality.</p>
 <p>But this need not be. I have compiled here a lengthy list of various ways you can simplify your CI and make it faster, based on my experience on open-source projects and my work experience. I sure wish you will find something in here worth your time.</p>
 <p>And finally, I hope you will realize this endeavour is not unlike optimizing a program: it requires some time and dedication but you will get tremendous results. Also, almost incidentally, it will be more secure and easier to audit.</p>
 <p>Lastly, remember to measure and profile your changes. If a change has made no improvements, it should be reverted.</p>

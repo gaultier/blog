@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>Making my static blog generator &lt;del&gt;11&lt;/del&gt; 33 times faster</title>
+<title>Making my static blog generator &ltdel&gt11&lt/del&gt 33 times faster</title>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link type="application/atom+xml" href="/blog/feed.xml" rel="self">
@@ -108,54 +108,34 @@
 </div>
 <div class="body">
 
-		<div class="article-prelude">
-			<p><a href="/blog"> ⏴ Back to all articles</a></p>
+<div class="article-prelude">
+  <p><a href="/blog"> ⏴ Back to all articles</a></p>
+  <p class="publication-date">Published on 2025-02-19T15:13:54+01:00</p>
+</div>
+<div class="article-title">
+<h1>Making my static blog generator <del>11</del> 33 times faster</h1>
 
-			<p class="publication-date">Published on 2025-02-19</p>
-		</div>
-		<div class="article-title">
-		<h1>Making my static blog generator <del>11</del> 33 times faster</h1>
-		  <div class="tags"> <a href="/blog/articles-by-tag.html#optimization" class="tag">Optimization</a> <a href="/blog/articles-by-tag.html#git" class="tag">Git</a> <a href="/blog/articles-by-tag.html#odin" class="tag">Odin</a> <a href="/blog/articles-by-tag.html#fossil" class="tag">Fossil</a></div>
- </div>
- <strong>Table of contents</strong>
-<ul>
+  <div class="tags"> <a href="/blog/articles-by-tag.html#Optimization" class="tag">Optimization</a> <a href="/blog/articles-by-tag.html#Git" class="tag">Git</a> <a href="/blog/articles-by-tag.html#Odin" class="tag">Odin</a></div>
+  </div>
 
-	<li>
-		<a href="#1071142523-the-investigation">The investigation</a>
-		  </li>
+<p><a href="/blog"> ⏴ Back to all articles</a></p>
 
-	<li>
-		<a href="#3047915491-when-there-s-one-there-s-many">When there's one, there's many</a>
-		  </li>
+<blockquote id="donate">
+  <p>If you enjoy what you're reading, you want to support me, and can afford it: <a href="https://paypal.me/philigaultier?country.x=DE&locale.x=en_US">Support me</a>. That allows me to write more cool articles!</p>
+</blockquote>
 
-	<li>
-		<a href="#2709289763-the-new-approach">The new approach</a>
-		  </li>
+<blockquote>
+  <p>
+    This blog is <a href="https://github.com/gaultier/blog">open-source</a>!
+    If you find a problem, please open a Github issue.
+    The content of this blog as well as the code snippets are under the <a href="https://en.wikipedia.org/wiki/BSD_licenses#3-clause_license_(%22BSD_License_2.0%22,_%22Revised_BSD_License%22,_%22New_BSD_License%22,_or_%22Modified_BSD_License%22)">BSD-3 License</a> which I also usually use for all my personal projects. It's basically free for every use but you have to mention me as the original author.
+  </p>
+</blockquote>
 
-	<li>
-		<a href="#3854930553-the-new-implementation">The new implementation</a>
-		  </li>
-
-	<li>
-		<a href="#3898000878-fossil">Fossil</a>
-		  </li>
-
-	<li>
-		<a href="#3796851539-conclusion">Conclusion</a>
-		  </li>
-
-	<li>
-		<a href="#4016320828-addendum">Addendum</a>
-		  </li>
-
-	<li>
-		<a href="#2077345490-addendum-2">Addendum 2</a>
-		  </li>
-</ul>
-
-<p>This blog is statically generated from Markdown files. It used to be fast, but nowadays it's not:</p>
-<pre><code class="language-sh"> $ hyperfine --warmup 2 ./master.bin 
-Benchmark 1: ./master.bin
+</div>
+</body>
+</html>
+1: ./master.bin
   Time (mean ± σ):      1.873 s ±  0.053 s    [User: 1.351 s, System: 0.486 s]
   Range (min … max):    1.806 s …  1.983 s    10 runs
 </code></pre>

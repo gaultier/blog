@@ -108,50 +108,34 @@
 </div>
 <div class="body">
 
-		<div class="article-prelude">
-			<p><a href="/blog"> ⏴ Back to all articles</a></p>
+<div class="article-prelude">
+  <p><a href="/blog"> ⏴ Back to all articles</a></p>
+  <p class="publication-date">Published on 2023-10-05T15:39:43+02:00</p>
+</div>
+<div class="article-title">
+<h1>Optimizing an Advent of Code solution in assembly</h1>
 
-			<p class="publication-date">Published on 2023-10-05</p>
-		</div>
-		<div class="article-title">
-		<h1>Optimizing an Advent of Code solution in assembly</h1>
-		  <div class="tags"> <a href="/blog/articles-by-tag.html#x86-64" class="tag">x86_64</a> <a href="/blog/articles-by-tag.html#advent-of-code" class="tag">Advent of Code</a> <a href="/blog/articles-by-tag.html#optimization" class="tag">Optimization</a> <a href="/blog/articles-by-tag.html#algorithm" class="tag">Algorithm</a> <a href="/blog/articles-by-tag.html#c" class="tag">C</a> <a href="/blog/articles-by-tag.html#lisp" class="tag">Lisp</a> <a href="/blog/articles-by-tag.html#scheme" class="tag">Scheme</a></div>
- </div>
- <strong>Table of contents</strong>
-<ul>
+  <div class="tags"> <a href="/blog/articles-by-tag.html#x86-64" class="tag">x86_64</a> <a href="/blog/articles-by-tag.html#Advent-of-Code" class="tag">Advent of Code</a> <a href="/blog/articles-by-tag.html#Optimization" class="tag">Optimization</a> <a href="/blog/articles-by-tag.html#Algorithm" class="tag">Algorithm</a> <a href="/blog/articles-by-tag.html#C" class="tag">C</a> <a href="/blog/articles-by-tag.html#Lisp" class="tag">Lisp</a></div>
+  </div>
 
-	<li>
-		<a href="#2859141830-the-new-solution">The new solution</a>
-		  </li>
+<p><a href="/blog"> ⏴ Back to all articles</a></p>
 
-	<li>
-		<a href="#2432913330-the-x86-64-implementation">The x86_64 implementation</a>
-		  </li>
+<blockquote id="donate">
+  <p>If you enjoy what you're reading, you want to support me, and can afford it: <a href="https://paypal.me/philigaultier?country.x=DE&locale.x=en_US">Support me</a>. That allows me to write more cool articles!</p>
+</blockquote>
 
-	<li>
-		<a href="#2843714489-benchmarking">Benchmarking</a>
-		  </li>
+<blockquote>
+  <p>
+    This blog is <a href="https://github.com/gaultier/blog">open-source</a>!
+    If you find a problem, please open a Github issue.
+    The content of this blog as well as the code snippets are under the <a href="https://en.wikipedia.org/wiki/BSD_licenses#3-clause_license_(%22BSD_License_2.0%22,_%22Revised_BSD_License%22,_%22New_BSD_License%22,_or_%22Modified_BSD_License%22)">BSD-3 License</a> which I also usually use for all my personal projects. It's basically free for every use but you have to mention me as the original author.
+  </p>
+</blockquote>
 
-	<li>
-		<a href="#1768815813-learnings">Learnings</a>
-		  </li>
-
-	<li>
-		<a href="#2879187008-appendix-the-full-code">Appendix: The full code</a>
-		<ul>
-
-	<li>
-		<a href="#2199062290-the-old-c-implementation">The old C implementation</a>
-		  </li>
-
-	<li>
-		<a href="#2467435296-the-x64-implementation">The x64 implementation</a>
-		  </li>
-</ul>
-  </li>
-</ul>
-
-<p>A few days ago I was tweaking the appearance of this blog and I stumbled upon my <a href="/blog/advent_of_code_2018_5">first article</a> which is about solving a simple problem from Advent of Code. Here it is again:</p>
+</div>
+</body>
+</html>
+ Here it is again:</p>
 <blockquote>
 <p>We have a string looking like this: <code>AabcdZZqQ</code> which represents a chain of
 chemical units. Adjacent units of the same type (i.e letter) and opposite

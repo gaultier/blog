@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>Cycle detection in graphs does not have to be hard: A lesser known, simple way with Kahn&#39;s algorithm</title>
+<title>Cycle detection in graphs does not have to be hard: A lesser known, simple way with Kahn&#x27s algorithm</title>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link type="application/atom+xml" href="/blog/feed.xml" rel="self">
@@ -108,59 +108,34 @@
 </div>
 <div class="body">
 
-		<div class="article-prelude">
-			<p><a href="/blog"> ⏴ Back to all articles</a></p>
+<div class="article-prelude">
+  <p><a href="/blog"> ⏴ Back to all articles</a></p>
+  <p class="publication-date">Published on 2023-06-03T09:20:51+02:00</p>
+</div>
+<div class="article-title">
+<h1>Cycle detection in graphs does not have to be hard: A lesser known, simple way with Kahn's algorithm</h1>
 
-			<p class="publication-date">Published on 2023-06-03</p>
-		</div>
-		<div class="article-title">
-		<h1>Cycle detection in graphs does not have to be hard: A lesser known, simple way with Kahn's algorithm</h1>
-		  <div class="tags"> <a href="/blog/articles-by-tag.html#graph" class="tag">Graph</a> <a href="/blog/articles-by-tag.html#algorithm" class="tag">Algorithm</a> <a href="/blog/articles-by-tag.html#javascript" class="tag">JavaScript</a> <a href="/blog/articles-by-tag.html#sql" class="tag">SQL</a></div>
- </div>
- <strong>Table of contents</strong>
-<ul>
+  <div class="tags"> <a href="/blog/articles-by-tag.html#Graph" class="tag">Graph</a> <a href="/blog/articles-by-tag.html#Algorithm" class="tag">Algorithm</a> <a href="/blog/articles-by-tag.html#JavaScript" class="tag">JavaScript</a></div>
+  </div>
 
-	<li>
-		<a href="#4275806978-introduction">Introduction</a>
-		  </li>
+<p><a href="/blog"> ⏴ Back to all articles</a></p>
 
-	<li>
-		<a href="#3658996082-the-database">The database</a>
-		  </li>
+<blockquote id="donate">
+  <p>If you enjoy what you're reading, you want to support me, and can afford it: <a href="https://paypal.me/philigaultier?country.x=DE&locale.x=en_US">Support me</a>. That allows me to write more cool articles!</p>
+</blockquote>
 
-	<li>
-		<a href="#3448959225-topological-sort">Topological sort</a>
-		  </li>
+<blockquote>
+  <p>
+    This blog is <a href="https://github.com/gaultier/blog">open-source</a>!
+    If you find a problem, please open a Github issue.
+    The content of this blog as well as the code snippets are under the <a href="https://en.wikipedia.org/wiki/BSD_licenses#3-clause_license_(%22BSD_License_2.0%22,_%22Revised_BSD_License%22,_%22New_BSD_License%22,_or_%22Modified_BSD_License%22)">BSD-3 License</a> which I also usually use for all my personal projects. It's basically free for every use but you have to mention me as the original author.
+  </p>
+</blockquote>
 
-	<li>
-		<a href="#1273712339-how-to-store-the-graph-in-memory">How to store the graph in memory</a>
-		  </li>
+</div>
+</body>
+</html>
 
-	<li>
-		<a href="#1475551869-kahn-s-algorithm">Kahn's algorithm</a>
-		  </li>
-
-	<li>
-		<a href="#3410597752-implementation">Implementation</a>
-		<ul>
-
-	<li>
-		<a href="#3667958886-helpers">Helpers</a>
-		  </li>
-
-	<li>
-		<a href="#1391191453-the-algorithm">The algorithm</a>
-		  </li>
-
-	<li>
-		<a href="#266987965-inserting-entries-in-the-database">Inserting entries in the database</a>
-		  </li>
-
-	<li>
-		<a href="#1211708065-detecting-cycles">Detecting cycles</a>
-		  </li>
-
-	<li>
 		<a href="#2939355639-detecting-multiple-roots">Detecting multiple roots</a>
 		  </li>
 </ul>

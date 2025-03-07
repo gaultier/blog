@@ -108,39 +108,34 @@
 </div>
 <div class="body">
 
-		<div class="article-prelude">
-			<p><a href="/blog"> ⏴ Back to all articles</a></p>
+<div class="article-prelude">
+  <p><a href="/blog"> ⏴ Back to all articles</a></p>
+  <p class="publication-date">Published on 2023-12-01T15:15:26+01:00</p>
+</div>
+<div class="article-title">
+<h1>Solving a problem with Gnuplot, the programming language (not the plotting software!)</h1>
 
-			<p class="publication-date">Published on 2023-12-01</p>
-		</div>
-		<div class="article-title">
-		<h1>Solving a problem with Gnuplot, the programming language (not the plotting software!)</h1>
-		  <div class="tags"> <a href="/blog/articles-by-tag.html#advent-of-code" class="tag">Advent of Code</a> <a href="/blog/articles-by-tag.html#gnuplot" class="tag">Gnuplot</a></div>
- </div>
- <strong>Table of contents</strong>
-<ul>
+  <div class="tags"> <a href="/blog/articles-by-tag.html#Advent-of-Code" class="tag">Advent of Code</a></div>
+  </div>
 
-	<li>
-		<a href="#2580162644-the-problem">The problem</a>
-		  </li>
+<p><a href="/blog"> ⏴ Back to all articles</a></p>
 
-	<li>
-		<a href="#3440295979-closing-thoughts">Closing thoughts</a>
-		  </li>
+<blockquote id="donate">
+  <p>If you enjoy what you're reading, you want to support me, and can afford it: <a href="https://paypal.me/philigaultier?country.x=DE&locale.x=en_US">Support me</a>. That allows me to write more cool articles!</p>
+</blockquote>
 
-	<li>
-		<a href="#2853131083-addendum-the-full-code">Addendum: The full code</a>
-		  </li>
-</ul>
+<blockquote>
+  <p>
+    This blog is <a href="https://github.com/gaultier/blog">open-source</a>!
+    If you find a problem, please open a Github issue.
+    The content of this blog as well as the code snippets are under the <a href="https://en.wikipedia.org/wiki/BSD_licenses#3-clause_license_(%22BSD_License_2.0%22,_%22Revised_BSD_License%22,_%22New_BSD_License%22,_or_%22Modified_BSD_License%22)">BSD-3 License</a> which I also usually use for all my personal projects. It's basically free for every use but you have to mention me as the original author.
+  </p>
+</blockquote>
 
-<p><em>Is it any good? Can you solve real problems with it?</em></p>
-<p>Most people know <a href="https://en.wikipedia.org/wiki/Gnuplot">Gnuplot</a> as a way to plot data. Two lines of code and we can visualize data:</p>
-<pre><code class="language-gnuplot">set output &quot;plot.png&quot;
-plot &quot;out.dat&quot; with lines
-</code></pre>
-<p><img src="gnuplot.png" alt="gnuplot.png" /></p>
-<p>where <code>out.data</code> is a text file with a number on each line.</p>
-<p>The software engineering advice that I heard a long time ago and left a mark on me is: <strong>Find a way to visualize your problem.</strong></p>
+</div>
+</body>
+</html>
+strong>Find a way to visualize your problem.</strong></p>
 <p>So Gnuplot is definitely worth of a spot in a Software Engineer's toolbox.</p>
 <p>However, few know that Gnuplot is actually also Turing complete programming language. It is similar in syntax to Perl or Awk. So I scratched an itch and solved a <a href="https://adventofcode.com/2023/day/1">problem</a> with it.</p>
 <h2 id="2580162644-the-problem">

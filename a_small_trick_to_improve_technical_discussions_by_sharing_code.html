@@ -108,28 +108,34 @@
 </div>
 <div class="body">
 
-		<div class="article-prelude">
-			<p><a href="/blog"> ⏴ Back to all articles</a></p>
+<div class="article-prelude">
+  <p><a href="/blog"> ⏴ Back to all articles</a></p>
+  <p class="publication-date">Published on 2024-03-07T11:14:09+01:00</p>
+</div>
+<div class="article-title">
+<h1>A small trick to improve technical discussions by sharing code</h1>
 
-			<p class="publication-date">Published on 2024-03-07</p>
-		</div>
-		<div class="article-title">
-		<h1>A small trick to improve technical discussions by sharing code</h1>
-		  <div class="tags"> <a href="/blog/articles-by-tag.html#lua" class="tag">Lua</a> <a href="/blog/articles-by-tag.html#neovim" class="tag">Neovim</a> <a href="/blog/articles-by-tag.html#git" class="tag">Git</a></div>
- </div>
- <strong>Table of contents</strong>
-<ul>
+  <div class="tags"> <a href="/blog/articles-by-tag.html#Lua" class="tag">Lua</a> <a href="/blog/articles-by-tag.html#Neovim" class="tag">Neovim</a></div>
+  </div>
 
-	<li>
-		<a href="#1512890027-addendum-the-full-code">Addendum: the full code</a>
-		  </li>
-</ul>
+<p><a href="/blog"> ⏴ Back to all articles</a></p>
 
-<p>This is a big title for a small trick that I've been using daily for years now, in every place I've worked at.</p>
-<p>Whenever there is a technical discussion, a bug hunt, or any disagreement about the codebase, I think it really helps to look at existing code to anchor the debate in reality and make it concrete.</p>
-<p>Copy pasting code, taking screenshots, or screen sharing may work at times but I have found a low-tech solution that's superior: Sharing a link to a region of code in the codebase. It's shorter, easier, and can be used in chats, documentation and PRs.
-It works for any code, be it existing code on the main branch, or experimental code on a branch:</p>
-<p><img src="git_web_ui_link.png" alt="Link in Github's web UI" /></p>
+<blockquote id="donate">
+  <p>If you enjoy what you're reading, you want to support me, and can afford it: <a href="https://paypal.me/philigaultier?country.x=DE&locale.x=en_US">Support me</a>. That allows me to write more cool articles!</p>
+</blockquote>
+
+<blockquote>
+  <p>
+    This blog is <a href="https://github.com/gaultier/blog">open-source</a>!
+    If you find a problem, please open a Github issue.
+    The content of this blog as well as the code snippets are under the <a href="https://en.wikipedia.org/wiki/BSD_licenses#3-clause_license_(%22BSD_License_2.0%22,_%22Revised_BSD_License%22,_%22New_BSD_License%22,_or_%22Modified_BSD_License%22)">BSD-3 License</a> which I also usually use for all my personal projects. It's basically free for every use but you have to mention me as the original author.
+  </p>
+</blockquote>
+
+</div>
+</body>
+</html>
+="Link in Github's web UI" /></p>
 <p>Every web UI of every Version Control System (VCS) worth its salt has that feature, let's take Github for example: <a href="https://github.com/gaultier/micro-kotlin/blob/master/class_file.h#L773-L775">https://github.com/gaultier/micro-kotlin/blob/master/class_file.h#L773-L775</a></p>
 <p>The hurdle is that every hosting provider has its own URL 'shape' and it's not always documented, so there is a tiny bit of reverse-engineering involved. Compare the previous URL with this one: <a href="https://gitlab.com/philigaultier/jvm-bytecode/-/blob/master/class_file.h?ref_type=heads#L125-127">https://gitlab.com/philigaultier/jvm-bytecode/-/blob/master/class_file.h?ref_type=heads#L125-127</a>. It's slightly different.</p>
 <p>So to make it easy to share a link to code with coworkers, I've written a tiny script to craft the URL for me, inside my editor. I select a few lines, hit a keystroke, and the URL is now in the clipboard for me to paste anywhere.</p>

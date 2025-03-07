@@ -108,50 +108,34 @@
 </div>
 <div class="body">
 
-		<div class="article-prelude">
-			<p><a href="/blog"> ⏴ Back to all articles</a></p>
+<div class="article-prelude">
+  <p><a href="/blog"> ⏴ Back to all articles</a></p>
+  <p class="publication-date">Published on 2024-10-29T16:15:48+01:00</p>
+</div>
+<div class="article-title">
+<h1>Tip of the day #2: A safer arena allocator</h1>
 
-			<p class="publication-date">Published on 2024-10-29</p>
-		</div>
-		<div class="article-title">
-		<h1>Tip of the day #2: A safer arena allocator</h1>
-		  <div class="tags"> <a href="/blog/articles-by-tag.html#c" class="tag">C</a> <a href="/blog/articles-by-tag.html#allocator" class="tag">Allocator</a> <a href="/blog/articles-by-tag.html#safety" class="tag">Safety</a> <a href="/blog/articles-by-tag.html#tip-of-the-day" class="tag">Tip of the day</a></div>
- </div>
- <strong>Table of contents</strong>
-<ul>
+  <div class="tags"> <a href="/blog/articles-by-tag.html#C" class="tag">C</a> <a href="/blog/articles-by-tag.html#Allocator" class="tag">Allocator</a> <a href="/blog/articles-by-tag.html#Safety" class="tag">Safety</a></div>
+  </div>
 
-	<li>
-		<a href="#3570727127-the-standard-arena">The standard arena</a>
-		  </li>
+<p><a href="/blog"> ⏴ Back to all articles</a></p>
 
-	<li>
-		<a href="#366874779-the-bug">The bug</a>
-		  </li>
+<blockquote id="donate">
+  <p>If you enjoy what you're reading, you want to support me, and can afford it: <a href="https://paypal.me/philigaultier?country.x=DE&locale.x=en_US">Support me</a>. That allows me to write more cool articles!</p>
+</blockquote>
 
-	<li>
-		<a href="#1807516660-the-solution">The solution</a>
-		  </li>
+<blockquote>
+  <p>
+    This blog is <a href="https://github.com/gaultier/blog">open-source</a>!
+    If you find a problem, please open a Github issue.
+    The content of this blog as well as the code snippets are under the <a href="https://en.wikipedia.org/wiki/BSD_licenses#3-clause_license_(%22BSD_License_2.0%22,_%22Revised_BSD_License%22,_%22New_BSD_License%22,_or_%22Modified_BSD_License%22)">BSD-3 License</a> which I also usually use for all my personal projects. It's basically free for every use but you have to mention me as the original author.
+  </p>
+</blockquote>
 
-	<li>
-		<a href="#2175727336-variations">Variations</a>
-		<ul>
-
-	<li>
-		<a href="#3293170840-the-paranoid-approach">The paranoid approach</a>
-		  </li>
-
-	<li>
-		<a href="#332247973-the-bucket-per-type-approach">The bucket per type approach</a>
-		  </li>
-</ul>
-  </li>
-
-	<li>
-		<a href="#3625827200-see-also">See also</a>
-		  </li>
-</ul>
-
-<p><em>Discussions: <a href="https://old.reddit.com/r/programming/comments/1gfiif5/tip_of_the_day_2_a_safer_arena_allocator/">/r/programming</a>, <a href="https://old.reddit.com/r/cprogramming/comments/1gfiit0/tip_of_the_day_2_a_safer_arena_allocator/?">/r/cprogramming</a></em></p>
+</div>
+</body>
+</html>
+a_allocator/?">/r/cprogramming</a></em></p>
 <p>The most transformative action you can do to dramatically improve your code in a programming language where you are in control of the memory is: to use arenas.</p>
 <p>Much has been written about arenas (<a href="https://nullprogram.com/blog/2023/09/27/">1</a>, <a href="https://www.rfleury.com/p/untangling-lifetimes-the-arena-allocator">2</a>). In short, it means grouping multiple allocations with the same lifetime in one batch that gets allocated and deallocated only once.</p>
 <p>Another way to look at it, is that the allocations are append only. They never get freed during their 'life'. The program is split into 'phases'. Typically, each phase has its own arena, and when it reaches its end, the whole arena gets nuked from space along with all entities allocated from it. It's a great way to simplify the code, make it faster, and escape from the 'web of pointers' hell.</p>

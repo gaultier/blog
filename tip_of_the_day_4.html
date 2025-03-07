@@ -108,29 +108,34 @@
 </div>
 <div class="body">
 
-		<div class="article-prelude">
-			<p><a href="/blog"> ⏴ Back to all articles</a></p>
+<div class="article-prelude">
+  <p><a href="/blog"> ⏴ Back to all articles</a></p>
+  <p class="publication-date">Published on 2025-02-11T16:47:16+01:00</p>
+</div>
+<div class="article-title">
+<h1>Tip of the day #4: Type annotations on Rust match patterns</h1>
 
-			<p class="publication-date">Published on 2025-02-11</p>
-		</div>
-		<div class="article-title">
-		<h1>Tip of the day #4: Type annotations on Rust match patterns</h1>
-		  <div class="tags"> <a href="/blog/articles-by-tag.html#rust" class="tag">Rust</a> <a href="/blog/articles-by-tag.html#tip-of-the-day" class="tag">Tip of the day</a></div>
- </div>
+  <div class="tags"> <a href="/blog/articles-by-tag.html#Rust" class="tag">Rust</a></div>
+  </div>
 
-<p><em>Discussions: <a href="https://old.reddit.com/r/rust/comments/1in1wyr/tip_of_the_day_4_type_annotations_on_rust_match/">/r/rust</a></em></p>
-<p>Today at work I was adding error logs to our Rust codebase and I hit an interesting case. I had a match pattern, and the compiler asked me to add type annotations to a branch of the pattern, because it could not infer by itself the right type.</p>
-<pre><code class="language-rust">fn decode_foo(input: &amp;[u8]) -&gt; Result&lt;(&amp;[u8], [u8; 33]), Error&gt; {
-    if input.len() &lt; 33 {
-        return Err(Error::InvalidData);
-    }
+<p><a href="/blog"> ⏴ Back to all articles</a></p>
 
-    let (left, right) = input.split_at(33);
-    let value = match left.try_into() {
-        Ok(v) =&gt; v,
-        Err(err) =&gt; {
-            let err_s = err.to_string(); // &lt;= Here is the compilation error.
-            eprintln!(&quot;failed to decode data, wrong length: {}&quot;, err_s);
+<blockquote id="donate">
+  <p>If you enjoy what you're reading, you want to support me, and can afford it: <a href="https://paypal.me/philigaultier?country.x=DE&locale.x=en_US">Support me</a>. That allows me to write more cool articles!</p>
+</blockquote>
+
+<blockquote>
+  <p>
+    This blog is <a href="https://github.com/gaultier/blog">open-source</a>!
+    If you find a problem, please open a Github issue.
+    The content of this blog as well as the code snippets are under the <a href="https://en.wikipedia.org/wiki/BSD_licenses#3-clause_license_(%22BSD_License_2.0%22,_%22Revised_BSD_License%22,_%22New_BSD_License%22,_or_%22Modified_BSD_License%22)">BSD-3 License</a> which I also usually use for all my personal projects. It's basically free for every use but you have to mention me as the original author.
+  </p>
+</blockquote>
+
+</div>
+</body>
+</html>
+ailed to decode data, wrong length: {}&quot;, err_s);
             return Err(Error::InvalidData);
         }
     };

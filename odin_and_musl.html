@@ -108,39 +108,34 @@
 </div>
 <div class="body">
 
-		<div class="article-prelude">
-			<p><a href="/blog"> ⏴ Back to all articles</a></p>
+<div class="article-prelude">
+  <p><a href="/blog"> ⏴ Back to all articles</a></p>
+  <p class="publication-date">Published on 2024-09-10T12:59:04+02:00</p>
+</div>
+<div class="article-title">
+<h1>Odin and musl: Cross-compiling Odin programs for the Raspberry Pi Zero</h1>
 
-			<p class="publication-date">Published on 2024-09-10</p>
-		</div>
-		<div class="article-title">
-		<h1>Odin and musl: Cross-compiling Odin programs for the Raspberry Pi Zero</h1>
-		  <div class="tags"> <a href="/blog/articles-by-tag.html#odin" class="tag">Odin</a> <a href="/blog/articles-by-tag.html#musl" class="tag">Musl</a> <a href="/blog/articles-by-tag.html#arm" class="tag">ARM</a> <a href="/blog/articles-by-tag.html#cross-compilation" class="tag">Cross-compilation</a></div>
- </div>
- <strong>Table of contents</strong>
-<ul>
+  <div class="tags"> <a href="/blog/articles-by-tag.html#Odin" class="tag">Odin</a> <a href="/blog/articles-by-tag.html#Musl" class="tag">Musl</a> <a href="/blog/articles-by-tag.html#ARM" class="tag">ARM</a></div>
+  </div>
 
-	<li>
-		<a href="#848107681-inciting-incident">Inciting incident</a>
-		  </li>
+<p><a href="/blog"> ⏴ Back to all articles</a></p>
 
-	<li>
-		<a href="#1339502364-confrontation">Confrontation</a>
-		  </li>
+<blockquote id="donate">
+  <p>If you enjoy what you're reading, you want to support me, and can afford it: <a href="https://paypal.me/philigaultier?country.x=DE&locale.x=en_US">Support me</a>. That allows me to write more cool articles!</p>
+</blockquote>
 
-	<li>
-		<a href="#3613299072-resolution">Resolution</a>
-		  </li>
+<blockquote>
+  <p>
+    This blog is <a href="https://github.com/gaultier/blog">open-source</a>!
+    If you find a problem, please open a Github issue.
+    The content of this blog as well as the code snippets are under the <a href="https://en.wikipedia.org/wiki/BSD_licenses#3-clause_license_(%22BSD_License_2.0%22,_%22Revised_BSD_License%22,_%22New_BSD_License%22,_or_%22Modified_BSD_License%22)">BSD-3 License</a> which I also usually use for all my personal projects. It's basically free for every use but you have to mention me as the original author.
+  </p>
+</blockquote>
 
-	<li>
-		<a href="#301746397-appendix-maybe-you-don-t-even-need-a-libc">Appendix: Maybe you don't even need a libc</a>
-		  </li>
-</ul>
-
-<p><a href="https://odin-lang.org/">Odin programming language</a> is becoming my favorite tool as a Software Engineer. It's a fantastic programming language, mostly because it is dead simple.</p>
-<p>I have purchased some time ago a Raspberry Pi Zero 2, and I found myself wanting to write command-line Odin programs for it. Here it is in all its beauty:</p>
-<p><img src="zero2.png" alt="Raspberry Pi Zero 2" /></p>
-<p>Here's the story of how I did it. If you do not work with Odin but do work a lot with cross-compilation, like I do at work, all of these techniques will be, I believe, very valuable anyway.</p>
+</div>
+</body>
+</html>
+tory of how I did it. If you do not work with Odin but do work a lot with cross-compilation, like I do at work, all of these techniques will be, I believe, very valuable anyway.</p>
 <p><em>Note: ARM64 is sometimes also called AARCH64 interchangeably.</em>
 <em>Note 2: The Rapsberry Pi Zero 1 is based on ARM (32 bits). The Raspberry Pi Zero 2 is based on ARM64 (64 bits). If you have a Raspberry Pi Zero 1, this article still applies, just adjust the target when cross-compiling.</em></p>
 <h2 id="848107681-inciting-incident">

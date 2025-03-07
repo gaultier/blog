@@ -248,18 +248,19 @@ static void article_generate_html_file(PgString content, Article *article,
                       allocator);
   PG_DYN_APPEND_SLICE(&sb, PG_S("</title>\n"), allocator);
   PG_DYN_APPEND_SLICE(&sb, header, allocator);
-  PG_DYN_APPEND_SLICE(&sb, PG_S("<div class=\"article-prelude\">\n"),
+  PG_DYN_APPEND_SLICE(&sb, PG_S("\n<div class=\"article-prelude\">\n  "),
                       allocator);
   PG_DYN_APPEND_SLICE(&sb, PG_S(BACK_LINK), allocator);
-  PG_DYN_APPEND_SLICE(&sb, PG_S("  <p class=\"publication-date\">Published on"),
-                      allocator);
-  // TODO: date.
+  PG_DYN_APPEND_SLICE(
+      &sb, PG_S("  <p class=\"publication-date\">Published on "), allocator);
+  // TODO: datetime to date.
+  PG_DYN_APPEND_SLICE(&sb, article->creation_date, allocator);
   PG_DYN_APPEND_SLICE(&sb, PG_S("</p>\n"), allocator);
   PG_DYN_APPEND_SLICE(&sb, PG_S("</div>\n"), allocator);
-  PG_DYN_APPEND_SLICE(&sb, PG_S("<div class=\"article-title\">"), allocator);
+  PG_DYN_APPEND_SLICE(&sb, PG_S("<div class=\"article-title\">\n"), allocator);
   PG_DYN_APPEND_SLICE(&sb, PG_S("<h1>"), allocator);
   PG_DYN_APPEND_SLICE(&sb, article->title, allocator);
-  PG_DYN_APPEND_SLICE(&sb, PG_S("</h1>"), allocator);
+  PG_DYN_APPEND_SLICE(&sb, PG_S("</h1>\n\n"), allocator);
 
   PG_DYN_APPEND_SLICE(&sb, PG_S("  <div class=\"tags\">"), allocator);
   for (u64 i = 0; i < article->tags.len; i++) {
@@ -270,7 +271,7 @@ static void article_generate_html_file(PgString content, Article *article,
     PG_DYN_APPEND_SLICE(&sb, id, allocator);
     PG_DYN_APPEND_SLICE(&sb, PG_S("\" class=\"tag\">"), allocator);
     PG_DYN_APPEND_SLICE(&sb, tag, allocator);
-    PG_DYN_APPEND_SLICE(&sb, PG_S("</a>\n"), allocator);
+    PG_DYN_APPEND_SLICE(&sb, PG_S("</a>"), allocator);
   }
   PG_DYN_APPEND_SLICE(&sb, PG_S("</div>\n"), allocator);
   PG_DYN_APPEND_SLICE(&sb, PG_S("  </div>\n"), allocator);
@@ -320,8 +321,8 @@ static Article article_generate(PgString header, PgString footer,
 
   cut = pg_string_cut_byte(metadata_title, ':');
   PG_ASSERT(cut.ok);
-  PgString title = pg_string_trim(cut.right, ' ');
-  PG_ASSERT(!pg_string_is_empty(title));
+  article.title = pg_string_trim(cut.right, ' ');
+  PG_ASSERT(!pg_string_is_empty(article.title));
 
   cut = pg_string_cut_byte(metadata_tags, ':');
   PG_ASSERT(cut.ok);

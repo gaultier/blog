@@ -108,41 +108,34 @@
 </div>
 <div class="body">
 
-		<div class="article-prelude">
-			<p><a href="/blog"> ⏴ Back to all articles</a></p>
+<div class="article-prelude">
+  <p><a href="/blog"> ⏴ Back to all articles</a></p>
+  <p class="publication-date">Published on 2024-10-29T13:46:14+01:00</p>
+</div>
+<div class="article-title">
+<h1>Tip of the day #1: Count lines of Rust code, ignoring tests</h1>
 
-			<p class="publication-date">Published on 2024-10-29</p>
-		</div>
-		<div class="article-title">
-		<h1>Tip of the day #1: Count lines of Rust code, ignoring tests</h1>
-		  <div class="tags"> <a href="/blog/articles-by-tag.html#rust" class="tag">Rust</a> <a href="/blog/articles-by-tag.html#tip-of-the-day" class="tag">Tip of the day</a> <a href="/blog/articles-by-tag.html#awk" class="tag">Awk</a></div>
- </div>
- <strong>Table of contents</strong>
-<ul>
+  <div class="tags"> <a href="/blog/articles-by-tag.html#Rust" class="tag">Rust</a> <a href="/blog/articles-by-tag.html#Tip-of-the-day" class="tag">Tip of the day</a></div>
+  </div>
 
-	<li>
-		<a href="#4091184562-addendum-exit">Addendum: exit</a>
-		  </li>
-</ul>
+<p><a href="/blog"> ⏴ Back to all articles</a></p>
 
-<p>I have a Rust codebase at work. The other day, I was wondering how many lines of code were in there. Whether you use <code>wc -l ***.rs</code> or a more fancy tool like <code>tokei</code>, there is an issue: this will count the source code <em>as well as</em> tests.</p>
-<p>That's because in Rust and in some other languages, people write their tests in the same files as the implementation. Typically it looks like that:</p>
-<pre><code class="language-rust">// src/foo.rs
+<blockquote id="donate">
+  <p>If you enjoy what you're reading, you want to support me, and can afford it: <a href="https://paypal.me/philigaultier?country.x=DE&locale.x=en_US">Support me</a>. That allows me to write more cool articles!</p>
+</blockquote>
 
-fn foo() { 
- ...
-}
+<blockquote>
+  <p>
+    This blog is <a href="https://github.com/gaultier/blog">open-source</a>!
+    If you find a problem, please open a Github issue.
+    The content of this blog as well as the code snippets are under the <a href="https://en.wikipedia.org/wiki/BSD_licenses#3-clause_license_(%22BSD_License_2.0%22,_%22Revised_BSD_License%22,_%22New_BSD_License%22,_or_%22Modified_BSD_License%22)">BSD-3 License</a> which I also usually use for all my personal projects. It's basically free for every use but you have to mention me as the original author.
+  </p>
+</blockquote>
 
-#[cfg(test)]
-mod tests {
-    fn test_foo(){
-      ...
-    }
-
-    ...
-}
-</code></pre>
-<p>But I only want to know how big is the implementation. I don't care about the tests. And <code>wc</code> or <code>tokei</code> will not show me that.</p>
+</div>
+</body>
+</html>
+.</p>
 <p>So I resorted to my trusty <code>awk</code>. Let's first count all lines, like <code>wc</code> does:</p>
 <pre><code class="language-sh">$ awk '{count += 1} END{print(count)}' src/***.rs
 # Equivalent to:

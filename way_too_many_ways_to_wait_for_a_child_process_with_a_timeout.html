@@ -108,50 +108,34 @@
 </div>
 <div class="body">
 
-		<div class="article-prelude">
-			<p><a href="/blog"> ⏴ Back to all articles</a></p>
+<div class="article-prelude">
+  <p><a href="/blog"> ⏴ Back to all articles</a></p>
+  <p class="publication-date">Published on 2024-11-10T23:58:59+01:00</p>
+</div>
+<div class="article-title">
+<h1>Way too many ways to wait on a child process with a timeout</h1>
 
-			<p class="publication-date">Published on 2024-11-10</p>
-		</div>
-		<div class="article-title">
-		<h1>Way too many ways to wait on a child process with a timeout</h1>
-		  <div class="tags"> <a href="/blog/articles-by-tag.html#unix" class="tag">Unix</a> <a href="/blog/articles-by-tag.html#signals" class="tag">Signals</a> <a href="/blog/articles-by-tag.html#c" class="tag">C</a> <a href="/blog/articles-by-tag.html#linux" class="tag">Linux</a> <a href="/blog/articles-by-tag.html#freebsd" class="tag">FreeBSD</a> <a href="/blog/articles-by-tag.html#illumos" class="tag">Illumos</a> <a href="/blog/articles-by-tag.html#macos" class="tag">MacOS</a></div>
- </div>
- <strong>Table of contents</strong>
-<ul>
+  <div class="tags"> <a href="/blog/articles-by-tag.html#Unix" class="tag">Unix</a> <a href="/blog/articles-by-tag.html#Signals" class="tag">Signals</a> <a href="/blog/articles-by-tag.html#C" class="tag">C</a> <a href="/blog/articles-by-tag.html#Linux" class="tag">Linux</a> <a href="/blog/articles-by-tag.html#FreeBSD" class="tag">FreeBSD</a> <a href="/blog/articles-by-tag.html#Illumos" class="tag">Illumos</a></div>
+  </div>
 
-	<li>
-		<a href="#785223571-what-are-we-building">What are we building?</a>
-		  </li>
+<p><a href="/blog"> ⏴ Back to all articles</a></p>
 
-	<li>
-		<a href="#1028185512-first-way-old-school-sigsuspend">First way: old-school sigsuspend</a>
-		  </li>
+<blockquote id="donate">
+  <p>If you enjoy what you're reading, you want to support me, and can afford it: <a href="https://paypal.me/philigaultier?country.x=DE&locale.x=en_US">Support me</a>. That allows me to write more cool articles!</p>
+</blockquote>
 
-	<li>
-		<a href="#3926643734-second-way-sigtimedwait">Second way: sigtimedwait</a>
-		  </li>
+<blockquote>
+  <p>
+    This blog is <a href="https://github.com/gaultier/blog">open-source</a>!
+    If you find a problem, please open a Github issue.
+    The content of this blog as well as the code snippets are under the <a href="https://en.wikipedia.org/wiki/BSD_licenses#3-clause_license_(%22BSD_License_2.0%22,_%22Revised_BSD_License%22,_%22New_BSD_License%22,_or_%22Modified_BSD_License%22)">BSD-3 License</a> which I also usually use for all my personal projects. It's basically free for every use but you have to mention me as the original author.
+  </p>
+</blockquote>
 
-	<li>
-		<a href="#184214679-third-approach-self-pipe-trick">Third approach: Self-pipe trick</a>
-		<ul>
-
-	<li>
-		<a href="#848676761-a-simpler-self-pipe-trick">A simpler self-pipe trick</a>
-		  </li>
-</ul>
-  </li>
-
-	<li>
-		<a href="#3012560712-fourth-approach-linux-s-signalfd">Fourth approach: Linux's signalfd</a>
-		  </li>
-
-	<li>
-		<a href="#4269605744-fifth-approach-process-descriptors">Fifth approach: process descriptors</a>
-		  </li>
-
-	<li>
-		<a href="#4073477733-sixth-approach-macos-s-and-bsd-s-kqueue">Sixth approach: MacOS's and BSD's kqueue</a>
+</div>
+</body>
+</html>
+approach: MacOS's and BSD's kqueue</a>
 		<ul>
 
 	<li>
