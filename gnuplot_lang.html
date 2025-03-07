@@ -191,24 +191,11 @@ do for [line in data] {
 <pre><code class="language-gnuplot">print(sum)
 </code></pre>
 <h2>Closing thoughts</h2>
-<p>Pretty straightforward, isn't it? Well, no. The language is weirdly restrictive, for example <code>sum += num</code> does not parse. <code>for</code> and <code>whi<p><a href="/blog"> ⏴ Back to all articles</a></p>
-
-<blockquote id="donate">
-  <p>If you enjoy what you're reading, you want to support me, and can afford it: <a href="https://paypal.me/philigaultier?country.x=DE&locale.x=en_US">Support me</a>. That allows me to write more cool articles!</p>
-</blockquote>
-
-<blockquote>
-  <p>
-    This blog is <a href="https://github.com/gaultier/blog">open-source</a>!
-    If you find a problem, please open a Github issue.
-    The content of this blog as well as the code snippets are under the <a href="https://en.wikipedia.org/wiki/BSD_licenses#3-clause_license_(%22BSD_License_2.0%22,_%22Revised_BSD_License%22,_%22New_BSD_License%22,_or_%22Modified_BSD_License%22)">BSD-3 License</a> which I also usually use for all my personal projects. It's basically free for every use but you have to mention me as the original author.
-  </p>
-</blockquote>
-
-</div>
-</body>
-</html>
-l) programming language is expected to do prior work and Gnuplot is at the end of the data pipeline as a 'dumb' visualization tool. I can also see how the limited language can still be useful for Physicists or Mathematicians to write simple numerical, pure functions e.g. <code>f(x) = x*2 + 1</code>.</p>
+<p>Pretty straightforward, isn't it? Well, no. The language is weirdly restrictive, for example <code>sum += num</code> does not parse. <code>for</code> and <code>while</code> loops cannot for some reason be used interchangeably due to the weird <code>do</code> prefix for for-loops. Very few builtin functions are available.
+There does not seem to be basic data structures such as arrays and maps. Every variable is global. And so on.</p>
+<p>It's weird because the language also has very modern constructs that some mainstream languages still do not have, like the slicing syntax.</p>
+<p>Awk, Lua or Perl are honestly better in every way, to pick relatively simple, dynamic languages that people usually reach to for Unixy text transformations. And these will have better tooling, such as a debugger. Heck, even shell scripting is probably easier and more straightforward, and that's a low bar.</p>
+<p>Everything points to the fact that Gnuplot expects it's input data in some prearranged tabular form, and just wants to plot it, not transform it. That means that another (real) programming language is expected to do prior work and Gnuplot is at the end of the data pipeline as a 'dumb' visualization tool. I can also see how the limited language can still be useful for Physicists or Mathematicians to write simple numerical, pure functions e.g. <code>f(x) = x*2 + 1</code>.</p>
 <p>I'll investigate Julia and perhaps R in the future, which are in the same niche of science/data visualization but are full programming languages with plentiful tooling.</p>
 <h2>Addendum: The full code</h2>
 <p>Run with <code>gnuplot my_file.dem</code>.</p>

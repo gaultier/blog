@@ -456,9 +456,12 @@ static ArticleSlice articles_generate(PgString header, PgString footer,
 }
 
 int main() {
-  PgArena arena = pg_arena_make_from_virtual_mem(100 * PG_MiB);
-  PgArenaAllocator arena_allocator = pg_make_arena_allocator(&arena);
-  PgAllocator *allocator = pg_arena_allocator_as_allocator(&arena_allocator);
+  PgHeapAllocator heap_allocator = pg_make_heap_allocator();
+  PgAllocator *allocator = pg_heap_allocator_as_allocator(&heap_allocator);
+
+  //  PgArena arena = pg_arena_make_from_virtual_mem(100 * PG_MiB);
+  // PgArenaAllocator arena_allocator = pg_make_arena_allocator(&arena);
+  // PgAllocator *allocator = pg_arena_allocator_as_allocator(&arena_allocator);
 
   PgStringResult res_header =
       pg_file_read_full_from_path(PG_S("header.html"), allocator);
