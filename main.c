@@ -237,6 +237,12 @@ static PgString html_make_id(PgString s, PgAllocator *allocator) {
   return PG_DYN_SLICE(PgString, sb);
 }
 
+[[nodiscard]]
+static PgString datetime_to_date(PgString datetime) {
+  PgStringCut cut = pg_string_cut_byte(datetime, 'T');
+  return cut.ok ? cut.left : datetime;
+}
+
 static void article_generate_html_file(PgString content, Article *article,
                                        PgString header, PgString footer,
                                        PgAllocator *allocator) {
@@ -252,9 +258,8 @@ static void article_generate_html_file(PgString content, Article *article,
                       allocator);
   PG_DYN_APPEND_SLICE(&sb, PG_S(BACK_LINK), allocator);
   PG_DYN_APPEND_SLICE(
-      &sb, PG_S("  <p class=\"publication-date\">Published on "), allocator);
-  // TODO: datetime to date.
-  PG_DYN_APPEND_SLICE(&sb, article->creation_date, allocator);
+      &sb, PG_S("\n  <p class=\"publication-date\">Published on "), allocator);
+  PG_DYN_APPEND_SLICE(&sb, datetime_to_date(article->creation_date), allocator);
   PG_DYN_APPEND_SLICE(&sb, PG_S("</p>\n"), allocator);
   PG_DYN_APPEND_SLICE(&sb, PG_S("</div>\n"), allocator);
   PG_DYN_APPEND_SLICE(&sb, PG_S("<div class=\"article-title\">\n"), allocator);
