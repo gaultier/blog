@@ -102,11 +102,70 @@ static GitStatSlice git_get_articles_stats(PgAllocator *allocator) {
       if (!cut.ok) { // End.
         break;
       }
+      remaining = cut.right;
 
       PG_ASSERT(pg_string_starts_with(cut.left, PG_S("'20")));
       date = cut.left;
       date = pg_string_trim(date, '\'');
       date = pg_string_trim(date, '\n');
+    }
+    // Empty line.
+    {
+      PgStringCut cut = pg_string_cut_byte(remaining, '\n');
+      PG_ASSERT(cut.ok);
+      remaining = cut.right;
+
+      PG_ASSERT(pg_string_is_empty(cut.left));
+    }
+
+    // Files.
+    for (;;) {
+      // Start of a new commit?
+      if (pg_string_starts_with(remaining, PG_S("'20'"))) {
+        break;
+      }
+
+      PgStringCut cut = pg_string_cut_byte(remaining, '\n');
+      PG_ASSERT(cut.ok);
+      PgString line = cut.left;
+      remaining = cut.right;
+
+      PG_ASSERT(!pg_string_is_empty(line));
+      u8 action = PG_SLICE_AT(line, 0);
+      PG_ASSERT(action == 'A' || action == 'M' || action == 'R' ||
+                action == 'D');
+
+      PgString path_old = {0}, path_new = {0};
+      {
+        // Skip the 'action' part.
+        cut = pg_string_cut_byte(line, '\t');
+        PG_ASSERT(cut.ok);
+        line = cut.right;
+
+        cut = pg_string_cut_byte(line, '\t');
+        PG_ASSERT(cut.ok);
+        path_old = cut.left;
+        PG_ASSERT(!pg_string_is_empty(path_old));
+
+        if ('R' == action) { // 2 operands.
+          path_new = cut.right;
+          PG_ASSERT(!pg_string_is_empty(path_new));
+        } else { // 1 operand.
+          path_new = path_old;
+        }
+      }
+
+      if ('D' == action) {
+        // TODO: delete entry.
+        continue;
+      }
+
+      if ('R' == action) {
+        // TODO: delete entry.
+        // Still need to insert the new entry below.
+      }
+
+      // TODO: upsert entry.
     }
   }
 
