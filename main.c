@@ -429,6 +429,9 @@ static void html_write_decorated_titles_rec(PgString html, Pgu8Dyn *sb,
   PG_DYN_APPEND_SLICE(
       sb, PG_SLICE_RANGE(html, *last_title_pos_end, title->pos_start),
       allocator);
+  if (*last_title_pos_end != 0) {
+    PG_ASSERT(*last_title_pos_end < title->pos_end);
+  }
   *last_title_pos_end = title->pos_end;
 
   PG_DYN_APPEND_SLICE(sb, PG_S("<h"), allocator);
