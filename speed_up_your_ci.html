@@ -124,7 +124,10 @@
 <p>And finally, I hope you will realize this endeavour is not unlike optimizing a program: it requires some time and dedication but you will get tremendous results. Also, almost incidentally, it will be more secure and easier to audit.</p>
 <p>Lastly, remember to measure and profile your changes. If a change has made no improvements, it should be reverted.</p>
 <p><em>This article assumes you are running a POSIX system. Windows developers, this is not the article you are looking for.</em></p>
-<h2>Reduce the size of everything</h2>
+<h2 id="2959153544-Reduce-the-size-of-everything">
+  <a class="title" href="#2959153544-Reduce-the-size-of-everything">Reduce the size of everything</a>
+  <a class="hash-anchor" href="#2959153544-Reduce-the-size-of-everything" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+</h2>
 <p>Almost certainly, your CI pipeline has to download 'something', be it a base docker image, a virtual machine image, some packages, maybe a few company wide scripts. The thing is, you are downloading those every time it runs, 24/7, every day of the year. Even a small size reduction can yield big speed ups. Remember, the network is usually the bottleneck.</p>
 <p>In no particular order:</p>
 <ul>
@@ -142,7 +145,10 @@
 <li>Opt-out of 'recommended' packages. Aptitude on Debian/Ubuntu is the culprit here: <code>apt-get install foo</code> will install much more than <code>foo</code>. It will also install recommended packages that most of the time are completely unrelated. Always use <code>apt-get install --no-install-recommends foo</code>.</li>
 <li>Don't create unnecessary files: you use use heredoc and shell pipelines to avoid creating intermediary files.</li>
 </ul>
-<h2>Be lazy: Don't do things you don't need to do</h2>
+<h2 id="1630662642-Be-lazy--Don-t-do-things-you-don-t-need-to-do">
+  <a class="title" href="#1630662642-Be-lazy--Don-t-do-things-you-don-t-need-to-do">Be lazy: Don't do things you don't need to do</a>
+  <a class="hash-anchor" href="#1630662642-Be-lazy--Don-t-do-things-you-don-t-need-to-do" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+</h2>
 <ul>
 <li>Some features you are not using are enabled by default. Be explicit instead of relying on obscure, ever changing defaults. Example: <code>CGO_ENABLED=0 go build ...</code> because it is (at the time of writing) enabled by default. The Gradle build system also has the annoying habit to run stuff behind your back. Use <code>gradle foo -x baz</code> to run <code>foo</code> and not <code>baz</code>.</li>
 <li>Don't run tests from your dependencies. This can happen if you are using git submodules or vendoring dependencies in some way. You generally always want to build them, but not run their tests. Again, <code>gradle</code> is the culprit here. If you are storing your git submodules in a <code>submodules/</code> directory for example, you can run only your project tests with: <code>gradle test -x submodules:test</code>.</li>
@@ -166,7 +172,10 @@ This can have a huge impact on performance since Docker will copy all the files 
 <li>Don't update the package manager cache: you typically need to start your Dockerfile by updating the package manager cache, otherwise it will complain the dependencies you want to install are not found. E.g.: <code>RUN apk update &amp;&amp; apk add curl</code>. But did you know it is not always required? You can simply do: <code>RUN apk --no-cache add curl</code> when you know the package exists and you can bypass the cache.</li>
 <li>Silence the tools: most command line applications accept the <code>-q</code> flag which reduces their verbosity. Most of their output is likely to be useless, some CI systems will struggle storing big pipeline logs, and you might be bottlenecked on stdout! Also, it will simplify troubleshooting <em>your</em> build if it is not swamped in thousands of unrelated logs.</li>
 </ul>
-<h2>Miscellenaous tricks</h2>
+<h2 id="618219166-Miscellenaous-tricks">
+  <a class="title" href="#618219166-Miscellenaous-tricks">Miscellenaous tricks</a>
+  <a class="hash-anchor" href="#618219166-Miscellenaous-tricks" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+</h2>
 <ul>
 <li>Use <code>sed</code> to quickly edit big files in place. E.g.: you want to insert a line at the top of a Javascript file to skip linter warnings. Instead of doing:
 <pre><code>printf '/* eslint-disable */\n\n' | cat - foo.js &gt; foo_tmp &amp;&amp; mv foo_tmp foo.js
@@ -188,18 +197,27 @@ which is simpler.</li>
 </ul>
 </li>
 </ul>
-<h2>A note on security</h2>
+<h2 id="3119426742-A-note-on-security">
+  <a class="title" href="#3119426742-A-note-on-security">A note on security</a>
+  <a class="hash-anchor" href="#3119426742-A-note-on-security" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+</h2>
 <ul>
 <li>Always use https</li>
 <li>Checksum files you fetched from third-parties with <code>shasum</code>.</li>
 <li>Favor official package repositories, docker images, and third-parties over those of individuals.</li>
 <li>Never bypass certificate checks (such as <code>curl -k</code>)</li>
 </ul>
-<h2>I am a DevOps Engineer, what can I do?</h2>
+<h2 id="2259479887-I-am-a-DevOps-Engineer--what-can-I-do-">
+  <a class="title" href="#2259479887-I-am-a-DevOps-Engineer--what-can-I-do-">I am a DevOps Engineer, what can I do?</a>
+  <a class="hash-anchor" href="#2259479887-I-am-a-DevOps-Engineer--what-can-I-do-" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+</h2>
 <p>Most of the above rules can be automated with a script, assuming the definition of a CI pipeline is in a text format (e.g. Gitlab CI). I would suggest starting here, and teaching developers about these simple tips than really make a difference.</p>
 <p>I would also suggest considering adding strict firewall rules inside CI pipelines, and making sure the setup/teardown of CI runners is very fast. Additionally, I would do everything to avoid a situation where no CI runner is available, preventing developers from working and deploying.</p>
 <p>Finally, I would recommend leading by example with the pipelines for the tools made by DevOps Engineers in your organization.</p>
-<h2>Closing words</h2>
+<h2 id="3019505966-Closing-words">
+  <a class="title" href="#3019505966-Closing-words">Closing words</a>
+  <a class="hash-anchor" href="#3019505966-Closing-words" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+</h2>
 <p>I wish you well on your journey towards a fast, reliable and simple CI pipeline.</p>
 <p>I noticed in my numerous projects with different tech stacks that some are friendlier than others towards CI pipelines than others (I am looking at you, Gradle!). If you have the luxury of choosing your technical stack, do consider how it will play out with your pipeline. I believe this is a much more important factor than discussing whether $LANG has semicolons or not because I am convinced it can completely decide the outcome of your project.</p>
 <p><a href="/blog"> ⏴ Back to all articles</a></p>

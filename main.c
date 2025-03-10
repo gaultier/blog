@@ -431,14 +431,14 @@ static void html_write_decorated_titles_rec(PgString html, Pgu8Dyn *sb,
   *last_title_pos_end = title->pos_end;
 
   PG_DYN_APPEND_SLICE(sb, PG_S("<h"), allocator);
-  pg_string_builder_append_u32(sb, title->level, allocator);
+  pg_string_builder_append_u64_as_string(sb, title->level, allocator);
   PG_DYN_APPEND_SLICE(sb, PG_S(" id=\""), allocator);
-  pg_string_builder_append_u32(sb, title->hash, allocator);
+  pg_string_builder_append_u64_as_string(sb, title->hash, allocator);
   PG_DYN_APPEND_SLICE(sb, PG_S("-"), allocator);
   PG_DYN_APPEND_SLICE(sb, title->content_html_id, allocator);
   PG_DYN_APPEND_SLICE(sb, PG_S("\">\n  <a class=\"title\" href=\"#"),
                       allocator);
-  pg_string_builder_append_u32(sb, title->hash, allocator);
+  pg_string_builder_append_u64_as_string(sb, title->hash, allocator);
   PG_DYN_APPEND_SLICE(sb, PG_S("-"), allocator);
   PG_DYN_APPEND_SLICE(sb, title->content_html_id, allocator);
   PG_DYN_APPEND_SLICE(sb, PG_S("\">"), allocator);
@@ -446,7 +446,7 @@ static void html_write_decorated_titles_rec(PgString html, Pgu8Dyn *sb,
   PG_DYN_APPEND_SLICE(sb, PG_S("</a>\n"), allocator);
   PG_DYN_APPEND_SLICE(sb, PG_S("  <a class=\"hash-anchor\" href=\"#"),
                       allocator);
-  pg_string_builder_append_u32(sb, title->hash, allocator);
+  pg_string_builder_append_u64_as_string(sb, title->hash, allocator);
   PG_DYN_APPEND_SLICE(sb, PG_S("-"), allocator);
   PG_DYN_APPEND_SLICE(sb, title->content_html_id, allocator);
   PG_DYN_APPEND_SLICE(
@@ -463,7 +463,7 @@ static void html_write_decorated_titles_rec(PgString html, Pgu8Dyn *sb,
 
 static void html_write_decorated_titles(PgString html, Pgu8Dyn *sb, Title *root,
                                         PgAllocator *allocator) {
-  PG_ASSERT(root->next_sibling);
+  PG_ASSERT(nullptr == root->next_sibling);
 
   // No titles, noop.
   if (!root->first_child) {
