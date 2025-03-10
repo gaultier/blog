@@ -239,24 +239,28 @@ Cat: kitty
 <pre><code class="language-go">type _Ctype_struct___0 struct {
 	kind	_Ctype_AnimalKind
 	_	[4]byte
-	ano<p><a href="/blog"> ⏴ Back to all articles</a></p>
+	anon0	[16]byte
+}
+</code></pre>
+<p>So it's a struct with a <code>kind</code> field, so far so good. Then comes 4 bytes of padding, as expected (the C struct also has them). But then, we only see 16 opaque bytes. The size is correct: the C union is the size of its largest member which is 16 bytes long (<code>String</code>). But then, how do we access <code>String.len</code>?</p>
+<p>Here's the very tedious way, by hand:</p>
+<pre><code class="language-go">// app/app.go
+func DoStuff() {
+    // [...]
 
-<blockquote id="donate">
-  <p>If you enjoy what you're reading, you want to support me, and can afford it: <a href="https://paypal.me/philigaultier?country.x=DE&locale.x=en_US">Support me</a>. That allows me to write more cool articles!</p>
-</blockquote>
-
-<blockquote>
-  <p>
-    This blog is <a href="https://github.com/gaultier/blog">open-source</a>!
-    If you find a problem, please open a Github issue.
-    The content of this blog as well as the code snippets are under the <a href="https://en.wikipedia.org/wiki/BSD_licenses#3-clause_license_(%22BSD_License_2.0%22,_%22Revised_BSD_License%22,_%22New_BSD_License%22,_or_%22Modified_BSD_License%22)">BSD-3 License</a> which I also usually use for all my personal projects. It's basically free for every use but you have to mention me as the original author.
-  </p>
-</blockquote>
-
-</div>
-</body>
-</html>
-c with the C struct when its layout changes!</p>
+	cat_ptr := unsafe.Pointer(&amp;cat)
+	cat_name_ptr := unsafe.Add(cat_ptr, 8)
+	cat_name_len_ptr := unsafe.Add(cat_name_ptr, 8)
+	fmt.Println(*(*C.uint64_t)(cat_name_len_ptr))
+}
+</code></pre>
+<p>And we get:</p>
+<pre><code>$ go run .
+Dog: 42
+Cat: kitty
+5
+</code></pre>
+<p>Ok, we are a C compiler now. Back to computing fields offsets by hand! I sure hope you do not forget about alignment! And keep the offsets in sync with the C struct when its layout changes!</p>
 <p>Well we all agree this sucks, but that's all what the <code>unsafe</code> package offers. Cherry on the cake, every pointer in this code has the same type: <code>unsafe.Pointer</code>, even though the first one really is a <code>Animal*</code>, the second one is a <code>String*</code>, and the third one is a <code>uint64_t*</code>. Not great.</p>
 <p>So the solution is: treat C unions as opaque values in Go, and only access them with C functions (essentially, getters and setters):</p>
 <pre><code class="language-c">// c/api.h
@@ -314,24 +318,35 @@ Cat: kitty
 [107 105 116 116 121]
 kitty
 </code></pre>
-<p>Ok, but just re<p><a href="/blog"> ⏴ Back to all articles</a></p>
+<p>Ok, but just reading them is boring, let's try to mutate them. First, we need to allocate a fresh string in C, otherwise the string constant will be located in the read-only part of the executable, mapped to read-only page, and we will segfault when trying to mutate it. So we modify <code>animal_make_cat</code>:</p>
+<pre><code class="language-c">// c/api.c
 
-<blockquote id="donate">
-  <p>If you enjoy what you're reading, you want to support me, and can afford it: <a href="https://paypal.me/philigaultier?country.x=DE&locale.x=en_US">Support me</a>. That allows me to write more cool articles!</p>
-</blockquote>
+Animal animal_make_cat() {
+  return (Animal){
+      .kind = ANIMAL_KIND_CAT,
+      .cat_name =
+          {
+              .data = strdup(&quot;kitty&quot;), // &lt;= Heap allocation here.
+              .len = 5,
+          },
+  };
+}
+</code></pre>
+<p>Let's mutate all the things!</p>
+<pre><code class="language-go">// app/app.go
+func DoStuff() {
+    // [...]
 
-<blockquote>
-  <p>
-    This blog is <a href="https://github.com/gaultier/blog">open-source</a>!
-    If you find a problem, please open a Github issue.
-    The content of this blog as well as the code snippets are under the <a href="https://en.wikipedia.org/wiki/BSD_licenses#3-clause_license_(%22BSD_License_2.0%22,_%22Revised_BSD_License%22,_%22New_BSD_License%22,_or_%22Modified_BSD_License%22)">BSD-3 License</a> which I also usually use for all my personal projects. It's basically free for every use but you have to mention me as the original author.
-  </p>
-</blockquote>
-
-</div>
-</body>
-</html>
-undefined behavior! The string <em>did</em> get mutated! The Go compiler generates code based on the assumption that strings are immutable, so our program <em>may</em> break in very unexpected ways.</p>
+	slice[0] -= 32 // Poor man's uppercase.
+	fmt.Println(slice)
+	fmt.Println(str)
+}
+</code></pre>
+<p>And we get the additional output:</p>
+<pre><code>[75 105 116 116 121]
+Kitty
+</code></pre>
+<p>But wait, this is undefined behavior! The string <em>did</em> get mutated! The Go compiler generates code based on the assumption that strings are immutable, so our program <em>may</em> break in very unexpected ways.</p>
 <p>The docs for <code>unsafe.String</code> state:</p>
 <blockquote>
 <p>Since Go strings are immutable, the bytes passed to String
@@ -412,16 +427,24 @@ func TestAnimalMakeDog(t *testing.T) {
 --- PASS: TestAnimalMakeDog (0.00s)
 PASS
 ok  	cgo/app	0.003s
-</code></pre>
-<p>So... that works, and also: that's annoying boilerplate that no one wants to have to write. And if you're feeling smug, thinking your favorite LLM will do the right thing for you, I can tell you I tried and the LLM generated the wrong thing, with the test trying to use Cgo directly.</p>
-<p><strong>My recommendation:</strong></p>
-<ul>
-<li>Test the C code in C directly (or Rust, or whatever language it is)</li>
-<li>There is some glue code sometimes that is only useful to the Go codebase, and that's written in C. In that case wrap each C utility function in a Go one and write a Go test, hopefully it's not that much.</li>
-</ul>
-<p><strong>My ask to the Go team:</strong> let's allow the use of Cgo in tests.</p>
-<h2>The Go compiler does not detect changes</h2>
-<p>People are used to say: Go builds so fast! And yes, it's not a slow compiler, but if you have ever built the Go compiler from scratch, you will have noticed it takes a significant amount of time still. What Go is really good at, is caching: it's really smart at detecting what changed, and only rebuilding that. And that's great! Until it isn't.</p>
+</<p><a href="/blog"> ⏴ Back to all articles</a></p>
+
+<blockquote id="donate">
+  <p>If you enjoy what you're reading, you want to support me, and can afford it: <a href="https://paypal.me/philigaultier?country.x=DE&locale.x=en_US">Support me</a>. That allows me to write more cool articles!</p>
+</blockquote>
+
+<blockquote>
+  <p>
+    This blog is <a href="https://github.com/gaultier/blog">open-source</a>!
+    If you find a problem, please open a Github issue.
+    The content of this blog as well as the code snippets are under the <a href="https://en.wikipedia.org/wiki/BSD_licenses#3-clause_license_(%22BSD_License_2.0%22,_%22Revised_BSD_License%22,_%22New_BSD_License%22,_or_%22Modified_BSD_License%22)">BSD-3 License</a> which I also usually use for all my personal projects. It's basically free for every use but you have to mention me as the original author.
+  </p>
+</blockquote>
+
+</div>
+</body>
+</html>
+ratch, you will have noticed it takes a significant amount of time still. What Go is really good at, is caching: it's really smart at detecting what changed, and only rebuilding that. And that's great! Until it isn't.</p>
 <p>Sometimes, changes to the Cgo build flags, or to the <code>.a</code> library, were not detected by Go. I could not really reproduce these issues reliably, but they do happen.</p>
 <p>Solution: force a clean build with <code>go build -a</code>.</p>
 <h2>False positive warnings</h2>

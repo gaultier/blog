@@ -178,24 +178,23 @@ letters of the alphabet.</p>
          (b-code (char-&gt;integer b))
          (diff (- a-code b-code)))
     (= (* 32 32) (* diff diff))))
-</code<p><a href="/blog"> ⏴ Back to all articles</a></p>
-
-<blockquote id="donate">
-  <p>If you enjoy what you're reading, you want to support me, and can afford it: <a href="https://paypal.me/philigaultier?country.x=DE&locale.x=en_US">Support me</a>. That allows me to write more cool articles!</p>
-</blockquote>
-
-<blockquote>
-  <p>
-    This blog is <a href="https://github.com/gaultier/blog">open-source</a>!
-    If you find a problem, please open a Github issue.
-    The content of this blog as well as the code snippets are under the <a href="https://en.wikipedia.org/wiki/BSD_licenses#3-clause_license_(%22BSD_License_2.0%22,_%22Revised_BSD_License%22,_%22New_BSD_License%22,_or_%22Modified_BSD_License%22)">BSD-3 License</a> which I also usually use for all my personal projects. It's basically free for every use but you have to mention me as the original author.
-  </p>
-</blockquote>
-
-</div>
-</body>
-</html>
-(arbitrarily) chose to implement it without
+</code></pre>
+<p>Let's try it with <code>a</code> and <code>A</code>:</p>
+<pre><code class="language-scheme">(char-case-opposite-casing? #\a #\A) 
+</code></pre>
+<p>And flipped:</p>
+<pre><code class="language-scheme">(char-case-opposite-casing? #\A #\a)
+</code></pre>
+<p>And <code>A</code> and <code>b</code>:</p>
+<pre><code class="language-scheme">(char-case-opposite-casing? #\A #\b)
+</code></pre>
+<p><code>let*</code> is used to define local bindings which are only visible in this function.
+It evaluates each binding in order which means we can define <code>diff</code> in terms of
+<code>a</code> and <code>b</code> (contrary to <code>let</code>).</p>
+<p>We could have done without it but it makes the function more readable.</p>
+<p>The only hurdle is not caring
+about the sign of the difference: if the difference is <code>32</code> or <code>-32</code>, it is the
+same. We could compare the absolute value, but I (arbitrarily) chose to implement it without
 branches, by comparing the squared values (which swallows the signs).</p>
 <hr />
 <p>Now let's work on the central problem: how to remove
@@ -258,25 +257,24 @@ empty. Additionally, we can bind variables to our patterns: we do that in the
 second case, binding the first element of the first list to <code>a</code>, and the fist
 element of the second list to <code>b</code>, and summing the two.</p>
 <p>Note that not all possible cases are covered here, and we will get a (runtime)
-error if we trigger one of them, for example with a list containing several numbers:</p>
-<pre><code class="language-scheme">(chem-react (list 1 2) (list 3)) ;; =&gt; Error: (match) &quot;no matching pattern&quot;: ()
-</code></pre>
-<p>Let's go ahead and match the case of a list of one or more elements (<code>(a . arest)</code>) to avoid that:</p>
-<pre><code class="language-scheme">(define (chem-react acc input)
-  (match (list acc input)
-    [(_ ()) 42]
-    [((a) (b)) (+ a b)]
-    [((a . arest) (b . brest)) (* a b)]))
+error if we trigger one of them, for example with a list containing several nu<p><a href="/blog"> ⏴ Back to all articles</a></p>
 
-(chem-react (list 2 3) (list 4)) ;; =&gt; 8
-</code></pre>
-<p>Here we choose to (arbitrarily) return the product of the first elements of both
-list, to show that pattern matching is also a way to do destructuring.</p>
-<h3>Using pattern matching to solve our problem</h3>
-<p>If the second list (the input) is empty, it means we are
-finished, so we return the first list (<code>acc</code>):</p>
-<pre><code class="language-scheme">(define (chem-react acc input)
-  (match (list acc input)
+<blockquote id="donate">
+  <p>If you enjoy what you're reading, you want to support me, and can afford it: <a href="https://paypal.me/philigaultier?country.x=DE&locale.x=en_US">Support me</a>. That allows me to write more cool articles!</p>
+</blockquote>
+
+<blockquote>
+  <p>
+    This blog is <a href="https://github.com/gaultier/blog">open-source</a>!
+    If you find a problem, please open a Github issue.
+    The content of this blog as well as the code snippets are under the <a href="https://en.wikipedia.org/wiki/BSD_licenses#3-clause_license_(%22BSD_License_2.0%22,_%22Revised_BSD_License%22,_%22New_BSD_License%22,_or_%22Modified_BSD_License%22)">BSD-3 License</a> which I also usually use for all my personal projects. It's basically free for every use but you have to mention me as the original author.
+  </p>
+</blockquote>
+
+</div>
+</body>
+</html>
+ (list acc input)
     [(_ ()) acc]))
 </code></pre>
 <p>Our recursion will work as follows: we look at the first element of the second

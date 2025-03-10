@@ -207,24 +207,27 @@ test tests::test_get_foos ... ok
 <p>Of course, we have not yet freed anything, so we expect Miri to complain, and it does:</p>
 <pre><code class="language-sh">$ cargo +nightly miri test
 ...
-error: memory leaked: alloc5<p><a href="/blog"> ⏴ Back to all articles</a></p>
+error: memory leaked: alloc59029 (Rust heap, size: 16, align: 8), allocated here:
+...
+</code></pre>
+<p>Note that the standard test runner does not report memory leaks, unfortunately. If Miri does not work for a given use case, and we still want to check that there are no leaks, we have to reach for nightly sanitizers or Valgrind.</p>
+<h2>First attempt at freeing the memory properly</h2>
+<p>Great, so let's free it at the end of the test, like C does, with <code>free</code> from libc, which we add as a dependency:</p>
+<pre><code class="language-rust">
+    #[test]
+    fn test_get_foos() {
+        ...
 
-<blockquote id="donate">
-  <p>If you enjoy what you're reading, you want to support me, and can afford it: <a href="https://paypal.me/philigaultier?country.x=DE&locale.x=en_US">Support me</a>. That allows me to write more cool articles!</p>
-</blockquote>
-
-<blockquote>
-  <p>
-    This blog is <a href="https://github.com/gaultier/blog">open-source</a>!
-    If you find a problem, please open a Github issue.
-    The content of this blog as well as the code snippets are under the <a href="https://en.wikipedia.org/wiki/BSD_licenses#3-clause_license_(%22BSD_License_2.0%22,_%22Revised_BSD_License%22,_%22New_BSD_License%22,_or_%22Modified_BSD_License%22)">BSD-3 License</a> which I also usually use for all my personal projects. It's basically free for every use but you have to mention me as the original author.
-  </p>
-</blockquote>
-
-</div>
-</body>
-</html>
-Hmm...ok...Well that's a bit weird, because what Rust does, when the <code>Vec</code> is allocated, is to call out to <code>malloc</code> from libc, as we can see with <code>strace</code>:</p>
+        unsafe { libc::free(foos as *mut std::ffi::c_void) };
+    }
+</code></pre>
+<p>The test passes, great. Let's try with Miri:</p>
+<pre><code class="language-sh">$ cargo +nightly miri test
+...
+ error: Undefined Behavior: deallocating alloc59029, which is Rust heap memory, using C heap deallocation operation
+...
+</code></pre>
+<p>Hmm...ok...Well that's a bit weird, because what Rust does, when the <code>Vec</code> is allocated, is to call out to <code>malloc</code> from libc, as we can see with <code>strace</code>:</p>
 <pre><code class="language-sh">$ strace -k -v -e brk ./a.out
 ...
 brk(0x213c0000)                         = 0x213c0000
@@ -304,39 +307,24 @@ pub struct OwningArrayC&lt;T&gt; {
 <pre><code class="language-rust">#[no_mangle]
 pub extern &quot;C&quot; fn MYLIB_get_foos(out_foos: &amp;mut OwningArrayC&lt;Foo&gt;) -&gt; i32 {
     let res = vec![Foo { value: 42 }, Foo { value: 99 }];
-    let len = res.len();
-    let cap = res.capacity();
+    let len = res.l<p><a href="/blog"> ⏴ Back to all articles</a></p>
 
-    *out_foos = OwningArrayC {
-        data: res.leak().as_mut_ptr(),
-        len,
-        cap,
-    };
-    0
-}
+<blockquote id="donate">
+  <p>If you enjoy what you're reading, you want to support me, and can afford it: <a href="https://paypal.me/philigaultier?country.x=DE&locale.x=en_US">Support me</a>. That allows me to write more cool articles!</p>
+</blockquote>
 
-#[no_mangle]
-pub extern &quot;C&quot; fn MYLIB_free_foos(foos: &amp;mut OwningArrayC&lt;Foo&gt;) {
-    if foos.cap &gt; 0 {
-        unsafe {
-            let _ = Vec::from_raw_parts(foos.data, foos.len, foos.cap);
-        }
-    }
-}
-</code></pre>
-<p>Let's also re-generate the C header, adapt the C code, rebuild it, communicate with the various projects that use our C API to make them adapt, etc...</p>
-<p>Back to the Rust test:</p>
-<pre><code class="language-rust">#[cfg(test)]
-mod tests {
-    #[test]
-    fn test_get_foos() {
-        let mut foos = crate::OwningArrayC {
-            data: std::ptr::null_mut(),
-            len: 0,
-            cap: 0,
-        };
-        assert_eq!(0, super::MYLIB_get_foos(&amp;mut foos));
-        println!(&quot;foos: {}&quot;, foos.len);
+<blockquote>
+  <p>
+    This blog is <a href="https://github.com/gaultier/blog">open-source</a>!
+    If you find a problem, please open a Github issue.
+    The content of this blog as well as the code snippets are under the <a href="https://en.wikipedia.org/wiki/BSD_licenses#3-clause_license_(%22BSD_License_2.0%22,_%22Revised_BSD_License%22,_%22New_BSD_License%22,_or_%22Modified_BSD_License%22)">BSD-3 License</a> which I also usually use for all my personal projects. It's basically free for every use but you have to mention me as the original author.
+  </p>
+</blockquote>
+
+</div>
+</body>
+</html>
+, foos.len);
         super::MYLIB_free_foos(&amp;mut foos);
     }
 }

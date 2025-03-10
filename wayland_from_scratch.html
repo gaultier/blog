@@ -219,24 +219,21 @@ static int wayland_display_connect() {
     socket_path_len += wayland_display_len;
   }
 
-  int fd = soc<p><a href="/blog"> ⏴ Back to all articles</a></p>
+  int fd = socket(AF_UNIX, SOCK_STREAM, 0);
+  if (fd == -1)
+    exit(errno);
 
-<blockquote id="donate">
-  <p>If you enjoy what you're reading, you want to support me, and can afford it: <a href="https://paypal.me/philigaultier?country.x=DE&locale.x=en_US">Support me</a>. That allows me to write more cool articles!</p>
-</blockquote>
+  if (connect(fd, (struct sockaddr *)&amp;addr, sizeof(addr)) == -1)
+    exit(errno);
 
-<blockquote>
-  <p>
-    This blog is <a href="https://github.com/gaultier/blog">open-source</a>!
-    If you find a problem, please open a Github issue.
-    The content of this blog as well as the code snippets are under the <a href="https://en.wikipedia.org/wiki/BSD_licenses#3-clause_license_(%22BSD_License_2.0%22,_%22Revised_BSD_License%22,_%22New_BSD_License%22,_or_%22Modified_BSD_License%22)">BSD-3 License</a> which I also usually use for all my personal projects. It's basically free for every use but you have to mention me as the original author.
-  </p>
-</blockquote>
-
-</div>
-</body>
-</html>
-a RPC mechanism. All bytes are in the host endianness so there is nothing special to do about it:</p>
+  return fd;
+}
+</code></pre>
+<p>In Wayland, there is no connection setup to do, such as sending some special messages, so there is nothing more to do.</p>
+<h2>Creating a registry</h2>
+<p>Now, to do anything useful, we want to create a registry: it is an object that allows us to query at runtime the capabilities of the compositor.</p>
+<p>In Wayland, to create an object, we simply send the right message followed by an id of our own. Ids should be unique so we simply increment a number each time we want to create a new resource. After this is done, we will remember this number to be able to refer to it in later messages:</p>
+<p>This is coincidentally our first message we send, so let's briefly go over the structure of a Wayland message. It is basically a RPC mechanism. All bytes are in the host endianness so there is nothing special to do about it:</p>
 <ul>
 <li>4 bytes: The id of the resource ('object') we want to call a method on</li>
 <li>2 bytes: The opcode of the method we want to call</li>

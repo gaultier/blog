@@ -135,24 +135,10 @@
 <li>Don't install documentation. It's obvious but most people do it. While you are at it, don't install <code>man</code>, <code>apropos</code>, <code>info</code>, etc. Alpine Linux gets it right by splitting almost all packages between the package itself and its documentation. E.g.: <code>cmake</code> and <code>cmake-doc</code>.</li>
 <li>On the same vein: don't install shell autocompletions. Same idea. Again, on Alpine they are not part of the main package. E.g.: <code>cmake</code> and <code>cmake-bash-completion</code>.</li>
 <li>Stay away from aggregate packages (or meta-packages)! Those are for convenience only when developing. E.g.: <code>build-base</code> on Alpine is a meta-package gathering <code>make</code>, <code>file</code>, <code>gcc</code>, etc. It will bring lots of things you do not need. Cherry-pick only what you really required and steer clear of those packages.</li>
-<li>Learn how Docker image layers work: avoid doing <code>RUN rm archive.tar</code>, since it simply creates a new layer without removing the file from the previous <p><a href="/blog"> ⏴ Back to all articles</a></p>
-
-<blockquote id="donate">
-  <p>If you enjoy what you're reading, you want to support me, and can afford it: <a href="https://paypal.me/philigaultier?country.x=DE&locale.x=en_US">Support me</a>. That allows me to write more cool articles!</p>
-</blockquote>
-
-<blockquote>
-  <p>
-    This blog is <a href="https://github.com/gaultier/blog">open-source</a>!
-    If you find a problem, please open a Github issue.
-    The content of this blog as well as the code snippets are under the <a href="https://en.wikipedia.org/wiki/BSD_licenses#3-clause_license_(%22BSD_License_2.0%22,_%22Revised_BSD_License%22,_%22New_BSD_License%22,_or_%22Modified_BSD_License%22)">BSD-3 License</a> which I also usually use for all my personal projects. It's basically free for every use but you have to mention me as the original author.
-  </p>
-</blockquote>
-
-</div>
-</body>
-</html>
-You can astutely use multi-stage Docker builds to have first a build stage using the development packages, and then a final stage which only has the non-development packages. In CI, you almost never need both variants installed at the same time.</li>
+<li>Learn how Docker image layers work: avoid doing <code>RUN rm archive.tar</code>, since it simply creates a new layer without removing the file from the previous layer. Prefer: <code>RUN curl -sSL --retry 5 foo.com/archive.tar &amp;&amp; tar -xf archive.tar &amp;&amp; rm archive.tar</code> which will not add the tar archive to the Docker image.</li>
+<li>Use multi-stage Docker builds. It is old advice at this point but it bears repeating.</li>
+<li>When using multi-stage: Only copy files you need from a previous stage instead of globbing wildly, thus defeating the purpose of multi-stages.</li>
+<li>Tell apart the development and the release variant of a package. For example: on Ubuntu, when using the SDL2 library, it comes in two flavors: <code>libsdl2-dev</code> and <code>libsdl2-2.0</code>. The former is the development variant which you only need when building code that needs the headers and the libraries of the SDL2, while the latter is only useful with software needing the dynamic libraries at runtime. The development packages are usually bigger in size. You can astutely use multi-stage Docker builds to have first a build stage using the development packages, and then a final stage which only has the non-development packages. In CI, you almost never need both variants installed at the same time.</li>
 <li>Opt-out of 'recommended' packages. Aptitude on Debian/Ubuntu is the culprit here: <code>apt-get install foo</code> will install much more than <code>foo</code>. It will also install recommended packages that most of the time are completely unrelated. Always use <code>apt-get install --no-install-recommends foo</code>.</li>
 <li>Don't create unnecessary files: you use use heredoc and shell pipelines to avoid creating intermediary files.</li>
 </ul>

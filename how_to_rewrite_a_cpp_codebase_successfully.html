@@ -167,24 +167,10 @@
 <p>Essentially, it's a matter of genuinely presenting the alternative of rewriting being cheaper in terms of time and effort compared to improving the project with pure C++. If your teammates and boss are reality-based, it should be a straightforward decision.</p>
 <p>We use at my day job basically a RFC process to introduce a major change. That's great because it forces the person pushing for a change to document the current issues, the possible solutions, and allowing for a rational discussion to take place in the team. And documenting the whole process in a shared document (that allows comments) is very valuable because when people ask about it months later, you can just share the link to it.</p>
 <p>After the problematic situation has been presented, I think at least 3 different solutions should be presented and compared (including sticking with pure C++), and seriously consider each option. I find it important here to be as little emotionally invested as possible even if one option is your favorite, and to be ready to work for possibly months on your least favorite option, if it happens to be chosen by the collective.</p>
-<p>Ideally, if time permits, a small prototype for the preferred solution should be done, to confirm or infirm early that it can work, and to eliminate <p><a href="/blog"> ⏴ Back to all articles</a></p>
-
-<blockquote id="donate">
-  <p>If you enjoy what you're reading, you want to support me, and can afford it: <a href="https://paypal.me/philigaultier?country.x=DE&locale.x=en_US">Support me</a>. That allows me to write more cool articles!</p>
-</blockquote>
-
-<blockquote>
-  <p>
-    This blog is <a href="https://github.com/gaultier/blog">open-source</a>!
-    If you find a problem, please open a Github issue.
-    The content of this blog as well as the code snippets are under the <a href="https://en.wikipedia.org/wiki/BSD_licenses#3-clause_license_(%22BSD_License_2.0%22,_%22Revised_BSD_License%22,_%22New_BSD_License%22,_or_%22Modified_BSD_License%22)">BSD-3 License</a> which I also usually use for all my personal projects. It's basically free for every use but you have to mention me as the original author.
-  </p>
-</blockquote>
-
-</div>
-</body>
-</html>
-I also seriously considered Go, but after doing a prototype, I was doubtful the many limitations of CGO would allow us to achieve the rewrite. Other teammates also had concerns on how the performance and battery usage would look like on low-end Android and Linux devices, especially 32 bits, having essentially two garbage collectors running concurrently, the JVM one and the Go one.</p>
+<p>Ideally, if time permits, a small prototype for the preferred solution should be done, to confirm or infirm early that it can work, and to eliminate doubts. It's a much more compelling argument to say: &quot;Of course it will work, here is prototype I made, let's look at it together!&quot; compared to &quot;I hope it will work, but who knows, oh well I guess we'll see 3 months in...&quot;.</p>
+<p>After much debate, we settled on Rust as the new programming language being introduced into the codebase. It's important to note that I am not a Rust die hard fan. I appreciate the language but it's not perfect (see the FFI section later), it has issues, it's just that it solves all the issues we have in this project, especially considering the big focus on security (since we deal with payments),  the relative similarity with the company tech stack (Go), and the willingness of the team to learn it and review code in it.</p>
+<p>After all, the goal is also to gain additional developers, and stop being the only person who can even touch this code.</p>
+<p>I also seriously considered Go, but after doing a prototype, I was doubtful the many limitations of CGO would allow us to achieve the rewrite. Other teammates also had concerns on how the performance and battery usage would look like on low-end Android and Linux devices, especially 32 bits, having essentially two garbage collectors running concurrently, the JVM one and the Go one.</p>
 <h2>Keeping buy-in</h2>
 <p>Keeping buy-in after initially getting it is not a given, since software always takes longer than expected and unexpected hurdles happen all the time. Here, showing the progress through regular demos (weekly or biweekly is a good frequency) is great for stakeholders especially non-technical ones. And it can potentially motivate fellow developers to also learn the new language and help you out.</p>
 <p>Additionally, showing how long-standing issues in the old code get automatically solved by the new code, e.g. memory leaks, or fuzzing crashes in one function, are a great sign for stakeholders of the quality improving and the value of the on-going effort.</p>
@@ -196,24 +182,11 @@ I also seriously considered Go, but after doing a prototype, I was doubtful the 
 <p>Every time such a bug appeared, I switched to this Git tag, and tried to reproduce the bug. Almost every time, the bug was already present before the rewrite. That's a very important information (for me, it was a relief!) for solving the bug, and also for stakeholders. That's the difference in their eye between: We are improving the product by fixing long existing bugs; or: we are introducing new bugs with our risky changes and we should maybe stop the effort completely because it's harming the product.</p>
 <p>Furthermore, I think the first commit introducing the new code should add dummy code and focus on making the build system and CI work seamlessly on every supported platform. This is not appealing work but it's necessary. Also, having instructions in the README explaining a bit what each tool does (<code>cargo</code>, <code>rustup</code>, <code>clippy</code>, etc) is very valuable and will ease beginners into contributing in the new language.</p>
 <h2>Incremental rewrite</h2>
-<p>Along with stakeholder<p><a href="/blog"> ⏴ Back to all articles</a></p>
-
-<blockquote id="donate">
-  <p>If you enjoy what you're reading, you want to support me, and can afford it: <a href="https://paypal.me/philigaultier?country.x=DE&locale.x=en_US">Support me</a>. That allows me to write more cool articles!</p>
-</blockquote>
-
-<blockquote>
-  <p>
-    This blog is <a href="https://github.com/gaultier/blog">open-source</a>!
-    If you find a problem, please open a Github issue.
-    The content of this blog as well as the code snippets are under the <a href="https://en.wikipedia.org/wiki/BSD_licenses#3-clause_license_(%22BSD_License_2.0%22,_%22Revised_BSD_License%22,_%22New_BSD_License%22,_or_%22Modified_BSD_License%22)">BSD-3 License</a> which I also usually use for all my personal projects. It's basically free for every use but you have to mention me as the original author.
-  </p>
-</blockquote>
-
-</div>
-</body>
-</html>
-i>
+<p>Along with stakeholder buy-in, the most important point in the article is that only an <strong>incremental</strong> rewrite can succeed, in my opinion. Rewriting from scratch is bound to fail, I think. At least I have never seen it succeed, and have seen it fail many times.</p>
+<p>What does it mean, very pragmatically? Well it's just a few rules of thumb:</p>
+<ul>
+<li>A small component is picked to be rewritten, the smallest, the better. Ideally it is as small as one function, or one class.</li>
+<li>The new implementation is written in the same Git (or whatever CVS you use) repository as the existing code, alongside it. It's a 'bug for bug' implementation which means it does the exact same thing as the old implementation, even if the old seems sometimes non-sensical. In some cases, what the old code tries to do is so broken and insecure, that we have to do something different in the new code, but that should be rare.</li>
 <li>Tests for the new implementation are written and pass (so that we know the new implementation is likely correct)</li>
 <li>Each site calling the function/class is switched to using the new implementation. After each replacement, the test suite is run and passes (so that we know that nothing broke at the scale of the project; a kind of regression testing). The change is committed. That way is something breaks, we know exactly which change is the culprit.</li>
 <li>A small PR is opened, reviewed and merged. Since our changes are anyways incremental, it's up to us to decide that the current diff is of the right size for a PR. We can make the PR as big or small as we want. We can even make a PR with only the new implementation that's not yet used at all.</li>
@@ -229,11 +202,24 @@ i>
 <li>Thus, mapping out at the start from a high-level what are the existing components and which component calls out to which other component is invaluable in that regard, but also for establishing a rough roadmap for the rewrite, and reporting on the progress (&quot;3 components have been rewritten, 2 left to do!&quot;).</li>
 <li>Port the code comments from the old code to the new code if they make sense and add value. In my experience, a few are knowledge gems and should be kept, and most are completely useless noise.</li>
 <li>If you can use automated tools (search and replace, or tools operating at the AST level) to change every call site to use the new implementation, it'll make your reviewers very happy, and save you hours and hours of debugging because of a copy-paste mistake</li>
-<li>Since Rust and C++ can basically only communicate through a C API (I am aware of experimental projects to make them talk directly but we did not use those - we ultimately want 100% Rust code exposing a C API, just like the old C++ did), it means that each Rust function must be accompanied by a corresponding C function signature, so that C++ can call it as a C function. I recommend automating this process with <a href="https://github.com/mozilla/cbindgen">cbindgen</a>. I have encountered some limitations with it but it's very useful, especially to keep the implementation (in Rust) and the API (in C) in sync, or if your teammates are not comfortable with C.</li>
-<li>Automate when you can, for example I added the <code>cbindgen</code> code generation step to CMake so that rebuilding the C++ project would automatically run <code>cbindgen</code> as well as <code>cargo build</code> for the right target in the right mode (debug or release) for the right platforms (<code>--target=...</code>). DevUX matters!</li>
-<li>When rewriting a function/class, port the tests for this function/class to the new implementation to avoid reducing the code coverage each time</li>
-<li>Make the old and the new test suites fast so that the iteration time is short</li>
-<li>When a divergence is detected (a difference in output or side effects between the old and the new implementation), observe with tests or within the debugger the output of the old implementation (that's where the initial Git tag comes handy, and working with small commits) in detail so that you can correct the new implementation. Some people even develop big test suites verifying that the output of the old and the new implementation are exactly the same.</li>
+<li>Since Rust and C++ can basically only communicate through a C API (I am aware of experimental projects to make them talk directly but we did not use those - we ultimately want 100% Rust code exposing a C API, just like the old C++ did), it means that each Rust function must be accompanied by a corresponding C function signature, so that C++ can call it as a C function. I recommend automating <p><a href="/blog"> ⏴ Back to all articles</a></p>
+
+<blockquote id="donate">
+  <p>If you enjoy what you're reading, you want to support me, and can afford it: <a href="https://paypal.me/philigaultier?country.x=DE&locale.x=en_US">Support me</a>. That allows me to write more cool articles!</p>
+</blockquote>
+
+<blockquote>
+  <p>
+    This blog is <a href="https://github.com/gaultier/blog">open-source</a>!
+    If you find a problem, please open a Github issue.
+    The content of this blog as well as the code snippets are under the <a href="https://en.wikipedia.org/wiki/BSD_licenses#3-clause_license_(%22BSD_License_2.0%22,_%22Revised_BSD_License%22,_%22New_BSD_License%22,_or_%22Modified_BSD_License%22)">BSD-3 License</a> which I also usually use for all my personal projects. It's basically free for every use but you have to mention me as the original author.
+  </p>
+</blockquote>
+
+</div>
+</body>
+</html>
+e in output or side effects between the old and the new implementation), observe with tests or within the debugger the output of the old implementation (that's where the initial Git tag comes handy, and working with small commits) in detail so that you can correct the new implementation. Some people even develop big test suites verifying that the output of the old and the new implementation are exactly the same.</li>
 <li>Since it's a bug-for-bug rewrite, <em>what</em> the new implementation does may seem weird or unnecessarily convoluted but shall be kept (at least as a first pass). However, <em>how</em> it does it in the new code should be up to the best software engineering standards, that means tests, fuzzing, documentation, etc.</li>
 <li>Thread lightly, what can tank the project is being too bold when rewriting code and by doing so, introducing bugs or subtly changing the behavior which will cause breakage down the line. It's better to be conservative here.</li>
 <li>Pick a prefix for all structs and functions in the C API exposed by the Rust code, even if it's just <code>RUST_xxx</code>, so that they are immediately identifiable and greppable. Just like <code>libcurl</code> has the prefix <code>curl_xxx</code>.</li>
