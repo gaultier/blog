@@ -142,24 +142,12 @@
 <h2>POSIX: timer_create, timer_settime</h2>
 <p>POSIX has one API for timers, and it sucks. A timer is created with <code>timer_create</code>, which does initially nothing, and the timer is started with a timeout using <code>timer_settime</code>. When the timeout is reached, a signal is sent to the program. And that's the issue. Signals are <em>very</em> problematic, as seen in my <a href="/blog/way_too_many_ways_to_wait_for_a_child_process_with_a_timeout.html">previous article</a>:</p>
 <ul>
-<li>They do not compose with other OS primitives. This forces numerous syscalls to have a normal version and a signal-aware version that can block some signals for its duration: <code>poll/ppoll</code<p><a href="/blog"> ⏴ Back to all articles</a></p>
-
-<blockquote id="donate">
-  <p>If you enjoy what you're reading, you want to support me, and can afford it: <a href="https://paypal.me/philigaultier?country.x=DE&locale.x=en_US">Support me</a>. That allows me to write more cool articles!</p>
-</blockquote>
-
-<blockquote>
-  <p>
-    This blog is <a href="https://github.com/gaultier/blog">open-source</a>!
-    If you find a problem, please open a Github issue.
-    The content of this blog as well as the code snippets are under the <a href="https://en.wikipedia.org/wiki/BSD_licenses#3-clause_license_(%22BSD_License_2.0%22,_%22Revised_BSD_License%22,_%22New_BSD_License%22,_or_%22Modified_BSD_License%22)">BSD-3 License</a> which I also usually use for all my personal projects. It's basically free for every use but you have to mention me as the original author.
-  </p>
-</blockquote>
-
-</div>
-</body>
-</html>
- and should not be used from within a signal handler but no compiler warns about that and most example code is wrong. This is exacerbated by the fact that a given function may be async-signal safe on some OS but not on another. Or for some version of this OS but not for another version. This has caused real <a href="https://www.qualys.com/2024/07/01/cve-2024-6387/regresshion.txt">security vulnerabilities</a> in the past.</li>
+<li>They do not compose with other OS primitives. This forces numerous syscalls to have a normal version and a signal-aware version that can block some signals for its duration: <code>poll/ppoll</code>, <code>select/pselect</code>, etc.</li>
+<li>They are affected by the signal mask of the parent (e.g.: the shell, the service runner, etc)</li>
+<li>They behave confusingly with child processes. Normally, a signal mask is inherited by the child. But some signal-triggering APIs (e.g.: <code>timer_settime</code>)  explicitly prevent child processes from inheriting their signals. I guess we'll have to read the fine prints in the man page!</li>
+<li>It's hard to write complex programs with signals in mind due to their global nature. Code of our own, or in a library we use, could block some signals for some period of time, unbeknownst to us. Or simply modify the signal mask of the process, so we can never assume that the signal mask has a given value.</li>
+<li>A signal handler has to use global variables, there is no way to pass it a pointer to some data.</li>
+<li>Most functions are not async-signal-safe and should not be used from within a signal handler but no compiler warns about that and most example code is wrong. This is exacerbated by the fact that a given function may be async-signal safe on some OS but not on another. Or for some version of this OS but not for another version. This has caused real <a href="https://www.qualys.com/2024/07/01/cve-2024-6387/regresshion.txt">security vulnerabilities</a> in the past.</li>
 </ul>
 <p>I'll just quote here the Linux man page for <a href="https://www.man7.org/linux/man-pages/man2/timer_create.2.html">timer_create</a>:</p>
 <pre><code> /* Note: calling printf() from a signal handler is not safe
@@ -185,24 +173,36 @@ the array of elements to be sorted.</p>
 <p>So, we all heard the saying: In Unix, everything is a file. So, what if a timer was also a file (descriptor)? And we could ask the OS to notify our program whenever there is data to read (i.e.: when our timer triggers), like with a file or a socket?
 That's the whole idea behind <code>timerfd_create</code> and <code>timerfd_settime</code>. We create a timer, we get a file descriptor back.</p>
 <p>In the previous article, we saw that Linux added similar APIs for signals with <code>signalfd</code> and processes with <code>pidfd_open</code>, so there is a consistent effort to indeed make everything a file.</p>
-<p>That means that using the venerable <code>poll(2)</code>, we can wait on an array of very diverse things: sockets, files, signals, timers, processes, pipes, etc. This is great! That's simple (one API for all OS entities) and composable (handling an additional OS entity does not force<p><a href="/blog"> ⏴ Back to all articles</a></p>
+<p>That means that using the venerable <code>poll(2)</code>, we can wait on an array of very diverse things: sockets, files, signals, timers, processes, pipes, etc. This is great! That's simple (one API for all OS entities) and composable (handling an additional OS entity does not force our program to undergo big changes, and we can wait on diverse OS entities using the same API).</p>
+<p>Let's see it in action by creating 10 timers and waiting for them to trigger:</p>
+<pre><code class="language-c">#include &lt;assert.h&gt;
+#include &lt;inttypes.h&gt;
+#include &lt;stdio.h&gt;
+#include &lt;sys/epoll.h&gt;
+#include &lt;sys/timerfd.h&gt;
+#include &lt;unistd.h&gt;
 
-<blockquote id="donate">
-  <p>If you enjoy what you're reading, you want to support me, and can afford it: <a href="https://paypal.me/philigaultier?country.x=DE&locale.x=en_US">Support me</a>. That allows me to write more cool articles!</p>
-</blockquote>
+int main() {
+  int queue = epoll_create(1 /* Ignored */);
+  assert(-1 != queue);
 
-<blockquote>
-  <p>
-    This blog is <a href="https://github.com/gaultier/blog">open-source</a>!
-    If you find a problem, please open a Github issue.
-    The content of this blog as well as the code snippets are under the <a href="https://en.wikipedia.org/wiki/BSD_licenses#3-clause_license_(%22BSD_License_2.0%22,_%22Revised_BSD_License%22,_%22New_BSD_License%22,_or_%22Modified_BSD_License%22)">BSD-3 License</a> which I also usually use for all my personal projects. It's basically free for every use but you have to mention me as the original author.
-  </p>
-</blockquote>
+  int res = 0;
 
-</div>
-</body>
-</html>
-t(-1 != res);
+  for (int i = 0; i &lt; 10; i++) {
+    res = timerfd_create(CLOCK_MONOTONIC, TFD_NONBLOCK);
+    assert(-1 != res);
+
+    int fd = res;
+    struct itimerspec ts = {.it_value.tv_nsec = i * 50 * 1000 * 1000};
+    res = timerfd_settime(fd, 0, &amp;ts, NULL);
+    assert(-1 != res);
+
+    struct epoll_event ev = {
+        .events = EPOLLIN,
+        .data.fd = fd,
+    };
+    res = epoll_ctl(queue, EPOLL_CTL_ADD, fd, &amp;ev);
+    assert(-1 != res);
   }
 
   int timeout_ms = 1000;

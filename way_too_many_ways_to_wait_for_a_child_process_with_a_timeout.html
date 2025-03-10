@@ -159,24 +159,32 @@ $ ueb sleep 1
 
 
 # Run a program that prints the date and time, and exits with a random status code, to see how it works.
-$ ueb sh -c 'date --iso-8601=ns; export R=$(($RANDOM % 5)); echo $R; exit $R<p><a href="/blog"> ⏴ Back to all articles</a></p>
+$ ueb sh -c 'date --iso-8601=ns; export R=$(($RANDOM % 5)); echo $R; exit $R'
+2024-11-10T15:48:49,499172093+01:00
+4
+2024-11-10T15:48:49,628818472+01:00
+3
+2024-11-10T15:48:49,886557676+01:00
+4
+2024-11-10T15:48:50,400199626+01:00
+3
+2024-11-10T15:48:51,425937132+01:00
+2
+2024-11-10T15:48:53,475565645+01:00
+2
+2024-11-10T15:48:57,573278508+01:00
+1
+2024-11-10T15:49:05,767338611+01:00
+0
 
-<blockquote id="donate">
-  <p>If you enjoy what you're reading, you want to support me, and can afford it: <a href="https://paypal.me/philigaultier?country.x=DE&locale.x=en_US">Support me</a>. That allows me to write more cool articles!</p>
-</blockquote>
-
-<blockquote>
-  <p>
-    This blog is <a href="https://github.com/gaultier/blog">open-source</a>!
-    If you find a problem, please open a Github issue.
-    The content of this blog as well as the code snippets are under the <a href="https://en.wikipedia.org/wiki/BSD_licenses#3-clause_license_(%22BSD_License_2.0%22,_%22Revised_BSD_License%22,_%22New_BSD_License%22,_or_%22Modified_BSD_License%22)">BSD-3 License</a> which I also usually use for all my personal projects. It's basically free for every use but you have to mention me as the original author.
-  </p>
-</blockquote>
-
-</div>
-</body>
-</html>
- race window, which is completely fine if the command is idempotent but will erroneously retry the command to the bitter end otherwise. There is also the case where the sub-command does stuff over the network for example creating a resource, it succeeds, but the ACK is never received due to network issues. The sub-command will think it failed and retry. Again, fairly standard stuff in distributed systems but I thought it was worth mentioning.</p>
+# Some more practical examples.
+$ ueb ssh &lt;some_ip&gt;
+$ ueb createdb my_great_database -h 0.0.0.0 -U postgres
+</code></pre>
+<p>If you want to monitor the retries and the sleeps, you can use <code>strace</code> or <code>dtrace</code>:</p>
+<pre><code class="language-sh">$ strace ueb sleep 1
+</code></pre>
+<p>Note that the sub-command should be idempotent, otherwise we might create a given resource twice, or the command might have succeeded right after our timeout triggered but also right before we killed it, so our program thinks it timed out and thus needs to be retried. There is this small data race window, which is completely fine if the command is idempotent but will erroneously retry the command to the bitter end otherwise. There is also the case where the sub-command does stuff over the network for example creating a resource, it succeeds, but the ACK is never received due to network issues. The sub-command will think it failed and retry. Again, fairly standard stuff in distributed systems but I thought it was worth mentioning.</p>
 <p>So how do we implement it?</p>
 <p>Immediately, we notice something: even though there are a bazillion ways to wait on a child process to finish (<code>wait</code>, <code>wait3</code>, <code>wait4</code>, <code>waitid</code>, <code>waitpid</code>), none of them take a timeout as an argument. This has sparked numerous questions online (<a href="https://stackoverflow.com/questions/18542089/how-to-wait-on-child-process-to-finish-with-time-limit">1</a>, <a href="https://stackoverflow.com/questions/18476138/is-there-a-version-of-the-wait-system-call-that-sets-a-timeout">2</a>), with in my opinion unsatisfactory answers. So let's explore this rabbit hole.</p>
 <p>We'd like the pseudo-code to be something like:</p>
@@ -486,24 +494,13 @@ kill(child_pid, SIGKILL); // Effectively: kill(-1, SIGKILL)
 <p>And the kernel developers have worked hard to introduce a better concept: process descriptors, which are (almost) bog-standard file descriptors, like files or sockets. After all, that's what sparked our whole investigation: we wanted to use <code>poll</code> and it did not work on a PID. PIDs and signals do not compose well, but file descriptors do. Also, just like file descriptors, process descriptors are per-process. If I open a file with <code>open()</code> and get the file descriptor <code>3</code>, it is scoped to my process. Another process can <code>close(3)</code> and it will refer to their own file descriptor, and not affect my file descriptor. That's great, we get isolation, so bugs in our code do not affect other processes.</p>
 <p>So, Linux and FreeBSD have introduced the same concepts but with slightly different APIs (unfortunately), and I have no idea about other OSes:</p>
 <ul>
-<li>A child process can be created with <code>clone3(..., CLONE_PIDFD)</code> (Linux) or <code>pdfork()</code> (FreeBSD) which returns a process descriptor which is almost like a normal file descriptor. <p><a href="/blog"> ⏴ Back to all articles</a></p>
-
-<blockquote id="donate">
-  <p>If you enjoy what you're reading, you want to support me, and can afford it: <a href="https://paypal.me/philigaultier?country.x=DE&locale.x=en_US">Support me</a>. That allows me to write more cool articles!</p>
-</blockquote>
-
-<blockquote>
-  <p>
-    This blog is <a href="https://github.com/gaultier/blog">open-source</a>!
-    If you find a problem, please open a Github issue.
-    The content of this blog as well as the code snippets are under the <a href="https://en.wikipedia.org/wiki/BSD_licenses#3-clause_license_(%22BSD_License_2.0%22,_%22Revised_BSD_License%22,_%22New_BSD_License%22,_or_%22Modified_BSD_License%22)">BSD-3 License</a> which I also usually use for all my personal projects. It's basically free for every use but you have to mention me as the original author.
-  </p>
-</blockquote>
-
-</div>
-</body>
-</html>
-</p>
+<li>A child process can be created with <code>clone3(..., CLONE_PIDFD)</code> (Linux) or <code>pdfork()</code> (FreeBSD) which returns a process descriptor which is almost like a normal file descriptor. On Linux, a process descriptor can also be obtained from a PID with <code>pidfd_open(pid)</code> e.g. after a normal <code>fork</code> was done (but there is a risk of a data race in some cases!). Once we have the process descriptor, we do not need the PID anymore.</li>
+<li>We wait on the process descriptor with <code>poll(..., timeout)</code> (or <code>select</code>, or <code>epoll</code>, etc).</li>
+<li>We kill the child process using the process descriptor with <code>pidfd_send_signal</code> (Linux) or <code>close</code> (FreeBSD) or <code>pdkill</code> (FreeBSD).</li>
+<li>We wait on the zombie child process again using the process descriptor to get its exit status.</li>
+</ul>
+<p>And voila, no signals! Isolation! Composability! (Almost) No PIDs in our program! Life can be nice sometimes. It's just unfortunate that there isn't a cross-platform API for that.</p>
+<p>Here's the Linux implementation:</p>
 <pre><code class="language-c">#define _GNU_SOURCE
 #include &lt;errno.h&gt;
 #include &lt;poll.h&gt;

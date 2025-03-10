@@ -131,24 +131,13 @@
 <p>Cross-compilation is pretty smooth, although not always, see next section.</p>
 <p>The builtin test framework in Rust is very serviceable. All the ones I used in C++ were terrible and took so much time to even compile.</p>
 <p>Rust is much more concerned with correctness than C++, so it sparked a lot of useful discussions. For example: oh, the Rust compiler is forcing me to check if this byte array is valid UTF8 when I try to convert it to a string. The old C++ code did no such check. Let's add this check.</p>
-<p>It felt so good to remove all the CMake files. On all the C or C++ projects I worked on, I never f<p><a href="/blog"> ⏴ Back to all articles</a></p>
-
-<blockquote id="donate">
-  <p>If you enjoy what you're reading, you want to support me, and can afford it: <a href="https://paypal.me/philigaultier?country.x=DE&locale.x=en_US">Support me</a>. That allows me to write more cool articles!</p>
-</blockquote>
-
-<blockquote>
-  <p>
-    This blog is <a href="https://github.com/gaultier/blog">open-source</a>!
-    If you find a problem, please open a Github issue.
-    The content of this blog as well as the code snippets are under the <a href="https://en.wikipedia.org/wiki/BSD_licenses#3-clause_license_(%22BSD_License_2.0%22,_%22Revised_BSD_License%22,_%22New_BSD_License%22,_or_%22Modified_BSD_License%22)">BSD-3 License</a> which I also usually use for all my personal projects. It's basically free for every use but you have to mention me as the original author.
-  </p>
-</blockquote>
-
-</div>
-</body>
-</html>
- rule in Rust is: <del>multiple read-only pointers XOR one mutable pointer</del> <code>multiple read-only reference XOR one mutable reference</code>. That's what the borrow checker is always pestering you about.</p>
+<p>It felt so good to remove all the CMake files. On all the C or C++ projects I worked on, I never felt that CMake was worth it and I always lost a lot of hours to coerce it into doing what I needed.</p>
+<h2>What did not work so well</h2>
+<p>This section is surprisingly long and is the most interesting in my opinion. Did Rust hold its promises?</p>
+<h3>I am still chasing Undefined Behavior</h3>
+<p>Doing an incremental rewrite from C/C++ to Rust, we had to use a lot of raw pointers and <code>unsafe{}</code> blocks. And even when segregating these to the entry point of the library, they proved to be a big pain in the neck.</p>
+<p>All the stringent rules of Rust still apply inside these blocks but the compiler just stops checking them for you, so you are on your own. As such, it's so easy to introduce Undefined Behavior. I honestly think from this experience that it is easier to inadvertently introduce Undefined Behavior in Rust than in C++, and it turn, it's easier in C++ than in C.</p>
+<p>The main rule in Rust is: <del>multiple read-only pointers XOR one mutable pointer</del> <code>multiple read-only reference XOR one mutable reference</code>. That's what the borrow checker is always pestering you about.</p>
 <p>But when using raw pointers, it's so easy to silently break, especially when porting C or C++ code as-is, which is mutation and pointer heavy:</p>
 <p><em>Note: Astute readers have pointed out that the issue in the snippet below is having multiple mutable references, not pointers, and that using the syntax <code>let a = &amp;raw mut x;</code> in recent Rust versions, or <code>addr_of_mut</code> in older versions, avoids creating multiple mutable references.</em></p>
 <pre><code class="language-rust">fn main() {
@@ -251,24 +240,11 @@ However, we wanted to write our tests using the public C API of the library like
 Also, it can become unwieldy when there are tens of types that have an allocation/deallocation function. It's a lot of boilerplate!</p>
 <p>And often, there is complicated logic with lots of code paths, and we need to ensure that the cleanup is always called. In C, this is typically done with <code>goto</code> to an <code>end:</code> label that always cleans up the resources. But Rust does not support this form of <code>goto</code>.</p>
 <p>So we solved it with the <a href="https://docs.rs/scopeguard/latest/scopeguard/">defer</a> crate in Rust and implementing a <a href="https://www.gingerbill.org/article/2015/08/19/defer-in-cpp/">defer</a> statement in C++.</p>
-<p>However, the Rust borrow checker really does not like the <code>defer</code> pattern. Typically, a cleanup function will take as its argument as <code>&amp;mut</code> reference and that precludes the rest of the code to also store and u<p><a href="/blog"> ⏴ Back to all articles</a></p>
-
-<blockquote id="donate">
-  <p>If you enjoy what you're reading, you want to support me, and can afford it: <a href="https://paypal.me/philigaultier?country.x=DE&locale.x=en_US">Support me</a>. That allows me to write more cool articles!</p>
-</blockquote>
-
-<blockquote>
-  <p>
-    This blog is <a href="https://github.com/gaultier/blog">open-source</a>!
-    If you find a problem, please open a Github issue.
-    The content of this blog as well as the code snippets are under the <a href="https://en.wikipedia.org/wiki/BSD_licenses#3-clause_license_(%22BSD_License_2.0%22,_%22Revised_BSD_License%22,_%22New_BSD_License%22,_or_%22Modified_BSD_License%22)">BSD-3 License</a> which I also usually use for all my personal projects. It's basically free for every use but you have to mention me as the original author.
-  </p>
-</blockquote>
-
-</div>
-</body>
-</html>
-ons or bugs. I thought of contributing PRs, but I found for most of these issues, a stale open PR, so I didn't. Every time, I thought of dumping <code>cbindgen</code> and writing all of the C prototypes by hand. I think it would have been simpler in the end.</p>
+<p>However, the Rust borrow checker really does not like the <code>defer</code> pattern. Typically, a cleanup function will take as its argument as <code>&amp;mut</code> reference and that precludes the rest of the code to also store and use a second <code>&amp;mut</code> reference to the same value. So we could not always use <code>defer</code> on the Rust side.</p>
+<h3>Cross-compilation does not always work</h3>
+<p>Same issue as with Miri, using libraries with a Rust API but with parts implemented in C or Assembly will make <code>cargo build --target=...</code> not work out of the box. It won't affect everyone out there, and perhaps it can be worked around by providing a sysroot like in C or C++. But that's a bummer still. For example, I think Zig manages this situation smoothly for most targets, since it ships with a C compiler and standard library, whereas <code>cargo</code> does not.</p>
+<h3>Cbindgen does not always work</h3>
+<p><a href="https://github.com/mozilla/cbindgen">cbindgen</a> is a conventionally used tool to generate a C header from a Rust codebase. It mostly works, until it does not. I hit quite a number of limitations or bugs. I thought of contributing PRs, but I found for most of these issues, a stale open PR, so I didn't. Every time, I thought of dumping <code>cbindgen</code> and writing all of the C prototypes by hand. I think it would have been simpler in the end.</p>
 <p>Again, as a comparison, I believe Zig has a builtin C header generation tool.</p>
 <h3>Unstable ABI</h3>
 <p>I talked about this point in my previous articles so I won't be too long. Basically, all the useful standard library types such as <code>Option</code> have no stable ABI, so they have to be replicated manually with the <code>repr(C)</code> annotation, so that they can be used from C or C++. This again is a bummer and creates friction. Note that I am equally annoyed at C++ ABI issues for the same reason.</p>

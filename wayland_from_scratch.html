@@ -144,24 +144,16 @@ The same goes for extension protocols: they simply are one XML file that is turn
 <ul>
 <li>No need to link to external libraries: no build system complexities, no dynamic linking issues, and so on.</li>
 <li>We do not have to use the callback system that <code>libwayland</code> requires.</li>
-<li>We can use the I/O mechanism we wish to listen to incoming messages: blocking, <code>poll</code>, <code>select<p><a href="/blog"> ⏴ Back to all articles</a></p>
-
-<blockquote id="donate">
-  <p>If you enjoy what you're reading, you want to support me, and can afford it: <a href="https://paypal.me/philigaultier?country.x=DE&locale.x=en_US">Support me</a>. That allows me to write more cool articles!</p>
-</blockquote>
-
-<blockquote>
-  <p>
-    This blog is <a href="https://github.com/gaultier/blog">open-source</a>!
-    If you find a problem, please open a Github issue.
-    The content of this blog as well as the code snippets are under the <a href="https://en.wikipedia.org/wiki/BSD_licenses#3-clause_license_(%22BSD_License_2.0%22,_%22Revised_BSD_License%22,_%22New_BSD_License%22,_or_%22Modified_BSD_License%22)">BSD-3 License</a> which I also usually use for all my personal projects. It's basically free for every use but you have to mention me as the original author.
-  </p>
-</blockquote>
-
-</div>
-</body>
-</html>
-_wl_buffer_event_release = 0;
+<li>We can use the I/O mechanism we wish to listen to incoming messages: blocking, <code>poll</code>, <code>select</code>, <code>epoll</code>, <code>io_uring</code>, <code>kqueue</code> on some systems, etc. Here, we will use blocking calls for simplicity but the world is your oyster.</li>
+<li>Easy troubleshooting: 100% of the code is our own.</li>
+<li>No XML</li>
+<li>The protocols we will use are stable so the numeric values on the wire should not change underneath us, but in the unlikely event they do, we simply have to fix them in our code and compile again.</li>
+</ul>
+<p>So at this point you might be thinking: this is going to be so much work! Well, not really. Here are <strong>all</strong> of the Wayland protocol numeric values we will need, including the extension protocols:</p>
+<pre><code class="language-c">static const uint32_t wayland_display_object_id = 1;
+static const uint16_t wayland_wl_registry_event_global = 0;
+static const uint16_t wayland_shm_pool_event_format = 0;
+static const uint16_t wayland_wl_buffer_event_release = 0;
 static const uint16_t wayland_xdg_wm_base_event_ping = 0;
 static const uint16_t wayland_xdg_toplevel_event_configure = 0;
 static const uint16_t wayland_xdg_toplevel_event_close = 1;
@@ -324,24 +316,24 @@ static void buf_read_n(char **buf, uint64_t *buf_size, char *dst, uint64_t n) {
   uint16_t msg_announced_size =
       wayland_header_size + sizeof(wayland_current_id);
   assert(roundup_4(msg_announced_size) == msg_announced_size);
-  buf_write_u16(msg, &amp;msg_size, s<p><a href="/blog"> ⏴ Back to all articles</a></p>
+  buf_write_u16(msg, &amp;msg_size, sizeof(msg), msg_announced_size);
 
-<blockquote id="donate">
-  <p>If you enjoy what you're reading, you want to support me, and can afford it: <a href="https://paypal.me/philigaultier?country.x=DE&locale.x=en_US">Support me</a>. That allows me to write more cool articles!</p>
-</blockquote>
+  wayland_current_id++;
+  buf_write_u32(msg, &amp;msg_size, sizeof(msg), wayland_current_id);
 
-<blockquote>
-  <p>
-    This blog is <a href="https://github.com/gaultier/blog">open-source</a>!
-    If you find a problem, please open a Github issue.
-    The content of this blog as well as the code snippets are under the <a href="https://en.wikipedia.org/wiki/BSD_licenses#3-clause_license_(%22BSD_License_2.0%22,_%22Revised_BSD_License%22,_%22New_BSD_License%22,_or_%22Modified_BSD_License%22)">BSD-3 License</a> which I also usually use for all my personal projects. It's basically free for every use but you have to mention me as the original author.
-  </p>
-</blockquote>
+  if ((int64_t)msg_size != send(fd, msg, msg_size, MSG_DONTWAIT))
+    exit(errno);
 
-</div>
-</body>
-</html>
-oach: the buffer should be shared between the two processes, so that no copying is required.</p>
+  printf(&quot;-&gt; wl_display@%u.get_registry: wl_registry=%u\n&quot;,
+         wayland_display_object_id, wayland_current_id);
+
+  return wayland_current_id;
+}
+</code></pre>
+<p>And by calling it, we have created our very first Wayland resource!</p>
+<p><em>From this point on, the utility functions to send Wayland messages (<code>wayland_*</code>) will not be included in the code snippets for brevity (but you will find all of the code at the end!), just because they all are similar to the one above.</em></p>
+<h2>Shared memory: the frame buffer</h2>
+<p>To avoid drawing  a frame in our application, and having to send all of the bytes over the socket to the compositor, there is a smarter approach: the buffer should be shared between the two processes, so that no copying is required.</p>
 <p>We need to synchronize the access between the two so that presenting the frame does not happen while we are still drawing it, and Wayland has us covered here.</p>
 <p>First, we need to create this buffer. We are going to make it easier for us by using a fixed size. Wayland is going to send us 'resize' events, whenever the window size changes, which we will acknowledge and ignore. This is done here just to simplify a bit the article, obviously in a real application, you would resize the buffer.</p>
 <p>First, we introduce a struct that will hold all of the client-side state so that we remember which resources we have created so far. We also need a super simple state machine for later to track whether the surface (i.e. the 'frame' data) should be drawn to, as mentioned:</p>

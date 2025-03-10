@@ -227,24 +227,42 @@ AuthEntry :: struct {
 
 	display_number_len: u16 = 0
 	{
-		n_read, err := bytes.buffer_read(buffer, mem.ptr_to_bytes(&amp;display_num<p><a href="/blog"> ⏴ Back to all articles</a></p>
+		n_read, err := bytes.buffer_read(buffer, mem.ptr_to_bytes(&amp;display_number_len))
+		assert(err == .None)
 
-<blockquote id="donate">
-  <p>If you enjoy what you're reading, you want to support me, and can afford it: <a href="https://paypal.me/philigaultier?country.x=DE&locale.x=en_US">Support me</a>. That allows me to write more cool articles!</p>
-</blockquote>
+		display_number_len = bits.byte_swap(display_number_len)
+		assert(n_read == size_of(display_number_len))
+	}
 
-<blockquote>
-  <p>
-    This blog is <a href="https://github.com/gaultier/blog">open-source</a>!
-    If you find a problem, please open a Github issue.
-    The content of this blog as well as the code snippets are under the <a href="https://en.wikipedia.org/wiki/BSD_licenses#3-clause_license_(%22BSD_License_2.0%22,_%22Revised_BSD_License%22,_%22New_BSD_License%22,_or_%22Modified_BSD_License%22)">BSD-3 License</a> which I also usually use for all my personal projects. It's basically free for every use but you have to mention me as the original author.
-  </p>
-</blockquote>
+	display_number := make([]u8, display_number_len)
+	{
+		n_read, err := bytes.buffer_read(buffer, display_number)
+		assert(err == .None)
+		assert(n_read == cast(int)display_number_len)
+	}
 
-</div>
-</body>
-</html>
-len)
+	auth_name_len: u16 = 0
+	{
+		n_read, err := bytes.buffer_read(buffer, mem.ptr_to_bytes(&amp;auth_name_len))
+		assert(err == .None)
+
+		auth_name_len = bits.byte_swap(auth_name_len)
+		assert(n_read == size_of(auth_name_len))
+	}
+
+	entry.auth_name = make([]u8, auth_name_len)
+	{
+		n_read, err := bytes.buffer_read(buffer, entry.auth_name)
+		assert(err == .None)
+		assert(n_read == cast(int)auth_name_len)
+	}
+
+	auth_data_len: u16 = 0
+	{
+		n_read, err := bytes.buffer_read(buffer, mem.ptr_to_bytes(&amp;auth_data_len))
+		assert(err == .None)
+
+		auth_data_len = bits.byte_swap(auth_data_len)
 		assert(n_read == size_of(auth_data_len))
 	}
 
@@ -545,24 +563,71 @@ test_round_up_4 :: proc(_: ^testing.T) {
 </code></pre>
 <p>Finally we create a window. We subscribe to a few events as well:</p>
 <ul>
-<li><code>Exposure</code>: when o<p><a href="/blog"> ⏴ Back to all articles</a></p>
+<li><code>Exposure</code>: when our window becomes visible</li>
+<li><code>KEY_PRESS</code>: when a keyboard key is pressed</li>
+<li><code>KEY_RELEASE</code>: when a keyboard key is released</li>
+<li><code>BUTTON_PRESS</code>: when a mouse button is pressed</li>
+<li><code>BUTTON_RELEASE</code>: when a mouse button is released</li>
+</ul>
+<p>We also pick an arbitrary background color, yellow. It does not matter because we will always cover every part of the window with our assets.</p>
+<pre><code class="language-odin">x11_create_window :: proc(
+	socket: os.Socket,
+	window_id: u32,
+	parent_id: u32,
+	x: u16,
+	y: u16,
+	width: u16,
+	height: u16,
+	root_visual_id: u32,
+) {
+	FLAG_WIN_BG_PIXEL: u32 : 2
+	FLAG_WIN_EVENT: u32 : 0x800
+	FLAG_COUNT: u16 : 2
+	EVENT_FLAG_EXPOSURE: u32 = 0x80_00
+	EVENT_FLAG_KEY_PRESS: u32 = 0x1
+	EVENT_FLAG_KEY_RELEASE: u32 = 0x2
+	EVENT_FLAG_BUTTON_PRESS: u32 = 0x4
+	EVENT_FLAG_BUTTON_RELEASE: u32 = 0x8
+	flags: u32 : FLAG_WIN_BG_PIXEL | FLAG_WIN_EVENT
+	depth: u8 : 24
+	border_width: u16 : 0
+	CLASS_INPUT_OUTPUT: u16 : 1
+	opcode: u8 : 1
+	BACKGROUND_PIXEL_COLOR: u32 : 0x00_ff_ff_00
 
-<blockquote id="donate">
-  <p>If you enjoy what you're reading, you want to support me, and can afford it: <a href="https://paypal.me/philigaultier?country.x=DE&locale.x=en_US">Support me</a>. That allows me to write more cool articles!</p>
-</blockquote>
-
-<blockquote>
-  <p>
-    This blog is <a href="https://github.com/gaultier/blog">open-source</a>!
-    If you find a problem, please open a Github issue.
-    The content of this blog as well as the code snippets are under the <a href="https://en.wikipedia.org/wiki/BSD_licenses#3-clause_license_(%22BSD_License_2.0%22,_%22Revised_BSD_License%22,_%22New_BSD_License%22,_or_%22Modified_BSD_License%22)">BSD-3 License</a> which I also usually use for all my personal projects. It's basically free for every use but you have to mention me as the original author.
-  </p>
-</blockquote>
-
-</div>
-</body>
-</html>
-BUTTON_RELEASE | EVENT_FLAG_BUTTON_PRESS | EVENT_FLAG_KEY_PRESS | EVENT_FLAG_KEY_RELEASE,
+	Request :: struct #packed {
+		opcode:         u8,
+		depth:          u8,
+		request_length: u16,
+		window_id:      u32,
+		parent_id:      u32,
+		x:              u16,
+		y:              u16,
+		width:          u16,
+		height:         u16,
+		border_width:   u16,
+		class:          u16,
+		root_visual_id: u32,
+		bitmask:        u32,
+		value1:         u32,
+		value2:         u32,
+	}
+	request := Request {
+		opcode         = opcode,
+		depth          = depth,
+		request_length = 8 + FLAG_COUNT,
+		window_id      = window_id,
+		parent_id      = parent_id,
+		x              = x,
+		y              = y,
+		width          = width,
+		height         = height,
+		border_width   = border_width,
+		class          = CLASS_INPUT_OUTPUT,
+		root_visual_id = root_visual_id,
+		bitmask        = flags,
+		value1         = BACKGROUND_PIXEL_COLOR,
+		value2         = EVENT_FLAG_EXPOSURE | EVENT_FLAG_BUTTON_RELEASE | EVENT_FLAG_BUTTON_PRESS | EVENT_FLAG_KEY_PRESS | EVENT_FLAG_KEY_RELEASE,
 	}
 
 	{
@@ -1031,24 +1096,7 @@ ASSET_COORDINATES: [Entity_kind]Position = {
 }
 </code></pre>
 <p>If the event is <code>Exposed</code>, we simply render (that's our first render when the window becomes visible - or if the window was minimized and then made visible again).</p>
-<p>If the event is the <code>Enter</code> key, we reset the state of the game and render. X11 differentiates between physical and logical keys on the keyboard but that does not matter here (or I would argue in most games: we are intere<p><a href="/blog"> ⏴ Back to all articles</a></p>
-
-<blockquote id="donate">
-  <p>If you enjoy what you're reading, you want to support me, and can afford it: <a href="https://paypal.me/philigaultier?country.x=DE&locale.x=en_US">Support me</a>. That allows me to write more cool articles!</p>
-</blockquote>
-
-<blockquote>
-  <p>
-    This blog is <a href="https://github.com/gaultier/blog">open-source</a>!
-    If you find a problem, please open a Github issue.
-    The content of this blog as well as the code snippets are under the <a href="https://en.wikipedia.org/wiki/BSD_licenses#3-clause_license_(%22BSD_License_2.0%22,_%22Revised_BSD_License%22,_%22New_BSD_License%22,_or_%22Modified_BSD_License%22)">BSD-3 License</a> which I also usually use for all my personal projects. It's basically free for every use but you have to mention me as the original author.
-  </p>
-</blockquote>
-
-</div>
-</body>
-</html>
-een physical and logical keys on the keyboard but that does not matter here (or I would argue in most games: we are interested in the physical location of the key, not what the user mapped it to).</p>
+<p>If the event is the <code>Enter</code> key, we reset the state of the game and render. X11 differentiates between physical and logical keys on the keyboard but that does not matter here (or I would argue in most games: we are interested in the physical location of the key, not what the user mapped it to).</p>
 <p>If the event is (pressing and) releasing a mouse button, we run the game logic to uncover a cell and render.</p>
 <p>That's it!</p>
 <h2>Game logic: uncover a cell</h2>

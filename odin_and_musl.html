@@ -146,24 +146,22 @@ clang -Wno-unused-command-line-argument [...]  -lm -lc   -L/       -no-pie
 <p>A big difference between Odin and Zig is that Zig is a full cross-compilation toolchain: it comes with the source code of <code>musl</code>, and has put in a ton of work to cross-compile it to the target the user desires.</p>
 <p>So to make our use-case work with Odin, without Odin the toolchain supporting what Zig supports, what we need to do is cross-compile our code to an ARM64 object file but without linking it yet. Then we link it manually to musl libc that has been built for ARM64. We could download this musl artifact from the internet but it's both more educational, empowering, and secure, to build it ourselves. So let's do this, it's not too much work.</p>
 <p>To build musl, we can either use clang since it is a cross-compiler by default, or a GCC toolchain that has been made to target ARM64. Most Linux distributions provide such a compiler as a package typically called <code>gcc-aarch64-xxx</code> e.g. <code>sudo apt-get install gcc-aarch64-linux-gnu</code> or <code>sudo dnf install gcc-aarch64-linux-gnu</code>.</p>
-<p>So let's now build a static musl for ARM64, following t<p><a href="/blog"> ⏴ Back to all articles</a></p>
+<p>So let's now build a static musl for ARM64, following the official instructions. We just need to this once:</p>
+<pre><code class="language-sh">$ git clone --recurse --depth 1 https://git.musl-libc.org/git/musl
+$ cd musl
 
-<blockquote id="donate">
-  <p>If you enjoy what you're reading, you want to support me, and can afford it: <a href="https://paypal.me/philigaultier?country.x=DE&locale.x=en_US">Support me</a>. That allows me to write more cool articles!</p>
-</blockquote>
+# With Clang:
+$ CFLAGS='--target=aarch64-unknown-linux-musl' RANLIB=llvm-ranlib AR=llvm-ar CC=clang ./configure --target=aarch64 --disable-shared
+# Or with GCC:
+$ RANLIB=/usr/bin/aarch64-linux-gnu-gcc-ranlib AR=/usr/bin/aarch64-linux-gnu-gcc-ar CC=/usr/bin/aarch64-linux-gnu-gcc ./configure --target=aarch64 --disable-shared
 
-<blockquote>
-  <p>
-    This blog is <a href="https://github.com/gaultier/blog">open-source</a>!
-    If you find a problem, please open a Github issue.
-    The content of this blog as well as the code snippets are under the <a href="https://en.wikipedia.org/wiki/BSD_licenses#3-clause_license_(%22BSD_License_2.0%22,_%22Revised_BSD_License%22,_%22New_BSD_License%22,_or_%22Modified_BSD_License%22)">BSD-3 License</a> which I also usually use for all my personal projects. It's basically free for every use but you have to mention me as the original author.
-  </p>
-</blockquote>
-
-</div>
-</body>
-</html>
-:'
+# Either way (Clang/GCC), the build command itself is the same.
+$ make
+</code></pre>
+<p>We now have the two artifacts we want: <code>crt1.o</code> and <code>libc.a</code>. We can confirm that they have been correctly built for our target:</p>
+<pre><code class="language-sh">$ file lib/crt1.o
+lib/crt1.o: ELF 64-bit LSB relocatable, ARM aarch64, version 1 (SYSV), not stripped
+$ readelf -h lib/libc.a | grep '^\s*Machine:'
   Machine:                           AArch64
   Machine:                           AArch64
   Machine:                           AArch64
@@ -206,24 +204,6 @@ $ du -h a.out
 </code></pre>
 <p>Ok, so basically: heap allocation and some functions to copy/set memory.</p>
 <p>Heap allocation functions are not actually required if our program does not do heap allocations (Odin provides the option <code>-default-to-nil-allocator</code> for this case), or if we implement these ourselves, for example with a naive <code>mmap</code> implementation, or by setting in our program the default allocator to be an arena. Odin has first class support for custom allocators!</p>
-<p>The functions to manipulate memory are required even if we do not call them directly because typically, the compiler will replace some code patterns, e.g. <code>struct<p><a href="/blog"> ⏴ Back to all articles</a></p>
-
-<blockquote id="donate">
-  <p>If you enjoy what you're reading, you want to support me, and can afford it: <a href="https://paypal.me/philigaultier?country.x=DE&locale.x=en_US">Support me</a>. That allows me to write more cool articles!</p>
-</blockquote>
-
-<blockquote>
-  <p>
-    This blog is <a href="https://github.com/gaultier/blog">open-source</a>!
-    If you find a problem, please open a Github issue.
-    The content of this blog as well as the code snippets are under the <a href="https://en.wikipedia.org/wiki/BSD_licenses#3-clause_license_(%22BSD_License_2.0%22,_%22Revised_BSD_License%22,_%22New_BSD_License%22,_or_%22Modified_BSD_License%22)">BSD-3 License</a> which I also usually use for all my personal projects. It's basically free for every use but you have to mention me as the original author.
-  </p>
-</blockquote>
-
-</div>
-</body>
-</html>
-tions are not actually required if our program does not do heap allocations (Odin provides the option <code>-default-to-nil-allocator</code> for this case), or if we implement these ourselves, for example with a naive <code>mmap</code> implementation, or by setting in our program the default allocator to be an arena. Odin has first class support for custom allocators!</p>
 <p>The functions to manipulate memory are required even if we do not call them directly because typically, the compiler will replace some code patterns, e.g. <code>struct</code> or array initialization, with these functions behind the scene.</p>
 <p>These <code>memxxx</code> functions could potentially be implemented by us, likely incurring a performance cost compared to the hand-optimized libc versions. But Odin can provide them for us! We can just use the <code>-no-crt</code> option.</p>
 <p>Note that not all targets will be equally supported for this use-case. ARM64 is not yet supported, so I will demonstrate targeting AMD64 (i.e. Intel/AMD 64 bits).</p>
@@ -241,6 +221,32 @@ main :: proc() {
 <pre><code class="language-sh">$ odin build hello.odin -file -target=linux_amd64 -default-to-nil-allocator -no-crt
 $ file hello
 hello: ELF 64-bit LSB executable, x86-64, version 1 (SYSV), statically linked, BuildID[sha1]=ef8dfc9dc297295808f80ec66e92763358a598d1, not stripped
+</code></pre>
+<p>And we can see the <code>malloc</code> symbol is not present since we do opted out of it, and that Odin provided with these assembly files the correct implementation for <code>memset</code>:</p>
+<pre><code class="language-sh">$ nm hello | grep malloc
+# Nothing
+$ nm hello | grep memset
+00000000004042c0 T memset
+</code></pre>
+<p>I'll soon write about what programs I made for the Raspberry Pi Zero, so check back soon!</p>
+<p><a href="/blog"> ⏴ Back to all articles</a></p>
+
+<blockquote id="donate">
+  <p>If you enjoy what you're reading, you want to support me, and can afford it: <a href="https://paypal.me/philigaultier?country.x=DE&locale.x=en_US">Support me</a>. That allows me to write more cool articles!</p>
+</blockquote>
+
+<blockquote>
+  <p>
+    This blog is <a href="https://github.com/gaultier/blog">open-source</a>!
+    If you find a problem, please open a Github issue.
+    The content of this blog as well as the code snippets are under the <a href="https://en.wikipedia.org/wiki/BSD_licenses#3-clause_license_(%22BSD_License_2.0%22,_%22Revised_BSD_License%22,_%22New_BSD_License%22,_or_%22Modified_BSD_License%22)">BSD-3 License</a> which I also usually use for all my personal projects. It's basically free for every use but you have to mention me as the original author.
+  </p>
+</blockquote>
+
+</div>
+</body>
+</html>
+ersion 1 (SYSV), statically linked, BuildID[sha1]=ef8dfc9dc297295808f80ec66e92763358a598d1, not stripped
 </code></pre>
 <p>And we can see the <code>malloc</code> symbol is not present since we do opted out of it, and that Odin provided with these assembly files the correct implementation for <code>memset</code>:</p>
 <pre><code class="language-sh">$ nm hello | grep malloc
