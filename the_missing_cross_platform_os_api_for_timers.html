@@ -119,9 +119,7 @@
   <div class="tags"> <a href="/blog/articles-by-tag.html#Unix" class="tag">Unix</a> <a href="/blog/articles-by-tag.html#Signals" class="tag">Signals</a> <a href="/blog/articles-by-tag.html#C" class="tag">C</a> <a href="/blog/articles-by-tag.html#Linux" class="tag">Linux</a> <a href="/blog/articles-by-tag.html#FreeBSD" class="tag">FreeBSD</a> <a href="/blog/articles-by-tag.html#Illumos" class="tag">Illumos</a> <a href="/blog/articles-by-tag.html#MacOS" class="tag">MacOS</a> <a href="/blog/articles-by-tag.html#Windows" class="tag">Windows</a> <a href="/blog/articles-by-tag.html#OpenBSD" class="tag">OpenBSD</a> <a href="/blog/articles-by-tag.html#NetBSD" class="tag">NetBSD</a></div>
   </div>
 
-<p><em>Discussions: <a href="https://old.reddit.com/r/programming/comments/1igik53/the_missing_crossplatform_os_api_for_timers/">/r/programming</a>, <a href="https://news.ycombinator.com/item?id=42915437">HN</a></em></p>
-<p>Most serious programs will need to trigger some action at a delayed point in time, often repeatedly: set timeouts, clean up temporary files or entries in the database, send keep-alives, garbage-collect unused entities, etc. All while doing some work in the meantime. A blocking <code>sleep</code> won't cut it! For example, JavaScript has <code>setTimeout</code>. But how does it work under the hood? How does each OS handle that?</p>
-<p>Lately, I have found myself in need of doing just that, repeatedly sending a keep-alive over the network to many remote peers, in C. My program has an event loop, a la NodeJS or Redis. It is doing lots of file I/O, network I/O, and handling timers, all in a single thread, in a non-blocking way.</p>
+<p>blocking way.</p>
 <p>And I wanted to do all that in a cross-platform way. And to my surprise, I could not find a (sane) libc function or syscall to create a timer, and that is the same on all Unices!</p>
 <p>Each Unix variant had its own weird way to do it, as I discovered. I am used to Windows being the odd kid in its corner doing its thing, but usually, Unices (thanks to POSIX) agree on a simple API to do something. There's the elephant in the room, of course, with epoll/kqueue/event ports...Which is such a pain that numerous libraries have sprung up to paper over the differences and offer The <em>One API To Rule Them All</em>: libuv, libev, libevent, etc. So, are timers the same painful ordeal?</p>
 <p>Well, let's take a tour of all the OS APIs to handle them.</p>
@@ -142,7 +140,12 @@
 <h2>POSIX: timer_create, timer_settime</h2>
 <p>POSIX has one API for timers, and it sucks. A timer is created with <code>timer_create</code>, which does initially nothing, and the timer is started with a timeout using <code>timer_settime</code>. When the timeout is reached, a signal is sent to the program. And that's the issue. Signals are <em>very</em> problematic, as seen in my <a href="/blog/way_too_many_ways_to_wait_for_a_child_process_with_a_timeout.html">previous article</a>:</p>
 <ul>
-<li>They do not compose with other OS primitives. This forces numerous syscalls to have a normal version and a signal-aware version that can block some signals for its duration: <code>poll/ppoll</code<p><a href="/blog"> ⏴ Back to all articles</a></p>
+<li>They do not compose with other OS primitives. This forces numerous syscalls to have a normal version and a signal-aware version that can block some signals for its duration: <code>poll/ppoll</code>, <code>select/pselect</code>, etc.</li>
+<li>They are affected by the signal mask of the parent (e.g.: the shell, the service runner, etc)</li>
+<li>They behave confusingly with child processes. Normally, a signal mask is inherited by the child. But some signal-triggering APIs (e.g.: <code>timer_settime</code>)  explicitly prevent child processes from inheriting their signals. I guess we'll have to read the fine prints in the man page!</li>
+<li>It's hard to write complex programs with signals in mind due to their global nature. Code of our own, or in a library we use, could block some signals for some period of time, unbeknownst to us. Or simply modify the signal mask of the process, so we can never assume that the signal mask has a given value.</li>
+<li>A signal handler has to use global variables, there is no way to pass it a pointer to some data.</li>
+<li>Most functions are not async-signal-safe and should not be used from w<p><a href="/blog"> ⏴ Back to all articles</a></p>
 
 <blockquote id="donate">
   <p>If you enjoy what you're reading, you want to support me, and can afford it: <a href="https://paypal.me/philigaultier?country.x=DE&locale.x=en_US">Support me</a>. That allows me to write more cool articles!</p>

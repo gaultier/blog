@@ -119,36 +119,19 @@
   <div class="tags"> <a href="/blog/articles-by-tag.html#Rust" class="tag">Rust</a></div>
   </div>
 
-<p><em>Discussions: <a href="https://old.reddit.com/r/rust/comments/1in1wyr/tip_of_the_day_4_type_annotations_on_rust_match/">/r/rust</a></em></p>
-<p>Today at work I was adding error logs to our Rust codebase and I hit an interesting case. I had a match pattern, and the compiler asked me to add type annotations to a branch of the pattern, because it could not infer by itself the right type.</p>
-<pre><code class="language-rust">fn decode_foo(input: &amp;[u8]) -&gt; Result&lt;(&amp;[u8], [u8; 33]), Error&gt; {
-    if input.len() &lt; 33 {
-        return Err(Error::InvalidData);
-    }
-
-    let (left, right) = input.split_at(33);
-    let value = match left.try_into() {
-        Ok(v) =&gt; v,
-        Err(err) =&gt; {
-            let err_s = err.to_string(); // &lt;= Here is the compilation error.
-            eprintln!(&quot;failed to decode data, wrong length: {}&quot;, err_s);
-            return Err(Error::InvalidData);
-        }
-    };
-
-    Ok((right, value))
-}
-</code></pre>
-<pre><code>error[E0282]: type annotations needed
-  --&gt; src/main.rs:14:25
-   |
+<p>--&gt; src/main.rs:14:25
+|
 14 |             let err_s = err.to_string();
-   |                         ^^^ cannot infer type
-</code></pre>
-<p>This function parses a slice of bytes, and on error, logs the error. The real code is of course more complex but I could reduce the error to this minimal code.</p>
-<hr />
-<p>So I tried to add type annotations the usual Rust way:</p>
-<pre><code class="language-rust">    let value = match left.try_into() {
+|                         ^^^ cannot infer type</p>
+<pre><code>
+This function parses a slice of bytes, and on error, logs the error. The real code is of course more complex but I could reduce the error to this minimal code.
+
+---
+
+So I tried to add type annotations the usual Rust way:
+
+```rust
+    let value = match left.try_into() {
         Ok(v) =&gt; v,
         Err(err: TryFromSliceError) =&gt; {
             // [...]
@@ -193,7 +176,27 @@
             let err: TryFromSliceError = err; // &lt;= Here.
             let err_s = err.to_string();
             eprintln!(&quot;failed to decode data, wrong length: {}&quot;, err_s);
-      <p><a href="/blog"> ⏴ Back to all articles</a></p>
+            return Err(Error::InvalidData);
+        }
+    };
+</code></pre>
+<hr />
+<p>Another reader had a different idea: use a match binding, which mentions the error type explicitly (that only works if the error type is a struct):</p>
+<pre><code class="language-rust">    let value = match left.try_into() {
+        Ok(v) =&gt; v,
+        Err(err @ TryFromSliceError { .. }) =&gt; {
+</code></pre>
+<p>Pretty succinct! This reader mentions this <a href="https://github.com/rust-lang/rfcs/pull/3753">PR</a> to expand this to all types, but that the general feedback is that the 'intuitive' syntax <code>Err(err: Bar) =&gt; {</code> should be possible instead.</p>
+<hr />
+<p>Yet another approach that works is to annotate the <code>try_into()</code> function with the type, but I find it even noisier than annotating the <code>Err</code> branch:</p>
+<pre><code class="language-rust">    let value = match TryInto::&lt;[u8; 33]&gt;::try_into(left) {
+        Ok(v) =&gt; v,
+        Err(err) =&gt; {
+          // [...]
+        }
+</code></pre>
+<hr />
+<p>Astute readers will think at this po<p><a href="/blog"> ⏴ Back to all articles</a></p>
 
 <blockquote id="donate">
   <p>If you enjoy what you're reading, you want to support me, and can afford it: <a href="https://paypal.me/philigaultier?country.x=DE&locale.x=en_US">Support me</a>. That allows me to write more cool articles!</p>

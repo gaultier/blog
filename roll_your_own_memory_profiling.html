@@ -119,17 +119,7 @@
   <div class="tags"> <a href="/blog/articles-by-tag.html#C" class="tag">C</a> <a href="/blog/articles-by-tag.html#Allocator" class="tag">Allocator</a> <a href="/blog/articles-by-tag.html#Profiling" class="tag">Profiling</a> <a href="/blog/articles-by-tag.html#Pprof" class="tag">Pprof</a></div>
   </div>
 
-<p><em>Discussions: <a href="https://old.reddit.com/r/C_Programming/comments/182rnqw/roll_your_own_memory_profiling_its_actually_not/">/r/c_programming</a></em></p>
-<p><em>Or: An exploration of the <a href="https://github.com/gperftools/gperftools">pprof</a> memory profiler and its textual format for fun an profit.</em></p>
-<p>Say that you are using a programming language where memory is manually managed, and you have decided to use a custom allocator for one reason or another, for example an arena allocator, and are wondering:</p>
-<ul>
-<li>How do I track every allocation, recording how many bytes were allocated and what was the call stack at that time?</li>
-<li>How much memory is my program using, and what is the peak use?</li>
-<li>How much memory does my program free? Is it all of it (are there leaks)?</li>
-<li>Which line of code in my function is allocating, and how much?</li>
-<li>I want a flamegraph showing allocations by function</li>
-</ul>
-<p>What to do? Mainstream allocators such as <code>tcmalloc</code> and <code>jemalloc</code> can provide us this information but we have lost this ability by using our own!</p>
+<p>and <code>jemalloc</code> can provide us this information but we have lost this ability by using our own!</p>
 <p>Well, it turns out that this can all be achieved very simply without adding dependencies to your application, in ~100 lines of code (including lots of comments). I'll show one way and then explore other possibilities. And here are the results we are working towards:</p>
 <p><img src="mem_prof1.png" alt="1" />
 <em>Profiling the memory usage of my <a href="https://github.com/gaultier/micro-kotlin">micro-kotlin</a> project.</em></p>
@@ -156,7 +146,18 @@
 <h2>The text format</h2>
 <p>Here is the text format we want to generate:</p>
 <pre><code>heap profile:    &lt;in use objects sum&gt;:  &lt;in use bytes sum&gt; [   &lt;space objects sum&gt;:  &lt;space bytes sum&gt;] @ heapprofile
-&lt;in use objects&gt;: &lt;in use bytes&gt; [&lt;space objects&gt;: &lt;space bytes&gt;] @ &lt;rip1&gt; &lt;rip2&gt; &lt;r<p><a href="/blog"> ⏴ Back to all articles</a></p>
+&lt;in use objects&gt;: &lt;in use bytes&gt; [&lt;space objects&gt;: &lt;space bytes&gt;] @ &lt;rip1&gt; &lt;rip2&gt; &lt;rip3&gt; [...]
+&lt;in use objects&gt;: &lt;in use bytes&gt; [&lt;space objects&gt;: &lt;space bytes&gt;] @ &lt;rip1&gt; &lt;rip2&gt; &lt;rip3&gt; [...]
+&lt;in use objects&gt;: &lt;in use bytes&gt; [&lt;space objects&gt;: &lt;space bytes&gt;] @ &lt;rip1&gt; &lt;rip2&gt; &lt;rip3&gt; [...]
+                                                                             
+MAPPED_LIBRARIES:
+[...]
+</code></pre>
+<p>The first line is a header identifying that this is a heap profile (contrary to a CPU profile which <code>pprof</code> can also analyze, which uses a different, binary, format) and gives for each of the four fields we will record, their sum.</p>
+<p>Then comes one line per entry. Each entry has these four fields that the header just gave us a sum of:</p>
+<ul>
+<li><code>in use objects</code>: How many objects are 'live' i.e. in use on the heap at the time of the allocation. Allocating increases its value, freeing decreases it.</li>
+<li><code>in use bytes</code>: How many bytes are 'live' i.e. in use on the heap <p><a href="/blog"> ⏴ Back to all articles</a></p>
 
 <blockquote id="donate">
   <p>If you enjoy what you're reading, you want to support me, and can afford it: <a href="https://paypal.me/philigaultier?country.x=DE&locale.x=en_US">Support me</a>. That allows me to write more cool articles!</p>

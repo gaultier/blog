@@ -119,29 +119,7 @@
   <div class="tags"> <a href="/blog/articles-by-tag.html#Rust" class="tag">Rust</a> <a href="/blog/articles-by-tag.html#Tip-of-the-day" class="tag">Tip of the day</a></div>
   </div>
 
-<p><a href="/blog"> ⏴ Back to all articles</a></p>
-
-<blockquote id="donate">
-  <p>If you enjoy what you're reading, you want to support me, and can afford it: <a href="https://paypal.me/philigaultier?country.x=DE&locale.x=en_US">Support me</a>. That allows me to write more cool articles!</p>
-</blockquote>
-
-<blockquote>
-  <p>
-    This blog is <a href="https://github.com/gaultier/blog">open-source</a>!
-    If you find a problem, please open a Github issue.
-    The content of this blog as well as the code snippets are under the <a href="https://en.wikipedia.org/wiki/BSD_licenses#3-clause_license_(%22BSD_License_2.0%22,_%22Revised_BSD_License%22,_%22New_BSD_License%22,_or_%22Modified_BSD_License%22)">BSD-3 License</a> which I also usually use for all my personal projects. It's basically free for every use but you have to mention me as the original author.
-  </p>
-</blockquote>
-
-</div>
-</body>
-</html>
-nt)}' src/***.rs
-# Equivalent to:
-$ wc -l src/***/.rs
-</code></pre>
-<p>On my open-source Rust <a href="https://github.com/gaultier/kotlin-rs">project</a>, this prints <code>11485</code>.</p>
-<p>Alright, now let's exclude the tests. When we encounter the line <code>mod tests</code>, we stop counting. Note that this name is just a convention, but that's one that followed pretty much universally in Rust code, and there is usually no more code after this section. Tweak the name if needed:</p>
+<p>now let's exclude the tests. When we encounter the line <code>mod tests</code>, we stop counting. Note that this name is just a convention, but that's one that followed pretty much universally in Rust code, and there is usually no more code after this section. Tweak the name if needed:</p>
 <pre><code class="language-sh">$ awk '/mod tests/{skip[FILENAME]=1}  !skip[FILENAME]{count += 1} END{print(count)}'  src/***.rs
 </code></pre>
 <p>And this prints in the same project: <code>10057</code>.</p>
@@ -160,8 +138,34 @@ $ wc -l src/***/.rs
 <p>If we encounter tests, stop processing the file altogether, with the builtin statement <code>exit</code> (<a href="https://www.gnu.org/software/gawk/manual/html_node/Exit-Statement.html">docs</a>).</p>
 <p>Running this on the same Rust codebase prints: <code>1038</code> which is obviously wrong.</p>
 <p>Why is it wrong then?</p>
-<p>Well, as I understand it, AWK processes all inputs files one by one, as if it was one big sequential file (it will still fill the builtin constant <code>FILENAME</code> though, that's why the solution above works). Since there is no isolation between the processing each file (AWK does not spawn a subprocess for each file), it means we simply stop altogether at the first encountered test in any file.</p>
-<p><a href="/blog"> ⏴ Back to all articles</a></p>
+<h2>Well, as I understand it, AWK processes all inputs files one by one, as if it was one big sequential file (it will still fill the builtin constant <code>FILENAME</code> though, that's why the solution above works). Since there is no isolation between the processing each file (AWK does not spawn a subprocess for each file), it means we simply stop altogether at the first encountered test in any file.
+Title: Tip of the day #1: Count lines of Rust code, ignoring tests
+Tags: Rust, Tip of the day, Awk</h2>
+<p>I have a Rust codebase at work. The other day, I was wondering how many lines of code were in there. Whether you use <code>wc -l ***.rs</code> or a more fancy tool like <code>tokei</code>, there is an issue: this will count the source code <em>as well as</em> tests.</p>
+<p>That's because in Rust and in some other languages, people write their tests in the same files as the implementation. Typically it looks like that:</p>
+<pre><code class="language-rust">// src/foo.rs
+
+fn foo() { 
+ ...
+}
+
+#[cfg(test)]
+mod tests {
+    fn test_foo(){
+      ...
+    }
+
+    ...
+}
+</code></pre>
+<p>But I only want to know how big is the implementation. I don't care about the tests. And <code>wc</code> or <code>tokei</code> will not show me that.</p>
+<p>So I resorted to my trusty <code>awk</code>. Let's first count all lines, like <code>wc</code> does:</p>
+<pre><code class="language-sh">$ awk '{count += 1} END{print(count)}' src/***.rs
+# Equivalent to:
+$ wc -l src/***/.rs
+</code></pre>
+<p>On my open-source Rust <a href="https://github.com/gaultier/kotlin-rs">project</a>, this prints <code>11485</code>.</p>
+<p>Alright, now let's exclude the tests. When we encounter the line <code>mod tests</code>, we stop counting. Note that this name is just a convention, but that's one that followed pretty much universally in Rust code, and there is usually no more code after this section. Tweak <p><a href="/blog"> ⏴ Back to all articles</a></p>
 
 <blockquote id="donate">
   <p>If you enjoy what you're reading, you want to support me, and can afford it: <a href="https://paypal.me/philigaultier?country.x=DE&locale.x=en_US">Support me</a>. That allows me to write more cool articles!</p>
@@ -178,10 +182,7 @@ $ wc -l src/***/.rs
 </div>
 </body>
 </html>
->
-</html>
- snippets are under the <a href="https://en.wikipedia.org/wiki/BSD_licenses#3-clause_license_(%22BSD_License_2.0%22,_%22Revised_BSD_License%22,_%22New_BSD_License%22,_or_%22Modified_BSD_License%22)">BSD-3 License</a> which I also usually use for all my personal projects. It's basically free for every use but you have to mention me as the original author.
-  </p>
+p>
 </blockquote>
 
 </div>

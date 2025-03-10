@@ -119,11 +119,7 @@
   <div class="tags"> <a href="/blog/articles-by-tag.html#GUI" class="tag">GUI</a> <a href="/blog/articles-by-tag.html#x86-64" class="tag">x86_64</a> <a href="/blog/articles-by-tag.html#X11" class="tag">X11</a></div>
   </div>
 
-<p><em>Discussions: <a href="https://news.ycombinator.com/item?id=36153237">Hacker News</a>, <a href="https://old.reddit.com/r/programming/comments/13xgbk6/learn_x8664_assembly_by_writing_a_gui_from_scratch/">r/programming</a>, <a href="https://lobste.rs/s/dvtzfl/learn_x86_64_assembly_by_writing_gui_from">Lobsters</a>.</em></p>
-<p>Most people think assembly is only to be used to write toy programs for learning purposes, or to write a highly optimized version of a specific function inside a codebase written in a high-level language.</p>
-<p>Well, what if we wrote a whole program in assembly that opens a GUI window? It will be the hello world of the GUI world, but that still counts. Here is what we are working towards:</p>
-<p><img src="x11_x64_final.png" alt="Result" /></p>
-<p>I wanted to expand my knowledge of assembly and by doing something fun and motivating. It all originated from the observation that so many program binaries today are very big, often over 30 Mib (!), and I asked myself: How small a binary can be for a (very simplistic) GUI? Well, it turns out, very little. Spoiler alert: around 1 KiB!</p>
+<p>ow small a binary can be for a (very simplistic) GUI? Well, it turns out, very little. Spoiler alert: around 1 KiB!</p>
 <blockquote>
 <p>I am by no means an expert in assembly or in X11. I just hope to provide an entertaining, approachable article, something a beginner can understand. Something I wished I had found when I was learning those topics. If you spot an error, please open a <a href="https://github.com/gaultier/blog">Github issue</a>!</p>
 </blockquote>
@@ -187,24 +183,11 @@ _start:
   syscall
 </code></pre>
 <blockquote>
-<p><code>nasm</code> uses the Intel syntax: <code>&lt;instruction&gt; &lt;destination&gt;, &lt;source&gt;</code>, so <code>mov <p><a href="/blog"> ⏴ Back to all articles</a></p>
-
-<blockquote id="donate">
-  <p>If you enjoy what you're reading, you want to support me, and can afford it: <a href="https://paypal.me/philigaultier?country.x=DE&locale.x=en_US">Support me</a>. That allows me to write more cool articles!</p>
+<p><code>nasm</code> uses the Intel syntax: <code>&lt;instruction&gt; &lt;destination&gt;, &lt;source&gt;</code>, so <code>mov rdi, 0</code> puts 0 into the register <code>rdi</code>. Other assemblers use the AT&amp;T syntax which swaps the source and destination. My advice: pick one syntax and one assembler and stick to it, both syntaxes are fine and most tools have some support for both.</p>
 </blockquote>
-
-<blockquote>
-  <p>
-    This blog is <a href="https://github.com/gaultier/blog">open-source</a>!
-    If you find a problem, please open a Github issue.
-    The content of this blog as well as the code snippets are under the <a href="https://en.wikipedia.org/wiki/BSD_licenses#3-clause_license_(%22BSD_License_2.0%22,_%22Revised_BSD_License%22,_%22New_BSD_License%22,_or_%22Modified_BSD_License%22)">BSD-3 License</a> which I also usually use for all my personal projects. It's basically free for every use but you have to mention me as the original author.
-  </p>
-</blockquote>
-
-</div>
-</body>
-</html>
-t Linux (and perhaps other Unices?) has a 'fun' difference, which is that the fourth parameter of a system call is actually passed using the register <code>r10</code>.</em></p>
+<p>Following the System V ABI, which is required on Linux and other Unices for system calls, invoking a system call requires us to put the system call code in the register <code>rax</code>, the parameters to the syscall (up to 6) in the registers <code>rdi</code>, <code>rsi</code>, <code>rdx</code>, <code>rcx</code>, <code>r8</code>, <code>r9</code>, and additional parameters, if any, on the stack (which will not happen in this program so we can forget about it).
+We then use the instruction <code>syscall</code> and check <code>rax</code> for the return value, <code>0</code> usually meaning: no error.</p>
+<p><em>Note that Linux (and perhaps other Unices?) has a 'fun' difference, which is that the fourth parameter of a system call is actually passed using the register <code>r10</code>.</em></p>
 <blockquote>
 <p>Astute readers have pointed out that this is the case across all OSes and documented in the x86_64 architecture supplement of the System V ABI. The more you know! That's only for system calls, though, regular functions still use <code>rcx</code> for the fourth parameter.</p>
 </blockquote>
@@ -298,7 +281,10 @@ print_hello:
 <p>There is a lot to unpack here.</p>
 <p>First, what is <code>rbp</code>? That's a register like any other. But, you can choose to follow the convention of not using this register like the other registers, to store arbitrary values, and instead, use it to store a linked list of call frames. That's a lot of words.</p>
 <p>Basically, at the very beginning of a function, the value of <code>rbp</code> is stored on the stack (that's <code>push rbp</code>). Since <code>rbp</code> stores an address (the address of the frame that's called us), we are storing on the stack the address of the caller in a known location.</p>
-<p>Immediately after that, we set <code>rbp</code> to <code>rsp</code>, that is, to the stack pointer at the beginning of the function. <code>pus<p><a href="/blog"> ⏴ Back to all articles</a></p>
+<p>Immediately after that, we set <code>rbp</code> to <code>rsp</code>, that is, to the stack pointer at the beginning of the function. <code>push rbp</code> and <code>mov rbp, rsp</code> are thus usually referred to as the function prolog.</p>
+<p>For the rest of the function body, we treat <code>rbp</code> as a constant and only decrease <code>rsp</code> if we need to reserve space on the stack.</p>
+<p>So if function A calls function B which in turn calls function C, and each function stores on the stack the address of the caller frame, we know where to find on the stack the address of each. Thus, we can print a stack trace in any location of our program simply by inspecting the stack. Pretty nifty. That's already very useful to profilers and other similar tools.</p>
+<p>We must not forget of course, just before we exit the function, to restore <code>rbp</code> to its original value (which is still on the stack at that point): that's <code>pop rbp</code>. This is also known as the function epilog. Another way to look at it is that we remove the last element of the linked list of call frames, since we are exiting the leaf function<p><a href="/blog"> ⏴ Back to all articles</a></p>
 
 <blockquote id="donate">
   <p>If you enjoy what you're reading, you want to support me, and can afford it: <a href="https://paypal.me/philigaultier?country.x=DE&locale.x=en_US">Support me</a>. That allows me to write more cool articles!</p>

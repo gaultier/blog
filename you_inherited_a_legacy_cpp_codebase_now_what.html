@@ -119,10 +119,7 @@
   <div class="tags"> <a href="/blog/articles-by-tag.html#Cplusplus" class="tag">C++</a> <a href="/blog/articles-by-tag.html#C" class="tag">C</a> <a href="/blog/articles-by-tag.html#Legacy" class="tag">Legacy</a> <a href="/blog/articles-by-tag.html#CI" class="tag">CI</a> <a href="/blog/articles-by-tag.html#Git" class="tag">Git</a></div>
   </div>
 
-<p><em>Discussions: <a href="https://news.ycombinator.com/item?id=39549486">Hacker News</a>, <a href="https://lobste.rs/s/lf8b9r/you_ve_just_inherited_legacy_c_codebase">Lobster.rs</a>, <a href="https://old.reddit.com/r/programming/comments/1b3143w/youve_just_inherited_a_legacy_c_codebase_now_what/">/r/programming</a>. I've got great suggestions from the comments, see the addendum at the end!</em></p>
-<p>You were minding your own business, and out of nowhere something fell on your lap. Maybe you started a new job, or perhaps changed teams, or someone experienced just left.</p>
-<p>And now you are responsible for a C++ codebase. It's big, complex, idiosyncratic; you stare too long at it and it breaks in various interesting ways. In a word, legacy.</p>
-<p>But somehow bugs still need to be fixed, the odd feature to be added. In short, you can't just ignore it or better yet nuke it out of existence. It matters. At least to someone who's paying your salary. So, it matters to you.</p>
+<p>ers to you.</p>
 <p>What do you do now?</p>
 <p>Well, fear not, because I have experience this many times in numerous places (the snarky folks in the back will mutter: what C++ codebase isn't exactly like I described above), and there is a way out, that's not overly painful and will make you able to actually fix the bugs, add features, and, one can dream, even rewrite it some day.</p>
 <p>So join me on a recollection of what worked for me and what one should absolutely avoid.</p>
@@ -146,6 +143,24 @@
 <li>Hey boss, the last hire took 3 weeks to get the code building on his machine and make his first contribution. Wouldn't it be nice if, with minimal effort, we could make that a few minutes?</li>
 <li>Hey boss, I put quickly together a simple fuzzing setup ('inputting random data in the app like a monkey and seeing what happens'), and it manages to crash the app 253 times within a few seconds. I wonder what would happen if people try to do that in production with our app?</li>
 <li>Hey boss, the last few urgent bug fixes took several people and 2 weeks to be deployed in production because the app can only be built by this one build server with this ancient operating system that has not been supported for 8 years (FreeBSD 9, for the curious) and it kept failing. Oh by the way whenever this server dies we have no way to deploy anymore, like at all. Wouldn't it be nice to be able to build our app on any cheap cloud instance?</li>
+<li>Hey boss, we <p><a href="/blog"> ⏴ Back to all articles</a></p>
+
+<blockquote id="donate">
+  <p>If you enjoy what you're reading, you want to support me, and can afford it: <a href="https://paypal.me/philigaultier?country.x=DE&locale.x=en_US">Support me</a>. That allows me to write more cool articles!</p>
+</blockquote>
+
+<blockquote>
+  <p>
+    This blog is <a href="https://github.com/gaultier/blog">open-source</a>!
+    If you find a problem, please open a Github issue.
+    The content of this blog as well as the code snippets are under the <a href="https://en.wikipedia.org/wiki/BSD_licenses#3-clause_license_(%22BSD_License_2.0%22,_%22Revised_BSD_License%22,_%22New_BSD_License%22,_or_%22Modified_BSD_License%22)">BSD-3 License</a> which I also usually use for all my personal projects. It's basically free for every use but you have to mention me as the original author.
+  </p>
+</blockquote>
+
+</div>
+</body>
+</html>
+ild our app on any cheap cloud instance?</li>
 <li>Hey boss, we had a cryptic bug in production affecting users, it took weeks to figure out and fix, and it turns out if was due to undefined behavior ('a problem in the code that's very hard to notice') corrupting data, and when I run this industry standard linter ('a program that finds issues in the code') on our code, it detects the issue instantly. We should run that tool every time we make a change!</li>
 <li>Hey boss, the yearly audit is coming up and the last one took 7 months to pass because the auditor was not happy with what they saw. I have ideas to make that smoother.</li>
 <li>Hey boss, there is a security vulnerability in the news right now about being able to decrypt encrypted data and stealing secrets, I think we might be affected, but I don't know for sure because the cryptography library we use has been vendored ('copy-pasted') by hand with some changes on top that were never reviewed by anyone. We should clean that up and setup something so that we get alerted automatically if there is a vulnerability that affects us.</li>

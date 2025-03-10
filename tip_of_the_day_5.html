@@ -119,6 +119,16 @@
   <div class="tags"> <a href="/blog/articles-by-tag.html#Go" class="tag">Go</a></div>
   </div>
 
+<p>manage-install](https://go.dev/doc/manage-install), I installed the specific version of Go I needed and used that to install the tool:</p>
+<pre><code class="language-sh">$ go install golang.org/dl/go1.23.6@latest
+$ go1.23.6 download
+$ go1.23.6 install honnef.co/go/tools/cmd/staticcheck@v0.5.1
+$ staticcheck  -tags=integration_tests ./... # Works!
+</code></pre>
+<p>That was a TIL for me.</p>
+<h2>Note that Go 1.24 supports the project listing tools directly in <code>go.mod</code> which would probably solve this issue directly.
+Title: Tip of the day #5: Install Go tools with a specific version
+Tags: Go, Tip of the day</h2>
 <p>I had an issue with Go tools around versioning, and here's how I solved it. It could be useful to others. This was the error:</p>
 <pre><code class="language-sh">$ staticcheck  ./...
 -: module requires at least go1.23.6, but Staticcheck was built with go1.23.1 (compile)
@@ -156,15 +166,6 @@ $ staticcheck  -tags=integration_tests ./... # Works!
     This blog is <a href="https://github.com/gaultier/blog">open-source</a>!
     If you find a problem, please open a Github issue.
     The content of this blog as well as the code snippets are under the <a href="https://en.wikipedia.org/wiki/BSD_licenses#3-clause_license_(%22BSD_License_2.0%22,_%22Revised_BSD_License%22,_%22New_BSD_License%22,_or_%22Modified_BSD_License%22)">BSD-3 License</a> which I also usually use for all my personal projects. It's basically free for every use but you have to mention me as the original author.
-  </p>
-</blockquote>
-
-</div>
-</body>
-</html>
->
-</html>
-to mention me as the original author.
   </p>
 </blockquote>
 

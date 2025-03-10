@@ -119,14 +119,7 @@
   <div class="tags"> <a href="/blog/articles-by-tag.html#Graph" class="tag">Graph</a> <a href="/blog/articles-by-tag.html#Algorithm" class="tag">Algorithm</a> <a href="/blog/articles-by-tag.html#JavaScript" class="tag">JavaScript</a></div>
   </div>
 
-<h2>Introduction</h2>
-<p>Graphs are everywhere in Software Engineering, or so we are told by Computer Science teachers and interviewers. But sometimes, they do show up in real problems.</p>
-<p>Not too long ago, I was tasked to create a Web API to create and update a company's hierarchy of employee, and display that on a web page. Basically, who reports to whom.</p>
-<p>In the simple case, it's a tree, when an employee reports to exactly one manager.</p>
-<p><img src="kahns_algorithm_1.svg" alt="Employee hierarchy" /></p>
-<p>Here's the tree of employees in an organization. An employee reports to a manager, and this forms a tree. The root is the CEO since they report to no one and so they have no outgoing edge.</p>
-<p>An arrow (or 'edge') between two nodes means <code>&lt;source&gt; reports to &lt;destination&gt;</code>, for example: <code>Jane the CFO reports to Ellen the CEO</code>.</p>
-<p>But here is the twist: our API receives a list of <code>employee -&gt; manager</code> links, in any order:</p>
+<p>-&gt; manager` links, in any order:</p>
 <pre><code>Jane -&gt; Ellen
 Angela -&gt; Ellen
 Zoe -&gt; Jane
@@ -167,7 +160,29 @@ Miranda -&gt; Angela
 <blockquote>
 <p>A topological sort or topological ordering of a directed graph is a linear ordering of its vertices such that for every directed edge uv from vertex u to vertex v, u comes before v in the ordering. For instance, the vertices of the graph may represent tasks to be performed, and the edges may represent constraints that one task must be performed before another; in this application, a topological ordering is just a valid sequence for the tasks</p>
 </blockquote>
-<p>That's a mouthful but it's not too hard.</p<p><a href="/blog"> ⏴ Back to all articles</a></p>
+<p>That's a mouthful but it's not too hard.</p>
+<p>A useful command line utility that's already on your (Unix) machine is <code>tsort</code>, which takes a list of edges as input, and outputs a topological sort. Here is the input in a text file (<code>people.txt</code>):</p>
+<pre><code>Jane Ellen
+Angela Ellen
+Zoe Jane
+Zoe Angela
+Bella Angela
+Miranda Angela
+</code></pre>
+<blockquote>
+<p><code>tsort</code> uses a simple way of defining each edge <code>A -&gt; B</code> on its own line with the syntax: <code>A B</code>. The order of the lines does not matter.</p>
+</blockquote>
+<p>And here's the <code>tsort</code> output:</p>
+<pre><code class="language-sh">$ tsort &lt; people.txt
+Bella
+Miranda
+Zoe
+Angela
+Jane
+Ellen
+</code></pre>
+<p>The first 3 elements are the ones with no incoming edge, the Software Engineers, since no one reports to them. Then come their respective managers, Angela and Jane. Finally comes their manager, <code>Ellen</code>.</p>
+<p>So to insert all those people in our <code>people</code> <p><a href="/blog"> ⏴ Back to all articles</a></p>
 
 <blockquote id="donate">
   <p>If you enjoy what you're reading, you want to support me, and can afford it: <a href="https://paypal.me/philigaultier?country.x=DE&locale.x=en_US">Support me</a>. That allows me to write more cool articles!</p>

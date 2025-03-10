@@ -119,11 +119,7 @@
   <div class="tags"> <a href="/blog/articles-by-tag.html#CI" class="tag">CI</a></div>
   </div>
 
-<p>Every project has a Continuous Integration (CI) pipeline and every one of them complains its CI is too slow. It is more important than you might think; this can be the root cause of many problems, including lackluster productivity, low morale, high barrier of entry for newcomers, and overall suboptimal quality.</p>
-<p>But this need not be. I have compiled here a lengthy list of various ways you can simplify your CI and make it faster, based on my experience on open-source projects and my work experience. I sure wish you will find something in here worth your time.</p>
-<p>And finally, I hope you will realize this endeavour is not unlike optimizing a program: it requires some time and dedication but you will get tremendous results. Also, almost incidentally, it will be more secure and easier to audit.</p>
-<p>Lastly, remember to measure and profile your changes. If a change has made no improvements, it should be reverted.</p>
-<p><em>This article assumes you are running a POSIX system. Windows developers, this is not the article you are looking for.</em></p>
+<p>ou are running a POSIX system. Windows developers, this is not the article you are looking for.*</p>
 <h2>Reduce the size of everything</h2>
 <p>Almost certainly, your CI pipeline has to download 'something', be it a base docker image, a virtual machine image, some packages, maybe a few company wide scripts. The thing is, you are downloading those every time it runs, 24/7, every day of the year. Even a small size reduction can yield big speed ups. Remember, the network is usually the bottleneck.</p>
 <p>In no particular order:</p>
@@ -135,7 +131,10 @@
 <li>Don't install documentation. It's obvious but most people do it. While you are at it, don't install <code>man</code>, <code>apropos</code>, <code>info</code>, etc. Alpine Linux gets it right by splitting almost all packages between the package itself and its documentation. E.g.: <code>cmake</code> and <code>cmake-doc</code>.</li>
 <li>On the same vein: don't install shell autocompletions. Same idea. Again, on Alpine they are not part of the main package. E.g.: <code>cmake</code> and <code>cmake-bash-completion</code>.</li>
 <li>Stay away from aggregate packages (or meta-packages)! Those are for convenience only when developing. E.g.: <code>build-base</code> on Alpine is a meta-package gathering <code>make</code>, <code>file</code>, <code>gcc</code>, etc. It will bring lots of things you do not need. Cherry-pick only what you really required and steer clear of those packages.</li>
-<li>Learn how Docker image layers work: avoid doing <code>RUN rm archive.tar</code>, since it simply creates a new layer without removing the file from the previous <p><a href="/blog"> ⏴ Back to all articles</a></p>
+<li>Learn how Docker image layers work: avoid doing <code>RUN rm archive.tar</code>, since it simply creates a new layer without removing the file from the previous layer. Prefer: <code>RUN curl -sSL --retry 5 foo.com/archive.tar &amp;&amp; tar -xf archive.tar &amp;&amp; rm archive.tar</code> which will not add the tar archive to the Docker image.</li>
+<li>Use multi-stage Docker builds. It is old advice at this point but it bears repeating.</li>
+<li>When using multi-stage: Only copy files you need from a previous stage instead of globbing wildly, thus defeating the purpose of multi-stages.</li>
+<li>Tell apart the development and the release variant of a package. For example: on Ubuntu, when using the SDL2 library, it comes in two flavors: <code>libsdl2-dev</code> and <code>libsdl2-2.0</code>. The former is the development variant which you only need when building code that needs the headers and the libraries of the SDL2, while the latter is only useful with software needing the dynamic libraries at runtime. The development packages are usually bigger in size. You can astutely use multi-stage Docker builds to have firs<p><a href="/blog"> ⏴ Back to all articles</a></p>
 
 <blockquote id="donate">
   <p>If you enjoy what you're reading, you want to support me, and can afford it: <a href="https://paypal.me/philigaultier?country.x=DE&locale.x=en_US">Support me</a>. That allows me to write more cool articles!</p>
