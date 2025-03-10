@@ -141,31 +141,28 @@ $ staticcheck  ./...
 <pre><code class="language-sh">$ go install golang.org/dl/go1.23.6@latest
 $ go1.23.6 download
 $ go1.23.6 install honnef.co/go/tools/cmd/staticcheck@v0.5.1
-$ staticcheckTitle: Tip of the day #5: Install Go tools with a specific version
-Tags: Go, Tip of the day
----
-
- I had an issue with Go tools around versioning, and here's how I solved it. It could be useful to others. This was the error:
-
-```sh
-$ staticcheck  ./...
--: module requires at least go1.23.6, but Staticcheck was built with go1.23.1 (compile)
-$ go version
-go version go1.23.6 linux/amd64
+$ staticcheck  -tags=integration_tests ./... # Works!
 </code></pre>
-<p>Indeed the project was specifying <code>go 1.23.6</code> in <code>go.mod</code>.</p>
-<p>Even after removing the staticcheck binary and re-installing it I still had the same issue:</p>
-<pre><code class="language-sh">$ which staticcheck
-/home/pg/go/bin/staticcheck
-$ rm /home/pg/go/bin/staticcheck
-$ which staticcheck
-which: no staticcheck 
-$ go install honnef.co/go/tools/cmd/staticcheck@v0.5.1
-$ staticcheck  ./...
--: module requires at least go1.23.6, but Staticcheck was built with go1.23.1 (compile)
-</code></pre>
-<p>I even tried the <code>-a</code> flag for <code>go install</code> to force a clean build (since <code>go install</code> fetches the sources and builds them) to no avail.</p>
-<p><strong>Solution:</strong> following <a href="https://go.dev/doc/manage-install">https://go.dev/doc/manage-install</a>, I installed the specific version of Go I needed and used that to install the tool:</p>
+<p>That was a TIL for me.</p>
+<p>Note that Go 1.24 supports the project listing tools directly in <code>go.mod</code> which would probably solve this issue directly.</p>
+<p><a href="/blog"> ⏴ Back to all articles</a></p>
+
+<blockquote id="donate">
+  <p>If you enjoy what you're reading, you want to support me, and can afford it: <a href="https://paypal.me/philigaultier?country.x=DE&locale.x=en_US">Support me</a>. That allows me to write more cool articles!</p>
+</blockquote>
+
+<blockquote>
+  <p>
+    This blog is <a href="https://github.com/gaultier/blog">open-source</a>!
+    If you find a problem, please open a Github issue.
+    The content of this blog as well as the code snippets are under the <a href="https://en.wikipedia.org/wiki/BSD_licenses#3-clause_license_(%22BSD_License_2.0%22,_%22Revised_BSD_License%22,_%22New_BSD_License%22,_or_%22Modified_BSD_License%22)">BSD-3 License</a> which I also usually use for all my personal projects. It's basically free for every use but you have to mention me as the original author.
+  </p>
+</blockquote>
+
+</div>
+</body>
+</html>
+<a href="https://go.dev/doc/manage-install">https://go.dev/doc/manage-install</a>, I installed the specific version of Go I needed and used that to install the tool:</p>
 <pre><code class="language-sh">$ go install golang.org/dl/go1.23.6@latest
 $ go1.23.6 download
 $ go1.23.6 install honnef.co/go/tools/cmd/staticcheck@v0.5.1

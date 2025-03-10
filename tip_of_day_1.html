@@ -162,11 +162,7 @@ $ wc -l src/***/.rs
 <p>If we encounter tests, stop processing the file altogether, with the builtin statement <code>exit</code> (<a href="https://www.gnu.org/software/gawk/manual/html_node/Exit-Statement.html">docs</a>).</p>
 <p>Running this on the same Rust codebase prints: <code>1038</code> which is obviously wrong.</p>
 <p>Why is it wrong then?</p>
-<h2>Well, as I understand it, AWK processes all inputs files one by one, as if it was one big sequential file (it will still fill the builtin constant <code>FILENAME</code> though, that's why the solutTitle: Tip of the day #1: Count lines of Rust code, ignoring tests
-Tags: Rust, Tip of the day, Awk</h2>
-<p>I have a Rust codebase at work. The other day, I was wondering how many lines of code were in there. Whether you use <code>wc -l ***.rs</code> or a more fancy tool like <code>tokei</code>, there is an issue: this will count the source code <em>as well as</em> tests.</p>
-<p>That's because in Rust and in some other languages, people write their tests in the same files as the implementation. Typically it looks like that:</p>
-<pre><code class="language-rust">// src/foo.rs
+<p>Well, as I understand it, AWK processes all inputs files one by one, as if it was one big sequential file (it will still fill the builtin constant <code>FILENAME</code> though, that's why the solution above works). Since there is no isolation between the processing each file (AWK does not spawn a subprocess for each file), it means we simply stop altogether at the first encountered test in any file.</p>
 <p><a href="/blog"> ⏴ Back to all articles</a></p>
 
 <blockquote id="donate">
@@ -178,6 +174,13 @@ Tags: Rust, Tip of the day, Awk</h2>
     This blog is <a href="https://github.com/gaultier/blog">open-source</a>!
     If you find a problem, please open a Github issue.
     The content of this blog as well as the code snippets are under the <a href="https://en.wikipedia.org/wiki/BSD_licenses#3-clause_license_(%22BSD_License_2.0%22,_%22Revised_BSD_License%22,_%22New_BSD_License%22,_or_%22Modified_BSD_License%22)">BSD-3 License</a> which I also usually use for all my personal projects. It's basically free for every use but you have to mention me as the original author.
+  </p>
+</blockquote>
+
+</div>
+</body>
+</html>
+="https://en.wikipedia.org/wiki/BSD_licenses#3-clause_license_(%22BSD_License_2.0%22,_%22Revised_BSD_License%22,_%22New_BSD_License%22,_or_%22Modified_BSD_License%22)">BSD-3 License</a> which I also usually use for all my personal projects. It's basically free for every use but you have to mention me as the original author.
   </p>
 </blockquote>
 

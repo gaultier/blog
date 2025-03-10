@@ -187,11 +187,24 @@ _start:
   syscall
 </code></pre>
 <blockquote>
-<p><code>nasm</code> uses the Intel syntax: <code>&lt;instruction&gt; &lt;destination&gt;, &lt;source&gt;</code>, so <code>mov rdi, 0</code> puts 0 into the register <code>rdi</code>. Other assemblers use the AT&amp;T syntax which swaps the source and destination. My advice: pick one syntax and one assembler and stick to it, both syntaxes are fine and most tools have some support for both.</p>
+<p><code>nasm</code> uses the Intel syntax: <code>&lt;instruction&gt; &lt;destination&gt;, &lt;source&gt;</code>, so <code>mov <p><a href="/blog"> ⏴ Back to all articles</a></p>
+
+<blockquote id="donate">
+  <p>If you enjoy what you're reading, you want to support me, and can afford it: <a href="https://paypal.me/philigaultier?country.x=DE&locale.x=en_US">Support me</a>. That allows me to write more cool articles!</p>
 </blockquote>
-<p>Following the System V ABI, which is required on Linux and other Unices for system calls, invoking a system call requires us to put the system call code in the register <code>rax</code>, the parameters to the syscall (up to 6) in the registers <code>rdi</code>, <code>rsi</code>, <code>rdx</code>, <code>rcx</code>, <code>r8</code>, <code>r9</code>, and additional parameters, if any, on the stack (which will not happen in this program so we can forget about it).
-We then use the instruction <code>syscall</code> and check <code>rax</code> for the return value, <code>0</code> usually meaning: no error.</p>
-<p><em>Note that Linux (and perhaps other Unices?) has a 'fun' difference, which is that the fourth parameter of a system call is actually passed using the register <code>r10</code>.</em></p>
+
+<blockquote>
+  <p>
+    This blog is <a href="https://github.com/gaultier/blog">open-source</a>!
+    If you find a problem, please open a Github issue.
+    The content of this blog as well as the code snippets are under the <a href="https://en.wikipedia.org/wiki/BSD_licenses#3-clause_license_(%22BSD_License_2.0%22,_%22Revised_BSD_License%22,_%22New_BSD_License%22,_or_%22Modified_BSD_License%22)">BSD-3 License</a> which I also usually use for all my personal projects. It's basically free for every use but you have to mention me as the original author.
+  </p>
+</blockquote>
+
+</div>
+</body>
+</html>
+t Linux (and perhaps other Unices?) has a 'fun' difference, which is that the fourth parameter of a system call is actually passed using the register <code>r10</code>.</em></p>
 <blockquote>
 <p>Astute readers have pointed out that this is the case across all OSes and documented in the x86_64 architecture supplement of the System V ABI. The more you know! That's only for system calls, though, regular functions still use <code>rcx</code> for the fourth parameter.</p>
 </blockquote>
