@@ -734,7 +734,7 @@ static void home_page_generate(ArticleSlice articles, PgString header,
   PG_DYN_APPEND_SLICE(&sb, PG_S("Philippe Gaultier's blog"), allocator);
   PG_DYN_APPEND_SLICE(&sb, PG_S("</title>\n"), allocator);
   PG_DYN_APPEND_SLICE(&sb, header, allocator);
-  PG_DYN_APPEND_SLICE(&sb, PG_S("<div class=\"articles\">\n"), allocator);
+  PG_DYN_APPEND_SLICE(&sb, PG_S("\n<div class=\"articles\">\n"), allocator);
   PG_DYN_APPEND_SLICE(&sb, PG_S("  <h2 id=\"articles\">Articles</h2>\n"),
                       allocator);
   PG_DYN_APPEND_SLICE(&sb, PG_S("  <ul>\n"), allocator);
@@ -745,7 +745,7 @@ static void home_page_generate(ArticleSlice articles, PgString header,
     if (pg_string_eq(a.html_file_name, PG_S("body_of_work.html"))) {
       continue;
     }
-    PG_DYN_APPEND_SLICE(&sb, PG_S("  <li>\n"), allocator);
+    PG_DYN_APPEND_SLICE(&sb, PG_S("\n  <li>\n"), allocator);
     PG_DYN_APPEND_SLICE(&sb, PG_S("    <div class=\"home-link\">\n"),
                         allocator);
     PG_DYN_APPEND_SLICE(&sb, PG_S("      <span class=\"date\">"), allocator);
@@ -762,14 +762,14 @@ static void home_page_generate(ArticleSlice articles, PgString header,
     for (u64 j = 0; j < a.tags.len; j++) {
       PgString tag = PG_SLICE_AT(a.tags, j);
       PgString id = html_make_id(tag, allocator);
-      PG_DYN_APPEND_SLICE(&sb, PG_S("<a href=\"/blog/articles-by-tag.html#"),
+      PG_DYN_APPEND_SLICE(&sb, PG_S(" <a href=\"/blog/articles-by-tag.html#"),
                           allocator);
       PG_DYN_APPEND_SLICE(&sb, id, allocator);
       PG_DYN_APPEND_SLICE(&sb, PG_S("\" class=\"tag\">"), allocator);
       PG_DYN_APPEND_SLICE(&sb, tag, allocator);
       PG_DYN_APPEND_SLICE(&sb, PG_S("</a>"), allocator);
     }
-    PG_DYN_APPEND_SLICE(&sb, PG_S("<div></li>"), allocator);
+    PG_DYN_APPEND_SLICE(&sb, PG_S("</div></li>"), allocator);
   }
   PG_DYN_APPEND_SLICE(&sb, PG_S("  </ul>\n"), allocator);
   PG_DYN_APPEND_SLICE(&sb, PG_S("</div>\n"), allocator);
