@@ -397,10 +397,35 @@ static Title *html_parse_titles(PgString html, PgAllocator *allocator) {
   return root;
 }
 
+static void title_print(Title *title) {
+  if (!title) {
+    return;
+  }
+  PG_ASSERT(title->level > 0);
+
+  for (u64 i = 0; i < title->level - 2; i++) {
+    printf("  ");
+  }
+  if (1 == title->level) {
+    printf(".\n");
+  } else {
+    printf("title='%.*s' id=%u\n", (int)title->title.len, title->title.data,
+           title->hash);
+  }
+}
+
 static void article_generate_html_file(PgFileDescriptor markdown_file,
                                        u64 metadata_offset, Article *article,
                                        PgString header, PgString footer,
                                        PgAllocator *allocator) {
+
+  PgString article_html =
+      markdown_to_html(markdown_file, metadata_offset, allocator);
+  // TODO: build search index on html.
+
+  Title *title_root = html_parse_titles(article_html, allocator);
+  title_print(title_root);
+
   Pgu8Dyn sb = {0};
   PG_DYN_ENSURE_CAP(&sb, 4096, allocator);
   PG_DYN_APPEND_SLICE(&sb, PG_S("<!DOCTYPE html>\n<html>\n<head>\n<title>"),
@@ -439,10 +464,7 @@ static void article_generate_html_file(PgFileDescriptor markdown_file,
   // TODO: toc.
   PG_DYN_APPEND_SLICE(&sb, PG_S("\n"), allocator);
 
-  PgString article_html =
-      markdown_to_html(markdown_file, metadata_offset, allocator);
   PG_DYN_APPEND_SLICE(&sb, article_html, allocator);
-  // TODO: build search index on html.
 
   PG_DYN_APPEND_SLICE(&sb, PG_S(BACK_LINK), allocator);
   PG_DYN_APPEND_SLICE(&sb, footer, allocator);
