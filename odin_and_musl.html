@@ -119,7 +119,34 @@
   <div class="tags"> <a href="/blog/articles-by-tag.html#Odin" class="tag">Odin</a> <a href="/blog/articles-by-tag.html#Musl" class="tag">Musl</a> <a href="/blog/articles-by-tag.html#ARM" class="tag">ARM</a></div>
   </div>
 
-<p><a href="/blog"> ⏴ Back to all articles</a></p>
+<p><a href="https://odin-lang.org/">Odin programming language</a> is becoming my favorite tool as a Software Engineer. It's a fantastic programming language, mostly because it is dead simple.</p>
+<p>I have purchased some time ago a Raspberry Pi Zero 2, and I found myself wanting to write command-line Odin programs for it. Here it is in all its beauty:</p>
+<p><img src="zero2.png" alt="Raspberry Pi Zero 2" /></p>
+<p>Here's the story of how I did it. If you do not work with Odin but do work a lot with cross-compilation, like I do at work, all of these techniques will be, I believe, very valuable anyway.</p>
+<p><em>Note: ARM64 is sometimes also called AARCH64 interchangeably.</em>
+<em>Note 2: The Rapsberry Pi Zero 1 is based on ARM (32 bits). The Raspberry Pi Zero 2 is based on ARM64 (64 bits). If you have a Raspberry Pi Zero 1, this article still applies, just adjust the target when cross-compiling.</em></p>
+<h2>Inciting incident</h2>
+<p>The thing is, I work on an Intel Linux laptop and the Zero is a Linux ARM 64 bits piece of hardware. It's also a relatively cheap component with only 512 MiB of RAM and a slow CPU (compared to a modern developer workstation), and based on a very slow SD card, so it's not fast to install the required tools and to build source code on it. Cross-compilation is much easier and faster.</p>
+<p>Odin can cross-compile to it with <code>-target=linux_arm64</code>, so that's great, let's try it:</p>
+<pre><code class="language-sh">$ odin build src -target=linux_arm64
+[...]
+/usr/bin/ld: /home/pg/my-code/odin-music-chords-placements/src.o: error adding symbols: file in wrong format
+clang: error: linker command failed with exit code 1 (use -v to see invocation)
+</code></pre>
+<p>Oh no...The key part is: <code>file in wrong format</code>.</p>
+<p>That's because behind the scenes, the Odin compiler builds our code into an ARM64 object file, which is great. But then it tries to link this object file with libc, which on this computer is a x86_64 library, and that won't work.</p>
+<p>We can confirm this theory by asking Odin to print the linking command:</p>
+<pre><code class="language-sh">$ odin build src -target=linux_arm64 -print-linker-flags
+clang -Wno-unused-command-line-argument [...]  -lm -lc   -L/       -no-pie
+</code></pre>
+<p>And we see it links libc with <code>-lc</code>, meaning it links our program with the local libc it finds on my machine which is a different architecture than our target.</p>
+<h2>Confrontation</h2>
+<p>What we want is to link our object file with the correct libc, meaning one that has been built for ARM64. Moreover, we'd like to build our program statically with libc so that we can simply copy the one executable to the Raspberry Pi Zero and it is fully self-contained. We completely side-step issues of different glibc versions not being compatible with each other.</p>
+<p>Enter musl, a C library for Linux that supports many platforms including ARM64, and static compilation. That's exactly what we need!</p>
+<p>A big difference between Odin and Zig is that Zig is a full cross-compilation toolchain: it comes with the source code of <code>musl</code>, and has put in a ton of work to cross-compile it to the target the user desires.</p>
+<p>So to make our use-case work with Odin, without Odin the toolchain supporting what Zig supports, what we need to do is cross-compile our code to an ARM64 object file but without linking it yet. Then we link it manually to musl libc that has been built for ARM64. We could download this musl artifact from the internet but it's both more educational, empowering, and secure, to build it ourselves. So let's do this, it's not too much work.</p>
+<p>To build musl, we can either use clang since it is a cross-compiler by default, or a GCC toolchain that has been made to target ARM64. Most Linux distributions provide such a compiler as a package typically called <code>gcc-aarch64-xxx</code> e.g. <code>sudo apt-get install gcc-aarch64-linux-gnu</code> or <code>sudo dnf install gcc-aarch64-linux-gnu</code>.</p>
+<p>So let's now build a static musl for ARM64, following t<p><a href="/blog"> ⏴ Back to all articles</a></p>
 
 <blockquote id="donate">
   <p>If you enjoy what you're reading, you want to support me, and can afford it: <a href="https://paypal.me/philigaultier?country.x=DE&locale.x=en_US">Support me</a>. That allows me to write more cool articles!</p>
@@ -136,37 +163,7 @@
 </div>
 </body>
 </html>
-p>Here's the story of how I did it. If you do not work with Odin but do work a lot with cross-compilation, like I do at work, all of these techniques will be, I believe, very valuable anyway.</p>
-<p><em>Note: ARM64 is sometimes also called AARCH64 interchangeably.</em>
-<em>Note 2: The Rapsberry Pi Zero 1 is based on ARM (32 bits). The Raspberry Pi Zero 2 is based on ARM64 (64 bits). If you have a Raspberry Pi Zero 1, this article still applies, just adjust the target when cross-compiling.</em></p>
-<h2 id="848107681-inciting-incident">
-	<a class="title" href="#848107681-inciting-incident">Inciting incident</a>
-	<a class="hash-anchor" href="#848107681-inciting-incident" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
-</h2>
-<p>The thing is, I work on an Intel Linux laptop and the Zero is a Linux ARM 64 bits piece of hardware. It's also a relatively cheap component with only 512 MiB of RAM and a slow CPU (compared to a modern developer workstation), and based on a very slow SD card, so it's not fast to install the required tools and to build source code on it. Cross-compilation is much easier and faster.</p>
-<p>Odin can cross-compile to it with <code>-target=linux_arm64</code>, so that's great, let's try it:</p>
-<pre><code class="language-sh">$ odin build src -target=linux_arm64
-[...]
-/usr/bin/ld: /home/pg/my-code/odin-music-chords-placements/src.o: error adding symbols: file in wrong format
-clang: error: linker command failed with exit code 1 (use -v to see invocation)
-</code></pre>
-<p>Oh no...The key part is: <code>file in wrong format</code>.</p>
-<p>That's because behind the scenes, the Odin compiler builds our code into an ARM64 object file, which is great. But then it tries to link this object file with libc, which on this computer is a x86_64 library, and that won't work.</p>
-<p>We can confirm this theory by asking Odin to print the linking command:</p>
-<pre><code class="language-sh">$ odin build src -target=linux_arm64 -print-linker-flags
-clang -Wno-unused-command-line-argument [...]  -lm -lc   -L/       -no-pie
-</code></pre>
-<p>And we see it links libc with <code>-lc</code>, meaning it links our program with the local libc it finds on my machine which is a different architecture than our target.</p>
-<h2 id="1339502364-confrontation">
-	<a class="title" href="#1339502364-confrontation">Confrontation</a>
-	<a class="hash-anchor" href="#1339502364-confrontation" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
-</h2>
-<p>What we want is to link our object file with the correct libc, meaning one that has been built for ARM64. Moreover, we'd like to build our program statically with libc so that we can simply copy the one executable to the Raspberry Pi Zero and it is fully self-contained. We completely side-step issues of different glibc versions not being compatible with each other.</p>
-<p>Enter musl, a C library for Linux that supports many platforms including ARM64, and static compilation. That's exactly what we need!</p>
-<p>A big difference between Odin and Zig is that Zig is a full cross-compilation toolchain: it comes with the source code of <code>musl</code>, and has put in a ton of work to cross-compile it to the target the user desires.</p>
-<p>So to make our use-case work with Odin, without Odin the toolchain supporting what Zig supports, what we need to do is cross-compile our code to an ARM64 object file but without linking it yet. Then we link it manually to musl libc that has been built for ARM64. We could download this musl artifact from the internet but it's both more educational, empowering, and secure, to build it ourselves. So let's do this, it's not too much work.</p>
-<p>To build musl, we can either use clang since it is a cross-compiler by default, or a GCC toolchain that has been made to target ARM64. Most Linux distributions provide such a compiler as a package typically called <code>gcc-aarch64-xxx</code> e.g. <code>sudo apt-get install gcc-aarch64-linux-gnu</code> or <code>sudo dnf install gcc-aarch64-linux-gnu</code>.</p>
-<p>So let's now build a static musl for ARM64, following the official instructions. We just need to this once:</p>
+tatic musl for ARM64, following the official instructions. We just need to this once:</p>
 <pre><code class="language-sh">$ git clone --recurse --depth 1 https://git.musl-libc.org/git/musl
 $ cd musl
 

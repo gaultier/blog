@@ -231,7 +231,7 @@ static PgString datetime_to_date(PgString datetime) {
   return cut.ok ? cut.left : datetime;
 }
 
-[[nodiscard]] static PgString markdown_to_html(PgString markdown,
+[[nodiscard]] static PgString markdown_to_html(PgFileDescriptor markdown_file,
                                                PgAllocator *allocator) {
   PgStringDyn args = {0};
   *PG_DYN_PUSH(&args, allocator) = PG_S("--validate-utf8");
@@ -256,10 +256,10 @@ static PgString datetime_to_date(PgString datetime) {
 
   PgProcess process = res_spawn.res;
 
-  // TODO: Use `sendfile(2)`.
-  PG_ASSERT(0 ==
-            pg_file_write_full_with_descriptor(process.stdin_pipe, markdown));
+  PG_ASSERT(0 == pg_file_copy_with_descriptors(process.stdin_pipe,
+                                               markdown_file, (Pgu64Ok){0}));
   PG_ASSERT(0 == pg_file_close(process.stdin_pipe));
+  PG_ASSERT(0 == pg_file_close(markdown_file));
 
   PgProcessExitResult res_wait = pg_process_wait(process, allocator);
   PG_ASSERT(0 == res_wait.err);
@@ -276,11 +276,12 @@ static PgString datetime_to_date(PgString datetime) {
   return status.stdout_captured;
 }
 
-static void article_generate_html_file(PgString markdown, Article *article,
-                                       PgString header, PgString footer,
+static void article_generate_html_file(PgFileDescriptor markdown_file,
+                                       Article *article, PgString header,
+                                       PgString footer,
                                        PgAllocator *allocator) {
   Pgu8Dyn sb = {0};
-  PG_DYN_ENSURE_CAP(&sb, markdown.len * 3, allocator);
+  PG_DYN_ENSURE_CAP(&sb, 4096, allocator);
   PG_DYN_APPEND_SLICE(&sb, PG_S("<!DOCTYPE html>\n<html>\n<head>\n<title>"),
                       allocator);
   PG_DYN_APPEND_SLICE(&sb, pg_html_sanitize(article->title, allocator),
@@ -317,14 +318,23 @@ static void article_generate_html_file(PgString markdown, Article *article,
   // TODO: toc.
   PG_DYN_APPEND_SLICE(&sb, PG_S("\n"), allocator);
 
-  PgString cmark_out = markdown_to_html(markdown, allocator);
-  PG_DYN_APPEND_SLICE(&sb, cmark_out, allocator);
+  PgFileDescriptorResult res_html_file = pg_file_open(
+      article->html_file_name, PG_FILE_ACCESS_WRITE, true, allocator);
+  PG_ASSERT(0 == res_html_file.err);
+  PgFileDescriptor html_file = res_html_file.res;
+  PG_ASSERT(0 == pg_file_write_full_with_descriptor(
+                     html_file, PG_DYN_SLICE(PgString, sb)));
 
+  PgString html = markdown_to_html(markdown_file, allocator);
+  PG_ASSERT(0 == pg_file_write_full_with_descriptor(html_file, html));
+
+  // TODO: build search index on html.
+
+  sb.len = 0;
   PG_DYN_APPEND_SLICE(&sb, PG_S(BACK_LINK), allocator);
   PG_DYN_APPEND_SLICE(&sb, footer, allocator);
-
-  PgString html = PG_DYN_SLICE(PgString, sb);
-  PG_ASSERT(0 == pg_file_write_full(article->html_file_name, html, allocator));
+  PG_ASSERT(0 == pg_file_write_full_with_descriptor(
+                     html_file, PG_DYN_SLICE(PgString, sb)));
 }
 
 [[nodiscard]]
@@ -339,17 +349,27 @@ static Article article_generate(PgString header, PgString footer,
       .modification_date = git_stat.modification_date,
   };
 
-  PgStringResult res_markdown =
-      pg_file_read_full_from_path(git_stat.path_rel, allocator);
-  PG_ASSERT(0 == res_markdown.err);
-  PgString markdown = res_markdown.res;
+  PgFileDescriptorResult res_markdown_file =
+      pg_file_open(git_stat.path_rel, PG_FILE_ACCESS_READ, false, allocator);
+  PG_ASSERT(0 == res_markdown_file.err);
+  PgFileDescriptor markdown_file = res_markdown_file.res;
 
-  PgStringCut cut = pg_string_cut_string(markdown, PG_S(METADATA_DELIMITER));
+  u8 tmp[1024] = {0};
+  PgString markdown_header = {
+      .data = tmp,
+      .len = PG_STATIC_ARRAY_LEN(tmp),
+  };
+  PgU64Result res_markdown_header =
+      pg_file_read(markdown_file, markdown_header);
+  PG_ASSERT(0 == res_markdown_header.err);
+  markdown_header.len = res_markdown_header.res;
+  PG_ASSERT(markdown_header.len > 16);
+
+  PgStringCut cut =
+      pg_string_cut_string(markdown_header, PG_S(METADATA_DELIMITER));
   PG_ASSERT(cut.ok);
   PgString metadata_str = cut.left;
   PG_ASSERT(!pg_string_is_empty(metadata_str));
-  PgString article_content = cut.right;
-  PG_ASSERT(!pg_string_is_empty(article_content));
 
   cut = pg_string_cut_byte(metadata_str, '\n');
   PG_ASSERT(cut.ok);
@@ -388,9 +408,10 @@ static Article article_generate(PgString header, PgString footer,
   PgString stem = pg_path_stem(git_stat.path_rel);
   article.html_file_name = pg_string_concat(stem, PG_S(".html"), allocator);
 
-  article_generate_html_file(article_content, &article, header, footer,
+  article_generate_html_file(markdown_file, &article, header, footer,
                              allocator);
 
+  PG_ASSERT(0 == pg_file_close(markdown_file));
   return article;
 }
 

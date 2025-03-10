@@ -119,13 +119,24 @@
   <div class="tags"> <a href="/blog/articles-by-tag.html#Rust" class="tag">Rust</a></div>
   </div>
 
-<p><em>Discussions: <a href="https://www.reddit.com/r/rust/comments/1fkpbfk/a_small_trick_for_simple_rustc_interop/">/r/rust</a>, <a href="https://news.ycombinator.com/item?id=41593661">HN</a>.</em></p>
-<p>I am <a href="/blog/how_to_rewrite_a_cpp_codebase_successfully.html">rewriting</a> a gnarly <a href="/blog/you_inherited_a_legacy_cpp_codebase_now_what.html">C++ codebase</a> in Rust at work.</p>
-<p>Due to the heavy use of callbacks (sigh), Rust sometimes calls C++ and C++ sometimes calls Rust. This done by having both sides expose a C API for the functions they want the other side to be able to call.</p>
-<p>This is for functions; but what about C++ methods? Here is a trick to rewrite one C++ method at a time, without headaches. And by the way, this works whatever the language you are rewriting the project in, it does not have to be Rust!</p>
-<h2>The trick</h2>
-<ol>
-<li>Make the C++ class a <a href="https://en.cppreference.com/w/cpp/language/classes#Standard-layout_class">standard layout class</a>. This is defined by the C++ standard. In layman terms, this makes the C++ class be similar to a plain C struct. With a few allowances, for example the C++ class can still use inheritance and a few other things. Most notably, virtual methods are forbidden. I don't care about this limitation because I never use virtual methods myself and this is my least favorite feature in any programming language.</li>
+<p><a href="/blog"> ⏴ Back to all articles</a></p>
+
+<blockquote id="donate">
+  <p>If you enjoy what you're reading, you want to support me, and can afford it: <a href="https://paypal.me/philigaultier?country.x=DE&locale.x=en_US">Support me</a>. That allows me to write more cool articles!</p>
+</blockquote>
+
+<blockquote>
+  <p>
+    This blog is <a href="https://github.com/gaultier/blog">open-source</a>!
+    If you find a problem, please open a Github issue.
+    The content of this blog as well as the code snippets are under the <a href="https://en.wikipedia.org/wiki/BSD_licenses#3-clause_license_(%22BSD_License_2.0%22,_%22Revised_BSD_License%22,_%22New_BSD_License%22,_or_%22Modified_BSD_License%22)">BSD-3 License</a> which I also usually use for all my personal projects. It's basically free for every use but you have to mention me as the original author.
+  </p>
+</blockquote>
+
+</div>
+</body>
+</html>
+ef="https://en.cppreference.com/w/cpp/language/classes#Standard-layout_class">standard layout class</a>. This is defined by the C++ standard. In layman terms, this makes the C++ class be similar to a plain C struct. With a few allowances, for example the C++ class can still use inheritance and a few other things. Most notably, virtual methods are forbidden. I don't care about this limitation because I never use virtual methods myself and this is my least favorite feature in any programming language.</li>
 <li>Create a Rust struct with the <em>exact</em> same layout as the C++ class.</li>
 <li>Create a Rust function with a C calling convention, whose first argument is this Rust class. You can now access every C++ member of the class!</li>
 </ol>
