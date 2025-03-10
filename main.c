@@ -416,6 +416,70 @@ static void title_print(Title *title) {
   title_print(title->next_sibling);
 }
 
+static void html_write_decorated_titles_rec(PgString html, Pgu8Dyn *sb,
+                                            Title *title,
+                                            u64 *last_title_pos_end,
+                                            PgAllocator *allocator) {
+  if (!title) {
+    return;
+  }
+  PG_ASSERT(title->pos_end > title->pos_start);
+
+  PG_DYN_APPEND_SLICE(
+      sb, PG_SLICE_RANGE(html, *last_title_pos_end, title->pos_start),
+      allocator);
+  *last_title_pos_end = title->pos_end;
+
+  PG_DYN_APPEND_SLICE(sb, PG_S("<h"), allocator);
+  pg_string_builder_append_u32(sb, title->level, allocator);
+  PG_DYN_APPEND_SLICE(sb, PG_S(" id=\""), allocator);
+  pg_string_builder_append_u32(sb, title->hash, allocator);
+  PG_DYN_APPEND_SLICE(sb, PG_S("-"), allocator);
+  PG_DYN_APPEND_SLICE(sb, title->content_html_id, allocator);
+  PG_DYN_APPEND_SLICE(sb, PG_S("\">\n  <a class=\"title\" href=\"#"),
+                      allocator);
+  pg_string_builder_append_u32(sb, title->hash, allocator);
+  PG_DYN_APPEND_SLICE(sb, PG_S("-"), allocator);
+  PG_DYN_APPEND_SLICE(sb, title->content_html_id, allocator);
+  PG_DYN_APPEND_SLICE(sb, PG_S("\">"), allocator);
+  PG_DYN_APPEND_SLICE(sb, title->title, allocator);
+  PG_DYN_APPEND_SLICE(sb, PG_S("</a>\n"), allocator);
+  PG_DYN_APPEND_SLICE(sb, PG_S("  <a class=\"hash-anchor\" href=\"#"),
+                      allocator);
+  pg_string_builder_append_u32(sb, title->hash, allocator);
+  PG_DYN_APPEND_SLICE(sb, PG_S("-"), allocator);
+  PG_DYN_APPEND_SLICE(sb, title->content_html_id, allocator);
+  PG_DYN_APPEND_SLICE(
+      sb,
+      PG_S("\" aria-hidden=\"true\" "
+           "onclick=\"navigator.clipboard.writeText(this.href);\"></a>\n"),
+      allocator);
+
+  html_write_decorated_titles_rec(html, sb, title->first_child,
+                                  last_title_pos_end, allocator);
+  html_write_decorated_titles_rec(html, sb, title->next_sibling,
+                                  last_title_pos_end, allocator);
+}
+
+static void html_write_decorated_titles(PgString html, Pgu8Dyn *sb, Title *root,
+                                        PgAllocator *allocator) {
+  PG_ASSERT(root->next_sibling);
+
+  // No titles, noop.
+  if (!root->first_child) {
+    PG_DYN_APPEND_SLICE(sb, html, allocator);
+    return;
+  }
+  u64 last_title_pos_end = 0;
+
+  html_write_decorated_titles_rec(html, sb, root->first_child,
+                                  &last_title_pos_end, allocator);
+
+  PG_DYN_APPEND_SLICE(sb, PG_SLICE_RANGE_START(html, last_title_pos_end),
+                      allocator);
+  PG_ASSERT(sb->len > html.len);
+}
+
 static void article_generate_html_file(PgFileDescriptor markdown_file,
                                        u64 metadata_offset, Article *article,
                                        PgString header, PgString footer,
@@ -464,9 +528,10 @@ static void article_generate_html_file(PgFileDescriptor markdown_file,
   PG_DYN_APPEND_SLICE(&sb, PG_S("  </div>\n"), allocator);
 
   // TODO: toc.
+
   PG_DYN_APPEND_SLICE(&sb, PG_S("\n"), allocator);
 
-  PG_DYN_APPEND_SLICE(&sb, article_html, allocator);
+  html_write_decorated_titles(article_html, &sb, title_root, allocator);
 
   PG_DYN_APPEND_SLICE(&sb, PG_S(BACK_LINK), allocator);
   PG_DYN_APPEND_SLICE(&sb, footer, allocator);
