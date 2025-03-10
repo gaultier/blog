@@ -131,10 +131,24 @@
 <p>My second internship (10 weeks), and perhaps the project I loved the most. This took place at an astronomy lab, I had the incredible privilege to have my office in the old library that was probably a few centuries old, filled with old books; the building was this 19th century observatory with a big park with bee houses... This will never be topped.</p>
 <p>The work was also such a blast: I got to experiment with the first version of the Oculus Rift, and tinker with it. My adviser and I decided to work on two different projects: A (from scratch) 3D visualization of planets inside the Oculus Rift for kids to 'fly' through the solar system and hopefully spark in them an interest in space exploration and astronomy. The second project was to add to an existing and large 3D simulation of planets a VR mode.</p>
 <p>It was an exciting time, VR was all the rage and everything had to be figured out: the motion sickness, the controller (it turns out that most people are not so good at using a keyboard and mouse while being completely blind and a video game console controller is much more intuitive), how to plug the Oculus Rift SDK to an existing codebase, the performance, etc.</p>
-<p>Even though I wished I had a tad more time, I delivered both. Since we foresaw we would not have time for everything, the solar system visualization got cut down to blue sparkling cubes in 3D space, but still, the Oculus Rift worked beautifully with it. Even though the field was in its infancy, the feeling of realism was already jarring - our brain is tricked easily! The second project also worked, although we had visual artifacts in some cases when traveling far distances, which I suspected was due to floating point precision issues in the existing codebase. There are articles online discussing this fact with physical simulations where huge distances are present and I discussed it with codebase authors during our weekly check-ins and demo sessions.</p>
-<p>Performance was initially also a challenge since VR consists of rendering the same scene twice, once for each eye, with a slight change in where the camera is in 3D space (since the camera is your eye, in a way). And 3D rendering will always be a domain where performance is paramount. It's interesting to note that new 3D APIs such as Vulkan do offer features for VR in the form of extensions to speed it up in hardware, having the GPU do the heavy lifting. But back in 2014, there was nothing like that. Also, 3D APIs have really evolved in the last decade, becoming more low level and giving the developer more control, power, but also responsibilities.</p>
-<p>My major performance stepping stone was moving from rendering everything in the scene to using an octree to only render entities in the 'zone' where the camera is, or is looking at.</p>
-<p>I used OpenGL and C++ for the first project, and C for the second one since the existing codebase was in C.</p>
+<p>Even though I wished I had a tad more time, I delivered both. Since we foresaw we would not have time for everything, the solar system visualization got cut down to blue sparkling cubes in 3D space, but still, the Oculus Rift worked beautifully with it. Even though the field was in its infancy, the feeling of realism was already jarring - our brain is tricked easily! The second project also worked, although we had visual artifacts in some cases when traveling far distances, which I suspected was due to floating point precision issues in the existing codebase. There are articles online discussing this fact with physical simulations where huge distances are present and I discussed it with codebase authors during our weekly che<p><a href="/blog"> ⏴ Back to all articles</a></p>
+
+<blockquote id="donate">
+  <p>If you enjoy what you're reading, you want to support me, and can afford it: <a href="https://paypal.me/philigaultier?country.x=DE&locale.x=en_US">Support me</a>. That allows me to write more cool articles!</p>
+</blockquote>
+
+<blockquote>
+  <p>
+    This blog is <a href="https://github.com/gaultier/blog">open-source</a>!
+    If you find a problem, please open a Github issue.
+    The content of this blog as well as the code snippets are under the <a href="https://en.wikipedia.org/wiki/BSD_licenses#3-clause_license_(%22BSD_License_2.0%22,_%22Revised_BSD_License%22,_%22New_BSD_License%22,_or_%22Modified_BSD_License%22)">BSD-3 License</a> which I also usually use for all my personal projects. It's basically free for every use but you have to mention me as the original author.
+  </p>
+</blockquote>
+
+</div>
+</body>
+</html>
+ the first project, and C for the second one since the existing codebase was in C.</p>
 <p>3D, VR, extending an existing codebase, starting a new project from scratch with 'carte blanche': I learned a ton! And my adviser, fellow coworkers exploring this space (notably trying to do the same with a different VR headset, the Sony Morpheus), and I even got to publish a paper based on our work, that got submitted: <a href="cnrs.pdf">Immersive-3D visualization of astronomical data</a>, <a href="https://ui.adsabs.harvard.edu/abs/2015ASPC..495..125S/abstract">link 1</a>, <a href="http://aspbooks.org/custom/publications/paper/495-0125.html">link 2</a>.</p>
 <p>Finally, I on-boarded my successor on the codebase and the build system and helped them troubleshoot some cross-platform issues.</p>
 <hr />

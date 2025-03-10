@@ -222,25 +222,24 @@ exit(8)                                 = ?
 <li>A function must restore the stack pointer to its original value before the function returns, meaning, either remember the original value and set <code>rsp</code> to this, or, match every decrement by an increment of the same value.</li>
 <li>Before a function call, the stack pointer needs to be 16 bytes aligned, according to the System V ABI. Also, at the very beginning of a function, the stack pointer value is: <code>16*N + 8</code>. That's because before the function call, its value was 16 byte aligned, i.e. <code>16*N</code>, and the <code>call</code> instruction pushes on the stack the current location (the register <code>rip</code>, which is 8 bytes long), to know where to jump when the called function returns.</li>
 </ul>
-<p>Not abiding by those rules will result in nasty crashes, so be warned. That's because the location of where to jump when the function returns will be likely overwritten and the program will jump to the wrong location. That, or the stack content will be overwritten and the program will operate on wrong values. Bad either way.</p>
-<h3>A small stack example</h3>
-<p>Let's write a function that prints <code>hello</code> to the standard out, using the stack, to learn the ropes. An easier way would be to store this static string in the <code>.rodata</code> section, but that would not teach us anything about the stack.</p>
-<p>We need to reserve (at least) 5 bytes on the stack, since that's the length in bytes of <code>hello</code>.</p>
-<p>The stack looks like this:</p>
-<table>
-  <tr> <td align="left">...</td> </tr>
-  <tr> <td align="left" >rbp</td> </tr>
-  <tr> <td align="left" >o</td> </tr>
-  <tr> <td align="left" >l</td> </tr>
-  <tr> <td align="left" >l</td> </tr>
-  <tr> <td align="left" >e</td> </tr>
-  <tr> <td align="left" >h</td> </tr>
-</table>
-<p>And <code>rsp</code> points to the bottom of it.</p>
-<p>Here's how we access each element:</p>
-<table>
-  <thead>
-  <tr> <th>Memory location (example)</th> <th>Assembly code</th> <th align="left">Stack element</th> </tr>
+<p>Not abiding by those rules will result in nasty crashes, so be warned. That's because the location of where to jump when the function returns will be likely overwritten and the program will jump to the wrong location. That, or the stack content will be overwritten and the program will o<p><a href="/blog"> ⏴ Back to all articles</a></p>
+
+<blockquote id="donate">
+  <p>If you enjoy what you're reading, you want to support me, and can afford it: <a href="https://paypal.me/philigaultier?country.x=DE&locale.x=en_US">Support me</a>. That allows me to write more cool articles!</p>
+</blockquote>
+
+<blockquote>
+  <p>
+    This blog is <a href="https://github.com/gaultier/blog">open-source</a>!
+    If you find a problem, please open a Github issue.
+    The content of this blog as well as the code snippets are under the <a href="https://en.wikipedia.org/wiki/BSD_licenses#3-clause_license_(%22BSD_License_2.0%22,_%22Revised_BSD_License%22,_%22New_BSD_License%22,_or_%22Modified_BSD_License%22)">BSD-3 License</a> which I also usually use for all my personal projects. It's basically free for every use but you have to mention me as the original author.
+  </p>
+</blockquote>
+
+</div>
+</body>
+</html>
+on (example)</th> <th>Assembly code</th> <th align="left">Stack element</th> </tr>
   </thead>
   <tbody>
   <tr> <td>0x1016</td> <td></td> <td align="left">...</td> </tr>

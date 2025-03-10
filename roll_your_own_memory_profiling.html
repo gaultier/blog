@@ -156,17 +156,24 @@
 <h2>The text format</h2>
 <p>Here is the text format we want to generate:</p>
 <pre><code>heap profile:    &lt;in use objects sum&gt;:  &lt;in use bytes sum&gt; [   &lt;space objects sum&gt;:  &lt;space bytes sum&gt;] @ heapprofile
-&lt;in use objects&gt;: &lt;in use bytes&gt; [&lt;space objects&gt;: &lt;space bytes&gt;] @ &lt;rip1&gt; &lt;rip2&gt; &lt;rip3&gt; [...]
-&lt;in use objects&gt;: &lt;in use bytes&gt; [&lt;space objects&gt;: &lt;space bytes&gt;] @ &lt;rip1&gt; &lt;rip2&gt; &lt;rip3&gt; [...]
-&lt;in use objects&gt;: &lt;in use bytes&gt; [&lt;space objects&gt;: &lt;space bytes&gt;] @ &lt;rip1&gt; &lt;rip2&gt; &lt;rip3&gt; [...]
-                                                                             
-MAPPED_LIBRARIES:
-[...]
-</code></pre>
-<p>The first line is a header identifying that this is a heap profile (contrary to a CPU profile which <code>pprof</code> can also analyze, which uses a different, binary, format) and gives for each of the four fields we will record, their sum.</p>
-<p>Then comes one line per entry. Each entry has these four fields that the header just gave us a sum of:</p>
-<ul>
-<li><code>in use objects</code>: How many objects are 'live' i.e. in use on the heap at the time of the allocation. Allocating increases its value, freeing decreases it.</li>
+&lt;in use objects&gt;: &lt;in use bytes&gt; [&lt;space objects&gt;: &lt;space bytes&gt;] @ &lt;rip1&gt; &lt;rip2&gt; &lt;r<p><a href="/blog"> ⏴ Back to all articles</a></p>
+
+<blockquote id="donate">
+  <p>If you enjoy what you're reading, you want to support me, and can afford it: <a href="https://paypal.me/philigaultier?country.x=DE&locale.x=en_US">Support me</a>. That allows me to write more cool articles!</p>
+</blockquote>
+
+<blockquote>
+  <p>
+    This blog is <a href="https://github.com/gaultier/blog">open-source</a>!
+    If you find a problem, please open a Github issue.
+    The content of this blog as well as the code snippets are under the <a href="https://en.wikipedia.org/wiki/BSD_licenses#3-clause_license_(%22BSD_License_2.0%22,_%22Revised_BSD_License%22,_%22New_BSD_License%22,_or_%22Modified_BSD_License%22)">BSD-3 License</a> which I also usually use for all my personal projects. It's basically free for every use but you have to mention me as the original author.
+  </p>
+</blockquote>
+
+</div>
+</body>
+</html>
+lue, freeing decreases it.</li>
 <li><code>in use bytes</code>: How many bytes are 'live' i.e. in use on the heap at the time of the allocation. Allocating increases its value, freeing decreases it.</li>
 <li><code>space objects</code>: How many objects have been allocated since the start of the program. It is not affected by freeing memory, it only increases.</li>
 <li><code>space bytes</code>: How many bytes have been allocated since the start of the program. It is not affected by freeing memory, it only increases.</li>

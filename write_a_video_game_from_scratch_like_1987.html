@@ -227,42 +227,24 @@ AuthEntry :: struct {
 
 	display_number_len: u16 = 0
 	{
-		n_read, err := bytes.buffer_read(buffer, mem.ptr_to_bytes(&amp;display_number_len))
-		assert(err == .None)
+		n_read, err := bytes.buffer_read(buffer, mem.ptr_to_bytes(&amp;display_num<p><a href="/blog"> ⏴ Back to all articles</a></p>
 
-		display_number_len = bits.byte_swap(display_number_len)
-		assert(n_read == size_of(display_number_len))
-	}
+<blockquote id="donate">
+  <p>If you enjoy what you're reading, you want to support me, and can afford it: <a href="https://paypal.me/philigaultier?country.x=DE&locale.x=en_US">Support me</a>. That allows me to write more cool articles!</p>
+</blockquote>
 
-	display_number := make([]u8, display_number_len)
-	{
-		n_read, err := bytes.buffer_read(buffer, display_number)
-		assert(err == .None)
-		assert(n_read == cast(int)display_number_len)
-	}
+<blockquote>
+  <p>
+    This blog is <a href="https://github.com/gaultier/blog">open-source</a>!
+    If you find a problem, please open a Github issue.
+    The content of this blog as well as the code snippets are under the <a href="https://en.wikipedia.org/wiki/BSD_licenses#3-clause_license_(%22BSD_License_2.0%22,_%22Revised_BSD_License%22,_%22New_BSD_License%22,_or_%22Modified_BSD_License%22)">BSD-3 License</a> which I also usually use for all my personal projects. It's basically free for every use but you have to mention me as the original author.
+  </p>
+</blockquote>
 
-	auth_name_len: u16 = 0
-	{
-		n_read, err := bytes.buffer_read(buffer, mem.ptr_to_bytes(&amp;auth_name_len))
-		assert(err == .None)
-
-		auth_name_len = bits.byte_swap(auth_name_len)
-		assert(n_read == size_of(auth_name_len))
-	}
-
-	entry.auth_name = make([]u8, auth_name_len)
-	{
-		n_read, err := bytes.buffer_read(buffer, entry.auth_name)
-		assert(err == .None)
-		assert(n_read == cast(int)auth_name_len)
-	}
-
-	auth_data_len: u16 = 0
-	{
-		n_read, err := bytes.buffer_read(buffer, mem.ptr_to_bytes(&amp;auth_data_len))
-		assert(err == .None)
-
-		auth_data_len = bits.byte_swap(auth_data_len)
+</div>
+</body>
+</html>
+len)
 		assert(n_read == size_of(auth_data_len))
 	}
 

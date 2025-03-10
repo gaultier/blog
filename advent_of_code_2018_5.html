@@ -178,23 +178,24 @@ letters of the alphabet.</p>
          (b-code (char-&gt;integer b))
          (diff (- a-code b-code)))
     (= (* 32 32) (* diff diff))))
-</code></pre>
-<p>Let's try it with <code>a</code> and <code>A</code>:</p>
-<pre><code class="language-scheme">(char-case-opposite-casing? #\a #\A) 
-</code></pre>
-<p>And flipped:</p>
-<pre><code class="language-scheme">(char-case-opposite-casing? #\A #\a)
-</code></pre>
-<p>And <code>A</code> and <code>b</code>:</p>
-<pre><code class="language-scheme">(char-case-opposite-casing? #\A #\b)
-</code></pre>
-<p><code>let*</code> is used to define local bindings which are only visible in this function.
-It evaluates each binding in order which means we can define <code>diff</code> in terms of
-<code>a</code> and <code>b</code> (contrary to <code>let</code>).</p>
-<p>We could have done without it but it makes the function more readable.</p>
-<p>The only hurdle is not caring
-about the sign of the difference: if the difference is <code>32</code> or <code>-32</code>, it is the
-same. We could compare the absolute value, but I (arbitrarily) chose to implement it without
+</code<p><a href="/blog"> ⏴ Back to all articles</a></p>
+
+<blockquote id="donate">
+  <p>If you enjoy what you're reading, you want to support me, and can afford it: <a href="https://paypal.me/philigaultier?country.x=DE&locale.x=en_US">Support me</a>. That allows me to write more cool articles!</p>
+</blockquote>
+
+<blockquote>
+  <p>
+    This blog is <a href="https://github.com/gaultier/blog">open-source</a>!
+    If you find a problem, please open a Github issue.
+    The content of this blog as well as the code snippets are under the <a href="https://en.wikipedia.org/wiki/BSD_licenses#3-clause_license_(%22BSD_License_2.0%22,_%22Revised_BSD_License%22,_%22New_BSD_License%22,_or_%22Modified_BSD_License%22)">BSD-3 License</a> which I also usually use for all my personal projects. It's basically free for every use but you have to mention me as the original author.
+  </p>
+</blockquote>
+
+</div>
+</body>
+</html>
+(arbitrarily) chose to implement it without
 branches, by comparing the squared values (which swallows the signs).</p>
 <hr />
 <p>Now let's work on the central problem: how to remove

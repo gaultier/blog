@@ -144,16 +144,24 @@ The same goes for extension protocols: they simply are one XML file that is turn
 <ul>
 <li>No need to link to external libraries: no build system complexities, no dynamic linking issues, and so on.</li>
 <li>We do not have to use the callback system that <code>libwayland</code> requires.</li>
-<li>We can use the I/O mechanism we wish to listen to incoming messages: blocking, <code>poll</code>, <code>select</code>, <code>epoll</code>, <code>io_uring</code>, <code>kqueue</code> on some systems, etc. Here, we will use blocking calls for simplicity but the world is your oyster.</li>
-<li>Easy troubleshooting: 100% of the code is our own.</li>
-<li>No XML</li>
-<li>The protocols we will use are stable so the numeric values on the wire should not change underneath us, but in the unlikely event they do, we simply have to fix them in our code and compile again.</li>
-</ul>
-<p>So at this point you might be thinking: this is going to be so much work! Well, not really. Here are <strong>all</strong> of the Wayland protocol numeric values we will need, including the extension protocols:</p>
-<pre><code class="language-c">static const uint32_t wayland_display_object_id = 1;
-static const uint16_t wayland_wl_registry_event_global = 0;
-static const uint16_t wayland_shm_pool_event_format = 0;
-static const uint16_t wayland_wl_buffer_event_release = 0;
+<li>We can use the I/O mechanism we wish to listen to incoming messages: blocking, <code>poll</code>, <code>select<p><a href="/blog"> ⏴ Back to all articles</a></p>
+
+<blockquote id="donate">
+  <p>If you enjoy what you're reading, you want to support me, and can afford it: <a href="https://paypal.me/philigaultier?country.x=DE&locale.x=en_US">Support me</a>. That allows me to write more cool articles!</p>
+</blockquote>
+
+<blockquote>
+  <p>
+    This blog is <a href="https://github.com/gaultier/blog">open-source</a>!
+    If you find a problem, please open a Github issue.
+    The content of this blog as well as the code snippets are under the <a href="https://en.wikipedia.org/wiki/BSD_licenses#3-clause_license_(%22BSD_License_2.0%22,_%22Revised_BSD_License%22,_%22New_BSD_License%22,_or_%22Modified_BSD_License%22)">BSD-3 License</a> which I also usually use for all my personal projects. It's basically free for every use but you have to mention me as the original author.
+  </p>
+</blockquote>
+
+</div>
+</body>
+</html>
+_wl_buffer_event_release = 0;
 static const uint16_t wayland_xdg_wm_base_event_ping = 0;
 static const uint16_t wayland_xdg_toplevel_event_configure = 0;
 static const uint16_t wayland_xdg_toplevel_event_close = 1;
