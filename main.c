@@ -259,7 +259,6 @@ static PgString datetime_to_date(PgString datetime) {
   PG_ASSERT(0 == pg_file_copy_with_descriptors(process.stdin_pipe,
                                                markdown_file, (Pgu64Ok){0}));
   PG_ASSERT(0 == pg_file_close(process.stdin_pipe));
-  PG_ASSERT(0 == pg_file_close(markdown_file));
 
   PgProcessExitResult res_wait = pg_process_wait(process, allocator);
   PG_ASSERT(0 == res_wait.err);
