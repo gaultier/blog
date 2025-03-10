@@ -82,6 +82,7 @@ static GitStatSlice git_get_articles_stats(PgAllocator *allocator) {
   PG_ASSERT(!status.core_dumped);
   PG_ASSERT(!status.stopped);
 
+  PG_ASSERT(!pg_string_is_empty(status.stdout_captured));
   PG_ASSERT(pg_string_is_empty(status.stderr_captured));
 
   GitStatDyn stats = {0};
@@ -452,13 +453,16 @@ static ArticleSlice articles_generate(PgString header, PgString footer,
 }
 
 int main() {
+#if 0
   PgHeapAllocator heap_allocator = pg_make_heap_allocator();
   PgAllocator *allocator = pg_heap_allocator_as_allocator(&heap_allocator);
+#endif
 
-  //  PgArena arena = pg_arena_make_from_virtual_mem(100 * PG_MiB);
-  // PgArenaAllocator arena_allocator = pg_make_arena_allocator(&arena);
-  // PgAllocator *allocator = pg_arena_allocator_as_allocator(&arena_allocator);
+  PgArena arena = pg_arena_make_from_virtual_mem(100 * PG_MiB);
+  PgArenaAllocator arena_allocator = pg_make_arena_allocator(&arena);
+  PgAllocator *allocator = pg_arena_allocator_as_allocator(&arena_allocator);
 
+  // TODO: Use `pg_copy_file` for header, footer?
   PgStringResult res_header =
       pg_file_read_full_from_path(PG_S("header.html"), allocator);
   PG_ASSERT(0 == res_header.err);
@@ -471,4 +475,7 @@ int main() {
 
   ArticleSlice articles = articles_generate(header, footer, allocator);
   (void)articles;
+
+  printf("generated %" PRIu64 " articles (arena use=%" PRIu64 "\n",
+         articles.len, pg_arena_mem_use(arena));
 }
