@@ -513,8 +513,7 @@ static void article_write_toc_rec(Pgu8Dyn *sb, Title *title,
   }
 
   if (title->level > 1) {
-    PG_DYN_APPEND_SLICE(sb, PG_S("\n  <li>\n    <a class=\"title\" href=\"#"),
-                        allocator);
+    PG_DYN_APPEND_SLICE(sb, PG_S("\n  <li>\n    <a href=\"#"), allocator);
     pg_string_builder_append_u64_as_string(sb, title->hash, allocator);
     PG_DYN_APPEND_SLICE(sb, PG_S("-"), allocator);
     PG_DYN_APPEND_SLICE(sb, title->content_html_id, allocator);
