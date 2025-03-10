@@ -117,6 +117,55 @@
 <h1>Addressing CGO pains, one at a time</h1>
   <div class="tags"> <a href="/blog/articles-by-tag.html#go" class="tag">Go</a> <a href="/blog/articles-by-tag.html#c" class="tag">C</a> <a href="/blog/articles-by-tag.html#rust" class="tag">Rust</a> <a href="/blog/articles-by-tag.html#zig" class="tag">Zig</a> <a href="/blog/articles-by-tag.html#docker" class="tag">Docker</a> <a href="/blog/articles-by-tag.html#cross-compilation" class="tag">Cross-compilation</a> <a href="/blog/articles-by-tag.html#musl" class="tag">Musl</a></div>
   </div>
+ <strong>Table of contents</strong>
+<ul>
+
+  <li>
+    <a class="title" href="#2500525419-cgo-does-not-have-unions">CGO does not have unions</a>
+  </li>
+
+  <li>
+    <a class="title" href="#1510699236-slices-vs-strings">Slices vs Strings</a>
+  </li>
+
+  <li>
+    <a class="title" href="#1045507796-test-a-c-function-in-go-tests">Test a C function in Go tests</a>
+  </li>
+
+  <li>
+    <a class="title" href="#1377417454-the-go-compiler-does-not-detect-changes">The Go compiler does not detect changes</a>
+  </li>
+
+  <li>
+    <a class="title" href="#1226423581-false-positive-warnings">False positive warnings</a>
+  </li>
+
+  <li>
+    <a class="title" href="#716190716-white-space-is-significant">White space is significant</a>
+  </li>
+
+  <li>
+    <a class="title" href="#1161538398-debug-go-and-c-rust">Debug Go and C/Rust</a>
+<ul>
+
+  <li>
+    <a class="title" href="#1317537828-strace-bpftrace">Strace, bpftrace</a>
+  </li>
+</ul>
+  </li>
+
+  <li>
+    <a class="title" href="#1705429708-cross-compile">Cross-compile</a>
+  </li>
+
+  <li>
+    <a class="title" href="#3796851539-conclusion">Conclusion</a>
+  </li>
+
+  <li>
+    <a class="title" href="#1512890027-addendum-the-full-code">Addendum: the full code</a>
+  </li>
+</ul>
 
 <p>Rust? Go? Cgo!</p>
 <p>I maintain a Go codebase at work which does most of its work through a Rust library that exposes a C API. So they interact via Cgo, Go's FFI mechanism. And it works!</p>

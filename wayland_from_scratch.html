@@ -117,6 +117,67 @@
 <h1>Learn Wayland by writing a GUI from scratch</h1>
   <div class="tags"> <a href="/blog/articles-by-tag.html#c" class="tag">C</a> <a href="/blog/articles-by-tag.html#wayland" class="tag">Wayland</a> <a href="/blog/articles-by-tag.html#gui" class="tag">GUI</a> <a href="/blog/articles-by-tag.html#x11" class="tag">X11</a></div>
   </div>
+ <strong>Table of contents</strong>
+<ul>
+
+  <li>
+    <a class="title" href="#3018859686-what-do-we-need">What do we need?</a>
+  </li>
+
+  <li>
+    <a class="title" href="#2474413437-wayland-basics">Wayland basics</a>
+  </li>
+
+  <li>
+    <a class="title" href="#4163415294-opening-a-socket">Opening a socket</a>
+  </li>
+
+  <li>
+    <a class="title" href="#2693341289-creating-a-registry">Creating a registry</a>
+  </li>
+
+  <li>
+    <a class="title" href="#3637969354-shared-memory-the-frame-buffer">Shared memory: the frame buffer</a>
+  </li>
+
+  <li>
+    <a class="title" href="#2024835768-chatting-with-the-compositor">Chatting with the compositor</a>
+<ul>
+
+  <li>
+    <a class="title" href="#1038699131-reacting-to-events-binding-interfaces">Reacting to events: binding interfaces</a>
+  </li>
+
+  <li>
+    <a class="title" href="#663050396-using-the-interfaces-we-created">Using the interfaces we created</a>
+  </li>
+
+  <li>
+    <a class="title" href="#3236706263-reacting-to-events-ping-pong">Reacting to events: ping/pong</a>
+  </li>
+
+  <li>
+    <a class="title" href="#2838931666-reacting-to-events-configure-ack-configure">Reacting to events: configure/ACK configure</a>
+  </li>
+
+  <li>
+    <a class="title" href="#3853643148-rendering-a-frame-the-red-rectangle">Rendering a frame: the red rectangle</a>
+  </li>
+
+  <li>
+    <a class="title" href="#2039654787-rendering-a-frame-the-wayland-logo">Rendering a frame: The Wayland logo</a>
+  </li>
+</ul>
+  </li>
+
+  <li>
+    <a class="title" href="#1770781618-the-end">The end</a>
+  </li>
+
+  <li>
+    <a class="title" href="#1512890027-addendum-the-full-code">Addendum: the full code</a>
+  </li>
+</ul>
 
 <p><em>Discussions: <a href="https://news.ycombinator.com/item?id=37876896">Hacker News</a>, <a href="https://lobste.rs/s/385e2w/learn_wayland_by_writing_gui_from_scratch">Lobsters</a>.</em></p>
 <p><a href="https://wayland.freedesktop.org/">Wayland</a> is all the rage those days. Distributions left and right switch to it, many readers of my previous article on <a href="/blog/x11_x64.html">writing a X11 GUI from scratch in x86_64 assembly</a> asked for a follow-up article about Wayland, and I now run Wayland on my desktop. So here we go, let's write a (very simple) GUI program with Wayland, without any libraries, this time in C.</p>

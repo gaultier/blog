@@ -117,6 +117,39 @@
 <h1>Optimizing an Advent of Code solution in assembly</h1>
   <div class="tags"> <a href="/blog/articles-by-tag.html#x86-64" class="tag">x86_64</a> <a href="/blog/articles-by-tag.html#advent-of-code" class="tag">Advent of Code</a> <a href="/blog/articles-by-tag.html#optimization" class="tag">Optimization</a> <a href="/blog/articles-by-tag.html#algorithm" class="tag">Algorithm</a> <a href="/blog/articles-by-tag.html#c" class="tag">C</a> <a href="/blog/articles-by-tag.html#lisp" class="tag">Lisp</a> <a href="/blog/articles-by-tag.html#scheme" class="tag">Scheme</a></div>
   </div>
+ <strong>Table of contents</strong>
+<ul>
+
+  <li>
+    <a class="title" href="#2859141830-the-new-solution">The new solution</a>
+  </li>
+
+  <li>
+    <a class="title" href="#2432913330-the-x86-64-implementation">The x86_64 implementation</a>
+  </li>
+
+  <li>
+    <a class="title" href="#2843714489-benchmarking">Benchmarking</a>
+  </li>
+
+  <li>
+    <a class="title" href="#1768815813-learnings">Learnings</a>
+  </li>
+
+  <li>
+    <a class="title" href="#2879187008-appendix-the-full-code">Appendix: The full code</a>
+<ul>
+
+  <li>
+    <a class="title" href="#2199062290-the-old-c-implementation">The old C implementation</a>
+  </li>
+
+  <li>
+    <a class="title" href="#2467435296-the-x64-implementation">The x64 implementation</a>
+  </li>
+</ul>
+  </li>
+</ul>
 
 <p>A few days ago I was tweaking the appearance of this blog and I stumbled upon my <a href="/blog/advent_of_code_2018_5">first article</a> which is about solving a simple problem from Advent of Code. Here it is again:</p>
 <blockquote>

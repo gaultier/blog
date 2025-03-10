@@ -484,6 +484,49 @@ static void html_write_decorated_titles(PgString html, Pgu8Dyn *sb, Title *root,
   PG_ASSERT(sb->len > html.len);
 }
 
+static void article_write_toc_rec(Pgu8Dyn *sb, Title *title,
+                                  PgAllocator *allocator) {
+  if (!title) {
+    return;
+  }
+
+  if (title->level > 1) {
+    PG_DYN_APPEND_SLICE(sb, PG_S("\n  <li>\n    <a class=\"title\" href=\"#"),
+                        allocator);
+    pg_string_builder_append_u64_as_string(sb, title->hash, allocator);
+    PG_DYN_APPEND_SLICE(sb, PG_S("-"), allocator);
+    PG_DYN_APPEND_SLICE(sb, title->content_html_id, allocator);
+    PG_DYN_APPEND_SLICE(sb, PG_S("\">"), allocator);
+    PG_DYN_APPEND_SLICE(sb, title->title, allocator);
+    PG_DYN_APPEND_SLICE(sb, PG_S("</a>\n"), allocator);
+  }
+
+  if (title->first_child) {
+    PG_DYN_APPEND_SLICE(sb, PG_S("<ul>\n"), allocator);
+  }
+  article_write_toc_rec(sb, title->first_child, allocator);
+  if (title->first_child) {
+    PG_DYN_APPEND_SLICE(sb, PG_S("</ul>\n"), allocator);
+  }
+
+  if (title->level > 1) {
+    PG_DYN_APPEND_SLICE(sb, PG_S("  </li>\n"), allocator);
+  }
+
+  article_write_toc_rec(sb, title->next_sibling, allocator);
+}
+
+static void article_write_toc(Pgu8Dyn *sb, Title *root,
+                              PgAllocator *allocator) {
+  if (!root->first_child) {
+    return;
+  }
+
+  PG_DYN_APPEND_SLICE(sb, PG_S(" <strong>Table of contents</strong>\n"),
+                      allocator);
+  article_write_toc_rec(sb, root, allocator);
+}
+
 static void article_generate_html_file(PgFileDescriptor markdown_file,
                                        u64 metadata_offset, Article *article,
                                        PgString header, PgString footer,
@@ -531,7 +574,7 @@ static void article_generate_html_file(PgFileDescriptor markdown_file,
   PG_DYN_APPEND_SLICE(&sb, PG_S("</div>\n"), allocator);
   PG_DYN_APPEND_SLICE(&sb, PG_S("  </div>\n"), allocator);
 
-  // TODO: toc.
+  article_write_toc(&sb, title_root, allocator);
 
   PG_DYN_APPEND_SLICE(&sb, PG_S("\n"), allocator);
 
