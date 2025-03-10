@@ -631,7 +631,7 @@ static Article article_generate(PgString header, PgString footer,
 
   cut = pg_string_cut_byte(metadata_title, ':');
   PG_ASSERT(cut.ok);
-  article.title = pg_string_trim(cut.right, ' ');
+  article.title = pg_string_dup(pg_string_trim(cut.right, ' '), allocator);
   PG_ASSERT(!pg_string_is_empty(article.title));
 
   cut = pg_string_cut_byte(metadata_tags, ':');
@@ -713,11 +713,45 @@ static void home_page_generate(ArticleSlice articles, PgString header,
   (void)allocator;
 }
 
+#define HASH_TABLE_EXP 10
+
+typedef struct {
+  PgString keys[1 << HASH_TABLE_EXP];
+  ArticleDyn values[1 << HASH_TABLE_EXP];
+} ArticlesByTag;
+
+static ArticleDyn *articles_by_tag_lookup(ArticlesByTag *table, PgString key) {
+  u64 hash = pg_hash_fnv(key);
+  u64 mask = (1 << HASH_TABLE_EXP) - 1;
+  u32 step = (hash >> (64 - HASH_TABLE_EXP)) | 1;
+  for (u64 i = hash;;) {
+    i = (i + step) & mask;
+
+    PgString *k =
+        PG_C_ARRAY_AT_PTR(table->keys, PG_STATIC_ARRAY_LEN(table->keys), i);
+    if (!pg_string_is_empty(key)) {
+      *k = key;
+      return table->values + i;
+    } else if (pg_string_eq(*k, key)) {
+      return table->values + i;
+    }
+  }
+}
+
+static int article_cmp_by_creation_date_asc(const void *a, const void *b) {
+  const Article *article_a = a;
+  const Article *article_b = b;
+
+  return pg_string_cmp(article_a->creation_date, article_b->creation_date);
+}
+
 static void tags_page_generate(ArticleSlice articles, PgString header,
                                PgString footer, PgAllocator *allocator) {
 
   PgStringDyn tags_lexicographically_ordered = {0};
   PG_DYN_ENSURE_CAP(&tags_lexicographically_ordered, 128, allocator);
+
+  ArticlesByTag articles_by_tag = {0};
 
   for (u64 i = 0; i < articles.len; i++) {
     Article article = PG_SLICE_AT(articles, i);
@@ -727,6 +761,10 @@ static void tags_page_generate(ArticleSlice articles, PgString header,
       PG_ASSERT(!pg_string_is_empty(tag));
 
       *PG_DYN_PUSH(&tags_lexicographically_ordered, allocator) = tag;
+      ArticleDyn *articles_for_tag =
+          articles_by_tag_lookup(&articles_by_tag, tag);
+      PG_DYN_ENSURE_CAP(articles_for_tag, 128, allocator);
+      *PG_DYN_PUSH(articles_for_tag, allocator) = article;
     }
   }
   pg_sort_unique(tags_lexicographically_ordered.data, sizeof(PgString),
@@ -752,6 +790,28 @@ static void tags_page_generate(ArticleSlice articles, PgString header,
     PG_DYN_APPEND_SLICE(&sb, PG_S("</span><ul>\n"), allocator);
 
     // TODO: Articles.
+    ArticleDyn *articles_for_tag =
+        articles_by_tag_lookup(&articles_by_tag, tag);
+    PG_ASSERT(articles_for_tag->len > 0);
+
+    qsort(articles_for_tag->data, articles_for_tag->len, sizeof(Article),
+          article_cmp_by_creation_date_asc);
+
+    for (u64 j = 0; j < articles_for_tag->len; j++) {
+      Article article = PG_SLICE_AT(*articles_for_tag, j);
+
+      PG_DYN_APPEND_SLICE(&sb, PG_S("<li>\n"), allocator);
+      PG_DYN_APPEND_SLICE(&sb, PG_S("  <span class=\"date\">"), allocator);
+      PG_DYN_APPEND_SLICE(&sb, datetime_to_date(article.creation_date),
+                          allocator);
+      PG_DYN_APPEND_SLICE(&sb, PG_S("</span>\n"), allocator);
+      PG_DYN_APPEND_SLICE(&sb, PG_S("  <a href=\""), allocator);
+      PG_DYN_APPEND_SLICE(&sb, article.html_file_name, allocator);
+      PG_DYN_APPEND_SLICE(&sb, PG_S("\">"), allocator);
+      PG_DYN_APPEND_SLICE(&sb, article.title, allocator);
+      PG_DYN_APPEND_SLICE(&sb, PG_S("</a>\n"), allocator);
+      PG_DYN_APPEND_SLICE(&sb, PG_S("</li>\n"), allocator);
+    }
 
     PG_DYN_APPEND_SLICE(&sb, PG_S("</ul></li>\n"), allocator);
   }
