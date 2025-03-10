@@ -750,6 +750,9 @@ static void tags_page_generate(ArticleSlice articles, PgString header,
     PG_DYN_APPEND_SLICE(&sb, PG_S("\"><span class=\"tag\">"), allocator);
     PG_DYN_APPEND_SLICE(&sb, tag, allocator);
     PG_DYN_APPEND_SLICE(&sb, PG_S("</span><ul>\n"), allocator);
+
+    // TODO: Articles.
+
     PG_DYN_APPEND_SLICE(&sb, PG_S("</ul></li>\n"), allocator);
   }
 
