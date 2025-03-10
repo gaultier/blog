@@ -323,14 +323,16 @@ static void article_generate_html_file(PgFileDescriptor markdown_file,
   // TODO: toc.
   PG_DYN_APPEND_SLICE(&sb, PG_S("\n"), allocator);
 
-  PgString html = markdown_to_html(markdown_file, metadata_offset, allocator);
-  PG_DYN_APPEND_SLICE(&sb, html, allocator);
+  PgString article_html =
+      markdown_to_html(markdown_file, metadata_offset, allocator);
+  PG_DYN_APPEND_SLICE(&sb, article_html, allocator);
   // TODO: build search index on html.
 
   PG_DYN_APPEND_SLICE(&sb, PG_S(BACK_LINK), allocator);
   PG_DYN_APPEND_SLICE(&sb, footer, allocator);
-  PG_ASSERT(0 == pg_file_write_full(article->html_file_name,
-                                    PG_DYN_SLICE(PgString, sb), allocator));
+  PgString html = PG_DYN_SLICE(PgString, sb);
+  PG_ASSERT(!pg_string_contains(html, PG_S("\n>\n</html>")));
+  PG_ASSERT(0 == pg_file_write_full(article->html_file_name, html, allocator));
 }
 
 [[nodiscard]]

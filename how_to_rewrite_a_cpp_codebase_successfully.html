@@ -695,39 +695,3 @@ end
 </div>
 </body>
 </html>
->
-</html>
->
-<p>Also, developers not deeply familiar with either C or C++ do not want to touch all this CMake/Autotools with a ten-foot pole. And I understand them. Stockholm syndrome notwithstanding, these are pretty slow, convoluted, niche programming languages and no one wants to actively learn and use them unless they have to.</p>
-<p>Once you are used to simply typing <code>go build</code> or <code>cargo build</code>, you really start to ask yourself if those weird things are worth anyone's time.</p>
-<h2 id="3796851539-conclusion">
-	<a class="title" href="#3796851539-conclusion">Conclusion</a>
-	<a class="hash-anchor" href="#3796851539-conclusion" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
-</h2>
-<p>The rewrite is not yet fully done, but we have already more Rust code than C++ code, and it's moving along nicely, at our own pace (it's not by far the only project we have on our lap). Once all C++ code is removed, we will do a final pass to remove the CMake stuff and build directly via <code>cargo</code>. We'll see if that works when integrating with other build systems e.g. Bazel for Android or Xcode for iOS.</p>
-<p>Developers who learned Rust are overall very happy with it and did not have too many fights with the borrow checker, with one notable exception of trying to migrate a C struct that used an intrusive linked list (ah, the dreaded linked list v. borrow checker!). My suggestion was to simply use a <code>Vec</code> in Rust since the linked list was not really justified here, and the problem was solved.</p>
-<p>Adding unit tests was trivial in Rust compared to C++ and as a result people would write a lot more of them. Built-in support for tests is expected in 2024 by developers. I don't think one single C++ test was written during this rewrite, now that I think of it.</p>
-<p>Everyone was really satisfied with the tooling, even though having to first do <code>rustup target add ...</code> before cross-compiling tripped up a few people, since in Go that's done automatically behind the scenes (I think one difference is that Go compiles everything from source and so does not need to download pre-compiled blobs?).</p>
-<p>Everyone also had an easy time with their text editor/IDE, Rust is ubiquitous enough now that every editor will have support for it.</p>
-<p>All the tooling we needed to scan dependencies for vulnerabilities, linting, etc was present and polished. Shootout to <code>osv-scanner</code> from Google, which allowed us to scan both the Rust and C++ dependencies in the same project (and it evens supports Go).</p>
-<p>As expected, developers migrating C++ code to Rust code had a breeze with the Rust code and almost every time asked for assistance when dealing with the C++ code. C++ is just too complex a language for most developers, especially compared to its alternatives.</p>
-<p>CMake/Make/Ninja proved surprisingly difficult for developers not accustomed to them, but I mentioned that already. I think half of my time during this rewrite was actually spent coercing all the various build systems (Bazel/Xcode/CMake/cargo/Go) on the various platforms into working well together. If there is no one in the team who's really familiar with build systems, I think this is going to be a real challenge.</p>
-<p>So, I hope this article alleviated your concerns about rewriting your C++ codebase. It can absolutely be done, just pick the right programming language for you and your context, do it incrementally, don't overpromise, establish a rough roadmap with milestones, regularly show progress to stakeholders (even if it's just you, it helps staying motivated!), and make sure the team is on-board and enjoying the process.</p>
-<p>You know, like any other software project, really!</p>
-<p><a href="/blog"> ⏴ Back to all articles</a></p>
-
-<blockquote id="donate">
-  <p>If you enjoy what you're reading, you want to support me, and can afford it: <a href="https://paypal.me/philigaultier?country.x=DE&locale.x=en_US">Support me</a>. That allows me to write more cool articles!</p>
-</blockquote>
-
-<blockquote>
-  <p>
-    This blog is <a href="https://github.com/gaultier/blog">open-source</a>!
-    If you find a problem, please open a Github issue.
-    The content of this blog as well as the code snippets are under the <a href="https://en.wikipedia.org/wiki/BSD_licenses#3-clause_license_(%22BSD_License_2.0%22,_%22Revised_BSD_License%22,_%22New_BSD_License%22,_or_%22Modified_BSD_License%22)">BSD-3 License</a> which I also usually use for all my personal projects. It's basically free for every use but you have to mention me as the original author.
-  </p>
-</blockquote>
-
-</div>
-</body>
-</html>
