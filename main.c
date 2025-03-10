@@ -643,14 +643,15 @@ static Article article_generate(PgString header, PgString footer,
   for (;;) {
     cut = pg_string_cut_byte(remaining, ',');
     if (!cut.ok) {
-      *PG_DYN_PUSH_WITHIN_CAPACITY(&tags) = pg_string_trim_space(remaining);
+      PgString tag = pg_string_trim_space(remaining);
+      *PG_DYN_PUSH_WITHIN_CAPACITY(&tags) = pg_string_dup(tag, allocator);
       break;
     }
 
     PgString tag = pg_string_trim(cut.left, ' ');
     remaining = cut.right;
 
-    *PG_DYN_PUSH_WITHIN_CAPACITY(&tags) = tag;
+    *PG_DYN_PUSH_WITHIN_CAPACITY(&tags) = pg_string_dup(tag, allocator);
   }
   PG_ASSERT(tags.len > 0);
   article.tags = PG_DYN_SLICE(PgStringSlice, tags);
