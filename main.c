@@ -714,10 +714,33 @@ static void home_page_generate(ArticleSlice articles, PgString header,
 
 static void tags_page_generate(ArticleSlice articles, PgString header,
                                PgString footer, PgAllocator *allocator) {
-  (void)articles;
-  (void)header;
-  (void)footer;
-  (void)allocator;
+
+  for (u64 i = 0; i < articles.len; i++) {
+    Article article = PG_SLICE_AT(articles, i);
+
+    for (u64 j = 0; j < article.tags.len; j++) {
+      PgString tag = PG_SLICE_AT(article.tags, j);
+      PG_ASSERT(!pg_string_is_empty(tag));
+
+      // TODO
+    }
+  }
+
+  Pgu8Dyn sb = pg_sb_make_with_cap(4096, allocator);
+  PG_DYN_APPEND_SLICE(&sb, PG_S("<!DOCTYPE html>\n<html>\n<head>\n<title>"),
+                      allocator);
+  PG_DYN_APPEND_SLICE(&sb, PG_S("Articles by tag"), allocator);
+  PG_DYN_APPEND_SLICE(&sb, PG_S("</title>\n"), allocator);
+  PG_DYN_APPEND_SLICE(&sb, header, allocator);
+  PG_DYN_APPEND_SLICE(&sb, PG_S(BACK_LINK), allocator);
+  PG_DYN_APPEND_SLICE(&sb, PG_S("<h1>Articles by tag</h1>\n"), allocator);
+  PG_DYN_APPEND_SLICE(&sb, PG_S("<ul>\n"), allocator);
+  PG_DYN_APPEND_SLICE(&sb, PG_S("</ul>\n"), allocator);
+  PG_DYN_APPEND_SLICE(&sb, footer, allocator);
+
+  PgString html_file_name = PG_S("articles-by-tag.html");
+  PG_ASSERT(0 == pg_file_write_full(html_file_name, PG_DYN_SLICE(PgString, sb),
+                                    allocator));
 }
 
 static void rss_generate(ArticleSlice articles, PgString header,
