@@ -32,6 +32,20 @@ typedef struct {
 PG_SLICE(GitStat) GitStatSlice;
 PG_DYN(GitStat) GitStatDyn;
 
+static int article_cmp_by_creation_date_asc(const void *a, const void *b) {
+  const Article *article_a = a;
+  const Article *article_b = b;
+
+  return pg_string_cmp(article_a->creation_date, article_b->creation_date);
+}
+
+static int article_cmp_by_creation_date_desc(const void *a, const void *b) {
+  const Article *article_a = a;
+  const Article *article_b = b;
+
+  return pg_string_cmp(article_b->creation_date, article_a->creation_date);
+}
+
 [[nodiscard]] static i64 git_stats_find_by_path_rel(GitStatSlice git_stats,
                                                     PgString path_rel) {
   for (u64 i = 0; i < git_stats.len; i++) {
@@ -707,10 +721,72 @@ static ArticleSlice articles_generate(PgString header, PgString footer,
 
 static void home_page_generate(ArticleSlice articles, PgString header,
                                PgString footer, PgAllocator *allocator) {
-  (void)articles;
-  (void)header;
-  (void)footer;
-  (void)allocator;
+
+  qsort(articles.data, articles.len, sizeof(Article),
+        article_cmp_by_creation_date_desc);
+
+  PgString markdown_file_path = PG_S("index.md");
+  PgString html_file_path = PG_S("index.html");
+
+  Pgu8Dyn sb = pg_sb_make_with_cap(32 * PG_KiB, allocator);
+  PG_DYN_APPEND_SLICE(&sb, PG_S("<!DOCTYPE html>\n<html>\n<head>\n<title>"),
+                      allocator);
+  PG_DYN_APPEND_SLICE(&sb, PG_S("Philippe Gaultier's blog"), allocator);
+  PG_DYN_APPEND_SLICE(&sb, PG_S("</title>\n"), allocator);
+  PG_DYN_APPEND_SLICE(&sb, header, allocator);
+  PG_DYN_APPEND_SLICE(&sb, PG_S("<div class=\"articles\">\n"), allocator);
+  PG_DYN_APPEND_SLICE(&sb, PG_S("  <h2 id=\"articles\">Articles</h2>\n"),
+                      allocator);
+  PG_DYN_APPEND_SLICE(&sb, PG_S("  <ul>\n"), allocator);
+
+  for (u64 i = 0; i < articles.len; i++) {
+    Article a = PG_SLICE_AT(articles, i);
+
+    if (pg_string_eq(a.html_file_name, PG_S("body_of_work.html"))) {
+      continue;
+    }
+    PG_DYN_APPEND_SLICE(&sb, PG_S("  <li>\n"), allocator);
+    PG_DYN_APPEND_SLICE(&sb, PG_S("    <div class=\"home-link\">\n"),
+                        allocator);
+    PG_DYN_APPEND_SLICE(&sb, PG_S("      <span class=\"date\">"), allocator);
+    PG_DYN_APPEND_SLICE(&sb, datetime_to_date(a.creation_date), allocator);
+    PG_DYN_APPEND_SLICE(&sb, PG_S("</span>\n"), allocator);
+    PG_DYN_APPEND_SLICE(&sb, PG_S("      <a href=\"/blog/"), allocator);
+    PG_DYN_APPEND_SLICE(&sb, a.html_file_name, allocator);
+    PG_DYN_APPEND_SLICE(&sb, PG_S("\">"), allocator);
+    PG_DYN_APPEND_SLICE(&sb, a.title, allocator);
+    PG_DYN_APPEND_SLICE(&sb, PG_S("</a>\n"), allocator);
+    PG_DYN_APPEND_SLICE(&sb, PG_S("    </div>\n"), allocator);
+    PG_DYN_APPEND_SLICE(&sb, PG_S("<div class=\"tags\">\n"), allocator);
+
+    for (u64 j = 0; j < a.tags.len; j++) {
+      PgString tag = PG_SLICE_AT(a.tags, j);
+      PgString id = html_make_id(tag, allocator);
+      PG_DYN_APPEND_SLICE(&sb, PG_S("<a href=\"/blog/articles-by-tag.html#"),
+                          allocator);
+      PG_DYN_APPEND_SLICE(&sb, id, allocator);
+      PG_DYN_APPEND_SLICE(&sb, PG_S("\" class=\"tag\">"), allocator);
+      PG_DYN_APPEND_SLICE(&sb, tag, allocator);
+      PG_DYN_APPEND_SLICE(&sb, PG_S("</a>"), allocator);
+    }
+    PG_DYN_APPEND_SLICE(&sb, PG_S("<div></li>"), allocator);
+  }
+  PG_DYN_APPEND_SLICE(&sb, PG_S("  </ul>\n"), allocator);
+  PG_DYN_APPEND_SLICE(&sb, PG_S("</div>\n"), allocator);
+
+  PgFileDescriptorResult res_markdown_file =
+      pg_file_open(markdown_file_path, PG_FILE_ACCESS_READ, false, allocator);
+  PG_ASSERT(0 == res_markdown_file.err);
+  PgString html = markdown_to_html(res_markdown_file.res, 0, allocator);
+
+  Title *title_root = html_parse_titles(html, allocator);
+  html_write_decorated_titles(html, &sb, title_root, allocator);
+
+  PG_DYN_APPEND_SLICE(&sb, footer, allocator);
+
+  PG_ASSERT(0 == pg_file_write_full(html_file_path, PG_DYN_SLICE(PgString, sb),
+                                    allocator));
+  PG_ASSERT(0 == pg_file_close(res_markdown_file.res));
 }
 
 #define HASH_TABLE_EXP 10
@@ -736,13 +812,6 @@ static ArticleDyn *articles_by_tag_lookup(ArticlesByTag *table, PgString key) {
       return table->values + i;
     }
   }
-}
-
-static int article_cmp_by_creation_date_asc(const void *a, const void *b) {
-  const Article *article_a = a;
-  const Article *article_b = b;
-
-  return pg_string_cmp(article_a->creation_date, article_b->creation_date);
 }
 
 static void tags_page_generate(ArticleSlice articles, PgString header,
