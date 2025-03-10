@@ -9,6 +9,7 @@
 #define BASE_URL "https://gaultier.github.io/blog"
 #define METADATA_DELIMITER "---"
 #define BACK_LINK "<p><a href=\"/blog\"> ⏴ Back to all articles</a></p>\n"
+#define FNV_SEED ((u32)0x811c9dc5)
 
 typedef u32 TitleHash;
 
@@ -302,8 +303,6 @@ static PgString datetime_to_date(PgString datetime) {
   PG_ASSERT(pg_string_is_empty(status.stderr_captured));
   return status.stdout_captured;
 }
-
-#define FNV_SEED ((u32)0x811c9dc5)
 
 [[nodiscard]] static TitleHash title_compute_hash(Title *title, u32 hash) {
   // Reached root?
@@ -802,6 +801,7 @@ typedef struct {
   ArticleDyn values[1 << HASH_TABLE_EXP];
 } ArticlesByTag;
 
+[[nodiscard]]
 static ArticleDyn *articles_by_tag_lookup(ArticlesByTag *table, PgString key) {
   u64 hash = pg_hash_fnv(key);
   u32 mask = (1 << HASH_TABLE_EXP) - 1;
@@ -820,6 +820,7 @@ static ArticleDyn *articles_by_tag_lookup(ArticlesByTag *table, PgString key) {
   }
 }
 
+[[nodiscard]]
 static PgStringSlice articles_by_tag_get_keys(ArticlesByTag table,
                                               PgAllocator *allocator) {
   PgStringDyn res = {0};
