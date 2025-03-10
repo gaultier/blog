@@ -352,7 +352,7 @@ static Title *html_parse_titles(PgString html, PgAllocator *allocator) {
     Title *title = PG_SLICE_AT_PTR(&titles, i);
 
     if (i > 0) {
-      Title *previous = PG_SLICE_AT_PTR(&titles, i);
+      Title *previous = PG_SLICE_AT_PTR(&titles, i - 1);
       i8 level_diff = previous->level - title->level;
 
       if (level_diff > 0) {
@@ -392,7 +392,7 @@ static Title *html_parse_titles(PgString html, PgAllocator *allocator) {
     title->hash = title_compute_hash(title, FNV_SEED);
   }
 
-  PG_ASSERT(root->next_sibling);
+  PG_ASSERT(nullptr == root->next_sibling);
 
   return root;
 }
@@ -403,7 +403,7 @@ static void title_print(Title *title) {
   }
   PG_ASSERT(title->level > 0);
 
-  for (u64 i = 0; i < title->level - 2; i++) {
+  for (i64 i = 0; i < title->level - 2; i++) {
     printf("  ");
   }
   if (1 == title->level) {
@@ -412,6 +412,8 @@ static void title_print(Title *title) {
     printf("title='%.*s' id=%u\n", (int)title->title.len, title->title.data,
            title->hash);
   }
+  title_print(title->first_child);
+  title_print(title->next_sibling);
 }
 
 static void article_generate_html_file(PgFileDescriptor markdown_file,
