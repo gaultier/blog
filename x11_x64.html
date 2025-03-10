@@ -298,24 +298,10 @@ print_hello:
 <p>There is a lot to unpack here.</p>
 <p>First, what is <code>rbp</code>? That's a register like any other. But, you can choose to follow the convention of not using this register like the other registers, to store arbitrary values, and instead, use it to store a linked list of call frames. That's a lot of words.</p>
 <p>Basically, at the very beginning of a function, the value of <code>rbp</code> is stored on the stack (that's <code>push rbp</code>). Since <code>rbp</code> stores an address (the address of the frame that's called us), we are storing on the stack the address of the caller in a known location.</p>
-<p>Immediately after that, we set <code>rbp</code> to <code>rsp</code>, that is, to the stack pointer at the beginning of the function. <code>pus<p><a href="/blog"> ⏴ Back to all articles</a></p>
-
-<blockquote id="donate">
-  <p>If you enjoy what you're reading, you want to support me, and can afford it: <a href="https://paypal.me/philigaultier?country.x=DE&locale.x=en_US">Support me</a>. That allows me to write more cool articles!</p>
-</blockquote>
-
-<blockquote>
-  <p>
-    This blog is <a href="https://github.com/gaultier/blog">open-source</a>!
-    If you find a problem, please open a Github issue.
-    The content of this blog as well as the code snippets are under the <a href="https://en.wikipedia.org/wiki/BSD_licenses#3-clause_license_(%22BSD_License_2.0%22,_%22Revised_BSD_License%22,_%22New_BSD_License%22,_or_%22Modified_BSD_License%22)">BSD-3 License</a> which I also usually use for all my personal projects. It's basically free for every use but you have to mention me as the original author.
-  </p>
-</blockquote>
-
-</div>
-</body>
-</html>
- the last element of the linked list of call frames, since we are exiting the leaf function.</p>
+<p>Immediately after that, we set <code>rbp</code> to <code>rsp</code>, that is, to the stack pointer at the beginning of the function. <code>push rbp</code> and <code>mov rbp, rsp</code> are thus usually referred to as the function prolog.</p>
+<p>For the rest of the function body, we treat <code>rbp</code> as a constant and only decrease <code>rsp</code> if we need to reserve space on the stack.</p>
+<p>So if function A calls function B which in turn calls function C, and each function stores on the stack the address of the caller frame, we know where to find on the stack the address of each. Thus, we can print a stack trace in any location of our program simply by inspecting the stack. Pretty nifty. That's already very useful to profilers and other similar tools.</p>
+<p>We must not forget of course, just before we exit the function, to restore <code>rbp</code> to its original value (which is still on the stack at that point): that's <code>pop rbp</code>. This is also known as the function epilog. Another way to look at it is that we remove the last element of the linked list of call frames, since we are exiting the leaf function.</p>
 <p>Don't worry if you have not fully understood everything, just remember to always have the function epilogs and prologs and you'll be fine:</p>
 <pre><code class="language-x86asm">my_function:
   push rbp
@@ -416,21 +402,24 @@ print_hello:
 <li>Always use the standard function prologs and epilogs</li>
 <li>Always increment/decrement <code>rsp</code> by (a multiple of) 16</li>
 <li>Address items on the stack relative to <code>rsp</code>, i.e. <code>mov BYTE [rsp + 4], 'o'</code></li>
-<li>If you have to decrement <code>rsp</code> by a value that's unknown at compile time (similar to how <code>alloca()</code> works in C), you can <code>and rsp, -16</code> to 16 bytes align it.</li>
-</ul>
-<p>And you'll be safe.</p>
-<p>The last point is interesting, see for yourself:</p>
-<pre><code class="language-shell">(gdb) p -100 &amp; -16
-$1 = -112
-(gdb) p -112 &amp; -16
-$2 = -112
-</code></pre>
-<p>Which translates in assembly to:</p>
-<pre><code class="language-asm">sub rsp, 100
-and rsp, -16
-</code></pre>
-<p>Finally, following those conventions means that our assembly functions can be safely called from C or other languages following the <a href="https://wiki.osdev.org/System_V_ABI">System V ABI</a>, without any modification, which is great.</p>
-<p><em>I have not talked about the red zone which is a 128 byte region at the bottom of the stack which our program is free to use as it pleases without having to change the stack pointer. In my opinion, it is not helpful and creates hard to track bugs, so I do not recommend to use it. To disable it entirely, run: <code>nasm -f elf64 -g main.nasm &amp;&amp; cc main.o -static -o main -mno-red-zone -nostdlib</code></em>.</p>
+<li>If you have to decrement <code>rsp</code> by a value that's unknown at compile time (similar to how <code>al<p><a href="/blog"> ⏴ Back to all articles</a></p>
+
+<blockquote id="donate">
+  <p>If you enjoy what you're reading, you want to support me, and can afford it: <a href="https://paypal.me/philigaultier?country.x=DE&locale.x=en_US">Support me</a>. That allows me to write more cool articles!</p>
+</blockquote>
+
+<blockquote>
+  <p>
+    This blog is <a href="https://github.com/gaultier/blog">open-source</a>!
+    If you find a problem, please open a Github issue.
+    The content of this blog as well as the code snippets are under the <a href="https://en.wikipedia.org/wiki/BSD_licenses#3-clause_license_(%22BSD_License_2.0%22,_%22Revised_BSD_License%22,_%22New_BSD_License%22,_or_%22Modified_BSD_License%22)">BSD-3 License</a> which I also usually use for all my personal projects. It's basically free for every use but you have to mention me as the original author.
+  </p>
+</blockquote>
+
+</div>
+</body>
+</html>
+ot recommend to use it. To disable it entirely, run: <code>nasm -f elf64 -g main.nasm &amp;&amp; cc main.o -static -o main -mno-red-zone -nostdlib</code></em>.</p>
 <h2>Opening a socket</h2>
 <p>We now are ready to open a socket with the <code>socket(2)</code> syscall, so we add a few constants, taken from the libc headers (<em>note that those values might actually be different on a different Unix, I have not checked. Again, a few <code>%ifdef</code> can easily remedy this discrepancy</em>):</p>
 <pre><code class="language-x86asm">%define AF_UNIX 1

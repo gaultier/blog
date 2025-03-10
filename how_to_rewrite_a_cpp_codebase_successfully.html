@@ -138,24 +138,17 @@
 <p>So join me on this journey, here's the guide to rewrite a C++ codebase successfully. And also what not do!</p>
 <h2>The project</h2>
 <p>This project is a library that exposes a C API but the implementation is C++, and it vendors C libraries (e.g. mbedtls) which we build from source. The final artifacts are a <code>libfoo.a</code> static library and a <code>libfoo.h</code> C header. It is used to talk to applets on a <a href="https://en.wikipedia.org/wiki/Smart_card">smart card</a> like your credit card, ID, passport or driving license (yes, smart cards are nowadays everywhere - you probably carry several on you right now), since they use a <del>bizarre</del> interesting communication protocol. The library also implements a home-grown protocol on top of the well-specified smart card protocol, encryption, and business logic.</p>
-<p>It is meant to be part of an user-facing application running on smartphones and Point of Sales terminals, as well as in servers ru<p><a href="/blog"> ⏴ Back to all articles</a></p>
-
-<blockquote id="donate">
-  <p>If you enjoy what you're reading, you want to support me, and can afford it: <a href="https://paypal.me/philigaultier?country.x=DE&locale.x=en_US">Support me</a>. That allows me to write more cool articles!</p>
-</blockquote>
-
-<blockquote>
-  <p>
-    This blog is <a href="https://github.com/gaultier/blog">open-source</a>!
-    If you find a problem, please open a Github issue.
-    The content of this blog as well as the code snippets are under the <a href="https://en.wikipedia.org/wiki/BSD_licenses#3-clause_license_(%22BSD_License_2.0%22,_%22Revised_BSD_License%22,_%22New_BSD_License%22,_or_%22Modified_BSD_License%22)">BSD-3 License</a> which I also usually use for all my personal projects. It's basically free for every use but you have to mention me as the original author.
-  </p>
-</blockquote>
-
-</div>
-</body>
-</html>
-project.</p>
+<p>It is meant to be part of an user-facing application running on smartphones and Point of Sales terminals, as well as in servers running in a datacenter or in the cloud.</p>
+<p>This library is used in:</p>
+<ul>
+<li>Android applications, through JNI</li>
+<li>Go back-end services running in Kubernetes, through CGO</li>
+<li>iOS applications, through Swift FFI</li>
+<li>C and C++ applications running on very small 32 bits ARM boards similar to the first Raspberry Pi</li>
+</ul>
+<p>Additionally, developers are using macOS (x64 and arm64) and Linux so the library needs to build and run on these platforms.</p>
+<p>Since external customers also integrate their applications with our library and we do not control these environments, and because some developer machines and servers use glibc and others musl,  we also need to work with either the glibc and the musl C libraries, as well as clang and gcc, and expose a C89-ish API, to maximize compatibility.</p>
+<p>Alright, now that the stage is set, let's go through the steps of rewriting this project.</p>
 <h2>Improve the existing codebase</h2>
 <p>That's basically all the steps in <a href="/blog/you_inherited_a_legacy_cpp_codebase_now_what.html">Inheriting a legacy C++ codebase</a>. We need to start the rewrite with a codebase that builds and runs on every platform we support, with tests passing, and a clear README explaining how to setup the project locally. This is a small investment (a few days to a few weeks depending on the scale of the codebase) that will pay massive dividends in the future.</p>
 <p>But I think the most important point is to trim all the unused code which is typically the majority of the codebase! No one wants to spend time and effort on rewriting completely unused code.</p>

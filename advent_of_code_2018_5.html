@@ -430,35 +430,24 @@ int main() {
   char *const input = calloc(input_len, 1);
 
   if (read(fd, input, input_len) != input_len)
-    return errno;
+    return e<p><a href="/blog"> ⏴ Back to all articles</a></p>
 
-  while (input[input_len - 1] == '\n' || input[input_len - 1] == ' ')
-    input_len--;
-
-  int64_t i = 0;
-  while (i &lt; input_len) {
-    if (abs(input[i] - input[i + 1]) == 32) {
-      memmove(input + i, input + i + 2, input_len - i - 2);
-      input_len -= 2;
-      i = i &gt; 0 ? i - 1 : 0;
-    } else
-      i++;
-  }
-
-  printf(&quot;`%zu`\n&quot;, input_len);
-}
-</code></pre>
-<p>Let's benchmark it on the same input:</p>
-<pre><code class="language-sh">$ cc -std=c99 -O3 -Weverything aoc5.c -march=native &amp;&amp; time ./a.out
-./a.out  0.01s user 0.00s system 86% cpu 0.012 total
-</code></pre>
-<p>It took 12 milliseconds. So the scheme version is very close, and takes an
-acceptable amount of time.</p>
-<blockquote>
-<p>Can't we use strings and not lists?</p>
+<blockquote id="donate">
+  <p>If you enjoy what you're reading, you want to support me, and can afford it: <a href="https://paypal.me/philigaultier?country.x=DE&locale.x=en_US">Support me</a>. That allows me to write more cool articles!</p>
 </blockquote>
-<p>Yes, of course. However we need to be careful about how strings are implemented
-and what we we do with those. Most runtimes (e.g the JVM) use immutable strings,
+
+<blockquote>
+  <p>
+    This blog is <a href="https://github.com/gaultier/blog">open-source</a>!
+    If you find a problem, please open a Github issue.
+    The content of this blog as well as the code snippets are under the <a href="https://en.wikipedia.org/wiki/BSD_licenses#3-clause_license_(%22BSD_License_2.0%22,_%22Revised_BSD_License%22,_%22New_BSD_License%22,_or_%22Modified_BSD_License%22)">BSD-3 License</a> which I also usually use for all my personal projects. It's basically free for every use but you have to mention me as the original author.
+  </p>
+</blockquote>
+
+</div>
+</body>
+</html>
+(e.g the JVM) use immutable strings,
 meaning we could end up allocating thousands of big strings, and being quite slow.</p>
 <h2>Conclusion</h2>
 <p>That's it, we solved the fifth Advent of Code challenge in Scheme. The solution
