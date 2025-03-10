@@ -821,8 +821,8 @@ static ArticleDyn *articles_by_tag_lookup(ArticlesByTag *table, PgString key) {
   }
 }
 
-static PgStringSlice articles_by_tag_keys(ArticlesByTag table,
-                                          PgAllocator *allocator) {
+static PgStringSlice articles_by_tag_get_keys(ArticlesByTag table,
+                                              PgAllocator *allocator) {
   PgStringDyn res = {0};
 
   for (u64 i = 0; i < PG_STATIC_ARRAY_LEN(table.keys); i++) {
@@ -859,7 +859,7 @@ static void tags_page_generate(ArticleSlice articles, PgString header,
     }
   }
   PgStringSlice tags_lexicographically_ordered =
-      articles_by_tag_keys(articles_by_tag, allocator);
+      articles_by_tag_get_keys(articles_by_tag, allocator);
 
   Pgu8Dyn sb = pg_sb_make_with_cap(4096, allocator);
   PG_DYN_APPEND_SLICE(&sb, PG_S("<!DOCTYPE html>\n<html>\n<head>\n<title>"),
