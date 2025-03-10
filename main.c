@@ -185,15 +185,13 @@ static GitStatSlice git_get_articles_stats(PgAllocator *allocator) {
         GitStat *entry = PG_SLICE_AT_PTR(&stats, idx);
         PG_ASSERT(!pg_string_is_empty(entry->creation_date));
         PG_ASSERT(!pg_string_is_empty(entry->modification_date));
-        PG_ASSERT(
-            PG_STRING_CMP_GREATER !=
-            pg_string_cmp(entry->creation_date, entry->modification_date));
+        PG_ASSERT(PG_CMP_GREATER != pg_string_cmp(entry->creation_date,
+                                                  entry->modification_date));
         // Keep updating the modification date, when we reach the end of the
         // commit log, it has the right value.
         entry->modification_date = date;
-        PG_ASSERT(
-            PG_STRING_CMP_GREATER !=
-            pg_string_cmp(entry->creation_date, entry->modification_date));
+        PG_ASSERT(PG_CMP_GREATER != pg_string_cmp(entry->creation_date,
+                                                  entry->modification_date));
       }
     }
   }
@@ -715,6 +713,9 @@ static void home_page_generate(ArticleSlice articles, PgString header,
 static void tags_page_generate(ArticleSlice articles, PgString header,
                                PgString footer, PgAllocator *allocator) {
 
+  PgStringDyn tags_lexicographically_ordered = {0};
+  PG_DYN_ENSURE_CAP(&tags_lexicographically_ordered, 128, allocator);
+
   for (u64 i = 0; i < articles.len; i++) {
     Article article = PG_SLICE_AT(articles, i);
 
@@ -722,9 +723,11 @@ static void tags_page_generate(ArticleSlice articles, PgString header,
       PgString tag = PG_SLICE_AT(article.tags, j);
       PG_ASSERT(!pg_string_is_empty(tag));
 
-      // TODO
+      *PG_DYN_PUSH(&tags_lexicographically_ordered, allocator) = tag;
     }
   }
+  pg_sort_unique(tags_lexicographically_ordered.data, sizeof(PgString),
+                 tags_lexicographically_ordered.len, pg_string_cmp_qsort);
 
   Pgu8Dyn sb = pg_sb_make_with_cap(4096, allocator);
   PG_DYN_APPEND_SLICE(&sb, PG_S("<!DOCTYPE html>\n<html>\n<head>\n<title>"),
