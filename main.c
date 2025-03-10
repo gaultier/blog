@@ -972,7 +972,6 @@ int main() {
   PgArenaAllocator arena_allocator = pg_make_arena_allocator(&arena);
   PgAllocator *allocator = pg_arena_allocator_as_allocator(&arena_allocator);
 
-  // TODO: Use `pg_copy_file` for header, footer?
   PgStringResult res_header =
       pg_file_read_full_from_path(PG_S("header.html"), allocator);
   PG_ASSERT(0 == res_header.err);
