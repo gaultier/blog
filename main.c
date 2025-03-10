@@ -821,11 +821,27 @@ static ArticleDyn *articles_by_tag_lookup(ArticlesByTag *table, PgString key) {
   }
 }
 
+static PgStringSlice articles_by_tag_keys(ArticlesByTag table,
+                                          PgAllocator *allocator) {
+  PgStringDyn res = {0};
+
+  for (u64 i = 0; i < PG_STATIC_ARRAY_LEN(table.keys); i++) {
+    PgString key =
+        PG_C_ARRAY_AT(table.keys, PG_STATIC_ARRAY_LEN(table.keys), i);
+    if (pg_string_is_empty(key)) {
+      continue;
+    }
+
+    *PG_DYN_PUSH(&res, allocator) = key;
+  }
+
+  qsort(res.data, res.len, sizeof(PgString), pg_string_cmp_qsort);
+
+  return PG_DYN_SLICE(PgStringSlice, res);
+}
+
 static void tags_page_generate(ArticleSlice articles, PgString header,
                                PgString footer, PgAllocator *allocator) {
-
-  PgStringDyn tags_lexicographically_ordered = {0};
-  PG_DYN_ENSURE_CAP(&tags_lexicographically_ordered, 128, allocator);
 
   ArticlesByTag articles_by_tag = {0};
 
@@ -836,15 +852,14 @@ static void tags_page_generate(ArticleSlice articles, PgString header,
       PgString tag = PG_SLICE_AT(article.tags, j);
       PG_ASSERT(!pg_string_is_empty(tag));
 
-      *PG_DYN_PUSH(&tags_lexicographically_ordered, allocator) = tag;
       ArticleDyn *articles_for_tag =
           articles_by_tag_lookup(&articles_by_tag, tag);
       PG_DYN_ENSURE_CAP(articles_for_tag, 128, allocator);
       *PG_DYN_PUSH(articles_for_tag, allocator) = article;
     }
   }
-  pg_sort_unique(tags_lexicographically_ordered.data, sizeof(PgString),
-                 &tags_lexicographically_ordered.len, pg_string_cmp_qsort);
+  PgStringSlice tags_lexicographically_ordered =
+      articles_by_tag_keys(articles_by_tag, allocator);
 
   Pgu8Dyn sb = pg_sb_make_with_cap(4096, allocator);
   PG_DYN_APPEND_SLICE(&sb, PG_S("<!DOCTYPE html>\n<html>\n<head>\n<title>"),
