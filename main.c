@@ -704,6 +704,30 @@ static ArticleSlice articles_generate(PgString header, PgString footer,
   return PG_DYN_SLICE(ArticleSlice, articles);
 }
 
+static void home_page_generate(ArticleSlice articles, PgString header,
+                               PgString footer, PgAllocator *allocator) {
+  (void)articles;
+  (void)header;
+  (void)footer;
+  (void)allocator;
+}
+
+static void tags_page_generate(ArticleSlice articles, PgString header,
+                               PgString footer, PgAllocator *allocator) {
+  (void)articles;
+  (void)header;
+  (void)footer;
+  (void)allocator;
+}
+
+static void rss_generate(ArticleSlice articles, PgString header,
+                         PgString footer, PgAllocator *allocator) {
+  (void)articles;
+  (void)header;
+  (void)footer;
+  (void)allocator;
+}
+
 int main() {
 #if 0
   PgHeapAllocator heap_allocator = pg_make_heap_allocator();
@@ -726,7 +750,9 @@ int main() {
   PgString footer = res_footer.res;
 
   ArticleSlice articles = articles_generate(header, footer, allocator);
-  (void)articles;
+  home_page_generate(articles, header, footer, allocator);
+  tags_page_generate(articles, header, footer, allocator);
+  rss_generate(articles, header, footer, allocator);
 
   printf("generated %" PRIu64 " articles (arena use=%" PRIu64 "\n",
          articles.len, pg_arena_mem_use(arena));
