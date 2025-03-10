@@ -173,15 +173,24 @@ NR==1 { # Output the delimiting line
 <p>The first clause will execute for each line of the input.
 The for loop then iterates over each field and outputs the right thing.</p>
 <p>The second clause will execute only for the first line (<code>NR</code> is the line number).</p>
-<p>The same line can trigger multiple clauses, here, the first line of the input will trigger both clauses, whilst the remaining lines will only trigger the first clause.</p>
-<p>So let's run it!</p>
-<pre><code class="language-sh">$ cargo license --all-features --avoid-build-deps --avoid-dev-deps --direct-deps-only --tsv | ./md-table.awk 
-| name | version | authors | repository | license | license_file | description |
-| --- |  --- |  --- |  --- |  --- |  --- |  --- | 
-| clap | 2.33.0 | Kevin K. &lt;kbknapp@gmail.com&gt; | https://github.com/clap-rs/clap | MIT |  | A simple to use, efficient, and full-featured Command Line Argument Parser |
-| heck | 0.3.1 | Without Boats &lt;woboats@gmail.com&gt; | https://github.com/withoutboats/heck | Apache-2.0 OR MIT |  | heck is a case conversion library. |
-| kotlin | 0.1.0 | Philippe Gaultier &lt;philigaultier@gmail.com&gt; |  |  |  |  |
-| log | 0.4.8 | The Rust Project Developers | https://github.com/rust-lang/log | Apache-2.0 OR MIT |  | A lightweight logging facade for Rust |
+<p>The same line can trigger multiple clauses, here, the first line<p><a href="/blog"> ⏴ Back to all articles</a></p>
+
+<blockquote id="donate">
+  <p>If you enjoy what you're reading, you want to support me, and can afford it: <a href="https://paypal.me/philigaultier?country.x=DE&locale.x=en_US">Support me</a>. That allows me to write more cool articles!</p>
+</blockquote>
+
+<blockquote>
+  <p>
+    This blog is <a href="https://github.com/gaultier/blog">open-source</a>!
+    If you find a problem, please open a Github issue.
+    The content of this blog as well as the code snippets are under the <a href="https://en.wikipedia.org/wiki/BSD_licenses#3-clause_license_(%22BSD_License_2.0%22,_%22Revised_BSD_License%22,_%22New_BSD_License%22,_or_%22Modified_BSD_License%22)">BSD-3 License</a> which I also usually use for all my personal projects. It's basically free for every use but you have to mention me as the original author.
+  </p>
+</blockquote>
+
+</div>
+</body>
+</html>
+0 OR MIT |  | A lightweight logging facade for Rust |
 | pretty_env_logger | 0.3.1 | Sean McArthur &lt;sean@seanmonstar&gt; | https://github.com/seanmonstar/pretty-env-logger | Apache-2.0 OR MIT |  | a visually pretty env_logger |
 | termcolor | 1.1.0 | Andrew Gallant &lt;jamslam@gmail.com&gt; | https://github.com/BurntSushi/termcolor | MIT OR Unlicense |  | A simple cross platform library for writing colored text to a terminal. |
 </code></pre>

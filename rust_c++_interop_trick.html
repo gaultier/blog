@@ -187,6 +187,24 @@ int main() {
 </code></pre>
 <p>And place our Rust struct in <code>src/lib.rs</code>.</p>
 <p>We just need to be careful about alignment (padding between fields) and the order the fields, so we mark the struct <code>repr(C)</code> to make the Rust compiler use the same layout as C does:</p>
+<pre><code class=<p><a href="/blog"> ⏴ Back to all articles</a></p>
+
+<blockquote id="donate">
+  <p>If you enjoy what you're reading, you want to support me, and can afford it: <a href="https://paypal.me/philigaultier?country.x=DE&locale.x=en_US">Support me</a>. That allows me to write more cool articles!</p>
+</blockquote>
+
+<blockquote>
+  <p>
+    This blog is <a href="https://github.com/gaultier/blog">open-source</a>!
+    If you find a problem, please open a Github issue.
+    The content of this blog as well as the code snippets are under the <a href="https://en.wikipedia.org/wiki/BSD_licenses#3-clause_license_(%22BSD_License_2.0%22,_%22Revised_BSD_License%22,_%22New_BSD_License%22,_or_%22Modified_BSD_License%22)">BSD-3 License</a> which I also usually use for all my personal projects. It's basically free for every use but you have to mention me as the original author.
+  </p>
+</blockquote>
+
+</div>
+</body>
+</html>
+he fields, so we mark the struct <code>repr(C)</code> to make the Rust compiler use the same layout as C does:</p>
 <pre><code class="language-rust">// Path: ./user-rs/src/lib.rs
 
 #[repr(C)]
@@ -279,31 +297,36 @@ $ ls target/debug/libuser_rs_lib.a
 <pre><code class="language-c++">// Path: user.cpp
 
 int main() {
-  User alice{&qu<p><a href="/blog"> ⏴ Back to all articles</a></p>
+  User alice{&quot;alice&quot;};
+  const char msg[] = &quot;hello, world!&quot;;
+  alice.write_comment(msg, sizeof(msg) - 1);
 
-<blockquote id="donate">
-  <p>If you enjoy what you're reading, you want to support me, and can afford it: <a href="https://paypal.me/philigaultier?country.x=DE&locale.x=en_US">Support me</a>. That allows me to write more cool articles!</p>
-</blockquote>
+  printf(&quot;Comment count: %lu\n&quot;, alice.get_comment_count());
 
-<blockquote>
-  <p>
-    This blog is <a href="https://github.com/gaultier/blog">open-source</a>!
-    If you find a problem, please open a Github issue.
-    The content of this blog as well as the code snippets are under the <a href="https://en.wikipedia.org/wiki/BSD_licenses#3-clause_license_(%22BSD_License_2.0%22,_%22Revised_BSD_License%22,_%22New_BSD_License%22,_or_%22Modified_BSD_License%22)">BSD-3 License</a> which I also usually use for all my personal projects. It's basically free for every use but you have to mention me as the original author.
-  </p>
-</blockquote>
-
-</div>
-</body>
-</html>
-/code> trait to print the slice, but the content is the same.</p>
+  RUST_write_comment(reinterpret_cast&lt;UserC *&gt;(&amp;alice),
+                     reinterpret_cast&lt;const uint8_t *&gt;(msg), sizeof(msg) - 1);
+  printf(&quot;Comment count: %lu\n&quot;, alice.get_comment_count());
+}
+</code></pre>
+<p>And link (manually) our brand new Rust library to our C++ program:</p>
+<pre><code class="language-sh">$ clang++ user.cpp ./user-rs-lib/target/debug/libuser_rs_lib.a
+$ ./a.out
+alice (336ff4cec0a2ccbfc0c4e4cb9ba7c152) says: hello, world!
+Comment count: 1
+([33, 6f, f4, ce, c0, a2, cc, bf, c0, c4, e4, cb, 9b, a7, c1, 52]) says: hello, world!
+Comment count: 2
+</code></pre>
+<p>The output is slightly different for the uuid, because we use in the Rust implementation the default <code>Debug</code> trait to print the slice, but the content is the same.</p>
 <p>A couple of thoughts:</p>
 <ul>
 <li>The calls <code>alice.write_comment(..)</code> and <code>RUST_write_comment(alice, ..)</code> are strictly equivalent and in fact, a C++ compiler will transform the former into the latter in a pure C++ codebase, if you look at the assembly generated. So our Rust function is just mimicking what the C++ compiler would do anyway. However, we are free to have the <code>User</code> argument be in any position in the function. An other way to say it: We rely on the API, not the ABI, compatibility.</li>
 <li>The Rust implementation can freely read and modify private members of the C++ class, for example the <code>comment_count</code> field is only accessible in C++ through the getter, but Rust can just access it as if it was public. That's because <code>public/private</code> are just rules enforced by the C++ compiler. However your CPU does not know nor care. The bytes are the bytes. If you can access the bytes at runtime, it does not matter that they were marked 'private' in the source code.</li>
 <li>We have to use tedious casts which is normal. We are indeed reinterpreting memory from one type (<code>User</code>) to another (<code>UserC</code>). This is allowed by the standard because the C++ class is a 'standard layout class'. If it was not the case, this would be undefined behavior and likely work on some platforms but break on others.</li>
 </ul>
-<h2>Accessing std::string from Rust</h2>
+<h2 id="3377210712-accessing-std-string-from-rust">
+	<a class="title" href="#3377210712-accessing-std-string-from-rust">Accessing std::string from Rust</a>
+	<a class="hash-anchor" href="#3377210712-accessing-std-string-from-rust" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+</h2>
 <p><code>std::string</code> should be an opaque type from the perspective of Rust, because it is not the same across platforms or even compiler versions, so we cannot exactly describe its layout.</p>
 <p>But we only want to access the underlying bytes of the string. We thus need a helper on the C++ side, that will extract these bytes for us.</p>
 <p>First, the Rust side. We define a helper type <code>ByteSliceView</code> which is a pointer and a length (the equivalent of a <code>std::string_view</code> in C++ latest versions and <code>&amp;[u8]</code> in Rust), and our Rust function now takes an additional parameter, the <code>name</code>:</p>
@@ -363,12 +386,18 @@ alice ([69, b7, c4, 14, 9, 1c, cf, bd, 28, c2, 69, ea, 40, 91, 65, 2d]) says: he
 Comment count: 2
 </code></pre>
 <p>Alternatively, if we cannot or do not want to change the Rust signature, we can make the C++ helper <code>get_std_string_pointer_and_length</code> have a C convention and take a void pointer, so that Rust will call the helper itself, at the cost of numerous casts in and out of <code>void*</code>.</p>
-<h2>Improving the std::string situation</h2>
+<h2 id="3494226560-improving-the-std-string-situation">
+	<a class="title" href="#3494226560-improving-the-std-string-situation">Improving the std::string situation</a>
+	<a class="hash-anchor" href="#3494226560-improving-the-std-string-situation" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+</h2>
 <ul>
 <li>Instead of modeling <code>std::string</code> as an array of bytes whose size is platform-dependent, we could move this field to the end of the C++ class and remove it entirely from Rust (since it is unused there). This would break <code>sizeof(User) == sizeof(UserC)</code>, it would now be <code>sizeof(User) - sizeof(std::string) == sizeof(UserC)</code>. Thus, the layout would be exactly the same (until the last field which is fine) between C++ and Rust. However, it will be an ABI breakage, if external users depend on the exact layout of the C++ class, and C++ constructors will have to be adapted since they rely on the order of fields. This approach is basically the same as the <a href="https://en.wikipedia.org/wiki/Flexible_array_member">flexible array member</a> feature in C.</li>
 <li>If allocations are cheap, we could store the name as a pointer: <code>std::string * name;</code> on the C++ side, and on the Rust side, as a void pointer: <code>name: *const std::ffi::c_void</code>, since pointers have a guaranteed size on all platforms. That has the advantage that Rust can access the data in <code>std::string</code>, by calling a C++ helper with a C calling convention. But some will dislike that a naked pointer is being used in C++.</li>
 </ul>
-<h2>Conclusion</h2>
+<h2 id="3796851539-conclusion">
+	<a class="title" href="#3796851539-conclusion">Conclusion</a>
+	<a class="hash-anchor" href="#3796851539-conclusion" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+</h2>
 <p>We now have successfully re-written a C++ class method. This technique is great because the C++ class could have hundreds of methods, in a real codebase, and we can still rewrite them one at a time, without breaking or touching the others.</p>
 <p>The big caveat is that: the more C++ specific features and standard types the class is using, the more difficult this technique is to apply, necessitating helpers to make conversions from one type to another, and/or numerous tedious casts. If the C++ class is basically a C struct only using C types, it will be very easy.</p>
 <p>Still, I have employed this technique at work a lot and I really enjoy its relative simplicity and incremental nature.</p>
@@ -383,7 +412,10 @@ Comment count: 2
 <li>Delete the C++ methods that have been rewritten.</li>
 </ol>
 <p>And boom, project rewritten.</p>
-<h2>Addendum: the full code</h2>
+<h2 id="1512890027-addendum-the-full-code">
+	<a class="title" href="#1512890027-addendum-the-full-code">Addendum: the full code</a>
+	<a class="hash-anchor" href="#1512890027-addendum-the-full-code" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+</h2>
 <details>
   <summary>The full code</summary>
 <pre><code class="language-cpp">// Path: user.cpp
@@ -469,72 +501,6 @@ struct ByteSliceView {
 extern &quot;C&quot; {
 
 void RUST_write_comment(UserC *user,
-                        const uint8_t *comment,
-                        uintptr_t comment_len,
-                        ByteSliceView name);
-
-} // extern &quot;C&quot;
-</code></pre>
-<pre><code class="language-rust">// Path: user-rs-lib/src/lib.rs
-
-#[repr(C)]
-pub struct UserC {
-    pub name: [u8; 32],
-    pub comments_count: u64,
-    pub uuid: [u8; 16],
-}
-
-#[repr(C)]
-// Akin to `&amp;[u8]`, for C.
-pub struct ByteSliceView {
-    pub ptr: *const u8,
-    pub len: usize,
-}
-
-#[no_mangle]
-pub extern &quot;C&quot; fn RUST_write_comment(
-    user: &amp;mut UserC,
-    comment: *const u8,
-    comment_len: usize,
-    name: ByteSliceView,
-) {
-    let comment = unsafe { std::slice::from_raw_parts(comment, comment_len) };
-    let comment_str = unsafe { std::str::from_utf8_unchecked(comment) };
-
-    let name_slice = unsafe { std::slice::from_raw_parts(name.ptr, name.len) };
-    let name_str = unsafe { std::str::from_utf8_unchecked(name_slice) };
-
-    println!(
-        &quot;{} ({:x?}) says: {}&quot;,
-        name_str,
-        user.uuid.as_slice(),
-        comment_str
-    );
-
-    user.comments_count += 1;
-}
-</code></pre>
-</details>
-<p><a href="/blog"> ⏴ Back to all articles</a></p>
-
-<blockquote id="donate">
-  <p>If you enjoy what you're reading, you want to support me, and can afford it: <a href="https://paypal.me/philigaultier?country.x=DE&locale.x=en_US">Support me</a>. That allows me to write more cool articles!</p>
-</blockquote>
-
-<blockquote>
-  <p>
-    This blog is <a href="https://github.com/gaultier/blog">open-source</a>!
-    If you find a problem, please open a Github issue.
-    The content of this blog as well as the code snippets are under the <a href="https://en.wikipedia.org/wiki/BSD_licenses#3-clause_license_(%22BSD_License_2.0%22,_%22Revised_BSD_License%22,_%22New_BSD_License%22,_or_%22Modified_BSD_License%22)">BSD-3 License</a> which I also usually use for all my personal projects. It's basically free for every use but you have to mention me as the original author.
-  </p>
-</blockquote>
-
-</div>
-</body>
-</html>
->
-</html>
-,
                         const uint8_t *comment,
                         uintptr_t comment_len,
                         ByteSliceView name);

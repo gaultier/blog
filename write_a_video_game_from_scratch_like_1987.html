@@ -156,12 +156,24 @@
 <p>Here are the steps we need to take:</p>
 <ul>
 <li>Open a window</li>
-<li>Upload image data (the one sprite with all the assets)</li>
-<li>Draw parts of the sprite to the window</li>
-<li>React to keyboard/mouse events</li>
-</ul>
-<p>And that's it. Spoiler alert: every step is 1-3 X11 messages that we need to craft and send. The only messages that we receive are the keyboard and mouse events. It's really not much at all!</p>
-<p>We will implement this in the <a href="https://odin-lang.org/">Odin programming language</a> which I really enjoy. But if you want to follow along with C or anything really, go for it. All we need is to be able to open a Unix socket, send and receive data on it, and load an image into memory. We will use PNG for that, since Odin has in its standard library support for PNGs, but we could also very easily use a simple format like PPM (like I did in the linked Wayland article) that is trivial to parse. Since Odin has support for both in its standard library, it does not really matter, and I stuck with PNG since it's more space-efficient.</p>
+<li>Upload image d<p><a href="/blog"> ⏴ Back to all articles</a></p>
+
+<blockquote id="donate">
+  <p>If you enjoy what you're reading, you want to support me, and can afford it: <a href="https://paypal.me/philigaultier?country.x=DE&locale.x=en_US">Support me</a>. That allows me to write more cool articles!</p>
+</blockquote>
+
+<blockquote>
+  <p>
+    This blog is <a href="https://github.com/gaultier/blog">open-source</a>!
+    If you find a problem, please open a Github issue.
+    The content of this blog as well as the code snippets are under the <a href="https://en.wikipedia.org/wiki/BSD_licenses#3-clause_license_(%22BSD_License_2.0%22,_%22Revised_BSD_License%22,_%22New_BSD_License%22,_or_%22Modified_BSD_License%22)">BSD-3 License</a> which I also usually use for all my personal projects. It's basically free for every use but you have to mention me as the original author.
+  </p>
+</blockquote>
+
+</div>
+</body>
+</html>
+not really matter, and I stuck with PNG since it's more space-efficient.</p>
 <p>Finally, if you're into writing X11 applications even with libraries, lots of things in X11 are undocumented or underdocumented, and this article can be a good learning resource. As a bonus, you can also follow along with pure Wayland, using my previous Wayland article.</p>
 <p>Or perhaps you simply enjoy, like me, peeking behind the curtain to understand the magician's tricks. It almost always ends up with: &quot;That's it? That's all there is to it?&quot;.</p>
 <h2>Authentication</h2>
