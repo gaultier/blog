@@ -139,24 +139,10 @@
 <p>Let's see how we can speed it up.</p>
 <h2>Why is it a problem at all and how did it come to be?</h2>
 <p>It's important to note that in my case, to reduce third-party dependencies, the SHA1 code is vendored in the source tree and comes from OpenBSD. It is plain C code, not using SIMD or such. It's good because I can read it and understand it.</p>
-<p>I entertained depending on OpenSSL or such, but it feels wasteful to pull in such a huge amount of code just for SHA1. And building OpenSSL ourselves, to tweak the build flags, means depending on Perl (and Go, in the case of aws-lc), and a lot of stuff. And now I need to pick between OpenSSL, LibreSSL, BoringSSL, aws-lc, etc. And upgrade it when the weekly security vulnera<p><a href="/blog"> ⏴ Back to all articles</a></p>
-
-<blockquote id="donate">
-  <p>If you enjoy what you're reading, you want to support me, and can afford it: <a href="https://paypal.me/philigaultier?country.x=DE&locale.x=en_US">Support me</a>. That allows me to write more cool articles!</p>
-</blockquote>
-
-<blockquote>
-  <p>
-    This blog is <a href="https://github.com/gaultier/blog">open-source</a>!
-    If you find a problem, please open a Github issue.
-    The content of this blog as well as the code snippets are under the <a href="https://en.wikipedia.org/wiki/BSD_licenses#3-clause_license_(%22BSD_License_2.0%22,_%22Revised_BSD_License%22,_%22New_BSD_License%22,_or_%22Modified_BSD_License%22)">BSD-3 License</a> which I also usually use for all my personal projects. It's basically free for every use but you have to mention me as the original author.
-  </p>
-</blockquote>
-
-</div>
-</body>
-</html>
-hyperfine --shell=none --warmup 3 'sha1sum ./NetBSD-9.4-amd64.iso'
+<p>I entertained depending on OpenSSL or such, but it feels wasteful to pull in such a huge amount of code just for SHA1. And building OpenSSL ourselves, to tweak the build flags, means depending on Perl (and Go, in the case of aws-lc), and a lot of stuff. And now I need to pick between OpenSSL, LibreSSL, BoringSSL, aws-lc, etc. And upgrade it when the weekly security vulnerability gets announced. I don't want any of it, if I can help it. Also I want to understand from top to bottom what code I depend on.</p>
+<p>For a while, due to this slowness, I simply gave up using a debug build, instead I use minimal optimizations (<code>-O1</code>) with Address Sanitizer. It was much faster, but lots of functions and variables got optimized away, and the debugging experience was thus sub par. I needed to make my debug + Address Sanitizer build viable.  The debug build without Address Sanitizer is much faster: the startup 'only' takes around 2 seconds. But Address Sanitizer is very valuable, I want to be able to use it! And 2 seconds is still too long. Reducing the iteration cycle is often the deciding factor for software quality in my experience.</p>
+<p>What's vexing is that from first principles, we know it could/should be much, much faster:</p>
+<pre><code class="language-sh">$ hyperfine --shell=none --warmup 3 'sha1sum ./NetBSD-9.4-amd64.iso'
 Benchmark 1: sha1sum ./NetBSD-9.4-amd64.iso
   Time (mean ± σ):     297.7 ms ±   3.2 ms    [User: 235.8 ms, System: 60.9 ms]
   Range (min … max):   293.7 ms … 304.2 ms    10 runs

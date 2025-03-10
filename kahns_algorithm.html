@@ -167,24 +167,29 @@ Miranda -&gt; Angela
 <blockquote>
 <p>A topological sort or topological ordering of a directed graph is a linear ordering of its vertices such that for every directed edge uv from vertex u to vertex v, u comes before v in the ordering. For instance, the vertices of the graph may represent tasks to be performed, and the edges may represent constraints that one task must be performed before another; in this application, a topological ordering is just a valid sequence for the tasks</p>
 </blockquote>
-<p>That's a mouthful but it's not too hard.</p<p><a href="/blog"> ⏴ Back to all articles</a></p>
-
-<blockquote id="donate">
-  <p>If you enjoy what you're reading, you want to support me, and can afford it: <a href="https://paypal.me/philigaultier?country.x=DE&locale.x=en_US">Support me</a>. That allows me to write more cool articles!</p>
-</blockquote>
-
+<p>That's a mouthful but it's not too hard.</p>
+<p>A useful command line utility that's already on your (Unix) machine is <code>tsort</code>, which takes a list of edges as input, and outputs a topological sort. Here is the input in a text file (<code>people.txt</code>):</p>
+<pre><code>Jane Ellen
+Angela Ellen
+Zoe Jane
+Zoe Angela
+Bella Angela
+Miranda Angela
+</code></pre>
 <blockquote>
-  <p>
-    This blog is <a href="https://github.com/gaultier/blog">open-source</a>!
-    If you find a problem, please open a Github issue.
-    The content of this blog as well as the code snippets are under the <a href="https://en.wikipedia.org/wiki/BSD_licenses#3-clause_license_(%22BSD_License_2.0%22,_%22Revised_BSD_License%22,_%22New_BSD_License%22,_or_%22Modified_BSD_License%22)">BSD-3 License</a> which I also usually use for all my personal projects. It's basically free for every use but you have to mention me as the original author.
-  </p>
+<p><code>tsort</code> uses a simple way of defining each edge <code>A -&gt; B</code> on its own line with the syntax: <code>A B</code>. The order of the lines does not matter.</p>
 </blockquote>
-
-</div>
-</body>
-</html>
->So to insert all those people in our <code>people</code> SQL table, we go through that list in reverse order: We can first insert <code>Ellen</code>, then <code>Jane</code>, etc, until we finally insert <code>Bella</code>.</p>
+<p>And here's the <code>tsort</code> output:</p>
+<pre><code class="language-sh">$ tsort &lt; people.txt
+Bella
+Miranda
+Zoe
+Angela
+Jane
+Ellen
+</code></pre>
+<p>The first 3 elements are the ones with no incoming edge, the Software Engineers, since no one reports to them. Then come their respective managers, Angela and Jane. Finally comes their manager, <code>Ellen</code>.</p>
+<p>So to insert all those people in our <code>people</code> SQL table, we go through that list in reverse order: We can first insert <code>Ellen</code>, then <code>Jane</code>, etc, until we finally insert <code>Bella</code>.</p>
 <p>Also, <code>tsort</code> detects cycles, for example if we add the line: <code>Ellen Zoe</code> at the end of <code>people.txt</code>, we get:</p>
 <pre><code class="language-sh">$ tsort &lt; people.txt
 Bella
@@ -232,24 +237,16 @@ Zoe
 </table>
 <p>The way to read this table is:</p>
 <ul>
-<li>For a given row, all the <cod<p><a href="/blog"> ⏴ Back to all articles</a></p>
-
-<blockquote id="donate">
-  <p>If you enjoy what you're reading, you want to support me, and can afford it: <a href="https://paypal.me/philigaultier?country.x=DE&locale.x=en_US">Support me</a>. That allows me to write more cool articles!</p>
-</blockquote>
-
-<blockquote>
-  <p>
-    This blog is <a href="https://github.com/gaultier/blog">open-source</a>!
-    If you find a problem, please open a Github issue.
-    The content of this blog as well as the code snippets are under the <a href="https://en.wikipedia.org/wiki/BSD_licenses#3-clause_license_(%22BSD_License_2.0%22,_%22Revised_BSD_License%22,_%22New_BSD_License%22,_or_%22Modified_BSD_License%22)">BSD-3 License</a> which I also usually use for all my personal projects. It's basically free for every use but you have to mention me as the original author.
-  </p>
-</blockquote>
-
-</div>
-</body>
-</html>
-mployee's row only has one <code>1</code> and the CEO's row is only zeroes), it is very compressible. An easy way would be to use run-length encoding, meaning, instead of <code>0 0 0 0</code>, we just store the number of times the number occurs: <code>4 0</code>. Easy to implement, easy to understand. A row compresses to just a few bytes. And this size would be constant, whatever the size of the organization (i.e. number of employees) is.</li>
+<li>For a given row, all the <code>1</code>'s indicate outgoing edges</li>
+<li>For a given column, all the <code>1</code>'s indicate incoming edges</li>
+<li>If there is a <code>1</code> on the diagonal, it means there is an edge going out of a node and going to the same node.</li>
+</ul>
+<p>There are a lot of zeroes in this table. Some may think this is horribly inefficient, which it is, but it really depends on number of nodes, i.e. the number of employees in the organization.
+But note that this adjacency matrix is a concept, it shows what information is present, but not how it is stored.</p>
+<p>For this article, we will store it the naive way, in a 2D array. Here are two optimization ideas I considered but have not had time to experiment with:</p>
+<ul>
+<li>Make this a bitarray. We are already only storing zeroes and ones, so it maps perfectly to this format.</li>
+<li>Since there are a ton of zeroes (in the valid case, a regular employee's row only has one <code>1</code> and the CEO's row is only zeroes), it is very compressible. An easy way would be to use run-length encoding, meaning, instead of <code>0 0 0 0</code>, we just store the number of times the number occurs: <code>4 0</code>. Easy to implement, easy to understand. A row compresses to just a few bytes. And this size would be constant, whatever the size of the organization (i.e. number of employees) is.</li>
 </ul>
 <p>Wikipedia lists others if you are interested, it's a well-known problem.</p>
 <p>Alright, now that we know how our graph is represented, on to the algorithm.</p>
@@ -280,10 +277,24 @@ else
 <li>Line 5: We first pick a node with no incoming edge (it does not matter which one). For example, <code>Zoe</code>, and remove it from <code>S</code>. <code>S</code> is now: <code>[Bella, Miranda]</code>.</li>
 <li>Line 6: We add this node to the list of topologically sorted nodes, <code>L</code>. It now is: <code>[Zoe]</code>.</li>
 <li>Line 7: We then inspect each node that <code>Zoe</code> has an edge to. That means <code>Jane</code> and <code>Angela</code>. In terms of adjacency matrix, we simply read <code>Zoe's</code> row, and inspect cells with a <code>1</code> in it.</li>
-<li>Line 8: We remove such an edge, for example, <code>Zoe -&gt; Jane</code>. In terms of adjacency matrix, it means setting the cell on the row <code>Zoe</code> and column <code>Jane</code> to <code>0</code>. At this point, the graph looks like this: <img src="kahns_algorithm_2.svg" alt="Employee hierarchy, step 1" /></li>
-<li>Line 9: If <code>Jane</code> does not have another incoming edge, we add it to the set of all nodes with no incoming edge. That's the case here, so <code>S</code> now looks like: <code>[Bella, Miranda, Jane]</code>. We now loop to line 7 and handle the node <code>Angela</code> since <code>Jane</code> is taken care of.</li>
-<li>Line 7-10: We are now handling the node <code>Angela</code>. We remove the edge <code>Zoe -&gt; Angela</code>. We check whether the node <code>Angela</code> has incoming edges. It does, so we do <strong>not</strong> add it to <code>S</code>. The graph is now: <img src="kahns_algorithm_2_1.svg" alt="Employee hierarchy, step 2" />.</li>
-<li>We are now done with the line 7 for loop, so go back to line 5 and pick this time <code>Bella</code>. And so on. The graph would now, to the algorithm, look like: <img src="kahns_algorithm_2_2.svg" alt="Employee hierarchy, step 3" /></li>
+<li>Line 8: We remove such an edge, for example, <code>Zoe -&gt; Jane</code>. In terms of adjacency matrix, it means setting the cell on the row <code>Zoe</code> and column <code>Jane</code> to <code>0</code><p><a href="/blog"> ⏴ Back to all articles</a></p>
+
+<blockquote id="donate">
+  <p>If you enjoy what you're reading, you want to support me, and can afford it: <a href="https://paypal.me/philigaultier?country.x=DE&locale.x=en_US">Support me</a>. That allows me to write more cool articles!</p>
+</blockquote>
+
+<blockquote>
+  <p>
+    This blog is <a href="https://github.com/gaultier/blog">open-source</a>!
+    If you find a problem, please open a Github issue.
+    The content of this blog as well as the code snippets are under the <a href="https://en.wikipedia.org/wiki/BSD_licenses#3-clause_license_(%22BSD_License_2.0%22,_%22Revised_BSD_License%22,_%22New_BSD_License%22,_or_%22Modified_BSD_License%22)">BSD-3 License</a> which I also usually use for all my personal projects. It's basically free for every use but you have to mention me as the original author.
+  </p>
+</blockquote>
+
+</div>
+</body>
+</html>
+aph would now, to the algorithm, look like: <img src="kahns_algorithm_2_2.svg" alt="Employee hierarchy, step 3" /></li>
 </ul>
 <hr />
 <p>And here are the next steps in images:</p>

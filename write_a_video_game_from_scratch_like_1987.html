@@ -326,12 +326,24 @@ AuthEntry :: struct {
 <p>Since authentication entries can be large, we have to allocate - the stack is only so big. It would be unfortunate to stack overflow because a hostname is a tiny bit too long in this file.</p>
 <p><em>Some readers have pointed out that it is likely it would all fit on the stack here, but this was also a perfect opportunity to describe Odin's approach to memory management.</em></p>
 <p>However, we do not want to retain the parsed entries from the file in memory after finding the 16 bytes token, so we <code>defer free_all(allocator)</code>. This is much better than going through each entry and freeing individually each field. We simply free the whole arena in one swoop (but the backing memory remains around to be reused later).</p>
-<p>Furthermore, using this arena places an upper bound (a few MiBs) on the allocations we can do. So if one entry in the file is huge, or malformed, we verifyingly cannot allocate many GiBs of memory. This is good news, because otherwise, the OS will start swapping like crazy and start killing random programs. In my experience it usually kills the window/desktop manager which kills all open windows. Very efficient from the OS perspective, and awful from the user perspective. So it's always good to place an upper bound on all resources including heap memory usage of your program.</p>
-<p>All in all I find Odin's approach very elegant. I usually want the ability to use a different allocator in a given function, but also if I don't care, it will do the right thing and use the standard allocator.</p>
-<h2>Opening a window</h2>
-<p>This part is almost exactly the same as the first linked article so I'll speed run this.</p>
-<p>First we open a UNIX domain socket:</p>
-<pre><code class="language-odin">connect_x11_socket :: proc() -&gt; os.Socket {
+<p>Furthermore, using this arena places an upper bound (a few MiBs) on the allocations we can do. So if one entry <p><a href="/blog"> ⏴ Back to all articles</a></p>
+
+<blockquote id="donate">
+  <p>If you enjoy what you're reading, you want to support me, and can afford it: <a href="https://paypal.me/philigaultier?country.x=DE&locale.x=en_US">Support me</a>. That allows me to write more cool articles!</p>
+</blockquote>
+
+<blockquote>
+  <p>
+    This blog is <a href="https://github.com/gaultier/blog">open-source</a>!
+    If you find a problem, please open a Github issue.
+    The content of this blog as well as the code snippets are under the <a href="https://en.wikipedia.org/wiki/BSD_licenses#3-clause_license_(%22BSD_License_2.0%22,_%22Revised_BSD_License%22,_%22New_BSD_License%22,_or_%22Modified_BSD_License%22)">BSD-3 License</a> which I also usually use for all my personal projects. It's basically free for every use but you have to mention me as the original author.
+  </p>
+</blockquote>
+
+</div>
+</body>
+</html>
+: proc() -&gt; os.Socket {
 	SockaddrUn :: struct #packed {
 		sa_family: os.ADDRESS_FAMILY,
 		sa_data:   [108]u8,

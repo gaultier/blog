@@ -61,15 +61,9 @@ static GitStatSlice git_get_articles_stats(PgAllocator *allocator) {
   *PG_DYN_PUSH(&args, allocator) = PG_S("--reverse");
   *PG_DYN_PUSH(&args, allocator) = PG_S("*.md");
 
-  PgRing ring_stdout = pg_ring_make(512 * PG_KiB, allocator);
-  PG_ASSERT(ring_stdout.data.data);
-
-  PgRing ring_stderr = pg_ring_make(2048, allocator);
-  PG_ASSERT(ring_stderr.data.data);
-
   PgProcessSpawnOptions options = {
-      .ring_stdout = &ring_stdout,
-      .ring_stderr = &ring_stderr,
+      .stdout_capture = PG_CHILD_PROCESS_STD_IO_PIPE,
+      .stderr_capture = PG_CHILD_PROCESS_STD_IO_PIPE,
   };
   PgProcessResult res_spawn = pg_process_spawn(
       PG_S("git"), PG_DYN_SLICE(PgStringSlice, args), options, allocator);
@@ -77,9 +71,7 @@ static GitStatSlice git_get_articles_stats(PgAllocator *allocator) {
 
   PgProcess process = res_spawn.res;
 
-  PG_ASSERT(0 == pg_process_capture_std_io(process));
-
-  PgProcessExitResult res_wait = pg_process_wait(process);
+  PgProcessExitResult res_wait = pg_process_wait(process, allocator);
   PG_ASSERT(0 == res_wait.err);
 
   PgProcessStatus status = res_wait.res;
@@ -90,11 +82,7 @@ static GitStatSlice git_get_articles_stats(PgAllocator *allocator) {
   PG_ASSERT(!status.core_dumped);
   PG_ASSERT(!status.stopped);
 
-  PgString process_stdout =
-      pg_string_make(pg_ring_read_space(ring_stdout), allocator);
-  PG_ASSERT(true == pg_ring_read_slice(&ring_stdout, process_stdout));
-
-  PG_ASSERT(0 == pg_ring_read_space(ring_stderr));
+  PG_ASSERT(pg_string_is_empty(status.stderr_captured));
 
   GitStatDyn stats = {0};
   PG_DYN_ENSURE_CAP(&stats, 256, allocator);
@@ -109,7 +97,7 @@ static GitStatSlice git_get_articles_stats(PgAllocator *allocator) {
   // R100    sha.md  making_my_debug_build_run_100_times_faster.md
 
   // For each commit.
-  PgString remaining = process_stdout;
+  PgString remaining = status.stdout_captured;
   for (;;) {
     PgString date = {0};
     {
@@ -257,20 +245,10 @@ static PgString datetime_to_date(PgString datetime) {
   *PG_DYN_PUSH(&args, allocator) = PG_S("-t");
   *PG_DYN_PUSH(&args, allocator) = PG_S("html");
 
-  PgRing ring_stdin = pg_ring_make(markdown.len, allocator);
-  PG_ASSERT(ring_stdin.data.data);
-  PG_ASSERT(true == pg_ring_write_slice(&ring_stdin, markdown));
-
-  PgRing ring_stdout = pg_ring_make(512 * PG_KiB, allocator);
-  PG_ASSERT(ring_stdout.data.data);
-
-  PgRing ring_stderr = pg_ring_make(2048, allocator);
-  PG_ASSERT(ring_stderr.data.data);
-
   PgProcessSpawnOptions options = {
-      .ring_stdin = &ring_stdin,
-      .ring_stdout = &ring_stdout,
-      .ring_stderr = &ring_stderr,
+      .stdin_capture = PG_CHILD_PROCESS_STD_IO_PIPE,
+      .stdout_capture = PG_CHILD_PROCESS_STD_IO_PIPE,
+      .stderr_capture = PG_CHILD_PROCESS_STD_IO_PIPE,
   };
   PgProcessResult res_spawn = pg_process_spawn(
       PG_S("cmark-gfm"), PG_DYN_SLICE(PgStringSlice, args), options, allocator);
@@ -278,9 +256,12 @@ static PgString datetime_to_date(PgString datetime) {
 
   PgProcess process = res_spawn.res;
 
-  PG_ASSERT(0 == pg_process_capture_std_io(process));
+  // TODO: Use `sendfile(2)`.
+  PG_ASSERT(0 ==
+            pg_file_write_full_with_descriptor(process.stdin_pipe, markdown));
+  PG_ASSERT(0 == pg_file_close(process.stdin_pipe));
 
-  PgProcessExitResult res_wait = pg_process_wait(process);
+  PgProcessExitResult res_wait = pg_process_wait(process, allocator);
   PG_ASSERT(0 == res_wait.err);
 
   PgProcessStatus status = res_wait.res;
@@ -291,13 +272,8 @@ static PgString datetime_to_date(PgString datetime) {
   PG_ASSERT(!status.core_dumped);
   PG_ASSERT(!status.stopped);
 
-  PgString process_stdout =
-      pg_string_make(pg_ring_read_space(ring_stdout), allocator);
-  PG_ASSERT(true == pg_ring_read_slice(&ring_stdout, process_stdout));
-
-  PG_ASSERT(0 == pg_ring_read_space(ring_stderr));
-
-  return process_stdout;
+  PG_ASSERT(pg_string_is_empty(status.stderr_captured));
+  return status.stdout_captured;
 }
 
 static void article_generate_html_file(PgString markdown, Article *article,
