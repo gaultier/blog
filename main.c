@@ -3,19 +3,18 @@
 #define METADATA_DELIMITER "---"
 #define BACK_LINK "<p><a href=\"/blog\"> ⏴ Back to all articles</a></p>\n"
 
-typedef struct {
-  u32 value;
-} Sha256Hash;
+typedef u32 TitleHash;
 
 typedef struct Title Title;
 struct Title {
   PgString title;
   PgString content_html_id;
   u8 level;
-  Sha256Hash hash;
+  TitleHash hash;
   Title *parent, *first_child, *next_sibling;
   u32 pos_start, pos_end;
 };
+PG_DYN(Title) TitleDyn;
 
 typedef struct {
   PgString html_file_name;
@@ -280,6 +279,122 @@ static PgString datetime_to_date(PgString datetime) {
 
   PG_ASSERT(pg_string_is_empty(status.stderr_captured));
   return status.stdout_captured;
+}
+
+#define FNV_SEED ((u32)0x811c9dc5)
+
+[[nodiscard]] static TitleHash title_compute_hash(Title *title, u32 hash) {
+  // Reached root?
+  if (title == title->parent) {
+    return hash;
+  }
+
+  for (u64 i = 0; i < title->title.len; i++) {
+    u8 c = PG_SLICE_AT(title->title, i);
+    hash = (hash ^ (u32)c) * 0x01000193;
+  }
+  // Separator between titles.
+  hash = (hash ^ (u32)'/') * 0x01000193;
+
+  return title_compute_hash(title->parent, hash);
+}
+
+[[nodiscard]]
+static Title *html_parse_titles(PgString html, PgAllocator *allocator) {
+  TitleDyn titles = {0};
+  PG_DYN_ENSURE_CAP(&titles, 64, allocator);
+
+  Title *root = pg_alloc(allocator, sizeof(Title), _Alignof(Title), 1);
+  root->level = 1;
+  root->parent = root;
+
+  u64 pos = 0;
+  while (pos < html.len) {
+    i64 idx_start =
+        pg_string_indexof_string(PG_SLICE_RANGE_START(html, pos), PG_S("<h"));
+    if (-1 == idx_start) {
+      break;
+    }
+
+    u8 level_ch = PG_SLICE_AT(html, pos + (u64)idx_start + 2);
+    if (!('2' <= level_ch && level_ch <= '6')) {
+      pos += (u64)idx_start + 2;
+      continue;
+    }
+    i64 idx_end = pg_string_indexof_string(
+        PG_SLICE_RANGE_START(html, pos + (u64)idx_start), PG_S("</h"));
+    PG_ASSERT(-1 != idx_end);
+
+    PgString s = PG_SLICE_RANGE_START(html, pos + (u64)idx_start);
+    s = PG_SLICE_RANGE(s, 0, (u64)idx_end);
+
+    PG_ASSERT(pg_string_starts_with(s, PG_S("<h")));
+
+    u8 level = PG_SLICE_AT(s, 2) - '0';
+    PG_ASSERT(1 < level && level <= 6);
+
+    PgString title_content = pg_string_trim_space(PG_SLICE_RANGE_START(s, 4));
+
+    Title title = {
+        .title = title_content,
+        .content_html_id = html_make_id(title_content, allocator),
+        .level = level,
+        .pos_start = (u32)pos + (u32)idx_start,
+        .pos_end = (u32)pos + (u32)idx_start + (u32)idx_end,
+        .parent = root, // Will be backpatched.
+    };
+    PG_ASSERT(title.pos_end - title.pos_start == s.len);
+    *PG_DYN_PUSH_WITHIN_CAPACITY(&titles) = title;
+    pos += (u64)(idx_start + idx_end);
+  }
+
+  for (u64 i = 0; i < titles.len; i++) {
+    Title *title = PG_SLICE_AT_PTR(&titles, i);
+
+    if (i > 0) {
+      Title *previous = PG_SLICE_AT_PTR(&titles, i);
+      i8 level_diff = previous->level - title->level;
+
+      if (level_diff > 0) {
+        // The current title is a (great-)uncle of the current title.
+
+        for (u64 _j = 0; _j < (u64)level_diff; _j++) {
+          PG_ASSERT(title->parent);
+          title->parent = title->parent->parent;
+        }
+      } else if (level_diff < 0) {
+        // Check that we do not skip levels e.g. prevent `## Foo\n#### Bar\n`
+        PG_ASSERT(level_diff == -1);
+        title->parent = previous;
+      } else if (0 == level_diff) { // Sibling.
+        title->parent = previous->parent;
+      }
+    }
+    PG_ASSERT(title->parent->level + 1 == title->level);
+    Title *child = title->parent->first_child;
+
+    // Add the node as last child of the parent.
+    while (child && child->next_sibling) {
+      child = child->next_sibling;
+    }
+    // Already one child present.
+    if (child) {
+      child->next_sibling = title;
+    } else { // First child.
+      title->parent->first_child = title;
+    }
+  }
+
+  // Backpatch `id` field which is a hash of the full path to this node
+  // including ancestors.
+  for (u64 i = 0; i < titles.len; i++) {
+    Title *title = PG_SLICE_AT_PTR(&titles, i);
+    title->hash = title_compute_hash(title, FNV_SEED);
+  }
+
+  PG_ASSERT(root->next_sibling);
+
+  return root;
 }
 
 static void article_generate_html_file(PgFileDescriptor markdown_file,
