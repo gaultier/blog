@@ -1,6 +1,12 @@
 #include "./submodules/cstd/lib.c"
 
-#define FEED_UUID "9c065c53-31bc-4049-a795-936802a6b1df"
+#define FEED_UUID_STR "9c065c53-31bc-4049-a795-936802a6b1df"
+#define FEED_UUID                                                              \
+  ((PgUuid){                                                                   \
+      .value = {0x9c, 0x06, 0x5c, 0x53, 0x31, 0xbc, 0x40, 0x49, 0xa7, 0x95,    \
+                0x93, 0x68, 0x02, 0xa6, 0xb1, 0xdf},                           \
+      .version = 5,                                                            \
+  })
 #define BASE_URL "https://gaultier.github.io/blog"
 #define METADATA_DELIMITER "---"
 #define BACK_LINK "<p><a href=\"/blog\"> ⏴ Back to all articles</a></p>\n"
@@ -897,6 +903,8 @@ static void tags_page_generate(ArticleSlice articles, PgString header,
 
 static void article_rss_generate(Pgu8Dyn *sb, Article a,
                                  PgAllocator *allocator) {
+  PgUuid article_uuid = pg_uuid_v5(FEED_UUID, a.html_file_name);
+
   PG_DYN_APPEND_SLICE(sb, PG_S("\n<entry>\n"), allocator);
   PG_DYN_APPEND_SLICE(sb, PG_S("<title>"), allocator);
   PG_DYN_APPEND_SLICE(sb, pg_html_sanitize(a.title, allocator), allocator);
@@ -907,7 +915,8 @@ static void article_rss_generate(Pgu8Dyn *sb, Article a,
   PG_DYN_APPEND_SLICE(sb, a.html_file_name, allocator);
   PG_DYN_APPEND_SLICE(sb, PG_S("\"/>\n"), allocator);
   PG_DYN_APPEND_SLICE(sb, PG_S("<id>urn:uuid:"), allocator);
-  PG_DYN_APPEND_SLICE(sb, PG_S("TODO"), allocator);
+  PG_DYN_APPEND_SLICE(sb, pg_uuid_to_string(article_uuid, allocator),
+                      allocator);
   PG_DYN_APPEND_SLICE(sb, PG_S("</id>\n"), allocator);
   PG_DYN_APPEND_SLICE(sb, PG_S("<updated>"), allocator);
   PG_DYN_APPEND_SLICE(sb, a.modification_date, allocator);
@@ -940,7 +949,7 @@ static void rss_generate(ArticleSlice articles, PgAllocator *allocator) {
   PG_DYN_APPEND_SLICE(&sb, PG_S("<name>Philippe Gaultier</name>\n"), allocator);
   PG_DYN_APPEND_SLICE(&sb, PG_S("</author>\n"), allocator);
   PG_DYN_APPEND_SLICE(&sb, PG_S("<id>urn:uuid:"), allocator);
-  PG_DYN_APPEND_SLICE(&sb, PG_S(FEED_UUID), allocator);
+  PG_DYN_APPEND_SLICE(&sb, PG_S(FEED_UUID_STR), allocator);
   PG_DYN_APPEND_SLICE(&sb, PG_S("</id>\n"), allocator);
 
   for (u64 i = 0; i < articles.len; i++) {

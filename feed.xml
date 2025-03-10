@@ -11,7 +11,7 @@
 <entry>
 <title>Getting started with Scheme by solving an Advent of Code 2018 challenge</title>
 <link href="https://gaultier.github.io/blog/advent_of_code_2018_5.html"/>
-<id>urn:uuid:TODO</id>
+<id>urn:uuid:b3c0c1c1-e36f-51fd-935699-f8686e7329</id>
 <updated>2024-11-05T15:54:44+01:00</updated>
 <published>2019-09-05T11:45:48+02:00</published>
 </entry>
@@ -19,7 +19,7 @@
 <entry>
 <title>How to compile LLVM, Clang, LLD, and Ziglang from source on Alpine Linux</title>
 <link href="https://gaultier.github.io/blog/compile_ziglang_from_source_on_alpine_2020_9.html"/>
-<id>urn:uuid:TODO</id>
+<id>urn:uuid:6cccb673-c083-550b-a1c8d7-a27819f1c7</id>
 <updated>2024-11-04T09:24:17+01:00</updated>
 <published>2020-09-07T20:49:20+02:00</published>
 </entry>
@@ -27,7 +27,7 @@
 <entry>
 <title>Adventures in CI land, or how to speed up your CI</title>
 <link href="https://gaultier.github.io/blog/speed_up_your_ci.html"/>
-<id>urn:uuid:TODO</id>
+<id>urn:uuid:4663e8ea-73ab-56ef-9dc58d-bb4743d84a</id>
 <updated>2024-11-05T15:29:19+01:00</updated>
 <published>2020-09-21T08:37:07+02:00</published>
 </entry>
@@ -35,7 +35,7 @@
 <entry>
 <title>Learn x86-64 assembly by writing a GUI from scratch</title>
 <link href="https://gaultier.github.io/blog/x11_x64.html"/>
-<id>urn:uuid:TODO</id>
+<id>urn:uuid:fa923100-dd66-531e-bdab8e-ed3527960f</id>
 <updated>2025-03-05T12:24:58+01:00</updated>
 <published>2023-05-31T14:24:11+02:00</published>
 </entry>
@@ -43,7 +43,7 @@
 <entry>
 <title>Cycle detection in graphs does not have to be hard: A lesser known, simple way with Kahn&#39;s algorithm</title>
 <link href="https://gaultier.github.io/blog/kahns_algorithm.html"/>
-<id>urn:uuid:TODO</id>
+<id>urn:uuid:665ef523-5c28-5dad-858258-7bfea27205</id>
 <updated>2024-11-05T15:22:51+01:00</updated>
 <published>2023-06-03T09:20:51+02:00</published>
 </entry>
@@ -51,7 +51,7 @@
 <entry>
 <title>Optimizing an Advent of Code solution in assembly</title>
 <link href="https://gaultier.github.io/blog/advent_of_code_2018_5_revisited.html"/>
-<id>urn:uuid:TODO</id>
+<id>urn:uuid:371c9129-162e-5d69-af73c3-263a2f7e47</id>
 <updated>2025-03-05T12:24:58+01:00</updated>
 <published>2023-10-05T15:39:43+02:00</published>
 </entry>
@@ -59,7 +59,7 @@
 <entry>
 <title>Learn Wayland by writing a GUI from scratch</title>
 <link href="https://gaultier.github.io/blog/wayland_from_scratch.html"/>
-<id>urn:uuid:TODO</id>
+<id>urn:uuid:6b96e587-14ff-53a9-a142d2-0e9c53d970</id>
 <updated>2025-03-05T12:24:58+01:00</updated>
 <published>2023-10-12T13:19:53+02:00</published>
 </entry>
@@ -67,7 +67,7 @@
 <entry>
 <title>Roll your own memory profiling: it&#39;s actually not hard</title>
 <link href="https://gaultier.github.io/blog/roll_your_own_memory_profiling.html"/>
-<id>urn:uuid:TODO</id>
+<id>urn:uuid:5344c109-864c-5db2-97a924-834e053169</id>
 <updated>2025-03-05T12:24:58+01:00</updated>
 <published>2023-11-23T11:26:11+01:00</published>
 </entry>
@@ -75,7 +75,7 @@
 <entry>
 <title>Solving a problem with Gnuplot, the programming language (not the plotting software!)</title>
 <link href="https://gaultier.github.io/blog/gnuplot_lang.html"/>
-<id>urn:uuid:TODO</id>
+<id>urn:uuid:f2d9c4e3-5c3d-57ab-80830f-56daf1f41e</id>
 <updated>2024-11-04T09:24:17+01:00</updated>
 <published>2023-12-01T15:15:26+01:00</published>
 </entry>
@@ -83,7 +83,7 @@
 <entry>
 <title>This blog now has an Atom feed, and yours should probably too</title>
 <link href="https://gaultier.github.io/blog/feed.html"/>
-<id>urn:uuid:TODO</id>
+<id>urn:uuid:1f4df7db-eea8-5ef0-ae9210-38111f5dc9</id>
 <updated>2025-03-04T20:27:05+01:00</updated>
 <published>2023-12-15T12:23:43+01:00</published>
 </entry>
@@ -91,7 +91,7 @@
 <entry>
 <title>Body of work</title>
 <link href="https://gaultier.github.io/blog/body_of_work.html"/>
-<id>urn:uuid:TODO</id>
+<id>urn:uuid:b6ce21d7-32d4-5b52-a4f343-5887fe9ba4</id>
 <updated>2025-02-20T12:05:06+01:00</updated>
 <published>2023-12-19T14:27:40+01:00</published>
 </entry>
@@ -99,7 +99,7 @@
 <entry>
 <title>Quick and easy PNG image size reduction</title>
 <link href="https://gaultier.github.io/blog/image_size_reduction.html"/>
-<id>urn:uuid:TODO</id>
+<id>urn:uuid:1cd73d67-ad32-5cdc-93a7f4-046d7cd4a5</id>
 <updated>2024-07-11T15:04:34+02:00</updated>
 <published>2024-02-23T11:27:43+01:00</published>
 </entry>
@@ -107,7 +107,7 @@
 <entry>
 <title>You&#39;ve just inherited a legacy C++ codebase, now what?</title>
 <link href="https://gaultier.github.io/blog/you_inherited_a_legacy_cpp_codebase_now_what.html"/>
-<id>urn:uuid:TODO</id>
+<id>urn:uuid:b9c26cf9-cb85-5ca9-b52f5c-dd535a3b84</id>
 <updated>2024-11-05T15:43:44+01:00</updated>
 <published>2024-02-29T09:30:30+01:00</published>
 </entry>
@@ -115,7 +115,7 @@
 <entry>
 <title>A small trick to improve technical discussions by sharing code</title>
 <link href="https://gaultier.github.io/blog/a_small_trick_to_improve_technical_discussions_by_sharing_code.html"/>
-<id>urn:uuid:TODO</id>
+<id>urn:uuid:ec2664b2-2153-5f24-a22221-f87171b57b</id>
 <updated>2025-02-20T11:33:50+01:00</updated>
 <published>2024-03-07T11:14:09+01:00</published>
 </entry>
@@ -123,7 +123,7 @@
 <entry>
 <title>How to rewrite a C++ codebase successfully</title>
 <link href="https://gaultier.github.io/blog/how_to_rewrite_a_cpp_codebase_successfully.html"/>
-<id>urn:uuid:TODO</id>
+<id>urn:uuid:70495e98-9416-5945-91781b-77e690ea86</id>
 <updated>2025-03-04T20:22:34+01:00</updated>
 <published>2024-05-03T14:46:42+02:00</published>
 </entry>
@@ -131,7 +131,7 @@
 <entry>
 <title>Let&#39;s write a video game from scratch like it&#39;s 1987</title>
 <link href="https://gaultier.github.io/blog/write_a_video_game_from_scratch_like_1987.html"/>
-<id>urn:uuid:TODO</id>
+<id>urn:uuid:6bea7a85-d449-5f4d-9ab67e-627c67ba57</id>
 <updated>2025-03-05T13:19:41+01:00</updated>
 <published>2024-06-20T07:44:40Z</published>
 </entry>
@@ -139,7 +139,7 @@
 <entry>
 <title>Odin and musl: Cross-compiling Odin programs for the Raspberry Pi Zero</title>
 <link href="https://gaultier.github.io/blog/odin_and_musl.html"/>
-<id>urn:uuid:TODO</id>
+<id>urn:uuid:5fa076c9-2d59-5651-83379f-2fb85d9e3e</id>
 <updated>2024-09-12T12:14:42+02:00</updated>
 <published>2024-09-10T12:59:04+02:00</published>
 </entry>
@@ -147,7 +147,7 @@
 <entry>
 <title>A small trick for simple Rust/C++ interop</title>
 <link href="https://gaultier.github.io/blog/rust_c++_interop_trick.html"/>
-<id>urn:uuid:TODO</id>
+<id>urn:uuid:fdfd0b73-184a-5d7f-91f045-7820b278d8</id>
 <updated>2024-11-05T15:49:57+01:00</updated>
 <published>2024-09-19T18:09:57+02:00</published>
 </entry>
@@ -155,7 +155,7 @@
 <entry>
 <title>Tip of the day #1: Count lines of Rust code, ignoring tests</title>
 <link href="https://gaultier.github.io/blog/tip_of_day_1.html"/>
-<id>urn:uuid:TODO</id>
+<id>urn:uuid:7f069c67-f7cc-5b66-99c524-0656047972</id>
 <updated>2024-10-31T16:20:34+01:00</updated>
 <published>2024-10-29T13:46:14+01:00</published>
 </entry>
@@ -163,7 +163,7 @@
 <entry>
 <title>Tip of the day #2: A safer arena allocator</title>
 <link href="https://gaultier.github.io/blog/tip_of_the_day_2.html"/>
-<id>urn:uuid:TODO</id>
+<id>urn:uuid:dd624149-10e7-5563-af44ef-da307fa041</id>
 <updated>2024-11-04T09:11:56+01:00</updated>
 <published>2024-10-29T16:15:48+01:00</published>
 </entry>
@@ -171,7 +171,7 @@
 <entry>
 <title>Lessons learned from a successful Rust rewrite</title>
 <link href="https://gaultier.github.io/blog/lessons_learned_from_a_successful_rust_rewrite.html"/>
-<id>urn:uuid:TODO</id>
+<id>urn:uuid:82d0f141-d7cc-5bee-84b018-bc3e699a9f</id>
 <updated>2025-03-04T20:23:26+01:00</updated>
 <published>2024-10-30T11:46:57+01:00</published>
 </entry>
@@ -179,7 +179,7 @@
 <entry>
 <title>Tip of the day #3: Convert a CSV to a markdown or HTML table</title>
 <link href="https://gaultier.github.io/blog/tip_of_day_3.html"/>
-<id>urn:uuid:TODO</id>
+<id>urn:uuid:94af4e61-6ac9-52eb-8d33cd-f29b9abf02</id>
 <updated>2024-11-05T14:23:39+01:00</updated>
 <published>2024-10-31T16:09:02+01:00</published>
 </entry>
@@ -187,7 +187,7 @@
 <entry>
 <title>Perhaps Rust needs &quot;defer&quot;</title>
 <link href="https://gaultier.github.io/blog/perhaps_rust_needs_defer.html"/>
-<id>urn:uuid:TODO</id>
+<id>urn:uuid:55eb4918-5851-5a25-80d5d3-50aad8971b</id>
 <updated>2025-03-04T20:27:05+01:00</updated>
 <published>2024-11-06T08:33:45+01:00</published>
 </entry>
@@ -195,7 +195,7 @@
 <entry>
 <title>Way too many ways to wait on a child process with a timeout</title>
 <link href="https://gaultier.github.io/blog/way_too_many_ways_to_wait_for_a_child_process_with_a_timeout.html"/>
-<id>urn:uuid:TODO</id>
+<id>urn:uuid:38fa76b5-00c5-5e17-975374-b7d0ea1ec0</id>
 <updated>2025-02-18T08:22:33+01:00</updated>
 <published>2024-11-10T23:58:59+01:00</published>
 </entry>
@@ -203,7 +203,7 @@
 <entry>
 <title>The missing cross-platform OS API for timers</title>
 <link href="https://gaultier.github.io/blog/the_missing_cross_platform_os_api_for_timers.html"/>
-<id>urn:uuid:TODO</id>
+<id>urn:uuid:87e0c181-0c40-53af-954a0d-ffe1881278</id>
 <updated>2025-02-12T07:41:47+01:00</updated>
 <published>2025-02-02T23:11:55+01:00</published>
 </entry>
@@ -211,7 +211,7 @@
 <entry>
 <title>Tip of the day #4: Type annotations on Rust match patterns</title>
 <link href="https://gaultier.github.io/blog/tip_of_the_day_4.html"/>
-<id>urn:uuid:TODO</id>
+<id>urn:uuid:c4aa2dc8-0d40-5ce8-9b46ac-6c7f41dea6</id>
 <updated>2025-03-05T13:28:16+01:00</updated>
 <published>2025-02-11T16:47:16+01:00</published>
 </entry>
@@ -219,7 +219,7 @@
 <entry>
 <title>Addressing CGO pains, one at a time</title>
 <link href="https://gaultier.github.io/blog/addressing_cgo_pains_one_at_a_time.html"/>
-<id>urn:uuid:TODO</id>
+<id>urn:uuid:07006a7b-7a02-50db-aa2756-8407c1f588</id>
 <updated>2025-02-26T07:38:08+01:00</updated>
 <published>2025-02-14T13:14:11+01:00</published>
 </entry>
@@ -227,7 +227,7 @@
 <entry>
 <title>Making my debug build run 100x faster so that it is finally usable</title>
 <link href="https://gaultier.github.io/blog/making_my_debug_build_run_100_times_faster.html"/>
-<id>urn:uuid:TODO</id>
+<id>urn:uuid:a5f75104-e439-59db-b54fc7-f65d76b339</id>
 <updated>2025-03-05T13:19:41+01:00</updated>
 <published>2025-02-18T08:07:55+01:00</published>
 </entry>
@@ -235,7 +235,7 @@
 <entry>
 <title>Tip of the day #5: Install Go tools with a specific version</title>
 <link href="https://gaultier.github.io/blog/tip_of_the_day_5.html"/>
-<id>urn:uuid:TODO</id>
+<id>urn:uuid:39a7f948-a91a-5dea-8f368c-8aaf8d01b6</id>
 <updated>2025-02-20T11:57:16+01:00</updated>
 <published>2025-02-18T12:02:06+01:00</published>
 </entry>
@@ -243,7 +243,7 @@
 <entry>
 <title>Making my static blog generator &lt;del&gt;11&lt;/del&gt; 33 times faster</title>
 <link href="https://gaultier.github.io/blog/making_my_static_blog_generator_11_times_faster.html"/>
-<id>urn:uuid:TODO</id>
+<id>urn:uuid:d29b6ec2-f895-5f2f-896f2f-343766fc85</id>
 <updated>2025-03-05T11:14:44+01:00</updated>
 <published>2025-02-19T15:13:54+01:00</published>
 </entry>
