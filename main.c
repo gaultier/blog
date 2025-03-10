@@ -1010,6 +1010,6 @@ int main() {
   tags_page_generate(articles, header, footer, allocator);
   rss_generate(articles, allocator);
 
-  printf("generated %" PRIu64 " articles (arena use=%" PRIu64 "\n",
+  printf("generated %" PRIu64 " articles (arena use=%" PRIu64 ")\n",
          articles.len, pg_arena_mem_use(arena));
 }
