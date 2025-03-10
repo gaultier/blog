@@ -1,5 +1,7 @@
 #include "./submodules/cstd/lib.c"
 
+#define FEED_UUID "9c065c53-31bc-4049-a795-936802a6b1df"
+#define BASE_URL "https://gaultier.github.io/blog"
 #define METADATA_DELIMITER "---"
 #define BACK_LINK "<p><a href=\"/blog\"> ⏴ Back to all articles</a></p>\n"
 
@@ -893,12 +895,34 @@ static void tags_page_generate(ArticleSlice articles, PgString header,
                                     allocator));
 }
 
-static void rss_generate(ArticleSlice articles, PgString header,
-                         PgString footer, PgAllocator *allocator) {
-  (void)articles;
-  (void)header;
-  (void)footer;
-  (void)allocator;
+static void rss_generate(ArticleSlice articles, PgAllocator *allocator) {
+  qsort(articles.data, articles.len, sizeof(Article),
+        article_cmp_by_creation_date_asc);
+
+  Pgu8Dyn sb = pg_sb_make_with_cap(8 * PG_KiB, allocator);
+  PG_DYN_APPEND_SLICE(&sb, PG_S("<?xml version=\"1.0\" encoding=\"utf-8\"?>\n"),
+                      allocator);
+  PG_DYN_APPEND_SLICE(
+      &sb, PG_S("<feed xmlns=\"http://www.w3.org/2005/Atom\">\n"), allocator);
+  PG_DYN_APPEND_SLICE(&sb, PG_S("<title>Philippe Gaultier's blog</title>\n"),
+                      allocator);
+  PG_DYN_APPEND_SLICE(&sb, PG_S("<link href=\""), allocator);
+  PG_DYN_APPEND_SLICE(&sb, PG_S(BASE_URL), allocator);
+  PG_DYN_APPEND_SLICE(&sb, PG_S("\"/>\n"), allocator);
+  PG_DYN_APPEND_SLICE(&sb, PG_S("<updated>"), allocator);
+  PG_DYN_APPEND_SLICE(&sb, PG_SLICE_LAST(articles).modification_date,
+                      allocator);
+  PG_DYN_APPEND_SLICE(&sb, PG_S("</updated>\n"), allocator);
+  PG_DYN_APPEND_SLICE(&sb, PG_S("<author>\n"), allocator);
+  PG_DYN_APPEND_SLICE(&sb, PG_S("<name>Philippe Gaultier</name>\n"), allocator);
+  PG_DYN_APPEND_SLICE(&sb, PG_S("</author>\n"), allocator);
+  PG_DYN_APPEND_SLICE(&sb, PG_S("<id>urn:uuid:"), allocator);
+  PG_DYN_APPEND_SLICE(&sb, PG_S(FEED_UUID), allocator);
+  PG_DYN_APPEND_SLICE(&sb, PG_S("</id>\n"), allocator);
+  PG_DYN_APPEND_SLICE(&sb, PG_S("</feed>"), allocator);
+
+  PG_ASSERT(0 == pg_file_write_full(PG_S("feed.xml"),
+                                    PG_DYN_SLICE(PgString, sb), allocator));
 }
 
 int main() {
@@ -925,7 +949,7 @@ int main() {
   ArticleSlice articles = articles_generate(header, footer, allocator);
   home_page_generate(articles, header, footer, allocator);
   tags_page_generate(articles, header, footer, allocator);
-  rss_generate(articles, header, footer, allocator);
+  rss_generate(articles, allocator);
 
   printf("generated %" PRIu64 " articles (arena use=%" PRIu64 "\n",
          articles.len, pg_arena_mem_use(arena));
