@@ -805,14 +805,14 @@ typedef struct {
 
 static ArticleDyn *articles_by_tag_lookup(ArticlesByTag *table, PgString key) {
   u64 hash = pg_hash_fnv(key);
-  u64 mask = (1 << HASH_TABLE_EXP) - 1;
+  u32 mask = (1 << HASH_TABLE_EXP) - 1;
   u32 step = (hash >> (64 - HASH_TABLE_EXP)) | 1;
-  for (u64 i = hash;;) {
-    i = (i + step) & mask;
+  for (u32 i = (u32)hash;;) {
+    i = ((i + step) & mask);
 
     PgString *k =
         PG_C_ARRAY_AT_PTR(table->keys, PG_STATIC_ARRAY_LEN(table->keys), i);
-    if (!pg_string_is_empty(key)) {
+    if (pg_string_is_empty(*k)) {
       *k = key;
       return table->values + i;
     } else if (pg_string_eq(*k, key)) {
@@ -880,7 +880,6 @@ static void tags_page_generate(ArticleSlice articles, PgString header,
     PG_DYN_APPEND_SLICE(&sb, tag, allocator);
     PG_DYN_APPEND_SLICE(&sb, PG_S("</span><ul>\n"), allocator);
 
-    // TODO: Articles.
     ArticleDyn *articles_for_tag =
         articles_by_tag_lookup(&articles_by_tag, tag);
     PG_ASSERT(articles_for_tag->len > 0);
@@ -890,6 +889,15 @@ static void tags_page_generate(ArticleSlice articles, PgString header,
 
     for (u64 j = 0; j < articles_for_tag->len; j++) {
       Article article = PG_SLICE_AT(*articles_for_tag, j);
+
+      bool tag_found = false;
+      for (u64 k = 0; k < article.tags.len; k++) {
+        if (pg_string_eq(PG_SLICE_AT(article.tags, k), tag)) {
+          tag_found = true;
+          break;
+        }
+      }
+      PG_ASSERT(tag_found);
 
       PG_DYN_APPEND_SLICE(&sb, PG_S("<li>\n"), allocator);
       PG_DYN_APPEND_SLICE(&sb, PG_S("  <span class=\"date\">"), allocator);
