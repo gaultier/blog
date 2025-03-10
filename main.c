@@ -512,7 +512,7 @@ static void article_generate_html_file(PgFileDescriptor markdown_file,
   PG_DYN_APPEND_SLICE(&sb, PG_S("<div class=\"article-title\">\n"), allocator);
   PG_DYN_APPEND_SLICE(&sb, PG_S("<h1>"), allocator);
   PG_DYN_APPEND_SLICE(&sb, article->title, allocator);
-  PG_DYN_APPEND_SLICE(&sb, PG_S("</h1>\n\n"), allocator);
+  PG_DYN_APPEND_SLICE(&sb, PG_S("</h1>\n"), allocator);
 
   PG_DYN_APPEND_SLICE(&sb, PG_S("  <div class=\"tags\">"), allocator);
   for (u64 i = 0; i < article->tags.len; i++) {
@@ -599,6 +599,7 @@ static Article article_generate(PgString header, PgString footer,
   for (;;) {
     cut = pg_string_cut_byte(remaining, ',');
     if (!cut.ok) {
+      *PG_DYN_PUSH_WITHIN_CAPACITY(&tags) = pg_string_trim_space(remaining);
       break;
     }
 
