@@ -231,7 +231,7 @@ Executed in   73.69 millis    fish           external
 <p>Looks like we got our solution. There is one added benefit: we do not need to list all <code>.md</code> files in the directory at startup. Git gives us this information (in my case there are no markdown files <em>not</em> tracked by Git).</p>
 <p>Mike Acton and <a href="https://en.wikipedia.org/wiki/Data-oriented_design">Data Oriented Design</a> are right once again:</p>
 <blockquote>
-<p>Rule of thumb: When there is one, there is many. <sup class="footnote-ref"><a href="#fn-1" id="fnref-1" data-footnote-ref="1">1</a></sup></p>
+<p>Rule of thumb: When there is one, there is many. <sup class="footnote-ref"><a href="#fn-1" id="fnref-1" data-footnote-ref>1</a></sup></p>
 </blockquote>
 <p>Or: try to think in terms of arrays, not in terms of one isolated object at a time.</p>
 <h2 id="2709289763-the-new-approach">
@@ -538,11 +538,11 @@ Benchmark 1: fossil sql -R new-repo.fossil &quot;[...]&quot;
 <p>Furthermore, the initial approach was fine because it only looked at the creation date, so we could do <code>git log --reverse article.md | head -n1</code> which is faster than sifting through the whole commit log for this file. However, as it is always the case, requirements (again, a big word for: my taste concerning what should my personal blog look like) change and the modification date now had to also be extracted from git. This forced us, with the current Git functionality, to scan through the whole commit log, for each file, which became too slow.</p>
 <p>As Mike Acton and Data Oriented Design state:</p>
 <blockquote>
-<p>Different problems require different solutions.<sup class="footnote-ref"><a href="#fn-2" id="fnref-2" data-footnote-ref="1">2</a></sup></p>
+<p>Different problems require different solutions.<sup class="footnote-ref"><a href="#fn-2" id="fnref-2" data-footnote-ref>2</a></sup></p>
 </blockquote>
 <p>And:</p>
 <blockquote>
-<p>If you have different data, you have a different problem. <sup class="footnote-ref"><a href="#fn-3" id="fnref-3" data-footnote-ref="1">3</a></sup></p>
+<p>If you have different data, you have a different problem. <sup class="footnote-ref"><a href="#fn-3" id="fnref-3" data-footnote-ref>3</a></sup></p>
 </blockquote>
 <p>It also does not help that any querying in Git is ad-hoc and outputs a weird text format that we have to tediously parse. Please everyone, let's add the option to output structured data in our command line programs, damn it! String programming is no fun at all - that's why I moved away from concatenating the output of shell commands in a Makefile, to a real programming language, to do the static generation.</p>
 <p>All in all, I am pleased with my solution - I can now see any edit materialize <em>instantly</em>. It's a bit funny that my previous article was about SIMD and inspecting assembly instructions, while this issue is so obvious and high-level in retrospect.</p>
@@ -571,16 +571,16 @@ Benchmark 1: ./src.bin
   Range (min … max):    53.1 ms …  61.0 ms    55 runs
 </code></pre>
 <p><em>In fine</em>: a x33 speed-up from the original time.</p>
-<section class="footnotes" data-footnotes="1">
+<section class="footnotes" data-footnotes>
 <ol>
 <li id="fn-1">
-<p><a href="https://www.youtube.com/watch?v=rX0ItVEVjHc&amp;t=14m33s">CppCon 2014: Mike Acton &quot;Data-Oriented Design and C++&quot;</a> <a href="#fnref-1" class="footnote-backref" data-footnote-backref="1" data-footnote-backref-idx="1" aria-label="Back to reference 1">↩</a></p>
+<p><a href="https://www.youtube.com/watch?v=rX0ItVEVjHc&amp;t=14m33s">CppCon 2014: Mike Acton &quot;Data-Oriented Design and C++&quot;</a> <a href="#fnref-1" class="footnote-backref" data-footnote-backref data-footnote-backref-idx="1" aria-label="Back to reference 1">↩</a></p>
 </li>
 <li id="fn-2">
-<p><a href="https://www.youtube.com/watch?v=rX0ItVEVjHc&amp;t=13m13s">CppCon 2014: Mike Acton &quot;Data-Oriented Design and C++&quot;</a> <a href="#fnref-2" class="footnote-backref" data-footnote-backref="1" data-footnote-backref-idx="2" aria-label="Back to reference 2">↩</a></p>
+<p><a href="https://www.youtube.com/watch?v=rX0ItVEVjHc&amp;t=13m13s">CppCon 2014: Mike Acton &quot;Data-Oriented Design and C++&quot;</a> <a href="#fnref-2" class="footnote-backref" data-footnote-backref data-footnote-backref-idx="2" aria-label="Back to reference 2">↩</a></p>
 </li>
 <li id="fn-3">
-<p><a href="https://www.youtube.com/watch?v=rX0ItVEVjHc&amp;t=13m21s">CppCon 2014: Mike Acton &quot;Data-Oriented Design and C++&quot;</a> <a href="#fnref-3" class="footnote-backref" data-footnote-backref="1" data-footnote-backref-idx="3" aria-label="Back to reference 3">↩</a></p>
+<p><a href="https://www.youtube.com/watch?v=rX0ItVEVjHc&amp;t=13m21s">CppCon 2014: Mike Acton &quot;Data-Oriented Design and C++&quot;</a> <a href="#fnref-3" class="footnote-backref" data-footnote-backref data-footnote-backref-idx="3" aria-label="Back to reference 3">↩</a></p>
 </li>
 </ol>
 </section>
