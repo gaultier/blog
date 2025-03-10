@@ -1,6 +1,5 @@
 #include "./submodules/cstd/lib.c"
 
-#define FEED_UUID_STR "9c065c53-31bc-4049-a795-936802a6b1df"
 #define FEED_UUID                                                              \
   ((PgUuid){                                                                   \
       .value = {0x9c, 0x06, 0x5c, 0x53, 0x31, 0xbc, 0x40, 0x49, 0xa7, 0x95,    \
@@ -971,7 +970,7 @@ static void rss_generate(ArticleSlice articles, PgAllocator *allocator) {
   PG_DYN_APPEND_SLICE(&sb, PG_S("<name>Philippe Gaultier</name>\n"), allocator);
   PG_DYN_APPEND_SLICE(&sb, PG_S("</author>\n"), allocator);
   PG_DYN_APPEND_SLICE(&sb, PG_S("<id>urn:uuid:"), allocator);
-  PG_DYN_APPEND_SLICE(&sb, PG_S(FEED_UUID_STR), allocator);
+  PG_DYN_APPEND_SLICE(&sb, pg_uuid_to_string(FEED_UUID, allocator), allocator);
   PG_DYN_APPEND_SLICE(&sb, PG_S("</id>\n"), allocator);
 
   for (u64 i = 0; i < articles.len; i++) {
