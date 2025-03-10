@@ -211,8 +211,9 @@ static PgString html_make_id(PgString s, PgAllocator *allocator) {
     u8 c = PG_SLICE_AT(s, i);
 
     if (pg_character_is_alphanumeric(c)) {
-      // TODO: u8 lowered = pg_xxx
-      *PG_DYN_PUSH(&sb, allocator) = c;
+      // FIXME
+      u8 lowered = ('A' <= c && c <= 'Z') ? c + ('a' - 'A') : c;
+      *PG_DYN_PUSH(&sb, allocator) = lowered;
     } else if ('+' == c) {
       PG_DYN_APPEND_SLICE(&sb, PG_S("plus"), allocator);
     } else if ('#' == c) {

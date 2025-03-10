@@ -116,7 +116,7 @@
 <div class="article-title">
 <h1>Tip of the day #1: Count lines of Rust code, ignoring tests</h1>
 
-  <div class="tags"> <a href="/blog/articles-by-tag.html#Rust" class="tag">Rust</a> <a href="/blog/articles-by-tag.html#Tip-of-the-day" class="tag">Tip of the day</a></div>
+  <div class="tags"> <a href="/blog/articles-by-tag.html#rust" class="tag">Rust</a> <a href="/blog/articles-by-tag.html#tip-of-the-day" class="tag">Tip of the day</a></div>
   </div>
 
 <p>I have a Rust codebase at work. The other day, I was wondering how many lines of code were in there. Whether you use <code>wc -l ***.rs</code> or a more fancy tool like <code>tokei</code>, there is an issue: this will count the source code <em>as well as</em> tests.</p>
@@ -155,9 +155,9 @@ $ wc -l src/***/.rs
 <li><code>END{print(count)}</code>: we print the count at the very end.</li>
 </ul>
 <p>And that's it. AWK is always very nifty.</p>
-<h2 id="4091184562-Addendum--exit">
-  <a class="title" href="#4091184562-Addendum--exit">Addendum: exit</a>
-  <a class="hash-anchor" href="#4091184562-Addendum--exit" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+<h2 id="4091184562-addendum--exit">
+  <a class="title" href="#4091184562-addendum--exit">Addendum: exit</a>
+  <a class="hash-anchor" href="#4091184562-addendum--exit" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>Originally I implemented it wrongly, like this:</p>
 <pre><code class="language-sh">$ awk '/mod tests/{exit 0} {count += 1} END{print(count)}'  src/***.rs
