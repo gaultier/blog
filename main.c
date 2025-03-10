@@ -895,6 +895,29 @@ static void tags_page_generate(ArticleSlice articles, PgString header,
                                     allocator));
 }
 
+static void article_rss_generate(Pgu8Dyn *sb, Article a,
+                                 PgAllocator *allocator) {
+  PG_DYN_APPEND_SLICE(sb, PG_S("\n<entry>\n"), allocator);
+  PG_DYN_APPEND_SLICE(sb, PG_S("<title>"), allocator);
+  PG_DYN_APPEND_SLICE(sb, pg_html_sanitize(a.title, allocator), allocator);
+  PG_DYN_APPEND_SLICE(sb, PG_S("</title>\n"), allocator);
+  PG_DYN_APPEND_SLICE(sb, PG_S("<link href=\""), allocator);
+  PG_DYN_APPEND_SLICE(sb, PG_S(BASE_URL), allocator);
+  PG_DYN_APPEND_SLICE(sb, PG_S("/"), allocator);
+  PG_DYN_APPEND_SLICE(sb, a.html_file_name, allocator);
+  PG_DYN_APPEND_SLICE(sb, PG_S("\"/>\n"), allocator);
+  PG_DYN_APPEND_SLICE(sb, PG_S("<id>urn:uuid:"), allocator);
+  PG_DYN_APPEND_SLICE(sb, PG_S("TODO"), allocator);
+  PG_DYN_APPEND_SLICE(sb, PG_S("</id>\n"), allocator);
+  PG_DYN_APPEND_SLICE(sb, PG_S("<updated>"), allocator);
+  PG_DYN_APPEND_SLICE(sb, a.modification_date, allocator);
+  PG_DYN_APPEND_SLICE(sb, PG_S("</updated>\n"), allocator);
+  PG_DYN_APPEND_SLICE(sb, PG_S("<published>"), allocator);
+  PG_DYN_APPEND_SLICE(sb, a.creation_date, allocator);
+  PG_DYN_APPEND_SLICE(sb, PG_S("</published>\n"), allocator);
+  PG_DYN_APPEND_SLICE(sb, PG_S("</entry>\n"), allocator);
+}
+
 static void rss_generate(ArticleSlice articles, PgAllocator *allocator) {
   qsort(articles.data, articles.len, sizeof(Article),
         article_cmp_by_creation_date_asc);
@@ -919,6 +942,12 @@ static void rss_generate(ArticleSlice articles, PgAllocator *allocator) {
   PG_DYN_APPEND_SLICE(&sb, PG_S("<id>urn:uuid:"), allocator);
   PG_DYN_APPEND_SLICE(&sb, PG_S(FEED_UUID), allocator);
   PG_DYN_APPEND_SLICE(&sb, PG_S("</id>\n"), allocator);
+
+  for (u64 i = 0; i < articles.len; i++) {
+    Article a = PG_SLICE_AT(articles, i);
+    article_rss_generate(&sb, a, allocator);
+  }
+
   PG_DYN_APPEND_SLICE(&sb, PG_S("</feed>"), allocator);
 
   PG_ASSERT(0 == pg_file_write_full(PG_S("feed.xml"),
