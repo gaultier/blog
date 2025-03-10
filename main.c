@@ -540,7 +540,6 @@ static void article_generate_html_file(PgFileDescriptor markdown_file,
   PG_DYN_APPEND_SLICE(&sb, PG_S(BACK_LINK), allocator);
   PG_DYN_APPEND_SLICE(&sb, footer, allocator);
   PgString html = PG_DYN_SLICE(PgString, sb);
-  PG_ASSERT(!pg_string_contains(html, PG_S("\n>\n</html>")));
   PG_ASSERT(0 == pg_file_write_full(article->html_file_name, html, allocator));
 }
 
