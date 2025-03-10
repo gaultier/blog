@@ -311,9 +311,9 @@ Comment count: 2
 <li>The Rust implementation can freely read and modify private members of the C++ class, for example the <code>comment_count</code> field is only accessible in C++ through the getter, but Rust can just access it as if it was public. That's because <code>public/private</code> are just rules enforced by the C++ compiler. However your CPU does not know nor care. The bytes are the bytes. If you can access the bytes at runtime, it does not matter that they were marked 'private' in the source code.</li>
 <li>We have to use tedious casts which is normal. We are indeed reinterpreting memory from one type (<code>User</code>) to another (<code>UserC</code>). This is allowed by the standard because the C++ class is a 'standard layout class'. If it was not the case, this would be undefined behavior and likely work on some platforms but break on others.</li>
 </ul>
-<h2 id="3377210712-accessing-std--string-from-rust">
-  <a class="title" href="#3377210712-accessing-std--string-from-rust">Accessing std::string from Rust</a>
-  <a class="hash-anchor" href="#3377210712-accessing-std--string-from-rust" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+<h2 id="3377210712-accessing-std-string-from-rust">
+  <a class="title" href="#3377210712-accessing-std-string-from-rust">Accessing std::string from Rust</a>
+  <a class="hash-anchor" href="#3377210712-accessing-std-string-from-rust" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p><code>std::string</code> should be an opaque type from the perspective of Rust, because it is not the same across platforms or even compiler versions, so we cannot exactly describe its layout.</p>
 <p>But we only want to access the underlying bytes of the string. We thus need a helper on the C++ side, that will extract these bytes for us.</p>
@@ -374,9 +374,9 @@ alice ([69, b7, c4, 14, 9, 1c, cf, bd, 28, c2, 69, ea, 40, 91, 65, 2d]) says: he
 Comment count: 2
 </code></pre>
 <p>Alternatively, if we cannot or do not want to change the Rust signature, we can make the C++ helper <code>get_std_string_pointer_and_length</code> have a C convention and take a void pointer, so that Rust will call the helper itself, at the cost of numerous casts in and out of <code>void*</code>.</p>
-<h2 id="3494226560-improving-the-std--string-situation">
-  <a class="title" href="#3494226560-improving-the-std--string-situation">Improving the std::string situation</a>
-  <a class="hash-anchor" href="#3494226560-improving-the-std--string-situation" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+<h2 id="3494226560-improving-the-std-string-situation">
+  <a class="title" href="#3494226560-improving-the-std-string-situation">Improving the std::string situation</a>
+  <a class="hash-anchor" href="#3494226560-improving-the-std-string-situation" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <ul>
 <li>Instead of modeling <code>std::string</code> as an array of bytes whose size is platform-dependent, we could move this field to the end of the C++ class and remove it entirely from Rust (since it is unused there). This would break <code>sizeof(User) == sizeof(UserC)</code>, it would now be <code>sizeof(User) - sizeof(std::string) == sizeof(UserC)</code>. Thus, the layout would be exactly the same (until the last field which is fine) between C++ and Rust. However, it will be an ABI breakage, if external users depend on the exact layout of the C++ class, and C++ constructors will have to be adapted since they rely on the order of fields. This approach is basically the same as the <a href="https://en.wikipedia.org/wiki/Flexible_array_member">flexible array member</a> feature in C.</li>
@@ -400,9 +400,9 @@ Comment count: 2
 <li>Delete the C++ methods that have been rewritten.</li>
 </ol>
 <p>And boom, project rewritten.</p>
-<h2 id="1512890027-addendum--the-full-code">
-  <a class="title" href="#1512890027-addendum--the-full-code">Addendum: the full code</a>
-  <a class="hash-anchor" href="#1512890027-addendum--the-full-code" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+<h2 id="1512890027-addendum-the-full-code">
+  <a class="title" href="#1512890027-addendum-the-full-code">Addendum: the full code</a>
+  <a class="hash-anchor" href="#1512890027-addendum-the-full-code" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <details>
   <summary>The full code</summary>
@@ -551,4 +551,6 @@ pub extern &quot;C&quot; fn RUST_write_comment(
 
 </div>
 </body>
+</html>
+
 </html>

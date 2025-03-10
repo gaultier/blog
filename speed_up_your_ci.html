@@ -145,9 +145,9 @@
 <li>Opt-out of 'recommended' packages. Aptitude on Debian/Ubuntu is the culprit here: <code>apt-get install foo</code> will install much more than <code>foo</code>. It will also install recommended packages that most of the time are completely unrelated. Always use <code>apt-get install --no-install-recommends foo</code>.</li>
 <li>Don't create unnecessary files: you use use heredoc and shell pipelines to avoid creating intermediary files.</li>
 </ul>
-<h2 id="1630662642-be-lazy--don-t-do-things-you-don-t-need-to-do">
-  <a class="title" href="#1630662642-be-lazy--don-t-do-things-you-don-t-need-to-do">Be lazy: Don't do things you don't need to do</a>
-  <a class="hash-anchor" href="#1630662642-be-lazy--don-t-do-things-you-don-t-need-to-do" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+<h2 id="1630662642-be-lazy-don-t-do-things-you-don-t-need-to-do">
+  <a class="title" href="#1630662642-be-lazy-don-t-do-things-you-don-t-need-to-do">Be lazy: Don't do things you don't need to do</a>
+  <a class="hash-anchor" href="#1630662642-be-lazy-don-t-do-things-you-don-t-need-to-do" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <ul>
 <li>Some features you are not using are enabled by default. Be explicit instead of relying on obscure, ever changing defaults. Example: <code>CGO_ENABLED=0 go build ...</code> because it is (at the time of writing) enabled by default. The Gradle build system also has the annoying habit to run stuff behind your back. Use <code>gradle foo -x baz</code> to run <code>foo</code> and not <code>baz</code>.</li>
@@ -207,9 +207,9 @@ which is simpler.</li>
 <li>Favor official package repositories, docker images, and third-parties over those of individuals.</li>
 <li>Never bypass certificate checks (such as <code>curl -k</code>)</li>
 </ul>
-<h2 id="2259479887-i-am-a-devops-engineer--what-can-i-do-">
-  <a class="title" href="#2259479887-i-am-a-devops-engineer--what-can-i-do-">I am a DevOps Engineer, what can I do?</a>
-  <a class="hash-anchor" href="#2259479887-i-am-a-devops-engineer--what-can-i-do-" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+<h2 id="2259479887-i-am-a-devops-engineer-what-can-i-do">
+  <a class="title" href="#2259479887-i-am-a-devops-engineer-what-can-i-do">I am a DevOps Engineer, what can I do?</a>
+  <a class="hash-anchor" href="#2259479887-i-am-a-devops-engineer-what-can-i-do" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>Most of the above rules can be automated with a script, assuming the definition of a CI pipeline is in a text format (e.g. Gitlab CI). I would suggest starting here, and teaching developers about these simple tips than really make a difference.</p>
 <p>I would also suggest considering adding strict firewall rules inside CI pipelines, and making sure the setup/teardown of CI runners is very fast. Additionally, I would do everything to avoid a situation where no CI runner is available, preventing developers from working and deploying.</p>
@@ -237,3 +237,5 @@ which is simpler.</li>
 </div>
 </body>
 </html>
+l>
+html>

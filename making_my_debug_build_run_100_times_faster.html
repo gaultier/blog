@@ -137,9 +137,9 @@
 </code></pre>
 <p>But when I build my code in debug mode (no optimizations) with Address Sanitizer, to detect various issues early, startup takes <strong>20 to 30 seconds</strong> (hashing at roughly ~ <strong>18 KiB/s</strong>)! That's unbearable, especially when working in the debugger and inspecting some code that runs after the startup. We'd like to finish this verification under 1 second ideally. And making it fast is important, because until it finishes, we do not know which pieces we need to download so that blocks everything.</p>
 <p>Let's see how we can speed it up.</p>
-<h2 id="2864684395-why-is-it-a-problem-at-all-and-how-did-it-come-to-be-">
-  <a class="title" href="#2864684395-why-is-it-a-problem-at-all-and-how-did-it-come-to-be-">Why is it a problem at all and how did it come to be?</a>
-  <a class="hash-anchor" href="#2864684395-why-is-it-a-problem-at-all-and-how-did-it-come-to-be-" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+<h2 id="2864684395-why-is-it-a-problem-at-all-and-how-did-it-come-to-be">
+  <a class="title" href="#2864684395-why-is-it-a-problem-at-all-and-how-did-it-come-to-be">Why is it a problem at all and how did it come to be?</a>
+  <a class="hash-anchor" href="#2864684395-why-is-it-a-problem-at-all-and-how-did-it-come-to-be" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>It's important to note that in my case, to reduce third-party dependencies, the SHA1 code is vendored in the source tree and comes from OpenBSD. It is plain C code, not using SIMD or such. It's good because I can read it and understand it.</p>
 <p>I entertained depending on OpenSSL or such, but it feels wasteful to pull in such a huge amount of code just for SHA1. And building OpenSSL ourselves, to tweak the build flags, means depending on Perl (and Go, in the case of aws-lc), and a lot of stuff. And now I need to pick between OpenSSL, LibreSSL, BoringSSL, aws-lc, etc. And upgrade it when the weekly security vulnerability gets announced. I don't want any of it, if I can help it. Also I want to understand from top to bottom what code I depend on.</p>
@@ -561,9 +561,9 @@ Benchmark 1: ./a.out ./NetBSD-9.4-amd64.iso ~/Downloads/NetBSD-9.4-amd64.iso.tor
 <blockquote>
 <p>You can't have multiple cores until you've shown you can use one efficiently.</p>
 </blockquote>
-<h2 id="3812694471-simd--sse--implementation">
-  <a class="title" href="#3812694471-simd--sse--implementation">SIMD (SSE) implementation</a>
-  <a class="hash-anchor" href="#3812694471-simd--sse--implementation" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+<h2 id="3812694471-simd-sse-implementation">
+  <a class="title" href="#3812694471-simd-sse-implementation">SIMD (SSE) implementation</a>
+  <a class="hash-anchor" href="#3812694471-simd-sse-implementation" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p><a href="http://arctic.org/~dean/crypto/sha1.html">This</a> is an implementation from the early 2000s in the public domain. Yes, SSE, which is the first widespread SIMD instruction set, is from the nineties to early 2000s. More than 25 years ago! There's basically no reason to write SIMD-less code for performance sensitive code for a SIMD-friendly problem - every CPU we care about has SIMD! Well, we have two write separate implementations for x64 and ARM, and there were lots of additions to SSE over the years, that's the downside.</p>
 <p>Intel references this implementation on their <a href="https://www.intel.com/content/www/us/en/developer/articles/technical/improving-the-performance-of-the-secure-hash-algorithm-1.html">website</a>. According to Intel, it was fundamental work at the time and influenced them. It's also not the fastest SSE implementation, the very article from Intel is about some performance enhancements they found for this code, but it has the advantage that if you have a processor from 2004 or after, it works, and it's simple.</p>
@@ -1323,3 +1323,5 @@ Benchmark 1: ./a.out ./NetBSD-9.4-amd64.iso ~/Downloads/NetBSD-9.4-amd64.iso.tor
 </div>
 </body>
 </html>
+l>
+html>

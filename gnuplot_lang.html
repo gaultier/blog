@@ -202,9 +202,9 @@ There does not seem to be basic data structures such as arrays and maps. Every v
 <p>Awk, Lua or Perl are honestly better in every way, to pick relatively simple, dynamic languages that people usually reach to for Unixy text transformations. And these will have better tooling, such as a debugger. Heck, even shell scripting is probably easier and more straightforward, and that's a low bar.</p>
 <p>Everything points to the fact that Gnuplot expects it's input data in some prearranged tabular form, and just wants to plot it, not transform it. That means that another (real) programming language is expected to do prior work and Gnuplot is at the end of the data pipeline as a 'dumb' visualization tool. I can also see how the limited language can still be useful for Physicists or Mathematicians to write simple numerical, pure functions e.g. <code>f(x) = x*2 + 1</code>.</p>
 <p>I'll investigate Julia and perhaps R in the future, which are in the same niche of science/data visualization but are full programming languages with plentiful tooling.</p>
-<h2 id="2853131083-addendum--the-full-code">
-  <a class="title" href="#2853131083-addendum--the-full-code">Addendum: The full code</a>
-  <a class="hash-anchor" href="#2853131083-addendum--the-full-code" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+<h2 id="2853131083-addendum-the-full-code">
+  <a class="title" href="#2853131083-addendum-the-full-code">Addendum: The full code</a>
+  <a class="hash-anchor" href="#2853131083-addendum-the-full-code" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>Run with <code>gnuplot my_file.dem</code>.</p>
 <pre><code class="language-gnuplot">data = system(&quot;cat in.txt&quot;)
@@ -263,3 +263,4 @@ print(sum)
 </div>
 </body>
 </html>
+l>

@@ -179,9 +179,9 @@ Benchmark 1: ./master.bin
 </ul>
 <p>The last option was my preferred one because it did not force me to re-architect the whole program.</p>
 <p>Note that the other two options are sill on the table regardless of whether our experiment works out or not.</p>
-<h2 id="3047915491-when-there-s-one--there-s-many">
-  <a class="title" href="#3047915491-when-there-s-one--there-s-many">When there's one, there's many</a>
-  <a class="hash-anchor" href="#3047915491-when-there-s-one--there-s-many" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+<h2 id="3047915491-when-there-s-one-there-s-many">
+  <a class="title" href="#3047915491-when-there-s-one-there-s-many">When there's one, there's many</a>
+  <a class="hash-anchor" href="#3047915491-when-there-s-one-there-s-many" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>My intuition was to do a deep dive in the <code>git log</code> options, to see if I could instruct it to do less work. But then something struck me: we invoke <code>git log</code> to get all commits for one markdown file (even though we only are interested in the first and last, but that's the only interface Git provides us as far as I know). What if we invoked it once <em>for all markdown files</em>? Yes, the output might be a bit big... How big? Is it really faster? Let's measure!</p>
 <p>Conceptually we can simply do <code>git log '*.md'</code> and parse the output. We can refine that approach later with more options, but that's the gist of it:</p>
@@ -567,3 +567,4 @@ Benchmark 1: ./src.bin
 </div>
 </body>
 </html>
+l>

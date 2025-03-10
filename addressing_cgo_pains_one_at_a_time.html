@@ -712,9 +712,9 @@ Values returned:
 <p>This point is close to being a deal-breaker for me. Debugging is really important! A language/tech stack is IMHO only as good as we developers can understand and troubleshoot production applications. Can't debug, can't pinpoint where the bug is? Not sure if that program is worth much.</p>
 <p><strong>My recommendation:</strong>: Have both debuggers at hand and locate where the problem is: is it on the Go side or on the C/Rust side? Then use the right debugger to inspect local variables and such. Yes, it's a pity. I guess you can try to build Go code with Gccgo, perhaps gdb understands the full call stack then? My approach was to insert logs everywhere in the code, both Go and Rust, with logs. Not ideal. It's a bit too close to 'printf debugging' to my taste.</p>
 <p><strong>My ask for the Go team:</strong>: Well, ideally both debuggers would work fully with CGO. But since this issue is known for years...I don't have much hope.</p>
-<h3 id="1317537828-strace--bpftrace">
-  <a class="title" href="#1317537828-strace--bpftrace">Strace, bpftrace</a>
-  <a class="hash-anchor" href="#1317537828-strace--bpftrace" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+<h3 id="1317537828-strace-bpftrace">
+  <a class="title" href="#1317537828-strace-bpftrace">Strace, bpftrace</a>
+  <a class="hash-anchor" href="#1317537828-strace-bpftrace" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h3>
 <p>It's the same issue manifesting in a different way: it's not just debuggers than do not understand the call stack, it's also <code>strace</code>:</p>
 <pre><code class="language-sh">$ strace -k -e write ./cgo
@@ -832,9 +832,9 @@ Executed in    1.47 secs
   <a class="hash-anchor" href="#3796851539-conclusion" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>Cgo is rocky, but there are no real blocking issues, apart from the debugging pain point, mostly lots of small pains. Half the cure is being aware of the ailment, as the saying goes. So armed with this knowledge, I wish you god speed with your Cgo projects!</p>
-<h2 id="1512890027-addendum--the-full-code">
-  <a class="title" href="#1512890027-addendum--the-full-code">Addendum: the full code</a>
-  <a class="hash-anchor" href="#1512890027-addendum--the-full-code" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+<h2 id="1512890027-addendum-the-full-code">
+  <a class="title" href="#1512890027-addendum-the-full-code">Addendum: the full code</a>
+  <a class="hash-anchor" href="#1512890027-addendum-the-full-code" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <details>
   <summary>The full code</summary>
@@ -1006,3 +1006,4 @@ go 1.23.1
 </div>
 </body>
 </html>
+html>

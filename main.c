@@ -218,7 +218,7 @@ static PgString html_make_id(PgString s, PgAllocator *allocator) {
       PG_DYN_APPEND_SLICE(&sb, PG_S("plus"), allocator);
     } else if ('#' == c) {
       PG_DYN_APPEND_SLICE(&sb, PG_S("sharp"), allocator);
-    } else {
+    } else if (i < s.len - 1 && sb.len > 0 && PG_SLICE_LAST(sb) != '-') {
       *PG_DYN_PUSH(&sb, allocator) = '-';
     }
   }

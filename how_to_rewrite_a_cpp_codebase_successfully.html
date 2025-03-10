@@ -295,9 +295,9 @@ $ cargo +nightly fuzz cmin [...]
 <li>When fuzzing is complete, we print the code coverage statistics</li>
 </ol>
 <p>Finally, we still have the option to add manually crafted files to this corpus if we wish. For example after hitting a bug in the wild, and fixing it, we can add a reproducer file to the corpus as a kind of regression test.</p>
-<h2 id="2929078078-pure-rust-vs-interop--ffi-">
-  <a class="title" href="#2929078078-pure-rust-vs-interop--ffi-">Pure Rust vs interop (FFI)</a>
-  <a class="hash-anchor" href="#2929078078-pure-rust-vs-interop--ffi-" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+<h2 id="2929078078-pure-rust-vs-interop-ffi">
+  <a class="title" href="#2929078078-pure-rust-vs-interop-ffi">Pure Rust vs interop (FFI)</a>
+  <a class="hash-anchor" href="#2929078078-pure-rust-vs-interop-ffi" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>Writing Rust has been a joy, even for more junior developers in the team. Pure Rust code was pretty much 100% correct on the first try.</p>
 <p>However we had to use <code>unsafe {}</code> blocks in the FFI layer. We segregated all the FFI code to one file, and converted the C FFI structs to Rust idiomatic structs as soon as possible, so that the bulk of the Rust code can be idiomatic and safe.</p>
@@ -734,3 +734,5 @@ end
 </div>
 </body>
 </html>
+l>
+l>
