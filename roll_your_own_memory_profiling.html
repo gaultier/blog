@@ -119,7 +119,17 @@
   <div class="tags"> <a href="/blog/articles-by-tag.html#C" class="tag">C</a> <a href="/blog/articles-by-tag.html#Allocator" class="tag">Allocator</a> <a href="/blog/articles-by-tag.html#Profiling" class="tag">Profiling</a> <a href="/blog/articles-by-tag.html#Pprof" class="tag">Pprof</a></div>
   </div>
 
-<p>and <code>jemalloc</code> can provide us this information but we have lost this ability by using our own!</p>
+<p><em>Discussions: <a href="https://old.reddit.com/r/C_Programming/comments/182rnqw/roll_your_own_memory_profiling_its_actually_not/">/r/c_programming</a></em></p>
+<p><em>Or: An exploration of the <a href="https://github.com/gperftools/gperftools">pprof</a> memory profiler and its textual format for fun an profit.</em></p>
+<p>Say that you are using a programming language where memory is manually managed, and you have decided to use a custom allocator for one reason or another, for example an arena allocator, and are wondering:</p>
+<ul>
+<li>How do I track every allocation, recording how many bytes were allocated and what was the call stack at that time?</li>
+<li>How much memory is my program using, and what is the peak use?</li>
+<li>How much memory does my program free? Is it all of it (are there leaks)?</li>
+<li>Which line of code in my function is allocating, and how much?</li>
+<li>I want a flamegraph showing allocations by function</li>
+</ul>
+<p>What to do? Mainstream allocators such as <code>tcmalloc</code> and <code>jemalloc</code> can provide us this information but we have lost this ability by using our own!</p>
 <p>Well, it turns out that this can all be achieved very simply without adding dependencies to your application, in ~100 lines of code (including lots of comments). I'll show one way and then explore other possibilities. And here are the results we are working towards:</p>
 <p><img src="mem_prof1.png" alt="1" />
 <em>Profiling the memory usage of my <a href="https://github.com/gaultier/micro-kotlin">micro-kotlin</a> project.</em></p>
@@ -157,24 +167,6 @@ MAPPED_LIBRARIES:
 <p>Then comes one line per entry. Each entry has these four fields that the header just gave us a sum of:</p>
 <ul>
 <li><code>in use objects</code>: How many objects are 'live' i.e. in use on the heap at the time of the allocation. Allocating increases its value, freeing decreases it.</li>
-<li><code>in use bytes</code>: How many bytes are 'live' i.e. in use on the heap <p><a href="/blog"> ⏴ Back to all articles</a></p>
-
-<blockquote id="donate">
-  <p>If you enjoy what you're reading, you want to support me, and can afford it: <a href="https://paypal.me/philigaultier?country.x=DE&locale.x=en_US">Support me</a>. That allows me to write more cool articles!</p>
-</blockquote>
-
-<blockquote>
-  <p>
-    This blog is <a href="https://github.com/gaultier/blog">open-source</a>!
-    If you find a problem, please open a Github issue.
-    The content of this blog as well as the code snippets are under the <a href="https://en.wikipedia.org/wiki/BSD_licenses#3-clause_license_(%22BSD_License_2.0%22,_%22Revised_BSD_License%22,_%22New_BSD_License%22,_or_%22Modified_BSD_License%22)">BSD-3 License</a> which I also usually use for all my personal projects. It's basically free for every use but you have to mention me as the original author.
-  </p>
-</blockquote>
-
-</div>
-</body>
-</html>
-lue, freeing decreases it.</li>
 <li><code>in use bytes</code>: How many bytes are 'live' i.e. in use on the heap at the time of the allocation. Allocating increases its value, freeing decreases it.</li>
 <li><code>space objects</code>: How many objects have been allocated since the start of the program. It is not affected by freeing memory, it only increases.</li>
 <li><code>space bytes</code>: How many bytes have been allocated since the start of the program. It is not affected by freeing memory, it only increases.</li>

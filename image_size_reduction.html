@@ -119,7 +119,14 @@
   <div class="tags"> <a href="/blog/articles-by-tag.html#Optimization" class="tag">Optimization</a></div>
   </div>
 
-<p>as the human eye does not see the difference. Since PNG images use compression, it will compress better.</p>
+<p>I seredenpitously noticed that my blog had somewhat big PNG images. But these are just very simple screenshots. There surely must be a way to reduce their size, without affecting their size or legibility?
+Well yes, let's quantize them!
+What? Quant-what?</p>
+<p>Quoting Wikipedia:</p>
+<blockquote>
+<p>Quantization, involved in image processing, is a lossy compression technique achieved by compressing a range of values to a single quantum (discrete) value. When the number of discrete symbols in a given stream is reduced, the stream becomes more compressible. For example, reducing the number of colors required to represent a digital image makes it possible to reduce its file size</p>
+</blockquote>
+<p>In other words, by picking the right color palette for an image, we can reduce its size without the human eye noticing. For example, an image which has multiple red variants, all very close, are a prime candidate to be converted to the same red color (perhaps the average value) so long as the human eye does not see the difference. Since PNG images use compression, it will compress better.</p>
 <p>At least, that's my layman understanding.</p>
 <p>Fortunately there is an open-source <a href="https://github.com/kornelski/pngquant">command line tool</a> that is very easy to use and works great. So go give them a star and come back!</p>
 <p>I simply ran the tool on all images to convert them in place in parallel:</p>
@@ -161,16 +168,7 @@ Well yes, let's quantize them!
 What? Quant-what?</p>
 <p>Quoting Wikipedia:</p>
 <blockquote>
-<p>Quantization, involved in image processing, is a lossy compression technique achieved by compressing a range of values to a single quantum (discrete) value. When the number of discrete symbols in a given stream is reduced, the stream becomes more compressible. For example, reducing the number of colors required to represent a digital image makes it possible to reduce its file size</p>
-</blockquote>
-<p>In other words, by picking the right color palette for an image, we can reduce its size without the human eye noticing. For example, an image which has multiple red variants, all very close, are a prime candidate to be converted to the same red color (perhaps the average value) so long as the human eye does not see the difference. Since PNG images use compression, it will compress better.</p>
-<p>At least, that's my layman understanding.</p>
-<p>Fortunately there is an open-source <a href="https://github.com/kornelski/pngquant">command line tool</a> that is very easy to use and works great. So go give them a star and come back!</p>
-<p>I simply ran the tool on all images to convert them in place in parallel:</p>
-<pre><code class="language-sh">$ ls *.png | parallel 'pngquant {} -o {}.tmp &amp;&amp; mv {}.tmp {}'
-</code></pre>
-<p>It finished instantly, and here is the result:</p>
-<pre><code class="la<p><a href="/blog"> ⏴ Back to all articles</a></p>
+<p>Quantization, involved in image processing, is a lossy compression technique achieved by compressing a range of values to a single quantum (discrete) value. When the number of discrete symbols in a given stream is reduced, the stream becomes more compressible. For example, reducing the number of colors required to repre<p><a href="/blog"> ⏴ Back to all articles</a></p>
 
 <blockquote id="donate">
   <p>If you enjoy what you're reading, you want to support me, and can afford it: <a href="https://paypal.me/philigaultier?country.x=DE&locale.x=en_US">Support me</a>. That allows me to write more cool articles!</p>

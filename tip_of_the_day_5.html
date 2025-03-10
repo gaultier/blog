@@ -119,7 +119,25 @@
   <div class="tags"> <a href="/blog/articles-by-tag.html#Go" class="tag">Go</a></div>
   </div>
 
-<p>manage-install](https://go.dev/doc/manage-install), I installed the specific version of Go I needed and used that to install the tool:</p>
+<p>I had an issue with Go tools around versioning, and here's how I solved it. It could be useful to others. This was the error:</p>
+<pre><code class="language-sh">$ staticcheck  ./...
+-: module requires at least go1.23.6, but Staticcheck was built with go1.23.1 (compile)
+$ go version
+go version go1.23.6 linux/amd64
+</code></pre>
+<p>Indeed the project was specifying <code>go 1.23.6</code> in <code>go.mod</code>.</p>
+<p>Even after removing the staticcheck binary and re-installing it I still had the same issue:</p>
+<pre><code class="language-sh">$ which staticcheck
+/home/pg/go/bin/staticcheck
+$ rm /home/pg/go/bin/staticcheck
+$ which staticcheck
+which: no staticcheck 
+$ go install honnef.co/go/tools/cmd/staticcheck@v0.5.1
+$ staticcheck  ./...
+-: module requires at least go1.23.6, but Staticcheck was built with go1.23.1 (compile)
+</code></pre>
+<p>I even tried the <code>-a</code> flag for <code>go install</code> to force a clean build (since <code>go install</code> fetches the sources and builds them) to no avail.</p>
+<p><strong>Solution:</strong> following <a href="https://go.dev/doc/manage-install">https://go.dev/doc/manage-install</a>, I installed the specific version of Go I needed and used that to install the tool:</p>
 <pre><code class="language-sh">$ go install golang.org/dl/go1.23.6@latest
 $ go1.23.6 download
 $ go1.23.6 install honnef.co/go/tools/cmd/staticcheck@v0.5.1

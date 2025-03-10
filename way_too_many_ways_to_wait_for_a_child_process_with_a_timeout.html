@@ -119,8 +119,18 @@
   <div class="tags"> <a href="/blog/articles-by-tag.html#Unix" class="tag">Unix</a> <a href="/blog/articles-by-tag.html#Signals" class="tag">Signals</a> <a href="/blog/articles-by-tag.html#C" class="tag">C</a> <a href="/blog/articles-by-tag.html#Linux" class="tag">Linux</a> <a href="/blog/articles-by-tag.html#FreeBSD" class="tag">FreeBSD</a> <a href="/blog/articles-by-tag.html#Illumos" class="tag">Illumos</a></div>
   </div>
 
-<p>with a timeout (useful if the command itself does not have a <code>--timeout</code> option).</p>
+<p><em>Windows is not covered at all in this article.</em></p>
+<p><em>Discussions: <a href="https://old.reddit.com/r/programming/comments/1godk0x/way_too_many_ways_to_wait_on_a_child_process_with/">/r/programming</a>, <a href="https://news.ycombinator.com/item?id=42103200">HN</a>, <a href="https://lobste.rs/s/2awfwc/way_too_many_ways_wait_on_child_process">Lobsters</a></em></p>
+<p>I often need to launch a program in the terminal in a retry loop. Maybe because it's flaky, or because it tries to contact a remote service that is not available. A few scenarios:</p>
 <ul>
+<li>ssh to a (re)starting machine.</li>
+<li><code>psql</code> to a (re)starting database.</li>
+<li>Ensuring that a network service started fine with <code>netcat</code>.</li>
+<li>File system commands over NFS.</li>
+</ul>
+<p>It's a common problem, so much so that there are two utilities that I usually reach for:</p>
+<ul>
+<li><a href="https://www.gnu.org/software/coreutils/manual/html_node/timeout-invocation.html">timeout</a> from GNU coreutils, which launches a command with a timeout (useful if the command itself does not have a <code>--timeout</code> option).</li>
 <li><a href="https://github.com/rye/eb">eb</a> which runs a command with a certain number of times with an exponential backoff. That's useful to avoid hammering a server with connection attempts for example.</li>
 </ul>
 <p>This will all sound familiar to people who develop distributed systems: they have long known that this is <a href="https://aws.amazon.com/blogs/architecture/exponential-backoff-and-jitter/">best practice</a> to retry an operation:</p>
@@ -174,24 +184,7 @@ $ ueb createdb my_great_database -h 0.0.0.0 -U postgres
 <p>If you want to monitor the retries and the sleeps, you can use <code>strace</code> or <code>dtrace</code>:</p>
 <pre><code class="language-sh">$ strace ueb sleep 1
 </code></pre>
-<p>Note that the sub-command should be idempotent, otherwise we might create a given resource twice, or the command might have succeeded right after our timeout triggered but also right before we killed it, so our program thinks it timed out and thus needs to be retried. There is this small data race window, which is completely fine if the command is idempotent but will erroneously retry the command to the bitter end oth<p><a href="/blog"> ⏴ Back to all articles</a></p>
-
-<blockquote id="donate">
-  <p>If you enjoy what you're reading, you want to support me, and can afford it: <a href="https://paypal.me/philigaultier?country.x=DE&locale.x=en_US">Support me</a>. That allows me to write more cool articles!</p>
-</blockquote>
-
-<blockquote>
-  <p>
-    This blog is <a href="https://github.com/gaultier/blog">open-source</a>!
-    If you find a problem, please open a Github issue.
-    The content of this blog as well as the code snippets are under the <a href="https://en.wikipedia.org/wiki/BSD_licenses#3-clause_license_(%22BSD_License_2.0%22,_%22Revised_BSD_License%22,_%22New_BSD_License%22,_or_%22Modified_BSD_License%22)">BSD-3 License</a> which I also usually use for all my personal projects. It's basically free for every use but you have to mention me as the original author.
-  </p>
-</blockquote>
-
-</div>
-</body>
-</html>
- race window, which is completely fine if the command is idempotent but will erroneously retry the command to the bitter end otherwise. There is also the case where the sub-command does stuff over the network for example creating a resource, it succeeds, but the ACK is never received due to network issues. The sub-command will think it failed and retry. Again, fairly standard stuff in distributed systems but I thought it was worth mentioning.</p>
+<p>Note that the sub-command should be idempotent, otherwise we might create a given resource twice, or the command might have succeeded right after our timeout triggered but also right before we killed it, so our program thinks it timed out and thus needs to be retried. There is this small data race window, which is completely fine if the command is idempotent but will erroneously retry the command to the bitter end otherwise. There is also the case where the sub-command does stuff over the network for example creating a resource, it succeeds, but the ACK is never received due to network issues. The sub-command will think it failed and retry. Again, fairly standard stuff in distributed systems but I thought it was worth mentioning.</p>
 <p>So how do we implement it?</p>
 <p>Immediately, we notice something: even though there are a bazillion ways to wait on a child process to finish (<code>wait</code>, <code>wait3</code>, <code>wait4</code>, <code>waitid</code>, <code>waitpid</code>), none of them take a timeout as an argument. This has sparked numerous questions online (<a href="https://stackoverflow.com/questions/18542089/how-to-wait-on-child-process-to-finish-with-time-limit">1</a>, <a href="https://stackoverflow.com/questions/18476138/is-there-a-version-of-the-wait-system-call-that-sets-a-timeout">2</a>), with in my opinion unsatisfactory answers. So let's explore this rabbit hole.</p>
 <p>We'd like the pseudo-code to be something like:</p>

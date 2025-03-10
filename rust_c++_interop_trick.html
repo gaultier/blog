@@ -119,9 +119,16 @@
   <div class="tags"> <a href="/blog/articles-by-tag.html#Rust" class="tag">Rust</a></div>
   </div>
 
-<p>. In layman terms, this makes the C++ class be similar to a plain C struct. With a few allowances, for example the C++ class can still use inheritance and a few other things. Most notably, virtual methods are forbidden. I don't care about this limitation because I never use virtual methods myself and this is my least favorite feature in any programming language.
-2. Create a Rust struct with the <em>exact</em> same layout as the C++ class.
-3. Create a Rust function with a C calling convention, whose first argument is this Rust class. You can now access every C++ member of the class!</p>
+<p><em>Discussions: <a href="https://www.reddit.com/r/rust/comments/1fkpbfk/a_small_trick_for_simple_rustc_interop/">/r/rust</a>, <a href="https://news.ycombinator.com/item?id=41593661">HN</a>.</em></p>
+<p>I am <a href="/blog/how_to_rewrite_a_cpp_codebase_successfully.html">rewriting</a> a gnarly <a href="/blog/you_inherited_a_legacy_cpp_codebase_now_what.html">C++ codebase</a> in Rust at work.</p>
+<p>Due to the heavy use of callbacks (sigh), Rust sometimes calls C++ and C++ sometimes calls Rust. This done by having both sides expose a C API for the functions they want the other side to be able to call.</p>
+<p>This is for functions; but what about C++ methods? Here is a trick to rewrite one C++ method at a time, without headaches. And by the way, this works whatever the language you are rewriting the project in, it does not have to be Rust!</p>
+<h2>The trick</h2>
+<ol>
+<li>Make the C++ class a <a href="https://en.cppreference.com/w/cpp/language/classes#Standard-layout_class">standard layout class</a>. This is defined by the C++ standard. In layman terms, this makes the C++ class be similar to a plain C struct. With a few allowances, for example the C++ class can still use inheritance and a few other things. Most notably, virtual methods are forbidden. I don't care about this limitation because I never use virtual methods myself and this is my least favorite feature in any programming language.</li>
+<li>Create a Rust struct with the <em>exact</em> same layout as the C++ class.</li>
+<li>Create a Rust function with a C calling convention, whose first argument is this Rust class. You can now access every C++ member of the class!</li>
+</ol>
 <p>Note: Depending on the C++ codebase you find yourself in, the first point could be either trivial or not feasible at all. It depends on the amount of virtual methods used, etc.</p>
 <p>In my case, there were a handful of virtual methods, which could all be advantageously made non virtual, so I first did this.</p>
 <p>This is all very abstract? Let's proceed with an example!</p>
@@ -180,23 +187,7 @@ int main() {
 </code></pre>
 <p>And place our Rust struct in <code>src/lib.rs</code>.</p>
 <p>We just need to be careful about alignment (padding between fields) and the order the fields, so we mark the struct <code>repr(C)</code> to make the Rust compiler use the same layout as C does:</p>
-<pre><code class="language-rust">// Path: ./user-rs/src/lib.rs
-
-#[repr(C)]
-pub struct UserC {
-    pub name: [u8; 32],
-    pub comments_count: u64,
-    pub uuid: [u8; 16],
-}
-</code></pre>
-<p>Note that the fields can be named differently from the C++ fields if you so choose.</p>
-<p>Also note that <code>std::string</code> is represented here by an opaque array of 32 bytes. That's because on my machine, with the standard library I have, <code>sizeof(std::string)</code> is 32. That is <em>not</em> guaranteed by the standard, so this makes it very much not portable. We'll go over some options to work-around this at the end. I wanted to include a standard library type to show that it does not prevent the class from being a 'standard layout class', but that is also creates challenges.</p>
-<p>For now, let's forget about this hurdle.</p>
-<p>We can also write a stub for the Rust function equivalent to the C++ method:</p>
-<pre><code class="language-rust">// Path: ./user-rs-lib/src/lib.rs
-
-#[no_mangle]
-pub extern &quot;C&quot; fn RUST_write_comment(user: &amp;mut UserC, comment: *<p><a href="/blog"> ⏴ Back to all articles</a></p>
+<pre><code class=<p><a href="/blog"> ⏴ Back to all articles</a></p>
 
 <blockquote id="donate">
   <p>If you enjoy what you're reading, you want to support me, and can afford it: <a href="https://paypal.me/philigaultier?country.x=DE&locale.x=en_US">Support me</a>. That allows me to write more cool articles!</p>

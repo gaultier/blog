@@ -119,23 +119,28 @@
   <div class="tags"> <a href="/blog/articles-by-tag.html#Rust" class="tag">Rust</a></div>
   </div>
 
-<p>ct Foo {
-value: usize,
-}</p>
-<p>#[no_mangle]
+<p><em>Or, how FFI in Rust is a pain in the neck.</em></p>
+<p><em>Discussions: <a href="https://old.reddit.com/r/rust/comments/1gktuw6/perhaps_rust_needs_defer/?">/r/rust</a>, <a href="https://old.reddit.com/r/programming/comments/1gktum4/perhaps_rust_needs_defer/?">/r/programming</a>, <a href="https://news.ycombinator.com/item?id=42058091">HN</a>, <a href="https://lobste.rs/s/2ka0ps/perhaps_rust_needs_defer">lobsters</a></em></p>
+<p>In a previous article I <a href="/blog/lessons_learned_from_a_successful_rust_rewrite.html#i-am-still-chasing-memory-leaks">mentioned</a> that we use the <code>defer</code> idiom in Rust through a crate, but that it actually rarely gets past the borrow checker. Some comments were <del>claiming this issue does not exist</del> surprised and I did not have an example at hand.</p>
+<p>Well, today at work I hit this issue again so I thought I would document it. And the whole experience showcases well how working in Rust with lots of FFI interop feels like.</p>
+<h2>Setting the stage</h2>
+<p>So, I have a Rust API like this:</p>
+<pre><code class="language-rust">#[repr(C)]
+pub struct Foo {
+    value: usize,
+}
+
+#[no_mangle]
 pub extern &quot;C&quot; fn MYLIB_get_foos(out_foos: *mut *mut Foo, out_foos_count: &amp;mut usize) -&gt; i32 {
-let res = vec![Foo { value: 42 }, Foo { value: 99 }];
-*out_foos_count = res.len();
-unsafe { *out_foos = res.leak().as_mut_ptr() };
-0
-}</p>
-<pre><code>
-It allocates and returns an dynamically allocated array as a pointer and a length. Of course in reality, `Foo` has many fields and the values are not known in advance but what happens is that we send messages to a Smartcard to ask it to send us a piece of data residing on it, and it replies with some encoded messages that our library decodes and returns to the user.
-
-I tell Cargo this is a static library:
-
-```toml
-# Cargo.toml
+    let res = vec![Foo { value: 42 }, Foo { value: 99 }];
+    *out_foos_count = res.len();
+    unsafe { *out_foos = res.leak().as_mut_ptr() };
+    0
+}
+</code></pre>
+<p>It allocates and returns an dynamically allocated array as a pointer and a length. Of course in reality, <code>Foo</code> has many fields and the values are not known in advance but what happens is that we send messages to a Smartcard to ask it to send us a piece of data residing on it, and it replies with some encoded messages that our library decodes and returns to the user.</p>
+<p>I tell Cargo this is a static library:</p>
+<pre><code class="language-toml"># Cargo.toml
 
 [lib]
 crate-type = [&quot;staticlib&quot;]
@@ -202,30 +207,7 @@ test tests::test_get_foos ... ok
 <p>Of course, we have not yet freed anything, so we expect Miri to complain, and it does:</p>
 <pre><code class="language-sh">$ cargo +nightly miri test
 ...
-error: memory leaked: alloc59029 (Rust heap, size: 16, align: 8), allocated here:
-...
-</code></pre>
-<p>Note that the standard test runner does not report memory leaks, unfortunately. If Miri does not work for a given use case, and we still want to check that there are no leaks, we have to reach for nightly sanitizers or Valgrind.</p>
-<h2>First attempt at freeing the memory properly</h2>
-<p>Great, so let's free it at the end of the test, like C does, with <code>free</code> from libc, which we add as a dependency:</p>
-<pre><code class="language-rust">
-    #[test]
-    fn test_get_foos() {
-        ...
-
-        unsafe { libc::free(foos as *mut std::ffi::c_void) };
-    }
-</code></pre>
-<p>The test passes, great. Let's try with Miri:</p>
-<pre><code class="language-sh">$ cargo +nightly miri test
-...
- error: Undefined Behavior: deallocating alloc59029, which is Rust heap memory, using C heap deallocation operation
-...
-</code></pre>
-<p>Hmm...ok...Well that's a bit weird, because what Rust does, when the <code>Vec</code> is allocated, is to call out to <code>malloc</code> from libc, as we can see with <code>strace</code>:</p>
-<pre><code class="language-sh">$ strace -k -v -e brk ./a.out
-...
-brk(0x<p><a href="/blog"> ⏴ Back to all articles</a></p>
+error: memory leaked: alloc5<p><a href="/blog"> ⏴ Back to all articles</a></p>
 
 <blockquote id="donate">
   <p>If you enjoy what you're reading, you want to support me, and can afford it: <a href="https://paypal.me/philigaultier?country.x=DE&locale.x=en_US">Support me</a>. That allows me to write more cool articles!</p>

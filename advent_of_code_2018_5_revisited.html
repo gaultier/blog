@@ -119,8 +119,19 @@
   <div class="tags"> <a href="/blog/articles-by-tag.html#x86-64" class="tag">x86_64</a> <a href="/blog/articles-by-tag.html#Advent-of-Code" class="tag">Advent of Code</a> <a href="/blog/articles-by-tag.html#Optimization" class="tag">Optimization</a> <a href="/blog/articles-by-tag.html#Algorithm" class="tag">Algorithm</a> <a href="/blog/articles-by-tag.html#C" class="tag">C</a> <a href="/blog/articles-by-tag.html#Lisp" class="tag">Lisp</a></div>
   </div>
 
-<p>ternal dependencies, which usually turn out to be problematic in the long run.</p>
+<p>A few days ago I was tweaking the appearance of this blog and I stumbled upon my <a href="/blog/advent_of_code_2018_5">first article</a> which is about solving a simple problem from Advent of Code. Here it is again:</p>
+<blockquote>
+<p>We have a string looking like this: <code>AabcdZZqQ</code> which represents a chain of
+chemical units. Adjacent units of the same type (i.e letter) and opposite
+polarity (i.e casing) react together and disappear.
+It means we want to remove adjacent characters which are the same letter and have opposite casing, e.g
+<code>Aa</code> and <code>qQ</code> disappear while <code>bc</code> and <code>ZZ</code> remain. Once we are finished, we have: <code>bcdZZ</code>.</p>
+<p>The final output is the number of characters in the final string, i.e, <code>5</code>.</p>
+</blockquote>
+<p>Immediately, I thought I could do better than my past self:</p>
 <ul>
+<li>In the Lisp solution, there are lots of allocations and the code is not straightforward.</li>
+<li>In the Lisp solution, we use multiple external dependencies, which usually turn out to be problematic in the long run.</li>
 <li>In the C solution, there is no allocation apart from the input but we do a lot of unnecessary work.</li>
 <li>In the C solution, we use <code>abs(x) == 32</code> which we could avoid by doing <code>x*x == 32*32</code>.</li>
 </ul>
@@ -1036,28 +1047,24 @@ static char input[] =
     &quot;zsQpPkKqfFSeEUdDZlHhLNnzuPWwcCnNmMJjrRkWLqQJjYyixXvVIVvPpOcQqjoOiEeIeEJCoZ&quot;
     &quot;hyYpgxUVvugjJGXbBkKLqQlETBuUbteUroOVvRBbiIdDZWwznNBGgDdsSbuNvVsSIieKiIGgjJ&quot;
     &quot;dPoOpWwDyfFpPYIikdDTtpPEaUuAIizZUpPuYsSCcYyIFvNOoutTUfFyYHhWxXqQoyYOwaAvVy&quot;
-    &quot;YKkngGJjmGHAaiICcSRApPJjeEaSsiIeIiEdDrsQHhWwKkYyuUscCFVvfSAwoOyYWaYyeEUnNC&quot;
-    &quot;BbsLIilSvZNnzUuVuUpqQZzLlPcCsScpEBbNdDnegBbTtGPyOoYyYPvawDdWtJjlkKQlLKkhHq&quot;
-    &quot;WwSsLlfjPpKkJFjJRrEeHvFfVEQKkqdDJjXLhHlTtJjxLlWtRrTIlLiZhJjiIHzwxXjJKcMyYm&quot;
-    &quot;CCcHhksSLlenNWRrwScZzCDdsrqQRgGzPsSpBALlFfacCEzZOomMiIejGgtTJoOlLBbsSbzZpP&quot;
-    &quot;BZzTtJWwjLSslbBMsqQSsqGgQGgSqlayYeEAQFNnfqhHJjPpAadDvEeVcCbBpPKgGoOkRQqrer&quot;
-    &quot;REGwWfZzFeEgwmMZpPIiUWwuAazpbBvVqQPtTWStEeTvVaAskXRrxHhKbNnqQBIpPiebIgGasS&quot;
-    &quot;ACciEwOoSsWiIZzeBMcCmpCcPEFEefrRCZzcVqAaQJjvJjKZznaAaANAakoOPpbJjBDUvVudDd&quot;
-    &quot;YsSyIiBbZWSAaAaHhValLAwWAavLlHxXheEeEVixXjJIEyYxXiIxkKwvVRrOorRWwWQlLqLlUu&quot;
-    &quot;sSJjbBhlLZgGzGgncPpCNjlXKkxLoORrJHnPVEekKvpNWqKvVTJjtEuiIUwWwWCcyYPWwpcCji&quot;
-    &quot;ITtYcCyECceJjpnNPJBkhHfBbzkKMDHhdmJHhjtTFfyJjHhdUujyYXxJKkQqDMwWuUmmukKUZz&quot;
-    &quot;jJuUHOoOoDdqQqQaAUuyYrHhRkKbBWwhazloiIhHRrOLPpDNnZZzLzgGZYNnqQylfFaAeEiICc&quot;
-    &quot;zdmoOLeElmMnWLlwvvrRVaAVPsSqQpuUzYyRrZBboOKkgGTNGgntMmssSbtLfmMFciICdDloOT&quot;
-    &quot;fYyPpSNFfnWwiuUIBwNnAaWkZUuIiQqzKXxvoOtTmMbGgcTYydDRHtThrQqlLwAaalLALAalvV&quot;
-    &quot;XYNnNPpuUKkNLlpPkKnhtTHtTXxlEnNeAHhaUuVAavLHhBbzTtFfZGBbaAJjvEeVxXZzgKHhkg&quot;
-    &quot;pPxXPfFeEpGcCCDdDdreJjErRHhxBbzZXxXCaAyYclLDvPpVtTdCkDdJjKmmMlIiLMmMKkYXmM&quot;
-    &quot;QVvXxUuREeJVvqQLlBVvZzbjOGgSSsoOsGgHheEdDoRtTrXxWoOwOjJoYyMmVvAaFBbfEeTtqK&quot;
-    &quot;zZkIEepPNuUnEeGbBlLcFrEeREwWqhHQmOoMXxeAQPjJpJjCcoBbYypNYynWwIiaVvAcjJeEAp&quot;
-    &quot;PRrNnICcxXiaANnakKEehHRrgGCPoOsEeStTdfFDpPAaNnNIiTtZznPoOpiISsXxjIMpPmtcCT&quot;
-    &quot;ieIHhSlLgBbGglLLlheEtspPxXSTTrRlUDdupyYYyhHUNnFfpiIxXTMmtfXxxXFPeEmxXVKkfF&quot;
-    &quot;vCcrWLVvlwRqRrQFfPVvFfFlLZzdDfpHhbBWwyxQqXZmMVgbBGvlUuLxXYyzAabBCkQqZqQiIm&quot;
-    &quot;RnNrRhcCHrMpPQIiHDdhqdqQMmigGrRIiTtlLZwWYyEPpekHOohVvKDdRfSspiIPZLlzFrNnmw&quot;
-    &quot;WtTMnNrReXxifFIsSwuUWEOYyKrRkfrfcCFtTCcwNSsnWJOojOUXsSxBbjXxjJJuFfYMmCcyGt&quot;
+    &quot;YKkngGJjmGHAaiICcSRApPJjeEaSsiIeIiE<p><a href="/blog"> ⏴ Back to all articles</a></p>
+
+<blockquote id="donate">
+  <p>If you enjoy what you're reading, you want to support me, and can afford it: <a href="https://paypal.me/philigaultier?country.x=DE&locale.x=en_US">Support me</a>. That allows me to write more cool articles!</p>
+</blockquote>
+
+<blockquote>
+  <p>
+    This blog is <a href="https://github.com/gaultier/blog">open-source</a>!
+    If you find a problem, please open a Github issue.
+    The content of this blog as well as the code snippets are under the <a href="https://en.wikipedia.org/wiki/BSD_licenses#3-clause_license_(%22BSD_License_2.0%22,_%22Revised_BSD_License%22,_%22New_BSD_License%22,_or_%22Modified_BSD_License%22)">BSD-3 License</a> which I also usually use for all my personal projects. It's basically free for every use but you have to mention me as the original author.
+  </p>
+</blockquote>
+
+</div>
+</body>
+</html>
+bjXxjJJuFfYMmCcyGt&quot;
     &quot;WwTbBLnNyYlOohHSsLlgSDdoOHhhHsMQqYytTHtTjJOoLlhKkowWUbBTtsWwSuNnLlxXrROcyY&quot;
     &quot;ZfFzvVCZzHhqHhNeiIckKVvuUuJjiIJjUXxzZCEGHiIyYhgDsSHLlfFUuhrNnRaApAsSaPXxdk&quot;
     &quot;dDGgKzZntWwTkKbpvVuUGgPQcCqUHhuWwNnuUEelLYVvhHyBvGgVrRBbreEWwRsiIHYJjAIiat&quot;
@@ -1118,7 +1125,92 @@ This coincided with me listening to an interview from the VLC developers saying 
 </div>
 </body>
 </html>
-pVvPOopPKKbBkYykYQqPpPpoKkOihHIECcJjeyvsSVpbBPGKkgfVvHhiIvGgViXxlLdDIgGKMCncCNcmfFDDdSsXxqQtTaAdenNdDVvPuUpVvtTZzEQqyoOvVTxXtbBnDdcCZWwrRzNaeEAlDZzeEdJlelLEzZhHhOoHYyKkLjWwNnLAjJaiHhIvhHHhEhHeSsSKksXxVvzZEevVzpliIRPprLPcOHhsSoRSsTtrlLCiISsJjMmZvnNoOVclLCVzZMmKhHkqWufFmMSmMkKsiFfoRrOIUozZyYNnSNnqQsTrRtSHhNniIbGgCcnNBxXSFYyWwfgFRrfaROorAsxXSGsSKBbkspPIeoOHhEiXxVvpPUfFuyYypPynNYpPSskdDKjJCeErRtxXTHIzjJZihoOZvoOGfFWwgVzCUuaXxAeEnBVvbNiIAaRdDxXrmMcgCyYceyYyYEEMmgWwGOoKkqQkeEVvGgrRJjrYyEeRKYyOPZzJjpooOcCrgGtTOoRNneHiIXxnNIQqzZiHhZgGZzyYeEuUOmMbZzUjaAJuPpBozZzlfFLiIphHsvVSvVUTtuDdPhPVDdPpvYyvDgGCcdTSstaHhcCHhAJgGLOOoaARVCclgGLvrsSolAPpUuaXxaAkoOPpeEzGgZcCjJHhKkKlYUuyMQIiqSiqQBbIsGLLGgvWwTtVlpyTtYgAaGPSeEfFsDdgGkVbBNnvQrLlRqYWwyEqQLlsSSVvstTghHGeKkKQqhHHhmMoYyhsSAaHdDuUKkOMmDdMmgGgQqRnNTtVvryYlDdrnNLlRUcCurRgGZuUWwMmbBTtjJzjJbBdDaAwWLjJKDpPpcCDdHhPRrhHRzjeEJZmMcNfVvlLvtTVSsxXFnVvTxtTKkjkAaKhzZxXfFHuBbkKTeEyrRcCYTtGgtuZDdjJzUUcSsCqQgGuUqUulLRrwWQeHOohSXxNnisSIWHhwiuUIfFVMxUaAuGdDgXmdHhDUuTFWwftbBvVKAakvrqQAayYWwRCcIvVijJhHrSNnsDaAdBbHLlhRPpAqZzQSsaQmOpPozQLlqhHZIDdisdDSyFpPfEJjeYowWhHrnNRRUuhHLeEdDlkKyYkKqQCcEexXifFIYfFqQyFzDdZcCorRgGzqQZDdzIiMmwWrRIIjJihlLHoOyYDzrRuUKbBvMmeEKkFffFsSVcYJuUjQqMHEeeEhbBYyucCfFGDdqQRmMHhhHqWwoOQTtrBhHxXCcbggGGpgGPgEecCYyEeEesSisSeOovVcwWCEIPJjnlLTtyYNLtfFHzZQCcqLlyxXYSqvGgVQzZsBvVDoOdlLbfFGxphHqQPHhmMdDGgHszjJZShXxXYysbBifrRFiIxcChIiHgGQqqvVbBEewWQxjJZmPpUuMzXlYyHhLXDvVBbdEsSexsSvtTrReEVnNmMTtXuKkjxXJMyYmZFfzUMmyVvTtFfYdDExEeXvVooOOjJTtCcUrRSwWsbBbhHtTBGVvgNDdnQqukKGgJOYHFfhKfFkSnNkKOoOohHsSnNsmmMMvVFGglHxXhLfFPsKkSpfyBbqQqaxXfpPZzbBCggGdDPlBbLaAZzKeEkYJiIemMtYyTlLjJEjXxsSyLlXxCckKeEuUZzrqQlLxXafFeEVvAiRrIRpmiRrFfbBzZvHhVICcoOMXxiWwNIinkkKBbgQqGPpLlKWhHwszZSQuUjKkfFJcZzCVvWeEYywtXxTjJzZkSsKfFeEcCrDhXxMmrRjUuOoYyJQDdqHwWMmLlOodqQMmqGCcgwWpJjqMmQKkPMmpPBbxnNzZyYySscTcCFftwWOeEoOobSsBSsOoaAGoOgRWwcQUWOokKwuTdUuDtYyYiJjYyIyquqaFfwWAQUZtKkTBbzndDXxjJLlJjyxWjJDdLlsSMmGgtiGgIqQpgGTtDdPClLAasyYFlLKoOkfMmFUuBEerRYyGflLFDdnNFfgFLlXJjxWHhwDOoOodOokKPpMmfoOzZupPUvVjJSBRrbYLlyuUNTXxnNtUuvVVvpPQqQqUuaqQAlLMBbHhxOfFozZJjXzZhHgqQEPpeVvSsEgGAaeUucCItTiLuUlGSsyYEeRrBbZiIAPpvRrhHzqEeQqvVBbGgIhHRXxrishHSQNnyYZzxXZpdDPVWXxwMvVmmMByYcCaAEebxXVvKfFlLcCcCkZzzQqGgFIifPpZNnjJMwsSWwRrWmvHosSOhVIibMmyYQqTtBMoOYOoSsZFKuUkKZzZzxXPpbqAanNNnQyYsZzShHUuGgSiIsYgGyeeECcsAadGgDOojqQGgSstTPpJSQRrGgUunNqpkKdDZzPhHkSsrRQwtTXyYxsSZzAaRcUgGvVufNSfFsnFCrXeogGWwQqlLOKbBuUkvWwzZUuEoOKkNneseECcwWwzbBWiIwDQqdAawWiIwWNnLiQDdqIAatTEOdDoeVkOopPKvQmbBKkvVbyhHYBWwbzZrQqRZDdhpCcOoXxnayYizZIFfANPKkeELKDdHhvyYVCckkvVKTAadDsSHhAjBbeQqEJpPaJjXxaAAFfXxRrVpuFWwWwfFoOZRrzPpxHJjhIqQiXfrRkKkKkNnLlKqhhHLNWWKkwwZznvOIioMwWXxeEmYyzZXcCxVZzmMUuPKYykKyYkpiIlSAaYcCyBCwDwWdWPpcbsghHnNbBsSMlLbBTpPtEeVuUZzfciICEmMMfFmlLeuwWoOnNUgGJjiybBCJZziZzAaIjQqhHCcaAcnGgjUuPpQqpPhXxHUjJuuxNnXUYyJCcLOoImMilBbLlkKGkKPwWEeuUzZHoOqQjJFfGgCckBbKzlwKpQqsSsSViIIirRvbBiZzIZiplxXLPTjnNJVpPyYvtDyYwqQWdYyarRxXDdALlIDdTtTcClZyYzvVRvVrLtmMkKvTDdxXtVqQlVvLPNnpoaAdDeELUwWuwxXWlOxXGgiaAITtgGyYuUzZdDynNYGwzZPkqQOoKklLxBbdQqDGyYgXKzHhRDhHdWzZwbBhvYyVHLHXxhlcaACIidDVbjJxeMmEXJBbtTjBVDdpPsNnSvrRbbBMmyoBbONnwWJTtOoQqIiVhsSHLlQqHhXxAoOHhTjCcJwWLltFfetTEFWwtTIyYiYyzZvVzZTOobchHCBQSiIsBbRDAamMJZzjoOJjyYIidHhQqOuUWwOovIiuUCcVoWPhHpwdDJjIvTufFUtWQqvVuUXxwtTiIVisqyYQiISHLjJGkKcCBAabhHiIKkWCcwpPcChfFHCnNlLcZSBbfFbBgwWzWwZaAZIizGcCmSsGxpNnPXQhHgGgGFfuJRraAjOouaUuTtAbRBbrjJlUtuUEeTCcwxXrROioZreOlnncKXxkCNKZzaAkpKkRcCrRVvrPNuULfCcxdZzDZvVCfFsUuSreFdDafFAfqQWPpTeINniEBArbBRaeJjEbZnNsSFflLzZztsPpEeBbwQqwWGgQqoOFfZzWnNSyYsXKkxWwKkkcCONnoNVvGgXxFuQqUkKfjJYyFeGgEcCnNFfLldyikbiIBhHKjOoJaAIYpPIMmHLlhibBIaJjyrRYbBjJAaASsVvFuUfTMNTtnnNmFfqQBbJOoCcXIhHgGCciTtSBMiImBYybxLgGlwWXNljuUJjJbBdDyYhHLQqxXmtTMwWqQnxXWwzSsmMkBbJjeRrsSEDdTtGAagXxKeEJjwuUDdpPdDWTCcKktjmMJjlLXybBYnNMmwoOfTtixXjJDduMmdzZJjclLqiIQciqQfjJvVFOJHhnNjUuoOoFfDdpkKPHbBhwWLYGvVgSXHsSFfxNnXhpvVAaSsFZtTFfzXoOxfUJjuYyRrYyqQvVSslLPMbYyBmpIiCdkTtKDcDmiIoOQxXBfSsFHhVtTvKcwWvVdDlOoHhuUQaTtAqLtTCkQXxEFfeoUunNHhtkKOobBEisSIetTWwTzrlLGgdDRiIelLmcOoSsYyzOoZPpdgGZzDenNEnyYXbBoUuOwHOYyplLPSsoUuSECdvPpcCVmvVLdDlDdoOUuRpPUYyurxXleKkeEEAaWwHhOoDrReXxEuULEelCNVvnjJIivVPpmwWeEAabBCcwZSwWsXxyxUuXYuUdXxoOhHhHggGIPpkKiNQqnSsrReRrEGXxrRfFgQqYyAZLllLzaAxbBNnXRrtTNcyPUumMIipSsTtYzOnNMmxXwVQsSvVqvJjVBbTtvoOQcCcCVvqWbmMBSkKsoOvVUCTtcuDxiTtIXxCcdlLDxXBFbBfbpPNfFnfFHhdDBkKowWObUUuuxOrRoDUuQqQHhHhBbqrRdiNnUuFfoOINEenNOAzZakoOhHJMhHmOoCcaAQIMmiqhHmDYwWdDjJXTtnNTnNpPtCcQqiInNnNXiYtWOYyNoOmRtVvlIiLIpiIPigetuqQUPqaAUrRvVugGuUsCcYySQzToOwgDdGaiIAWdeAaFfuUtuUequUQZzBbEpbBhHvVFfWpPXryoOYUcCASsauofnNFiHhInNKfFgGWwWVBSsbBbvMmWNnwQqDdnNDywWWNnwrveEVRgvVFfGgGfJKkjRgEeYyXxWRrwfFWhHwPIKCcsytTYyYAazXxTtEHheCjJQqoODWwgGdVahHAvcZgdDEhHuUSsYxXKkyXuGgUsGuUgLjJYRrsqJmMHhjQSfwWFrRaJKkRxXGglLrRDdHhIizZBYyJjbFfeEmvRPprXxYDdFfyrRMdDQqaAnNKsLpPjJleEctfTtFonNOVENnpnNZAaPjJhrREeVvbBCctEeIioOuKdDkXxYyJHfPpvVHlLAayaAYhVvZzFfFlWwBLlwWQqyYFPnNpPOopPoyYiIOpJpNiIJjkKnTcCEuVvtTtSsStjVjpPTCcfFteEtTxJjnxlLgGlLdDwWtLlrRTyIiYMmMmXmdDMDDddHhNuUvUuJjjJlLWAauUwmUppqQPAaHhtTUuwWJjYydXeELVNneuiqQkkaAaOoKtTkaQEyYeqAdDaTIiKqQkwWcCGaAQqUuIigGiIRrTLDVvCcdbBJIijhnNHsyYcChHmMSqQcCiIiDkgcCGOomMDkGIiwWSoOwdjJDLlsZYyzlLIkKivXxrRnNKkMmXmMPpkBrRoOIiHaAxbBXZrRoOzQqwWhXxbQHhqAoPBbZzQqCcpzFfJcCaAjuUzZZUuzqiIQwGgWjJWwFdDfQaAtTHlLFgGfBbBMmycqQHhSyYdMmyYmMgUuzZujJhvcnNCPpVPpHgiIGFHhOMmNnfFoGmMvIiHXzZDdnNZzxoiIBbIihUuDmMBbdXxXcCKkatTAzZFfmCUucTtUuhHCNnjeEoOVIbBjJbBXxYDdXxJjyzZNnVvApPpxXPfFtxXYBbKRrkyTjiQzOoEoOeSsLtTlZqyhxgGOqQTtOSaAskiWwqGlonNTtfVvvVFOLEegaXxAQRrJztTrROoQqZjZzZhHBHhbeXxYQqyxEEexXYYZzyFfDcKkWaAkKwwWOozZIiBuUTtxXoOAHhsSWLCcLlrSssPpSIbBlkYyXOFCcfxXlfFLOoMmuUohHOmMoGCcgSsJWwjDdLlcpCcPidDwcOoCVvLbpPBEebmMSDyYeEdnlcCHhPzZtOozZdDhkKHTWwZzwhHBbtDdinyYNjpPJccZzVvYyChHRrDGkKUuxXUuaDdwQqKuUkLleSsERrRxXnNTxXggGGnNmMSsmpPBGgyYFyiYymMnNeTkKcIiCkKELleLmMgKkcClnFfEeSsdKLmMlkHDdjJuUiPdoOLlBbXsSxbBojcCJmMOCcUxXnaikwMmMhcZYysiIHhRrCcZzxXnNyYbQqAajJUurRQuUutTkKUnaAJsSjXRrpPeHJjoOhYyEoOeEUeOFCLAaRrloOFyoOYfWwwSrRsWwWMiwWQqWwIlLmAaHhRriIOVvQvqQIiotTcCVChKcCsSbBkKkeEFfEePdUwWuDRSiIsCcJAbHhBeFLlfjkKJqVZtiNnPpiNJjnvVxWwSsXpPINnKEyYpPpPjbnNTtaAWfFwBtTvVJrReOoEcOmrNnRuUoUuLlnNcYdDMmcCDdLlAiBOoNnbcCZzbENneIiwWsSDgmMGkKwGgEeHxXhyMzZrMmRmnepoOdDPENIMmiZzYfFVvAnLloONhHaFPKkpHhdjzZJNKkcmMCsSKkLWwKkRrdDlQqHobddDlUuoajWwmhHMXxLLlnTpSsTtPtTtNeSNnsalLAEjBbGgatTAtTJjJDAnNkinmMNrRSsIkRrtZkKzBbMmVQDdqvmMuBWkEeEexXKwwPpzZYydxXyYxmoONcCKkRWNnwZzrljJLCVPpvaAtlLwkKWTcbFfBdrRguUVXdVMLlmvwWVMyeEYmHRuUOcAaCoGoOgyxiBbIXFfuUroAOaAcClLoaeEODdRVvrHCZUuzcDWdoOaAUuDOQquLOolUojJSsxXoGgOxMmiIDpPdGguUIidDIixXlLLlmVvpPHhQPaYyAkKptTXxXjJwLlrRPpCcWwZzqodDPtToOXxPporRMmHdDsSmMsHjJlCxXdyYDzvbBPkKpVvLEekKeEkSPpZzLlOVvHhCcosbBSJmsOoSNnNnPHhKkaVvZzoOoOaAeoOoAIiaUutTgVvGtTOhHGcCxOoexXKjJLlkiJqQjDdtTeqdDzQqAaGgZoOMmDyYdIisnyYnuUNWrTvVgLSsllLGgkCcTtoUugGOKGtCcZzKlLbAXUuWwrRxaexXEUuVqQvBYyYyrRzxXZvNNyYrsSRPpHhChpdDJjPIiKkHhrRHiISswCcWwXgKkcCGxUukaAKkKszfBbDdiICSsbBZzwicCjJIfqQbBFZzBbRrJVDoOdEevjuUyYTtwGBoqQSjJsgGObtDdEeVrfkgGKFUuMmNJjWwHnNtFfTsDdtSsTZxXzWwSYmCcMIiyhnkPpsSOoKNVwWGgvFUuOofSAHhlLaIiuUAVsSvcBbCVQficoOjJVvCBbUKkdDugGjJPkacCAgkMdDmEeLlSsKBbKkXevVEZFfbHheTvpPRjJdGasrRSJjAgTJjoObBUurRcWwNnCMmFQquUvbqQBymMYVsOEeozIiLlZkDSsZzEYyhDuCcxXUOUDduKjJgGzZhHkoddDsSjGzZggJcCSsbrqQReEBPKrRHhkeEpjIioOowWOAaoOkKhHqGiIkKjJdMkjhalLAHaAlLxvaluLljJLlVvrQqrPwWwWzQqXxkwWXxKZtSsTfFuxQqdDfHhFXpPFEembBbEqQeERCcDdxXaAPpsStuBAabGHhg<p><a href="/blog"> ⏴ Back to all articles</a></p>
+use there may be tombstones, i.e. zeroes, in-between.
+
+
+In pseudo-code:
+
+</code></pre>
+<p>remaining_count = len(input)
+end = input + len(input)
+current = &amp;input[0]
+next = &amp;input[1]</p>
+<p>while next != end:
+diff = *next - *current</p>
+<pre><code>if diff*diff == 32*32:
+  *current = 0
+  *next = 0
+  remaining_count -= 2
+
+  current -= 1
+  while current == 0:
+    current -= 1
+  endwhile
+else:
+  current = next
+endif
+</code></pre>
+<p>next += 1</p>
+<p>endwhile</p>
+<p>print(remaining_count)</p>
+<pre><code>
+The easy case is when there is no need to merge: `current` simply becomes `next` (and `next` is incremented at the end of the loop iteration).
+
+The 'hard' case is merging: we set the two tombstones, lower the count, and now we are in a pickle: `current` needs to go backwards, but we do not know to where. There might be an arbitrary number of zeroes preceding the character `current` points to: the data on the left of `next` is sparse, the data on the right of `next` is not.
+
+</code></pre>
+<p>[...] 0 0 A 0 0 0 0 B 0 0 0 0 C D E F [...]
+^         ^         ^
+|         |         |
+target    |         |
+current   |
+next</p>
+<pre><code>
+So we have to do a backwards search to find the first non zero character.
+We could memoize this location, but that would basically come down to the Scheme solution, having an output array of the same size as the input.
+
+Astute readers might have noticed a potential issue with the backwards search: We may underflow the `input` and go out of bounds! To avoid that, we could clamp `current`, but the branch misprediction is costly (an earlier implementation of mine did this and that was almost twice as slow!), and we can simplify the code as well as improve the performance by simply prefixing the `input` wTitle: Optimizing an Advent of Code solution in assembly
+Tags: x86_64, Advent of Code, Optimization, Algorithm, C, Lisp, Scheme
+---
+
+A few days ago I was tweaking the appearance of this blog and I stumbled upon my [first article](/blog/advent_of_code_2018_5) which is about solving a simple problem from Advent of Code. Here it is again:
+
+&gt; We have a string looking like this: `AabcdZZqQ` which represents a chain of
+&gt; chemical units. Adjacent units of the same type (i.e letter) and opposite
+&gt; polarity (i.e casing) react together and disappear.
+&gt; It means we want to remove adjacent characters which are the same letter and have opposite casing, e.g
+&gt; `Aa` and `qQ` disappear while `bc` and `ZZ` remain. Once we are finished, we have: `bcdZZ`.
+&gt; 
+&gt; The final output is the number of characters in the final string, i.e, `5`.
+
+
+Immediately, I thought I could do better than my past self: 
+
+- In the Lisp solution, there are lots of allocations and the code is not straightforward.
+- In the Lisp solution, we use multiple external dependencies, which usually turn out to be problematic in the long run.
+- In the C solution, there is no allocation apart from the input but we do a lot of unnecessary work.
+- In the C solution, we use `abs(x) == 32` which we could avoid by doing `x*x == 32*32`.
+
+
+
+This coincided with me listening to an interview from the VLC developers saying they wrote hundred of thousan<p><a href="/blog"> ⏴ Back to all articles</a></p>
+
+<blockquote id="donate">
+  <p>If you enjoy what you're reading, you want to support me, and can afford it: <a href="https://paypal.me/philigaultier?country.x=DE&locale.x=en_US">Support me</a>. That allows me to write more cool articles!</p>
+</blockquote>
+
+<blockquote>
+  <p>
+    This blog is <a href="https://github.com/gaultier/blog">open-source</a>!
+    If you find a problem, please open a Github issue.
+    The content of this blog as well as the code snippets are under the <a href="https://en.wikipedia.org/wiki/BSD_licenses#3-clause_license_(%22BSD_License_2.0%22,_%22Revised_BSD_License%22,_%22New_BSD_License%22,_or_%22Modified_BSD_License%22)">BSD-3 License</a> which I also usually use for all my personal projects. It's basically free for every use but you have to mention me as the original author.
+  </p>
+</blockquote>
+
+</div>
+</body>
+</html>
+EAabBCcwZSwWsXxyxUuXYuUdXxoOhHhHggGIPpkKiNQqnSsrReRrEGXxrRfFgQqYyAZLllLzaAxbBNnXRrtTNcyPUumMIipSsTtYzOnNMmxXwVQsSvVqvJjVBbTtvoOQcCcCVvqWbmMBSkKsoOvVUCTtcuDxiTtIXxCcdlLDxXBFbBfbpPNfFnfFHhdDBkKowWObUUuuxOrRoDUuQqQHhHhBbqrRdiNnUuFfoOINEenNOAzZakoOhHJMhHmOoCcaAQIMmiqhHmDYwWdDjJXTtnNTnNpPtCcQqiInNnNXiYtWOYyNoOmRtVvlIiLIpiIPigetuqQUPqaAUrRvVugGuUsCcYySQzToOwgDdGaiIAWdeAaFfuUtuUequUQZzBbEpbBhHvVFfWpPXryoOYUcCASsauofnNFiHhInNKfFgGWwWVBSsbBbvMmWNnwQqDdnNDywWWNnwrveEVRgvVFfGgGfJKkjRgEeYyXxWRrwfFWhHwPIKCcsytTYyYAazXxTtEHheCjJQqoODWwgGdVahHAvcZgdDEhHuUSsYxXKkyXuGgUsGuUgLjJYRrsqJmMHhjQSfwWFrRaJKkRxXGglLrRDdHhIizZBYyJjbFfeEmvRPprXxYDdFfyrRMdDQqaAnNKsLpPjJleEctfTtFonNOVENnpnNZAaPjJhrREeVvbBCctEeIioOuKdDkXxYyJHfPpvVHlLAayaAYhVvZzFfFlWwBLlwWQqyYFPnNpPOopPoyYiIOpJpNiIJjkKnTcCEuVvtTtSsStjVjpPTCcfFteEtTxJjnxlLgGlLdDwWtLlrRTyIiYMmMmXmdDMDDddHhNuUvUuJjjJlLWAauUwmUppqQPAaHhtTUuwWJjYydXeELVNneuiqQkkaAaOoKtTkaQEyYeqAdDaTIiKqQkwWcCGaAQqUuIigGiIRrTLDVvCcdbBJIijhnNHsyYcChHmMSqQcCiIiDkgcCGOomMDkGIiwWSoOwdjJDLlsZYyzlLIkKivXxrRnNKkMmXmMPpkBrRoOIiHaAxbBXZrRoOzQqwWhXxbQHhqAoPBbZzQqCcpzFfJcCaAjuUzZZUuzqiIQwGgWjJWwFdDfQaAtTHlLFgGfBbBMmycqQHhSyYdMmyYmMgUuzZujJhvcnNCPpVPpHgiIGFHhOMmNnfFoGmMvIiHXzZDdnNZzxoiIBbIihUuDmMBbdXxXcCKkatTAzZFfmCUucTtUuhHCNnjeEoOVIbBjJbBXxYDdXxJjyzZNnVvApPpxXPfFtxXYBbKRrkyTjiQzOoEoOeSsLtTlZqyhxgGOqQTtOSaAskiWwqGlonNTtfVvvVFOLEegaXxAQRrJztTrROoQqZjZzZhHBHhbeXxYQqyxEEexXYYZzyFfDcKkWaAkKwwWOozZIiBuUTtxXoOAHhsSWLCcLlrSssPpSIbBlkYyXOFCcfxXlfFLOoMmuUohHOmMoGCcgSsJWwjDdLlcpCcPidDwcOoCVvLbpPBEebmMSDyYeEdnlcCHhPzZtOozZdDhkKHTWwZzwhHBbtDdinyYNjpPJccZzVvYyChHRrDGkKUuxXUuaDdwQqKuUkLleSsERrRxXnNTxXggGGnNmMSsmpPBGgyYFyiYymMnNeTkKcIiCkKELleLmMgKkcClnFfEeSsdKLmMlkHDdjJuUiPdoOLlBbXsSxbBojcCJmMOCcUxXnaikwMmMhcZYysiIHhRrCcZzxXnNyYbQqAajJUurRQuUutTkKUnaAJsSjXRrpPeHJjoOhYyEoOeEUeOFCLAaRrloOFyoOYfWwwSrRsWwWMiwWQqWwIlLmAaHhRriIOVvQvqQIiotTcCVChKcCsSbBkKkeEFfEePdUwWuDRSiIsCcJAbHhBeFLlfjkKJqVZtiNnPpiNJjnvVxWwSsXpPINnKEyYpPpPjbnNTtaAWfFwBtTvVJrReOoEcOmrNnRuUoUuLlnNcYdDMmcCDdLlAiBOoNnbcCZzbENneIiwWsSDgmMGkKwGgEeHxXhyMzZrMmRmnepoOdDPENIMmiZzYfFVvAnLloONhHaFPKkpHhdjzZJNKkcmMCsSKkLWwKkRrdDlQqHobddDlUuoajWwmhHMXxLLlnTpSsTtPtTtNeSNnsalLAEjBbGgatTAtTJjJDAnNkinmMNrRSsIkRrtZkKzBbMmVQDdqvmMuBWkEeEexXKwwPpzZYydxXyYxmoONcCKkRWNnwZzrljJLCVPpvaAtlLwkKWTcbFfBdrRguUVXdVMLlmvwWVMyeEYmHRuUOcAaCoGoOgyxiBbIXFfuUroAOaAcClLoaeEODdRVvrHCZUuzcDWdoOaAUuDOQquLOolUojJSsxXoGgOxMmiIDpPdGguUIidDIixXlLLlmVvpPHhQPaYyAkKptTXxXjJwLlrRPpCcWwZzqodDPtToOXxPporRMmHdDsSmMsHjJlCxXdyYDzvbBPkKpVvLEekKeEkSPpZzLlOVvHhCcosbBSJmsOoSNnNnPHhKkaVvZzoOoOaAeoOoAIiaUutTgVvGtTOhHGcCxOoexXKjJLlkiJqQjDdtTeqdDzQqAaGgZoOMmDyYdIisnyYnuUNWrTvVgLSsllLGgkCcTtoUugGOKGtCcZzKlLbAXUuWwrRxaexXEUuVqQvBYyYyrRzxXZvNNyYrsSRPpHhChpdDJjPIiKkHhrRHiISswCcWwXgKkcCGxUukaAKkKszfBbDdiICSsbBZzwicCjJIfqQbBFZzBbRrJVDoOdEevjuUyYTtwGBoqQSjJsgGObtDdEeVrfkgGKFUuMmNJjWwHnNtFfTsDdtSsTZxXzWwSYmCcMIiyhnkPpsSOoKNVwWGgvFUuOofSAHhlLaIiuUAVsSvcBbCVQficoOjJVvCBbUKkdDugGjJPkacCAgkMdDmEeLlSsKBbKkXevVEZFfbHheTvpPRjJdGasrRSJjAgTJjoObBUurRcWwNnCMmFQquUvbqQBymMYVsOEeozIiLlZkDSsZzEYyhDuCcxXUOUDduKjJgGzZhHkoddDsSjGzZggJcCSsbrqQReEBPKrRHhkeEpjIioOowWOAaoOkKhHqGiIkKjJdMkjhalLAHaAlLxvaluLljJLlVvrQqrPwWwWzQqXxkwWXxKZtSsTfFuxQqdDfHhFXpPFEembBbEqQeERCcDdxXaAPpsStuBAabGHhg<p><a href="/blog"> ⏴ Back to all articles</a></p>
 
 <blockquote id="donate">
   <p>If you enjoy what you're reading, you want to support me, and can afford it: <a href="https://paypal.me/philigaultier?country.x=DE&locale.x=en_US">Support me</a>. That allows me to write more cool articles!</p>

@@ -119,7 +119,10 @@
   <div class="tags"> <a href="/blog/articles-by-tag.html#C" class="tag">C</a> <a href="/blog/articles-by-tag.html#Allocator" class="tag">Allocator</a> <a href="/blog/articles-by-tag.html#Safety" class="tag">Safety</a></div>
   </div>
 
-<p>rena gets nuked from space along with all entities allocated from it. It's a great way to simplify the code, make it faster, and escape from the 'web of pointers' hell.</p>
+<p><em>Discussions: <a href="https://old.reddit.com/r/programming/comments/1gfiif5/tip_of_the_day_2_a_safer_arena_allocator/">/r/programming</a>, <a href="https://old.reddit.com/r/cprogramming/comments/1gfiit0/tip_of_the_day_2_a_safer_arena_allocator/?">/r/cprogramming</a></em></p>
+<p>The most transformative action you can do to dramatically improve your code in a programming language where you are in control of the memory is: to use arenas.</p>
+<p>Much has been written about arenas (<a href="https://nullprogram.com/blog/2023/09/27/">1</a>, <a href="https://www.rfleury.com/p/untangling-lifetimes-the-arena-allocator">2</a>). In short, it means grouping multiple allocations with the same lifetime in one batch that gets allocated and deallocated only once.</p>
+<p>Another way to look at it, is that the allocations are append only. They never get freed during their 'life'. The program is split into 'phases'. Typically, each phase has its own arena, and when it reaches its end, the whole arena gets nuked from space along with all entities allocated from it. It's a great way to simplify the code, make it faster, and escape from the 'web of pointers' hell.</p>
 <h2>The standard arena</h2>
 <p>A typical arena looks like that:</p>
 <pre><code class="language-c">#include &lt;stdint.h&gt;
@@ -170,17 +173,7 @@ int main() {
 </code></pre>
 <p>And...the program did not crash. The symptoms were very weird: data was subtly wrong in another place of the program, thus making it very difficult to troubleshoot. That's basically the nightmare scenario for any engineer. A crash would be so much easier.</p>
 <p>But why?</p>
-<p>Well, we basically asked the OS to give us one page of virtual memory when creating the first arena. Right after, we asked for a second page. And most often than not, the OS gives us then a page right after the first page. So from the OS perspective, we allocated <code>2 * 4096 = 8192</code> bytes, and wrote in the middle, so all is good. We wanted to write into the first arena but instead wrote into the second one accidentally.</p>
-<p>This behavior is however not consistent, running the programs many times will sometimes crash and sometimes not. It all depends if the memory pages for the different arenas are contiguous or not.</p>
-<h2>The solution</h2>
-<p>So how do we fix it? What I did was defense in depth:</p>
-<ul>
-<li>Add asserts everywhere I could to check pre- and post-conditions. I believe that's how I discovered the bug in the first place, when one assert failed, even though it seemed impossible.</li>
-<li>Replace all direct array and pointer accesses with macros that check bounds (like most modern programming languages)</li>
-<li>Tweak how the arena is created to make it safer. That's our tip of the day, so let's see it.</li>
-</ul>
-<p>The idea is not new, most allocators do so in 'hardening' mode: when the arena is created, we place a 'guard page' right before and after the real allocation.</p>
-<p>We mark these guard p<p><a href="/blog"> ⏴ Back to all articles</a></p>
+<p>Well, we basically asked the OS to give us one page of virtual memory when creating the first arena. Right after, we asked for a second page. And most often than not, the OS gives us then a page right after the first page. So from the OS perspective, we allocated <code>2 * 4096 = 8192</code> bytes, and wrote in the middle, so all is good. We wanted t<p><a href="/blog"> ⏴ Back to all articles</a></p>
 
 <blockquote id="donate">
   <p>If you enjoy what you're reading, you want to support me, and can afford it: <a href="https://paypal.me/philigaultier?country.x=DE&locale.x=en_US">Support me</a>. That allows me to write more cool articles!</p>

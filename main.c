@@ -232,6 +232,7 @@ static PgString datetime_to_date(PgString datetime) {
 }
 
 [[nodiscard]] static PgString markdown_to_html(PgFileDescriptor markdown_file,
+                                               u64 metadata_offset,
                                                PgAllocator *allocator) {
   PgStringDyn args = {0};
   *PG_DYN_PUSH(&args, allocator) = PG_S("--validate-utf8");
@@ -256,8 +257,9 @@ static PgString datetime_to_date(PgString datetime) {
 
   PgProcess process = res_spawn.res;
 
+  Pgu64Ok offset = {.ok = true, .res = metadata_offset};
   PG_ASSERT(0 == pg_file_copy_with_descriptors(process.stdin_pipe,
-                                               markdown_file, (Pgu64Ok){0}));
+                                               markdown_file, offset));
   PG_ASSERT(0 == pg_file_close(process.stdin_pipe));
 
   PgProcessExitResult res_wait = pg_process_wait(process, allocator);
@@ -276,8 +278,8 @@ static PgString datetime_to_date(PgString datetime) {
 }
 
 static void article_generate_html_file(PgFileDescriptor markdown_file,
-                                       Article *article, PgString header,
-                                       PgString footer,
+                                       u64 metadata_offset, Article *article,
+                                       PgString header, PgString footer,
                                        PgAllocator *allocator) {
   Pgu8Dyn sb = {0};
   PG_DYN_ENSURE_CAP(&sb, 4096, allocator);
@@ -324,7 +326,7 @@ static void article_generate_html_file(PgFileDescriptor markdown_file,
   PG_ASSERT(0 == pg_file_write_full_with_descriptor(
                      html_file, PG_DYN_SLICE(PgString, sb)));
 
-  PgString html = markdown_to_html(markdown_file, allocator);
+  PgString html = markdown_to_html(markdown_file, metadata_offset, allocator);
   PG_ASSERT(0 == pg_file_write_full_with_descriptor(html_file, html));
 
   // TODO: build search index on html.
@@ -369,6 +371,7 @@ static Article article_generate(PgString header, PgString footer,
   PG_ASSERT(cut.ok);
   PgString metadata_str = cut.left;
   PG_ASSERT(!pg_string_is_empty(metadata_str));
+  u64 metadata_offset = cut.left.len + PG_STATIC_ARRAY_LEN(METADATA_DELIMITER);
 
   cut = pg_string_cut_byte(metadata_str, '\n');
   PG_ASSERT(cut.ok);
@@ -407,8 +410,8 @@ static Article article_generate(PgString header, PgString footer,
   PgString stem = pg_path_stem(git_stat.path_rel);
   article.html_file_name = pg_string_concat(stem, PG_S(".html"), allocator);
 
-  article_generate_html_file(markdown_file, &article, header, footer,
-                             allocator);
+  article_generate_html_file(markdown_file, metadata_offset, &article, header,
+                             footer, allocator);
 
   PG_ASSERT(0 == pg_file_close(markdown_file));
   return article;

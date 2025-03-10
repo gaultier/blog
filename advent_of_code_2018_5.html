@@ -119,7 +119,17 @@
   <div class="tags"> <a href="/blog/articles-by-tag.html#Lisp" class="tag">Lisp</a> <a href="/blog/articles-by-tag.html#Scheme" class="tag">Scheme</a> <a href="/blog/articles-by-tag.html#C" class="tag">C</a></div>
   </div>
 
-<p>basics, because
+<p><em>Discussions: <a href="https://old.reddit.com/r/scheme/comments/czyr3t/getting_started_with_scheme_by_solving_an_advent/">/r/scheme</a></em></p>
+<p>I started learning <a href="https://en.wikipedia.org/wiki/Scheme_(programming_language)">Scheme</a> very recently. <a href="http://wiki.call-cc.org/">Chicken Scheme</a> is a wonderful small and
+performant implementation of Scheme, a programming language in the family of
+LISPs.
+Since I learn by doing, let's solve the <a href="https://adventofcode.com/2018/day/5">Advent of Code 2018 day 5 challenge</a> with a tiny Scheme program.
+I encourage you to check out <a href="https://adventofcode.com/2018/about">Advent of
+Code</a> and try to solve the challenges yourself.</p>
+<p>Many people have the feeling that LISPs are slow and cryptic with all those
+parentheses. I hope to show that it is in fact very approachable, easy to work
+with, and even fast to run!</p>
+<p>I will not go through installing Chicken Scheme and learning the basics, because
 it was <a href="http://blog.klipse.tech/scheme/2016/09/11/scheme-tutorial-1.html">already done better than I can</a>.</p>
 <h2>The problem</h2>
 <p>We have a string looking like this: <code>AabcdZZqQ</code> which represents a chain of
@@ -168,24 +178,7 @@ letters of the alphabet.</p>
          (b-code (char-&gt;integer b))
          (diff (- a-code b-code)))
     (= (* 32 32) (* diff diff))))
-</code></pre>
-<p>Let's try it with <code>a</code> and <code>A</code>:</p>
-<pre><code class="language-scheme">(char-case-opposite-casing? #\a #\A) 
-</code></pre>
-<p>And flipped:</p>
-<pre><code class="language-scheme">(char-case-opposite-casing? #\A #\a)
-</code></pre>
-<p>And <code>A</code> and <code>b</code>:</p>
-<pre><code class="language-scheme">(char-case-opposite-casing? #\A #\b)
-</code></pre>
-<p><code>let*</code> is used to define local bindings which are only visible in this function.
-It evaluates each binding in order which means we can define <code>diff</code> in terms of
-<code>a</code> and <code>b</code> (contrary to <code>let</code>).</p>
-<p>We could have done without it but it makes the function more readable.</p>
-<p>The only hurdle is not caring
-about the sign of the difference: if the difference is <code>32</code> or <code>-32</code>, it is the
-same. We could compare the absolute value, but I (arbitrarily) chose to implement it without
-branches, by comparing the<p><a href="/blog"> ⏴ Back to all articles</a></p>
+</code<p><a href="/blog"> ⏴ Back to all articles</a></p>
 
 <blockquote id="donate">
   <p>If you enjoy what you're reading, you want to support me, and can afford it: <a href="https://paypal.me/philigaultier?country.x=DE&locale.x=en_US">Support me</a>. That allows me to write more cool articles!</p>
