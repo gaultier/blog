@@ -201,6 +201,8 @@ static GitStatSlice git_get_articles_stats(PgAllocator *allocator) {
 
 [[nodiscard]]
 static PgString html_make_id(PgString s, PgAllocator *allocator) {
+  PG_ASSERT(!pg_string_is_empty(s));
+
   Pgu8Dyn sb = {0};
   PG_DYN_ENSURE_CAP(&sb, s.len * 2, allocator);
 
@@ -728,7 +730,7 @@ static void tags_page_generate(ArticleSlice articles, PgString header,
     }
   }
   pg_sort_unique(tags_lexicographically_ordered.data, sizeof(PgString),
-                 tags_lexicographically_ordered.len, pg_string_cmp_qsort);
+                 &tags_lexicographically_ordered.len, pg_string_cmp_qsort);
 
   Pgu8Dyn sb = pg_sb_make_with_cap(4096, allocator);
   PG_DYN_APPEND_SLICE(&sb, PG_S("<!DOCTYPE html>\n<html>\n<head>\n<title>"),
@@ -739,6 +741,18 @@ static void tags_page_generate(ArticleSlice articles, PgString header,
   PG_DYN_APPEND_SLICE(&sb, PG_S(BACK_LINK), allocator);
   PG_DYN_APPEND_SLICE(&sb, PG_S("<h1>Articles by tag</h1>\n"), allocator);
   PG_DYN_APPEND_SLICE(&sb, PG_S("<ul>\n"), allocator);
+
+  for (u64 i = 0; i < tags_lexicographically_ordered.len; i++) {
+    PgString tag = PG_SLICE_AT(tags_lexicographically_ordered, i);
+
+    PG_DYN_APPEND_SLICE(&sb, PG_S("<li id=\""), allocator);
+    PG_DYN_APPEND_SLICE(&sb, html_make_id(tag, allocator), allocator);
+    PG_DYN_APPEND_SLICE(&sb, PG_S("\"><span class=\"tag\">"), allocator);
+    PG_DYN_APPEND_SLICE(&sb, tag, allocator);
+    PG_DYN_APPEND_SLICE(&sb, PG_S("</span><ul>\n"), allocator);
+    PG_DYN_APPEND_SLICE(&sb, PG_S("</ul></li>\n"), allocator);
+  }
+
   PG_DYN_APPEND_SLICE(&sb, PG_S("</ul>\n"), allocator);
   PG_DYN_APPEND_SLICE(&sb, footer, allocator);
 
