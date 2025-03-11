@@ -546,6 +546,38 @@ static void article_write_toc(Pgu8Dyn *sb, Title *root,
   article_write_toc_rec(sb, root, allocator);
 }
 
+static void html_tokens_print(PgHtmlTokenSlice tokens) {
+  for (u64 i = 0; i < tokens.len; i++) {
+    PgHtmlToken token = PG_SLICE_AT(tokens, i);
+    switch (token.kind) {
+    case PG_HTML_TOKEN_KIND_TEXT:
+      printf("text: %.*s\n", (int)token.text.len, token.text.data);
+      break;
+    case PG_HTML_TOKEN_KIND_TAG_OPENING:
+      printf("open: %.*s\n", (int)token.tag.len, token.tag.data);
+      break;
+    case PG_HTML_TOKEN_KIND_TAG_CLOSING:
+      printf("close: %.*s\n", (int)token.tag.len, token.tag.data);
+      break;
+    case PG_HTML_TOKEN_KIND_ATTRIBUTE:
+      printf("attribute: %.*s", (int)token.attribute.key.len,
+             token.attribute.key.data);
+      if (!pg_string_is_empty(token.attribute.value)) {
+        printf("=%.*s", (int)token.attribute.value.len,
+               token.attribute.value.data);
+      }
+      puts("");
+      break;
+    case PG_HTML_TOKEN_KIND_COMMENT:
+      break;
+    case PG_HTML_TOKEN_KIND_DOCTYPE:
+      break;
+    default:
+      PG_ASSERT(0);
+    }
+  }
+}
+
 static void article_generate_html_file(PgFileDescriptor markdown_file,
                                        u64 metadata_offset, Article *article,
                                        PgString header, PgString footer,
@@ -555,6 +587,8 @@ static void article_generate_html_file(PgFileDescriptor markdown_file,
       markdown_to_html(markdown_file, metadata_offset, allocator);
   PgHtmlTokenDynResult res = pg_html_tokenize(article_html, allocator);
   PG_ASSERT(0 == res.err);
+  PgHtmlTokenSlice html_tokens = PG_DYN_SLICE(PgHtmlTokenSlice, res.res);
+  html_tokens_print(html_tokens);
 
   // TODO: build search index on html.
 
