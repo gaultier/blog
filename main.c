@@ -553,6 +553,9 @@ static void article_generate_html_file(PgFileDescriptor markdown_file,
 
   PgString article_html =
       markdown_to_html(markdown_file, metadata_offset, allocator);
+  PgHtmlTokenDynResult res = pg_html_tokenize(article_html, allocator);
+  PG_ASSERT(0 == res.err);
+
   // TODO: build search index on html.
 
   Title *title_root = html_parse_titles(article_html, allocator);
