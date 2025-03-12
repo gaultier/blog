@@ -236,7 +236,7 @@
 <title>Tip of the day #6: Use Bpftrace to estimate how much memory an in-memory cache will use</title>
 <link href="https://gaultier.github.io/blog/tip_of_the_day_5.html"/>
 <id>urn:uuid:39a7f948-a91a-5dea-8f36-8c8aaf8d01b6</id>
-<updated>2025-03-12T13:48:21+01:00</updated>
+<updated>2025-03-12T13:51:32+01:00</updated>
 <published>2025-02-18T12:02:06+01:00</published>
 </entry>
 
@@ -249,7 +249,7 @@
 </entry>
 
 <entry>
-<title>Tip of the day #5: Install Go tools with a specific version</title>
+<title>Tip of the day #6: Use Bpftrace to estimate how much memory an in-memory cache will use</title>
 <link href="https://gaultier.github.io/blog/tip_of_the_day_6.html"/>
 <id>urn:uuid:1364b66b-c20b-5130-a782-2c785188ed89</id>
 <updated>2025-03-12T13:35:23+01:00</updated>
