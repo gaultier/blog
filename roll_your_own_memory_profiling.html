@@ -119,6 +119,34 @@
   </div>
  <strong>Table of contents</strong>
 <ul>
+
+  <li>
+    <a href="#1714161565-pprof">Pprof</a>
+  </li>
+
+  <li>
+    <a href="#3080183899-the-text-format">The text format</a>
+  </li>
+
+  <li>
+    <a href="#1521287171-generating-a">Generating a </a>
+  </li>
+
+  <li>
+    <a href="#2279041372-variations-and-limitations">Variations and limitations</a>
+  </li>
+
+  <li>
+    <a href="#3437344394-alternatives">Alternatives</a>
+  </li>
+
+  <li>
+    <a href="#3796851539-conclusion">Conclusion</a>
+  </li>
+
+  <li>
+    <a href="#1512890027-addendum-the-full-code">Addendum: the full code</a>
+  </li>
 </ul>
 
 <p><em>Discussions: <a href="https://old.reddit.com/r/C_Programming/comments/182rnqw/roll_your_own_memory_profiling_its_actually_not/">/r/c_programming</a></em></p>
@@ -144,7 +172,7 @@
 <blockquote>
 <p>If you spot an error, please open a <a href="https://github.com/gaultier/blog">Github issue</a>!</p>
 </blockquote>
-<h1 id="1714161565-pprof">
+<h2 id="1714161565-pprof">
   <a class="title" href="#1714161565-pprof">Pprof</a>
   <a class="hash-anchor" href="#1714161565-pprof" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 >Pprof</h2>
@@ -158,7 +186,7 @@
 <blockquote>
 <p>The original <code>pprof</code> written in Perl is not to be confused with the rewritten <a href="https://github.com/google/pprof">pprof</a> in Go which offers a superset of the features of the original but based on a completely different and incompatible file format (protobuf)!</p>
 </blockquote>
-<h1 id="3080183899-the-text-format">
+<h2 id="3080183899-the-text-format">
   <a class="title" href="#3080183899-the-text-format">The text format</a>
   <a class="hash-anchor" href="#3080183899-the-text-format" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 >The text format</h2>
@@ -326,7 +354,7 @@ Total: 0.0 MB
      0.0   0.0% 100.0%      0.0 100.0% _start
      0.0   0.0% 100.0%      0.0 100.0% main
 </code></pre>
-<h1 id="1521287171-generating-a">
+<h2 id="1521287171-generating-a">
   <a class="title" href="#1521287171-generating-a">Generating a </a>
   <a class="hash-anchor" href="#1521287171-generating-a" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 >Generating a <code>pprof</code> profile</h2>
@@ -578,7 +606,7 @@ $ pprof --web ./a.out heap.profile
 <pre><code class="language-sh">$ pprof --collapsed ./a.out heap.profile | flamegraph.pl &gt; out.svg
 </code></pre>
 <p><object data="mem_prof_flamegraph.svg" type="image/svg+xml"></object></p>
-<h1 id="2279041372-variations-and-limitations">
+<h2 id="2279041372-variations-and-limitations">
   <a class="title" href="#2279041372-variations-and-limitations">Variations and limitations</a>
   <a class="hash-anchor" href="#2279041372-variations-and-limitations" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 >Variations and limitations</h2>
@@ -589,7 +617,7 @@ $ pprof --web ./a.out heap.profile
 <li>Stack traces won't work across library calls that are compiled without frame pointers. To which I'd say: It's likely easier to compile all of the code you depend on with the build flags you require than try to come up with alternative ways to walk the stack. Your mileage may vary.</li>
 <li>We use linear scanning to find an existing record with the same call stack. When having lots of records, it would be advantageous to use a binary search on a sorted array or perhaps a hashtable.</li>
 </ul>
-<h1 id="3437344394-alternatives">
+<h2 id="3437344394-alternatives">
   <a class="title" href="#3437344394-alternatives">Alternatives</a>
   <a class="hash-anchor" href="#3437344394-alternatives" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 >Alternatives</h2>
@@ -611,14 +639,14 @@ $ pprof --web ./a.out heap.profile
 </li>
 <li>The new <code>pprof</code> (the Go version) expects a relatively simple gzipped <a href="https://github.com/google/pprof/tree/4ca4178f5c7ab3f10300f07dab7422ead8dc17bc/proto">protobuf file</a>, but that means adding code generation and a library dependency. I use this tool when writing Go quite often and it is helpful. It also supports adding labels to samples, for example we could label the allocations coming from different arenas differently to be able to distinguish them in the same profile.</li>
 </ul>
-<h1 id="3796851539-conclusion">
+<h2 id="3796851539-conclusion">
   <a class="title" href="#3796851539-conclusion">Conclusion</a>
   <a class="hash-anchor" href="#3796851539-conclusion" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 >Conclusion</h2>
 <p>I like that one of the most common memory profilers uses a very simple text format that anyone can generate, and that's it's stand-alone. It's very UNIXy!</p>
 <p>Nonetheless, I will in the future explore the other aforementioned profilers (probably the Chrome one because it seems the most straightforward) and I do not think it should be much additional work. It's nice to leverage the existing browser to avoid having to install a profiler.</p>
 <p>After all, it's been <a href="https://technology.riotgames.com/news/profiling-real-world-performance-league">done before</a>!</p>
-<h1 id="1512890027-addendum-the-full-code">
+<h2 id="1512890027-addendum-the-full-code">
   <a class="title" href="#1512890027-addendum-the-full-code">Addendum: the full code</a>
   <a class="hash-anchor" href="#1512890027-addendum-the-full-code" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 >Addendum: the full code</h2>

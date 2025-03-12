@@ -369,6 +369,7 @@ static Title *html_collect_titles(PgHtmlNode *html_root,
 
   Title *title_root = pg_alloc(allocator, sizeof(Title), _Alignof(Title), 1);
   title_root->level = 1;
+  title_root->parent = title_root;
 
   for (u64 i = 0; i < titles.len; i++) {
     Title *title = PG_SLICE_AT_PTR(&titles, i);
