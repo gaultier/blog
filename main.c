@@ -335,55 +335,84 @@ static PgString datetime_to_date(PgString datetime) {
   return title_compute_hash(title->parent, hash);
 }
 
-static void html_collect_titles_rec(PgHtmlNode *node, Title *parent,
+static void html_collect_titles_rec(PgHtmlNode *node, TitleDyn *titles,
                                     PgAllocator *allocator) {
-  PG_ASSERT(parent);
-
   if (!node) {
     return;
   }
 
   u8 level = pg_html_get_title_level(node);
-  if (0 == level) {
-    html_collect_titles_rec(node->first_child, parent, allocator);
-    html_collect_titles_rec(node->next_sibling, parent, allocator);
-    return;
+  if (level) {
+    PG_ASSERT(2 <= level && level <= 6);
+
+    Title new_title = {0};
+    new_title.level = level;
+    new_title.title = pg_html_get_title_content(node);
+    new_title.content_html_id = html_make_id(new_title.title, allocator);
+    new_title.pos_start = node->token_start.start;
+    new_title.pos_end = node->token_start.end;
+    // Other fields backpatched.
+
+    *PG_DYN_PUSH(titles, allocator) = new_title;
   }
 
-  PG_ASSERT(2 <= level && level <= 6);
-  PG_ASSERT(parent->level + 1 == level);
-
-  Title *new_title = pg_alloc(allocator, sizeof(Title), _Alignof(Title), 1);
-  new_title->level = level;
-  new_title->parent = parent;
-  new_title->title = pg_html_get_title_content(node);
-  new_title->content_html_id = html_make_id(new_title->title, allocator);
-  new_title->hash = title_compute_hash(new_title, FNV_SEED);
-  new_title->pos_start = node->token_start.start;
-  new_title->pos_end = node->token_start.end;
-
-  if (!parent->first_child) {
-    parent->first_child = new_title;
-  } else {
-    Title *it = parent->first_child;
-    while (it->next_sibling) {
-      it = it->next_sibling;
-    }
-    it->next_sibling = new_title;
-  }
-  html_collect_titles_rec(node->first_child, new_title, allocator);
-  html_collect_titles_rec(node->next_sibling, parent, allocator);
+  html_collect_titles_rec(node->first_child, titles, allocator);
+  html_collect_titles_rec(node->next_sibling, titles, allocator);
 }
 
 [[nodiscard]]
 static Title *html_collect_titles(PgHtmlNode *html_root,
                                   PgAllocator *allocator) {
+  TitleDyn titles = {0};
+  PG_DYN_ENSURE_CAP(&titles, 64, allocator);
+  html_collect_titles_rec(html_root, &titles, allocator);
+
   Title *title_root = pg_alloc(allocator, sizeof(Title), _Alignof(Title), 1);
   title_root->level = 1;
-  title_root->parent = title_root;
 
-  html_collect_titles_rec(html_root, title_root, allocator);
+  for (u64 i = 0; i < titles.len; i++) {
+    Title *title = PG_SLICE_AT_PTR(&titles, i);
+    title->parent = title_root;
 
+    if (i > 0) {
+      Title *previous = PG_SLICE_AT_PTR(&titles, i - 1);
+      i8 level_diff = previous->level - title->level;
+
+      if (level_diff > 0) {
+        // The current title is a (great-)uncle of the current title.
+        for (u64 _j = 0; _j < (u64)level_diff; _j++) {
+          PG_ASSERT(title->parent);
+          title->parent = title->parent->parent;
+        }
+      } else if (level_diff < 0) {
+        // Check that we do not skip levels e.g. prevent `## Foo\n#### Bar\n`
+        PG_ASSERT(level_diff == -1);
+        title->parent = previous;
+      } else if (0 == level_diff) { // Sibling.
+        title->parent = previous->parent;
+      }
+    }
+    PG_ASSERT(title->parent->level + 1 == title->level);
+    Title *child = title->parent->first_child;
+    // Add the node as last child of the parent.
+    while (child && child->next_sibling) {
+      child = child->next_sibling;
+    }
+    // Already one child present.
+    if (child) {
+      child->next_sibling = title;
+    } else { // First child.
+      title->parent->first_child = title;
+    }
+  }
+
+  // Backpatch `id` field which is a hash of the full path to this node
+  // including ancestors.
+  for (u64 i = 0; i < titles.len; i++) {
+    Title *title = PG_SLICE_AT_PTR(&titles, i);
+    title->hash = title_compute_hash(title, FNV_SEED);
+  }
+  PG_ASSERT(nullptr == title_root->next_sibling);
   return title_root;
 }
 
@@ -712,8 +741,8 @@ static ArticleSlice articles_generate(PgString header, PgString footer,
   for (u64 i = 0; i < git_stats.len; i++) {
     GitStat git_stat = PG_SLICE_AT(git_stats, i);
 
-    // The home page is generate separately. The logic is different from an
-    // article.
+    // The home page is generate separately. The logic is different from
+    // an article.
     if (pg_string_eq(git_stat.path_rel, PG_S("index.md"))) {
       continue;
     }
