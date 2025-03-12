@@ -204,7 +204,7 @@
 <p>The overarching goal is exerting the least amount of effort to get the project in an acceptable state in terms of security, developer experience, correctness, and performance. It's crucial to always keep that in mind. It's not about 'clean code', using the new hotness language features, etc.</p>
 <p>Ok, let's dive in!</p>
 <p><em>By the way, everything here applies to a pure C codebase or a mixed C and C++ codebase, so if that's you, keep reading!</em></p>
-<h2><h2 id="3970719462-get-buy-in">
+<<h2 id="3970719462-get-buy-in">
   <a class="title" href="#3970719462-get-buy-in">Get buy-in</a>
   <a class="hash-anchor" href="#3970719462-get-buy-in" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
@@ -235,7 +235,7 @@
 </ul>
 <p>In my experience, with this approach, you keep everyone happy and can do the improvements that you really need to do.</p>
 <p>Alright, let's get down to business now!</p>
-<h2><h2 id="935823156-write-down-the-platforms-you-support">
+<<h2 id="935823156-write-down-the-platforms-you-support">
   <a class="title" href="#935823156-write-down-the-platforms-you-support">Write down the platforms you support</a>
   <a class="hash-anchor" href="#935823156-write-down-the-platforms-you-support" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
@@ -249,7 +249,7 @@
 <li>Can a <code>char</code> be 7 bits?</li>
 </ul>
 <p>And an important point: This list should absolutely include the developers workstations. Which leads me to my next point:</p>
-<h2><h2 id="3432615743-get-the-build-working-on-your-machine">
+<<h2 id="3432615743-get-the-build-working-on-your-machine">
   <a class="title" href="#3432615743-get-the-build-working-on-your-machine">Get the build working on your machine</a>
   <a class="hash-anchor" href="#3432615743-get-the-build-working-on-your-machine" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
@@ -263,20 +263,20 @@
 <p>Now if your project is humongous that may be a problem, your system might not even have enough RAM to complete the build. A fallback is to rent a big server somewhere and run your builds here. It's not ideal but better than nothing.</p>
 <p>Another hurdle is the code requiring some platform specific API, for example <code>io_uring</code> on Linux. What can help here is to implement a shim, or build inside a virtual machine on your workstation. Again, not ideal but better than nothing.</p>
 <p>I have done all of the above in the past and that works but building directly on your machine is still the best option.</p>
-<h2><h2 id="2709220288-get-the-tests-passing-on-your-machine">
+<<h2 id="2709220288-get-the-tests-passing-on-your-machine">
   <a class="title" href="#2709220288-get-the-tests-passing-on-your-machine">Get the tests passing on your machine</a>
   <a class="hash-anchor" href="#2709220288-get-the-tests-passing-on-your-machine" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>First, if there are no tests, I am sorry. This is going to be really difficult to do any change at all. So go write some tests before doing any change to the code, make them pass, and come back. The easiest way is to capture inputs and outputs of the program running in the real world and write end-to-end tests based on that, the more varied the better. It will ensure there are no regressions when making changes, not that the behavior was correct in the first place, but again, better than nothing.</p>
 <p>So, now you have a test suite. If some tests fail, disable them for now. Make them pass, even if the whole test suite takes hours to run. We'll worry about that later.</p>
-<h2><h2 id="3557174246-write-down-in-the-readme-how-to-build-and-test-the-application">
+<<h2 id="3557174246-write-down-in-the-readme-how-to-build-and-test-the-application">
   <a class="title" href="#3557174246-write-down-in-the-readme-how-to-build-and-test-the-application">Write down in the README how to build and test the application</a>
   <a class="hash-anchor" href="#3557174246-write-down-in-the-readme-how-to-build-and-test-the-application" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>Ideally it's one command to build and one for testing. At first it's fine if it's more involved, in that case the respective commands can be put in a <code>build.sh</code> and <code>test.sh</code> that encapsulate the madness.</p>
 <p>The goal is to have a non C++ expert be able to build the code and run the tests without having to ask you anything.</p>
 <p>Here some folks would recommend documenting the project layout, the architecture, etc. Since the next step is going to rip out most of it, I'd say don't waste your time now, do that at the end.</p>
-<h2><h2 id="3820736028-find-low-hanging-fruits-to-speed-up-the-build-and-tests">
+<<h2 id="3820736028-find-low-hanging-fruits-to-speed-up-the-build-and-tests">
   <a class="title" href="#3820736028-find-low-hanging-fruits-to-speed-up-the-build-and-tests">Find low hanging fruits to speed up the build and tests</a>
   <a class="hash-anchor" href="#3820736028-find-low-hanging-fruits-to-speed-up-the-build-and-tests" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
@@ -299,7 +299,7 @@
 <li>The type of file system in use, and tweaking its settings</li>
 </ul>
 <p>Once the iteration cycle feels ok, the code gets to go under the microscope. If the build takes ages, it's not realistic to want to modify the code.</p>
-<h2><h2 id="2342264914-remove-all-unnecessary-code">
+<<h2 id="2342264914-remove-all-unnecessary-code">
   <a class="title" href="#2342264914-remove-all-unnecessary-code">Remove all unnecessary code</a>
   <a class="hash-anchor" href="#2342264914-remove-all-unnecessary-code" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
@@ -314,17 +314,17 @@
 <li>Remember the list of supported platforms? Yeah, time to put it to use to kill all the code for unsupported platforms. Code trying to support ancient versions of Solaris on a project that exclusively ran on FreeBSD?  Out of the window it goes. Code trying to provide its own random number generator because maybe the platform we run on does not have one (of course it turned out that was never the case)? To the bin. Hundred of lines of code in case POSIX 2001 is not supported, when we only run on modern Linux and macOS? Nuke it. Checking if the host CPU is big-endian and swapping bytes if it is? Ciao (when was the last time you shipped code for a big-endian CPU? And if yes, how are you finding IBM?). That code introduced years ago for a hypothetical feature that never came? Hasta la vista.</li>
 </ul>
 <p>And the bonus for doing all of this, is not only that you sped up the build time by a factor of 5 with zero downside, is that, if your boss is a tiny bit technical, they'll love seeing PRs deleting thousands of lines of code. And your coworkers as well.</p>
-<h2><h2 id="3779016797-linters">
+<<h2 id="3779016797-linters">
   <a class="title" href="#3779016797-linters">Linters</a>
   <a class="hash-anchor" href="#3779016797-linters" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>Don't go overboard with linter rules, add a few basic ones, incorporate them in the development life cycle, incrementally tweak the rules and fix the issues that pop up, and move on. Don't try to enable all the rules, it's just a rabbit hole of diminishing returns. I have used <code>clang-tidy</code> and <code>cppcheck</code> in the past, they can be helpful, but also incredibly slow and noisy, so be warned. Having no linter is not an option though. The first time you run the linter, it'll catch so many real issues that you'll wonder why the compiler is not detecting anything even with all the warnings on.</p>
-<h2><h2 id="1360834800-code-formatting">
+<<h2 id="1360834800-code-formatting">
   <a class="title" href="#1360834800-code-formatting">Code formatting</a>
   <a class="hash-anchor" href="#1360834800-code-formatting" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>Wait for the appropriate moment where no branches are active (otherwise people will have horrendous merge conflicts), pick a code style at random, do a one time formatting of the entire codebase (no exceptions), typically with <code>clang-format</code>, commit the configuration, done. Don't waste any bit of saliva arguing about the actual code formatting. It only exists to make diffs smaller and avoid arguments, so do not argue about it!</p>
-<h2><h2 id="3829291122-sanitizers">
+<<h2 id="3829291122-sanitizers">
   <a class="title" href="#3829291122-sanitizers">Sanitizers</a>
   <a class="hash-anchor" href="#3829291122-sanitizers" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
@@ -333,14 +333,14 @@
 <p>One thing is for sure: even in the best codebase in the world, with the best coding practices and developers, the second you enable the sanitizers, you absolutely will uncover horrifying bugs and memory leaks that went undetected for years. So do it. Be warned that fixing these can require a lot of work and refactorings.
 Each sanitizer also has options so it could be useful to inspect them if your project is a special snowflake.</p>
 <p>One last thing: ideally, all third-party dependencies should also be compiled with the sanitizers enabled when running tests, to spot <a href="https://github.com/rxi/microui/pull/67">issues</a> in them as well.</p>
-<h2><h2 id="2879635062-add-a-ci-pipeline">
+<<h2 id="2879635062-add-a-ci-pipeline">
   <a class="title" href="#2879635062-add-a-ci-pipeline">Add a CI pipeline</a>
   <a class="hash-anchor" href="#2879635062-add-a-ci-pipeline" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>As Bryan Cantrill once said (quoting from memory), 'I am convinced most firmware just comes out of the home directory of a developer's laptop'. Setting up a CI is quick, free, and automates all the good things we have set up so far (linters, code formatting, tests, etc). And that way we can produce in a pristine environment the production binaries, on every change. If you're not doing this already as a developer, I don't think you really have entered the 21st century yet.</p>
 <p>Cherry on the cake: most CI systems allow for running the steps on a matrix of different platforms! So you can demonstrably check that the list of supported platforms is not just theory, it is real.</p>
 <p>Typically the pipeline just looks like <code>make all test lint fmt</code>  so it's not rocket science. Just make sure that issues that get reported by the tools (linters, sanitizers, etc) actually fail the pipeline, otherwise no one will notice and fix them.</p>
-<h2><h2 id="3974654374-incremental-code-improvements">
+<<h2 id="3974654374-incremental-code-improvements">
   <a class="title" href="#3974654374-incremental-code-improvements">Incremental code improvements</a>
   <a class="hash-anchor" href="#3974654374-incremental-code-improvements" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
@@ -348,19 +348,19 @@ Each sanitizer also has options so it could be useful to inspect them if your pr
 <p>I remember iteratively simplifying a complicated class that manually allocated and (sometimes) deallocated memory, was meant to handle generic things, and so on. All the class did, as it turned out, was allocate a pointer, later check whether the pointer was null or not, and...that's it. Yeah that's a boolean in my book. True/false, nothing more to it.</p>
 <p>I feel that's the step that's the hardest to timebox because each round of simplification opens new avenues to simplify further. Use your best judgment here and stay on the conservative side. Focus on tangible goals such as security, correctness and performance, and stray away from subjective criteria such as 'clean code'.</p>
 <p>In my experience, upgrading the C++ standard in use in the project can at times help with code simplifications, for example to replace code that manually increments iterators by a <code>for (auto x : items)</code> loop, but remember it's just a means to an end, not an end in itself. If all you need is <code>std::clamp</code>, just write it yourself.</p>
-<h2><h2 id="1595479803-rewrite-in-a-memory-safe-language">
+<<h2 id="1595479803-rewrite-in-a-memory-safe-language">
   <a class="title" href="#1595479803-rewrite-in-a-memory-safe-language">Rewrite in a memory safe language?</a>
   <a class="hash-anchor" href="#1595479803-rewrite-in-a-memory-safe-language" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>I am doing this right now at work, and that deserves an article of its own. Lots of gotchas there as well. Only do this with a compelling reason.</p>
-<h2><h2 id="3796851539-conclusion">
+<<h2 id="3796851539-conclusion">
   <a class="title" href="#3796851539-conclusion">Conclusion</a>
   <a class="hash-anchor" href="#3796851539-conclusion" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>Well, there you have it. A tangible, step-by-step plan to get out of the finicky situation that's a complex legacy C++ codebase. I have just finished going through that at work on a project, and it's become much more bearable to work on it now. I have seen coworkers, who previously would not have come within a 10 mile radius of the codebase, now make meaningful contributions. So it feels great.</p>
 <p>There are important topics that I wanted to mention but in the end did not, such as the absolute necessity of being able to run the code in a debugger locally, fuzzing, dependency scanning for vulnerabilities, etc. Maybe for the next article!</p>
 <p>If you go through this on a project, and you found this article helpful, shoot me an email! It's nice to know that it helped someone.</p>
-<h2><h2 id="2445862428-addendum-dependency-management">
+<<h2 id="2445862428-addendum-dependency-management">
   <a class="title" href="#2445862428-addendum-dependency-management">Addendum: Dependency management</a>
   <a class="hash-anchor" href="#2445862428-addendum-dependency-management" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
@@ -406,7 +406,7 @@ Any other: well you're out of luck buddy. I guess you'll have to pick a mainstre
 <p>If submodules are really not an option, an alternative is to still compile from source but do it by hand, with one script, that fetches each dependency and builds it. Example in the wild: Neovim.</p>
 <p>Of course, if your dependency graph visualized in Graphviz looks like a Rorschach test and has to build thousands of dependencies, it is not easily doable, but it might be still possible, using a build system like Buck2, which does hybrid local-remote builds, and reuses build artifacts between builds from different users.</p>
 <p>If you look at the landscape of package managers for compiled languages (Go, Rust, etc), all of them that I know of compile from source. It's the same approach, minus git, plus the automation.</p>
-<h2><h2 id="1737337095-addendum-suggestions-from-readers">
+<<h2 id="1737337095-addendum-suggestions-from-readers">
   <a class="title" href="#1737337095-addendum-suggestions-from-readers">Addendum: suggestions from readers</a>
   <a class="hash-anchor" href="#1737337095-addendum-suggestions-from-readers" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>

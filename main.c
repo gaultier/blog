@@ -347,15 +347,15 @@ static Title *html_parse_titles(PgHtmlTokenSlice html_tokens,
 
   for (u64 i = 0; i < html_tokens.len; i++) {
     PgHtmlToken token = PG_SLICE_AT(html_tokens, i);
-    bool is_title = PG_HTML_TOKEN_KIND_TAG_CLOSING == token.kind &&
-                    (pg_string_eq(token.tag, PG_S("h1")) ||
-                     pg_string_eq(token.tag, PG_S("h2")) ||
-                     pg_string_eq(token.tag, PG_S("h3")) ||
-                     pg_string_eq(token.tag, PG_S("h4")) ||
-                     pg_string_eq(token.tag, PG_S("h5")) ||
-                     pg_string_eq(token.tag, PG_S("h6")));
+    bool is_closing_title = PG_HTML_TOKEN_KIND_TAG_CLOSING == token.kind &&
+                            (pg_string_eq(token.tag, PG_S("h1")) ||
+                             pg_string_eq(token.tag, PG_S("h2")) ||
+                             pg_string_eq(token.tag, PG_S("h3")) ||
+                             pg_string_eq(token.tag, PG_S("h4")) ||
+                             pg_string_eq(token.tag, PG_S("h5")) ||
+                             pg_string_eq(token.tag, PG_S("h6")));
 
-    if (!is_title) {
+    if (!is_closing_title) {
       continue;
     }
 
@@ -363,9 +363,11 @@ static Title *html_parse_titles(PgHtmlTokenSlice html_tokens,
     PgHtmlToken text = PG_SLICE_AT(html_tokens, i - 1);
     PG_ASSERT(PG_HTML_TOKEN_KIND_TEXT == text.kind);
     PG_ASSERT(!pg_string_is_empty(text.text));
+    PG_ASSERT(text.start < token.start);
+    PG_ASSERT(text.start < token.end);
 
     PgHtmlToken opening = {0};
-    for (i64 j = (i64)i - 2; j >= 0; j++) {
+    for (i64 j = (i64)i - 2; j >= 0; j--) {
       opening = PG_SLICE_AT(html_tokens, j);
       if (PG_HTML_TOKEN_KIND_TAG_OPENING == opening.kind &&
           pg_string_eq(opening.tag, token.tag)) {

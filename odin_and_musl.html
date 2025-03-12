@@ -143,7 +143,7 @@
 <p>Here's the story of how I did it. If you do not work with Odin but do work a lot with cross-compilation, like I do at work, all of these techniques will be, I believe, very valuable anyway.</p>
 <p><em>Note: ARM64 is sometimes also called AARCH64 interchangeably.</em>
 <em>Note 2: The Rapsberry Pi Zero 1 is based on ARM (32 bits). The Raspberry Pi Zero 2 is based on ARM64 (64 bits). If you have a Raspberry Pi Zero 1, this article still applies, just adjust the target when cross-compiling.</em></p>
-<h2><h2 id="848107681-inciting-incident">
+<<h2 id="848107681-inciting-incident">
   <a class="title" href="#848107681-inciting-incident">Inciting incident</a>
   <a class="hash-anchor" href="#848107681-inciting-incident" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
@@ -161,7 +161,7 @@ clang: error: linker command failed with exit code 1 (use -v to see invocation)
 clang -Wno-unused-command-line-argument [...]  -lm -lc   -L/       -no-pie
 </code></pre>
 <p>And we see it links libc with <code>-lc</code>, meaning it links our program with the local libc it finds on my machine which is a different architecture than our target.</p>
-<h2><h2 id="1339502364-confrontation">
+<<h2 id="1339502364-confrontation">
   <a class="title" href="#1339502364-confrontation">Confrontation</a>
   <a class="hash-anchor" href="#1339502364-confrontation" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
@@ -191,7 +191,7 @@ $ readelf -h lib/libc.a | grep '^\s*Machine:'
   Machine:                           AArch64
   [...]
 </code></pre>
-<h2><h2 id="3613299072-resolution">
+<<h2 id="3613299072-resolution">
   <a class="title" href="#3613299072-resolution">Resolution</a>
   <a class="hash-anchor" href="#3613299072-resolution" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
@@ -218,7 +218,7 @@ $ du -h a.out
 <p>So it's a breeze to <code>scp</code> or <code>rsync</code> our small executable over to the Raspberry Pi Zero while hacking on it.</p>
 <p>Perhaps Odin will have built-in support for musl in the future like Zig does. In the meantime, this article shows it's absolutely possible to do that ourselves!</p>
 <p>By the way, this technique can be used to cross-compile any C library that's a dependency of our project, assuming the library did not do anything silly that would prevent cross-compilation.</p>
-<h2><h2 id="301746397-appendix-maybe-you-don-t-even-need-a-libc">
+<<h2 id="301746397-appendix-maybe-you-don-t-even-need-a-libc">
   <a class="title" href="#301746397-appendix-maybe-you-don-t-even-need-a-libc">Appendix: Maybe you don't even need a libc</a>
   <a class="hash-anchor" href="#301746397-appendix-maybe-you-don-t-even-need-a-libc" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
