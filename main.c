@@ -123,7 +123,7 @@ static GitStatSlice git_get_articles_stats(PgAllocator *allocator) {
   for (;;) {
     PgString date = {0};
     {
-      PgStringCut cut = pg_string_cut_byte(remaining, '\n');
+      PgStringCut cut = pg_string_cut_rune(remaining, '\n');
       if (!cut.ok) { // End.
         break;
       }
@@ -136,7 +136,7 @@ static GitStatSlice git_get_articles_stats(PgAllocator *allocator) {
     }
     // Empty line.
     {
-      PgStringCut cut = pg_string_cut_byte(remaining, '\n');
+      PgStringCut cut = pg_string_cut_rune(remaining, '\n');
       PG_ASSERT(cut.ok);
       remaining = cut.right;
 
@@ -150,7 +150,7 @@ static GitStatSlice git_get_articles_stats(PgAllocator *allocator) {
         break;
       }
 
-      PgStringCut cut = pg_string_cut_byte(remaining, '\n');
+      PgStringCut cut = pg_string_cut_rune(remaining, '\n');
       if (!cut.ok) {
         break;
       }
@@ -165,11 +165,11 @@ static GitStatSlice git_get_articles_stats(PgAllocator *allocator) {
       PgString path_old = {0}, path_new = {0};
       {
         // Skip the 'action' part.
-        cut = pg_string_cut_byte(line, '\t');
+        cut = pg_string_cut_rune(line, '\t');
         PG_ASSERT(cut.ok);
         line = cut.right;
 
-        cut = pg_string_cut_byte(line, '\t');
+        cut = pg_string_cut_rune(line, '\t');
         path_old = cut.ok ? cut.left : line;
         path_new = cut.ok ? cut.right : path_old;
         PG_ASSERT(!pg_string_is_empty(path_old));
@@ -250,7 +250,7 @@ static PgString html_make_id(PgString s, PgAllocator *allocator) {
 
 [[nodiscard]]
 static PgString datetime_to_date(PgString datetime) {
-  PgStringCut cut = pg_string_cut_byte(datetime, 'T');
+  PgStringCut cut = pg_string_cut_rune(datetime, 'T');
   return cut.ok ? cut.left : datetime;
 }
 
@@ -455,14 +455,14 @@ static void html_write_decorated_titles_rec(PgString html, Pgu8Dyn *sb,
   *last_title_pos_end = title->pos_end;
 
   PG_DYN_APPEND_SLICE(sb, PG_S("<h"), allocator);
-  pg_string_builder_append_u64_as_string(sb, title->level, allocator);
+  pg_string_builder_append_u64(sb, title->level, allocator);
   PG_DYN_APPEND_SLICE(sb, PG_S(" id=\""), allocator);
-  pg_string_builder_append_u64_as_string(sb, title->hash, allocator);
+  pg_string_builder_append_u64(sb, title->hash, allocator);
   PG_DYN_APPEND_SLICE(sb, PG_S("-"), allocator);
   PG_DYN_APPEND_SLICE(sb, title->content_html_id, allocator);
   PG_DYN_APPEND_SLICE(sb, PG_S("\">\n  <a class=\"title\" href=\"#"),
                       allocator);
-  pg_string_builder_append_u64_as_string(sb, title->hash, allocator);
+  pg_string_builder_append_u64(sb, title->hash, allocator);
   PG_DYN_APPEND_SLICE(sb, PG_S("-"), allocator);
   PG_DYN_APPEND_SLICE(sb, title->content_html_id, allocator);
   PG_DYN_APPEND_SLICE(sb, PG_S("\">"), allocator);
@@ -470,7 +470,7 @@ static void html_write_decorated_titles_rec(PgString html, Pgu8Dyn *sb,
   PG_DYN_APPEND_SLICE(sb, PG_S("</a>\n"), allocator);
   PG_DYN_APPEND_SLICE(sb, PG_S("  <a class=\"hash-anchor\" href=\"#"),
                       allocator);
-  pg_string_builder_append_u64_as_string(sb, title->hash, allocator);
+  pg_string_builder_append_u64(sb, title->hash, allocator);
   PG_DYN_APPEND_SLICE(sb, PG_S("-"), allocator);
   PG_DYN_APPEND_SLICE(sb, title->content_html_id, allocator);
   PG_DYN_APPEND_SLICE(
@@ -512,7 +512,7 @@ static void article_write_toc_rec(Pgu8Dyn *sb, Title *title,
 
   if (title->level > 1) {
     PG_DYN_APPEND_SLICE(sb, PG_S("\n  <li>\n    <a href=\"#"), allocator);
-    pg_string_builder_append_u64_as_string(sb, title->hash, allocator);
+    pg_string_builder_append_u64(sb, title->hash, allocator);
     PG_DYN_APPEND_SLICE(sb, PG_S("-"), allocator);
     PG_DYN_APPEND_SLICE(sb, title->content_html_id, allocator);
     PG_DYN_APPEND_SLICE(sb, PG_S("\">"), allocator);
@@ -572,6 +572,7 @@ static void html_tokens_print(PgHtmlTokenSlice tokens) {
       break;
     case PG_HTML_TOKEN_KIND_DOCTYPE:
       break;
+    case PG_HTML_TOKEN_KIND_NONE:
     default:
       PG_ASSERT(0);
     }
@@ -678,19 +679,19 @@ static Article article_generate(PgString header, PgString footer,
   PG_ASSERT(!pg_string_is_empty(metadata_str));
   u64 metadata_offset = cut.left.len + PG_STATIC_ARRAY_LEN(METADATA_DELIMITER);
 
-  cut = pg_string_cut_byte(metadata_str, '\n');
+  cut = pg_string_cut_rune(metadata_str, '\n');
   PG_ASSERT(cut.ok);
   PgString metadata_title = cut.left;
   PG_ASSERT(!pg_string_is_empty(metadata_title));
   PgString metadata_tags = cut.right;
   PG_ASSERT(!pg_string_is_empty(metadata_tags));
 
-  cut = pg_string_cut_byte(metadata_title, ':');
+  cut = pg_string_cut_rune(metadata_title, ':');
   PG_ASSERT(cut.ok);
-  article.title = pg_string_dup(pg_string_trim(cut.right, ' '), allocator);
+  article.title = pg_string_clone(pg_string_trim(cut.right, ' '), allocator);
   PG_ASSERT(!pg_string_is_empty(article.title));
 
-  cut = pg_string_cut_byte(metadata_tags, ':');
+  cut = pg_string_cut_rune(metadata_tags, ':');
   PG_ASSERT(cut.ok);
   PgString tags_str = cut.right;
   PG_ASSERT(!pg_string_is_empty(tags_str));
@@ -699,17 +700,17 @@ static Article article_generate(PgString header, PgString footer,
   PgStringDyn tags = {0};
   PG_DYN_ENSURE_CAP(&tags, 32, allocator);
   for (;;) {
-    cut = pg_string_cut_byte(remaining, ',');
+    cut = pg_string_cut_rune(remaining, ',');
     if (!cut.ok) {
       PgString tag = pg_string_trim_space(remaining);
-      *PG_DYN_PUSH_WITHIN_CAPACITY(&tags) = pg_string_dup(tag, allocator);
+      *PG_DYN_PUSH_WITHIN_CAPACITY(&tags) = pg_string_clone(tag, allocator);
       break;
     }
 
     PgString tag = pg_string_trim(cut.left, ' ');
     remaining = cut.right;
 
-    *PG_DYN_PUSH_WITHIN_CAPACITY(&tags) = pg_string_dup(tag, allocator);
+    *PG_DYN_PUSH_WITHIN_CAPACITY(&tags) = pg_string_clone(tag, allocator);
   }
   PG_ASSERT(tags.len > 0);
   article.tags = PG_DYN_SLICE(PgStringSlice, tags);
