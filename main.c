@@ -336,7 +336,7 @@ static PgString datetime_to_date(PgString datetime) {
 }
 
 static void html_collect_titles_rec(PgHtmlNode *node, TitleDyn *titles,
-                                    PgAllocator *allocator) {
+                                    PgString html_str, PgAllocator *allocator) {
   if (!node) {
     return;
   }
@@ -347,7 +347,7 @@ static void html_collect_titles_rec(PgHtmlNode *node, TitleDyn *titles,
 
     Title new_title = {0};
     new_title.level = level;
-    new_title.title = pg_html_get_title_content(node);
+    new_title.title = pg_html_get_title_content(node, html_str);
     new_title.content_html_id = html_make_id(new_title.title, allocator);
     new_title.pos_start = node->token_start.start;
     new_title.pos_end = 2 + node->token_end.end;
@@ -356,16 +356,16 @@ static void html_collect_titles_rec(PgHtmlNode *node, TitleDyn *titles,
     *PG_DYN_PUSH(titles, allocator) = new_title;
   }
 
-  html_collect_titles_rec(node->first_child, titles, allocator);
-  html_collect_titles_rec(node->next_sibling, titles, allocator);
+  html_collect_titles_rec(node->first_child, titles, html_str, allocator);
+  html_collect_titles_rec(node->next_sibling, titles, html_str, allocator);
 }
 
 [[nodiscard]]
-static Title *html_collect_titles(PgHtmlNode *html_root,
+static Title *html_collect_titles(PgHtmlNode *html_root, PgString html_str,
                                   PgAllocator *allocator) {
   TitleDyn titles = {0};
   PG_DYN_ENSURE_CAP(&titles, 64, allocator);
-  html_collect_titles_rec(html_root, &titles, allocator);
+  html_collect_titles_rec(html_root, &titles, html_str, allocator);
 
   Title *title_root = pg_alloc(allocator, sizeof(Title), _Alignof(Title), 1);
   title_root->level = 1;
@@ -600,7 +600,7 @@ static void article_generate_html_file(PgFileDescriptor markdown_file,
 
   // TODO: build search index on html.
 
-  Title *title_root = html_collect_titles(html_root, allocator);
+  Title *title_root = html_collect_titles(html_root, article_html, allocator);
   title_print(title_root);
 
   Pgu8Dyn sb = {0};
@@ -835,7 +835,7 @@ static void home_page_generate(ArticleSlice articles, PgString header,
   PgHtmlNode *html_root = res_parse.res;
   html_node_print(html_root, 0);
 
-  Title *title_root = html_collect_titles(html_root, allocator);
+  Title *title_root = html_collect_titles(html_root, html, allocator);
   html_write_decorated_titles(html, &sb, title_root, allocator);
 
   PG_DYN_APPEND_SLICE(&sb, footer, allocator);
