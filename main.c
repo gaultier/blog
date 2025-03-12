@@ -350,6 +350,9 @@ static void html_collect_titles_rec(PgHtmlNode *node, Title *parent,
     return;
   }
 
+  PG_ASSERT(2 <= level && level <= 6);
+  PG_ASSERT(parent->level + 1 == level);
+
   Title *new_title = pg_alloc(allocator, sizeof(Title), _Alignof(Title), 1);
   new_title->level = level;
   new_title->parent = parent;
