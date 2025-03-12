@@ -149,7 +149,7 @@
 <p>I am <a href="/blog/how_to_rewrite_a_cpp_codebase_successfully.html">rewriting</a> a gnarly <a href="/blog/you_inherited_a_legacy_cpp_codebase_now_what.html">C++ codebase</a> in Rust at work.</p>
 <p>Due to the heavy use of callbacks (sigh), Rust sometimes calls C++ and C++ sometimes calls Rust. This done by having both sides expose a C API for the functions they want the other side to be able to call.</p>
 <p>This is for functions; but what about C++ methods? Here is a trick to rewrite one C++ method at a time, without headaches. And by the way, this works whatever the language you are rewriting the project in, it does not have to be Rust!</p>
-<h2 id="1948100756-the-trick">
+<h2><h2 id="1948100756-the-trick">
   <a class="title" href="#1948100756-the-trick">The trick</a>
   <a class="hash-anchor" href="#1948100756-the-trick" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
@@ -161,7 +161,7 @@
 <p>Note: Depending on the C++ codebase you find yourself in, the first point could be either trivial or not feasible at all. It depends on the amount of virtual methods used, etc.</p>
 <p>In my case, there were a handful of virtual methods, which could all be advantageously made non virtual, so I first did this.</p>
 <p>This is all very abstract? Let's proceed with an example!</p>
-<h2 id="2877789738-example">
+<h2><h2 id="2877789738-example">
   <a class="title" href="#2877789738-example">Example</a>
   <a class="hash-anchor" href="#2877789738-example" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
@@ -337,7 +337,7 @@ Comment count: 2
 <li>The Rust implementation can freely read and modify private members of the C++ class, for example the <code>comment_count</code> field is only accessible in C++ through the getter, but Rust can just access it as if it was public. That's because <code>public/private</code> are just rules enforced by the C++ compiler. However your CPU does not know nor care. The bytes are the bytes. If you can access the bytes at runtime, it does not matter that they were marked 'private' in the source code.</li>
 <li>We have to use tedious casts which is normal. We are indeed reinterpreting memory from one type (<code>User</code>) to another (<code>UserC</code>). This is allowed by the standard because the C++ class is a 'standard layout class'. If it was not the case, this would be undefined behavior and likely work on some platforms but break on others.</li>
 </ul>
-<h2 id="3377210712-accessing-std-string-from-rust">
+<h2><h2 id="3377210712-accessing-std-string-from-rust">
   <a class="title" href="#3377210712-accessing-std-string-from-rust">Accessing std::string from Rust</a>
   <a class="hash-anchor" href="#3377210712-accessing-std-string-from-rust" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
@@ -400,7 +400,7 @@ alice ([69, b7, c4, 14, 9, 1c, cf, bd, 28, c2, 69, ea, 40, 91, 65, 2d]) says: he
 Comment count: 2
 </code></pre>
 <p>Alternatively, if we cannot or do not want to change the Rust signature, we can make the C++ helper <code>get_std_string_pointer_and_length</code> have a C convention and take a void pointer, so that Rust will call the helper itself, at the cost of numerous casts in and out of <code>void*</code>.</p>
-<h2 id="3494226560-improving-the-std-string-situation">
+<h2><h2 id="3494226560-improving-the-std-string-situation">
   <a class="title" href="#3494226560-improving-the-std-string-situation">Improving the std::string situation</a>
   <a class="hash-anchor" href="#3494226560-improving-the-std-string-situation" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
@@ -408,7 +408,7 @@ Comment count: 2
 <li>Instead of modeling <code>std::string</code> as an array of bytes whose size is platform-dependent, we could move this field to the end of the C++ class and remove it entirely from Rust (since it is unused there). This would break <code>sizeof(User) == sizeof(UserC)</code>, it would now be <code>sizeof(User) - sizeof(std::string) == sizeof(UserC)</code>. Thus, the layout would be exactly the same (until the last field which is fine) between C++ and Rust. However, it will be an ABI breakage, if external users depend on the exact layout of the C++ class, and C++ constructors will have to be adapted since they rely on the order of fields. This approach is basically the same as the <a href="https://en.wikipedia.org/wiki/Flexible_array_member">flexible array member</a> feature in C.</li>
 <li>If allocations are cheap, we could store the name as a pointer: <code>std::string * name;</code> on the C++ side, and on the Rust side, as a void pointer: <code>name: *const std::ffi::c_void</code>, since pointers have a guaranteed size on all platforms. That has the advantage that Rust can access the data in <code>std::string</code>, by calling a C++ helper with a C calling convention. But some will dislike that a naked pointer is being used in C++.</li>
 </ul>
-<h2 id="3796851539-conclusion">
+<h2><h2 id="3796851539-conclusion">
   <a class="title" href="#3796851539-conclusion">Conclusion</a>
   <a class="hash-anchor" href="#3796851539-conclusion" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
@@ -426,7 +426,7 @@ Comment count: 2
 <li>Delete the C++ methods that have been rewritten.</li>
 </ol>
 <p>And boom, project rewritten.</p>
-<h2 id="1512890027-addendum-the-full-code">
+<h2><h2 id="1512890027-addendum-the-full-code">
   <a class="title" href="#1512890027-addendum-the-full-code">Addendum: the full code</a>
   <a class="hash-anchor" href="#1512890027-addendum-the-full-code" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>

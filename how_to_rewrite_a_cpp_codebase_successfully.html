@@ -192,7 +192,7 @@
 <p>However, I claim, because I've done it, and many others before me, that an <strong>incremental</strong> rewrite can be successful, and is absolutely worth it. It's all about how it is being done, so here's how I proceeded and I hope it can be applied in other cases, and people find it useful.</p>
 <p>I think it's a good case study because whilst not a big codebase, it is a complex codebase, and it's used in production on 10+ different operating systems and architectures, including by external customers. This is not a toy.</p>
 <p>So join me on this journey, here's the guide to rewrite a C++ codebase successfully. And also what not do!</p>
-<h2 id="878217442-the-project">
+<h2><h2 id="878217442-the-project">
   <a class="title" href="#878217442-the-project">The project</a>
   <a class="hash-anchor" href="#878217442-the-project" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
@@ -208,14 +208,14 @@
 <p>Additionally, developers are using macOS (x64 and arm64) and Linux so the library needs to build and run on these platforms.</p>
 <p>Since external customers also integrate their applications with our library and we do not control these environments, and because some developer machines and servers use glibc and others musl,  we also need to work with either the glibc and the musl C libraries, as well as clang and gcc, and expose a C89-ish API, to maximize compatibility.</p>
 <p>Alright, now that the stage is set, let's go through the steps of rewriting this project.</p>
-<h2 id="802215620-improve-the-existing-codebase">
+<h2><h2 id="802215620-improve-the-existing-codebase">
   <a class="title" href="#802215620-improve-the-existing-codebase">Improve the existing codebase</a>
   <a class="hash-anchor" href="#802215620-improve-the-existing-codebase" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>That's basically all the steps in <a href="/blog/you_inherited_a_legacy_cpp_codebase_now_what.html">Inheriting a legacy C++ codebase</a>. We need to start the rewrite with a codebase that builds and runs on every platform we support, with tests passing, and a clear README explaining how to setup the project locally. This is a small investment (a few days to a few weeks depending on the scale of the codebase) that will pay massive dividends in the future.</p>
 <p>But I think the most important point is to trim all the unused code which is typically the majority of the codebase! No one wants to spend time and effort on rewriting completely unused code.</p>
 <p>Additionally, if you fail to convince your team and the stakeholders to do the rewrite, you at least have improved the codebase you are now stuck with. So it's time well spent either way.</p>
-<h2 id="3970719462-get-buy-in">
+<h2><h2 id="3970719462-get-buy-in">
   <a class="title" href="#3970719462-get-buy-in">Get buy-in</a>
   <a class="hash-anchor" href="#3970719462-get-buy-in" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
@@ -236,7 +236,7 @@
 <p>After much debate, we settled on Rust as the new programming language being introduced into the codebase. It's important to note that I am not a Rust die hard fan. I appreciate the language but it's not perfect (see the FFI section later), it has issues, it's just that it solves all the issues we have in this project, especially considering the big focus on security (since we deal with payments),  the relative similarity with the company tech stack (Go), and the willingness of the team to learn it and review code in it.</p>
 <p>After all, the goal is also to gain additional developers, and stop being the only person who can even touch this code.</p>
 <p>I also seriously considered Go, but after doing a prototype, I was doubtful the many limitations of CGO would allow us to achieve the rewrite. Other teammates also had concerns on how the performance and battery usage would look like on low-end Android and Linux devices, especially 32 bits, having essentially two garbage collectors running concurrently, the JVM one and the Go one.</p>
-<h2 id="1704982617-keeping-buy-in">
+<h2><h2 id="1704982617-keeping-buy-in">
   <a class="title" href="#1704982617-keeping-buy-in">Keeping buy-in</a>
   <a class="hash-anchor" href="#1704982617-keeping-buy-in" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
@@ -244,7 +244,7 @@
 <p>Additionally, showing how long-standing issues in the old code get automatically solved by the new code, e.g. memory leaks, or fuzzing crashes in one function, are a great sign for stakeholders of the quality improving and the value of the on-going effort.</p>
 <p>Be prepared to repeat many many times the decision process that led to the rewrite to your boss, your boss's boss, the odd product manager who's not technical, the salesperson supporting the external customers, etc. It's important to nail the elevator's pitch.</p>
 <p>That applies also to teammates, who might be unsure the new programming language 'carries its weight'. It helps to regularly ask them how they feel about the language, the on-going-effort, the roadmap, etc. Also, pairing with them, so that ideally, everyone in the team feels confident working on this project alone.</p>
-<h2 id="2968870471-preparations-to-introduce-the-new-language">
+<h2><h2 id="2968870471-preparations-to-introduce-the-new-language">
   <a class="title" href="#2968870471-preparations-to-introduce-the-new-language">Preparations to introduce the new language</a>
   <a class="hash-anchor" href="#2968870471-preparations-to-introduce-the-new-language" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
@@ -252,7 +252,7 @@
 <p>This proved invaluable, because when rewriting the legacy code, I found tens of bugs lying around, and I think that's very typical. Also, this rewriting effort requires time, during which other team members or external customers may report bugs they just found.</p>
 <p>Every time such a bug appeared, I switched to this Git tag, and tried to reproduce the bug. Almost every time, the bug was already present before the rewrite. That's a very important information (for me, it was a relief!) for solving the bug, and also for stakeholders. That's the difference in their eye between: We are improving the product by fixing long existing bugs; or: we are introducing new bugs with our risky changes and we should maybe stop the effort completely because it's harming the product.</p>
 <p>Furthermore, I think the first commit introducing the new code should add dummy code and focus on making the build system and CI work seamlessly on every supported platform. This is not appealing work but it's necessary. Also, having instructions in the README explaining a bit what each tool does (<code>cargo</code>, <code>rustup</code>, <code>clippy</code>, etc) is very valuable and will ease beginners into contributing in the new language.</p>
-<h2 id="3959077628-incremental-rewrite">
+<h2><h2 id="3959077628-incremental-rewrite">
   <a class="title" href="#3959077628-incremental-rewrite">Incremental rewrite</a>
   <a class="hash-anchor" href="#3959077628-incremental-rewrite" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
@@ -286,7 +286,7 @@
 <li>Pick a prefix for all structs and functions in the C API exposed by the Rust code, even if it's just <code>RUST_xxx</code>, so that they are immediately identifiable and greppable. Just like <code>libcurl</code> has the prefix <code>curl_xxx</code>.</li>
 </ul>
 <p>Finally, there is one hidden advantage of doing an incremental rewrite. A from-scratch rewrite is all or nothing, if it does not fully complete and replace the old implementation, it's useless and wasteful. However, an incremental rewrite is immediately useful, may be paused and continued a number of times, and even if the funding gets cut short and it never fully completes, it's still a clear improvement over the starting point.</p>
-<h2 id="1275343589-fuzzing">
+<h2><h2 id="1275343589-fuzzing">
   <a class="title" href="#1275343589-fuzzing">Fuzzing</a>
   <a class="hash-anchor" href="#1275343589-fuzzing" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
@@ -351,7 +351,7 @@ $ cargo +nightly fuzz cmin [...]
 <li>When fuzzing is complete, we print the code coverage statistics</li>
 </ol>
 <p>Finally, we still have the option to add manually crafted files to this corpus if we wish. For example after hitting a bug in the wild, and fixing it, we can add a reproducer file to the corpus as a kind of regression test.</p>
-<h2 id="2929078078-pure-rust-vs-interop-ffi">
+<h2><h2 id="2929078078-pure-rust-vs-interop-ffi">
   <a class="title" href="#2929078078-pure-rust-vs-interop-ffi">Pure Rust vs interop (FFI)</a>
   <a class="hash-anchor" href="#2929078078-pure-rust-vs-interop-ffi" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
@@ -361,7 +361,7 @@ $ cargo +nightly fuzz cmin [...]
 <p>We run tests under Miri in CI to make sure each commit is reasonably safe.</p>
 <p>So beware: introducing Rust to a C or C++ codebase may actually introduce new memory safety issues, usually all located in the FFI code.</p>
 <p>Thankfully that's a better situation to be in than to have to inspect all of the codebase when a memory issue is detected.</p>
-<h3 id="988259740-c-ffi-in-rust-is-cumbersome-and-error-prone">
+<h3><h3 id="988259740-c-ffi-in-rust-is-cumbersome-and-error-prone">
   <a class="title" href="#988259740-c-ffi-in-rust-is-cumbersome-and-error-prone">C FFI in Rust is cumbersome and error-prone</a>
   <a class="hash-anchor" href="#988259740-c-ffi-in-rust-is-cumbersome-and-error-prone" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h3>
@@ -438,7 +438,7 @@ if (foo_parse(&amp;foo, bytes) == SUCCESS) {
 <p>Which feels right at home for Go developers, and is an improvement over the style in use in the old C++ code where it was fully manual calls to new/delete.</p>
 <p>Still, it's more work than what you'd have to do in pure idiomatic Rust or C++ code (or even C code with arenas for that matter).</p>
 <p>In Zig or Odin, I would probably have used arenas to avoid that, or a general allocator with <code>defer</code>.</p>
-<h3 id="3680487399-an-example-of-a-real-bug-at-the-ffi-boundary">
+<h3><h3 id="3680487399-an-example-of-a-real-bug-at-the-ffi-boundary">
   <a class="title" href="#3680487399-an-example-of-a-real-bug-at-the-ffi-boundary">An example of a real bug at the FFI boundary</a>
   <a class="hash-anchor" href="#3680487399-an-example-of-a-real-bug-at-the-ffi-boundary" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h3>
@@ -525,7 +525,7 @@ help: alloc195648 was deallocated here:
 </code></pre>
 <p>Which is not very informative, but better than nothing. <code>Miri</code>'s output is much more actionable.</p>
 <p>So in conclusion, Rust's FFI capabilities work but are tedious are error-prone in my opinion, and so require extra care and testing with Miri/fuzzing, with high code coverage of the FFI functions. It's not enough to only test the pure (non FFI) Rust code.</p>
-<h3 id="4044715241-another-example-of-a-real-bug-at-the-ffi-boundary">
+<h3><h3 id="4044715241-another-example-of-a-real-bug-at-the-ffi-boundary">
   <a class="title" href="#4044715241-another-example-of-a-real-bug-at-the-ffi-boundary">Another example of a real bug at the FFI boundary</a>
   <a class="hash-anchor" href="#4044715241-another-example-of-a-real-bug-at-the-ffi-boundary" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h3>
@@ -590,7 +590,7 @@ free_foo(&amp;foo);
 <p>However that entails more work and more functions in the API.</p>
 <p><code>libcurl</code> is an example of such an approach, <code>libuv</code> is an example of a library which did not do this initially, but plans to move to this approach in future versions, which would be a breaking change for clients.</p>
 <p>So to summarize, Miri is so essential that I don't know whether it's viable to write Rust code with lots of FFI (and thus lots of unsafe blocks) without it. If Miri did not exist, I would seriously consider using only arenas or reconsider the use of Rust.</p>
-<h2 id="1168506370-cross-compilation">
+<h2><h2 id="1168506370-cross-compilation">
   <a class="title" href="#1168506370-cross-compilation">Cross-compilation</a>
   <a class="hash-anchor" href="#1168506370-cross-compilation" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
@@ -759,7 +759,7 @@ end
 <p>That's something that people do not mention often when saying that modern C++ is good enough and secure enough. Well, first I disagree with this statement, but more broadly, the C++ toolchain to cross-compile sucks. You only have clang that can cross-compile in theory but in practice you have to resort to the Zig toolchain to automate cross-compiling the standard library etc.</p>
 <p>Also, developers not deeply familiar with either C or C++ do not want to touch all this CMake/Autotools with a ten-foot pole. And I understand them. Stockholm syndrome notwithstanding, these are pretty slow, convoluted, niche programming languages and no one wants to actively learn and use them unless they have to.</p>
 <p>Once you are used to simply typing <code>go build</code> or <code>cargo build</code>, you really start to ask yourself if those weird things are worth anyone's time.</p>
-<h2 id="3796851539-conclusion">
+<h2><h2 id="3796851539-conclusion">
   <a class="title" href="#3796851539-conclusion">Conclusion</a>
   <a class="hash-anchor" href="#3796851539-conclusion" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
