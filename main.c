@@ -1,5 +1,23 @@
 #include "./submodules/cstd/lib.c"
 
+// Plan:
+// - Reader header & footer
+// - Get all markdown files from git along with their creation/modification date
+// - For each markdown file:
+//   + Read metadata at the beginning of the file
+//   + Parse metadata
+//   + Convert markdown to HTML
+//   + Parse titles from HTML
+//   + Generate TOC
+//   + Extract plain text from HTML
+//   + Serialize articles including titles and plain text to client-side JS for
+//   search
+//   + Decorate titles with HTML id for links
+//   + Generate final HTML with header, TOC, decorated content, and footer.
+// - Generate tags page
+// - Generate home page
+// - Generate RSS feed
+
 #define FEED_UUID                                                              \
   ((PgUuid){                                                                   \
       .value = {0x9c, 0x06, 0x5c, 0x53, 0x31, 0xbc, 0x40, 0x49, 0xa7, 0x95,    \
@@ -23,6 +41,7 @@ struct Title {
   u32 pos_start, pos_end;
 };
 PG_DYN(Title) TitleDyn;
+PG_SLICE(Title) TitleSlice;
 
 typedef struct {
   PgString html_file_name;
@@ -40,6 +59,110 @@ typedef struct {
 PG_SLICE(GitStat) GitStatSlice;
 PG_DYN(GitStat) GitStatDyn;
 
+typedef struct {
+  PgString html_file_name;
+  PgString title;
+  TitleSlice titles;
+  Pgu32Dyn title_text_offsets;
+  Pgu8Dyn text;
+} SearchDocument;
+PG_DYN(SearchDocument) SearchDocumentDyn;
+
+typedef struct {
+  SearchDocumentDyn documents;
+} SearchIndex;
+
+static void search_index_serialize_to_file(SearchIndex search_index,
+                                           PgString file_name,
+                                           PgAllocator *allocator) {
+  PG_ASSERT(!PG_SLICE_IS_EMPTY(search_index.documents));
+
+  PgFileDescriptorResult res_file =
+      pg_file_open(file_name, PG_FILE_ACCESS_WRITE, true, allocator);
+  PG_ASSERT(0 == res_file.err);
+  PgFileDescriptor file = res_file.res;
+
+  Pgu8Dyn sb = pg_sb_make_with_cap(50 * PG_MiB, allocator);
+  PG_DYN_APPEND_SLICE(&sb, PG_S("const raw_index={documents:["), allocator);
+
+  for (u64 i = 0; i < search_index.documents.len; i++) {
+    SearchDocument doc = PG_SLICE_AT(search_index.documents, i);
+    PG_DYN_APPEND_SLICE(&sb, PG_S("{\n"), allocator);
+
+    // HTML file name.
+    {
+      PG_DYN_APPEND_SLICE(&sb, PG_S("html_file_name:\""), allocator);
+      pg_string_builder_append_js_string_escaped(&sb, doc.html_file_name,
+                                                 allocator);
+      PG_DYN_APPEND_SLICE(&sb, PG_S("\",\n"), allocator);
+    }
+
+    // Document title.
+    {
+      PG_DYN_APPEND_SLICE(&sb, PG_S("title:\""), allocator);
+      pg_string_builder_append_js_string_escaped(&sb, doc.title, allocator);
+      PG_DYN_APPEND_SLICE(&sb, PG_S("\",\n"), allocator);
+    }
+
+    // Text.
+    {
+      PG_DYN_APPEND_SLICE(&sb, PG_S("text:\""), allocator);
+      pg_string_builder_append_js_string_escaped(
+          &sb, PG_DYN_SLICE(PgString, doc.text), allocator);
+      PG_DYN_APPEND_SLICE(&sb, PG_S("\",\n"), allocator);
+    }
+
+    // Titles.
+    {
+      PG_DYN_APPEND_SLICE(&sb, PG_S("titles:[\n"), allocator);
+
+      for (u64 j = 0; j < doc.titles.len; j++) {
+        Title title = PG_SLICE_AT(doc.titles, j);
+        PG_DYN_APPEND_SLICE(&sb, PG_S("{\n"), allocator);
+
+        PG_DYN_APPEND_SLICE(&sb, PG_S("title:\""), allocator);
+        pg_string_builder_append_js_string_escaped(&sb, title.title, allocator);
+        PG_DYN_APPEND_SLICE(&sb, PG_S("\",\n"), allocator);
+
+        PG_DYN_APPEND_SLICE(&sb, PG_S("hash:"), allocator);
+        pg_string_builder_append_u64(&sb, title.hash, allocator);
+        PG_DYN_APPEND_SLICE(&sb, PG_S(",\n"), allocator);
+
+        PG_DYN_APPEND_SLICE(&sb, PG_S("content_html_id:\""), allocator);
+        pg_string_builder_append_js_string_escaped(&sb, title.content_html_id,
+                                                   allocator);
+        PG_DYN_APPEND_SLICE(&sb, PG_S("\",\n"), allocator);
+
+        PG_DYN_APPEND_SLICE(&sb, PG_S("},\n"), allocator);
+      }
+      PG_DYN_APPEND_SLICE(&sb, PG_S("],\n"), allocator);
+    }
+
+    // Title offsets.
+    {
+      PG_DYN_APPEND_SLICE(&sb, PG_S("title_text_offsets:[\n"), allocator);
+      for (u64 j = 0; j < doc.title_text_offsets.len; j++) {
+        u32 offset = PG_SLICE_AT(doc.title_text_offsets, j);
+        pg_string_builder_append_u64(&sb, offset, allocator);
+        PG_DYN_APPEND_SLICE(&sb, PG_S(","), allocator);
+      }
+      PG_DYN_APPEND_SLICE(&sb, PG_S("],\n"), allocator);
+    }
+
+    PG_DYN_APPEND_SLICE(&sb, PG_S("},\n"), allocator);
+  }
+  PG_DYN_APPEND_SLICE(&sb, PG_S("],\n"), allocator);
+
+  PG_DYN_APPEND_SLICE(&sb, PG_S("};\n"), allocator);
+  PG_DYN_APPEND_SLICE(&sb, PG_S("export default { raw_index };"), allocator);
+
+  PG_ASSERT(0 == pg_file_write_full_with_descriptor(
+                     file, PG_DYN_SLICE(PgString, sb)));
+
+  PG_ASSERT(0 == pg_file_close(file));
+}
+
+[[nodiscard]]
 static int article_cmp_by_creation_date_asc(const void *a, const void *b) {
   const Article *article_a = a;
   const Article *article_b = b;
@@ -47,6 +170,7 @@ static int article_cmp_by_creation_date_asc(const void *a, const void *b) {
   return pg_string_cmp(article_a->creation_date, article_b->creation_date);
 }
 
+[[nodiscard]]
 static int article_cmp_by_creation_date_desc(const void *a, const void *b) {
   const Article *article_a = a;
   const Article *article_b = b;
@@ -320,80 +444,69 @@ static PgString datetime_to_date(PgString datetime) {
   return title_compute_hash(title->parent, hash);
 }
 
+static void html_collect_titles_rec(PgHtmlNode *node, TitleDyn *titles,
+                                    PgAllocator *allocator) {
+  PG_ASSERT(node);
+
+  u8 level = pg_html_node_get_title_level(node);
+  if (level) {
+    PG_ASSERT(2 <= level && level <= 6);
+
+    Title new_title = {0};
+    new_title.level = level;
+    new_title.title = pg_html_node_get_simple_title_content(node);
+    new_title.content_html_id = html_make_id(new_title.title, allocator);
+    new_title.pos_start = node->token_start.start;
+    new_title.pos_end = 2 + node->token_end.end;
+    // Other fields backpatched.
+
+    *PG_DYN_PUSH_WITHIN_CAPACITY(titles) = new_title;
+  }
+
+  PgHtmlNode *first_child = pg_html_node_get_first_child(node);
+  if (first_child != node) {
+    html_collect_titles_rec(first_child, titles, allocator);
+  }
+  PgHtmlNode *next_sibling = pg_html_node_get_next_sibling(node);
+  if (next_sibling != node) {
+    html_collect_titles_rec(next_sibling, titles, allocator);
+  }
+}
+
 [[nodiscard]]
-static Title *html_parse_titles(PgString html, PgAllocator *allocator) {
+static TitleSlice html_collect_titles(PgHtmlNode *html_root,
+                                      PgAllocator *allocator) {
   TitleDyn titles = {0};
   PG_DYN_ENSURE_CAP(&titles, 64, allocator);
 
-  Title *root = pg_alloc(allocator, sizeof(Title), _Alignof(Title), 1);
-  root->level = 1;
-  root->parent = root;
+  *PG_DYN_PUSH_WITHIN_CAPACITY(&titles) = (Title){.level = 1};
+  Title *title_root = PG_SLICE_AT_PTR(&titles, 0);
+  title_root->parent = title_root;
 
-  u64 pos = 0;
-  while (pos < html.len) {
-    i64 idx_start =
-        pg_string_indexof_string(PG_SLICE_RANGE_START(html, pos), PG_S("<h"));
-    if (-1 == idx_start) {
-      break;
-    }
+  html_collect_titles_rec(html_root, &titles, allocator);
 
-    u8 level_ch = PG_SLICE_AT(html, pos + (u64)idx_start + 2);
-    if (!('2' <= level_ch && level_ch <= '6')) {
-      pos += (u64)idx_start + 2;
-      continue;
-    }
-    i64 idx_end = pg_string_indexof_string(
-        PG_SLICE_RANGE_START(html, pos + (u64)idx_start), PG_S("</h"));
-    PG_ASSERT(-1 != idx_end);
-
-    PgString s = PG_SLICE_RANGE_START(html, pos + (u64)idx_start);
-    s = PG_SLICE_RANGE(s, 0, (u64)idx_end);
-
-    PG_ASSERT(pg_string_starts_with(s, PG_S("<h")));
-
-    u8 level = PG_SLICE_AT(s, 2) - '0';
-    PG_ASSERT(1 < level && level <= 6);
-
-    PgString title_content = pg_string_trim_space(PG_SLICE_RANGE_START(s, 4));
-
-    Title title = {
-        .title = title_content,
-        .content_html_id = html_make_id(title_content, allocator),
-        .level = level,
-        .pos_start = (u32)pos + (u32)idx_start,
-        .pos_end = (u32)pos + (u32)idx_start + (u32)idx_end,
-        .parent = root, // Will be backpatched.
-    };
-    PG_ASSERT(title.pos_end - title.pos_start == s.len);
-    *PG_DYN_PUSH_WITHIN_CAPACITY(&titles) = title;
-    pos += (u64)(idx_start + idx_end);
-  }
-
-  for (u64 i = 0; i < titles.len; i++) {
+  for (u64 i = 1; i < titles.len; i++) {
     Title *title = PG_SLICE_AT_PTR(&titles, i);
+    title->parent = title_root;
 
-    if (i > 0) {
-      Title *previous = PG_SLICE_AT_PTR(&titles, i - 1);
-      i8 level_diff = previous->level - title->level;
+    Title *previous = PG_SLICE_AT_PTR(&titles, i - 1);
+    i8 level_diff = previous->level - title->level;
 
-      if (level_diff > 0) {
-        // The current title is a (great-)uncle of the current title.
-
-        for (u64 _j = 0; _j < (u64)level_diff; _j++) {
-          PG_ASSERT(title->parent);
-          title->parent = title->parent->parent;
-        }
-      } else if (level_diff < 0) {
-        // Check that we do not skip levels e.g. prevent `## Foo\n#### Bar\n`
-        PG_ASSERT(level_diff == -1);
-        title->parent = previous;
-      } else if (0 == level_diff) { // Sibling.
-        title->parent = previous->parent;
+    if (level_diff > 0) {
+      // The current title is a (great-)uncle of the current title.
+      for (u64 _j = 0; _j < (u64)level_diff; _j++) {
+        PG_ASSERT(title->parent);
+        title->parent = title->parent->parent;
       }
+    } else if (level_diff < 0) {
+      // Check that we do not skip levels e.g. prevent `## Foo\n#### Bar\n`
+      PG_ASSERT(level_diff == -1);
+      title->parent = previous;
+    } else if (0 == level_diff) { // Sibling.
+      title->parent = previous->parent;
     }
     PG_ASSERT(title->parent->level + 1 == title->level);
     Title *child = title->parent->first_child;
-
     // Add the node as last child of the parent.
     while (child && child->next_sibling) {
       child = child->next_sibling;
@@ -412,92 +525,57 @@ static Title *html_parse_titles(PgString html, PgAllocator *allocator) {
     Title *title = PG_SLICE_AT_PTR(&titles, i);
     title->hash = title_compute_hash(title, FNV_SEED);
   }
-
-  PG_ASSERT(nullptr == root->next_sibling);
-
-  return root;
+  PG_ASSERT(nullptr == title_root->next_sibling);
+  return PG_DYN_SLICE(TitleSlice, titles);
 }
 
-static void title_print(Title *title) {
-  if (!title) {
-    return;
-  }
-  PG_ASSERT(title->level > 0);
-
-  for (i64 i = 0; i < title->level - 2; i++) {
-    printf("  ");
-  }
-  if (1 == title->level) {
-    printf(".\n");
-  } else {
-    printf("title='%.*s' id=%u\n", (int)title->title.len, title->title.data,
-           title->hash);
-  }
-  title_print(title->first_child);
-  title_print(title->next_sibling);
-}
-
-static void html_write_decorated_titles_rec(PgString html, Pgu8Dyn *sb,
-                                            Title *title,
-                                            u64 *last_title_pos_end,
-                                            PgAllocator *allocator) {
-  if (!title) {
-    return;
-  }
-  PG_ASSERT(title->pos_end > title->pos_start);
-
-  PG_DYN_APPEND_SLICE(
-      sb, PG_SLICE_RANGE(html, *last_title_pos_end, title->pos_start),
-      allocator);
-  if (*last_title_pos_end != 0) {
-    PG_ASSERT(*last_title_pos_end < title->pos_end);
-  }
-  *last_title_pos_end = title->pos_end;
-
-  PG_DYN_APPEND_SLICE(sb, PG_S("<h"), allocator);
-  pg_string_builder_append_u64(sb, title->level, allocator);
-  PG_DYN_APPEND_SLICE(sb, PG_S(" id=\""), allocator);
-  pg_string_builder_append_u64(sb, title->hash, allocator);
-  PG_DYN_APPEND_SLICE(sb, PG_S("-"), allocator);
-  PG_DYN_APPEND_SLICE(sb, title->content_html_id, allocator);
-  PG_DYN_APPEND_SLICE(sb, PG_S("\">\n  <a class=\"title\" href=\"#"),
-                      allocator);
-  pg_string_builder_append_u64(sb, title->hash, allocator);
-  PG_DYN_APPEND_SLICE(sb, PG_S("-"), allocator);
-  PG_DYN_APPEND_SLICE(sb, title->content_html_id, allocator);
-  PG_DYN_APPEND_SLICE(sb, PG_S("\">"), allocator);
-  PG_DYN_APPEND_SLICE(sb, title->title, allocator);
-  PG_DYN_APPEND_SLICE(sb, PG_S("</a>\n"), allocator);
-  PG_DYN_APPEND_SLICE(sb, PG_S("  <a class=\"hash-anchor\" href=\"#"),
-                      allocator);
-  pg_string_builder_append_u64(sb, title->hash, allocator);
-  PG_DYN_APPEND_SLICE(sb, PG_S("-"), allocator);
-  PG_DYN_APPEND_SLICE(sb, title->content_html_id, allocator);
-  PG_DYN_APPEND_SLICE(
-      sb,
-      PG_S("\" aria-hidden=\"true\" "
-           "onclick=\"navigator.clipboard.writeText(this.href);\"></a>\n"),
-      allocator);
-
-  html_write_decorated_titles_rec(html, sb, title->first_child,
-                                  last_title_pos_end, allocator);
-  html_write_decorated_titles_rec(html, sb, title->next_sibling,
-                                  last_title_pos_end, allocator);
-}
-
-static void html_write_decorated_titles(PgString html, Pgu8Dyn *sb, Title *root,
+static void html_write_decorated_titles(PgString html, Pgu8Dyn *sb,
+                                        TitleSlice titles,
                                         PgAllocator *allocator) {
-  PG_ASSERT(nullptr == root->next_sibling);
+  PG_ASSERT(!PG_SLICE_IS_EMPTY(titles));
 
-  // No titles, noop.
-  if (!root->first_child) {
-    PG_DYN_APPEND_SLICE(sb, html, allocator);
-    return;
-  }
   u64 last_title_pos_end = 0;
 
-  html_write_decorated_titles_rec(html, sb, root->first_child,
-                                  &last_title_pos_end, allocator);
+  for (u64 i = 1; i < titles.len; i++) {
+    Title title = PG_SLICE_AT(titles, i);
+    PG_ASSERT(title.pos_end > title.pos_start);
+
+    PG_DYN_APPEND_SLICE(
+        sb, PG_SLICE_RANGE(html, last_title_pos_end, title.pos_start),
+        allocator);
+    if (last_title_pos_end != 0) {
+      PG_ASSERT(last_title_pos_end < title.pos_end);
+    }
+    last_title_pos_end = title.pos_end;
+
+    PG_DYN_APPEND_SLICE(sb, PG_S("h"), allocator);
+    pg_string_builder_append_u64(sb, title.level, allocator);
+    PG_DYN_APPEND_SLICE(sb, PG_S(" id=\""), allocator);
+    pg_string_builder_append_u64(sb, title.hash, allocator);
+    PG_DYN_APPEND_SLICE(sb, PG_S("-"), allocator);
+    PG_DYN_APPEND_SLICE(sb, title.content_html_id, allocator);
+    PG_DYN_APPEND_SLICE(sb, PG_S("\">\n  <a class=\"title\" href=\"#"),
+                        allocator);
+    pg_string_builder_append_u64(sb, title.hash, allocator);
+    PG_DYN_APPEND_SLICE(sb, PG_S("-"), allocator);
+    PG_DYN_APPEND_SLICE(sb, title.content_html_id, allocator);
+    PG_DYN_APPEND_SLICE(sb, PG_S("\">"), allocator);
+    PG_DYN_APPEND_SLICE(sb, title.title, allocator);
+    PG_DYN_APPEND_SLICE(sb, PG_S("</a>\n"), allocator);
+    PG_DYN_APPEND_SLICE(sb, PG_S("  <a class=\"hash-anchor\" href=\"#"),
+                        allocator);
+    pg_string_builder_append_u64(sb, title.hash, allocator);
+    PG_DYN_APPEND_SLICE(sb, PG_S("-"), allocator);
+    PG_DYN_APPEND_SLICE(sb, title.content_html_id, allocator);
+    PG_DYN_APPEND_SLICE(
+        sb,
+        PG_S("\" aria-hidden=\"true\" "
+             "onclick=\"navigator.clipboard.writeText(this.href);\"></a>\n"),
+        allocator);
+    PG_DYN_APPEND_SLICE(sb, PG_S("</h"), allocator);
+    pg_string_builder_append_u64(sb, title.level, allocator);
+    PG_DYN_APPEND_SLICE(sb, PG_S(">\n"), allocator);
+  }
 
   PG_DYN_APPEND_SLICE(sb, PG_SLICE_RANGE_START(html, last_title_pos_end),
                       allocator);
@@ -535,8 +613,11 @@ static void article_write_toc_rec(Pgu8Dyn *sb, Title *title,
   article_write_toc_rec(sb, title->next_sibling, allocator);
 }
 
-static void article_write_toc(Pgu8Dyn *sb, Title *root,
+static void article_write_toc(Pgu8Dyn *sb, TitleSlice titles,
                               PgAllocator *allocator) {
+  PG_ASSERT(!PG_SLICE_IS_EMPTY(titles));
+  Title *root = PG_SLICE_AT_PTR(&titles, 0);
+
   if (!root->first_child) {
     return;
   }
@@ -546,55 +627,53 @@ static void article_write_toc(Pgu8Dyn *sb, Title *root,
   article_write_toc_rec(sb, root, allocator);
 }
 
-static void html_tokens_print(PgHtmlTokenSlice tokens) {
-  for (u64 i = 0; i < tokens.len; i++) {
-    PgHtmlToken token = PG_SLICE_AT(tokens, i);
-    switch (token.kind) {
-    case PG_HTML_TOKEN_KIND_TEXT:
-      printf("text: %.*s\n", (int)token.text.len, token.text.data);
-      break;
-    case PG_HTML_TOKEN_KIND_TAG_OPENING:
-      printf("open: %.*s\n", (int)token.tag.len, token.tag.data);
-      break;
-    case PG_HTML_TOKEN_KIND_TAG_CLOSING:
-      printf("close: %.*s\n", (int)token.tag.len, token.tag.data);
-      break;
-    case PG_HTML_TOKEN_KIND_ATTRIBUTE:
-      printf("attribute: %.*s", (int)token.attribute.key.len,
-             token.attribute.key.data);
-      if (!pg_string_is_empty(token.attribute.value)) {
-        printf("=%.*s", (int)token.attribute.value.len,
-               token.attribute.value.data);
-      }
-      puts("");
-      break;
-    case PG_HTML_TOKEN_KIND_COMMENT:
-      break;
-    case PG_HTML_TOKEN_KIND_DOCTYPE:
-      break;
-    case PG_HTML_TOKEN_KIND_NONE:
-    default:
-      PG_ASSERT(0);
+static void search_index_feed_document(SearchIndex *search_index,
+                                       PgHtmlTokenSlice html_tokens,
+                                       Article article, TitleSlice titles,
+                                       PgAllocator *allocator) {
+  SearchDocument doc = {
+      .html_file_name = article.html_file_name,
+      .title = article.title,
+      .titles = titles,
+  };
+  PG_DYN_ENSURE_CAP(&doc.text, 128 * PG_KiB, allocator);
+  PG_DYN_ENSURE_CAP(&doc.title_text_offsets, titles.len, allocator);
+
+  for (u64 i = 1; i < html_tokens.len; i++) {
+    PgHtmlToken token = PG_SLICE_AT(html_tokens, i);
+
+    if (PG_HTML_TOKEN_KIND_TAG_OPENING == token.kind &&
+        (pg_string_eq(token.tag, PG_S("h2")) ||
+         pg_string_eq(token.tag, PG_S("h3")) ||
+         pg_string_eq(token.tag, PG_S("h4")) ||
+         pg_string_eq(token.tag, PG_S("h5")) ||
+         pg_string_eq(token.tag, PG_S("h6")))) {
+      PG_ASSERT(i + 2 < html_tokens.len);
+
+      *PG_DYN_PUSH_WITHIN_CAPACITY(&doc.title_text_offsets) = (u32)doc.text.len;
+    } else if (PG_HTML_TOKEN_KIND_TEXT == token.kind) {
+      PG_DYN_APPEND_SLICE(&doc.text, pg_string_trim_space(token.text),
+                          allocator);
+      *PG_DYN_PUSH(&doc.text, allocator) = ' ';
     }
   }
+  *PG_DYN_PUSH(&search_index->documents, allocator) = doc;
 }
 
 static void article_generate_html_file(PgFileDescriptor markdown_file,
                                        u64 metadata_offset, Article *article,
                                        PgString header, PgString footer,
+                                       SearchIndex *search_index,
                                        PgAllocator *allocator) {
 
   PgString article_html =
       markdown_to_html(markdown_file, metadata_offset, allocator);
-  PgHtmlTokenDynResult res = pg_html_tokenize(article_html, allocator);
-  PG_ASSERT(0 == res.err);
-  PgHtmlTokenSlice html_tokens = PG_DYN_SLICE(PgHtmlTokenSlice, res.res);
-  html_tokens_print(html_tokens);
+  PgHtmlNodePtrResult res_parse = pg_html_parse(article_html, allocator);
+  PG_ASSERT(0 == res_parse.err);
 
-  // TODO: build search index on html.
+  PgHtmlNode *html_root = res_parse.res;
 
-  Title *title_root = html_parse_titles(article_html, allocator);
-  title_print(title_root);
+  TitleSlice titles = html_collect_titles(html_root, allocator);
 
   Pgu8Dyn sb = {0};
   PG_DYN_ENSURE_CAP(&sb, 4096, allocator);
@@ -631,22 +710,32 @@ static void article_generate_html_file(PgFileDescriptor markdown_file,
   PG_DYN_APPEND_SLICE(&sb, PG_S("</div>\n"), allocator);
   PG_DYN_APPEND_SLICE(&sb, PG_S("  </div>\n"), allocator);
 
-  article_write_toc(&sb, title_root, allocator);
+  article_write_toc(&sb, titles, allocator);
 
   PG_DYN_APPEND_SLICE(&sb, PG_S("\n"), allocator);
 
-  html_write_decorated_titles(article_html, &sb, title_root, allocator);
+  html_write_decorated_titles(article_html, &sb, titles, allocator);
 
   PG_DYN_APPEND_SLICE(&sb, PG_S(BACK_LINK), allocator);
   PG_DYN_APPEND_SLICE(&sb, footer, allocator);
   PgString html = PG_DYN_SLICE(PgString, sb);
-  PG_ASSERT(!pg_string_contains(html, PG_S("\n>\n")));
+  {
+    PgHtmlTokenDynResult res_html_tokens =
+        pg_html_tokenize(article_html, allocator);
+    PG_ASSERT(0 == res_html_tokens.err);
+
+    PgHtmlTokenSlice html_tokens =
+        PG_DYN_SLICE(PgHtmlTokenSlice, res_html_tokens.res);
+    search_index_feed_document(search_index, html_tokens, *article, titles,
+                               allocator);
+  }
   PG_ASSERT(0 == pg_file_write_full(article->html_file_name, html, allocator));
 }
 
 [[nodiscard]]
 static Article article_generate(PgString header, PgString footer,
-                                GitStat git_stat, PgAllocator *allocator) {
+                                GitStat git_stat, SearchIndex *search_index,
+                                PgAllocator *allocator) {
   (void)header;
   (void)footer;
   printf("generating article: %.*s\n", (int)git_stat.path_rel.len,
@@ -719,7 +808,7 @@ static Article article_generate(PgString header, PgString footer,
   article.html_file_name = pg_string_concat(stem, PG_S(".html"), allocator);
 
   article_generate_html_file(markdown_file, metadata_offset, &article, header,
-                             footer, allocator);
+                             footer, search_index, allocator);
 
   PG_ASSERT(0 == pg_file_close(markdown_file));
   return article;
@@ -727,6 +816,7 @@ static Article article_generate(PgString header, PgString footer,
 
 [[nodiscard]]
 static ArticleSlice articles_generate(PgString header, PgString footer,
+                                      SearchIndex *search_index,
                                       PgAllocator *allocator) {
   PG_ASSERT(!pg_string_is_empty(header));
   PG_ASSERT(!pg_string_is_empty(footer));
@@ -739,8 +829,8 @@ static ArticleSlice articles_generate(PgString header, PgString footer,
   for (u64 i = 0; i < git_stats.len; i++) {
     GitStat git_stat = PG_SLICE_AT(git_stats, i);
 
-    // The home page is generate separately. The logic is different from an
-    // article.
+    // The home page is generate separately. The logic is different from
+    // an article.
     if (pg_string_eq(git_stat.path_rel, PG_S("index.md"))) {
       continue;
     }
@@ -755,7 +845,8 @@ static ArticleSlice articles_generate(PgString header, PgString footer,
       continue;
     }
 
-    Article article = article_generate(header, footer, git_stat, allocator);
+    Article article =
+        article_generate(header, footer, git_stat, search_index, allocator);
     *PG_DYN_PUSH_WITHIN_CAPACITY(&articles) = article;
   }
 
@@ -822,8 +913,13 @@ static void home_page_generate(ArticleSlice articles, PgString header,
   PG_ASSERT(0 == res_markdown_file.err);
   PgString html = markdown_to_html(res_markdown_file.res, 0, allocator);
 
-  Title *title_root = html_parse_titles(html, allocator);
-  html_write_decorated_titles(html, &sb, title_root, allocator);
+  PgHtmlNodePtrResult res_parse = pg_html_parse(html, allocator);
+  PG_ASSERT(0 == res_parse.err);
+
+  PgHtmlNode *html_root = res_parse.res;
+
+  TitleSlice titles = html_collect_titles(html_root, allocator);
+  html_write_decorated_titles(html, &sb, titles, allocator);
 
   PG_DYN_APPEND_SLICE(&sb, footer, allocator);
 
@@ -1043,7 +1139,11 @@ int main() {
   PG_ASSERT(0 == res_footer.err);
   PgString footer = res_footer.res;
 
-  ArticleSlice articles = articles_generate(header, footer, allocator);
+  SearchIndex search_index = {0};
+  ArticleSlice articles =
+      articles_generate(header, footer, &search_index, allocator);
+  search_index_serialize_to_file(search_index, PG_S("search_index.js"),
+                                 allocator);
   home_page_generate(articles, header, footer, allocator);
   tags_page_generate(articles, header, footer, allocator);
   rss_generate(articles, allocator);

@@ -11,53 +11,9 @@
 <script src="highlight.min.js"></script>
 <!-- From https://github.com/odin-lang/odin-lang.org/blob/6f48c2cfb094a42dffd34143884fa958bd9c0ba2/themes/odin/layouts/partials/head.html#L71 -->
 <script src="x86asm.min.js"></script>
-<script>
-  window.onload = function() {
-      hljs.registerLanguage("odin", function(e) {
-      return {
-          aliases: ["odin", "odinlang", "odin-lang"],
-          keywords: {
-              keyword: "auto_cast bit_field bit_set break case cast context continue defer distinct do dynamic else enum fallthrough for foreign if import in map matrix not_in or_else or_return package proc return struct switch transmute type_of typeid union using when where",
-              literal: "true false nil",
-              built_in: "abs align_of cap clamp complex conj expand_to_tuple imag jmag kmag len max min offset_of quaternion real size_of soa_unzip soa_zip swizzle type_info_of type_of typeid_of"
-          },
-          illegal: "</",
-          contains: [e.C_LINE_COMMENT_MODE, e.C_BLOCK_COMMENT_MODE, {
-              className: "string",
-              variants: [e.QUOTE_STRING_MODE, {
-                  begin: "'",
-                  end: "[^\\\\]'"
-              }, {
-                  begin: "`",
-                  end: "`"
-              }]
-          }, {
-              className: "number",
-              variants: [{
-                  begin: e.C_NUMBER_RE + "[ijk]",
-                  relevance: 1
-              }, e.C_NUMBER_MODE]
-          }]
-      }
-    });
-
-    hljs.highlightAll();
-
-    document.querySelectorAll('code').forEach((el, _i) => {
-        if (0 == el.classList.length || el.classList.contains('language-sh') || el.classList.contains('language-shell') || el.classList.contains('language-bash')){
-          el.classList.add('code-no-line-numbers');
-          return; 
-        }
-
-        var lines = el.innerHTML.trimEnd().split('\n');
-        var out = [];
-        lines.forEach(function(l, i){
-          out.push('<span class="line-number">' + (i+1).toString() + '</span> ' + l);
-        });
-        el.innerHTML = out.join('\n');
-    });
-  }
-</script>
+<script src="odin_syntax.js"></script>
+<script type="module" src="search_index.js"></script>
+<script type="module" src="search.js"></script>
 </head>
 <body>
 
@@ -66,6 +22,7 @@
         <img id="me" src="me.jpeg">
         <span>Philippe Gaultier</span>
     </div>
+    <input id="search" placeholder="🔎 Search">
     <ul>
       <li> <a href="/blog/body_of_work.html">Body of work</a> </li>
       <li> <a href="/blog/articles-by-tag.html">Tags</a> </li>
@@ -81,12 +38,12 @@
 
       <li> <a href="https://www.linkedin.com/in/philippegaultier/">
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" data-supported-dps="24x24" fill="currentColor" class="mercado-match" width="24" height="24" focusable="false">
-              <path d="M20.5 2h-17A1.5 1.5 0 002 3.5v17A1.5 1.5 0 003.5 22h17a1.5 1.5 0 001.5-1.5v-17A1.5 1.5 0 0020.5 2zM8 19H5v-9h3zM6.5 8.25A1.75 1.75 0 118.3 6.5a1.78 1.78 0 01-1.8 1.75zM19 19h-3v-4.74c0-1.42-.6-1.93-1.38-1.93A1.74 1.74 0 0013 14.19a.66.66 0 000 .14V19h-3v-9h2.9v1.3a3.11 3.11 0 012.7-1.4c1.55 0 3.36.86 3.36 3.66z"></path>
+              <path d="M20.5 2h-17A1.5 1.5 0 002 3.5v17A1.5 1.5 0 003.5 22h17a1.5 1.5 0 001.5-1.5v-17A1.5 1.5 0 0020.5 2zM8 19H5v-9h3zM6.5 8.25A1.75 1.75 0 118.3 6.5a1.78 1.78 0 01-1.8 1.75zM19 19h-3v-4.74c0-1.42-.6-1.93-1.38-1.93A1.74 1.74 0 0013 14.19a.66.66 0 000 .14V19h-3v-9h2.9v1.3a3.11 3.11 0 012.7-1.4c1.55 0 3.36.86 3.36 3.66z"/>
             </svg>
         </a> </li>
       <li> <a href="https://github.com/gaultier">
         <svg height="32" aria-hidden="true" viewBox="0 0 24 24" version="1.1" width="32" data-view-component="true" class="octicon octicon-mark-github v-align-middle">
-            <path d="M12.5.75C6.146.75 1 5.896 1 12.25c0 5.089 3.292 9.387 7.863 10.91.575.101.79-.244.79-.546 0-.273-.014-1.178-.014-2.142-2.889.532-3.636-.704-3.866-1.35-.13-.331-.69-1.352-1.18-1.625-.402-.216-.977-.748-.014-.762.906-.014 1.553.834 1.769 1.179 1.035 1.74 2.688 1.25 3.349.948.1-.747.402-1.25.733-1.538-2.559-.287-5.232-1.279-5.232-5.678 0-1.25.445-2.285 1.178-3.09-.115-.288-.517-1.467.115-3.048 0 0 .963-.302 3.163 1.179.92-.259 1.897-.388 2.875-.388.977 0 1.955.13 2.875.388 2.2-1.495 3.162-1.179 3.162-1.179.633 1.581.23 2.76.115 3.048.733.805 1.179 1.825 1.179 3.09 0 4.413-2.688 5.39-5.247 5.678.417.36.776 1.05.776 2.128 0 1.538-.014 2.774-.014 3.162 0 .302.216.662.79.547C20.709 21.637 24 17.324 24 12.25 24 5.896 18.854.75 12.5.75Z"></path>
+          <path d="M12.5.75C6.146.75 1 5.896 1 12.25c0 5.089 3.292 9.387 7.863 10.91.575.101.79-.244.79-.546 0-.273-.014-1.178-.014-2.142-2.889.532-3.636-.704-3.866-1.35-.13-.331-.69-1.352-1.18-1.625-.402-.216-.977-.748-.014-.762.906-.014 1.553.834 1.769 1.179 1.035 1.74 2.688 1.25 3.349.948.1-.747.402-1.25.733-1.538-2.559-.287-5.232-1.279-5.232-5.678 0-1.25.445-2.285 1.178-3.09-.115-.288-.517-1.467.115-3.048 0 0 .963-.302 3.163 1.179.92-.259 1.897-.388 2.875-.388.977 0 1.955.13 2.875.388 2.2-1.495 3.162-1.179 3.162-1.179.633 1.581.23 2.76.115 3.048.733.805 1.179 1.825 1.179 3.09 0 4.413-2.688 5.39-5.247 5.678.417.36.776 1.05.776 2.128 0 1.538-.014 2.774-.014 3.162 0 .302.216.662.79.547C20.709 21.637 24 17.324 24 12.25 24 5.896 18.854.75 12.5.75Z"/>
         </svg>
         </a> </li>
       <li> <a href="https://hachyderm.io/@pg">
@@ -102,11 +59,13 @@
         </svg>
         </a> </li>
       <li> <a href="https://bsky.app/profile/pgaultier.bsky.social">
-        <svg fill="none" viewBox="0 0 64 57" width="32" style="width: 32px; height: 28.5px;"><path fill="#0085ff" d="M13.873 3.805C21.21 9.332 29.103 20.537 32 26.55v15.882c0-.338-.13.044-.41.867-1.512 4.456-7.418 21.847-20.923 7.944-7.111-7.32-3.819-14.64 9.125-16.85-7.405 1.264-15.73-.825-18.014-9.015C1.12 23.022 0 8.51 0 6.55 0-3.268 8.579-.182 13.873 3.805ZM50.127 3.805C42.79 9.332 34.897 20.537 32 26.55v15.882c0-.338.13.044.41.867 1.512 4.456 7.418 21.847 20.923 7.944 7.111-7.32 3.819-14.64-9.125-16.85 7.405 1.264 15.73-.825 18.014-9.015C62.88 23.022 64 8.51 64 6.55c0-9.818-8.578-6.732-13.873-2.745Z"></path></svg>
+        <svg fill="none" viewBox="0 0 64 57" width="32" style="width: 32px; height: 28.5px;"><path fill="#0085ff" d="M13.873 3.805C21.21 9.332 29.103 20.537 32 26.55v15.882c0-.338-.13.044-.41.867-1.512 4.456-7.418 21.847-20.923 7.944-7.111-7.32-3.819-14.64 9.125-16.85-7.405 1.264-15.73-.825-18.014-9.015C1.12 23.022 0 8.51 0 6.55 0-3.268 8.579-.182 13.873 3.805ZM50.127 3.805C42.79 9.332 34.897 20.537 32 26.55v15.882c0-.338.13.044.41.867 1.512 4.456 7.418 21.847 20.923 7.944 7.111-7.32 3.819-14.64-9.125-16.85 7.405 1.264 15.73-.825 18.014-9.015C62.88 23.022 64 8.51 64 6.55c0-9.818-8.578-6.732-13.873-2.745Z"/></svg>
         </a> </li>
     </ul>
 </div>
-<div class="body">
+<div id="search-matches" hidden>
+</div>
+<div id="pseudo-body">
 
 <div class="article-prelude">
   <p><a href="/blog"> ⏴ Back to all articles</a></p>
@@ -129,7 +88,7 @@
   </li>
 
   <li>
-    <a href="#1611004510-generating-a-code-pprof-code-profile">Generating a <code>pprof</code> profile</a>
+    <a href="#1521287171-generating-a">Generating a </a>
   </li>
 
   <li>
@@ -354,9 +313,9 @@ Total: 0.0 MB
      0.0   0.0% 100.0%      0.0 100.0% _start
      0.0   0.0% 100.0%      0.0 100.0% main
 </code></pre>
-<h2 id="1611004510-generating-a-code-pprof-code-profile">
-  <a class="title" href="#1611004510-generating-a-code-pprof-code-profile">Generating a <code>pprof</code> profile</a>
-  <a class="hash-anchor" href="#1611004510-generating-a-code-pprof-code-profile" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+<h2 id="1521287171-generating-a">
+  <a class="title" href="#1521287171-generating-a">Generating a </a>
+  <a class="hash-anchor" href="#1521287171-generating-a" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>Let's start with a very simple arena (directly based on <a href="https://nullprogram.com/blog/2023/09/27/">https://nullprogram.com/blog/2023/09/27/</a>) and show how it is used:</p>
 <pre><code class="language-c">#define _GNU_SOURCE

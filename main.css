@@ -1,3 +1,7 @@
+input {
+  padding: .3rem;
+}
+
 .publication-date {
   font-style: italic;
   color: gray;
@@ -69,8 +73,8 @@ p {
   margin-right: 1rem;
 }
 
-.body {
-  margin: .7rem;
+#pseudo-body, #search-matches {
+  padding: .7rem;
 }
 
 .articles > ul {
@@ -123,8 +127,6 @@ p {
   color: black;
   border-radius: 8px;
   border: 15px;
-  padding: 0 .5rem;
-  padding-bottom: .5rem;
 }
 
 figure {
