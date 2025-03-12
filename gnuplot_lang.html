@@ -146,7 +146,7 @@ plot &quot;out.dat&quot; with lines
 <h2 id="2580162644-the-problem">
   <a class="title" href="#2580162644-the-problem">The problem</a>
   <a class="hash-anchor" href="#2580162644-the-problem" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
->The problem</h2>
+</h2>
 <p>In short, we get a text file where each line contains random ASCII characters. For each line, we must find the first and last digit characters, combine them into an number and at the end output the sum of all these numbers.</p>
 <p>The way we read the data into a variable is through a shell command:</p>
 <pre><code class="language-gnuplot">data = system(&quot;cat in.txt&quot;)
@@ -209,7 +209,7 @@ do for [line in data] {
 <h2 id="3440295979-closing-thoughts">
   <a class="title" href="#3440295979-closing-thoughts">Closing thoughts</a>
   <a class="hash-anchor" href="#3440295979-closing-thoughts" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
->Closing thoughts</h2>
+</h2>
 <p>Pretty straightforward, isn't it? Well, no. The language is weirdly restrictive, for example <code>sum += num</code> does not parse. <code>for</code> and <code>while</code> loops cannot for some reason be used interchangeably due to the weird <code>do</code> prefix for for-loops. Very few builtin functions are available.
 There does not seem to be basic data structures such as arrays and maps. Every variable is global. And so on.</p>
 <p>It's weird because the language also has very modern constructs that some mainstream languages still do not have, like the slicing syntax.</p>
@@ -219,7 +219,7 @@ There does not seem to be basic data structures such as arrays and maps. Every v
 <h2 id="2853131083-addendum-the-full-code">
   <a class="title" href="#2853131083-addendum-the-full-code">Addendum: The full code</a>
   <a class="hash-anchor" href="#2853131083-addendum-the-full-code" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
->Addendum: The full code</h2>
+</h2>
 <p>Run with <code>gnuplot my_file.dem</code>.</p>
 <pre><code class="language-gnuplot">data = system(&quot;cat in.txt&quot;)
 

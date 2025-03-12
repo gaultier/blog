@@ -136,7 +136,7 @@
 <h2 id="132857161-context">
   <a class="title" href="#132857161-context">Context</a>
   <a class="hash-anchor" href="#132857161-context" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
->Context</h2>
+</h2>
 <p>I have a Go service that has an in-memory LRU (Least Recently Used) cache to speed up some things.
 Here I am, writing documentation for this service, and it happens that you can specify in its configuration the maximum number of cache entries.
 That's useful to limit the overall memory usage. Obviously this value is directly related to the Kubernetes memory limit for this deployment.</p>
@@ -147,7 +147,7 @@ That's useful to limit the overall memory usage. Obviously this value is directl
 <h2 id="3714754269-bpftrace">
   <a class="title" href="#3714754269-bpftrace">Bpftrace</a>
   <a class="hash-anchor" href="#3714754269-bpftrace" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
->Bpftrace</h2>
+</h2>
 <p>So, the plan is: I run the tests under <code>bpftrace</code>, collect a histogram of the slice of bytes to be inserted in the cache, and voila!</p>
 <p>We can also run the real service with a load test to generate traffic, or simply wait for real traffic to come - all of that works, and <code>dtrace</code>/<code>bpftrace</code> are designed to inspect production programs without the risk of crashing them, or adversely impacting the system. The <code>bpftrace</code> incantation will be the same in all of these cases, only the binary (or process id) will change.</p>
 <p>Here, my function to insert a slice of bytes in the cache is called <code>cache_insert</code>, the executable is called <code>itest.test</code>, and the length of the slice of bytes happens to be passed as the third function argument. Arguments are zero-indexed so that means <code>arg2</code>:</p>
@@ -172,7 +172,7 @@ That's useful to limit the overall memory usage. Obviously this value is directl
 <h2 id="3450441466-addendum-function-arguments-in-bpftrace">
   <a class="title" href="#3450441466-addendum-function-arguments-in-bpftrace">Addendum: Function arguments in bpftrace</a>
   <a class="hash-anchor" href="#3450441466-addendum-function-arguments-in-bpftrace" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
->Addendum: Function arguments in bpftrace</h2>
+</h2>
 <p><code>bpftrace</code> reads neither debug information nor C headers by default so all function arguments are register sized, i.e. 64 bits on x86_64. <code>bpftrace</code> does not even know how many arguments the function accepts!</p>
 <p>My function signature is (simplified):</p>
 <pre><code class="language-c">struct ByteSliceView {

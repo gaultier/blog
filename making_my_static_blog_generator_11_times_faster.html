@@ -163,7 +163,7 @@ Benchmark 1: ./master.bin
 <h2 id="1071142523-the-investigation">
   <a class="title" href="#1071142523-the-investigation">The investigation</a>
   <a class="hash-anchor" href="#1071142523-the-investigation" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
->The investigation</h2>
+</h2>
 <p>In the early days of this blog, there were only a few articles, and the build process was a simple Makefile, something like this (simplified):</p>
 <pre><code class="language-make">%.html: %.md header.html footer.html
         cat header.html &gt;&gt; $@
@@ -216,7 +216,7 @@ Benchmark 1: ./master.bin
 <h2 id="3047915491-when-there-s-one-there-s-many">
   <a class="title" href="#3047915491-when-there-s-one-there-s-many">When there's one, there's many</a>
   <a class="hash-anchor" href="#3047915491-when-there-s-one-there-s-many" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
->When there's one, there's many</h2>
+</h2>
 <p>My intuition was to do a deep dive in the <code>git log</code> options, to see if I could instruct it to do less work. But then something struck me: we invoke <code>git log</code> to get all commits for one markdown file (even though we only are interested in the first and last, but that's the only interface Git provides us as far as I know). What if we invoked it once <em>for all markdown files</em>? Yes, the output might be a bit big... How big? Is it really faster? Let's measure!</p>
 <p>Conceptually we can simply do <code>git log '*.md'</code> and parse the output. We can refine that approach later with more options, but that's the gist of it:</p>
 <pre><code class="language-sh"> $ time git log '*.md' | wc -c
@@ -237,7 +237,7 @@ Executed in   73.69 millis    fish           external
 <h2 id="2709289763-the-new-approach">
   <a class="title" href="#2709289763-the-new-approach">The new approach</a>
   <a class="hash-anchor" href="#2709289763-the-new-approach" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
->The new approach</h2>
+</h2>
 <p>We only want git to tell us, for each commit:</p>
 <ul>
 <li>The date</li>
@@ -279,7 +279,7 @@ So first we'll encounter the delete/rename commit for this file, and then later 
 <h2 id="3854930553-the-new-implementation">
   <a class="title" href="#3854930553-the-new-implementation">The new implementation</a>
   <a class="hash-anchor" href="#3854930553-the-new-implementation" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
->The new implementation</h2>
+</h2>
 <pre><code class="language-odin">GitStat :: struct {
 	creation_date:     string,
 	modification_date: string,
@@ -489,7 +489,7 @@ Summary
 <h2 id="3898000878-fossil">
   <a class="title" href="#3898000878-fossil">Fossil</a>
   <a class="hash-anchor" href="#3898000878-fossil" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
->Fossil</h2>
+</h2>
 <p><a href="https://fossil-scm.org">fossil</a> is an alternative version control system created by the same folks that created, and are still working on, SQLite. Naturally, a fossil repository is basically just one SQLite database file. That sounds very <em>queryable</em>!</p>
 <p>Let's import our git repository into a Fossil repository and enter the SQLite prompt:</p>
 <pre><code class="language-sh">$ git fast-export --all | fossil import --git new-repo.fossil
@@ -531,7 +531,7 @@ Benchmark 1: fossil sql -R new-repo.fossil &quot;[...]&quot;
 <h2 id="3796851539-conclusion">
   <a class="title" href="#3796851539-conclusion">Conclusion</a>
   <a class="hash-anchor" href="#3796851539-conclusion" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
->Conclusion</h2>
+</h2>
 <p>The issue was effectively a N+1 query problem. We issued a separate 'query' (in this case, <code>git log</code>) for each markdown file, in a sequential blocking fashion. This approach worked until it didn't because the number of entities (i.e. articles, and commits) grew over time.</p>
 <p>The solution is instead to do only one query for all entities. It may return a bit more data that we need, but that's much faster, and scales better, than the original version.</p>
 <p>It's obvious in retrospect but it's easy to let it happen when the 'codebase' (a big word for only one file that started as a basic Makefile) is a few years old, it's only looked at briefly from time to time, and the initial implementation did not really allow for the correct approach - who wants to parse the <code>git log</code> output in the Makefile language?</p>
@@ -550,7 +550,7 @@ Benchmark 1: fossil sql -R new-repo.fossil &quot;[...]&quot;
 <h2 id="4016320828-addendum">
   <a class="title" href="#4016320828-addendum">Addendum</a>
   <a class="hash-anchor" href="#4016320828-addendum" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
->Addendum</h2>
+</h2>
 <p>Running <code>git gc</code> and <code>git prune</code> also helps because all unreachable objects are removed, so git has to do less work scanning and parsing them on disk.</p>
 <p>Having done that, we get almost twice as fast:</p>
 <pre><code class="language-sh">$ hyperfine --shell=none --warmup 2 './src.bin'
@@ -563,7 +563,7 @@ Benchmark 1: ./src.bin
 <h2 id="2077345490-addendum-2">
   <a class="title" href="#2077345490-addendum-2">Addendum 2</a>
   <a class="hash-anchor" href="#2077345490-addendum-2" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
->Addendum 2</h2>
+</h2>
 <p>Since spawning the <code>cmark</code> process, having <code>cmark</code> parsing the command line options, over and over, is still taking a good chunk of the time, we can switch to using <code>libcmark</code> directly. This is something I wanted to do anyway to extract a table of content, etc from the markdown. Since the running time is getting lower and lower, we add <code>--shell=none</code> and increase the warm-up to reduce statistical outliers:</p>
 <pre><code class="language-sh">$ hyperfine --shell=none --warmup 10 ./src.bin
 Benchmark 1: ./src.bin

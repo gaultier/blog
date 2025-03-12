@@ -146,7 +146,7 @@
 <h2 id="848107681-inciting-incident">
   <a class="title" href="#848107681-inciting-incident">Inciting incident</a>
   <a class="hash-anchor" href="#848107681-inciting-incident" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
->Inciting incident</h2>
+</h2>
 <p>The thing is, I work on an Intel Linux laptop and the Zero is a Linux ARM 64 bits piece of hardware. It's also a relatively cheap component with only 512 MiB of RAM and a slow CPU (compared to a modern developer workstation), and based on a very slow SD card, so it's not fast to install the required tools and to build source code on it. Cross-compilation is much easier and faster.</p>
 <p>Odin can cross-compile to it with <code>-target=linux_arm64</code>, so that's great, let's try it:</p>
 <pre><code class="language-sh">$ odin build src -target=linux_arm64
@@ -164,7 +164,7 @@ clang -Wno-unused-command-line-argument [...]  -lm -lc   -L/       -no-pie
 <h2 id="1339502364-confrontation">
   <a class="title" href="#1339502364-confrontation">Confrontation</a>
   <a class="hash-anchor" href="#1339502364-confrontation" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
->Confrontation</h2>
+</h2>
 <p>What we want is to link our object file with the correct libc, meaning one that has been built for ARM64. Moreover, we'd like to build our program statically with libc so that we can simply copy the one executable to the Raspberry Pi Zero and it is fully self-contained. We completely side-step issues of different glibc versions not being compatible with each other.</p>
 <p>Enter musl, a C library for Linux that supports many platforms including ARM64, and static compilation. That's exactly what we need!</p>
 <p>A big difference between Odin and Zig is that Zig is a full cross-compilation toolchain: it comes with the source code of <code>musl</code>, and has put in a ton of work to cross-compile it to the target the user desires.</p>
@@ -194,7 +194,7 @@ $ readelf -h lib/libc.a | grep '^\s*Machine:'
 <h2 id="3613299072-resolution">
   <a class="title" href="#3613299072-resolution">Resolution</a>
   <a class="hash-anchor" href="#3613299072-resolution" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
->Resolution</h2>
+</h2>
 <p>Now we can finally put all the pieces together. We can use any linker, I am using LLD (the LLVM linker) here, but the GNU LD linker would also work as long as it knows to target ARM64 e.g. using the one coming with the right GCC toolchain would work.</p>
 <pre><code class="language-sh">$ odin build src  -target=linux_arm64 -build-mode=object
 $ file src.o
@@ -221,7 +221,7 @@ $ du -h a.out
 <h2 id="301746397-appendix-maybe-you-don-t-even-need-a-libc">
   <a class="title" href="#301746397-appendix-maybe-you-don-t-even-need-a-libc">Appendix: Maybe you don't even need a libc</a>
   <a class="hash-anchor" href="#301746397-appendix-maybe-you-don-t-even-need-a-libc" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
->Appendix: Maybe you don't even need a libc</h2>
+</h2>
 <p>Odin comes with batteries included with a rich standard library. So why do we even need libc? Let's inspect which functions we really use from libc, i.e. are undefined symbols in the object file built from our source code:</p>
 <pre><code class="language-sh">$ nm -u src.o
                  U calloc

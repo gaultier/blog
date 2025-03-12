@@ -172,12 +172,12 @@
 <h2 id="2371048346-windows-settimer">
   <a class="title" href="#2371048346-windows-settimer">Windows: SetTimer</a>
   <a class="hash-anchor" href="#2371048346-windows-settimer" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
->Windows: SetTimer</h2>
+</h2>
 <p>This will be brief because I do not develop on Windows. The official documentation mentions the <a href="https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-settimer">SetTimer</a> function from Win32 and you pass it a timeout and a callback. Alternatively, since Windows applications come with a built-in event queue, an event of type <code>WM_TIMER</code> gets emitted and can be consumed from the queue. Simple, and it composes with other OS events, I like it.</p>
 <h3 id="84588324-readers-suggestions-createwaitabletimer-createthreadpooltimer-createtimerqueuetimer">
   <a class="title" href="#84588324-readers-suggestions-createwaitabletimer-createthreadpooltimer-createtimerqueuetimer">Readers suggestions: CreateWaitableTimer, CreateThreadpoolTimer, CreateTimerQueueTimer</a>
   <a class="hash-anchor" href="#84588324-readers-suggestions-createwaitabletimer-createthreadpooltimer-createtimerqueuetimer" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
->Readers suggestions: CreateWaitableTimer, CreateThreadpoolTimer, CreateTimerQueueTimer</h3>
+</h3>
 <p>Readers with experience with <code>SetTimer</code> have pointed out that <code>SetTimer</code> has flaws:</p>
 <ul>
 <li>An invisible window must be created to get a message queue, which is opt-in.</li>
@@ -192,7 +192,7 @@
 <h2 id="1405764248-posix-timer-create-timer-settime">
   <a class="title" href="#1405764248-posix-timer-create-timer-settime">POSIX: timer_create, timer_settime</a>
   <a class="hash-anchor" href="#1405764248-posix-timer-create-timer-settime" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
->POSIX: timer_create, timer_settime</h2>
+</h2>
 <p>POSIX has one API for timers, and it sucks. A timer is created with <code>timer_create</code>, which does initially nothing, and the timer is started with a timeout using <code>timer_settime</code>. When the timeout is reached, a signal is sent to the program. And that's the issue. Signals are <em>very</em> problematic, as seen in my <a href="/blog/way_too_many_ways_to_wait_for_a_child_process_with_a_timeout.html">previous article</a>:</p>
 <ul>
 <li>They do not compose with other OS primitives. This forces numerous syscalls to have a normal version and a signal-aware version that can block some signals for its duration: <code>poll/ppoll</code>, <code>select/pselect</code>, etc.</li>
@@ -225,7 +225,7 @@ the array of elements to be sorted.</p>
 <h2 id="1096776765-linux-timerfd-create-timerfd-settime">
   <a class="title" href="#1096776765-linux-timerfd-create-timerfd-settime">Linux: timerfd_create, timerfd_settime</a>
   <a class="hash-anchor" href="#1096776765-linux-timerfd-create-timerfd-settime" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
->Linux: timerfd_create, timerfd_settime</h2>
+</h2>
 <p>So, we all heard the saying: In Unix, everything is a file. So, what if a timer was also a file (descriptor)? And we could ask the OS to notify our program whenever there is data to read (i.e.: when our timer triggers), like with a file or a socket?
 That's the whole idea behind <code>timerfd_create</code> and <code>timerfd_settime</code>. We create a timer, we get a file descriptor back.</p>
 <p>In the previous article, we saw that Linux added similar APIs for signals with <code>signalfd</code> and processes with <code>pidfd_open</code>, so there is a consistent effort to indeed make everything a file.</p>
@@ -322,7 +322,7 @@ the timerfd interface that appeared in Linux 2.6.25.</p>
 <h2 id="288104383-bsd-kqueue-kevent">
   <a class="title" href="#288104383-bsd-kqueue-kevent">BSD: kqueue/kevent</a>
   <a class="hash-anchor" href="#288104383-bsd-kqueue-kevent" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
->BSD: kqueue/kevent</h2>
+</h2>
 <p><code>kqueue</code> might be my favorite OS API: it can watch any OS entity for changes with just one call. Even timers! As it is often the case for BSD-borne APIs, they are well designed and well documented. The man page says:</p>
 <blockquote>
 <p>EVFILT_TIMER   Establishes an arbitrary timer identified by ident.</p>
@@ -400,7 +400,7 @@ Great news, and thanks, nice reader!</em></p>
 <h2 id="1016060147-illumos-port-create">
   <a class="title" href="#1016060147-illumos-port-create">Illumos: port_create</a>
   <a class="hash-anchor" href="#1016060147-illumos-port-create" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
->Illumos: port_create</h2>
+</h2>
 <p>So, Illumos (in)famously has its own API for multiplexing events from disjoint sources, that is different from <code>kqueue</code>, and some Illumos developers have publicly stated they now wished they had adopted <code>kqueue</code> back in the day.</p>
 <p>Anyways, similarly to kqueue, their API (<code>port_create</code>) also supports timers! From the <a href="https://illumos.org/man/3C/port_create">man page</a>:</p>
 <blockquote>
@@ -412,7 +412,7 @@ as its notification mechanism.</p>
 <h2 id="4005145368-macos-dispatch-source-create">
   <a class="title" href="#4005145368-macos-dispatch-source-create">macOS: dispatch_source_create</a>
   <a class="hash-anchor" href="#4005145368-macos-dispatch-source-create" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
->macOS: dispatch_source_create</h2>
+</h2>
 <p>Apple developers, in their infinite wisdom, decided to support <code>kqueue</code> but not kqueue timers, and invented their own thing instead.</p>
 <p>It's called <a href="https://man.archlinux.org/man/dispatch_source_create.3.en">dispatch_source_create</a> and it supports timers with <code>DISPATCH_SOURCE_TYPE_TIMER</code>.</p>
 <p>I do not currently have access to an Apple computer so I have not tried it. All I know is that <a href="https://en.wikipedia.org/wiki/Grand_Central_Dispatch">Grand Central Dispatch/libdispatch</a> is an effort to have applications have an event queue and thread pool managed for them by the OS. It's more of a task system, actually. All of this seems to me somewhat redundant with <code>kqueue</code> (which, on Apple platforms, came first!), but I am not an Apple engineer.</p>
@@ -420,7 +420,7 @@ as its notification mechanism.</p>
 <h2 id="2940717762-linux-io-uring">
   <a class="title" href="#2940717762-linux-io-uring">Linux: io_uring</a>
   <a class="hash-anchor" href="#2940717762-linux-io-uring" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
->Linux: io_uring</h2>
+</h2>
 <p><code>io_uring</code> is a fascinating Linux-only approach to essentially make every blocking system call... non-blocking. A syscall is enqueued into a ring buffer shared between userspace and the kernel, as a 'request', and at some point in time, a 'response' is enqueued by the kernel into a separate ring buffer that our program can read. It's simple, it's composable, it's great.</p>
 <p>At the beginning I said that a blocking 'sleep' was not enough, because our program cannot do any work while sleeping. <code>io_uring</code> renders this moot: we can (conceptually) enqueue a sleep, do some work, for example enqueue other syscalls, and whenever our sleep finishes, we can dequeue it from the second ring buffer, and voila: we just implemented a timer.</p>
 <p>It's so simple it's brilliant! Sadly, it's Linux only, only for recent-ish kernels, and some cloud providers disable this facility.</p>
@@ -476,7 +476,7 @@ int main() {
 <h2 id="2425088119-all-oses-timers-fully-implemented-in-userspace">
   <a class="title" href="#2425088119-all-oses-timers-fully-implemented-in-userspace">All OSes: timers fully implemented in userspace</a>
   <a class="hash-anchor" href="#2425088119-all-oses-timers-fully-implemented-in-userspace" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
->All OSes: timers fully implemented in userspace</h2>
+</h2>
 <p>Frustrated by my research, not having found one sane API that exists on all Unices, I wondered: How does <code>libuv</code>, the C library powering all of the asynchronous I/O for NodeJS, do it? I knew they support <a href="https://docs.libuv.org/en/v1.x/timer.html">timers</a>. And they support all OSes, even the most obscure ones like AIX. Surely, they have found the best OS API!</p>
 <p>Let's make a super simple C program using libuv timers (loosely adapted from their test suite):</p>
 <pre><code class="language-c">#include &lt;assert.h&gt;
@@ -549,7 +549,7 @@ precision.</p>
 <h2 id="3796851539-conclusion">
   <a class="title" href="#3796851539-conclusion">Conclusion</a>
   <a class="hash-anchor" href="#3796851539-conclusion" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
->Conclusion</h2>
+</h2>
 <p>Writing cross-platform C code typically means writing two code paths: one for Windows and one for Unix. But for multiplexed I/O, and for timers, each Unix has its own idea of what's the Right Way(tm).</p>
 <p>To sum up:</p>
 <table>

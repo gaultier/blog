@@ -158,7 +158,7 @@
 <h2 id="3570727127-the-standard-arena">
   <a class="title" href="#3570727127-the-standard-arena">The standard arena</a>
   <a class="hash-anchor" href="#3570727127-the-standard-arena" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
->The standard arena</h2>
+</h2>
 <p>A typical arena looks like that:</p>
 <pre><code class="language-c">#include &lt;stdint.h&gt;
 #include &lt;stdio.h&gt;
@@ -196,7 +196,7 @@ int main() {
 <h2 id="366874779-the-bug">
   <a class="title" href="#366874779-the-bug">The bug</a>
   <a class="hash-anchor" href="#366874779-the-bug" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
->The bug</h2>
+</h2>
 <p>Now, since we use a system call directly, sanitizers and runtime checks from the libc allocator do not apply, since we bypass them completely. In a way, it is also a feature: it means that our program will behave exactly the same on all OSes, have the exact same memory layout, and use the exact same amount of memory. It does not depend on the libc or allocator.</p>
 <p>So it turns out that I had a bug in my code: I allocated an array from the arena, and then accidentally wrote past the bounds of my array (so far, this sounds like a typical story from the C trenches).</p>
 <p>Normally, this would likely (depending on a few factors, like where in the arena was this allocation located, how big was it, and by how many bytes did the write go past the bounds, etc) write past the memory page that the OS gave us, thus triggering a <code>SIGSEGV</code>.</p>
@@ -216,7 +216,7 @@ int main() {
 <h2 id="1807516660-the-solution">
   <a class="title" href="#1807516660-the-solution">The solution</a>
   <a class="hash-anchor" href="#1807516660-the-solution" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
->The solution</h2>
+</h2>
 <p>So how do we fix it? What I did was defense in depth:</p>
 <ul>
 <li>Add asserts everywhere I could to check pre- and post-conditions. I believe that's how I discovered the bug in the first place, when one assert failed, even though it seemed impossible.</li>
@@ -265,17 +265,17 @@ int main() {
 <h2 id="2175727336-variations">
   <a class="title" href="#2175727336-variations">Variations</a>
   <a class="hash-anchor" href="#2175727336-variations" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
->Variations</h2>
+</h2>
 <h3 id="3293170840-the-paranoid-approach">
   <a class="title" href="#3293170840-the-paranoid-approach">The paranoid approach</a>
   <a class="hash-anchor" href="#3293170840-the-paranoid-approach" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
->The paranoid approach</h3>
+</h3>
 <p>If we are really paranoid, we could change how the arena works, to make every allocation get a new, separate page from the OS. That means that creating the arena would do nothing, and allocating from the arena would do the real allocation. This approach is, to me, indistinguishable from a general purpose allocator a la <code>malloc</code> from libc, just one that's very naive, and probably much slower.</p>
 <p>But, if there is a pesky out-of-bound bug pestering you, that could be worth trying.</p>
 <h3 id="332247973-the-bucket-per-type-approach">
   <a class="title" href="#332247973-the-bucket-per-type-approach">The bucket per type approach</a>
   <a class="hash-anchor" href="#332247973-the-bucket-per-type-approach" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
->The bucket per type approach</h3>
+</h3>
 <p>On <a href="https://www.youtube.com/watch?v=t7EJTO0-reg">Apple platforms</a>, the libc allocator has a hardening mode that can be enabled at compile time. It stems from the realization that many security vulnerabilities rely on type confusion: The program thinks it is handling an entity of type <code>X</code>, but due to a logic bug, or the attacker meddling, or the allocator reusing freshly freed memory from another place in the program, it is actually of another type <code>Y</code>. This results in an entity being in an 'impossible' state which is great for an attacker. Also, reusing a previously allocated-then-freed object with a different type, without zero-initializing it, can leak secrets or information about the state of the program, to an attacker.</p>
 <p>There's a whole class of attacks where the first step is to make the program allocate and free objects many times, of an attacker controlled size, so that the heap is in the right 'shape', with a high statistical chance. Meaning, a few targeted objects are next to each other in the heap, for the attack to occur.</p>
 <p>So, the mitigation is to place all allocations of the same type in one bucket (supposedly, it's a separate memory region with guard pages before and after). When an object of type <code>X</code> is allocated, then freed, and then the program allocates an object of type <code>Y</code>, of roughly the same size, a typical allocator will reuse the memory of <code>X</code>. This Apple allocator would give memory from a separate bucket, from a completely different memory region.</p>
@@ -285,7 +285,7 @@ int main() {
 <h2 id="3625827200-see-also">
   <a class="title" href="#3625827200-see-also">See also</a>
   <a class="hash-anchor" href="#3625827200-see-also" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
->See also</h2>
+</h2>
 <p><em>Astute readers have also mentioned: using canaries in the available space in the arena to detect illegal accesses, putting the real data at the start or end of the page to catch out-of-bounds accesses respectively before and after the allocation, periodic checks for long-running applications, randomizing where the guard pages are placed relative to the allocation, running the tests a number of times to catch inconsistent behavior, and finally, teaching Address Sanitizer to be aware of our custom arena allocator so that it does these checks for us. That's super cool! See the linked discussions at the start.</em></p>
 <p>I wrote in the past about adding memory profiling an arena allocator: <a href="/blog/roll_your_own_memory_profiling.html">Roll your own memory profiling: it's actually not hard</a>.</p>
 <p><a href="/blog"> ⏴ Back to all articles</a></p>

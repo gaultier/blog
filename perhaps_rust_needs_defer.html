@@ -160,7 +160,7 @@
 <h2 id="3029713171-setting-the-stage">
   <a class="title" href="#3029713171-setting-the-stage">Setting the stage</a>
   <a class="hash-anchor" href="#3029713171-setting-the-stage" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
->Setting the stage</h2>
+</h2>
 <p>So, I have a Rust API like this:</p>
 <pre><code class="language-rust">#[repr(C)]
 pub struct Foo {
@@ -251,7 +251,7 @@ error: memory leaked: alloc59029 (Rust heap, size: 16, align: 8), allocated here
 <h2 id="1329431729-first-attempt-at-freeing-the-memory-properly">
   <a class="title" href="#1329431729-first-attempt-at-freeing-the-memory-properly">First attempt at freeing the memory properly</a>
   <a class="hash-anchor" href="#1329431729-first-attempt-at-freeing-the-memory-properly" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
->First attempt at freeing the memory properly</h2>
+</h2>
 <p>Great, so let's free it at the end of the test, like C does, with <code>free</code> from libc, which we add as a dependency:</p>
 <pre><code class="language-rust">
     #[test]
@@ -313,7 +313,7 @@ brk(0x213c0000)                         = 0x213c0000
 <h2 id="3847667637-second-attempt-at-freeing-the-memory-properly">
   <a class="title" href="#3847667637-second-attempt-at-freeing-the-memory-properly">Second attempt at freeing the memory properly</a>
   <a class="hash-anchor" href="#3847667637-second-attempt-at-freeing-the-memory-properly" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
->Second attempt at freeing the memory properly</h2>
+</h2>
 <p>So, let's first try to dodge the problem the <del>hacky</del> simple way by pretending that the memory is allocated by a <code>Box</code>, which only needs the pointer, just like <code>free()</code>:</p>
 <pre><code class="language-rust">    #[test]
     fn test_get_foos() {
@@ -337,7 +337,7 @@ brk(0x213c0000)                         = 0x213c0000
 <h2 id="2173130770-third-attempt-at-freeing-the-memory-properly">
   <a class="title" href="#2173130770-third-attempt-at-freeing-the-memory-properly">Third attempt at freeing the memory properly</a>
   <a class="hash-anchor" href="#2173130770-third-attempt-at-freeing-the-memory-properly" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
->Third attempt at freeing the memory properly</h2>
+</h2>
 <p>So, in our codebase at work, we have defined this type:</p>
 <pre><code class="language-rust">/// Owning Array i.e. `Vec&lt;T&gt;` in Rust or `std::vector&lt;T&gt;` in C++.
 #[repr(C)]
@@ -394,7 +394,7 @@ mod tests {
 <h2 id="1920616220-defer">
   <a class="title" href="#1920616220-defer">Defer</a>
   <a class="hash-anchor" href="#1920616220-defer" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
->Defer</h2>
+</h2>
 <p>The test is trivial right now but in real code, there are many code paths that sometimes allocate, sometimes not, with validation interleaved, and early returns, so we'd really like if we could statically demonstrate that the memory is always correctly freed. To ourselves, to auditors, etc.</p>
 <p>One example at work of such hairy code is: building a linked list (in Rust), fetching more from the network based on the content of the last node in the list, and appending the additional data to the linked list, until some flag is detected in the encoded data. Oh, and there is also validation of the incoming data, so you might have to return early with a partially constructed list which should be properly cleaned up.</p>
 <p>And there are many such examples like this, where the memory is often allocated/deallocated with a C API and it's not always possible to use RAII. So <code>defer</code> comes in handy.</p>
@@ -437,7 +437,7 @@ error[E0502]: cannot borrow `foos.len` as immutable because it is also borrowed 
 <h2 id="629489335-possible-solutions">
   <a class="title" href="#629489335-possible-solutions">Possible solutions</a>
   <a class="hash-anchor" href="#629489335-possible-solutions" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
->Possible solutions</h2>
+</h2>
 <p>So that is why I argue that Rust should get a <code>defer</code> statement in the language and the borrow checker should be made aware of this construct to allow this approach to take place.</p>
 <p>But what can we do otherwise? Are there any alternatives?</p>
 <ul>
@@ -475,7 +475,7 @@ It's very nifty, but I am not sure I would enjoy reading and writing this kind o
 <h2 id="3796851539-conclusion">
   <a class="title" href="#3796851539-conclusion">Conclusion</a>
   <a class="hash-anchor" href="#3796851539-conclusion" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
->Conclusion</h2>
+</h2>
 <p>Rust + FFI is nasty and has a lot of friction. I went at work through all these steps I went through in this article, and this happens a lot.</p>
 <p>The crux of the issue is that there is a lot of knowledge to keep in our heads, lots of easy ways to shoot ourselves in the foot, and we have to reconcile what various tools tell us: even if the compiler is happy, the tests might not be. Even the tests are happy, Miri might not be. Even if we think we have done the right thing, we discover later, buried deep in the docs, that in fact, we didn't. It's definitely for experts only.</p>
 <p>This should not be so hard! Won't somebody think of the <del>children</del> Rust FFI users?</p>
@@ -483,7 +483,7 @@ It's very nifty, but I am not sure I would enjoy reading and writing this kind o
 <h2 id="1681326077-addendum-one-more-gotcha">
   <a class="title" href="#1681326077-addendum-one-more-gotcha">Addendum: One more gotcha</a>
   <a class="hash-anchor" href="#1681326077-addendum-one-more-gotcha" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
->Addendum: One more gotcha</h2>
+</h2>
 <p>Rust guarantees that the underlying pointer in <code>Vec</code> is not null. And <code>OwningArrayC</code> mirrors <code>Vec</code>, so it should be the same, right? Well consider this C code:</p>
 <pre><code class="language-c">int main() {
     OwningArrayC_Foo foos = {0};

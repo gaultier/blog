@@ -162,7 +162,7 @@ it was <a href="http://blog.klipse.tech/scheme/2016/09/11/scheme-tutorial-1.html
 <h2 id="2580162644-the-problem">
   <a class="title" href="#2580162644-the-problem">The problem</a>
   <a class="hash-anchor" href="#2580162644-the-problem" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
->The problem</h2>
+</h2>
 <p>We have a string looking like this: <code>AabcdZZqQ</code> which represents a chain of
 chemical units. Adjacent units of the same type (i.e letter) and opposite
 polarity (i.e casing) react together and disappear.
@@ -172,7 +172,7 @@ It means we want to remove adjacent characters which are the same letter and hav
 <h2 id="3898953298-working-with-the-repl-to-iteratively-close-in-on-a-solution">
   <a class="title" href="#3898953298-working-with-the-repl-to-iteratively-close-in-on-a-solution">Working with the REPL to iteratively close in on a solution</a>
   <a class="hash-anchor" href="#3898953298-working-with-the-repl-to-iteratively-close-in-on-a-solution" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
->Working with the REPL to iteratively close in on a solution</h2>
+</h2>
 <p>First, let's define our input, which is a string:</p>
 <pre><code class="language-scheme">(define input &quot;aAbxXBctTCz&quot;)
 </code></pre>
@@ -264,7 +264,7 @@ more readable and concise to use pattern matching.</p>
 <h3 id="3881950255-a-small-detour-pattern-matching">
   <a class="title" href="#3881950255-a-small-detour-pattern-matching">A small detour: pattern matching</a>
   <a class="hash-anchor" href="#3881950255-a-small-detour-pattern-matching" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
->A small detour: pattern matching</h3>
+</h3>
 <p>Scheme has a minimalist core, so we do not get pattern matching out of
 the box, but we can easily add it with the package <code>matchable</code>. Let's install
 it in the terminal:</p>
@@ -311,7 +311,7 @@ list, to show that pattern matching is also a way to do destructuring.</p>
 <h3 id="1617151895-using-pattern-matching-to-solve-our-problem">
   <a class="title" href="#1617151895-using-pattern-matching-to-solve-our-problem">Using pattern matching to solve our problem</a>
   <a class="hash-anchor" href="#1617151895-using-pattern-matching-to-solve-our-problem" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
->Using pattern matching to solve our problem</h3>
+</h3>
 <p>If the second list (the input) is empty, it means we are
 finished, so we return the first list (<code>acc</code>):</p>
 <pre><code class="language-scheme">(define (chem-react acc input)
@@ -394,7 +394,7 @@ as <code>fold</code> and it ends up very small.</p>
 <h2 id="405744868-the-final-solution">
   <a class="title" href="#405744868-the-final-solution">The final solution</a>
   <a class="hash-anchor" href="#405744868-the-final-solution" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
->The final solution</h2>
+</h2>
 <p>Here I use the package <code>clojurian</code> (<code>chicken-install clojurian</code>) to have access
 to the <code>-&gt;&gt;</code> macro which makes code more readable. It works like the pipe in the
 shell. Instead of writing:</p>
@@ -511,7 +511,7 @@ meaning we could end up allocating thousands of big strings, and being quite slo
 <h2 id="3796851539-conclusion">
   <a class="title" href="#3796851539-conclusion">Conclusion</a>
   <a class="hash-anchor" href="#3796851539-conclusion" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
->Conclusion</h2>
+</h2>
 <p>That's it, we solved the fifth Advent of Code challenge in Scheme. The solution
 is under 30 lines of code, is (hopefully) simple and readable, and has a
 performance close to C, while having memory safety (I had several segfaults

@@ -175,7 +175,7 @@
 <h2 id="1714161565-pprof">
   <a class="title" href="#1714161565-pprof">Pprof</a>
   <a class="hash-anchor" href="#1714161565-pprof" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
->Pprof</h2>
+</h2>
 <p>Here is the plan:</p>
 <ol>
 <li>Each time there is an allocation in our program, we record information about it in an array.</li>
@@ -189,7 +189,7 @@
 <h2 id="3080183899-the-text-format">
   <a class="title" href="#3080183899-the-text-format">The text format</a>
   <a class="hash-anchor" href="#3080183899-the-text-format" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
->The text format</h2>
+</h2>
 <p>Here is the text format we want to generate:</p>
 <pre><code>heap profile:    &lt;in use objects sum&gt;:  &lt;in use bytes sum&gt; [   &lt;space objects sum&gt;:  &lt;space bytes sum&gt;] @ heapprofile
 &lt;in use objects&gt;: &lt;in use bytes&gt; [&lt;space objects&gt;: &lt;space bytes&gt;] @ &lt;rip1&gt; &lt;rip2&gt; &lt;rip3&gt; [...]
@@ -357,7 +357,7 @@ Total: 0.0 MB
 <h2 id="1521287171-generating-a">
   <a class="title" href="#1521287171-generating-a">Generating a </a>
   <a class="hash-anchor" href="#1521287171-generating-a" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
->Generating a <code>pprof</code> profile</h2>
+<code>pprof</code> profile</h2>
 <p>Let's start with a very simple arena (directly based on <a href="https://nullprogram.com/blog/2023/09/27/">https://nullprogram.com/blog/2023/09/27/</a>) and show how it is used:</p>
 <pre><code class="language-c">#define _GNU_SOURCE
 #include &lt;stdint.h&gt;
@@ -609,7 +609,7 @@ $ pprof --web ./a.out heap.profile
 <h2 id="2279041372-variations-and-limitations">
   <a class="title" href="#2279041372-variations-and-limitations">Variations and limitations</a>
   <a class="hash-anchor" href="#2279041372-variations-and-limitations" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
->Variations and limitations</h2>
+</h2>
 <ul>
 <li>For this article we always do memory profiling and abort once the arena is full; but it does not have to be this way. Memory profiling could be enabled in a CLI program with a command line flag; if it is disabled we do not create a memory profile nor an arena for it. Or, it could be enabled/disabled dynamically, after a given amount of time, etc. It could also stop when its dedicated arena is full instead of aborting the whole program.</li>
 <li>Sampling could be easily added to <code>mem_profile_record_alloc</code> to only record some records, say 1%</li>
@@ -620,7 +620,7 @@ $ pprof --web ./a.out heap.profile
 <h2 id="3437344394-alternatives">
   <a class="title" href="#3437344394-alternatives">Alternatives</a>
   <a class="hash-anchor" href="#3437344394-alternatives" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
->Alternatives</h2>
+</h2>
 <p><code>pprof</code> (the Perl one) is not the only way to get this information.</p>
 <p>It turns out that your browser comes with a built-in profiler and a nice one to use at that! And it has support for native allocations, stack traces and so forth. Another possibility is the new <code>pprof</code> (the Go one). They all have more features than the original <code>pprof</code> that are really handy, most notably:</p>
 <ul>
@@ -642,14 +642,14 @@ $ pprof --web ./a.out heap.profile
 <h2 id="3796851539-conclusion">
   <a class="title" href="#3796851539-conclusion">Conclusion</a>
   <a class="hash-anchor" href="#3796851539-conclusion" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
->Conclusion</h2>
+</h2>
 <p>I like that one of the most common memory profilers uses a very simple text format that anyone can generate, and that's it's stand-alone. It's very UNIXy!</p>
 <p>Nonetheless, I will in the future explore the other aforementioned profilers (probably the Chrome one because it seems the most straightforward) and I do not think it should be much additional work. It's nice to leverage the existing browser to avoid having to install a profiler.</p>
 <p>After all, it's been <a href="https://technology.riotgames.com/news/profiling-real-world-performance-league">done before</a>!</p>
 <h2 id="1512890027-addendum-the-full-code">
   <a class="title" href="#1512890027-addendum-the-full-code">Addendum: the full code</a>
   <a class="hash-anchor" href="#1512890027-addendum-the-full-code" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
->Addendum: the full code</h2>
+</h2>
 <details>
   <summary>The full code</summary>
 <pre><code class="language-c">#define _GNU_SOURCE

@@ -171,7 +171,7 @@ It means we want to remove adjacent characters which are the same letter and hav
 <h2 id="2859141830-the-new-solution">
   <a class="title" href="#2859141830-the-new-solution">The new solution</a>
   <a class="hash-anchor" href="#2859141830-the-new-solution" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
->The new solution</h2>
+</h2>
 <p>I came up with a new algorithm, which on paper does less work. It's one linear pass on the input, and does not allocate.</p>
 <p>Since the result we care about is the number of remaining characters, we simply keep track of the count as we sift through the input.</p>
 <p>We maintain two pointers, <code>current</code> and <code>next</code>, which we compare to decide whether we should merge the characters they point to. 'Merging' means setting the two characters to <code>0</code> (it's basically a tombstone) and lower the count.</p>
@@ -221,7 +221,7 @@ We could memoize this location, but that would basically come down to the Scheme
 <h2 id="2432913330-the-x86-64-implementation">
   <a class="title" href="#2432913330-the-x86-64-implementation">The x86_64 implementation</a>
   <a class="hash-anchor" href="#2432913330-the-x86-64-implementation" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
->The x86_64 implementation</h2>
+</h2>
 <p><em>For a gentle introduction to x64 assembly, go read an <a href="/blog/x11_x64.html">earlier article</a> of mine.</em></p>
 <pre><code class="language-x86asm">BITS 64
 CPU X64
@@ -419,7 +419,7 @@ static solve:function
 <h2 id="2843714489-benchmarking">
   <a class="title" href="#2843714489-benchmarking">Benchmarking</a>
   <a class="hash-anchor" href="#2843714489-benchmarking" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
->Benchmarking</h2>
+</h2>
 <p>So, did it work? Is it fast? Let's compare the old C solution (also embedding the input data for a fair comparison) with our new Assembly one:</p>
 <pre><code class="language-sh">$ clang -Ofast -g3 -march=native aoc2018_5.c -o aoc2018_5-c
 $ hyperfine --warmup 3 --shell=none ./aoc2018_5 ./aoc2018_5-c
@@ -440,7 +440,7 @@ Summary
 <h2 id="1768815813-learnings">
   <a class="title" href="#1768815813-learnings">Learnings</a>
   <a class="hash-anchor" href="#1768815813-learnings" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
->Learnings</h2>
+</h2>
 <ul>
 <li>Assembly can absolutely be written by hand, although with (much) more effort and a harder time troubleshooting what goes wrong.</li>
 <li>Some tools (profilers, reverse-engineering tools) expect that the assembly they consume came from a C source file and will be confused when it's not the case.</li>
@@ -453,11 +453,11 @@ Summary
 <h2 id="2879187008-appendix-the-full-code">
   <a class="title" href="#2879187008-appendix-the-full-code">Appendix: The full code</a>
   <a class="hash-anchor" href="#2879187008-appendix-the-full-code" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
->Appendix: The full code</h2>
+</h2>
 <h3 id="2199062290-the-old-c-implementation">
   <a class="title" href="#2199062290-the-old-c-implementation">The old C implementation</a>
   <a class="hash-anchor" href="#2199062290-the-old-c-implementation" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
->The old C implementation</h3>
+</h3>
 <details>
   <summary>The full code</summary>
 <pre><code class="language-c">#include &lt;stdint.h&gt;
@@ -1165,7 +1165,7 @@ int main() {
 <h3 id="2467435296-the-x64-implementation">
   <a class="title" href="#2467435296-the-x64-implementation">The x64 implementation</a>
   <a class="hash-anchor" href="#2467435296-the-x64-implementation" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
->The x64 implementation</h3>
+</h3>
 <details>
   <summary>The full code</summary>
 <pre><code class="language-x86asm">BITS 64

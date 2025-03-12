@@ -350,7 +350,7 @@ static void html_collect_titles_rec(PgHtmlNode *node, TitleDyn *titles,
     new_title.title = pg_html_get_title_content(node);
     new_title.content_html_id = html_make_id(new_title.title, allocator);
     new_title.pos_start = node->token_start.start;
-    new_title.pos_end = node->token_start.end;
+    new_title.pos_end = node->first_child->token_end.end;
     // Other fields backpatched.
 
     *PG_DYN_PUSH(titles, allocator) = new_title;
