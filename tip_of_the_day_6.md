@@ -76,7 +76,7 @@ The value of interest is `value.len`. So initially I tried to access it in `bpft
 
 So, it's a mess ...
 
-I fired up `gdb` and printed registers directly when the `cache_insert` function is entered. I discovered by doing `print $rdx` that (on my machine, with this compiler and build flags, yada yada yada), the `rdx` register contains `value.len`. I.e. the compiler unpacks `value` which is a struct of two fields, into `arg1` (i.e. the `rsi` register) and `arg2` (i.e. the `rdx` register). 
+I fired up `gdb` and printed registers directly when the `cache_insert` function is entered. I discovered by doing `info registers` that (on my machine, with this compiler and build flags, yada yada yada), the `rdx` register contains `value.len`. I.e. the compiler unpacks `value` which is a struct of two fields, into `arg1` (i.e. the `rsi` register) and `arg2` (i.e. the `rdx` register). 
 
 Thus, this call: `cache_insert(foo, bar)` gets transformed by the compiler into `cache_insert(foo, bar.data, bar.len)`, and the third function argument (aka `arg2`) is our length.
 
