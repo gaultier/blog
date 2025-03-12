@@ -117,6 +117,9 @@
 <h1>Tip of the day #1: Count lines of Rust code, ignoring tests</h1>
   <div class="tags"> <a href="/blog/articles-by-tag.html#rust" class="tag">Rust</a> <a href="/blog/articles-by-tag.html#tip-of-the-day" class="tag">Tip of the day</a> <a href="/blog/articles-by-tag.html#awk" class="tag">Awk</a></div>
   </div>
+ <strong>Table of contents</strong>
+<ul>
+</ul>
 
 <p>I have a Rust codebase at work. The other day, I was wondering how many lines of code were in there. Whether you use <code>wc -l ***.rs</code> or a more fancy tool like <code>tokei</code>, there is an issue: this will count the source code <em>as well as</em> tests.</p>
 <p>That's because in Rust and in some other languages, people write their tests in the same files as the implementation. Typically it looks like that:</p>

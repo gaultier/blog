@@ -24,9 +24,7 @@
 #define BASE_URL "https://gaultier.github.io/blog"
 #define METADATA_DELIMITER "---"
 #define BACK_LINK "<p><a href=\"/blog\"> ⏴ Back to all articles</a></p>\n"
-#if 0
 #define FNV_SEED ((u32)0x811c9dc5)
-#endif
 
 typedef u32 TitleHash;
 
@@ -321,23 +319,23 @@ static PgString datetime_to_date(PgString datetime) {
   return status.stdout_captured;
 }
 
-#if 0
-[[nodiscard]] static TitleHash title_compute_hash(Title *title, u32 hash) {
+[[nodiscard]] static TitleHash title_compute_hash(PgHtmlNode *node, u32 hash) {
   // Reached root?
-  if (title == title->parent) {
+  if (!node) {
     return hash;
   }
 
-  for (u64 i = 0; i < title->title.len; i++) {
-    u8 c = PG_SLICE_AT(title->title, i);
+  PgString title_content = pg_html_get_title_content(node);
+
+  for (u64 i = 0; i < title_content.len; i++) {
+    u8 c = PG_SLICE_AT(title_content, i);
     hash = (hash ^ (u32)c) * 0x01000193;
   }
   // Separator between titles.
   hash = (hash ^ (u32)'/') * 0x01000193;
 
-  return title_compute_hash(title->parent, hash);
+  return title_compute_hash(node->parent, hash);
 }
-#endif
 
 [[nodiscard]]
 static Title *html_parse_titles(PgHtmlNode *html_root, PgAllocator *allocator) {
@@ -536,38 +534,48 @@ static void html_write_decorated_titles(PgString html, Pgu8Dyn *sb, Title *root,
   PG_ASSERT(sb->len > html.len);
 }
 
-static void article_write_toc_rec(Pgu8Dyn *sb, Title *title,
+static void article_write_toc_rec(Pgu8Dyn *sb, PgHtmlNode *node,
                                   PgAllocator *allocator) {
-  if (!title) {
+  if (!node) {
+    return;
+  }
+  u8 title_level = pg_html_get_title_level(node);
+  if (0 == title_level) {
+    article_write_toc_rec(sb, node->first_child, allocator);
+    article_write_toc_rec(sb, node->next_sibling, allocator);
     return;
   }
 
-  if (title->level > 1) {
+  if (title_level > 1) {
+    TitleHash hash = title_compute_hash(node, FNV_SEED);
+    PgString title_content = pg_html_get_title_content(node);
+    PgString content_html_id = html_make_id(title_content, allocator);
+
     PG_DYN_APPEND_SLICE(sb, PG_S("\n  <li>\n    <a href=\"#"), allocator);
-    pg_string_builder_append_u64(sb, title->hash, allocator);
+    pg_string_builder_append_u64(sb, hash, allocator);
     PG_DYN_APPEND_SLICE(sb, PG_S("-"), allocator);
-    PG_DYN_APPEND_SLICE(sb, title->content_html_id, allocator);
+    PG_DYN_APPEND_SLICE(sb, content_html_id, allocator);
     PG_DYN_APPEND_SLICE(sb, PG_S("\">"), allocator);
-    PG_DYN_APPEND_SLICE(sb, title->title, allocator);
+    PG_DYN_APPEND_SLICE(sb, title_content, allocator);
     PG_DYN_APPEND_SLICE(sb, PG_S("</a>\n"), allocator);
   }
 
-  if (title->first_child) {
+  if (node->first_child) {
     PG_DYN_APPEND_SLICE(sb, PG_S("<ul>\n"), allocator);
   }
-  article_write_toc_rec(sb, title->first_child, allocator);
-  if (title->first_child) {
+  article_write_toc_rec(sb, node->first_child, allocator);
+  if (node->first_child) {
     PG_DYN_APPEND_SLICE(sb, PG_S("</ul>\n"), allocator);
   }
 
-  if (title->level > 1) {
+  if (title_level > 1) {
     PG_DYN_APPEND_SLICE(sb, PG_S("  </li>\n"), allocator);
   }
 
-  article_write_toc_rec(sb, title->next_sibling, allocator);
+  article_write_toc_rec(sb, node->next_sibling, allocator);
 }
 
-static void article_write_toc(Pgu8Dyn *sb, Title *root,
+static void article_write_toc(Pgu8Dyn *sb, PgHtmlNode *root,
                               PgAllocator *allocator) {
   if (!root->first_child) {
     return;
@@ -667,7 +675,7 @@ static void article_generate_html_file(PgFileDescriptor markdown_file,
   PG_DYN_APPEND_SLICE(&sb, PG_S("</div>\n"), allocator);
   PG_DYN_APPEND_SLICE(&sb, PG_S("  </div>\n"), allocator);
 
-  article_write_toc(&sb, title_root, allocator);
+  article_write_toc(&sb, html_root, allocator);
 
   PG_DYN_APPEND_SLICE(&sb, PG_S("\n"), allocator);
 
