@@ -143,7 +143,7 @@ That's useful to limit the overall memory usage. Obviously this value is directl
 <p>But then I am wondering: what value should the docs recommend for this configuration field? A 1000 entries, 10 000? One factor is how many distinct entries do we expect, but another is: <em>How big is a cache entry</em>?</p>
 <p>An entry in the cache in this case is a slice of bytes (a blob) so it's not statically possible to determine, just looking at the code, how much memory it will consume.</p>
 <p>This distribution of entry sizes is however easy to uncover: all entries in the cache are inserted by one callback. It happens to be a Go function that is passed to a C library (via CGO) but this trick works with any language. This function takes as argument a slice of bytes to be inserted in the cache. So, add a log in this callback, print the slice length, process all the relevant logs, compute some statistics, and done? Or, add a custom Prometheus metric, deploy, done?</p>
-<p>Well... why modify the source code when we don't have too? Let's use <code>bpftrace</code> to determine the distribution of entry sizes <em>at runtime</em> on the unmodified program! In the past I have used <code>dtrace</code> on macOS which is similar and the direct inspiration for <code>bpftrace</code>. I find <code>dtrace</code> more powerful in some regards - although <code>bpftrace</code> has support for loops whereas <code>dtrace</code> does not. Point being, the <code>bpftrace</code> incantation can be adapted for <code>dtrace</code> pretty easily. Both of these tools are essentials workhorses of exploratory programming and troubleshooting.</p>
+<p>Well... why modify the source code when we don't have too? Let's use <a href="https://github.com/bpftrace/bpftrace">bpftrace</a> to determine the distribution of entry sizes <em>at runtime</em> on the unmodified program! In the past I have used <code>dtrace</code> on macOS which is similar and the direct inspiration for <code>bpftrace</code>. I find <code>dtrace</code> more powerful in some regards - although <code>bpftrace</code> has support for loops whereas <code>dtrace</code> does not. Point being, the <code>bpftrace</code> incantation can be adapted for <code>dtrace</code> pretty easily. Both of these tools are essential workhorses of exploratory programming and troubleshooting.</p>
 <h2 id="3714754269-bpftrace">
   <a class="title" href="#3714754269-bpftrace">Bpftrace</a>
   <a class="hash-anchor" href="#3714754269-bpftrace" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
@@ -159,6 +159,7 @@ That's useful to limit the overall memory usage. Obviously this value is directl
 [512, 640)            96 |@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@|
 </code></pre>
 <p>So all slices of bytes have their length between <code>512</code> and <code>640</code> in this case, all in one bucket.</p>
+<hr />
 <p>Alternatively, we can point <code>bpftrace</code> at the Go function instead of the C function:</p>
 <pre><code>func (c Cache) Insert(ctx context.Context, key [32]byte, value []byte, expiryDate time.Time) error { [...] }
 </code></pre>
@@ -170,7 +171,7 @@ That's useful to limit the overall memory usage. Obviously this value is directl
   <a class="title" href="#3450441466-addendum-function-arguments-in-bpftrace">Addendum: Function arguments in bpftrace</a>
   <a class="hash-anchor" href="#3450441466-addendum-function-arguments-in-bpftrace" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
-<p><code>bpftrace</code> does neither read debug information nor C headers by default so all function arguments are register sized, i.e. 64 bits on x86_64. <code>bpftrace</code> does not even know how many arguments the function accepts!</p>
+<p><code>bpftrace</code> reads neither debug information nor C headers by default so all function arguments are register sized, i.e. 64 bits on x86_64. <code>bpftrace</code> does not even know how many arguments the function accepts!</p>
 <p>My function signature is (simplified):</p>
 <pre><code class="language-c">struct ByteSliceView {
     uint8_t* data;

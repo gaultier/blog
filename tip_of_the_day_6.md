@@ -14,7 +14,7 @@ An entry in the cache in this case is a slice of bytes (a blob) so it's not stat
 
 This distribution of entry sizes is however easy to uncover: all entries in the cache are inserted by one callback. It happens to be a Go function that is passed to a C library (via CGO) but this trick works with any language. This function takes as argument a slice of bytes to be inserted in the cache. So, add a log in this callback, print the slice length, process all the relevant logs, compute some statistics, and done? Or, add a custom Prometheus metric, deploy, done?
 
-Well... why modify the source code when we don't have too? Let's use `bpftrace` to determine the distribution of entry sizes *at runtime* on the unmodified program! In the past I have used `dtrace` on macOS which is similar and the direct inspiration for `bpftrace`. I find `dtrace` more powerful in some regards - although `bpftrace` has support for loops whereas `dtrace` does not. Point being, the `bpftrace` incantation can be adapted for `dtrace` pretty easily. Both of these tools are essentials workhorses of exploratory programming and troubleshooting.
+Well... why modify the source code when we don't have too? Let's use [bpftrace](https://github.com/bpftrace/bpftrace) to determine the distribution of entry sizes *at runtime* on the unmodified program! In the past I have used `dtrace` on macOS which is similar and the direct inspiration for `bpftrace`. I find `dtrace` more powerful in some regards - although `bpftrace` has support for loops whereas `dtrace` does not. Point being, the `bpftrace` incantation can be adapted for `dtrace` pretty easily. Both of these tools are essential workhorses of exploratory programming and troubleshooting.
 
 ## Bpftrace
 
@@ -39,6 +39,7 @@ $ sudo bpftrace -e 'uprobe:./itest.test:cache_insert {@bytes=lhist(arg2, 0 , 163
 
 So all slices of bytes have their length between `512` and `640` in this case, all in one bucket.
 
+---
 
 Alternatively, we can point `bpftrace` at the Go function instead of the C function:
 
@@ -56,7 +57,7 @@ and we get the same output.
 
 ## Addendum: Function arguments in bpftrace
 
-`bpftrace` does neither read debug information nor C headers by default so all function arguments are register sized, i.e. 64 bits on x86_64. `bpftrace` does not even know how many arguments the function accepts!
+`bpftrace` reads neither debug information nor C headers by default so all function arguments are register sized, i.e. 64 bits on x86_64. `bpftrace` does not even know how many arguments the function accepts!
 
 My function signature is (simplified):
 
