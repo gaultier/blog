@@ -212,7 +212,7 @@
 <li><code>eb</code> does not have a timeout.</li>
 </ul>
 <p>So let's implement our own that does both! As we'll see, it's much less straightforward, and thus more interesting, than I thought. It's a whirlwind tour through Unix deeps. If you're interested in systems programming, Operating Systems, multiplexed I/O, data races, weird historical APIs, and all the ways you can shoot yourself in the foot with just a few system calls, you're in the right place!</p>
-<<h2 id="785223571-what-are-we-building">
+<h2 id="785223571-what-are-we-building">
   <a class="title" href="#785223571-what-are-we-building">What are we building?</a>
   <a class="hash-anchor" href="#785223571-what-are-we-building" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
@@ -280,7 +280,7 @@ for retry in 0..&lt;10:
 exit(1)
 </code></pre>
 <p><em>There is a degenerate case where the give command to run is wrong (e.g. typo in the parameters) or the executable does not exist, and our program will happily retry it to the bitter end. But there is solace: this is bounded by the number of retries (10). That's why we do not retry forever.</em></p>
-<<h2 id="1028185512-first-way-old-school-sigsuspend">
+<h2 id="1028185512-first-way-old-school-sigsuspend">
   <a class="title" href="#1028185512-first-way-old-school-sigsuspend">First way: old-school sigsuspend</a>
   <a class="hash-anchor" href="#1028185512-first-way-old-school-sigsuspend" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
@@ -311,7 +311,7 @@ exit(1)
 <li>They are many libc functions and system calls relating to signals and that's a lot to learn. A non-exhaustive list e.g. on Linux: <code>kill(1), alarm(2), kill(2), pause(2), sigaction(2), signalfd(2),  sigpending(2),  sigprocmask(2),   sigsuspend(2),  bsd_signal(3),  killpg(3),  raise(3),  siginterrupt(3), sigqueue(3), sigsetops(3), sigvec(3), sysv_signal(3), signal(7)</code>. Oh wait, I forgot <code>sigemptyset(3)</code> and  <code>sigaddset(3)</code>. And I'm sure I forgot about a few!</li>
 </ul>
 <p>So, let's stick with signals for a bit but simplify our current approach.</p>
-<<h2 id="3926643734-second-way-sigtimedwait">
+<h2 id="3926643734-second-way-sigtimedwait">
   <a class="title" href="#3926643734-second-way-sigtimedwait">Second way: sigtimedwait</a>
   <a class="hash-anchor" href="#3926643734-second-way-sigtimedwait" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
@@ -383,7 +383,7 @@ int main(int argc, char *argv[]) {
 </code></pre>
 <p>I like this implementation. It's pretty easy to convince ourselves looking at the code that it is obviously correct, and that's a very important factor for me.</p>
 <p>We still have to deal with signals though. Could we reduce their imprint on our code?</p>
-<<h2 id="184214679-third-approach-self-pipe-trick">
+<h2 id="184214679-third-approach-self-pipe-trick">
   <a class="title" href="#184214679-third-approach-self-pipe-trick">Third approach: Self-pipe trick</a>
   <a class="hash-anchor" href="#184214679-third-approach-self-pipe-trick" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
@@ -472,7 +472,7 @@ with the desired sigmask, avoiding the race.)</p>
 </li>
 </ul>
 <p>So, this trick is clever, but wouldn't it be nice if we could avoid signals <em>entirely</em>?</p>
-<<h3 id="848676761-a-simpler-self-pipe-trick">
+<h3 id="848676761-a-simpler-self-pipe-trick">
   <a class="title" href="#848676761-a-simpler-self-pipe-trick">A simpler self-pipe trick</a>
   <a class="hash-anchor" href="#848676761-a-simpler-self-pipe-trick" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h3>
@@ -554,7 +554,7 @@ int main(int argc, char *argv[]) {
 }
 </code></pre>
 <p>Voila, no signals and no global state!</p>
-<<h2 id="3012560712-fourth-approach-linux-s-signalfd">
+<h2 id="3012560712-fourth-approach-linux-s-signalfd">
   <a class="title" href="#3012560712-fourth-approach-linux-s-signalfd">Fourth approach: Linux's signalfd</a>
   <a class="hash-anchor" href="#3012560712-fourth-approach-linux-s-signalfd" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
@@ -562,7 +562,7 @@ int main(int argc, char *argv[]) {
 <p>Cool, but also....Was it really necessary to introduce a system call for that? I guess the advantage is clarity.</p>
 <p>I would prefer extending <code>poll</code> to support things other than file descriptors, instead of converting everything a file descriptor to be able to use <code>poll</code>.</p>
 <p>Ok, next!</p>
-<<h2 id="4269605744-fifth-approach-process-descriptors">
+<h2 id="4269605744-fifth-approach-process-descriptors">
   <a class="title" href="#4269605744-fifth-approach-process-descriptors">Fifth approach: process descriptors</a>
   <a class="hash-anchor" href="#4269605744-fifth-approach-process-descriptors" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
@@ -654,7 +654,7 @@ int main(int argc, char *argv[]) {
 </code></pre>
 <p>A small note: To <code>poll</code> a process descriptor, Linux wants us to use <code>POLLIN</code> whereas FreeBSD wants us to use <code>POLLHUP</code>. So we use <code>POLLHUP | POLLIN</code> since there are no side-effects to use both.</p>
 <p>Another small note: a process descriptor, just like a file descriptor, takes up resources on the kernel side and we can reach some system limits (or even the memory limit), so it's good practice to <code>close</code> it as soon as possible to free up resources. For us, that's right before retrying. On FreeBSD, closing the process descriptor also kills the process, so it's very short, just one system call. On Linux, we need to do both.</p>
-<<h2 id="4073477733-sixth-approach-macos-s-and-bsd-s-kqueue">
+<h2 id="4073477733-sixth-approach-macos-s-and-bsd-s-kqueue">
   <a class="title" href="#4073477733-sixth-approach-macos-s-and-bsd-s-kqueue">Sixth approach: MacOS's and BSD's kqueue</a>
   <a class="hash-anchor" href="#4073477733-sixth-approach-macos-s-and-bsd-s-kqueue" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
@@ -733,7 +733,7 @@ int main(int argc, char *argv[]) {
 </code></pre>
 <p>The only surprising thing, perhaps, is that a <code>kqueue</code> is stateful, so once the child process exited by itself or was killed, we have to remove the watcher on its PID, since the next time we spawn a child process, the PID will very likely be different. <code>kqueue</code> offers the flag <code>EV_ONESHOT</code>, which automatically deletes the event from the queue once it has been consumed by us. However, it would not help in all cases: if the timeout triggers, no event was consumed, and we have to kill the child process, which creates an event in the queue! So we have to always consume/delete the event from the queue right before we retry, with a second <code>kevent</code> call. That's the same situation as with the self-pipe approach where we unconditionally <code>read</code> from the pipe to 'clear' it before retrying.</p>
 <p>I love that <code>kqueue</code> works with every kind of Unix entity: file descriptor, pipes, PIDs, Vnodes, sockets, etc. Even signals! However, I am not sure that I love its statefulness. I find the <code>poll</code> API simpler, since it's stateless. But perhaps this behavior is necessary for some corner cases or for performance to avoid the linear scanning that <code>poll</code> entails? It's interesting to observe that Linux's <code>epoll</code> went the same route as <code>kqueue</code> with a similar API, however, <code>epoll</code> can only watch plain file descriptors.</p>
-<<h3 id="1021934944-a-parenthesis-libkqueue">
+<h3 id="1021934944-a-parenthesis-libkqueue">
   <a class="title" href="#1021934944-a-parenthesis-libkqueue">A parenthesis: libkqueue</a>
   <a class="hash-anchor" href="#1021934944-a-parenthesis-libkqueue" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h3>
@@ -748,14 +748,14 @@ int main(int argc, char *argv[]) {
 </blockquote>
 </li>
 </ul>
-<<h3 id="2516997340-another-parenthesis-solaris-illumos-s-ports">
+<h3 id="2516997340-another-parenthesis-solaris-illumos-s-ports">
   <a class="title" href="#2516997340-another-parenthesis-solaris-illumos-s-ports">Another parenthesis: Solaris/illumos's ports</a>
   <a class="hash-anchor" href="#2516997340-another-parenthesis-solaris-illumos-s-ports" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h3>
 <p>So, if it was not enough that each major OS has its own way to watch many different kinds of entities (Windows has its own thing called <a href="https://learn.microsoft.com/en-us/windows/win32/fileio/i-o-completion-ports">I/O completion ports</a>, MacOS &amp; BSDs have <code>kqueue</code>, Linux has <code>epoll</code>), Solaris/illumos shows up and says: Watch me do my own thing. Well actually I do not know the chronology, they might in fact have been first, and some illumos kernel developers (namely Brian Cantrill in the fabulous <a href="https://www.youtube.com/watch?v=wTVfAMRj-7E">Cantrillogy</a>) have admitted that it would have been better for everyone if they also had adopted <code>kqueue</code>.</p>
 <p>Anyways, their own system is called <a href="https://www.illumos.org/man/3C/port_create">port</a> (or is it ports?) and it looks so similar to <code>kqueue</code> it's almost painful. And weirdly, they support all the different kinds of entities that <code>kqueue</code> supports <em>except</em> PIDs! And I am not sure that they support process descriptors either e.g. <code>pidfd_open</code>. However, they have an extensive compatibility layer for Linux so perhaps they do there.</p>
 <p><em>EDIT: illumos has <a href="https://illumos.org/man/3PROC/Pctlfd">Pctlfd</a> which seems to give a file descriptor for a given process, and this file descriptor could then be used <code>port_create</code> or <code>poll</code>.</em></p>
-<<h2 id="210343823-seventh-approach-linux-s-io-uring">
+<h2 id="210343823-seventh-approach-linux-s-io-uring">
   <a class="title" href="#210343823-seventh-approach-linux-s-io-uring">Seventh approach: Linux's io_uring</a>
   <a class="hash-anchor" href="#210343823-seventh-approach-linux-s-io-uring" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
@@ -836,7 +836,7 @@ int main(int argc, char *argv[]) {
 <p>The only difficulty here is in case of timeout: we kill the child directly, and we need to consume and discard the <code>waitid</code> entry in the completion queue. Just like <code>kqueue</code>.</p>
 <p>One caveat for io_uring: it's only supported on modern kernels (5.1+).</p>
 <p>Another caveat: some cloud providers e.g. Google Cloud disable <code>io_uring</code> due to security concerns when running untrusted code. So it's not ubiquitous.</p>
-<<h2 id="3235889612-eigth-approach-threads">
+<h2 id="3235889612-eigth-approach-threads">
   <a class="title" href="#3235889612-eigth-approach-threads">Eigth approach: Threads</a>
   <a class="hash-anchor" href="#3235889612-eigth-approach-threads" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
@@ -852,12 +852,12 @@ int main(int argc, char *argv[]) {
 <p>Now, this approach works but is kind of cumbersome (as noted by the readers), because threads interact in surprising ways with signals (yay, another thing to watch out for!) so we may have to set up signal masks to block/ignore some, and we must take care of not introducing data-races due to the global variables.</p>
 <p>Unless the problem is embarassingly parallel and the threads share nothing (e.g.: dividing an array into pieces and each thread gets its own piece to work on), I am reminded of the adage: &quot;You had two problems. You reach out for X. You now have 3 problems&quot;. And threads are often the X.</p>
 <p>Still, it's a useful tool in the toolbox.</p>
-<<h2 id="2864348830-ninth-approach-active-polling">
+<h2 id="2864348830-ninth-approach-active-polling">
   <a class="title" href="#2864348830-ninth-approach-active-polling">Ninth approach: Active polling.</a>
   <a class="hash-anchor" href="#2864348830-ninth-approach-active-polling" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>That's looping in user code with micro-sleeping to actively poll on the child status in a non-blocking way, for example using <code>wait(..., WNOHANG)</code>. Unless you have a very bizzare use case and you know what you are doing, please do not do this. This is unnecessary, bad for power consumption, and all we achieve is noticing late that the child ended. This approach is just here for completeness.</p>
-<<h2 id="3796851539-conclusion">
+<h2 id="3796851539-conclusion">
   <a class="title" href="#3796851539-conclusion">Conclusion</a>
   <a class="hash-anchor" href="#3796851539-conclusion" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
@@ -876,7 +876,7 @@ int main(int argc, char *argv[]) {
 <p>And OS developers have noticed and are working on new, better abstractions!</p>
 <p>Process descriptors seem to me so straightforward, so obviously correct, that I would definitely favor them over signals. They simply remove entire classes of bugs. If these are not available to me, I would perhaps use <code>kqueue</code> instead (with <code>libkqueue</code> emulation when necessary), because it means my program can be extended easily to watch for over types of entities and I like that the API is very straightforward: one call to create the queue and one call to use it.</p>
 <p>Finally, I regret that there is so much fragmentation across all operating systems. Perhaps <code>io_uring</code> will become more than a Linuxism and spread to Windows, MacOS, the BSDs, and illumos in the future?</p>
-<<h2 id="164672758-addendum-the-code">
+<h2 id="164672758-addendum-the-code">
   <a class="title" href="#164672758-addendum-the-code">Addendum: The code</a>
   <a class="hash-anchor" href="#164672758-addendum-the-code" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>

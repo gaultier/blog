@@ -200,7 +200,7 @@
 <p>I am by no means an expert in assembly or in X11. I just hope to provide an entertaining, approachable article, something a beginner can understand. Something I wished I had found when I was learning those topics. If you spot an error, please open a <a href="https://github.com/gaultier/blog">Github issue</a>!</p>
 </blockquote>
 <p><em>Note: Authentication is optional in the X11 protocol, but some X11 servers e.g. XWayland require it. Authentication is skipped here and is handled in a separate <a href="/blog/write_a_video_game_from_scratch_like_1987.html#authentication">article</a>.</em></p>
-<<h2 id="3018859686-what-do-we-need">
+<h2 id="3018859686-what-do-we-need">
   <a class="title" href="#3018859686-what-do-we-need">What do we need?</a>
   <a class="hash-anchor" href="#3018859686-what-do-we-need" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
@@ -221,7 +221,7 @@
 <p>Some readers have rightfully pointed out that Linux is the only mainstream operating system that officially provides a stable userland ABI, other OSes often break their ABI from (major) version to version and recommend all programs to link to a library (e.g. <code>libSystem</code> in the case of macOS). That layer guarantees API stability, and acts as a insulation layer from breaking changes in the ABI. In practice, for common system calls such as the ones we use here, they very rarely break, but doing more exotic things may break in the future. That actually happened to the Go project in the past on macOS! The solution if that happens is to simply recompile the program on the new version of the OS.</p>
 </blockquote>
 <p>So let's dive in!</p>
-<<h2 id="2049729589-x11-basics">
+<h2 id="2049729589-x11-basics">
   <a class="title" href="#2049729589-x11-basics">X11 basics</a>
   <a class="hash-anchor" href="#2049729589-x11-basics" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
@@ -229,7 +229,7 @@
 <p>Most applications will want to use <code>libX11</code> or <code>libxcb</code> which offer a C API, but we want to do that ourselves.</p>
 <p>Where the server lives is actually not relevant for a client, it might run on the same machine or in a data center far far away. Of course, in the context of a desktop computer in 2023, it will be running on the same machine, but that's a detail.</p>
 <p>The <a href="https://www.x.org/releases/X11R7.7/doc/xproto/x11protocol.html">official documentation</a> is pretty good, so when in doubt we can refer to it.</p>
-<<h2 id="1992549332-main-in-x64-assembly">
+<h2 id="1992549332-main-in-x64-assembly">
   <a class="title" href="#1992549332-main-in-x64-assembly">Main in x64 assembly</a>
   <a class="hash-anchor" href="#1992549332-main-in-x64-assembly" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
@@ -295,7 +295,7 @@ exit(8)                                 = ?
 +++ exited with 8 +++
 </code></pre>
 <p>Let's change it back to 0 and continue.</p>
-<<h2 id="2732446636-a-stack-primer">
+<h2 id="2732446636-a-stack-primer">
   <a class="title" href="#2732446636-a-stack-primer">A stack primer</a>
   <a class="hash-anchor" href="#2732446636-a-stack-primer" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
@@ -307,7 +307,7 @@ exit(8)                                 = ?
 <li>Before a function call, the stack pointer needs to be 16 bytes aligned, according to the System V ABI. Also, at the very beginning of a function, the stack pointer value is: <code>16*N + 8</code>. That's because before the function call, its value was 16 byte aligned, i.e. <code>16*N</code>, and the <code>call</code> instruction pushes on the stack the current location (the register <code>rip</code>, which is 8 bytes long), to know where to jump when the called function returns.</li>
 </ul>
 <p>Not abiding by those rules will result in nasty crashes, so be warned. That's because the location of where to jump when the function returns will be likely overwritten and the program will jump to the wrong location. That, or the stack content will be overwritten and the program will operate on wrong values. Bad either way.</p>
-<<h3 id="657479577-a-small-stack-example">
+<h3 id="657479577-a-small-stack-example">
   <a class="title" href="#657479577-a-small-stack-example">A small stack example</a>
   <a class="hash-anchor" href="#657479577-a-small-stack-example" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h3>
@@ -491,7 +491,7 @@ and rsp, -16
 </code></pre>
 <p>Finally, following those conventions means that our assembly functions can be safely called from C or other languages following the <a href="https://wiki.osdev.org/System_V_ABI">System V ABI</a>, without any modification, which is great.</p>
 <p><em>I have not talked about the red zone which is a 128 byte region at the bottom of the stack which our program is free to use as it pleases without having to change the stack pointer. In my opinion, it is not helpful and creates hard to track bugs, so I do not recommend to use it. To disable it entirely, run: <code>nasm -f elf64 -g main.nasm &amp;&amp; cc main.o -static -o main -mno-red-zone -nostdlib</code></em>.</p>
-<<h2 id="4163415294-opening-a-socket">
+<h2 id="4163415294-opening-a-socket">
   <a class="title" href="#4163415294-opening-a-socket">Opening a socket</a>
   <a class="hash-anchor" href="#4163415294-opening-a-socket" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
@@ -545,7 +545,7 @@ socket(AF_UNIX, SOCK_STREAM, 0)         = 3
 exit(0)                                 = ?
 +++ exited with 0 +++
 </code></pre>
-<<h2 id="2750592591-connecting-to-the-server">
+<h2 id="2750592591-connecting-to-the-server">
   <a class="title" href="#2750592591-connecting-to-the-server">Connecting to the server</a>
   <a class="hash-anchor" href="#2750592591-connecting-to-the-server" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
@@ -715,7 +715,7 @@ static x11_connect_to_server:function
   ret
 </code></pre>
 <p>We are ready to talk to the X11 server!</p>
-<<h2 id="484246098-sending-data-over-the-socket">
+<h2 id="484246098-sending-data-over-the-socket">
   <a class="title" href="#484246098-sending-data-over-the-socket">Sending data over the socket</a>
   <a class="hash-anchor" href="#484246098-sending-data-over-the-socket" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
@@ -945,7 +945,7 @@ static x11_send_handshake:function
 <blockquote>
 <p>From this point on, I will assume you are familiar with the basics of assembly and X11 and will not go as much into details.</p>
 </blockquote>
-<<h2 id="1309822244-generating-ids">
+<h2 id="1309822244-generating-ids">
   <a class="title" href="#1309822244-generating-ids">Generating ids</a>
   <a class="hash-anchor" href="#1309822244-generating-ids" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
@@ -973,7 +973,7 @@ static x11_next_id:function
   pop rbp
   ret
 </code></pre>
-<<h2 id="4134081642-opening-a-font">
+<h2 id="4134081642-opening-a-font">
   <a class="title" href="#4134081642-opening-a-font">Opening a font</a>
   <a class="hash-anchor" href="#4134081642-opening-a-font" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
@@ -1018,7 +1018,7 @@ static x11_open_font:function
   pop rbp
   ret
 </code></pre>
-<<h2 id="3515439192-creating-a-graphical-context">
+<h2 id="3515439192-creating-a-graphical-context">
   <a class="title" href="#3515439192-creating-a-graphical-context">Creating a graphical context</a>
   <a class="hash-anchor" href="#3515439192-creating-a-graphical-context" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
@@ -1070,7 +1070,7 @@ static x11_create_gc:function
   pop rbp
   ret
 </code></pre>
-<<h2 id="2863200396-creating-the-window">
+<h2 id="2863200396-creating-the-window">
   <a class="title" href="#2863200396-creating-the-window">Creating the window</a>
   <a class="hash-anchor" href="#2863200396-creating-the-window" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
@@ -1128,7 +1128,7 @@ static x11_create_window:function
   pop rbp
   ret
 </code></pre>
-<<h2 id="577694983-mapping-the-window">
+<h2 id="577694983-mapping-the-window">
   <a class="title" href="#577694983-mapping-the-window">Mapping the window</a>
   <a class="hash-anchor" href="#577694983-mapping-the-window" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
@@ -1165,7 +1165,7 @@ static x11_map_window:function
 <p>We now have a black window:</p>
 <p><img src="x11_x64_black_window.png" alt="Black window" /></p>
 <p>Yay!</p>
-<<h2 id="677275119-polling-for-server-messages">
+<h2 id="677275119-polling-for-server-messages">
   <a class="title" href="#677275119-polling-for-server-messages">Polling for server messages</a>
   <a class="hash-anchor" href="#677275119-polling-for-server-messages" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
@@ -1285,7 +1285,7 @@ static poll_messages:function
   pop rbp
   ret
 </code></pre>
-<<h2 id="3433791877-drawing-text">
+<h2 id="3433791877-drawing-text">
   <a class="title" href="#3433791877-drawing-text">Drawing text</a>
   <a class="hash-anchor" href="#3433791877-drawing-text" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
@@ -1384,7 +1384,7 @@ static x11_draw_text:function
 </code></pre>
 <p>Finally, we see our <code>Hello, world!</code> text displayed inside the window:</p>
 <p><img src="x11_x64_final.png" alt="Result" /></p>
-<<h2 id="1770781618-the-end">
+<h2 id="1770781618-the-end">
   <a class="title" href="#1770781618-the-end">The end</a>
   <a class="hash-anchor" href="#1770781618-the-end" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
@@ -1403,7 +1403,7 @@ static x11_draw_text:function
 <li>We could listen to keyboard and mouse events (the polling loop is easy to extend to do that)</li>
 </ul>
 <p>I hope that you had as much fun as I did!</p>
-<<h2 id="1512890027-addendum-the-full-code">
+<h2 id="1512890027-addendum-the-full-code">
   <a class="title" href="#1512890027-addendum-the-full-code">Addendum: the full code</a>
   <a class="hash-anchor" href="#1512890027-addendum-the-full-code" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>

@@ -168,7 +168,7 @@ It means we want to remove adjacent characters which are the same letter and hav
 <li>In the C solution, we use <code>abs(x) == 32</code> which we could avoid by doing <code>x*x == 32*32</code>.</li>
 </ul>
 <p>This coincided with me listening to an interview from the VLC developers saying they wrote hundred of thousand of lines of (multi platform!) Assembly code by hand in their new AV1 decoder. I thought that was intriguing, who still writes assembly by hand in 2023? Well these guys are no idiots so I should try it as well.</p>
-<<h2 id="2859141830-the-new-solution">
+<h2 id="2859141830-the-new-solution">
   <a class="title" href="#2859141830-the-new-solution">The new solution</a>
   <a class="hash-anchor" href="#2859141830-the-new-solution" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
@@ -218,7 +218,7 @@ print(remaining_count)
 We could memoize this location, but that would basically come down to the Scheme solution, having an output array of the same size as the input.</p>
 <p>Astute readers might have noticed a potential issue with the backwards search: We may underflow the <code>input</code> and go out of bounds! To avoid that, we could clamp <code>current</code>, but the branch misprediction is costly (an earlier implementation of mine did this and that was almost twice as slow!), and we can simplify the code as well as improve the performance by simply prefixing the <code>input</code> with a non-zero value that has no chance of being merged with the rest of the input, say, <code>1</code>.</p>
 <p>Let's implement it in x86_64 assembly!</p>
-<<h2 id="2432913330-the-x86-64-implementation">
+<h2 id="2432913330-the-x86-64-implementation">
   <a class="title" href="#2432913330-the-x86-64-implementation">The x86_64 implementation</a>
   <a class="hash-anchor" href="#2432913330-the-x86-64-implementation" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
@@ -416,7 +416,7 @@ static solve:function
   pop rbp
   ret
 </code></pre>
-<<h2 id="2843714489-benchmarking">
+<h2 id="2843714489-benchmarking">
   <a class="title" href="#2843714489-benchmarking">Benchmarking</a>
   <a class="hash-anchor" href="#2843714489-benchmarking" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
@@ -437,7 +437,7 @@ Summary
     1.95 ± 0.86 times faster than './aoc2018_5-c'
 </code></pre>
 <p>Yes, indeed, almost twice as fast!</p>
-<<h2 id="1768815813-learnings">
+<h2 id="1768815813-learnings">
   <a class="title" href="#1768815813-learnings">Learnings</a>
   <a class="hash-anchor" href="#1768815813-learnings" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
@@ -450,11 +450,11 @@ Summary
 <li>Having a clear idea in pseudo-code of the solution will simplify the implementation in any language.</li>
 <li>Naive assembly is very fast (your CPU is crazy fast when you do not abuse it with badly written interpreted languages, seriously!), but a good compiler will emit better assembly than you if you write C or similar. Unless you are an expert like the VLC guys.</li>
 </ul>
-<<h2 id="2879187008-appendix-the-full-code">
+<h2 id="2879187008-appendix-the-full-code">
   <a class="title" href="#2879187008-appendix-the-full-code">Appendix: The full code</a>
   <a class="hash-anchor" href="#2879187008-appendix-the-full-code" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
-<<h3 id="2199062290-the-old-c-implementation">
+<h3 id="2199062290-the-old-c-implementation">
   <a class="title" href="#2199062290-the-old-c-implementation">The old C implementation</a>
   <a class="hash-anchor" href="#2199062290-the-old-c-implementation" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h3>
@@ -1162,7 +1162,7 @@ int main() {
 }
 </code></pre>
 </details>
-<<h3 id="2467435296-the-x64-implementation">
+<h3 id="2467435296-the-x64-implementation">
   <a class="title" href="#2467435296-the-x64-implementation">The x64 implementation</a>
   <a class="hash-anchor" href="#2467435296-the-x64-implementation" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h3>

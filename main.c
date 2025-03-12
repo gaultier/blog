@@ -480,7 +480,7 @@ static void html_write_decorated_titles_rec(PgString html, Pgu8Dyn *sb,
   }
   *last_title_pos_end = title->pos_end;
 
-  PG_DYN_APPEND_SLICE(sb, PG_S("<h"), allocator);
+  PG_DYN_APPEND_SLICE(sb, PG_S("h"), allocator);
   pg_string_builder_append_u64(sb, title->level, allocator);
   PG_DYN_APPEND_SLICE(sb, PG_S(" id=\""), allocator);
   pg_string_builder_append_u64(sb, title->hash, allocator);
