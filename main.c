@@ -350,7 +350,7 @@ static void html_collect_titles_rec(PgHtmlNode *node, TitleDyn *titles,
     new_title.title = pg_html_get_title_content(node);
     new_title.content_html_id = html_make_id(new_title.title, allocator);
     new_title.pos_start = node->token_start.start;
-    new_title.pos_end = node->first_child->token_end.end;
+    new_title.pos_end = 2 + node->token_end.end;
     // Other fields backpatched.
 
     *PG_DYN_PUSH(titles, allocator) = new_title;
@@ -477,6 +477,9 @@ static void html_write_decorated_titles_rec(PgString html, Pgu8Dyn *sb,
       PG_S("\" aria-hidden=\"true\" "
            "onclick=\"navigator.clipboard.writeText(this.href);\"></a>\n"),
       allocator);
+  PG_DYN_APPEND_SLICE(sb, PG_S("</h"), allocator);
+  pg_string_builder_append_u64(sb, title->level, allocator);
+  PG_DYN_APPEND_SLICE(sb, PG_S(">\n"), allocator);
 
   html_write_decorated_titles_rec(html, sb, title->first_child,
                                   last_title_pos_end, allocator);
@@ -567,7 +570,6 @@ static void html_node_print(PgHtmlNode *node, u64 depth) {
     }
     printf("close: %.*s\n", (int)node->token_end.tag.len,
            node->token_end.tag.data);
-    html_node_print(node->next_sibling, depth);
     break;
   case PG_HTML_TOKEN_KIND_NONE: // Root.
     html_node_print(node->first_child, depth + 2);
@@ -579,6 +581,8 @@ static void html_node_print(PgHtmlNode *node, u64 depth) {
   default:
     PG_ASSERT(0);
   }
+
+  html_node_print(node->next_sibling, depth);
 }
 
 static void article_generate_html_file(PgFileDescriptor markdown_file,
