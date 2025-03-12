@@ -159,8 +159,8 @@ That's useful to limit the overall memory usage. Obviously this value is directl
 [512, 640)            96 |@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@|
 </code></pre>
 <p>So all slices of bytes have their length between <code>512</code> and <code>640</code> in this case, all in one bucket.</p>
-<p>Alternatively, we can point <code>bpftrace</code> at the Go function:</p>
-<pre><code>func (c Cache) Insert(ctx context.Context, key [32]bytes, value []byte, expiryDate time.Time) error { [...] }
+<p>Alternatively, we can point <code>bpftrace</code> at the Go function instead of the C function:</p>
+<pre><code>func (c Cache) Insert(ctx context.Context, key [32]byte, value []byte, expiryDate time.Time) error { [...] }
 </code></pre>
 <p>We are interested in <code>len(value)</code> which happens to be accessible in <code>arg5</code>:</p>
 <pre><code class="language-sh">$ sudo bpftrace -e 'uprobe:./itest.test:/path/to/my/pkg/Cache.Insert {@bytes=lhist(arg5, 0 , 16384, 128)}' -c './itest.test -test.count=1'
