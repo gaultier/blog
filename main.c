@@ -232,7 +232,7 @@ static PgString html_make_id(PgString s, PgAllocator *allocator) {
   for (u64 i = 0; i < s.len; i++) {
     u8 c = PG_SLICE_AT(s, i);
 
-    if (pg_character_is_alphanumeric(c)) {
+    if (pg_rune_is_alphanumeric(c)) {
       // FIXME
       u8 lowered = ('A' <= c && c <= 'Z') ? c + ('a' - 'A') : c;
       *PG_DYN_PUSH(&sb, allocator) = lowered;
