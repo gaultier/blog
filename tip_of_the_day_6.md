@@ -55,6 +55,10 @@ $ sudo bpftrace -e 'uprobe:./itest.test:/path/to/my/pkg/Cache.Insert {@bytes=lhi
 
 and we get the same output.
 
+---
+
+Note that we are doing very basic runtime inspection in this case, but we could also for example look at the hit rate of cache lookups, how much time inserting a new entry takes, etc. `bpftrace` and `dtrace` are really designed to be lightweight swiss-army knives.
+
 ## Addendum: Function arguments in bpftrace
 
 `bpftrace` reads neither debug information nor C headers by default so all function arguments are register sized, i.e. 64 bits on x86_64. `bpftrace` does not even know how many arguments the function accepts!

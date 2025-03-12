@@ -167,6 +167,8 @@ That's useful to limit the overall memory usage. Obviously this value is directl
 <pre><code class="language-sh">$ sudo bpftrace -e 'uprobe:./itest.test:/path/to/my/pkg/Cache.Insert {@bytes=lhist(arg5, 0 , 16384, 128)}' -c './itest.test -test.count=1'
 </code></pre>
 <p>and we get the same output.</p>
+<hr />
+<p>Note that we are doing very basic runtime inspection in this case, but we could also for example look at the hit rate of cache lookups, how much time inserting a new entry takes, etc. <code>bpftrace</code> and <code>dtrace</code> are really designed to be lightweight swiss-army knives.</p>
 <h2 id="3450441466-addendum-function-arguments-in-bpftrace">
   <a class="title" href="#3450441466-addendum-function-arguments-in-bpftrace">Addendum: Function arguments in bpftrace</a>
   <a class="hash-anchor" href="#3450441466-addendum-function-arguments-in-bpftrace" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
