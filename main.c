@@ -319,133 +319,69 @@ static PgString datetime_to_date(PgString datetime) {
   return status.stdout_captured;
 }
 
-[[nodiscard]] static TitleHash title_compute_hash(PgHtmlNode *node, u32 hash) {
+[[nodiscard]] static TitleHash title_compute_hash(Title *title, u32 hash) {
   // Reached root?
-  if (!node) {
+  if (title == title->parent) {
     return hash;
   }
 
-  PgString title_content = pg_html_get_title_content(node);
-
-  for (u64 i = 0; i < title_content.len; i++) {
-    u8 c = PG_SLICE_AT(title_content, i);
+  for (u64 i = 0; i < title->title.len; i++) {
+    u8 c = PG_SLICE_AT(title->title, i);
     hash = (hash ^ (u32)c) * 0x01000193;
   }
   // Separator between titles.
   hash = (hash ^ (u32)'/') * 0x01000193;
 
-  return title_compute_hash(node->parent, hash);
+  return title_compute_hash(title->parent, hash);
+}
+
+static void html_collect_titles_rec(PgHtmlNode *node, Title *parent,
+                                    PgAllocator *allocator) {
+  PG_ASSERT(parent);
+
+  if (!node) {
+    return;
+  }
+
+  u8 level = pg_html_get_title_level(node);
+  if (0 == level) {
+    html_collect_titles_rec(node->first_child, parent, allocator);
+    html_collect_titles_rec(node->next_sibling, parent, allocator);
+    return;
+  }
+
+  Title *new_title = pg_alloc(allocator, sizeof(Title), _Alignof(Title), 1);
+  new_title->level = level;
+  new_title->parent = parent;
+  new_title->title = pg_html_get_title_content(node);
+  new_title->content_html_id = html_make_id(new_title->title, allocator);
+  new_title->hash = title_compute_hash(new_title, FNV_SEED);
+  new_title->pos_start = node->token_start.start;
+  new_title->pos_end = node->token_start.end;
+
+  if (!parent->first_child) {
+    parent->first_child = new_title;
+  } else {
+    Title *it = parent->first_child;
+    while (it->next_sibling) {
+      it = it->next_sibling;
+    }
+    it->next_sibling = new_title;
+  }
+  html_collect_titles_rec(node->first_child, new_title, allocator);
+  html_collect_titles_rec(node->next_sibling, parent, allocator);
 }
 
 [[nodiscard]]
-static Title *html_parse_titles(PgHtmlNode *html_root, PgAllocator *allocator) {
-  (void)html_root;
-  TitleDyn titles = {0};
-  PG_DYN_ENSURE_CAP(&titles, 64, allocator);
+static Title *html_collect_titles(PgHtmlNode *html_root,
+                                  PgAllocator *allocator) {
+  Title *title_root = pg_alloc(allocator, sizeof(Title), _Alignof(Title), 1);
+  title_root->level = 1;
+  title_root->parent = title_root;
 
-  Title *root = pg_alloc(allocator, sizeof(Title), _Alignof(Title), 1);
-  root->level = 1;
-  root->parent = root;
+  html_collect_titles_rec(html_root, title_root, allocator);
 
-#if 0
-  for (u64 i = 0; i < html_tokens.len; i++) {
-    PgHtmlToken token = PG_SLICE_AT(html_tokens, i);
-    bool is_closing_title = PG_HTML_TOKEN_KIND_TAG_CLOSING == token.kind &&
-                            (pg_string_eq(token.tag, PG_S("h1")) ||
-                             pg_string_eq(token.tag, PG_S("h2")) ||
-                             pg_string_eq(token.tag, PG_S("h3")) ||
-                             pg_string_eq(token.tag, PG_S("h4")) ||
-                             pg_string_eq(token.tag, PG_S("h5")) ||
-                             pg_string_eq(token.tag, PG_S("h6")));
-
-    if (!is_closing_title) {
-      continue;
-    }
-
-    PG_ASSERT(i > 1);
-    PgHtmlToken text = PG_SLICE_AT(html_tokens, i - 1);
-    PG_ASSERT(PG_HTML_TOKEN_KIND_TEXT == text.kind);
-    PG_ASSERT(!pg_string_is_empty(text.text));
-    PG_ASSERT(text.start < token.start);
-    PG_ASSERT(text.start < token.end);
-
-    PgHtmlToken opening = {0};
-    for (i64 j = (i64)i - 2; j >= 0; j--) {
-      opening = PG_SLICE_AT(html_tokens, j);
-      if (PG_HTML_TOKEN_KIND_TAG_OPENING == opening.kind &&
-          pg_string_eq(opening.tag, token.tag)) {
-        break;
-      }
-    }
-
-    PG_ASSERT(PG_HTML_TOKEN_KIND_TAG_OPENING == opening.kind &&
-              pg_string_eq(opening.tag, token.tag));
-    PG_ASSERT(opening.start < text.start);
-    PG_ASSERT(opening.start < text.end);
-
-    PgString title_content = text.text;
-    u8 level = (u8)pg_string_last(token.tag) - '0';
-    PG_ASSERT(1 <= level && level <= 6);
-
-    Title title = {
-        .title = title_content,
-        .content_html_id = html_make_id(title_content, allocator),
-        .level = level,
-        .pos_start = opening.start,
-        .pos_end = text.end,
-        .parent = root, // Will be backpatched.
-    };
-    *PG_DYN_PUSH_WITHIN_CAPACITY(&titles) = title;
-  }
-
-  for (u64 i = 0; i < titles.len; i++) {
-    Title *title = PG_SLICE_AT_PTR(&titles, i);
-
-    if (i > 0) {
-      Title *previous = PG_SLICE_AT_PTR(&titles, i - 1);
-      i8 level_diff = previous->level - title->level;
-
-      if (level_diff > 0) {
-        // The current title is a (great-)uncle of the current title.
-
-        for (u64 _j = 0; _j < (u64)level_diff; _j++) {
-          PG_ASSERT(title->parent);
-          title->parent = title->parent->parent;
-        }
-      } else if (level_diff < 0) {
-        // Check that we do not skip levels e.g. prevent `## Foo\n#### Bar\n`
-        PG_ASSERT(level_diff == -1);
-        title->parent = previous;
-      } else if (0 == level_diff) { // Sibling.
-        title->parent = previous->parent;
-      }
-    }
-    PG_ASSERT(title->parent->level + 1 == title->level);
-    Title *child = title->parent->first_child;
-
-    // Add the node as last child of the parent.
-    while (child && child->next_sibling) {
-      child = child->next_sibling;
-    }
-    // Already one child present.
-    if (child) {
-      child->next_sibling = title;
-    } else { // First child.
-      title->parent->first_child = title;
-    }
-  }
-
-  // Backpatch `id` field which is a hash of the full path to this node
-  // including ancestors.
-  for (u64 i = 0; i < titles.len; i++) {
-    Title *title = PG_SLICE_AT_PTR(&titles, i);
-    title->hash = title_compute_hash(title, FNV_SEED);
-  }
-
-  PG_ASSERT(nullptr == root->next_sibling);
-#endif
-
-  return root;
+  return title_root;
 }
 
 static void title_print(Title *title) {
@@ -534,48 +470,38 @@ static void html_write_decorated_titles(PgString html, Pgu8Dyn *sb, Title *root,
   PG_ASSERT(sb->len > html.len);
 }
 
-static void article_write_toc_rec(Pgu8Dyn *sb, PgHtmlNode *node,
+static void article_write_toc_rec(Pgu8Dyn *sb, Title *title,
                                   PgAllocator *allocator) {
-  if (!node) {
-    return;
-  }
-  u8 title_level = pg_html_get_title_level(node);
-  if (0 == title_level) {
-    article_write_toc_rec(sb, node->first_child, allocator);
-    article_write_toc_rec(sb, node->next_sibling, allocator);
+  if (!title) {
     return;
   }
 
-  if (title_level > 1) {
-    TitleHash hash = title_compute_hash(node, FNV_SEED);
-    PgString title_content = pg_html_get_title_content(node);
-    PgString content_html_id = html_make_id(title_content, allocator);
-
+  if (title->level > 1) {
     PG_DYN_APPEND_SLICE(sb, PG_S("\n  <li>\n    <a href=\"#"), allocator);
-    pg_string_builder_append_u64(sb, hash, allocator);
+    pg_string_builder_append_u64(sb, title->hash, allocator);
     PG_DYN_APPEND_SLICE(sb, PG_S("-"), allocator);
-    PG_DYN_APPEND_SLICE(sb, content_html_id, allocator);
+    PG_DYN_APPEND_SLICE(sb, title->content_html_id, allocator);
     PG_DYN_APPEND_SLICE(sb, PG_S("\">"), allocator);
-    PG_DYN_APPEND_SLICE(sb, title_content, allocator);
+    PG_DYN_APPEND_SLICE(sb, title->title, allocator);
     PG_DYN_APPEND_SLICE(sb, PG_S("</a>\n"), allocator);
   }
 
-  if (node->first_child) {
+  if (title->first_child) {
     PG_DYN_APPEND_SLICE(sb, PG_S("<ul>\n"), allocator);
   }
-  article_write_toc_rec(sb, node->first_child, allocator);
-  if (node->first_child) {
+  article_write_toc_rec(sb, title->first_child, allocator);
+  if (title->first_child) {
     PG_DYN_APPEND_SLICE(sb, PG_S("</ul>\n"), allocator);
   }
 
-  if (title_level > 1) {
+  if (title->level > 1) {
     PG_DYN_APPEND_SLICE(sb, PG_S("  </li>\n"), allocator);
   }
 
-  article_write_toc_rec(sb, node->next_sibling, allocator);
+  article_write_toc_rec(sb, title->next_sibling, allocator);
 }
 
-static void article_write_toc(Pgu8Dyn *sb, PgHtmlNode *root,
+static void article_write_toc(Pgu8Dyn *sb, Title *root,
                               PgAllocator *allocator) {
   if (!root->first_child) {
     return;
@@ -637,7 +563,7 @@ static void article_generate_html_file(PgFileDescriptor markdown_file,
 
   // TODO: build search index on html.
 
-  Title *title_root = html_parse_titles(html_root, allocator);
+  Title *title_root = html_collect_titles(html_root, allocator);
   title_print(title_root);
 
   Pgu8Dyn sb = {0};
@@ -675,7 +601,7 @@ static void article_generate_html_file(PgFileDescriptor markdown_file,
   PG_DYN_APPEND_SLICE(&sb, PG_S("</div>\n"), allocator);
   PG_DYN_APPEND_SLICE(&sb, PG_S("  </div>\n"), allocator);
 
-  article_write_toc(&sb, html_root, allocator);
+  article_write_toc(&sb, title_root, allocator);
 
   PG_DYN_APPEND_SLICE(&sb, PG_S("\n"), allocator);
 
@@ -872,7 +798,7 @@ static void home_page_generate(ArticleSlice articles, PgString header,
   PgHtmlNode *html_root = res_parse.res;
   html_node_print(html_root, 0);
 
-  Title *title_root = html_parse_titles(html_root, allocator);
+  Title *title_root = html_collect_titles(html_root, allocator);
   html_write_decorated_titles(html, &sb, title_root, allocator);
 
   PG_DYN_APPEND_SLICE(&sb, footer, allocator);
