@@ -4,15 +4,17 @@ Tags: Go, Tip of the day, Bpftrace
 
 ## Context
 
-I have a Go service has an in-memory LRU (Least Recently Used) cache to speed up some things. 
-Here I am writing documentation for this service, and you can specify in its configuration a maximum number of cache entries.
+I have a Go service that has an in-memory LRU (Least Recently Used) cache to speed up some things. 
+Here I am, writing documentation for this service, and it happens that you can specify in its configuration the maximum number of cache entries.
 That's useful to limit the overall memory usage. Obviously this value is directly related to the Kubernetes memory limit for this deployment.
 
-But then I am wondering: what should this configuration value be? A 1000 entries, 10 000? One factor is how many distinct entries do we expect, but another is: *How big is a cache entry*? An entry in the cache here is a slice of bytes (a blob) so it's not statically possible to determine, just looking at the code, how much memory it consumes.
+But then I am wondering: what value should the docs recommend for this configuration field? A 1000 entries, 10 000? One factor is how many distinct entries do we expect, but another is: *How big is a cache entry*? 
 
-This *average entry size* is easy to estimate: all entries in the cache are inserted by one callback. It happens to be a Go function that is passed to a C library (via CGO) but this trick works with any language. This function takes as argument a slice of bytes to be inserted in the cache. So, add a log in this callback, print the slice length, process all the relevant logs, compute some statistics, and done? Or, add a custom Prometheus metric, deploy, done?
+An entry in the cache in this case is a slice of bytes (a blob) so it's not statically possible to determine, just looking at the code, how much memory it will consume.
 
-Well... why modify the source code when we don't have too? Let's use `bpftrace` to determine the distribution of entry sizes *at runtime*! In the past I have used `dtrace` on macOS which is similar and the direct inspiration for `bpftrace`. I find `dtrace` more powerful in some regards - although `bpftrace` has support for loops whereas `dtrace` does not. Point being, the `bpftrace` incantation can be adapted for `dtrace` pretty easily.
+This distribution of entry sizes is however easy to uncover: all entries in the cache are inserted by one callback. It happens to be a Go function that is passed to a C library (via CGO) but this trick works with any language. This function takes as argument a slice of bytes to be inserted in the cache. So, add a log in this callback, print the slice length, process all the relevant logs, compute some statistics, and done? Or, add a custom Prometheus metric, deploy, done?
+
+Well... why modify the source code when we don't have too? Let's use `bpftrace` to determine the distribution of entry sizes *at runtime* on the unmodified program! In the past I have used `dtrace` on macOS which is similar and the direct inspiration for `bpftrace`. I find `dtrace` more powerful in some regards - although `bpftrace` has support for loops whereas `dtrace` does not. Point being, the `bpftrace` incantation can be adapted for `dtrace` pretty easily. Both of these tools are essentials workhorses of exploratory programming and troubleshooting.
 
 ## Bpftrace
 
@@ -26,7 +28,7 @@ Here, my function to insert a slice of bytes in the cache is called `cache_inser
 $ sudo bpftrace -e 'uprobe:./itest.test:cache_insert {@bytes=lhist(arg2, 0 , 16384, 128)}' -c './itest.test -test.count=1'
 ```
 
-`lhist` creates a linear histogram with the minimum value here being `0`, the maximum value `16384` and the bucket size `128`. I used the `hist` function initially which uses a power-of-two bucket size but my values were all in one bucket so that was a bit imprecise. Still a good first approximation.
+`lhist` creates a linear histogram with the minimum value here being `0`, the maximum value `16384` and the bucket size `128`. I used the `hist` function initially which uses a power-of-two bucket size but my values were all in one big bucket so that was a bit imprecise. Still a good first approximation. But we can get a better estimate by using a small bucket size with `lhist`.
 
 `bpftrace` prints the histogram by default at the end:
 
