@@ -55,6 +55,31 @@ typedef struct {
 PG_SLICE(GitStat) GitStatSlice;
 PG_DYN(GitStat) GitStatDyn;
 
+typedef struct {
+  PgString html_file_name;
+} SearchDocument;
+PG_DYN(SearchDocument) SearchDocumentDyn;
+
+typedef struct {
+  u32 value;
+} SearchDocumentIndex;
+
+typedef struct {
+  PgRune value[3];
+} SearchTrigram;
+
+typedef struct {
+  SearchDocumentDyn documents;
+  // TODO: map<SearchTrigram,[]SearchDocumentIndex> index;
+} SearchIndex;
+
+#define HASH_TABLE_EXP 10
+
+typedef struct {
+  PgString keys[1 << HASH_TABLE_EXP];
+  ArticleDyn values[1 << HASH_TABLE_EXP];
+} ArticlesByTag;
+
 static int article_cmp_by_creation_date_asc(const void *a, const void *b) {
   const Article *article_a = a;
   const Article *article_b = b;
@@ -598,6 +623,8 @@ static void article_generate_html_file(PgFileDescriptor markdown_file,
   PgHtmlNode *html_root = res_parse.res;
   html_node_print(html_root, 0);
 
+  SearchIndex search_index = {0};
+  search_index_feed(&search_index, html_root);
   // TODO: build search index on html.
 
   Title *title_root = html_collect_titles(html_root, article_html, allocator);
@@ -844,13 +871,6 @@ static void home_page_generate(ArticleSlice articles, PgString header,
                                     allocator));
   PG_ASSERT(0 == pg_file_close(res_markdown_file.res));
 }
-
-#define HASH_TABLE_EXP 10
-
-typedef struct {
-  PgString keys[1 << HASH_TABLE_EXP];
-  ArticleDyn values[1 << HASH_TABLE_EXP];
-} ArticlesByTag;
 
 [[nodiscard]]
 static ArticleDyn *articles_by_tag_lookup(ArticlesByTag *table, PgString key) {
