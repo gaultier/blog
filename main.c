@@ -623,9 +623,9 @@ static void article_generate_html_file(PgFileDescriptor markdown_file,
   PgHtmlNode *html_root = res_parse.res;
   html_node_print(html_root, 0);
 
-  SearchIndex search_index = {0};
-  search_index_feed(&search_index, html_root);
-  // TODO: build search index on html.
+  // SearchIndex search_index = {0};
+  //  search_index_feed(&search_index, html_root);
+  //   TODO: build search index on html.
 
   Title *title_root = html_collect_titles(html_root, article_html, allocator);
   title_print(title_root);
