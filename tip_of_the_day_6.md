@@ -39,6 +39,21 @@ $ sudo bpftrace -e 'uprobe:./itest.test:cache_insert {@bytes=lhist(arg2, 0 , 163
 
 So all slices of bytes have their length between `512` and `640` in this case, all in one bucket.
 
+
+Alternatively, we can point `bpftrace` at the Go function:
+
+```
+func (c Cache) Insert(ctx context.Context, key [32]bytes, value []byte, expiryDate time.Time) error { [...] }
+```
+
+We are interested in `len(value)` which happens to be accessible in `arg5`:
+
+```sh
+$ sudo bpftrace -e 'uprobe:./itest.test:/path/to/my/pkg/Cache.Insert {@bytes=lhist(arg5, 0 , 16384, 128)}' -c './itest.test -test.count=1'
+```
+
+and we get the same output.
+
 ## Addendum: Function arguments in bpftrace
 
 `bpftrace` does neither read debug information nor C headers by default so all function arguments are register sized, i.e. 64 bits on x86_64. `bpftrace` does not even know how many arguments the function accepts!
