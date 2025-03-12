@@ -24,7 +24,9 @@
 #define BASE_URL "https://gaultier.github.io/blog"
 #define METADATA_DELIMITER "---"
 #define BACK_LINK "<p><a href=\"/blog\"> ⏴ Back to all articles</a></p>\n"
+#if 0
 #define FNV_SEED ((u32)0x811c9dc5)
+#endif
 
 typedef u32 TitleHash;
 
@@ -319,6 +321,7 @@ static PgString datetime_to_date(PgString datetime) {
   return status.stdout_captured;
 }
 
+#if 0
 [[nodiscard]] static TitleHash title_compute_hash(Title *title, u32 hash) {
   // Reached root?
   if (title == title->parent) {
@@ -334,10 +337,11 @@ static PgString datetime_to_date(PgString datetime) {
 
   return title_compute_hash(title->parent, hash);
 }
+#endif
 
 [[nodiscard]]
-static Title *html_parse_titles(PgHtmlTokenSlice html_tokens,
-                                PgAllocator *allocator) {
+static Title *html_parse_titles(PgHtmlNode *html_root, PgAllocator *allocator) {
+  (void)html_root;
   TitleDyn titles = {0};
   PG_DYN_ENSURE_CAP(&titles, 64, allocator);
 
@@ -345,6 +349,7 @@ static Title *html_parse_titles(PgHtmlTokenSlice html_tokens,
   root->level = 1;
   root->parent = root;
 
+#if 0
   for (u64 i = 0; i < html_tokens.len; i++) {
     PgHtmlToken token = PG_SLICE_AT(html_tokens, i);
     bool is_closing_title = PG_HTML_TOKEN_KIND_TAG_CLOSING == token.kind &&
@@ -440,6 +445,7 @@ static Title *html_parse_titles(PgHtmlTokenSlice html_tokens,
   }
 
   PG_ASSERT(nullptr == root->next_sibling);
+#endif
 
   return root;
 }
@@ -572,36 +578,39 @@ static void article_write_toc(Pgu8Dyn *sb, Title *root,
   article_write_toc_rec(sb, root, allocator);
 }
 
-static void html_tokens_print(PgHtmlTokenSlice tokens) {
-  for (u64 i = 0; i < tokens.len; i++) {
-    PgHtmlToken token = PG_SLICE_AT(tokens, i);
-    switch (token.kind) {
-    case PG_HTML_TOKEN_KIND_TEXT:
-      printf("text: %.*s\n", (int)token.text.len, token.text.data);
-      break;
-    case PG_HTML_TOKEN_KIND_TAG_OPENING:
-      printf("open: %.*s\n", (int)token.tag.len, token.tag.data);
-      break;
-    case PG_HTML_TOKEN_KIND_TAG_CLOSING:
-      printf("close: %.*s\n", (int)token.tag.len, token.tag.data);
-      break;
-    case PG_HTML_TOKEN_KIND_ATTRIBUTE:
-      printf("attribute: %.*s", (int)token.attribute.key.len,
-             token.attribute.key.data);
-      if (!pg_string_is_empty(token.attribute.value)) {
-        printf("=%.*s", (int)token.attribute.value.len,
-               token.attribute.value.data);
-      }
-      puts("");
-      break;
-    case PG_HTML_TOKEN_KIND_COMMENT:
-      break;
-    case PG_HTML_TOKEN_KIND_DOCTYPE:
-      break;
-    case PG_HTML_TOKEN_KIND_NONE:
-    default:
-      PG_ASSERT(0);
+static void html_node_print(PgHtmlNode *node, u64 depth) {
+  if (!node) {
+    return;
+  }
+  for (u64 i = 0; i < depth; i++) {
+    printf("  ");
+  }
+
+  switch (node->token_start.kind) {
+  case PG_HTML_TOKEN_KIND_TEXT:
+    printf("text: %.*s\n", (int)node->token_start.text.len,
+           node->token_start.text.data);
+    break;
+  case PG_HTML_TOKEN_KIND_TAG_OPENING:
+    printf("open: %.*s\n", (int)node->token_start.tag.len,
+           node->token_start.tag.data);
+    html_node_print(node->first_child, depth + 2);
+    for (u64 i = 0; i < depth; i++) {
+      printf("  ");
     }
+    printf("close: %.*s\n", (int)node->token_end.tag.len,
+           node->token_end.tag.data);
+    html_node_print(node->next_sibling, depth);
+    break;
+  case PG_HTML_TOKEN_KIND_NONE: // Root.
+    html_node_print(node->first_child, depth + 2);
+    break;
+  case PG_HTML_TOKEN_KIND_TAG_CLOSING:
+  case PG_HTML_TOKEN_KIND_ATTRIBUTE:
+  case PG_HTML_TOKEN_KIND_COMMENT:
+  case PG_HTML_TOKEN_KIND_DOCTYPE:
+  default:
+    PG_ASSERT(0);
   }
 }
 
@@ -612,14 +621,15 @@ static void article_generate_html_file(PgFileDescriptor markdown_file,
 
   PgString article_html =
       markdown_to_html(markdown_file, metadata_offset, allocator);
-  PgHtmlTokenDynResult res = pg_html_tokenize(article_html, allocator);
-  PG_ASSERT(0 == res.err);
-  PgHtmlTokenSlice html_tokens = PG_DYN_SLICE(PgHtmlTokenSlice, res.res);
-  html_tokens_print(html_tokens);
+  PgHtmlNodePtrResult res_parse = pg_html_parse(article_html, allocator);
+  PG_ASSERT(0 == res_parse.err);
+
+  PgHtmlNode *html_root = res_parse.res;
+  html_node_print(html_root, 0);
 
   // TODO: build search index on html.
 
-  Title *title_root = html_parse_titles(html_tokens, allocator);
+  Title *title_root = html_parse_titles(html_root, allocator);
   title_print(title_root);
 
   Pgu8Dyn sb = {0};
@@ -848,12 +858,13 @@ static void home_page_generate(ArticleSlice articles, PgString header,
   PG_ASSERT(0 == res_markdown_file.err);
   PgString html = markdown_to_html(res_markdown_file.res, 0, allocator);
 
-  PgHtmlTokenDynResult res = pg_html_tokenize(html, allocator);
-  PG_ASSERT(0 == res.err);
-  PgHtmlTokenSlice html_tokens = PG_DYN_SLICE(PgHtmlTokenSlice, res.res);
-  html_tokens_print(html_tokens);
+  PgHtmlNodePtrResult res_parse = pg_html_parse(html, allocator);
+  PG_ASSERT(0 == res_parse.err);
 
-  Title *title_root = html_parse_titles(html_tokens, allocator);
+  PgHtmlNode *html_root = res_parse.res;
+  html_node_print(html_root, 0);
+
+  Title *title_root = html_parse_titles(html_root, allocator);
   html_write_decorated_titles(html, &sb, title_root, allocator);
 
   PG_DYN_APPEND_SLICE(&sb, footer, allocator);
