@@ -89,7 +89,7 @@ typedef struct {
   ArticleDyn values[1 << HASH_TABLE_EXP];
 } ArticlesByTag;
 
-[[maybe_unused]] [[nodiscard]] static SearchTrigramPositionDyn *
+[[nodiscard]] static SearchTrigramPositionDyn *
 search_trigram_lookup(SearchDocumentIndexByTrigram **map, PgString key,
                       PgAllocator *allocator) {
   for (u64 hash = pg_hash_fnv(key); *map; hash <<= 2) {
@@ -106,6 +106,35 @@ search_trigram_lookup(SearchDocumentIndexByTrigram **map, PgString key,
                   _Alignof(SearchDocumentIndexByTrigram), 1);
   (*map)->key = key;
   return &(*map)->value;
+}
+
+[[maybe_unused]] static void
+search_document_index_by_trigram_print(SearchIndex search_index,
+                                       SearchDocumentIndexByTrigram *index) {
+  if (!index) {
+    return;
+  }
+
+  printf("search: key=`%.*s` values=", (int)index->key.len, index->key.data);
+
+  for (u64 i = 0; i < index->value.len; i++) {
+    SearchTrigramPosition position = PG_SLICE_AT(index->value, i);
+    PgString document_name =
+        PG_SLICE_AT(search_index.documents, position.document_index.value)
+            .html_file_name;
+    printf("(%.*s, %u, %u) ", (int)document_name.len, document_name.data,
+           position.offset_start, position.offset_end);
+  }
+  puts("");
+
+  search_document_index_by_trigram_print(search_index, index->child[0]);
+  search_document_index_by_trigram_print(search_index, index->child[1]);
+  search_document_index_by_trigram_print(search_index, index->child[2]);
+  search_document_index_by_trigram_print(search_index, index->child[3]);
+}
+
+[[maybe_unused]] static void search_index_print(SearchIndex search_index) {
+  search_document_index_by_trigram_print(search_index, search_index.index);
 }
 
 static int article_cmp_by_creation_date_asc(const void *a, const void *b) {
@@ -1242,6 +1271,7 @@ int main() {
   SearchIndex search_index = {0};
   ArticleSlice articles =
       articles_generate(header, footer, &search_index, allocator);
+  search_index_print(search_index);
   home_page_generate(articles, header, footer, allocator);
   tags_page_generate(articles, header, footer, allocator);
   rss_generate(articles, allocator);
