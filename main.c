@@ -67,7 +67,7 @@ PG_DYN(SearchDocumentIndex) SearchDocumentIndexDyn;
 
 typedef struct SearchDocumentIndexByTrigram SearchDocumentIndexByTrigram;
 struct SearchDocumentIndexByTrigram {
-  Pgu8Slice key;
+  PgString key;
   SearchDocumentIndexDyn value;
   SearchDocumentIndexByTrigram *child[4];
 };
@@ -85,10 +85,10 @@ typedef struct {
 } ArticlesByTag;
 
 [[maybe_unused]] [[nodiscard]] static SearchDocumentIndexDyn *
-search_trigram_lookup(SearchDocumentIndexByTrigram **map, Pgu8Slice key,
+search_trigram_lookup(SearchDocumentIndexByTrigram **map, PgString key,
                       PgAllocator *allocator) {
   for (u64 hash = pg_hash_fnv(key); *map; hash <<= 2) {
-    if (pg_bytes_eq(key, (*map)->key)) {
+    if (pg_string_eq(key, (*map)->key)) {
       return &(*map)->value;
     }
     map = &(*map)->child[hash >> 62];
@@ -667,16 +667,21 @@ static void search_index_feed_text(SearchIndex *search_index, PgString text,
     return;
   }
 
-  Pgu8Slice key = {.data = text.data, .len = it.idx};
+  PgString key = {.data = text.data, .len = it.idx};
   for (;;) {
-    PG_ASSERT(key.len >= 3);
-    PG_ASSERT(key.len <= 3 * 4);
+    PG_ASSERT(3 == pg_utf8_count(key).res);
 
     SearchDocumentIndexDyn *document_indexes =
         search_trigram_lookup(&search_index->index, key, allocator);
     PG_ASSERT(document_indexes);
     *PG_DYN_PUSH(document_indexes, allocator) = document_index;
 
+    printf(
+        "[D001] document=%.*s trigram=%.*s\n",
+        (int)search_index->documents.data[document_index.value]
+            .html_file_name.len,
+        search_index->documents.data[document_index.value].html_file_name.data,
+        (int)key.len, key.data);
     res_rune = pg_utf8_iterator_next(&it);
     PG_ASSERT(!res_rune.err);
     PgRune rune = res_rune.res;
@@ -684,9 +689,14 @@ static void search_index_feed_text(SearchIndex *search_index, PgString text,
       break;
     }
 
-    key.data += pg_utf8_rune_bytes_count(pg_string_first(key));
-    key.len -= pg_utf8_rune_bytes_count(pg_string_first(key));
+    u64 key_first_bytes_count = pg_utf8_rune_bytes_count(pg_string_first(key));
+    key.data += key_first_bytes_count;
+    PG_ASSERT(key.data < text.data + text.len);
+    PG_ASSERT(key.len >= 3);
+    key.len -= key_first_bytes_count;
     key.len += pg_utf8_rune_bytes_count(rune);
+    PG_ASSERT(key.len <= 3 * 4);
+    PG_ASSERT(3 == pg_utf8_count(key).res);
   }
 }
 
