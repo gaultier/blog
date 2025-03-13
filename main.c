@@ -867,8 +867,8 @@ static void article_generate_html_file(PgFileDescriptor markdown_file,
     PgHtmlNode *html_root_full = res_parse_full.res;
     html_node_print(html_root_full, 0);
 
-    search_index_feed_document(search_index, html_root, article->html_file_name,
-                               allocator);
+    search_index_feed_document(search_index, html_root_full,
+                               article->html_file_name, allocator);
   }
   PG_ASSERT(0 == pg_file_write_full(article->html_file_name, html, allocator));
 }
