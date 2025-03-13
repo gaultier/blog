@@ -62,14 +62,18 @@ PG_DYN(SearchDocument) SearchDocumentDyn;
 
 typedef struct {
   u32 value;
-} SearchDocumentIndex;
-PG_DYN(SearchDocumentIndex) SearchDocumentIndexDyn;
+} DocumentIndex;
+
+typedef struct {
+  DocumentIndex document_index;
+  u32 offset_start, offset_end;
+} SearchTrigramPosition;
+PG_DYN(SearchTrigramPosition) SearchTrigramPositionDyn;
 
 typedef struct SearchDocumentIndexByTrigram SearchDocumentIndexByTrigram;
 struct SearchDocumentIndexByTrigram {
   PgString key;
-  // FIXME: Should be a set.
-  SearchDocumentIndexDyn value;
+  SearchTrigramPositionDyn value;
   SearchDocumentIndexByTrigram *child[4];
 };
 
@@ -85,7 +89,7 @@ typedef struct {
   ArticleDyn values[1 << HASH_TABLE_EXP];
 } ArticlesByTag;
 
-[[maybe_unused]] [[nodiscard]] static SearchDocumentIndexDyn *
+[[maybe_unused]] [[nodiscard]] static SearchTrigramPositionDyn *
 search_trigram_lookup(SearchDocumentIndexByTrigram **map, PgString key,
                       PgAllocator *allocator) {
   for (u64 hash = pg_hash_fnv(key); *map; hash <<= 2) {
@@ -644,7 +648,7 @@ static void html_node_print(PgHtmlNode *node, u64 depth) {
 }
 
 static void search_index_feed_text(SearchIndex *search_index, PgString text,
-                                   SearchDocumentIndex document_index,
+                                   DocumentIndex document_index,
                                    PgAllocator *allocator) {
   PgUtf8Iterator it = pg_make_utf8_iterator(text);
   PgRuneResult res_rune = {0};
@@ -674,10 +678,14 @@ static void search_index_feed_text(SearchIndex *search_index, PgString text,
   for (;;) {
     PG_ASSERT(3 == pg_utf8_count(key).res);
 
-    SearchDocumentIndexDyn *document_indexes =
+    SearchTrigramPositionDyn *positions =
         search_trigram_lookup(&search_index->index, key, allocator);
-    PG_ASSERT(document_indexes);
-    *PG_DYN_PUSH(document_indexes, allocator) = document_index;
+    SearchTrigramPosition position = {
+        .document_index = document_index,
+        .offset_start = (u32)(key.data - text.data),
+        .offset_end = (u32)(key.data - text.data) + (u32)key.len,
+    };
+    *PG_DYN_PUSH(positions, allocator) = position;
 
 #if 0
     printf(
@@ -707,7 +715,7 @@ static void search_index_feed_text(SearchIndex *search_index, PgString text,
 
 static void search_index_feed_html_node(SearchIndex *search_index,
                                         PgHtmlNode *html_node,
-                                        SearchDocumentIndex document_index,
+                                        DocumentIndex document_index,
                                         PgAllocator *allocator) {
   if (PG_HTML_TOKEN_KIND_TEXT == html_node->token_start.kind) {
     search_index_feed_text(search_index, html_node->token_start.text,
@@ -733,8 +741,9 @@ static void search_index_feed_document(SearchIndex *search_index,
                                        PgAllocator *allocator) {
   *PG_DYN_PUSH(&search_index->documents, allocator) =
       (SearchDocument){.html_file_name = document_name};
-  SearchDocumentIndex document_index = {
-      .value = (u32)(search_index->documents.len - 1)};
+  DocumentIndex document_index = {
+      .value = (u32)(search_index->documents.len - 1),
+  };
 
   search_index_feed_html_node(search_index,
                               pg_html_node_get_first_child(html_root),
