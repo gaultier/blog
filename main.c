@@ -645,12 +645,14 @@ static void html_node_print(PgHtmlNode *node, u64 depth) {
 
   switch (node->token_start.kind) {
   case PG_HTML_TOKEN_KIND_TEXT:
-    printf("text: %.*s\n", (int)node->token_start.text.len,
-           node->token_start.text.data);
+    printf("text: %.*s (%u, %u)\n", (int)node->token_start.text.len,
+           node->token_start.text.data, node->token_start.start,
+           node->token_end.end);
     break;
   case PG_HTML_TOKEN_KIND_TAG_OPENING: {
-    printf("open: %.*s\n", (int)node->token_start.tag.len,
-           node->token_start.tag.data);
+    printf("open: %.*s (%u, %u)\n", (int)node->token_start.tag.len,
+           node->token_start.tag.data, node->token_start.start,
+           node->token_end.end);
     PgHtmlNode *first_child = pg_html_node_get_first_child(node);
     if (first_child != node) {
       html_node_print(first_child, depth + 2);
@@ -658,19 +660,22 @@ static void html_node_print(PgHtmlNode *node, u64 depth) {
     for (u64 i = 0; i < depth; i++) {
       printf("  ");
     }
-    printf("close: %.*s\n", (int)node->token_end.tag.len,
-           node->token_end.tag.data);
+    printf("close: %.*s (%u, %u)\n", (int)node->token_end.tag.len,
+           node->token_end.tag.data, node->token_start.start,
+           node->token_end.end);
   } break;
   case PG_HTML_TOKEN_KIND_NONE: // Root.
     html_node_print(pg_html_node_get_first_child(node), depth + 2);
     break;
   case PG_HTML_TOKEN_KIND_COMMENT:
-    printf("comment: %.*s\n", (int)node->token_start.comment.len,
-           node->token_start.comment.data);
+    printf("comment: %.*s (%u, %u)\n", (int)node->token_start.comment.len,
+           node->token_start.comment.data, node->token_start.start,
+           node->token_end.end);
     break;
   case PG_HTML_TOKEN_KIND_DOCTYPE:
-    printf("doctype: %.*s\n", (int)node->token_start.doctype.len,
-           node->token_start.doctype.data);
+    printf("doctype: %.*s (%u, %u)\n", (int)node->token_start.doctype.len,
+           node->token_start.doctype.data, node->token_start.start,
+           node->token_end.end);
     break;
   case PG_HTML_TOKEN_KIND_TAG_CLOSING:
   case PG_HTML_TOKEN_KIND_ATTRIBUTE:
@@ -685,6 +690,7 @@ static void html_node_print(PgHtmlNode *node, u64 depth) {
 }
 
 static void search_index_feed_text(SearchIndex *search_index, PgString text,
+                                   u64 text_offset,
                                    DocumentIndex document_index,
                                    PgAllocator *allocator) {
   PgUtf8Iterator it = pg_make_utf8_iterator(text);
@@ -719,8 +725,9 @@ static void search_index_feed_text(SearchIndex *search_index, PgString text,
         search_trigram_lookup(&search_index->index, key, allocator);
     SearchTrigramPosition position = {
         .document_index = document_index,
-        .offset_start = (u32)(key.data - text.data),
-        .offset_end = (u32)(key.data - text.data) + (u32)key.len,
+        .offset_start = (u32)text_offset + (u32)(key.data - text.data),
+        .offset_end =
+            (u32)text_offset + (u32)(key.data - text.data) + (u32)key.len,
     };
     *PG_DYN_PUSH(positions, allocator) = position;
 
@@ -756,7 +763,8 @@ static void search_index_feed_html_node(SearchIndex *search_index,
                                         PgAllocator *allocator) {
   if (PG_HTML_TOKEN_KIND_TEXT == html_node->token_start.kind) {
     search_index_feed_text(search_index, html_node->token_start.text,
-                           document_index, allocator);
+                           html_node->token_start.start, document_index,
+                           allocator);
   }
 
   PgHtmlNode *first_child = pg_html_node_get_first_child(html_node);
