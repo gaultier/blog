@@ -362,9 +362,7 @@ static PgString datetime_to_date(PgString datetime) {
 
 static void html_collect_titles_rec(PgHtmlNode *node, TitleDyn *titles,
                                     PgString html_str, PgAllocator *allocator) {
-  if (!node) {
-    return;
-  }
+  PG_ASSERT(node);
 
   u8 level = pg_html_get_title_level(node);
   if (level) {
@@ -381,8 +379,14 @@ static void html_collect_titles_rec(PgHtmlNode *node, TitleDyn *titles,
     *PG_DYN_PUSH(titles, allocator) = new_title;
   }
 
-  html_collect_titles_rec(node->first_child, titles, html_str, allocator);
-  html_collect_titles_rec(node->next_sibling, titles, html_str, allocator);
+  PgHtmlNode *first_child = pg_html_node_get_first_child(node);
+  if (first_child != node) {
+    html_collect_titles_rec(first_child, titles, html_str, allocator);
+  }
+  PgHtmlNode *next_sibling = pg_html_node_get_next_sibling(node);
+  if (next_sibling != node) {
+    html_collect_titles_rec(next_sibling, titles, html_str, allocator);
+  }
 }
 
 [[nodiscard]]
@@ -574,9 +578,6 @@ static void article_write_toc(Pgu8Dyn *sb, Title *root,
 }
 
 static void html_node_print(PgHtmlNode *node, u64 depth) {
-  if (!node) {
-    return;
-  }
   for (u64 i = 0; i < depth; i++) {
     printf("  ");
   }
@@ -586,18 +587,21 @@ static void html_node_print(PgHtmlNode *node, u64 depth) {
     printf("text: %.*s\n", (int)node->token_start.text.len,
            node->token_start.text.data);
     break;
-  case PG_HTML_TOKEN_KIND_TAG_OPENING:
+  case PG_HTML_TOKEN_KIND_TAG_OPENING: {
     printf("open: %.*s\n", (int)node->token_start.tag.len,
            node->token_start.tag.data);
-    html_node_print(node->first_child, depth + 2);
+    PgHtmlNode *first_child = pg_html_node_get_first_child(node);
+    if (first_child != node) {
+      html_node_print(first_child, depth + 2);
+    }
     for (u64 i = 0; i < depth; i++) {
       printf("  ");
     }
     printf("close: %.*s\n", (int)node->token_end.tag.len,
            node->token_end.tag.data);
-    break;
+  } break;
   case PG_HTML_TOKEN_KIND_NONE: // Root.
-    html_node_print(node->first_child, depth + 2);
+    html_node_print(pg_html_node_get_first_child(node), depth + 2);
     break;
   case PG_HTML_TOKEN_KIND_TAG_CLOSING:
   case PG_HTML_TOKEN_KIND_ATTRIBUTE:
@@ -607,7 +611,10 @@ static void html_node_print(PgHtmlNode *node, u64 depth) {
     PG_ASSERT(0);
   }
 
-  html_node_print(node->next_sibling, depth);
+  PgHtmlNode *next_sibling = pg_html_node_get_next_sibling(node);
+  if (next_sibling != node) {
+    html_node_print(next_sibling, depth);
+  }
 }
 
 static void article_generate_html_file(PgFileDescriptor markdown_file,
