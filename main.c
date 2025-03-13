@@ -25,6 +25,7 @@
 #define METADATA_DELIMITER "---"
 #define BACK_LINK "<p><a href=\"/blog\"> ⏴ Back to all articles</a></p>\n"
 #define FNV_SEED ((u32)0x811c9dc5)
+#define EXCERPT_LEN_AROUND_TRIGRAM 10
 
 typedef u32 TitleHash;
 
@@ -728,14 +729,14 @@ static void search_index_feed_text(SearchIndex *search_index, PgString text,
 
     u32 text_offset_start = (u32)(key.data - text.data);
     u32 text_offset_end = text_offset_start + (u32)key.len;
-    u64 excerpt_len_around_trigram = 6;
     u64 excerpt_start = (u64)PG_CLAMP(
-        (i64)0, (i64)text_offset_start - (i64)excerpt_len_around_trigram,
+        (i64)0, (i64)text_offset_start - (i64)EXCERPT_LEN_AROUND_TRIGRAM,
         (i64)text.len);
     u64 excerpt_end =
-        PG_CLAMP(0, text_offset_end + excerpt_len_around_trigram, text.len);
+        PG_CLAMP(0, text_offset_end + EXCERPT_LEN_AROUND_TRIGRAM, text.len);
     PgString excerpt = PG_SLICE_RANGE(text, excerpt_start, excerpt_end);
-    PG_ASSERT(excerpt.len <= key.len + 2 * excerpt_len_around_trigram);
+    PG_ASSERT(excerpt.len <= key.len + 2 * EXCERPT_LEN_AROUND_TRIGRAM);
+    PG_ASSERT(pg_string_contains(excerpt, key));
 
     SearchTrigramPositionDyn *positions =
         search_trigram_lookup(&search_index->index, key, allocator);
