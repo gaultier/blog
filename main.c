@@ -68,6 +68,7 @@ PG_DYN(SearchDocumentIndex) SearchDocumentIndexDyn;
 typedef struct SearchDocumentIndexByTrigram SearchDocumentIndexByTrigram;
 struct SearchDocumentIndexByTrigram {
   PgString key;
+  // FIXME: Should be a set.
   SearchDocumentIndexDyn value;
   SearchDocumentIndexByTrigram *child[4];
 };
