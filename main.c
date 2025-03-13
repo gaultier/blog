@@ -63,14 +63,18 @@ PG_DYN(SearchDocument) SearchDocumentDyn;
 typedef struct {
   u32 value;
 } SearchDocumentIndex;
+PG_DYN(SearchDocumentIndex) SearchDocumentIndexDyn;
 
-typedef struct {
-  PgRune value[3];
-} SearchTrigram;
+typedef struct SearchDocumentIndexByTrigram SearchDocumentIndexByTrigram;
+struct SearchDocumentIndexByTrigram {
+  Pgu8Slice key;
+  SearchDocumentIndexDyn value;
+  SearchDocumentIndexByTrigram *child[4];
+};
 
 typedef struct {
   SearchDocumentDyn documents;
-  // TODO: map<SearchTrigram,[]SearchDocumentIndex> index;
+  SearchDocumentIndexByTrigram *index;
 } SearchIndex;
 
 #define HASH_TABLE_EXP 10
@@ -79,6 +83,25 @@ typedef struct {
   PgString keys[1 << HASH_TABLE_EXP];
   ArticleDyn values[1 << HASH_TABLE_EXP];
 } ArticlesByTag;
+
+[[maybe_unused]] [[nodiscard]] static SearchDocumentIndexDyn *
+search_trigram_lookup(SearchDocumentIndexByTrigram **map, Pgu8Slice key,
+                      PgAllocator *allocator) {
+  for (u64 hash = pg_hash_fnv(key); *map; hash <<= 2) {
+    if (pg_bytes_eq(key, (*map)->key)) {
+      return &(*map)->value;
+    }
+    map = &(*map)->child[hash >> 62];
+  }
+  if (!allocator) {
+    return nullptr;
+  }
+
+  *map = pg_alloc(allocator, sizeof(SearchDocumentIndexByTrigram),
+                  _Alignof(SearchDocumentIndexByTrigram), 1);
+  (*map)->key = key;
+  return &(*map)->value;
+}
 
 static int article_cmp_by_creation_date_asc(const void *a, const void *b) {
   const Article *article_a = a;
@@ -617,9 +640,96 @@ static void html_node_print(PgHtmlNode *node, u64 depth) {
   }
 }
 
+static void search_index_feed_text(SearchIndex *search_index, PgString text,
+                                   SearchDocumentIndex document_index,
+                                   PgAllocator *allocator) {
+  PgUtf8Iterator it = pg_make_utf8_iterator(text);
+  PgRuneResult res_rune = {0};
+
+  res_rune = pg_utf8_iterator_next(&it);
+  PG_ASSERT(!res_rune.err);
+  PgRune rune_a = res_rune.res;
+  if (!rune_a) {
+    return;
+  }
+
+  res_rune = pg_utf8_iterator_next(&it);
+  PG_ASSERT(!res_rune.err);
+  PgRune rune_b = res_rune.res;
+  if (!rune_b) {
+    return;
+  }
+
+  res_rune = pg_utf8_iterator_next(&it);
+  PG_ASSERT(!res_rune.err);
+  PgRune rune_c = res_rune.res;
+  if (!rune_c) {
+    return;
+  }
+
+  Pgu8Slice key = {.data = text.data, .len = it.idx};
+  for (;;) {
+    PG_ASSERT(key.len >= 3);
+    PG_ASSERT(key.len <= 3 * 4);
+
+    SearchDocumentIndexDyn *document_indexes =
+        search_trigram_lookup(&search_index->index, key, allocator);
+    PG_ASSERT(document_indexes);
+    *PG_DYN_PUSH(document_indexes, allocator) = document_index;
+
+    res_rune = pg_utf8_iterator_next(&it);
+    PG_ASSERT(!res_rune.err);
+    PgRune rune = res_rune.res;
+    if (!rune) {
+      break;
+    }
+
+    key.data += pg_utf8_rune_bytes_count(pg_string_first(key));
+    key.len -= pg_utf8_rune_bytes_count(pg_string_first(key));
+    key.len += pg_utf8_rune_bytes_count(rune);
+  }
+}
+
+static void search_index_feed_html_node(SearchIndex *search_index,
+                                        PgHtmlNode *html_node,
+                                        SearchDocumentIndex document_index,
+                                        PgAllocator *allocator) {
+  if (PG_HTML_TOKEN_KIND_TEXT == html_node->token_start.kind) {
+    search_index_feed_text(search_index, html_node->token_start.text,
+                           document_index, allocator);
+  }
+
+  PgHtmlNode *first_child = pg_html_node_get_first_child(html_node);
+  if (first_child != html_node) {
+    search_index_feed_html_node(search_index, first_child, document_index,
+                                allocator);
+  }
+
+  PgHtmlNode *next_sibling = pg_html_node_get_next_sibling(html_node);
+  if (next_sibling != html_node) {
+    search_index_feed_html_node(search_index, next_sibling, document_index,
+                                allocator);
+  }
+}
+
+static void search_index_feed_document(SearchIndex *search_index,
+                                       PgHtmlNode *html_root,
+                                       PgString document_name,
+                                       PgAllocator *allocator) {
+  *PG_DYN_PUSH(&search_index->documents, allocator) =
+      (SearchDocument){.html_file_name = document_name};
+  SearchDocumentIndex document_index = {
+      .value = (u32)(search_index->documents.len - 1)};
+
+  search_index_feed_html_node(search_index,
+                              pg_html_node_get_first_child(html_root),
+                              document_index, allocator);
+}
+
 static void article_generate_html_file(PgFileDescriptor markdown_file,
                                        u64 metadata_offset, Article *article,
                                        PgString header, PgString footer,
+                                       SearchIndex *search_index,
                                        PgAllocator *allocator) {
 
   PgString article_html =
@@ -630,9 +740,8 @@ static void article_generate_html_file(PgFileDescriptor markdown_file,
   PgHtmlNode *html_root = res_parse.res;
   html_node_print(html_root, 0);
 
-  // SearchIndex search_index = {0};
-  //  search_index_feed(&search_index, html_root);
-  //   TODO: build search index on html.
+  search_index_feed_document(search_index, html_root, article->html_file_name,
+                             allocator);
 
   Title *title_root = html_collect_titles(html_root, article_html, allocator);
   title_print(title_root);
@@ -687,7 +796,8 @@ static void article_generate_html_file(PgFileDescriptor markdown_file,
 
 [[nodiscard]]
 static Article article_generate(PgString header, PgString footer,
-                                GitStat git_stat, PgAllocator *allocator) {
+                                GitStat git_stat, SearchIndex *search_index,
+                                PgAllocator *allocator) {
   (void)header;
   (void)footer;
   printf("generating article: %.*s\n", (int)git_stat.path_rel.len,
@@ -760,7 +870,7 @@ static Article article_generate(PgString header, PgString footer,
   article.html_file_name = pg_string_concat(stem, PG_S(".html"), allocator);
 
   article_generate_html_file(markdown_file, metadata_offset, &article, header,
-                             footer, allocator);
+                             footer, search_index, allocator);
 
   PG_ASSERT(0 == pg_file_close(markdown_file));
   return article;
@@ -768,6 +878,7 @@ static Article article_generate(PgString header, PgString footer,
 
 [[nodiscard]]
 static ArticleSlice articles_generate(PgString header, PgString footer,
+                                      SearchIndex *search_index,
                                       PgAllocator *allocator) {
   PG_ASSERT(!pg_string_is_empty(header));
   PG_ASSERT(!pg_string_is_empty(footer));
@@ -796,7 +907,8 @@ static ArticleSlice articles_generate(PgString header, PgString footer,
       continue;
     }
 
-    Article article = article_generate(header, footer, git_stat, allocator);
+    Article article =
+        article_generate(header, footer, git_stat, search_index, allocator);
     *PG_DYN_PUSH_WITHIN_CAPACITY(&articles) = article;
   }
 
@@ -1083,7 +1195,9 @@ int main() {
   PG_ASSERT(0 == res_footer.err);
   PgString footer = res_footer.res;
 
-  ArticleSlice articles = articles_generate(header, footer, allocator);
+  SearchIndex search_index = {0};
+  ArticleSlice articles =
+      articles_generate(header, footer, &search_index, allocator);
   home_page_generate(articles, header, footer, allocator);
   tags_page_generate(articles, header, footer, allocator);
   rss_generate(articles, allocator);
