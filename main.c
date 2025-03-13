@@ -67,6 +67,8 @@ typedef struct {
 typedef struct {
   DocumentIndex document_index;
   u32 offset_start, offset_end;
+  PgString excerpt;
+  /* Title *section; */
 } SearchTrigramPosition;
 PG_DYN(SearchTrigramPosition) SearchTrigramPositionDyn;
 
@@ -115,17 +117,20 @@ search_document_index_by_trigram_print(SearchIndex search_index,
     return;
   }
 
-  printf("search: key=`%.*s` values=", (int)index->key.len, index->key.data);
-
   for (u64 i = 0; i < index->value.len; i++) {
     SearchTrigramPosition position = PG_SLICE_AT(index->value, i);
     PgString document_name =
         PG_SLICE_AT(search_index.documents, position.document_index.value)
             .html_file_name;
-    printf("(%.*s, %u, %u) ", (int)document_name.len, document_name.data,
-           position.offset_start, position.offset_end);
+    // section=`%.*s`
+    printf("trigram=`%.*s` doc=`%.*s` start=%u end=%u "
+           "excerpt=`%.*s`\n",
+           (int)index->key.len, index->key.data, (int)document_name.len,
+           document_name.data, position.offset_start, position.offset_end,
+           //           (int)position.section->title.len,
+           //           position.section->title.data,
+           (int)position.excerpt.len, position.excerpt.data);
   }
-  puts("");
 
   search_document_index_by_trigram_print(search_index, index->child[0]);
   search_document_index_by_trigram_print(search_index, index->child[1]);
@@ -721,13 +726,25 @@ static void search_index_feed_text(SearchIndex *search_index, PgString text,
   for (;;) {
     PG_ASSERT(3 == pg_utf8_count(key).res);
 
+    u32 text_offset_start = (u32)(key.data - text.data);
+    u32 text_offset_end = text_offset_start + (u32)key.len;
+    u64 excerpt_len_around_trigram = 6;
+    u64 excerpt_start = (u64)PG_CLAMP(
+        (i64)0, (i64)text_offset_start - (i64)excerpt_len_around_trigram,
+        (i64)text.len);
+    u64 excerpt_end =
+        PG_CLAMP(0, text_offset_end + excerpt_len_around_trigram, text.len);
+    PgString excerpt = PG_SLICE_RANGE(text, excerpt_start, excerpt_end);
+    PG_ASSERT(excerpt.len <= key.len + 2 * excerpt_len_around_trigram);
+
     SearchTrigramPositionDyn *positions =
         search_trigram_lookup(&search_index->index, key, allocator);
     SearchTrigramPosition position = {
         .document_index = document_index,
-        .offset_start = (u32)text_offset + (u32)(key.data - text.data),
-        .offset_end =
-            (u32)text_offset + (u32)(key.data - text.data) + (u32)key.len,
+        .offset_start = (u32)text_offset + text_offset_start,
+        .offset_end = (u32)text_offset + text_offset_end,
+        /* .section = section, */
+        .excerpt = excerpt,
     };
     *PG_DYN_PUSH(positions, allocator) = position;
 
@@ -761,6 +778,7 @@ static void search_index_feed_html_node(SearchIndex *search_index,
                                         PgHtmlNode *html_node,
                                         DocumentIndex document_index,
                                         PgAllocator *allocator) {
+
   if (PG_HTML_TOKEN_KIND_TEXT == html_node->token_start.kind) {
     search_index_feed_text(search_index, html_node->token_start.text,
                            html_node->token_start.start, document_index,
