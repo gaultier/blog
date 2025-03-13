@@ -608,6 +608,8 @@ static void article_write_toc(Pgu8Dyn *sb, Title *root,
 
 [[maybe_unused]]
 static void html_node_print(PgHtmlNode *node, u64 depth) {
+  PG_ASSERT(node);
+
   for (u64 i = 0; i < depth; i++) {
     printf("  ");
   }
@@ -633,10 +635,16 @@ static void html_node_print(PgHtmlNode *node, u64 depth) {
   case PG_HTML_TOKEN_KIND_NONE: // Root.
     html_node_print(pg_html_node_get_first_child(node), depth + 2);
     break;
+  case PG_HTML_TOKEN_KIND_COMMENT:
+    printf("comment: %.*s\n", (int)node->token_start.comment.len,
+           node->token_start.comment.data);
+    break;
+  case PG_HTML_TOKEN_KIND_DOCTYPE:
+    printf("doctype: %.*s\n", (int)node->token_start.doctype.len,
+           node->token_start.doctype.data);
+    break;
   case PG_HTML_TOKEN_KIND_TAG_CLOSING:
   case PG_HTML_TOKEN_KIND_ATTRIBUTE:
-  case PG_HTML_TOKEN_KIND_COMMENT:
-  case PG_HTML_TOKEN_KIND_DOCTYPE:
   default:
     PG_ASSERT(0);
   }
@@ -766,9 +774,6 @@ static void article_generate_html_file(PgFileDescriptor markdown_file,
   html_node_print(html_root, 0);
 #endif
 
-  search_index_feed_document(search_index, html_root, article->html_file_name,
-                             allocator);
-
   Title *title_root = html_collect_titles(html_root, article_html, allocator);
 #if 0
   title_print(title_root);
@@ -818,7 +823,16 @@ static void article_generate_html_file(PgFileDescriptor markdown_file,
   PG_DYN_APPEND_SLICE(&sb, PG_S(BACK_LINK), allocator);
   PG_DYN_APPEND_SLICE(&sb, footer, allocator);
   PgString html = PG_DYN_SLICE(PgString, sb);
-  PG_ASSERT(!pg_string_contains(html, PG_S("\n>\n")));
+  {
+    PgHtmlNodePtrResult res_parse_full = pg_html_parse(html, allocator);
+    PG_ASSERT(0 == res_parse_full.err);
+
+    PgHtmlNode *html_root_full = res_parse_full.res;
+    html_node_print(html_root_full, 0);
+
+    search_index_feed_document(search_index, html_root, article->html_file_name,
+                               allocator);
+  }
   PG_ASSERT(0 == pg_file_write_full(article->html_file_name, html, allocator));
 }
 
