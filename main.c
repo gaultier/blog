@@ -470,6 +470,7 @@ static Title *html_collect_titles(PgHtmlNode *html_root, PgString html_str,
   return title_root;
 }
 
+[[maybe_unused]]
 static void title_print(Title *title) {
   if (!title) {
     return;
@@ -760,7 +761,9 @@ static void article_generate_html_file(PgFileDescriptor markdown_file,
                              allocator);
 
   Title *title_root = html_collect_titles(html_root, article_html, allocator);
+#if 0
   title_print(title_root);
+#endif
 
   Pgu8Dyn sb = {0};
   PG_DYN_ENSURE_CAP(&sb, 4096, allocator);
