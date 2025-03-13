@@ -601,6 +601,7 @@ static void article_write_toc(Pgu8Dyn *sb, Title *root,
   article_write_toc_rec(sb, root, allocator);
 }
 
+[[maybe_unused]]
 static void html_node_print(PgHtmlNode *node, u64 depth) {
   for (u64 i = 0; i < depth; i++) {
     printf("  ");
@@ -677,12 +678,14 @@ static void search_index_feed_text(SearchIndex *search_index, PgString text,
     PG_ASSERT(document_indexes);
     *PG_DYN_PUSH(document_indexes, allocator) = document_index;
 
+#if 0
     printf(
         "[D001] document=%.*s trigram=%.*s\n",
         (int)search_index->documents.data[document_index.value]
             .html_file_name.len,
         search_index->documents.data[document_index.value].html_file_name.data,
         (int)key.len, key.data);
+#endif
     res_rune = pg_utf8_iterator_next(&it);
     PG_ASSERT(!res_rune.err);
     PgRune rune = res_rune.res;
@@ -749,7 +752,9 @@ static void article_generate_html_file(PgFileDescriptor markdown_file,
   PG_ASSERT(0 == res_parse.err);
 
   PgHtmlNode *html_root = res_parse.res;
+#if 0
   html_node_print(html_root, 0);
+#endif
 
   search_index_feed_document(search_index, html_root, article->html_file_name,
                              allocator);
@@ -990,7 +995,9 @@ static void home_page_generate(ArticleSlice articles, PgString header,
   PG_ASSERT(0 == res_parse.err);
 
   PgHtmlNode *html_root = res_parse.res;
+#if 0
   html_node_print(html_root, 0);
+#endif
 
   Title *title_root = html_collect_titles(html_root, html, allocator);
   html_write_decorated_titles(html, &sb, title_root, allocator);
