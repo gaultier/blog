@@ -177,12 +177,12 @@ static void search_index_serialize_to_file_rec(
      */
     /*                                         allocator); */
     /* *PG_DYN_PUSH(sb, allocator) = '"'; */
-    *PG_DYN_PUSH(sb, allocator) = ']';
+    PG_DYN_APPEND_SLICE(sb, PG_S("]\n"), allocator);
     if (i + 1 < index->value.len) {
       *PG_DYN_PUSH(sb, allocator) = ',';
     }
   }
-  PG_DYN_APPEND_SLICE(sb, PG_S("],"), allocator);
+  PG_DYN_APPEND_SLICE(sb, PG_S("],\n"), allocator);
 
   search_index_serialize_to_file_rec(sb, index->child[0], allocator);
   search_index_serialize_to_file_rec(sb, index->child[1], allocator);
@@ -201,7 +201,7 @@ static void search_index_serialize_to_file(SearchIndex search_index,
   PgFileDescriptor file = res_file.res;
 
   Pgu8Dyn sb = pg_sb_make_with_cap(50 * PG_MiB, allocator);
-  PG_DYN_APPEND_SLICE(&sb, PG_S("{documents:["), allocator);
+  PG_DYN_APPEND_SLICE(&sb, PG_S("index={documents:["), allocator);
 
   for (u64 i = 0; i < search_index.documents.len; i++) {
     SearchDocument doc = PG_SLICE_AT(search_index.documents, i);
