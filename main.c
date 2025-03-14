@@ -67,10 +67,14 @@ typedef struct {
 } DocumentIndex;
 
 typedef struct {
+  u32 value;
+} TitleIndex;
+
+typedef struct {
   DocumentIndex document_index;
   u32 offset_start, offset_end;
-  PgString excerpt;
-  Title *section;
+  // PgString excerpt;
+  TitleIndex section;
 } SearchTrigramPosition;
 PG_DYN(SearchTrigramPosition) SearchTrigramPositionDyn;
 
@@ -112,8 +116,10 @@ search_trigram_lookup(SearchDocumentIndexByTrigram **map, PgString key,
   return &(*map)->value;
 }
 
-[[maybe_unused]] static void search_document_index_by_trigram_print(
-    SearchIndex search_index, SearchDocumentIndexByTrigram *index, u64 *count) {
+[[maybe_unused]] static void
+search_document_index_by_trigram_print(SearchIndex search_index,
+                                       SearchDocumentIndexByTrigram *index,
+                                       TitleSlice titles, u64 *count) {
   if (!index) {
     return;
   }
@@ -123,27 +129,41 @@ search_trigram_lookup(SearchDocumentIndexByTrigram **map, PgString key,
     PgString document_name =
         PG_SLICE_AT(search_index.documents, position.document_index.value)
             .html_file_name;
+    Title *section = position.section.value == UINT32_MAX
+                         ? nullptr
+                         : PG_SLICE_AT_PTR(&titles, position.section.value);
     printf("trigram=`%.*s` doc=`%.*s` start=%u end=%u "
-           "section=`%.*s` "
+           "section=`%.*s` ",
+#if 0
            "excerpt=`%.*s`\n",
+#endif
            (int)index->key.len, index->key.data, (int)document_name.len,
            document_name.data, position.offset_start, position.offset_end,
-           position.section ? (int)position.section->title.len : 0,
-           position.section ? position.section->title.data : nullptr,
-           (int)position.excerpt.len, position.excerpt.data);
+           section ? (int)section->title.len : 0,
+           section ? section->title.data : nullptr
+#if 0 
+           ,
+           (int)position.excerpt.len, position.excerpt.data
+#endif
+    );
     *count += 1;
   }
 
-  search_document_index_by_trigram_print(search_index, index->child[0], count);
-  search_document_index_by_trigram_print(search_index, index->child[1], count);
-  search_document_index_by_trigram_print(search_index, index->child[2], count);
-  search_document_index_by_trigram_print(search_index, index->child[3], count);
+  search_document_index_by_trigram_print(search_index, index->child[0], titles,
+                                         count);
+  search_document_index_by_trigram_print(search_index, index->child[1], titles,
+                                         count);
+  search_document_index_by_trigram_print(search_index, index->child[2], titles,
+                                         count);
+  search_document_index_by_trigram_print(search_index, index->child[3], titles,
+                                         count);
 }
 
-[[maybe_unused]] static void search_index_print(SearchIndex search_index) {
+[[maybe_unused]] static void search_index_print(SearchIndex search_index,
+                                                TitleSlice titles) {
   u64 count = 0;
   search_document_index_by_trigram_print(search_index, search_index.index,
-                                         &count);
+                                         titles, &count);
   printf("search index: count=%" PRIu64 "\n", count);
 }
 
@@ -160,17 +180,11 @@ static void search_index_serialize_to_file_rec(
 
   for (u64 i = 0; i < index->value.len; i++) {
     SearchTrigramPosition position = PG_SLICE_AT(index->value, i);
-    Title *title = position.section;
-
     *PG_DYN_PUSH(sb, allocator) = '[';
     pg_string_builder_append_u64(sb, position.document_index.value, allocator);
     *PG_DYN_PUSH(sb, allocator) = ',';
     *PG_DYN_PUSH(sb, allocator) = '"';
-    if (title) {
-      pg_string_builder_append_u64(sb, title->hash, allocator);
-      *PG_DYN_PUSH(sb, allocator) = '-';
-      PG_DYN_APPEND_SLICE(sb, title->content_html_id, allocator);
-    }
+    pg_string_builder_append_u64(sb, position.section.value, allocator);
     *PG_DYN_PUSH(sb, allocator) = '"';
     /* *PG_DYN_PUSH(sb, allocator) = ','; */
     /* *PG_DYN_PUSH(sb, allocator) = '"'; */
@@ -766,8 +780,8 @@ static void html_node_print(PgHtmlNode *node, u64 depth) {
 
 static void search_index_feed_text(SearchIndex *search_index, PgString text,
                                    u64 text_offset,
-                                   DocumentIndex document_index, Title *section,
-                                   PgAllocator *allocator) {
+                                   DocumentIndex document_index,
+                                   TitleIndex section, PgAllocator *allocator) {
   PgUtf8Iterator it = pg_make_utf8_iterator(text);
   PgRuneResult res_rune = {0};
 
@@ -815,7 +829,9 @@ static void search_index_feed_text(SearchIndex *search_index, PgString text,
         .offset_start = (u32)text_offset + text_offset_start,
         .offset_end = (u32)text_offset + text_offset_end,
         .section = section,
+#if 0
         .excerpt = (PgString){0},
+#endif
     };
     *PG_DYN_PUSH(positions, allocator) = position;
 
@@ -845,12 +861,12 @@ static void search_index_feed_text(SearchIndex *search_index, PgString text,
   }
 }
 
-static Title *title_find_by_title_content(TitleSlice titles,
-                                          PgString title_content) {
+static TitleIndex title_find_by_title_content(TitleSlice titles,
+                                              PgString title_content) {
   for (u64 i = 0; i < titles.len; i++) {
     Title *title = PG_SLICE_AT_PTR(&titles, i);
     if (pg_string_eq(title->title, title_content)) {
-      return title;
+      return (TitleIndex){.value = (u32)i};
     }
   }
   PG_ASSERT(0);
@@ -867,7 +883,7 @@ static void search_index_feed_document(SearchIndex *search_index,
       .value = (u32)(search_index->documents.len - 1),
   };
 
-  Title *section = nullptr;
+  TitleIndex section = {.value = UINT32_MAX};
 
   for (u64 i = 0; i < html_tokens.len; i++) {
     PgHtmlToken token = PG_SLICE_AT(html_tokens, i);
