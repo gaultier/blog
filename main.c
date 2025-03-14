@@ -428,7 +428,7 @@ static PgString datetime_to_date(PgString datetime) {
 }
 
 static void html_collect_titles_rec(PgHtmlNode *node, TitleDyn *titles,
-                                    PgString html_str, PgAllocator *allocator) {
+                                    PgAllocator *allocator) {
   PG_ASSERT(node);
 
   u8 level = pg_html_get_title_level(node);
@@ -437,7 +437,7 @@ static void html_collect_titles_rec(PgHtmlNode *node, TitleDyn *titles,
 
     Title new_title = {0};
     new_title.level = level;
-    new_title.title = pg_html_get_title_content(node, html_str);
+    new_title.title = pg_html_get_title_content(node);
     new_title.content_html_id = html_make_id(new_title.title, allocator);
     new_title.pos_start = node->token_start.start;
     new_title.pos_end = 2 + node->token_end.end;
@@ -448,16 +448,16 @@ static void html_collect_titles_rec(PgHtmlNode *node, TitleDyn *titles,
 
   PgHtmlNode *first_child = pg_html_node_get_first_child(node);
   if (first_child != node) {
-    html_collect_titles_rec(first_child, titles, html_str, allocator);
+    html_collect_titles_rec(first_child, titles, allocator);
   }
   PgHtmlNode *next_sibling = pg_html_node_get_next_sibling(node);
   if (next_sibling != node) {
-    html_collect_titles_rec(next_sibling, titles, html_str, allocator);
+    html_collect_titles_rec(next_sibling, titles, allocator);
   }
 }
 
 [[nodiscard]]
-static TitleSlice html_collect_titles(PgHtmlNode *html_root, PgString html_str,
+static TitleSlice html_collect_titles(PgHtmlNode *html_root,
                                       PgAllocator *allocator) {
   TitleDyn titles = {0};
   PG_DYN_ENSURE_CAP(&titles, 64, allocator);
@@ -466,7 +466,7 @@ static TitleSlice html_collect_titles(PgHtmlNode *html_root, PgString html_str,
   Title *title_root = PG_SLICE_AT_PTR(&titles, 0);
   title_root->parent = title_root;
 
-  html_collect_titles_rec(html_root, &titles, html_str, allocator);
+  html_collect_titles_rec(html_root, &titles, allocator);
 
   for (u64 i = 1; i < titles.len; i++) {
     Title *title = PG_SLICE_AT_PTR(&titles, i);
@@ -764,36 +764,21 @@ static void search_index_feed_text(SearchIndex *search_index, PgString text,
   }
 }
 
-static void search_index_feed_html_node(SearchIndex *search_index,
-                                        PgHtmlNode *html_node,
-                                        DocumentIndex document_index,
-                                        PgAllocator *allocator) {
-  Title *section = nullptr;
-
-  if (pg_html_get_title_level(html_node) >= 2) {
-    // TODO: get section.
-  } else if (PG_HTML_TOKEN_KIND_TEXT == html_node->token_start.kind) {
-    search_index_feed_text(search_index, html_node->token_start.text,
-                           html_node->token_start.start, document_index,
-                           section, allocator);
+static Title *title_find_by_title_content(TitleSlice titles,
+                                          PgString title_content) {
+  for (u64 i = 0; i < titles.len; i++) {
+    Title *title = PG_SLICE_AT_PTR(&titles, i);
+    if (pg_string_eq(title->title, title_content)) {
+      return title;
+    }
   }
-
-  PgHtmlNode *first_child = pg_html_node_get_first_child(html_node);
-  if (first_child != html_node) {
-    search_index_feed_html_node(search_index, first_child, document_index,
-                                allocator);
-  }
-
-  PgHtmlNode *next_sibling = pg_html_node_get_next_sibling(html_node);
-  if (next_sibling != html_node) {
-    search_index_feed_html_node(search_index, next_sibling, document_index,
-                                allocator);
-  }
+  PG_ASSERT(0);
 }
 
 static void search_index_feed_document(SearchIndex *search_index,
-                                       PgHtmlNode *html_root,
+                                       PgHtmlTokenSlice html_tokens,
                                        PgString document_name,
+                                       TitleSlice titles,
                                        PgAllocator *allocator) {
   *PG_DYN_PUSH(&search_index->documents, allocator) =
       (SearchDocument){.html_file_name = document_name};
@@ -801,9 +786,31 @@ static void search_index_feed_document(SearchIndex *search_index,
       .value = (u32)(search_index->documents.len - 1),
   };
 
-  search_index_feed_html_node(search_index,
-                              pg_html_node_get_first_child(html_root),
-                              document_index, allocator);
+  Title *section = nullptr;
+
+  for (u64 i = 0; i < html_tokens.len; i++) {
+    PgHtmlToken token = PG_SLICE_AT(html_tokens, i);
+
+    if (PG_HTML_TOKEN_KIND_TAG_OPENING == token.kind &&
+        (pg_string_eq(token.tag, PG_S("h1")) ||
+         pg_string_eq(token.tag, PG_S("h2")) ||
+         pg_string_eq(token.tag, PG_S("h3")) ||
+         pg_string_eq(token.tag, PG_S("h4")) ||
+         pg_string_eq(token.tag, PG_S("h5")) ||
+         pg_string_eq(token.tag, PG_S("h6")))) {
+      PgHtmlToken title_text = {0}; // FIXME
+
+      PG_ASSERT(PG_HTML_TOKEN_KIND_TEXT == title_text.kind);
+      PgString title_content = title_text.text;
+      PG_ASSERT(!pg_string_is_empty(title_content));
+
+      section = title_find_by_title_content(titles, title_content);
+      // TODO: get section.
+    } else if (PG_HTML_TOKEN_KIND_TEXT == token.kind) {
+      search_index_feed_text(search_index, token.text, token.start,
+                             document_index, section, allocator);
+    }
+  }
 }
 
 static void article_generate_html_file(PgFileDescriptor markdown_file,
@@ -822,7 +829,7 @@ static void article_generate_html_file(PgFileDescriptor markdown_file,
   html_node_print(html_root, 0);
 #endif
 
-  TitleSlice titles = html_collect_titles(html_root, article_html, allocator);
+  TitleSlice titles = html_collect_titles(html_root, allocator);
 #if 0
   title_print(title_root);
 #endif
@@ -872,14 +879,13 @@ static void article_generate_html_file(PgFileDescriptor markdown_file,
   PG_DYN_APPEND_SLICE(&sb, footer, allocator);
   PgString html = PG_DYN_SLICE(PgString, sb);
   {
-    PgHtmlNodePtrResult res_parse_full = pg_html_parse(html, allocator);
-    PG_ASSERT(0 == res_parse_full.err);
+    PgHtmlTokenDynResult res_html_tokens = pg_html_tokenize(html, allocator);
+    PG_ASSERT(0 == res_html_tokens.err);
 
-    PgHtmlNode *html_root_full = res_parse_full.res;
-    html_node_print(html_root_full, 0);
-
-    search_index_feed_document(search_index, html_root_full,
-                               article->html_file_name, allocator);
+    PgHtmlTokenSlice html_tokens =
+        PG_DYN_SLICE(PgHtmlTokenSlice, res_html_tokens.res);
+    search_index_feed_document(search_index, html_tokens,
+                               article->html_file_name, titles, allocator);
   }
   PG_ASSERT(0 == pg_file_write_full(article->html_file_name, html, allocator));
 }
@@ -1073,7 +1079,7 @@ static void home_page_generate(ArticleSlice articles, PgString header,
   html_node_print(html_root, 0);
 #endif
 
-  TitleSlice titles = html_collect_titles(html_root, html, allocator);
+  TitleSlice titles = html_collect_titles(html_root, allocator);
   html_write_decorated_titles(html, &sb, titles, allocator);
 
   PG_DYN_APPEND_SLICE(&sb, footer, allocator);
