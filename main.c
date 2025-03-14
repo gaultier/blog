@@ -431,13 +431,13 @@ static void html_collect_titles_rec(PgHtmlNode *node, TitleDyn *titles,
                                     PgAllocator *allocator) {
   PG_ASSERT(node);
 
-  u8 level = pg_html_get_title_level(node);
+  u8 level = pg_html_node_get_title_level(node);
   if (level) {
     PG_ASSERT(2 <= level && level <= 6);
 
     Title new_title = {0};
     new_title.level = level;
-    new_title.title = pg_html_get_title_content(node);
+    new_title.title = pg_html_node_get_simple_title_content(node);
     new_title.content_html_id = html_make_id(new_title.title, allocator);
     new_title.pos_start = node->token_start.start;
     new_title.pos_end = 2 + node->token_end.end;
@@ -792,13 +792,14 @@ static void search_index_feed_document(SearchIndex *search_index,
     PgHtmlToken token = PG_SLICE_AT(html_tokens, i);
 
     if (PG_HTML_TOKEN_KIND_TAG_OPENING == token.kind &&
-        (pg_string_eq(token.tag, PG_S("h1")) ||
-         pg_string_eq(token.tag, PG_S("h2")) ||
+        (pg_string_eq(token.tag, PG_S("h2")) ||
          pg_string_eq(token.tag, PG_S("h3")) ||
          pg_string_eq(token.tag, PG_S("h4")) ||
          pg_string_eq(token.tag, PG_S("h5")) ||
          pg_string_eq(token.tag, PG_S("h6")))) {
-      PgHtmlToken title_text = {0}; // FIXME
+      PG_ASSERT(i + 2 < html_tokens.len);
+
+      PgHtmlToken title_text = PG_SLICE_AT(html_tokens, i + 2);
 
       PG_ASSERT(PG_HTML_TOKEN_KIND_TEXT == title_text.kind);
       PgString title_content = title_text.text;
