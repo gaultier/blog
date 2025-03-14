@@ -149,9 +149,40 @@ search_trigram_lookup(SearchDocumentIndexByTrigram **map, PgString key,
 
 static void search_index_serialize_to_file_rec(
     Pgu8Dyn *sb, SearchDocumentIndexByTrigram *index, PgAllocator *allocator) {
-  (void)sb;
-  (void)index;
-  (void)allocator;
+  if (!index) {
+    return;
+  }
+
+  *PG_DYN_PUSH(sb, allocator) = '"';
+  // TODO: Escape `"`.
+  PG_DYN_APPEND_SLICE(sb, index->key, allocator);
+  PG_DYN_APPEND_SLICE(sb, PG_S("\":["), allocator);
+
+  for (u64 i = 0; i < index->value.len; i++) {
+    SearchTrigramPosition position = PG_SLICE_AT(index->value, i);
+    Title *title = position.section;
+
+    *PG_DYN_PUSH(sb, allocator) = '[';
+    pg_byte_buffer_append_u32(sb, position.document_index.value, allocator);
+    *PG_DYN_PUSH(sb, allocator) = ',';
+    *PG_DYN_PUSH(sb, allocator) = '"';
+    if (title) {
+      pg_byte_buffer_append_u32(sb, title->hash, allocator);
+      *PG_DYN_PUSH(sb, allocator) = '-';
+      PG_DYN_APPEND_SLICE(sb, title->content_html_id, allocator);
+    }
+    *PG_DYN_PUSH(sb, allocator) = '"';
+    *PG_DYN_PUSH(sb, allocator) = ',';
+    *PG_DYN_PUSH(sb, allocator) = '"';
+    // TODO: escape `"`.
+    PG_DYN_APPEND_SLICE(sb, position.excerpt, allocator);
+    *PG_DYN_PUSH(sb, allocator) = '"';
+    *PG_DYN_PUSH(sb, allocator) = ']';
+    if (i + 1 < index->value.len) {
+      *PG_DYN_PUSH(sb, allocator) = ',';
+    }
+  }
+  PG_DYN_APPEND_SLICE(sb, PG_S("],"), allocator);
 }
 
 static void search_index_serialize_to_file(SearchIndex search_index,
@@ -180,9 +211,9 @@ static void search_index_serialize_to_file(SearchIndex search_index,
     }
   }
 
-  PG_DYN_APPEND_SLICE(&sb, PG_S("],index:"), allocator);
+  PG_DYN_APPEND_SLICE(&sb, PG_S("],index:{"), allocator);
   search_index_serialize_to_file_rec(&sb, search_index.index, allocator);
-  PG_DYN_APPEND_SLICE(&sb, PG_S("}"), allocator);
+  PG_DYN_APPEND_SLICE(&sb, PG_S("}}"), allocator);
 
   PG_ASSERT(0 == pg_file_write_full_with_descriptor(
                      file, PG_DYN_SLICE(PgString, sb)));
