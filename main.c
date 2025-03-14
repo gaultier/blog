@@ -183,9 +183,7 @@ static void search_index_serialize_to_file_rec(
     *PG_DYN_PUSH(sb, allocator) = '[';
     pg_string_builder_append_u64(sb, position.document_index.value, allocator);
     *PG_DYN_PUSH(sb, allocator) = ',';
-    *PG_DYN_PUSH(sb, allocator) = '"';
     pg_string_builder_append_u64(sb, position.section.value, allocator);
-    *PG_DYN_PUSH(sb, allocator) = '"';
     /* *PG_DYN_PUSH(sb, allocator) = ','; */
     /* *PG_DYN_PUSH(sb, allocator) = '"'; */
     /* pg_string_builder_append_string_escaped(sb, position.excerpt, '"', '\\',
@@ -230,6 +228,7 @@ static void search_index_serialize_to_file(SearchIndex search_index,
       *PG_DYN_PUSH(&sb, allocator) = ',';
     }
   }
+  // TODO: titles.
 
   PG_DYN_APPEND_SLICE(&sb, PG_S("],index:{"), allocator);
   search_index_serialize_to_file_rec(&sb, search_index.index, allocator);
