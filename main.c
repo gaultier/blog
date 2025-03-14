@@ -111,9 +111,8 @@ search_trigram_lookup(SearchDocumentIndexByTrigram **map, PgString key,
   return &(*map)->value;
 }
 
-[[maybe_unused]] static void
-search_document_index_by_trigram_print(SearchIndex search_index,
-                                       SearchDocumentIndexByTrigram *index) {
+[[maybe_unused]] static void search_document_index_by_trigram_print(
+    SearchIndex search_index, SearchDocumentIndexByTrigram *index, u64 *count) {
   if (!index) {
     return;
   }
@@ -131,16 +130,20 @@ search_document_index_by_trigram_print(SearchIndex search_index,
            position.section ? (int)position.section->title.len : 0,
            position.section ? position.section->title.data : nullptr,
            (int)position.excerpt.len, position.excerpt.data);
+    *count += 1;
   }
 
-  search_document_index_by_trigram_print(search_index, index->child[0]);
-  search_document_index_by_trigram_print(search_index, index->child[1]);
-  search_document_index_by_trigram_print(search_index, index->child[2]);
-  search_document_index_by_trigram_print(search_index, index->child[3]);
+  search_document_index_by_trigram_print(search_index, index->child[0], count);
+  search_document_index_by_trigram_print(search_index, index->child[1], count);
+  search_document_index_by_trigram_print(search_index, index->child[2], count);
+  search_document_index_by_trigram_print(search_index, index->child[3], count);
 }
 
 [[maybe_unused]] static void search_index_print(SearchIndex search_index) {
-  search_document_index_by_trigram_print(search_index, search_index.index);
+  u64 count = 0;
+  search_document_index_by_trigram_print(search_index, search_index.index,
+                                         &count);
+  printf("search index: count=%" PRIu64 "\n", count);
 }
 
 static int article_cmp_by_creation_date_asc(const void *a, const void *b) {
