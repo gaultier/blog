@@ -147,6 +147,49 @@ search_trigram_lookup(SearchDocumentIndexByTrigram **map, PgString key,
   printf("search index: count=%" PRIu64 "\n", count);
 }
 
+static void search_index_serialize_to_file_rec(
+    Pgu8Dyn *sb, SearchDocumentIndexByTrigram *index, PgAllocator *allocator) {
+  (void)sb;
+  (void)index;
+  (void)allocator;
+}
+
+static void search_index_serialize_to_file(SearchIndex search_index,
+                                           PgString file_name,
+                                           PgAllocator *allocator) {
+  PG_ASSERT(!PG_SLICE_IS_EMPTY(search_index.documents));
+
+  PgFileDescriptorResult res_file =
+      pg_file_open(file_name, PG_FILE_ACCESS_WRITE, true, allocator);
+  PG_ASSERT(0 == res_file.err);
+  PgFileDescriptor file = res_file.res;
+
+  Pgu8Dyn sb = pg_sb_make_with_cap(50 * PG_MiB, allocator);
+  PG_DYN_APPEND_SLICE(&sb, PG_S("{documents:["), allocator);
+
+  for (u64 i = 0; i < search_index.documents.len; i++) {
+    SearchDocument doc = PG_SLICE_AT(search_index.documents, i);
+    PG_ASSERT(-1 == pg_string_indexof_rune(doc.html_file_name, '"'));
+
+    *PG_DYN_PUSH(&sb, allocator) = '"';
+    PG_DYN_APPEND_SLICE(&sb, doc.html_file_name, allocator);
+    *PG_DYN_PUSH(&sb, allocator) = '"';
+
+    if (i + 1 < search_index.documents.len) {
+      *PG_DYN_PUSH(&sb, allocator) = ',';
+    }
+  }
+
+  PG_DYN_APPEND_SLICE(&sb, PG_S("],index:"), allocator);
+  search_index_serialize_to_file_rec(&sb, search_index.index, allocator);
+  PG_DYN_APPEND_SLICE(&sb, PG_S("}"), allocator);
+
+  PG_ASSERT(0 == pg_file_write_full_with_descriptor(
+                     file, PG_DYN_SLICE(PgString, sb)));
+
+  PG_ASSERT(0 == pg_file_close(file));
+}
+
 static int article_cmp_by_creation_date_asc(const void *a, const void *b) {
   const Article *article_a = a;
   const Article *article_b = b;
@@ -1280,7 +1323,7 @@ int main() {
   PgAllocator *allocator = pg_heap_allocator_as_allocator(&heap_allocator);
 #endif
 
-  PgArena arena = pg_arena_make_from_virtual_mem(100 * PG_MiB);
+  PgArena arena = pg_arena_make_from_virtual_mem(200 * PG_MiB);
   PgArenaAllocator arena_allocator = pg_make_arena_allocator(&arena);
   PgAllocator *allocator = pg_arena_allocator_as_allocator(&arena_allocator);
 
@@ -1297,7 +1340,9 @@ int main() {
   SearchIndex search_index = {0};
   ArticleSlice articles =
       articles_generate(header, footer, &search_index, allocator);
-  search_index_print(search_index);
+  /* search_index_print(search_index); */
+  search_index_serialize_to_file(search_index, PG_S("search_index.js"),
+                                 allocator);
   home_page_generate(articles, header, footer, allocator);
   tags_page_generate(articles, header, footer, allocator);
   rss_generate(articles, allocator);
