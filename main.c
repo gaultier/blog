@@ -25,7 +25,7 @@
 #define METADATA_DELIMITER "---"
 #define BACK_LINK "<p><a href=\"/blog\"> ⏴ Back to all articles</a></p>\n"
 #define FNV_SEED ((u32)0x811c9dc5)
-#define EXCERPT_LEN_AROUND_TRIGRAM 10
+/* #define EXCERPT_LEN_AROUND_TRIGRAM 10 */
 
 typedef u32 TitleHash;
 
@@ -171,17 +171,23 @@ static void search_index_serialize_to_file_rec(
       PG_DYN_APPEND_SLICE(sb, title->content_html_id, allocator);
     }
     *PG_DYN_PUSH(sb, allocator) = '"';
-    *PG_DYN_PUSH(sb, allocator) = ',';
-    *PG_DYN_PUSH(sb, allocator) = '"';
-    pg_string_builder_append_string_escaped(sb, position.excerpt, '"', '\\',
-                                            allocator);
-    *PG_DYN_PUSH(sb, allocator) = '"';
+    /* *PG_DYN_PUSH(sb, allocator) = ','; */
+    /* *PG_DYN_PUSH(sb, allocator) = '"'; */
+    /* pg_string_builder_append_string_escaped(sb, position.excerpt, '"', '\\',
+     */
+    /*                                         allocator); */
+    /* *PG_DYN_PUSH(sb, allocator) = '"'; */
     *PG_DYN_PUSH(sb, allocator) = ']';
     if (i + 1 < index->value.len) {
       *PG_DYN_PUSH(sb, allocator) = ',';
     }
   }
   PG_DYN_APPEND_SLICE(sb, PG_S("],"), allocator);
+
+  search_index_serialize_to_file_rec(sb, index->child[0], allocator);
+  search_index_serialize_to_file_rec(sb, index->child[1], allocator);
+  search_index_serialize_to_file_rec(sb, index->child[2], allocator);
+  search_index_serialize_to_file_rec(sb, index->child[3], allocator);
 }
 
 static void search_index_serialize_to_file(SearchIndex search_index,
@@ -791,14 +797,15 @@ static void search_index_feed_text(SearchIndex *search_index, PgString text,
 
     u32 text_offset_start = (u32)(key.data - text.data);
     u32 text_offset_end = text_offset_start + (u32)key.len;
-    u64 excerpt_start = (u64)PG_CLAMP(
-        (i64)0, (i64)text_offset_start - (i64)EXCERPT_LEN_AROUND_TRIGRAM,
-        (i64)text.len);
-    u64 excerpt_end =
-        PG_CLAMP(0, text_offset_end + EXCERPT_LEN_AROUND_TRIGRAM, text.len);
-    PgString excerpt = PG_SLICE_RANGE(text, excerpt_start, excerpt_end);
-    PG_ASSERT(excerpt.len <= key.len + 2 * EXCERPT_LEN_AROUND_TRIGRAM);
-    PG_ASSERT(pg_string_contains(excerpt, key));
+    /* u64 excerpt_start = (u64)PG_CLAMP( */
+    /*     (i64)0, (i64)text_offset_start - (i64)EXCERPT_LEN_AROUND_TRIGRAM, */
+    /*     (i64)text.len); */
+    /* u64 excerpt_end = */
+    /*     PG_CLAMP(0, text_offset_end + EXCERPT_LEN_AROUND_TRIGRAM, text.len);
+     */
+    /* PgString excerpt = PG_SLICE_RANGE(text, excerpt_start, excerpt_end); */
+    /* PG_ASSERT(excerpt.len <= key.len + 2 * EXCERPT_LEN_AROUND_TRIGRAM); */
+    /* PG_ASSERT(pg_string_contains(excerpt, key)); */
 
     SearchTrigramPositionDyn *positions =
         search_trigram_lookup(&search_index->index, key, allocator);
@@ -807,7 +814,7 @@ static void search_index_feed_text(SearchIndex *search_index, PgString text,
         .offset_start = (u32)text_offset + text_offset_start,
         .offset_end = (u32)text_offset + text_offset_end,
         .section = section,
-        .excerpt = excerpt,
+        .excerpt = (PgString){0},
     };
     *PG_DYN_PUSH(positions, allocator) = position;
 
