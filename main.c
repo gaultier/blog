@@ -39,6 +39,7 @@ struct Title {
   u32 pos_start, pos_end;
 };
 PG_DYN(Title) TitleDyn;
+PG_SLICE(Title) TitleSlice;
 
 typedef struct {
   PgString html_file_name;
@@ -456,37 +457,36 @@ static void html_collect_titles_rec(PgHtmlNode *node, TitleDyn *titles,
 }
 
 [[nodiscard]]
-static Title *html_collect_titles(PgHtmlNode *html_root, PgString html_str,
-                                  PgAllocator *allocator) {
+static TitleSlice html_collect_titles(PgHtmlNode *html_root, PgString html_str,
+                                      PgAllocator *allocator) {
   TitleDyn titles = {0};
   PG_DYN_ENSURE_CAP(&titles, 64, allocator);
-  html_collect_titles_rec(html_root, &titles, html_str, allocator);
 
-  Title *title_root = pg_alloc(allocator, sizeof(Title), _Alignof(Title), 1);
-  title_root->level = 1;
+  *PG_DYN_PUSH_WITHIN_CAPACITY(&titles) = (Title){.level = 1};
+  Title *title_root = PG_SLICE_AT_PTR(&titles, 0);
   title_root->parent = title_root;
 
-  for (u64 i = 0; i < titles.len; i++) {
+  html_collect_titles_rec(html_root, &titles, html_str, allocator);
+
+  for (u64 i = 1; i < titles.len; i++) {
     Title *title = PG_SLICE_AT_PTR(&titles, i);
     title->parent = title_root;
 
-    if (i > 0) {
-      Title *previous = PG_SLICE_AT_PTR(&titles, i - 1);
-      i8 level_diff = previous->level - title->level;
+    Title *previous = PG_SLICE_AT_PTR(&titles, i - 1);
+    i8 level_diff = previous->level - title->level;
 
-      if (level_diff > 0) {
-        // The current title is a (great-)uncle of the current title.
-        for (u64 _j = 0; _j < (u64)level_diff; _j++) {
-          PG_ASSERT(title->parent);
-          title->parent = title->parent->parent;
-        }
-      } else if (level_diff < 0) {
-        // Check that we do not skip levels e.g. prevent `## Foo\n#### Bar\n`
-        PG_ASSERT(level_diff == -1);
-        title->parent = previous;
-      } else if (0 == level_diff) { // Sibling.
-        title->parent = previous->parent;
+    if (level_diff > 0) {
+      // The current title is a (great-)uncle of the current title.
+      for (u64 _j = 0; _j < (u64)level_diff; _j++) {
+        PG_ASSERT(title->parent);
+        title->parent = title->parent->parent;
       }
+    } else if (level_diff < 0) {
+      // Check that we do not skip levels e.g. prevent `## Foo\n#### Bar\n`
+      PG_ASSERT(level_diff == -1);
+      title->parent = previous;
+    } else if (0 == level_diff) { // Sibling.
+      title->parent = previous->parent;
     }
     PG_ASSERT(title->parent->level + 1 == title->level);
     Title *child = title->parent->first_child;
@@ -509,7 +509,7 @@ static Title *html_collect_titles(PgHtmlNode *html_root, PgString html_str,
     title->hash = title_compute_hash(title, FNV_SEED);
   }
   PG_ASSERT(nullptr == title_root->next_sibling);
-  return title_root;
+  return PG_DYN_SLICE(TitleSlice, titles);
 }
 
 [[maybe_unused]]
@@ -633,8 +633,11 @@ static void article_write_toc_rec(Pgu8Dyn *sb, Title *title,
   article_write_toc_rec(sb, title->next_sibling, allocator);
 }
 
-static void article_write_toc(Pgu8Dyn *sb, Title *root,
+static void article_write_toc(Pgu8Dyn *sb, TitleSlice titles,
                               PgAllocator *allocator) {
+  PG_ASSERT(!PG_SLICE_IS_EMPTY(titles));
+  Title *root = PG_SLICE_AT_PTR(&titles, 0);
+
   if (!root->first_child) {
     return;
   }
@@ -836,7 +839,7 @@ static void article_generate_html_file(PgFileDescriptor markdown_file,
   html_node_print(html_root, 0);
 #endif
 
-  Title *title_root = html_collect_titles(html_root, article_html, allocator);
+  TitleSlice titles = html_collect_titles(html_root, article_html, allocator);
 #if 0
   title_print(title_root);
 #endif
@@ -876,11 +879,12 @@ static void article_generate_html_file(PgFileDescriptor markdown_file,
   PG_DYN_APPEND_SLICE(&sb, PG_S("</div>\n"), allocator);
   PG_DYN_APPEND_SLICE(&sb, PG_S("  </div>\n"), allocator);
 
-  article_write_toc(&sb, title_root, allocator);
+  article_write_toc(&sb, titles, allocator);
 
   PG_DYN_APPEND_SLICE(&sb, PG_S("\n"), allocator);
 
-  html_write_decorated_titles(article_html, &sb, title_root, allocator);
+  html_write_decorated_titles(article_html, &sb, PG_SLICE_AT_PTR(&titles, 0),
+                              allocator);
 
   PG_DYN_APPEND_SLICE(&sb, PG_S(BACK_LINK), allocator);
   PG_DYN_APPEND_SLICE(&sb, footer, allocator);
@@ -1087,8 +1091,9 @@ static void home_page_generate(ArticleSlice articles, PgString header,
   html_node_print(html_root, 0);
 #endif
 
-  Title *title_root = html_collect_titles(html_root, html, allocator);
-  html_write_decorated_titles(html, &sb, title_root, allocator);
+  TitleSlice titles = html_collect_titles(html_root, html, allocator);
+  html_write_decorated_titles(html, &sb, PG_SLICE_AT_PTR(&titles, 0),
+                              allocator);
 
   PG_DYN_APPEND_SLICE(&sb, footer, allocator);
 
