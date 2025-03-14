@@ -154,7 +154,8 @@ static void search_index_serialize_to_file_rec(
   }
 
   *PG_DYN_PUSH(sb, allocator) = '"';
-  pg_string_builder_append_string_escaped(sb, index->key, '"', '\\', allocator);
+  pg_string_builder_append_string_escaped_any(sb, index->key, PG_S("\"\\\n"),
+                                              '\\', allocator);
   PG_DYN_APPEND_SLICE(sb, PG_S("\":["), allocator);
 
   for (u64 i = 0; i < index->value.len; i++) {
