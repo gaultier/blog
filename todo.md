@@ -37,6 +37,7 @@ Blog implementation:
   + HTTP2 force push to force the browser to get the new page version?
   + Server sent event to reload the page
 - [ ] Built-in http server
+- [ ] Syntax highlighting done statically
 
 ### Full text search reference
 
