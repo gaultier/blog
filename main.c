@@ -69,7 +69,7 @@ typedef struct {
   DocumentIndex document_index;
   u32 offset_start, offset_end;
   PgString excerpt;
-  /* Title *section; */
+  Title *section;
 } SearchTrigramPosition;
 PG_DYN(SearchTrigramPosition) SearchTrigramPositionDyn;
 
@@ -123,13 +123,13 @@ search_document_index_by_trigram_print(SearchIndex search_index,
     PgString document_name =
         PG_SLICE_AT(search_index.documents, position.document_index.value)
             .html_file_name;
-    // section=`%.*s`
     printf("trigram=`%.*s` doc=`%.*s` start=%u end=%u "
+           "section=`%.*s` "
            "excerpt=`%.*s`\n",
            (int)index->key.len, index->key.data, (int)document_name.len,
            document_name.data, position.offset_start, position.offset_end,
-           //           (int)position.section->title.len,
-           //           position.section->title.data,
+           position.section ? (int)position.section->title.len : 0,
+           position.section ? position.section->title.data : nullptr,
            (int)position.excerpt.len, position.excerpt.data);
   }
 
@@ -439,7 +439,7 @@ static void html_collect_titles_rec(PgHtmlNode *node, TitleDyn *titles,
     new_title.pos_end = 2 + node->token_end.end;
     // Other fields backpatched.
 
-    *PG_DYN_PUSH(titles, allocator) = new_title;
+    *PG_DYN_PUSH_WITHIN_CAPACITY(titles) = new_title;
   }
 
   PgHtmlNode *first_child = pg_html_node_get_first_child(node);
@@ -697,7 +697,7 @@ static void html_node_print(PgHtmlNode *node, u64 depth) {
 
 static void search_index_feed_text(SearchIndex *search_index, PgString text,
                                    u64 text_offset,
-                                   DocumentIndex document_index,
+                                   DocumentIndex document_index, Title *section,
                                    PgAllocator *allocator) {
   PgUtf8Iterator it = pg_make_utf8_iterator(text);
   PgRuneResult res_rune = {0};
@@ -744,7 +744,7 @@ static void search_index_feed_text(SearchIndex *search_index, PgString text,
         .document_index = document_index,
         .offset_start = (u32)text_offset + text_offset_start,
         .offset_end = (u32)text_offset + text_offset_end,
-        /* .section = section, */
+        .section = section,
         .excerpt = excerpt,
     };
     *PG_DYN_PUSH(positions, allocator) = position;
@@ -779,11 +779,14 @@ static void search_index_feed_html_node(SearchIndex *search_index,
                                         PgHtmlNode *html_node,
                                         DocumentIndex document_index,
                                         PgAllocator *allocator) {
+  Title *section = nullptr;
 
-  if (PG_HTML_TOKEN_KIND_TEXT == html_node->token_start.kind) {
+  if (pg_html_get_title_level(html_node) >= 2) {
+    // TODO: get section.
+  } else if (PG_HTML_TOKEN_KIND_TEXT == html_node->token_start.kind) {
     search_index_feed_text(search_index, html_node->token_start.text,
                            html_node->token_start.start, document_index,
-                           allocator);
+                           section, allocator);
   }
 
   PgHtmlNode *first_child = pg_html_node_get_first_child(html_node);
