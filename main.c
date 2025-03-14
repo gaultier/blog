@@ -154,8 +154,7 @@ static void search_index_serialize_to_file_rec(
   }
 
   *PG_DYN_PUSH(sb, allocator) = '"';
-  // TODO: Escape `"`.
-  PG_DYN_APPEND_SLICE(sb, index->key, allocator);
+  pg_string_builder_append_string_escaped(sb, index->key, '"', '\\', allocator);
   PG_DYN_APPEND_SLICE(sb, PG_S("\":["), allocator);
 
   for (u64 i = 0; i < index->value.len; i++) {
@@ -163,19 +162,19 @@ static void search_index_serialize_to_file_rec(
     Title *title = position.section;
 
     *PG_DYN_PUSH(sb, allocator) = '[';
-    pg_byte_buffer_append_u32(sb, position.document_index.value, allocator);
+    pg_string_builder_append_u64(sb, position.document_index.value, allocator);
     *PG_DYN_PUSH(sb, allocator) = ',';
     *PG_DYN_PUSH(sb, allocator) = '"';
     if (title) {
-      pg_byte_buffer_append_u32(sb, title->hash, allocator);
+      pg_string_builder_append_u64(sb, title->hash, allocator);
       *PG_DYN_PUSH(sb, allocator) = '-';
       PG_DYN_APPEND_SLICE(sb, title->content_html_id, allocator);
     }
     *PG_DYN_PUSH(sb, allocator) = '"';
     *PG_DYN_PUSH(sb, allocator) = ',';
     *PG_DYN_PUSH(sb, allocator) = '"';
-    // TODO: escape `"`.
-    PG_DYN_APPEND_SLICE(sb, position.excerpt, allocator);
+    pg_string_builder_append_string_escaped(sb, position.excerpt, '"', '\\',
+                                            allocator);
     *PG_DYN_PUSH(sb, allocator) = '"';
     *PG_DYN_PUSH(sb, allocator) = ']';
     if (i + 1 < index->value.len) {
