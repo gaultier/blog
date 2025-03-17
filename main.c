@@ -78,6 +78,13 @@ typedef struct {
 } SearchTrigramPosition;
 PG_DYN(SearchTrigramPosition) SearchTrigramPositionDyn;
 
+typedef struct {
+  u32 document_index : 12;
+  u32 offset_start : 12;
+  u32 offset_end : 12;
+  u32 section : 8;
+} SearchTrigramPositionSerialized;
+
 typedef struct SearchDocumentIndexByTrigram SearchDocumentIndexByTrigram;
 struct SearchDocumentIndexByTrigram {
   PgString key;
@@ -179,11 +186,16 @@ static void search_index_serialize_to_file_rec(
 
   for (u64 i = 0; i < index->value.len; i++) {
     SearchTrigramPosition position = PG_SLICE_AT(index->value, i);
-    *PG_DYN_PUSH(sb, allocator) = '[';
-    pg_string_builder_append_u64(sb, position.document_index.value, allocator);
-    *PG_DYN_PUSH(sb, allocator) = ',';
-    pg_string_builder_append_u64(sb, position.section.value, allocator);
-    PG_DYN_APPEND_SLICE(sb, PG_S("]\n"), allocator);
+    SearchTrigramPositionSerialized serialized = {
+        .document_index = position.document_index.value,
+        .offset_start = position.offset_start,
+        .offset_end = position.offset_end,
+        .section = position.section.value,
+    };
+    static_assert(sizeof(serialized) <= sizeof(u64));
+    u64 value = 0;
+    memcpy(&value, &serialized, sizeof(serialized));
+    pg_string_builder_append_u64(sb, (u64)value, allocator);
     if (i + 1 < index->value.len) {
       *PG_DYN_PUSH(sb, allocator) = ',';
     }
