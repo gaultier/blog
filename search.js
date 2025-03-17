@@ -36,7 +36,7 @@ function search_text(raw_index, text) {
   return results;
 }
 
-const res = search_text(raw_index, 'Rust');
+const res = search_text(raw_index, 'Odin');
 console.log("[D003]", res);
 for (let pos of res) {
   const unpacked = search_unpack_trigram_position(pos);
