@@ -226,7 +226,7 @@ static void search_index_serialize_to_file(SearchIndex search_index,
   PG_DYN_APPEND_SLICE(&sb, PG_S("],index:{"), allocator);
   search_index_serialize_to_file_rec(&sb, search_index.index, allocator);
   PG_DYN_APPEND_SLICE(&sb, PG_S("}};\n"), allocator);
-  PG_DYN_APPEND_SLICE(&sb, PG_S("export { index };"), allocator);
+  PG_DYN_APPEND_SLICE(&sb, PG_S("export { raw_index };"), allocator);
 
   PG_ASSERT(0 == pg_file_write_full_with_descriptor(
                      file, PG_DYN_SLICE(PgString, sb)));
