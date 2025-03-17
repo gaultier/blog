@@ -1,4 +1,5 @@
-import { raw_index } from './search_index.js';
+import search from './search_index.js';
+const {raw_index}=search;
 
 function search_unpack_trigram_position(position){
   return {
@@ -40,6 +41,7 @@ const res = search_text(raw_index, 'Odin');
 console.log("[D003]", res);
 for (let pos of res) {
   const unpacked = search_unpack_trigram_position(pos);
-  console.log("[D004]", unpacked, raw_index.documents[unpacked.document_index]);
+  const doc = raw_index.documents[unpacked.document_index];
+  console.log("[D004]", unpacked, doc.name, doc.titles[pos.section]);
 }
 

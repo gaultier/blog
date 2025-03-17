@@ -59,6 +59,8 @@ PG_DYN(GitStat) GitStatDyn;
 
 typedef struct {
   PgString html_file_name;
+  TitleSlice titles;
+  // PgString text;
 } SearchDocument;
 PG_DYN(SearchDocument) SearchDocumentDyn;
 
@@ -223,22 +225,28 @@ static void search_index_serialize_to_file(SearchIndex search_index,
 
   for (u64 i = 0; i < search_index.documents.len; i++) {
     SearchDocument doc = PG_SLICE_AT(search_index.documents, i);
-    *PG_DYN_PUSH(&sb, allocator) = '"';
+    PG_DYN_APPEND_SLICE(&sb, PG_S("{\nname:\""), allocator);
     pg_string_builder_append_js_string_escaped(&sb, doc.html_file_name,
                                                allocator);
-    *PG_DYN_PUSH(&sb, allocator) = '"';
+    PG_DYN_APPEND_SLICE(&sb, PG_S("\",\ntitles:[\n"), allocator);
 
-    if (i + 1 < search_index.documents.len) {
-      *PG_DYN_PUSH(&sb, allocator) = ',';
+    for (u64 j = 0; j < doc.titles.len; j++) {
+      Title title = PG_SLICE_AT(doc.titles, j);
+      PG_DYN_APPEND_SLICE(&sb, PG_S("\"/#"), allocator);
+      pg_string_builder_append_u64(&sb, title.hash, allocator);
+      PG_DYN_APPEND_SLICE(&sb, PG_S("-"), allocator);
+      pg_string_builder_append_js_string_escaped(&sb, title.content_html_id,
+                                                 allocator);
+      PG_DYN_APPEND_SLICE(&sb, PG_S("\",\n"), allocator);
     }
+    PG_DYN_APPEND_SLICE(&sb, PG_S("]},\n"), allocator);
   }
+  PG_DYN_APPEND_SLICE(&sb, PG_S("],\n"), allocator);
 
-  // TODO: titles.
-
-  PG_DYN_APPEND_SLICE(&sb, PG_S("],index:{"), allocator);
+  PG_DYN_APPEND_SLICE(&sb, PG_S("index:{"), allocator);
   search_index_serialize_to_file_rec(&sb, search_index.index, allocator);
   PG_DYN_APPEND_SLICE(&sb, PG_S("}};\n"), allocator);
-  PG_DYN_APPEND_SLICE(&sb, PG_S("export { raw_index };"), allocator);
+  PG_DYN_APPEND_SLICE(&sb, PG_S("export default { raw_index };"), allocator);
 
   PG_ASSERT(0 == pg_file_write_full_with_descriptor(
                      file, PG_DYN_SLICE(PgString, sb)));
@@ -882,8 +890,10 @@ static void search_index_feed_document(SearchIndex *search_index,
                                        PgString document_name,
                                        TitleSlice titles,
                                        PgAllocator *allocator) {
-  *PG_DYN_PUSH(&search_index->documents, allocator) =
-      (SearchDocument){.html_file_name = document_name};
+  *PG_DYN_PUSH(&search_index->documents, allocator) = (SearchDocument){
+      .html_file_name = document_name,
+      .titles = titles,
+  };
   DocumentIndex document_index = {
       .value = (u32)(search_index->documents.len - 1),
   };
