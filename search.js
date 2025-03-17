@@ -6,7 +6,7 @@ function search_unpack_trigram_position(position){
     document_index : (position >> 0) & 0xfff,
     // offset_start : (position >> 12) & 0xfff,
     // offset_end : (position >> 24) & 0xfff,
-    section : (position >> 32) & 0xff,
+    section : (position >> 12) & 0xff,
   }; 
 }
 
@@ -42,6 +42,6 @@ console.log("[D003]", res);
 for (let pos of res) {
   const unpacked = search_unpack_trigram_position(pos);
   const doc = raw_index.documents[unpacked.document_index];
-  console.log("[D004]", unpacked, doc.name, doc.titles[pos.section]);
+  console.log("[D004]",pos, unpacked, doc.name, doc.titles[unpacked.section]);
 }
 
