@@ -60,7 +60,7 @@ PG_DYN(GitStat) GitStatDyn;
 typedef struct {
   PgString html_file_name;
   TitleSlice titles;
-  // PgString text;
+  Pgu8Dyn text;
 } SearchDocument;
 PG_DYN(SearchDocument) SearchDocumentDyn;
 
@@ -216,7 +216,14 @@ static void search_index_serialize_to_file(SearchIndex search_index,
     PG_DYN_APPEND_SLICE(&sb, PG_S("{\nname:\""), allocator);
     pg_string_builder_append_js_string_escaped(&sb, doc.html_file_name,
                                                allocator);
-    PG_DYN_APPEND_SLICE(&sb, PG_S("\",\ntitles:[\n"), allocator);
+    PG_DYN_APPEND_SLICE(&sb, PG_S("\",\n"), allocator);
+
+    PG_DYN_APPEND_SLICE(&sb, PG_S("text:\""), allocator);
+    pg_string_builder_append_js_string_escaped(
+        &sb, PG_DYN_SLICE(PgString, doc.text), allocator);
+    PG_DYN_APPEND_SLICE(&sb, PG_S("\","), allocator);
+
+    PG_DYN_APPEND_SLICE(&sb, PG_S("titles:[\n"), allocator);
 
     for (u64 j = 0; j < doc.titles.len; j++) {
       Title title = PG_SLICE_AT(doc.titles, j);
@@ -783,6 +790,11 @@ static void search_index_feed_text(SearchIndex *search_index, PgString text,
                                    u64 text_offset,
                                    DocumentIndex document_index,
                                    TitleIndex section, PgAllocator *allocator) {
+  SearchDocument *doc =
+      PG_SLICE_AT_PTR(&search_index->documents, document_index.value);
+  *PG_DYN_PUSH(&doc->text, allocator) = '\n';
+  PG_DYN_APPEND_SLICE(&doc->text, text, allocator);
+
   PgUtf8Iterator it = pg_make_utf8_iterator(text);
   PgRuneResult res_rune = {0};
 
@@ -882,6 +894,8 @@ static void search_index_feed_document(SearchIndex *search_index,
       .html_file_name = document_name,
       .titles = titles,
   };
+  PG_DYN_ENSURE_CAP(&PG_SLICE_LAST_PTR(&search_index->documents)->text,
+                    128 * PG_KiB, allocator);
   DocumentIndex document_index = {
       .value = (u32)(search_index->documents.len - 1),
   };
