@@ -207,7 +207,7 @@ static void search_index_serialize_to_file(SearchIndex search_index,
   PgFileDescriptor file = res_file.res;
 
   Pgu8Dyn sb = pg_sb_make_with_cap(50 * PG_MiB, allocator);
-  PG_DYN_APPEND_SLICE(&sb, PG_S("index={documents:["), allocator);
+  PG_DYN_APPEND_SLICE(&sb, PG_S("const index={documents:["), allocator);
 
   for (u64 i = 0; i < search_index.documents.len; i++) {
     SearchDocument doc = PG_SLICE_AT(search_index.documents, i);
@@ -220,11 +220,13 @@ static void search_index_serialize_to_file(SearchIndex search_index,
       *PG_DYN_PUSH(&sb, allocator) = ',';
     }
   }
+
   // TODO: titles.
 
   PG_DYN_APPEND_SLICE(&sb, PG_S("],index:{"), allocator);
   search_index_serialize_to_file_rec(&sb, search_index.index, allocator);
-  PG_DYN_APPEND_SLICE(&sb, PG_S("}}"), allocator);
+  PG_DYN_APPEND_SLICE(&sb, PG_S("}};\n"), allocator);
+  PG_DYN_APPEND_SLICE(&sb, PG_S("export { index };"), allocator);
 
   PG_ASSERT(0 == pg_file_write_full_with_descriptor(
                      file, PG_DYN_SLICE(PgString, sb)));
