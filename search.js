@@ -1,5 +1,14 @@
 import { raw_index } from './search_index.js';
 
+function search_unpack_trigram_position(position){
+  return {
+    document_index : (position >> 0) & 0xfff,
+    // offset_start : (position >> 12) & 0xfff,
+    // offset_end : (position >> 24) & 0xfff,
+    section : (position >> 32) & 0xff,
+  }; 
+}
+
 function search_trigram(raw_index, trigram) {
   const v = raw_index.index[trigram];
   if (v == undefined) {
@@ -27,6 +36,10 @@ function search_text(raw_index, text) {
   return results;
 }
 
-const res = search_text(raw_index, 'bank');
+const res = search_text(raw_index, 'Rust');
 console.log("[D003]", res);
+for (let pos of res) {
+  const unpacked = search_unpack_trigram_position(pos);
+  console.log("[D004]", unpacked, raw_index.documents[unpacked.document_index]);
+}
 

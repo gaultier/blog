@@ -188,8 +188,8 @@ static void search_index_serialize_to_file_rec(
     SearchTrigramPosition position = PG_SLICE_AT(index->value, i);
     SearchTrigramPositionSerialized serialized = {
         .document_index = position.document_index.value,
-        .offset_start = position.offset_start,
-        .offset_end = position.offset_end,
+        .offset_start = 0 /*position.offset_start*/,
+        .offset_end = 0 /*position.offset_end*/,
         .section = position.section.value,
     };
     static_assert(sizeof(serialized) <= sizeof(u64));
