@@ -207,7 +207,7 @@ static void search_index_serialize_to_file(SearchIndex search_index,
   PgFileDescriptor file = res_file.res;
 
   Pgu8Dyn sb = pg_sb_make_with_cap(50 * PG_MiB, allocator);
-  PG_DYN_APPEND_SLICE(&sb, PG_S("const index={documents:["), allocator);
+  PG_DYN_APPEND_SLICE(&sb, PG_S("const raw_index={documents:["), allocator);
 
   for (u64 i = 0; i < search_index.documents.len; i++) {
     SearchDocument doc = PG_SLICE_AT(search_index.documents, i);
