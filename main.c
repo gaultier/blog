@@ -220,7 +220,7 @@ static void search_index_serialize_to_file(SearchIndex search_index,
 
     for (u64 j = 0; j < doc.titles.len; j++) {
       Title title = PG_SLICE_AT(doc.titles, j);
-      PG_DYN_APPEND_SLICE(&sb, PG_S("\"/#"), allocator);
+      PG_DYN_APPEND_SLICE(&sb, PG_S("\"#"), allocator);
       pg_string_builder_append_u64(&sb, title.hash, allocator);
       PG_DYN_APPEND_SLICE(&sb, PG_S("-"), allocator);
       pg_string_builder_append_js_string_escaped(&sb, title.content_html_id,

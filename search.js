@@ -42,6 +42,8 @@ console.log("[D003]", res);
 for (let pos of res) {
   const unpacked = search_unpack_trigram_position(pos);
   const doc = raw_index.documents[unpacked.document_index];
-  console.log("[D004]",pos, unpacked, doc.name, doc.titles[unpacked.section]);
+  const title = doc.titles[unpacked.section];
+  const link = doc.name + title
+  console.log("[D004]",pos, unpacked, doc.name, title, link);
 }
 
