@@ -37,7 +37,22 @@ function search_text(raw_index, text) {
   return results;
 }
 
+console.time("search_text_with_index");
 const res = search_text(raw_index, 'Odin');
+console.timeEnd("search_text_with_index");
+
+console.time("search_text_without_index");
+const needle = 'Odin';
+const res2=[];
+for (let doc of raw_index.documents){
+  const idx = doc.text.indexOf(needle);
+  if (-1==idx) { continue; }
+  res2.push([doc,idx]);
+}
+console.timeEnd("search_text_without_index");
+
+console.log("[D010]", res2);
+
 console.log("[D003]", res);
 for (let pos of res) {
   const unpacked = search_unpack_trigram_position(pos);
