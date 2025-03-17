@@ -174,9 +174,8 @@ static void search_index_serialize_to_file_rec(
   }
 
   *PG_DYN_PUSH(sb, allocator) = '"';
-  pg_string_builder_append_string_escaped_any(sb, index->key, PG_S("\"\\\n"),
-                                              '\\', allocator);
-  PG_DYN_APPEND_SLICE(sb, PG_S("\":["), allocator);
+  pg_string_builder_append_js_string_escaped(sb, index->key, allocator);
+  PG_DYN_APPEND_SLICE(sb, PG_S("\":[\n"), allocator);
 
   for (u64 i = 0; i < index->value.len; i++) {
     SearchTrigramPosition position = PG_SLICE_AT(index->value, i);
@@ -184,12 +183,6 @@ static void search_index_serialize_to_file_rec(
     pg_string_builder_append_u64(sb, position.document_index.value, allocator);
     *PG_DYN_PUSH(sb, allocator) = ',';
     pg_string_builder_append_u64(sb, position.section.value, allocator);
-    /* *PG_DYN_PUSH(sb, allocator) = ','; */
-    /* *PG_DYN_PUSH(sb, allocator) = '"'; */
-    /* pg_string_builder_append_string_escaped(sb, position.excerpt, '"', '\\',
-     */
-    /*                                         allocator); */
-    /* *PG_DYN_PUSH(sb, allocator) = '"'; */
     PG_DYN_APPEND_SLICE(sb, PG_S("]\n"), allocator);
     if (i + 1 < index->value.len) {
       *PG_DYN_PUSH(sb, allocator) = ',';
@@ -218,10 +211,9 @@ static void search_index_serialize_to_file(SearchIndex search_index,
 
   for (u64 i = 0; i < search_index.documents.len; i++) {
     SearchDocument doc = PG_SLICE_AT(search_index.documents, i);
-    PG_ASSERT(-1 == pg_string_indexof_rune(doc.html_file_name, '"'));
-
     *PG_DYN_PUSH(&sb, allocator) = '"';
-    PG_DYN_APPEND_SLICE(&sb, doc.html_file_name, allocator);
+    pg_string_builder_append_js_string_escaped(&sb, doc.html_file_name,
+                                               allocator);
     *PG_DYN_PUSH(&sb, allocator) = '"';
 
     if (i + 1 < search_index.documents.len) {
