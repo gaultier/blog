@@ -24,12 +24,11 @@ function search_text(needle) {
     const doc = raw_index.documents[doc_i];
 
     let title = undefined;
-    for (let i=0; i<doc.titles.length; i++){
-      title = doc.titles[i];
-      if (idx < title.offset) {
-        title = i>0 ? doc.titles[i-1]:title;
+    for (const t of doc.titles){
+      if (idx < t.offset) {
         break;
       }
+      title = t;
     }
 
     const link = title ? doc.html_file_name + '#' + title.hash + '-' + title.content_html_id : doc.html_file_name;
