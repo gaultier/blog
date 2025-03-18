@@ -14,7 +14,7 @@ The content of this blog as well as the code snippets are under the [BSD-3 Licen
 
 I very unregularly post about various technical topics, usually low-level, esoteric and probably not directly applicable to your run-of-the-mill business application.
 
-This blog does not and will not employ any tracking or cookie of any sort. The only Javascript present is fully optional and only used to do code highlighting.
+This blog does not and will not employ any tracking or cookie of any sort. The only Javascript present is fully optional and only used to do code highlighting and client-side search.
 
 
 ## I am grateful
