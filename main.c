@@ -720,7 +720,7 @@ static void search_index_feed_document(SearchIndex *search_index,
     } else if (PG_HTML_TOKEN_KIND_TEXT == token.kind) {
       PG_DYN_APPEND_SLICE(&doc.text, pg_string_trim_space(token.text),
                           allocator);
-      *PG_DYN_PUSH(&doc.text, allocator) = '\n';
+      *PG_DYN_PUSH(&doc.text, allocator) = ' ';
     }
   }
   *PG_DYN_PUSH(&search_index->documents, allocator) = doc;
