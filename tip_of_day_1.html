@@ -12,6 +12,8 @@
 <!-- From https://github.com/odin-lang/odin-lang.org/blob/6f48c2cfb094a42dffd34143884fa958bd9c0ba2/themes/odin/layouts/partials/head.html#L71 -->
 <script src="x86asm.min.js"></script>
 <script src="odin_syntax.js"></script>
+<script type="module" src="search_index.js"></script>
+<script type="module" src="search.js"></script>
 </head>
 <body>
 
@@ -20,6 +22,7 @@
         <img id="me" src="me.jpeg">
         <span>Philippe Gaultier</span>
     </div>
+    <input id="search" placeholder="Search" value="search_needle">
     <ul>
       <li> <a href="/blog/body_of_work.html">Body of work</a> </li>
       <li> <a href="/blog/articles-by-tag.html">Tags</a> </li>
@@ -60,7 +63,8 @@
         </a> </li>
     </ul>
 </div>
-<div class="body">
+<div id="search-results"></div>
+<div id="pseudo-body">
 
 <div class="article-prelude">
   <p><a href="/blog"> ⏴ Back to all articles</a></p>
