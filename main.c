@@ -1205,7 +1205,6 @@ int main() {
   SearchIndex search_index = {0};
   ArticleSlice articles =
       articles_generate(header, footer, &search_index, allocator);
-  /* search_index_print(search_index); */
   search_index_serialize_to_file(search_index, PG_S("search_index.js"),
                                  allocator);
   home_page_generate(articles, header, footer, allocator);
