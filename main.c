@@ -74,23 +74,7 @@ typedef struct {
 } TitleIndex;
 
 typedef struct {
-  DocumentIndex document_index;
-  u32 offset_start, offset_end;
-  // PgString excerpt;
-  TitleIndex section;
-} SearchTrigramPosition;
-PG_DYN(SearchTrigramPosition) SearchTrigramPositionDyn;
-
-typedef struct SearchDocumentIndexByTrigram SearchDocumentIndexByTrigram;
-struct SearchDocumentIndexByTrigram {
-  PgString key;
-  SearchTrigramPositionDyn value;
-  SearchDocumentIndexByTrigram *child[4];
-};
-
-typedef struct {
   SearchDocumentDyn documents;
-  // SearchDocumentIndexByTrigram *index;
 } SearchIndex;
 
 #define HASH_TABLE_EXP 10
@@ -99,109 +83,6 @@ typedef struct {
   PgString keys[1 << HASH_TABLE_EXP];
   ArticleDyn values[1 << HASH_TABLE_EXP];
 } ArticlesByTag;
-
-#if 0
-[[nodiscard]] static SearchTrigramPositionDyn *
-search_trigram_lookup(SearchDocumentIndexByTrigram **map, PgString key,
-                      PgAllocator *allocator) {
-  for (u64 hash = pg_hash_fnv(key); *map; hash <<= 2) {
-    if (pg_string_eq(key, (*map)->key)) {
-      return &(*map)->value;
-    }
-    map = &(*map)->child[hash >> 62];
-  }
-  if (!allocator) {
-    return nullptr;
-  }
-
-  *map = pg_alloc(allocator, sizeof(SearchDocumentIndexByTrigram),
-                  _Alignof(SearchDocumentIndexByTrigram), 1);
-  (*map)->key = key;
-  return &(*map)->value;
-}
-#endif
-
-[[maybe_unused]] static void
-search_document_index_by_trigram_print(SearchIndex search_index,
-                                       SearchDocumentIndexByTrigram *index,
-                                       TitleSlice titles, u64 *count) {
-  if (!index) {
-    return;
-  }
-
-  for (u64 i = 0; i < index->value.len; i++) {
-    SearchTrigramPosition position = PG_SLICE_AT(index->value, i);
-    PgString document_name =
-        PG_SLICE_AT(search_index.documents, position.document_index.value)
-            .html_file_name;
-    Title *section = position.section.value == UINT32_MAX
-                         ? nullptr
-                         : PG_SLICE_AT_PTR(&titles, position.section.value);
-    printf("trigram=`%.*s` doc=`%.*s` start=%u end=%u "
-           "section=`%.*s` ",
-#if 0
-           "excerpt=`%.*s`\n",
-#endif
-           (int)index->key.len, index->key.data, (int)document_name.len,
-           document_name.data, position.offset_start, position.offset_end,
-           section ? (int)section->title.len : 0,
-           section ? section->title.data : nullptr
-#if 0 
-           ,
-           (int)position.excerpt.len, position.excerpt.data
-#endif
-    );
-    *count += 1;
-  }
-
-  search_document_index_by_trigram_print(search_index, index->child[0], titles,
-                                         count);
-  search_document_index_by_trigram_print(search_index, index->child[1], titles,
-                                         count);
-  search_document_index_by_trigram_print(search_index, index->child[2], titles,
-                                         count);
-  search_document_index_by_trigram_print(search_index, index->child[3], titles,
-                                         count);
-}
-
-#if 0
-[[maybe_unused]] static void search_index_print(SearchIndex search_index,
-                                                TitleSlice titles) {
-  u64 count = 0;
-  search_document_index_by_trigram_print(search_index, search_index.index,
-                                         titles, &count);
-  printf("search index: count=%" PRIu64 "\n", count);
-}
-
-static void search_index_serialize_to_file_rec(
-    Pgu8Dyn *sb, SearchDocumentIndexByTrigram *index, PgAllocator *allocator) {
-  if (!index) {
-    return;
-  }
-
-  *PG_DYN_PUSH(sb, allocator) = '"';
-  pg_string_builder_append_js_string_escaped(sb, index->key, allocator);
-  PG_DYN_APPEND_SLICE(sb, PG_S("\":[\n"), allocator);
-
-  for (u64 i = 0; i < index->value.len; i++) {
-    SearchTrigramPosition position = PG_SLICE_AT(index->value, i);
-    u64 value = (((u64)position.section.value & 0xff) << 12) |
-#if 0
-                (((u64)position.offset_end & 0xfff) << 24) |
-                (((u64)position.offset_start & 0xfff) << 12) |
-#endif
-                (((u64)position.document_index.value & 0xfff) << 0);
-    pg_string_builder_append_u64(sb, (u64)value, allocator);
-    *PG_DYN_PUSH(sb, allocator) = ',';
-  }
-  PG_DYN_APPEND_SLICE(sb, PG_S("],\n"), allocator);
-
-  search_index_serialize_to_file_rec(sb, index->child[0], allocator);
-  search_index_serialize_to_file_rec(sb, index->child[1], allocator);
-  search_index_serialize_to_file_rec(sb, index->child[2], allocator);
-  search_index_serialize_to_file_rec(sb, index->child[3], allocator);
-}
-#endif
 
 static void search_index_serialize_to_file(SearchIndex search_index,
                                            PgString file_name,
@@ -267,11 +148,6 @@ static void search_index_serialize_to_file(SearchIndex search_index,
   }
   PG_DYN_APPEND_SLICE(&sb, PG_S("],\n"), allocator);
 
-#if 0
-  PG_DYN_APPEND_SLICE(&sb, PG_S("index:{"), allocator);
-  search_index_serialize_to_file_rec(&sb, search_index.index, allocator);
-  PG_DYN_APPEND_SLICE(&sb, PG_S("}\n"), allocator);
-#endif
   PG_DYN_APPEND_SLICE(&sb, PG_S("};\n"), allocator);
   PG_DYN_APPEND_SLICE(&sb, PG_S("export default { raw_index };"), allocator);
 
@@ -818,109 +694,6 @@ static void html_node_print(PgHtmlNode *node, u64 depth) {
   }
 }
 
-#if 0
-static void search_index_feed_text(SearchIndex *search_index, PgString text,
-                                   u64 text_offset,
-                                   DocumentIndex document_index,
-                                   TitleIndex section, PgAllocator *allocator) {
-  SearchDocument *doc =
-      PG_SLICE_AT_PTR(&search_index->documents, document_index.value);
-  *PG_DYN_PUSH(&doc->text, allocator) = '\n';
-  PG_DYN_APPEND_SLICE(&doc->text, text, allocator);
-
-  PgUtf8Iterator it = pg_make_utf8_iterator(text);
-  PgRuneResult res_rune = {0};
-
-  res_rune = pg_utf8_iterator_next(&it);
-  PG_ASSERT(!res_rune.err);
-  PgRune rune_a = res_rune.res;
-  if (!rune_a) {
-    return;
-  }
-
-  res_rune = pg_utf8_iterator_next(&it);
-  PG_ASSERT(!res_rune.err);
-  PgRune rune_b = res_rune.res;
-  if (!rune_b) {
-    return;
-  }
-
-  res_rune = pg_utf8_iterator_next(&it);
-  PG_ASSERT(!res_rune.err);
-  PgRune rune_c = res_rune.res;
-  if (!rune_c) {
-    return;
-  }
-
-  PgString key = {.data = text.data, .len = it.idx};
-  for (;;) {
-    PG_ASSERT(3 == pg_utf8_count(key).res);
-
-    u32 text_offset_start = (u32)(key.data - text.data);
-    u32 text_offset_end = text_offset_start + (u32)key.len;
-    /* u64 excerpt_start = (u64)PG_CLAMP( */
-    /*     (i64)0, (i64)text_offset_start - (i64)EXCERPT_LEN_AROUND_TRIGRAM, */
-    /*     (i64)text.len); */
-    /* u64 excerpt_end = */
-    /*     PG_CLAMP(0, text_offset_end + EXCERPT_LEN_AROUND_TRIGRAM, text.len);
-     */
-    /* PgString excerpt = PG_SLICE_RANGE(text, excerpt_start, excerpt_end); */
-    /* PG_ASSERT(excerpt.len <= key.len + 2 * EXCERPT_LEN_AROUND_TRIGRAM); */
-    /* PG_ASSERT(pg_string_contains(excerpt, key)); */
-
-    SearchTrigramPositionDyn *positions =
-        search_trigram_lookup(&search_index->index, key, allocator);
-    SearchTrigramPosition position = {
-        .document_index = document_index,
-        .offset_start = (u32)text_offset + text_offset_start,
-        .offset_end = (u32)text_offset + text_offset_end,
-        .section = section,
-#if 0
-        .excerpt = (PgString){0},
-#endif
-    };
-    *PG_DYN_PUSH(positions, allocator) = position;
-
-#if 0
-    printf(
-        "[D001] document=%.*s trigram=%.*s\n",
-        (int)search_index->documents.data[document_index.value]
-            .html_file_name.len,
-        search_index->documents.data[document_index.value].html_file_name.data,
-        (int)key.len, key.data);
-#endif
-    res_rune = pg_utf8_iterator_next(&it);
-    PG_ASSERT(!res_rune.err);
-    PgRune rune = res_rune.res;
-    if (!rune) {
-      break;
-    }
-
-    u64 key_first_bytes_count = pg_utf8_rune_bytes_count(pg_string_first(key));
-    key.data += key_first_bytes_count;
-    PG_ASSERT(key.data < text.data + text.len);
-    PG_ASSERT(key.len >= 3);
-    key.len -= key_first_bytes_count;
-    key.len += pg_utf8_rune_bytes_count(rune);
-    PG_ASSERT(key.len <= 3 * 4);
-    PG_ASSERT(3 == pg_utf8_count(key).res);
-  }
-}
-#endif
-
-#if 0
-static TitleIndex title_find_by_title_content(TitleSlice titles,
-                                              PgString title_content) {
-  for (u64 i = 0; i < titles.len; i++) {
-    Title *title = PG_SLICE_AT_PTR(&titles, i);
-    if (pg_string_eq(title->title, title_content)) {
-      return (TitleIndex){.value = (u32)i};
-    }
-  }
-  PG_ASSERT(0);
-}
-#endif
-
 static void search_index_feed_document(SearchIndex *search_index,
                                        PgHtmlTokenSlice html_tokens,
                                        PgString document_name,
@@ -932,14 +705,6 @@ static void search_index_feed_document(SearchIndex *search_index,
   };
   PG_DYN_ENSURE_CAP(&doc.text, 128 * PG_KiB, allocator);
   PG_DYN_ENSURE_CAP(&doc.title_text_offsets, titles.len, allocator);
-
-#if 0
-  DocumentIndex document_index = {
-      .value = (u32)(search_index->documents.len - 1),
-  };
-
-  TitleIndex section = {.value = UINT32_MAX};
-#endif
 
   for (u64 i = 1; i < html_tokens.len; i++) {
     PgHtmlToken token = PG_SLICE_AT(html_tokens, i);
@@ -958,19 +723,10 @@ static void search_index_feed_document(SearchIndex *search_index,
       PgString title_content = title_text.text;
       PG_ASSERT(!pg_string_is_empty(title_content));
 
-#if 0
-      section = title_find_by_title_content(titles, title_content);
-#endif
-
       *PG_DYN_PUSH_WITHIN_CAPACITY(&doc.title_text_offsets) = (u32)doc.text.len;
     } else if (PG_HTML_TOKEN_KIND_TEXT == token.kind) {
       *PG_DYN_PUSH(&doc.text, allocator) = '\n';
       PG_DYN_APPEND_SLICE(&doc.text, token.text, allocator);
-
-#if 0
-      search_index_feed_text(search_index, token.text, token.start,
-                             document_index, section, allocator);
-#endif
     }
   }
   *PG_DYN_PUSH(&search_index->documents, allocator) = doc;
@@ -988,14 +744,8 @@ static void article_generate_html_file(PgFileDescriptor markdown_file,
   PG_ASSERT(0 == res_parse.err);
 
   PgHtmlNode *html_root = res_parse.res;
-#if 0
-  html_node_print(html_root, 0);
-#endif
 
   TitleSlice titles = html_collect_titles(html_root, allocator);
-#if 0
-  title_print(title_root);
-#endif
 
   Pgu8Dyn sb = {0};
   PG_DYN_ENSURE_CAP(&sb, 4096, allocator);
@@ -1238,9 +988,6 @@ static void home_page_generate(ArticleSlice articles, PgString header,
   PG_ASSERT(0 == res_parse.err);
 
   PgHtmlNode *html_root = res_parse.res;
-#if 0
-  html_node_print(html_root, 0);
-#endif
 
   TitleSlice titles = html_collect_titles(html_root, allocator);
   html_write_decorated_titles(html, &sb, titles, allocator);
