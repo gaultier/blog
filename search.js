@@ -54,7 +54,6 @@ window.onload = function() {
     if (needle.length < 3) {
       dom_pseudo_body.hidden = false;
       dom_search_matches.hidden = true;
-      window.scrollTo(0, 0);
       return;
     }
 
