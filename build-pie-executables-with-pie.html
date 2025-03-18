@@ -100,10 +100,10 @@
   <a class="title" href="#132857161-context">Context</a>
   <a class="hash-anchor" href="#132857161-context" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
-<p>Lately I have been hardening the build at work of our Go services and one low-hanging fruit was <a href="https://en.wikipedia.org/wiki/Position-independent_code">PIE</a>. This is code built to be relocatable, meaning it can be loaded by the operating system at any memory address. That complicates the work of an attacker because they typically want to manipulate the return address of the current function (e.g. by overwriting the stack due to a buffer overflow) to jump to a specific function e.g. <code>system()</code> from libc to pop a shell.</p>
-<p>If the target function is loaded at a different address each time, it makes it a bit more difficult for the attacker to find it. This approach has been supported for more than two decades by most OSes and toolchains and there is practially no downside. Some people report a single digit percent slowdown in rare cases although it's not the rule. Go supports PIE as well, however this is not the default.</p>
+<p>Lately I have been hardening the build at work of our Go services and one (seemingly) low-hanging fruit was <a href="https://en.wikipedia.org/wiki/Position-independent_code">PIE</a>. This is code built to be relocatable, meaning it can be loaded by the operating system at any memory address. That complicates the work of an attacker because they typically want to manipulate the return address of the current function (e.g. by overwriting the stack due to a buffer overflow) to jump to a specific function e.g. <code>system()</code> from libc to pop a shell. That's easy if <code>system</code> is always at the same address.</p>
+<p>If the target function is loaded at a different address each time, it makes it a bit more difficult for the attacker to find it. This approach has been supported for more than two decades by most OSes and toolchains and there is practially no downside. Some people report a single digit percent slowdown in rare cases although it's not the rule. Go supports PIE as well, however this is not the default so we have to opt in.</p>
 <p>PIE is especially desirable when using CGO to call C functions from Go which is my case at work.
-And Go is <a href="https://blog.stalkr.net/2015/04/golang-data-races-to-break-memory-safety.html">not entirely memory safe</a> so there are a few situations there where PIE is a mitigation we'd like to have.</p>
+But also Go is <a href="https://blog.stalkr.net/2015/04/golang-data-races-to-break-memory-safety.html">not entirely memory safe</a> so I'd argue having PIE enabled in all cases is preferrable.</p>
 <p>So let's look into enabling it.</p>
 <h2 id="4000567472-how-hard-can-it-be">
   <a class="title" href="#4000567472-how-hard-can-it-be">How hard can it be?</a>
@@ -127,12 +127,12 @@ $ file ./main
 $ file ./main
 ./main: ELF 64-bit LSB pie executable [..] dynamically linked [..] 
 </code></pre>
-<p>Ok, it worked, but also: why did we go from a statically linked file to a dynamically linked file? PIE is orthogonal to static/dynamic linking! Or is it? We'll come back to that.</p>
+<p>Ok, it worked, but also: why did we go from a statically linked file to a dynamically linked executable? PIE should be orthogonal to static/dynamic linking! Or is it? We'll come back to that.</p>
 <p>Now, we deploy our freshly built PIE executable in a distroless Docker container where there is not even a libc available or the loader <code>ld.so</code>.
 And we get a nice cryptic error at runtime:</p>
 <pre><code>exec /home/nonroot/my-service: no such file or directory
 </code></pre>
-<p>That's because our executable is dynamically linked and now required the loader <code>ld.so</code> to be present. Which means we need to change our Docker image, etc. Not ideal. What can we do?</p>
+<p>That's because our executable is dynamically linked and now requires the loader <code>ld.so</code> to be present. Which means we now need to change our Docker image to include a loader. Not ideal. What can we do?</p>
 <h2 id="2855875514-troubleshooting-the-problem">
   <a class="title" href="#2855875514-troubleshooting-the-problem">Troubleshooting the problem</a>
   <a class="hash-anchor" href="#2855875514-troubleshooting-the-problem" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
@@ -141,7 +141,7 @@ And we get a nice cryptic error at runtime:</p>
 <pre><code class="language-sh">$ go build -x main.go
 [..] /home/pg/Downloads/go/pkg/tool/linux_amd64/link [..] -buildmode=exe 
 </code></pre>
-<p>The linker shipping with Go, <code>link</code>, is used.</p>
+<p>The linker shipping with Go, <code>link</code>, is used. This is in Go parlance: 'internal mode'. 'external mode' is where linking is delegated to an external linker e.g. <code>ld</code>.</p>
 <p>Now let's see what happens in PIE mode:</p>
 <pre><code class="language-sh">$ go build -buildmode-pie -x main.go
 [..]
@@ -154,20 +154,20 @@ And we get a nice cryptic error at runtime:</p>
 <p>PIE is orthogonal to static/dynamic linking! Or is it?</p>
 </blockquote>
 <p>Well...no. It turns out that PIE was initially tailored to dynamically linked executables:
-The loader loads at startup the sections of the executable at different places in memory and voila!</p>
+The loader loads at startup the sections of the executable at different places in memory and voila! Super simple!</p>
 <p>So how does it work with a statically linked executable that does not even use a loader? Well, have you heard the saying:</p>
 <blockquote>
 <p>In Computer Science, any problem can be solved by introducing an additional level of indirection.</p>
 </blockquote>
-<p>The whole purpose of PIE is to have the address of each function be unpredicatable. A call to a function at the assembly level is basically just pushing the return address on the stack
-and jumping to an address. If we jump to a statically known address, we do not have PIE. If we store the runtime address of each function in a global table, load the address of the target function from this table, and jump to it, we have successfully reached our goal, by adding this additional level of indirection. And that's the <a href="https://en.wikipedia.org/wiki/Global_Offset_Table">Global Offset Table</a>.</p>
+<p>The whole purpose of PIE is to have the address of each function be unpredictable. A call to a function at the assembly level is basically just pushing the return address on the stack
+and jumping to an address. If we jump to a statically known address, we do not have PIE and attackers rejoice. If we store the runtime address of each function in a global table, load the address of the target function from this table, and jump to it, we have successfully reached our goal, by adding this additional level of indirection. And that's called the <a href="https://en.wikipedia.org/wiki/Global_Offset_Table">Global Offset Table</a>.</p>
 <p>And up until a few years ago, statically built PIE executables were less secure than their dynamic counterpart. <a href="https://www.leviathansecurity.com/blog/aslr-protection-for-statically-linked-executables">This article</a> does a deep dive on this topic (it's from 2015 so some things have improved since).</p>
-<p><strong>But</strong>: The OS and the system toolchain support an executable built in PIE mode <em>and</em> statically linked! Let's take a simple C program:</p>
+<p><strong>But</strong>: Nowadays the OS and the system toolchain support an executable built in PIE mode <em>and</em> statically linked! Let's take a simple C program:</p>
 <pre><code class="language-c">#include &lt;stdio.h&gt;
 
 int main() { printf(&quot;Hello!&quot;); }
 </code></pre>
-<p>We compile it som using the musl libc since glibc does not support static linking:</p>
+<p>We compile it using the musl libc since glibc does not support static linking:</p>
 <pre><code class="language-sh">$ musl-gcc -static-pie pie.c -fPIE
 $ file ./a.out
 ./a.out: ELF 64-bit LSB pie executable [...] static-pie linked [...]
