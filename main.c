@@ -716,12 +716,6 @@ static void search_index_feed_document(SearchIndex *search_index,
          pg_string_eq(token.tag, PG_S("h6")))) {
       PG_ASSERT(i + 2 < html_tokens.len);
 
-      PgHtmlToken title_text = PG_SLICE_AT(html_tokens, i + 2);
-
-      PG_ASSERT(PG_HTML_TOKEN_KIND_TEXT == title_text.kind);
-      PgString title_content = title_text.text;
-      PG_ASSERT(!pg_string_is_empty(title_content));
-
       *PG_DYN_PUSH_WITHIN_CAPACITY(&doc.title_text_offsets) = (u32)doc.text.len;
     } else if (PG_HTML_TOKEN_KIND_TEXT == token.kind) {
       PG_DYN_APPEND_SLICE(&doc.text, pg_string_trim_space(token.text),
@@ -792,7 +786,8 @@ static void article_generate_html_file(PgFileDescriptor markdown_file,
   PG_DYN_APPEND_SLICE(&sb, footer, allocator);
   PgString html = PG_DYN_SLICE(PgString, sb);
   {
-    PgHtmlTokenDynResult res_html_tokens = pg_html_tokenize(html, allocator);
+    PgHtmlTokenDynResult res_html_tokens =
+        pg_html_tokenize(article_html, allocator);
     PG_ASSERT(0 == res_html_tokens.err);
 
     PgHtmlTokenSlice html_tokens =
