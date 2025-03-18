@@ -66,12 +66,12 @@ window.onload = function(){
     for (const match of matches.values()) {
       const elem = document.createElement('p');
 
-      const document_name = document.createElement('span');
+      const document_name = document.createElement('p');
       document_name.innerText = match.document_name;
       elem.append(document_name);
 
-      const excerpt = document.createElement('span');
-      excerpt.innerText = match.excerpt;
+      const excerpt = document.createElement('p');
+      excerpt.innerText = '...' + match.excerpt + '...';
       elem.append(excerpt);
 
       const link = document.createElement('a');
@@ -83,5 +83,5 @@ window.onload = function(){
     }
   };
   input_elem.oninput = search_and_display_results;
-  // input_elem.onfocus = search_and_display_results;
+  input_elem.onfocus = search_and_display_results;
 };
