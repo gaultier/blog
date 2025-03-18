@@ -3,17 +3,22 @@ const {raw_index}=search;
 
 function search_text(needle) {
   console.time("search_text");
-  console.log("[D000]", needle, raw_index.documents.length);
 
   const matches=[];
   for (let [doc_i, doc] of raw_index.documents.entries()){
-    const idx = doc.text.indexOf(needle);
-    if (-1==idx) { continue; }
-    matches.push([doc_i | 0,idx]);
+    let start = 0;
+    for (let _i =0; _i < doc.text.length; _i++){
+      let idx = doc.text.slice(start).indexOf(needle);
+      console.log(start, idx);
+      if (-1==idx) { break; }
+
+      matches.push([doc_i | 0, start+idx]);
+      start += idx + 1;
+    }
   }
   console.timeEnd("search_text");
 
-  console.log("[D010]", matches);
+  console.log("[D010]", matches,matches.length);
 
   const res = [];
   for (let [doc_i, idx] of matches) {
@@ -48,10 +53,14 @@ function search_text(needle) {
 window.onload = function(){
   const search_results = document.getElementById('search-results');
   const input_elem = document.getElementById('search');
-  input_elem.oninput = function(event){
+  function search_and_display_results(event){
+    const needle = input_elem.value;
+    if (needle.length < 3) {
+      return;
+    }
+
     search_results.innerHTML = '';
 
-    console.log(event);
     const matches = search_text(input_elem.value);
 
     for (const match of matches.values()) {
@@ -73,4 +82,6 @@ window.onload = function(){
       search_results.prepend(elem);
     }
   };
+  input_elem.oninput = search_and_display_results;
+  // input_elem.onfocus = search_and_display_results;
 };

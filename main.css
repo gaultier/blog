@@ -69,8 +69,8 @@ p {
   margin-right: 1rem;
 }
 
-.body {
-  margin: .7rem;
+#pseudo-body, #search-results {
+  padding: .7rem;
 }
 
 .articles > ul {
