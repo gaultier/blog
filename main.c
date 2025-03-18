@@ -60,6 +60,7 @@ PG_DYN(GitStat) GitStatDyn;
 typedef struct {
   PgString html_file_name;
   TitleSlice titles;
+  Pgu32Dyn title_text_offsets;
   Pgu8Dyn text;
 } SearchDocument;
 PG_DYN(SearchDocument) SearchDocumentDyn;
@@ -89,7 +90,7 @@ struct SearchDocumentIndexByTrigram {
 
 typedef struct {
   SearchDocumentDyn documents;
-  SearchDocumentIndexByTrigram *index;
+  // SearchDocumentIndexByTrigram *index;
 } SearchIndex;
 
 #define HASH_TABLE_EXP 10
@@ -99,6 +100,7 @@ typedef struct {
   ArticleDyn values[1 << HASH_TABLE_EXP];
 } ArticlesByTag;
 
+#if 0
 [[nodiscard]] static SearchTrigramPositionDyn *
 search_trigram_lookup(SearchDocumentIndexByTrigram **map, PgString key,
                       PgAllocator *allocator) {
@@ -117,6 +119,7 @@ search_trigram_lookup(SearchDocumentIndexByTrigram **map, PgString key,
   (*map)->key = key;
   return &(*map)->value;
 }
+#endif
 
 [[maybe_unused]] static void
 search_document_index_by_trigram_print(SearchIndex search_index,
@@ -161,6 +164,7 @@ search_document_index_by_trigram_print(SearchIndex search_index,
                                          count);
 }
 
+#if 0
 [[maybe_unused]] static void search_index_print(SearchIndex search_index,
                                                 TitleSlice titles) {
   u64 count = 0;
@@ -197,6 +201,7 @@ static void search_index_serialize_to_file_rec(
   search_index_serialize_to_file_rec(sb, index->child[2], allocator);
   search_index_serialize_to_file_rec(sb, index->child[3], allocator);
 }
+#endif
 
 static void search_index_serialize_to_file(SearchIndex search_index,
                                            PgString file_name,
@@ -213,34 +218,61 @@ static void search_index_serialize_to_file(SearchIndex search_index,
 
   for (u64 i = 0; i < search_index.documents.len; i++) {
     SearchDocument doc = PG_SLICE_AT(search_index.documents, i);
-    PG_DYN_APPEND_SLICE(&sb, PG_S("{\nname:\""), allocator);
-    pg_string_builder_append_js_string_escaped(&sb, doc.html_file_name,
-                                               allocator);
-    PG_DYN_APPEND_SLICE(&sb, PG_S("\",\n"), allocator);
+    PG_DYN_APPEND_SLICE(&sb, PG_S("{\n"), allocator);
 
-    PG_DYN_APPEND_SLICE(&sb, PG_S("text:\""), allocator);
-    pg_string_builder_append_js_string_escaped(
-        &sb, PG_DYN_SLICE(PgString, doc.text), allocator);
-    PG_DYN_APPEND_SLICE(&sb, PG_S("\","), allocator);
-
-    PG_DYN_APPEND_SLICE(&sb, PG_S("titles:[\n"), allocator);
-
-    for (u64 j = 0; j < doc.titles.len; j++) {
-      Title title = PG_SLICE_AT(doc.titles, j);
-      PG_DYN_APPEND_SLICE(&sb, PG_S("\"#"), allocator);
-      pg_string_builder_append_u64(&sb, title.hash, allocator);
-      PG_DYN_APPEND_SLICE(&sb, PG_S("-"), allocator);
-      pg_string_builder_append_js_string_escaped(&sb, title.content_html_id,
+    // Name
+    {
+      PG_DYN_APPEND_SLICE(&sb, PG_S("name:\""), allocator);
+      pg_string_builder_append_js_string_escaped(&sb, doc.html_file_name,
                                                  allocator);
       PG_DYN_APPEND_SLICE(&sb, PG_S("\",\n"), allocator);
     }
-    PG_DYN_APPEND_SLICE(&sb, PG_S("]},\n"), allocator);
+
+    // Text
+    {
+      PG_DYN_APPEND_SLICE(&sb, PG_S("text:\""), allocator);
+      pg_string_builder_append_js_string_escaped(
+          &sb, PG_DYN_SLICE(PgString, doc.text), allocator);
+      PG_DYN_APPEND_SLICE(&sb, PG_S("\",\n"), allocator);
+    }
+
+    // Titles.
+    {
+      PG_DYN_APPEND_SLICE(&sb, PG_S("titles:[\n"), allocator);
+
+      for (u64 j = 0; j < doc.titles.len; j++) {
+        Title title = PG_SLICE_AT(doc.titles, j);
+        PG_DYN_APPEND_SLICE(&sb, PG_S("\"#"), allocator);
+        pg_string_builder_append_u64(&sb, title.hash, allocator);
+        PG_DYN_APPEND_SLICE(&sb, PG_S("-"), allocator);
+        pg_string_builder_append_js_string_escaped(&sb, title.content_html_id,
+                                                   allocator);
+        PG_DYN_APPEND_SLICE(&sb, PG_S("\",\n"), allocator);
+      }
+      PG_DYN_APPEND_SLICE(&sb, PG_S("],\n"), allocator);
+    }
+
+    // Title offsets.
+    {
+      PG_DYN_APPEND_SLICE(&sb, PG_S("title_text_offsets:[\n"), allocator);
+      for (u64 j = 0; j < doc.title_text_offsets.len; j++) {
+        u32 offset = PG_SLICE_AT(doc.title_text_offsets, j);
+        pg_string_builder_append_u64(&sb, offset, allocator);
+        PG_DYN_APPEND_SLICE(&sb, PG_S(","), allocator);
+      }
+      PG_DYN_APPEND_SLICE(&sb, PG_S("],\n"), allocator);
+    }
+
+    PG_DYN_APPEND_SLICE(&sb, PG_S("},\n"), allocator);
   }
   PG_DYN_APPEND_SLICE(&sb, PG_S("],\n"), allocator);
 
+#if 0
   PG_DYN_APPEND_SLICE(&sb, PG_S("index:{"), allocator);
   search_index_serialize_to_file_rec(&sb, search_index.index, allocator);
-  PG_DYN_APPEND_SLICE(&sb, PG_S("}};\n"), allocator);
+  PG_DYN_APPEND_SLICE(&sb, PG_S("}\n"), allocator);
+#endif
+  PG_DYN_APPEND_SLICE(&sb, PG_S("};\n"), allocator);
   PG_DYN_APPEND_SLICE(&sb, PG_S("export default { raw_index };"), allocator);
 
   PG_ASSERT(0 == pg_file_write_full_with_descriptor(
@@ -786,6 +818,7 @@ static void html_node_print(PgHtmlNode *node, u64 depth) {
   }
 }
 
+#if 0
 static void search_index_feed_text(SearchIndex *search_index, PgString text,
                                    u64 text_offset,
                                    DocumentIndex document_index,
@@ -873,7 +906,9 @@ static void search_index_feed_text(SearchIndex *search_index, PgString text,
     PG_ASSERT(3 == pg_utf8_count(key).res);
   }
 }
+#endif
 
+#if 0
 static TitleIndex title_find_by_title_content(TitleSlice titles,
                                               PgString title_content) {
   for (u64 i = 0; i < titles.len; i++) {
@@ -884,25 +919,29 @@ static TitleIndex title_find_by_title_content(TitleSlice titles,
   }
   PG_ASSERT(0);
 }
+#endif
 
 static void search_index_feed_document(SearchIndex *search_index,
                                        PgHtmlTokenSlice html_tokens,
                                        PgString document_name,
                                        TitleSlice titles,
                                        PgAllocator *allocator) {
-  *PG_DYN_PUSH(&search_index->documents, allocator) = (SearchDocument){
+  SearchDocument doc = {
       .html_file_name = document_name,
       .titles = titles,
   };
-  PG_DYN_ENSURE_CAP(&PG_SLICE_LAST_PTR(&search_index->documents)->text,
-                    128 * PG_KiB, allocator);
+  PG_DYN_ENSURE_CAP(&doc.text, 128 * PG_KiB, allocator);
+  PG_DYN_ENSURE_CAP(&doc.title_text_offsets, titles.len, allocator);
+
+#if 0
   DocumentIndex document_index = {
       .value = (u32)(search_index->documents.len - 1),
   };
 
   TitleIndex section = {.value = UINT32_MAX};
+#endif
 
-  for (u64 i = 0; i < html_tokens.len; i++) {
+  for (u64 i = 1; i < html_tokens.len; i++) {
     PgHtmlToken token = PG_SLICE_AT(html_tokens, i);
 
     if (PG_HTML_TOKEN_KIND_TAG_OPENING == token.kind &&
@@ -919,13 +958,22 @@ static void search_index_feed_document(SearchIndex *search_index,
       PgString title_content = title_text.text;
       PG_ASSERT(!pg_string_is_empty(title_content));
 
+#if 0
       section = title_find_by_title_content(titles, title_content);
-      // TODO: get section.
+#endif
+
+      *PG_DYN_PUSH_WITHIN_CAPACITY(&doc.title_text_offsets) = (u32)doc.text.len;
     } else if (PG_HTML_TOKEN_KIND_TEXT == token.kind) {
+      *PG_DYN_PUSH(&doc.text, allocator) = '\n';
+      PG_DYN_APPEND_SLICE(&doc.text, token.text, allocator);
+
+#if 0
       search_index_feed_text(search_index, token.text, token.start,
                              document_index, section, allocator);
+#endif
     }
   }
+  *PG_DYN_PUSH(&search_index->documents, allocator) = doc;
 }
 
 static void article_generate_html_file(PgFileDescriptor markdown_file,
