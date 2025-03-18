@@ -69,14 +69,6 @@ typedef struct {
 PG_DYN(SearchDocument) SearchDocumentDyn;
 
 typedef struct {
-  u32 value;
-} DocumentIndex;
-
-typedef struct {
-  u32 value;
-} TitleIndex;
-
-typedef struct {
   SearchDocumentDyn documents;
 } SearchIndex;
 
