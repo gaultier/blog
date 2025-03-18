@@ -25,7 +25,6 @@
 #define METADATA_DELIMITER "---"
 #define BACK_LINK "<p><a href=\"/blog\"> ⏴ Back to all articles</a></p>\n"
 #define FNV_SEED ((u32)0x811c9dc5)
-/* #define EXCERPT_LEN_AROUND_TRIGRAM 10 */
 
 typedef u32 TitleHash;
 
