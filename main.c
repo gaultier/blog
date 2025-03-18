@@ -162,6 +162,7 @@ static void search_index_serialize_to_file(SearchIndex search_index,
   PG_ASSERT(0 == pg_file_close(file));
 }
 
+[[nodiscard]]
 static int article_cmp_by_creation_date_asc(const void *a, const void *b) {
   const Article *article_a = a;
   const Article *article_b = b;
@@ -169,6 +170,7 @@ static int article_cmp_by_creation_date_asc(const void *a, const void *b) {
   return pg_string_cmp(article_a->creation_date, article_b->creation_date);
 }
 
+[[nodiscard]]
 static int article_cmp_by_creation_date_desc(const void *a, const void *b) {
   const Article *article_a = a;
   const Article *article_b = b;
