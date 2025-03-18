@@ -72,13 +72,6 @@ typedef struct {
   SearchDocumentDyn documents;
 } SearchIndex;
 
-#define HASH_TABLE_EXP 10
-
-typedef struct {
-  PgString keys[1 << HASH_TABLE_EXP];
-  ArticleDyn values[1 << HASH_TABLE_EXP];
-} ArticlesByTag;
-
 static void search_index_serialize_to_file(SearchIndex search_index,
                                            PgString file_name,
                                            PgAllocator *allocator) {
@@ -534,26 +527,6 @@ static TitleSlice html_collect_titles(PgHtmlNode *html_root,
   return PG_DYN_SLICE(TitleSlice, titles);
 }
 
-[[maybe_unused]]
-static void title_print(Title *title) {
-  if (!title) {
-    return;
-  }
-  PG_ASSERT(title->level > 0);
-
-  for (i64 i = 0; i < title->level - 2; i++) {
-    printf("  ");
-  }
-  if (1 == title->level) {
-    printf(".\n");
-  } else {
-    printf("title='%.*s' id=%u\n", (int)title->title.len, title->title.data,
-           title->hash);
-  }
-  title_print(title->first_child);
-  title_print(title->next_sibling);
-}
-
 static void html_write_decorated_titles(PgString html, Pgu8Dyn *sb,
                                         TitleSlice titles,
                                         PgAllocator *allocator) {
@@ -650,60 +623,6 @@ static void article_write_toc(Pgu8Dyn *sb, TitleSlice titles,
   PG_DYN_APPEND_SLICE(sb, PG_S(" <strong>Table of contents</strong>\n"),
                       allocator);
   article_write_toc_rec(sb, root, allocator);
-}
-
-[[maybe_unused]]
-static void html_node_print(PgHtmlNode *node, u64 depth) {
-  PG_ASSERT(node);
-
-  for (u64 i = 0; i < depth; i++) {
-    printf("  ");
-  }
-
-  switch (node->token_start.kind) {
-  case PG_HTML_TOKEN_KIND_TEXT:
-    printf("text: %.*s (%u, %u)\n", (int)node->token_start.text.len,
-           node->token_start.text.data, node->token_start.start,
-           node->token_end.end);
-    break;
-  case PG_HTML_TOKEN_KIND_TAG_OPENING: {
-    printf("open: %.*s (%u, %u)\n", (int)node->token_start.tag.len,
-           node->token_start.tag.data, node->token_start.start,
-           node->token_end.end);
-    PgHtmlNode *first_child = pg_html_node_get_first_child(node);
-    if (first_child != node) {
-      html_node_print(first_child, depth + 2);
-    }
-    for (u64 i = 0; i < depth; i++) {
-      printf("  ");
-    }
-    printf("close: %.*s (%u, %u)\n", (int)node->token_end.tag.len,
-           node->token_end.tag.data, node->token_start.start,
-           node->token_end.end);
-  } break;
-  case PG_HTML_TOKEN_KIND_NONE: // Root.
-    html_node_print(pg_html_node_get_first_child(node), depth + 2);
-    break;
-  case PG_HTML_TOKEN_KIND_COMMENT:
-    printf("comment: %.*s (%u, %u)\n", (int)node->token_start.comment.len,
-           node->token_start.comment.data, node->token_start.start,
-           node->token_end.end);
-    break;
-  case PG_HTML_TOKEN_KIND_DOCTYPE:
-    printf("doctype: %.*s (%u, %u)\n", (int)node->token_start.doctype.len,
-           node->token_start.doctype.data, node->token_start.start,
-           node->token_end.end);
-    break;
-  case PG_HTML_TOKEN_KIND_TAG_CLOSING:
-  case PG_HTML_TOKEN_KIND_ATTRIBUTE:
-  default:
-    PG_ASSERT(0);
-  }
-
-  PgHtmlNode *next_sibling = pg_html_node_get_next_sibling(node);
-  if (next_sibling != node) {
-    html_node_print(next_sibling, depth);
-  }
 }
 
 static void search_index_feed_document(SearchIndex *search_index,
@@ -1006,6 +925,13 @@ static void home_page_generate(ArticleSlice articles, PgString header,
                                     allocator));
   PG_ASSERT(0 == pg_file_close(res_markdown_file.res));
 }
+
+#define HASH_TABLE_EXP 10
+
+typedef struct {
+  PgString keys[1 << HASH_TABLE_EXP];
+  ArticleDyn values[1 << HASH_TABLE_EXP];
+} ArticlesByTag;
 
 [[nodiscard]]
 static ArticleDyn *articles_by_tag_lookup(ArticlesByTag *table, PgString key) {
