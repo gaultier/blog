@@ -724,8 +724,9 @@ static void search_index_feed_document(SearchIndex *search_index,
 
       *PG_DYN_PUSH_WITHIN_CAPACITY(&doc.title_text_offsets) = (u32)doc.text.len;
     } else if (PG_HTML_TOKEN_KIND_TEXT == token.kind) {
+      PG_DYN_APPEND_SLICE(&doc.text, pg_string_trim_space(token.text),
+                          allocator);
       *PG_DYN_PUSH(&doc.text, allocator) = '\n';
-      PG_DYN_APPEND_SLICE(&doc.text, token.text, allocator);
     }
   }
   *PG_DYN_PUSH(&search_index->documents, allocator) = doc;
