@@ -58,6 +58,7 @@ PG_DYN(GitStat) GitStatDyn;
 
 typedef struct {
   PgString html_file_name;
+  PgString title;
   TitleSlice titles;
   Pgu32Dyn title_text_offsets;
   Pgu8Dyn text;
@@ -100,15 +101,22 @@ static void search_index_serialize_to_file(SearchIndex search_index,
     SearchDocument doc = PG_SLICE_AT(search_index.documents, i);
     PG_DYN_APPEND_SLICE(&sb, PG_S("{\n"), allocator);
 
-    // Name
+    // HTML file name.
     {
-      PG_DYN_APPEND_SLICE(&sb, PG_S("name:\""), allocator);
+      PG_DYN_APPEND_SLICE(&sb, PG_S("html_file_name:\""), allocator);
       pg_string_builder_append_js_string_escaped(&sb, doc.html_file_name,
                                                  allocator);
       PG_DYN_APPEND_SLICE(&sb, PG_S("\",\n"), allocator);
     }
 
-    // Text
+    // Document title.
+    {
+      PG_DYN_APPEND_SLICE(&sb, PG_S("title:\""), allocator);
+      pg_string_builder_append_js_string_escaped(&sb, doc.title, allocator);
+      PG_DYN_APPEND_SLICE(&sb, PG_S("\",\n"), allocator);
+    }
+
+    // Text.
     {
       PG_DYN_APPEND_SLICE(&sb, PG_S("text:\""), allocator);
       pg_string_builder_append_js_string_escaped(
@@ -122,12 +130,22 @@ static void search_index_serialize_to_file(SearchIndex search_index,
 
       for (u64 j = 0; j < doc.titles.len; j++) {
         Title title = PG_SLICE_AT(doc.titles, j);
-        PG_DYN_APPEND_SLICE(&sb, PG_S("\"#"), allocator);
+        PG_DYN_APPEND_SLICE(&sb, PG_S("{\n"), allocator);
+
+        PG_DYN_APPEND_SLICE(&sb, PG_S("title:\""), allocator);
+        pg_string_builder_append_js_string_escaped(&sb, title.title, allocator);
+        PG_DYN_APPEND_SLICE(&sb, PG_S("\",\n"), allocator);
+
+        PG_DYN_APPEND_SLICE(&sb, PG_S("hash:"), allocator);
         pg_string_builder_append_u64(&sb, title.hash, allocator);
-        PG_DYN_APPEND_SLICE(&sb, PG_S("-"), allocator);
+        PG_DYN_APPEND_SLICE(&sb, PG_S(",\n"), allocator);
+
+        PG_DYN_APPEND_SLICE(&sb, PG_S("content_html_id:\""), allocator);
         pg_string_builder_append_js_string_escaped(&sb, title.content_html_id,
                                                    allocator);
         PG_DYN_APPEND_SLICE(&sb, PG_S("\",\n"), allocator);
+
+        PG_DYN_APPEND_SLICE(&sb, PG_S("},\n"), allocator);
       }
       PG_DYN_APPEND_SLICE(&sb, PG_S("],\n"), allocator);
     }
@@ -695,11 +713,11 @@ static void html_node_print(PgHtmlNode *node, u64 depth) {
 
 static void search_index_feed_document(SearchIndex *search_index,
                                        PgHtmlTokenSlice html_tokens,
-                                       PgString document_name,
-                                       TitleSlice titles,
+                                       Article article, TitleSlice titles,
                                        PgAllocator *allocator) {
   SearchDocument doc = {
-      .html_file_name = document_name,
+      .html_file_name = article.html_file_name,
+      .title = article.title,
       .titles = titles,
   };
   PG_DYN_ENSURE_CAP(&doc.text, 128 * PG_KiB, allocator);
@@ -792,8 +810,8 @@ static void article_generate_html_file(PgFileDescriptor markdown_file,
 
     PgHtmlTokenSlice html_tokens =
         PG_DYN_SLICE(PgHtmlTokenSlice, res_html_tokens.res);
-    search_index_feed_document(search_index, html_tokens,
-                               article->html_file_name, titles, allocator);
+    search_index_feed_document(search_index, html_tokens, *article, titles,
+                               allocator);
   }
   PG_ASSERT(0 == pg_file_write_full(article->html_file_name, html, allocator));
 }

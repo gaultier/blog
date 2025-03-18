@@ -1,6 +1,8 @@
 import search from './search_index.js';
 const {raw_index}=search;
 
+const excerpt_len_around = 100;
+
 function search_text(needle) {
   console.time("search_text");
 
@@ -9,7 +11,6 @@ function search_text(needle) {
     let start = 0;
     for (let _i =0; _i < doc.text.length; _i++){
       let idx = doc.text.slice(start).indexOf(needle);
-      console.log(start, idx);
       if (-1==idx) { break; }
 
       matches.push([doc_i | 0, start+idx]);
@@ -17,8 +18,6 @@ function search_text(needle) {
     }
   }
   console.timeEnd("search_text");
-
-  console.log("[D010]", matches,matches.length);
 
   const res = [];
   for (let [doc_i, idx] of matches) {
@@ -31,19 +30,13 @@ function search_text(needle) {
     }
 
     const title = doc.titles[title_i];
-    const link = doc.name + title
-    const excerpt_len_around = 30;
-    let excerpt_idx_start = idx - excerpt_len_around < 0 ? 0 : idx - excerpt_len_around;
-    let excerpt_idx_end = idx + needle.length + excerpt_len_around;
-
-    const excerpt = doc.text.slice(excerpt_idx_start, excerpt_idx_end).trim().replace('\n',' ');
-    console.log("[D004]", title_i, doc.name, title, link, "`"+ excerpt + "`", idx - excerpt_len_around);
+    const link = doc.html_file_name + '#' + title.hash + '-' + title.content_html_id;
 
     res.push({
+      index: idx,
       title: title,
       link: link,
-      excerpt: excerpt,
-      document_name: doc.name,
+      document_index: doc_i,
     });
   }
 
@@ -51,47 +44,56 @@ function search_text(needle) {
 }
 
 window.onload = function(){
-  const search_matches_wrapper = document.getElementById('search-matches-wrapper');
-  const search_matches = document.getElementById('search-matches');
-  const input_elem = document.getElementById('search');
-  const pseudo_body = document.getElementById('pseudo-body');
+  const dom_search_matches_wrapper = window.document.getElementById('search-matches-wrapper');
+  const dom_search_matches = window.document.getElementById('search-matches');
+  const dom_input = window.document.getElementById('search');
+  const dom_pseudo_body = window.document.getElementById('pseudo-body');
 
   function search_and_display_results(event) {
-    const needle = input_elem.value;
+    const needle = dom_input.value;
     if (needle.length < 3) {
-      pseudo_body.hidden = false;
-      search_matches_wrapper.hidden = true;
+      dom_pseudo_body.hidden = false;
+      dom_search_matches_wrapper.hidden = true;
       return;
     }
 
-    pseudo_body.hidden = true;
-    search_matches_wrapper.hidden = false;
-    search_matches.innerHTML = '';
+    dom_pseudo_body.hidden = true;
+    dom_search_matches_wrapper.hidden = false;
+    dom_search_matches.innerHTML = '';
 
-    const matches = search_text(input_elem.value);
+    const matches = search_text(dom_input.value);
 
     for (const match of matches.values()) {
-      const elem = document.createElement('p');
+      const doc = raw_index.documents[match.document_index];
+      const dom_match = window.document.createElement('p');
 
-      const document_name = document.createElement('p');
-      document_name.innerText = match.document_name;
-      elem.append(document_name);
+      const dom_doc = window.document.createElement('h3');
+      dom_doc.innerHTML = `<a href="/blog/${doc.html_file_name}">${doc.title}</a>`;
+      dom_match.append(dom_doc);
 
-      const excerpt = document.createElement('p');
-      excerpt.innerText = '...' + match.excerpt + '...';
-      elem.append(excerpt);
+      const dom_link = window.document.createElement('a');
+      dom_link.setAttribute('href', '/blog/' + match.link);
+      dom_link.innerText = match.title.title;
+      dom_match.append(dom_link);
 
-      const link = document.createElement('a');
-      link.setAttribute('href', '/blog/' + match.link);
-      link.innerText = match.title;
-      elem.append(link);
+      const dom_excerpt = window.document.createElement('p');
+      let excerpt_idx_start = match.index - excerpt_len_around < 0 ? 0 : match.index - excerpt_len_around;
+      let excerpt_idx_end = match.index + needle.length + excerpt_len_around;
+      dom_excerpt.innerHTML = '...' + 
+        doc.text.slice(excerpt_idx_start, match.index) +
+        '<strong>' +
+        doc.text.slice(match.index, match.index + needle.length) + 
+        '</strong>' +
+        doc.text.slice(match.index + needle.length, excerpt_idx_end) +
+        '...';
+      dom_match.append(dom_excerpt);
 
-      const hr = document.createElement('hr');
-      elem.append(hr);
+      const dom_hr = window.document.createElement('hr');
+      dom_match.append(dom_hr);
 
-      search_matches.append(elem);
+      dom_search_matches.append(dom_match);
     }
   };
-  input_elem.oninput = search_and_display_results;
-  input_elem.onfocus = search_and_display_results;
+  dom_input.oninput = search_and_display_results;
+  dom_input.onfocus = search_and_display_results;
 };
