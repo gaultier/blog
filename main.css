@@ -1,5 +1,6 @@
 input {
   padding: .3rem;
+  margin: auto;
 }
 
 .publication-date {
@@ -30,6 +31,7 @@ p {
   width: 100%;
   justify-content: space-between;
   align-items: center;
+  flex-wrap: wrap;
 }
 
 #banner > ul {
