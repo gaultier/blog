@@ -116,7 +116,7 @@ static void search_index_serialize_to_file(SearchIndex search_index,
     {
       PG_DYN_APPEND_SLICE(&sb, PG_S("titles:[\n"), allocator);
 
-      for (u64 j = 0; j < doc.titles.len; j++) {
+      for (u64 j = 1; j < doc.titles.len; j++) {
         Title title = PG_SLICE_AT(doc.titles, j);
         PG_DYN_APPEND_SLICE(&sb, PG_S("{\n"), allocator);
 
@@ -133,18 +133,12 @@ static void search_index_serialize_to_file(SearchIndex search_index,
                                                    allocator);
         PG_DYN_APPEND_SLICE(&sb, PG_S("\",\n"), allocator);
 
-        PG_DYN_APPEND_SLICE(&sb, PG_S("},\n"), allocator);
-      }
-      PG_DYN_APPEND_SLICE(&sb, PG_S("],\n"), allocator);
-    }
+        PG_DYN_APPEND_SLICE(&sb, PG_S("offset:"), allocator);
+        pg_string_builder_append_u64(
+            &sb, PG_SLICE_AT(doc.title_text_offsets, j - 1), allocator);
+        PG_DYN_APPEND_SLICE(&sb, PG_S(",\n"), allocator);
 
-    // Title offsets.
-    {
-      PG_DYN_APPEND_SLICE(&sb, PG_S("title_text_offsets:[\n"), allocator);
-      for (u64 j = 0; j < doc.title_text_offsets.len; j++) {
-        u32 offset = PG_SLICE_AT(doc.title_text_offsets, j);
-        pg_string_builder_append_u64(&sb, offset, allocator);
-        PG_DYN_APPEND_SLICE(&sb, PG_S(","), allocator);
+        PG_DYN_APPEND_SLICE(&sb, PG_S("},\n"), allocator);
       }
       PG_DYN_APPEND_SLICE(&sb, PG_S("],\n"), allocator);
     }
@@ -639,7 +633,7 @@ static void search_index_feed_document(SearchIndex *search_index,
   PG_DYN_ENSURE_CAP(&doc.text, 128 * PG_KiB, allocator);
   PG_DYN_ENSURE_CAP(&doc.title_text_offsets, titles.len, allocator);
 
-  for (u64 i = 1; i < html_tokens.len; i++) {
+  for (u64 i = 0; i < html_tokens.len; i++) {
     PgHtmlToken token = PG_SLICE_AT(html_tokens, i);
 
     if (PG_HTML_TOKEN_KIND_TAG_OPENING == token.kind &&

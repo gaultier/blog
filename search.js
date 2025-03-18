@@ -23,14 +23,16 @@ function search_text(needle) {
   for (const [doc_i, idx] of matches) {
     const doc = raw_index.documents[doc_i];
 
-    let title_i = 0;
-    for (title_i of doc.title_text_offsets.keys()){
-      const offset = doc.title_text_offsets[title_i];
-      if (offset >= idx) {break;}
+    let title = undefined;
+    for (let i=0; i<doc.titles.length; i++){
+      title = doc.titles[i];
+      if (idx < title.offset) {
+        title = i>0 ? doc.titles[i-1]:title;
+        break;
+      }
     }
 
-    const title = doc.titles[title_i];
-    const link = doc.html_file_name + '#' + title.hash + '-' + title.content_html_id;
+    const link = title ? doc.html_file_name + '#' + title.hash + '-' + title.content_html_id : doc.html_file_name;
 
     res.push({
       index: idx,
@@ -53,6 +55,7 @@ window.onload = function() {
     if (needle.length < 3) {
       dom_pseudo_body.hidden = false;
       dom_search_matches.hidden = true;
+      window.scrollTo(0, 0);
       return;
     }
 
@@ -66,12 +69,16 @@ window.onload = function() {
     dom_search_title.innerText = `Search results (${matches.length}):`;
     dom_search_matches.append(dom_search_title);
 
-    for (const match of matches.values()) {
+    const match_entries = matches.entries();
+    for (const [i, match] of match_entries) {
       const doc = raw_index.documents[match.document_index];
       const dom_match = window.document.createElement('p');
 
       const dom_doc = window.document.createElement('h3');
-      dom_doc.innerHTML = `<a href="/blog/${doc.html_file_name}">${doc.title}</a>: <a href="/blog/${match.link}">${match.title.title}</a>`;
+      dom_doc.innerHTML = `<a href="/blog/${doc.html_file_name}">${doc.title}</a>`
+      if (match.title) {
+        dom_doc.innerHTML += `: <a href="/blog/${match.link}">${match.title.title}</a>`;
+      }
       dom_match.append(dom_doc);
 
       const dom_excerpt = window.document.createElement('p');
@@ -86,8 +93,10 @@ window.onload = function() {
         '...';
       dom_match.append(dom_excerpt);
 
-      const dom_hr = window.document.createElement('hr');
-      dom_match.append(dom_hr);
+      if (i + 1 < matches.length){
+        const dom_hr = window.document.createElement('hr');
+        dom_match.append(dom_hr);
+      }
 
       dom_search_matches.append(dom_match);
     }
