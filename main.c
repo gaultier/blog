@@ -9,6 +9,9 @@
 //   + Convert markdown to HTML
 //   + Parse titles from HTML
 //   + Generate TOC
+//   + Extract plain text from HTML
+//   + Serialize articles including titles and plain text to client-side JS for
+//   search
 //   + Decorate titles with HTML id for links
 //   + Generate final HTML with header, TOC, decorated content, and footer.
 // - Generate tags page
