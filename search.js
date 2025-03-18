@@ -44,7 +44,6 @@ function search_text(needle) {
 }
 
 window.onload = function(){
-  const dom_search_matches_wrapper = window.document.getElementById('search-matches-wrapper');
   const dom_search_matches = window.document.getElementById('search-matches');
   const dom_input = window.document.getElementById('search');
   const dom_pseudo_body = window.document.getElementById('pseudo-body');
@@ -53,28 +52,27 @@ window.onload = function(){
     const needle = dom_input.value;
     if (needle.length < 3) {
       dom_pseudo_body.hidden = false;
-      dom_search_matches_wrapper.hidden = true;
+      dom_search_matches.hidden = true;
       return;
     }
 
     dom_pseudo_body.hidden = true;
-    dom_search_matches_wrapper.hidden = false;
+    dom_search_matches.hidden = false;
     dom_search_matches.innerHTML = '';
 
     const matches = search_text(dom_input.value);
+
+    const dom_search_title = window.document.createElement('h2');
+    dom_search_title.innerText = `Search results (${matches.length}):`;
+    dom_search_matches.append(dom_search_title);
 
     for (const match of matches.values()) {
       const doc = raw_index.documents[match.document_index];
       const dom_match = window.document.createElement('p');
 
       const dom_doc = window.document.createElement('h3');
-      dom_doc.innerHTML = `<a href="/blog/${doc.html_file_name}">${doc.title}</a>`;
+      dom_doc.innerHTML = `<a href="/blog/${doc.html_file_name}">${doc.title}</a>: <a href="/blog/${match.link}">${match.title.title}</a>`;
       dom_match.append(dom_doc);
-
-      const dom_link = window.document.createElement('a');
-      dom_link.setAttribute('href', '/blog/' + match.link);
-      dom_link.innerText = match.title.title;
-      dom_match.append(dom_link);
 
       const dom_excerpt = window.document.createElement('p');
       let excerpt_idx_start = match.index - excerpt_len_around < 0 ? 0 : match.index - excerpt_len_around;
