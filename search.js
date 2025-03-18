@@ -7,10 +7,10 @@ function search_text(needle) {
   console.time("search_text");
 
   const matches=[];
-  for (let [doc_i, doc] of raw_index.documents.entries()){
+  for (const [doc_i, doc] of raw_index.documents.entries()){
     let start = 0;
     for (let _i =0; _i < doc.text.length; _i++){
-      let idx = doc.text.slice(start).indexOf(needle);
+      const idx = doc.text.slice(start).indexOf(needle);
       if (-1==idx) { break; }
 
       matches.push([doc_i | 0, start+idx]);
@@ -20,7 +20,7 @@ function search_text(needle) {
   console.timeEnd("search_text");
 
   const res = [];
-  for (let [doc_i, idx] of matches) {
+  for (const [doc_i, idx] of matches) {
     const doc = raw_index.documents[doc_i];
 
     let title_i = 0;
@@ -43,12 +43,12 @@ function search_text(needle) {
   return res;
 }
 
-window.onload = function(){
+window.onload = function() {
   const dom_search_matches = window.document.getElementById('search-matches');
   const dom_input = window.document.getElementById('search');
   const dom_pseudo_body = window.document.getElementById('pseudo-body');
 
-  function search_and_display_results(event) {
+  function search_and_display_results(_event) {
     const needle = dom_input.value;
     if (needle.length < 3) {
       dom_pseudo_body.hidden = false;
@@ -75,8 +75,8 @@ window.onload = function(){
       dom_match.append(dom_doc);
 
       const dom_excerpt = window.document.createElement('p');
-      let excerpt_idx_start = match.index - excerpt_len_around < 0 ? 0 : match.index - excerpt_len_around;
-      let excerpt_idx_end = match.index + needle.length + excerpt_len_around;
+      const excerpt_idx_start = match.index - excerpt_len_around < 0 ? 0 : match.index - excerpt_len_around;
+      const excerpt_idx_end = match.index + needle.length + excerpt_len_around;
       dom_excerpt.innerHTML = '...' + 
         doc.text.slice(excerpt_idx_start, match.index) +
         '<strong>' +
