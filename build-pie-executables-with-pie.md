@@ -42,7 +42,7 @@ $ file ./main
 ./main: ELF 64-bit LSB pie executable [..] dynamically linked, interpreter /lib64/ld-linux-x86-64.so.2 [..]
 ```
 
-Ok, it worked, but also: why did we go from a statically linked file to a dynamically linked executable? PIE should be orthogonal to static/dynamic linking! Or is it? We'll come back to that in a second.
+Ok, it worked, but also: why did we go from a statically linked to a dynamically linked executable? PIE should be orthogonal to static/dynamic linking! Or is it? We'll come back to that in a second.
 
 When we run our freshly built Go executable in a bare-bone Docker image (distroless), we get a nice cryptic error at runtime:
 
