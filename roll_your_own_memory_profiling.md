@@ -236,7 +236,7 @@ Total: 0.0 MB
      0.0   0.0% 100.0%      0.0 100.0% main
 ```
 
-## Generating a `pprof` profile
+## Generating a pprof profile
 
 Let's start with a very simple arena (directly based on [https://nullprogram.com/blog/2023/09/27/](https://nullprogram.com/blog/2023/09/27/)) and show how it is used:
 
