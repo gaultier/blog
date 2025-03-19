@@ -74,7 +74,7 @@
 </div>
 <div class="article-title">
 <h1>Build PIE executables in Go: I got nerd-sniped</h1>
-  <div class="tags"> <a href="/blog/articles-by-tag.html#go" class="tag">Go</a> <a href="/blog/articles-by-tag.html#pie" class="tag">PIE</a></div>
+  <div class="tags"> <a href="/blog/articles-by-tag.html#go" class="tag">Go</a> <a href="/blog/articles-by-tag.html#pie" class="tag">PIE</a> <a href="/blog/articles-by-tag.html#linux" class="tag">Linux</a> <a href="/blog/articles-by-tag.html#musl" class="tag">Musl</a></div>
   </div>
  <strong>Table of contents</strong>
 <ul>
@@ -137,13 +137,17 @@ $ file ./main
 $ file ./main
 ./main: ELF 64-bit LSB pie executable [..] dynamically linked, interpreter /lib64/ld-linux-x86-64.so.2 [..]
 </code></pre>
-<p>Ok, it worked, but also: why did we go from a statically linked file to a dynamically linked executable? PIE should be orthogonal to static/dynamic linking! Or is it?</p>
+<p>Ok, it worked, but also: why did we go from a statically linked file to a dynamically linked executable? PIE should be orthogonal to static/dynamic linking! Or is it? We'll come back to that in a second.</p>
+<p>When we run our freshly built Go executable in a bare-bone Docker image (distroless), we get a nice cryptic error at runtime:</p>
+<pre><code>exec /home/nonroot/my-service: no such file or directory
+</code></pre>
+<p>Oho. Let's investigate.</p>
 <h3 id="1539498158-a-helpful-mental-model">
   <a class="title" href="#1539498158-a-helpful-mental-model">A helpful mental model</a>
   <a class="hash-anchor" href="#1539498158-a-helpful-mental-model" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h3>
-<p>I'd argue that the wording of the tools and the content online is confusing.</p>
-<p>For example, invoking <code>lld</code> with the above executable prints <code>statically linked</code>. But <code>file</code> prints <code>dynamically linked</code>! So which is it?</p>
+<p>I'd argue that the wording of the tools and the online content is confusing.</p>
+<p>For example, invoking <code>lld</code> with the above executable prints <code>statically linked</code>. But <code>file</code> prints <code>dynamically linked</code> for the exact same file! So which is it?</p>
 <p>A <a href="https://www.quora.com/Systems-Programming/What-is-the-exact-difference-between-dynamic-loading-and-dynamic-linking/answer/Jeff-Darcy">helpful mental model</a> is to split <em>linking</em> from <em>loading</em> and have thus two orthogonal dimensions:</p>
 <ul>
 <li>static linking, static loading</li>
@@ -151,7 +155,7 @@ $ file ./main
 <li>dynamic linking, static loading</li>
 <li>dynamic linking, dynamic loading</li>
 </ul>
-<p>The first dimension (static vs dynamic linking) is decided by the field 'Type' in the ELF header (bytes 16-20): if it's <code>EXEC</code>, it's a statically linked executable. If it's <code>DYN</code>, it's a shared object file or a statically linked PIE executable.</p>
+<p>The first dimension (static vs dynamic linking) is decided by the field 'Type' in the ELF header (bytes 16-20): if it's <code>EXEC</code>, it's a statically linked executable. If it's <code>DYN</code>, it's a shared object file or a statically linked PIE executable (note that the same file can be both a shared library and an executable. Pretty cool, no?).</p>
 <p>The second dimension (static vs dynamic loading) is decided by the ELF program headers: if there is one program header of type <code>INTERP</code> (which specifies the loader to use), our executable is using dynamic loading meaning it requires a loader (a.k.a interpreter) at runtime. Otherwise it does not. This aspect can be observed with <code>readelf</code>:</p>
 <pre><code class="language-sh">$ readelf --program-headers ./main
 [..]
@@ -167,22 +171,15 @@ Program Headers:
   [..]
 </code></pre>
 <p>Our newly built Go executable is in the second category: static linking, dynamic loading.</p>
-<p>And that's an issue because we deploy our freshly built PIE executable in a distroless Docker container where there is not even a libc available or the loader <code>ld.so</code>.
-And we get a nice cryptic error at runtime:</p>
-<pre><code>exec /home/nonroot/my-service: no such file or directory
-</code></pre>
+<p>And that's an issue because we deploy our freshly built PIE executable in a distroless Docker container where there is not even a libc available or the loader <code>ld.so</code>.</p>
 <p>It means we now need to change our Docker image to include a loader at runtime.</p>
 <p>So not ideal. What can we do? We'd like to be in the first category: static linking, static loading.</p>
 <h2 id="2855875514-troubleshooting-the-problem">
   <a class="title" href="#2855875514-troubleshooting-the-problem">Troubleshooting the problem</a>
   <a class="hash-anchor" href="#2855875514-troubleshooting-the-problem" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
-<p>Back to our central question:</p>
-<blockquote>
-<p>PIE is orthogonal to static/dynamic linking! Or is it?</p>
-</blockquote>
-<p>Well...no. It turns out that PIE was initially tailored to executables using dynamic loading.
-The loader loads at startup the sections of the executable at different places in memory, fills (eagerly or lazily) in a global table (the <a href="https://en.wikipedia.org/wiki/Global_Offset_Table">GOT</a>) the locations of symbols. And voila, functions from different ELF objects (e.g. functions from libc) are placed randomly in memory.</p>
+<p>It turns out that PIE was historically designed for executables using dynamic loading.
+The loader loads at startup the sections of the executable at different places in memory, fills (eagerly or lazily) in a global table (the <a href="https://en.wikipedia.org/wiki/Global_Offset_Table">GOT</a>) the locations of symbols. And voila, functions are placed randomly in memory. Blue team, rejoice! Red team, sad.</p>
 <p>So how does it work with a statically linked executable where a loader is not even <em>present</em> on the system? Here's a bare-bone C program that uses PIE <em>and</em> is statically linked:</p>
 <pre><code class="language-c">#include &lt;stdio.h&gt;
 
@@ -200,9 +197,9 @@ $ sudo chroot /tmp/scratch ./a.out
 $ sudo chroot /tmp/scratch ./a.out
 0x7f891d95e419 0x7f891d95e7e0 hello!
 </code></pre>
-<p>So... how does it work when no loader is present in the environment? Well, what is the only thing that we link in our bare-bone program? Libc! And what does libc contain? You guess it, a loader!</p>
+<p>So... how does it work when no loader is present in the environment? Well, what is the only thing that we link in our bare-bone program? Libc! And what does libc contain? You guessed it, a loader!</p>
 <p>For musl, it's the file <code>ldso/dlstart.c</code> and that's the code that runs before our <code>main</code>. Effectively libc doubles as a loader. And when statically linked, the loader gets embedded in our application and runs at startup before our code.</p>
-<p>That means that we can have our cake and eat it too: static linking and PIE!</p>
+<p>That means that we can have our cake and eat it too: static linking and PIE! No loader required in the environment.</p>
 <p>So, how can we coerce Go to do the same?</p>
 <h2 id="1807516660-the-solution">
   <a class="title" href="#1807516660-the-solution">The solution</a>
@@ -254,7 +251,7 @@ $ sudo chroot /tmp/scratch ./main
   <a class="hash-anchor" href="#3796851539-conclusion" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>'Static PIE', or statically linked PIE executables, are a relatively new development: OpenBSD <a href="https://www.openbsd.org/papers/asiabsdcon2015-pie-slides.pdf">added</a> that in 2015 and builds all system executables in that mode, Clang only <a href="https://reviews.llvm.org/D58307">added</a> the flag in 2019, etc. Apparently the Go linker does not support this yet, I suppose because it does not ship with a loader and so has to rely on the libc loader (if someone knows for sure, I'd be curious to know!). Still I think it's great to do since we get the best of both worlds, only requiring a little bit of finagling with linker flags.</p>
-<p>A further hardening that I have not yet explored but is on my todo list is <a href="https://www.redhat.com/en/blog/hardening-elf-binaries-using-relocation-read-only-relro">read-only relocations</a> which makes the Global Offset Table read-only to prevent an attacker from overwriting the relocatio entries there.</p>
+<p>A further hardening on top of PIE, that I have not yet explored yet, but is on my todo list, is <a href="https://www.redhat.com/en/blog/hardening-elf-binaries-using-relocation-read-only-relro">read-only relocations</a> which makes the Global Offset Table read-only to prevent an attacker from overwriting the relocation entries there.</p>
 <p><a href="/blog"> ⏴ Back to all articles</a></p>
 
 <blockquote id="donate">

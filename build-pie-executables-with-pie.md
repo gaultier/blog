@@ -1,5 +1,5 @@
 Title: Build PIE executables in Go: I got nerd-sniped
-Tags: Go, PIE
+Tags: Go, PIE, Linux, Musl
 ---
 
 ## Context
@@ -40,13 +40,21 @@ $ file ./main
 ./main: ELF 64-bit LSB pie executable [..] dynamically linked, interpreter /lib64/ld-linux-x86-64.so.2 [..]
 ```
 
-Ok, it worked, but also: why did we go from a statically linked file to a dynamically linked executable? PIE should be orthogonal to static/dynamic linking! Or is it?
+Ok, it worked, but also: why did we go from a statically linked file to a dynamically linked executable? PIE should be orthogonal to static/dynamic linking! Or is it? We'll come back to that in a second.
+
+When we run our freshly built Go executable in a bare-bone Docker image (distroless), we get a nice cryptic error at runtime:
+
+```
+exec /home/nonroot/my-service: no such file or directory
+```
+
+Oho. Let's investigate.
 
 ### A helpful mental model
 
-I'd argue that the wording of the tools and the content online is confusing.
+I'd argue that the wording of the tools and the online content is confusing.
 
-For example, invoking `lld` with the above executable prints `statically linked`. But `file` prints `dynamically linked`! So which is it?
+For example, invoking `lld` with the above executable prints `statically linked`. But `file` prints `dynamically linked` for the exact same file! So which is it?
 
 A [helpful mental model](https://www.quora.com/Systems-Programming/What-is-the-exact-difference-between-dynamic-loading-and-dynamic-linking/answer/Jeff-Darcy) is to split *linking* from *loading* and have thus two orthogonal dimensions:
 
@@ -55,7 +63,7 @@ A [helpful mental model](https://www.quora.com/Systems-Programming/What-is-the-e
 - dynamic linking, static loading
 - dynamic linking, dynamic loading
 
-The first dimension (static vs dynamic linking) is decided by the field 'Type' in the ELF header (bytes 16-20): if it's `EXEC`, it's a statically linked executable. If it's `DYN`, it's a shared object file or a statically linked PIE executable.
+The first dimension (static vs dynamic linking) is decided by the field 'Type' in the ELF header (bytes 16-20): if it's `EXEC`, it's a statically linked executable. If it's `DYN`, it's a shared object file or a statically linked PIE executable (note that the same file can be both a shared library and an executable. Pretty cool, no?).
 
 The second dimension (static vs dynamic loading) is decided by the ELF program headers: if there is one program header of type `INTERP` (which specifies the loader to use), our executable is using dynamic loading meaning it requires a loader (a.k.a interpreter) at runtime. Otherwise it does not. This aspect can be observed with `readelf`:
 
@@ -78,11 +86,6 @@ Our newly built Go executable is in the second category: static linking, dynamic
 
 
 And that's an issue because we deploy our freshly built PIE executable in a distroless Docker container where there is not even a libc available or the loader `ld.so`. 
-And we get a nice cryptic error at runtime:
-
-```
-exec /home/nonroot/my-service: no such file or directory
-```
 
 It means we now need to change our Docker image to include a loader at runtime.
 
@@ -92,13 +95,8 @@ So not ideal. What can we do? We'd like to be in the first category: static link
 ## Troubleshooting the problem
 
 
-Back to our central question: 
-
-> PIE is orthogonal to static/dynamic linking! Or is it?
-
-
-Well...no. It turns out that PIE was initially tailored to executables using dynamic loading. 
-The loader loads at startup the sections of the executable at different places in memory, fills (eagerly or lazily) in a global table (the [GOT](https://en.wikipedia.org/wiki/Global_Offset_Table)) the locations of symbols. And voila, functions from different ELF objects (e.g. functions from libc) are placed randomly in memory.
+It turns out that PIE was historically designed for executables using dynamic loading. 
+The loader loads at startup the sections of the executable at different places in memory, fills (eagerly or lazily) in a global table (the [GOT](https://en.wikipedia.org/wiki/Global_Offset_Table)) the locations of symbols. And voila, functions are placed randomly in memory. Blue team, rejoice! Red team, sad.
 
 So how does it work with a statically linked executable where a loader is not even *present* on the system? Here's a bare-bone C program that uses PIE *and* is statically linked:
 
@@ -123,11 +121,11 @@ $ sudo chroot /tmp/scratch ./a.out
 0x7f891d95e419 0x7f891d95e7e0 hello!
 ```
 
-So... how does it work when no loader is present in the environment? Well, what is the only thing that we link in our bare-bone program? Libc! And what does libc contain? You guess it, a loader! 
+So... how does it work when no loader is present in the environment? Well, what is the only thing that we link in our bare-bone program? Libc! And what does libc contain? You guessed it, a loader! 
 
 For musl, it's the file `ldso/dlstart.c` and that's the code that runs before our `main`. Effectively libc doubles as a loader. And when statically linked, the loader gets embedded in our application and runs at startup before our code.
 
-That means that we can have our cake and eat it too: static linking and PIE!
+That means that we can have our cake and eat it too: static linking and PIE! No loader required in the environment.
 
 
 So, how can we coerce Go to do the same?
@@ -195,6 +193,6 @@ $ sudo chroot /tmp/scratch ./main
 
 'Static PIE', or statically linked PIE executables, are a relatively new development: OpenBSD [added](https://www.openbsd.org/papers/asiabsdcon2015-pie-slides.pdf) that in 2015 and builds all system executables in that mode, Clang only [added](https://reviews.llvm.org/D58307) the flag in 2019, etc. Apparently the Go linker does not support this yet, I suppose because it does not ship with a loader and so has to rely on the libc loader (if someone knows for sure, I'd be curious to know!). Still I think it's great to do since we get the best of both worlds, only requiring a little bit of finagling with linker flags.
 
-A further hardening that I have not yet explored but is on my todo list is [read-only relocations](https://www.redhat.com/en/blog/hardening-elf-binaries-using-relocation-read-only-relro) which makes the Global Offset Table read-only to prevent an attacker from overwriting the relocatio entries there.
+A further hardening on top of PIE, that I have not yet explored yet, but is on my todo list, is [read-only relocations](https://www.redhat.com/en/blog/hardening-elf-binaries-using-relocation-read-only-relro) which makes the Global Offset Table read-only to prevent an attacker from overwriting the relocation entries there.
 
 
