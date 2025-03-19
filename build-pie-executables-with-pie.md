@@ -1,4 +1,4 @@
-Title: Build PIE executables in Go: more involved than expected
+Title: Build PIE executables in Go: I got nerd-sniped
 Tags: Go, PIE
 ---
 
@@ -6,7 +6,7 @@ Tags: Go, PIE
 
 Lately I have been hardening the build at work of our Go services and one (seemingly) low-hanging fruit was [PIE](https://en.wikipedia.org/wiki/Position-independent_code). This is code built to be relocatable, meaning it can be loaded by the operating system at any memory address. That complicates the work of an attacker because they typically want to manipulate the return address of the current function (e.g. by overwriting the stack due to a buffer overflow) to jump to a specific function e.g. `system()` from libc to pop a shell. That's easy if `system` is always at the same address. 
 
-If the target function is loaded at a different address each time, it makes it a bit more difficult for the attacker to find it. This approach has been supported for more than two decades by most OSes and toolchains and there is practially no downside. Some people report a single digit percent slowdown in rare cases although it's not the rule. Go supports PIE as well, however this is not the default so we have to opt in. 
+If the target function is loaded at a different address each time, it makes it more difficult for the attacker to find it. This approach has been supported for more than two decades by most OSes and toolchains and there is practially no downside. Some people report a single digit percent slowdown in rare cases although it's not the rule. Go supports PIE as well, however this is not the default so we have to opt in. 
 
 PIE is especially desirable when using CGO to call C functions from Go which is my case at work. 
 But also Go is [not entirely memory safe](https://blog.stalkr.net/2015/04/golang-data-races-to-break-memory-safety.html) so I'd argue having PIE enabled in all cases is preferrable.
@@ -37,58 +37,68 @@ Now, let's add the `-buildmode=pie` option:
 ```sh
 $ go build -buildmode=pie ./main.go
 $ file ./main
-./main: ELF 64-bit LSB pie executable [..] dynamically linked [..] 
+./main: ELF 64-bit LSB pie executable [..] dynamically linked, interpreter /lib64/ld-linux-x86-64.so.2 [..]
 ```
 
-Ok, it worked, but also: why did we go from a statically linked file to a dynamically linked executable? PIE should be orthogonal to static/dynamic linking! Or is it? We'll come back to that.
+Ok, it worked, but also: why did we go from a statically linked file to a dynamically linked executable? PIE should be orthogonal to static/dynamic linking! Or is it?
 
-Now, that's an isse because we deploy our freshly built PIE executable in a distroless Docker container where there is not even a libc available or the loader `ld.so`. 
+### A helpful mental model
+
+I'd argue that the wording of the tools and the content online is confusing.
+
+For example, invoking `lld` with the above executable prints `statically linked`. But `file` prints `dynamically linked`! So which is it?
+
+A [helpful mental model](https://www.quora.com/Systems-Programming/What-is-the-exact-difference-between-dynamic-loading-and-dynamic-linking/answer/Jeff-Darcy) is to split *linking* from *loading* and have thus two orthogonal dimensions:
+
+- static linking, static loading
+- static linking, dynamic loading
+- dynamic linking, static loading
+- dynamic linking, dynamic loading
+
+The first dimension (static vs dynamic linking) is decided by the field 'Type' in the ELF header (bytes 16-20): if it's `EXEC`, it's a statically linked executable. If it's `DYN`, it's a shared object file or a statically linked PIE executable.
+
+The second dimension (static vs dynamic loading) is decided by the ELF program headers: if there is one program header of type `INTERP` (which specifies the loader to use), our executable is using dynamic loading meaning it requires a loader (a.k.a interpreter) at runtime. Otherwise it does not. This aspect can be observed with `readelf`:
+
+```sh
+$ readelf --program-headers ./main
+[..]
+Elf file type is DYN (Position-Independent Executable file)
+[..]
+Program Headers:
+  Type           Offset             VirtAddr           PhysAddr
+                 FileSiz            MemSiz              Flags  Align
+  [..]
+  INTERP         0x0000000000000fe4 0x0000000000400fe4 0x0000000000400fe4
+                 0x000000000000001c 0x000000000000001c  R      0x1
+      [Requesting program interpreter: /lib64/ld-linux-x86-64.so.2]
+  [..]
+```
+
+Our newly built Go executable is in the second category: static linking, dynamic loading.
+
+
+And that's an issue because we deploy our freshly built PIE executable in a distroless Docker container where there is not even a libc available or the loader `ld.so`. 
 And we get a nice cryptic error at runtime:
 
 ```
 exec /home/nonroot/my-service: no such file or directory
 ```
 
-That's because our executable is dynamically linked and now requires the loader `ld.so` to be present. Which means we now need to change our Docker image to include a loader.
+It means we now need to change our Docker image to include a loader at runtime.
 
-If we are shipping Go binaries to customer machines, we'd also like to keep them statically linked to be sure they will work regardless of the glibc version, etc.
-
-So not ideal. What can we do?
+So not ideal. What can we do? We'd like to be in the first category: static linking, static loading.
 
 
 ## Troubleshooting the problem
 
-
-### The how
-
-Statically or dynamically linking an executable is decided by the linker flags. Let's have a look at them by passing the `-x` option:
-
-```sh
-$ go build -x main.go
-[..] /home/pg/Downloads/go/pkg/tool/linux_amd64/link [..] -buildmode=exe 
-```
-
-The linker shipping with Go, `link`, is used. This is in Go parlance: 'internal mode'. 'external mode' is where linking is delegated to an external linker e.g. `ld`.
-
-Now let's see what happens in PIE mode:
-
-```sh
-$ go build -buildmode-pie -x main.go
-[..]
-/home/pg/Downloads/go/pkg/tool/linux_amd64/link [..] -installsuffix shared -buildmode=pie 
-```
-
-The `shared` flag is sneakily passed to the Go linker. That explains how it happened, but not yet why.
-
-### The why
 
 Back to our central question: 
 
 > PIE is orthogonal to static/dynamic linking! Or is it?
 
 
-Well...no. It turns out that PIE was initially tailored to dynamically linked executables:
-The loader loads at startup the sections of the executable at different places in memory, fills (eagerly or lazily) in a global table (the [GOT](https://en.wikipedia.org/wiki/Global_Offset_Table)) the locations of symbols. And voila.
+Well...no. It turns out that PIE was initially tailored to executables using dynamic loading. 
+The loader loads at startup the sections of the executable at different places in memory, fills (eagerly or lazily) in a global table (the [GOT](https://en.wikipedia.org/wiki/Global_Offset_Table)) the locations of symbols. And voila, functions from different ELF objects (e.g. functions from libc) are placed randomly in memory.
 
 So how does it work with a statically linked executable where a loader is not even *present* on the system? Here's a bare-bone C program that uses PIE *and* is statically linked:
 
@@ -113,9 +123,11 @@ $ sudo chroot /tmp/scratch ./a.out
 0x7f891d95e419 0x7f891d95e7e0 hello!
 ```
 
-So... how does it work when no loader is present in the environment? Well, what is the only thing that we link in our bare-bone program? Libc! And what libc contain? You guess it, a loader! 
+So... how does it work when no loader is present in the environment? Well, what is the only thing that we link in our bare-bone program? Libc! And what does libc contain? You guess it, a loader! 
 
-For musl, it's the file `ldso/dlstart.c` and that's the code that runs before our `main`. Effectively libc doubles as a loader. That means that we can have our cake and eat it too: static linking and PIE.
+For musl, it's the file `ldso/dlstart.c` and that's the code that runs before our `main`. Effectively libc doubles as a loader. And when statically linked, the loader gets embedded in our application and runs at startup before our code.
+
+That means that we can have our cake and eat it too: static linking and PIE!
 
 
 So, how can we coerce Go to do the same?
@@ -179,6 +191,10 @@ $ sudo chroot /tmp/scratch ./main
 0x48f0e0 0x48a160 hello
 ```
 
+## Conclusion
 
+'Static PIE', or statically linked PIE executables, are a relatively new development: OpenBSD [added](https://www.openbsd.org/papers/asiabsdcon2015-pie-slides.pdf) that in 2015 and builds all system executables in that mode, Clang only [added](https://reviews.llvm.org/D58307) the flag in 2019, etc. Apparently the Go linker does not support this yet, I suppose because it does not ship with a loader and so has to rely on the libc loader (if someone knows for sure, I'd be curious to know!). Still I think it's great to do since we get the best of both worlds, only requiring a little bit of finagling with linker flags.
+
+A further hardening that I have not yet explored but is on my todo list is [read-only relocations](https://www.redhat.com/en/blog/hardening-elf-binaries-using-relocation-read-only-relro) which makes the Global Offset Table read-only to prevent an attacker from overwriting the relocatio entries there.
 
 
