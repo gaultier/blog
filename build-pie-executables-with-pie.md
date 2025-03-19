@@ -193,6 +193,7 @@ $ sudo chroot /tmp/scratch ./main
 
 'Static PIE', or statically linked PIE executables, are a relatively new development: OpenBSD [added](https://www.openbsd.org/papers/asiabsdcon2015-pie-slides.pdf) that in 2015 and builds all system executables in that mode, Clang only [added](https://reviews.llvm.org/D58307) the flag in 2019, etc. Apparently the Go linker does not support this yet, I suppose because it does not ship with a loader and so has to rely on the libc loader (if someone knows for sure, I'd be curious to know!). Still I think it's great to do since we get the best of both worlds, only requiring a little bit of finagling with linker flags.
 
-A further hardening on top of PIE, that I have not yet explored yet, but is on my todo list, is [read-only relocations](https://www.redhat.com/en/blog/hardening-elf-binaries-using-relocation-read-only-relro) which makes the Global Offset Table read-only to prevent an attacker from overwriting the relocation entries there.
+Also it would be nice that the Go documentation mentions at least a little about this topic. In the meantime, there is this article.
 
+A further hardening on top of PIE, that I have not yet explored yet, but is on my todo list, is [read-only relocations](https://www.redhat.com/en/blog/hardening-elf-binaries-using-relocation-read-only-relro) which makes the Global Offset Table read-only to prevent an attacker from overwriting the relocation entries there. On Fedora for example, all system executables are built with this mitigation on.
 
