@@ -12,6 +12,8 @@ Ideas for articles:
 - [ ] How CGO calls are implemented in assembly
 - [ ] How I develop Windows applications from the comfort of Linux
 - [ ] Add a JS/Wasm live running version of the programs described in each article. As a fallback: Video/Gif.
+    + [ ] Kahn's algorithm
+- [ ] Blog search implementation
 
 Blog implementation:
 
