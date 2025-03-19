@@ -1,5 +1,5 @@
 Title: Build PIE executables in Go: I got nerd-sniped
-Tags: Go, PIE, Linux, Musl
+Tags: Go, PIE, Linux, Musl, Security
 ---
 
 ## Context
@@ -144,7 +144,7 @@ $ CGO_ENABLED=0 go build -buildmode=pie -ldflags '-linkmode external -extldflags
 -linkmode requires external (cgo) linking, but cgo is not enabled
 ```
 
-We use `musl-gcc` again for simplicity but you can also use Zig, or provide your own build of musl, etc:
+We use `musl-gcc` again for simplicity but you can also use the Zig build system to automatically build musl from source, or provide your own build of musl, etc:
 
 ```sh
 $ CC=musl-gcc go build -ldflags '-linkmode external -extldflags "--static-pie"' -buildmode=pie main.go
