@@ -19,7 +19,7 @@ Blog implementation:
 - [x] Support markdown syntax in article title in metadata
 - [x] Use libcmark to simplify parsing
 - [ ] Link to related articles at the end (requires post-processing after all articles have been generated)
-- [ ] Search
+- [x] Search
   + May require proper markdown parsing (e.g. with libcmark) to avoid having html/markdown elements in search results, to get the (approximate) location of each results (e.g. parent title), and show a rendered excerpt in search results. Perhaps simply post-process html?
   + Results are shown inline
   + Results show (some) surrounding text
