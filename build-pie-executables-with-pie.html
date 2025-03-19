@@ -111,9 +111,9 @@
   <a class="hash-anchor" href="#132857161-context" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>Lately I have been hardening the build at work of our Go services and one (seemingly) low-hanging fruit was <a href="https://en.wikipedia.org/wiki/Position-independent_code">PIE</a>. This is code built to be relocatable, meaning it can be loaded by the operating system at any memory address. That complicates the work of an attacker because they typically want to manipulate the return address of the current function (e.g. by overwriting the stack due to a buffer overflow) to jump to a specific function e.g. <code>system()</code> from libc to pop a shell. That's easy if <code>system</code> is always at the same address.</p>
-<p>If the target function is loaded at a different address each time, it makes it more difficult for the attacker to find it. This approach has been supported for more than two decades by most OSes and toolchains and there is practially no downside. Some people report a single digit percent slowdown in rare cases although it's not the rule. Go supports PIE as well, however this is not the default so we have to opt in.</p>
+<p>If the target function is loaded at a different address each time, it makes it more difficult for the attacker to find it. This approach has been supported for more than two decades by most OSes and toolchains and there is practically no downside. Some people report a single digit percent slowdown in rare cases although it's not the rule. Go supports PIE as well, however this is not the default so we have to opt in.</p>
 <p>PIE is especially desirable when using CGO to call C functions from Go which is my case at work.
-But also Go is <a href="https://blog.stalkr.net/2015/04/golang-data-races-to-break-memory-safety.html">not entirely memory safe</a> so I'd argue having PIE enabled in all cases is preferrable.</p>
+But also Go is <a href="https://blog.stalkr.net/2015/04/golang-data-races-to-break-memory-safety.html">not entirely memory safe</a> so I'd argue having PIE enabled in all cases is preferable.</p>
 <p>So let's look into enabling it.</p>
 <h2 id="4000567472-how-hard-can-it-be">
   <a class="title" href="#4000567472-how-hard-can-it-be">How hard can it be?</a>
@@ -185,7 +185,7 @@ The loader loads at startup the sections of the executable at different places i
 
 int main() { printf(&quot;%p %p hello!\n&quot;, &amp;main, &amp;printf); }
 </code></pre>
-<p>We compile it, create an empty chroot with only our executable in it, and run it multiple times, to observe that the functions <code>main</code> and <code>printf</code> are indeed loaded in different places of memory each time:</p>
+<p>We compile it, create an empty <code>chroot</code> with only our executable in it, and run it multiple times, to observe that the functions <code>main</code> and <code>printf</code> are indeed loaded in different places of memory each time:</p>
 <pre><code class="language-sh">$ musl-gcc pie.c -fPIE -static-pie
 $ file ./a.out
 ./a.out: ELF 64-bit LSB pie executable [..] static-pie linked [..]
@@ -215,7 +215,7 @@ $ file ./main
 ./main: ELF 64-bit LSB pie executable [..] static-pie linked
 </code></pre>
 <p>Yeah!</p>
-<p>We can check it works in our empty chroot again. Here's is our Go program:</p>
+<p>We can check it works in our empty <code>chroot</code> again. Here's is our Go program:</p>
 <pre><code class="language-go">package main
 
 import (
@@ -252,7 +252,7 @@ $ sudo chroot /tmp/scratch ./main
 </h2>
 <p>'Static PIE', or statically linked PIE executables, are a relatively new development: OpenBSD <a href="https://www.openbsd.org/papers/asiabsdcon2015-pie-slides.pdf">added</a> that in 2015 and builds all system executables in that mode, Clang only <a href="https://reviews.llvm.org/D58307">added</a> the flag in 2019, etc. Apparently the Go linker does not support this yet, I suppose because it does not ship with a loader and so has to rely on the libc loader (if someone knows for sure, I'd be curious to know!). Still I think it's great to do since we get the best of both worlds, only requiring a little bit of finagling with linker flags.</p>
 <p>Also it would be nice that the Go documentation mentions at least a little about this topic. In the meantime, there is this article.</p>
-<p>A further hardening on top of PIE, that I have not yet explored yet, but is on my todo list, is <a href="https://www.redhat.com/en/blog/hardening-elf-binaries-using-relocation-read-only-relro">read-only relocations</a> which makes the Global Offset Table read-only to prevent an attacker from overwriting the relocation entries there. On Fedora for example, all system executables are built with this mitigation on.</p>
+<p>A further hardening on top of PIE, that I have not yet explored yet, but is on my to do list, is <a href="https://www.redhat.com/en/blog/hardening-elf-binaries-using-relocation-read-only-relro">read-only relocations</a> which makes the Global Offset Table read-only to prevent an attacker from overwriting the relocation entries there. On Fedora for example, all system executables are built with this mitigation on.</p>
 <p><a href="/blog"> ⏴ Back to all articles</a></p>
 
 <blockquote id="donate">

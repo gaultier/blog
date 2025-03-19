@@ -2,7 +2,7 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
 <title>Philippe Gaultier's blog</title>
 <link href="https://gaultier.github.io/blog"/>
-<updated>2025-03-19T10:40:20+01:00</updated>
+<updated>2025-03-19T10:41:48+01:00</updated>
 <author>
 <name>Philippe Gaultier</name>
 </author>
@@ -260,7 +260,7 @@
 <title>Build PIE executables in Go: I got nerd-sniped</title>
 <link href="https://gaultier.github.io/blog/build-pie-executables-with-pie.html"/>
 <id>urn:uuid:dc223815-7853-5330-8e0c-46251ae2419d</id>
-<updated>2025-03-19T10:40:20+01:00</updated>
+<updated>2025-03-19T10:41:48+01:00</updated>
 <published>2025-03-18T14:55:21+01:00</published>
 </entry>
 </feed>

@@ -6,10 +6,10 @@ Tags: Go, PIE, Linux, Musl
 
 Lately I have been hardening the build at work of our Go services and one (seemingly) low-hanging fruit was [PIE](https://en.wikipedia.org/wiki/Position-independent_code). This is code built to be relocatable, meaning it can be loaded by the operating system at any memory address. That complicates the work of an attacker because they typically want to manipulate the return address of the current function (e.g. by overwriting the stack due to a buffer overflow) to jump to a specific function e.g. `system()` from libc to pop a shell. That's easy if `system` is always at the same address. 
 
-If the target function is loaded at a different address each time, it makes it more difficult for the attacker to find it. This approach has been supported for more than two decades by most OSes and toolchains and there is practially no downside. Some people report a single digit percent slowdown in rare cases although it's not the rule. Go supports PIE as well, however this is not the default so we have to opt in. 
+If the target function is loaded at a different address each time, it makes it more difficult for the attacker to find it. This approach has been supported for more than two decades by most OSes and toolchains and there is practically no downside. Some people report a single digit percent slowdown in rare cases although it's not the rule. Go supports PIE as well, however this is not the default so we have to opt in. 
 
 PIE is especially desirable when using CGO to call C functions from Go which is my case at work. 
-But also Go is [not entirely memory safe](https://blog.stalkr.net/2015/04/golang-data-races-to-break-memory-safety.html) so I'd argue having PIE enabled in all cases is preferrable.
+But also Go is [not entirely memory safe](https://blog.stalkr.net/2015/04/golang-data-races-to-break-memory-safety.html) so I'd argue having PIE enabled in all cases is preferable.
 
 So let's look into enabling it.
 
@@ -106,7 +106,7 @@ So how does it work with a statically linked executable where a loader is not ev
 int main() { printf("%p %p hello!\n", &main, &printf); }
 ```
 
-We compile it, create an empty chroot with only our executable in it, and run it multiple times, to observe that the functions `main` and `printf` are indeed loaded in different places of memory each time:
+We compile it, create an empty `chroot` with only our executable in it, and run it multiple times, to observe that the functions `main` and `printf` are indeed loaded in different places of memory each time:
 
 ```sh
 $ musl-gcc pie.c -fPIE -static-pie
@@ -149,7 +149,7 @@ $ file ./main
 
 Yeah!
 
-We can check it works in our empty chroot again. Here's is our Go program:
+We can check it works in our empty `chroot` again. Here's is our Go program:
 
 ```go
 package main
@@ -195,5 +195,5 @@ $ sudo chroot /tmp/scratch ./main
 
 Also it would be nice that the Go documentation mentions at least a little about this topic. In the meantime, there is this article.
 
-A further hardening on top of PIE, that I have not yet explored yet, but is on my todo list, is [read-only relocations](https://www.redhat.com/en/blog/hardening-elf-binaries-using-relocation-read-only-relro) which makes the Global Offset Table read-only to prevent an attacker from overwriting the relocation entries there. On Fedora for example, all system executables are built with this mitigation on.
+A further hardening on top of PIE, that I have not yet explored yet, but is on my to do list, is [read-only relocations](https://www.redhat.com/en/blog/hardening-elf-binaries-using-relocation-read-only-relro) which makes the Global Offset Table read-only to prevent an attacker from overwriting the relocation entries there. On Fedora for example, all system executables are built with this mitigation on.
 
