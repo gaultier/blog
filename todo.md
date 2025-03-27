@@ -14,6 +14,7 @@ Ideas for articles:
 - [ ] Add a JS/Wasm live running version of the programs described in each article. As a fallback: Video/Gif.
     + [ ] Kahn's algorithm
 - [ ] Blog search implementation
+- [ ] C++ web server undefined behavior bug
 
 Blog implementation:
 
