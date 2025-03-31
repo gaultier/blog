@@ -97,6 +97,8 @@ I suppose that folks that ship executables to customer workstations would also h
 
 Also possibly people who want to obfuscate what their program does at startup and do not want anyone monkeying around with environment variables that impact the loader such as `LD_PRELOAD` (so, perhaps malware or anti-malware programs?).
 
+*Addendum: I have found at least one [CVE](https://seclists.org/oss-sec/2023/q4/18) in the glibc loader, and it seems it's a frequent occurrence, so in my opinion that's reason enough to remove one moving piece from the equation and prefer static loading!*
+
 ## Troubleshooting the problem
 
 
