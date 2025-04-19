@@ -1,3 +1,6 @@
 [submodule "submodules/cstd"]
 	path = submodules/cstd
 	url = https://github.com/gaultier/cstd.git
+[submodule "submodules/cmark-gfm"]
+	path = submodules/cmark-gfm
+	url = https://github.com/github/cmark-gfm.git
