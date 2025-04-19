@@ -392,8 +392,9 @@ static PgString datetime_to_date(PgString datetime) {
       .stdout_capture = PG_CHILD_PROCESS_STD_IO_PIPE,
       .stderr_capture = PG_CHILD_PROCESS_STD_IO_PIPE,
   };
-  PgProcessResult res_spawn = pg_process_spawn(
-      PG_S("cmark-gfm"), PG_DYN_SLICE(PgStringSlice, args), options, allocator);
+  PgProcessResult res_spawn =
+      pg_process_spawn(PG_S("./submodules/cmark-gfm/.build/src/cmark-gfm"),
+                       PG_DYN_SLICE(PgStringSlice, args), options, allocator);
   PG_ASSERT(0 == res_spawn.err);
 
   PgProcess process = res_spawn.res;
