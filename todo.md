@@ -15,6 +15,11 @@ Ideas for articles:
     + [ ] Kahn's algorithm
 - [ ] Blog search implementation
 - [ ] C++ web server undefined behavior bug
+- [ ] Weird and surprising things about x64 assembly
+  + non symetric mnemonics (`cmp 1, rax` vs `cmp rax, 1`)
+  + some different mnemonics encode to the same bytes (`jne`, `jz`)
+  + diffent calling convention for functions & system calls in the SysV ABI (4th argument)
+  + no (to my knowledge) mnemonic accepts 2 immediates or effective addresses as operands  e.g. `cmp 1, 0`
 
 Blog implementation:
 
