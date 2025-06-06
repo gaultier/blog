@@ -22,6 +22,21 @@ Ideas for articles:
   + no (to my knowledge) mnemonic accepts 2 immediates or effective addresses as operands  e.g. `cmp 1, 0`
 - [ ] Golang data race due to closure capture
 - [ ] ast-grep to search a codebase
+    ```
+    id: find-mtx-fields
+    message: Mutex fields found
+    severity: info
+    language: go
+    rule:
+      kind: field_declaration
+      all:
+        - has: 
+            field: name
+            regex: "(m|M)(u|tx)$"
+        - has:
+            field: type
+            regex: "Mutex"
+    ```
 - [ ] How to get the current SQL schema when all you have is lots of migrations (deltas)
 
 Blog implementation:
