@@ -32,7 +32,8 @@ Ideas for articles:
       all:
         - has: 
             field: name
-            regex: "(m|M)(u|tx)$"
+            # Ignore nameless fields.
+            regex: ".+"
         - has:
             field: type
             regex: "Mutex"
