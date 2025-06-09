@@ -147,9 +147,9 @@ And here are the statistics (commit `7800f4f`, 2025-06-08):
 | `lock`             | 6   |
 | `mux`              | 0   |
 
-So according to these statistics: if you want to follow the same naming convention as the Go project primary one, **use `xxxMu` as a name for your mutexes**.
+So according to these statistics: if you want to follow the same naming convention as the Go project, use `xxxMu` as a name for your mutexes.
 
-I would also add, and this is subjective: **name the mutex after the variable it protects for clarity, e.g.: `bar` and `barMu`**. In nearly every case in the Go project where this rule of thumb was not followed, a code comment was present to explain which variable the mutex protects. We might as well have this information in the mutex variable name.
+More importantly, I would add, and this is subjective: **name the mutex after the variable it protects for clarity, e.g.: `bar` and `barMu`**. In nearly every case in the Go project where this rule of thumb was not followed, a code comment was present to explain which variable the mutex protects. We might as well have this information in the mutex variable name.
 
 Even for cases where the mutex protects multiple variables, the Go developers often picked one of the variables and named the mutex after it:
 
