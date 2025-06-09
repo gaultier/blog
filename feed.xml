@@ -2,7 +2,7 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
 <title>Philippe Gaultier's blog</title>
 <link href="https://gaultier.github.io/blog"/>
-<updated>2025-06-09T23:31:04+02:00</updated>
+<updated>2025-06-09T23:31:29+02:00</updated>
 <author>
 <name>Philippe Gaultier</name>
 </author>
@@ -268,7 +268,7 @@
 <title>What should your mutexes be named?</title>
 <link href="https://gaultier.github.io/blog/what_should_your_mutexes_be_named.html"/>
 <id>urn:uuid:0917ef9a-670e-5705-be73-b007cd362f86</id>
-<updated>2025-06-09T23:31:04+02:00</updated>
+<updated>2025-06-09T23:31:29+02:00</updated>
 <published>2025-06-09T23:30:04+02:00</published>
 </entry>
 </feed>
