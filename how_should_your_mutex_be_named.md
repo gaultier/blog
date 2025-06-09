@@ -23,7 +23,7 @@ barMu.Unlock()
 
 But I paused for a second: What should the mutex be named? I usually use the `xxxMtx` convention. 
 
-To avoid a sterile 'you vs me' debate, I thought: What do other people do? What naming convention does the Go standard library use, if any? 
+To avoid a sterile 'you vs me' debate, I thought: What do other people do? What naming convention is in use in the project, if any? I'll ddemonstrate this method in the realm of the Go standard library.
 
 And more generally, what is the best way to find out what naming conventions are used in a project? Since I just started a new job, it's a prevalent question which will come again and again - there is a lot of unknown code ahead of me! Thus, I need a good tool to find the answers quickly.
 
