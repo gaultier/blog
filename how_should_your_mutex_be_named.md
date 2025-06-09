@@ -29,9 +29,9 @@ barMux.Unlock()
 
 But I paused for a second: What should the mutex be named? I usually use the `xxxMtx` convention, so I'd have named it `barMtx`. 
 
-To avoid a sterile 'you vs me' debate, I thought: What do other people do? What naming convention is in use in the project, if any? I'll demonstrate this method in the realm of the Go standard library.
+To avoid a sterile 'you vs me' debate, I thought: What do other people do? What naming convention is in use in the project, if any? I'll demonstrate this method with the code of the Go standard library.
 
-And more generally, what is the best way to find out what naming conventions or code patterns are used in a project? Since I just started this new job, it's a prevalent question which will come again and again - there is a lot of unknown code ahead of me! Thus, I need a good tool to find the answers quickly.
+And more generally, what is the best way to find out what naming conventions or code patterns are used in a project you don't know? I need a good tool to find these answers quickly.
 
 ## Structural search
 
@@ -145,12 +145,13 @@ And here are the statistics (commit `7800f4f`, 2025-06-08):
 | `mutex`            | 11  |
 | something else     | 11  |
 | `lock`             | 6   |
+| `mux`              | 0   |
 
 So according to these statistics: if you want to follow the same naming convention as the Go project primary one, **use `xxxMu` as a name for your mutexes**.
 
 I would also add, and this is subjective: **name the mutex after the variable it protects for clarity, e.g.: `bar` and `barMu`**. In nearly every case in the Go project where this rule of thumb was not followed, a code comment was present to explain which variable the mutex protects. We might as well have this information in the mutex variable name.
 
-Even for cases where the mutex protects multiple variables, the Go developers often picked one of the variables and named  the variable after it:
+Even for cases where the mutex protects multiple variables, the Go developers often picked one of the variables and named the mutex after it:
 
 ```go
 type Link struct {
@@ -172,7 +173,7 @@ $ rg -t go '^\s+\w+\s+sync\.Mutex$'
 
 This works since Go is a language with only one way to define a `struct` field, but some languages would be more difficult.
 
-Another way to only find field declarations would be to use AWK to remember whether or not we are inside a `struct` definition:
+A slightly smarter way, to only find field declarations, would be to use AWK to remember whether or not we are inside a `struct` definition:
 
 ```awk
 /\s+struct\s+/ { in_struct = 1 }
@@ -199,7 +200,7 @@ These approaches are not bullet-proof, but they will find most relevant code loc
 ## Limitations of structural search tools
 
 - Most if not all structural search tools only work on a valid AST, and not every language is supported by every tool.
-- The rule syntax is arcane and in parts language specific.
+- The rule syntax is arcane and in parts language specific (see the addendum for details).
 - Speed can be an issue: `ast-grep` is relatively fast but still slower than `ripgrep` and it states that it is one of the fastest in its category. On my (admittedly very old) laptop:
   + `ast-grep` takes  ~10s to scan ~2 millions LOC. Which is pretty good! 
   + `find + awk` takes ~1.5s.
@@ -311,4 +312,4 @@ note[find-mtx-fields-vars]: Mutex variables found
 
 ---
 
-Funnily, it seems that the C code has less variability in naming than the Go code. It's mostly `xxxlock`.
+Funnily, it seems that: 1) the C code has much less variability in naming than the Go code: it's mostly `xxxlock`, and 2) The naming in Go code does not stem from the C code since it's completely different.
