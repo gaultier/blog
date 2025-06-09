@@ -139,12 +139,12 @@ END {
 
 And here are the statistics (commit `7800f4f`, 2025-06-08):
 
-|Variable name suffix|count|
+|Variable name suffix|Count|
 |--------------------|-----|
-| `lock`             | 6   |
-| `mutex`            | 11  |
 | `mu`               | 131 |
+| `mutex`            | 11  |
 | something else     | 11  |
+| `lock`             | 6   |
 
 So according to these statistics: if you want to follow the same naming convention as the Go project primary one, **use `xxxMu` as a name for your mutexes**.
 
