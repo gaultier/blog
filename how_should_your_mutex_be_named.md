@@ -1,5 +1,5 @@
 Title: How should your mutexes be named?
-Tags: Go, Grep, Search
+Tags: Go, Awk, Search
 ---
 
 The other day a Pull Request popped up at work, which made me think for a bit. It looked like this (Go, simplified):
@@ -19,21 +19,23 @@ bar += 1
 barMu.Unlock()
 ```
 
-*Yes, in this particular case an atomic would be used instead of a mutex but that's just to illustrate.*
+*Yes, in this simplistic case an atomic would likely be used instead of a mutex but that's just to illustrate.*
 
-But I paused for a second: What should the mutex be named? I usually use the `xxxMtx` convention. 
+But I paused for a second: What should the mutex be named? I usually use the `xxxMtx` convention, so I'd have named it `barMtx`. 
 
 To avoid a sterile 'you vs me' debate, I thought: What do other people do? What naming convention is in use in the project, if any? I'll ddemonstrate this method in the realm of the Go standard library.
 
-And more generally, what is the best way to find out what naming conventions are used in a project? Since I just started a new job, it's a prevalent question which will come again and again - there is a lot of unknown code ahead of me! Thus, I need a good tool to find the answers quickly.
+And more generally, what is the best way to find out what naming conventions or code patterns are used in a project? Since I just started a new job, it's a prevalent question which will come again and again - there is a lot of unknown code ahead of me! Thus, I need a good tool to find the answers quickly.
 
 ## Structural search
 
-I use `ripgrep`, `ag` and `awk` all the time when developing (probably at least once a minute), and they can do that, kind of, since they operate on raw text. What I often actually need to do is *search the code structurally*, meaning search the Abstract Syntax Tree (AST). And the good news is, there are tools nowadays than can do that! I never took the time to learn one, even though the need came up a few times, so I felt this is finally the occasion.
+I use `ripgrep` (or equivalent) and `awk` all the time when developing, probably at least once a minute, and these tools can do that... kind of, since they operate on raw text. 
+
+What I often actually need to do is *search the code structurally*, meaning search the Abstract Syntax Tree (AST). And the good news is, there are tools nowadays than can do that! I never took the time to learn one, even though the need came up a few times, so I felt this is finally the occasion.
 
 Enter [ast-grep](https://github.com/ast-grep/ast-grep). Surprisingly, the main way to search with it is to write a rule file in YAML. A command line search also exists but seems much more limited. 
 
-Let's then search for structure fields that are a mutex:
+Let's thus search for 'structure fields' whose type is a 'mutex':
 
 ```yaml
 id: find-mtx-fields
@@ -83,7 +85,10 @@ note[find-mtx-fields]: Mutex fields found
 [...]
 ```
 
-Very useful. The tool can do much more, but that's enough for us to discover that there isn't *one* naming convention in this case. Also, the mutex is not always named after the variable it protects. So, is there at least a convention used in the majority of cases?
+Very useful. The tool can do much more, but that's enough for us to discover that there isn't *one* naming convention in use. Also, the mutex is not always named after the variable it protects (e.g.: `mutex` protects `seq`).
+
+
+So, is there at least a convention used in the majority of cases? How can we get aggregate the results?
 
 ## A naming convention to rule them all
 
@@ -127,7 +132,9 @@ mutex 11
 mu 131
 ```
 
-So according to statistics: if you want to follow the same naming conventions as the Go project, **use `xxxMu` as a name for your mutexes**. I would also add, and this is subjective: **name the mutex after the variable it protects for clarity, e.g.: `bar` and `barMu`**. In nearly every case in the Go project where this rule of thumb was not followed, a code comment was present to explain which variable the mutex protects. Might as well have this information in the mutex variable name I think. Even for cases where the mutex protects multiple variables, the Go developers often picked one of the variables and named  the variable after it:
+So according to these statistics: if you want to follow the same naming conventions as the Go project, **use `xxxMu` as a name for your mutexes**.
+
+I would also add, and this is subjective: **name the mutex after the variable it protects for clarity, e.g.: `bar` and `barMu`**. In nearly every case in the Go project where this rule of thumb was not followed, a code comment was present to explain which variable the mutex protects. We might as well have this information in the mutex variable name. Even for cases where the mutex protects multiple variables, the Go developers often picked one of the variables and named  the variable after it:
 
 ```
 note[find-mtx-fields]: Mutex fields found
@@ -169,21 +176,23 @@ type Foo struct {
 }
 ```
 
+These approaches are not bullet-proof, but they will find most relevant code locations, which is enough.
+
 ## Limitations of structural search tools
 
 - Most if not all structural search tools only work on a valid AST, and not every language is supported by every tool.
+- The rule syntax is arcane and in parts language specific.
 - Speed can be an issue: `ast-grep` is relatively fast but still slower than `ripgrep` and it states that it is one of the fastest in its category. On my (admittedly very old) laptop:
   + `ast-grep` takes  ~10s to scan ~2 millions LOC. Which is pretty good! 
-  + `find + awk` ~1.5s.
+  + `find + awk` takes ~1.5s.
   + `ripgrep` takes ~100ms (I'm impressed).
-- The rule syntax is arcane and in parts language specific.
 
 
 
 ## Conclusion
 
-I think one structural search program is a very useful tool to have in your toolbox as a software developer, especially if you intend to use it as a linter and mass refactoring tool. 
+I think having one structural search program in your toolbox is a good idea, especially if you intend to use it as a linter and mass refactoring tool. 
 
-If all you want to do is a one-time search, text search programs such as `ripgrep` and `awk` probably should probably be your first stab at it.
+If all you want to do is a one-time search, text search programs such as `ripgrep` and `awk` should probably be your first stab at it.
 
-Also, I think I would prefer using a SQL-like syntax to define rules over YAML with pseudo-code constructs like `all`.
+Also, I think I would prefer using a SQL-like syntax to define rules, over writing YAML with pseudo-code constructs.
