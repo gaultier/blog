@@ -23,7 +23,7 @@ barMu.Unlock()
 
 But I paused for a second: What should the mutex be named? I usually use the `xxxMtx` convention. 
 
-To avoid a sterile 'you vs me' debate, I thought: What do other people do? What naming convention does the Go project use, if any? 
+To avoid a sterile 'you vs me' debate, I thought: What do other people do? What naming convention does the Go standard library use, if any? 
 
 And more generally, what is the best way to find out what naming conventions are used in a project? Since I just started a new job, it's a prevalent question which will come again and again. Thus, I need a good tool to find the answers quickly.
 
@@ -125,7 +125,22 @@ mutex 11
 mu 131
 ```
 
-So in conclusion: If you want to follow the same naming conventions as the Go project, use `xxxMu` as a name for your mutexes. I would also add, and this is subjective: name the mutex after the variable it protects for clarity, e.g.: `bar` and `barMu`. In nearly every case in the Go project where this rule was not followed, a code comment explained which variable the mutex protected. Might as well have it in the name I think. Perhaps the Go developers made this choice in situations where one mutex protected multiple variables?
+So in conclusion: If you want to follow the same naming conventions as the Go project, use `xxxMu` as a name for your mutexes. I would also add, and this is subjective: name the mutex after the variable it protects for clarity, e.g.: `bar` and `barMu`. In nearly every case in the Go project where this rule was not followed, a code comment explained which variable the mutex protected. Might as well have it in the name I think. Even for cases where the mutex protects multiple variables, the Go developers often picked one of the variables and named  the variable after it:
+
+```
+note[find-mtx-fields]: Mutex fields found
+     ┌─ cmd/internal/obj/link.go:1154:2
+     │
+1154 │     hashmu             sync.Mutex       // protects hash, funchash
+     │     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+```
+
+## Limitations
+
+- Most if not all structural search tools only work on a valid AST
+- Speed can be an issue: `ast-grep` is relatively fast but still slower than `ripgrep` and it states that it is one of the fastest in its category. It takes on my (admittedly very old laptop) ~10s to scan ~2 millions LOC. Which is pretty good! It's just that `ripgrep` takes ~100ms and `find + awk` ~1.5s.
+- The rule syntax is arcane and in parts language specific.
+
 
 ## Low-tech alternatives
 
@@ -159,3 +174,9 @@ type Foo struct {
 	barMtx sync.Mutex
 }
 ```
+
+## Conclusion
+
+I think one structural search tool is a very useful tool to have in your toolbox as a software developer, especially if you intend to use it as a linter and refactoring tool. If all you want to do is a one-time search, text search programs such as `ripgrep` and `awk` probably should be your first stab at it.
+
+Also, I think I would prefer using a SQL-like syntax to define rules over YAML with pseudo-code constructs like `all`.
