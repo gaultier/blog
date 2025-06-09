@@ -312,4 +312,4 @@ note[find-mtx-fields-vars]: Mutex variables found
 
 ---
 
-Funnily, it seems that: 1) the C code has much less variability in naming than the Go code: it's mostly `xxxlock`, and 2) The naming in Go code does not stem from the C code since it's completely different.
+Funnily, it seems that: 1) the C code has much less variability in naming than the Go code: it's mostly `xxxlock`, and 2) The naming in the Go code does not stem from the C code since it's completely different.
