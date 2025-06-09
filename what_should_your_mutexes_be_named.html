@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>What should your mutexes be named?</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link type="application/atom+xml" href="/blog/feed.xml" rel="self">
+<link rel="shortcut icon" type="image/ico" href="/blog/favicon.ico">
+<link rel="stylesheet" type="text/css" href="main.css">
+<link rel="stylesheet" href="https://unpkg.com/@highlightjs/cdn-assets@11.8.0/styles/default.min.css">
+<script src="highlight.min.js"></script>
+<!-- From https://github.com/odin-lang/odin-lang.org/blob/6f48c2cfb094a42dffd34143884fa958bd9c0ba2/themes/odin/layouts/partials/head.html#L71 -->
+<script src="x86asm.min.js" defer></script>
+<script src="odin_syntax.js" defer></script>
+<script type="module" src="search_index.js" defer></script>
+<script type="module" src="search.js" defer></script>
+</head>
+<body>
+
+<div id="banner">
+    <div id="name">
+        <img id="me" src="me.jpeg">
+        <span>Philippe Gaultier</span>
+    </div>
+    <input id="search" placeholder="🔎 Search" autocomplete=off>
+    <ul>
+      <li> <a href="/blog/body_of_work.html">Body of work</a> </li>
+      <li> <a href="/blog/articles-by-tag.html">Tags</a> </li>
+      <li> <a href="https://github.com/gaultier/resume/raw/master/Philippe_Gaultier_resume_en.pdf">
+          Resume
+        </a> </li>
+
+      <li> <a href="/blog/feed.xml">
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path fill-rule="evenodd" clip-rule="evenodd" d="M5.5 3.5C4.39543 3.5 3.5 4.39543 3.5 5.5V18.5C3.5 19.6046 4.39543 20.5 5.5 20.5H18.5C19.6046 20.5 20.5 19.6046 20.5 18.5V5.5C20.5 4.39543 19.6046 3.5 18.5 3.5H5.5ZM7 19C8.10457 19 9 18.1046 9 17C9 15.8954 8.10457 15 7 15C5.89543 15 5 15.8954 5 17C5 18.1046 5.89543 19 7 19ZM6.14863 10.5052C6.14863 10.0379 6.52746 9.65906 6.99478 9.65906C7.95949 9.65906 8.91476 9.84908 9.80603 10.2183C10.6973 10.5874 11.5071 11.1285 12.1893 11.8107C12.8715 12.4929 13.4126 13.3027 13.7817 14.194C14.1509 15.0852 14.3409 16.0405 14.3409 17.0052C14.3409 17.4725 13.9621 17.8514 13.4948 17.8514C13.0275 17.8514 12.6486 17.4725 12.6486 17.0052C12.6486 16.2627 12.5024 15.5275 12.2183 14.8416C11.9341 14.1556 11.5177 13.5324 10.9927 13.0073C10.4676 12.4823 9.84437 12.0659 9.15842 11.7817C8.47246 11.4976 7.73726 11.3514 6.99478 11.3514C6.52746 11.3514 6.14863 10.9725 6.14863 10.5052ZM7 5.15385C6.53268 5.15385 6.15385 5.53268 6.15385 6C6.15385 6.46732 6.53268 6.84615 7 6.84615C8.33342 6.84615 9.65379 7.10879 10.8857 7.61907C12.1176 8.12935 13.237 8.87728 14.1799 9.82015C15.1227 10.763 15.8707 11.8824 16.3809 13.1143C16.8912 14.3462 17.1538 15.6666 17.1538 17C17.1538 17.4673 17.5327 17.8462 18 17.8462C18.4673 17.8462 18.8462 17.4673 18.8462 17C18.8462 15.4443 18.5397 13.9039 17.9444 12.4667C17.3491 11.0294 16.4765 9.72352 15.3765 8.6235C14.2765 7.52349 12.9706 6.65091 11.5333 6.05558C10.0961 5.46026 8.55566 5.15385 7 5.15385Z" fill="#000000"/>
+        </svg>
+        </a> </li>
+
+      <li> <a href="https://www.linkedin.com/in/philippegaultier/">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" data-supported-dps="24x24" fill="currentColor" class="mercado-match" width="24" height="24" focusable="false">
+              <path d="M20.5 2h-17A1.5 1.5 0 002 3.5v17A1.5 1.5 0 003.5 22h17a1.5 1.5 0 001.5-1.5v-17A1.5 1.5 0 0020.5 2zM8 19H5v-9h3zM6.5 8.25A1.75 1.75 0 118.3 6.5a1.78 1.78 0 01-1.8 1.75zM19 19h-3v-4.74c0-1.42-.6-1.93-1.38-1.93A1.74 1.74 0 0013 14.19a.66.66 0 000 .14V19h-3v-9h2.9v1.3a3.11 3.11 0 012.7-1.4c1.55 0 3.36.86 3.36 3.66z"/>
+            </svg>
+        </a> </li>
+      <li> <a href="https://github.com/gaultier">
+        <svg height="32" aria-hidden="true" viewBox="0 0 24 24" version="1.1" width="32" data-view-component="true" class="octicon octicon-mark-github v-align-middle">
+          <path d="M12.5.75C6.146.75 1 5.896 1 12.25c0 5.089 3.292 9.387 7.863 10.91.575.101.79-.244.79-.546 0-.273-.014-1.178-.014-2.142-2.889.532-3.636-.704-3.866-1.35-.13-.331-.69-1.352-1.18-1.625-.402-.216-.977-.748-.014-.762.906-.014 1.553.834 1.769 1.179 1.035 1.74 2.688 1.25 3.349.948.1-.747.402-1.25.733-1.538-2.559-.287-5.232-1.279-5.232-5.678 0-1.25.445-2.285 1.178-3.09-.115-.288-.517-1.467.115-3.048 0 0 .963-.302 3.163 1.179.92-.259 1.897-.388 2.875-.388.977 0 1.955.13 2.875.388 2.2-1.495 3.162-1.179 3.162-1.179.633 1.581.23 2.76.115 3.048.733.805 1.179 1.825 1.179 3.09 0 4.413-2.688 5.39-5.247 5.678.417.36.776 1.05.776 2.128 0 1.538-.014 2.774-.014 3.162 0 .302.216.662.79.547C20.709 21.637 24 17.324 24 12.25 24 5.896 18.854.75 12.5.75Z"/>
+        </svg>
+        </a> </li>
+      <li> <a href="https://hachyderm.io/@pg">
+        <svg width="75" height="79" viewBox="0 0 75 79" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M73.8393 17.4898C72.6973 9.00165 65.2994 2.31235 56.5296 1.01614C55.05 0.797115 49.4441 0 36.4582 0H36.3612C23.3717 0 20.585 0.797115 19.1054 1.01614C10.5798 2.27644 2.79399 8.28712 0.904997 16.8758C-0.00358524 21.1056 -0.100549 25.7949 0.0682394 30.0965C0.308852 36.2651 0.355538 42.423 0.91577 48.5665C1.30307 52.6474 1.97872 56.6957 2.93763 60.6812C4.73325 68.042 12.0019 74.1676 19.1233 76.6666C26.7478 79.2728 34.9474 79.7055 42.8039 77.9162C43.6682 77.7151 44.5217 77.4817 45.3645 77.216C47.275 76.6092 49.5123 75.9305 51.1571 74.7385C51.1797 74.7217 51.1982 74.7001 51.2112 74.6753C51.2243 74.6504 51.2316 74.6229 51.2325 74.5948V68.6416C51.2321 68.6154 51.2259 68.5896 51.2142 68.5661C51.2025 68.5426 51.1858 68.522 51.1651 68.5058C51.1444 68.4896 51.1204 68.4783 51.0948 68.4726C51.0692 68.4669 51.0426 68.467 51.0171 68.4729C45.9835 69.675 40.8254 70.2777 35.6502 70.2682C26.7439 70.2682 24.3486 66.042 23.6626 64.2826C23.1113 62.762 22.7612 61.1759 22.6212 59.5646C22.6197 59.5375 22.6247 59.5105 22.6357 59.4857C22.6466 59.4609 22.6633 59.4391 22.6843 59.422C22.7053 59.4048 22.73 59.3929 22.7565 59.3871C22.783 59.3813 22.8104 59.3818 22.8367 59.3886C27.7864 60.5826 32.8604 61.1853 37.9522 61.1839C39.1768 61.1839 40.3978 61.1839 41.6224 61.1516C46.7435 61.008 52.1411 60.7459 57.1796 59.7621C57.3053 59.7369 57.431 59.7154 57.5387 59.6831C65.4861 58.157 73.0493 53.3672 73.8178 41.2381C73.8465 40.7606 73.9184 36.2364 73.9184 35.7409C73.9219 34.0569 74.4606 23.7949 73.8393 17.4898Z" fill="url(#paint0_linear_549_34)"/>
+        <path d="M61.2484 27.0263V48.114H52.8916V27.6475C52.8916 23.3388 51.096 21.1413 47.4437 21.1413C43.4287 21.1413 41.4177 23.7409 41.4177 28.8755V40.0782H33.1111V28.8755C33.1111 23.7409 31.0965 21.1413 27.0815 21.1413C23.4507 21.1413 21.6371 23.3388 21.6371 27.6475V48.114H13.2839V27.0263C13.2839 22.7176 14.384 19.2946 16.5843 16.7572C18.8539 14.2258 21.8311 12.926 25.5264 12.926C29.8036 12.926 33.0357 14.5705 35.1905 17.8559L37.2698 21.346L39.3527 17.8559C41.5074 14.5705 44.7395 12.926 49.0095 12.926C52.7013 12.926 55.6784 14.2258 57.9553 16.7572C60.1531 19.2922 61.2508 22.7152 61.2484 27.0263Z" fill="white"/>
+        <defs>
+        <linearGradient id="paint0_linear_549_34" x1="37.0692" y1="0" x2="37.0692" y2="79" gradientUnits="userSpaceOnUse">
+        <stop stop-color="#6364FF"/>
+        <stop offset="1" stop-color="#563ACC"/>
+        </linearGradient>
+        </defs>
+        </svg>
+        </a> </li>
+      <li> <a href="https://bsky.app/profile/pgaultier.bsky.social">
+        <svg fill="none" viewBox="0 0 64 57" width="32" style="width: 32px; height: 28.5px;"><path fill="#0085ff" d="M13.873 3.805C21.21 9.332 29.103 20.537 32 26.55v15.882c0-.338-.13.044-.41.867-1.512 4.456-7.418 21.847-20.923 7.944-7.111-7.32-3.819-14.64 9.125-16.85-7.405 1.264-15.73-.825-18.014-9.015C1.12 23.022 0 8.51 0 6.55 0-3.268 8.579-.182 13.873 3.805ZM50.127 3.805C42.79 9.332 34.897 20.537 32 26.55v15.882c0-.338.13.044.41.867 1.512 4.456 7.418 21.847 20.923 7.944 7.111-7.32 3.819-14.64-9.125-16.85 7.405 1.264 15.73-.825 18.014-9.015C62.88 23.022 64 8.51 64 6.55c0-9.818-8.578-6.732-13.873-2.745Z"/></svg>
+        </a> </li>
+    </ul>
+</div>
+<div id="search-matches" hidden>
+</div>
+<div id="pseudo-body">
+
+<div class="article-prelude">
+  <p><a href="/blog"> ⏴ Back to all articles</a></p>
+
+  <p class="publication-date">Published on 2025-06-09</p>
+</div>
+<div class="article-title">
+<h1>What should your mutexes be named?</h1>
+  <div class="tags"> <a href="/blog/articles-by-tag.html#go" class="tag">Go</a> <a href="/blog/articles-by-tag.html#awk" class="tag">Awk</a> <a href="/blog/articles-by-tag.html#search" class="tag">Search</a></div>
+  </div>
+ <strong>Table of contents</strong>
+<ul>
+
+  <li>
+    <a href="#404658211-structural-search">Structural search</a>
+  </li>
+
+  <li>
+    <a href="#2333177148-a-naming-convention-to-rule-them-all">A naming convention to rule them all</a>
+  </li>
+
+  <li>
+    <a href="#3017488881-low-tech-alternatives">Low-tech alternatives</a>
+  </li>
+
+  <li>
+    <a href="#2043966314-limitations-of-structural-search-tools">Limitations of structural search tools</a>
+  </li>
+
+  <li>
+    <a href="#3796851539-conclusion">Conclusion</a>
+  </li>
+
+  <li>
+    <a href="#2356890292-addendum-how-were-mutexes-named-in-the-c-implementation-of-the-go-compiler">Addendum: How were mutexes named in the C implementation of the Go compiler?</a>
+  </li>
+</ul>
+
+<p>I have started a new job recently and the main challenge, I find, is to ingest and adapt to a big codebase that does things slightly differently than what I am used to.</p>
+<p>This article explores ways to make this phase go smoother.</p>
+<hr />
+<p>The other day a Pull Request popped up at work, which made me think for a bit. It looked like this (Go, simplified):</p>
+<pre><code class="language-go">type Foo struct {
+    bar int
+    barMux sync.Mutex
+}
+</code></pre>
+<p>It's a typical approach with concurrent code: a mutex protects the variable it is named after. So using the variable <code>bar</code> looks like this:</p>
+<pre><code class="language-go">barMux.Lock()
+bar += 1
+barMux.Unlock()
+</code></pre>
+<p><em>Yes, in this simplistic case an atomic would likely be used instead of a mutex but that's just to illustrate.</em></p>
+<p>But I paused for a second: What should the mutex be named? I usually use the <code>xxxMtx</code> convention, so I'd have named it <code>barMtx</code>.</p>
+<p>To avoid a sterile 'you vs me' debate, I thought: What do other people do? What naming convention is in use in the project, if any? I'll demonstrate this method with the code of the Go standard library.</p>
+<p>And more generally, what is the best way to find out what naming conventions or code patterns are used in a project you don't know? I need a good tool to find these answers quickly.</p>
+<h2 id="404658211-structural-search">
+  <a class="title" href="#404658211-structural-search">Structural search</a>
+  <a class="hash-anchor" href="#404658211-structural-search" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+</h2>
+<p>I use <code>ripgrep</code> and <code>awk</code> all the time when developing, probably at least once a minute, and these tools can give us the answers... kind of, since they operate on raw text. Complex code constructs or contextual searches e.g. 'A function call whose third argument is a number and the function name starts with <code>get</code>' may be impossible to find correctly.</p>
+<p>What I often actually need to do is <em>search the code structurally</em>, meaning search the Abstract Syntax Tree (AST). And the good news is, there are tools nowadays than can do that! I never took the time to learn one, even though this came up a few times, so I felt this is finally the occasion.</p>
+<p>Enter <a href="https://github.com/ast-grep/ast-grep">ast-grep</a>. Surprisingly, the main way to search with it is to write a rule file in YAML. A command line search also exists but seems much more limited.</p>
+<p>Let's thus search for 'structure fields' whose type is a 'mutex':</p>
+<pre><code class="language-yaml">id: find-mtx-fields
+message: Mutex fields found
+severity: info
+language: go
+rule:
+  kind: field_declaration
+  all:
+    - has: 
+        field: name
+        # Ignore nameless fields.
+        regex: &quot;.+&quot;
+    - has:
+        field: type
+        regex: &quot;Mutex&quot;
+</code></pre>
+<p>A potential match must pass all conditions under the <code>all</code> section to be a result. There are other ways to write this rule, but this works. Note that the regexp is loose enough to match different kinds of mutex types such as <code>sync.Mutex</code> and <code>sync.RWMutex</code>.</p>
+<p>When we run the tool on the Go standard library, we get something like this (excerpt):</p>
+<pre><code class="language-sh">$ ast-grep scan --rule ~/scratch/mtx.yaml
+[...]
+
+note[find-mtx-fields]: Mutex fields found
+   ┌─ net/textproto/pipeline.go:29:2
+   │
+29 │     mu       sync.Mutex
+   │     ^^^^^^^^^^^^^^^^^^^
+
+
+note[find-mtx-fields]: Mutex fields found
+    ┌─ net/rpc/server.go:191:2
+    │
+191 │     reqLock    sync.Mutex // protects freeReq
+    │     ^^^^^^^^^^^^^^^^^^^^^
+
+note[find-mtx-fields]: Mutex fields found
+   ┌─ net/rpc/jsonrpc/server.go:31:2
+   │
+31 │     mutex   sync.Mutex // protects seq, pending
+   │     ^^^^^^^^^^^^^^^^^^
+
+[...]
+</code></pre>
+<p>Very useful. The tool can do much more, but that's enough for us to discover that there isn't <em>one</em> naming convention in use. Also, the mutex is not always named after the variable it protects (e.g.: <code>mutex</code> protects <code>seq</code>).</p>
+<p>So, is there at least a convention used in the majority of cases? How can we get aggregate the results?</p>
+<h2 id="2333177148-a-naming-convention-to-rule-them-all">
+  <a class="title" href="#2333177148-a-naming-convention-to-rule-them-all">A naming convention to rule them all</a>
+  <a class="hash-anchor" href="#2333177148-a-naming-convention-to-rule-them-all" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+</h2>
+<p>Unfortunately I did not find a built-in way to post-process the results from <code>ast-grep</code>, so I resorted to outputting the matches as JSON, extracting the matched text with <code>jq</code>, and finally aggregating the results with good old AWK:</p>
+<pre><code class="language-sh">$ ast-grep scan --rule ~/scratch/mtx.yaml --json | jq '.[].text' -r | awk -f ~/scratch/ast-grep-post.awk 
+</code></pre>
+<p>And this is the ad-hoc AWK script:</p>
+<pre><code class="language-awk"># ~/scratch/ast-grep-post.awk
+
+# `$1` is the variable name.
+{
+  if ($1 ~ /(m|M)u$/) { 
+    stats[&quot;mu&quot;] += 1
+  }
+  else if ($1 ~ /(m|M)ux$/) { 
+    stats[&quot;mux&quot;] += 1
+  }
+  else if ($1 ~ /(m|M)tx$/) { 
+    stats[&quot;mtx&quot;] += 1
+  }
+  else if ($1 ~ /(m|M)utex$/) { 
+    stats[&quot;mutex&quot;] += 1
+  }
+  else if ($1 ~ /(l|L)ock$/) { 
+    stats[&quot;lock&quot;] += 1
+  } else {
+    stats[&quot;other&quot;] += 1
+  }
+}
+
+END {
+  for (k in stats) {
+    print k, stats[k]
+  }
+}
+</code></pre>
+<p>And here are the statistics (commit <code>7800f4f</code>, 2025-06-08):</p>
+<table>
+<thead>
+<tr>
+<th>Variable name suffix</th>
+<th>Count</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>mu</code></td>
+<td>131</td>
+</tr>
+<tr>
+<td><code>mutex</code></td>
+<td>11</td>
+</tr>
+<tr>
+<td>something else</td>
+<td>11</td>
+</tr>
+<tr>
+<td><code>lock</code></td>
+<td>6</td>
+</tr>
+<tr>
+<td><code>mux</code></td>
+<td>0</td>
+</tr>
+</tbody>
+</table>
+<p>So according to these statistics: if you want to follow the same naming convention as the Go project primary one, <strong>use <code>xxxMu</code> as a name for your mutexes</strong>.</p>
+<p>I would also add, and this is subjective: <strong>name the mutex after the variable it protects for clarity, e.g.: <code>bar</code> and <code>barMu</code></strong>. In nearly every case in the Go project where this rule of thumb was not followed, a code comment was present to explain which variable the mutex protects. We might as well have this information in the mutex variable name.</p>
+<p>Even for cases where the mutex protects multiple variables, the Go developers often picked one of the variables and named the mutex after it:</p>
+<pre><code class="language-go">type Link struct {
+	hashmu             sync.Mutex       // protects hash, funchash
+	hash               map[string]*LSym 
+	funchash           map[string]*LSym
+
+        [...]
+}
+</code></pre>
+<h2 id="3017488881-low-tech-alternatives">
+  <a class="title" href="#3017488881-low-tech-alternatives">Low-tech alternatives</a>
+  <a class="hash-anchor" href="#3017488881-low-tech-alternatives" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+</h2>
+<p>A quick and dirty way to achieve the same with a regexp is:</p>
+<pre><code>$ rg -t go '^\s+\w+\s+sync\.Mutex$'
+</code></pre>
+<p>This works since Go is a language with only one way to define a <code>struct</code> field, but some languages would be more difficult.</p>
+<p>A slightly smarter way, to only find field declarations, would be to use AWK to remember whether or not we are inside a <code>struct</code> definition:</p>
+<pre><code class="language-awk">/\s+struct\s+/ { in_struct = 1 }
+
+in_struct &amp;&amp; /\s+\w+\s+sync\.Mutex/ { print }
+
+in_struct &amp;&amp; /^}$/ { in_struct = 0 }
+</code></pre>
+<p>But this might not work, or at least need to be adapted, to cover complex constructs such as defining a <code>struct</code> within a <code>struct</code>:</p>
+<pre><code class="language-go">type Foo struct {
+	bar struct {
+		x int
+		y int
+	}
+	barMtx sync.Mutex
+}
+</code></pre>
+<p>These approaches are not bullet-proof, but they will find most relevant code locations, which is enough.</p>
+<h2 id="2043966314-limitations-of-structural-search-tools">
+  <a class="title" href="#2043966314-limitations-of-structural-search-tools">Limitations of structural search tools</a>
+  <a class="hash-anchor" href="#2043966314-limitations-of-structural-search-tools" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+</h2>
+<ul>
+<li>Most if not all structural search tools only work on a valid AST, and not every language is supported by every tool.</li>
+<li>The rule syntax is arcane and in parts language specific (see the addendum for details).</li>
+<li>Speed can be an issue: <code>ast-grep</code> is relatively fast but still slower than <code>ripgrep</code> and it states that it is one of the fastest in its category. On my (admittedly very old) laptop:
+<ul>
+<li><code>ast-grep</code> takes  ~10s to scan ~2 millions LOC. Which is pretty good!</li>
+<li><code>find + awk</code> takes ~1.5s.</li>
+<li><code>ripgrep</code> takes ~100ms (I'm impressed).</li>
+</ul>
+</li>
+</ul>
+<h2 id="3796851539-conclusion">
+  <a class="title" href="#3796851539-conclusion">Conclusion</a>
+  <a class="hash-anchor" href="#3796851539-conclusion" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+</h2>
+<p>I think having one structural search program in your toolbox is a good idea, especially if you intend to use it as a linter and mass refactoring tool.</p>
+<p>If all you want to do is a one-time search, text search programs such as <code>ripgrep</code> and <code>awk</code> should probably be your first stab at it.</p>
+<p>Also, I think I would prefer using a SQL-like syntax to define rules, over writing YAML with pseudo-code constructs.</p>
+<h2 id="2356890292-addendum-how-were-mutexes-named-in-the-c-implementation-of-the-go-compiler">
+  <a class="title" href="#2356890292-addendum-how-were-mutexes-named-in-the-c-implementation-of-the-go-compiler">Addendum: How were mutexes named in the C implementation of the Go compiler?</a>
+  <a class="hash-anchor" href="#2356890292-addendum-how-were-mutexes-named-in-the-c-implementation-of-the-go-compiler" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+</h2>
+<p>I wondered if the way mutexes are named in the Go project actually comes from the time were the Go compiler and much of the runtime were implemented in C.
+We can easily check this out with the same approach. This illustrates that <code>ast-grep</code> works for different languages, and also the slight differences.</p>
+<p><code>1.4</code> was the last major version to use the C compiler and runtime apparently, so we checkout this commit:</p>
+<pre><code class="language-sh">$ git checkout go1.4beta1
+</code></pre>
+<p>I initially simply changed the <code>language: go</code> field in the rule to <code>language: c</code> but was surprised nothing turned up. After toying with the <a href="https://tree-sitter.github.io/tree-sitter/7-playground.html">treesitter playground</a> (<code>treesitter</code> is used under the covers), I realized that for C, the AST is structured differently and the nodes have different names. Here is the rule working for <code>struct</code> fields:</p>
+<pre><code class="language-yaml">id: find-mtx-fields-struct-fields
+message: Mutex fields found
+severity: info
+language: c
+rule:
+  kind: field_declaration
+  all:
+    - has: 
+        field: declarator
+        regex: &quot;.+&quot;
+    - has:
+        field: type
+        regex: &quot;(M|m)utex&quot;
+</code></pre>
+<p>Here are the results of this rule (excerpt):</p>
+<pre><code>note[find-mtx-fields]: Mutex fields found
+    ┌─ runtime/malloc.h:430:2
+    │
+430 │     Mutex   specialLock;    // guards specials list
+    │     ^^^^^^^^^^^^^^^^^^^^
+
+note[find-mtx-fields]: Mutex fields found
+    ┌─ runtime/malloc.h:451:2
+    │
+451 │     Mutex  lock;
+    │     ^^^^^^^^^^^^
+</code></pre>
+<hr />
+<p>Right after, I realized that some mutexes are defined as global variables, so here is an additional rule file for that:</p>
+<pre><code class="language-yaml">id: find-mtx-fields-vars
+message: Mutex variables found
+severity: info
+language: c
+rule:
+  kind: declaration
+  all:
+    - has: 
+        field: declarator
+        regex: &quot;.+&quot;
+    - has:
+        field: type
+        regex: &quot;(M|m)utex&quot;
+</code></pre>
+<p>And here are the results (excerpt):</p>
+<pre><code>note[find-mtx-fields-vars]: Mutex variables found
+   ┌─ runtime/panic.c:18:1
+   │
+18 │ static Mutex paniclk;
+   │ ^^^^^^^^^^^^^^^^^^^^^
+
+note[find-mtx-fields-vars]: Mutex variables found
+    ┌─ runtime/panic.c:162:3
+    │
+162 │         static Mutex deadlock;
+    │         ^^^^^^^^^^^^^^^^^^^^^^
+
+note[find-mtx-fields-vars]: Mutex variables found
+   ┌─ runtime/mem_plan9.c:15:1
+   │
+15 │ static Mutex memlock;
+   │ ^^^^^^^^^^^^^^^^^^^^^
+
+note[find-mtx-fields-vars]: Mutex variables found
+    ┌─ runtime/os_windows.c:586:2
+    │
+586 │     static Mutex lock;
+</code></pre>
+<hr />
+<p>Funnily, it seems that: 1) the C code has much less variability in naming than the Go code: it's mostly <code>xxxlock</code>, and 2) The naming in the Go code does not stem from the C code since it's completely different.</p>
+<p><a href="/blog"> ⏴ Back to all articles</a></p>
+
+<blockquote id="donate">
+  <p>If you enjoy what you're reading, you want to support me, and can afford it: <a href="https://paypal.me/philigaultier?country.x=DE&locale.x=en_US">Support me</a>. That allows me to write more cool articles!</p>
+</blockquote>
+
+<blockquote>
+  <p>
+    This blog is <a href="https://github.com/gaultier/blog">open-source</a>!
+    If you find a problem, please open a Github issue.
+    The content of this blog as well as the code snippets are under the <a href="https://en.wikipedia.org/wiki/BSD_licenses#3-clause_license_(%22BSD_License_2.0%22,_%22Revised_BSD_License%22,_%22New_BSD_License%22,_or_%22Modified_BSD_License%22)">BSD-3 License</a> which I also usually use for all my personal projects. It's basically free for every use but you have to mention me as the original author.
+  </p>
+</blockquote>
+
+</div>
+</body>
+</html>
