@@ -173,23 +173,27 @@ note[find-mtx-fields]: Mutex fields found
   <a class="title" href="#2333177148-a-naming-convention-to-rule-them-all">A naming convention to rule them all</a>
   <a class="hash-anchor" href="#2333177148-a-naming-convention-to-rule-them-all" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
-<p>Unfortunately I did not find a built-in way to post-process the results from <code>ast-grep</code>, so I resorted to good old AWK:</p>
+<p>Unfortunately I did not find a built-in way to post-process the results from <code>ast-grep</code>, so I resorted to outputting the matches as JSON, extracting the matched text with <code>jq</code>, and finally aggregating the results with good old AWK:</p>
+<pre><code class="language-sh">$ ast-grep scan --rule ~/scratch/mtx.yaml --json | jq '.[].text' -r | awk -f ~/scratch/ast-grep-post.awk 
+</code></pre>
+<p>And this is the ad-hoc AWK script:</p>
 <pre><code class="language-awk"># ~/scratch/ast-grep-post.awk
 
-/^[0-9]+/ {
-  if ($3 ~ /(m|M)u$/) { 
+# `$1` is the variable name.
+{
+  if ($1 ~ /(m|M)u$/) { 
     stats[&quot;mu&quot;] += 1
   }
-  else if ($3 ~ /(m|M)ux$/) { 
+  else if ($1 ~ /(m|M)ux$/) { 
     stats[&quot;mux&quot;] += 1
   }
-  else if ($3 ~ /(m|M)tx$/) { 
+  else if ($1 ~ /(m|M)tx$/) { 
     stats[&quot;mtx&quot;] += 1
   }
-  else if ($3 ~ /(m|M)utex$/) { 
+  else if ($1 ~ /(m|M)utex$/) { 
     stats[&quot;mutex&quot;] += 1
   }
-  else if ($3 ~ /(l|L)ock$/) { 
+  else if ($1 ~ /(l|L)ock$/) { 
     stats[&quot;lock&quot;] += 1
   } else {
     stats[&quot;other&quot;] += 1
@@ -203,12 +207,32 @@ END {
 }
 </code></pre>
 <p>And here are the statistics (commit <code>7800f4f</code>, 2025-06-08):</p>
-<pre><code class="language-sh">$ ast-grep scan --rule ~/scratch/mtx.yaml | awk -f ~/scratch/ast-grep-post.awk 
-lock 6
-other 11
-mutex 11
-mu 131
-</code></pre>
+<table>
+<thead>
+<tr>
+<th>Variable name suffix</th>
+<th>count</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>lock</code></td>
+<td>6</td>
+</tr>
+<tr>
+<td><code>mutex</code></td>
+<td>11</td>
+</tr>
+<tr>
+<td><code>mu</code></td>
+<td>131</td>
+</tr>
+<tr>
+<td>something else</td>
+<td>11</td>
+</tr>
+</tbody>
+</table>
 <p>So according to these statistics: if you want to follow the same naming convention as the Go project primary one, <strong>use <code>xxxMu</code> as a name for your mutexes</strong>.</p>
 <p>I would also add, and this is subjective: <strong>name the mutex after the variable it protects for clarity, e.g.: <code>bar</code> and <code>barMu</code></strong>. In nearly every case in the Go project where this rule of thumb was not followed, a code comment was present to explain which variable the mutex protects. We might as well have this information in the mutex variable name.</p>
 <p>Even for cases where the mutex protects multiple variables, the Go developers often picked one of the variables and named  the variable after it:</p>

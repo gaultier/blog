@@ -98,25 +98,32 @@ So, is there at least a convention used in the majority of cases? How can we get
 
 ## A naming convention to rule them all
 
-Unfortunately I did not find a built-in way to post-process the results from `ast-grep`, so I resorted to good old AWK:
+Unfortunately I did not find a built-in way to post-process the results from `ast-grep`, so I resorted to outputting the matches as JSON, extracting the matched text with `jq`, and finally aggregating the results with good old AWK:
+
+```sh
+$ ast-grep scan --rule ~/scratch/mtx.yaml --json | jq '.[].text' -r | awk -f ~/scratch/ast-grep-post.awk 
+```
+
+And this is the ad-hoc AWK script:
 
 ```awk
 # ~/scratch/ast-grep-post.awk
 
-/^[0-9]+/ {
-  if ($3 ~ /(m|M)u$/) { 
+# `$1` is the variable name.
+{
+  if ($1 ~ /(m|M)u$/) { 
     stats["mu"] += 1
   }
-  else if ($3 ~ /(m|M)ux$/) { 
+  else if ($1 ~ /(m|M)ux$/) { 
     stats["mux"] += 1
   }
-  else if ($3 ~ /(m|M)tx$/) { 
+  else if ($1 ~ /(m|M)tx$/) { 
     stats["mtx"] += 1
   }
-  else if ($3 ~ /(m|M)utex$/) { 
+  else if ($1 ~ /(m|M)utex$/) { 
     stats["mutex"] += 1
   }
-  else if ($3 ~ /(l|L)ock$/) { 
+  else if ($1 ~ /(l|L)ock$/) { 
     stats["lock"] += 1
   } else {
     stats["other"] += 1
@@ -132,13 +139,12 @@ END {
 
 And here are the statistics (commit `7800f4f`, 2025-06-08):
 
-```sh
-$ ast-grep scan --rule ~/scratch/mtx.yaml | awk -f ~/scratch/ast-grep-post.awk 
-lock 6
-other 11
-mutex 11
-mu 131
-```
+|Variable name suffix|count|
+|--------------------|-----|
+| `lock`             | 6   |
+| `mutex`            | 11  |
+| `mu`               | 131 |
+| something else     | 11  |
 
 So according to these statistics: if you want to follow the same naming convention as the Go project primary one, **use `xxxMu` as a name for your mutexes**.
 
