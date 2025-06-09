@@ -98,6 +98,10 @@
   <li>
     <a href="#3796851539-conclusion">Conclusion</a>
   </li>
+
+  <li>
+    <a href="#2356890292-addendum-how-were-mutexes-named-in-the-c-implementation-of-the-go-compiler">Addendum: How were mutexes named in the C implementation of the Go compiler?</a>
+  </li>
 </ul>
 
 <p>I have started a new job recently and the main challenge, I find, is to ingest and adapt to a big codebase that does things slightly differently than what I am used to.</p>
@@ -291,6 +295,85 @@ in_struct &amp;&amp; /^}$/ { in_struct = 0 }
 <p>I think having one structural search program in your toolbox is a good idea, especially if you intend to use it as a linter and mass refactoring tool.</p>
 <p>If all you want to do is a one-time search, text search programs such as <code>ripgrep</code> and <code>awk</code> should probably be your first stab at it.</p>
 <p>Also, I think I would prefer using a SQL-like syntax to define rules, over writing YAML with pseudo-code constructs.</p>
+<h2 id="2356890292-addendum-how-were-mutexes-named-in-the-c-implementation-of-the-go-compiler">
+  <a class="title" href="#2356890292-addendum-how-were-mutexes-named-in-the-c-implementation-of-the-go-compiler">Addendum: How were mutexes named in the C implementation of the Go compiler?</a>
+  <a class="hash-anchor" href="#2356890292-addendum-how-were-mutexes-named-in-the-c-implementation-of-the-go-compiler" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+</h2>
+<p>I wondered if the way mutexes are named in the Go project actually comes from the time were the Go compiler and much of the runtime were implemented in C.
+We can easily check this out with the same approach. This illustrates that <code>ast-grep</code> works for different languages, and also the slight differences.</p>
+<p><code>1.4</code> was the last major version to use the C compiler and runtime apparently, so we checkout this commit:</p>
+<pre><code class="language-sh">$ git checkout go1.4beta1
+</code></pre>
+<p>I initially simply changed the <code>language: go</code> field in the rule to <code>language: c</code> but was surprised nothing turned up. After toying with the <a href="https://tree-sitter.github.io/tree-sitter/7-playground.html">treesitter playground</a>, which is used under the curtain, I realized that for C, the AST is structured differently and the nodes have different names. Here is the rule working for <code>struct</code> fields:</p>
+<pre><code class="language-yaml">id: find-mtx-fields-struct-fields
+message: Mutex fields found
+severity: info
+language: c
+rule:
+  kind: field_declaration
+  all:
+    - has: 
+        field: declarator
+        regex: &quot;.+&quot;
+    - has:
+        field: type
+        regex: &quot;(M|m)utex&quot;
+</code></pre>
+<p>Here are the results of this rule (excerpt):</p>
+<pre><code>note[find-mtx-fields]: Mutex fields found
+    ┌─ runtime/malloc.h:430:2
+    │
+430 │     Mutex   specialLock;    // guards specials list
+    │     ^^^^^^^^^^^^^^^^^^^^
+
+note[find-mtx-fields]: Mutex fields found
+    ┌─ runtime/malloc.h:451:2
+    │
+451 │     Mutex  lock;
+    │     ^^^^^^^^^^^^
+</code></pre>
+<hr />
+<p>Right after, I realized that some mutexes are defined as global variables, so here is an additional rule file for that:</p>
+<pre><code class="language-yaml">id: find-mtx-fields-vars
+message: Mutex variables found
+severity: info
+language: c
+rule:
+  kind: declaration
+  all:
+    - has: 
+        field: declarator
+        regex: &quot;.+&quot;
+    - has:
+        field: type
+        regex: &quot;(M|m)utex&quot;
+</code></pre>
+<p>And here are the results (excerpt):</p>
+<pre><code>note[find-mtx-fields-vars]: Mutex variables found
+   ┌─ runtime/panic.c:18:1
+   │
+18 │ static Mutex paniclk;
+   │ ^^^^^^^^^^^^^^^^^^^^^
+
+note[find-mtx-fields-vars]: Mutex variables found
+    ┌─ runtime/panic.c:162:3
+    │
+162 │         static Mutex deadlock;
+    │         ^^^^^^^^^^^^^^^^^^^^^^
+
+note[find-mtx-fields-vars]: Mutex variables found
+   ┌─ runtime/mem_plan9.c:15:1
+   │
+15 │ static Mutex memlock;
+   │ ^^^^^^^^^^^^^^^^^^^^^
+
+note[find-mtx-fields-vars]: Mutex variables found
+    ┌─ runtime/os_windows.c:586:2
+    │
+586 │     static Mutex lock;
+</code></pre>
+<hr />
+<p>Funnily, it seems that the C code has less variability in naming than the Go code. It's mostly <code>xxxlock</code>.</p>
 <p><a href="/blog"> ⏴ Back to all articles</a></p>
 
 <blockquote id="donate">

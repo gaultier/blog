@@ -214,3 +214,101 @@ I think having one structural search program in your toolbox is a good idea, esp
 If all you want to do is a one-time search, text search programs such as `ripgrep` and `awk` should probably be your first stab at it.
 
 Also, I think I would prefer using a SQL-like syntax to define rules, over writing YAML with pseudo-code constructs.
+
+
+## Addendum: How were mutexes named in the C implementation of the Go compiler?
+
+I wondered if the way mutexes are named in the Go project actually comes from the time were the Go compiler and much of the runtime were implemented in C. 
+We can easily check this out with the same approach. This illustrates that `ast-grep` works for different languages, and also the slight differences.
+
+`1.4` was the last major version to use the C compiler and runtime apparently, so we checkout this commit:
+
+```sh
+$ git checkout go1.4beta1
+```
+
+I initially simply changed the `language: go` field in the rule to `language: c` but was surprised nothing turned up. After toying with the [treesitter playground](https://tree-sitter.github.io/tree-sitter/7-playground.html), which is used under the curtain, I realized that for C, the AST is structured differently and the nodes have different names. Here is the rule working for `struct` fields:
+
+
+```yaml
+id: find-mtx-fields-struct-fields
+message: Mutex fields found
+severity: info
+language: c
+rule:
+  kind: field_declaration
+  all:
+    - has: 
+        field: declarator
+        regex: ".+"
+    - has:
+        field: type
+        regex: "(M|m)utex"
+```
+
+Here are the results of this rule (excerpt):
+
+```
+note[find-mtx-fields]: Mutex fields found
+    ┌─ runtime/malloc.h:430:2
+    │
+430 │     Mutex   specialLock;    // guards specials list
+    │     ^^^^^^^^^^^^^^^^^^^^
+
+note[find-mtx-fields]: Mutex fields found
+    ┌─ runtime/malloc.h:451:2
+    │
+451 │     Mutex  lock;
+    │     ^^^^^^^^^^^^
+```
+
+---
+
+Right after, I realized that some mutexes are defined as global variables, so here is an additional rule file for that:
+
+```yaml
+id: find-mtx-fields-vars
+message: Mutex variables found
+severity: info
+language: c
+rule:
+  kind: declaration
+  all:
+    - has: 
+        field: declarator
+        regex: ".+"
+    - has:
+        field: type
+        regex: "(M|m)utex"
+```
+
+And here are the results (excerpt):
+
+```
+note[find-mtx-fields-vars]: Mutex variables found
+   ┌─ runtime/panic.c:18:1
+   │
+18 │ static Mutex paniclk;
+   │ ^^^^^^^^^^^^^^^^^^^^^
+
+note[find-mtx-fields-vars]: Mutex variables found
+    ┌─ runtime/panic.c:162:3
+    │
+162 │         static Mutex deadlock;
+    │         ^^^^^^^^^^^^^^^^^^^^^^
+
+note[find-mtx-fields-vars]: Mutex variables found
+   ┌─ runtime/mem_plan9.c:15:1
+   │
+15 │ static Mutex memlock;
+   │ ^^^^^^^^^^^^^^^^^^^^^
+
+note[find-mtx-fields-vars]: Mutex variables found
+    ┌─ runtime/os_windows.c:586:2
+    │
+586 │     static Mutex lock;
+```
+
+---
+
+Funnily, it seems that the C code has less variability in naming than the Go code. It's mostly `xxxlock`.
