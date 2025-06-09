@@ -46,8 +46,67 @@ rule:
         regex: "Mutex"
 ```
 
+A potential match must pass all conditions under the `all` section to be a result.
+
 When we run the tool on the Go project source code, we get something like this (excerpt):
 
 ```sh
+$ ast-grep scan --rule ~/scratch/mtx.yaml
+[...]
 
+note[find-mtx-fields]: Mutex fields found
+   ┌─ net/textproto/pipeline.go:29:2
+   │
+29 │     mu       sync.Mutex
+   │     ^^^^^^^^^^^^^^^^^^^
+
+
+note[find-mtx-fields]: Mutex fields found
+    ┌─ net/rpc/server.go:191:2
+    │
+191 │     reqLock    sync.Mutex // protects freeReq
+    │     ^^^^^^^^^^^^^^^^^^^^^
+
+note[find-mtx-fields]: Mutex fields found
+   ┌─ net/rpc/jsonrpc/server.go:31:2
+   │
+31 │     mutex   sync.Mutex // protects seq, pending
+   │     ^^^^^^^^^^^^^^^^^^
+
+[...]
+```
+
+Very useful. The tool can do much more, but that's enough for us to discover that there isn't *one* naming convention in this case:
+
+## Low-tech alternatives
+
+A quick and dirty way to achieve the same with a regexp is:
+
+```
+rg -t go '^\s*\w+\s+sync\.Mutex$'
+```
+
+This works since Go is a language with only one way to define a struct field, but some languages would be more difficult.
+
+Another way to only find field declarations would be to use awk:
+
+```awk
+/\s+struct\s+/ { in_struct = 1 }
+
+in_struct && /\s+\w+\s+sync\.Mutex/ { print }
+
+in_struct && /^}$/ { in_struct = 0 }
+```
+
+But this might not work with complex constructs such as defining a struct within a struct e.g.:
+
+```go
+
+type Foo struct {
+	bar struct {
+		x int
+		y int
+	}
+	barMtx sync.Mutex
+}
 ```
