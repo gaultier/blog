@@ -227,7 +227,7 @@ We can easily check this out with the same approach. This illustrates that `ast-
 $ git checkout go1.4beta1
 ```
 
-I initially simply changed the `language: go` field in the rule to `language: c` but was surprised nothing turned up. After toying with the [treesitter playground](https://tree-sitter.github.io/tree-sitter/7-playground.html), which is used under the curtain, I realized that for C, the AST is structured differently and the nodes have different names. Here is the rule working for `struct` fields:
+I initially simply changed the `language: go` field in the rule to `language: c` but was surprised nothing turned up. After toying with the [treesitter playground](https://tree-sitter.github.io/tree-sitter/7-playground.html) (`treesitter` is used under the covers), I realized that for C, the AST is structured differently and the nodes have different names. Here is the rule working for `struct` fields:
 
 
 ```yaml

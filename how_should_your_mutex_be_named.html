@@ -304,7 +304,7 @@ We can easily check this out with the same approach. This illustrates that <code
 <p><code>1.4</code> was the last major version to use the C compiler and runtime apparently, so we checkout this commit:</p>
 <pre><code class="language-sh">$ git checkout go1.4beta1
 </code></pre>
-<p>I initially simply changed the <code>language: go</code> field in the rule to <code>language: c</code> but was surprised nothing turned up. After toying with the <a href="https://tree-sitter.github.io/tree-sitter/7-playground.html">treesitter playground</a>, which is used under the curtain, I realized that for C, the AST is structured differently and the nodes have different names. Here is the rule working for <code>struct</code> fields:</p>
+<p>I initially simply changed the <code>language: go</code> field in the rule to <code>language: c</code> but was surprised nothing turned up. After toying with the <a href="https://tree-sitter.github.io/tree-sitter/7-playground.html">treesitter playground</a> (<code>treesitter</code> is used under the covers), I realized that for C, the AST is structured differently and the nodes have different names. Here is the rule working for <code>struct</code> fields:</p>
 <pre><code class="language-yaml">id: find-mtx-fields-struct-fields
 message: Mutex fields found
 severity: info
