@@ -2,12 +2,12 @@ Title: How should your mutexes be named?
 Tags: Go, Concurrency
 ---
 
-The other day a Pull Request popped up at work, it looked like this in Go (simplified):
+The other day a Pull Request popped up at work, which made me think for a bit. It looked like this (Go, simplified):
 
 ```go
 type Foo struct {
     bar int
-    barMu sync.Mutex
+    barMux sync.Mutex
 }
 ```
 
@@ -21,13 +21,17 @@ barMu.Unlock()
 
 *Yes, in this particular case an atomic would be used instead of a mutex but that's just to illustrate.*
 
-But I paused for a second: What should the mutex be named? I usually use the `xxxMtx` convention. To avoid a sterile 'you vs me' debate, I thought: What do other people do? What naming convention does the Go project use, if any? 
+But I paused for a second: What should the mutex be named? I usually use the `xxxMtx` convention. 
+
+To avoid a sterile 'you vs me' debate, I thought: What do other people do? What naming convention does the Go project use, if any? 
 
 And more generally, what is the best way to find out what naming conventions are used in a project? Since I just started a new job, it's a prevalent question which will come again and again. Thus, I need a good tool to find the answers quickly.
 
-I use `ripgrep` and `ag` all the time (probably at least once a minute), and they can do that, kind of, since they operate on raw text. What I often actually need to do is *search the code structurally*, meaning search the Abstract Syntax Tree (AST). And the good news, there are tools nowadays than can do that!
+## Structural search
 
-Enter [ast-grep](https://github.com/ast-grep/ast-grep). Suprisingly, the main way to search with it is to write a rule file in YAML. A command line search also exists but seems much more limited. Let's search for structure fields whose type is a mutex:
+I use `ripgrep`, `ag` and `awk` all the time when developing (probably at least once a minute), and they can do that, kind of, since they operate on raw text. What I often actually need to do is *search the code structurally*, meaning search the Abstract Syntax Tree (AST). And the good news, there are tools nowadays than can do that! I never took the time to learn one, so I felt this is the occasion.
+
+Enter [ast-grep](https://github.com/ast-grep/ast-grep). Suprisingly, the main way to search with it is to write a rule file in YAML. A command line search also exists but seems much more limited. Let's search for structure fields that are a mutex:
 
 ```yaml
 id: find-mtx-fields
@@ -46,7 +50,8 @@ rule:
         regex: "Mutex"
 ```
 
-A potential match must pass all conditions under the `all` section to be a result.
+A potential match must pass all conditions under the `all` section to be a result. There are other ways to write this rule, but this works. Note that the regexp is loose enough to match different kinds of mutex types such as `sync.Mutex` and `sync.RWMutex`.
+
 
 When we run the tool on the Go project source code, we get something like this (excerpt):
 
@@ -76,7 +81,51 @@ note[find-mtx-fields]: Mutex fields found
 [...]
 ```
 
-Very useful. The tool can do much more, but that's enough for us to discover that there isn't *one* naming convention in this case:
+Very useful. The tool can do much more, such as rewriting code, etc, but that's enough for us to discover that there isn't *one* naming convention in this case. Also, the mutex is not always named after the variable it protects. So, is there at least a convention used in the majority of cases?
+
+## A naming convention to rule them all
+
+Unfortunately I did not find a built-in way to post-process the results from `ast-grep`, so I resorted to goold ol' AWK:
+
+```awk
+/^[0-9]+/ {
+  if ($3 ~ /(m|M)u$/) { 
+    stats["mu"] += 1
+  }
+  else if ($3 ~ /(m|M)ux$/) { 
+    stats["mux"] += 1
+  }
+  else if ($3 ~ /(m|M)tx$/) { 
+    stats["mtx"] += 1
+  }
+  else if ($3 ~ /(m|M)utex$/) { 
+    stats["mutex"] += 1
+  }
+  else if ($3 ~ /(l|L)ock$/) { 
+    stats["lock"] += 1
+  } else {
+    stats["other"] += 1
+  }
+}
+
+END {
+  for (k in stats) {
+    print k, stats[k]
+  }
+}
+```
+
+And here are the statistics (commit `7800f4f`, 2025-06-08):
+
+```sh
+$ ast-grep scan --rule ~/scratch/mtx.yaml | awk -f ~/scratch/ast-grep-post.awk 
+lock 6
+other 11
+mutex 11
+mu 131
+```
+
+So in conclusion: If you want to follow the same naming conventions as the Go project, use `xxxMu` as a name for your mutexes. I would also add, and this is subjective: name the mutex after the variable it protects for clarity, e.g.: `bar` and `barMu`. In nearly every case in the Go project where this rule was not followed, a code comment explained which variable the mutex protected. Might as well have it in the name I think. Perhaps the Go developers made this choice in situations where one mutex protected multiple variables?
 
 ## Low-tech alternatives
 
