@@ -2,7 +2,7 @@ Title: How should your mutexes be named?
 Tags: Go, Awk, Search
 ---
 
-I have started a new job recently and the main challenge, I find, is to ingest and adapt to a big codebase that does things slightly differently than what you are used to.
+I have started a new job recently and the main challenge, I find, is to ingest and adapt to a big codebase that does things slightly differently than what I am used to.
 
 This article explores ways to make this phase go smoother.
 
@@ -35,7 +35,7 @@ And more generally, what is the best way to find out what naming conventions or 
 
 ## Structural search
 
-I use `ripgrep` and `awk` all the time when developing, probably at least once a minute, and these tools can give us the answers... kind of, since they operate on raw text. 
+I use `ripgrep` and `awk` all the time when developing, probably at least once a minute, and these tools can give us the answers... kind of, since they operate on raw text. Complex code constructs or contextual searches e.g. 'A function call whose third argument is a number and the function name starts with `get`' may be impossible to find correctly.
 
 What I often actually need to do is *search the code structurally*, meaning search the Abstract Syntax Tree (AST). And the good news is, there are tools nowadays than can do that! I never took the time to learn one, even though this came up a few times, so I felt this is finally the occasion.
 

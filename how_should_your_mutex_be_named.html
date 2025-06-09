@@ -100,7 +100,7 @@
   </li>
 </ul>
 
-<p>I have started a new job recently and the main challenge, I find, is to ingest and adapt to a big codebase that does things slightly differently than what you are used to.</p>
+<p>I have started a new job recently and the main challenge, I find, is to ingest and adapt to a big codebase that does things slightly differently than what I am used to.</p>
 <p>This article explores ways to make this phase go smoother.</p>
 <hr />
 <p>The other day a Pull Request popped up at work, which made me think for a bit. It looked like this (Go, simplified):</p>
@@ -122,7 +122,7 @@ barMux.Unlock()
   <a class="title" href="#404658211-structural-search">Structural search</a>
   <a class="hash-anchor" href="#404658211-structural-search" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
-<p>I use <code>ripgrep</code> and <code>awk</code> all the time when developing, probably at least once a minute, and these tools can give us the answers... kind of, since they operate on raw text.</p>
+<p>I use <code>ripgrep</code> and <code>awk</code> all the time when developing, probably at least once a minute, and these tools can give us the answers... kind of, since they operate on raw text. Complex code constructs or contextual searches e.g. 'A function call whose third argument is a number and the function name starts with <code>get</code>' may be impossible to find correctly.</p>
 <p>What I often actually need to do is <em>search the code structurally</em>, meaning search the Abstract Syntax Tree (AST). And the good news is, there are tools nowadays than can do that! I never took the time to learn one, even though this came up a few times, so I felt this is finally the occasion.</p>
 <p>Enter <a href="https://github.com/ast-grep/ast-grep">ast-grep</a>. Surprisingly, the main way to search with it is to write a rule file in YAML. A command line search also exists but seems much more limited.</p>
 <p>Let's thus search for 'structure fields' whose type is a 'mutex':</p>
