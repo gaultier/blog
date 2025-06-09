@@ -100,7 +100,7 @@
   </li>
 
   <li>
-    <a href="#2356890292-addendum-how-were-mutexes-named-in-the-c-implementation-of-the-go-compiler">Addendum: How were mutexes named in the C implementation of the Go compiler?</a>
+    <a href="#3232348814-addendum-what-were-mutexes-named-in-the-c-implementation-of-the-go-compiler">Addendum: What were mutexes named in the C implementation of the Go compiler?</a>
   </li>
 </ul>
 
@@ -299,9 +299,9 @@ in_struct &amp;&amp; /^}$/ { in_struct = 0 }
 <p>I think having one structural search program in your toolbox is a good idea, especially if you intend to use it as a linter and mass refactoring tool.</p>
 <p>If all you want to do is a one-time search, text search programs such as <code>ripgrep</code> and <code>awk</code> should probably be your first stab at it.</p>
 <p>Also, I think I would prefer using a SQL-like syntax to define rules, over writing YAML with pseudo-code constructs.</p>
-<h2 id="2356890292-addendum-how-were-mutexes-named-in-the-c-implementation-of-the-go-compiler">
-  <a class="title" href="#2356890292-addendum-how-were-mutexes-named-in-the-c-implementation-of-the-go-compiler">Addendum: How were mutexes named in the C implementation of the Go compiler?</a>
-  <a class="hash-anchor" href="#2356890292-addendum-how-were-mutexes-named-in-the-c-implementation-of-the-go-compiler" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+<h2 id="3232348814-addendum-what-were-mutexes-named-in-the-c-implementation-of-the-go-compiler">
+  <a class="title" href="#3232348814-addendum-what-were-mutexes-named-in-the-c-implementation-of-the-go-compiler">Addendum: What were mutexes named in the C implementation of the Go compiler?</a>
+  <a class="hash-anchor" href="#3232348814-addendum-what-were-mutexes-named-in-the-c-implementation-of-the-go-compiler" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>I wondered if the way mutexes are named in the Go project actually comes from the time were the Go compiler and much of the runtime were implemented in C.
 We can easily check this out with the same approach. This illustrates that <code>ast-grep</code> works for different languages, and also the slight differences.</p>

@@ -217,7 +217,7 @@ If all you want to do is a one-time search, text search programs such as `ripgre
 Also, I think I would prefer using a SQL-like syntax to define rules, over writing YAML with pseudo-code constructs.
 
 
-## Addendum: How were mutexes named in the C implementation of the Go compiler?
+## Addendum: What were mutexes named in the C implementation of the Go compiler?
 
 I wondered if the way mutexes are named in the Go project actually comes from the time were the Go compiler and much of the runtime were implemented in C. 
 We can easily check this out with the same approach. This illustrates that `ast-grep` works for different languages, and also the slight differences.
