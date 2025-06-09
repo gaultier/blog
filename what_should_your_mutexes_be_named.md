@@ -94,7 +94,7 @@ note[find-mtx-fields]: Mutex fields found
 Very useful. The tool can do much more, but that's enough for us to discover that there isn't *one* naming convention in use. Also, the mutex is not always named after the variable it protects (e.g.: `mutex` protects `seq`).
 
 
-So, is there at least a convention used in the majority of cases? How can we get aggregate the results?
+So, is there at least a convention used in the majority of cases? How can we aggregate the results?
 
 ## A naming convention to rule them all
 
