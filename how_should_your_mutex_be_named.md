@@ -2,7 +2,7 @@ Title: How should your mutexes be named?
 Tags: Go, Concurrency
 ---
 
-The other day a Pull Request popped up at work, it looked like this (simplified):
+The other day a Pull Request popped up at work, it looked like this in Go (simplified):
 
 ```go
 type Foo struct {
