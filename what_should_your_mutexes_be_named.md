@@ -1,4 +1,4 @@
-Title: How should your mutexes be named?
+Title: What should your mutexes be named?
 Tags: Go, Awk, Search
 ---
 
