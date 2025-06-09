@@ -2,7 +2,11 @@ Title: How should your mutexes be named?
 Tags: Go, Awk, Search
 ---
 
-I have started a new job recently and the main challenge I find is to ingest and adapt to a big codebase that does things slightly differently than what you are used to.
+I have started a new job recently and the main challenge, I find, is to ingest and adapt to a big codebase that does things slightly differently than what you are used to.
+
+This article explores ways to make this phase go smoother.
+
+---
 
 The other day a Pull Request popped up at work, which made me think for a bit. It looked like this (Go, simplified):
 
@@ -16,9 +20,9 @@ type Foo struct {
 It's a typical approach with concurrent code: a mutex protects the variable it is named after. So using the variable `bar` looks like this:
 
 ```go
-barMu.Lock()
+barMux.Lock()
 bar += 1
-barMu.Unlock()
+barMux.Unlock()
 ```
 
 *Yes, in this simplistic case an atomic would likely be used instead of a mutex but that's just to illustrate.*

@@ -100,7 +100,9 @@
   </li>
 </ul>
 
-<p>I have started a new job recently and the main challenge I find is to ingest and adapt to a big codebase that does things slightly differently than what you are used to.</p>
+<p>I have started a new job recently and the main challenge, I find, is to ingest and adapt to a big codebase that does things slightly differently than what you are used to.</p>
+<p>This article explores ways to make this phase go smoother.</p>
+<hr />
 <p>The other day a Pull Request popped up at work, which made me think for a bit. It looked like this (Go, simplified):</p>
 <pre><code class="language-go">type Foo struct {
     bar int
@@ -108,9 +110,9 @@
 }
 </code></pre>
 <p>It's a typical approach with concurrent code: a mutex protects the variable it is named after. So using the variable <code>bar</code> looks like this:</p>
-<pre><code class="language-go">barMu.Lock()
+<pre><code class="language-go">barMux.Lock()
 bar += 1
-barMu.Unlock()
+barMux.Unlock()
 </code></pre>
 <p><em>Yes, in this simplistic case an atomic would likely be used instead of a mutex but that's just to illustrate.</em></p>
 <p>But I paused for a second: What should the mutex be named? I usually use the <code>xxxMtx</code> convention, so I'd have named it <code>barMtx</code>.</p>
