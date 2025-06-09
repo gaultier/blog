@@ -177,6 +177,8 @@ type Foo struct {
 
 ## Conclusion
 
-I think one structural search tool is a very useful tool to have in your toolbox as a software developer, especially if you intend to use it as a linter and refactoring tool. If all you want to do is a one-time search, text search programs such as `ripgrep` and `awk` probably should be your first stab at it.
+I think one structural search program is a very useful tool to have in your toolbox as a software developer, especially if you intend to use it as a linter and mass refactoring tool. 
+
+If all you want to do is a one-time search, text search programs such as `ripgrep` and `awk` probably should be your first stab at it.
 
 Also, I think I would prefer using a SQL-like syntax to define rules over YAML with pseudo-code constructs like `all`.
