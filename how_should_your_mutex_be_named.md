@@ -2,6 +2,8 @@ Title: How should your mutexes be named?
 Tags: Go, Awk, Search
 ---
 
+I have started a new job recently and the main challenge I find is to ingest and adapt to a big codebase that does things slightly differently than what you are used to.
+
 The other day a Pull Request popped up at work, which made me think for a bit. It looked like this (Go, simplified):
 
 ```go
@@ -23,15 +25,15 @@ barMu.Unlock()
 
 But I paused for a second: What should the mutex be named? I usually use the `xxxMtx` convention, so I'd have named it `barMtx`. 
 
-To avoid a sterile 'you vs me' debate, I thought: What do other people do? What naming convention is in use in the project, if any? I'll ddemonstrate this method in the realm of the Go standard library.
+To avoid a sterile 'you vs me' debate, I thought: What do other people do? What naming convention is in use in the project, if any? I'll demonstrate this method in the realm of the Go standard library.
 
-And more generally, what is the best way to find out what naming conventions or code patterns are used in a project? Since I just started a new job, it's a prevalent question which will come again and again - there is a lot of unknown code ahead of me! Thus, I need a good tool to find the answers quickly.
+And more generally, what is the best way to find out what naming conventions or code patterns are used in a project? Since I just started this new job, it's a prevalent question which will come again and again - there is a lot of unknown code ahead of me! Thus, I need a good tool to find the answers quickly.
 
 ## Structural search
 
-I use `ripgrep` (or equivalent) and `awk` all the time when developing, probably at least once a minute, and these tools can do that... kind of, since they operate on raw text. 
+I use `ripgrep` and `awk` all the time when developing, probably at least once a minute, and these tools can give us the answers... kind of, since they operate on raw text. 
 
-What I often actually need to do is *search the code structurally*, meaning search the Abstract Syntax Tree (AST). And the good news is, there are tools nowadays than can do that! I never took the time to learn one, even though the need came up a few times, so I felt this is finally the occasion.
+What I often actually need to do is *search the code structurally*, meaning search the Abstract Syntax Tree (AST). And the good news is, there are tools nowadays than can do that! I never took the time to learn one, even though this came up a few times, so I felt this is finally the occasion.
 
 Enter [ast-grep](https://github.com/ast-grep/ast-grep). Surprisingly, the main way to search with it is to write a rule file in YAML. A command line search also exists but seems much more limited. 
 
@@ -92,9 +94,11 @@ So, is there at least a convention used in the majority of cases? How can we get
 
 ## A naming convention to rule them all
 
-Unfortunately I did not find a built-in way to post-process the results from `ast-grep`, so I resorted to goold ol' AWK:
+Unfortunately I did not find a built-in way to post-process the results from `ast-grep`, so I resorted to good old AWK:
 
 ```awk
+# ~/scratch/ast-grep-post.awk
+
 /^[0-9]+/ {
   if ($3 ~ /(m|M)u$/) { 
     stats["mu"] += 1
@@ -132,16 +136,20 @@ mutex 11
 mu 131
 ```
 
-So according to these statistics: if you want to follow the same naming conventions as the Go project, **use `xxxMu` as a name for your mutexes**.
+So according to these statistics: if you want to follow the same naming convention as the Go project primary one, **use `xxxMu` as a name for your mutexes**.
 
-I would also add, and this is subjective: **name the mutex after the variable it protects for clarity, e.g.: `bar` and `barMu`**. In nearly every case in the Go project where this rule of thumb was not followed, a code comment was present to explain which variable the mutex protects. We might as well have this information in the mutex variable name. Even for cases where the mutex protects multiple variables, the Go developers often picked one of the variables and named  the variable after it:
+I would also add, and this is subjective: **name the mutex after the variable it protects for clarity, e.g.: `bar` and `barMu`**. In nearly every case in the Go project where this rule of thumb was not followed, a code comment was present to explain which variable the mutex protects. We might as well have this information in the mutex variable name.
 
-```
-note[find-mtx-fields]: Mutex fields found
-     ┌─ cmd/internal/obj/link.go:1154:2
-     │
-1154 │     hashmu             sync.Mutex       // protects hash, funchash
-     │     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Even for cases where the mutex protects multiple variables, the Go developers often picked one of the variables and named  the variable after it:
+
+```go
+type Link struct {
+	hashmu             sync.Mutex       // protects hash, funchash
+	hash               map[string]*LSym 
+	funchash           map[string]*LSym
+
+        [...]
+}
 ```
 
 ## Low-tech alternatives
@@ -149,12 +157,12 @@ note[find-mtx-fields]: Mutex fields found
 A quick and dirty way to achieve the same with a regexp is:
 
 ```
-rg -t go '^\s+\w+\s+sync\.Mutex$'
+$ rg -t go '^\s+\w+\s+sync\.Mutex$'
 ```
 
-This works since Go is a language with only one way to define a struct field, but some languages would be more difficult.
+This works since Go is a language with only one way to define a `struct` field, but some languages would be more difficult.
 
-Another way to only find field declarations would be to use awk to remember whether or not we are inside a struct definition:
+Another way to only find field declarations would be to use AWK to remember whether or not we are inside a `struct` definition:
 
 ```awk
 /\s+struct\s+/ { in_struct = 1 }
@@ -164,7 +172,7 @@ in_struct && /\s+\w+\s+sync\.Mutex/ { print }
 in_struct && /^}$/ { in_struct = 0 }
 ```
 
-But this might not work, or at least need to be adapted, to cover complex constructs such as defining a struct within a struct:
+But this might not work, or at least need to be adapted, to cover complex constructs such as defining a `struct` within a `struct`:
 
 ```go
 type Foo struct {

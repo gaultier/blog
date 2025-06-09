@@ -35,6 +35,7 @@ return {
         built_in: ""
     },
     illegal: "</",
+  contains: [ hljs.COMMENT('#', '$'), ]
 }
 });
 
