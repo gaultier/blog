@@ -21,6 +21,62 @@
   + diffent calling convention for functions & system calls in the SysV ABI (4th argument)
   + no (to my knowledge) mnemonic accepts 2 immediates or effective addresses as operands  e.g. `cmp 1, 0`
 - [ ] Golang data race due to closure capture
+    ```go
+    package main
+
+    import (
+        "fmt"
+        "net/http"
+        "strings"
+    )
+
+    func NewMiddleware(rateLimitEnabled bool) http.Handler {
+        return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+            if strings.HasPrefix(r.URL.Path, "/admin") {
+                rateLimitEnabled = false
+                w.Write([]byte("admin section"))
+                return
+            }
+
+            fmt.Fprintf(w, "Rate limiting enabled: %v", rateLimitEnabled)
+        })
+    }
+
+    func main() {
+        handler := NewMiddleware(true)
+        http.Handle("/", handler)
+        http.ListenAndServe(":3001", nil)
+    }
+    ```
+
+    ```
+    diff --git a/http-race.go b/http-race.go
+    index 4e38871..ba9398a 100644
+    --- a/http-race.go
+    +++ b/http-race.go
+    @@ -6,8 +6,10 @@ import (
+        "strings"
+     )
+     
+    -func NewMiddleware(rateLimitEnabled bool) http.Handler {
+    +func NewMiddleware() http.Handler {
+        return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+    +		rateLimitEnabled := true
+    +
+            if strings.HasPrefix(r.URL.Path, "/admin") {
+                rateLimitEnabled = false
+                w.Write([]byte("admin section"))
+    @@ -19,7 +21,7 @@ func NewMiddleware(rateLimitEnabled bool) http.Handler {
+     }
+     
+     func main() {
+    -	handler := NewMiddleware(true)
+    +	handler := NewMiddleware()
+        http.Handle("/", handler)
+        http.ListenAndServe(":3001", nil)
+     }
+
+    ```
 - [ ] How to get the current SQL schema when all you have is lots of migrations (deltas)
 - [ ] 'About' page
 - [ ] Search and replace fish function
