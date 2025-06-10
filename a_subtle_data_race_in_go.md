@@ -169,7 +169,7 @@ Ok, it's a logic bug. Not yet a data race, right? (We could debate whether there
 
 Well, when is this closure called? When handling **every single incoming HTTP request, concurrently.**
 
-It's as if we spawned many goroutines which all called this function concurrently. So it is indeed a data race.
+It's as if we spawned many goroutines which all called this function concurrently, and said function reads and writes an outer variable without any synchronization. So it is indeed a data race.
 
 Here is thus the fixed code:
 

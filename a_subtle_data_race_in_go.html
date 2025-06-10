@@ -238,7 +238,7 @@ path=/ rate_limit_enabled=yes
 <hr />
 <p>Ok, it's a logic bug. Not yet a data race, right? (We could debate whether there is a difference between the two. I think not. But let's move on).</p>
 <p>Well, when is this closure called? When handling <strong>every single incoming HTTP request, concurrently.</strong></p>
-<p>It's as if we spawned many goroutines which all called this function concurrently. So it is indeed a data race.</p>
+<p>It's as if we spawned many goroutines which all called this function concurrently, and said function reads and writes an outer variable without any synchronization. So it is indeed a data race.</p>
 <p>Here is thus the fixed code:</p>
 <pre><code class="language-go">package main
 
