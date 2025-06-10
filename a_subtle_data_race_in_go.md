@@ -50,7 +50,7 @@ func main() {
 }
 ```
 
-It's very typical Go code I would say. The only interesting thing going on here, is that we never do rate-limiting for the admin section of the site. That's handy if a user is abusing the site, say with a Denial of Service, and the admin has to go disable their account as fast as possible.
+It's very typical Go code I would say. The only interesting thing going on here, is that we never do rate-limiting for the admin section of the site. That's handy if a user is abusing the site, and the admin has to go disable their account as fast as possible.
 
 The intent behind the `rateLimitEnabled` parameter was likely to have it 'off' in development mode, and 'on' in production, based on some environment variable read in `main` (also omitted here).
 
@@ -233,7 +233,7 @@ auto fn =  [a, b, c]() { return a + b + c; };
 int res = fn();
 ``` 
 
-After writing quite a lot of code in C, Zig and Odin, which all do *not* have support for closures, I actually do not miss them. I even think they might have been a mistake to have in most languages. Every single time I have to deal with code with closures, it is always harder to understand and debug than code without them. It can even lead to performance issues due to hidden memory allocations, and makes the compiler quite a bit more complex. The code that gives me the most headaches is functions returning functions returning functions... You get the idea.
+After writing quite a lot of code in C, Zig and Odin, which all do *not* have support for closures, I actually do not miss them. I even think they might have been a mistake to have in most languages. Every single time I have to deal with code with closures, it is always harder to understand and debug than code without them. It can even lead to performance issues due to hidden memory allocations, and makes the compiler quite a bit more complex. The code that gives me the most headaches is functions returning functions returning functions... And some of these in the chain capture their environment implicitly... You get the idea.
 
 
 So here's my recommendation for future programming language designers:
