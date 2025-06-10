@@ -12,7 +12,10 @@ Build this blog (i.e. convert markdown files to HTML):
 
 ```sh
 $ ./build.sh release
+# Build once.
 $ ./main.bin
+# Watch & rebuild.
+$ ls *.md | entr -c ./main.bin
 ```
 
 Serve the files locally:
