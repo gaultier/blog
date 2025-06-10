@@ -111,7 +111,7 @@ Do not edit it by hand.
   <a class="title" href="#1494239933-the-original-code">The original code</a>
   <a class="hash-anchor" href="#1494239933-the-original-code" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
-<p>I have managed to reproduce the race in a self-contained Go program ressembling the real production code, and the diff for the fix is basically the same as the real one. It's a web server with a middleware to do rate limiting. The actual rate limiting code is omitted because it does not matter:</p>
+<p>I have managed to reproduce the race in a self-contained Go program resembling the real production code, and the diff for the fix is basically the same as the real one. It's a web server with a middleware to do rate limiting. The actual rate limiting code is omitted because it does not matter:</p>
 <pre><code class="language-go">package main
 
 import (
@@ -288,7 +288,7 @@ func main() {
   <a class="hash-anchor" href="#3139033100-conclusion-and-recommendations" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>This was quite a subtle data race which took me time to spot and understand. The go race detector did not notice it, even when throwing lots of concurrent requests at it. LLMs, when asked to analyze the code, did not spot it.</p>
-<p>The good news is: The Go memory model gives us some guarantees for data races. Contrary to C or C++, where a data race means the wild west of undefined behavior, it only means in Go that we may read/write the wrong value, when reading/writing machine word sizes or smaller (which is the case of booleans). However, the <a href="https://go.dev/ref/mem#restrictions">official documentation</a> warns us that reading more than one machine word at once (such as a big struct) may have dire consequences:</p>
+<p>The good news is: The Go memory model gives us some guarantees for data races. Contrary to C or C++, where a data race means the wild west of undefined behavior, it only means in Go that we may read/write the wrong value, when reading/writing machine word sizes or smaller (which is the case of booleans). However, the <a href="https://go.dev/ref/mem#restrictions">official documentation</a> warns us that reading more than one machine word at once may have dire consequences:</p>
 <blockquote>
 <p>This means that races on multiword data structures can lead to inconsistent values not corresponding to a single write. When the values depend on the consistency of internal (pointer, length) or (pointer, type) pairs, as can be the case for interface values, maps, slices, and strings in most Go implementations, such races can in turn lead to arbitrary memory corruption.</p>
 </blockquote>
