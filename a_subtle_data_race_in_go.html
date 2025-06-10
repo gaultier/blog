@@ -280,7 +280,7 @@ func main() {
   <a class="hash-anchor" href="#3139033100-conclusion-and-recommendations" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>This was quite a subtle data race which took me time to spot and understand. The go race detector did not notice it, even when throwing lots of concurrent requests at it. LLMs, when asked to analyze the code, did not spot it.</p>
-<p>The good news is: The Go memory model gives us some guarantees for data races. Contrary to C or C++, where a data race means the wild west of undefined behavior, it only means in Go that we may read/write the wrong value, when reading/writing machine word sizes or smaller (which is the case of booleans). However, the <a href="https://go.dev/ref/mem#restrictions">official documentation</a> warns us that reading more than one machine word at once (such as a big struct) may lead to undefined behavior due to breaking pre-conditions:</p>
+<p>The good news is: The Go memory model gives us some guarantees for data races. Contrary to C or C++, where a data race means the wild west of undefined behavior, it only means in Go that we may read/write the wrong value, when reading/writing machine word sizes or smaller (which is the case of booleans). However, the <a href="https://go.dev/ref/mem#restrictions">official documentation</a> warns us that reading more than one machine word at once (such as a big struct) may have dire consequences:</p>
 <blockquote>
 <p>This means that races on multiword data structures can lead to inconsistent values not corresponding to a single write. When the values depend on the consistency of internal (pointer, length) or (pointer, type) pairs, as can be the case for interface values, maps, slices, and strings in most Go implementations, such races can in turn lead to arbitrary memory corruption.</p>
 </blockquote>
@@ -300,6 +300,7 @@ int res = fn();
 <li>Consider forcing the developer to explicitly write which variables are captured (like C++ does)</li>
 <li>Have a knob in your compiler to easily see what variables are being captured in closures (like Go does)</li>
 <li>Have good statical analysis to spot common problematic patterns</li>
+<li>Consider showing in the editor captured variables in a different way, for example with a different color, from normal variables</li>
 </ul>
 <p><a href="/blog"> ⏴ Back to all articles</a></p>
 
