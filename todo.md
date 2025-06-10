@@ -23,6 +23,7 @@
 - [ ] Golang data race due to closure capture
 - [ ] How to get the current SQL schema when all you have is lots of migrations (deltas)
 - [ ] 'About' page
+- [ ] Search and replace fish function
 
 ## Blog implementation
 
