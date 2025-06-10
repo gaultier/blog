@@ -16,41 +16,42 @@ I have managed to reproduce the race in a self-contained Go program ressembling 
 package main
 
 import (
-"net/http"
-"strings"
+	"fmt"
+	"net/http"
+	"strings"
 )
 
 func NewMiddleware(handler http.Handler, rateLimitEnabled bool) http.Handler {
-    return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-        if strings.HasPrefix(r.URL.Path, "/admin") {
-            rateLimitEnabled = false
-        }
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if strings.HasPrefix(r.URL.Path, "/admin") {
+			rateLimitEnabled = false
+		}
 
-        if rateLimitEnabled {
-            println("rate limiting...")
-            // Rate limiting logic here ...
-        } else {
-            println("not rate limiting")
-        }
+		if rateLimitEnabled {
+			fmt.Printf("path=%s rate_limit_enabled=yes\n", r.URL.Path)
+			// Rate limiting logic here ...
+		} else {
+			fmt.Printf("path=%s rate_limit_enabled=no\n", r.URL.Path)
+		}
 
-        handler.ServeHTTP(w, r)
-    })
+		handler.ServeHTTP(w, r)
+	})
 }
 
 func handle(w http.ResponseWriter, r *http.Request) {
-    w.Write([]byte("hello!\n"))
+	w.Write([]byte("hello!\n"))
 }
 
 func main() {
-    handler := http.HandlerFunc(handle)
-    middleware := NewMiddleware(handler, true)
-    http.Handle("/", middleware)
+	handler := http.HandlerFunc(handle)
+	middleware := NewMiddleware(handler, true)
+	http.Handle("/", middleware)
 
-    http.ListenAndServe(":3001", nil)
+	http.ListenAndServe(":3001", nil)
 }
 ```
 
-It's very typical Go code I would say. The only interesting thing going on here, is that we never do rate-limiting for the admin section of the site. That's handy if a user is abusing the site, and the admin has to go disable their account as fast as possible.
+It's very typical Go code I would say. The only interesting thing going on here, is that we never do rate-limiting for the admin section of the site. That's handy if a user is abusing the site, and the admin has to go disable their account as fast as possible in the admin section.
 
 The intent behind the `rateLimitEnabled` parameter was likely to have it 'off' in development mode, and 'on' in production, based on some environment variable read in `main` (also omitted here).
 
@@ -70,10 +71,10 @@ $ curl http://localhost:3001/
 We see these server logs:
 
 ```
-rate limiting...
-not rate limiting
-not rate limiting
-not rate limiting
+path=/ rate_limit_enabled=yes
+path=/admin rate_limit_enabled=no
+path=/ rate_limit_enabled=no
+path=/ rate_limit_enabled=no
 ```
 
 *The actual output could vary from machine to machine due to the data race. This is what I have observed on one machine.*
@@ -81,15 +82,15 @@ not rate limiting
 The third log is definitely wrong. We would have expected:
 
 ```
-rate limiting...
-not rate limiting
-rate limiting...
-rate limiting...
+path=/ rate_limit_enabled=yes
+path=/admin rate_limit_enabled=no
+path=/ rate_limit_enabled=yes
+path=/ rate_limit_enabled=yes
 ```
 
 The non-admin section of the site should be rate limited, always. But it's apparently not, starting from the second request. Trying to access the admin section disables rate limiting for everyone, until the next server restart! So this data race just became a security vulnerability as well!
 
-In the real code at work it was actually not a security issue, since the parameter in question governed something related to metrics about rate limiting, so the consequence was only that some metrics were wrong. Which is how the bug was initially spotted.
+In the real code at work it was actually not a security issue, since the parameter in question governed something related to metrics about rate limiting, not rate limiting itself, so the consequence was only that some metrics were wrong. Which is how the bug was initially spotted.
 
 ## The fix
 
@@ -97,10 +98,10 @@ The diff for the fix looks like this:
 
 ```
 diff --git a/http-race.go b/http-race.go
-index 3d94a71..90b571e 100644
+index deff273..6c73b7e 100644
 --- a/http-race.go
 +++ b/http-race.go
-@@ -5,8 +5,10 @@ import (
+@@ -6,8 +6,10 @@ import (
  	"strings"
  )
  
@@ -112,7 +113,7 @@ index 3d94a71..90b571e 100644
  		if strings.HasPrefix(r.URL.Path, "/admin") {
  			rateLimitEnabled = false
  		}
-@@ -28,7 +30,7 @@ func handle(w http.ResponseWriter, r *http.Request) {
+@@ -29,7 +31,7 @@ func handle(w http.ResponseWriter, r *http.Request) {
  
  func main() {
  	handler := http.HandlerFunc(handle)
@@ -121,6 +122,7 @@ index 3d94a71..90b571e 100644
  	http.Handle("/", middleware)
  
  	http.ListenAndServe(":3001", nil)
+
 ```
 
 Just transforming a function argument to a local variable. No other change. How can it be?
@@ -137,10 +139,10 @@ $ curl http://localhost:3001/
 Server logs:
 
 ```
-rate limiting...
-not rate limiting
-rate limiting...
-rate limiting...
+path=/ rate_limit_enabled=yes
+path=/admin rate_limit_enabled=no
+path=/ rate_limit_enabled=yes
+path=/ rate_limit_enabled=yes
 ```
 
 As expected.
