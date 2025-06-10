@@ -1,5 +1,5 @@
 Title: Tip of the day #6: Use Bpftrace to estimate how much memory an in-memory cache will use
-Tags: Go, Tip of the day, Bpftrace
+Tags: Go, Tip of the day, Bpftrace, C
 ---
 
 ## Context
