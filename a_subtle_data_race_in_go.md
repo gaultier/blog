@@ -77,7 +77,7 @@ path=/ rate_limit_enabled=no
 path=/ rate_limit_enabled=no
 ```
 
-*The actual output could vary from machine to machine due to the data race. This is what I have observed on one machine. Reading the Go memory model, another legal behavior in this case could be immediately aborting the program. No symptoms at all is not possible, as we'll see later.*
+*The actual output could vary from machine to machine due to the data race. This is what I have observed on one machine. Reading the Go memory model, another legal behavior in this case could be to immediately abort the program. No symptoms at all is not possible. The only question is when the race will manifest. When receiving lots of HTTP requests, it might not happen right after the first request. See the 'Conclusion and recommendations' section for more information.*
 
 The third log is definitely wrong. We would have expected:
 
