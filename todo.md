@@ -48,7 +48,9 @@
   + HTTP server & HTML page communicate via websocket to reload content (complex)
   + HTTP2 force push to force the browser to get the new page version?
   + Server sent event to reload the page
+  + Websocket
 - [ ] Built-in http server
+- [ ] Built-in file watch
 - [ ] Syntax highlighting done statically
 - [ ] Highlight only the changed lines in a code snippet
 - [ ] Copy-paste button for code snippets
