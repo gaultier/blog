@@ -165,7 +165,7 @@ We can plainly see that `rateLimitEnabled` is being captured.
 
 ---
 
-Ok, it's a logic bug. Not yet a data race, right? 
+Ok, it's a logic bug. Not yet a data race, right? (We could debate whether there is a difference between the two. I think not. But let's move on).
 
 Well, when is this closure called? When handling **every single incoming HTTP request, concurrently.**
 
