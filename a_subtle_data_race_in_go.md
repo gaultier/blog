@@ -256,4 +256,5 @@ So here's my personal recommendation for future programming language designers:
   - Have a knob in your compiler to easily see what variables are being captured in closures (like Go does)
   - Have good statical analysis to spot common problematic patterns (`golangci-lint` finds the bug neither in our reproducer nor in the real production service)
   - Consider showing in the editor captured variables in a different way, for example with a different color, from normal variables
+3. Implement a race detector (even if that just means using Thread sanitizer).
 3. Document precisely what is the memory model you offer and what are legal behaviors in the presence of data races. Big props to Go for doing this very well. 
