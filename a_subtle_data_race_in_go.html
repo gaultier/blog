@@ -159,9 +159,11 @@ func main() {
 <pre><code>$ curl http://localhost:3001/
 $ curl http://localhost:3001/admin
 $ curl http://localhost:3001/
+$ curl http://localhost:3001/
 </code></pre>
 <p>We see these server logs:</p>
 <pre><code>rate limiting...
+not rate limiting
 not rate limiting
 not rate limiting
 </code></pre>
@@ -169,6 +171,7 @@ not rate limiting
 <p>The third log is definitely wrong. We would have expected:</p>
 <pre><code>rate limiting...
 not rate limiting
+rate limiting...
 rate limiting...
 </code></pre>
 <p>The non-admin section of the site should be rate limited, always. But it's apparently not, starting from the second request. Trying to access the admin section disables rate limiting for everyone, until the next server restart! So this data race just became a security vulnerability as well!</p>
@@ -209,10 +212,12 @@ index 3d94a71..90b571e 100644
 <pre><code>$ curl http://localhost:3001/
 $ curl http://localhost:3001/admin
 $ curl http://localhost:3001/
+$ curl http://localhost:3001/
 </code></pre>
 <p>Server logs:</p>
 <pre><code>rate limiting...
 not rate limiting
+rate limiting...
 rate limiting...
 </code></pre>
 <p>As expected.</p>

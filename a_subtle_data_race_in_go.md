@@ -64,12 +64,14 @@ Let's observe the behavior with a few HTTP requests:
 $ curl http://localhost:3001/
 $ curl http://localhost:3001/admin
 $ curl http://localhost:3001/
+$ curl http://localhost:3001/
 ```
 
 We see these server logs:
 
 ```
 rate limiting...
+not rate limiting
 not rate limiting
 not rate limiting
 ```
@@ -81,6 +83,7 @@ The third log is definitely wrong. We would have expected:
 ```
 rate limiting...
 not rate limiting
+rate limiting...
 rate limiting...
 ```
 
@@ -128,6 +131,7 @@ We can confirm that the behavior is now correct:
 $ curl http://localhost:3001/
 $ curl http://localhost:3001/admin
 $ curl http://localhost:3001/
+$ curl http://localhost:3001/
 ```
 
 Server logs:
@@ -135,6 +139,7 @@ Server logs:
 ```
 rate limiting...
 not rate limiting
+rate limiting...
 rate limiting...
 ```
 
