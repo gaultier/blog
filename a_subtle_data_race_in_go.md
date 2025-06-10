@@ -177,6 +177,7 @@ Here is thus the fixed code:
 package main
 
 import (
+	"fmt"
 	"net/http"
 	"strings"
 )
@@ -190,10 +191,10 @@ func NewMiddleware(handler http.Handler) http.Handler {
 		}
 
 		if rateLimitEnabled {
-			println("rate limiting...")
+			fmt.Printf("path=%s rate_limit_enabled=yes\n", r.URL.Path)
 			// Rate limiting logic here ...
 		} else {
-			println("not rate limiting")
+			fmt.Printf("path=%s rate_limit_enabled=no\n", r.URL.Path)
 		}
 
 		handler.ServeHTTP(w, r)

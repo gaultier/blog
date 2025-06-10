@@ -243,6 +243,7 @@ path=/ rate_limit_enabled=yes
 <pre><code class="language-go">package main
 
 import (
+	&quot;fmt&quot;
 	&quot;net/http&quot;
 	&quot;strings&quot;
 )
@@ -256,10 +257,10 @@ func NewMiddleware(handler http.Handler) http.Handler {
 		}
 
 		if rateLimitEnabled {
-			println(&quot;rate limiting...&quot;)
+			fmt.Printf(&quot;path=%s rate_limit_enabled=yes\n&quot;, r.URL.Path)
 			// Rate limiting logic here ...
 		} else {
-			println(&quot;not rate limiting&quot;)
+			fmt.Printf(&quot;path=%s rate_limit_enabled=no\n&quot;, r.URL.Path)
 		}
 
 		handler.ServeHTTP(w, r)
