@@ -49,6 +49,15 @@
     }
     ```
 
+    ```sh
+    $ curl http://localhost:3001/
+    Rate limiting enabled: true
+    $ curl http://localhost:3001/admin
+    admin section
+    $ curl http://localhost:3001/
+    Rate limiting enabled: false
+    ```
+
     ```
     diff --git a/http-race.go b/http-race.go
     index 4e38871..ba9398a 100644
