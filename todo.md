@@ -22,6 +22,7 @@
   + no (to my knowledge) mnemonic accepts 2 immediates or effective addresses as operands  e.g. `cmp 1, 0`
 - [ ] Golang data race due to closure capture
 - [ ] How to get the current SQL schema when all you have is lots of migrations (deltas)
+- [ ] 'About' page
 
 ## Blog implementation
 
