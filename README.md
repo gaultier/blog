@@ -3,9 +3,10 @@ https://gaultier.github.io/blog/
 
 ## Quickstart
 
+*Ensure git submodules are present e.g. `git submodule update --init`.*
+
 Requirements: 
-- A C compiler
-- [cmark-gfm](https://github.com/github/cmark-gfm) 
+- A C23 compiler
 - `git`
 
 Build this blog (i.e. convert markdown files to HTML):
