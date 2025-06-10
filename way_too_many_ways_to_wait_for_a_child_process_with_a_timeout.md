@@ -114,7 +114,7 @@ exit(1)
 
 *There is a degenerate case where the give command to run is wrong (e.g. typo in the parameters) or the executable does not exist, and our program will happily retry it to the bitter end. But there is solace: this is bounded by the number of retries (10). That's why we do not retry forever.*
 
-## First way: old-school sigsuspend
+## First approach: old-school sigsuspend
 
 That's how `timeout` from coreutils [implements](https://git.savannah.gnu.org/gitweb/?p=coreutils.git;a=blob;f=src/timeout.c;h=5600ce42957dcf117785f6a361ef72ac9c2df352;hb=HEAD) it. This is quite simple on paper:
 
@@ -145,9 +145,11 @@ So... I don't *love* this approach:
 
 So, let's stick with signals for a bit but simplify our current approach.
 
-## Second way: sigtimedwait
+## Second approach: sigtimedwait
 
 Wouldn't it be great if we could wait on a signal, say, `SIGCHLD`, with a timeout? Oh look, a system call that does exactly that *and* is standardized by POSIX 2001. Cool! I am not quite sure why the `timeout` program does not use it, but we sure as hell can. My only guess would be that they want to support old Unices pre 2001, or non POSIX systems.
+
+*A knowledgeable reader has [pointed out](https://github.com/gaultier/blog/issues/22) that `sigtimedwait` was optional in POSIX 2001 and as such not implemented in some operating systems. It was made mandatory in POSIX 2008 but the adoption was slow.*
 
 Anyways, here's a very straightforward implementation:
 

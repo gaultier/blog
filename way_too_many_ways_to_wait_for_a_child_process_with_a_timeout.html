@@ -84,11 +84,11 @@
   </li>
 
   <li>
-    <a href="#1028185512-first-way-old-school-sigsuspend">First way: old-school sigsuspend</a>
+    <a href="#268719357-first-approach-old-school-sigsuspend">First approach: old-school sigsuspend</a>
   </li>
 
   <li>
-    <a href="#3926643734-second-way-sigtimedwait">Second way: sigtimedwait</a>
+    <a href="#242573005-second-approach-sigtimedwait">Second approach: sigtimedwait</a>
   </li>
 
   <li>
@@ -239,9 +239,9 @@ for retry in 0..&lt;10:
 exit(1)
 </code></pre>
 <p><em>There is a degenerate case where the give command to run is wrong (e.g. typo in the parameters) or the executable does not exist, and our program will happily retry it to the bitter end. But there is solace: this is bounded by the number of retries (10). That's why we do not retry forever.</em></p>
-<h2 id="1028185512-first-way-old-school-sigsuspend">
-  <a class="title" href="#1028185512-first-way-old-school-sigsuspend">First way: old-school sigsuspend</a>
-  <a class="hash-anchor" href="#1028185512-first-way-old-school-sigsuspend" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+<h2 id="268719357-first-approach-old-school-sigsuspend">
+  <a class="title" href="#268719357-first-approach-old-school-sigsuspend">First approach: old-school sigsuspend</a>
+  <a class="hash-anchor" href="#268719357-first-approach-old-school-sigsuspend" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>That's how <code>timeout</code> from coreutils <a href="https://git.savannah.gnu.org/gitweb/?p=coreutils.git;a=blob;f=src/timeout.c;h=5600ce42957dcf117785f6a361ef72ac9c2df352;hb=HEAD">implements</a> it. This is quite simple on paper:</p>
 <ol>
@@ -270,11 +270,12 @@ exit(1)
 <li>They are many libc functions and system calls relating to signals and that's a lot to learn. A non-exhaustive list e.g. on Linux: <code>kill(1), alarm(2), kill(2), pause(2), sigaction(2), signalfd(2),  sigpending(2),  sigprocmask(2),   sigsuspend(2),  bsd_signal(3),  killpg(3),  raise(3),  siginterrupt(3), sigqueue(3), sigsetops(3), sigvec(3), sysv_signal(3), signal(7)</code>. Oh wait, I forgot <code>sigemptyset(3)</code> and  <code>sigaddset(3)</code>. And I'm sure I forgot about a few!</li>
 </ul>
 <p>So, let's stick with signals for a bit but simplify our current approach.</p>
-<h2 id="3926643734-second-way-sigtimedwait">
-  <a class="title" href="#3926643734-second-way-sigtimedwait">Second way: sigtimedwait</a>
-  <a class="hash-anchor" href="#3926643734-second-way-sigtimedwait" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+<h2 id="242573005-second-approach-sigtimedwait">
+  <a class="title" href="#242573005-second-approach-sigtimedwait">Second approach: sigtimedwait</a>
+  <a class="hash-anchor" href="#242573005-second-approach-sigtimedwait" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>Wouldn't it be great if we could wait on a signal, say, <code>SIGCHLD</code>, with a timeout? Oh look, a system call that does exactly that <em>and</em> is standardized by POSIX 2001. Cool! I am not quite sure why the <code>timeout</code> program does not use it, but we sure as hell can. My only guess would be that they want to support old Unices pre 2001, or non POSIX systems.</p>
+<p><em>A knowledgeable reader has <a href="https://github.com/gaultier/blog/issues/22">pointed out</a> that <code>sigtimedwait</code> was optional in POSIX 2001 and as such not implemented in some operating systems. It was made mandatory in POSIX 2008 but the adoption was slow.</em></p>
 <p>Anyways, here's a very straightforward implementation:</p>
 <pre><code class="language-c">#define _GNU_SOURCE
 #include &lt;errno.h&gt;
