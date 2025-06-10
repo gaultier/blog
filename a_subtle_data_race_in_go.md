@@ -77,7 +77,7 @@ path=/ rate_limit_enabled=no
 path=/ rate_limit_enabled=no
 ```
 
-*The actual output could vary from machine to machine due to the data race. This is what I have observed on one machine.*
+*The actual output could vary from machine to machine due to the data race. This is what I have observed on one machine. Reading the Go memory model, another legal behavior in this case could be immediately aborting the program. No symptoms at all is not possible, as we'll see later.*
 
 The third log is definitely wrong. We would have expected:
 
@@ -226,7 +226,11 @@ $ go build -gcflags='-d closure=1' http-race.go
 
 This was quite a subtle data race which took me time to spot and understand. The go race detector did not notice it, even when throwing lots of concurrent requests at it. LLMs, when asked to analyze the code, did not spot it.
 
-The good news is: The Go memory model gives us some guarantees for data races. Contrary to C or C++, where a data race means the wild west of undefined behavior, it only means in Go that we may read/write the wrong value, when reading/writing machine word sizes or smaller (which is the case of booleans). However, the [official documentation](https://go.dev/ref/mem#restrictions) warns us that reading more than one machine word at once may have dire consequences:
+The good news is: The Go memory model gives us some guarantees for data races. Contrary to C or C++, where a data race means the wild west of undefined behavior, it only means in Go that we may read/write the wrong value, when reading/writing machine word sizes or smaller (which is the case of booleans). We even find quite a strong guarantee in the [https://go.dev/ref/mem#restrictions](Implementation Restrictions for Programs Containing Data Races) section: 
+
+> each read must observe a value written by a preceding or concurrent write. 
+
+However, the [official documentation](https://go.dev/ref/mem#restrictions) also warns us that reading more than one machine word at once may have dire consequences:
 
 >  This means that races on multiword data structures can lead to inconsistent values not corresponding to a single write. When the values depend on the consistency of internal (pointer, length) or (pointer, type) pairs, as can be the case for interface values, maps, slices, and strings in most Go implementations, such races can in turn lead to arbitrary memory corruption. 
 
