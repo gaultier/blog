@@ -2,6 +2,8 @@ Title: What should your mutexes be named?
 Tags: Go, Awk, Search
 ---
 
+*Discussions: [/r/golang](https://www.reddit.com/r/golang/comments/1l7h9cw/what_should_your_mutexes_be_named/), [HN](https://news.ycombinator.com/item?id=44232897).*
+
 I have started a new job recently and the main challenge, I find, is to ingest and adapt to a big codebase that does things slightly differently than what I am used to.
 
 This article explores ways to make this phase go smoother.
