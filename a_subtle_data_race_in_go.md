@@ -243,11 +243,11 @@ int res = fn();
 After writing quite a lot of code in C, Zig and Odin, which all do *not* have support for closures, I actually do not miss them. I even think they might have been a mistake to have in most languages. Every single time I have to deal with code with closures, it is always harder to understand and debug than code without them. It can even lead to performance issues due to hidden memory allocations, and makes the compiler quite a bit more complex. The code that gives me the most headaches is functions returning functions returning functions... And some of these in the chain capture their environment implicitly... You get the idea.
 
 
-So here's my recommendation for future programming language designers:
+So here's my personal recommendation for future programming language designers:
 
 1. Consider not having closures in your language, at all. Plain function (pointers) are still fine.
 2. If you *really* must have closures:
   - Consider forcing the developer to explicitly write which variables are captured (like C++ does)
   - Have a knob in your compiler to easily see what variables are being captured in closures (like Go does)
-  - Have good statical analysis to spot common problematic patterns
+  - Have good statical analysis to spot common problematic patterns (`golangci-lint` finds the bug neither in our reproducer nor in the real production service)
   - Consider showing in the editor captured variables in a different way, for example with a different color, from normal variables
