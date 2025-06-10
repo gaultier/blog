@@ -50,3 +50,5 @@
   + Server sent event to reload the page
 - [ ] Built-in http server
 - [ ] Syntax highlighting done statically
+- [ ] Highlight only the changed lines in a code snippet
+- [ ] Copy-paste button for code snippets
