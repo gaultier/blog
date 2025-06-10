@@ -16,7 +16,6 @@ The team insisted (although not unanimously) that I write *new* COBOL code for t
 
 All in all, that was a very interesting social experience and a great insight on how business and developers think and (try to) evolve, and how one can attempt to change the tech stack of an existing running application, which is a challenge any company will face at a moment or another. And how we engineers have a professional duty to keep learning and adapting to this changing world.
 
----
 
 ## CNRS Intern Software Engineer experimenting with the Oculus Rift (VR) CNRS, Strasbourg, France; 2014
 
@@ -39,7 +38,6 @@ I used OpenGL and C++ for the first project, and C for the second one since the 
 
 Finally, I on-boarded my successor on the codebase and the build system and helped them troubleshoot some cross-platform issues.
 
----
 
 ## Full-stack Software Engineer EdgeLab, Lausanne, Switzerland; 2015-2017
 
@@ -57,7 +55,6 @@ I also contributed to modernizing the codebase to C++11 and improving the build 
 
 Eventually, the company got acquired for 8 digits by a Swiss bank.
 
----
 
 ## Back-end Software Engineer & DevOps PPRO, Munich, Germany; 2017-2023
 
@@ -86,9 +83,7 @@ I also had a short stint as a team manager, but after 2 months I decided this wa
 
 I look fondly on all these achievements, achieving business targets with a variety of tech stacks and cloud services, majorly contributing to fundamentally transform the company from a slow moving, datacenter based software stack, where developers sometimes wait for weeks for one deployment to happen, and a new project is a herculean effort of synchronizing every team; to a fast-moving, cloud based, self-service and event-oriented architecture, where each team is autonomous, gets a real-time stream of events containing all the information they need, and has nigh complete control and visibility on the whole lifecycle of their application.
 
----
-
-## Senior Software Engineer Giesecke+Devrient, Munich, Germany; 2023-present
+## Senior Software Engineer Giesecke+Devrient, Munich, Germany; 2023-2025
 
 After 6+ years in my job, I decided I was ready for the next challenge and joined my current company to help productionize an innovative Central Bank Digital Currency project (similar to a cryptocurrency, but backed by a sovereign state, using the state's currency, and with all the high standards one expects from regulated financial institutions). The most interesting feature, technically and product wise, is offline payments (card to card) with a focus on privacy. 
 
@@ -99,3 +94,7 @@ My second focus has been security: going through regular threat analysis exercis
 Indeed, I inherited a C++ codebase where the original author moved on, which was a central part of the company's offering. After investing some time to get it up to modern standards, I convinced stakeholders and developers to incrementally rewrite it in a memory-safe language (Rust). I led this effort by mentoring fellow developers, establishing a roadmap, doing the implementation work, and presenting regular demos of the progress to stakeholders. This software runs on various OSes and architectures including mobile platforms, and is now 100% Rust.
 
 My final project was to entirely refactor (but not rewrite) a stateful Go service to make it stateless, so that it can be run with multiple instances e.g. in multiple regions. The challenge was that the application state was held in numerous in-memory maps protected by mutexes, both on the Go side and on the C side, since this project used CGO extensively with some of the logic being done in C. I managed to move all of the state to the database and optimize database queries to keep performance the same or better than using in-memory state.
+
+## Senior Software Engineer Ory, Munich, Germany; 2025-present
+
+To be continued...
