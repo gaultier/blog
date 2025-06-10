@@ -34,11 +34,11 @@
         return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
             if strings.HasPrefix(r.URL.Path, "/admin") {
                 rateLimitEnabled = false
-                w.Write([]byte("admin section"))
+                w.Write([]byte("admin section\n"))
                 return
             }
 
-            fmt.Fprintf(w, "Rate limiting enabled: %v", rateLimitEnabled)
+            fmt.Fprintf(w, "Rate limiting enabled: %v\n", rateLimitEnabled)
         })
     }
 
@@ -65,7 +65,7 @@
     +
             if strings.HasPrefix(r.URL.Path, "/admin") {
                 rateLimitEnabled = false
-                w.Write([]byte("admin section"))
+                w.Write([]byte("admin section\n"))
     @@ -19,7 +21,7 @@ func NewMiddleware(rateLimitEnabled bool) http.Handler {
      }
      
@@ -77,6 +77,9 @@
      }
 
     ```
+
+    `parallel "curl -s http://localhost:3001/{2}"  ::: $(seq 100) ::: "admin" "hello"`
+
 - [ ] How to get the current SQL schema when all you have is lots of migrations (deltas)
 - [ ] 'About' page
 - [ ] Search and replace fish function
