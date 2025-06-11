@@ -20,10 +20,6 @@
   + some different mnemonics encode to the same bytes (`jne`, `jz`)
   + diffent calling convention for functions & system calls in the SysV ABI (4th argument)
   + no (to my knowledge) mnemonic accepts 2 immediates or effective addresses as operands  e.g. `cmp 1, 0`
-- [ ] Golang data race due to closure capture
-
-    `parallel "curl -s http://localhost:3001/{2}"  ::: $(seq 100) ::: "admin" "hello"`
-
 - [ ] How to get the current SQL schema when all you have is lots of migrations (deltas)
 - [ ] 'About' page
 - [ ] Search and replace fish function

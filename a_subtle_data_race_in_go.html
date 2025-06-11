@@ -278,7 +278,7 @@ func rateLimitMiddleware(w http.ResponseWriter, r *http.Request, env *ClosureEnv
   <a class="hash-anchor" href="#3139033100-conclusion-and-recommendations" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>This was quite a subtle data race which took me time to spot and understand. The go race detector did not notice it, even when throwing lots of concurrent requests at it. LLMs, when asked to analyze the code, did not spot it.</p>
-<p>The good news is: The Go memory model gives us some guarantees for data races. Contrary to C or C++, where a data race means the wild west of undefined behavior, it only means in Go that we may read/write the wrong value, when reading/writing machine word sizes or smaller (which is the case of booleans). We even find quite a strong guarantee in the [https://go.dev/ref/mem#restrictions](Implementation Restrictions for Programs Containing Data Races) section:</p>
+<p>The good news is: The Go memory model gives us some guarantees for data races. Contrary to C or C++, where a data race means the wild west of undefined behavior, it only means in Go that we may read/write the wrong value, when reading/writing machine word sizes or smaller (which is the case of booleans). We even find quite a strong guarantee in the <a href="https://go.dev/ref/mem#restrictions">Implementation Restrictions for Programs Containing Data Races</a> section:</p>
 <blockquote>
 <p>each read must observe a value written by a preceding or concurrent write.</p>
 </blockquote>

@@ -211,7 +211,7 @@ $ go build -gcflags='-d closure=1' http-race.go
 
 This was quite a subtle data race which took me time to spot and understand. The go race detector did not notice it, even when throwing lots of concurrent requests at it. LLMs, when asked to analyze the code, did not spot it.
 
-The good news is: The Go memory model gives us some guarantees for data races. Contrary to C or C++, where a data race means the wild west of undefined behavior, it only means in Go that we may read/write the wrong value, when reading/writing machine word sizes or smaller (which is the case of booleans). We even find quite a strong guarantee in the [https://go.dev/ref/mem#restrictions](Implementation Restrictions for Programs Containing Data Races) section: 
+The good news is: The Go memory model gives us some guarantees for data races. Contrary to C or C++, where a data race means the wild west of undefined behavior, it only means in Go that we may read/write the wrong value, when reading/writing machine word sizes or smaller (which is the case of booleans). We even find quite a strong guarantee in the [Implementation Restrictions for Programs Containing Data Races](https://go.dev/ref/mem#restrictions) section: 
 
 > each read must observe a value written by a preceding or concurrent write. 
 
