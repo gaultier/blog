@@ -2,7 +2,7 @@ Title: A subtle data race in Go
 Tags: Go
 ---
 
-At work, an good colleague of mine opened a PR titled: 'fix data race'. Ok, I thought, let's see. They probably forgot a mutex or an atomic. Or perhaps they returned a pointer to an object when they intended to return a copy of the object. Easy to miss.
+At work, a good colleague of mine opened a PR titled: 'fix data race'. Ok, I thought, let's see. They probably forgot a mutex or an atomic. Or perhaps they returned a pointer to an object when they intended to return a copy of the object. Easy to miss.
 
 Then I was completely puzzled.
 
@@ -77,9 +77,9 @@ path=/ rate_limit_enabled=no
 path=/ rate_limit_enabled=no
 ```
 
-*The actual output could vary from machine to machine due to the data race. This is what I have observed on one machine. Reading the Go memory model, another legal behavior in this case could be to immediately abort the program. No symptoms at all is not possible. The only question is when the race will manifest. When receiving lots of HTTP requests, it might not happen right after the first request. See the 'Conclusion and recommendations' section for more information.*
+*The actual output could vary from machine to machine due to the data race. This is what I have observed on my machine. Reading the Go memory model, another legal behavior in this case could be to immediately abort the program. No symptoms at all is not possible. The only question is when the race will manifest. When receiving lots of HTTP requests, it might not happen right after the first request. See the 'Conclusion and recommendations' section for more information.*
 
-The third log is definitely wrong. We would have expected:
+The third and fourth log are definitely wrong. We would have expected:
 
 ```
 path=/ rate_limit_enabled=yes
@@ -163,6 +163,33 @@ $ go build -gcflags='-d closure=1' http-race.go
 
 We can plainly see that `rateLimitEnabled` is being captured.
 
+
+The Go compiler conceptually transforms the closure into code like this:
+
+```go
+type ClosureEnv struct {
+	rateLimitEnabled *bool
+	handler          *http.Handler
+}
+
+func rateLimitMiddleware(w http.ResponseWriter, r *http.Request, env *ClosureEnv) {
+	if strings.HasPrefix(r.URL.Path, "/admin") {
+		env.rateLimitEnabled = false
+	}
+
+	if env.rateLimitEnabled {
+		fmt.Printf("path=%s rate_limit_enabled=yes\n", r.URL.Path)
+		// Rate limiting logic here ...
+	} else {
+		fmt.Printf("path=%s rate_limit_enabled=no\n", r.URL.Path)
+	}
+
+	env.handler.ServeHTTP(w, r)
+}
+```
+
+Note that `ClosureEnv` holds a pointer to `rateLimitEnabled`. If it was not a pointer, the closure could not modify the outer values. That's why closures capturing their environment lead in the general case to heap allocations so that environment variables live long enough.
+
 ---
 
 Ok, it's a logic bug. Not yet a data race, right? (We could debate whether all data races are also logic bugs. But let's move on).
@@ -245,10 +272,20 @@ auto fn =  [a, b, c]() { return a + b + c; };
 int res = fn();
 ``` 
 
-After writing quite a lot of code in C, Zig and Odin, which all do *not* have support for closures, I actually do not miss them. I even think they might have been a mistake to have in most languages. Every single time I have to deal with code with closures, it is always harder to understand and debug than code without them. It can even lead to performance issues due to hidden memory allocations, and makes the compiler quite a bit more complex. The code that gives me the most headaches is functions returning functions returning functions... And some of these in the chain capture their environment implicitly... You get the idea.
+After writing quite a lot of code in C, Zig and Odin, which all do *not* have support for closures, I actually do not miss them. I even think it might have been a mistake to have them in most languages. Every single time I have to deal with code with closures, it is always harder to understand and debug than code without them. It can even lead to performance issues due to hidden memory allocations, and makes the compiler quite a bit more complex. The code that gives me the most headaches is functions returning functions returning functions... And some of these functions in the chain capture their environment implicitly... Urgh.
 
+---
 
-So here's my personal recommendation for future programming language designers:
+So here's my personal, **very subjective** recommendation when writing code in any language including in Go:
+
+- Avoid closures if possible. Write standard functions instead. This will avoid accidental captures and make all arguments explicit.
+- Avoid writing callback-heavy code a la JavaScript. Closures usually show up most often in this type of code. It makes debugging and reading hard. Prefer using Go channels, events like `io_uring`, or polling functions like `poll`/`epoll`/`kqueue`. In other words, let the caller pull data, instead of pushing data to them (by calling their callback with the new data at some undetermined future point).
+- Prefer, when possible, using OS processes over threads/goroutines, to have memory isolation between tasks and to remove entire categories of bugs. You can always map memory pages that are accessible to two or more processes if you absolutely need shared mutable state. Although message passing (e.g. over pipes or sockets) would be less error-prone. Another advantage with OS processes is that you can set resource limits on them e.g. on memory usage.
+- Related to the previous point: Reduce global mutable state to the absolute minimum, ideally zero
+
+---
+
+And here's my personal, **very subjective** recommendation for future programming language designers:
 
 1. Consider not having closures in your language, at all. Plain function (pointers) are still fine.
 2. If you *really* must have closures:
@@ -256,5 +293,6 @@ So here's my personal recommendation for future programming language designers:
   - Have a knob in your compiler to easily see what variables are being captured in closures (like Go does)
   - Have good statical analysis to spot common problematic patterns (`golangci-lint` finds the bug neither in our reproducer nor in the real production service)
   - Consider showing in the editor captured variables in a different way, for example with a different color, from normal variables
-3. Implement a race detector (even if that just means using Thread sanitizer).
-3. Document precisely what is the memory model you offer and what are legal behaviors in the presence of data races. Big props to Go for doing this very well. 
+3. Implement a race detector (even if that just means using Thread sanitizer). It's not a perfect solution because some races will not be caught, but it's better than nothing.
+4. Document precisely what is the memory model you offer and what are legal behaviors in the presence of data races. Big props to Go for doing this very well. 
+5. Consider making function arguments not re-assignable. Force the developer to define a local variable instead.
