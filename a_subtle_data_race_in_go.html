@@ -327,12 +327,12 @@ int res = fn();
 <p>After writing quite a lot of code in C, Zig and Odin, which all do <em>not</em> have support for closures, I actually do not miss them. I even think it might have been a mistake to have them in most languages. Every single time I have to deal with code with closures, it is always harder to understand and debug than code without them. It can even lead to performance issues due to hidden memory allocations, and makes the compiler quite a bit more complex. The code that gives me the most headaches is functions returning functions returning functions... And some of these functions in the chain capture their environment implicitly... Urgh.</p>
 <hr />
 <p>So here's my personal, <strong>very subjective</strong> recommendation when writing code in any language including in Go:</p>
-<ul>
+<ol>
 <li>Avoid closures if possible. Write standard functions instead. This will avoid accidental captures and make all arguments explicit.</li>
 <li>Avoid writing callback-heavy code a la JavaScript. Closures usually show up most often in this type of code. It makes debugging and reading hard. Prefer using Go channels, events like <code>io_uring</code>, or polling functions like <code>poll</code>/<code>epoll</code>/<code>kqueue</code>. In other words, let the caller pull data, instead of pushing data to them (by calling their callback with the new data at some undetermined future point).</li>
-<li>Prefer, when possible, using OS processes over threads/goroutines, to have memory isolation between tasks and to remove entire categories of bugs. You can always map memory pages that are accessible to two or more processes if you absolutely need shared mutable state. Although message passing (e.g. over pipes or sockets) would be less error-prone. Another advantage with OS processes is that you can set resource limits on them e.g. on memory usage.</li>
-<li>Related to the previous point: Reduce global mutable state to the absolute minimum, ideally zero</li>
-</ul>
+<li>Prefer, when possible, using OS processes over threads/goroutines, to have memory isolation between tasks and to remove entire categories of bugs. You can always map memory pages that are accessible to two or more processes if you absolutely need shared mutable state. Although message passing (e.g. over pipes or sockets) would be less error-prone. Another advantage with OS processes is that you can set resource limits on them e.g. on memory usage. Yes, some cases will require using threads. I'm talking about <em>most</em> cases here.</li>
+<li>Related to the previous point: Reduce global mutable state to the absolute minimum, ideally zero.</li>
+</ol>
 <hr />
 <p>And here's my personal, <strong>very subjective</strong> recommendation for future programming language designers:</p>
 <ol>
@@ -340,9 +340,9 @@ int res = fn();
 <li>If you <em>really</em> must have closures:</li>
 </ol>
 <ul>
-<li>Consider forcing the developer to explicitly write which variables are captured (like C++ does)</li>
-<li>Have a knob in your compiler to easily see what variables are being captured in closures (like Go does)</li>
-<li>Have good statical analysis to spot common problematic patterns (<code>golangci-lint</code> finds the bug neither in our reproducer nor in the real production service)</li>
+<li>Consider forcing the developer to explicitly write which variables are captured (like C++ does).</li>
+<li>Have a knob in your compiler to easily see what variables are being captured in closures (like Go does).</li>
+<li>Have good statical analysis to spot common problematic patterns (<code>golangci-lint</code> finds the bug neither in our reproducer nor in the real production service).</li>
 <li>Consider showing in the editor captured variables in a different way, for example with a different color, from normal variables</li>
 </ul>
 <ol start="3">

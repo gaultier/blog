@@ -278,10 +278,10 @@ After writing quite a lot of code in C, Zig and Odin, which all do *not* have su
 
 So here's my personal, **very subjective** recommendation when writing code in any language including in Go:
 
-- Avoid closures if possible. Write standard functions instead. This will avoid accidental captures and make all arguments explicit.
-- Avoid writing callback-heavy code a la JavaScript. Closures usually show up most often in this type of code. It makes debugging and reading hard. Prefer using Go channels, events like `io_uring`, or polling functions like `poll`/`epoll`/`kqueue`. In other words, let the caller pull data, instead of pushing data to them (by calling their callback with the new data at some undetermined future point).
-- Prefer, when possible, using OS processes over threads/goroutines, to have memory isolation between tasks and to remove entire categories of bugs. You can always map memory pages that are accessible to two or more processes if you absolutely need shared mutable state. Although message passing (e.g. over pipes or sockets) would be less error-prone. Another advantage with OS processes is that you can set resource limits on them e.g. on memory usage.
-- Related to the previous point: Reduce global mutable state to the absolute minimum, ideally zero
+1. Avoid closures if possible. Write standard functions instead. This will avoid accidental captures and make all arguments explicit.
+1. Avoid writing callback-heavy code a la JavaScript. Closures usually show up most often in this type of code. It makes debugging and reading hard. Prefer using Go channels, events like `io_uring`, or polling functions like `poll`/`epoll`/`kqueue`. In other words, let the caller pull data, instead of pushing data to them (by calling their callback with the new data at some undetermined future point).
+1. Prefer, when possible, using OS processes over threads/goroutines, to have memory isolation between tasks and to remove entire categories of bugs. You can always map memory pages that are accessible to two or more processes if you absolutely need shared mutable state. Although message passing (e.g. over pipes or sockets) would be less error-prone. Another advantage with OS processes is that you can set resource limits on them e.g. on memory usage. Yes, some cases will require using threads. I'm talking about *most* cases here. 
+1. Related to the previous point: Reduce global mutable state to the absolute minimum, ideally zero.
 
 ---
 
@@ -289,9 +289,9 @@ And here's my personal, **very subjective** recommendation for future programmin
 
 1. Consider not having closures in your language, at all. Plain function (pointers) are still fine.
 2. If you *really* must have closures:
-  - Consider forcing the developer to explicitly write which variables are captured (like C++ does)
-  - Have a knob in your compiler to easily see what variables are being captured in closures (like Go does)
-  - Have good statical analysis to spot common problematic patterns (`golangci-lint` finds the bug neither in our reproducer nor in the real production service)
+  - Consider forcing the developer to explicitly write which variables are captured (like C++ does).
+  - Have a knob in your compiler to easily see what variables are being captured in closures (like Go does).
+  - Have good statical analysis to spot common problematic patterns (`golangci-lint` finds the bug neither in our reproducer nor in the real production service).
   - Consider showing in the editor captured variables in a different way, for example with a different color, from normal variables
 3. Implement a race detector (even if that just means using Thread sanitizer). It's not a perfect solution because some races will not be caught, but it's better than nothing.
 4. Document precisely what is the memory model you offer and what are legal behaviors in the presence of data races. Big props to Go for doing this very well. 
