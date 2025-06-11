@@ -102,6 +102,14 @@ Do not edit it by hand.
   <li>
     <a href="#3139033100-conclusion-and-recommendations">Conclusion and recommendations</a>
   </li>
+
+  <li>
+    <a href="#3446512891-addendum-a-reproducer-program-for-the-go-race-detector">Addendum: A reproducer program for the Go race detector</a>
+  </li>
+
+  <li>
+    <a href="#82181600-addendum-the-fixed-code-in-full">Addendum: The fixed code in full</a>
+  </li>
 </ul>
 
 <p>At work, a good colleague of mine opened a PR titled: 'fix data race'. Ok, I thought, let's see. They probably forgot a mutex or an atomic. Or perhaps they returned a pointer to an object when they intended to return a copy of the object. Easy to miss.</p>
@@ -261,47 +269,7 @@ func rateLimitMiddleware(w http.ResponseWriter, r *http.Request, env *ClosureEnv
 <p>Ok, it's a logic bug. Not yet a data race, right? (We could debate whether all data races are also logic bugs. But let's move on).</p>
 <p>Well, when is this closure called? When handling <strong>every single incoming HTTP request, concurrently.</strong></p>
 <p>It's as if we spawned many goroutines which all called this function concurrently, and said function reads and writes an outer variable without any synchronization. So it is indeed a data race.</p>
-<p>Here is thus the fixed code:</p>
-<pre><code class="language-go">package main
-
-import (
-	&quot;fmt&quot;
-	&quot;net/http&quot;
-	&quot;strings&quot;
-)
-
-func NewMiddleware(handler http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		rateLimitEnabled := true
-
-		if strings.HasPrefix(r.URL.Path, &quot;/admin&quot;) {
-			rateLimitEnabled = false
-		}
-
-		if rateLimitEnabled {
-			fmt.Printf(&quot;path=%s rate_limit_enabled=yes\n&quot;, r.URL.Path)
-			// Rate limiting logic here ...
-		} else {
-			fmt.Printf(&quot;path=%s rate_limit_enabled=no\n&quot;, r.URL.Path)
-		}
-
-		handler.ServeHTTP(w, r)
-	})
-}
-
-func handle(w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte(&quot;hello!\n&quot;))
-}
-
-func main() {
-	handler := http.HandlerFunc(handle)
-	middleware := NewMiddleware(handler)
-	http.Handle(&quot;/&quot;, middleware)
-
-	http.ListenAndServe(&quot;:3001&quot;, nil)
-}
-</code></pre>
-<p>We can confirm with the compiler that no variable is captured by accident now:</p>
+<p>We can confirm with the compiler that no variable is captured by accident now that the patch is applied:</p>
 <pre><code class="language-sh">$ go build -gcflags='-d closure=1' http-race.go
 ./http-race.go:9:26: heap closure, captured vars = [handler]
 </code></pre>
@@ -350,6 +318,120 @@ int res = fn();
 <li>Document precisely what is the memory model you offer and what are legal behaviors in the presence of data races. Big props to Go for doing this very well.</li>
 <li>Consider making function arguments not re-assignable. Force the developer to define a local variable instead.</li>
 </ol>
+<h2 id="3446512891-addendum-a-reproducer-program-for-the-go-race-detector">
+  <a class="title" href="#3446512891-addendum-a-reproducer-program-for-the-go-race-detector">Addendum: A reproducer program for the Go race detector</a>
+  <a class="hash-anchor" href="#3446512891-addendum-a-reproducer-program-for-the-go-race-detector" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+</h2>
+<p>Here is a reproducer program with the same issue but this time the Go race detector finds the data race:</p>
+<pre><code class="language-go">package main
+
+import (
+	&quot;fmt&quot;
+	&quot;sync&quot;
+	&quot;time&quot;
+)
+
+func NewMiddleware(rateLimitEnabled bool) func() {
+	return func() {
+		if time.Now().Nanosecond()%2 == 0 {
+			rateLimitEnabled = false
+		}
+
+		if rateLimitEnabled {
+			fmt.Printf(&quot;rate_limit_enabled=yes\n&quot;)
+			// Rate limiting logic here ...
+		} else {
+			fmt.Printf(&quot;rate_limit_enabled=no\n&quot;)
+		}
+	}
+}
+
+func main() {
+	middleware := NewMiddleware(true)
+	count := 100
+	wg := sync.WaitGroup{}
+	wg.Add(count)
+
+	for range count {
+		go func() {
+			middleware()
+			wg.Done()
+		}()
+	}
+
+	wg.Wait()
+}
+</code></pre>
+<p>Here's the output:</p>
+<pre><code class="language-sh">$ go run -race race_reproducer.go
+rate_limit_enabled=no
+==================
+WARNING: DATA RACE
+Read at 0x00c00001216f by goroutine 8:
+  main.main.NewMiddleware.func2()
+      /home/pg/scratch/http-race/reproducer/race_reproducer.go:15 +0x52
+  main.main.func1()
+      /home/pg/scratch/http-race/reproducer/race_reproducer.go:32 +0x33
+
+Previous write at 0x00c00001216f by goroutine 7:
+  main.main.NewMiddleware.func2()
+      /home/pg/scratch/http-race/reproducer/race_reproducer.go:12 +0x45
+  main.main.func1()
+      /home/pg/scratch/http-race/reproducer/race_reproducer.go:32 +0x33
+
+Goroutine 8 (running) created at:
+  main.main()
+      /home/pg/scratch/http-race/reproducer/race_reproducer.go:31 +0xe4
+
+Goroutine 7 (running) created at:
+  main.main()
+      /home/pg/scratch/http-race/reproducer/race_reproducer.go:31 +0xe4
+==================
+</code></pre>
+<p>It's not completely clear to me why the Go race detector finds the race in this program but not in the original program since each HTTP request is handled in its own goroutine, both programs should be analogous. Maybe not enough concurrent HTTP traffic?</p>
+<h2 id="82181600-addendum-the-fixed-code-in-full">
+  <a class="title" href="#82181600-addendum-the-fixed-code-in-full">Addendum: The fixed code in full</a>
+  <a class="hash-anchor" href="#82181600-addendum-the-fixed-code-in-full" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+</h2>
+<pre><code class="language-go">package main
+
+import (
+	&quot;fmt&quot;
+	&quot;net/http&quot;
+	&quot;strings&quot;
+)
+
+func NewMiddleware(handler http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		rateLimitEnabled := true
+
+		if strings.HasPrefix(r.URL.Path, &quot;/admin&quot;) {
+			rateLimitEnabled = false
+		}
+
+		if rateLimitEnabled {
+			fmt.Printf(&quot;path=%s rate_limit_enabled=yes\n&quot;, r.URL.Path)
+			// Rate limiting logic here ...
+		} else {
+			fmt.Printf(&quot;path=%s rate_limit_enabled=no\n&quot;, r.URL.Path)
+		}
+
+		handler.ServeHTTP(w, r)
+	})
+}
+
+func handle(w http.ResponseWriter, r *http.Request) {
+	w.Write([]byte(&quot;hello!\n&quot;))
+}
+
+func main() {
+	handler := http.HandlerFunc(handle)
+	middleware := NewMiddleware(handler)
+	http.Handle(&quot;/&quot;, middleware)
+
+	http.ListenAndServe(&quot;:3001&quot;, nil)
+}
+</code></pre>
 <p><a href="/blog"> ⏴ Back to all articles</a></p>
 
 <blockquote id="donate">

@@ -198,50 +198,8 @@ Well, when is this closure called? When handling **every single incoming HTTP re
 
 It's as if we spawned many goroutines which all called this function concurrently, and said function reads and writes an outer variable without any synchronization. So it is indeed a data race.
 
-Here is thus the fixed code:
 
-```go
-package main
-
-import (
-	"fmt"
-	"net/http"
-	"strings"
-)
-
-func NewMiddleware(handler http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		rateLimitEnabled := true
-
-		if strings.HasPrefix(r.URL.Path, "/admin") {
-			rateLimitEnabled = false
-		}
-
-		if rateLimitEnabled {
-			fmt.Printf("path=%s rate_limit_enabled=yes\n", r.URL.Path)
-			// Rate limiting logic here ...
-		} else {
-			fmt.Printf("path=%s rate_limit_enabled=no\n", r.URL.Path)
-		}
-
-		handler.ServeHTTP(w, r)
-	})
-}
-
-func handle(w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte("hello!\n"))
-}
-
-func main() {
-	handler := http.HandlerFunc(handle)
-	middleware := NewMiddleware(handler)
-	http.Handle("/", middleware)
-
-	http.ListenAndServe(":3001", nil)
-}
-```
-
-We can confirm with the compiler that no variable is captured by accident now:
+We can confirm with the compiler that no variable is captured by accident now that the patch is applied:
 
 ```sh
 $ go build -gcflags='-d closure=1' http-race.go
@@ -296,3 +254,123 @@ And here's my personal, **very subjective** recommendation for future programmin
 3. Implement a race detector (even if that just means using Thread sanitizer). It's not a perfect solution because some races will not be caught, but it's better than nothing.
 4. Document precisely what is the memory model you offer and what are legal behaviors in the presence of data races. Big props to Go for doing this very well. 
 5. Consider making function arguments not re-assignable. Force the developer to define a local variable instead.
+
+
+## Addendum: A reproducer program for the Go race detector
+
+Here is a reproducer program with the same issue but this time the Go race detector finds the data race:
+
+```go
+package main
+
+import (
+	"fmt"
+	"sync"
+	"time"
+)
+
+func NewMiddleware(rateLimitEnabled bool) func() {
+	return func() {
+		if time.Now().Nanosecond()%2 == 0 {
+			rateLimitEnabled = false
+		}
+
+		if rateLimitEnabled {
+			fmt.Printf("rate_limit_enabled=yes\n")
+			// Rate limiting logic here ...
+		} else {
+			fmt.Printf("rate_limit_enabled=no\n")
+		}
+	}
+}
+
+func main() {
+	middleware := NewMiddleware(true)
+	count := 100
+	wg := sync.WaitGroup{}
+	wg.Add(count)
+
+	for range count {
+		go func() {
+			middleware()
+			wg.Done()
+		}()
+	}
+
+	wg.Wait()
+}
+```
+
+Here's the output:
+
+```sh
+$ go run -race race_reproducer.go
+rate_limit_enabled=no
+==================
+WARNING: DATA RACE
+Read at 0x00c00001216f by goroutine 8:
+  main.main.NewMiddleware.func2()
+      /home/pg/scratch/http-race/reproducer/race_reproducer.go:15 +0x52
+  main.main.func1()
+      /home/pg/scratch/http-race/reproducer/race_reproducer.go:32 +0x33
+
+Previous write at 0x00c00001216f by goroutine 7:
+  main.main.NewMiddleware.func2()
+      /home/pg/scratch/http-race/reproducer/race_reproducer.go:12 +0x45
+  main.main.func1()
+      /home/pg/scratch/http-race/reproducer/race_reproducer.go:32 +0x33
+
+Goroutine 8 (running) created at:
+  main.main()
+      /home/pg/scratch/http-race/reproducer/race_reproducer.go:31 +0xe4
+
+Goroutine 7 (running) created at:
+  main.main()
+      /home/pg/scratch/http-race/reproducer/race_reproducer.go:31 +0xe4
+==================
+```
+
+It's not completely clear to me why the Go race detector finds the race in this program but not in the original program since each HTTP request is handled in its own goroutine, both programs should be analogous. Maybe not enough concurrent HTTP traffic?
+
+## Addendum: The fixed code in full
+
+```go
+package main
+
+import (
+	"fmt"
+	"net/http"
+	"strings"
+)
+
+func NewMiddleware(handler http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		rateLimitEnabled := true
+
+		if strings.HasPrefix(r.URL.Path, "/admin") {
+			rateLimitEnabled = false
+		}
+
+		if rateLimitEnabled {
+			fmt.Printf("path=%s rate_limit_enabled=yes\n", r.URL.Path)
+			// Rate limiting logic here ...
+		} else {
+			fmt.Printf("path=%s rate_limit_enabled=no\n", r.URL.Path)
+		}
+
+		handler.ServeHTTP(w, r)
+	})
+}
+
+func handle(w http.ResponseWriter, r *http.Request) {
+	w.Write([]byte("hello!\n"))
+}
+
+func main() {
+	handler := http.HandlerFunc(handle)
+	middleware := NewMiddleware(handler)
+	http.Handle("/", middleware)
+
+	http.ListenAndServe(":3001", nil)
+}
+```
