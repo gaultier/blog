@@ -2,7 +2,7 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
 <title>Philippe Gaultier's blog</title>
 <link href="https://gaultier.github.io/blog"/>
-<updated>2025-06-11T22:01:01+02:00</updated>
+<updated>2025-06-11T22:16:25+02:00</updated>
 <author>
 <name>Philippe Gaultier</name>
 </author>
@@ -276,7 +276,7 @@
 <title>A subtle data race in Go</title>
 <link href="https://gaultier.github.io/blog/a_subtle_data_race_in_go.html"/>
 <id>urn:uuid:2bbc9f5e-3d29-5c97-8568-795307bafe6c</id>
-<updated>2025-06-11T22:01:01+02:00</updated>
+<updated>2025-06-11T22:16:25+02:00</updated>
 <published>2025-06-10T20:02:21+02:00</published>
 </entry>
 </feed>

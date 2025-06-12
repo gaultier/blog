@@ -2,6 +2,8 @@ Title: A subtle data race in Go
 Tags: Go
 ---
 
+*Discussions: [/r/golang](https://www.reddit.com/r/golang/comments/1l92qe9/a_subtle_data_race_in_go).*
+
 At work, a good colleague of mine opened a PR titled: 'fix data race'. Ok, I thought, let's see. They probably forgot a mutex or an atomic. Or perhaps they returned a pointer to an object when they intended to return a copy of the object. Easy to miss.
 
 Then I was completely puzzled.
