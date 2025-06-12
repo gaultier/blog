@@ -23,6 +23,28 @@
 - [ ] How to get the current SQL schema when all you have is lots of migrations (deltas)
 - [ ] 'About' page
 - [ ] Search and replace fish function
+- [ ] Go+Dtrace
+    ```
+pid$target::*DispatchMessage:entry {
+  stack_offset =656;
+  this->data=copyin(uregs[R_SP] + stack_offset, 16);
+  tracemem(this->data, 16);
+
+  this->body_len = *((ssize_t*)this->data+1);
+
+  this->body_ptr = (uint8_t**)this->data;
+
+  this->s = copyinstr((user_addr_t)*this->body_ptr, this->body_len);
+  printf("msg.Body: %s\n", this->s);
+}
+    ```
+    ```
+
+ 10   2968 github.com/ory/kratos/courier.(*courier).DispatchMessage:entry 
+             0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f  0123456789abcdef
+         0: 80 ae c7 01 40 01 00 00 1e 00 00 00 00 00 00 00  ....@...........
+msg.Body: Your recovery code is: 707144
+    ```
 
 ## Blog implementation
 
