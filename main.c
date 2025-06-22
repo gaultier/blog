@@ -82,7 +82,7 @@ static void search_index_serialize_to_file(SearchIndex search_index,
   PG_ASSERT(!PG_SLICE_IS_EMPTY(search_index.documents));
 
   PgFileDescriptorResult res_file =
-      pg_file_open(file_name, PG_FILE_ACCESS_WRITE, true, allocator);
+      pg_file_open(file_name, PG_FILE_ACCESS_WRITE, 0600, true, allocator);
   PG_ASSERT(0 == res_file.err);
   PgFileDescriptor file = res_file.res;
 
@@ -730,7 +730,8 @@ static void article_generate_html_file(PgFileDescriptor markdown_file,
     search_index_feed_document(search_index, html_tokens, *article, titles,
                                allocator);
   }
-  PG_ASSERT(0 == pg_file_write_full(article->html_file_name, html, allocator));
+  PG_ASSERT(0 ==
+            pg_file_write_full(article->html_file_name, html, 0600, allocator));
 }
 
 [[nodiscard]]
@@ -746,8 +747,8 @@ static Article article_generate(PgString header, PgString footer,
       .modification_date = git_stat.modification_date,
   };
 
-  PgFileDescriptorResult res_markdown_file =
-      pg_file_open(git_stat.path_rel, PG_FILE_ACCESS_READ, false, allocator);
+  PgFileDescriptorResult res_markdown_file = pg_file_open(
+      git_stat.path_rel, PG_FILE_ACCESS_READ, 0600, false, allocator);
   PG_ASSERT(0 == res_markdown_file.err);
   PgFileDescriptor markdown_file = res_markdown_file.res;
 
@@ -909,8 +910,8 @@ static void home_page_generate(ArticleSlice articles, PgString header,
   PG_DYN_APPEND_SLICE(&sb, PG_S("  </ul>\n"), allocator);
   PG_DYN_APPEND_SLICE(&sb, PG_S("</div>\n"), allocator);
 
-  PgFileDescriptorResult res_markdown_file =
-      pg_file_open(markdown_file_path, PG_FILE_ACCESS_READ, false, allocator);
+  PgFileDescriptorResult res_markdown_file = pg_file_open(
+      markdown_file_path, PG_FILE_ACCESS_READ, 0600, false, allocator);
   PG_ASSERT(0 == res_markdown_file.err);
   PgString html = markdown_to_html(res_markdown_file.res, 0, allocator);
 
@@ -925,7 +926,7 @@ static void home_page_generate(ArticleSlice articles, PgString header,
   PG_DYN_APPEND_SLICE(&sb, footer, allocator);
 
   PG_ASSERT(0 == pg_file_write_full(html_file_path, PG_DYN_SLICE(PgString, sb),
-                                    allocator));
+                                    0600, allocator));
   PG_ASSERT(0 == pg_file_close(res_markdown_file.res));
 }
 
@@ -1055,7 +1056,7 @@ static void tags_page_generate(ArticleSlice articles, PgString header,
 
   PgString html_file_name = PG_S("articles-by-tag.html");
   PG_ASSERT(0 == pg_file_write_full(html_file_name, PG_DYN_SLICE(PgString, sb),
-                                    allocator));
+                                    0600, allocator));
 }
 
 static void article_rss_generate(Pgu8Dyn *sb, Article a,
@@ -1117,7 +1118,8 @@ static void rss_generate(ArticleSlice articles, PgAllocator *allocator) {
   PG_DYN_APPEND_SLICE(&sb, PG_S("</feed>"), allocator);
 
   PG_ASSERT(0 == pg_file_write_full(PG_S("feed.xml"),
-                                    PG_DYN_SLICE(PgString, sb), allocator));
+                                    PG_DYN_SLICE(PgString, sb), 0600,
+                                    allocator));
 }
 
 int main() {
