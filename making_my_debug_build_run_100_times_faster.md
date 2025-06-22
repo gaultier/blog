@@ -106,7 +106,7 @@ int main(int argc, char *argv[]) {
 
   uint8_t *file_download_data = mmap(NULL, file_download_size, PROT_READ,
                                      MAP_FILE | MAP_PRIVATE, file_download, 0);
-  if (!file_download_data) {
+  if ((void*)-1 == file_download_data) {
     return 1;
   }
 
@@ -123,7 +123,7 @@ int main(int argc, char *argv[]) {
 
   uint8_t *file_torrent_data = mmap(NULL, file_torrent_size, PROT_READ,
                                     MAP_FILE | MAP_PRIVATE, file_torrent, 0);
-  if (!file_torrent_data) {
+  if ((void*)-1 == file_torrent_data) {
     return 1;
   }
   // HACK
