@@ -23,7 +23,7 @@
 - [ ] How to get the current SQL schema when all you have is lots of migrations (deltas)
 - [ ] 'About' page
 - [ ] Search and replace fish function
-- [ ] Go+Dtrace
+- [ ] Go+Dtrace: 'Go and Dtrace: Useful but clunky'
     ```
 pid$target::*DispatchMessage:entry {
   stack_offset =656;
@@ -38,6 +38,16 @@ pid$target::*DispatchMessage:entry {
   printf("msg.Body: %s\n", this->s);
 }
     ```
+
+    ```
+$ sudo dtrace  -n 'pid$target::github.com?ory?kratos*SMSBody:return{  this->body_len = uregs[1]; this->body_ptr = (uint8_t*)uregs[0];
+
+                                                                                this->s = copyinstr((user_addr_t)this->body_ptr, this->body_len);
+                                                                                printf("msg.Body: %s\\n", this->s);
+                                                                              }' -p $(pgrep -a kratos)
+    ```
+
+
     ```
 
  10   2968 github.com/ory/kratos/courier.(*courier).DispatchMessage:entry 
@@ -95,6 +105,10 @@ CPU FUNCTION
  10      -> github.com/ory/kratos/selfservice/flow/recovery.(*Flow).AppendTo 
  10      <- github.com/ory/kratos/selfservice/flow/recovery.(*Flow).AppendTo 
  10    <- github.com/ory/kratos/selfservice/flow/recovery.(*Handler).createBrowserRecoveryFlow 
+    ```
+
+    ```
+$ sudo dtrace -n 'pid$target::*SendRecoveryCodeTo:entry {this->len = uregs[5]; this->ptr = uregs[4]; this->str = copyinstr(this->ptr, this->len); printf("Code: %s\n", this->str);} pid$target::*SendRecoveryCodeTo:return {trace(uregs[R_R0])}' -p $(pgrep -a kratos)
     ```
 
 ## Blog implementation
