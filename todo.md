@@ -35,7 +35,7 @@ pid$target::*DispatchMessage:entry {
   this->body_ptr = (uint8_t**)this->data;
 
   this->s = copyinstr((user_addr_t)*this->body_ptr, this->body_len);
-  printf("msg.Body: %s\n", this->s);
+  printf("msg.body: %s\n", this->s);
 }
     ```
 
@@ -109,6 +109,93 @@ CPU FUNCTION
 
     ```
 $ sudo dtrace -n 'pid$target::*SendRecoveryCodeTo:entry {this->len = uregs[5]; this->ptr = uregs[4]; this->str = copyinstr(this->ptr, this->len); printf("Code: %s\n", this->str);} pid$target::*SendRecoveryCodeTo:return {trace(uregs[R_R0])}' -p $(pgrep -a kratos)
+    ```
+
+    ```
+$ sudo dtrace -n 'struct flow {uint8_t pad1[136]; uint8_t* state_ptr; ssize_t state_len;}; pid$target::github.com?ory?kratos*GetRecoveryFlow:return {this->flow = (struct flow*)copyin(uregs[0],sizeof(struct flow)); this->state= copyinstr((user_addr_t)this->flow->state_ptr, this->flow->state_len ); trace(this->state);
+                                                              }' -p $(pgrep -a kratos)
+dtrace: description 'struct flow ' matched 2 probes
+CPU     ID                    FUNCTION:NAME
+ 11  53391 github.com/ory/kratos/persistence/sql.(*Persister).GetRecoveryFlow:return   choose_method                    
+    ```
+
+    ```
+struct flow {
+  uint8_t pad1[136];
+
+  uint8_t* state_ptr; 
+  size_t state_len;
+
+  uint8_t pad2[128];
+
+  uint8_t* payload_ptr; 
+  size_t payload_len;
+};
+
+pid$target::github.com?ory?kratos*GenerateCode:return {
+  self->body_len = uregs[1];
+  self->body_ptr = (uint8_t*)uregs[0];
+
+  self->s = copyinstr((user_addr_t)self->body_ptr, self->body_len);
+  printf("Code: %s\n", self->s);
+}
+
+pid$target::github.com?ory?kratos*SendRecoveryCodeTo:entry {
+  self->body_ptr = (uint8_t*)uregs[R_R4];
+  self->body_len = uregs[R_R3];
+
+  self->s = copyinstr((user_addr_t)self->body_ptr, self->body_len);
+  printf("Body: %s\n", self->s);
+}
+
+
+pid$target::github.com?ory?kratos*GetRecoveryFlow:return {
+  self->flow = (struct flow*)copyin(uregs[0],sizeof(struct flow));
+
+  self->state= copyinstr((user_addr_t)self->flow->state_ptr, self->flow->state_len );
+  trace(self->state);
+
+  if (self->flow->payload_ptr){
+    self->payload= copyinstr((user_addr_t)self->flow->payload_ptr, self->flow->payload_len );
+    trace(self->payload);
+  }
+
+  ustack(10);
+}
+
+pid$target::github.com?ory?kratos*UpdateRecoveryFlow:entry {
+  self->flow = (struct flow*)copyin(uregs[R_R3],sizeof(struct flow));
+
+  self->state= copyinstr((user_addr_t)self->flow->state_ptr, self->flow->state_len );
+  trace(self->state);
+
+
+  if (self->flow->payload_ptr){
+    self->payload= copyinstr((user_addr_t)self->flow->payload_ptr, self->flow->payload_len );
+    trace(self->payload);
+  }
+
+
+  ustack(10);
+}
+
+pid$target::github.com?ory?kratos*CreateRecoveryFlow:entry {
+  self->flow = (struct flow*)copyin(uregs[R_R3],sizeof(struct flow));
+
+  self->state= copyinstr((user_addr_t)self->flow->state_ptr, self->flow->state_len );
+  trace(self->state);
+
+  if (self->flow->payload_ptr){
+    self->payload= copyinstr((user_addr_t)self->flow->payload_ptr, self->flow->payload_len );
+    trace(self->payload);
+  }
+
+
+  ustack(10);
+}
+
+
+
     ```
 
 ## Blog implementation
