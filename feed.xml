@@ -2,7 +2,7 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
 <title>Philippe Gaultier's blog</title>
 <link href="https://gaultier.github.io/blog"/>
-<updated>2025-06-11T22:16:25+02:00</updated>
+<updated>2025-06-12T09:30:03+02:00</updated>
 <author>
 <name>Philippe Gaultier</name>
 </author>
@@ -60,7 +60,7 @@
 <title>Learn Wayland by writing a GUI from scratch</title>
 <link href="https://gaultier.github.io/blog/wayland_from_scratch.html"/>
 <id>urn:uuid:6b96e587-14ff-53a9-a142-d20e9c53d970</id>
-<updated>2025-03-05T12:24:58+01:00</updated>
+<updated>2025-06-22T17:46:17+02:00</updated>
 <published>2023-10-12T13:19:53+02:00</published>
 </entry>
 
@@ -228,7 +228,7 @@
 <title>Making my debug build run 100x faster so that it is finally usable</title>
 <link href="https://gaultier.github.io/blog/making_my_debug_build_run_100_times_faster.html"/>
 <id>urn:uuid:a5f75104-e439-59db-b54f-c7f65d76b339</id>
-<updated>2025-03-05T13:19:41+01:00</updated>
+<updated>2025-06-22T17:46:17+02:00</updated>
 <published>2025-02-18T08:07:55+01:00</published>
 </entry>
 
@@ -276,7 +276,7 @@
 <title>A subtle data race in Go</title>
 <link href="https://gaultier.github.io/blog/a_subtle_data_race_in_go.html"/>
 <id>urn:uuid:2bbc9f5e-3d29-5c97-8568-795307bafe6c</id>
-<updated>2025-06-11T22:16:25+02:00</updated>
+<updated>2025-06-12T09:30:03+02:00</updated>
 <published>2025-06-10T20:02:21+02:00</published>
 </entry>
 </feed>

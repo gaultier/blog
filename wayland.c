@@ -346,6 +346,7 @@ static void create_shared_memory_file(uint64_t size, state_t *state) {
 
   state->shm_pool_data =
       mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+  assert(state->shm_pool_data != (void *)-1);
   assert(state->shm_pool_data != NULL);
   state->shm_fd = fd;
 }

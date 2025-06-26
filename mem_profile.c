@@ -164,6 +164,7 @@ static void *arena_alloc(arena_t *a, size_t size, size_t align, size_t count) {
 static arena_t arena_new(uint64_t cap, mem_profile_t *profile) {
   uint8_t *mem = mmap(NULL, cap, PROT_READ | PROT_WRITE,
                       MAP_ANONYMOUS | MAP_PRIVATE, -1, 0);
+  assert(mem != (void *)-1);
 
   arena_t arena = {
       .profile = profile,
