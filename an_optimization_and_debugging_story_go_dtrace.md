@@ -137,15 +137,17 @@ CPU     ID                    FUNCTION:NAME
 [...]
 ```
 
-Damn, so we are doing purely in-memory work. Alright, so is 180 ms still good in that light? How many files are we dealing with? According to `find`, ~1.6k. So, you're saying we are spending 180 ms to sort a measle 1.6k items in a linear array? That's *nothing* for a modern computer! It should be a small number of milliseconds!
+And we run the same script on the test binary, we see that no SQL files on disk are being opened.
+
+Damn, so we are doing purely in-memory work. Alright, so is 180 ms still good in that light? How many files are we dealing with? According to `find`, ~1.6k. So, you're saying we are spending 180 ms to sort a measly 1.6k items in a linear array? That's *nothing* for a modern computer! It should be a small number of milliseconds!
 
 ## What the hell is my program even doing?
 
-If you're like me, you're always asking yourself: what is taking my computer so f***ing long? Why is Microsoft Teams hanging again? (Joking, I do not have to use it, thank God). Why is Slack taking 15s to simply startup? 
+If you're like me, you're always asking yourself: what is taking my computer so f***ing long? Why is Microsoft Teams hanging again? (Joking, I do not have to use it anymore, thank God). Why is Slack taking 15s to simply startup? 
 
 The problem with computer programs is that there are a black box. You normally have no idea what they are doing. If you're lucky they will print some stuff. If you're lucky.
 
-If only there was a tool that shows me precisely what the hell my program is doing...And I could dynamically choose what to show and what to hide to avoid noise...Oh wait this exists for 20 years. Dtrace of course!
+If only there was a tool that shows me precisely what the hell my program is doing... And I could dynamically choose what to show and what to hide to avoid noise... Oh wait this has been existing for 20 years. Dtrace of course!
 
 If you're still not convinced to use Dtrace yet, let me show you its superpower. It can show you *every* function call your program does! That's sooo useful when you do not know the codebase. Let's try it, but we are only interested in calls from within `NewMigrationBox`, and when we exit `NewMigrationBox`, we should stop tracing, because each invocation will be anyway be the same:
 
@@ -157,14 +159,16 @@ pid$target:code.test.before:*NewMigrationBox:return { exit(0) }
 pid$target:code.test.before:sort*: /self->t != 0/ {}
 ```
 
-> I have written more specific probes in this script by specifying more parts of the probe, to try to reduce noise (by accidentally matching probes we do not care about) and also to help with performance. Since we know that the performance issue is located in the sorting part, we only need to trace that.
+> I have written more specific probes in this script by specifying more parts of the probe, to try to reduce noise (by accidentally matching probes we do not care about) and also to help with performance (the more probes are being matched, the more the performance tanks). Since we know that the performance issue is located in the sorting part, we only need to trace that.
+>
+> For example if all your company code is under some prefix, like for me, `github.com/ory`, and you want to see all calls to company code, the probe can be `pid$target::github.com?ory*:`. The only issue is that the Go stdlib code has no prefix...
 > 
 > The `self->t` variable is used to only start tracing things when we enter a specific function of interest, and to stop tracing when we leave it. Very useful to reduce noise and avoid a post-processing filtering step.
 
 So, let's run our script with the `-F` option to get a nicely formatted output:
 
 ```
-$ sudo dtrace -s ~/scratch/popx_trace_calls.dtrace -c './code.test.before' -F -w
+$ sudo dtrace -s ~/scratch/popx_trace_calls.dtrace -c './code.test.before' -F
 
 CPU FUNCTION                                 
   7  -> sort.Sort                             
@@ -194,14 +198,14 @@ CPU FUNCTION
 [...]
 ```
 
-The `->` arrow means we enter the function, and `<-` means we exit it. We see a nice call tree. Also I notice something weird: we are calling `sort.Sort` way too much. It should be once, but we call it much more than that. 
+The `->` arrow means we enter the function, and `<-` means we exit it. We see a nice call tree. Also I notice something weird (looking at the full output which is huge): we are calling `sort.Sort` way too much. It should be once, but we call it much more than that. 
 
 That's the canary in the coal mine and it matches what we see on the CPU profile from the beginning.
 
 
 ## It's always DNS - wait no, it's always: superlinear algorithmic complexity
 
-Time to inspect the code in `findMigrations`, finally. Pretty quickly I stumble upon code like this (I simplified a bit - you can find the original code in the PR):
+Time to inspect the code in `NewMigrationBox`, finally. Pretty quickly I stumble upon code like this (I simplified a bit - you can find the original code in the PR):
 
 ```go
 fs.WalkDir(fm.Dir, ".", func(p string, info fs.DirEntry, err error) error {
@@ -213,10 +217,12 @@ fs.WalkDir(fm.Dir, ".", func(p string, info fs.DirEntry, err error) error {
 }
 ```
 
-Aaah... We are sorting the slice of files *every time we find a new file*. That explains it. The sort has `O(n*log(n))` complexity and we turned that into `O(n*n*log(n))`. That's 'very very super-linear', as the scientists call it.
+Aaah... We are sorting the slice of files *every time we find a new file*. That explains it. The sort has `O(n*log(n))` complexity and we turned that into `O(n*n*log(n))`. That's 'very very super-linear', as the scientists call it. 
+
+Furthermore, more sort algorithms have worst-case performance when the input is already sorted, so we are paying full price each time, essentially doing `sort(sort(sort(...)))`.
 
 
-Let's confirm this finding with Dtrace by printing how many elements are being sorted in `sort.Sort`. We rely on the fact that `sort.Sort` calls `.Len()` on its argument:
+Let's confirm this finding with Dtrace by printing how many elements are being sorted in `sort.Sort`. We rely on the fact that the first thing `sort.Sort` does, is to call `.Len()` on its argument:
 
 ```
 pid$target::*NewMigrationBox:entry { self->t = 1}
@@ -267,7 +273,7 @@ mod := sort.Interface(migrations)
 sort.Sort(mod)
 ```
 
-The real fix uses `slices.SortFunc` instead of `sort.Sort` because the official docs mention the performance of the former is better than the latter. Surely because `slices.SortFunc` uses compile-time generics whereas `sort.Sort` uses runtime interfaces.
+The real fix uses `slices.SortFunc` instead of `sort.Sort` because the official docs mention the performance of the former is better than the latter. Likely because `slices.SortFunc` uses compile-time generics whereas `sort.Sort` uses runtime interfaces. And also we see that the Go compiler inlines the call to `slices.SortFunc`, which probably helps further.
 
 With this done, we can measure again the duration of `NewMigrationBox`:
 
@@ -288,11 +294,20 @@ CPU     ID                    FUNCTION:NAME
 
 ```
 
-So we went from ~180 ms to ~11ms, a *16x* improvement that applies to every single test in the test suite. Not too bad.
+## Conclusion
 
+So we went from ~180 ms to ~11ms for the problematic function, a *16x* improvement that applies to every single test in the test suite. Not too bad. And we used Dtrace at every turn along the way. 
+
+What I find fascinating is that Dtrace is a *general purpose* tool. Go was never designed with Dtrace in mind, and vice-versa. Our code: same thing. And still, it works, no recompilation needed. I can instrument the highest levels of the stack to the kernel with one tool. That's pretty cool!
+
+Of course Dtrace is not perfect. User friendliness is, I think, pretty abysmal. It's an arcane power tool for people who took the time to decipher incomplete manuals. But it's very often a life-saver.
 
 ## Addendum: The sorting function was wrong
 
-If you look at the PR you'll see that the diff is bigger than what I described. It's because I noticed that the sorting function had a flaw and did not abide by the requirements of the Go standard library. Have a look, I think it is pretty clear.
+If you look at the PR you'll see that the diff is bigger than what I described.
+
+Initially I wanted to simply remove the sorting altogether, because `fs.WalkDir` already sorts lexically all the files, in order to always process the files in the same order. However this code uses a custom sorting logic so we need to still sort at the end.
+
+So, the diff is bigger because I noticed that the sorting function had a flaw and did not abide by the requirements of the Go standard library. Have a look, I think it is pretty clear.
 
 Interestingly, `sort.Sort` and `slices.SortFunc` have different requirements! The first one requires the sorting function to be a `transitive ordering` whereas the second one requires it to be a `strict weak ordering`. The more you know.
