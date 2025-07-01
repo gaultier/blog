@@ -15,7 +15,7 @@ Oh, and if you always dreamt of playing the 'DTrace drinking game' with your fri
 
 The nice thing when you work on an open-source project for work is that it's easy to write blog posts about it, and it's easy for readers to reproduce it! And when I'm done, it benefits the community. I like it.
 
-So, [Kratos]((https://github.com/ory/kratos)) uses a database. Each schema change is done with a SQL migration file, like `add_some_column.up.sql` and its counterpart `add_some_column.down.sql`. 
+So, [Kratos](https://github.com/ory/kratos) uses a database. Each schema change is done with a SQL migration file, like `add_some_column.up.sql` and its counterpart `add_some_column.down.sql`. 
 
 Since each test is independent, each test creates a new database, collects all migrations, and applies them, before doing its thing. 
 

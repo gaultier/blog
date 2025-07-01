@@ -125,7 +125,7 @@ Do not edit it by hand.
   <a class="hash-anchor" href="#3029713171-setting-the-stage" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>The nice thing when you work on an open-source project for work is that it's easy to write blog posts about it, and it's easy for readers to reproduce it! And when I'm done, it benefits the community. I like it.</p>
-<p>So, <a href="(https://github.com/ory/kratos)">Kratos</a> uses a database. Each schema change is done with a SQL migration file, like <code>add_some_column.up.sql</code> and its counterpart <code>add_some_column.down.sql</code>.</p>
+<p>So, <a href="https://github.com/ory/kratos">Kratos</a> uses a database. Each schema change is done with a SQL migration file, like <code>add_some_column.up.sql</code> and its counterpart <code>add_some_column.down.sql</code>.</p>
 <p>Since each test is independent, each test creates a new database, collects all migrations, and applies them, before doing its thing.</p>
 <p>Now, there are a number of things we could do to speed things up, like only collect migrations once at startup, or merge them all in one (i.e. a snapshot). But that's how things are right now. And there are 10 years worth of SQL migrations piled up in the project.</p>
 <h2 id="2883787522-profiling">
