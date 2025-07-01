@@ -23,16 +23,16 @@ When I profile the test suite, I notice some weird things:
 
 ![CPU profile of the test suite](x_popx_profile.png)
 
-- The profile shows a few big clumps (in yellow) that are the function `findMigrations` whereas the rest of the profile is pretty uneventful.
-- Pretty much all of the time (95%) in `findMigration` is spenting sorting. Perhaps it could be fine, but still surprising and worth investigating.
+- The profile shows a few big clumps (in yellow) that are the function `NewMigrationBox` whereas the rest of the profile is pretty uneventful.
+- Pretty much all of the time (95%) in `NewMigrationBox` is spenting sorting. Perhaps it could be fine, but still surprising and worth investigating.
 
 ## Get a precise timing
 
-The CPU profile unfortunately does not show how much time is spent exactly in `findMigrations`. At this point, I also do not know how many SQL files are present. If there are indeed a bazillion SQL migrations, maybe it's expected that sorting them indeed takes the most time. 
+The CPU profile unfortunately does not show how much time is spent exactly in `NewMigrationBox`. At this point, I also do not know how many SQL files are present. If there are indeed a bazillion SQL migrations, maybe it's expected that sorting them indeed takes the most time. 
 
-Let's first find out with dtrace how long the function runs. We'd like to dynamically trace `findMigrations`, but the Go compiler actually inlined it. We can see it on the profile, it's mark `inl` for inline. The profiler is clever enough to inspect the debug information and reconstruct this information. But dtrace inserts tracing code at runtime at the entry of the function - if it does not exist it's not feasible. So we trace the next best thing which is the caller of `findMigrations`: `NewMigrationBox`.
+Let's find out with dtrace how long the function really runs. 
 
-Let's first check it is visible to dtrace by listing (`-l`) all probes matching the pattern `*ory*` in the executable `code.test.before` (i.e. before the fix):
+We check if it is visible to dtrace by listing (`-l`) all probes matching the pattern `*ory*` in the executable `code.test.before` (i.e. before the fix):
 
 ```sh
 $ sudo dtrace -n 'pid$target:code.test.before:*ory*: ' -c ./code.test.before -l | grep NewMigrationBox

@@ -125,16 +125,16 @@ Do not edit it by hand.
 <p>When I profile the test suite, I notice some weird things:</p>
 <p><img src="x_popx_profile.png" alt="CPU profile of the test suite" /></p>
 <ul>
-<li>The profile shows a few big clumps (in yellow) that are the function <code>findMigrations</code> whereas the rest of the profile is pretty uneventful.</li>
-<li>Pretty much all of the time (95%) in <code>findMigration</code> is spenting sorting. Perhaps it could be fine, but still surprising and worth investigating.</li>
+<li>The profile shows a few big clumps (in yellow) that are the function <code>NewMigrationBox</code> whereas the rest of the profile is pretty uneventful.</li>
+<li>Pretty much all of the time (95%) in <code>NewMigrationBox</code> is spenting sorting. Perhaps it could be fine, but still surprising and worth investigating.</li>
 </ul>
 <h2 id="809549190-get-a-precise-timing">
   <a class="title" href="#809549190-get-a-precise-timing">Get a precise timing</a>
   <a class="hash-anchor" href="#809549190-get-a-precise-timing" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
-<p>The CPU profile unfortunately does not show how much time is spent exactly in <code>findMigrations</code>. At this point, I also do not know how many SQL files are present. If there are indeed a bazillion SQL migrations, maybe it's expected that sorting them indeed takes the most time.</p>
-<p>Let's first find out with dtrace how long the function runs. We'd like to dynamically trace <code>findMigrations</code>, but the Go compiler actually inlined it. We can see it on the profile, it's mark <code>inl</code> for inline. The profiler is clever enough to inspect the debug information and reconstruct this information. But dtrace inserts tracing code at runtime at the entry of the function - if it does not exist it's not feasible. So we trace the next best thing which is the caller of <code>findMigrations</code>: <code>NewMigrationBox</code>.</p>
-<p>Let's first check it is visible to dtrace by listing (<code>-l</code>) all probes matching the pattern <code>*ory*</code> in the executable <code>code.test.before</code> (i.e. before the fix):</p>
+<p>The CPU profile unfortunately does not show how much time is spent exactly in <code>NewMigrationBox</code>. At this point, I also do not know how many SQL files are present. If there are indeed a bazillion SQL migrations, maybe it's expected that sorting them indeed takes the most time.</p>
+<p>Let's find out with dtrace how long the function really runs.</p>
+<p>We check if it is visible to dtrace by listing (<code>-l</code>) all probes matching the pattern <code>*ory*</code> in the executable <code>code.test.before</code> (i.e. before the fix):</p>
 <pre><code class="language-sh">$ sudo dtrace -n 'pid$target:code.test.before:*ory*: ' -c ./code.test.before -l | grep NewMigrationBox
 209591   pid47446  code.test.before github.com/ory/x/popx.NewMigrationBox return
 209592   pid47446  code.test.before github.com/ory/x/popx.NewMigrationBox entry
