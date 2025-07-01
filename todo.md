@@ -405,16 +405,14 @@ pid$target::*NewMigrationBox:entry { self->t=timestamp }
 pid$target::*NewMigrationBox:return {
   self->duration = (timestamp - self->t) / 1000000;
 
-  if (self->duration < 500) {
+  if (self->duration < 1000) {
     printf("NewMigrationBox:%d\n", self->duration);
 
-
     @durations["NewMigrationBox"] = avg(self->duration);
-
-    self->t = 0;
   }
+  self->duration = 0;
+  self->t = 0;
 }
-
 ```
 
 ```
@@ -455,6 +453,36 @@ CPU     ID                    FUNCTION:NAME
 
   NewMigrationBox                                                  11
 
+```
+
+```
+CPU     ID                    FUNCTION:NAME
+  4 130841 github.com/ory/x/popx.NewMigrationBox:return NewMigrationBox:180
+
+  9 130841 github.com/ory/x/popx.NewMigrationBox:return NewMigrationBox:180
+
+  9 130841 github.com/ory/x/popx.NewMigrationBox:return NewMigrationBox:185
+
+ 10 130841 github.com/ory/x/popx.NewMigrationBox:return NewMigrationBox:180
+
+ 13 130841 github.com/ory/x/popx.NewMigrationBox:return NewMigrationBox:181
+
+ 12 130841 github.com/ory/x/popx.NewMigrationBox:return NewMigrationBox:181
+
+  7 130841 github.com/ory/x/popx.NewMigrationBox:return NewMigrationBox:182
+
+  7 130841 github.com/ory/x/popx.NewMigrationBox:return NewMigrationBox:184
+
+  4 130841 github.com/ory/x/popx.NewMigrationBox:return NewMigrationBox:181
+
+  8 130841 github.com/ory/x/popx.NewMigrationBox:return NewMigrationBox:180
+
+  4 130841 github.com/ory/x/popx.NewMigrationBox:return NewMigrationBox:181
+
+  7 130841 github.com/ory/x/popx.NewMigrationBox:return NewMigrationBox:182
+
+
+  NewMigrationBox                                                 181
 ```
 
 ## Blog implementation
