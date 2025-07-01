@@ -123,7 +123,69 @@ Damn, so we are doing purely in-memory work. Alright, so is 180 ms still good in
 
 ## What the hell is my program even doing?
 
-If you're still not convinced to use dtrace yet, let me show you its superpower. It can show you *every* function call your program does! That's sooo useful when you do not know the codebase. Let's try it:
+If you're like me, you're always asking yourself: what is taking my computer so f***ing long? Why is Microsoft Teams hanging again? (Joking, I do not have to use it, thank God). Why is Slack taking 15s to simply startup? 
+
+The problem with computer programs is that there are a black box. You normally have no idea what they are doing. If you're lucky they will print some stuff. If you're lucky.
+
+If only there was a tool that shows me precisely what the hell my program is doing...And I could dynamically choose what to show and what to hide to avoid noise...Oh wait this exists for 20 years. Dtrace of course!
+
+If you're still not convinced to use dtrace yet, let me show you its superpower. It can show you *every* function call your program does! That's sooo useful when you do not know the codebase. Let's try it, but we are only interested in calls from within `NewMigrationBox`, and when we exit `NewMigrationBox`, we should stop, because each invocation will be anyway be the same:
 
 ```
+pid$target:code.test.before:*NewMigrationBox:entry { self->t = 1}
+
+pid$target:code.test.before:*NewMigrationBox:return { stop() }
+
+pid$target:code.test.before:sort*: /self->t != 0/ {}
 ```
+
+Note 1: `stop()` kills the current process and as such is a *destructive action*. Yes, dtrace can do destructive actions (enabled with the `-w` flag) like write arbitrary data to some place in memory, send signals to processes, run shell commands, etc. when some event triggers. It can even do that *inside the kernel*. 
+
+Note 2: I have written more specific probes in this script to try to reduce noise (by accidentally matching probes we do not care about) and also to help with performance. Since we know that the performance issue is located in the sorting part, we only need to trace that.
+
+So, let's run our script with the `-F` option to get a nicely formatted output:
+
+```
+$ sudo dtrace -s ~/scratch/popx_trace_calls.dtrace -c './code.test.before' -F -w
+
+CPU FUNCTION                                 
+  7  -> sort.Sort                             
+  7    -> sort.pdqsort                        
+  7      -> sort.insertionSort                
+  7      <- sort.insertionSort                
+  7    <- sort.Sort                           
+  7    -> sort.Sort                           
+  7      -> sort.pdqsort                      
+  7        -> sort.insertionSort              
+  7        <- sort.insertionSort              
+  7      <- sort.Sort                         
+  7      -> sort.Sort                         
+  7        -> sort.pdqsort                    
+  7          -> sort.choosePivot              
+  7            -> sort.median                 
+  7            <- sort.median                 
+  7            -> sort.median                 
+  7            <- sort.median                 
+  7            -> sort.median                 
+  7            <- sort.median                 
+  7            -> sort.median                 
+  7            <- sort.median                 
+  7          <- sort.choosePivot              
+  7          -> sort.partialInsertionSort     
+  7          <- sort.partialInsertionSort 
+[...]
+```
+
+The `->` arrow means we enter the function, and `<-` means we exit it. We see a nice call tree. Also I notice something weird: we are calling `sort.Sort` way too much. It should be once, but we call it much more than that. 
+
+That's the canary in the coal mine.
+
+
+## It's always superlinear algorithmic complexity
+
+Time to inspect the code, finally. Pretty quickly I stumble upon code like this:
+
+```go
+```
+
+
