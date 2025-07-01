@@ -46,33 +46,34 @@ $ sudo dtrace -n 'pid$target:code.test.before:*ory*: ' -c ./code.test.before -l 
 Ok, the first two are the ones we need. Let's time the function duration then with a D script `time.d`:
 
 ```dtrace
-pid$target::*popx?NewMigrationBox:entry { self->t=timestamp } 
+pid$target::*NewMigrationBox:entry { self->t=timestamp } 
 
-pid$target::*popx?NewMigrationBox:return {
-  printf("NewMigrationBox:%d\n", (timestamp - self->t)/1000000)
+pid$target::*NewMigrationBox:return {
+  self->duration = (timestamp - self->t) / 1000000;
+
+  if (self->duration < 500) {
+    printf("NewMigrationBox:%d\n", self->duration);
+
+
+    @durations["NewMigrationBox"] = avg(self->duration);
+
+    self->t = 0;
+  }
 }
 ```
 
 Explanation: `timestamp` is an automatically defined variable that stores the current monotonic time at the nanosecond granularity. When we enter the function, we read the current timestamp and store it in a thread-local variable `t` (with the `self->t` syntax). When we exit the function, we do the same again, compute the difference in terms of milliseconds, and print that.
 
+Due to (I think) the M:N concurrency model of Go, sometimes the function starts running on one OS thread, yields back to the scheduler (due for example to doing some I/O), and gets moved to a different OS thread where it continues running. That, and the fact that the Go tests apparently spawn subprocess, make our calculations in this simple script fragile. Still correct, but fragile. So when we see an outlandish duration, we simply discard it.
+
+The nice thing with dtrace is that it can also do aggregations, so we compute the average of all durations. It can also show histograms etc, but no need here.
+
 Since the tests log verbose stuff by default and I do not know how to silence them, I save the output of dtrace in a separate file `/tmp/time.txt`: `dtrace -s time.d -c ./code.test.before -o /tmp/time.txt`
 
-We see these results (excerpt):
+We see these results and the last line shows the aggregation (average):
 
 ```
- 13   4446 github.com/ory/x/popx.NewMigrationBox:return NewMigrationBox:180
-
- 10   4446 github.com/ory/x/popx.NewMigrationBox:return NewMigrationBox:180
-
-  4   4446 github.com/ory/x/popx.NewMigrationBox:return NewMigrationBox:179
-
- 13   4446 github.com/ory/x/popx.NewMigrationBox:return NewMigrationBox:179
 ```
-
-> There are some outlier numbers, but I believe this is due to the `M:N` concurrency model of Go, where a function can start on one OS thread, but during its executation, yield back to the Go runtime due to doing I/O or such, and then be continued later, potentially on a different OS thread. Thus, our use of a thread-local variable is not strictly correct (but good enough). To be perfectly correct, we would need to also track with Dtrace the Go scheduler actions. Which is also possible but complicates the script.
-
-
-Dtrace can also compute histograms which is typically a better approach when inspecting the runtime of something, for example the duration of a HTTP request, but here this is enough for us.
 
 ## Establishing a baseline
 
@@ -129,19 +130,17 @@ The problem with computer programs is that there are a black box. You normally h
 
 If only there was a tool that shows me precisely what the hell my program is doing...And I could dynamically choose what to show and what to hide to avoid noise...Oh wait this exists for 20 years. Dtrace of course!
 
-If you're still not convinced to use dtrace yet, let me show you its superpower. It can show you *every* function call your program does! That's sooo useful when you do not know the codebase. Let's try it, but we are only interested in calls from within `NewMigrationBox`, and when we exit `NewMigrationBox`, we should stop, because each invocation will be anyway be the same:
+If you're still not convinced to use dtrace yet, let me show you its superpower. It can show you *every* function call your program does! That's sooo useful when you do not know the codebase. Let's try it, but we are only interested in calls from within `NewMigrationBox`, and when we exit `NewMigrationBox`, we should stop tracing, because each invocation will be anyway be the same:
 
 ```
 pid$target:code.test.before:*NewMigrationBox:entry { self->t = 1}
 
-pid$target:code.test.before:*NewMigrationBox:return { stop() }
+pid$target:code.test.before:*NewMigrationBox:return { exit(0) }
 
 pid$target:code.test.before:sort*: /self->t != 0/ {}
 ```
 
-Note 1: `stop()` kills the current process and as such is a *destructive action*. Yes, dtrace can do destructive actions (enabled with the `-w` flag) like write arbitrary data to some place in memory, send signals to processes, run shell commands, etc. when some event triggers. It can even do that *inside the kernel*. 
-
-Note 2: I have written more specific probes in this script to try to reduce noise (by accidentally matching probes we do not care about) and also to help with performance. Since we know that the performance issue is located in the sorting part, we only need to trace that.
+Note: I have written more specific probes in this script to try to reduce noise (by accidentally matching probes we do not care about) and also to help with performance. Since we know that the performance issue is located in the sorting part, we only need to trace that.
 
 So, let's run our script with the `-F` option to get a nicely formatted output:
 
@@ -181,7 +180,7 @@ The `->` arrow means we enter the function, and `<-` means we exit it. We see a 
 That's the canary in the coal mine.
 
 
-## It's always superlinear algorithmic complexity
+## It's always ~DNS~ superlinear algorithmic complexity
 
 Time to inspect the code in `findMigrations`, finally. Pretty quickly I stumble upon code like this (I simplified a bit - you can find the original code in the PR):
 
@@ -195,7 +194,7 @@ fs.WalkDir(fm.Dir, ".", func(p string, info fs.DirEntry, err error) error {
 }
 ```
 
-Ah... We are sorting the slice of files *every time we find a new file*. That explains it. The sort has `O(n*log(n))` complexity and we turned that into `O(n*n*log(n))`. That's 'very very super-linear', as the scientists call it.
+Aaah... We are sorting the slice of files *every time we find a new file*. That explains it. The sort has `O(n*log(n))` complexity and we turned that into `O(n*n*log(n))`. That's 'very very super-linear', as the scientists call it.
 
 
 Let's confirm this finding with dtrace by printing how many elements are being sorted in `sort.Sort`. We rely on the fact that `sort.Sort` calls `.Len()` on its argument:
@@ -211,7 +210,29 @@ pid$target:code.test.before:sort*Len:return /self->t != 0/ {printf("%d\n", uregs
 We see:
 
 ```
+CPU     ID                    FUNCTION:NAME
+  5  52085       sort.(*reverse).Len:return 1
+
+  5  52085       sort.(*reverse).Len:return 2
+
+  5  52085       sort.(*reverse).Len:return 3
+
+  5  52085       sort.(*reverse).Len:return 4
+
+  5  52085       sort.(*reverse).Len:return 5
+
+  [...]
+
+ 11  52085       sort.(*reverse).Len:return 1690
+
+ 11  52085       sort.(*reverse).Len:return 1691
+
+ 11  52085       sort.(*reverse).Len:return 1692
+
+ 11  52085       sort.(*reverse).Len:return 1693
 ```
+
+So it's confirmed.
 
 The fix is easy: collect all files into the slice and then sort them once:
 
@@ -225,5 +246,25 @@ mod := sort.Interface(migrations)
 sort.Sort(mod)
 ```
 
+The real fix used `slices.SortFunc` instead of `sort.Sort` because the official docs mention the performance of the former is better than the latter. Surely because `slices.SortFunc` uses compile-time generics whereas `sort.Sort` uses runtime interfaces.
+
+With this done, we can measure again the duration of `NewMigrationBox`:
 
 
+```
+$ sudo dtrace -s ~/scratch/time.dtrace -c './code.test.after' 
+CPU     ID                    FUNCTION:NAME
+ 12  62559 github.com/ory/x/popx.NewMigrationBox:return NewMigrationBox:12
+
+ 11  62559 github.com/ory/x/popx.NewMigrationBox:return NewMigrationBox:11
+
+ 13  62559 github.com/ory/x/popx.NewMigrationBox:return NewMigrationBox:12
+
+ [...]
+
+
+  NewMigrationBox                                                  11
+
+```
+
+So we went from ~180 ms to ~11ms.
