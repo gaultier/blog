@@ -21,10 +21,10 @@ Now, there are a number of things we could do to speed things up, like only coll
 
 When I profile the test suite, I notice some weird things:
 
-![CPU profile of the test suite](x_popx_profile.png)
+<object alt="CPU Profile" data="popx_profile.svg" type="image/svg+xml"></object>
 
-- The profile shows a few big clumps (in yellow) that are the function `NewMigrationBox` whereas the rest of the profile is pretty uneventful.
-- Pretty much all of the time (95%) in `NewMigrationBox` is spenting sorting. Perhaps it could be fine, but still surprising and worth investigating.
+- Pretty much all of the time (97%) in the test is spent in `NewMigrationBox`.
+- Pretty much all of the time (95%) in `NewMigrationBox` is spent sorting. Maybe it is fine, but still surprising and worth investigating.
 
 ## Get a precise timing
 

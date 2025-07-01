@@ -123,10 +123,10 @@ Do not edit it by hand.
   <a class="hash-anchor" href="#2883787522-profiling" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>When I profile the test suite, I notice some weird things:</p>
-<p><img src="x_popx_profile.png" alt="CPU profile of the test suite" /></p>
+<p><object alt="CPU Profile" data="popx_profile.svg" type="image/svg+xml"></object></p>
 <ul>
-<li>The profile shows a few big clumps (in yellow) that are the function <code>NewMigrationBox</code> whereas the rest of the profile is pretty uneventful.</li>
-<li>Pretty much all of the time (95%) in <code>NewMigrationBox</code> is spenting sorting. Perhaps it could be fine, but still surprising and worth investigating.</li>
+<li>Pretty much all of the time (97%) in the test is spent in <code>NewMigrationBox</code>.</li>
+<li>Pretty much all of the time (95%) in <code>NewMigrationBox</code> is spent sorting. Maybe it is fine, but still surprising and worth investigating.</li>
 </ul>
 <h2 id="809549190-get-a-precise-timing">
   <a class="title" href="#809549190-get-a-precise-timing">Get a precise timing</a>
