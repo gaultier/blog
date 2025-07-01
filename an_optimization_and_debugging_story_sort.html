@@ -128,18 +128,7 @@ Do not edit it by hand.
 209592   pid47446  code.test.before github.com/ory/x/popx.NewMigrationBox entry
 209593   pid47446  code.test.before github.com/ory/x/popx.NewMigrationBox.(*MigrationBox).findMigrations.func4 return
 209594   pid47446  code.test.before github.com/ory/x/popx.NewMigrationBox.(*MigrationBox).findMigrations.func4 entry
-209595   pid47446  code.test.before github.com/ory/x/popx.NewMigrationBox.(*MigrationBox).findMigrations.func4.deferwrap1 return
-209596   pid47446  code.test.before github.com/ory/x/popx.NewMigrationBox.(*MigrationBox).findMigrations.func4.deferwrap1 entry
-209597   pid47446  code.test.before github.com/ory/x/popx.NewMigrationBox.func2 return
-209598   pid47446  code.test.before github.com/ory/x/popx.NewMigrationBox.func2 entry
-209599   pid47446  code.test.before github.com/ory/x/popx.NewMigrationBox.func2.1 return
-209600   pid47446  code.test.before github.com/ory/x/popx.NewMigrationBox.func2.1 entry
-209601   pid47446  code.test.before github.com/ory/x/popx.NewMigrationBox.func1 return
-209602   pid47446  code.test.before github.com/ory/x/popx.NewMigrationBox.func1 entry
-209603   pid47446  code.test.before github.com/ory/x/popx.NewMigrationBox.func1.1 return
-209604   pid47446  code.test.before github.com/ory/x/popx.NewMigrationBox.func1.1 entry
-209605   pid47446  code.test.before github.com/ory/x/popx.NewMigrationBox.ParameterizedMigrationContent.func3 return
-209606   pid47446  code.test.before github.com/ory/x/popx.NewMigrationBox.ParameterizedMigrationContent.func3 entry
+[...]
 </code></pre>
 <p>Ok, the first two are the ones we need. Let's time the function duration then with a D script <code>time.d</code>:</p>
 <pre><code class="language-dtrace">pid$target::*popx?NewMigrationBox:entry { self-&gt;t=timestamp } 
@@ -150,8 +139,20 @@ pid$target::*popx?NewMigrationBox:return {
 </code></pre>
 <p>Explanation: <code>timestamp</code> is an automatically defined variable that stores the current monotonic time at the nanosecond granularity. When we enter the function, we read the current timestamp and store it in a thread-local variable <code>t</code> (with the <code>self-&gt;t</code> syntax). When we exit the function, we do the same again, compute the difference in terms of milliseconds, and print that.</p>
 <p>Since the tests log verbose stuff by default and I do not know how to silence them, I save the output of dtrace in a separate file <code>/tmp/time.txt</code>: <code>dtrace -s time.d -c ./code.test.before -o /tmp/time.txt</code></p>
-<p>We see these results:</p>
-<pre><code></code></pre>
+<p>We see these results (excerpt):</p>
+<pre><code> 13   4446 github.com/ory/x/popx.NewMigrationBox:return NewMigrationBox:180
+
+ 10   4446 github.com/ory/x/popx.NewMigrationBox:return NewMigrationBox:180
+
+  4   4446 github.com/ory/x/popx.NewMigrationBox:return NewMigrationBox:179
+
+ 13   4446 github.com/ory/x/popx.NewMigrationBox:return NewMigrationBox:179
+</code></pre>
+<blockquote>
+<p>There are some outlier numbers, but I believe this is due to the <code>M:N</code> concurrency model of Go, where a function can start on one OS thread, but during its executation, yield back to the Go runtime due to doing I/O or such, and then be continued later, potentially on a different OS thread. Thus, our use of a thread-local variable is not strictly correct (but good enough). To be perfectly correct, we would need to also track with Dtrace the Go scheduler actions. Which is also possible but complicates the script.</p>
+</blockquote>
+<p>Alright, so the findings are surprising. This function should not take this long because all the SQL files are embedded in the binary with <code>go:embed</code>. We can see this again with dtrace by tracking <code>open</code> syscalls.
+By comparison, a simple <code>find . -name '*.sql'</code> takes ~200ms. How come doing something purely in memory takes as much time as doing it with disk I/O?</p>
 <p><a href="/blog"> ⏴ Back to all articles</a></p>
 
 <blockquote id="donate">

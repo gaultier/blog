@@ -40,18 +40,7 @@ $ sudo dtrace -n 'pid$target:code.test.before:*ory*: ' -c ./code.test.before -l 
 209592   pid47446  code.test.before github.com/ory/x/popx.NewMigrationBox entry
 209593   pid47446  code.test.before github.com/ory/x/popx.NewMigrationBox.(*MigrationBox).findMigrations.func4 return
 209594   pid47446  code.test.before github.com/ory/x/popx.NewMigrationBox.(*MigrationBox).findMigrations.func4 entry
-209595   pid47446  code.test.before github.com/ory/x/popx.NewMigrationBox.(*MigrationBox).findMigrations.func4.deferwrap1 return
-209596   pid47446  code.test.before github.com/ory/x/popx.NewMigrationBox.(*MigrationBox).findMigrations.func4.deferwrap1 entry
-209597   pid47446  code.test.before github.com/ory/x/popx.NewMigrationBox.func2 return
-209598   pid47446  code.test.before github.com/ory/x/popx.NewMigrationBox.func2 entry
-209599   pid47446  code.test.before github.com/ory/x/popx.NewMigrationBox.func2.1 return
-209600   pid47446  code.test.before github.com/ory/x/popx.NewMigrationBox.func2.1 entry
-209601   pid47446  code.test.before github.com/ory/x/popx.NewMigrationBox.func1 return
-209602   pid47446  code.test.before github.com/ory/x/popx.NewMigrationBox.func1 entry
-209603   pid47446  code.test.before github.com/ory/x/popx.NewMigrationBox.func1.1 return
-209604   pid47446  code.test.before github.com/ory/x/popx.NewMigrationBox.func1.1 entry
-209605   pid47446  code.test.before github.com/ory/x/popx.NewMigrationBox.ParameterizedMigrationContent.func3 return
-209606   pid47446  code.test.before github.com/ory/x/popx.NewMigrationBox.ParameterizedMigrationContent.func3 entry
+[...]
 ```
 
 Ok, the first two are the ones we need. Let's time the function duration then with a D script `time.d`:
@@ -68,10 +57,20 @@ Explanation: `timestamp` is an automatically defined variable that stores the cu
 
 Since the tests log verbose stuff by default and I do not know how to silence them, I save the output of dtrace in a separate file `/tmp/time.txt`: `dtrace -s time.d -c ./code.test.before -o /tmp/time.txt`
 
-We see these results:
+We see these results (excerpt):
 
 ```
+ 13   4446 github.com/ory/x/popx.NewMigrationBox:return NewMigrationBox:180
+
+ 10   4446 github.com/ory/x/popx.NewMigrationBox:return NewMigrationBox:180
+
+  4   4446 github.com/ory/x/popx.NewMigrationBox:return NewMigrationBox:179
+
+ 13   4446 github.com/ory/x/popx.NewMigrationBox:return NewMigrationBox:179
 ```
 
+> There are some outlier numbers, but I believe this is due to the `M:N` concurrency model of Go, where a function can start on one OS thread, but during its executation, yield back to the Go runtime due to doing I/O or such, and then be continued later, potentially on a different OS thread. Thus, our use of a thread-local variable is not strictly correct (but good enough). To be perfectly correct, we would need to also track with Dtrace the Go scheduler actions. Which is also possible but complicates the script.
 
 
+Alright, so the findings are surprising. This function should not take this long because all the SQL files are embedded in the binary with `go:embed`. We can see this again with dtrace by tracking `open` syscalls. 
+By comparison, a simple `find . -name '*.sql'` takes ~200ms. How come doing something purely in memory takes as much time as doing it with disk I/O?
