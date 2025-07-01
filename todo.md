@@ -456,76 +456,33 @@ CPU     ID                    FUNCTION:NAME
 ```
 
 ```
-
 CPU     ID                    FUNCTION:NAME
-  4   4446 github.com/ory/x/popx.NewMigrationBox:return NewMigrationBox:2111957174
+  4 130841 github.com/ory/x/popx.NewMigrationBox:return NewMigrationBox:180
 
- 10   4446 github.com/ory/x/popx.NewMigrationBox:return NewMigrationBox:180
+  9 130841 github.com/ory/x/popx.NewMigrationBox:return NewMigrationBox:180
 
- 13   4446 github.com/ory/x/popx.NewMigrationBox:return NewMigrationBox:2111958100
+  9 130841 github.com/ory/x/popx.NewMigrationBox:return NewMigrationBox:185
 
- 13   4446 github.com/ory/x/popx.NewMigrationBox:return NewMigrationBox:180
+ 10 130841 github.com/ory/x/popx.NewMigrationBox:return NewMigrationBox:180
 
- 10   4446 github.com/ory/x/popx.NewMigrationBox:return NewMigrationBox:180
+ 13 130841 github.com/ory/x/popx.NewMigrationBox:return NewMigrationBox:181
 
-  4   4446 github.com/ory/x/popx.NewMigrationBox:return NewMigrationBox:179
+ 12 130841 github.com/ory/x/popx.NewMigrationBox:return NewMigrationBox:181
 
- 13   4446 github.com/ory/x/popx.NewMigrationBox:return NewMigrationBox:179
+  7 130841 github.com/ory/x/popx.NewMigrationBox:return NewMigrationBox:182
 
- 13   4446 github.com/ory/x/popx.NewMigrationBox:return NewMigrationBox:14413
+  7 130841 github.com/ory/x/popx.NewMigrationBox:return NewMigrationBox:184
 
-  6   4446 github.com/ory/x/popx.NewMigrationBox:return NewMigrationBox:16007
+  4 130841 github.com/ory/x/popx.NewMigrationBox:return NewMigrationBox:181
 
-  8   4446 github.com/ory/x/popx.NewMigrationBox:return NewMigrationBox:180
+  8 130841 github.com/ory/x/popx.NewMigrationBox:return NewMigrationBox:180
 
- 13   4446 github.com/ory/x/popx.NewMigrationBox:return NewMigrationBox:180
+  4 130841 github.com/ory/x/popx.NewMigrationBox:return NewMigrationBox:181
 
-  9   4446 github.com/ory/x/popx.NewMigrationBox:return NewMigrationBox:182
-
-  6   4446 github.com/ory/x/popx.NewMigrationBox:return NewMigrationBox:2111979385
-
-  8   4446 github.com/ory/x/popx.NewMigrationBox:return NewMigrationBox:181
-
-  5   4446 github.com/ory/x/popx.NewMigrationBox:return NewMigrationBox:180
-
-  4   4446 github.com/ory/x/popx.NewMigrationBox:return NewMigrationBox:180
-
- 13   4446 github.com/ory/x/popx.NewMigrationBox:return NewMigrationBox:2115
-
- 11   4446 github.com/ory/x/popx.NewMigrationBox:return NewMigrationBox:2111983464
-
- 11   4446 github.com/ory/x/popx.NewMigrationBox:return NewMigrationBox:18076
-
-  5   4446 github.com/ory/x/popx.NewMigrationBox:return NewMigrationBox:182
+  7 130841 github.com/ory/x/popx.NewMigrationBox:return NewMigrationBox:182
 
 
-CPU     ID                    FUNCTION:NAME
-  9 164193 github.com/ory/x/popx.NewMigrationBox:return NewMigrationBox:179
-
- 11 164193 github.com/ory/x/popx.NewMigrationBox:return NewMigrationBox:178
-
- 13 164193 github.com/ory/x/popx.NewMigrationBox:return NewMigrationBox:180
-
- 13 164193 github.com/ory/x/popx.NewMigrationBox:return NewMigrationBox:180
-
-  6 164193 github.com/ory/x/popx.NewMigrationBox:return NewMigrationBox:180
-
-  5 164193 github.com/ory/x/popx.NewMigrationBox:return NewMigrationBox:181
-
- 13 164193 github.com/ory/x/popx.NewMigrationBox:return NewMigrationBox:180
-
- 13 164193 github.com/ory/x/popx.NewMigrationBox:return NewMigrationBox:180
-
- 10 164193 github.com/ory/x/popx.NewMigrationBox:return NewMigrationBox:180
-
-  8 164193 github.com/ory/x/popx.NewMigrationBox:return NewMigrationBox:180
-
-  7 164193 github.com/ory/x/popx.NewMigrationBox:return NewMigrationBox:177
-
- 13 164193 github.com/ory/x/popx.NewMigrationBox:return NewMigrationBox:179
-
-
-  NewMigrationBox                                                 179
+  NewMigrationBox                                                 181
 ```
 
 ## Blog implementation
