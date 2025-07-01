@@ -1,10 +1,12 @@
-Title: An optimization and debugging story (your sort might be wrong)
+Title: An optimization and debugging story with Go and Dtrace
 Tags: Go, Optimization, Dtrace
 ---
 
 Today at work, I was hacking on [Kratos](https://github.com/ory/kratos) (a Go application), and I noticed running the tests took a bit too long to my liking. So I profiled the tests, and unknowingly embarked on a fun optimization and debugging adventure. I thought it could be interesting and perhaps educational. I just started this job not two months ago. I want to show methods that make it feasible to understand and diagnose a big body of software you don't know.
 
 If you want you can jump to the [PR](https://github.com/ory/x/pull/872) directly.
+
+Oh, and if you always dreamt of playing the 'Dtrace drinking game' with your friends, where you have to drink each time 'Dtrace' gets mentioned, oh boy, go get the glasses and the bottle.
 
 
 ## Setting the stage
@@ -19,7 +21,7 @@ Now, there are a number of things we could do to speed things up, like only coll
 
 ## Profiling
 
-When I profile the test suite, I notice some weird things:
+When I profile the test suite (the profiler collects the raw data behind the scenes using Dtrace), I notice some weird things:
 
 <object alt="CPU Profile" data="popx_profile.svg" type="image/svg+xml"></object>
 
@@ -28,11 +30,11 @@ When I profile the test suite, I notice some weird things:
 
 ## Get a precise timing
 
-The CPU profile unfortunately does not show how much time is spent exactly in `NewMigrationBox`. At this point, I also do not know how many SQL files are present. If there are indeed a bazillion SQL migrations, maybe it's expected that sorting them indeed takes the most time. 
+The CPU profile unfortunately does not show how much time is spent exactly in `NewMigrationBox`. At this point, I also do not know how many SQL files are present. If there are a bazillion SQL migrations, maybe it's expected that sorting them indeed takes the most time. 
 
-Let's find out with dtrace how long the function really runs. 
+Let's find out with Dtrace how long the function really runs. 
 
-We check if it is visible to dtrace by listing (`-l`) all probes matching the pattern `*ory*` in the executable `code.test.before` (i.e. before the fix):
+We check if the function `NewMigrationBox` is visible to Dtrace by listing (`-l`) all probes matching the pattern `*ory*` in the executable `code.test.before` (i.e. before the fix):
 
 ```sh
 $ sudo dtrace -n 'pid$target:code.test.before:*ory*: ' -c ./code.test.before -l | grep NewMigrationBox
@@ -62,13 +64,13 @@ pid$target::*NewMigrationBox:return {
 
 ```
 
-Explanation: `timestamp` is an automatically defined variable that stores the current monotonic time at the nanosecond granularity. When we enter the function, we read the current timestamp and store it in a thread-local variable `t` (with the `self->t` syntax). When we exit the function, we do the same again, compute the difference in terms of milliseconds, and print that.
+> Explanation: `timestamp` is an automatically defined variable that stores the current monotonic time at the nanosecond granularity. When we enter the function, we read the current timestamp and store it in a thread-local variable `t` (with the `self->t` syntax). When we exit the function, we do the same again, compute the difference in terms of milliseconds, and print that.
+> 
+> Due to (I think) the M:N concurrency model of Go, sometimes the function starts running on one OS thread, yields back to the scheduler (due for example to doing some I/O), and gets moved to a different OS thread where it continues running. That, and the fact that the Go tests apparently spawn subprocess, make our calculations in this simple script fragile. So when we see an outlandish duration, that we know is not possible, we simply discard it.
 
-Due to (I think) the M:N concurrency model of Go, sometimes the function starts running on one OS thread, yields back to the scheduler (due for example to doing some I/O), and gets moved to a different OS thread where it continues running. That, and the fact that the Go tests apparently spawn subprocess, make our calculations in this simple script fragile. Still correct, but fragile. So when we see an outlandish duration, we simply discard it.
+The nice thing with Dtrace is that it can also do aggregations, so we compute the average of all durations with `avg()`. Dtrace can also show histograms etc, but no need here. Aggregations get prints at the end automatically.
 
-The nice thing with dtrace is that it can also do aggregations, so we compute the average of all durations. Dtrace can also show histograms etc, but no need here.
-
-Since the tests log verbose stuff by default and I do not know how to silence them, I save the output of dtrace in a separate file `/tmp/time.txt`: `dtrace -s time.d -c ./code.test.before -o /tmp/time.txt`
+Since the tests log verbose stuff by default and I do not know how to silence them, I save the output of Dtrace in a separate file `/tmp/time.txt`: `dtrace -s time.d -c ./code.test.before -o /tmp/time.txt`
 
 We see these results and the last line shows the aggregation (average):
 
@@ -86,14 +88,16 @@ CPU     ID                    FUNCTION:NAME
   NewMigrationBox                                                 181
 ```
 
+So the duration is ~180 ms.
+
 ## Establishing a baseline
 
 When doing some (light) optimization work, it is crucial to establish a baseline. What is the ideal time? How much do we differ from this time? And to establish this baseline, it is very important to understand what kind of work we are doing:
 
-- Are we doing any I/O at all?
-- Are we doing purely in-memory work?
+- Are we doing any I/O at all or is the workload purely in-memory?
+- How much works is there? How many items are we handling? Is it a few, a few thousands, millions?
 
-So let's see what the baseline is to simply find all the SQL files:
+So let's see what the baseline is when simply finding all the SQL files on disk:
 
 ```sh
 hyperfine --shell=none --warmup=5 "find ./persistence/sql/migrations -name '*.sql' -type f"
@@ -104,9 +108,9 @@ Benchmark 1: find ./persistence/sql/migrations -name '*.sql' -type f
 
 Ok, so 200ms, which is pretty close to our 180ms in Go...
 
-Wait a minute...*are we doing any I/O in Go at all???* Could it be that we *embed* all the SQL files in our binary at build time ?!
+Wait a minute...are we doing any I/O in Go at all? Could it be that we *embed* all the SQL files in our binary at build time ?!
 
-Let's check with dtrace:
+Let's print with dtrace files being opened whose extension is `.sql`:
 
 ```
 syscall::open:entry { 
@@ -117,6 +121,8 @@ syscall::open:entry {
   }
 } 
 ```
+
+> `copyinstr` is [required](https://illumos.org/books/dtrace/chp-user.html#chp-user) because our D script runs inside the kernel but we are trying to access user-space memory. 
 
 When we run this script on `go test -c` which builds the text executable, we see that all the SQL files are being opened by the Go compiler and subsequently embedded in the test binary:
 
@@ -141,7 +147,7 @@ The problem with computer programs is that there are a black box. You normally h
 
 If only there was a tool that shows me precisely what the hell my program is doing...And I could dynamically choose what to show and what to hide to avoid noise...Oh wait this exists for 20 years. Dtrace of course!
 
-If you're still not convinced to use dtrace yet, let me show you its superpower. It can show you *every* function call your program does! That's sooo useful when you do not know the codebase. Let's try it, but we are only interested in calls from within `NewMigrationBox`, and when we exit `NewMigrationBox`, we should stop tracing, because each invocation will be anyway be the same:
+If you're still not convinced to use Dtrace yet, let me show you its superpower. It can show you *every* function call your program does! That's sooo useful when you do not know the codebase. Let's try it, but we are only interested in calls from within `NewMigrationBox`, and when we exit `NewMigrationBox`, we should stop tracing, because each invocation will be anyway be the same:
 
 ```
 pid$target:code.test.before:*NewMigrationBox:entry { self->t = 1}
@@ -151,7 +157,9 @@ pid$target:code.test.before:*NewMigrationBox:return { exit(0) }
 pid$target:code.test.before:sort*: /self->t != 0/ {}
 ```
 
-Note: I have written more specific probes in this script to try to reduce noise (by accidentally matching probes we do not care about) and also to help with performance. Since we know that the performance issue is located in the sorting part, we only need to trace that.
+> I have written more specific probes in this script by specifying more parts of the probe, to try to reduce noise (by accidentally matching probes we do not care about) and also to help with performance. Since we know that the performance issue is located in the sorting part, we only need to trace that.
+> 
+> The `self->t` variable is used to only start tracing things when we enter a specific function of interest, and to stop tracing when we leave it. Very useful to reduce noise and avoid a post-processing filtering step.
 
 So, let's run our script with the `-F` option to get a nicely formatted output:
 
@@ -188,10 +196,10 @@ CPU FUNCTION
 
 The `->` arrow means we enter the function, and `<-` means we exit it. We see a nice call tree. Also I notice something weird: we are calling `sort.Sort` way too much. It should be once, but we call it much more than that. 
 
-That's the canary in the coal mine.
+That's the canary in the coal mine and it matches what we see on the CPU profile from the beginning.
 
 
-## It's always ~DNS~ superlinear algorithmic complexity
+## It's always DNS - wait no, it's always: superlinear algorithmic complexity
 
 Time to inspect the code in `findMigrations`, finally. Pretty quickly I stumble upon code like this (I simplified a bit - you can find the original code in the PR):
 
@@ -208,7 +216,7 @@ fs.WalkDir(fm.Dir, ".", func(p string, info fs.DirEntry, err error) error {
 Aaah... We are sorting the slice of files *every time we find a new file*. That explains it. The sort has `O(n*log(n))` complexity and we turned that into `O(n*n*log(n))`. That's 'very very super-linear', as the scientists call it.
 
 
-Let's confirm this finding with dtrace by printing how many elements are being sorted in `sort.Sort`. We rely on the fact that `sort.Sort` calls `.Len()` on its argument:
+Let's confirm this finding with Dtrace by printing how many elements are being sorted in `sort.Sort`. We rely on the fact that `sort.Sort` calls `.Len()` on its argument:
 
 ```
 pid$target::*NewMigrationBox:entry { self->t = 1}
@@ -217,6 +225,8 @@ pid$target::*NewMigrationBox:return { self->t = 0}
 
 pid$target:code.test.before:sort*Len:return /self->t != 0/ {printf("%d\n", uregs[R_R0])}
 ```
+
+> The register `R_R0` contains the return value on `aarch64` and `amd64` per the [Go ABI](https://github.com/golang/go/blob/master/src/cmd/compile/abi-internal.md).
 
 We see:
 
@@ -245,7 +255,7 @@ CPU     ID                    FUNCTION:NAME
 
 So it's confirmed.
 
-The fix is easy: collect all files into the slice and then sort them once:
+The fix is easy: collect all files into the slice and then sort them once at the end:
 
 ```
 fs.WalkDir(fm.Dir, ".", func(p string, info fs.DirEntry, err error) error {
@@ -257,7 +267,7 @@ mod := sort.Interface(migrations)
 sort.Sort(mod)
 ```
 
-The real fix used `slices.SortFunc` instead of `sort.Sort` because the official docs mention the performance of the former is better than the latter. Surely because `slices.SortFunc` uses compile-time generics whereas `sort.Sort` uses runtime interfaces.
+The real fix uses `slices.SortFunc` instead of `sort.Sort` because the official docs mention the performance of the former is better than the latter. Surely because `slices.SortFunc` uses compile-time generics whereas `sort.Sort` uses runtime interfaces.
 
 With this done, we can measure again the duration of `NewMigrationBox`:
 
@@ -278,4 +288,11 @@ CPU     ID                    FUNCTION:NAME
 
 ```
 
-So we went from ~180 ms to ~11ms.
+So we went from ~180 ms to ~11ms, a *16x* improvement that applies to every single test in the test suite. Not too bad.
+
+
+## Addendum: The sorting function was wrong
+
+If you look at the PR you'll see that the diff is bigger than what I described. It's because I noticed that the sorting function had a flaw and did not abide by the requirements of the Go standard library. Have a look, I think it is pretty clear.
+
+Interestingly, `sort.Sort` and `slices.SortFunc` have different requirements! The first one requires the sorting function to be a `transitive ordering` whereas the second one requires it to be a `strict weak ordering`. The more you know.
