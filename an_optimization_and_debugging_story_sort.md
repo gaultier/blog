@@ -32,12 +32,46 @@ The CPU profile unfortunately does not show how much time is spent exactly in `f
 
 Let's first find out with dtrace how long the function runs. We'd like to dynamically trace `findMigrations`, but the Go compiler actually inlined it. We can see it on the profile, it's mark `inl` for inline. The profiler is clever enough to inspect the debug information and reconstruct this information. But dtrace inserts tracing code at runtime at the entry of the function - if it does not exist it's not feasible. So we trace the next best thing which is the caller of `findMigrations`: `NewMigrationBox`.
 
-Let's first check it is visible to dtrace by listing (`-l`) all probes matching the pattern `*ory*`:
+Let's first check it is visible to dtrace by listing (`-l`) all probes matching the pattern `*ory*` in the executable `code.test.before` (i.e. before the fix):
 
-```dtrace
-sudo dtrace -n 'pid$target::*ory*:' -c ./code.test -l 
+```sh
+$ sudo dtrace -n 'pid$target:code.test.before:*ory*: ' -c ./code.test.before -l | grep NewMigrationBox
+209591   pid47446  code.test.before github.com/ory/x/popx.NewMigrationBox return
+209592   pid47446  code.test.before github.com/ory/x/popx.NewMigrationBox entry
+209593   pid47446  code.test.before github.com/ory/x/popx.NewMigrationBox.(*MigrationBox).findMigrations.func4 return
+209594   pid47446  code.test.before github.com/ory/x/popx.NewMigrationBox.(*MigrationBox).findMigrations.func4 entry
+209595   pid47446  code.test.before github.com/ory/x/popx.NewMigrationBox.(*MigrationBox).findMigrations.func4.deferwrap1 return
+209596   pid47446  code.test.before github.com/ory/x/popx.NewMigrationBox.(*MigrationBox).findMigrations.func4.deferwrap1 entry
+209597   pid47446  code.test.before github.com/ory/x/popx.NewMigrationBox.func2 return
+209598   pid47446  code.test.before github.com/ory/x/popx.NewMigrationBox.func2 entry
+209599   pid47446  code.test.before github.com/ory/x/popx.NewMigrationBox.func2.1 return
+209600   pid47446  code.test.before github.com/ory/x/popx.NewMigrationBox.func2.1 entry
+209601   pid47446  code.test.before github.com/ory/x/popx.NewMigrationBox.func1 return
+209602   pid47446  code.test.before github.com/ory/x/popx.NewMigrationBox.func1 entry
+209603   pid47446  code.test.before github.com/ory/x/popx.NewMigrationBox.func1.1 return
+209604   pid47446  code.test.before github.com/ory/x/popx.NewMigrationBox.func1.1 entry
+209605   pid47446  code.test.before github.com/ory/x/popx.NewMigrationBox.ParameterizedMigrationContent.func3 return
+209606   pid47446  code.test.before github.com/ory/x/popx.NewMigrationBox.ParameterizedMigrationContent.func3 entry
 ```
 
+Ok, the first two are the ones we need. Let's time the function duration then with a D script `time.d`:
+
+```dtrace
+pid$target::*popx?NewMigrationBox:entry { self->t=timestamp } 
+
+pid$target::*popx?NewMigrationBox:return {
+  printf("NewMigrationBox:%d\n", (timestamp - self->t)/1000000)
+}
+```
+
+Explanation: `timestamp` is an automatically defined variable that stores the current monotonic time at the nanosecond granularity. When we enter the function, we read the current timestamp and store it in a thread-local variable `t` (with the `self->t` syntax). When we exit the function, we do the same again, compute the difference in terms of milliseconds, and print that.
+
+Since the tests log verbose stuff by default and I do not know how to silence them, I save the output of dtrace in a separate file `/tmp/time.txt`: `dtrace -s time.d -c ./code.test.before -o /tmp/time.txt`
+
+We see these results:
+
+```
+```
 
 
 

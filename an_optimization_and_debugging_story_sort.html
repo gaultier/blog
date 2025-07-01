@@ -122,9 +122,36 @@ Do not edit it by hand.
 </h2>
 <p>The CPU profile unfortunately does not show how much time is spent exactly in <code>findMigrations</code>. At this point, I also do not know how many SQL files are present. If there are indeed a bazillion SQL migrations, maybe it's expected that sorting them indeed takes the most time.</p>
 <p>Let's first find out with dtrace how long the function runs. We'd like to dynamically trace <code>findMigrations</code>, but the Go compiler actually inlined it. We can see it on the profile, it's mark <code>inl</code> for inline. The profiler is clever enough to inspect the debug information and reconstruct this information. But dtrace inserts tracing code at runtime at the entry of the function - if it does not exist it's not feasible. So we trace the next best thing which is the caller of <code>findMigrations</code>: <code>NewMigrationBox</code>.</p>
-<p>Let's first check it is visible to dtrace by listing (<code>-l</code>) all probes matching the pattern <code>*ory*</code>:</p>
-<pre><code class="language-dtrace">sudo dtrace -n 'pid$target::*ory*:' -c ./code.test -l 
+<p>Let's first check it is visible to dtrace by listing (<code>-l</code>) all probes matching the pattern <code>*ory*</code> in the executable <code>code.test.before</code> (i.e. before the fix):</p>
+<pre><code class="language-sh">$ sudo dtrace -n 'pid$target:code.test.before:*ory*: ' -c ./code.test.before -l | grep NewMigrationBox
+209591   pid47446  code.test.before github.com/ory/x/popx.NewMigrationBox return
+209592   pid47446  code.test.before github.com/ory/x/popx.NewMigrationBox entry
+209593   pid47446  code.test.before github.com/ory/x/popx.NewMigrationBox.(*MigrationBox).findMigrations.func4 return
+209594   pid47446  code.test.before github.com/ory/x/popx.NewMigrationBox.(*MigrationBox).findMigrations.func4 entry
+209595   pid47446  code.test.before github.com/ory/x/popx.NewMigrationBox.(*MigrationBox).findMigrations.func4.deferwrap1 return
+209596   pid47446  code.test.before github.com/ory/x/popx.NewMigrationBox.(*MigrationBox).findMigrations.func4.deferwrap1 entry
+209597   pid47446  code.test.before github.com/ory/x/popx.NewMigrationBox.func2 return
+209598   pid47446  code.test.before github.com/ory/x/popx.NewMigrationBox.func2 entry
+209599   pid47446  code.test.before github.com/ory/x/popx.NewMigrationBox.func2.1 return
+209600   pid47446  code.test.before github.com/ory/x/popx.NewMigrationBox.func2.1 entry
+209601   pid47446  code.test.before github.com/ory/x/popx.NewMigrationBox.func1 return
+209602   pid47446  code.test.before github.com/ory/x/popx.NewMigrationBox.func1 entry
+209603   pid47446  code.test.before github.com/ory/x/popx.NewMigrationBox.func1.1 return
+209604   pid47446  code.test.before github.com/ory/x/popx.NewMigrationBox.func1.1 entry
+209605   pid47446  code.test.before github.com/ory/x/popx.NewMigrationBox.ParameterizedMigrationContent.func3 return
+209606   pid47446  code.test.before github.com/ory/x/popx.NewMigrationBox.ParameterizedMigrationContent.func3 entry
 </code></pre>
+<p>Ok, the first two are the ones we need. Let's time the function duration then with a D script <code>time.d</code>:</p>
+<pre><code class="language-dtrace">pid$target::*popx?NewMigrationBox:entry { self-&gt;t=timestamp } 
+
+pid$target::*popx?NewMigrationBox:return {
+  printf(&quot;NewMigrationBox:%d\n&quot;, (timestamp - self-&gt;t)/1000000)
+}
+</code></pre>
+<p>Explanation: <code>timestamp</code> is an automatically defined variable that stores the current monotonic time at the nanosecond granularity. When we enter the function, we read the current timestamp and store it in a thread-local variable <code>t</code> (with the <code>self-&gt;t</code> syntax). When we exit the function, we do the same again, compute the difference in terms of milliseconds, and print that.</p>
+<p>Since the tests log verbose stuff by default and I do not know how to silence them, I save the output of dtrace in a separate file <code>/tmp/time.txt</code>: <code>dtrace -s time.d -c ./code.test.before -o /tmp/time.txt</code></p>
+<p>We see these results:</p>
+<pre><code></code></pre>
 <p><a href="/blog"> ⏴ Back to all articles</a></p>
 
 <blockquote id="donate">
