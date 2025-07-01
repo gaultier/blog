@@ -25,7 +25,7 @@ When I profile the test suite (the profiler collects the raw data behind the sce
 
 <object alt="CPU Profile" data="popx_profile.svg" type="image/svg+xml"></object>
 
-- Pretty much all of the time (97%) in the test is spent in `NewMigrationBox`.
+- Pretty much all of the time (97%) in the test is spent in `NewMigrationBox` which applies SQL migrations. Strange.
 - Pretty much all of the time (90+%) in `NewMigrationBox` is spent sorting. Maybe it is fine, but still surprising and worth investigating.
 
 ## Get a precise timing
@@ -68,7 +68,7 @@ pid$target::*NewMigrationBox:return {
 > 
 > Due to (I think) the M:N concurrency model of Go, sometimes the function starts running on one OS thread, yields back to the scheduler (due for example to doing some I/O), and gets moved to a different OS thread where it continues running. That, and the fact that the Go tests apparently spawn subprocess, make our calculations in this simple script fragile. So when we see an outlandish duration, that we know is not possible, we simply discard it.
 
-The nice thing with Dtrace is that it can also do aggregations, so we compute the average of all durations with `avg()`. Dtrace can also show histograms etc, but no need here. Aggregations get prints at the end automatically.
+The nice thing with Dtrace is that it can also do aggregations (with `@`), so we compute the average of all durations with `avg()`. Dtrace can also show histograms etc, but no need here. Aggregations get printed at the end automatically.
 
 Since the tests log verbose stuff by default and I do not know how to silence them, I save the output of Dtrace in a separate file `/tmp/time.txt`: `dtrace -s time.d -c ./code.test.before -o /tmp/time.txt`
 
