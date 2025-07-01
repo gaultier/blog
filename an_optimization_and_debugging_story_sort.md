@@ -45,34 +45,45 @@ $ sudo dtrace -n 'pid$target:code.test.before:*ory*: ' -c ./code.test.before -l 
 
 Ok, the first two are the ones we need. Let's time the function duration then with a D script `time.d`:
 
-```dtrace
+```
 pid$target::*NewMigrationBox:entry { self->t=timestamp } 
 
 pid$target::*NewMigrationBox:return {
   self->duration = (timestamp - self->t) / 1000000;
 
-  if (self->duration < 500) {
+  if (self->duration < 1000) {
     printf("NewMigrationBox:%d\n", self->duration);
 
-
     @durations["NewMigrationBox"] = avg(self->duration);
-
-    self->t = 0;
   }
+  self->duration = 0;
+  self->t = 0;
 }
+
 ```
 
 Explanation: `timestamp` is an automatically defined variable that stores the current monotonic time at the nanosecond granularity. When we enter the function, we read the current timestamp and store it in a thread-local variable `t` (with the `self->t` syntax). When we exit the function, we do the same again, compute the difference in terms of milliseconds, and print that.
 
 Due to (I think) the M:N concurrency model of Go, sometimes the function starts running on one OS thread, yields back to the scheduler (due for example to doing some I/O), and gets moved to a different OS thread where it continues running. That, and the fact that the Go tests apparently spawn subprocess, make our calculations in this simple script fragile. Still correct, but fragile. So when we see an outlandish duration, we simply discard it.
 
-The nice thing with dtrace is that it can also do aggregations, so we compute the average of all durations. It can also show histograms etc, but no need here.
+The nice thing with dtrace is that it can also do aggregations, so we compute the average of all durations. Dtrace can also show histograms etc, but no need here.
 
 Since the tests log verbose stuff by default and I do not know how to silence them, I save the output of dtrace in a separate file `/tmp/time.txt`: `dtrace -s time.d -c ./code.test.before -o /tmp/time.txt`
 
 We see these results and the last line shows the aggregation (average):
 
 ```
+CPU     ID                    FUNCTION:NAME
+  4 130841 github.com/ory/x/popx.NewMigrationBox:return NewMigrationBox:180
+
+  9 130841 github.com/ory/x/popx.NewMigrationBox:return NewMigrationBox:185
+
+ 13 130841 github.com/ory/x/popx.NewMigrationBox:return NewMigrationBox:181
+
+ [...]
+
+
+  NewMigrationBox                                                 181
 ```
 
 ## Establishing a baseline

@@ -143,27 +143,38 @@ Do not edit it by hand.
 [...]
 </code></pre>
 <p>Ok, the first two are the ones we need. Let's time the function duration then with a D script <code>time.d</code>:</p>
-<pre><code class="language-dtrace">pid$target::*NewMigrationBox:entry { self-&gt;t=timestamp } 
+<pre><code>pid$target::*NewMigrationBox:entry { self-&gt;t=timestamp } 
 
 pid$target::*NewMigrationBox:return {
   self-&gt;duration = (timestamp - self-&gt;t) / 1000000;
 
-  if (self-&gt;duration &lt; 500) {
+  if (self-&gt;duration &lt; 1000) {
     printf(&quot;NewMigrationBox:%d\n&quot;, self-&gt;duration);
 
-
     @durations[&quot;NewMigrationBox&quot;] = avg(self-&gt;duration);
-
-    self-&gt;t = 0;
   }
+  self-&gt;duration = 0;
+  self-&gt;t = 0;
 }
+
 </code></pre>
 <p>Explanation: <code>timestamp</code> is an automatically defined variable that stores the current monotonic time at the nanosecond granularity. When we enter the function, we read the current timestamp and store it in a thread-local variable <code>t</code> (with the <code>self-&gt;t</code> syntax). When we exit the function, we do the same again, compute the difference in terms of milliseconds, and print that.</p>
 <p>Due to (I think) the M:N concurrency model of Go, sometimes the function starts running on one OS thread, yields back to the scheduler (due for example to doing some I/O), and gets moved to a different OS thread where it continues running. That, and the fact that the Go tests apparently spawn subprocess, make our calculations in this simple script fragile. Still correct, but fragile. So when we see an outlandish duration, we simply discard it.</p>
-<p>The nice thing with dtrace is that it can also do aggregations, so we compute the average of all durations. It can also show histograms etc, but no need here.</p>
+<p>The nice thing with dtrace is that it can also do aggregations, so we compute the average of all durations. Dtrace can also show histograms etc, but no need here.</p>
 <p>Since the tests log verbose stuff by default and I do not know how to silence them, I save the output of dtrace in a separate file <code>/tmp/time.txt</code>: <code>dtrace -s time.d -c ./code.test.before -o /tmp/time.txt</code></p>
 <p>We see these results and the last line shows the aggregation (average):</p>
-<pre><code></code></pre>
+<pre><code>CPU     ID                    FUNCTION:NAME
+  4 130841 github.com/ory/x/popx.NewMigrationBox:return NewMigrationBox:180
+
+  9 130841 github.com/ory/x/popx.NewMigrationBox:return NewMigrationBox:185
+
+ 13 130841 github.com/ory/x/popx.NewMigrationBox:return NewMigrationBox:181
+
+ [...]
+
+
+  NewMigrationBox                                                 181
+</code></pre>
 <h2 id="1457903711-establishing-a-baseline">
   <a class="title" href="#1457903711-establishing-a-baseline">Establishing a baseline</a>
   <a class="hash-anchor" href="#1457903711-establishing-a-baseline" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
