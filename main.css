@@ -143,7 +143,7 @@ figure > figcaption {
 }
 
 img, video {
-  max-width: 90%;
+  max-width: 95%;
   padding: 1rem;
   display: block;
   margin: auto;
@@ -195,8 +195,8 @@ code {
 
 object {
   padding: 1rem .5rem;
-  max-width: 95%;
-  min-width: 60%;
+  width: 95%;
+  min-width: 70%;
   display: block;
   margin: auto;
 }

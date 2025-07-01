@@ -24,7 +24,7 @@ When I profile the test suite, I notice some weird things:
 <object alt="CPU Profile" data="popx_profile.svg" type="image/svg+xml"></object>
 
 - Pretty much all of the time (97%) in the test is spent in `NewMigrationBox`.
-- Pretty much all of the time (95%) in `NewMigrationBox` is spent sorting. Maybe it is fine, but still surprising and worth investigating.
+- Pretty much all of the time (90+%) in `NewMigrationBox` is spent sorting. Maybe it is fine, but still surprising and worth investigating.
 
 ## Get a precise timing
 
