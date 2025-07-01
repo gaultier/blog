@@ -197,6 +197,22 @@ fs.WalkDir(fm.Dir, ".", func(p string, info fs.DirEntry, err error) error {
 
 Ah... We are sorting the slice of files *every time we find a new file*. That explains it. The sort has `O(n*log(n))` complexity and we turned that into `O(n*n*log(n))`. That's 'very very super-linear', as the scientists call it.
 
+
+Let's confirm this finding with dtrace by printing how many elements are being sorted in `sort.Sort`. We rely on the fact that `sort.Sort` calls `.Len()` on its argument:
+
+```
+pid$target::*NewMigrationBox:entry { self->t = 1}
+
+pid$target::*NewMigrationBox:return { self->t = 0}
+
+pid$target:code.test.before:sort*Len:return /self->t != 0/ {printf("%d\n", uregs[R_R0])}
+```
+
+We see:
+
+```
+```
+
 The fix is easy: collect all files into the slice and then sort them once:
 
 ```

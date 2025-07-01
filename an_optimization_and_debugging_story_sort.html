@@ -263,6 +263,15 @@ CPU FUNCTION
 }
 </code></pre>
 <p>Ah... We are sorting the slice of files <em>every time we find a new file</em>. That explains it. The sort has <code>O(n*log(n))</code> complexity and we turned that into <code>O(n*n*log(n))</code>. That's 'very very super-linear', as the scientists call it.</p>
+<p>Let's confirm this finding with dtrace by printing how many elements are being sorted in <code>sort.Sort</code>. We rely on the fact that <code>sort.Sort</code> calls <code>.Len()</code> on its argument:</p>
+<pre><code>pid$target::*NewMigrationBox:entry { self-&gt;t = 1}
+
+pid$target::*NewMigrationBox:return { self-&gt;t = 0}
+
+pid$target:code.test.before:sort*Len:return /self-&gt;t != 0/ {printf(&quot;%d\n&quot;, uregs[R_R0])}
+</code></pre>
+<p>We see:</p>
+<pre><code></code></pre>
 <p>The fix is easy: collect all files into the slice and then sort them once:</p>
 <pre><code>fs.WalkDir(fm.Dir, &quot;.&quot;, func(p string, info fs.DirEntry, err error) error {
     migrations = append(migrations, migrations)
