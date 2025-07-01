@@ -235,7 +235,6 @@ CPU     ID                    FUNCTION:NAME
     ```
 pid$target::*SortFunc*Migration*:entry {
   printf("len=%d\n", uregs[R_R2]);
-  ustack(40);
 }
 
     ```
@@ -397,6 +396,66 @@ CPU FUNCTION
   7          <- sort.partialInsertionSort 
 ```
 
+
+Time:
+
+```
+pid$target::*NewMigrationBox:entry { self->t=timestamp } 
+
+pid$target::*NewMigrationBox:return {
+  self->duration = (timestamp - self->t) / 1000000;
+
+  if (self->duration < 500) {
+    printf("NewMigrationBox:%d\n", self->duration);
+
+
+    @durations["NewMigrationBox"] = avg(self->duration);
+
+    self->t = 0;
+  }
+}
+
+```
+
+```
+$ sudo dtrace -s ~/scratch/time.dtrace -c './code.test.after' 
+CPU     ID                    FUNCTION:NAME
+ 12  62559 github.com/ory/x/popx.NewMigrationBox:return NewMigrationBox:12
+
+ 13  62559 github.com/ory/x/popx.NewMigrationBox:return NewMigrationBox:12
+
+  4  62559 github.com/ory/x/popx.NewMigrationBox:return NewMigrationBox:12
+
+  7  62559 github.com/ory/x/popx.NewMigrationBox:return NewMigrationBox:12
+
+  4  62559 github.com/ory/x/popx.NewMigrationBox:return NewMigrationBox:12
+
+  7  62559 github.com/ory/x/popx.NewMigrationBox:return NewMigrationBox:12
+
+  8  62559 github.com/ory/x/popx.NewMigrationBox:return NewMigrationBox:12
+
+ 13  62559 github.com/ory/x/popx.NewMigrationBox:return NewMigrationBox:12
+
+ 12  62559 github.com/ory/x/popx.NewMigrationBox:return NewMigrationBox:12
+
+  9  62559 github.com/ory/x/popx.NewMigrationBox:return NewMigrationBox:12
+
+  6  62559 github.com/ory/x/popx.NewMigrationBox:return NewMigrationBox:12
+
+ 11  62559 github.com/ory/x/popx.NewMigrationBox:return NewMigrationBox:11
+
+  4  62559 github.com/ory/x/popx.NewMigrationBox:return NewMigrationBox:11
+
+  8  62559 github.com/ory/x/popx.NewMigrationBox:return NewMigrationBox:12
+
+  9  62559 github.com/ory/x/popx.NewMigrationBox:return NewMigrationBox:12
+
+ 13  62559 github.com/ory/x/popx.NewMigrationBox:return NewMigrationBox:12
+
+
+  NewMigrationBox                                                  11
+
+```
 
 ## Blog implementation
 
