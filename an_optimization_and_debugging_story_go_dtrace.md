@@ -312,8 +312,10 @@ Another learning for me is that super-linear algorithms will go unnoticed and se
 
 If you look at the PR you'll see that the diff is bigger than what I described.
 
-Initially I wanted to simply remove the sorting altogether, because `fs.WalkDir` already sorts lexically all the files, in order to always process the files in the same order. However this code uses a custom sorting logic so we need to still sort at the end.
+Initially I wanted to simply remove the sorting altogether, because `fs.WalkDir` already sorts lexically all the files, in order to always process the files in the same order. However this code uses a custom sorting logic so we need to still sort at the end, after walking the directory.
 
 So, the diff is bigger because I noticed that the sorting function had a flaw and did not abide by the requirements of the Go standard library. Have a look, I think it is pretty clear.
 
-Interestingly, `sort.Sort` and `slices.SortFunc` have different requirements! The first one requires the sorting function to be a `transitive ordering` whereas the second one requires it to be a `strict weak ordering`. The more you know.
+Interestingly, `sort.Sort` and `slices.SortFunc` have different requirements! The first one requires the sorting function to be a `transitive ordering` whereas the second one requires it to be a `strict weak ordering`. The more you know!
+
+I encourage you, if you write a custom sorting function, to carefully read which requirements you have to comply with, and write tests that ensure that these requirements are met, lest you face subtle sorting bugs.

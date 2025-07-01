@@ -369,9 +369,10 @@ CPU     ID                    FUNCTION:NAME
   <a class="hash-anchor" href="#1968454417-addendum-the-sorting-function-was-wrong" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>If you look at the PR you'll see that the diff is bigger than what I described.</p>
-<p>Initially I wanted to simply remove the sorting altogether, because <code>fs.WalkDir</code> already sorts lexically all the files, in order to always process the files in the same order. However this code uses a custom sorting logic so we need to still sort at the end.</p>
+<p>Initially I wanted to simply remove the sorting altogether, because <code>fs.WalkDir</code> already sorts lexically all the files, in order to always process the files in the same order. However this code uses a custom sorting logic so we need to still sort at the end, after walking the directory.</p>
 <p>So, the diff is bigger because I noticed that the sorting function had a flaw and did not abide by the requirements of the Go standard library. Have a look, I think it is pretty clear.</p>
-<p>Interestingly, <code>sort.Sort</code> and <code>slices.SortFunc</code> have different requirements! The first one requires the sorting function to be a <code>transitive ordering</code> whereas the second one requires it to be a <code>strict weak ordering</code>. The more you know.</p>
+<p>Interestingly, <code>sort.Sort</code> and <code>slices.SortFunc</code> have different requirements! The first one requires the sorting function to be a <code>transitive ordering</code> whereas the second one requires it to be a <code>strict weak ordering</code>. The more you know!</p>
+<p>I encourage you, if you write a custom sorting function, to carefully read which requirements you have to comply with, and write tests that ensure that these requirements are met, lest you face subtle sorting bugs.</p>
 <p><a href="/blog"> ⏴ Back to all articles</a></p>
 
 <blockquote id="donate">
