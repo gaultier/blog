@@ -221,7 +221,7 @@ fs.WalkDir(fm.Dir, ".", func(p string, info fs.DirEntry, err error) error {
 
 > For the uninitiated: `fs.Walkdir` recursively traverses a directory and calls the passed function on each entry.
 
-Aaah... We are sorting the slice of files *every time we find a new file*. That explains it. The sort has `O(n*log(n))` complexity and we turned that into `O(n*n*log(n))`. That's 'very very super-linear', as the scientists call it. 
+Aaah... We are sorting the slice of files *every time we find a new file*. That explains it. The sort has `O(n*log(n))` complexity and we turned that into `O(n²*log(n))`. That's 'very very super-linear', as the scientists call it. 
 
 Furthermore, most sort algorithms have worst-case performance when the input is already sorted, so we are paying full price each time, essentially doing `sort(sort(sort(...)))`.
 
