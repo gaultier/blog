@@ -121,9 +121,9 @@ CPU     ID                    FUNCTION:NAME
 
 Damn, so we are doing purely in-memory work. Alright, so is 180 ms still good in that light? How many files are we dealing with? According to `find`, ~1.6k. So, you're saying we are spending 180 ms to sort a measle 1.6k items in a linear array? That's *nothing* for a modern computer! It should be a small number of milliseconds!
 
-## Shed some light into that black box
+## What the hell is my program even doing?
 
-If you're still not convinced to use dtrace yet, let me show you its superpower. It can show you *every* function call your program does! That's sooo useful when you do not know the codebase. Let's try it (here I use `dtruss` which is a light shell script that wraps dtrace but the same can be done with 'raw' dtrace):
+If you're still not convinced to use dtrace yet, let me show you its superpower. It can show you *every* function call your program does! That's sooo useful when you do not know the codebase. Let's try it:
 
 ```
 ```

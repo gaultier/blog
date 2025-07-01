@@ -100,7 +100,7 @@ Do not edit it by hand.
   </li>
 
   <li>
-    <a href="#1836467941-shed-some-light-into-that-black-box">Shed some light into that black box</a>
+    <a href="#1398418838-what-the-hell-is-my-program-even-doing">What the hell is my program even doing?</a>
   </li>
 </ul>
 
@@ -197,11 +197,11 @@ CPU     ID                    FUNCTION:NAME
 [...]
 </code></pre>
 <p>Damn, so we are doing purely in-memory work. Alright, so is 180 ms still good in that light? How many files are we dealing with? According to <code>find</code>, ~1.6k. So, you're saying we are spending 180 ms to sort a measle 1.6k items in a linear array? That's <em>nothing</em> for a modern computer! It should be a small number of milliseconds!</p>
-<h2 id="1836467941-shed-some-light-into-that-black-box">
-  <a class="title" href="#1836467941-shed-some-light-into-that-black-box">Shed some light into that black box</a>
-  <a class="hash-anchor" href="#1836467941-shed-some-light-into-that-black-box" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+<h2 id="1398418838-what-the-hell-is-my-program-even-doing">
+  <a class="title" href="#1398418838-what-the-hell-is-my-program-even-doing">What the hell is my program even doing?</a>
+  <a class="hash-anchor" href="#1398418838-what-the-hell-is-my-program-even-doing" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
-<p>If you're still not convinced to use dtrace yet, let me show you its superpower. It can show you <em>every</em> function call your program does! That's sooo useful when you do not know the codebase. Let's try it (here I use <code>dtruss</code> which is a light shell script that wraps dtrace but the same can be done with 'raw' dtrace):</p>
+<p>If you're still not convinced to use dtrace yet, let me show you its superpower. It can show you <em>every</em> function call your program does! That's sooo useful when you do not know the codebase. Let's try it:</p>
 <pre><code></code></pre>
 <p><a href="/blog"> ⏴ Back to all articles</a></p>
 
