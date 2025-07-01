@@ -1,5 +1,5 @@
-Title: An optimization and debugging story with Go and Dtrace
-Tags: Go, Optimization, Dtrace
+Title: An optimization and debugging story with Go and DTrace
+Tags: Go, Optimization, DTrace
 ---
 
 Today at work, I was hacking on [Kratos](https://github.com/ory/kratos) (a Go application), and I noticed running the tests took a bit too long to my liking. So I profiled the tests, and unknowingly embarked on a fun optimization and debugging adventure. I thought it could be interesting and perhaps educational.
@@ -8,7 +8,7 @@ I just started this job, not two months ago. I want to show methods that make it
 
 If you want you can jump to the [PR](https://github.com/ory/x/pull/872) directly.
 
-Oh, and if you always dreamt of playing the 'Dtrace drinking game' with your friends, where you have to drink each time 'Dtrace' gets mentioned, oh boy do I have something for you here. 
+Oh, and if you always dreamt of playing the 'DTrace drinking game' with your friends, where you have to drink each time 'DTrace' gets mentioned, oh boy do I have something for you here. 
 
 
 ## Setting the stage
@@ -23,7 +23,7 @@ Now, there are a number of things we could do to speed things up, like only coll
 
 ## Profiling
 
-When I profile the test suite (the profiler collects the raw data behind the scenes using [Dtrace](https://illumos.org/books/dtrace/preface.html#preface)), I notice some weird things:
+When I profile the test suite (the profiler collects the raw data behind the scenes using [DTrace](https://illumos.org/books/dtrace/preface.html#preface)), I notice some weird things:
 
 <object alt="CPU Profile" data="popx_profile.svg" type="image/svg+xml"></object>
 
@@ -34,9 +34,9 @@ When I profile the test suite (the profiler collects the raw data behind the sce
 
 The CPU profile unfortunately does not show how much time is spent exactly in `NewMigrationBox`. At this point, I also do not know how many SQL files are present. If there are a bazillion SQL migrations, maybe it's expected that sorting them indeed takes the most time. 
 
-Let's find out with [Dtrace](https://illumos.org/books/dtrace/preface.html#preface) how long the function really runs. 
+Let's find out with [DTrace](https://illumos.org/books/dtrace/preface.html#preface) how long the function really runs. 
 
-We check if the function `NewMigrationBox` is visible to Dtrace by listing (`-l`) all probes matching the pattern `*ory*` in the executable `code.test.before` (i.e. before the fix):
+We check if the function `NewMigrationBox` is visible to DTrace by listing (`-l`) all probes matching the pattern `*ory*` in the executable `code.test.before` (i.e. before the fix):
 
 ```sh
 $ sudo dtrace -n 'pid$target:code.test.before:*ory*: ' -c ./code.test.before -l | grep NewMigrationBox
@@ -70,9 +70,9 @@ pid$target::*NewMigrationBox:return {
 > 
 > Due to (I think) the M:N concurrency model of Go, sometimes the function starts running on one OS thread, yields back to the scheduler (due for example to doing some I/O), and gets moved to a different OS thread where it continues running. That, and the fact that the Go tests apparently spawn subprocesses, makes our calculations in this simple script fragile. So when we see an outlandish duration, that we know is not possible, we simply discard it.
 
-The nice thing with Dtrace is that it can also do aggregations (with `@`), so we compute the average of all durations with `avg()`. Dtrace can also show histograms etc, but no need here (we see that all durations are pretty much identical, no outliers). Aggregations get printed at the end automatically.
+The nice thing with DTrace is that it can also do aggregations (with `@`), so we compute the average of all durations with `avg()`. DTrace can also show histograms etc, but no need here (we see that all durations are pretty much identical, no outliers). Aggregations get printed at the end automatically.
 
-Since the tests log verbose stuff by default and I do not know how to silence them, I save the output of Dtrace in a separate file `/tmp/time.txt`: `dtrace -s time.d -c ./code.test.before -o /tmp/time.txt`
+Since the tests log verbose stuff by default and I do not know how to silence them, I save the output of DTrace in a separate file `/tmp/time.txt`: `dtrace -s time.d -c ./code.test.before -o /tmp/time.txt`
 
 We see these results and the last line shows the aggregation (average):
 
@@ -112,7 +112,7 @@ Ok, so 200ms, which is pretty close to our 180ms in Go...
 
 Wait a minute...are we doing any I/O in Go at all? Could it be that we *embed* all the SQL files in our binary at build time ?!
 
-Let's print with Dtrace the files that are being opened, whose extension is `.sql`:
+Let's print with DTrace the files that are being opened, whose extension is `.sql`:
 
 ```
 syscall::open:entry { 
@@ -149,9 +149,9 @@ If you're like me, you're always asking yourself: what is taking my computer so 
 
 The problem with computer programs is that there are a black box. You normally have no idea what they are doing. If you're lucky they will print some stuff. If you're lucky.
 
-If only there was a tool that shows me precisely what the hell my program is doing... And I could dynamically choose what to show and what to hide to avoid noise... Oh wait this has been existing for 20 years. Dtrace of course!
+If only there was a tool that shows me precisely what the hell my program is doing... And I could dynamically choose what to show and what to hide to avoid noise... Oh wait this has been existing for 20 years. DTrace of course!
 
-If you're still not convinced to use Dtrace yet, let me show you its superpower. It can show you *every* function call your program does! That's sooo useful when you do not know the codebase. Let's try it, but we are only interested in calls from within `NewMigrationBox`, and when we exit `NewMigrationBox`, we should stop tracing, because each invocation will anyway be the same:
+If you're still not convinced to use DTrace yet, let me show you its superpower. It can show you *every* function call your program does! That's sooo useful when you do not know the codebase. Let's try it, but we are only interested in calls from within `NewMigrationBox`, and when we exit `NewMigrationBox`, we should stop tracing, because each invocation will anyway be the same:
 
 ```
 pid$target:code.test.before:*NewMigrationBox:entry { self->t = 1}
@@ -226,7 +226,7 @@ Aaah... We are sorting the slice of files *every time we find a new file*. That 
 Furthermore, most sort algorithms have worst-case performance when the input is already sorted, so we are paying full price each time, essentially doing `sort(sort(sort(...)))`.
 
 
-Let's confirm this finding with Dtrace by printing how many elements are being sorted in `sort.Sort`. We rely on the fact that the first thing `sort.Sort` does, is to call `.Len()` on its argument:
+Let's confirm this finding with DTrace by printing how many elements are being sorted in `sort.Sort`. We rely on the fact that the first thing `sort.Sort` does, is to call `.Len()` on its argument:
 
 ```
 pid$target::*NewMigrationBox:entry { self->t = 1}
@@ -300,13 +300,13 @@ CPU     ID                    FUNCTION:NAME
 
 ## Conclusion
 
-So we went from ~180 ms to ~11ms for the problematic function, a *16x* improvement that applies to every single test in the test suite. Not too bad. And we used Dtrace at every turn along the way. 
+So we went from ~180 ms to ~11ms for the problematic function, a *16x* improvement that applies to every single test in the test suite. Not too bad. And we used DTrace at every turn along the way. 
 
-What I find fascinating is that Dtrace is a *general purpose* tool. Go was never designed with Dtrace in mind, and vice-versa. Our code: same thing. And still, it works, no recompilation needed. I can instrument the highest levels of the stack to the kernel with one tool. That's pretty cool!
+What I find fascinating is that DTrace is a *general purpose* tool. Go was never designed with DTrace in mind, and vice-versa. Our code: same thing. And still, it works, no recompilation needed. I can instrument the highest levels of the stack to the kernel with one tool. That's pretty cool!
 
-Of course Dtrace is not perfect. User friendliness is, I think, pretty abysmal. It's an arcane power tool for people who took the time to decipher incomplete manuals (for example registers on `aarch64` are not documented, but the ones on `SPARC` are...). But it's very often a life-saver. So thank you to their creators.
+Of course DTrace is not perfect. User friendliness is, I think, pretty abysmal. It's an arcane power tool for people who took the time to decipher incomplete manuals (for example registers on `aarch64` are not documented, but the ones on `SPARC` are...). But it's very often a life-saver. So thank you to their creators.
 
-Another learning for me is that super-linear algorithms will go unnoticed and seem fine for the longest time and then bite you hard years later. If the issue is not addressed, each time a new item (here, a new SQL migration) is added, things will slow down until they halt to a crawl. So if you see something, say something. Or better yet, use Dtrace to diagnose the problem!
+Another learning for me is that super-linear algorithms will go unnoticed and seem fine for the longest time and then bite you hard years later. If the issue is not addressed, each time a new item (here, a new SQL migration) is added, things will slow down until they halt to a crawl. So if you see something, say something. Or better yet, use DTrace to diagnose the problem!
 
 ## Addendum: The sorting function was wrong
 
