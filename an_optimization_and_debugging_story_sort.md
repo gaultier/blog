@@ -1,13 +1,13 @@
-Title: An optimization and debugging story: Your sort might be wrong
+Title: An optimization and debugging story (your sort might be wrong)
 Tags: Go, Optimization, Dtrace
 ---
 
-Today I was hacking on [Kratos](https://github.com/ory/kratos) at work, and I noticed running the tests took a bit too long to my liking. So I profiled the tests, and unknowingly embarked on a fun optimization and debugging adventure. I thought it could be interesting and perhaps educational. I just started this job not two months ago. I want to show methods that make it feasible to understand and diagnose a big body of software you don't know.
+Today at work, I was hacking on [Kratos](https://github.com/ory/kratos) (a Go application), and I noticed running the tests took a bit too long to my liking. So I profiled the tests, and unknowingly embarked on a fun optimization and debugging adventure. I thought it could be interesting and perhaps educational. I just started this job not two months ago. I want to show methods that make it feasible to understand and diagnose a big body of software you don't know.
 
 If you want you can jump to the [PR](https://github.com/ory/x/pull/872) directly.
 
 
-# Setting the stage
+## Setting the stage
 
 The nice thing when you work on an open-source project for work is that it's easy to write blog posts about it, and it's easy for readers to reproduce it! And when I'm done, it benefits the community. I like it.
 
@@ -23,5 +23,7 @@ When I benchmark the test suite, I notice something weird:
 - The profile show big clumps (in yellow) that are the function `findMigrations` whereas the rest of the profile is pretty uneventful.
 
 ![CPU profile of the test suite](x_popx_profile.png)
+
+
 
 
