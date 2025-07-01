@@ -2,7 +2,7 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
 <title>Philippe Gaultier's blog</title>
 <link href="https://gaultier.github.io/blog"/>
-<updated>2025-07-01T16:52:57+02:00</updated>
+<updated>2025-07-01T17:00:55+02:00</updated>
 <author>
 <name>Philippe Gaultier</name>
 </author>
@@ -284,7 +284,7 @@
 <title>An optimization and debugging story (your sort might be wrong)</title>
 <link href="https://gaultier.github.io/blog/an_optimization_and_debugging_story_sort.html"/>
 <id>urn:uuid:1768403c-1bb9-5c41-93b4-3b6ce43b6171</id>
-<updated>2025-07-01T16:52:57+02:00</updated>
+<updated>2025-07-01T17:00:55+02:00</updated>
 <published>2025-07-01T16:06:16+02:00</published>
 </entry>
 </feed>

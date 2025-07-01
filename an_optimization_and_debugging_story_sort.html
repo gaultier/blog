@@ -98,6 +98,10 @@ Do not edit it by hand.
   <li>
     <a href="#1457903711-establishing-a-baseline">Establishing a baseline</a>
   </li>
+
+  <li>
+    <a href="#1836467941-shed-some-light-into-that-black-box">Shed some light into that black box</a>
+  </li>
 </ul>
 
 <p>Today at work, I was hacking on <a href="https://github.com/ory/kratos">Kratos</a> (a Go application), and I noticed running the tests took a bit too long to my liking. So I profiled the tests, and unknowingly embarked on a fun optimization and debugging adventure. I thought it could be interesting and perhaps educational. I just started this job not two months ago. I want to show methods that make it feasible to understand and diagnose a big body of software you don't know.</p>
@@ -165,6 +169,15 @@ pid$target::*popx?NewMigrationBox:return {
 <li>Are we doing any I/O at all?</li>
 <li>Are we doing purely in-memory work?</li>
 </ul>
+<p>So let's see what the baseline is to simply find all the SQL files:</p>
+<pre><code class="language-sh">hyperfine --shell=none --warmup=5 &quot;find ./persistence/sql/migrations -name '*.sql' -type f&quot;
+Benchmark 1: find ./persistence/sql/migrations -name '*.sql' -type f
+  Time (mean ± σ):     206.6 ms ±   4.8 ms    [User: 2.4 ms, System: 5.0 ms]
+  Range (min … max):   199.5 ms … 214.4 ms    14 runs
+</code></pre>
+<p>Ok, so 200ms, which is pretty close to our 180ms in Go...</p>
+<p>Wait a minute...<em>are we doing any I/O in Go at all???</em> Could it be that we <em>embed</em> all the SQL files in our binary at build time ?!</p>
+<p>Let's check with dtrace:</p>
 <pre><code>syscall::open:entry { 
   filename = copyinstr(arg0);
 
@@ -172,7 +185,6 @@ pid$target::*popx?NewMigrationBox:return {
     printf(&quot;%s\n&quot;, filename)
   }
 } 
-
 </code></pre>
 <p>When we run this script on <code>go test -c</code> which builds the text executable, we see that all the SQL files are being opened by the Go compiler and subsequently embedded in the test binary:</p>
 <pre><code class="language-sh">$ sudo dtrace -s ~/scratch/popx_opens.dtrace -c 'go test -tags=sqlite -c'
@@ -184,8 +196,13 @@ CPU     ID                    FUNCTION:NAME
 
 [...]
 </code></pre>
-<hr />
-<p>So... By comparison, a simple <code>find . -name '*.sql'</code> takes ~200ms. How come doing something purely in memory takes as much time (180 ms) as doing it with disk I/O?</p>
+<p>Damn, so we are doing purely in-memory work. Alright, so is 180 ms still good in that light? How many files are we dealing with? According to <code>find</code>, ~1.6k. So, you're saying we are spending 180 ms to sort a measle 1.6k items in a linear array? That's <em>nothing</em> for a modern computer! It should be a small number of milliseconds!</p>
+<h2 id="1836467941-shed-some-light-into-that-black-box">
+  <a class="title" href="#1836467941-shed-some-light-into-that-black-box">Shed some light into that black box</a>
+  <a class="hash-anchor" href="#1836467941-shed-some-light-into-that-black-box" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+</h2>
+<p>If you're still not convinced to use dtrace yet, let me show you its superpower. It can show you <em>every</em> function call your program does! That's sooo useful when you do not know the codebase. Let's try it (here I use <code>dtruss</code> which is a light shell script that wraps dtrace but the same can be done with 'raw' dtrace):</p>
+<pre><code></code></pre>
 <p><a href="/blog"> ⏴ Back to all articles</a></p>
 
 <blockquote id="donate">

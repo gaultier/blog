@@ -81,7 +81,20 @@ When doing some (light) optimization work, it is crucial to establish a baseline
 - Are we doing any I/O at all?
 - Are we doing purely in-memory work?
 
+So let's see what the baseline is to simply find all the SQL files:
 
+```sh
+hyperfine --shell=none --warmup=5 "find ./persistence/sql/migrations -name '*.sql' -type f"
+Benchmark 1: find ./persistence/sql/migrations -name '*.sql' -type f
+  Time (mean ± σ):     206.6 ms ±   4.8 ms    [User: 2.4 ms, System: 5.0 ms]
+  Range (min … max):   199.5 ms … 214.4 ms    14 runs
+```
+
+Ok, so 200ms, which is pretty close to our 180ms in Go...
+
+Wait a minute...*are we doing any I/O in Go at all???* Could it be that we *embed* all the SQL files in our binary at build time ?!
+
+Let's check with dtrace:
 
 ```
 syscall::open:entry { 
@@ -91,7 +104,6 @@ syscall::open:entry {
     printf("%s\n", filename)
   }
 } 
-
 ```
 
 When we run this script on `go test -c` which builds the text executable, we see that all the SQL files are being opened by the Go compiler and subsequently embedded in the test binary:
@@ -107,6 +119,11 @@ CPU     ID                    FUNCTION:NAME
 [...]
 ```
 
----
+Damn, so we are doing purely in-memory work. Alright, so is 180 ms still good in that light? How many files are we dealing with? According to `find`, ~1.6k. So, you're saying we are spending 180 ms to sort a measle 1.6k items in a linear array? That's *nothing* for a modern computer! It should be a small number of milliseconds!
 
-So... By comparison, a simple `find . -name '*.sql'` takes ~200ms. How come doing something purely in memory takes as much time (180 ms) as doing it with disk I/O?
+## Shed some light into that black box
+
+If you're still not convinced to use dtrace yet, let me show you its superpower. It can show you *every* function call your program does! That's sooo useful when you do not know the codebase. Let's try it (here I use `dtruss` which is a light shell script that wraps dtrace but the same can be done with 'raw' dtrace):
+
+```
+```
