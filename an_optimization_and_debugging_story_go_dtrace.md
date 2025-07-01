@@ -68,7 +68,7 @@ pid$target::*NewMigrationBox:return {
 
 > Explanation: `timestamp` is an automatically defined variable that stores the current monotonic time at the nanosecond granularity. When we enter the function, we read the current timestamp and store it in a thread-local variable `t` (with the `self->t` syntax). When we exit the function, we do the same again, compute the difference in terms of milliseconds, and print that.
 > 
-> Due to (I think) the M:N concurrency model of Go, sometimes the function starts running on one OS thread, yields back to the scheduler (due for example to doing some I/O), and gets moved to a different OS thread where it continues running. That, and the fact that the Go tests apparently spawn subprocess, makes our calculations in this simple script fragile. So when we see an outlandish duration, that we know is not possible, we simply discard it.
+> Due to (I think) the M:N concurrency model of Go, sometimes the function starts running on one OS thread, yields back to the scheduler (due for example to doing some I/O), and gets moved to a different OS thread where it continues running. That, and the fact that the Go tests apparently spawn subprocesses, makes our calculations in this simple script fragile. So when we see an outlandish duration, that we know is not possible, we simply discard it.
 
 The nice thing with Dtrace is that it can also do aggregations (with `@`), so we compute the average of all durations with `avg()`. Dtrace can also show histograms etc, but no need here (we see that all durations are pretty much identical, no outliers). Aggregations get printed at the end automatically.
 
