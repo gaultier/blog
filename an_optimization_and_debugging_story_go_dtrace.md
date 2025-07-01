@@ -97,7 +97,7 @@ So the duration is ~180 ms.
 When doing some (light) optimization work, it is crucial to establish a baseline. What is the ideal time? How much do we differ from this time? And to establish this baseline, it is very important to understand what kind of work we are doing:
 
 - Are we doing any I/O at all or is the workload purely in-memory?
-- How much works is there? How many items are we handling? Is it a handful, a few thousands, a few millions?
+- How much work is there? How many items are we handling? Is it a handful, a few thousands, a few millions?
 
 So let's see what the baseline is when simply finding all the SQL files on disk:
 
@@ -219,9 +219,11 @@ fs.WalkDir(fm.Dir, ".", func(p string, info fs.DirEntry, err error) error {
 }
 ```
 
+> For the uninitiated: `fs.Walkdir` recursively traverses a directory and calls the passed function on each entry.
+
 Aaah... We are sorting the slice of files *every time we find a new file*. That explains it. The sort has `O(n*log(n))` complexity and we turned that into `O(n*n*log(n))`. That's 'very very super-linear', as the scientists call it. 
 
-Furthermore, more sort algorithms have worst-case performance when the input is already sorted, so we are paying full price each time, essentially doing `sort(sort(sort(...)))`.
+Furthermore, most sort algorithms have worst-case performance when the input is already sorted, so we are paying full price each time, essentially doing `sort(sort(sort(...)))`.
 
 
 Let's confirm this finding with Dtrace by printing how many elements are being sorted in `sort.Sort`. We rely on the fact that the first thing `sort.Sort` does, is to call `.Len()` on its argument:
@@ -234,7 +236,7 @@ pid$target::*NewMigrationBox:return { self->t = 0}
 pid$target:code.test.before:sort*Len:return /self->t != 0/ {printf("%d\n", uregs[R_R0])}
 ```
 
-> The register `R_R0` contains the return value on `aarch64` and `amd64` per the [Go ABI](https://github.com/golang/go/blob/master/src/cmd/compile/abi-internal.md).
+> The register `R_R0` contains the return value on `aarch64` and `amd64` per the [Go ABI](https://github.com/golang/go/blob/master/src/cmd/compile/abi-internal.md). And `uregs` is an array containing user-space registers. So here we are simply printing the return value of the function.
 
 We see:
 
@@ -302,7 +304,7 @@ So we went from ~180 ms to ~11ms for the problematic function, a *16x* improveme
 
 What I find fascinating is that Dtrace is a *general purpose* tool. Go was never designed with Dtrace in mind, and vice-versa. Our code: same thing. And still, it works, no recompilation needed. I can instrument the highest levels of the stack to the kernel with one tool. That's pretty cool!
 
-Of course Dtrace is not perfect. User friendliness is, I think, pretty abysmal. It's an arcane power tool for people who took the time to decipher incomplete manuals. But it's very often a life-saver. So thank you to their creators.
+Of course Dtrace is not perfect. User friendliness is, I think, pretty abysmal. It's an arcane power tool for people who took the time to decipher incomplete manuals (for example registers on `aarch64` are not documented, but the ones on `SPARC` are...). But it's very often a life-saver. So thank you to their creators.
 
 Another learning for me is that super-linear algorithms will go unnoticed and seem fine for the longest time and then bite you hard years later. If the issue is not addressed, each time a new item (here, a new SQL migration) is added, things will slow down until they halt to a crawl. So if you see something, say something. Or better yet, use Dtrace to diagnose the problem!
 

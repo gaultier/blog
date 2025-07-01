@@ -195,7 +195,7 @@ pid$target::*NewMigrationBox:return {
 <p>When doing some (light) optimization work, it is crucial to establish a baseline. What is the ideal time? How much do we differ from this time? And to establish this baseline, it is very important to understand what kind of work we are doing:</p>
 <ul>
 <li>Are we doing any I/O at all or is the workload purely in-memory?</li>
-<li>How much works is there? How many items are we handling? Is it a handful, a few thousands, a few millions?</li>
+<li>How much work is there? How many items are we handling? Is it a handful, a few thousands, a few millions?</li>
 </ul>
 <p>So let's see what the baseline is when simply finding all the SQL files on disk:</p>
 <pre><code class="language-sh">hyperfine --shell=none --warmup=5 &quot;find ./persistence/sql/migrations -name '*.sql' -type f&quot;
@@ -293,8 +293,11 @@ CPU FUNCTION
     return nil
 }
 </code></pre>
+<blockquote>
+<p>For the uninitiated: <code>fs.Walkdir</code> recursively traverses a directory and calls the passed function on each entry.</p>
+</blockquote>
 <p>Aaah... We are sorting the slice of files <em>every time we find a new file</em>. That explains it. The sort has <code>O(n*log(n))</code> complexity and we turned that into <code>O(n*n*log(n))</code>. That's 'very very super-linear', as the scientists call it.</p>
-<p>Furthermore, more sort algorithms have worst-case performance when the input is already sorted, so we are paying full price each time, essentially doing <code>sort(sort(sort(...)))</code>.</p>
+<p>Furthermore, most sort algorithms have worst-case performance when the input is already sorted, so we are paying full price each time, essentially doing <code>sort(sort(sort(...)))</code>.</p>
 <p>Let's confirm this finding with Dtrace by printing how many elements are being sorted in <code>sort.Sort</code>. We rely on the fact that the first thing <code>sort.Sort</code> does, is to call <code>.Len()</code> on its argument:</p>
 <pre><code>pid$target::*NewMigrationBox:entry { self-&gt;t = 1}
 
@@ -303,7 +306,7 @@ pid$target::*NewMigrationBox:return { self-&gt;t = 0}
 pid$target:code.test.before:sort*Len:return /self-&gt;t != 0/ {printf(&quot;%d\n&quot;, uregs[R_R0])}
 </code></pre>
 <blockquote>
-<p>The register <code>R_R0</code> contains the return value on <code>aarch64</code> and <code>amd64</code> per the <a href="https://github.com/golang/go/blob/master/src/cmd/compile/abi-internal.md">Go ABI</a>.</p>
+<p>The register <code>R_R0</code> contains the return value on <code>aarch64</code> and <code>amd64</code> per the <a href="https://github.com/golang/go/blob/master/src/cmd/compile/abi-internal.md">Go ABI</a>. And <code>uregs</code> is an array containing user-space registers. So here we are simply printing the return value of the function.</p>
 </blockquote>
 <p>We see:</p>
 <pre><code>CPU     ID                    FUNCTION:NAME
@@ -359,7 +362,7 @@ CPU     ID                    FUNCTION:NAME
 </h2>
 <p>So we went from ~180 ms to ~11ms for the problematic function, a <em>16x</em> improvement that applies to every single test in the test suite. Not too bad. And we used Dtrace at every turn along the way.</p>
 <p>What I find fascinating is that Dtrace is a <em>general purpose</em> tool. Go was never designed with Dtrace in mind, and vice-versa. Our code: same thing. And still, it works, no recompilation needed. I can instrument the highest levels of the stack to the kernel with one tool. That's pretty cool!</p>
-<p>Of course Dtrace is not perfect. User friendliness is, I think, pretty abysmal. It's an arcane power tool for people who took the time to decipher incomplete manuals. But it's very often a life-saver. So thank you to their creators.</p>
+<p>Of course Dtrace is not perfect. User friendliness is, I think, pretty abysmal. It's an arcane power tool for people who took the time to decipher incomplete manuals (for example registers on <code>aarch64</code> are not documented, but the ones on <code>SPARC</code> are...). But it's very often a life-saver. So thank you to their creators.</p>
 <p>Another learning for me is that super-linear algorithms will go unnoticed and seem fine for the longest time and then bite you hard years later. If the issue is not addressed, each time a new item (here, a new SQL migration) is added, things will slow down until they halt to a crawl. So if you see something, say something. Or better yet, use Dtrace to diagnose the problem!</p>
 <h2 id="1968454417-addendum-the-sorting-function-was-wrong">
   <a class="title" href="#1968454417-addendum-the-sorting-function-was-wrong">Addendum: The sorting function was wrong</a>
