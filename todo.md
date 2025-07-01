@@ -202,11 +202,33 @@ pid$target::github.com?ory?kratos*CreateRecoveryFlow:entry {
 
     Print the length of the slice being sorted (before fix):
     ```
-pid$target::*findMigrations:entry { self->t = 1}
+pid$target:code.test.before:*NewMigrationBox:entry { self->t = 1}
 
-pid$target::*findMigrations:return { self->t = 0}
+pid$target:code.test.before:*NewMigrationBox:return { exit(0) }
 
-pid$target:code.test.before:sort*Len:return /self->t != 0/ {printf("%d\n", uregs[R_R0])}
+pid$target:code.test.before:sort*: /self->t != 0/ {}
+    ```
+
+    ```
+CPU     ID                    FUNCTION:NAME
+  5  52085       sort.(*reverse).Len:return 1
+
+  5  52085       sort.(*reverse).Len:return 2
+
+  5  52085       sort.(*reverse).Len:return 3
+
+  5  52085       sort.(*reverse).Len:return 4
+
+  5  52085       sort.(*reverse).Len:return 5
+  [...]
+
+ 11  52085       sort.(*reverse).Len:return 1690
+
+ 11  52085       sort.(*reverse).Len:return 1691
+
+ 11  52085       sort.(*reverse).Len:return 1692
+
+ 11  52085       sort.(*reverse).Len:return 1693
     ```
 
     Print the length of the slice being sorted (after fix):
