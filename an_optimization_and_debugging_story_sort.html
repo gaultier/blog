@@ -253,8 +253,25 @@ CPU FUNCTION
   <a class="title" href="#2771725781-it-s-always-superlinear-algorithmic-complexity">It's always superlinear algorithmic complexity</a>
   <a class="hash-anchor" href="#2771725781-it-s-always-superlinear-algorithmic-complexity" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
-<p>Time to inspect the code, finally. Pretty quickly I stumble upon code like this:</p>
-<pre><code class="language-go"></code></pre>
+<p>Time to inspect the code in <code>findMigrations</code>, finally. Pretty quickly I stumble upon code like this (I simplified a bit - you can find the original code in the PR):</p>
+<pre><code class="language-go">fs.WalkDir(fm.Dir, &quot;.&quot;, func(p string, info fs.DirEntry, err error) error {
+    migrations = append(migrations, migrations)
+    mod := sort.Interface(migrations)
+    sort.Sort(mod)
+
+    return nil
+}
+</code></pre>
+<p>Ah... We are sorting the slice of files <em>every time we find a new file</em>. That explains it. The sort has <code>O(n*log(n))</code> complexity and we turned that into <code>O(n*n*log(n))</code>. That's 'very very super-linear', as the scientists call it.</p>
+<p>The fix is easy: collect all files into the slice and then sort them once:</p>
+<pre><code>fs.WalkDir(fm.Dir, &quot;.&quot;, func(p string, info fs.DirEntry, err error) error {
+    migrations = append(migrations, migrations)
+    return nil
+}
+
+mod := sort.Interface(migrations)
+sort.Sort(mod)
+</code></pre>
 <p><a href="/blog"> ⏴ Back to all articles</a></p>
 
 <blockquote id="donate">

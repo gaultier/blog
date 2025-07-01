@@ -183,9 +183,31 @@ That's the canary in the coal mine.
 
 ## It's always superlinear algorithmic complexity
 
-Time to inspect the code, finally. Pretty quickly I stumble upon code like this:
+Time to inspect the code in `findMigrations`, finally. Pretty quickly I stumble upon code like this (I simplified a bit - you can find the original code in the PR):
 
 ```go
+fs.WalkDir(fm.Dir, ".", func(p string, info fs.DirEntry, err error) error {
+    migrations = append(migrations, migrations)
+    mod := sort.Interface(migrations)
+    sort.Sort(mod)
+
+    return nil
+}
 ```
+
+Ah... We are sorting the slice of files *every time we find a new file*. That explains it. The sort has `O(n*log(n))` complexity and we turned that into `O(n*n*log(n))`. That's 'very very super-linear', as the scientists call it.
+
+The fix is easy: collect all files into the slice and then sort them once:
+
+```
+fs.WalkDir(fm.Dir, ".", func(p string, info fs.DirEntry, err error) error {
+    migrations = append(migrations, migrations)
+    return nil
+}
+
+mod := sort.Interface(migrations)
+sort.Sort(mod)
+```
+
 
 
