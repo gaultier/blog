@@ -17,12 +17,26 @@ Since each test is independent, each test collects all migrations and applies th
 
 Now, there are a number of things we could do to speed things up, like only collect migrations once at startup, or merge them all in one (i.e. a snapshot). But that's how things are right now. And there are 10 years worth of SQL migrations piled up in the project.
 
-When I benchmark the test suite, I notice something weird:
+## Profiling
 
-- Simply collecting all migration files takes ~180 ms, even though there are only ~ 1.6k SQL files. This should not take this long because all the SQL files are embedded in the binary with `go:embed`. By comparison, a simple `find . -name '*.sql'` takes ~200ms. How come doing something purely in memory takes as much time as doing it with disk I/O?
-- The profile show big clumps (in yellow) that are the function `findMigrations` whereas the rest of the profile is pretty uneventful.
+When I profile the test suite, I notice some weird things:
 
 ![CPU profile of the test suite](x_popx_profile.png)
+
+- The profile shows a few big clumps (in yellow) that are the function `findMigrations` whereas the rest of the profile is pretty uneventful.
+- Pretty much all of the time (95%) in `findMigration` is spenting sorting. Perhaps it could be fine, but still surprising and worth investigating.
+
+## Dtrace
+
+The CPU profile unfortunately does not show how much time is spent exactly in `findMigrations`. At this point, I also do not know how many SQL files are present. If there are indeed a bazillion SQL migrations, maybe it's expected that sorting them indeed takes the most time. 
+
+Let's first find out with dtrace how long the function runs. We'd like to dynamically trace `findMigrations`, but the Go compiler actually inlined it. We can see it on the profile, it's mark `inl` for inline. The profiler is clever enough to inspect the debug information and reconstruct this information. But dtrace inserts tracing code at runtime at the entry of the function - if it does not exist it's not feasible. So we trace the next best thing which is the caller of `findMigrations`: `NewMigrationBox`.
+
+Let's first check it is visible to dtrace by listing (`-l`) all probes matching the pattern `*ory*`:
+
+```dtrace
+sudo dtrace -n 'pid$target::*ory*:' -c ./code.test -l 
+```
 
 
 
