@@ -26,7 +26,7 @@ When I profile the test suite, I notice some weird things:
 - The profile shows a few big clumps (in yellow) that are the function `findMigrations` whereas the rest of the profile is pretty uneventful.
 - Pretty much all of the time (95%) in `findMigration` is spenting sorting. Perhaps it could be fine, but still surprising and worth investigating.
 
-## Dtrace
+## Get a precise timing
 
 The CPU profile unfortunately does not show how much time is spent exactly in `findMigrations`. At this point, I also do not know how many SQL files are present. If there are indeed a bazillion SQL migrations, maybe it's expected that sorting them indeed takes the most time. 
 
@@ -72,5 +72,41 @@ We see these results (excerpt):
 > There are some outlier numbers, but I believe this is due to the `M:N` concurrency model of Go, where a function can start on one OS thread, but during its executation, yield back to the Go runtime due to doing I/O or such, and then be continued later, potentially on a different OS thread. Thus, our use of a thread-local variable is not strictly correct (but good enough). To be perfectly correct, we would need to also track with Dtrace the Go scheduler actions. Which is also possible but complicates the script.
 
 
-Alright, so the findings are surprising. This function should not take this long because all the SQL files are embedded in the binary with `go:embed`. We can see this again with dtrace by tracking `open` syscalls. 
-By comparison, a simple `find . -name '*.sql'` takes ~200ms. How come doing something purely in memory takes as much time as doing it with disk I/O?
+Dtrace can also compute histograms which is typically a better approach when inspecting the runtime of something, for example the duration of a HTTP request, but here this is enough for us.
+
+## Establishing a baseline
+
+When doing some (light) optimization work, it is crucial to establish a baseline. What is the ideal time? How much do we differ from this time? And to establish this baseline, it is very important to understand what kind of work we are doing:
+
+- Are we doing any I/O at all?
+- Are we doing purely in-memory work?
+
+
+
+```
+syscall::open:entry { 
+  filename = copyinstr(arg0);
+
+  if (rindex(filename, ".sql") == strlen(filename)-4) {
+    printf("%s\n", filename)
+  }
+} 
+
+```
+
+When we run this script on `go test -c` which builds the text executable, we see that all the SQL files are being opened by the Go compiler and subsequently embedded in the test binary:
+
+```sh
+$ sudo dtrace -s ~/scratch/popx_opens.dtrace -c 'go test -tags=sqlite -c'
+
+CPU     ID                    FUNCTION:NAME
+ 10    178                       open:entry /Users/philippe.gaultier/company-code/x/networkx/migrations/sql/20150100000001000000_networks.cockroach.down.sql
+
+  5    178                       open:entry /Users/philippe.gaultier/company-code/x/networkx/migrations/sql/20150100000001000000_networks.postgres.down.sql
+
+[...]
+```
+
+---
+
+So... By comparison, a simple `find . -name '*.sql'` takes ~200ms. How come doing something purely in memory takes as much time (180 ms) as doing it with disk I/O?

@@ -92,7 +92,11 @@ Do not edit it by hand.
   </li>
 
   <li>
-    <a href="#510672501-dtrace">Dtrace</a>
+    <a href="#809549190-get-a-precise-timing">Get a precise timing</a>
+  </li>
+
+  <li>
+    <a href="#1457903711-establishing-a-baseline">Establishing a baseline</a>
   </li>
 </ul>
 
@@ -116,9 +120,9 @@ Do not edit it by hand.
 <li>The profile shows a few big clumps (in yellow) that are the function <code>findMigrations</code> whereas the rest of the profile is pretty uneventful.</li>
 <li>Pretty much all of the time (95%) in <code>findMigration</code> is spenting sorting. Perhaps it could be fine, but still surprising and worth investigating.</li>
 </ul>
-<h2 id="510672501-dtrace">
-  <a class="title" href="#510672501-dtrace">Dtrace</a>
-  <a class="hash-anchor" href="#510672501-dtrace" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+<h2 id="809549190-get-a-precise-timing">
+  <a class="title" href="#809549190-get-a-precise-timing">Get a precise timing</a>
+  <a class="hash-anchor" href="#809549190-get-a-precise-timing" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>The CPU profile unfortunately does not show how much time is spent exactly in <code>findMigrations</code>. At this point, I also do not know how many SQL files are present. If there are indeed a bazillion SQL migrations, maybe it's expected that sorting them indeed takes the most time.</p>
 <p>Let's first find out with dtrace how long the function runs. We'd like to dynamically trace <code>findMigrations</code>, but the Go compiler actually inlined it. We can see it on the profile, it's mark <code>inl</code> for inline. The profiler is clever enough to inspect the debug information and reconstruct this information. But dtrace inserts tracing code at runtime at the entry of the function - if it does not exist it's not feasible. So we trace the next best thing which is the caller of <code>findMigrations</code>: <code>NewMigrationBox</code>.</p>
@@ -151,8 +155,37 @@ pid$target::*popx?NewMigrationBox:return {
 <blockquote>
 <p>There are some outlier numbers, but I believe this is due to the <code>M:N</code> concurrency model of Go, where a function can start on one OS thread, but during its executation, yield back to the Go runtime due to doing I/O or such, and then be continued later, potentially on a different OS thread. Thus, our use of a thread-local variable is not strictly correct (but good enough). To be perfectly correct, we would need to also track with Dtrace the Go scheduler actions. Which is also possible but complicates the script.</p>
 </blockquote>
-<p>Alright, so the findings are surprising. This function should not take this long because all the SQL files are embedded in the binary with <code>go:embed</code>. We can see this again with dtrace by tracking <code>open</code> syscalls.
-By comparison, a simple <code>find . -name '*.sql'</code> takes ~200ms. How come doing something purely in memory takes as much time as doing it with disk I/O?</p>
+<p>Dtrace can also compute histograms which is typically a better approach when inspecting the runtime of something, for example the duration of a HTTP request, but here this is enough for us.</p>
+<h2 id="1457903711-establishing-a-baseline">
+  <a class="title" href="#1457903711-establishing-a-baseline">Establishing a baseline</a>
+  <a class="hash-anchor" href="#1457903711-establishing-a-baseline" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+</h2>
+<p>When doing some (light) optimization work, it is crucial to establish a baseline. What is the ideal time? How much do we differ from this time? And to establish this baseline, it is very important to understand what kind of work we are doing:</p>
+<ul>
+<li>Are we doing any I/O at all?</li>
+<li>Are we doing purely in-memory work?</li>
+</ul>
+<pre><code>syscall::open:entry { 
+  filename = copyinstr(arg0);
+
+  if (rindex(filename, &quot;.sql&quot;) == strlen(filename)-4) {
+    printf(&quot;%s\n&quot;, filename)
+  }
+} 
+
+</code></pre>
+<p>When we run this script on <code>go test -c</code> which builds the text executable, we see that all the SQL files are being opened by the Go compiler and subsequently embedded in the test binary:</p>
+<pre><code class="language-sh">$ sudo dtrace -s ~/scratch/popx_opens.dtrace -c 'go test -tags=sqlite -c'
+
+CPU     ID                    FUNCTION:NAME
+ 10    178                       open:entry /Users/philippe.gaultier/company-code/x/networkx/migrations/sql/20150100000001000000_networks.cockroach.down.sql
+
+  5    178                       open:entry /Users/philippe.gaultier/company-code/x/networkx/migrations/sql/20150100000001000000_networks.postgres.down.sql
+
+[...]
+</code></pre>
+<hr />
+<p>So... By comparison, a simple <code>find . -name '*.sql'</code> takes ~200ms. How come doing something purely in memory takes as much time (180 ms) as doing it with disk I/O?</p>
 <p><a href="/blog"> ⏴ Back to all articles</a></p>
 
 <blockquote id="donate">
