@@ -36,6 +36,29 @@ The CPU profile unfortunately does not show how much time is spent exactly in `N
 
 Let's find out with [DTrace](https://illumos.org/books/dtrace/preface.html#preface) how long the function really runs. 
 
+### DTrace in 2 minutes
+
+DTrace is a 'dynamic instrumentation tracing framework [...] to concisely answer arbitrary questions about the behavior of the operating system and user programs'. Let's unpack:
+
+- 'Tracing' means that it can show which functions run, what is the value of their arguments, etc, at runtime.
+- 'Instrumentation' means that it inserts code in programs of interest to see into what they are doing. When DTrace is not in use, there is no negative effect on performance. Thus, it can instrument programs that do not even know what DTrace is. Consequently, there is no need to recompile programs in a certain way, or even have debug information present, or even have the source code.
+- 'Dynamic' means that it can be turned on and off at will, or with conditionals based on whatever you want, like the time of day, after a specific file gets opened on the system, etc. That's done by writing a script in a custom language (D).
+    That's the core idea behind DTrace: it exists to answer questions *we did not know we would need to answer*. Ahead of time tracing is great and all, but the reality is that there will be plenty of cases where this is not sufficient.
+- 'Framework' means that it is general purpose, with the D language, and also that it's more of a toolbox than a user-friendly product. You typically do not call a ready-made command to answer a question, you write a small custom script. Although, lots of reusable scripts are available on Github, and I suppose LLMs can help nowadays.
+- 'Answer questions': DTrace is not something that is on all the time like logs or OpenTelemetry traces (all of these work well together and are not exclusive). It's more of a detective tool to investigate, akin to the forensic police on a crime scene.
+- 'Operating system and user programs': That's the big advantage of DTrace, it can equally look into a user-space binary program, a program running in a virtual machine (like a Java or JavaScript program), the virtual machine itself (JVM, V8, etc), and the kernel, *all in one script*. That's really important when you are looking for a bug that could be at any level of the stack, in a complex program that perhaps does things in multiple programming languages: a web browser, an OS, a database, etc.
+
+What should also be added is that DTrace comes with the system on macOS (requires disabling System Integrity), which is where I did this whole investigation, FreeBSD, Illumos, Windows, etc.
+
+The advantage over a debugger is that DTrace does not stop the program. When inspecting a network heavy program, like a web server or a database, or a data race, or a scheduling bug, in production, this property is very important. Also, it can inspect the whole system, not just one single program: we can observe all writes happening on the system right now, or all files opened, etc. Sometimes this is a crucial property to have.
+
+The disadvantage is that it is less granular: it cannot (without much effort and assembly knowledge) inspect local variables, inlined functions, etc. However DTrace also supports static tracing where we define traces in our source code for these cases, assuming we know ahead of time that we need this information.
+
+
+### Timing a function
+
+Back to the problem at hand.
+
 We check if the function `NewMigrationBox` is visible to DTrace by listing (`-l`) all probes matching the pattern `*ory*` in the executable `code.test.before` (i.e. before the fix):
 
 ```sh
@@ -110,7 +133,7 @@ Benchmark 1: find ./persistence/sql/migrations -name '*.sql' -type f
 
 Ok, so 200ms, which is pretty close to our 180ms in Go...
 
-Wait a minute...are we doing any I/O in Go at all? Could it be that we *embed* all the SQL files in our binary at build time ?!
+Wait a minute... Are we doing any I/O in Go at all? Could it be that we *embed* all the SQL files in our binary at build time ?!
 
 Let's print with DTrace the files that are being opened, whose extension is `.sql`:
 
@@ -265,6 +288,12 @@ CPU     ID                    FUNCTION:NAME
 
 So it's confirmed.
 
+Remember when I said at the beginning:
+
+>  That's the core idea behind DTrace: it exists to answer questions *we did not know we would need to answer*.
+
+This is a perfect example: we would never add an OpenTelemetry trace or a log to the `.Len()` function ahead of time - that would be too costly and almost never useful. But DTrace can dynamically instrument this function when we need it.
+
 The fix is easy: collect all files into the slice and then sort them once at the end:
 
 ```
@@ -304,7 +333,9 @@ So we went from ~180 ms to ~11ms for the problematic function, a *16x* improveme
 
 What I find fascinating is that DTrace is a *general purpose* tool. Go was never designed with DTrace in mind, and vice-versa. Our code: same thing. And still, it works, no recompilation needed. I can instrument the highest levels of the stack to the kernel with one tool. That's pretty cool!
 
-Of course DTrace is not perfect. User friendliness is, I think, pretty abysmal. It's an arcane power tool for people who took the time to decipher incomplete manuals (for example registers on `aarch64` are not documented, but the ones on `SPARC` are...). But it's very often a life-saver. So thank you to their creators.
+Of course DTrace is not perfect. User friendliness is, I think, pretty ~abysmal~ ~rough~ quirky. It's an arcane power tool for people who took the time to decipher incomplete manuals. For example registers on `aarch64` are not documented, but the ones on `SPARC` are (because that's were DTrace originated from...). My favorite quirk is when an error in the script leads to an error message pointing at the bytecode (like Java and others, the D script gets compiled to bytecode before being sent to the kernel). What am I supposed to do with this :) ?
+
+But it's very often a life-saver. So thank you to their creators.
 
 Another learning for me is that super-linear algorithms will go unnoticed and seem fine for the longest time and then bite you hard years later. If the issue is not addressed, each time a new item (here, a new SQL migration) is added, things will slow down until they halt to a crawl. So if you see something, say something. Or better yet, use DTrace to diagnose the problem!
 

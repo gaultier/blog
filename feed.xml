@@ -2,7 +2,7 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
 <title>Philippe Gaultier's blog</title>
 <link href="https://gaultier.github.io/blog"/>
-<updated>2025-07-01T20:24:22+02:00</updated>
+<updated>2025-07-01T20:25:56+02:00</updated>
 <author>
 <name>Philippe Gaultier</name>
 </author>
@@ -284,7 +284,7 @@
 <title>An optimization and debugging story with Go and DTrace</title>
 <link href="https://gaultier.github.io/blog/an_optimization_and_debugging_story_go_dtrace.html"/>
 <id>urn:uuid:f88592d4-3a30-5f83-aea7-ec456edbc848</id>
-<updated>2025-07-01T20:24:22+02:00</updated>
+<updated>2025-07-01T20:25:56+02:00</updated>
 <published>2025-07-01T19:20:47+02:00</published>
 </entry>
 </feed>
