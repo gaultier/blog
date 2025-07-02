@@ -30,3 +30,9 @@ Optimize a PNG (requires `pngquant`):
 ```sh
 $ pngquant foo.png -o foo.tmp && mv foo.tmp foo.png
 ```
+
+Spell (in Neovim):
+
+```
+:setlocal spell spelllang=en_us
+```
