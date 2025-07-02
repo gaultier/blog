@@ -172,7 +172,11 @@ If you're like me, you're always asking yourself: what is taking my computer so 
 
 The problem with computer programs is that there are a black box. You normally have no idea what they are doing. If you're lucky they will print some stuff. If you're lucky.
 
-If only there was a tool that shows me precisely what the hell my program is doing... And I could dynamically choose what to show and what to hide to avoid noise... Oh wait this has been existing for 20 years. DTrace of course!
+If only there was a tool that shows me precisely what the hell my program is doing... And I could dynamically choose what to show and what to hide to avoid noise... Oh wait this has been existing for 20 years. DTrace of course! 
+
+> A debugger would also work in that case (command line program running on a developer workstation), but it pretty much requires recompiling with different Go build options which kills iteration times. 
+>
+> Contrary to popular belief, Go is not a crazy fast compiler. It's a smart compiler that avoids compiling stuff it already compiled in the past. But if a lot of code *does* need to be recompiled, it's not *that* fast.
 
 If you're still not convinced to use DTrace yet, let me show you its superpower. It can show you *every* function call your program does! That's sooo useful when you do not know the codebase. Let's try it, but we are only interested in calls from within `NewMigrationBox`, and when we exit `NewMigrationBox`, we should stop tracing, because each invocation will anyway be the same:
 
@@ -186,7 +190,7 @@ pid$target:code.test.before:sort*: /self->t != 0/ {}
 
 > I have written more specific probes in this script by specifying more parts of the probe, to try to reduce noise (by accidentally matching probes we do not care about) and also to help with performance (the more probes are being matched, the more the performance tanks). Since we know that the performance issue is located in the sorting part, we only need to trace that.
 >
-> For example if all your company code is under some prefix, like for me, `github.com/ory`, and you want to see all calls to company code, the probe can be `pid$target::github.com?ory*:`. The only issue is that the Go stdlib code has no prefix...
+> For example if all your company code is under some prefix, like for me, `github.com/ory`, and you want to see all calls to company code, the probe can be `pid$target::github.com?ory*:`. The only issue is that the Go stdlib code has no prefix and we want to see it as well...
 > 
 > The `self->t` variable is used to toggle tracing on when we enter a specific function of interest, and to toggle it off when we leave the function. Very useful to reduce noise and avoid a post-processing filtering step.
 
@@ -244,7 +248,7 @@ fs.WalkDir(fm.Dir, ".", func(p string, info fs.DirEntry, err error) error {
 
 > For the uninitiated: `fs.Walkdir` recursively traverses a directory and calls the passed function on each entry.
 
-Aaah... We are sorting the slice of files *every time we find a new file*. That explains it. The sort has `O(n*log(n))` complexity and we turned that into `O(n²*log(n))`. That's 'very very super-linear', as the scientists call it. 
+Aaah... We are sorting the slice of files *every time we find a new file*. That explains it. The sort has `O(n * log(n))` complexity and we turned that into `O(n² * log(n))`. That's 'very very super-linear', as the scientists call it. 
 
 Furthermore, most sort algorithms have worst-case performance when the input is already sorted, so we are paying full price each time, essentially doing `sort(sort(sort(...)))`.
 
