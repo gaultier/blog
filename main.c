@@ -407,8 +407,8 @@ static PgString datetime_to_date(PgString datetime) {
   PG_ASSERT(0 == res_markdown_file_size.err);
   u64 to_copy = res_markdown_file_size.res - metadata_offset;
   Pgu64Ok offset = {.ok = true, .res = metadata_offset};
-  PG_ASSERT(0 == pg_file_copy_with_descriptors(process.stdin_pipe,
-                                               markdown_file, offset, to_copy));
+  PG_ASSERT(0 == pg_file_copy_with_descriptors_until_eof(
+                     process.stdin_pipe, markdown_file, offset));
   PG_ASSERT(0 == pg_file_close(process.stdin_pipe));
   process.stdin_pipe.fd = 0;
 
