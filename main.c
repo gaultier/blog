@@ -761,6 +761,8 @@ static Article article_generate(PgString header, PgString footer,
   markdown_header.len = res_markdown_header.res;
   PG_ASSERT(markdown_header.len > 16);
 
+  PG_ASSERT(0 == pg_file_rewind_start(markdown_file));
+
   PgStringCut cut =
       pg_string_cut_string(markdown_header, PG_S(METADATA_DELIMITER));
   PG_ASSERT(cut.ok);
