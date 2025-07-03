@@ -20,6 +20,7 @@
   + some different mnemonics encode to the same bytes (`jne`, `jz`)
   + diffent calling convention for functions & system calls in the SysV ABI (4th argument)
   + no (to my knowledge) mnemonic accepts 2 immediates or effective addresses as operands  e.g. `cmp 1, 0`
+  + some less than optimal encodings are forced to avoid accidentally using RIP relative addressing, e.g. `lea rax, [r13]` gets encoded as `lea rax, [r13 + 0]`
 - [ ] How to get the current SQL schema when all you have is lots of migrations (deltas)
 - [ ] 'About' page
 - [ ] Search and replace fish function
