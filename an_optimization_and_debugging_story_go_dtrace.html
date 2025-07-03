@@ -285,7 +285,7 @@ pid$target:code.test.before:*NewMigrationBox:return { exit(0) }
 
 pid$target:code.test.before:sort*: /self-&gt;t != 0/ {}
 </code></pre>
-<p>I have written more specific probes in this script by specifying more parts of the probe, to try to reduce noise (by accidentally matching probes we do not care about) and also to help with performance (the more probes are being matched, the more the performance tanks). Since we know that the performance issue is located in the sorting part, we only need to trace that.</p>
+<p>I have written more specific probes in this script by specifying more parts of the probe (the second part of the probe is the module name, here it is the executable name), to try to reduce noise (by accidentally matching probes we do not care about) and also to help with performance (the more probes are being matched, the more the performance tanks). Since we know that the performance issue is located in the sorting part, we only need to trace that.</p>
 <p>For example if all your company code is under some prefix, like for me, <code>github.com/ory</code>, and you want to see all calls to company code, the probe can be <code>pid$target::github.com?ory*:</code>. The only issue is that the Go stdlib code has no prefix and we want to see it as well...</p>
 <p>The <code>self-&gt;t</code> variable is used to toggle tracing on when we enter a specific function of interest, and to toggle it off when we leave the function. Very useful to reduce noise and avoid a post-processing filtering step.</p>
 <p>So, let's run our script with the <code>-F</code> option to get a nicely formatted output:</p>
@@ -341,9 +341,9 @@ CPU FUNCTION
 
 pid$target::*NewMigrationBox:return { self-&gt;t = 0}
 
-pid$target:code.test.before:sort*Len:return /self-&gt;t != 0/ {printf(&quot;%d\n&quot;, arg0)}
+pid$target::sort*Len:return /self-&gt;t != 0/ {printf(&quot;%d\n&quot;, uregs[0])}
 </code></pre>
-<p>The variable <code>arg0</code> contains the return value. So here we are simply printing the return value of the function i.e. the length of the slice being sorted.</p>
+<p>The variable <code>uregs</code> is an array of user-space registers and the first one contains, in a <code>:return</code> probe, the return value of the function. So here we are simply printing the length of the slice being sorted.</p>
 <p>We see:</p>
 <pre><code>CPU     ID                    FUNCTION:NAME
   5  52085       sort.(*reverse).Len:return 1

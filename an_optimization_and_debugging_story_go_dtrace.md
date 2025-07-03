@@ -196,7 +196,7 @@ pid$target:code.test.before:*NewMigrationBox:return { exit(0) }
 pid$target:code.test.before:sort*: /self->t != 0/ {}
 ```
 
-I have written more specific probes in this script by specifying more parts of the probe, to try to reduce noise (by accidentally matching probes we do not care about) and also to help with performance (the more probes are being matched, the more the performance tanks). Since we know that the performance issue is located in the sorting part, we only need to trace that.
+I have written more specific probes in this script by specifying more parts of the probe (the second part of the probe is the module name, here it is the executable name), to try to reduce noise (by accidentally matching probes we do not care about) and also to help with performance (the more probes are being matched, the more the performance tanks). Since we know that the performance issue is located in the sorting part, we only need to trace that.
 
 For example if all your company code is under some prefix, like for me, `github.com/ory`, and you want to see all calls to company code, the probe can be `pid$target::github.com?ory*:`. The only issue is that the Go stdlib code has no prefix and we want to see it as well...
 
@@ -268,10 +268,10 @@ pid$target::*NewMigrationBox:entry { self->t = 1}
 
 pid$target::*NewMigrationBox:return { self->t = 0}
 
-pid$target:code.test.before:sort*Len:return /self->t != 0/ {printf("%d\n", arg0)}
+pid$target::sort*Len:return /self->t != 0/ {printf("%d\n", uregs[0])}
 ```
 
-The variable `arg0` contains the return value. So here we are simply printing the return value of the function i.e. the length of the slice being sorted.
+The variable `uregs` is an array of user-space registers and the first one contains, in a `:return` probe, the return value of the function. So here we are simply printing the length of the slice being sorted.
 
 We see:
 
