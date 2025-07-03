@@ -53,44 +53,50 @@ Ok, the first two are the ones we need. Let's time the function duration then wi
 pid$target::*NewMigrationBox:entry { self->t=timestamp } 
 
 pid$target::*NewMigrationBox:return {
-  self->duration = (timestamp - self->t) / 1000000;
+  this->duration = (timestamp - self->t)/1000000;
 
-  if (self->duration < 1000) {
-    printf("NewMigrationBox:%d\n", self->duration);
-
-    @durations["NewMigrationBox"] = avg(self->duration);
-  }
-  self->duration = 0;
-  self->t = 0;
+  @histogram["NewMigrationBox"] = lquantize(this->duration, 0, 800, 1);
 }
-
 ```
 
-> Explanation: `timestamp` is an automatically defined variable that stores the current monotonic time at the nanosecond granularity. When we enter the function, we read the current timestamp and store it in a thread-local variable `t` (with the `self->t` syntax). When we exit the function, we do the same again, compute the difference in terms of milliseconds, and print that.
-> 
-> Due to (I think) the M:N concurrency model of Go, sometimes the function starts running on one OS thread, yields back to the scheduler (due for example to doing some I/O), and gets moved to a different OS thread where it continues running. That, and the fact that the Go tests apparently spawn subprocesses, makes our calculations in this simple script fragile. So when we see an outlandish duration, that we know is not possible, we simply discard it.
+Explanation: `timestamp` is an automatically defined variable that stores the current monotonic time at the nanosecond granularity. When we enter the function, we read the current timestamp and store it in a thread-local variable `t` (with the `self->t` syntax). When we exit the function, we do the same again, compute the difference in terms of milliseconds, store it as a clause-local variable (with `this->duration`), and record it in a linear histogram with a minimum of 0 and a maximum of 800 (in milliseconds).
 
-The nice thing with DTrace is that it can also do aggregations (with `@`), so we compute the average of all durations with `avg()`. DTrace can also show histograms etc, but no need here (we see that all durations are pretty much identical, no outliers). Aggregations get printed at the end automatically.
+> Due to (I think) the M:N concurrency model of Go, sometimes the function starts running on one OS thread, yields back to the scheduler (due for example to doing some I/O), and gets moved to a different OS thread where it continues running. That, and the fact that the Go tests apparently spawn subprocesses, makes our calculations in this simple script fragile. So some outlandish durations will be observed, e.g. negative ones, or in the billions. The DTrace histogram is a nice way to see outliers and exclude them.
 
 Since the tests log verbose stuff by default and I do not know how to silence them, I save the output of DTrace in a separate file `/tmp/time.txt`: `dtrace -s time.d -c ./code.test.before -o /tmp/time.txt`
 
 We see these results and the last line shows the aggregation (average):
 
 ```
-CPU     ID                    FUNCTION:NAME
-  4 130841 github.com/ory/x/popx.NewMigrationBox:return NewMigrationBox:180
-
-  9 130841 github.com/ory/x/popx.NewMigrationBox:return NewMigrationBox:185
-
- 13 130841 github.com/ory/x/popx.NewMigrationBox:return NewMigrationBox:181
-
- [...]
-
-
-  NewMigrationBox                                                 181
+  NewMigrationBox                                   
+           value  ------------- Distribution ------------- count    
+             < 0 |@@@@@@                                   3        
+               0 |                                         0        
+               1 |                                         0        
+               2 |                                         0        
+               3 |                                         0        
+               4 |                                         0        
+               5 |                                         0        
+                 [...]
+             173 |                                         0        
+             174 |                                         0        
+             175 |                                         0        
+             176 |                                         0        
+             177 |@@                                       1        
+             178 |                                         0        
+             179 |                                         0        
+             180 |@@@@@@@@                                 4        
+             181 |@@@@@@@@                                 4        
+             182 |@@@@                                     2        
+             183 |                                         0        
+             184 |                                         0        
+             185 |                                         0        
+             186 |                                         0        
+                 [...]
+          >= 800 |@@@@@@@@@@@@                             6  
 ```
 
-So the duration is ~180 ms.
+So the duration is ~180 ms, ignoring impossible values.
 
 ## Establishing a baseline
 
@@ -279,22 +285,35 @@ sort.Sort(mod)
 
 The real fix uses `slices.SortFunc` instead of `sort.Sort` because the official docs mention the performance of the former is better than the latter. Likely because `slices.SortFunc` uses compile-time generics whereas `sort.Sort` uses runtime interfaces. And also we see that the Go compiler inlines the call to `slices.SortFunc`, which probably helps further.
 
-With this done, we can measure again the duration of `NewMigrationBox`:
+With this done, we can measure again the duration of `NewMigrationBox` (with a lower maximum value for the histogram since we know it got faster):
 
 
 ```
 $ sudo dtrace -s ~/scratch/time.d -c './code.test.after' 
-CPU     ID                    FUNCTION:NAME
- 12  62559 github.com/ory/x/popx.NewMigrationBox:return NewMigrationBox:12
 
- 11  62559 github.com/ory/x/popx.NewMigrationBox:return NewMigrationBox:11
-
- 13  62559 github.com/ory/x/popx.NewMigrationBox:return NewMigrationBox:12
-
- [...]
-
-
-  NewMigrationBox                                                  11
+  NewMigrationBox                                   
+           value  ------------- Distribution ------------- count    
+             < 0 |@@@@@@@@                                 4        
+               0 |                                         0        
+               1 |                                         0        
+               2 |                                         0        
+               3 |                                         0        
+               4 |                                         0        
+               5 |                                         0        
+               6 |                                         0        
+               7 |                                         0        
+               8 |                                         0        
+               9 |                                         0        
+              10 |                                         0        
+              11 |                                         0        
+              12 |@@@@@@@@@@@@@@@@@@@@                     10       
+              13 |@@@@@@@@                                 4        
+              14 |                                         0        
+              15 |                                         0        
+              16 |                                         0        
+              17 |                                         0        
+                 [...]
+          >= 100 |@@@@                                     2
 
 ```
 
