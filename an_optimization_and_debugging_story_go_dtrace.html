@@ -198,7 +198,7 @@ pid$target::*NewMigrationBox:return {
 <p>Due to (I think) the M:N concurrency model of Go, sometimes the function starts running on one OS thread, yields back to the scheduler (due for example to doing some I/O), and gets moved to a different OS thread where it continues running. Conversely, an OS thread could start running a <code>NewMigrationBox</code> function call, which is suspended before finishing, and our OS thread starts running another <code>NewMigrationBox</code> function call. So some outlandish durations will be observed, e.g. negative ones, or in the billions. The DTrace histogram is a nice way to see outliers and exclude them. The real fix would be to not use thread-local variables but instead goroutine-local variables...which does not come out of the box with DTrace.</p>
 </blockquote>
 <p>Since the tests log verbose stuff by default and I do not know how to silence them, I save the output of DTrace in a separate file <code>/tmp/time.txt</code>: <code>dtrace -s time.d -c ./code.test.before -o /tmp/time.txt</code></p>
-<p>We see these results and the last line shows the aggregation (average):</p>
+<p>We see these results and the last line shows the aggregation (I trimmed empty lines for brevity):</p>
 <pre><code>  NewMigrationBox                                   
            value  ------------- Distribution ------------- count    
              &lt; 0 |@@@@@@                                   3        

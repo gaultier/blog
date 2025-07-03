@@ -88,7 +88,7 @@ Explanation: `timestamp` is an automatically defined variable that stores the cu
 
 Since the tests log verbose stuff by default and I do not know how to silence them, I save the output of DTrace in a separate file `/tmp/time.txt`: `dtrace -s time.d -c ./code.test.before -o /tmp/time.txt`
 
-We see these results and the last line shows the aggregation (average):
+We see these results and the last line shows the aggregation (I trimmed empty lines for brevity):
 
 ```
   NewMigrationBox                                   
