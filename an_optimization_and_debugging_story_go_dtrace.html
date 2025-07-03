@@ -199,8 +199,8 @@ pid$target::*NewMigrationBox:return {
 </code></pre>
 <p>Explanation: <code>timestamp</code> is an automatically defined variable that stores the current monotonic time at the nanosecond granularity. When we enter the function, we read the current timestamp and store it in a thread-local variable <code>t</code> (with the <code>self-&gt;t</code> syntax). When we exit the function, we do the same again, compute the difference in terms of milliseconds, store it as a clause-local variable (with <code>this-&gt;duration</code>), and record it in a linear histogram with a minimum of 0 and a maximum of 800 (in milliseconds).</p>
 <blockquote>
-<p>Due to (I think) the M:N concurrency model of Go, sometimes the function starts running on one OS thread, yields back to the scheduler (due for example to doing some I/O), and gets moved to a different OS thread where it continues running. Conversely, an OS thread could start running a <code>NewMigrationBox</code> function call, which is suspended before finishing, and our OS thread starts running another <code>NewMigrationBox</code> function call. So some outlandish durations will be observed, e.g. negative ones, or in the billions. The DTrace histogram is a nice way to see outliers and exclude them. The real fix would be to not use thread-local variables but instead goroutine-local variables... Which does not come out of the box with DTrace.</p>
-<p>Fortunately I found a way to avoid this pitfall, see the second addendum at the end.</p>
+<p>Due to the M:N concurrency model of Go,  in the general case, multiple goroutines run on the same thread concurrently, which means the thread-local variable <code>self-&gt;t</code> gets overriden by multiple goroutines all the time, and we observe as a result some non-sensical durations (negative or very high). The DTrace histogram is a nice way to see outliers and exclude them. The real fix would be to not use thread-local variables but instead goroutine-local variables... Which does not come out of the box with DTrace.</p>
+<p>Fortunately I later found a way to avoid this pitfall, see the <a href="#553173937-addendum-a-goroutine-aware-d-script">addendum</a> at the end.</p>
 </blockquote>
 <p>Since the tests log verbose stuff by default and I do not know how to silence them, I save the output of DTrace in a separate file <code>/tmp/time.txt</code>: <code>dtrace -s time.d -c ./code.test.before -o /tmp/time.txt</code></p>
 <p>We see these results and the last line shows the aggregation (I trimmed empty lines for brevity):</p>
@@ -445,7 +445,7 @@ sort.Sort(mod)
   <a class="title" href="#553173937-addendum-a-goroutine-aware-d-script">Addendum: A goroutine-aware D script</a>
   <a class="hash-anchor" href="#553173937-addendum-a-goroutine-aware-d-script" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
-<p>At the beginning I mentioned that <code>self-&gt;t = timestamp</code> means we are storing the current timestamp in a thread-local variable. However, since in the general case, multiple goroutines run on the same thread concurrently, this variable gets overriden in non-sensical ways and that means we observe as a result non-sensical durations (negative or very high). I also mentioned that the fix would be to store this variable in a <em>goroutine-aware</em> way instead.</p>
+<p>At the beginning I mentioned that <code>self-&gt;t = timestamp</code> means we are storing the current timestamp in a thread-local variable. However, since in the general case, multiple goroutines run on the same thread concurrently, this variable gets overriden by multiple goroutines all the time, and we observe as a result some non-sensical durations (negative or very high). I also mentioned that the fix would be to store this variable in a <em>goroutine-aware</em> way instead.</p>
 <p>Well, the good news is, there is a way!</p>
 <p>Reading carefully the <a href="https://github.com/golang/go/blob/master/src/cmd/compile/abi-internal.md">Go ABI</a> document again, we see that on ARM64 (a.k.a AARCH64), the register <code>R28</code> store the current goroutine. Great! That means that we can treat the value in this register as the 'goroutine id' and we can store all timestamps per goroutine.</p>
 <p>My approach is to store all timestamps in a global map where the key is the goroutine id and the value is the timestamp:</p>
@@ -476,7 +476,8 @@ pid$target::*NewMigrationBox:return {
               14 |@@@@                                     2        
               15 |                                         0      
 </code></pre>
-<p>So if you are using DTrace with Go, I would encourage you to use this trick. Note that the right register to use differs per architecture: <code>R14</code> on AMD64, <code>R28</code> on ARM64, etc.</p>
+<p>Note: I am not entirely sure if global maps are thread-safe. I did not find definitive documentation about this topic. I would assume they are because DTrace is designed from the ground-up to work with complex multi-threaded systems. If a reader knows for sure, feel free to reach out!</p>
+<p>In conclusion, if you are using DTrace with Go, I would encourage you to use this trick. Note that the right register to use differs per architecture: <code>R14</code> on AMD64, <code>R28</code> on ARM64, etc.</p>
 <p><a href="/blog"> ⏴ Back to all articles</a></p>
 
 <blockquote id="donate">
