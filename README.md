@@ -12,6 +12,7 @@ Requirements:
 Build this blog (i.e. convert markdown files to HTML):
 
 ```sh
+$ make -C ./submodules/cmark
 $ ./build.sh release
 # Build once.
 $ ./main.bin
