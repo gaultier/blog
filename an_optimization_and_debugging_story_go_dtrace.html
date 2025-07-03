@@ -198,10 +198,8 @@ pid$target::*NewMigrationBox:return {
 }
 </code></pre>
 <p>Explanation: <code>timestamp</code> is an automatically defined variable that stores the current monotonic time at the nanosecond granularity. When we enter the function, we read the current timestamp and store it in a thread-local variable <code>t</code> (with the <code>self-&gt;t</code> syntax). When we exit the function, we do the same again, compute the difference in terms of milliseconds, store it as a clause-local variable (with <code>this-&gt;duration</code>), and record it in a linear histogram with a minimum of 0 and a maximum of 800 (in milliseconds).</p>
-<blockquote>
 <p>Due to the M:N concurrency model of Go,  in the general case, multiple goroutines run on the same thread concurrently, which means the thread-local variable <code>self-&gt;t</code> gets overriden by multiple goroutines all the time, and we observe as a result some non-sensical durations (negative or very high). The DTrace histogram is a nice way to see outliers and exclude them. The real fix would be to not use thread-local variables but instead goroutine-local variables... Which does not come out of the box with DTrace.</p>
 <p>Fortunately I later found a way to avoid this pitfall, see the <a href="#553173937-addendum-a-goroutine-aware-d-script">addendum</a> at the end.</p>
-</blockquote>
 <p>Since the tests log verbose stuff by default and I do not know how to silence them, I save the output of DTrace in a separate file <code>/tmp/time.txt</code>: <code>dtrace -s time.d -c ./code.test.before -o /tmp/time.txt</code></p>
 <p>We see these results and the last line shows the aggregation (I trimmed empty lines for brevity):</p>
 <pre><code>  NewMigrationBox                                   
@@ -258,9 +256,7 @@ Benchmark 1: find ./persistence/sql/migrations -name '*.sql' -type f
   }
 } 
 </code></pre>
-<blockquote>
 <p><code>copyinstr</code> is <a href="https://illumos.org/books/dtrace/chp-user.html#chp-user">required</a> because our D script runs inside the kernel but we are trying to access user-space memory.</p>
-</blockquote>
 <p>When we run this script on <code>go test -c</code> which builds the text executable, we see that all the SQL files are being opened by the Go compiler and subsequently embedded in the test binary:</p>
 <pre><code class="language-sh">$ sudo dtrace -s ~/scratch/popx_opens.dtrace -c 'go test -tags=sqlite -c'
 
@@ -280,10 +276,8 @@ CPU     ID                    FUNCTION:NAME
 <p>If you're like me, you're always asking yourself: what is taking my computer so damn long? Why is Microsoft Teams hanging again? (thankfully I do not have to use it anymore, thank God). Why is Slack taking 15s to simply start up?</p>
 <p>The problem with computer programs is that there are a black box. You normally have no idea what they are doing. If you're lucky they will print some stuff. If you're lucky.</p>
 <p>If only there was a tool that shows me precisely what the hell my program is doing... And I could dynamically choose what to show and what to hide to avoid noise... Oh wait this has been existing for 20 years. DTrace of course!</p>
-<blockquote>
 <p>A debugger would also work in that case (command line program running on a developer workstation), but it pretty much requires recompiling with different Go build options which kills iteration times.</p>
 <p>Contrary to popular belief, Go is not a crazy fast compiler. It's a smart compiler that avoids compiling stuff it already compiled in the past. But if a lot of code <em>does</em> need to be recompiled, it's not <em>that</em> fast.</p>
-</blockquote>
 <p>If you're still not convinced to use DTrace yet, let me show you its superpower. It can show you <em>every</em> function call your program does! That's sooo useful when you do not know the codebase. Let's try it, but we are only interested in calls from within <code>NewMigrationBox</code>, and when we exit <code>NewMigrationBox</code>, we should stop tracing, because each invocation will anyway be the same:</p>
 <pre><code>pid$target:code.test.before:*NewMigrationBox:entry { self-&gt;t = 1}
 
@@ -291,11 +285,9 @@ pid$target:code.test.before:*NewMigrationBox:return { exit(0) }
 
 pid$target:code.test.before:sort*: /self-&gt;t != 0/ {}
 </code></pre>
-<blockquote>
 <p>I have written more specific probes in this script by specifying more parts of the probe, to try to reduce noise (by accidentally matching probes we do not care about) and also to help with performance (the more probes are being matched, the more the performance tanks). Since we know that the performance issue is located in the sorting part, we only need to trace that.</p>
 <p>For example if all your company code is under some prefix, like for me, <code>github.com/ory</code>, and you want to see all calls to company code, the probe can be <code>pid$target::github.com?ory*:</code>. The only issue is that the Go stdlib code has no prefix and we want to see it as well...</p>
 <p>The <code>self-&gt;t</code> variable is used to toggle tracing on when we enter a specific function of interest, and to toggle it off when we leave the function. Very useful to reduce noise and avoid a post-processing filtering step.</p>
-</blockquote>
 <p>So, let's run our script with the <code>-F</code> option to get a nicely formatted output:</p>
 <pre><code>$ sudo dtrace -s ~/scratch/popx_trace_calls.dtrace -c './code.test.before' -F
 
@@ -341,9 +333,7 @@ CPU FUNCTION
     return nil
 }
 </code></pre>
-<blockquote>
 <p>For the uninitiated: <code>fs.Walkdir</code> recursively traverses a directory and calls the passed function on each entry.</p>
-</blockquote>
 <p>Aaah... We are sorting the slice of files <em>every time we find a new file</em>. That explains it. The sort has <code>O(n * log(n))</code> complexity and we turned that into <code>O(n² * log(n))</code>. That's 'very very super-linear', as the scientists call it.</p>
 <p>Furthermore, most sort algorithms have worst-case performance when the input is already sorted, so we are paying full price each time, essentially doing <code>sort(sort(sort(...)))</code>.</p>
 <p>Let's confirm this finding with DTrace by printing how many elements are being sorted in <code>sort.Sort</code>. We rely on the fact that the first thing <code>sort.Sort</code> does, is to call <code>.Len()</code> on its argument:</p>
@@ -351,11 +341,9 @@ CPU FUNCTION
 
 pid$target::*NewMigrationBox:return { self-&gt;t = 0}
 
-pid$target:code.test.before:sort*Len:return /self-&gt;t != 0/ {printf(&quot;%d\n&quot;, uregs[R_R0])}
+pid$target:code.test.before:sort*Len:return /self-&gt;t != 0/ {printf(&quot;%d\n&quot;, arg0)}
 </code></pre>
-<blockquote>
-<p>The register <code>R_R0</code> contains the return value on <code>aarch64</code> and <code>amd64</code> per the <a href="https://github.com/golang/go/blob/master/src/cmd/compile/abi-internal.md">Go ABI</a>. And <code>uregs</code> is an array containing user-space registers. So here we are simply printing the return value of the function.</p>
-</blockquote>
+<p>The variable <code>arg0</code> contains the return value. So here we are simply printing the return value of the function i.e. the length of the slice being sorted.</p>
 <p>We see:</p>
 <pre><code>CPU     ID                    FUNCTION:NAME
   5  52085       sort.(*reverse).Len:return 1
@@ -469,7 +457,7 @@ pid$target::*NewMigrationBox:return {
 </code></pre>
 <p>At the end, when the duration has been duly recorded in the histogram, we set the value in the map to 0 per the <a href="https://illumos.org/books/dtrace/chp-variables.html#chp-variables-2">documentation</a>:</p>
 <blockquote>
-<p>assigning an associative array element to zero causes DTrace to deallocate the underlying storage. This behavior is important because the dynamic variable space out of which associative array elements are allocated is finite; if it is exhausted when an allocation is attempted, the allocation will fail and an error message will be generated indicating a dynamic variable drop. Always assign zero to associative array elements that are no longer in use.</p>
+<p>Assigning an associative array element to zero causes DTrace to deallocate the underlying storage. This behavior is important because the dynamic variable space out of which associative array elements are allocated is finite; if it is exhausted when an allocation is attempted, the allocation will fail and an error message will be generated indicating a dynamic variable drop. Always assign zero to associative array elements that are no longer in use.</p>
 </blockquote>
 <p>When we run it, we see that all durations are now nice and correct:</p>
 <pre><code>  NewMigrationBox                                   

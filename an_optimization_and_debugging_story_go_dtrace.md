@@ -84,9 +84,9 @@ pid$target::*NewMigrationBox:return {
 
 Explanation: `timestamp` is an automatically defined variable that stores the current monotonic time at the nanosecond granularity. When we enter the function, we read the current timestamp and store it in a thread-local variable `t` (with the `self->t` syntax). When we exit the function, we do the same again, compute the difference in terms of milliseconds, store it as a clause-local variable (with `this->duration`), and record it in a linear histogram with a minimum of 0 and a maximum of 800 (in milliseconds).
 
-> Due to the M:N concurrency model of Go,  in the general case, multiple goroutines run on the same thread concurrently, which means the thread-local variable `self->t` gets overriden by multiple goroutines all the time, and we observe as a result some non-sensical durations (negative or very high). The DTrace histogram is a nice way to see outliers and exclude them. The real fix would be to not use thread-local variables but instead goroutine-local variables... Which does not come out of the box with DTrace.
->
-> Fortunately I later found a way to avoid this pitfall, see the [addendum](#553173937-addendum-a-goroutine-aware-d-script) at the end.
+Due to the M:N concurrency model of Go,  in the general case, multiple goroutines run on the same thread concurrently, which means the thread-local variable `self->t` gets overriden by multiple goroutines all the time, and we observe as a result some non-sensical durations (negative or very high). The DTrace histogram is a nice way to see outliers and exclude them. The real fix would be to not use thread-local variables but instead goroutine-local variables... Which does not come out of the box with DTrace.
+
+Fortunately I later found a way to avoid this pitfall, see the [addendum](#553173937-addendum-a-goroutine-aware-d-script) at the end.
 
 Since the tests log verbose stuff by default and I do not know how to silence them, I save the output of DTrace in a separate file `/tmp/time.txt`: `dtrace -s time.d -c ./code.test.before -o /tmp/time.txt`
 
@@ -155,7 +155,7 @@ syscall::open:entry {
 } 
 ```
 
-> `copyinstr` is [required](https://illumos.org/books/dtrace/chp-user.html#chp-user) because our D script runs inside the kernel but we are trying to access user-space memory. 
+`copyinstr` is [required](https://illumos.org/books/dtrace/chp-user.html#chp-user) because our D script runs inside the kernel but we are trying to access user-space memory. 
 
 When we run this script on `go test -c` which builds the text executable, we see that all the SQL files are being opened by the Go compiler and subsequently embedded in the test binary:
 
@@ -182,9 +182,9 @@ The problem with computer programs is that there are a black box. You normally h
 
 If only there was a tool that shows me precisely what the hell my program is doing... And I could dynamically choose what to show and what to hide to avoid noise... Oh wait this has been existing for 20 years. DTrace of course! 
 
-> A debugger would also work in that case (command line program running on a developer workstation), but it pretty much requires recompiling with different Go build options which kills iteration times. 
->
-> Contrary to popular belief, Go is not a crazy fast compiler. It's a smart compiler that avoids compiling stuff it already compiled in the past. But if a lot of code *does* need to be recompiled, it's not *that* fast.
+A debugger would also work in that case (command line program running on a developer workstation), but it pretty much requires recompiling with different Go build options which kills iteration times. 
+
+Contrary to popular belief, Go is not a crazy fast compiler. It's a smart compiler that avoids compiling stuff it already compiled in the past. But if a lot of code *does* need to be recompiled, it's not *that* fast.
 
 If you're still not convinced to use DTrace yet, let me show you its superpower. It can show you *every* function call your program does! That's sooo useful when you do not know the codebase. Let's try it, but we are only interested in calls from within `NewMigrationBox`, and when we exit `NewMigrationBox`, we should stop tracing, because each invocation will anyway be the same:
 
@@ -196,11 +196,11 @@ pid$target:code.test.before:*NewMigrationBox:return { exit(0) }
 pid$target:code.test.before:sort*: /self->t != 0/ {}
 ```
 
-> I have written more specific probes in this script by specifying more parts of the probe, to try to reduce noise (by accidentally matching probes we do not care about) and also to help with performance (the more probes are being matched, the more the performance tanks). Since we know that the performance issue is located in the sorting part, we only need to trace that.
->
-> For example if all your company code is under some prefix, like for me, `github.com/ory`, and you want to see all calls to company code, the probe can be `pid$target::github.com?ory*:`. The only issue is that the Go stdlib code has no prefix and we want to see it as well...
-> 
-> The `self->t` variable is used to toggle tracing on when we enter a specific function of interest, and to toggle it off when we leave the function. Very useful to reduce noise and avoid a post-processing filtering step.
+I have written more specific probes in this script by specifying more parts of the probe, to try to reduce noise (by accidentally matching probes we do not care about) and also to help with performance (the more probes are being matched, the more the performance tanks). Since we know that the performance issue is located in the sorting part, we only need to trace that.
+
+For example if all your company code is under some prefix, like for me, `github.com/ory`, and you want to see all calls to company code, the probe can be `pid$target::github.com?ory*:`. The only issue is that the Go stdlib code has no prefix and we want to see it as well...
+
+The `self->t` variable is used to toggle tracing on when we enter a specific function of interest, and to toggle it off when we leave the function. Very useful to reduce noise and avoid a post-processing filtering step.
 
 So, let's run our script with the `-F` option to get a nicely formatted output:
 
@@ -254,7 +254,7 @@ fs.WalkDir(fm.Dir, ".", func(p string, info fs.DirEntry, err error) error {
 }
 ```
 
-> For the uninitiated: `fs.Walkdir` recursively traverses a directory and calls the passed function on each entry.
+For the uninitiated: `fs.Walkdir` recursively traverses a directory and calls the passed function on each entry.
 
 Aaah... We are sorting the slice of files *every time we find a new file*. That explains it. The sort has `O(n * log(n))` complexity and we turned that into `O(n² * log(n))`. That's 'very very super-linear', as the scientists call it. 
 
@@ -268,10 +268,10 @@ pid$target::*NewMigrationBox:entry { self->t = 1}
 
 pid$target::*NewMigrationBox:return { self->t = 0}
 
-pid$target:code.test.before:sort*Len:return /self->t != 0/ {printf("%d\n", uregs[R_R0])}
+pid$target:code.test.before:sort*Len:return /self->t != 0/ {printf("%d\n", arg0)}
 ```
 
-> The register `R_R0` contains the return value on `aarch64` and `amd64` per the [Go ABI](https://github.com/golang/go/blob/master/src/cmd/compile/abi-internal.md). And `uregs` is an array containing user-space registers. So here we are simply printing the return value of the function.
+The variable `arg0` contains the return value. So here we are simply printing the return value of the function i.e. the length of the slice being sorted.
 
 We see:
 
@@ -411,7 +411,7 @@ pid$target::*NewMigrationBox:return {
 
 At the end, when the duration has been duly recorded in the histogram, we set the value in the map to 0 per the [documentation](https://illumos.org/books/dtrace/chp-variables.html#chp-variables-2):
 
-> assigning an associative array element to zero causes DTrace to deallocate the underlying storage. This behavior is important because the dynamic variable space out of which associative array elements are allocated is finite; if it is exhausted when an allocation is attempted, the allocation will fail and an error message will be generated indicating a dynamic variable drop. Always assign zero to associative array elements that are no longer in use.
+> Assigning an associative array element to zero causes DTrace to deallocate the underlying storage. This behavior is important because the dynamic variable space out of which associative array elements are allocated is finite; if it is exhausted when an allocation is attempted, the allocation will fail and an error message will be generated indicating a dynamic variable drop. Always assign zero to associative array elements that are no longer in use.
 
 
 When we run it, we see that all durations are now nice and correct:
