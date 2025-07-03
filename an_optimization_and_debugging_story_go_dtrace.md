@@ -84,7 +84,9 @@ pid$target::*NewMigrationBox:return {
 
 Explanation: `timestamp` is an automatically defined variable that stores the current monotonic time at the nanosecond granularity. When we enter the function, we read the current timestamp and store it in a thread-local variable `t` (with the `self->t` syntax). When we exit the function, we do the same again, compute the difference in terms of milliseconds, store it as a clause-local variable (with `this->duration`), and record it in a linear histogram with a minimum of 0 and a maximum of 800 (in milliseconds).
 
-> Due to (I think) the M:N concurrency model of Go, sometimes the function starts running on one OS thread, yields back to the scheduler (due for example to doing some I/O), and gets moved to a different OS thread where it continues running. Conversely, an OS thread could start running a `NewMigrationBox` function call, which is suspended before finishing, and our OS thread starts running another `NewMigrationBox` function call. So some outlandish durations will be observed, e.g. negative ones, or in the billions. The DTrace histogram is a nice way to see outliers and exclude them. The real fix would be to not use thread-local variables but instead goroutine-local variables...which does not come out of the box with DTrace.
+> Due to (I think) the M:N concurrency model of Go, sometimes the function starts running on one OS thread, yields back to the scheduler (due for example to doing some I/O), and gets moved to a different OS thread where it continues running. Conversely, an OS thread could start running a `NewMigrationBox` function call, which is suspended before finishing, and our OS thread starts running another `NewMigrationBox` function call. So some outlandish durations will be observed, e.g. negative ones, or in the billions. The DTrace histogram is a nice way to see outliers and exclude them. The real fix would be to not use thread-local variables but instead goroutine-local variables... Which does not come out of the box with DTrace.
+>
+> Fortunately I found a way to avoid this pitfall, see the second addendum at the end.
 
 Since the tests log verbose stuff by default and I do not know how to silence them, I save the output of DTrace in a separate file `/tmp/time.txt`: `dtrace -s time.d -c ./code.test.before -o /tmp/time.txt`
 
@@ -356,7 +358,9 @@ So we went from ~180 ms to ~11ms for the problematic function, a *16x* improveme
 
 What I find fascinating is that DTrace is a *general purpose* tool. Go was never designed with DTrace in mind, and vice-versa. Our code: same thing. And still, it works, no recompilation needed. I can instrument the highest levels of the stack to the kernel with one tool. That's pretty cool!
 
-Of course DTrace is not perfect. User friendliness is, I think, pretty ~abysmal~ ~rough~ quirky. It's an arcane power tool for people who took the time to decipher incomplete manuals. For example registers on `aarch64` are not documented, but the ones on `SPARC` are (because that's were DTrace originated from...). My favorite quirk is when an error in the script leads to an error message pointing at the bytecode (like Java and others, the D script gets compiled to bytecode before being sent to the kernel). What am I supposed to do with this :) ?
+Of course DTrace is not perfect. User friendliness is, I think, pretty ~abysmal~ ~rough~ quirky. It's an arcane power tool for people who took the time to decipher incomplete manuals. For example registers on `aarch64` are not documented, but the ones on `SPARC` are (because that's were DTrace originated from...). Fortunately I found that piece of information after some digging: the file `/usr/lib/dtrace/arm64/regs_arm64.d` on macOS.
+
+My favorite quirk is when an error in the script leads to an error message pointing at the bytecode (like Java and others, the D script gets compiled to bytecode before being sent to the kernel). What am I supposed to do with this :) ?
 
 But it's very often a life-saver. So thank you to their creators.
 
@@ -373,3 +377,49 @@ So, the diff is bigger because I noticed that the sorting function had a flaw an
 Interestingly, `sort.Sort` and `slices.SortFunc` have different requirements! The first one requires the sorting function to be a `transitive ordering` whereas the second one requires it to be a `strict weak ordering`. The more you know!
 
 I encourage you, if you write a custom sorting function, to carefully read which requirements you have to comply with, and write tests that ensure that these requirements are met, lest you face subtle sorting bugs.
+
+## Addendum: A goroutine-aware D script
+
+At the beginning I mentioned that `self->t = timestamp` means we are storing the current timestamp in a thread-local variable. However, since in the general case, multiple goroutines run on the same thread concurrently, this variable gets overriden in non-sensical ways and that means we observe as a result non-sensical durations (negative or very high). I also mentioned that the fix would be to store this variable in a *goroutine-aware* way instead.
+
+Well, the good news is, there is a way!
+
+Reading carefully the [Go ABI](https://github.com/golang/go/blob/master/src/cmd/compile/abi-internal.md) document again, we see that on ARM64 (a.k.a AARCH64), the register `R28` store the current goroutine. Great! That means that we can treat the value in this register as the 'goroutine id' and we can store all timestamps per goroutine. 
+
+My approach is to store all timestamps in a global map where the key is the goroutine id and the value is the timestamp:
+
+
+```
+pid$target::*NewMigrationBox:entry { 
+  this->goroutine_id = uregs[R_X28];
+  durations_goroutines[self->goroutine_id] = timestamp;
+} 
+
+pid$target::*NewMigrationBox:return {
+  this->goroutine_id = uregs[R_X28];
+  this->duration = (timestamp - durations_goroutines[this->goroutine_id]) / 1000000;
+
+  @histogram["NewMigrationBox"] = lquantize(this->duration, 0, 100, 1);
+
+  durations_goroutines[this->goroutine_id] = 0;
+}
+```
+
+At the end, when the duration has been duly recorded in the histogram, we set the value in the map to 0 per the [documentation](https://illumos.org/books/dtrace/chp-variables.html#chp-variables-2):
+
+> assigning an associative array element to zero causes DTrace to deallocate the underlying storage. This behavior is important because the dynamic variable space out of which associative array elements are allocated is finite; if it is exhausted when an allocation is attempted, the allocation will fail and an error message will be generated indicating a dynamic variable drop. Always assign zero to associative array elements that are no longer in use.
+
+
+When we run it, we see that all durations are now nice and correct:
+
+```
+  NewMigrationBox                                   
+           value  ------------- Distribution ------------- count    
+              11 |                                         0        
+              12 |@@@@@@@@@@@@@@@@@@@@@@                   11       
+              13 |@@@@@@@@@@@@@@                           7        
+              14 |@@@@                                     2        
+              15 |                                         0      
+```
+
+So if you are using DTrace with Go, I would encourage you to use this trick. Note that the right register to use differs per architecture: `R14` on AMD64, `R28` on ARM64, etc.
