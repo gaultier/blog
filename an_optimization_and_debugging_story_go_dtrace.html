@@ -480,7 +480,7 @@ pid$target::*NewMigrationBox:return {
               14 |@@@@                                     2        
               15 |                                         0      
 </code></pre>
-<p>Note: I am not entirely sure if global maps are thread-safe. I did not find definitive documentation about this topic. I would assume they are because DTrace is designed from the ground-up to work with complex multi-threaded systems. If a reader knows for sure, feel free to reach out!</p>
+<p>Note: Reading and writing to global variables, including global maps, is thread-safe by design in DTrace.</p>
 <p>In conclusion, if you are using DTrace with Go, I would encourage you to use this trick. Note that the right register to use differs per architecture: <code>R14</code> on AMD64, <code>R28</code> on ARM64, etc.</p>
 <p><a href="/blog"> ⏴ Back to all articles</a></p>
 

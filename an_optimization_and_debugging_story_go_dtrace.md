@@ -426,6 +426,6 @@ When we run it, we see that all durations are now nice and correct:
               15 |                                         0      
 ```
 
-Note: I am not entirely sure if global maps are thread-safe. I did not find definitive documentation about this topic. I would assume they are because DTrace is designed from the ground-up to work with complex multi-threaded systems. If a reader knows for sure, feel free to reach out!
+Note: Reading and writing to global variables, including global maps, is thread-safe by design in DTrace. 
 
 In conclusion, if you are using DTrace with Go, I would encourage you to use this trick. Note that the right register to use differs per architecture: `R14` on AMD64, `R28` on ARM64, etc.
