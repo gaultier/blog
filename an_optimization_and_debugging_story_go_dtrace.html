@@ -480,7 +480,17 @@ pid$target::*NewMigrationBox:return {
               14 |@@@@                                     2        
               15 |                                         0      
 </code></pre>
-<p>Note: Reading and writing to global variables, including global maps, is thread-safe by design in DTrace.</p>
+<p>This approach is:</p>
+<ul>
+<li>Safe: reading and writing to global variables, including global maps, is thread-safe by design in DTrace.</li>
+<li>Correct, in the absence of panics: because the (current) Go garbage collector is <strong>non-moving</strong>, and because goroutine pointers are handled specially by the Go runtime, it means in practice that between our two probes (the entry and the exit of the function being traced):
+<ul>
+<li>The 'goroutine id', which is a pointer to the current goroutine, cannot change.</li>
+<li>Another goroutine cannot take the place of the current goroutine pointed to by the goroutine pointer we read.</li>
+</ul>
+</li>
+</ul>
+<p>However, you should know that if our function body panics between the entry and return probes, the return probe will not fire, because of the way Go implements panics.</p>
 <p>In conclusion, if you are using DTrace with Go, I would encourage you to use this trick. Note that the right register to use differs per architecture: <code>R14</code> on AMD64, <code>R28</code> on ARM64, etc.</p>
 <p><a href="/blog"> ⏴ Back to all articles</a></p>
 

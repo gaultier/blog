@@ -426,6 +426,13 @@ When we run it, we see that all durations are now nice and correct:
               15 |                                         0      
 ```
 
-Note: Reading and writing to global variables, including global maps, is thread-safe by design in DTrace. 
+This approach is:
+
+- Safe: reading and writing to global variables, including global maps, is thread-safe by design in DTrace.
+- Correct, in the absence of panics: because the (current) Go garbage collector is **non-moving**, and because goroutine pointers are handled specially by the Go runtime, it means in practice that between our two probes (the entry and the exit of the function being traced):
+  + The 'goroutine id', which is a pointer to the current goroutine, cannot change. 
+  + Another goroutine cannot take the place of the current goroutine pointed to by the goroutine pointer we read.
+
+However, you should know that if our function body panics between the entry and return probes, the return probe will not fire, because of the way Go implements panics.
 
 In conclusion, if you are using DTrace with Go, I would encourage you to use this trick. Note that the right register to use differs per architecture: `R14` on AMD64, `R28` on ARM64, etc.
