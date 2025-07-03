@@ -84,9 +84,9 @@ pid$target::*NewMigrationBox:return {
 
 Explanation: `timestamp` is an automatically defined variable that stores the current monotonic time at the nanosecond granularity. When we enter the function, we read the current timestamp and store it in a thread-local variable `t` (with the `self->t` syntax). When we exit the function, we do the same again, compute the difference in terms of milliseconds, store it as a clause-local variable (with `this->duration`), and record it in a linear histogram with a minimum of 0 and a maximum of 800 (in milliseconds).
 
-> Due to (I think) the M:N concurrency model of Go, sometimes the function starts running on one OS thread, yields back to the scheduler (due for example to doing some I/O), and gets moved to a different OS thread where it continues running. Conversely, an OS thread could start running a `NewMigrationBox` function call, which is suspended before finishing, and our OS thread starts running another `NewMigrationBox` function call. So some outlandish durations will be observed, e.g. negative ones, or in the billions. The DTrace histogram is a nice way to see outliers and exclude them. The real fix would be to not use thread-local variables but instead goroutine-local variables... Which does not come out of the box with DTrace.
+> Due to the M:N concurrency model of Go,  in the general case, multiple goroutines run on the same thread concurrently, which means the thread-local variable `self->t` gets overriden by multiple goroutines all the time, and we observe as a result some non-sensical durations (negative or very high). The DTrace histogram is a nice way to see outliers and exclude them. The real fix would be to not use thread-local variables but instead goroutine-local variables... Which does not come out of the box with DTrace.
 >
-> Fortunately I found a way to avoid this pitfall, see the second addendum at the end.
+> Fortunately I later found a way to avoid this pitfall, see the [addendum](#553173937-addendum-a-goroutine-aware-d-script) at the end.
 
 Since the tests log verbose stuff by default and I do not know how to silence them, I save the output of DTrace in a separate file `/tmp/time.txt`: `dtrace -s time.d -c ./code.test.before -o /tmp/time.txt`
 
@@ -380,7 +380,7 @@ I encourage you, if you write a custom sorting function, to carefully read which
 
 ## Addendum: A goroutine-aware D script
 
-At the beginning I mentioned that `self->t = timestamp` means we are storing the current timestamp in a thread-local variable. However, since in the general case, multiple goroutines run on the same thread concurrently, this variable gets overriden in non-sensical ways and that means we observe as a result non-sensical durations (negative or very high). I also mentioned that the fix would be to store this variable in a *goroutine-aware* way instead.
+At the beginning I mentioned that `self->t = timestamp` means we are storing the current timestamp in a thread-local variable. However, since in the general case, multiple goroutines run on the same thread concurrently, this variable gets overriden by multiple goroutines all the time, and we observe as a result some non-sensical durations (negative or very high). I also mentioned that the fix would be to store this variable in a *goroutine-aware* way instead.
 
 Well, the good news is, there is a way!
 
@@ -396,7 +396,7 @@ So here goes:
 ```
 pid$target::*NewMigrationBox:entry { 
   this->goroutine_id = uregs[R_X28];
-  durations_goroutines[self->goroutine_id] = timestamp;
+  durations_goroutines[this->goroutine_id] = timestamp;
 } 
 
 pid$target::*NewMigrationBox:return {
@@ -426,4 +426,6 @@ When we run it, we see that all durations are now nice and correct:
               15 |                                         0      
 ```
 
-So if you are using DTrace with Go, I would encourage you to use this trick. Note that the right register to use differs per architecture: `R14` on AMD64, `R28` on ARM64, etc.
+Note: I am not entirely sure if global maps are thread-safe. I did not find definitive documentation about this topic. I would assume they are because DTrace is designed from the ground-up to work with complex multi-threaded systems. If a reader knows for sure, feel free to reach out!
+
+In conclusion, if you are using DTrace with Go, I would encourage you to use this trick. Note that the right register to use differs per architecture: `R14` on AMD64, `R28` on ARM64, etc.
