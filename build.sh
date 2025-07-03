@@ -6,7 +6,7 @@ CFLAGS="${CFLAGS} -fpie -fno-omit-frame-pointer -gsplit-dwarf -march=native"
 if command -v lld > /dev/null 2>&1; then
  CFLAGS+=" -fuse-ld=lld"
 fi
-LDFLAGS="${LDFLAGS} -Wl,--gc-sections -flto"
+LDFLAGS="${LDFLAGS} -flto"
 
 CC="${CC:-clang}"
 WARNINGS="$(tr -s '\n' ' ' < compile_flags.txt)"

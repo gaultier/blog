@@ -403,7 +403,7 @@ static PgString datetime_to_date(PgString datetime) {
 
   PgProcess process = res_spawn.res;
 
-  PgU64Result res_markdown_file_size = pg_file_size(markdown_file);
+  Pgu64Result res_markdown_file_size = pg_file_size(markdown_file);
   PG_ASSERT(0 == res_markdown_file_size.err);
   u64 to_copy = res_markdown_file_size.res - metadata_offset;
   Pgu64Ok offset = {.ok = true, .res = metadata_offset};
@@ -757,7 +757,7 @@ static Article article_generate(PgString header, PgString footer,
       .data = tmp,
       .len = PG_STATIC_ARRAY_LEN(tmp),
   };
-  PgU64Result res_markdown_header =
+  Pgu64Result res_markdown_header =
       pg_file_read(markdown_file, markdown_header);
   PG_ASSERT(0 == res_markdown_header.err);
   markdown_header.len = res_markdown_header.res;
