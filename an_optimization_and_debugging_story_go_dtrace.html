@@ -451,7 +451,7 @@ sort.Sort(mod)
 <p>My approach is to store all timestamps in a global map where the key is the goroutine id and the value is the timestamp:</p>
 <pre><code>pid$target::*NewMigrationBox:entry { 
   this-&gt;goroutine_id = uregs[R_X28];
-  durations_goroutines[self-&gt;goroutine_id] = timestamp;
+  durations_goroutines[this-&gt;goroutine_id] = timestamp;
 } 
 
 pid$target::*NewMigrationBox:return {

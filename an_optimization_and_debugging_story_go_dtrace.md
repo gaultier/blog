@@ -392,7 +392,7 @@ My approach is to store all timestamps in a global map where the key is the goro
 ```
 pid$target::*NewMigrationBox:entry { 
   this->goroutine_id = uregs[R_X28];
-  durations_goroutines[self->goroutine_id] = timestamp;
+  durations_goroutines[this->goroutine_id] = timestamp;
 } 
 
 pid$target::*NewMigrationBox:return {
