@@ -10,3 +10,4 @@ perf.data*
 *.zst
 vgcore.*
 main.bin*
+*.dSYM

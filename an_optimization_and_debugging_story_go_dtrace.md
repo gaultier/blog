@@ -360,7 +360,7 @@ What I find fascinating is that DTrace is a *general purpose* tool. Go was never
 
 Of course DTrace is not perfect. User friendliness is, I think, pretty ~rough~ quirky. It's an arcane power tool for people who took the time to decipher incomplete manuals. For example registers on `aarch64` are not documented, but the ones on `SPARC` are (because that's were DTrace originated from...). Fortunately I found that piece of information after some digging: the file `/usr/lib/dtrace/arm64/regs_arm64.d` on macOS.
 
-My favorite quirk is when an error in the script leads to an error message pointing at the bytecode (like Java and others, the D script gets compiled to bytecode before being sent to the kernel). What am I supposed to do with this :) ?
+My favorite quirk is when an error in the script leads to an error message pointing at the bytecode (like Java and others, the D script gets compiled to bytecode before being sent to the kernel). What am I supposed to do with this :) ? It took me a while as a user to even understand that bytecode was involved at all.
 
 But it's very often a life-saver. So thank you to their creators.
 
