@@ -14,7 +14,9 @@ The content of this blog as well as the code snippets are under the [BSD-3 Licen
 
 I very unregularly post about various technical topics, usually low-level, esoteric and probably not directly applicable to your run-of-the-mill business application.
 
-This blog does not and will not employ any tracking or cookie of any sort. The only Javascript present is fully optional and only used to do code highlighting and client-side search.
+This blog does not and will not employ any tracking or cookie of any sort. The only Javascript present is fully optional and only used to do code highlighting, client-side search, and copy-to-clipboard. 
+
+Content is **not** LLM-generated.
 
 
 ## I am grateful
@@ -28,8 +30,9 @@ I often am frustrated with the state of the software industry; however there is 
 - Vim/Neovim. Another timeless, minimal, fast program that's great for code and prose alike and that respects your computer by requiring very minimal resources. This blog was entirely written inside Neovim!
 - ZFS. The last filesystem you'll need. Reliable and is built on the right concepts. It feels like Git for the filesystem.
 - Wine/Proton. What a technical feat, and a massive reverse engineering effort, to make Windows applications work on Linux without the application even noticing.
-- Rust. Because it catches all my mistakes at compile time and I wish all compilers would too. Although its complexity is a beast.
+- Rust. Because it catches all my mistakes at compile time and I wish all compilers would too. Although its complexity is a beast and compile times will make you cry.
 - Zig the toolchain. Because straightforward cross-compiling should be what everyone does on a daily basis without having to setup Docker/VMs/a complicated CI.
+- Make: This swiss-army knife somehow finds itself in nearly every project of mine.
 
 
 ## Portfolio
@@ -55,14 +58,6 @@ I think it still holds up to this day although I would definitely change how the
 
 [microkt](https://github.com/gaultier/microkt) is my second take on a Kotlin compiler, this time written in C and targeting x86_64 (no JVM). I think it is nice to have the luxury to revisit a past project in a different language and reevaluating past choices. I got about equally as far as the `kotlin-rs` in terms of language support and stopped while implementing the Garbage Collector which is an can of worms by itself. The reason I stopped is that I noticed I was being regularly stopped in my tracks by bugs in the generated x86_64 assembly code, notably due to 'move with zero extend' issues and register allocation. I thus decided to dig deep on this subject before returning to the compiler which I never did because I got two kids right after.
 The implementation still holds, however I would definitely revist the assembly generation part as mentioned and use a structured representation instead of a textual one (no one wants to do string programming).
-
-<br/>
-
-[My C monorepo](https://github.com/gaultier/c) is a big mix a small and big programs all written in C. The most noteworthy are:
-
-- `torrent`: A bittorrent client. It works well but only handles one file and is probably a nest of security vulnerabilities now that I think of it
-- `crash-reporter`: A crash reporter for macOS x86_64. It gives a full stacktrace at any point in the program. It does so by parsing the DWARF information embedded in the  mach-o executable format.
-- `clone-gitlab-api`: A small CLI that downloads all projects from a Gitlab instance. Especially useful since my employer at the time had all projects hosted on a private Gitlab instance and there was no search feature. So I figured that the easiest way is to fetch the list of all projects, clone them locally and use grep on them. I worked great! This is conceptually `curl` + `parallel` + `git clone/pull`. I additionally wrote an equivalent [Rust version](https://github.com/gaultier/gitlab-clone-all). I also later wrote [something similar](https://github.com/gaultier/gitlab-events) to poll Gitlab for notifications to watch repository changes. Yeah Gitlab is/was pretty limited in functionality.
 
 <br/>
 

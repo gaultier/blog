@@ -324,7 +324,8 @@
 <p>This blog is <a href="https://github.com/gaultier/blog">open-source</a>! If you find a problem, please open a Github issue.</p>
 <p>The content of this blog as well as the code snippets are under the <a href="https://en.wikipedia.org/wiki/BSD_licenses#3-clause_license_(%22BSD_License_2.0%22,_%22Revised_BSD_License%22,_%22New_BSD_License%22,_or_%22Modified_BSD_License%22)">BSD-3 License</a> which I also usually use for all my personal projects. It's basically free for every use but you have to mention me as the original author.</p>
 <p>I very unregularly post about various technical topics, usually low-level, esoteric and probably not directly applicable to your run-of-the-mill business application.</p>
-<p>This blog does not and will not employ any tracking or cookie of any sort. The only Javascript present is fully optional and only used to do code highlighting and client-side search.</p>
+<p>This blog does not and will not employ any tracking or cookie of any sort. The only Javascript present is fully optional and only used to do code highlighting, client-side search, and copy-to-clipboard.</p>
+<p>Content is <strong>not</strong> LLM-generated.</p>
 <h2 id="2077765069-i-am-grateful">
   <a class="title" href="#2077765069-i-am-grateful">I am grateful</a>
   <a class="hash-anchor" href="#2077765069-i-am-grateful" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
@@ -338,8 +339,9 @@
 <li>Vim/Neovim. Another timeless, minimal, fast program that's great for code and prose alike and that respects your computer by requiring very minimal resources. This blog was entirely written inside Neovim!</li>
 <li>ZFS. The last filesystem you'll need. Reliable and is built on the right concepts. It feels like Git for the filesystem.</li>
 <li>Wine/Proton. What a technical feat, and a massive reverse engineering effort, to make Windows applications work on Linux without the application even noticing.</li>
-<li>Rust. Because it catches all my mistakes at compile time and I wish all compilers would too. Although its complexity is a beast.</li>
+<li>Rust. Because it catches all my mistakes at compile time and I wish all compilers would too. Although its complexity is a beast and compile times will make you cry.</li>
 <li>Zig the toolchain. Because straightforward cross-compiling should be what everyone does on a daily basis without having to setup Docker/VMs/a complicated CI.</li>
+<li>Make: This swiss-army knife somehow finds itself in nearly every project of mine.</li>
 </ul>
 <h2 id="2433242564-portfolio">
   <a class="title" href="#2433242564-portfolio">Portfolio</a>
@@ -359,13 +361,6 @@ I think it still holds up to this day although I would definitely change how the
 <br/>
 <p><a href="https://github.com/gaultier/microkt">microkt</a> is my second take on a Kotlin compiler, this time written in C and targeting x86_64 (no JVM). I think it is nice to have the luxury to revisit a past project in a different language and reevaluating past choices. I got about equally as far as the <code>kotlin-rs</code> in terms of language support and stopped while implementing the Garbage Collector which is an can of worms by itself. The reason I stopped is that I noticed I was being regularly stopped in my tracks by bugs in the generated x86_64 assembly code, notably due to 'move with zero extend' issues and register allocation. I thus decided to dig deep on this subject before returning to the compiler which I never did because I got two kids right after.
 The implementation still holds, however I would definitely revist the assembly generation part as mentioned and use a structured representation instead of a textual one (no one wants to do string programming).</p>
-<br/>
-<p><a href="https://github.com/gaultier/c">My C monorepo</a> is a big mix a small and big programs all written in C. The most noteworthy are:</p>
-<ul>
-<li><code>torrent</code>: A bittorrent client. It works well but only handles one file and is probably a nest of security vulnerabilities now that I think of it</li>
-<li><code>crash-reporter</code>: A crash reporter for macOS x86_64. It gives a full stacktrace at any point in the program. It does so by parsing the DWARF information embedded in the  mach-o executable format.</li>
-<li><code>clone-gitlab-api</code>: A small CLI that downloads all projects from a Gitlab instance. Especially useful since my employer at the time had all projects hosted on a private Gitlab instance and there was no search feature. So I figured that the easiest way is to fetch the list of all projects, clone them locally and use grep on them. I worked great! This is conceptually <code>curl</code> + <code>parallel</code> + <code>git clone/pull</code>. I additionally wrote an equivalent <a href="https://github.com/gaultier/gitlab-clone-all">Rust version</a>. I also later wrote <a href="https://github.com/gaultier/gitlab-events">something similar</a> to poll Gitlab for notifications to watch repository changes. Yeah Gitlab is/was pretty limited in functionality.</li>
-</ul>
 <br/>
 <p><a href="https://github.com/gaultier/micro-kotlin">micro-kotlin</a>: The third (and last?) take on a Kotlin compiler, in C. It goes much further than the two previous attempts both in terms of language support and in terms of implementation:</p>
 <ul>
