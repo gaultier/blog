@@ -358,7 +358,7 @@ So we went from ~180 ms to ~11ms for the problematic function, a *16x* improveme
 
 What I find fascinating is that DTrace is a *general purpose* tool. Go was never designed with DTrace in mind, and vice-versa. Our code: same thing. And still, it works, no recompilation needed. I can instrument the highest levels of the stack to the kernel with one tool. That's pretty cool!
 
-Of course DTrace is not perfect. User friendliness is, I think, pretty ~abysmal~ ~rough~ quirky. It's an arcane power tool for people who took the time to decipher incomplete manuals. For example registers on `aarch64` are not documented, but the ones on `SPARC` are (because that's were DTrace originated from...). Fortunately I found that piece of information after some digging: the file `/usr/lib/dtrace/arm64/regs_arm64.d` on macOS.
+Of course DTrace is not perfect. User friendliness is, I think, pretty ~rough~ quirky. It's an arcane power tool for people who took the time to decipher incomplete manuals. For example registers on `aarch64` are not documented, but the ones on `SPARC` are (because that's were DTrace originated from...). Fortunately I found that piece of information after some digging: the file `/usr/lib/dtrace/arm64/regs_arm64.d` on macOS.
 
 My favorite quirk is when an error in the script leads to an error message pointing at the bytecode (like Java and others, the D script gets compiled to bytecode before being sent to the kernel). What am I supposed to do with this :) ?
 
