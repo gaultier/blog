@@ -13,24 +13,28 @@ C_FILES = main.c submodules/cstd/lib.c $(wildcard *.h)
 
 SANITIZERS = address,undefined
 
-main_debug.bin: $(C_FILES)
+.PHONY: gen
+gen: main_release.bin
+	./$<
+
+main_debug.bin: $(C_FILES) submodules/cmark-gfm/build/src/cmark-gfm
 	$(CC) $(CFLAGS) $(LDFLAGS) main.c -o $@
 
-main_debug_sanitizer.bin: $(C_FILES)
+main_debug_sanitizer.bin: $(C_FILES) submodules/cmark-gfm/build/src/cmark-gfm
 	$(CC) $(CFLAGS) $(LDFLAGS) main.c -o $@ -fsanitize=$(SANITIZERS)
 
-main_release.bin: $(C_FILES)
+main_release.bin: $(C_FILES) submodules/cmark-gfm/build/src/cmark-gfm
 	$(CC) $(CFLAGS) $(LDFLAGS) main.c -o $@ -O2 -flto
 
-main_release_sanitizer.bin: $(C_FILES)
+main_release_sanitizer.bin: $(C_FILES) submodules/cmark-gfm/build/src/cmark-gfm
 	$(CC) $(CFLAGS) $(LDFLAGS) main.c -o $@ -O2 -flto -fsanitize=$(SANITIZERS)
+
+submodules/cmark-gfm/build/src/cmark-gfm: 
+	make -C ./submodules/cmark
 
 .PHONY: all
 all: main_debug.bin main_debug_sanitizer.bin main_release.bin main_release_sanitizer.bin
 
-.PHONY: gen
-gen: main_release.bin
-	./$<
 
 .PHONY: clean
 clean:

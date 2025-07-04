@@ -12,12 +12,10 @@ Requirements:
 Build this blog (i.e. convert markdown files to HTML):
 
 ```sh
-$ make -C ./submodules/cmark
-$ ./build.sh release
 # Build once.
-$ ./main.bin
-# Watch & rebuild.
-$ ls *.md | entr -c ./main.bin
+$ make gen
+# Watch & rebuild on change (requires `entr`).
+$ make dev
 ```
 
 Serve the files locally:
