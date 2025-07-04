@@ -258,7 +258,7 @@ Benchmark 1: find ./persistence/sql/migrations -name '*.sql' -type f
 </code></pre>
 <p><code>copyinstr</code> is <a href="https://illumos.org/books/dtrace/chp-user.html#chp-user">required</a> because our D script runs inside the kernel but we are trying to access user-space memory.</p>
 <p>When we run this script on <code>go test -c</code> which builds the text executable, we see that all the SQL files are being opened by the Go compiler and subsequently embedded in the test binary:</p>
-<pre><code class="language-sh">$ sudo dtrace -s ~/scratch/popx_opens.dtrace -c 'go test -tags=sqlite -c'
+<pre><code class="language-sh">$ sudo dtrace -s ~/scratch/sql_files.d -c 'go test -tags=sqlite -c'
 
 CPU     ID                    FUNCTION:NAME
  10    178                       open:entry /Users/philippe.gaultier/company-code/x/networkx/migrations/sql/20150100000001000000_networks.cockroach.down.sql
@@ -289,7 +289,7 @@ pid$target:code.test.before:sort*: /self-&gt;t != 0/ {}
 <p>For example if all your company code is under some prefix, like for me, <code>github.com/ory</code>, and you want to see all calls to company code, the probe can be <code>pid$target::github.com?ory*:</code>. The only issue is that the Go stdlib code has no prefix and we want to see it as well...</p>
 <p>The <code>self-&gt;t</code> variable is used to toggle tracing on when we enter a specific function of interest, and to toggle it off when we leave the function. Very useful to reduce noise and avoid a post-processing filtering step.</p>
 <p>So, let's run our script with the <code>-F</code> option to get a nicely formatted output:</p>
-<pre><code>$ sudo dtrace -s ~/scratch/popx_trace_calls.dtrace -c './code.test.before' -F
+<pre><code>$ sudo dtrace -s ~/scratch/trace_calls.d -c './code.test.before' -F
 
 CPU FUNCTION                                 
   7  -&gt; sort.Sort                             

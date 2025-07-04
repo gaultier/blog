@@ -160,7 +160,7 @@ syscall::open:entry {
 When we run this script on `go test -c` which builds the text executable, we see that all the SQL files are being opened by the Go compiler and subsequently embedded in the test binary:
 
 ```sh
-$ sudo dtrace -s ~/scratch/popx_opens.dtrace -c 'go test -tags=sqlite -c'
+$ sudo dtrace -s ~/scratch/sql_files.d -c 'go test -tags=sqlite -c'
 
 CPU     ID                    FUNCTION:NAME
  10    178                       open:entry /Users/philippe.gaultier/company-code/x/networkx/migrations/sql/20150100000001000000_networks.cockroach.down.sql
@@ -205,7 +205,7 @@ The `self->t` variable is used to toggle tracing on when we enter a specific fun
 So, let's run our script with the `-F` option to get a nicely formatted output:
 
 ```
-$ sudo dtrace -s ~/scratch/popx_trace_calls.dtrace -c './code.test.before' -F
+$ sudo dtrace -s ~/scratch/trace_calls.d -c './code.test.before' -F
 
 CPU FUNCTION                                 
   7  -> sort.Sort                             
