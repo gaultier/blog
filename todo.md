@@ -206,7 +206,7 @@ pid$target::github.com?ory?kratos*CreateRecoveryFlow:entry {
   + HTTP server injects a JS snippet when serving HTML files which listens for SSE events on a separate endpoint (e.g. `/live-reload`).
   + When a client sends a request to the server on `/live-reload` (i.e. subscribes), the server adds it the list of clients (of 1).
   + When a file changes on disk, the server sends a SSE to all registered clients.
-  + The client reloads the page when a SSE event is received
+  + The client reloads the page when a SSE event is received.
 - [ ] Built-in file watch
 - [ ] Built-in http server
 - [ ] Dark mode
