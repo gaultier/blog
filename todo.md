@@ -200,13 +200,13 @@ pid$target::github.com?ory?kratos*CreateRecoveryFlow:entry {
 ## Blog implementation
 
 - [ ] Articles excerpt on the home page?
-- [ ] Browser live reload
-  + Send the F5 key to the browser window (does not work in Wayland)
-  + Somehow send an IPC message to the right browser process to reload the page?
-  + HTTP server & HTML page communicate via websocket to reload content (complex)
-  + HTTP2 force push to force the browser to get the new page version?
-  + Server sent event to reload the page
-  + Websocket
+- [ ] Browser live reload: 
+  + Depends on: custom HTTP server, builtin file watch.
+  + HTTP server serves and watches files for changes.
+  + HTTP server injects a JS snippet when serving HTML files which listens for SSE events on a separate endpoint (e.g. `/live-reload`).
+  + When a client sends a request to the server on `/live-reload` (i.e. subscribes), the server adds it the list of clients (of 1).
+  + When a file changes on disk, the server sends a SSE to all registered clients.
+  + The client reloads the page when a SSE event is received
 - [ ] Built-in file watch
 - [ ] Built-in http server
 - [ ] Dark mode
