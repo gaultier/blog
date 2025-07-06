@@ -1123,14 +1123,17 @@ static void rss_generate(ArticleSlice articles, PgAllocator *allocator) {
 }
 
 int main() {
-#if 0
-  PgHeapAllocator heap_allocator = pg_make_heap_allocator();
-  PgAllocator *allocator = pg_heap_allocator_as_allocator(&heap_allocator);
-#endif
-
   PgArena arena = pg_arena_make_from_virtual_mem(100 * PG_MiB);
   PgArenaAllocator arena_allocator = pg_make_arena_allocator(&arena);
   PgAllocator *allocator = pg_arena_allocator_as_allocator(&arena_allocator);
+
+  PgLogger logger = pg_log_make_logger_stdout_logfmt(PG_LOG_LEVEL_INFO);
+  {
+    PgError err = pg_http_server_start(3001, 1024, &logger);
+    if (err) {
+      return (int)err;
+    }
+  }
 
   PgStringResult res_header =
       pg_file_read_full_from_path(PG_S("header.html"), allocator);
