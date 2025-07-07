@@ -230,7 +230,7 @@ And in plain English:
 - Line 7: We then inspect each node that `Zoe` has an edge to. That means `Jane` and `Angela`. In terms of adjacency matrix, we simply read `Zoe's` row, and inspect cells with a `1` in it.
 - Line 8: We remove such an edge, for example, `Zoe -> Jane`. In terms of adjacency matrix, it means setting the cell on the row `Zoe` and column `Jane` to `0`. At this point, the graph looks like this: ![Employee hierarchy, step 1](kahns_algorithm_2.svg)
 - Line 9: If `Jane` does not have another incoming edge, we add it to the set of all nodes with no incoming edge. That's the case here, so `S` now looks like: `[Bella, Miranda, Jane]`. We now loop to line 7 and handle the node `Angela` since `Jane` is taken care of.
-- Line 7-10: We are now handling the node `Angela`. We remove the edge `Zoe -> Angela`. We check whether the node `Angela` has incoming edges. It does, so we do **not** add it to `S`. The graph is now: ![Employee hierarchy, step 2](kahns_algorithm_2_1.svg).
+- Line 7-10: We are now handling the node `Angela`. We remove the edge `Zoe -> Angela`. We check whether the node `Angela` has incoming edges. It does, so we do **not** add it to `S`. The graph is now: ![Employee hierarchy, step 2](kahns_algorithm_2_1.svg)
 - We are now done with the line 7 for loop, so go back to line 5 and pick this time `Bella`. And so on. The graph would now, to the algorithm, look like: ![Employee hierarchy, step 3](kahns_algorithm_2_2.svg)
 
 ---
