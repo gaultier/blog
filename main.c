@@ -1127,13 +1127,15 @@ int main() {
   PgArenaAllocator arena_allocator = pg_make_arena_allocator(&arena);
   PgAllocator *allocator = pg_arena_allocator_as_allocator(&arena_allocator);
 
-  PgLogger logger = pg_log_make_logger_stdout_logfmt(PG_LOG_LEVEL_INFO);
+#if 0
   {
+  PgLogger logger = pg_log_make_logger_stdout_logfmt(PG_LOG_LEVEL_INFO);
     PgError err = pg_http_server_start(3001, 1024, 28 * PG_KiB, &logger);
     if (err) {
       return (int)err;
     }
   }
+#endif
 
   PgStringResult res_header =
       pg_file_read_full_from_path(PG_S("header.html"), allocator);
