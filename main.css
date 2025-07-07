@@ -311,7 +311,6 @@ p:has(img):has(em) {
 details {
   width: fit-content;
   border-radius: .5rem;
-  background-color: #BDBDBD6B;
   margin: 0 auto;
   padding: .5rem;
   display: block;
