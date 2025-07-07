@@ -43,24 +43,21 @@ hljs.highlightAll();
 
 document.querySelectorAll('code').forEach((el, _i) => {
   if (el.parentElement.tagName != "PRE"){ 
-    el.classList.add('code-no-line-numbers');
     return; 
   }
 
   var copy_btn = document.createElement('button');
   copy_btn.innerText = 'Copy';
   copy_btn.type = 'button';
-  copy_btn.style.position = 'absolute';
-  copy_btn.style.top = 0;
-  copy_btn.style.right = 0;
-  copy_btn.style.margin = '0.5rem';
+  copy_btn.style.margin = '0.1rem';
+  copy_btn.style['align-self'] = 'flex-end';
+
   // Copy original content before adding line numbers.
   var content = el.innerText.slice();
   copy_btn.addEventListener('click', function(e){
     navigator.clipboard.writeText(content);
   });
-  el.parentElement.appendChild(copy_btn);
-  el.parentElement.style.position = 'relative';
+  el.parentElement.prepend(copy_btn);
 
   var lines = el.innerHTML.trimEnd().split('\n');
   var out = [];
