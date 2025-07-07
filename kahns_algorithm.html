@@ -153,7 +153,7 @@ Do not edit it by hand.
 <p>Here's the tree of employees in an organization. An employee reports to a manager, and this forms a tree. The root is the CEO since they report to no one and so they have no outgoing edge.</p>
 <p>An arrow (or 'edge') between two nodes means <code>&lt;source&gt; reports to &lt;destination&gt;</code>, for example: <code>Jane the CFO reports to Ellen the CEO</code>.</p>
 <p>But here is the twist: our API receives a list of <code>employee -&gt; manager</code> links, in any order:</p>
-<pre><code>Jane -&gt; Ellen
+<pre><code class="language-text">Jane -&gt; Ellen
 Angela -&gt; Ellen
 Zoe -&gt; Jane
 Zoe -&gt; Angela
@@ -201,7 +201,7 @@ Miranda -&gt; Angela
 </blockquote>
 <p>That's a mouthful but it's not too hard.</p>
 <p>A useful command line utility that's already on your (Unix) machine is <code>tsort</code>, which takes a list of edges as input, and outputs a topological sort. Here is the input in a text file (<code>people.txt</code>):</p>
-<pre><code>Jane Ellen
+<pre><code class="language-text">Jane Ellen
 Angela Ellen
 Zoe Jane
 Zoe Angela
@@ -249,7 +249,7 @@ Zoe
 <p>We'll use an <a href="https://en.wikipedia.org/wiki/Adjacency_matrix">adjacency matrix</a>, because it's simple conceptually, maps well to Kahn's algorithm, and can be optimized if needed.</p>
 <p>It's just a 2D square table of size <code>n x n</code> (where <code>n</code> is the number of nodes), where the cell at row <code>i</code> and column <code>j</code> is 1 if there is an edge from the node <code>i</code> to the node <code>j</code>, and otherwise, <code>0</code>.</p>
 <p>The order of the nodes is arbitrary, I'll use the alphabetical order because again, it's simple to do:</p>
-<pre><code>Angela
+<pre><code class="language-text">Angela
 Bella
 Ellen
 Jane
@@ -291,7 +291,7 @@ But note that this adjacency matrix is a concept, it shows what information is p
 </h2>
 <p><a href="https://en.wikipedia.org/wiki/Topological_sorting#Kahn&#x27;s_algorithm">Kahn's algorithm</a> keeps track of nodes with no incoming edge, and mutates the graph (in our case the adjacency matrix), by removing one edge at a time, until there are no more edges, and builds a list of nodes in the right order, which is the output.</p>
 <p>Here's the pseudo-code:</p>
-<pre><code>L ← Empty list that will contain the sorted elements
+<pre><code class="language-text">L ← Empty list that will contain the sorted elements
 S ← Set of all nodes with no incoming edge
 
 while S is not empty do

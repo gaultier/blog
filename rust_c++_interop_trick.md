@@ -102,6 +102,7 @@ pub struct UserC {
     pub uuid: [u8; 16],
 }
 ```
+
 Note that the fields can be named differently from the C++ fields if you so choose.
 
 Also note that `std::string` is represented here by an opaque array of 32 bytes. That's because on my machine, with the standard library I have, `sizeof(std::string)` is 32. That is *not* guaranteed by the standard, so this makes it very much not portable. We'll go over some options to work-around this at the end. I wanted to include a standard library type to show that it does not prevent the class from being a 'standard layout class', but that is also creates challenges.
@@ -308,7 +309,7 @@ int main() {
 
 We re-build, re-run, and lo and behold, the Rust implementation now prints the name:
 
-```
+```text
 alice (69b7c41491ccfbd28c269ea4091652d) says: hello, world!
 Comment count: 1
 alice ([69, b7, c4, 14, 9, 1c, cf, bd, 28, c2, 69, ea, 40, 91, 65, 2d]) says: hello, world!

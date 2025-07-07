@@ -87,7 +87,7 @@ The catch is that this file contains multiple tokens for various authentication 
 
 So we need to parse a little bit. It's basically what `libXau` does. From its docs:
 
-```
+```text
 The .Xauthority file is a binary file consisting of a sequence of entries
 in the following format:
 	2 bytes		Family value (second byte is as in protocol HOST)

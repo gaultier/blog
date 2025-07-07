@@ -329,7 +329,7 @@ rule:
         regex: &quot;(M|m)utex&quot;
 </code></pre>
 <p>Here are the results of this rule (excerpt):</p>
-<pre><code>note[find-mtx-fields]: Mutex fields found
+<pre><code class="language-text">note[find-mtx-fields]: Mutex fields found
     ┌─ runtime/malloc.h:430:2
     │
 430 │     Mutex   specialLock;    // guards specials list
@@ -358,7 +358,7 @@ rule:
         regex: &quot;(M|m)utex&quot;
 </code></pre>
 <p>And here are the results (excerpt):</p>
-<pre><code>note[find-mtx-fields-vars]: Mutex variables found
+<pre><code class="language-text">note[find-mtx-fields-vars]: Mutex variables found
    ┌─ runtime/panic.c:18:1
    │
 18 │ static Mutex paniclk;

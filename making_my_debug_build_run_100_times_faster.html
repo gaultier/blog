@@ -307,7 +307,7 @@ int main(int argc, char *argv[]) {
 </li>
 <li>
 <p>The main loop operating on the 64 bytes chunk is unrolled, which avoids having conditionals in the middle of the loop, which might tank performance due to mispredicted branches. The algorithm lends itself to that really well:</p>
-<pre><code>  for i from 0 to 79
+<pre><code class="language-text">  for i from 0 to 79
           if 0 ≤ i ≤ 19 then
             [..]
           else if 20 ≤ i ≤ 39
@@ -612,8 +612,11 @@ Benchmark 1: ./a.out ./NetBSD-9.4-amd64.iso ~/Downloads/NetBSD-9.4-amd64.iso.tor
 </h3>
 <p>I really am a SIMD beginner but I found a few interesting nuggets of wisdom here:</p>
 <ul>
-<li>Just like the SIMD-less implementation, the loops are unrolled</li>
-<li>Going from little-endian to big-endian (or back) is done with a SIMD shuffle. The way it works is by providing a bit mask that indicates which bits to copy from the source to the destination, and where to place them:
+<li>
+<p>Just like the SIMD-less implementation, the loops are unrolled</p>
+</li>
+<li>
+<p>Going from little-endian to big-endian (or back) is done with a SIMD shuffle. The way it works is by providing a bit mask that indicates which bits to copy from the source to the destination, and where to place them:</p>
 <pre><code class="language-c">  // `0x1b` == `0b0001_1011`.
   // Will result in:
   // [31:0] == [127:96] (due to bits [1:0] being `11`).
@@ -623,8 +626,11 @@ Benchmark 1: ./a.out ./NetBSD-9.4-amd64.iso ~/Downloads/NetBSD-9.4-amd64.iso.tor
   // I.e.: Transform state to big-endian.
   ABCD = _mm_shuffle_epi32(ABCD, 0x1B);
 </code></pre>
-It's nifty because we can copy the data in and out of SIMD registers, while also doing the endianness conversion, in one operation that typically compiles down to one assembly instruction. And this approach also works from a SIMD register to another SIMD register or inside the same register.</li>
-<li>Typical SIMD code processes the data in groups of N bytes at a time, and the few excess bytes at the end use the normal SIMD-less code path. Here, we have to deal with an additional grouping: SHA1 processes data in chunks of 64 bytes and the last chunk is padded to be 64 bytes if it is too short. Hence, for the last short chunk we use the SIMD-less code path. We could try to be clever about doing the padding, and re-using the SIMD code path for this last chunk, since 64 bytes is a nice round number that is SIMD friendly, but this last chunk is not going to really make a difference in practice when we are dealing with megabytes or gigabytes of data.</li>
+<p>It's nifty because we can copy the data in and out of SIMD registers, while also doing the endianness conversion, in one operation that typically compiles down to one assembly instruction. And this approach also works from a SIMD register to another SIMD register or inside the same register.</p>
+</li>
+<li>
+<p>Typical SIMD code processes the data in groups of N bytes at a time, and the few excess bytes at the end use the normal SIMD-less code path. Here, we have to deal with an additional grouping: SHA1 processes data in chunks of 64 bytes and the last chunk is padded to be 64 bytes if it is too short. Hence, for the last short chunk we use the SIMD-less code path. We could try to be clever about doing the padding, and re-using the SIMD code path for this last chunk, since 64 bytes is a nice round number that is SIMD friendly, but this last chunk is not going to really make a difference in practice when we are dealing with megabytes or gigabytes of data.</p>
+</li>
 </ul>
 <h3 id="121025924-the-code">
   <a class="title" href="#121025924-the-code">The code</a>
@@ -1023,7 +1029,7 @@ Benchmark 1: ./a.out ./NetBSD-9.4-amd64.iso ~/Downloads/NetBSD-9.4-amd64.iso.tor
 </li>
 <li>
 <p>What's a &quot;SHA computation&quot;? It's basically a recombination, or shuffling, of its input. For example, <code>sha1msg1</code> in pseudo-code does:</p>
-<pre><code>  W0 &lt;- SRC1[127:96] ;
+<pre><code class="language-text">  W0 &lt;- SRC1[127:96] ;
   W1 &lt;- SRC1[95:64] ;
   W2 &lt;- SRC1[63: 32] ;
   W3 &lt;- SRC1[31: 0] ;
@@ -1312,7 +1318,7 @@ Benchmark 1: ./a.out ./NetBSD-9.4-amd64.iso ~/Downloads/NetBSD-9.4-amd64.iso.tor
 <p>The version using the SHA extension performs very well, be it in debug + Address Sanitizer mode, or release mode.</p>
 <p>Also, in both versions, as the SHA1 code got much faster, we start to see on the CPU profile <code>mmap</code> show up, as confirmed by the <code>system time</code> part becoming a fifth of the whole runtime.</p>
 <p>That means that we are starting to be limited by I/O. Which is good!  Using <code>hdparm</code> to measure my disk performance, I get:</p>
-<pre><code> Timing buffered disk reads: 6518 MB in  3.00 seconds = 2171.34 MB/sec
+<pre><code class="language-text"> Timing buffered disk reads: 6518 MB in  3.00 seconds = 2171.34 MB/sec
 </code></pre>
 <p>Since our benchmark first warms up a few times, we know that the file data is in the cache, so <code>buffered disk reads</code> seems like a good metric to go by. Thus, our program performance is near the disk I/O limit for cached reads. Sounds pretty good to me!</p>
 <p>I tried to give the OS some hints to improve a bit on that front with <code>madvise(file_download_data, file_download_size, MADV_SEQUENTIAL | MADV_WILLNEED)</code>, but it did not have any impact on the timings.</p>

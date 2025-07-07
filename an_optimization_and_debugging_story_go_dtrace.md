@@ -277,7 +277,7 @@ The variable `uregs` is an array of user-space registers and the first one conta
 
 We see:
 
-```
+```text
 CPU     ID                    FUNCTION:NAME
   5  52085       sort.(*reverse).Len:return 1
 

@@ -26,7 +26,7 @@ fn decode_foo(input: &[u8]) -> Result<(&[u8], [u8; 33]), Error> {
 }
 ```
 
-```
+```text
 error[E0282]: type annotations needed
   --> src/main.rs:14:25
    |
@@ -50,7 +50,7 @@ So I tried to add type annotations the usual Rust way:
 
 Which leads to this nice error:
 
-```
+```text
 error: expected one of `)`, `,`, `@`, or `|`, found `:`
   --> src/main.rs:15:16
    |
@@ -169,7 +169,7 @@ By the way, here's a tip I heard some time ago: if you want to know the real typ
 
 And the compiler helpfully gives us the type:
 
-```
+```text
 error[E0271]: type mismatch resolving `<[u8; 33] as TryFrom<&[u8]>>::Error == bool`
   --> src/main.rs:11:28
    |

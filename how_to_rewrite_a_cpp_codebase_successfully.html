@@ -449,7 +449,7 @@ fn bar() {
 </code></pre>
 <p>If you're lucky, <code>cargo test</code> would fail at the last assertion saying that the value is not what we expected, but in my case it passed every time, and so the bug stayed undetected for a while. That's because we unknowingly introduced undefined behavior, and as such, how or if it manifests is impossible to tell.</p>
 <p>Let's run the test with Miri:</p>
-<pre><code>running 1 test
+<pre><code class="language-text">running 1 test
 test api::tests::bar ... error: Undefined Behavior: out-of-bounds pointer use: alloc195648 has been freed, so this pointer is dangling
     --&gt; src/tlv.rs:321:18
      |
@@ -543,7 +543,7 @@ if (foo.bar == nullptr) {
 free_foo(&amp;foo);
 </code></pre>
 <p>This is undefined behavior if the array is of size 1, since in that case the Rust allocator will free a pointer allocated by the C allocator, and address sanitizer catches it:</p>
-<pre><code>SUMMARY: AddressSanitizer: alloc-dealloc-mismatch /home/runner/work/llvm-project/llvm-project/final/llvm-project/compiler-rt/lib/asan/asan_malloc_linux.cpp:52:3 in free
+<pre><code class="language-text">SUMMARY: AddressSanitizer: alloc-dealloc-mismatch /home/runner/work/llvm-project/llvm-project/final/llvm-project/compiler-rt/lib/asan/asan_malloc_linux.cpp:52:3 in free
 </code></pre>
 <p>However, it is only detected with sanitizers on and if a test (or fuzzing) triggers this case. Or by Miri if a Rust test covers this function.</p>
 <hr />

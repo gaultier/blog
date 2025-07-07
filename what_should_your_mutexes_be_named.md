@@ -251,7 +251,7 @@ rule:
 
 Here are the results of this rule (excerpt):
 
-```
+```text
 note[find-mtx-fields]: Mutex fields found
     ┌─ runtime/malloc.h:430:2
     │
@@ -287,7 +287,7 @@ rule:
 
 And here are the results (excerpt):
 
-```
+```text
 note[find-mtx-fields-vars]: Mutex variables found
    ┌─ runtime/panic.c:18:1
    │

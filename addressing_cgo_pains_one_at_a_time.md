@@ -12,7 +12,7 @@ Also, Cgo has many weird limitations and surprises. Fortunately, over the two ye
 
 Let's create a sample app:
 
-```
+```text
 .
 ├── app
 │   └── app.go
@@ -25,6 +25,7 @@ Let's create a sample app:
 ├── go.mod
 └── main.go
 ```
+
 The C code is in the `c` directory, we build a static library `libapi.a` from it. The public header file is `api.h`.
 
 The Go code then links this library.
@@ -1076,7 +1077,7 @@ func main() {
 
 `go.mod:`
 
-```
+```go
 module cgo
 
 go 1.23.1

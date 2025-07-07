@@ -163,7 +163,7 @@ int main(int argc, char *argv[]) {
 - The SHA1 algorithm and some implementations support architectures where 1 byte is *not* 8 bits. But knowing that 1 byte *is indeed* 8 bits on our architecture unlocks a ton of performance as we'll see.
 - SHA1 expects data in big-endian but nearly all CPU nowadays are little-endian so we need to swap the bytes when loading the input data to do SHA1 computations, and back when storing the intermediate results (the SHA1 state). It is done here with lots of clever bit tricks, one `uint32_t` at a time.
 - The main loop operating on the 64 bytes chunk is unrolled, which avoids having conditionals in the middle of the loop, which might tank performance due to mispredicted branches. The algorithm lends itself to that really well:
-  ```
+  ```text
     for i from 0 to 79
             if 0 ≤ i ≤ 19 then
               [..]
@@ -174,6 +174,7 @@ int main(int argc, char *argv[]) {
             else if 60 ≤ i ≤ 79
               [..]
   ```
+
   So it's trivial to unroll each section. We'll see that every implementation does the unrolling.
 
 ### The code
@@ -480,6 +481,7 @@ I really am a SIMD beginner but I found a few interesting nuggets of wisdom here
       // I.e.: Transform state to big-endian.
       ABCD = _mm_shuffle_epi32(ABCD, 0x1B);
     ```
+
     It's nifty because we can copy the data in and out of SIMD registers, while also doing the endianness conversion, in one operation that typically compiles down to one assembly instruction. And this approach also works from a SIMD register to another SIMD register or inside the same register.
 - Typical SIMD code processes the data in groups of N bytes at a time, and the few excess bytes at the end use the normal SIMD-less code path. Here, we have to deal with an additional grouping: SHA1 processes data in chunks of 64 bytes and the last chunk is padded to be 64 bytes if it is too short. Hence, for the last short chunk we use the SIMD-less code path. We could try to be clever about doing the padding, and re-using the SIMD code path for this last chunk, since 64 bytes is a nice round number that is SIMD friendly, but this last chunk is not going to really make a difference in practice when we are dealing with megabytes or gigabytes of data.
 
@@ -881,7 +883,7 @@ The implementation is a pure work of art, and comes from this [Github repository
 
   Thus we alternate between SHA1 computations with `sha1msg1/sha1msg2`, and state calculations with `sha1rnds4/sha1nexte`, always 4 `uint32_t` at a time.
 - What's a "SHA computation"? It's basically a recombination, or shuffling, of its input. For example, `sha1msg1` in pseudo-code does:
-  ```
+  ```text
     W0 <- SRC1[127:96] ;
     W1 <- SRC1[95:64] ;
     W2 <- SRC1[63: 32] ;
@@ -893,6 +895,7 @@ The implementation is a pure work of art, and comes from this [Github repository
     DEST[63:32] <- W4 XOR W2;
     DEST[31:0] <- W5 XOR W3;
   ```
+
   The first 16 rounds, we do that on the input data (i.e. the download file). But for the remaining rounds (SHA1 does 80 rounds for a 64 byte chunk), the input is computations from previous rounds.
   `sha1msg2` does slightly different computations but still very similar.
 
@@ -1193,7 +1196,7 @@ Also, in both versions, as the SHA1 code got much faster, we start to see on the
 
 That means that we are starting to be limited by I/O. Which is good!  Using `hdparm` to measure my disk performance, I get:
 
-```
+```text
  Timing buffered disk reads: 6518 MB in  3.00 seconds = 2171.34 MB/sec
 ```
 

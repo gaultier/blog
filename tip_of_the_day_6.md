@@ -43,7 +43,7 @@ So all slices of bytes have their length between `512` and `640` in this case, a
 
 Alternatively, we can point `bpftrace` at the Go function instead of the C function:
 
-```
+```go
 func (c Cache) Insert(ctx context.Context, key [32]byte, value []byte, expiryDate time.Time) error { [...] }
 ```
 

@@ -101,7 +101,7 @@ Do not edit it by hand.
     Ok((right, value))
 }
 </code></pre>
-<pre><code>error[E0282]: type annotations needed
+<pre><code class="language-text">error[E0282]: type annotations needed
   --&gt; src/main.rs:14:25
    |
 14 |             let err_s = err.to_string();
@@ -117,7 +117,7 @@ Do not edit it by hand.
         }
 </code></pre>
 <p>Which leads to this nice error:</p>
-<pre><code>error: expected one of `)`, `,`, `@`, or `|`, found `:`
+<pre><code class="language-text">error: expected one of `)`, `,`, `@`, or `|`, found `:`
   --&gt; src/main.rs:15:16
    |
 15 |         Err(err: TryFromSliceError) =&gt; {
@@ -195,7 +195,7 @@ Do not edit it by hand.
         }
 </code></pre>
 <p>And the compiler helpfully gives us the type:</p>
-<pre><code>error[E0271]: type mismatch resolving `&lt;[u8; 33] as TryFrom&lt;&amp;[u8]&gt;&gt;::Error == bool`
+<pre><code class="language-text">error[E0271]: type mismatch resolving `&lt;[u8; 33] as TryFrom&lt;&amp;[u8]&gt;&gt;::Error == bool`
   --&gt; src/main.rs:11:28
    |
 11 |     let value = match left.try_into() {

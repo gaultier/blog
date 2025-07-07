@@ -2,7 +2,7 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
 <title>Philippe Gaultier's blog</title>
 <link href="https://gaultier.github.io/blog"/>
-<updated>2025-07-07T16:09:20+02:00</updated>
+<updated>2025-07-07T16:12:56+02:00</updated>
 <author>
 <name>Philippe Gaultier</name>
 </author>
@@ -68,7 +68,7 @@
 <title>Roll your own memory profiling: it&#39;s actually not hard</title>
 <link href="https://gaultier.github.io/blog/roll_your_own_memory_profiling.html"/>
 <id>urn:uuid:5344c109-864c-5db2-97a9-24834e053169</id>
-<updated>2025-03-19T09:37:14+01:00</updated>
+<updated>2025-07-07T16:12:56+02:00</updated>
 <published>2023-11-23T11:26:11+01:00</published>
 </entry>
 
@@ -284,7 +284,7 @@
 <title>An optimization and debugging story with Go and DTrace</title>
 <link href="https://gaultier.github.io/blog/an_optimization_and_debugging_story_go_dtrace.html"/>
 <id>urn:uuid:f88592d4-3a30-5f83-aea7-ec456edbc848</id>
-<updated>2025-07-07T16:09:20+02:00</updated>
+<updated>2025-07-07T16:12:56+02:00</updated>
 <published>2025-07-01T19:20:47+02:00</published>
 </entry>
 </feed>

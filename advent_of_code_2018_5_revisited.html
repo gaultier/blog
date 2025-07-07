@@ -141,7 +141,7 @@ It means we want to remove adjacent characters which are the same letter and hav
 <p><code>next</code> is always incremented by one in each loop iteration, that's the easy one.</p>
 <p><code>current</code> is always pointing to a character before <code>current</code>, but not always directly adjacent, because there may be tombstones, i.e. zeroes, in-between.</p>
 <p>In pseudo-code:</p>
-<pre><code>remaining_count = len(input)
+<pre><code class="language-text">remaining_count = len(input)
 end = input + len(input)
 current = &amp;input[0]
 next = &amp;input[1]

@@ -87,7 +87,7 @@ I assume the git remote URL is a `ssh` URL here, again it's easy to tweak to als
 
 Since I am mainly using Azure DevOps (ADO) and Github at the moment this is what I'll show. In ADO, the git remote URL looks like this:
 
-```
+```text
 git@ssh.<hostname>:v3/<organization>/<directory>/<project>
 ```
 
@@ -99,13 +99,13 @@ https://<hostname>/<organization>/<directory>/_git/<project>?<params>
 
 In Github, the git remote URL looks like this:
 
-```
+```text
 git@github.com:<username>/<project>.git
 ```
 
 And the final URL looks like this:
 
-```
+```text
 https://github.com/<username>/<project>/blob/<commit_id>/<file_path>?<params>
 ```
 

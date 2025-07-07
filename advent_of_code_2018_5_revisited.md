@@ -39,7 +39,7 @@ We maintain two pointers, `current` and `next`, which we compare to decide wheth
 
 In pseudo-code:
 
-```
+```text
 remaining_count = len(input)
 end = input + len(input)
 current = &input[0]

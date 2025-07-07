@@ -135,7 +135,7 @@ Do not edit it by hand.
 <p>Also, Cgo has many weird limitations and surprises. Fortunately, over the two years or so I have been working in this project, I have (re-)discovered solutions for most of these issues. Let's go through them, and hopefully the next time you use Cgo, you'll have a smooth experience.</p>
 <p><em>From Go's perspective, Rust is invisible, the C library looks like a pure C library (and indeed it used to be 100% C++ before it got incrementally rewritten to Rust). So I will use C snippets in this article, because that's what the public C header of the library looks like, and not everybody knows Rust, but most people know a C-like language. But worry not, I will still talk at lengths about Rust in the last section.</em></p>
 <p>Let's create a sample app:</p>
-<pre><code>.
+<pre><code class="language-text">.
 ├── app
 │   └── app.go
 ├── c
@@ -995,7 +995,7 @@ func main() {
 }
 </code></pre>
 <p><code>go.mod:</code></p>
-<pre><code>module cgo
+<pre><code class="language-go">module cgo
 
 go 1.23.1
 </code></pre>

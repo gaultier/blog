@@ -140,7 +140,7 @@ Executed in  108.38 millis    fish           external
 
 The output looks like this (I annotated each part along with the commit number):
 
-```
+```text
 2024-11-05T15:43:44+01:00                                                            | [1] A commit starts with the date.
                                                                                      | [1] Empty line
 M       how_to_rewrite_a_cpp_codebase_successfully.md                                | [1] A list of files affected by this commit.

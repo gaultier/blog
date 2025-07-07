@@ -39,7 +39,7 @@ In no particular order:
 - Some features you are not using are enabled by default. Be explicit instead of relying on obscure, ever changing defaults. Example: `CGO_ENABLED=0 go build ...` because it is (at the time of writing) enabled by default. The Gradle build system also has the annoying habit to run stuff behind your back. Use `gradle foo -x baz` to run `foo` and not `baz`.
 - Don't run tests from your dependencies. This can happen if you are using git submodules or vendoring dependencies in some way. You generally always want to build them, but not run their tests. Again, `gradle` is the culprit here. If you are storing your git submodules in a `submodules/` directory for example, you can run only your project tests with: `gradle test -x submodules:test`.
 - Disable the generation of reports files. They frequently come in the form of HTML or XML form, and once again, `gradle` gets out of his way to clutter your filesystem with those. Of debatable usefulness locally, they are downright wasteful in CI. And it takes some precious time, too! Disable it with: 
-    ```
+    ```kotlin
      tasks.withType<Test> {
          useJUnitPlatform()
          reports.html.isEnabled = false
@@ -50,10 +50,11 @@ In no particular order:
 - Don't build the static and dynamic variants of the same library (in C or C++). You probably only want one, preferably the static one. Otherwise, you are doing twice the work!
 - Fetch statically built binaries instead of building them from source. Go, and sometimes Rust, are great for this. As long as the OS and the architecture are the same, of course. E.g.: you can simply fetch `kubectl` which is a Go static binary instead of installing lots of Kubernetes packages, if you simply need to talk to a Kubernetes cluster. Naturally, the same goes for single file, dependency-less script: shell, awk, python, lua, perl, and ruby, assuming the interpreter is the right one. But this case is rarer and you might as well vendor the script at this point.
 - Groom your 'ignore' files. `.gitignore` is the mainstream one, but were you aware Docker has the mechanism in the form of a `.dockerignore` file? My advice: whitelist the files you need, e.g.:
-    ```
+    ```text
     **/*
     !**/*.js
     ```
+
   This can have a huge impact on performance since Docker will copy all the files inside the Docker context directory inside the container (or virtual machine on macOS) and it can be a lot. You don't want to copy build artifacts, images, and so on each time which your image does not need.
 - Use an empty Docker context if possible: you sometimes want to build an image which does not need any local files. In that case you can completely bypass copying any files into the image with the command: `docker build . -f - < Dockerfile`.
 - Don't update the package manager cache: you typically need to start your Dockerfile by updating the package manager cache, otherwise it will complain the dependencies you want to install are not found. E.g.: `RUN apk update && apk add curl`. But did you know it is not always required? You can simply do: `RUN apk --no-cache add curl` when you know the package exists and you can bypass the cache.
@@ -63,13 +64,16 @@ In no particular order:
 ## Miscellenaous tricks
 
 - Use `sed` to quickly edit big files in place. E.g.: you want to insert a line at the top of a Javascript file to skip linter warnings. Instead of doing: 
+    ```sh
+    $ printf '/* eslint-disable */\n\n' | cat - foo.js > foo_tmp && mv foo_tmp foo.js
     ```
-    printf '/* eslint-disable */\n\n' | cat - foo.js > foo_tmp && mv foo_tmp foo.js
-    ```
+
     which involves reading the whole file, copying it, and renaming it, we can do: 
+
+    ```sh
+    $ sed -i '1s#^#/* eslint-disable */ #' foo.js
     ```
-    sed -i '1s#^#/* eslint-disable */ #' foo.js
-    ```
+
     which is simpler.
 - Favor static linking and LTO. This will simplify much of your pipeline because you'll have to deal with fewer files, ideally one statically built executable.
 - Use only one Gitlab CI job. That is because the startup time of a job is very high, in the order of minutes. You can achieve task parallelism with other means such as `parallel` or `make -j`.

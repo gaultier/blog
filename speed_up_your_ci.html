@@ -139,46 +139,78 @@ Do not edit it by hand.
   <a class="hash-anchor" href="#1630662642-be-lazy-don-t-do-things-you-don-t-need-to-do" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <ul>
-<li>Some features you are not using are enabled by default. Be explicit instead of relying on obscure, ever changing defaults. Example: <code>CGO_ENABLED=0 go build ...</code> because it is (at the time of writing) enabled by default. The Gradle build system also has the annoying habit to run stuff behind your back. Use <code>gradle foo -x baz</code> to run <code>foo</code> and not <code>baz</code>.</li>
-<li>Don't run tests from your dependencies. This can happen if you are using git submodules or vendoring dependencies in some way. You generally always want to build them, but not run their tests. Again, <code>gradle</code> is the culprit here. If you are storing your git submodules in a <code>submodules/</code> directory for example, you can run only your project tests with: <code>gradle test -x submodules:test</code>.</li>
-<li>Disable the generation of reports files. They frequently come in the form of HTML or XML form, and once again, <code>gradle</code> gets out of his way to clutter your filesystem with those. Of debatable usefulness locally, they are downright wasteful in CI. And it takes some precious time, too! Disable it with:
-<pre><code> tasks.withType&lt;Test&gt; {
+<li>
+<p>Some features you are not using are enabled by default. Be explicit instead of relying on obscure, ever changing defaults. Example: <code>CGO_ENABLED=0 go build ...</code> because it is (at the time of writing) enabled by default. The Gradle build system also has the annoying habit to run stuff behind your back. Use <code>gradle foo -x baz</code> to run <code>foo</code> and not <code>baz</code>.</p>
+</li>
+<li>
+<p>Don't run tests from your dependencies. This can happen if you are using git submodules or vendoring dependencies in some way. You generally always want to build them, but not run their tests. Again, <code>gradle</code> is the culprit here. If you are storing your git submodules in a <code>submodules/</code> directory for example, you can run only your project tests with: <code>gradle test -x submodules:test</code>.</p>
+</li>
+<li>
+<p>Disable the generation of reports files. They frequently come in the form of HTML or XML form, and once again, <code>gradle</code> gets out of his way to clutter your filesystem with those. Of debatable usefulness locally, they are downright wasteful in CI. And it takes some precious time, too! Disable it with:</p>
+<pre><code class="language-kotlin"> tasks.withType&lt;Test&gt; {
      useJUnitPlatform()
      reports.html.isEnabled = false
      reports.junitXml.isEnabled = false
  }
 </code></pre>
 </li>
-<li>Check alternative repositories for a dependency instead of building it from source. It can happen that a certain dependency you need is not in the main repositories of the package manager of your system. You can however inspect other repositories before falling back to building it yourself. On Alpine, you can simply add the URL of the repository to <code>/etc/apk/repositories</code>. For example, in the main Alpine Docker image, the repository <code>https://&lt;mirror-server&gt;/alpine/edge/testing</code> is not enabled. More information <a href="https://wiki.alpinelinux.org/wiki/Enable_Community_Repository">here</a>. Other example: on OpenBSD or FreeBSD, you can opt-in to use the <code>current</code> branch to get the newest and latest changes, and along them the newest dependencies.</li>
-<li>Don't build the static and dynamic variants of the same library (in C or C++). You probably only want one, preferably the static one. Otherwise, you are doing twice the work!</li>
-<li>Fetch statically built binaries instead of building them from source. Go, and sometimes Rust, are great for this. As long as the OS and the architecture are the same, of course. E.g.: you can simply fetch <code>kubectl</code> which is a Go static binary instead of installing lots of Kubernetes packages, if you simply need to talk to a Kubernetes cluster. Naturally, the same goes for single file, dependency-less script: shell, awk, python, lua, perl, and ruby, assuming the interpreter is the right one. But this case is rarer and you might as well vendor the script at this point.</li>
-<li>Groom your 'ignore' files. <code>.gitignore</code> is the mainstream one, but were you aware Docker has the mechanism in the form of a <code>.dockerignore</code> file? My advice: whitelist the files you need, e.g.:
-<pre><code>**/*
+<li>
+<p>Check alternative repositories for a dependency instead of building it from source. It can happen that a certain dependency you need is not in the main repositories of the package manager of your system. You can however inspect other repositories before falling back to building it yourself. On Alpine, you can simply add the URL of the repository to <code>/etc/apk/repositories</code>. For example, in the main Alpine Docker image, the repository <code>https://&lt;mirror-server&gt;/alpine/edge/testing</code> is not enabled. More information <a href="https://wiki.alpinelinux.org/wiki/Enable_Community_Repository">here</a>. Other example: on OpenBSD or FreeBSD, you can opt-in to use the <code>current</code> branch to get the newest and latest changes, and along them the newest dependencies.</p>
+</li>
+<li>
+<p>Don't build the static and dynamic variants of the same library (in C or C++). You probably only want one, preferably the static one. Otherwise, you are doing twice the work!</p>
+</li>
+<li>
+<p>Fetch statically built binaries instead of building them from source. Go, and sometimes Rust, are great for this. As long as the OS and the architecture are the same, of course. E.g.: you can simply fetch <code>kubectl</code> which is a Go static binary instead of installing lots of Kubernetes packages, if you simply need to talk to a Kubernetes cluster. Naturally, the same goes for single file, dependency-less script: shell, awk, python, lua, perl, and ruby, assuming the interpreter is the right one. But this case is rarer and you might as well vendor the script at this point.</p>
+</li>
+<li>
+<p>Groom your 'ignore' files. <code>.gitignore</code> is the mainstream one, but were you aware Docker has the mechanism in the form of a <code>.dockerignore</code> file? My advice: whitelist the files you need, e.g.:</p>
+<pre><code class="language-text">**/*
 !**/*.js
 </code></pre>
-This can have a huge impact on performance since Docker will copy all the files inside the Docker context directory inside the container (or virtual machine on macOS) and it can be a lot. You don't want to copy build artifacts, images, and so on each time which your image does not need.</li>
-<li>Use an empty Docker context if possible: you sometimes want to build an image which does not need any local files. In that case you can completely bypass copying any files into the image with the command: <code>docker build . -f - &lt; Dockerfile</code>.</li>
-<li>Don't update the package manager cache: you typically need to start your Dockerfile by updating the package manager cache, otherwise it will complain the dependencies you want to install are not found. E.g.: <code>RUN apk update &amp;&amp; apk add curl</code>. But did you know it is not always required? You can simply do: <code>RUN apk --no-cache add curl</code> when you know the package exists and you can bypass the cache.</li>
-<li>Silence the tools: most command line applications accept the <code>-q</code> flag which reduces their verbosity. Most of their output is likely to be useless, some CI systems will struggle storing big pipeline logs, and you might be bottlenecked on stdout! Also, it will simplify troubleshooting <em>your</em> build if it is not swamped in thousands of unrelated logs.</li>
+<p>This can have a huge impact on performance since Docker will copy all the files inside the Docker context directory inside the container (or virtual machine on macOS) and it can be a lot. You don't want to copy build artifacts, images, and so on each time which your image does not need.</p>
+</li>
+<li>
+<p>Use an empty Docker context if possible: you sometimes want to build an image which does not need any local files. In that case you can completely bypass copying any files into the image with the command: <code>docker build . -f - &lt; Dockerfile</code>.</p>
+</li>
+<li>
+<p>Don't update the package manager cache: you typically need to start your Dockerfile by updating the package manager cache, otherwise it will complain the dependencies you want to install are not found. E.g.: <code>RUN apk update &amp;&amp; apk add curl</code>. But did you know it is not always required? You can simply do: <code>RUN apk --no-cache add curl</code> when you know the package exists and you can bypass the cache.</p>
+</li>
+<li>
+<p>Silence the tools: most command line applications accept the <code>-q</code> flag which reduces their verbosity. Most of their output is likely to be useless, some CI systems will struggle storing big pipeline logs, and you might be bottlenecked on stdout! Also, it will simplify troubleshooting <em>your</em> build if it is not swamped in thousands of unrelated logs.</p>
+</li>
 </ul>
 <h2 id="618219166-miscellenaous-tricks">
   <a class="title" href="#618219166-miscellenaous-tricks">Miscellenaous tricks</a>
   <a class="hash-anchor" href="#618219166-miscellenaous-tricks" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <ul>
-<li>Use <code>sed</code> to quickly edit big files in place. E.g.: you want to insert a line at the top of a Javascript file to skip linter warnings. Instead of doing:
-<pre><code>printf '/* eslint-disable */\n\n' | cat - foo.js &gt; foo_tmp &amp;&amp; mv foo_tmp foo.js
+<li>
+<p>Use <code>sed</code> to quickly edit big files in place. E.g.: you want to insert a line at the top of a Javascript file to skip linter warnings. Instead of doing:</p>
+<pre><code class="language-sh">$ printf '/* eslint-disable */\n\n' | cat - foo.js &gt; foo_tmp &amp;&amp; mv foo_tmp foo.js
 </code></pre>
-which involves reading the whole file, copying it, and renaming it, we can do:
-<pre><code>sed -i '1s#^#/* eslint-disable */ #' foo.js
+<p>which involves reading the whole file, copying it, and renaming it, we can do:</p>
+<pre><code class="language-sh">$ sed -i '1s#^#/* eslint-disable */ #' foo.js
 </code></pre>
-which is simpler.</li>
-<li>Favor static linking and LTO. This will simplify much of your pipeline because you'll have to deal with fewer files, ideally one statically built executable.</li>
-<li>Use only one Gitlab CI job. That is because the startup time of a job is very high, in the order of minutes. You can achieve task parallelism with other means such as <code>parallel</code> or <code>make -j</code>.</li>
-<li>Parallelize all the things! Some tools do not run tasks in parallel by default, e.g. <code>make</code> and <code>gradle</code>. Make sure you are always using a CI instance with multiple cores and are passing <code>--parallel</code> to Gradle and <code>-j$(nproc)</code> to make. In rare instances you might have to tweak the exact level of parallelism to your particular task for maximum performance. Also, <code>parallel</code> is great for parallelizing tasks.</li>
-<li>Avoid network accesses: you should minimize the amount of things you are downloading from external sources in your CI because it is both slow and a source of flakiness. Some tools will unfortunately always try to 'call home' even if all of your dependencies are present. You should disable this behavior explicitly, e.g. with Gradle: <code>gradle build --offline</code>.</li>
-<li>In some rare cases, you will be bottlenecked on a slow running script. Consider using a faster interpreter: for shell scripts, there is <code>ash</code> and <code>dash</code> which are said to be much faster than <code>bash</code>. For <code>awk</code> there is <code>gawk</code> and <code>mawk</code>. For Lua there is <code>LuaJIT</code>.</li>
-<li>Avoid building inside Docker if you can. Building locally, and then copying the artifacts into the image, is always faster. It only works under certain constraints, of course:
+<p>which is simpler.</p>
+</li>
+<li>
+<p>Favor static linking and LTO. This will simplify much of your pipeline because you'll have to deal with fewer files, ideally one statically built executable.</p>
+</li>
+<li>
+<p>Use only one Gitlab CI job. That is because the startup time of a job is very high, in the order of minutes. You can achieve task parallelism with other means such as <code>parallel</code> or <code>make -j</code>.</p>
+</li>
+<li>
+<p>Parallelize all the things! Some tools do not run tasks in parallel by default, e.g. <code>make</code> and <code>gradle</code>. Make sure you are always using a CI instance with multiple cores and are passing <code>--parallel</code> to Gradle and <code>-j$(nproc)</code> to make. In rare instances you might have to tweak the exact level of parallelism to your particular task for maximum performance. Also, <code>parallel</code> is great for parallelizing tasks.</p>
+</li>
+<li>
+<p>Avoid network accesses: you should minimize the amount of things you are downloading from external sources in your CI because it is both slow and a source of flakiness. Some tools will unfortunately always try to 'call home' even if all of your dependencies are present. You should disable this behavior explicitly, e.g. with Gradle: <code>gradle build --offline</code>.</p>
+</li>
+<li>
+<p>In some rare cases, you will be bottlenecked on a slow running script. Consider using a faster interpreter: for shell scripts, there is <code>ash</code> and <code>dash</code> which are said to be much faster than <code>bash</code>. For <code>awk</code> there is <code>gawk</code> and <code>mawk</code>. For Lua there is <code>LuaJIT</code>.</p>
+</li>
+<li>
+<p>Avoid building inside Docker if you can. Building locally, and then copying the artifacts into the image, is always faster. It only works under certain constraints, of course:</p>
 <ul>
 <li>same OS and architecture, or</li>
 <li>a portable artifact format such as <code>jar</code>, and not using native dependencies, or</li>

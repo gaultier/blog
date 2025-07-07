@@ -141,16 +141,16 @@ In the past, I just used the current branch name, however since this is a moving
 <p>Now, we can craft the URL by first extracting the interesting parts of the git remote URL and then tacking on at the end all the URL parameters precising the location.
 I assume the git remote URL is a <code>ssh</code> URL here, again it's easy to tweak to also handle <code>https</code> URL. Also note that this is the part that's hosting provider specific.</p>
 <p>Since I am mainly using Azure DevOps (ADO) and Github at the moment this is what I'll show. In ADO, the git remote URL looks like this:</p>
-<pre><code>git@ssh.&lt;hostname&gt;:v3/&lt;organization&gt;/&lt;directory&gt;/&lt;project&gt;
+<pre><code class="language-text">git@ssh.&lt;hostname&gt;:v3/&lt;organization&gt;/&lt;directory&gt;/&lt;project&gt;
 </code></pre>
 <p>And the final URL looks like:</p>
 <pre><code class="language-lua">https://&lt;hostname&gt;/&lt;organization&gt;/&lt;directory&gt;/_git/&lt;project&gt;?&lt;params&gt;
 </code></pre>
 <p>In Github, the git remote URL looks like this:</p>
-<pre><code>git@github.com:&lt;username&gt;/&lt;project&gt;.git
+<pre><code class="language-text">git@github.com:&lt;username&gt;/&lt;project&gt;.git
 </code></pre>
 <p>And the final URL looks like this:</p>
-<pre><code>https://github.com/&lt;username&gt;/&lt;project&gt;/blob/&lt;commit_id&gt;/&lt;file_path&gt;?&lt;params&gt;
+<pre><code class="language-text">https://github.com/&lt;username&gt;/&lt;project&gt;/blob/&lt;commit_id&gt;/&lt;file_path&gt;?&lt;params&gt;
 </code></pre>
 <p>We inspect the git remote url to know in which case we are:</p>
 <pre><code class="language-lua">  local url = ''

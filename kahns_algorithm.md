@@ -20,7 +20,7 @@ An arrow (or 'edge') between two nodes means `<source> reports to <destination>`
 
  But here is the twist: our API receives a list of `employee -> manager` links, in any order:
 
- ```
+ ```text
 Jane -> Ellen
 Angela -> Ellen
 Zoe -> Jane
@@ -88,7 +88,7 @@ That's a mouthful but it's not too hard.
 
 A useful command line utility that's already on your (Unix) machine is `tsort`, which takes a list of edges as input, and outputs a topological sort. Here is the input in a text file (`people.txt`):
 
-```
+```text
 Jane Ellen
 Angela Ellen
 Zoe Jane
@@ -149,7 +149,7 @@ It's just a 2D square table of size `n x n` (where `n` is the number of nodes), 
 
 The order of the nodes is arbitrary, I'll use the alphabetical order because again, it's simple to do:
 
-```
+```text
 Angela
 Bella
 Ellen
@@ -202,7 +202,7 @@ Alright, now that we know how our graph is represented, on to the algorithm.
 
 Here's the pseudo-code:
 
-```
+```text
 L ← Empty list that will contain the sorted elements
 S ← Set of all nodes with no incoming edge
 

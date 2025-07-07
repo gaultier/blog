@@ -36,6 +36,7 @@ We can confirm this theory by asking Odin to print the linking command:
 $ odin build src -target=linux_arm64 -print-linker-flags
 clang -Wno-unused-command-line-argument [...]  -lm -lc   -L/       -no-pie
 ```
+
 And we see it links libc with `-lc`, meaning it links our program with the local libc it finds on my machine which is a different architecture than our target.
 
 ## Confrontation

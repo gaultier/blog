@@ -414,7 +414,7 @@ If you're lucky, `cargo test` would fail at the last assertion saying that the v
 
 Let's run the test with Miri:
 
-```
+```text
 running 1 test
 test api::tests::bar ... error: Undefined Behavior: out-of-bounds pointer use: alloc195648 has been freed, so this pointer is dangling
     --> src/tlv.rs:321:18
@@ -534,7 +534,7 @@ free_foo(&foo);
 
 This is undefined behavior if the array is of size 1, since in that case the Rust allocator will free a pointer allocated by the C allocator, and address sanitizer catches it:
 
-```
+```text
 SUMMARY: AddressSanitizer: alloc-dealloc-mismatch /home/runner/work/llvm-project/llvm-project/final/llvm-project/compiler-rt/lib/asan/asan_malloc_linux.cpp:52:3 in free
 ```
 

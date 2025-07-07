@@ -63,7 +63,7 @@ Can you spot the data race? Feel free to pause for a second. I glanced at code v
 
 Let's observe the behavior with a few HTTP requests:
 
-```
+```sh
 $ curl http://localhost:3001/
 $ curl http://localhost:3001/admin
 $ curl http://localhost:3001/
@@ -72,7 +72,7 @@ $ curl http://localhost:3001/
 
 We see these server logs:
 
-```
+```text
 path=/ rate_limit_enabled=yes
 path=/admin rate_limit_enabled=no
 path=/ rate_limit_enabled=no
@@ -83,7 +83,7 @@ path=/ rate_limit_enabled=no
 
 The third and fourth log are definitely wrong. We would have expected:
 
-```
+```text
 path=/ rate_limit_enabled=yes
 path=/admin rate_limit_enabled=no
 path=/ rate_limit_enabled=yes
@@ -98,7 +98,7 @@ In the real code at work it was actually not a security issue, since the paramet
 
 The diff for the fix looks like this:
 
-```
+```text
 diff --git a/http-race.go b/http-race.go
 index deff273..6c73b7e 100644
 --- a/http-race.go
@@ -131,7 +131,7 @@ Just transforming a function argument to a local variable. No other change. How 
 
 We can confirm that the behavior is now correct:
 
-```
+```sh
 $ curl http://localhost:3001/
 $ curl http://localhost:3001/admin
 $ curl http://localhost:3001/
@@ -140,7 +140,7 @@ $ curl http://localhost:3001/
 
 Server logs:
 
-```
+```text
 path=/ rate_limit_enabled=yes
 path=/admin rate_limit_enabled=no
 path=/ rate_limit_enabled=yes

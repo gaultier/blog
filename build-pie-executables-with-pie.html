@@ -144,7 +144,7 @@ $ file ./main
 </code></pre>
 <p>Ok, it worked, but also: why did we go from a statically linked to a dynamically linked executable? PIE should be orthogonal to static/dynamic linking! Or is it? We'll come back to that in a second.</p>
 <p>When we run our freshly built Go executable in a bare-bone Docker image (distroless), we get a nice cryptic error at runtime:</p>
-<pre><code>exec /home/nonroot/my-service: no such file or directory
+<pre><code class="language-text">exec /home/nonroot/my-service: no such file or directory
 </code></pre>
 <p>Oh oh. Let's investigate.</p>
 <h3 id="1539498158-a-helpful-mental-model">

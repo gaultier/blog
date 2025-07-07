@@ -46,7 +46,7 @@ Ok, it worked, but also: why did we go from a statically linked to a dynamically
 
 When we run our freshly built Go executable in a bare-bone Docker image (distroless), we get a nice cryptic error at runtime:
 
-```
+```text
 exec /home/nonroot/my-service: no such file or directory
 ```
 
