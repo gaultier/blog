@@ -253,7 +253,7 @@ Do not edit it by hand.
   <a class="title" href="#1275343589-fuzzing">Fuzzing</a>
   <a class="hash-anchor" href="#1275343589-fuzzing" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
-<p>I am a fan a fuzzing, it's great. Almost every time I fuzz some code, I find an corner case I did not think about, especially when doing parsing.</p>
+<p>I am a fan a fuzzing, it's great. Almost every time I fuzz some code, I find a corner case I did not think about, especially when doing parsing.</p>
 <p>I added fuzzing to the project so that every new Rust function is fuzzed. I initially used <a href="https://rust-fuzz.github.io/book/afl.html">AFL</a> but then turned to <a href="https://rust-fuzz.github.io/book/cargo-fuzz.html">cargo-fuzz</a>, and I'll explain why.</p>
 <p>Fuzzing is only useful if code coverage is <a href="https://blog.trailofbits.com/2024/03/01/toward-more-effective-curl-fuzzing/">high</a>. The worst that can happen is to dedicate serious time to setup fuzzing, to only discover at the end that the same few branches are always taken during fuzzing.</p>
 <p>Coverage can only be improved if developers can easily see exactly which branches are being executed during fuzzing. And I could not find an easy way with AFL to get a hold on that data.</p>

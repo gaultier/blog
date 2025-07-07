@@ -169,7 +169,7 @@ a.out: ELF 64-bit LSB executable, ARM aarch64, version 1 (SYSV), statically link
 <p>Alternatively, we can decide to stick with the Odin compiler through and through, and we pass it the (lengthy) required build options:</p>
 <pre><code class="language-shell">$ odin build src -target=linux_arm64 -extra-linker-flags:'-L ~/not-my-code/musl/lib/ -nostdlib -fuse-ld=lld --target=linux-aarch64 ~/not-my-code/musl/lib/crt1.o -static'
 </code></pre>
-<p>We can even verify it works by running it inside a ARM64 Linux system using <code>qemu</code>:</p>
+<p>We can even verify it works by running it inside an ARM64 Linux system using <code>qemu</code>:</p>
 <pre><code class="language-shell">$ qemu-aarch64-static a.out
 # It runs!
 </code></pre>

@@ -46,7 +46,9 @@ dev:
 
 .PHONY: check
 check:
-	# Catch incorrect `an` e.g. `an fox`.
+# Catch incorrect `an` e.g. `an fox`.
 	rg '\san\s+[bcdfgjklmnpqrstvwxyz]' -i -t markdown || true
-	# Catch incorrect `a` e.g. `a opening`.
+# Catch incorrect `a` e.g. `a opening`.
 	rg '\sa\s+[aei]' -i -t markdown || true
+# Catch code blocks without explicit type.
+	rg '^[ ]*```[ ]*\n\S' -t markdown --multiline --glob='!todo.md' || true

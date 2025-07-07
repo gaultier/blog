@@ -673,7 +673,7 @@ The compositor responds with a series of events, listing the available global ob
   <a class="hash-anchor" href="#2039654787-rendering-a-frame-the-wayland-logo" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h3>
 <p>Let's render something more interesting. We download the <a href="https://wayland.freedesktop.org/wayland.png">Wayland logo</a>, but we do not want to have to deal with a complicated format like PNG (because we then have to uncompress the image data with <code>zlib</code> or similar).</p>
-<p>We thus convert it offline to a simpler image format, PPM6, and then embed the raw pixel data in our code as an byte array, skipping over the first 15 bytes which are metadata:</p>
+<p>We thus convert it offline to a simpler image format, PPM6, and then embed the raw pixel data in our code as a byte array, skipping over the first 15 bytes which are metadata:</p>
 <pre><code class="language-shell">$ file wayland.png
 wayland.png: PNG image data, 117 x 150, 8-bit/color RGBA, non-interlaced
 $ convert wayland.png wayland.ppm

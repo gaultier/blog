@@ -170,7 +170,7 @@ Miranda -&gt; Angela
 <p>So how do we store all of those people in the database?</p>
 <pre><code class="language-sql">CREATE TABLE IF NOT EXISTS people(name TEXT NOT NULL UNIQUE, manager BIGINT REFERENCES people)
 </code></pre>
-<p>Each employee has a optional reference to a manager.</p>
+<p>Each employee has an optional reference to a manager.</p>
 <blockquote>
 <p>This is not a novel idea, actually this is one of the examples in the official <a href="https://www.sqlite.org/lang_with.html">SQLite documentation</a>.</p>
 </blockquote>
@@ -187,7 +187,7 @@ Miranda -&gt; Angela
 <p>A big benefit is that we hit three birds with one stone:</p>
 <ul>
 <li>We detect cycles</li>
-<li>We have the nodes in an convenient order to insert them in the database</li>
+<li>We have the nodes in a convenient order to insert them in the database</li>
 <li>Since the algorithm for the topological sort takes as input an adjacency matrix (more on this later), we can easily detect the invalid case of a node having more than one outgoing edge (i.e. more than one manager, i.e. multiple roots).</li>
 </ul>
 <p>From now one, I will use the graph of employees (where <code>Zoe</code> has two managers) as example since that's a possible input to our API and we need to detect this case.</p>

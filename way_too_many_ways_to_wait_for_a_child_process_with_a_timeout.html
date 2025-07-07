@@ -166,7 +166,7 @@ Do not edit it by hand.
 <ul>
 <li>With a timeout (either constant or adaptive).</li>
 <li>A bounded number of times e.g. 10.</li>
-<li>With a waiting time between each retry, either a constant one or a increasing one e.g. with exponential backoff.</li>
+<li>With a waiting time between each retry, either a constant one or an increasing one e.g. with exponential backoff.</li>
 <li>With jitter, although this point also seemed the least important since most of us use non real-time operating systems which introduce some jitter anytime we sleep or wait on something with a timeout. The AWS article makes a point that in highly contended systems, the jitter parameter is very important, but for the scope of this article I'll leave it out.</li>
 </ul>
 <p>This is best practice in distributed systems, and we often need to do the same on the command line. But the two aforementioned tools only do that partially:</p>

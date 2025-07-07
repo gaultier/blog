@@ -138,7 +138,7 @@ pub extern &quot;C&quot; fn MYLIB_get_foos(out_foos: *mut *mut Foo, out_foos_cou
     0
 }
 </code></pre>
-<p>It allocates and returns an dynamically allocated array as a pointer and a length. Of course in reality, <code>Foo</code> has many fields and the values are not known in advance but what happens is that we send messages to a Smartcard to ask it to send us a piece of data residing on it, and it replies with some encoded messages that our library decodes and returns to the user.</p>
+<p>It allocates and returns a dynamically allocated array as a pointer and a length. Of course in reality, <code>Foo</code> has many fields and the values are not known in advance but what happens is that we send messages to a Smartcard to ask it to send us a piece of data residing on it, and it replies with some encoded messages that our library decodes and returns to the user.</p>
 <p>I tell Cargo this is a static library:</p>
 <pre><code class="language-toml"># Cargo.toml
 

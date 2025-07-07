@@ -181,7 +181,7 @@ Do not edit it by hand.
 </blockquote>
 <p>No need for additional tooling to cross-compile, issues with dynamic libraries, libc differences, etc. Just compile on Linux by defining the right variable on the command line, send the binary to your friend on FreeBSD, and it just works(tm). That's refreshing.</p>
 <blockquote>
-<p>Some readers have rightfully pointed out that Linux is the only mainstream operating system that officially provides a stable userland ABI, other OSes often break their ABI from (major) version to version and recommend all programs to link to a library (e.g. <code>libSystem</code> in the case of macOS). That layer guarantees API stability, and acts as a insulation layer from breaking changes in the ABI. In practice, for common system calls such as the ones we use here, they very rarely break, but doing more exotic things may break in the future. That actually happened to the Go project in the past on macOS! The solution if that happens is to simply recompile the program on the new version of the OS.</p>
+<p>Some readers have rightfully pointed out that Linux is the only mainstream operating system that officially provides a stable userland ABI, other OSes often break their ABI from (major) version to version and recommend all programs to link to a library (e.g. <code>libSystem</code> in the case of macOS). That layer guarantees API stability, and acts as an insulation layer from breaking changes in the ABI. In practice, for common system calls such as the ones we use here, they very rarely break, but doing more exotic things may break in the future. That actually happened to the Go project in the past on macOS! The solution if that happens is to simply recompile the program on the new version of the OS.</p>
 </blockquote>
 <p>So let's dive in!</p>
 <h2 id="2049729589-x11-basics">
@@ -607,7 +607,7 @@ global _start:function
 </ul>
 <p>It's basically <code>memcpy</code> from C.</p>
 <blockquote>
-<p>This is a interesting case: we can see that some instructions expect some of their operands to be in certain registers and there is no way around it.  So, we have to plan ahead and expect those registers to be overwritten. If we need to keep their original values around, we have to store those values elsewhere, for example on the stack (that's called spilling) or in other registers. This is a broader topic of register allocation which is NP-hard! In small functions, it's manageable though.</p>
+<p>This is an interesting case: we can see that some instructions expect some of their operands to be in certain registers and there is no way around it.  So, we have to plan ahead and expect those registers to be overwritten. If we need to keep their original values around, we have to store those values elsewhere, for example on the stack (that's called spilling) or in other registers. This is a broader topic of register allocation which is NP-hard! In small functions, it's manageable though.</p>
 </blockquote>
 <p>First, the <code>.rodata</code> section:</p>
 <pre><code class="language-x86asm">section .rodata
@@ -696,7 +696,7 @@ static x11_connect_to_server:function
 } x11_connection_req_t;
 </code></pre>
 <p><code>pad*</code> fields can be ignored since they are padding and their value is not read by the server.</p>
-<p>For our handshake, we need to set the <code>order</code> to be <code>l</code>, that is, little-endian, since X11 can be told to interpret message as big or little endian. Since x64 is little-endian, we do not want to have a endianness translation layer and so we stick to little-endian.</p>
+<p>For our handshake, we need to set the <code>order</code> to be <code>l</code>, that is, little-endian, since X11 can be told to interpret message as big or little endian. Since x64 is little-endian, we do not want to have an endianness translation layer and so we stick to little-endian.</p>
 <p>We also need to set the <code>major</code> field, which is the version, to <code>11</code>. I'll leave it to the reader to guess why.</p>
 <p>In C, we would do:</p>
 <pre><code class="language-c">  x11_connection_req_t req = {.order = 'l', .major = 11};
@@ -1137,7 +1137,7 @@ static x11_map_window:function
 <p>If we do a simple blocking <code>read(2)</code>, but the server sends nothing, the program will appear not responding. Not good.
 The solution is to use the <code>poll(2)</code> system call to be awoken by the operating system whenever there is data to be read on the socket, a la NodeJS or Nginx.</p>
 <blockquote>
-<p>An shrewd reader has pointed out that we could simply <code>read</code> from the socket in a loop, since we only have one, possibly with a timeout. Linux, and perhaps others, support setting a read timeout on a socket with <code>setsockopt(2)</code>. But I will keep this version in this article since this is the original one. Feel free to experiment with the alternative at home!</p>
+<p>A shrewd reader has pointed out that we could simply <code>read</code> from the socket in a loop, since we only have one, possibly with a timeout. Linux, and perhaps others, support setting a read timeout on a socket with <code>setsockopt(2)</code>. But I will keep this version in this article since this is the original one. Feel free to experiment with the alternative at home!</p>
 </blockquote>
 <p>First, we need to mark the socket as 'non-blocking' since it is by default in blocking mode:</p>
 <pre><code class="language-x86asm">; Set a file descriptor in non-blocking mode.

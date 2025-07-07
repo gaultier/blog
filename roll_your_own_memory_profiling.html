@@ -113,7 +113,7 @@ Do not edit it by hand.
 </ul>
 
 <p><em>Discussions: <a href="https://old.reddit.com/r/C_Programming/comments/182rnqw/roll_your_own_memory_profiling_its_actually_not/">/r/c_programming</a></em></p>
-<p><em>Or: An exploration of the <a href="https://github.com/gperftools/gperftools">pprof</a> memory profiler and its textual format for fun an profit.</em></p>
+<p><em>Or: An exploration of the <a href="https://github.com/gperftools/gperftools">pprof</a> memory profiler and its textual format for fun and profit.</em></p>
 <p>Say that you are using a programming language where memory is manually managed, and you have decided to use a custom allocator for one reason or another, for example an arena allocator, and are wondering:</p>
 <ul>
 <li>How do I track every allocation, recording how many bytes were allocated and what was the call stack at that time?</li>
@@ -388,7 +388,7 @@ struct mem_profile_t {
 <p>Note that the memory profile needs to allocate to store this metadata and as such needs an arena. Which makes these two structures cyclic!</p>
 <p>The way we solve it is:</p>
 <ol>
-<li>We create an small arena dedicated to the memory profiling and this arena does <em>not</em> have a memory profile attached (otherwise we would end up in a infinite recursion, and we are not interested in profiling the memory usage of the memory profiler anyway; its memory usage is capped by the size of its dedicated arena).</li>
+<li>We create a small arena dedicated to the memory profiling and this arena does <em>not</em> have a memory profile attached (otherwise we would end up in an infinite recursion, and we are not interested in profiling the memory usage of the memory profiler anyway; its memory usage is capped by the size of its dedicated arena).</li>
 <li>We create the memory profile using this arena.</li>
 <li>We create the main arena for our program to use and attach the profile to it.</li>
 </ol>
