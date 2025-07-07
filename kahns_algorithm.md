@@ -101,7 +101,7 @@ Miranda Angela
 
 And here's the `tsort` output:
 
-```sh
+```shell
 $ tsort < people.txt
 Bella
 Miranda
@@ -117,7 +117,7 @@ So to insert all those people in our `people` SQL table, we go through that list
 
 Also, `tsort` detects cycles, for example if we add the line: `Ellen Zoe` at the end of `people.txt`, we get:
 
-```sh
+```shell
 $ tsort < people.txt
 Bella
 Miranda
@@ -442,7 +442,7 @@ const employeesTopologicallySorted = topologicalSort(structuredClone(adjacencyMa
 
 And we get an error as expected:
 
-```sh
+```shell
 /home/pg/my-code/blog/kahns_algorithm.js:63
     throw new Error("Graph has at least one cycle");
     ^

@@ -63,7 +63,7 @@ Can you spot the data race? Feel free to pause for a second. I glanced at code v
 
 Let's observe the behavior with a few HTTP requests:
 
-```sh
+```shell
 $ curl http://localhost:3001/
 $ curl http://localhost:3001/admin
 $ curl http://localhost:3001/
@@ -131,7 +131,7 @@ Just transforming a function argument to a local variable. No other change. How 
 
 We can confirm that the behavior is now correct:
 
-```sh
+```shell
 $ curl http://localhost:3001/
 $ curl http://localhost:3001/admin
 $ curl http://localhost:3001/
@@ -157,7 +157,7 @@ The `NewMiddleware` function returns a closure (the middleware) that implicitly 
 
 But...it's neither a plain local variable nor a plain function argument: it's a variable existing outside of the closure, captured by it. So when the closure mutates it, this mutation *is* visible to the outside. We can confirm our hypothesis by toggling a knob to ask the compiler to log this:
 
-```sh
+```shell
 $ go build -gcflags='-d closure=1' http-race.go
 ./http-race.go:9:26: heap closure, captured vars = [rateLimitEnabled handler]
 [...]
@@ -203,7 +203,7 @@ It's as if we spawned many goroutines which all called this function concurrentl
 
 We can confirm with the compiler that no variable is captured by accident now that the patch is applied:
 
-```sh
+```shell
 $ go build -gcflags='-d closure=1' http-race.go
 ./http-race.go:9:26: heap closure, captured vars = [handler]
 ```
@@ -305,7 +305,7 @@ func main() {
 
 Here's the output:
 
-```sh
+```shell
 $ go run -race race_reproducer.go
 rate_limit_enabled=no
 ==================

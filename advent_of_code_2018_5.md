@@ -185,7 +185,7 @@ Scheme has a minimalist core, so we do not get pattern matching out of
 the box, but we can easily add it with the package `matchable`. Let's install
 it in the terminal:
 
-```sh
+```shell
 $ chicken-install matchable
 ```
 
@@ -435,7 +435,7 @@ Let's benchmark it on the real input (50 000 characters), with `-O3` to enable o
 be: warming up the file cache, making many runs, averaging the results, etc. 
 I did exactly that and it did not change the results in a significant manner.*
 
-```sh
+```shell
 $ csc aoc5.scm -o aoc5 -O3 && time ./aoc5
 ./aoc5  0.01s user 0.00s system 82% cpu 0.021 total
 ```
@@ -493,7 +493,7 @@ int main() {
 Let's benchmark it on the same input:
 
 
-```sh
+```shell
 $ cc -std=c99 -O3 -Weverything aoc5.c -march=native && time ./a.out
 ./a.out  0.01s user 0.00s system 86% cpu 0.012 total
 ```

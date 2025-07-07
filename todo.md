@@ -57,7 +57,7 @@ $ sudo dtrace  -n 'pid$target::github.com?ory?kratos*SMSBody:return{  this->body
 msg.Body: Your recovery code is: 707144
     ```
 
-    ```sh
+    ```shell
 $ sudo dtrace -x flowindent -n 'pid$target::*createBrowserRecoveryFlow*:entry {this->trace=1;} pid$target::*selfservice*:entry,pid$target::*selfservice*:return /this->trace/ {} pid$target::*createBrowserRecoveryFlow*:return {this->trace=0;} ' -p $(pgrep -a kratos)
 dtrace: description 'pid$target::*createBrowserRecoveryFlow*:entry ' matched 3602 probes
 CPU FUNCTION                                 

@@ -38,7 +38,7 @@ So let's implement our own that does both! As we'll see, it's much less straight
 
 I call the tool we are building `ueb` for: micro exponential backoff. It does up to 10 retries, with a waiting period in between that starts at an arbitrary 128 ms and doubles every retry. The timeout for the subprocess is the same as the sleep time, so that it's adaptive and we give the subprocess a longer and longer time to finish successfully. These numbers would probably be exposed as command line options in a real polished program, but there's no time, what have to demo it:
 
-```sh
+```shell
 # This returns immediately since it succeeds on the first try.
 $ ueb true
 
@@ -75,7 +75,7 @@ $ ueb createdb my_great_database -h 0.0.0.0 -U postgres
 
 If you want to monitor the retries and the sleeps, you can use `strace` or `dtrace`:
 
-```sh
+```shell
 $ strace ueb sleep 1
 ```
 

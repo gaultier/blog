@@ -135,7 +135,7 @@ func DoStuff() {
 
 So far, so good. Let's run it (our `main.go` simply calls `app.DoStuff()`):
 
-```sh
+```shell
 $ go run .
 Dog: 42
 Cat: kitty
@@ -256,7 +256,7 @@ func DoStuff() {
 
 And it does what we expect:
 
-```sh
+```shell
 $ go run .
 Dog: 42
 Cat: kitty
@@ -358,7 +358,7 @@ func TestAnimalMakeDog(t *testing.T) {
 
 Let's run it:
 
-```sh
+```shell
 $ go test ./app/
 use of cgo in test app_test.go not supported
 ```
@@ -396,7 +396,7 @@ func TestAnimalMakeDog(t *testing.T) {
 }
 ```
 
-```sh
+```shell
 $ go test ./app/ -count=1 -v
 === RUN   TestAnimalMakeDog
 --- PASS: TestAnimalMakeDog (0.00s)
@@ -463,7 +463,7 @@ Yes, we can write C code directly in Go files. Inside comments. Not, it's not we
 
 We build, everything is fine:
 
-```sh
+```shell
 $ go build .
 ```
 
@@ -522,7 +522,7 @@ import "C"
 
 Let's build:
 
-```sh
+```shell
 $ go build .
 # cgo
 /home/pg/Downloads/go/pkg/tool/linux_amd64/link: running gcc failed: exit status 1
@@ -554,7 +554,7 @@ import "C"
 
 We rebuild, and boom:
 
-```sh
+```shell
 $ go build .
 # cgo/app
 app/app.go:3:6: error: expected '=', ',', ';', 'asm' or '__attribute__' before ':' token
@@ -596,7 +596,7 @@ It's very simple, you have two exclusive choices:
 
 Let's see it for ourselves:
 
-```sh
+```shell
 $ gdb ./cgo
 (gdb) break animal_print
 Breakpoint 1 at 0x469b6c
@@ -625,7 +625,7 @@ Where is `app.DoStuff`? Where is `main`? Probably around frames 8-13 in the `cor
 
 Now with `delve`:
 
-```sh
+```shell
 $ go build   -gcflags=all="-N -l"
 $ dlv exec ./cgo
 (dlv) b animal_print
@@ -737,7 +737,7 @@ This point is close to being a deal-breaker for me. Debugging is really importan
 
 It's the same issue manifesting in a different way: it's not just debuggers than do not understand the call stack, it's also `strace`:
 
-```sh
+```shell
 $ strace -k -e write ./cgo
 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=438876, si_uid=1000} ---
  > /usr/lib64/libc.so.6(pthread_sigmask@GLIBC_2.2.5+0x48) [0x783b8]
@@ -766,7 +766,7 @@ Same as gdb, the call stack stops at the Cgo FFI boundary.
 
 But surprisingly, `bpftrace` seems to work:
 
-```sh
+```shell
 $ sudo bpftrace -e 'uprobe:./cgo:animal_print {print(ustack(perf, 64))}' -c ./cgo
 Attaching 1 probe...
 Dog: 42
@@ -790,7 +790,7 @@ So picture me, building my Go program (a web service) using Cgo. Locally, it bui
 
 Now, time to build in Docker to be able to test my changes:
 
-```sh
+```shell
 $ time docker build [...]
 [...]
 Total execution time 101.664413146
@@ -837,7 +837,7 @@ We could also target a specific glibc version and deploy on a LTS version of Ubu
 
 First, we cross-compile our C code:
 
-```sh
+```shell
 $ CC="zig cc --target=x86_64-linux-musl" make -C ./c
 ```
 
@@ -849,14 +849,14 @@ $ CC=musl-gcc make -C ./c
 
 If we have Rust code, we do instead:
 
-```sh
+```shell
 $ rustup target add x86_64-unknown-linux-musl
 $ cargo build --release --all-features --target=x86_64-unknown-linux-musl
 ```
 
 Then we build our Go code using the Zig C compiler. I put the non cross-compiling build commands just before for comparison:
 
-```sh
+```shell
 $ go build .
 $ file cgo
 cgo: ELF 64-bit LSB executable, x86-64, version 1 (SYSV), dynamically linked, interpreter /lib64/ld-linux-x86-64.so.2, BuildID[sha1]=9d5da9b6a211c5635a83e4a8a346ff605f7b6e3b, for GNU/Linux 3.2.0, with debug_info, not stripped
@@ -870,7 +870,7 @@ Ta dam!
 
 Time to build a native ARM image? No problem:
 
-```sh
+```shell
 $ CC="zig cc --target=aarch64-linux-musl" make -C ./c
 $ CGO_ENABLED=1 CC='zig cc --target=aarch64-linux-musl -static' GOOS=linux GOARCH=arm64 go build .
 $ file ./cgo
@@ -885,7 +885,7 @@ If you've done *any* work with cross-compilation, you know that this is magic. I
 Oh, and what about the speed now? Here is a full Docker build with my real-life program (Rust + Go):
 
 
-```sh
+```shell
 $ make docker-build
 Executed in    1.47 secs
 ```

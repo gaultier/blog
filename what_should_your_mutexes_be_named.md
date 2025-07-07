@@ -67,7 +67,7 @@ A potential match must pass all conditions under the `all` section to be a resul
 
 When we run the tool on the Go standard library, we get something like this (excerpt):
 
-```sh
+```shell
 $ ast-grep scan --rule ~/scratch/mtx.yaml
 [...]
 
@@ -102,7 +102,7 @@ So, is there at least a convention used in the majority of cases? How can we agg
 
 Unfortunately I did not find a built-in way to post-process the results from `ast-grep`, so I resorted to outputting the matches as JSON, extracting the matched text with `jq`, and finally aggregating the results with good old AWK:
 
-```sh
+```shell
 $ ast-grep scan --rule ~/scratch/mtx.yaml --json | jq '.[].text' -r | awk -f ~/scratch/ast-grep-post.awk 
 ```
 
@@ -226,7 +226,7 @@ We can easily check this out with the same approach. This illustrates that `ast-
 
 `1.4` was the last major version to use the C compiler and runtime apparently, so we checkout this commit:
 
-```sh
+```shell
 $ git checkout go1.4beta1
 ```
 

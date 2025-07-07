@@ -117,7 +117,7 @@ Do not edit it by hand.
 </ul>
 
 <p>This blog is statically generated from Markdown files. It used to be fast, but nowadays it's not:</p>
-<pre><code class="language-sh"> $ hyperfine --warmup 2 ./master.bin 
+<pre><code class="language-shell"> $ hyperfine --warmup 2 ./master.bin 
 Benchmark 1: ./master.bin
   Time (mean ± σ):      1.873 s ±  0.053 s    [User: 1.351 s, System: 0.486 s]
   Range (min … max):    1.806 s …  1.983 s    10 runs
@@ -158,7 +158,7 @@ Benchmark 1: ./master.bin
 <p><object alt="Profile before the optimization" data="making_my_static_blog_generator_11_times_faster_profile_before.svg" type="image/svg+xml"></object></p>
 <p>Yeah...I think it might be [git] [git] [git] [git] [git] [git] [git] [git]...</p>
 <p>Another way to confirm this is with <code>strace</code>:</p>
-<pre><code class="language-sh">$ strace --summary-only ./src.bin
+<pre><code class="language-shell">$ strace --summary-only ./src.bin
 % time     seconds  usecs/call     calls    errors syscall
 ------ ----------- ----------- --------- --------- ----------------
  94.85    0.479290        3928       122           waitid
@@ -182,7 +182,7 @@ Benchmark 1: ./master.bin
 </h2>
 <p>My intuition was to do a deep dive in the <code>git log</code> options, to see if I could instruct it to do less work. But then something struck me: we invoke <code>git log</code> to get all commits for one markdown file (even though we only are interested in the first and last, but that's the only interface Git provides us as far as I know). What if we invoked it once <em>for all markdown files</em>? Yes, the output might be a bit big... How big? Is it really faster? Let's measure!</p>
 <p>Conceptually we can simply do <code>git log '*.md'</code> and parse the output. We can refine that approach later with more options, but that's the gist of it:</p>
-<pre><code class="language-sh"> $ time git log '*.md' | wc -c
+<pre><code class="language-shell"> $ time git log '*.md' | wc -c
 191196
 
 ________________________________________________________
@@ -214,7 +214,7 @@ Executed in   73.69 millis    fish           external
 <li><code>--diff-filter=AMRD</code> to only get commits that add/modify/delete/rename files. We are not interested in commits changing the permissions on a file, or modifying symbolic links, etc.</li>
 </ul>
 <p>With these options we get even better numbers:</p>
-<pre><code class="language-sh">$ time git log --format='%aI' --name-status --no-merges --diff-filter=AMDR  -- '*.md' | wc -c
+<pre><code class="language-shell">$ time git log --format='%aI' --name-status --no-merges --diff-filter=AMDR  -- '*.md' | wc -c
 77832
 
 ________________________________________________________
@@ -419,14 +419,14 @@ GitStat{creation_date = &quot;2023-11-23T11:26:11+01:00&quot;, modification_date
 </code></pre>
 <p>Alright, so how does our new implementation fare compared to the old one?</p>
 <p>First, we can confirm with <code>strace</code> that the time spent on waiting for subprocesses (mainly Git) shrinked:</p>
-<pre><code class="language-sh">$ strace --summary-only ./src.bin
+<pre><code class="language-shell">$ strace --summary-only ./src.bin
 % time     seconds  usecs/call     calls    errors syscall
 ------ ----------- ----------- --------- --------- ----------------
  56.59    0.043176         674        64           waitid
  [...]
 </code></pre>
 <p>Then we benchmark:</p>
-<pre><code class="language-sh"> $ hyperfine --warmup 2 './src-main.bin' './src.bin'
+<pre><code class="language-shell"> $ hyperfine --warmup 2 './src-main.bin' './src.bin'
 Benchmark 1: ./src-main.bin
   Time (mean ± σ):      1.773 s ±  0.022 s    [User: 1.267 s, System: 0.472 s]
   Range (min … max):    1.748 s …  1.816 s    10 runs
@@ -455,7 +455,7 @@ Summary
 </h2>
 <p><a href="https://fossil-scm.org">fossil</a> is an alternative version control system created by the same folks that created, and are still working on, SQLite. Naturally, a fossil repository is basically just one SQLite database file. That sounds very <em>queryable</em>!</p>
 <p>Let's import our git repository into a Fossil repository and enter the SQLite prompt:</p>
-<pre><code class="language-sh">$ git fast-export --all | fossil import --git new-repo.fossil
+<pre><code class="language-shell">$ git fast-export --all | fossil import --git new-repo.fossil
 $ file new-repo.fossil 
 new-repo.fossil: SQLite 3.x database (Fossil repository), [...]
 $ fossil sql -R new-repo.fossil
@@ -481,7 +481,7 @@ sqlite&gt; SELECT
 [...]
 </code></pre>
 <p>Note that this does not filter out deleted/removed files yet. I'm sure that it can be done by tweaking the query a bit, but there's not time! We need to benchmark!</p>
-<pre><code class="language-sh">$ hyperfine --shell=none 'fossil sql -R new-repo.fossil &quot;SELECT [...]&quot;'
+<pre><code class="language-shell">$ hyperfine --shell=none 'fossil sql -R new-repo.fossil &quot;SELECT [...]&quot;'
 Benchmark 1: fossil sql -R new-repo.fossil &quot;[...]&quot;
   Time (mean ± σ):       3.0 ms ±   0.5 ms    [User: 1.5 ms, System: 1.4 ms]
   Range (min … max):     2.2 ms …   5.6 ms    776 runs
@@ -516,7 +516,7 @@ Benchmark 1: fossil sql -R new-repo.fossil &quot;[...]&quot;
 </h2>
 <p>Running <code>git gc</code> and <code>git prune</code> also helps because all unreachable objects are removed, so git has to do less work scanning and parsing them on disk.</p>
 <p>Having done that, we get almost twice as fast:</p>
-<pre><code class="language-sh">$ hyperfine --shell=none --warmup 2 './src.bin'
+<pre><code class="language-shell">$ hyperfine --shell=none --warmup 2 './src.bin'
 Benchmark 1: ./src.bin
   Time (mean ± σ):      89.7 ms ±   2.6 ms    [User: 63.6 ms, System: 59.5 ms]
   Range (min … max):    85.0 ms …  94.3 ms    31 runs
@@ -528,7 +528,7 @@ Benchmark 1: ./src.bin
   <a class="hash-anchor" href="#2077345490-addendum-2" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>Since spawning the <code>cmark</code> process, having <code>cmark</code> parsing the command line options, over and over, is still taking a good chunk of the time, we can switch to using <code>libcmark</code> directly. This is something I wanted to do anyway to extract a table of content, etc from the markdown. Since the running time is getting lower and lower, we add <code>--shell=none</code> and increase the warm-up to reduce statistical outliers:</p>
-<pre><code class="language-sh">$ hyperfine --shell=none --warmup 10 ./src.bin
+<pre><code class="language-shell">$ hyperfine --shell=none --warmup 10 ./src.bin
 Benchmark 1: ./src.bin
   Time (mean ± σ):      55.4 ms ±   1.5 ms    [User: 49.0 ms, System: 35.0 ms]
   Range (min … max):    53.1 ms …  61.0 ms    55 runs

@@ -187,10 +187,10 @@ Do not edit it by hand.
 <ul>
 <li>
 <p>Use <code>sed</code> to quickly edit big files in place. E.g.: you want to insert a line at the top of a Javascript file to skip linter warnings. Instead of doing:</p>
-<pre><code class="language-sh">$ printf '/* eslint-disable */\n\n' | cat - foo.js &gt; foo_tmp &amp;&amp; mv foo_tmp foo.js
+<pre><code class="language-shell">$ printf '/* eslint-disable */\n\n' | cat - foo.js &gt; foo_tmp &amp;&amp; mv foo_tmp foo.js
 </code></pre>
 <p>which involves reading the whole file, copying it, and renaming it, we can do:</p>
-<pre><code class="language-sh">$ sed -i '1s#^#/* eslint-disable */ #' foo.js
+<pre><code class="language-shell">$ sed -i '1s#^#/* eslint-disable */ #' foo.js
 </code></pre>
 <p>which is simpler.</p>
 </li>

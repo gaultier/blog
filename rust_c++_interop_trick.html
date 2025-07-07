@@ -178,7 +178,7 @@ int main() {
 <p>And... it builds!</p>
 <p>Now onto the second step: let's define the equivalent class on the Rust side.</p>
 <p>We create a new Rust library project:</p>
-<pre><code class="language-sh">$ cargo new --lib user-rs-lib
+<pre><code class="language-shell">$ cargo new --lib user-rs-lib
 </code></pre>
 <p>And place our Rust struct in <code>src/lib.rs</code>.</p>
 <p>We just need to be careful about alignment (padding between fields) and the order the fields, so we mark the struct <code>repr(C)</code> to make the Rust compiler use the same layout as C does:</p>
@@ -203,7 +203,7 @@ pub extern &quot;C&quot; fn RUST_write_comment(user: &amp;mut UserC, comment: *c
 }
 </code></pre>
 <p>Now, let's use the tool <a href="https://github.com/mozilla/cbindgen">cbindgen</a> to generate the C header corresponding to this Rust code:</p>
-<pre><code class="language-sh">$ cargo install cbindgen
+<pre><code class="language-shell">$ cargo install cbindgen
 $ cbindgen -v src/lib.rs --lang=c++ -o ../user-rs-lib.h
 </code></pre>
 <p>And we get this C header:</p>
@@ -266,7 +266,7 @@ pub extern &quot;C&quot; fn RUST_write_comment(user: &amp;mut UserC, comment: *c
 crate-type = [&quot;staticlib&quot;]
 </code></pre>
 <p>We now build:</p>
-<pre><code class="language-sh">$ cargo build
+<pre><code class="language-shell">$ cargo build
 # This is our artifact:
 $ ls target/debug/libuser_rs_lib.a
 </code></pre>
@@ -286,7 +286,7 @@ int main() {
 }
 </code></pre>
 <p>And link (manually) our brand new Rust library to our C++ program:</p>
-<pre><code class="language-sh">$ clang++ user.cpp ./user-rs-lib/target/debug/libuser_rs_lib.a
+<pre><code class="language-shell">$ clang++ user.cpp ./user-rs-lib/target/debug/libuser_rs_lib.a
 $ ./a.out
 alice (336ff4cec0a2ccbfc0c4e4cb9ba7c152) says: hello, world!
 Comment count: 1

@@ -231,7 +231,7 @@ more readable and concise to use pattern matching.</p>
 <p>Scheme has a minimalist core, so we do not get pattern matching out of
 the box, but we can easily add it with the package <code>matchable</code>. Let's install
 it in the terminal:</p>
-<pre><code class="language-sh">$ chicken-install matchable
+<pre><code class="language-shell">$ chicken-install matchable
 </code></pre>
 <p>Now we can import it at the top of our code:</p>
 <pre><code class="language-scheme">(import matchable)
@@ -412,7 +412,7 @@ efficient in terms of memory and time.</p>
 <p><em>Note 2: This is a simplistic way to do benchmarking. A more correct way would
 be: warming up the file cache, making many runs, averaging the results, etc.
 I did exactly that and it did not change the results in a significant manner.</em></p>
-<pre><code class="language-sh">$ csc aoc5.scm -o aoc5 -O3 &amp;&amp; time ./aoc5
+<pre><code class="language-shell">$ csc aoc5.scm -o aoc5 -O3 &amp;&amp; time ./aoc5
 ./aoc5  0.01s user 0.00s system 82% cpu 0.021 total
 </code></pre>
 <p>It takes 21 milliseconds. Not too bad for a garbage collected, functional,
@@ -460,7 +460,7 @@ int main() {
 }
 </code></pre>
 <p>Let's benchmark it on the same input:</p>
-<pre><code class="language-sh">$ cc -std=c99 -O3 -Weverything aoc5.c -march=native &amp;&amp; time ./a.out
+<pre><code class="language-shell">$ cc -std=c99 -O3 -Weverything aoc5.c -march=native &amp;&amp; time ./a.out
 ./a.out  0.01s user 0.00s system 86% cpu 0.012 total
 </code></pre>
 <p>It took 12 milliseconds. So the scheme version is very close, and takes an

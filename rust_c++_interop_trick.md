@@ -84,7 +84,7 @@ Now onto the second step: let's define the equivalent class on the Rust side.
 
 We create a new Rust library project:
 
-```sh
+```shell
 $ cargo new --lib user-rs-lib
 ```
 
@@ -122,7 +122,7 @@ pub extern "C" fn RUST_write_comment(user: &mut UserC, comment: *const u8, comme
 
 Now, let's use the tool [cbindgen](https://github.com/mozilla/cbindgen) to generate the C header corresponding to this Rust code:
 
-```sh
+```shell
 $ cargo install cbindgen
 $ cbindgen -v src/lib.rs --lang=c++ -o ../user-rs-lib.h
 ```
@@ -202,7 +202,7 @@ crate-type = ["staticlib"]
 
 We now build:
 
-```sh
+```shell
 $ cargo build
 # This is our artifact:
 $ ls target/debug/libuser_rs_lib.a
@@ -228,7 +228,7 @@ int main() {
 
 And link (manually) our brand new Rust library to our C++ program:
 
-```sh
+```shell
 $ clang++ user.cpp ./user-rs-lib/target/debug/libuser_rs_lib.a
 $ ./a.out
 alice (336ff4cec0a2ccbfc0c4e4cb9ba7c152) says: hello, world!

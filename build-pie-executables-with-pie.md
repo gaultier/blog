@@ -28,7 +28,7 @@ Easy enough, right?
 
 Let's build a hello world program (*not* using CGO) with default options:
 
-```sh
+```shell
 $ go build main.go
 $ file ./main
 ./main: ELF 64-bit LSB executable [..] statically linked [..]
@@ -36,7 +36,7 @@ $ file ./main
 
 Now, let's add the `-buildmode=pie` option:
 
-```sh
+```shell
 $ go build -buildmode=pie ./main.go
 $ file ./main
 ./main: ELF 64-bit LSB pie executable [..] dynamically linked, interpreter /lib64/ld-linux-x86-64.so.2 [..]
@@ -69,7 +69,7 @@ The first dimension (static vs dynamic linking) is, from the point of view of th
 
 The second dimension (static vs dynamic loading) is decided by the ELF program headers: if there is one program header of type `INTERP` (which specifies the loader to use), our executable is using dynamic loading meaning it requires a loader (a.k.a interpreter) at runtime. Otherwise it does not. This aspect can be observed with `readelf`:
 
-```sh
+```shell
 $ readelf --program-headers ./main
 [..]
 Elf file type is DYN (Position-Independent Executable file)
@@ -115,7 +115,7 @@ int main() { printf("%p %p hello!\n", &main, &printf); }
 
 We compile it, create an empty `chroot` with only our executable in it, and run it multiple times, to observe that the functions `main` and `printf` are indeed loaded in different places of memory each time:
 
-```sh
+```shell
 $ musl-gcc pie.c -fPIE -static-pie
 $ file ./a.out
 ./a.out: ELF 64-bit LSB pie executable [..] static-pie linked [..]
@@ -141,14 +141,14 @@ So, how can we coerce Go to do the same?
 
 The only way I have found is to ask Go to link with an external linker and pass it the flag `-static-pie`. Due to the explanation above that means that CGO gets enabled automatically and we need to link a libc statically:
 
-```sh
+```shell
 $ CGO_ENABLED=0 go build -buildmode=pie -ldflags '-linkmode external -extldflags "-static-pie"' main.go
 -linkmode requires external (cgo) linking, but cgo is not enabled
 ```
 
 We use `musl-gcc` again for simplicity but you can also use the Zig build system to automatically build musl from source, or provide your own build of musl, etc:
 
-```sh
+```shell
 $ CC=musl-gcc go build -ldflags '-linkmode external -extldflags "--static-pie"' -buildmode=pie main.go
 $ file ./main
 ./main: ELF 64-bit LSB pie executable [..] static-pie linked
@@ -172,7 +172,7 @@ func main() {
 
 And here's how we build and run it:
 
-```sh
+```shell
 $ CC=musl-gcc go build -ldflags '-linkmode external -extldflags "--static-pie"' -buildmode=pie main.go
 $ cp ./main /tmp/scratch/
 $ sudo chroot /tmp/scratch ./main
@@ -185,7 +185,7 @@ $ sudo chroot /tmp/scratch ./main
 
 Compare that with the non-PIE default build where the function addresses are fixed:
 
-```sh
+```shell
 $ go build main.go
 $ cp ./main /tmp/scratch/
 $ sudo chroot /tmp/scratch ./main

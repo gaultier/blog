@@ -11,7 +11,7 @@ Requirements:
 
 Build this blog (i.e. convert markdown files to HTML):
 
-```sh
+```shell
 # Build once.
 $ make gen
 # Watch & rebuild on change (requires `entr`).
@@ -20,13 +20,13 @@ $ make dev
 
 Serve the files locally:
 
-```sh
+```shell
 $ python3 -m http.server -d ..
 ```
 
 Optimize a PNG (requires `pngquant`):
 
-```sh
+```shell
 $ pngquant foo.png -o foo.tmp && mv foo.tmp foo.png
 ```
 

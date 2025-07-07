@@ -11,7 +11,7 @@ I just need to convert that to a human readable table in markdown or HTML, and v
 
 Here's the output of this tool in my open-source Rust [project](https://github.com/gaultier/kotlin-rs):
 
-```sh
+```shell
 $ cargo license --all-features --avoid-build-deps --avoid-dev-deps --direct-deps-only --tsv
 name	version	authors	repository	license	license_file	description
 clap	2.33.0	Kevin K. <kbknapp@gmail.com>	https://github.com/clap-rs/clap	MIT		A simple to use, efficient, and full-featured Command Line Argument Parser
@@ -78,7 +78,7 @@ The same line can trigger multiple clauses, here, the first line of the input wi
 
 So let's run it!
 
-```sh
+```shell
 $ cargo license --all-features --avoid-build-deps --avoid-dev-deps --direct-deps-only --tsv | ./md-table.awk 
 | name | version | authors | repository | license | license_file | description |
 | --- |  --- |  --- |  --- |  --- |  --- |  --- | 
@@ -92,7 +92,7 @@ $ cargo license --all-features --avoid-build-deps --avoid-dev-deps --direct-deps
 
 Ok, it's hard to really know if that's correct or not. Let's pipe it into [cmark-gfm](https://github.com/github/cmark-gfm) to render this markdown table as HTML:
 
-```sh
+```shell
 $ cargo license --all-features --avoid-build-deps --avoid-dev-deps --direct-deps-only --tsv | ./md-table.awk | cmark-gfm -e table
 ```
 

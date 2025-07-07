@@ -16,7 +16,7 @@ Incidentally, if you are a lost C++ developer trying to compile LLVM from source
 
 Note that those instructions should work just the same on any Unix system. Feel free to pick the directories you want when cloning the git repositories.
 
-```sh
+```shell
 # The only Alpine specific bit. build-base mainly installs make and a C++ compiler. Python 3 is required by LLVM for some reason.
 $ apk add build-base cmake git python3
 
@@ -45,7 +45,7 @@ $ sudo make install
 
 You will now have a `zig` executable in the PATH as well as the zig standard library. You can verify you have now the latest version by doing:
 
-```sh
+```shell
 $ zig version
 0.6.0+749417a
 ```

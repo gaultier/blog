@@ -24,7 +24,7 @@ We can also run the real service with a load test to generate traffic, or simply
 
 Here, my function to insert a slice of bytes in the cache is called `cache_insert`, the executable is called `itest.test`, and the length of the slice of bytes happens to be passed as the third function argument. Arguments are zero-indexed so that means `arg2`:
 
-```sh
+```shell
 $ sudo bpftrace -e 'uprobe:./itest.test:cache_insert {@bytes=lhist(arg2, 0 , 16384, 128)}' -c './itest.test -test.count=1'
 ```
 
@@ -49,7 +49,7 @@ func (c Cache) Insert(ctx context.Context, key [32]byte, value []byte, expiryDat
 
 We are interested in `len(value)` which happens to be accessible in `arg5`:
 
-```sh
+```shell
 $ sudo bpftrace -e 'uprobe:./itest.test:/path/to/my/pkg/Cache.Insert {@bytes=lhist(arg5, 0 , 16384, 128)}' -c './itest.test -test.count=1'
 ```
 

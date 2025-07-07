@@ -126,7 +126,7 @@ int main() {
 
 Leveraging `tcmalloc`, this program will generate a heap profile:
 
-```sh
+```shell
 $ cc /tmp/test_alloc.c -ltcmalloc  -g3
 $ HEAPPROFILE=/tmp/heapprof ./a.out
 Starting tracking the heap
@@ -223,7 +223,7 @@ As such, `pprof` only needs to find for each address the relevant range, subtrac
 
 Finally we can use `pprof` to extract human-readable information from this text file:
 
-```sh
+```shell
 $ pprof --text ./a.out ./heapprof.0001.heap
 Using local file ./a.out.
 Using local file /tmp/heapprof.0001.heap.
@@ -511,7 +511,7 @@ int main() {
 }
 ```
 
-```sh
+```shell
 $ cc -g3 example.c
 $ ./a.out 2> heap.profile
 $ pprof --web ./a.out heap.profile
@@ -523,7 +523,7 @@ And we see in our browser:
 
 And we can even generate a flamegraph for it leveraging the great [OG flamegraph project](https://github.com/brendangregg/FlameGraph):
 
-```sh
+```shell
 $ pprof --collapsed ./a.out heap.profile | flamegraph.pl > out.svg
 ```
 

@@ -212,7 +212,7 @@ Miranda Angela
 <p><code>tsort</code> uses a simple way of defining each edge <code>A -&gt; B</code> on its own line with the syntax: <code>A B</code>. The order of the lines does not matter.</p>
 </blockquote>
 <p>And here's the <code>tsort</code> output:</p>
-<pre><code class="language-sh">$ tsort &lt; people.txt
+<pre><code class="language-shell">$ tsort &lt; people.txt
 Bella
 Miranda
 Zoe
@@ -223,7 +223,7 @@ Ellen
 <p>The first 3 elements are the ones with no incoming edge, the Software Engineers, since no one reports to them. Then come their respective managers, Angela and Jane. Finally comes their manager, <code>Ellen</code>.</p>
 <p>So to insert all those people in our <code>people</code> SQL table, we go through that list in reverse order: We can first insert <code>Ellen</code>, then <code>Jane</code>, etc, until we finally insert <code>Bella</code>.</p>
 <p>Also, <code>tsort</code> detects cycles, for example if we add the line: <code>Ellen Zoe</code> at the end of <code>people.txt</code>, we get:</p>
-<pre><code class="language-sh">$ tsort &lt; people.txt
+<pre><code class="language-shell">$ tsort &lt; people.txt
 Bella
 Miranda
 tsort: -: input contains a loop:
@@ -488,7 +488,7 @@ const nodes = [&quot;Angela&quot;, &quot;Bella&quot;, &quot;Ellen&quot;, &quot;J
 const employeesTopologicallySorted = topologicalSort(structuredClone(adjacencyMatrix), nodes);
 </code></pre>
 <p>And we get an error as expected:</p>
-<pre><code class="language-sh">/home/pg/my-code/blog/kahns_algorithm.js:63
+<pre><code class="language-shell">/home/pg/my-code/blog/kahns_algorithm.js:63
     throw new Error(&quot;Graph has at least one cycle&quot;);
     ^
 

@@ -322,7 +322,7 @@ static solve:function
 
 So, did it work? Is it fast? Let's compare the old C solution (also embedding the input data for a fair comparison) with our new Assembly one:
 
-```sh
+```shell
 $ clang -Ofast -g3 -march=native aoc2018_5.c -o aoc2018_5-c
 $ hyperfine --warmup 3 --shell=none ./aoc2018_5 ./aoc2018_5-c
 

@@ -377,7 +377,7 @@ Of course, in a real program, we would also do real work while the timers run, e
 
 Let's compile our program and look at what syscalls are being done (here I am on Linux but we'll soon seen it does not matter at all):
 
-```sh
+```shell
 $ cc uv-timers.c -luv
 $ strace ./a.out
 [...]

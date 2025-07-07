@@ -27,7 +27,7 @@ But I only want to know how big is the implementation. I don't care about the te
 
 So I resorted to my trusty `awk`. Let's first count all lines, like `wc` does:
 
-```sh
+```shell
 $ awk '{count += 1} END{print(count)}' src/***.rs
 # Equivalent to:
 $ wc -l src/***/.rs
@@ -37,7 +37,7 @@ On my open-source Rust [project](https://github.com/gaultier/kotlin-rs), this pr
 
 Alright, now let's exclude the tests. When we encounter the line `mod tests`, we stop counting. Note that this name is just a convention, but that's one that followed pretty much universally in Rust code, and there is usually no more code after this section. Tweak the name if needed:
 
-```sh
+```shell
 $ awk '/mod tests/{skip[FILENAME]=1}  !skip[FILENAME]{count += 1} END{print(count)}'  src/***.rs
 ```
 
@@ -57,7 +57,7 @@ And that's it. AWK is always very nifty.
 Originally I implemented it wrongly, like this:
 
 
-```sh
+```shell
 $ awk '/mod tests/{exit 0} {count += 1} END{print(count)}'  src/***.rs
 ```
 

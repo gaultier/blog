@@ -92,10 +92,10 @@ What? Quant-what?</p>
 <p>At least, that's my layman understanding.</p>
 <p>Fortunately there is an open-source <a href="https://github.com/kornelski/pngquant">command line tool</a> that is very easy to use and works great. So go give them a star and come back!</p>
 <p>I simply ran the tool on all images to convert them in place in parallel:</p>
-<pre><code class="language-sh">$ ls *.png | parallel 'pngquant {} -o {}.tmp &amp;&amp; mv {}.tmp {}'
+<pre><code class="language-shell">$ ls *.png | parallel 'pngquant {} -o {}.tmp &amp;&amp; mv {}.tmp {}'
 </code></pre>
 <p>It finished instantly, and here is the result:</p>
-<pre><code class="language-sh">$ git show 2e126f55a77e75e182ea18b36fb535a0e37793e4 --compact-summary
+<pre><code class="language-shell">$ git show 2e126f55a77e75e182ea18b36fb535a0e37793e4 --compact-summary
 commit 2e126f55a77e75e182ea18b36fb535a0e37793e4 (HEAD -&gt; master, origin/master, origin/HEAD)
 
     use pgnquant to shrink images
@@ -116,7 +116,7 @@ commit 2e126f55a77e75e182ea18b36fb535a0e37793e4 (HEAD -&gt; master, origin/maste
 </code></pre>
 <p>Eye-balling it, every image was on average halved. Not bad, for no visible difference!</p>
 <p>Initially, I wanted to use the new hotness: AVIF. Here's an example using the <code>avifenc</code> tool on the original image:</p>
-<pre><code class="language-sh">$ avifenc feed.png feed.avif
+<pre><code class="language-shell">$ avifenc feed.png feed.avif
 $ stat -c '%n %s' feed.{png,avif}
 feed.png 167641
 feed.avif 36034

@@ -180,7 +180,7 @@ Do not edit it by hand.
   <a class="hash-anchor" href="#785223571-what-are-we-building" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>I call the tool we are building <code>ueb</code> for: micro exponential backoff. It does up to 10 retries, with a waiting period in between that starts at an arbitrary 128 ms and doubles every retry. The timeout for the subprocess is the same as the sleep time, so that it's adaptive and we give the subprocess a longer and longer time to finish successfully. These numbers would probably be exposed as command line options in a real polished program, but there's no time, what have to demo it:</p>
-<pre><code class="language-sh"># This returns immediately since it succeeds on the first try.
+<pre><code class="language-shell"># This returns immediately since it succeeds on the first try.
 $ ueb true
 
 # This retries 10 times since the command always fails, waiting more and more time between each try, and finally returns the last exit code of the command (1).
@@ -214,7 +214,7 @@ $ ueb ssh &lt;some_ip&gt;
 $ ueb createdb my_great_database -h 0.0.0.0 -U postgres
 </code></pre>
 <p>If you want to monitor the retries and the sleeps, you can use <code>strace</code> or <code>dtrace</code>:</p>
-<pre><code class="language-sh">$ strace ueb sleep 1
+<pre><code class="language-shell">$ strace ueb sleep 1
 </code></pre>
 <p>Note that the sub-command should be idempotent, otherwise we might create a given resource twice, or the command might have succeeded right after our timeout triggered but also right before we killed it, so our program thinks it timed out and thus needs to be retried. There is this small data race window, which is completely fine if the command is idempotent but will erroneously retry the command to the bitter end otherwise. There is also the case where the sub-command does stuff over the network for example creating a resource, it succeeds, but the ACK is never received due to network issues. The sub-command will think it failed and retry. Again, fairly standard stuff in distributed systems but I thought it was worth mentioning.</p>
 <p>So how do we implement it?</p>

@@ -4,7 +4,7 @@ Tags: Optimization, Git, Odin, Fossil
 
 This blog is statically generated from Markdown files. It used to be fast, but nowadays it's not:
 
-```sh
+```shell
  $ hyperfine --warmup 2 ./master.bin 
 Benchmark 1: ./master.bin
   Time (mean ± σ):      1.873 s ±  0.053 s    [User: 1.351 s, System: 0.486 s]
@@ -58,7 +58,7 @@ Yeah...I think it might be [git] [git] [git] [git] [git] [git] [git] [git]...
 
 Another way to confirm this is with `strace`:
 
-```sh
+```shell
 $ strace --summary-only ./src.bin
 % time     seconds  usecs/call     calls    errors syscall
 ------ ----------- ----------- --------- --------- ----------------
@@ -90,7 +90,7 @@ My intuition was to do a deep dive in the `git log` options, to see if I could i
 
 Conceptually we can simply do `git log '*.md'` and parse the output. We can refine that approach later with more options, but that's the gist of it:
 
-```sh
+```shell
  $ time git log '*.md' | wc -c
 191196
 
@@ -127,7 +127,7 @@ Hence we pass to `git log`:
 
 With these options we get even better numbers:
 
-```sh
+```shell
 $ time git log --format='%aI' --name-status --no-merges --diff-filter=AMDR  -- '*.md' | wc -c
 77832
 
@@ -350,7 +350,7 @@ Alright, so how does our new implementation fare compared to the old one?
 
 First, we can confirm with `strace` that the time spent on waiting for subprocesses (mainly Git) shrinked:
 
-```sh
+```shell
 $ strace --summary-only ./src.bin
 % time     seconds  usecs/call     calls    errors syscall
 ------ ----------- ----------- --------- --------- ----------------
@@ -360,7 +360,7 @@ $ strace --summary-only ./src.bin
 
 Then we benchmark:
 
-```sh
+```shell
  $ hyperfine --warmup 2 './src-main.bin' './src.bin'
 Benchmark 1: ./src-main.bin
   Time (mean ± σ):      1.773 s ±  0.022 s    [User: 1.267 s, System: 0.472 s]
@@ -399,7 +399,7 @@ I wonder if there is a better way...
 
 Let's import our git repository into a Fossil repository and enter the SQLite prompt:
 
-```sh
+```shell
 $ git fast-export --all | fossil import --git new-repo.fossil
 $ file new-repo.fossil 
 new-repo.fossil: SQLite 3.x database (Fossil repository), [...]
@@ -434,7 +434,7 @@ Which outputs what we want:
 
 Note that this does not filter out deleted/removed files yet. I'm sure that it can be done by tweaking the query a bit, but there's not time! We need to benchmark!
 
-```sh
+```shell
 $ hyperfine --shell=none 'fossil sql -R new-repo.fossil "SELECT [...]"'
 Benchmark 1: fossil sql -R new-repo.fossil "[...]"
   Time (mean ± σ):       3.0 ms ±   0.5 ms    [User: 1.5 ms, System: 1.4 ms]
@@ -492,7 +492,7 @@ Running `git gc` and `git prune` also helps because all unreachable objects are 
 
 Having done that, we get almost twice as fast:
 
-```sh
+```shell
 $ hyperfine --shell=none --warmup 2 './src.bin'
 Benchmark 1: ./src.bin
   Time (mean ± σ):      89.7 ms ±   2.6 ms    [User: 63.6 ms, System: 59.5 ms]
@@ -507,7 +507,7 @@ That's a ~21x speed-up from the original time.
 
 Since spawning the `cmark` process, having `cmark` parsing the command line options, over and over, is still taking a good chunk of the time, we can switch to using `libcmark` directly. This is something I wanted to do anyway to extract a table of content, etc from the markdown. Since the running time is getting lower and lower, we add `--shell=none` and increase the warm-up to reduce statistical outliers:
 
-```sh
+```shell
 $ hyperfine --shell=none --warmup 10 ./src.bin
 Benchmark 1: ./src.bin
   Time (mean ± σ):      55.4 ms ±   1.5 ms    [User: 49.0 ms, System: 35.0 ms]

@@ -152,7 +152,7 @@ rule:
 </code></pre>
 <p>A potential match must pass all conditions under the <code>all</code> section to be a result. There are other ways to write this rule, but this works. Note that the regexp is loose enough to match different kinds of mutex types such as <code>sync.Mutex</code> and <code>sync.RWMutex</code>.</p>
 <p>When we run the tool on the Go standard library, we get something like this (excerpt):</p>
-<pre><code class="language-sh">$ ast-grep scan --rule ~/scratch/mtx.yaml
+<pre><code class="language-shell">$ ast-grep scan --rule ~/scratch/mtx.yaml
 [...]
 
 note[find-mtx-fields]: Mutex fields found
@@ -183,7 +183,7 @@ note[find-mtx-fields]: Mutex fields found
   <a class="hash-anchor" href="#2333177148-a-naming-convention-to-rule-them-all" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>Unfortunately I did not find a built-in way to post-process the results from <code>ast-grep</code>, so I resorted to outputting the matches as JSON, extracting the matched text with <code>jq</code>, and finally aggregating the results with good old AWK:</p>
-<pre><code class="language-sh">$ ast-grep scan --rule ~/scratch/mtx.yaml --json | jq '.[].text' -r | awk -f ~/scratch/ast-grep-post.awk 
+<pre><code class="language-shell">$ ast-grep scan --rule ~/scratch/mtx.yaml --json | jq '.[].text' -r | awk -f ~/scratch/ast-grep-post.awk 
 </code></pre>
 <p>And this is the ad-hoc AWK script:</p>
 <pre><code class="language-awk"># ~/scratch/ast-grep-post.awk
@@ -311,7 +311,7 @@ in_struct &amp;&amp; /^}$/ { in_struct = 0 }
 <p>I wondered if the way mutexes are named in the Go project actually comes from the time were the Go compiler and much of the runtime were implemented in C.
 We can easily check this out with the same approach. This illustrates that <code>ast-grep</code> works for different languages, and also the slight differences.</p>
 <p><code>1.4</code> was the last major version to use the C compiler and runtime apparently, so we checkout this commit:</p>
-<pre><code class="language-sh">$ git checkout go1.4beta1
+<pre><code class="language-shell">$ git checkout go1.4beta1
 </code></pre>
 <p>I initially simply changed the <code>language: go</code> field in the rule to <code>language: c</code> but was surprised nothing turned up. After toying with the <a href="https://tree-sitter.github.io/tree-sitter/7-playground.html">treesitter playground</a> (<code>treesitter</code> is used under the covers), I realized that for C, the AST is structured differently and the nodes have different names. Here is the rule working for <code>struct</code> fields:</p>
 <pre><code class="language-yaml">id: find-mtx-fields-struct-fields

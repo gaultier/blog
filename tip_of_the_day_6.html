@@ -114,7 +114,7 @@ That's useful to limit the overall memory usage. Obviously this value is directl
 <p>So, the plan is: I run the tests under <code>bpftrace</code>, collect a histogram of the slice of bytes to be inserted in the cache, and voila!</p>
 <p>We can also run the real service with a load test to generate traffic, or simply wait for real traffic to come - all of that works, and <code>dtrace</code>/<code>bpftrace</code> are designed to inspect production programs without the risk of crashing them, or adversely impacting the system. The <code>bpftrace</code> incantation will be the same in all of these cases, only the binary (or process id) will change.</p>
 <p>Here, my function to insert a slice of bytes in the cache is called <code>cache_insert</code>, the executable is called <code>itest.test</code>, and the length of the slice of bytes happens to be passed as the third function argument. Arguments are zero-indexed so that means <code>arg2</code>:</p>
-<pre><code class="language-sh">$ sudo bpftrace -e 'uprobe:./itest.test:cache_insert {@bytes=lhist(arg2, 0 , 16384, 128)}' -c './itest.test -test.count=1'
+<pre><code class="language-shell">$ sudo bpftrace -e 'uprobe:./itest.test:cache_insert {@bytes=lhist(arg2, 0 , 16384, 128)}' -c './itest.test -test.count=1'
 </code></pre>
 <p><code>lhist</code> creates a linear histogram with the minimum value here being <code>0</code>, the maximum value <code>16384</code> and the bucket size <code>128</code>. I used the <code>hist</code> function initially which uses a power-of-two bucket size but my values were all in one big bucket so that was a bit imprecise. Still a good first approximation. But we can get a better estimate by using a small bucket size with <code>lhist</code>.</p>
 <p><code>bpftrace</code> prints the histogram by default at the end:</p>
@@ -127,7 +127,7 @@ That's useful to limit the overall memory usage. Obviously this value is directl
 <pre><code class="language-go">func (c Cache) Insert(ctx context.Context, key [32]byte, value []byte, expiryDate time.Time) error { [...] }
 </code></pre>
 <p>We are interested in <code>len(value)</code> which happens to be accessible in <code>arg5</code>:</p>
-<pre><code class="language-sh">$ sudo bpftrace -e 'uprobe:./itest.test:/path/to/my/pkg/Cache.Insert {@bytes=lhist(arg5, 0 , 16384, 128)}' -c './itest.test -test.count=1'
+<pre><code class="language-shell">$ sudo bpftrace -e 'uprobe:./itest.test:/path/to/my/pkg/Cache.Insert {@bytes=lhist(arg5, 0 , 16384, 128)}' -c './itest.test -test.count=1'
 </code></pre>
 <p>and we get the same output.</p>
 <hr />

@@ -244,7 +244,7 @@ func DoStuff() {
 }
 </code></pre>
 <p>So far, so good. Let's run it (our <code>main.go</code> simply calls <code>app.DoStuff()</code>):</p>
-<pre><code class="language-sh">$ go run .
+<pre><code class="language-shell">$ go run .
 Dog: 42
 Cat: kitty
 </code></pre>
@@ -329,7 +329,7 @@ func DoStuff() {
 }
 </code></pre>
 <p>And it does what we expect:</p>
-<pre><code class="language-sh">$ go run .
+<pre><code class="language-shell">$ go run .
 Dog: 42
 Cat: kitty
 [107 105 116 116 121]
@@ -413,7 +413,7 @@ func TestAnimalMakeDog(t *testing.T) {
 }
 </code></pre>
 <p>Let's run it:</p>
-<pre><code class="language-sh">$ go test ./app/
+<pre><code class="language-shell">$ go test ./app/
 use of cgo in test app_test.go not supported
 </code></pre>
 <p>Ah... yeah this is a <a href="https://go.dev/wiki/cgo">known limitation</a>: <code>_test.go files can’t use cgo.</code>.</p>
@@ -442,7 +442,7 @@ func TestAnimalMakeDog(t *testing.T) {
 	}
 }
 </code></pre>
-<pre><code class="language-sh">$ go test ./app/ -count=1 -v
+<pre><code class="language-shell">$ go test ./app/ -count=1 -v
 === RUN   TestAnimalMakeDog
 --- PASS: TestAnimalMakeDog (0.00s)
 PASS
@@ -498,7 +498,7 @@ import &quot;C&quot;
 </code></pre>
 <p>Yes, we can write C code directly in Go files. Inside comments. Not, it's not weird at all.</p>
 <p>We build, everything is fine:</p>
-<pre><code class="language-sh">$ go build .
+<pre><code class="language-shell">$ go build .
 </code></pre>
 <p>Since we are serious programmers, we want to enable C warnings, right? Let's add <code>-Wall</code> to the <code>CFLAGS</code>:</p>
 <pre><code class="language-go">// app/app.go
@@ -540,7 +540,7 @@ void initial_setup(){}
 import &quot;C&quot;
 </code></pre>
 <p>Let's build:</p>
-<pre><code class="language-sh">$ go build .
+<pre><code class="language-shell">$ go build .
 # cgo
 /home/pg/Downloads/go/pkg/tool/linux_amd64/link: running gcc failed: exit status 1
 /usr/bin/gcc -m64 -o $WORK/b001/exe/a.out -Wl,--export-dynamic-symbol=_cgo_panic -Wl,--export-dynamic-symbol=_cgo_topofstack -Wl,--export-dynamic-symbol=crosscall2 -Wl,--compress-debug-sections=zlib /tmp/go-link-2748897775/go.o /tmp/go-link-2748897775/000000.o /tmp/go-link-2748897775/000001.o /tmp/go-link-2748897775/000002.o /tmp/go-link-2748897775/000003.o /tmp/go-link-2748897775/000004.o /tmp/go-link-2748897775/000005.o /tmp/go-link-2748897775/000006.o /tmp/go-link-2748897775/000007.o /tmp/go-link-2748897775/000008.o /tmp/go-link-2748897775/000009.o /tmp/go-link-2748897775/000010.o /tmp/go-link-2748897775/000011.o /tmp/go-link-2748897775/000012.o /tmp/go-link-2748897775/000013.o /tmp/go-link-2748897775/000014.o /tmp/go-link-2748897775/000015.o /tmp/go-link-2748897775/000016.o -O2 -g /home/pg/scratch/cgo/app/../c/libapi.a -O2 -g -lpthread -no-pie
@@ -564,7 +564,7 @@ import &quot;C&quot;
 [...]
 </code></pre>
 <p>We rebuild, and boom:</p>
-<pre><code class="language-sh">$ go build .
+<pre><code class="language-shell">$ go build .
 # cgo/app
 app/app.go:3:6: error: expected '=', ',', ';', 'asm' or '__attribute__' before ':' token
     3 | // NOTE: Do not use -Wall.
@@ -598,7 +598,7 @@ import &quot;C&quot;
 <li>Use a Go debugger (e.g. delve) which does not (really) understand the C/Rust calling convention so you can see the Go stack, but it ends at the Cgo FFI boundary</li>
 </ul>
 <p>Let's see it for ourselves:</p>
-<pre><code class="language-sh">$ gdb ./cgo
+<pre><code class="language-shell">$ gdb ./cgo
 (gdb) break animal_print
 Breakpoint 1 at 0x469b6c
 (gdb) run
@@ -623,7 +623,7 @@ Backtrace stopped: previous frame inner to this frame (corrupt stack?)
 </code></pre>
 <p>Where is <code>app.DoStuff</code>? Where is <code>main</code>? Probably around frames 8-13 in the <code>corrupt stack</code>...</p>
 <p>Now with <code>delve</code>:</p>
-<pre><code class="language-sh">$ go build   -gcflags=all=&quot;-N -l&quot;
+<pre><code class="language-shell">$ go build   -gcflags=all=&quot;-N -l&quot;
 $ dlv exec ./cgo
 (dlv) b animal_print
 Command failed: could not find function C.animal_print
@@ -728,7 +728,7 @@ Values returned:
   <a class="hash-anchor" href="#1317537828-strace-bpftrace" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h3>
 <p>It's the same issue manifesting in a different way: it's not just debuggers than do not understand the call stack, it's also <code>strace</code>:</p>
-<pre><code class="language-sh">$ strace -k -e write ./cgo
+<pre><code class="language-shell">$ strace -k -e write ./cgo
 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=438876, si_uid=1000} ---
  &gt; /usr/lib64/libc.so.6(pthread_sigmask@GLIBC_2.2.5+0x48) [0x783b8]
  &gt; /home/pg/scratch/cgo/cgo(_cgo_sys_thread_start+0x7e) [0x4727ee]
@@ -753,7 +753,7 @@ write(1, &quot;Dog: 42\n&quot;, 8Dog: 42
 </code></pre>
 <p>Same as gdb, the call stack stops at the Cgo FFI boundary.</p>
 <p>But surprisingly, <code>bpftrace</code> seems to work:</p>
-<pre><code class="language-sh">$ sudo bpftrace -e 'uprobe:./cgo:animal_print {print(ustack(perf, 64))}' -c ./cgo
+<pre><code class="language-shell">$ sudo bpftrace -e 'uprobe:./cgo:animal_print {print(ustack(perf, 64))}' -c ./cgo
 Attaching 1 probe...
 Dog: 42
 
@@ -773,7 +773,7 @@ Dog: 42
 </h2>
 <p>So picture me, building my Go program (a web service) using Cgo. Locally, it builds very quickly, due to Rust and Go caching.</p>
 <p>Now, time to build in Docker to be able to test my changes:</p>
-<pre><code class="language-sh">$ time docker build [...]
+<pre><code class="language-shell">$ time docker build [...]
 [...]
 Total execution time 101.664413146
 </code></pre>
@@ -801,17 +801,17 @@ cgo/app: build constraints exclude all Go files in /home/pg/scratch/cgo/app
 <p>So, how does it look like? Let's assume we want to target <code>x86_64-linux-musl</code>, built statically, since we use a distroless image that does not come with a libc. The benefit is that our service looks like any other Go service without Cgo.</p>
 <p>We could also target a specific glibc version and deploy on a LTS version of Ubuntu, Debian, etc. Zig supports that.</p>
 <p>First, we cross-compile our C code:</p>
-<pre><code class="language-sh">$ CC=&quot;zig cc --target=x86_64-linux-musl&quot; make -C ./c
+<pre><code class="language-shell">$ CC=&quot;zig cc --target=x86_64-linux-musl&quot; make -C ./c
 </code></pre>
 <p>Or, bring your own cross-compiler, you don't have to use Zig:</p>
 <pre><code>$ CC=musl-gcc make -C ./c
 </code></pre>
 <p>If we have Rust code, we do instead:</p>
-<pre><code class="language-sh">$ rustup target add x86_64-unknown-linux-musl
+<pre><code class="language-shell">$ rustup target add x86_64-unknown-linux-musl
 $ cargo build --release --all-features --target=x86_64-unknown-linux-musl
 </code></pre>
 <p>Then we build our Go code using the Zig C compiler. I put the non cross-compiling build commands just before for comparison:</p>
-<pre><code class="language-sh">$ go build .
+<pre><code class="language-shell">$ go build .
 $ file cgo
 cgo: ELF 64-bit LSB executable, x86-64, version 1 (SYSV), dynamically linked, interpreter /lib64/ld-linux-x86-64.so.2, BuildID[sha1]=9d5da9b6a211c5635a83e4a8a346ff605f7b6e3b, for GNU/Linux 3.2.0, with debug_info, not stripped
 
@@ -821,7 +821,7 @@ cgo: ELF 64-bit LSB executable, x86-64, version 1 (SYSV), statically linked, Go 
 </code></pre>
 <p>Ta dam!</p>
 <p>Time to build a native ARM image? No problem:</p>
-<pre><code class="language-sh">$ CC=&quot;zig cc --target=aarch64-linux-musl&quot; make -C ./c
+<pre><code class="language-shell">$ CC=&quot;zig cc --target=aarch64-linux-musl&quot; make -C ./c
 $ CGO_ENABLED=1 CC='zig cc --target=aarch64-linux-musl -static' GOOS=linux GOARCH=arm64 go build .
 $ file ./cgo
 ./cgo: ELF 64-bit LSB executable, ARM aarch64, version 1 (SYSV), statically linked, Go BuildID=QRDa72MrAj44K3mt54PK/_aJwgCwTO37mKpnfElWN/0TEmGFNLMEZCx3Zv_PKs/lgDlIHFQ6-LxhCOsdhQI, with debug_info, not stripped
@@ -831,7 +831,7 @@ $ file ./cgo
 <p>Note: Rust code typically needs libunwind for printing a backtrace, so it needs to be cross-compiled and linked as well. But no worries, Zig has you covered, it ships with libunwind sources and will, just like with musl, build it for your target, and cache the results! Just add <code>-lunwind</code> to the <code>zig cc</code> invocation, and voila.</p>
 </blockquote>
 <p>Oh, and what about the speed now? Here is a full Docker build with my real-life program (Rust + Go):</p>
-<pre><code class="language-sh">$ make docker-build
+<pre><code class="language-shell">$ make docker-build
 Executed in    1.47 secs
 </code></pre>
 <p>That time includes <code>cargo build --release</code>, <code>go build</code>, and <code>docker build</code>. Most of the time is spent copying the giant executable (around 72 MiB!) into the Docker image since neither Rust nor Go are particularly good at producing small executables.</p>

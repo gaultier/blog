@@ -24,7 +24,7 @@ For this reason I do not have a state file at all. It's simpler and a whole clas
 
 So I have this big [NetBSD image](https://netbsd.org/mirrors/torrents/) torrent that I primarily test with (by the way, thank you NetBSD maintainers for that!). It's not that big:
 
-```sh
+```shell
 $ du -h ./NetBSD-9.4-amd64.iso 
 485M	./NetBSD-9.4-amd64.iso
 ```
@@ -43,7 +43,7 @@ For a while, due to this slowness, I simply gave up using a debug build, instead
 
 What's vexing is that from first principles, we know it could/should be much, much faster:
 
-```sh
+```shell
 $ hyperfine --shell=none --warmup 3 'sha1sum ./NetBSD-9.4-amd64.iso'
 Benchmark 1: sha1sum ./NetBSD-9.4-amd64.iso
   Time (mean ± σ):     297.7 ms ±   3.2 ms    [User: 235.8 ms, System: 60.9 ms]
@@ -432,7 +432,7 @@ The `SHA1_xxx` functions are lifted from [OpenBSD](https://github.com/openssh/op
 
 When compiled in non-optimized mode with Address Sanitizer, we get this timing:
 
-```sh
+```shell
 $ hyperfine --warmup 3 './a.out ./NetBSD-9.4-amd64.iso ~/Downloads/NetBSD-9.4-amd64.iso.torrent'
 Benchmark 1: ./a.out ./NetBSD-9.4-amd64.iso ~/Downloads/NetBSD-9.4-amd64.iso.torrent
   Time (mean ± σ):     26.312 s ±  0.734 s    [User: 26.164 s, System: 0.066 s]
@@ -851,7 +851,7 @@ static bool is_piece_valid(uint8_t *piece, uint64_t piece_len,
 
 So predictably, since we now process 4 `uint32_t` at a time instead of one, we observe roughly a 4x speed-up (still in debug + Address Sanitizer mode):
 
-```sh
+```shell
 $ hyperfine --warmup 3 './a.out ./NetBSD-9.4-amd64.iso ~/Downloads/NetBSD-9.4-amd64.iso.torrent'
 Benchmark 1: ./a.out ./NetBSD-9.4-amd64.iso ~/Downloads/NetBSD-9.4-amd64.iso.torrent
   Time (mean ± σ):      8.093 s ±  0.272 s    [User: 8.010 s, System: 0.060 s]
@@ -1152,7 +1152,7 @@ static bool is_piece_valid(uint8_t *piece, uint64_t piece_len,
 
 How fast?
 
-```sh
+```shell
  $ hyperfine --warmup 3 './a.out ./NetBSD-9.4-amd64.iso ~/Downloads/NetBSD-9.4-amd64.iso.torrent'
 Benchmark 1: ./a.out ./NetBSD-9.4-amd64.iso ~/Downloads/NetBSD-9.4-amd64.iso.torrent
   Time (mean ± σ):     866.9 ms ±  17.4 ms    [User: 809.6 ms, System: 54.4 ms]
@@ -1166,7 +1166,7 @@ What about a release build (without Address Sanitizer), for comparison?
 
 This is the SIMD-less version with `-O2 -march=native`, benefiting from some auto-vectorization:
 
-```sh
+```shell
 $ hyperfine --warmup 3 './a.out ./NetBSD-9.4-amd64.iso ~/Downloads/NetBSD-9.4-amd64.iso.torrent'
 Benchmark 1: ./a.out ./NetBSD-9.4-amd64.iso ~/Downloads/NetBSD-9.4-amd64.iso.torrent
   Time (mean ± σ):     617.8 ms ±  20.9 ms    [User: 573.6 ms, System: 42.2 ms]
@@ -1177,7 +1177,7 @@ That's ~ **802 Mib/s**.
 
 And this is the code using the SHA extension, again with `-O2 -march=native`:
 
-```sh
+```shell
 $ hyperfine --warmup 3 './a.out ./NetBSD-9.4-amd64.iso ~/Downloads/NetBSD-9.4-amd64.iso.torrent'
 Benchmark 1: ./a.out ./NetBSD-9.4-amd64.iso ~/Downloads/NetBSD-9.4-amd64.iso.torrent
   Time (mean ± σ):     281.2 ms ±   5.4 ms    [User: 240.6 ms, System: 39.6 ms]
@@ -1208,7 +1208,7 @@ I tried to give the OS some hints to improve a bit on that front with `madvise(f
 
 The whole point of this article is to do SHA1 computations from scratch and avoid dependencies. Let's see how OpenSSL (in this case, [aws-lc](https://github.com/aws/aws-lc) but I don't believe they changed that part at all) fares out of curiosity. 
 
-```sh
+```shell
  $ hyperfine --warmup 3 './a.out ./NetBSD-9.4-amd64.iso ~/Downloads/NetBSD-9.4-amd64.iso.torrent'
 Benchmark 1: ./a.out ./NetBSD-9.4-amd64.iso ~/Downloads/NetBSD-9.4-amd64.iso.torrent
   Time (mean ± σ):     281.5 ms ±   3.9 ms    [User: 245.7 ms, System: 35.1 ms]

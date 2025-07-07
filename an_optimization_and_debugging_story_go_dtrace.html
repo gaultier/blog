@@ -181,7 +181,7 @@ That's the core idea behind DTrace: it exists to answer questions <em>we did not
 </h3>
 <p>Back to the problem at hand.</p>
 <p>We check if the function <code>NewMigrationBox</code> is visible to DTrace by listing (<code>-l</code>) all probes matching the pattern <code>*ory*</code> in the executable <code>code.test.before</code> (i.e. before the fix):</p>
-<pre><code class="language-sh">$ sudo dtrace -n 'pid$target:code.test.before:*ory*: ' -c ./code.test.before -l | grep NewMigrationBox
+<pre><code class="language-shell">$ sudo dtrace -n 'pid$target:code.test.before:*ory*: ' -c ./code.test.before -l | grep NewMigrationBox
 209591   pid47446  code.test.before github.com/ory/x/popx.NewMigrationBox return
 209592   pid47446  code.test.before github.com/ory/x/popx.NewMigrationBox entry
 209593   pid47446  code.test.before github.com/ory/x/popx.NewMigrationBox.(*MigrationBox).findMigrations.func4 return
@@ -202,7 +202,7 @@ pid$target::*NewMigrationBox:return {
 <p>Fortunately I later found a way to avoid this pitfall, see the <a href="#553173937-addendum-a-goroutine-aware-d-script">addendum</a> at the end.</p>
 <p>Since the tests log verbose stuff by default and I do not know how to silence them, I save the output of DTrace in a separate file <code>/tmp/time.txt</code>: <code>dtrace -s time.d -c ./code.test.before -o /tmp/time.txt</code></p>
 <p>We see these results and the last line shows the aggregation (I trimmed empty lines for brevity):</p>
-<pre><code class="language-sh">$ sudo dtrace -s time.d -c ./code.test.before -o /tmp/time.txt
+<pre><code class="language-shell">$ sudo dtrace -s time.d -c ./code.test.before -o /tmp/time.txt
 
   NewMigrationBox                                   
            value  ------------- Distribution ------------- count    
@@ -242,7 +242,7 @@ pid$target::*NewMigrationBox:return {
 <li>How much work is there? How many items are we handling? Is it a handful, a few thousands, a few millions?</li>
 </ul>
 <p>So let's see what the baseline is when simply finding all the SQL files on disk:</p>
-<pre><code class="language-sh">hyperfine --shell=none --warmup=5 &quot;find ./persistence/sql/migrations -name '*.sql' -type f&quot;
+<pre><code class="language-shell">hyperfine --shell=none --warmup=5 &quot;find ./persistence/sql/migrations -name '*.sql' -type f&quot;
 Benchmark 1: find ./persistence/sql/migrations -name '*.sql' -type f
   Time (mean ± σ):     206.6 ms ±   4.8 ms    [User: 2.4 ms, System: 5.0 ms]
   Range (min … max):   199.5 ms … 214.4 ms    14 runs
@@ -260,7 +260,7 @@ Benchmark 1: find ./persistence/sql/migrations -name '*.sql' -type f
 </code></pre>
 <p><code>copyinstr</code> is <a href="https://illumos.org/books/dtrace/chp-user.html#chp-user">required</a> because our D script runs inside the kernel but we are trying to access user-space memory.</p>
 <p>When we run this script on <code>go test -c</code> which builds the text executable, we see that all the SQL files are being opened by the Go compiler and subsequently embedded in the test binary:</p>
-<pre><code class="language-sh">$ sudo dtrace -s ~/scratch/sql_files.d -c 'go test -tags=sqlite -c'
+<pre><code class="language-shell">$ sudo dtrace -s ~/scratch/sql_files.d -c 'go test -tags=sqlite -c'
 
 CPU     ID                    FUNCTION:NAME
  10    178                       open:entry /Users/philippe.gaultier/company-code/x/networkx/migrations/sql/20150100000001000000_networks.cockroach.down.sql
@@ -291,7 +291,7 @@ pid$target:code.test.before:sort*: /self-&gt;t != 0/ {}
 <p>For example if all your company code is under some prefix, like for me, <code>github.com/ory</code>, and you want to see all calls to company code, the probe can be <code>pid$target::github.com?ory*:</code>. The only issue is that the Go stdlib code has no prefix and we want to see it as well...</p>
 <p>The <code>self-&gt;t</code> variable is used to toggle tracing on when we enter a specific function of interest, and to toggle it off when we leave the function. Very useful to reduce noise and avoid a post-processing filtering step.</p>
 <p>So, let's run our script with the <code>-F</code> option to get a nicely formatted output:</p>
-<pre><code class="language-sh">$ sudo dtrace -s ~/scratch/trace_calls.d -c './code.test.before' -F
+<pre><code class="language-shell">$ sudo dtrace -s ~/scratch/trace_calls.d -c './code.test.before' -F
 
 CPU FUNCTION                                 
   7  -&gt; sort.Sort                             
@@ -385,7 +385,7 @@ sort.Sort(mod)
 </code></pre>
 <p>The real fix uses <code>slices.SortFunc</code> instead of <code>sort.Sort</code> because the official docs mention the performance of the former is better than the latter. Likely because <code>slices.SortFunc</code> uses compile-time generics whereas <code>sort.Sort</code> uses runtime interfaces. And also we see that the Go compiler inlines the call to <code>slices.SortFunc</code>, which probably helps further.</p>
 <p>With this done, we can measure again the duration of <code>NewMigrationBox</code> (with a lower maximum value for the histogram since we know it got faster):</p>
-<pre><code class="language-sh">$ sudo dtrace -s ~/scratch/time.d -c './code.test.after' 
+<pre><code class="language-shell">$ sudo dtrace -s ~/scratch/time.d -c './code.test.after' 
 
   NewMigrationBox                                   
            value  ------------- Distribution ------------- count    
@@ -462,7 +462,7 @@ pid$target::*NewMigrationBox:return {
 <p>Assigning an associative array element to zero causes DTrace to deallocate the underlying storage. This behavior is important because the dynamic variable space out of which associative array elements are allocated is finite; if it is exhausted when an allocation is attempted, the allocation will fail and an error message will be generated indicating a dynamic variable drop. Always assign zero to associative array elements that are no longer in use.</p>
 </blockquote>
 <p>When we run it, we see that all durations are now nice and correct:</p>
-<pre><code class="language-sh">$ sudo dtrace -s time.d -c ./code.test.before -o /tmp/time.txt
+<pre><code class="language-shell">$ sudo dtrace -s time.d -c ./code.test.before -o /tmp/time.txt
 
   NewMigrationBox                                   
            value  ------------- Distribution ------------- count    

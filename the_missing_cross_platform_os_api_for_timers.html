@@ -467,7 +467,7 @@ int main() {
 <p>We create 10 timers with increasing durations, and run the event loop. When a timer triggers, our callback is called by <code>libuv</code>.</p>
 <p>Of course, in a real program, we would also do real work while the timers run, e.g. network I/O.</p>
 <p>Let's compile our program and look at what syscalls are being done (here I am on Linux but we'll soon seen it does not matter at all):</p>
-<pre><code class="language-sh">$ cc uv-timers.c -luv
+<pre><code class="language-shell">$ cc uv-timers.c -luv
 $ strace ./a.out
 [...]
 epoll_pwait(3, [], 1024, 49, NULL, 8)   = 0

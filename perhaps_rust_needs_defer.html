@@ -146,7 +146,7 @@ pub extern &quot;C&quot; fn MYLIB_get_foos(out_foos: *mut *mut Foo, out_foos_cou
 crate-type = [&quot;staticlib&quot;]
 </code></pre>
 <p>It's a straightforward API, so I generate the corresponding C header with cbindgen:</p>
-<pre><code class="language-sh">$ cbindgen -v src/lib.rs --lang=c -o mylib.h
+<pre><code class="language-shell">$ cbindgen -v src/lib.rs --lang=c -o mylib.h
 </code></pre>
 <p>And I get:</p>
 <pre><code class="language-c">#include &lt;stdarg.h&gt;
@@ -198,14 +198,14 @@ mod tests {
 }
 </code></pre>
 <p>And it passes:</p>
-<pre><code class="language-sh">$ cargo test
+<pre><code class="language-shell">$ cargo test
 ...
 running 1 test
 test tests::test_get_foos ... ok
 ...
 </code></pre>
 <p>Of course, we have not yet freed anything, so we expect Miri to complain, and it does:</p>
-<pre><code class="language-sh">$ cargo +nightly miri test
+<pre><code class="language-shell">$ cargo +nightly miri test
 ...
 error: memory leaked: alloc59029 (Rust heap, size: 16, align: 8), allocated here:
 ...
@@ -225,13 +225,13 @@ error: memory leaked: alloc59029 (Rust heap, size: 16, align: 8), allocated here
     }
 </code></pre>
 <p>The test passes, great. Let's try with Miri:</p>
-<pre><code class="language-sh">$ cargo +nightly miri test
+<pre><code class="language-shell">$ cargo +nightly miri test
 ...
  error: Undefined Behavior: deallocating alloc59029, which is Rust heap memory, using C heap deallocation operation
 ...
 </code></pre>
 <p>Hmm...ok...Well that's a bit weird, because what Rust does, when the <code>Vec</code> is allocated, is to call out to <code>malloc</code> from libc, as we can see with <code>strace</code>:</p>
-<pre><code class="language-sh">$ strace -k -v -e brk ./a.out
+<pre><code class="language-shell">$ strace -k -v -e brk ./a.out
 ...
 brk(0x213c0000)                         = 0x213c0000
  &gt; /usr/lib64/libc.so.6(brk+0xb) [0x10fa9b]
@@ -289,7 +289,7 @@ brk(0x213c0000)                         = 0x213c0000
 </code></pre>
 <p>That's I think the first instinct for a C developer. Whatever way the memory was heap allocated, be it with <code>malloc</code>, <code>calloc</code>, <code>realloc</code>, be it for one struct or for a whole array, we want to free it with one call, passing it the base pointer. Let's ignore for a moment the docs that state that sometimes the pointer is heap-allocated and sometimes not.</p>
 <p>So this Rust code builds. The test passes. And Miri is unhappy. I guess you know the drill by now:</p>
-<pre><code class="language-sh">$ cargo +nightly miri test
+<pre><code class="language-shell">$ cargo +nightly miri test
 ...
  incorrect layout on deallocation: alloc59029 has size 16 and alignment 8, but gave size 8 and alignment 8
 ...
@@ -379,7 +379,7 @@ mod tests {
     }
 </code></pre>
 <p>And we get a compile error:</p>
-<pre><code class="language-sh">$ cargo test
+<pre><code class="language-shell">$ cargo test
 error[E0502]: cannot borrow `foos.len` as immutable because it is also borrowed as mutable
   --&gt; src/lib.rs:54:30
    |

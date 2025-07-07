@@ -384,7 +384,7 @@ static solve:function
   <a class="hash-anchor" href="#2843714489-benchmarking" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>So, did it work? Is it fast? Let's compare the old C solution (also embedding the input data for a fair comparison) with our new Assembly one:</p>
-<pre><code class="language-sh">$ clang -Ofast -g3 -march=native aoc2018_5.c -o aoc2018_5-c
+<pre><code class="language-shell">$ clang -Ofast -g3 -march=native aoc2018_5.c -o aoc2018_5-c
 $ hyperfine --warmup 3 --shell=none ./aoc2018_5 ./aoc2018_5-c
 
 Benchmark 1: ./aoc2018_5

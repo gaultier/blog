@@ -212,12 +212,12 @@ _start:
 <p>Note that those section usually get mapped by the OS to different pages in memory with different permissions (visible with <code>readelf -l</code>) so that the text section is not writable and the data section is not executable, but that varies from OS to OS.</p>
 <p>The <code>_start</code> function has a body that does nothing for now, but not for long. The actual name of the main function is actually up to us, it's just that <code>start</code> or <code>_start</code> is usual.</p>
 <p>We build and run our little program like this:</p>
-<pre><code class="language-sh">$ nasm -f elf64 -g main.nasm &amp;&amp; ld main.o -static -o main
+<pre><code class="language-shell">$ nasm -f elf64 -g main.nasm &amp;&amp; ld main.o -static -o main
 </code></pre>
 <p><code>nasm</code> actually only produces an object file, so to get an executable out of it, we need to invoke the linker <code>ld</code>. The flag <code>-g</code> is telling <code>nasm</code> to produce debugging information which is immensely useful when writing raw assembly, since firing the debugger is often our only recourse in face of a bug.</p>
 <p><em>To remove the debugging information, we can pass <code>-s</code> to the linker, for example when we are about to ship our program and want to save a few KiB.</em></p>
 <p>We finally have an executable:</p>
-<pre><code class="language-sh">$ file ./main
+<pre><code class="language-shell">$ file ./main
 main: ELF 64-bit LSB executable, x86-64, version 1 (SYSV), statically linked, with debug_info, not stripped
 </code></pre>
 <p>We can see the different sections with <code>readelf -a ./main</code>, and it tells us that the <code>.text</code> section, which contains our code, is only 3 bytes long.</p>
@@ -244,15 +244,15 @@ We then use the instruction <code>syscall</code> and check <code>rax</code> for 
 </blockquote>
 <p>Back to our program: when we run it, we see...nothing. That's because everything went well, true to the UNIX philosophy!</p>
 <p>We can check the exit code:</p>
-<pre><code class="language-sh">$ ./main; echo $?
+<pre><code class="language-shell">$ ./main; echo $?
 0
 </code></pre>
 <p>Changing <code>mov rdi, 0</code> to <code>mov rdi, 8</code> will now result in:</p>
-<pre><code class="language-sh">$ ./main; echo $?
+<pre><code class="language-shell">$ ./main; echo $?
 8
 </code></pre>
 <p>Another way to observe system calls made by a program is with <code>strace</code>, which will also prove very useful when troubleshooting. On some BSD, its equivalent is <code>truss</code> or <code>dtruss</code>.</p>
-<pre><code class="language-sh">$ strace ./main
+<pre><code class="language-shell">$ strace ./main
 execve(&quot;./main&quot;, [&quot;./main&quot;], 0x7ffc60e6bf10 /* 60 vars */) = 0
 exit(8)                                 = ?
 +++ exited with 8 +++
@@ -501,7 +501,7 @@ _start:
   syscall
 </code></pre>
 <p>Building and running it under <code>strace</code> shows that it works and we get a socket with the file descriptor <code>3</code> (in this case, it might be different for you if you are following at home):</p>
-<pre><code class="language-sh">$ nasm -f elf64 -g main.nasm &amp;&amp; ld main.o -static -o main 
+<pre><code class="language-shell">$ nasm -f elf64 -g main.nasm &amp;&amp; ld main.o -static -o main 
 $ strace ./main
 execve(&quot;./main&quot;, [&quot;./main&quot;], 0x7ffe54dfe550 /* 60 vars */) = 0
 socket(AF_UNIX, SOCK_STREAM, 0)         = 3

@@ -219,7 +219,7 @@ int main() {
 }
 </code></pre>
 <p>Leveraging <code>tcmalloc</code>, this program will generate a heap profile:</p>
-<pre><code class="language-sh">$ cc /tmp/test_alloc.c -ltcmalloc  -g3
+<pre><code class="language-shell">$ cc /tmp/test_alloc.c -ltcmalloc  -g3
 $ HEAPPROFILE=/tmp/heapprof ./a.out
 Starting tracking the heap
 Dumping heap profile to /tmp/heapprof.0001.heap (Exiting, 11 bytes in use)
@@ -306,7 +306,7 @@ ffffffffff600000-ffffffffff601000 --xp 00000000 00:00 0           [vsyscall]
 <p>Since our program is a Position Independant Executable (PIE), the loader picks a random address for where to load our program in virtual memory. Consequently, addresses collected from within our program have this offset added to them and this offset is different every run. Thankfully, the <code>MAPPED_LIBRARIES</code> section lists address ranges (the first column of each line in that section) for each library that gets loaded.</p>
 <p>As such, <code>pprof</code> only needs to find for each address the relevant range, subtract the start of the range from this address, and it has the real address in our executable. It then runs <code>addr2line</code> or similar to get the code location.</p>
 <p>Finally we can use <code>pprof</code> to extract human-readable information from this text file:</p>
-<pre><code class="language-sh">$ pprof --text ./a.out ./heapprof.0001.heap
+<pre><code class="language-shell">$ pprof --text ./a.out ./heapprof.0001.heap
 Using local file ./a.out.
 Using local file /tmp/heapprof.0001.heap.
 Total: 0.0 MB
@@ -559,14 +559,14 @@ int main() {
   mem_profile_write(&amp;mem_profile, stderr);
 }
 </code></pre>
-<pre><code class="language-sh">$ cc -g3 example.c
+<pre><code class="language-shell">$ cc -g3 example.c
 $ ./a.out 2&gt; heap.profile
 $ pprof --web ./a.out heap.profile
 </code></pre>
 <p>And we see in our browser:</p>
 <p><img src="mem_prof4.png" alt="Initial profile" /></p>
 <p>And we can even generate a flamegraph for it leveraging the great <a href="https://github.com/brendangregg/FlameGraph">OG flamegraph project</a>:</p>
-<pre><code class="language-sh">$ pprof --collapsed ./a.out heap.profile | flamegraph.pl &gt; out.svg
+<pre><code class="language-shell">$ pprof --collapsed ./a.out heap.profile | flamegraph.pl &gt; out.svg
 </code></pre>
 <p><object data="mem_prof_flamegraph.svg" type="image/svg+xml"></object></p>
 <h2 id="2279041372-variations-and-limitations">

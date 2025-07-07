@@ -42,7 +42,7 @@ crate-type = ["staticlib"]
 
 It's a straightforward API, so I generate the corresponding C header with cbindgen: 
 
-```sh
+```shell
 $ cbindgen -v src/lib.rs --lang=c -o mylib.h
 ```
 
@@ -110,7 +110,7 @@ mod tests {
 
 And it passes:
 
-```sh
+```shell
 $ cargo test
 ...
 running 1 test
@@ -120,7 +120,7 @@ test tests::test_get_foos ... ok
 
 Of course, we have not yet freed anything, so we expect Miri to complain, and it does:
 
-```sh
+```shell
 $ cargo +nightly miri test
 ...
 error: memory leaked: alloc59029 (Rust heap, size: 16, align: 8), allocated here:
@@ -145,7 +145,7 @@ Great, so let's free it at the end of the test, like C does, with `free` from li
 
 The test passes, great. Let's try with Miri:
 
-```sh
+```shell
 $ cargo +nightly miri test
 ...
  error: Undefined Behavior: deallocating alloc59029, which is Rust heap memory, using C heap deallocation operation
@@ -154,7 +154,7 @@ $ cargo +nightly miri test
 
 Hmm...ok...Well that's a bit weird, because what Rust does, when the `Vec` is allocated, is to call out to `malloc` from libc, as we can see with `strace`:
 
-```sh
+```shell
 $ strace -k -v -e brk ./a.out
 ...
 brk(0x213c0000)                         = 0x213c0000
@@ -232,7 +232,7 @@ That's I think the first instinct for a C developer. Whatever way the memory was
 
 So this Rust code builds. The test passes. And Miri is unhappy. I guess you know the drill by now:
 
-```sh
+```shell
 $ cargo +nightly miri test
 ...
  incorrect layout on deallocation: alloc59029 has size 16 and alignment 8, but gave size 8 and alignment 8
@@ -345,7 +345,7 @@ Let's use the `scopeguard` crate which provides a `defer!` macro, in the test, t
 
 And we get a compile error:
 
-```sh
+```shell
 $ cargo test
 error[E0502]: cannot borrow `foos.len` as immutable because it is also borrowed as mutable
   --> src/lib.rs:54:30

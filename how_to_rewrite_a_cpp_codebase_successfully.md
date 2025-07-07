@@ -233,7 +233,7 @@ Also, it means the corpus gets better each time we had a test (be it in C++ or R
 
 Does it mean that the corpus will grow to an extreme size? Well, worry not, because LLVM comes with a fuzzing corpus minimizer:
 
-```sh
+```shell
 # Minimize the fuzzing corpus (in place).
 $ cargo +nightly fuzz cmin [...]
 ```
@@ -567,13 +567,13 @@ I took inspiration from the CMake code in the Android project, which has to cros
 
 In short, you instruct CMake to cross-compile by supplying on the command-line the variables `CMAKE_SYSTEM_PROCESSOR` and `CMAKE_SYSTEM_NAME`, which are the equivalent of `GOARCH` and `GOOS` if you are familiar with Go. E.g.: 
 
-```sh
+```shell
 $ cmake -B .build -S src -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_SYSTEM_NAME=Linux -DCMAKE_SYSTEM_PROCESSOR=arm
 ```
 
 On the Rust side, you tell `cargo` to cross-compile by supplying the `--target` command-line argument, e.g.: `--target=x86_64-unknown-linux-musl`. This works by virtue of installing the pre-compiled toolchain for this platform with `rustup` first:
 
-```sh
+```shell
 $ rustup target add x86_64-unknown-linux-musl
 ```
 

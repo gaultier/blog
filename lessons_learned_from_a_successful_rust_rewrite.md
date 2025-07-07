@@ -67,7 +67,7 @@ You might think that this code is dumb and obviously wrong, but in a big real co
 
 The only savior here is [Miri](https://github.com/rust-lang/miri):
 
-```sh
+```shell
 $ cargo +nightly-2024-09-01 miri r
 error: Undefined Behavior: attempting a write access using <2883> at alloc1335[0x0], but that tag does not exist in the borrow stack for this location
  --> src/main.rs:7:9

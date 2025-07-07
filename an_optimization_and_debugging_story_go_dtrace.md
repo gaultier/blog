@@ -61,7 +61,7 @@ Back to the problem at hand.
 
 We check if the function `NewMigrationBox` is visible to DTrace by listing (`-l`) all probes matching the pattern `*ory*` in the executable `code.test.before` (i.e. before the fix):
 
-```sh
+```shell
 $ sudo dtrace -n 'pid$target:code.test.before:*ory*: ' -c ./code.test.before -l | grep NewMigrationBox
 209591   pid47446  code.test.before github.com/ory/x/popx.NewMigrationBox return
 209592   pid47446  code.test.before github.com/ory/x/popx.NewMigrationBox entry
@@ -92,7 +92,7 @@ Since the tests log verbose stuff by default and I do not know how to silence th
 
 We see these results and the last line shows the aggregation (I trimmed empty lines for brevity):
 
-```sh
+```shell
 $ sudo dtrace -s time.d -c ./code.test.before -o /tmp/time.txt
 
   NewMigrationBox                                   
@@ -134,7 +134,7 @@ When doing some (light) optimization work, it is crucial to establish a baseline
 
 So let's see what the baseline is when simply finding all the SQL files on disk:
 
-```sh
+```shell
 hyperfine --shell=none --warmup=5 "find ./persistence/sql/migrations -name '*.sql' -type f"
 Benchmark 1: find ./persistence/sql/migrations -name '*.sql' -type f
   Time (mean ± σ):     206.6 ms ±   4.8 ms    [User: 2.4 ms, System: 5.0 ms]
@@ -161,7 +161,7 @@ syscall::open:entry {
 
 When we run this script on `go test -c` which builds the text executable, we see that all the SQL files are being opened by the Go compiler and subsequently embedded in the test binary:
 
-```sh
+```shell
 $ sudo dtrace -s ~/scratch/sql_files.d -c 'go test -tags=sqlite -c'
 
 CPU     ID                    FUNCTION:NAME
@@ -206,7 +206,7 @@ The `self->t` variable is used to toggle tracing on when we enter a specific fun
 
 So, let's run our script with the `-F` option to get a nicely formatted output:
 
-```sh
+```shell
 $ sudo dtrace -s ~/scratch/trace_calls.d -c './code.test.before' -F
 
 CPU FUNCTION                                 
@@ -325,7 +325,7 @@ The real fix uses `slices.SortFunc` instead of `sort.Sort` because the official 
 With this done, we can measure again the duration of `NewMigrationBox` (with a lower maximum value for the histogram since we know it got faster):
 
 
-```sh
+```shell
 $ sudo dtrace -s ~/scratch/time.d -c './code.test.after' 
 
   NewMigrationBox                                   
@@ -418,7 +418,7 @@ At the end, when the duration has been duly recorded in the histogram, we set th
 
 When we run it, we see that all durations are now nice and correct:
 
-```sh
+```shell
 $ sudo dtrace -s time.d -c ./code.test.before -o /tmp/time.txt
 
   NewMigrationBox                                   

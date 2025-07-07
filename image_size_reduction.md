@@ -18,13 +18,13 @@ Fortunately there is an open-source [command line tool](https://github.com/korne
 
 I simply ran the tool on all images to convert them in place in parallel:
 
-```sh
+```shell
 $ ls *.png | parallel 'pngquant {} -o {}.tmp && mv {}.tmp {}'
 ```
 
 It finished instantly, and here is the result:
 
-```sh
+```shell
 $ git show 2e126f55a77e75e182ea18b36fb535a0e37793e4 --compact-summary
 commit 2e126f55a77e75e182ea18b36fb535a0e37793e4 (HEAD -> master, origin/master, origin/HEAD)
 
@@ -49,7 +49,7 @@ Eye-balling it, every image was on average halved. Not bad, for no visible diffe
 
 Initially, I wanted to use the new hotness: AVIF. Here's an example using the `avifenc` tool on the original image:
 
-```sh
+```shell
 $ avifenc feed.png feed.avif
 $ stat -c '%n %s' feed.{png,avif}
 feed.png 167641
