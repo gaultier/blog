@@ -10,7 +10,7 @@ Lately, I have found myself in need of doing just that, repeatedly sending a kee
 
 And I wanted to do all that in a cross-platform way. And to my surprise, I could not find a (sane) libc function or syscall to create a timer, and that is the same on all Unices! 
 
-Each Unix variant had its own weird way to do it, as I discovered. I am used to Windows being the odd kid in its corner doing its thing, but usually, Unices (thanks to POSIX) agree on a simple API to do something. There's the elephant in the room, of course, with epoll/kqueue/event ports...Which is such a pain that numerous libraries have sprung up to paper over the differences and offer The *One API To Rule Them All*: libuv, libev, libevent, etc. So, are timers the same painful ordeal?
+Each Unix variant had its own weird way to do it, as I discovered. I am used to Windows being the odd kid in its corner doing its thing, but usually, Unices (thanks to POSIX) agree on a simple API to do something. There's the elephant in the room, of course, with epoll/kqueue/event ports... Which is such a pain that numerous libraries have sprung up to paper over the differences and offer The *One API To Rule Them All*: libuv, libev, libevent, etc. So, are timers the same painful ordeal?
 
 Well, let's take a tour of all the OS APIs to handle them.
 
@@ -270,7 +270,7 @@ Interestingly, the timer is created using the POSIX API that normally triggers a
 
 ## macOS: dispatch_source_create
 
-Apple developers, in their infinite wisdom, decided to support `kqueue` but not kqueue timers, and invented their own thing instead.
+Apple developers, in their infinite wisdom, decided to support `kqueue` timers, and also invented their own thing.
 
 It's called [dispatch_source_create](https://man.archlinux.org/man/dispatch_source_create.3.en) and it supports timers with `DISPATCH_SOURCE_TYPE_TIMER`. 
 
@@ -417,6 +417,7 @@ Whenever a timer expires, it is removed from the min-heap. Simple, (relatively) 
 This approach is reminiscent of this part from the [man page](https://www.man7.org/linux/man-pages/man2/select.2.html) of `select` (which is basically `poll` with more limitations):
 
 >    Emulating usleep(3)
+>
 >    Before the advent of usleep(3), some code employed a call to
 >    select() with all three sets empty, nfds zero, and a non-NULL
 >    timeout as a fairly portable way to sleep with subsecond

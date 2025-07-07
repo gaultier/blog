@@ -130,7 +130,7 @@ Do not edit it by hand.
 <p>Most serious programs will need to trigger some action at a delayed point in time, often repeatedly: set timeouts, clean up temporary files or entries in the database, send keep-alives, garbage-collect unused entities, etc. All while doing some work in the meantime. A blocking <code>sleep</code> won't cut it! For example, JavaScript has <code>setTimeout</code>. But how does it work under the hood? How does each OS handle that?</p>
 <p>Lately, I have found myself in need of doing just that, repeatedly sending a keep-alive over the network to many remote peers, in C. My program has an event loop, a la NodeJS or Redis. It is doing lots of file I/O, network I/O, and handling timers, all in a single thread, in a non-blocking way.</p>
 <p>And I wanted to do all that in a cross-platform way. And to my surprise, I could not find a (sane) libc function or syscall to create a timer, and that is the same on all Unices!</p>
-<p>Each Unix variant had its own weird way to do it, as I discovered. I am used to Windows being the odd kid in its corner doing its thing, but usually, Unices (thanks to POSIX) agree on a simple API to do something. There's the elephant in the room, of course, with epoll/kqueue/event ports...Which is such a pain that numerous libraries have sprung up to paper over the differences and offer The <em>One API To Rule Them All</em>: libuv, libev, libevent, etc. So, are timers the same painful ordeal?</p>
+<p>Each Unix variant had its own weird way to do it, as I discovered. I am used to Windows being the odd kid in its corner doing its thing, but usually, Unices (thanks to POSIX) agree on a simple API to do something. There's the elephant in the room, of course, with epoll/kqueue/event ports... Which is such a pain that numerous libraries have sprung up to paper over the differences and offer The <em>One API To Rule Them All</em>: libuv, libev, libevent, etc. So, are timers the same painful ordeal?</p>
 <p>Well, let's take a tour of all the OS APIs to handle them.</p>
 <h2 id="2371048346-windows-settimer">
   <a class="title" href="#2371048346-windows-settimer">Windows: SetTimer</a>
@@ -376,7 +376,7 @@ as its notification mechanism.</p>
   <a class="title" href="#4005145368-macos-dispatch-source-create">macOS: dispatch_source_create</a>
   <a class="hash-anchor" href="#4005145368-macos-dispatch-source-create" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
-<p>Apple developers, in their infinite wisdom, decided to support <code>kqueue</code> but not kqueue timers, and invented their own thing instead.</p>
+<p>Apple developers, in their infinite wisdom, decided to support <code>kqueue</code> timers, and also invented their own thing.</p>
 <p>It's called <a href="https://man.archlinux.org/man/dispatch_source_create.3.en">dispatch_source_create</a> and it supports timers with <code>DISPATCH_SOURCE_TYPE_TIMER</code>.</p>
 <p>I do not currently have access to an Apple computer so I have not tried it. All I know is that <a href="https://en.wikipedia.org/wiki/Grand_Central_Dispatch">Grand Central Dispatch/libdispatch</a> is an effort to have applications have an event queue and thread pool managed for them by the OS. It's more of a task system, actually. All of this seems to me somewhat redundant with <code>kqueue</code> (which, on Apple platforms, came first!), but I am not an Apple engineer.</p>
 <p><code>libdispatch</code> has technically been ported to many platforms but I suppose this is just like <code>libkqueue</code> on Linux: it exposes the familiar API, but under the hood, it translates all calls to the OS-specific API, so for all intents and purposes, this syscall is macOS specific (well, and iOS, tvOS, IpadOS, etc, but let's group them all into a 'macOS' bucket).</p>
@@ -499,8 +499,8 @@ present in poll(2) [...].</p>
 Whenever a timer expires, it is removed from the min-heap. Simple, (relatively) efficient. The only caveat is that <code>epoll</code> only offers a millisecond precision for the timeout parameter so that's also the precision of <code>libuv</code> timers.</p>
 <p>This approach is reminiscent of this part from the <a href="https://www.man7.org/linux/man-pages/man2/select.2.html">man page</a> of <code>select</code> (which is basically <code>poll</code> with more limitations):</p>
 <blockquote>
-<p>Emulating usleep(3)
-Before the advent of usleep(3), some code employed a call to
+<p>Emulating usleep(3)</p>
+<p>Before the advent of usleep(3), some code employed a call to
 select() with all three sets empty, nfds zero, and a non-NULL
 timeout as a fairly portable way to sleep with subsecond
 precision.</p>
