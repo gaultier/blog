@@ -188,6 +188,8 @@ pre {
   align-items: center;
   width: fit-content;
   margin: auto;
+  min-width: 50%;
+  max-width: 95%;
 }
 
 code {
@@ -198,7 +200,8 @@ code {
 
 pre > code {
   border: 1px solid grey;
-  padding: 0.5rem !important;
+  align-self: stretch;
+  width: 100%;
 }
 
 object {

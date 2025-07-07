@@ -44,11 +44,11 @@ hljs.highlightAll();
 document.querySelectorAll('code').forEach((el, _i) => {
   if (el.parentElement.tagName == "PRE"){
     var header = document.createElement('div');
-    header.style.width = '100%';
     header.style['display'] = 'inline-flex';
     header.style['align-items'] = 'center';
     header.style['justify-content'] = 'space-between';
     header.style['background-color'] = '#BDBDBD';
+    header.style['align-self'] = 'stretch';
 
     var header_text = document.createElement('span');
     var lang = 'text';
@@ -87,6 +87,9 @@ document.querySelectorAll('code').forEach((el, _i) => {
 
 
   var lines = el.innerHTML.trimEnd().split('\n');
+  if (lines.length <= 1) {
+    return;
+  }
   var out = [];
   lines.forEach(function(l, i){
     out.push('<span class="line-number">' + (i+1).toString() + '</span> ' + l);
