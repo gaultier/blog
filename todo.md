@@ -24,7 +24,7 @@
 - [ ] How to get the current SQL schema when all you have is lots of migrations (deltas)
 - [ ] 'About' page
 - [ ] Search and replace fish function
-- [ ] Go+Dtrace: 'Go and Dtrace: Useful but clunky'
+- [ ] Go+Dtrace: Tips
     ```
 pid$target::*DispatchMessage:entry {
   stack_offset =656;
@@ -199,6 +199,7 @@ pid$target::github.com?ory?kratos*CreateRecoveryFlow:entry {
 
 ## Blog implementation
 
+- [ ] Wrap line numbers in their own div
 - [ ] Articles excerpt on the home page?
 - [ ] Browser live reload: 
   + Depends on: custom HTTP server, builtin file watch.

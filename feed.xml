@@ -36,7 +36,7 @@
 <title>Learn x86-64 assembly by writing a GUI from scratch</title>
 <link href="https://gaultier.github.io/blog/x11_x64.html"/>
 <id>urn:uuid:fa923100-dd66-531e-bdab-8eed3527960f</id>
-<updated>2025-07-07T21:15:50+02:00</updated>
+<updated>2025-07-07T21:23:20+02:00</updated>
 <published>2023-05-31T14:24:11+02:00</published>
 </entry>
 
@@ -164,7 +164,7 @@
 <title>Tip of the day #2: A safer arena allocator</title>
 <link href="https://gaultier.github.io/blog/tip_of_the_day_2.html"/>
 <id>urn:uuid:dd624149-10e7-5563-af44-efda307fa041</id>
-<updated>2025-07-07T17:33:16+02:00</updated>
+<updated>2025-07-07T21:23:20+02:00</updated>
 <published>2024-10-29T16:15:48+01:00</published>
 </entry>
 
@@ -228,7 +228,7 @@
 <title>Making my debug build run 100x faster so that it is finally usable</title>
 <link href="https://gaultier.github.io/blog/making_my_debug_build_run_100_times_faster.html"/>
 <id>urn:uuid:a5f75104-e439-59db-b54f-c7f65d76b339</id>
-<updated>2025-07-07T16:51:52+02:00</updated>
+<updated>2025-07-07T21:23:20+02:00</updated>
 <published>2025-02-18T08:07:55+01:00</published>
 </entry>
 
