@@ -50,7 +50,7 @@ I will showcase this approach with C code using an arena allocator. The full cod
 
 Here is the text format we want to generate:
 
-```
+```text
 heap profile:    <in use objects sum>:  <in use bytes sum> [   <space objects sum>:  <space bytes sum>] @ heapprofile
 <in use objects>: <in use bytes> [<space objects>: <space bytes>] @ <rip1> <rip2> <rip3> [...]
 <in use objects>: <in use bytes> [<space objects>: <space bytes>] @ <rip1> <rip2> <rip3> [...]
@@ -135,7 +135,7 @@ Dumping heap profile to /tmp/heapprof.0001.heap (Exiting, 11 bytes in use)
 
 *This is just an example to showcase the format, we will from this point on use our own code to generate this text format.*
 
-```
+```text
 heap profile:      5:       11 [     5:       11] @ heapprofile
      2:        4 [     2:        4] @ 0x558e804cc165 0x558e804cc18e 0x558e804cc1b0 0x7f452a4daa90 0x7f452a4dab49 0x558e804cc085
      2:        4 [     2:        4] @ 0x558e804cc184 0x558e804cc1b0 0x7f452a4daa90 0x7f452a4dab49 0x558e804cc085

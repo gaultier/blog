@@ -92,7 +92,9 @@ Since the tests log verbose stuff by default and I do not know how to silence th
 
 We see these results and the last line shows the aggregation (I trimmed empty lines for brevity):
 
-```text
+```sh
+$ sudo dtrace -s time.d -c ./code.test.before -o /tmp/time.txt
+
   NewMigrationBox                                   
            value  ------------- Distribution ------------- count    
              < 0 |@@@@@@                                   3        
@@ -416,7 +418,9 @@ At the end, when the duration has been duly recorded in the histogram, we set th
 
 When we run it, we see that all durations are now nice and correct:
 
-```text
+```sh
+$ sudo dtrace -s time.d -c ./code.test.before -o /tmp/time.txt
+
   NewMigrationBox                                   
            value  ------------- Distribution ------------- count    
               11 |                                         0        

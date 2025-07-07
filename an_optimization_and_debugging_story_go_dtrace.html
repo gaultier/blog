@@ -202,7 +202,9 @@ pid$target::*NewMigrationBox:return {
 <p>Fortunately I later found a way to avoid this pitfall, see the <a href="#553173937-addendum-a-goroutine-aware-d-script">addendum</a> at the end.</p>
 <p>Since the tests log verbose stuff by default and I do not know how to silence them, I save the output of DTrace in a separate file <code>/tmp/time.txt</code>: <code>dtrace -s time.d -c ./code.test.before -o /tmp/time.txt</code></p>
 <p>We see these results and the last line shows the aggregation (I trimmed empty lines for brevity):</p>
-<pre><code class="language-text">  NewMigrationBox                                   
+<pre><code class="language-sh">$ sudo dtrace -s time.d -c ./code.test.before -o /tmp/time.txt
+
+  NewMigrationBox                                   
            value  ------------- Distribution ------------- count    
              &lt; 0 |@@@@@@                                   3        
                0 |                                         0        
@@ -460,7 +462,9 @@ pid$target::*NewMigrationBox:return {
 <p>Assigning an associative array element to zero causes DTrace to deallocate the underlying storage. This behavior is important because the dynamic variable space out of which associative array elements are allocated is finite; if it is exhausted when an allocation is attempted, the allocation will fail and an error message will be generated indicating a dynamic variable drop. Always assign zero to associative array elements that are no longer in use.</p>
 </blockquote>
 <p>When we run it, we see that all durations are now nice and correct:</p>
-<pre><code class="language-text">  NewMigrationBox                                   
+<pre><code class="language-sh">$ sudo dtrace -s time.d -c ./code.test.before -o /tmp/time.txt
+
+  NewMigrationBox                                   
            value  ------------- Distribution ------------- count    
               11 |                                         0        
               12 |@@@@@@@@@@@@@@@@@@@@@@                   11       

@@ -154,7 +154,7 @@ Do not edit it by hand.
   <a class="hash-anchor" href="#3080183899-the-text-format" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>Here is the text format we want to generate:</p>
-<pre><code>heap profile:    &lt;in use objects sum&gt;:  &lt;in use bytes sum&gt; [   &lt;space objects sum&gt;:  &lt;space bytes sum&gt;] @ heapprofile
+<pre><code class="language-text">heap profile:    &lt;in use objects sum&gt;:  &lt;in use bytes sum&gt; [   &lt;space objects sum&gt;:  &lt;space bytes sum&gt;] @ heapprofile
 &lt;in use objects&gt;: &lt;in use bytes&gt; [&lt;space objects&gt;: &lt;space bytes&gt;] @ &lt;rip1&gt; &lt;rip2&gt; &lt;rip3&gt; [...]
 &lt;in use objects&gt;: &lt;in use bytes&gt; [&lt;space objects&gt;: &lt;space bytes&gt;] @ &lt;rip1&gt; &lt;rip2&gt; &lt;rip3&gt; [...]
 &lt;in use objects&gt;: &lt;in use bytes&gt; [&lt;space objects&gt;: &lt;space bytes&gt;] @ &lt;rip1&gt; &lt;rip2&gt; &lt;rip3&gt; [...]
@@ -225,7 +225,7 @@ Starting tracking the heap
 Dumping heap profile to /tmp/heapprof.0001.heap (Exiting, 11 bytes in use)
 </code></pre>
 <p><em>This is just an example to showcase the format, we will from this point on use our own code to generate this text format.</em></p>
-<pre><code>heap profile:      5:       11 [     5:       11] @ heapprofile
+<pre><code class="language-text">heap profile:      5:       11 [     5:       11] @ heapprofile
      2:        4 [     2:        4] @ 0x558e804cc165 0x558e804cc18e 0x558e804cc1b0 0x7f452a4daa90 0x7f452a4dab49 0x558e804cc085
      2:        4 [     2:        4] @ 0x558e804cc184 0x558e804cc1b0 0x7f452a4daa90 0x7f452a4dab49 0x558e804cc085
      1:        3 [     1:        3] @ 0x558e804cc165 0x558e804cc1c4 0x7f452a4daa90 0x7f452a4dab49 0x558e804cc085
