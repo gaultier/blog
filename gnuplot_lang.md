@@ -11,6 +11,7 @@ Most people know [Gnuplot](https://en.wikipedia.org/wiki/Gnuplot) as a way to pl
 set output "plot.png"
 plot "out.dat" with lines
 ```
+
 ![gnuplot.png](gnuplot.png)
 
 where `out.data` is a text file with a number on each line.

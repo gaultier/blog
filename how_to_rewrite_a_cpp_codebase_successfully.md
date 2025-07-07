@@ -454,7 +454,7 @@ int main() {
 
 And I get:
 
-```
+```text
 ==805913== Conditional jump or move depends on uninitialised value(s)
 ==805913==    at 0x127C34: main (src/example.cpp:13)
 ==805913== 

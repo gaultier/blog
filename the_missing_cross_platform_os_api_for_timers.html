@@ -166,7 +166,7 @@ Do not edit it by hand.
 <li>Most functions are not async-signal-safe and should not be used from within a signal handler but no compiler warns about that and most example code is wrong. This is exacerbated by the fact that a given function may be async-signal safe on some OS but not on another. Or for some version of this OS but not for another version. This has caused real <a href="https://www.qualys.com/2024/07/01/cve-2024-6387/regresshion.txt">security vulnerabilities</a> in the past.</li>
 </ul>
 <p>I'll just quote here the Linux man page for <a href="https://www.man7.org/linux/man-pages/man2/timer_create.2.html">timer_create</a>:</p>
-<pre><code> /* Note: calling printf() from a signal handler is not safe
+<pre><code class="language-text"> /* Note: calling printf() from a signal handler is not safe
   (and should not be done in production programs), since
   printf() is not async-signal-safe; see signal-safety(7).
   Nevertheless, we use printf() here [...]. */
@@ -251,7 +251,7 @@ int main() {
 }
 </code></pre>
 <p>And it prints:</p>
-<pre><code>[1738530944.233] timer 5 triggered
+<pre><code class="language-text">[1738530944.233] timer 5 triggered
 [1738530944.283] timer 6 triggered
 [1738530944.333] timer 7 triggered
 [1738530944.383] timer 8 triggered
@@ -340,7 +340,7 @@ int main() {
 }
 </code></pre>
 <p>And it prints:</p>
-<pre><code>[1738380963.984] timer 1 triggered
+<pre><code class="language-text">[1738380963.984] timer 1 triggered
 [1738380964.034] timer 2 triggered
 [1738380964.084] timer 3 triggered
 [1738380964.134] timer 4 triggered
@@ -425,7 +425,7 @@ int main() {
 }
 </code></pre>
 <p>And it outputs:</p>
-<pre><code>[1738532785.771] timer 1 triggered
+<pre><code class="language-text">[1738532785.771] timer 1 triggered
 [1738532785.821] timer 2 triggered
 [1738532785.871] timer 3 triggered
 [1738532785.921] timer 4 triggered

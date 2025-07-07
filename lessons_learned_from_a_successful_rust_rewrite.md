@@ -103,7 +103,7 @@ I am not talking about some parts of Miri that are experimental. Or the fact tha
 
 No, I am talking about code that Miri cannot run, period:
 
-```
+```text
     |
 471 |     let pkey_ctx = LcPtr::new(unsafe { EVP_PKEY_CTX_new_id(EVP_PKEY_EC, null_mut()) })?;
     |                                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ can't call foreign function `␁aws_lc_0_16_0_EVP_PKEY_CTX_new_id` on OS `linux`

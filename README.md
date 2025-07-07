@@ -32,6 +32,6 @@ $ pngquant foo.png -o foo.tmp && mv foo.tmp foo.png
 
 Spell (in Neovim):
 
-```
+```text
 :setlocal spell spelllang=en_us
 ```

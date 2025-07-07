@@ -262,7 +262,7 @@ END {
   <a class="hash-anchor" href="#3017488881-low-tech-alternatives" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>A quick and dirty way to achieve the same with a regexp is:</p>
-<pre><code>$ rg -t go '^\s+\w+\s+sync\.Mutex$'
+<pre><code class="language-shell">$ rg -t go '^\s+\w+\s+sync\.Mutex$'
 </code></pre>
 <p>This works since Go is a language with only one way to define a <code>struct</code> field, but some languages would be more difficult.</p>
 <p>A slightly smarter way, to only find field declarations, would be to use AWK to remember whether or not we are inside a <code>struct</code> definition:</p>

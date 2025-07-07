@@ -269,7 +269,7 @@ func DoStuff() {
 }
 </code></pre>
 <p>And we get:</p>
-<pre><code>$ go run .
+<pre><code class="language-shell">$ go run .
 Dog: 42
 Cat: kitty
 5
@@ -360,7 +360,7 @@ func DoStuff() {
 }
 </code></pre>
 <p>And we get the additional output:</p>
-<pre><code>[75 105 116 116 121]
+<pre><code class="language-text">[75 105 116 116 121]
 Kitty
 </code></pre>
 <p>But wait, this is undefined behavior! The string <em>did</em> get mutated! The Go compiler generates code based on the assumption that strings are immutable, so our program <em>may</em> break in very unexpected ways.</p>
@@ -370,7 +370,7 @@ Kitty
 must not be modified as long as the returned string value exists.</p>
 </blockquote>
 <p>Maybe the runtime Cgo checks will detect it?</p>
-<pre><code>$ GODEBUG=cgocheck=1 go run .
+<pre><code class="language-shell">$ GODEBUG=cgocheck=1 go run .
 [...]
 [75 105 116 116 121]
 Kitty
@@ -418,7 +418,7 @@ use of cgo in test app_test.go not supported
 </code></pre>
 <p>Ah... yeah this is a <a href="https://go.dev/wiki/cgo">known limitation</a>: <code>_test.go files can’t use cgo.</code>.</p>
 <p>Solution: wrap the C function in a Go one.</p>
-<pre><code>// app/app.go
+<pre><code class="language-go">// app/app.go
 
 func AnimalDogKind() int {
 	return C.ANIMAL_KIND_DOG
@@ -804,7 +804,7 @@ cgo/app: build constraints exclude all Go files in /home/pg/scratch/cgo/app
 <pre><code class="language-shell">$ CC=&quot;zig cc --target=x86_64-linux-musl&quot; make -C ./c
 </code></pre>
 <p>Or, bring your own cross-compiler, you don't have to use Zig:</p>
-<pre><code>$ CC=musl-gcc make -C ./c
+<pre><code class="language-shell">$ CC=musl-gcc make -C ./c
 </code></pre>
 <p>If we have Rust code, we do instead:</p>
 <pre><code class="language-shell">$ rustup target add x86_64-unknown-linux-musl

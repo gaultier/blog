@@ -205,7 +205,7 @@ help: &lt;2883&gt; was later invalidated at offsets [0x0..0x8] by a Unique retag
 </h3>
 <p>I am not talking about some parts of Miri that are experimental. Or the fact that running code under Miri is excruciatingly slow. Or the fact that Miri only works in <code>nightly</code>.</p>
 <p>No, I am talking about code that Miri cannot run, period:</p>
-<pre><code>    |
+<pre><code class="language-text">    |
 471 |     let pkey_ctx = LcPtr::new(unsafe { EVP_PKEY_CTX_new_id(EVP_PKEY_EC, null_mut()) })?;
     |                                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ can't call foreign function `␁aws_lc_0_16_0_EVP_PKEY_CTX_new_id` on OS `linux`
     |

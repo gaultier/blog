@@ -32,7 +32,7 @@ $ sudo bpftrace -e 'uprobe:./itest.test:cache_insert {@bytes=lhist(arg2, 0 , 163
 
 `bpftrace` prints the histogram by default at the end:
 
-```
+```text
 @bytes: 
 [512, 640)            96 |@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@|
 ```

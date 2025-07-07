@@ -90,6 +90,7 @@ p {
   display: inline-flex;
   align-items: center;
   width: 100%;
+  flex-wrap: wrap;
 }
 
 .home-link {

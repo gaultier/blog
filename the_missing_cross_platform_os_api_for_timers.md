@@ -45,7 +45,7 @@ POSIX has one API for timers, and it sucks. A timer is created with `timer_creat
 
 I'll just quote here the Linux man page for [timer_create](https://www.man7.org/linux/man-pages/man2/timer_create.2.html):
 
-```
+```text
  /* Note: calling printf() from a signal handler is not safe
   (and should not be done in production programs), since
   printf() is not async-signal-safe; see signal-safety(7).
@@ -142,7 +142,7 @@ int main() {
 
 And it prints:
 
-```
+```text
 [1738530944.233] timer 5 triggered
 [1738530944.283] timer 6 triggered
 [1738530944.333] timer 7 triggered
@@ -233,7 +233,7 @@ int main() {
 
 And it prints:
 
-```
+```text
 [1738380963.984] timer 1 triggered
 [1738380964.034] timer 2 triggered
 [1738380964.084] timer 3 triggered
@@ -328,7 +328,7 @@ int main() {
 
 And it outputs:
 
-```
+```text
 [1738532785.771] timer 1 triggered
 [1738532785.821] timer 2 triggered
 [1738532785.871] timer 3 triggered

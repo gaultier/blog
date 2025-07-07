@@ -118,7 +118,7 @@ That's useful to limit the overall memory usage. Obviously this value is directl
 </code></pre>
 <p><code>lhist</code> creates a linear histogram with the minimum value here being <code>0</code>, the maximum value <code>16384</code> and the bucket size <code>128</code>. I used the <code>hist</code> function initially which uses a power-of-two bucket size but my values were all in one big bucket so that was a bit imprecise. Still a good first approximation. But we can get a better estimate by using a small bucket size with <code>lhist</code>.</p>
 <p><code>bpftrace</code> prints the histogram by default at the end:</p>
-<pre><code>@bytes: 
+<pre><code class="language-text">@bytes: 
 [512, 640)            96 |@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@|
 </code></pre>
 <p>So all slices of bytes have their length between <code>512</code> and <code>640</code> in this case, all in one bucket.</p>

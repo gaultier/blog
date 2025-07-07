@@ -170,7 +170,7 @@ print(remaining_count)
 </code></pre>
 <p>The easy case is when there is no need to merge: <code>current</code> simply becomes <code>next</code> (and <code>next</code> is incremented at the end of the loop iteration).</p>
 <p>The 'hard' case is merging: we set the two tombstones, lower the count, and now we are in a pickle: <code>current</code> needs to go backwards, but we do not know to where. There might be an arbitrary number of zeroes preceding the character <code>current</code> points to: the data on the left of <code>next</code> is sparse, the data on the right of <code>next</code> is not.</p>
-<pre><code>[...] 0 0 A 0 0 0 0 B 0 0 0 0 C D E F [...]
+<pre><code class="language-text">[...] 0 0 A 0 0 0 0 B 0 0 0 0 C D E F [...]
           ^         ^         ^
           |         |         |
           target    |         |

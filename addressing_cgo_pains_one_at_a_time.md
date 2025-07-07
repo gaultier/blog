@@ -171,7 +171,7 @@ func DoStuff() {
 
 And we get:
 
-```
+```shell
 $ go run .
 Dog: 42
 Cat: kitty
@@ -296,7 +296,7 @@ func DoStuff() {
 
 And we get the additional output:
 
-```
+```text
 [75 105 116 116 121]
 Kitty
 ```
@@ -310,7 +310,7 @@ The docs for `unsafe.String` state:
 
 Maybe the runtime Cgo checks will detect it?
 
-```
+```shell
 $ GODEBUG=cgocheck=1 go run .
 [...]
 [75 105 116 116 121]
@@ -367,7 +367,7 @@ Ah... yeah this is a [known limitation](https://go.dev/wiki/cgo): `_test.go file
 
 Solution: wrap the C function in a Go one.
 
-```
+```go
 // app/app.go
 
 func AnimalDogKind() int {
@@ -843,7 +843,7 @@ $ CC="zig cc --target=x86_64-linux-musl" make -C ./c
 
 Or, bring your own cross-compiler, you don't have to use Zig:
 
-```
+```shell
 $ CC=musl-gcc make -C ./c
 ```
 

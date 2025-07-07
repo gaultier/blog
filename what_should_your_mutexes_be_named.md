@@ -169,7 +169,7 @@ type Link struct {
 
 A quick and dirty way to achieve the same with a regexp is:
 
-```
+```shell
 $ rg -t go '^\s+\w+\s+sync\.Mutex$'
 ```
 

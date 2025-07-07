@@ -411,7 +411,7 @@ get_articles_creation_and_modification_date :: proc() -&gt; ([]GitStat, os2.Erro
 </ul>
 <hr />
 <p>We can log the final result:</p>
-<pre><code>[...]
+<pre><code class="language-text">[...]
 GitStat{creation_date = &quot;2020-09-07T20:49:20+02:00&quot;, modification_date = &quot;2024-11-04T09:24:17+01:00&quot;, path_rel = &quot;compile_ziglang_from_source_on_alpine_2020_9.md&quot;}
 GitStat{creation_date = &quot;2024-09-10T12:59:04+02:00&quot;, modification_date = &quot;2024-09-12T12:14:42+02:00&quot;, path_rel = &quot;odin_and_musl.md&quot;}
 GitStat{creation_date = &quot;2023-11-23T11:26:11+01:00&quot;, modification_date = &quot;2025-02-06T20:55:27+01:00&quot;, path_rel = &quot;roll_your_own_memory_profiling.md&quot;}
@@ -474,7 +474,7 @@ sqlite&gt; SELECT
         ORDER BY f.name;
 </code></pre>
 <p>Which outputs what we want:</p>
-<pre><code>[...]
+<pre><code class="language-text">[...]
 {&quot;filename&quot;:&quot;body_of_work.md&quot;,&quot;creation_date&quot;:&quot;2023-12-19 13:27:40&quot;,&quot;last_modified&quot;:&quot;2024-11-05 15:11:55&quot;},
 {&quot;filename&quot;:&quot;communicate_by_sharing_code.md&quot;,&quot;creation_date&quot;:&quot;2024-03-07 09:48:39&quot;,&quot;last_modified&quot;:&quot;2024-03-07 10:14:09&quot;},
 {&quot;filename&quot;:&quot;compile_ziglang_from_source_on_alpine_2020_9.md&quot;,&quot;creation_date&quot;:&quot;2020-09-07 18:49:20&quot;,&quot;last_modified&quot;:&quot;2024-11-04 08:24:17&quot;},
