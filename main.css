@@ -159,6 +159,7 @@ body {
   margin: 0;
   font-family: monospace, sans-serif;
   margin-bottom: 5rem;
+  font-size: 1.2rem;
 }
 
 li {
@@ -185,14 +186,14 @@ pre {
   flex-direction: column;
   align-content: center;
   align-items: center;
+  width: fit-content;
+  margin: auto;
 }
 
 code {
-  font-size: .9rem;
   background: #FFF3E0 !important;
   word-wrap: break-word;
   white-space: pre-wrap;
-  padding: 0.1em .4em !important;
 }
 
 pre > code {
@@ -294,7 +295,7 @@ p:has(img):has(em) {
   margin-right: 1rem;
 }
 
-@media only screen and (max-width: 450px) {
+@media only screen and (max-width: 650px) {
   .line-number { display: none; }
   code { padding-left: 0.3rem !important; }
 }

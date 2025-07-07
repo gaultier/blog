@@ -72,7 +72,7 @@ $ sudo dtrace -n 'pid$target:code.test.before:*ory*: ' -c ./code.test.before -l 
 
 Ok, the first two are the ones we need. Let's time the function duration then with a D script `time.d`:
 
-```
+```dtrace
 pid$target::*NewMigrationBox:entry { self->t=timestamp } 
 
 pid$target::*NewMigrationBox:return {
@@ -92,7 +92,7 @@ Since the tests log verbose stuff by default and I do not know how to silence th
 
 We see these results and the last line shows the aggregation (I trimmed empty lines for brevity):
 
-```
+```text
   NewMigrationBox                                   
            value  ------------- Distribution ------------- count    
              < 0 |@@@@@@                                   3        
@@ -145,7 +145,7 @@ Wait a minute... Are we doing any I/O in Go at all? Could it be that we *embed* 
 
 Let's print with DTrace the files that are being opened, whose extension is `.sql`:
 
-```
+```dtrace
 syscall::open:entry { 
   self->filename = copyinstr(arg0);
 
@@ -188,7 +188,7 @@ Contrary to popular belief, Go is not a crazy fast compiler. It's a smart compil
 
 If you're still not convinced to use DTrace yet, let me show you its superpower. It can show you *every* function call your program does! That's sooo useful when you do not know the codebase. Let's try it, but we are only interested in calls from within `NewMigrationBox`, and when we exit `NewMigrationBox`, we should stop tracing, because each invocation will anyway be the same:
 
-```
+```dtrace
 pid$target:code.test.before:*NewMigrationBox:entry { self->t = 1}
 
 pid$target:code.test.before:*NewMigrationBox:return { exit(0) }
@@ -204,7 +204,7 @@ The `self->t` variable is used to toggle tracing on when we enter a specific fun
 
 So, let's run our script with the `-F` option to get a nicely formatted output:
 
-```
+```sh
 $ sudo dtrace -s ~/scratch/trace_calls.d -c './code.test.before' -F
 
 CPU FUNCTION                                 
@@ -263,7 +263,7 @@ Furthermore, most sort algorithms have worst-case performance when the input is 
 
 Let's confirm this finding with DTrace by printing how many elements are being sorted in `sort.Sort`. We rely on the fact that the first thing `sort.Sort` does, is to call `.Len()` on its argument:
 
-```
+```dtrace
 pid$target::*NewMigrationBox:entry { self->t = 1}
 
 pid$target::*NewMigrationBox:return { self->t = 0}
@@ -308,7 +308,7 @@ This is a perfect example: we would never add an OpenTelemetry trace or a log to
 
 The fix is easy: collect all files into the slice and then sort them once at the end:
 
-```
+```go
 fs.WalkDir(fm.Dir, ".", func(p string, info fs.DirEntry, err error) error {
     migrations = append(migrations, migrations)
     return nil
@@ -323,7 +323,7 @@ The real fix uses `slices.SortFunc` instead of `sort.Sort` because the official 
 With this done, we can measure again the duration of `NewMigrationBox` (with a lower maximum value for the histogram since we know it got faster):
 
 
-```
+```sh
 $ sudo dtrace -s ~/scratch/time.d -c './code.test.after' 
 
   NewMigrationBox                                   
@@ -393,7 +393,7 @@ My approach is to store all timestamps in a global map where the key is the goro
 
 So here goes:
 
-```
+```dtrace
 pid$target::*NewMigrationBox:entry { 
   this->goroutine_id = uregs[R_X28];
   durations_goroutines[this->goroutine_id] = timestamp;
@@ -416,7 +416,7 @@ At the end, when the duration has been duly recorded in the histogram, we set th
 
 When we run it, we see that all durations are now nice and correct:
 
-```
+```text
   NewMigrationBox                                   
            value  ------------- Distribution ------------- count    
               11 |                                         0        

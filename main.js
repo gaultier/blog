@@ -42,22 +42,49 @@ return {
 hljs.highlightAll();
 
 document.querySelectorAll('code').forEach((el, _i) => {
-  if (el.parentElement.tagName != "PRE"){ 
+  if (el.parentElement.tagName == "PRE"){
+    var header = document.createElement('div');
+    header.style.width = '100%';
+    header.style['display'] = 'inline-flex';
+    header.style['align-items'] = 'center';
+    header.style['justify-content'] = 'space-between';
+    header.style['background-color'] = '#BDBDBD';
+
+    var header_text = document.createElement('span');
+    var lang = 'text';
+    var prefix = 'language-';
+    for (c of el.classList) {
+      if (c.startsWith(prefix)) {
+        lang = c.slice(prefix.length);
+        break;
+      }
+    }
+    header_text.innerText = lang[0].toUpperCase() + lang.slice(1);
+    header_text.style['margin-left'] = '.2rem';
+    header_text.style['color'] = 'white';
+    header.appendChild(header_text);
+
+
+    var copy_btn = document.createElement('button');
+    copy_btn.innerHTML = `<svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg>`;
+    copy_btn.type = 'button';
+    copy_btn.style.margin = '0.1rem';
+    copy_btn.style['align-self'] = 'flex-end';
+
+    // Copy original content before adding line numbers.
+    var content = el.innerText.slice();
+    copy_btn.addEventListener('click', function(e){
+      navigator.clipboard.writeText(content);
+    });
+    header.appendChild(copy_btn);
+    el.parentElement.prepend(header);
+  }
+
+
+  if (0 == el.classList.length || el.classList.contains('language-sh') || el.classList.contains('language-shell') || el.classList.contains('language-bash') || el.classList.contains('language-ini') || el.classList.contains('language-diff')){ 
     return; 
   }
 
-  var copy_btn = document.createElement('button');
-  copy_btn.innerText = 'Copy';
-  copy_btn.type = 'button';
-  copy_btn.style.margin = '0.1rem';
-  copy_btn.style['align-self'] = 'flex-end';
-
-  // Copy original content before adding line numbers.
-  var content = el.innerText.slice();
-  copy_btn.addEventListener('click', function(e){
-    navigator.clipboard.writeText(content);
-  });
-  el.parentElement.prepend(copy_btn);
 
   var lines = el.innerHTML.trimEnd().split('\n');
   var out = [];
