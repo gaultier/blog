@@ -1129,7 +1129,7 @@ int main() {
 
   PgLogger logger = pg_log_make_logger_stdout_logfmt(PG_LOG_LEVEL_INFO);
   {
-    PgError err = pg_http_server_start(3001, 1024, &logger);
+    PgError err = pg_http_server_start(3001, 1024, 28 * PG_KiB, &logger);
     if (err) {
       return (int)err;
     }
