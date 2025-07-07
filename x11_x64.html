@@ -692,7 +692,7 @@ static x11_connect_to_server:function
   u16 major, minor;
   u16 auth_proto_len, auth_data_len;
   u16 pad2;
-  // Optionally, authorization information follow, if `auth_proto_len` and `auth_data_len` are  not 0.
+  // Optionally, authorization information follows, if `auth_proto_len` and `auth_data_len` are  not 0.
 } x11_connection_req_t;
 </code></pre>
 <p><code>pad*</code> fields can be ignored since they are padding and their value is not read by the server.</p>
