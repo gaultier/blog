@@ -165,7 +165,7 @@ $ file hello
 hello: ELF 64-bit LSB executable, x86-64, version 1 (SYSV), statically linked, BuildID[sha1]=ef8dfc9dc297295808f80ec66e92763358a598d1, not stripped
 ```
 
-And we can see the `malloc` symbol is not present since we do opted out of it, and that Odin provided with these assembly files the correct implementation for `memset`:
+And we can see the `malloc` symbol is not present since we opted out of it, and that Odin provided with these assembly files the correct implementation for `memset`:
 
 ```shell
 $ nm hello | grep malloc

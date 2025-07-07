@@ -42,4 +42,4 @@ clean:
 
 .PHONY: dev
 dev: 
-	ls *.{c,h,md} submodules/cstd/*.{c,h} | entr -c make gen
+	ls *.{c,h,md} submodules/cstd/*.{c,h} header.html footer.html | entr -c make gen
