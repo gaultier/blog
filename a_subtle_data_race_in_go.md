@@ -98,7 +98,7 @@ In the real code at work it was actually not a security issue, since the paramet
 
 The diff for the fix looks like this:
 
-```text
+```diff
 diff --git a/http-race.go b/http-race.go
 index deff273..6c73b7e 100644
 --- a/http-race.go
