@@ -76,7 +76,7 @@ And...the program did not crash. The symptoms were very weird: data was subtly w
 
 But why?
 
-Well, we basically asked the OS to give us one page of virtual memory when creating the first arena. Right after, we asked for a second page. And most often than not, the OS gives us then a page right after the first page. So from the OS perspective, we allocated `2 * 4096 = 8192` bytes, and wrote in the middle, so all is good. We wanted to write into the first arena but instead wrote into the second one accidentally. 
+Well, we basically asked the OS to give us one page of virtual memory when creating the first arena. Right after, we asked for a second page. And more often than not, the OS gives us a page right after the first page. So from the OS perspective, we allocated `2 * 4096 = 8192` bytes, and wrote in the middle, so all is good. We wanted to write into the first arena but instead wrote into the second one accidentally. 
 
 This behavior is however not consistent, running the programs many times will sometimes crash and sometimes not. It all depends if the memory pages for the different arenas are contiguous or not.
 
@@ -152,7 +152,7 @@ But, if there is a pesky out-of-bound bug pestering you, that could be worth try
 
 ### The bucket per type approach
 
-On [Apple platforms](https://www.youtube.com/watch?v=t7EJTO0-reg), the libc allocator has a hardening mode that can be enabled at compile time. It stems from the realization that many security vulnerabilities rely on type confusion: The program thinks it is handling an entity of type `X`, but due to a logic bug, or the attacker meddling, or the allocator reusing freshly freed memory from another place in the program, it is actually of another type `Y`. This results in an entity being in an 'impossible' state which is great for an attacker. Also, reusing a previously allocated-then-freed object with a different type, without zero-initializing it, can leak secrets or information about the state of the program, to an attacker.
+On [Apple platforms](https://www.youtube.com/watch?v=t7EJTO0-reg), the libc allocator has a hardening mode that can be enabled at compile time. It stems from the realization that many security vulnerabilities rely on type confusion: The program thinks it is handling an entity of type `X`, but due to a logic bug, or an attacker's meddling, or the allocator reusing freshly freed memory from another place in the program, it is actually of another type `Y`. This results in an entity being in an 'impossible' state which is great for an attacker. Also, reusing a previously allocated-then-freed object with a different type, without zero-initializing it, can leak secrets or information about the state of the program, to an attacker.
 
 There's a whole class of attacks where the first step is to make the program allocate and free objects many times, of an attacker controlled size, so that the heap is in the right 'shape', with a high statistical chance. Meaning, a few targeted objects are next to each other in the heap, for the attack to occur.
 
@@ -168,5 +168,5 @@ Still, this is an interesting approach, and could be implemented in our context 
 
 *Astute readers have also mentioned: using canaries in the available space in the arena to detect illegal accesses, putting the real data at the start or end of the page to catch out-of-bounds accesses respectively before and after the allocation, periodic checks for long-running applications, randomizing where the guard pages are placed relative to the allocation, running the tests a number of times to catch inconsistent behavior, and finally, teaching Address Sanitizer to be aware of our custom arena allocator so that it does these checks for us. That's super cool! See the linked discussions at the start.*
 
-I wrote in the past about adding memory profiling an arena allocator: [Roll your own memory profiling: it's actually not hard](/blog/roll_your_own_memory_profiling.html).
+I wrote in the past about adding memory profiling to an arena allocator: [Roll your own memory profiling: it's actually not hard](/blog/roll_your_own_memory_profiling.html).
 
