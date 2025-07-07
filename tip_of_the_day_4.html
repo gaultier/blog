@@ -115,6 +115,7 @@ Do not edit it by hand.
         Err(err: TryFromSliceError) =&gt; {
             // [...]
         }
+    };
 </code></pre>
 <p>Which leads to this nice error:</p>
 <pre><code class="language-text">error: expected one of `)`, `,`, `@`, or `|`, found `:`
@@ -131,6 +132,7 @@ Do not edit it by hand.
         Err::&lt;_, TryFromSliceError&gt;(err) =&gt; {
             // [...]
         }
+    };
 </code></pre>
 <p>Which works! And the same syntax can be applied to the <code>Ok</code> branch (per the link above) if needed. Note that this is a partial type annotation: we only care about the <code>Err</code> part of the <code>Result</code> type.</p>
 <p>That was a TIL for me. It's a bit of a weird syntax here. It's usually the syntax for type annotations on methods (more on that in a second).</p>
@@ -138,6 +140,9 @@ Do not edit it by hand.
 <pre><code class="language-rust">    let value = match left.try_into() {
         Ok(v) =&gt; v,
         Result::&lt;_, TryFromSliceError&gt;::Err(err) =&gt; {
+          // [...]
+        }
+     };
 </code></pre>
 <hr />
 <p>Anyways, there's a much better way to solve this issue. We can simply  annotate the resulting variable outside of the whole match pattern, so that <code>rustc</code> knows which <code>try_into</code> method we are using:</p>
@@ -146,6 +151,7 @@ Do not edit it by hand.
         Err(err) =&gt; {
           // [...]
         }
+    };
 </code></pre>
 <hr />
 <p>Or alternatively, as pointed out by a perceptive reader, annotate the <code>err</code> variable inside the body for the <code>Err</code> branch:</p>
@@ -164,6 +170,9 @@ Do not edit it by hand.
 <pre><code class="language-rust">    let value = match left.try_into() {
         Ok(v) =&gt; v,
         Err(err @ TryFromSliceError { .. }) =&gt; {
+          // [...]
+        }
+     };
 </code></pre>
 <p>Pretty succinct! This reader mentions this <a href="https://github.com/rust-lang/rfcs/pull/3753">PR</a> to expand this to all types, but that the general feedback is that the 'intuitive' syntax <code>Err(err: Bar) =&gt; {</code> should be possible instead.</p>
 <hr />
@@ -173,6 +182,7 @@ Do not edit it by hand.
         Err(err) =&gt; {
           // [...]
         }
+    };
 </code></pre>
 <hr />
 <p>Astute readers will think at this point that all of this is unnecessary: let's just have the <em>magic traits(tm)</em> do their wizardry. We do not convert the error to a string, we simply let <code>eprintln!</code> call <code>err.fmt()</code> under the hood, since <code>TryFromSliceError</code> implements the <code>Display</code> trait (which is why we could convert it to a <code>String</code> with <code>.to_string()</code>):</p>
@@ -193,6 +203,7 @@ Do not edit it by hand.
         Err::&lt;_, bool&gt;(err) =&gt; {
           // [...]
         }
+    };
 </code></pre>
 <p>And the compiler helpfully gives us the type:</p>
 <pre><code class="language-text">error[E0271]: type mismatch resolving `&lt;[u8; 33] as TryFrom&lt;&amp;[u8]&gt;&gt;::Error == bool`

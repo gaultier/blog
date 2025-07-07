@@ -190,6 +190,8 @@ pre {
   margin: auto;
   min-width: 50%;
   max-width: 95%;
+  margin-top: 1rem;
+  margin-bottom: 1rem;
 }
 
 code {
@@ -202,6 +204,7 @@ pre > code {
   border: 1px solid grey;
   align-self: stretch;
   width: 100%;
+  padding: 1em;
 }
 
 object {

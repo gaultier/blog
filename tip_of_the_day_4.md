@@ -46,6 +46,7 @@ So I tried to add type annotations the usual Rust way:
         Err(err: TryFromSliceError) => {
             // [...]
         }
+    };
 ```
 
 Which leads to this nice error:
@@ -70,6 +71,7 @@ Alright, so after some [searching around](https://users.rust-lang.org/t/type-ann
         Err::<_, TryFromSliceError>(err) => {
             // [...]
         }
+    };
 ```
 
 Which works! And the same syntax can be applied to the `Ok` branch (per the link above) if needed. Note that this is a partial type annotation: we only care about the `Err` part of the `Result` type.
@@ -82,6 +84,9 @@ You can be even more verbose by mentioning the whole type, if you want to:
     let value = match left.try_into() {
         Ok(v) => v,
         Result::<_, TryFromSliceError>::Err(err) => {
+          // [...]
+        }
+     };
 ```
 
 ---
@@ -94,6 +99,7 @@ Anyways, there's a much better way to solve this issue. We can simply  annotate 
         Err(err) => {
           // [...]
         }
+    };
 ```
 
 ---
@@ -120,6 +126,9 @@ Another reader had a different idea: use a match binding, which mentions the err
     let value = match left.try_into() {
         Ok(v) => v,
         Err(err @ TryFromSliceError { .. }) => {
+          // [...]
+        }
+     };
 ```
 
 Pretty succinct! This reader mentions this [PR](https://github.com/rust-lang/rfcs/pull/3753) to expand this to all types, but that the general feedback is that the 'intuitive' syntax `Err(err: Bar) => {` should be possible instead.
@@ -134,6 +143,7 @@ Yet another approach that works is to annotate the `try_into()` function with th
         Err(err) => {
           // [...]
         }
+    };
 ```
 
 ---
@@ -165,6 +175,7 @@ By the way, here's a tip I heard some time ago: if you want to know the real typ
         Err::<_, bool>(err) => {
           // [...]
         }
+    };
 ```
 
 And the compiler helpfully gives us the type:
