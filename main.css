@@ -46,6 +46,7 @@ p {
 #banner > ul > li {
   display: inline-flex;
   align-items: center;
+  margin: 0;
 }
 
 #banner > ul > li > a:hover {
