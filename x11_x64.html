@@ -303,7 +303,7 @@ exit(8)                                 = ?
   </tbody>
 </table>
 <p>We then pass the address on the stack of the beginning of the string to the <code>write</code> syscall, as well as its length:</p>
-<pre><code class="language-asm">%define SYSCALL_WRITE 1
+<pre><code class="language-x86asm">%define SYSCALL_WRITE 1
 %define STDOUT 1
 
 print_hello:
@@ -359,7 +359,7 @@ print_hello:
 </blockquote>
 <p>Good catch! The only reason why this program works, is that <code>print_hello</code> is a leaf function, meaning it does not call another function. Remember, the stack needs to be 16 bytes aligned when we do a <code>call</code>!</p>
 <p>So the correct way would be:</p>
-<pre><code class="language-asm">print_hello:
+<pre><code class="language-x86asm">print_hello:
   push rbp
   mov rbp, rsp
 
@@ -449,7 +449,7 @@ $1 = -112
 $2 = -112
 </code></pre>
 <p>Which translates in assembly to:</p>
-<pre><code class="language-asm">sub rsp, 100
+<pre><code class="language-x86asm">sub rsp, 100
 and rsp, -16
 </code></pre>
 <p>Finally, following those conventions means that our assembly functions can be safely called from C or other languages following the <a href="https://wiki.osdev.org/System_V_ABI">System V ABI</a>, without any modification, which is great.</p>
@@ -2001,9 +2001,7 @@ global _start:function
 
 <blockquote id="donate">
   <p>If you enjoy what you're reading, you want to support me, and can afford it: <a href="https://paypal.me/philigaultier?country.x=DE&locale.x=en_US">Support me</a>. That allows me to write more cool articles!</p>
-</blockquote>
 
-<blockquote>
   <p>
     This blog is <a href="https://github.com/gaultier/blog">open-source</a>!
     If you find a problem, please open a Github issue.
