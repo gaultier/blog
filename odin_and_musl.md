@@ -97,7 +97,7 @@ Alternatively, we can decide to stick with the Odin compiler through and through
 $ odin build src -target=linux_arm64 -extra-linker-flags:'-L ~/not-my-code/musl/lib/ -nostdlib -fuse-ld=lld --target=linux-aarch64 ~/not-my-code/musl/lib/crt1.o -static'
 ```
 
-We can even verify it works by running it inside a ARM64 Linux system using `qemu`:
+We can even verify it works by running it inside an ARM64 Linux system using `qemu`:
 
 ```shell
 $ qemu-aarch64-static a.out

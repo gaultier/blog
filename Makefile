@@ -47,4 +47,6 @@ dev:
 .PHONY: check
 check:
 	# Catch incorrect `an` e.g. `an fox`.
-	rg '\ban\s+[bcdfgjklmnpqrstvwxyz]' -i -t markdown || true
+	rg '\san\s+[bcdfgjklmnpqrstvwxyz]' -i -t markdown || true
+	# Catch incorrect `a` e.g. `a opening`.
+	rg '\sa\s+[aei]' -i -t markdown || true

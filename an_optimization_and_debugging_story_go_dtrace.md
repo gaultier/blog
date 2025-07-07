@@ -386,7 +386,7 @@ At the beginning I mentioned that `self->t = timestamp` means we are storing the
 
 Well, the good news is, there is a way!
 
-Reading carefully the [Go ABI](https://github.com/golang/go/blob/master/src/cmd/compile/abi-internal.md) document again, we see that on ARM64 (a.k.a AARCH64), the register `R28` stores the current goroutine. Great! That means that we can treat the value in this register as the 'goroutine id' and we can store all timestamps per goroutine. 
+Reading carefully the [Go ABI](https://github.com/golang/go/blob/master/src/cmd/compile/abi-internal.md) document again, we see that on ARM64 (a.k.a. AARCH64), the register `R28` stores the current goroutine. Great! That means that we can treat the value in this register as the 'goroutine id' and we can store all timestamps per goroutine. 
 
 My approach is to store all timestamps in a global map where the key is the goroutine id and the value is the timestamp. It's conceptually the same as thread-local DTrace variables, from the docs: 
 
