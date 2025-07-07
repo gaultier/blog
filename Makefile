@@ -43,3 +43,8 @@ clean:
 .PHONY: dev
 dev: 
 	ls *.{c,h,md} submodules/cstd/*.{c,h} header.html footer.html | entr -c make gen
+
+.PHONY: check
+check:
+	# Catch incorrect `an` e.g. `an fox`.
+	rg '\ban\s+[bcdfgjklmnpqrstvwxyz]' -i -t markdown || true

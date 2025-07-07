@@ -25,7 +25,7 @@ However, few know that Gnuplot is actually also Turing complete programming lang
 
 ## The problem
  
-In short, we get a text file where each line contains random ASCII characters. For each line, we must find the first and last digit characters, combine them into an number and at the end output the sum of all these numbers.
+In short, we get a text file where each line contains random ASCII characters. For each line, we must find the first and last digit characters, combine them into a number and at the end output the sum of all these numbers.
 
 
 The way we read the data into a variable is through a shell command:

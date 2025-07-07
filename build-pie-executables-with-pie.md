@@ -67,7 +67,7 @@ A [helpful mental model](https://www.quora.com/Systems-Programming/What-is-the-e
 
 The first dimension (static vs dynamic linking) is, from the point of view of the OS trying to launch our program, decided by the field 'Type' in the ELF header (bytes 16-20): if it's `EXEC`, it's a statically linked executable. If it's `DYN`, it's a shared object file or a statically linked PIE executable (note that the same file can be both a shared library and an executable. Pretty cool, no?).
 
-The second dimension (static vs dynamic loading) is decided by the ELF program headers: if there is one program header of type `INTERP` (which specifies the loader to use), our executable is using dynamic loading meaning it requires a loader (a.k.a interpreter) at runtime. Otherwise it does not. This aspect can be observed with `readelf`:
+The second dimension (static vs dynamic loading) is decided by the ELF program headers: if there is one program header of type `INTERP` (which specifies the loader to use), our executable is using dynamic loading meaning it requires a loader (a.k.a. interpreter) at runtime. Otherwise it does not. This aspect can be observed with `readelf`:
 
 ```shell
 $ readelf --program-headers ./main

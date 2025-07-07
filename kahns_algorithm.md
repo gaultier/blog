@@ -45,7 +45,7 @@ So how do we store all of those people in the database?
 CREATE TABLE IF NOT EXISTS people(name TEXT NOT NULL UNIQUE, manager BIGINT REFERENCES people)
 ```
 
-Each employee has a optional reference to a manager. 
+Each employee has an optional reference to a manager. 
 
 
 > This is not a novel idea, actually this is one of the examples in the official [SQLite documentation](https://www.sqlite.org/lang_with.html).
@@ -73,7 +73,7 @@ And that's called a topological sort.
 A big benefit is that we hit three birds with one stone:
 
 - We detect cycles
-- We have the nodes in an convenient order to insert them in the database
+- We have the nodes in a convenient order to insert them in the database
 - Since the algorithm for the topological sort takes as input an adjacency matrix (more on this later), we can easily detect the invalid case of a node having more than one outgoing edge (i.e. more than one manager, i.e. multiple roots).
 
 From now one, I will use the graph of employees (where `Zoe` has two managers) as example since that's a possible input to our API and we need to detect this case.

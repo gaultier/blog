@@ -29,7 +29,7 @@ pub extern "C" fn MYLIB_get_foos(out_foos: *mut *mut Foo, out_foos_count: &mut u
 }
 ```
 
-It allocates and returns an dynamically allocated array as a pointer and a length. Of course in reality, `Foo` has many fields and the values are not known in advance but what happens is that we send messages to a Smartcard to ask it to send us a piece of data residing on it, and it replies with some encoded messages that our library decodes and returns to the user.
+It allocates and returns a dynamically allocated array as a pointer and a length. Of course in reality, `Foo` has many fields and the values are not known in advance but what happens is that we send messages to a Smartcard to ask it to send us a piece of data residing on it, and it replies with some encoded messages that our library decodes and returns to the user.
 
 I tell Cargo this is a static library:
 

@@ -149,7 +149,7 @@ Finally, there is one hidden advantage of doing an incremental rewrite. A from-s
 
 ## Fuzzing
 
-I am a fan a fuzzing, it's great. Almost every time I fuzz some code, I find an corner case I did not think about, especially when doing parsing.
+I am a fan a fuzzing, it's great. Almost every time I fuzz some code, I find a corner case I did not think about, especially when doing parsing.
 
 I added fuzzing to the project so that every new Rust function is fuzzed. I initially used [AFL](https://rust-fuzz.github.io/book/afl.html) but then turned to [cargo-fuzz](https://rust-fuzz.github.io/book/cargo-fuzz.html), and I'll explain why.
 

@@ -4,7 +4,7 @@ Tags: C, Allocator, Profiling, Pprof, Linux
 
 *Discussions: [/r/c_programming](https://old.reddit.com/r/C_Programming/comments/182rnqw/roll_your_own_memory_profiling_its_actually_not/)*
 
-*Or: An exploration of the [pprof](https://github.com/gperftools/gperftools) memory profiler and its textual format for fun an profit.*
+*Or: An exploration of the [pprof](https://github.com/gperftools/gperftools) memory profiler and its textual format for fun and profit.*
 
 Say that you are using a programming language where memory is manually managed, and you have decided to use a custom allocator for one reason or another, for example an arena allocator, and are wondering:
 
@@ -317,7 +317,7 @@ struct mem_profile_t {
 Note that the memory profile needs to allocate to store this metadata and as such needs an arena. Which makes these two structures cyclic! 
 
 The way we solve it is: 
-1. We create an small arena dedicated to the memory profiling and this arena does *not* have a memory profile attached (otherwise we would end up in a infinite recursion, and we are not interested in profiling the memory usage of the memory profiler anyway; its memory usage is capped by the size of its dedicated arena).
+1. We create a small arena dedicated to the memory profiling and this arena does *not* have a memory profile attached (otherwise we would end up in an infinite recursion, and we are not interested in profiling the memory usage of the memory profiler anyway; its memory usage is capped by the size of its dedicated arena).
 2. We create the memory profile using this arena.
 3. We create the main arena for our program to use and attach the profile to it.
 

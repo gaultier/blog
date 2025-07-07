@@ -616,7 +616,7 @@ Result:
 
 Let's render something more interesting. We download the [Wayland logo](https://wayland.freedesktop.org/wayland.png), but we do not want to have to deal with a complicated format like PNG (because we then have to uncompress the image data with `zlib` or similar).
 
-We thus convert it offline to a simpler image format, PPM6, and then embed the raw pixel data in our code as an byte array, skipping over the first 15 bytes which are metadata:
+We thus convert it offline to a simpler image format, PPM6, and then embed the raw pixel data in our code as a byte array, skipping over the first 15 bytes which are metadata:
 
 ```shell
 $ file wayland.png
