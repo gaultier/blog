@@ -132,7 +132,7 @@ Do not edit it by hand.
 <li>When using multi-stage: Only copy files you need from a previous stage instead of globbing wildly, thus defeating the purpose of multi-stages.</li>
 <li>Tell apart the development and the release variant of a package. For example: on Ubuntu, when using the SDL2 library, it comes in two flavors: <code>libsdl2-dev</code> and <code>libsdl2-2.0</code>. The former is the development variant which you only need when building code that needs the headers and the libraries of the SDL2, while the latter is only useful with software needing the dynamic libraries at runtime. The development packages are usually bigger in size. You can astutely use multi-stage Docker builds to have first a build stage using the development packages, and then a final stage which only has the non-development packages. In CI, you almost never need both variants installed at the same time.</li>
 <li>Opt-out of 'recommended' packages. Aptitude on Debian/Ubuntu is the culprit here: <code>apt-get install foo</code> will install much more than <code>foo</code>. It will also install recommended packages that most of the time are completely unrelated. Always use <code>apt-get install --no-install-recommends foo</code>.</li>
-<li>Don't create unnecessary files: you use use heredoc and shell pipelines to avoid creating intermediary files.</li>
+<li>Don't create unnecessary files: you can use heredoc and shell pipelines to avoid creating intermediary files.</li>
 </ul>
 <h2 id="1630662642-be-lazy-don-t-do-things-you-don-t-need-to-do">
   <a class="title" href="#1630662642-be-lazy-don-t-do-things-you-don-t-need-to-do">Be lazy: Don't do things you don't need to do</a>
@@ -198,7 +198,7 @@ Do not edit it by hand.
 <p>Favor static linking and LTO. This will simplify much of your pipeline because you'll have to deal with fewer files, ideally one statically built executable.</p>
 </li>
 <li>
-<p>Use only one Gitlab CI job. That is because the startup time of a job is very high, in the order of minutes. You can achieve task parallelism with other means such as <code>parallel</code> or <code>make -j</code>.</p>
+<p>Use only one CI job. That is because the startup time of a job is very high, in the order of minutes. You can achieve task parallelism with other means such as <code>parallel</code> or <code>make -j</code>.</p>
 </li>
 <li>
 <p>Parallelize all the things! Some tools do not run tasks in parallel by default, e.g. <code>make</code> and <code>gradle</code>. Make sure you are always using a CI instance with multiple cores and are passing <code>--parallel</code> to Gradle and <code>-j$(nproc)</code> to make. In rare instances you might have to tweak the exact level of parallelism to your particular task for maximum performance. Also, <code>parallel</code> is great for parallelizing tasks.</p>

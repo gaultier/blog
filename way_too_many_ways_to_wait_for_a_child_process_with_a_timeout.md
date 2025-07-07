@@ -36,7 +36,7 @@ So let's implement our own that does both! As we'll see, it's much less straight
 
 ## What are we building?
 
-I call the tool we are building `ueb` for: micro exponential backoff. It does up to 10 retries, with a waiting period in between that starts at an arbitrary 128 ms and doubles every retry. The timeout for the subprocess is the same as the sleep time, so that it's adaptive and we give the subprocess a longer and longer time to finish successfully. These numbers would probably be exposed as command line options in a real polished program, but there's no time, what have to demo it:
+I call the tool we are building `ueb` for: micro exponential backoff. It does up to 10 retries, with a waiting period in between that starts at an arbitrary 128 ms and doubles every retry. The timeout for the subprocess is the same as the sleep time, so that it's adaptive and we give the subprocess a longer and longer time to finish successfully. These numbers would probably be exposed as command line options in a real polished program, but there's no time, we have to demo it:
 
 ```shell
 # This returns immediately since it succeeds on the first try.
@@ -128,7 +128,7 @@ The reality is grimmer, looking through the `timeout` implementation:
 - We could have inherited any signal mask from our parent so we need to explicitly unblock the signals we are interested in.
 - Signals can be sent to a process group we need to handle that case.
 - We have to avoid entering a 'signal loop'.
-- Our process can be implicitly multi-threaded due to some `timer_settime` implementations, therefore a `SIGALRM` signal sent to a process group, can be result in the signal being sent multiple times to a process (I am directly quoting the code comments from the `timeout` program here).
+- Our process can be implicitly multi-threaded due to some `timer_settime` implementations, therefore a `SIGALRM` signal sent to a process group, can result in the signal being sent multiple times to a process (I am directly quoting the code comments from the `timeout` program here).
 - When using `timer_create`, we need to take care of cleaning it up with `timer_delete`, lest we have a resource leak when retrying.
 - The signal handler may be called concurrently and we have to be aware of that.
 - Depending on the timer implementation we chose, we are susceptible to clock adjustments for example going back. E.g. `setitimer` only offers the `CLOCK_REALTIME` clock option for counting time, which is just the wall clock. We'd like something like `CLOCK_MONOTONIC` or `CLOCK_MONOTONIC_RAW` (the latter being Linux specific).
@@ -138,10 +138,10 @@ So... I don't *love* this approach:
 
 - I find signals hard. It's basically a global `goto` to a completely different location.
 - A signal handler is forced to use global mutable state, which is better avoided if possible, and it does not play nice with threads.
-- Lots of functions are not 'signal-safe', and that has led to security vulnerabilities in the past e.g. in [ssh](https://www.qualys.com/2024/07/01/cve-2024-6387/regresshion.txt). In short, non-atomic operations are not signal safe because they might be suspended in the middle, thus leaving an inconsistent state behind. Thus, we have to read documentation very carefully to ensure that we only call signal safe functions in our signal handler, and cherry on the cake, that varies from platform to platform, or even between libc versions on the same platform.
+- Lots of functions are not 'signal-safe', and that has led to security vulnerabilities in the past e.g. in [ssh](https://www.qualys.com/2024/07/01/cve-2024-6387/regresshion.txt). In short, non-atomic operations are not signal safe because they might be suspended in the middle, thus leaving an inconsistent state behind. So, we have to read documentation very carefully to ensure that we only call signal safe functions in our signal handler, and cherry on the cake, that varies from platform to platform, or even between libc versions on the same platform.
 - Signals do not compose well with other Unix entities such as file descriptors and sockets. For example, we cannot `poll` on signals. There are platform specific solutions though, keep on reading.
 - Different signals have different default behaviors, and this gets inherited in child processes, so you cannot assume anything in your program and have to be very defensive. Who knows what the parent process, e.g. the shell, set as the signal mask? If you read through the whole implementation of the `timeout` program, a lot of the code is dedicated to setting signal masks in the parent, forking, immediately changing the signal mask in the child and the parent, etc. Now, I believe modern Unices offer more control than `fork()` about what signal mask the child should be created with, so maybe it got better. Still, it's a lot of stuff to know.
-- They are many libc functions and system calls relating to signals and that's a lot to learn. A non-exhaustive list e.g. on Linux: `kill(1), alarm(2), kill(2), pause(2), sigaction(2), signalfd(2),  sigpending(2),  sigprocmask(2),   sigsuspend(2),  bsd_signal(3),  killpg(3),  raise(3),  siginterrupt(3), sigqueue(3), sigsetops(3), sigvec(3), sysv_signal(3), signal(7)`. Oh wait, I forgot `sigemptyset(3)` and  `sigaddset(3)`. And I'm sure I forgot about a few!
+- They are many libc functions and system calls relating to signals and that's a lot to learn. A non-exhaustive list e.g. on Linux: `kill(1), alarm(2), kill(2), pause(2), sigaction(2), signalfd(2),  sigpending(2), sigprocmask(2), sigsuspend(2), bsd_signal(3), killpg(3), raise(3), siginterrupt(3), sigqueue(3), sigsetops(3), sigvec(3), sysv_signal(3), signal(7)`. Oh wait, I forgot `sigemptyset(3)` and  `sigaddset(3)`. And I'm sure I overlooked a few more!
 
 So, let's stick with signals for a bit but simplify our current approach.
 
@@ -738,10 +738,10 @@ So what's the best approach then in a complex program? Let's recap:
 - If you are not afraid of signals, want a simpler API that still widely supported, and the use case is very specific (like ours), you can use `sigtimedwait`.
 - If you favor correctness and work with recent Linux and FreeBSD versions, you can use process descriptors with shims to get the same API on both OSes. That's probably my favorite option if it's applicable.
 - If you only care about MacOS and BSDs (or accept to use `libkqueue` on Linux), you can use `kqueue` because it works out of the box with PIDs, you avoid signals completely, and it's used in all the big libraries out of there e.g. `libuv`.
-- If you only care about bleeding edge Linux, are already using `io_uring` in your code, and are bold enough to add `wait` support to `io_uring`, you can use `io_uring` (once you have merged it in mainline Linux!).
+- If you only care about bleeding edge Linux, are already using `io_uring` in your code, you can use `io_uring`.
 - If you only care about Linux and are afraid of using `io_uring`, you can use `signalfd` + `poll`.
 
-I often look at complex code and think: what are the chances that this is correct? What are the chances that I missed something? Is there a way to make it simplistic that it is obviously correct? And how can I limit the blast of a bug I wrote? Will I understand this code in 3 months? When dealing with signals, I was constantly finding weird corner cases and timing issues leading to data races. You would not believe how many times I got my system completely frozen while writing this article, because I accidentally fork-bombed myself or simply forgot to reap zombie processes.
+I often look at complex code and think: what are the chances that this is correct? What are the chances that I missed something? Is there a way to make it so simple that it is obviously correct? And how can I limit the blast of a bug I wrote? Will I understand this code in 3 months? When dealing with signals, I was constantly finding weird corner cases and timing issues leading to data races. You would not believe how many times I got my system completely frozen while writing this article, because I accidentally fork-bombed myself or simply forgot to reap zombie processes.
 
 And to be fair to the OS developers that have to implement them: I do not think they did a bad job! I am sure it's super hard to implement! It's just that the whole concept and the available APIs are very easy to misuse. It's a good illustration of how a good API, the right abstraction, can enable great programs, and a poor API, the wrong abstraction, can be the root cause of various bugs in many programs for decades. 
 
@@ -754,5 +754,5 @@ Finally, I regret that there is so much fragmentation across all operating syste
 
 ## Addendum: The code
 
-The code is available [here](https://github.com/gaultier/c/tree/master/ueb). It does not have any dependencies except libc (well, and libkqueue for `kqueue.c`). All of these programs are in the worst case 27 KiB in size, with debug symbols enabled and linking statically to musl. They do not allocate any memory themselves.
+The code is available [here](https://github.com/gaultier/c/tree/master/ueb). It does not have any dependencies except libc (well, and libkqueue for `kqueue.c` on Linux). All of these programs are in the worst case 27 KiB in size, with debug symbols enabled and linking statically to musl. They do not allocate any memory themselves.
 For comparison, [eb](https://github.com/rye/eb) has 24 dependencies and is 1.2 MiB! That's roughly 50x times more.
