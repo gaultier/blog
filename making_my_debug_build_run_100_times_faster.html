@@ -1305,14 +1305,14 @@ Benchmark 1: ./a.out ./NetBSD-9.4-amd64.iso ~/Downloads/NetBSD-9.4-amd64.iso.tor
   Time (mean ± σ):     617.8 ms ±  20.9 ms    [User: 573.6 ms, System: 42.2 ms]
   Range (min … max):   598.7 ms … 669.1 ms    10 runs
 </code></pre>
-<p>That's ~ <strong>802 Mib/s</strong>.</p>
+<p>That's ~ <strong>802 MiB/s</strong>.</p>
 <p>And this is the code using the SHA extension, again with <code>-O2 -march=native</code>:</p>
 <pre><code class="language-shell">$ hyperfine --warmup 3 './a.out ./NetBSD-9.4-amd64.iso ~/Downloads/NetBSD-9.4-amd64.iso.torrent'
 Benchmark 1: ./a.out ./NetBSD-9.4-amd64.iso ~/Downloads/NetBSD-9.4-amd64.iso.torrent
   Time (mean ± σ):     281.2 ms ±   5.4 ms    [User: 240.6 ms, System: 39.6 ms]
   Range (min … max):   276.1 ms … 294.3 ms    10 runs
 </code></pre>
-<p>That's ~ <strong>1.8 Gib/s</strong>.</p>
+<p>That's ~ <strong>1.8 GiB/s</strong>.</p>
 <p>Unsurprisingly, when inspecting the generated assembly code for the SIMD-less version, the auto-vectorization is <em>very</em> limited and does not use the SHA extension (compilers are smart, but not <em>that</em> smart).</p>
 <p>As such, it's still very impressive that it reaches such a high performance. My guess is that the compiler does a good job at analyzing data dependencies and reordering statements to maximize utilization. Also, SHA1 does a lot of bit rotation, and the compiler makes heavy use of the <code>ror</code>, <code>rol</code>, and <code>shr</code> instructions to do just that instead of doing multiple naive bit operations like in the unoptimized code.</p>
 <p>The version using the SHA extension performs very well, be it in debug + Address Sanitizer mode, or release mode.</p>

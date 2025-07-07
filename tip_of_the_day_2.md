@@ -99,7 +99,7 @@ Note that this is a trade-off:
 
 - It will not catch all out-of-bounds accesses. We could get unlucky and accidentally hit the memory of another arena still. This is a protection that typically helps with off-by-one errors.
 - It's very lightweight: the OS only has to maintain an entry in a table, recording that the program owns the two additional pages (per arena). No actually physical memory will be dedicated for them. But, if there are millions of arenas, it could make a difference.
-- It's theoretically tunable: nothing prevents us from having larger guard 'regions'. If we are paranoid, we could make the guard region 64 Gib before and after the real allocation of 4096 bytes, if we wish. That's the power of virtual memory.
+- It's theoretically tunable: nothing prevents us from having larger guard 'regions'. If we are paranoid, we could make the guard region 64 GiB before and after the real allocation of 4096 bytes, if we wish. That's the power of virtual memory.
 - The granularity is still the page (typically 4096 bytes, something larger). We cannot easily prevent out-of-bounds accesses within a page.
 - The original implementation at the beginning of the article did not have to bother with the size of a page. But this implementation has to, which slightly complicates the logic (but not by much).
 

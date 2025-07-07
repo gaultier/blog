@@ -1173,7 +1173,7 @@ Benchmark 1: ./a.out ./NetBSD-9.4-amd64.iso ~/Downloads/NetBSD-9.4-amd64.iso.tor
   Range (min … max):   598.7 ms … 669.1 ms    10 runs
 ```
 
-That's ~ **802 Mib/s**.
+That's ~ **802 MiB/s**.
 
 And this is the code using the SHA extension, again with `-O2 -march=native`:
 
@@ -1184,7 +1184,7 @@ Benchmark 1: ./a.out ./NetBSD-9.4-amd64.iso ~/Downloads/NetBSD-9.4-amd64.iso.tor
   Range (min … max):   276.1 ms … 294.3 ms    10 runs
 ```
 
-That's ~ **1.8 Gib/s**.
+That's ~ **1.8 GiB/s**.
 
 Unsurprisingly, when inspecting the generated assembly code for the SIMD-less version, the auto-vectorization is *very* limited and does not use the SHA extension (compilers are smart, but not *that* smart).
 
