@@ -14,7 +14,6 @@
 - [ ] ~~Add a JS/Wasm live running version of the programs described in each article. As a fallback: Video/Gif.
     + [ ] Kahn's algorithm~~
 - [ ] Blog search implementation
-- [ ] C++ web server undefined behavior bug
 - [ ] Weird and surprising things about x64 assembly
   + non symetric mnemonics (`cmp 1, rax` vs `cmp rax, 1`)
   + some different mnemonics encode to the same bytes (`jne`, `jz`)

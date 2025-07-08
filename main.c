@@ -191,6 +191,7 @@ static int article_cmp_by_creation_date_desc(const void *a, const void *b) {
 [[nodiscard]]
 static GitStatSlice git_get_articles_stats(PgAllocator *allocator) {
   PgStringDyn args = {0};
+  PG_DYN_ENSURE_CAP(&args,16,allocator);
   *PG_DYN_PUSH(&args, allocator) = PG_S("log");
   // Print the date in ISO format.
   *PG_DYN_PUSH(&args, allocator) = PG_S("--format='%aI'");
@@ -214,7 +215,7 @@ static GitStatSlice git_get_articles_stats(PgAllocator *allocator) {
 
   PgProcess process = res_spawn.res;
 
-  PgProcessExitResult res_wait = pg_process_wait(process, allocator);
+  PgProcessExitResult res_wait = pg_process_wait(process, 256*PG_KiB, 0, allocator);
   PG_ASSERT(0 == res_wait.err);
 
   PgProcessStatus status = res_wait.res;
@@ -380,6 +381,7 @@ static PgString datetime_to_date(PgString datetime) {
                                                u64 metadata_offset,
                                                PgAllocator *allocator) {
   PgStringDyn args = {0};
+  PG_DYN_ENSURE_CAP(&args, 16, allocator);
   *PG_DYN_PUSH(&args, allocator) = PG_S("--validate-utf8");
   *PG_DYN_PUSH(&args, allocator) = PG_S("-e");
   *PG_DYN_PUSH(&args, allocator) = PG_S("table");
@@ -410,7 +412,10 @@ static PgString datetime_to_date(PgString datetime) {
   PG_ASSERT(0 == pg_file_close(process.stdin_pipe));
   process.stdin_pipe.fd = 0;
 
-  PgProcessExitResult res_wait = pg_process_wait(process, allocator);
+  u64 markdown_size = res_markdown_file_size.res;
+  u64 stdio_size_hint = markdown_size*5;
+
+  PgProcessExitResult res_wait = pg_process_wait(process, stdio_size_hint, 0, allocator);
   PG_ASSERT(0 == res_wait.err);
 
   PgProcessStatus status = res_wait.res;
