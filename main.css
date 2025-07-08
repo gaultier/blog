@@ -203,10 +203,20 @@ code {
 }
 
 pre > code {
-  border: 1px solid grey;
   align-self: stretch;
   width: 100%;
-  padding: 1em;
+  align-items: center;
+}
+
+.code-container {
+  padding-right: .5rem;
+  margin: .5rem;
+}
+
+
+code:has(div.code-container) {
+  display: inline-flex !important;
+  padding: 0 !important;
 }
 
 object {
@@ -295,25 +305,35 @@ p:has(img):has(em) {
   text-align: center;
 }
 
-.line-number {
-  width: 2rem;
-  display: inline-block;
-  text-align: right;
+.lines-number {
+  min-width: 2rem;
+  display: flex;
+  flex-direction: column;
   padding: .2rem;
   margin-right: 1rem;
+  border-right: 1px dotted black;
+}
+
+.lines-number > span {
+  text-align: right;
+  margin: 0 .5rem;
 }
 
 @media only screen and (max-width: 650px) {
-  .line-number { display: none; }
+  .lines-number { display: none; }
   code { padding-left: 0.3rem !important; }
 }
 
 details {
-  width: fit-content;
+  width: 100%;
   border-radius: .5rem;
   margin: 0 auto;
   padding: .5rem;
   display: block;
+}
+
+details > pre {
+  width: 100%;
 }
 
 summary {
