@@ -199,7 +199,7 @@ pid$target::github.com?ory?kratos*CreateRecoveryFlow:entry {
 
 ## Blog implementation
 
-- [ ] Dtrace syntax highlighting
+- [ ] Wrap line numbers in their own div
 - [ ] Articles excerpt on the home page?
 - [ ] Browser live reload: 
   + Depends on: custom HTTP server, builtin file watch.
@@ -220,4 +220,3 @@ pid$target::github.com?ory?kratos*CreateRecoveryFlow:entry {
 - [x] Search
 - [x] Support markdown syntax in article title in metadata
 - [x] Use libcmark to simplify parsing
-- [x] Wrap line numbers in their own div

@@ -85,28 +85,14 @@ document.querySelectorAll('code').forEach((el, _i) => {
     return; 
   }
 
-  const wrapper = document.createElement('div');
-  wrapper.classList.add('code-container');
-  const fragment = document.createDocumentFragment();
+
   var lines = el.innerHTML.trimEnd().split('\n');
   if (lines.length <= 1) {
     return;
   }
-  while (el.firstChild) {
-    fragment.appendChild(el.firstChild);
-  }
-  wrapper.appendChild(fragment);
-  el.appendChild(wrapper);
-
-  var lines_container = document.createElement('div');
-  lines_container.classList.add('lines-number');
-
+  var out = [];
   lines.forEach(function(l, i){
-    var line_elem = document.createElement('span');
-    line_elem.innerText = (i+1).toString();
-
-    lines_container.appendChild(line_elem);
+    out.push('<span class="line-number">' + (i+1).toString() + '</span> ' + l);
   });
-
-  el.prepend(lines_container);
+  el.innerHTML = out.join('\n');
 });
