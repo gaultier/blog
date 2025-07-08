@@ -191,7 +191,7 @@ static int article_cmp_by_creation_date_desc(const void *a, const void *b) {
 [[nodiscard]]
 static GitStatSlice git_get_articles_stats(PgAllocator *allocator) {
   PgStringDyn args = {0};
-  PG_DYN_ENSURE_CAP(&args,16,allocator);
+  PG_DYN_ENSURE_CAP(&args, 16, allocator);
   *PG_DYN_PUSH(&args, allocator) = PG_S("log");
   // Print the date in ISO format.
   *PG_DYN_PUSH(&args, allocator) = PG_S("--format='%aI'");
@@ -215,7 +215,8 @@ static GitStatSlice git_get_articles_stats(PgAllocator *allocator) {
 
   PgProcess process = res_spawn.res;
 
-  PgProcessExitResult res_wait = pg_process_wait(process, 256*PG_KiB, 0, allocator);
+  PgProcessExitResult res_wait =
+      pg_process_wait(process, 256 * PG_KiB, 0, allocator);
   PG_ASSERT(0 == res_wait.err);
 
   PgProcessStatus status = res_wait.res;
@@ -413,9 +414,10 @@ static PgString datetime_to_date(PgString datetime) {
   process.stdin_pipe.fd = 0;
 
   u64 markdown_size = res_markdown_file_size.res;
-  u64 stdio_size_hint = markdown_size*5;
+  u64 stdio_size_hint = markdown_size * 5;
 
-  PgProcessExitResult res_wait = pg_process_wait(process, stdio_size_hint, 0, allocator);
+  PgProcessExitResult res_wait =
+      pg_process_wait(process, stdio_size_hint, 0, allocator);
   PG_ASSERT(0 == res_wait.err);
 
   PgProcessStatus status = res_wait.res;
@@ -741,8 +743,6 @@ static void article_generate_html_file(PgFileDescriptor markdown_file,
 static Article article_generate(PgString header, PgString footer,
                                 GitStat git_stat, SearchIndex *search_index,
                                 PgAllocator *allocator) {
-  (void)header;
-  (void)footer;
   printf("generating article: %.*s\n", (int)git_stat.path_rel.len,
          git_stat.path_rel.data);
   Article article = {
@@ -836,8 +836,8 @@ static ArticleSlice articles_generate(PgString header, PgString footer,
   for (u64 i = 0; i < git_stats.len; i++) {
     GitStat git_stat = PG_SLICE_AT(git_stats, i);
 
-    // The home page is generate separately. The logic is different from
-    // an article.
+    // The home page is generated separately.
+    // The logic is different from an article.
     if (pg_string_eq(git_stat.path_rel, PG_S("index.md"))) {
       continue;
     }
@@ -869,7 +869,7 @@ static void home_page_generate(ArticleSlice articles, PgString header,
   PgString markdown_file_path = PG_S("index.md");
   PgString html_file_path = PG_S("index.html");
 
-  Pgu8Dyn sb = pg_string_builder_make(32 * PG_KiB, allocator);
+  Pgu8Dyn sb = pg_string_builder_make(64 * PG_KiB, allocator);
   PG_DYN_APPEND_SLICE(&sb, PG_S("<!DOCTYPE html>\n<html>\n<head>\n<title>"),
                       allocator);
   PG_DYN_APPEND_SLICE(&sb, PG_S("Philippe Gaultier's blog"), allocator);
@@ -984,8 +984,11 @@ static PgStringSlice articles_by_tag_get_keys(ArticlesByTag table,
 
 static void tags_page_generate(ArticleSlice articles, PgString header,
                                PgString footer, PgAllocator *allocator) {
-
   ArticlesByTag articles_by_tag = {0};
+
+  PG_ASSERT(articles.len <= PG_STATIC_ARRAY_LEN(articles_by_tag.keys));
+  static_assert(PG_STATIC_ARRAY_LEN(articles_by_tag.keys) ==
+                PG_STATIC_ARRAY_LEN(articles_by_tag.values));
 
   for (u64 i = 0; i < articles.len; i++) {
     Article article = PG_SLICE_AT(articles, i);
@@ -1003,7 +1006,7 @@ static void tags_page_generate(ArticleSlice articles, PgString header,
   PgStringSlice tags_lexicographically_ordered =
       articles_by_tag_get_keys(articles_by_tag, allocator);
 
-  Pgu8Dyn sb = pg_string_builder_make(64*PG_KiB, allocator);
+  Pgu8Dyn sb = pg_string_builder_make(64 * PG_KiB, allocator);
   PG_DYN_APPEND_SLICE(&sb, PG_S("<!DOCTYPE html>\n<html>\n<head>\n<title>"),
                       allocator);
   PG_DYN_APPEND_SLICE(&sb, PG_S("Articles by tag"), allocator);
