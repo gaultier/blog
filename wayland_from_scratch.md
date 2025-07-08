@@ -508,7 +508,6 @@ The last two being entities from extension protocols, which is inconsequential i
 Once we have done that, the surface is setup, and we commit it, to signal to the compositor to atomically apply the changes to the surface. 
 
 ```c
-
     while (msg_len > 0)
       wayland_handle_message(fd, &state, &msg, &msg_len);
 

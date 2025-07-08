@@ -576,8 +576,7 @@ The compositor responds with a series of events, listing the available global ob
 </ul>
 <p>The last two being entities from extension protocols, which is inconsequential in our implementation since we do not link against any libraries. This is just the same logic as the other messages and events from the core protocol.</p>
 <p>Once we have done that, the surface is setup, and we commit it, to signal to the compositor to atomically apply the changes to the surface.</p>
-<pre><code class="language-c">
-    while (msg_len &gt; 0)
+<pre><code class="language-c">    while (msg_len &gt; 0)
       wayland_handle_message(fd, &amp;state, &amp;msg, &amp;msg_len);
 
     if (state.wl_compositor != 0 &amp;&amp; state.wl_shm != 0 &amp;&amp;
