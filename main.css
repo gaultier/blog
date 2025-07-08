@@ -301,6 +301,7 @@ p:has(img):has(em) {
   text-align: right;
   padding: .2rem;
   margin-right: 1rem;
+  user-select: none;
 }
 
 @media only screen and (max-width: 650px) {

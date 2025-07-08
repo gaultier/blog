@@ -199,7 +199,6 @@ pid$target::github.com?ory?kratos*CreateRecoveryFlow:entry {
 
 ## Blog implementation
 
-- [ ] Wrap line numbers in their own div
 - [ ] Articles excerpt on the home page?
 - [ ] Browser live reload: 
   + Depends on: custom HTTP server, builtin file watch.
