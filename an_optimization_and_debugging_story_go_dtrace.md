@@ -159,7 +159,7 @@ syscall::open:entry {
 
 `copyinstr` is [required](https://illumos.org/books/dtrace/chp-user.html#chp-user) because our D script runs inside the kernel but we are trying to access user-space memory. 
 
-When we run this script on `go test -c` which builds the text executable, we see that all the SQL files are being opened by the Go compiler and subsequently embedded in the test binary:
+When we run this script on `go test -c` which builds the test executable, we see that all the SQL files are being opened by the Go compiler and subsequently embedded in the test binary:
 
 ```shell
 $ sudo dtrace -s ~/scratch/sql_files.d -c 'go test -tags=sqlite -c'

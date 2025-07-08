@@ -259,7 +259,7 @@ Benchmark 1: find ./persistence/sql/migrations -name '*.sql' -type f
 } 
 </code></pre>
 <p><code>copyinstr</code> is <a href="https://illumos.org/books/dtrace/chp-user.html#chp-user">required</a> because our D script runs inside the kernel but we are trying to access user-space memory.</p>
-<p>When we run this script on <code>go test -c</code> which builds the text executable, we see that all the SQL files are being opened by the Go compiler and subsequently embedded in the test binary:</p>
+<p>When we run this script on <code>go test -c</code> which builds the test executable, we see that all the SQL files are being opened by the Go compiler and subsequently embedded in the test binary:</p>
 <pre><code class="language-shell">$ sudo dtrace -s ~/scratch/sql_files.d -c 'go test -tags=sqlite -c'
 
 CPU     ID                    FUNCTION:NAME
