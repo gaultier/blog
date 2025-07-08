@@ -190,33 +190,26 @@ pre {
   align-items: center;
   width: fit-content;
   margin: auto;
-  min-width: 50%;
-  max-width: 95%;
   margin-top: 1rem;
   margin-bottom: 1rem;
+  background: #FFF3E0 !important;
 }
 
 code {
-  background: #FFF3E0 !important;
   word-wrap: break-word;
   white-space: pre-wrap;
-}
-
-pre > code {
-  align-self: stretch;
-  width: 100%;
-  align-items: center;
+  background: #FFF3E0 !important;
 }
 
 .code-container {
   padding-right: .5rem;
-  margin: .5rem;
-}
-
-
-code:has(div.code-container) {
+  width: 100%;
   display: inline-flex !important;
   padding: 0 !important;
+}
+
+.code-container > code {
+  padding: 1rem;
 }
 
 object {
@@ -309,8 +302,7 @@ p:has(img):has(em) {
   min-width: 2rem;
   display: flex;
   flex-direction: column;
-  padding: .2rem;
-  margin-right: 1rem;
+  padding: 1rem .2rem 0 .2rem;
   border-right: 1px dotted black;
 }
 
