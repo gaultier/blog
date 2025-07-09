@@ -216,8 +216,7 @@ error: memory leaked: alloc59029 (Rust heap, size: 16, align: 8), allocated here
   <a class="hash-anchor" href="#first-attempt-at-freeing-the-memory-properly" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>Great, so let's free it at the end of the test, like C does, with <code>free</code> from libc, which we add as a dependency:</p>
-<pre><code class="language-rust">
-    #[test]
+<pre><code class="language-rust">    #[test]
     fn test_get_foos() {
         ...
 

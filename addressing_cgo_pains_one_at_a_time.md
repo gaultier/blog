@@ -510,7 +510,6 @@ import "C"
 Let's add one empty line near the end:
 
 ```go
-
 package app
 
 /*

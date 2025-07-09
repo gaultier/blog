@@ -134,7 +134,6 @@ Note that the standard test runner does not report memory leaks, unfortunately. 
 Great, so let's free it at the end of the test, like C does, with `free` from libc, which we add as a dependency:
 
 ```rust
-
     #[test]
     fn test_get_foos() {
         ...
