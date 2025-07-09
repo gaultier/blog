@@ -33,8 +33,6 @@
   "markdown "                                                                  \
   "file of the same name.\nDo not edit it by hand.\n-->\n"
 
-typedef u32 TitleHash;
-
 typedef struct Title Title;
 struct Title {
   PgString title;
