@@ -55,7 +55,6 @@ typedef struct {
   PgString title;
   PgStringSlice tags;
   PgString creation_date, modification_date;
-  Title *titles_root;
 } Article;
 PG_DYN(Article) ArticleDyn;
 PG_SLICE(Article) ArticleSlice;
@@ -935,7 +934,9 @@ static void home_page_generate(ArticleSlice articles, PgString header,
 #define HASH_TABLE_EXP 10
 
 typedef struct {
+  // Tag.
   PgString keys[1 << HASH_TABLE_EXP];
+  // Articles.
   ArticleDyn values[1 << HASH_TABLE_EXP];
 } ArticlesByTag;
 
