@@ -39,6 +39,19 @@ return {
 }
 });
 
+hljs.registerLanguage("dtrace", function(e) {
+return {
+    aliases: ["d", "dtracelang", "dtrace-lang"],
+    keywords: {
+        keyword: "if else self this BEGIN END",
+        literal: "",
+        built_in: "trace copyin copyinstr stringof uregs print printf exit rindex strlen quantize lquantize timestamp"
+    },
+    illegal: "</",
+  contains: [ hljs.COMMENT('#', '$'), ]
+}
+});
+
 hljs.highlightAll();
 
 document.querySelectorAll('code').forEach((el, _i) => {
