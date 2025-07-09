@@ -38,7 +38,7 @@ typedef u32 TitleHash;
 typedef struct Title Title;
 struct Title {
   PgString title;
-  PgString content_html_id;
+  PgString slug;
   u8 level;
   TitleHash hash;
   Title *parent, *first_child, *next_sibling;
@@ -133,8 +133,7 @@ static void search_index_serialize_to_file(SearchIndex search_index,
         PG_DYN_APPEND_SLICE(&sb, PG_S(",\n"), allocator);
 
         PG_DYN_APPEND_SLICE(&sb, PG_S("content_html_id:\""), allocator);
-        pg_string_builder_append_js_string_escaped(&sb, title.content_html_id,
-                                                   allocator);
+        pg_string_builder_append_js_string_escaped(&sb, title.slug, allocator);
         PG_DYN_APPEND_SLICE(&sb, PG_S("\",\n"), allocator);
 
         PG_DYN_APPEND_SLICE(&sb, PG_S("offset:"), allocator);
@@ -346,7 +345,7 @@ static GitStatSlice git_get_articles_stats(PgAllocator *allocator) {
 }
 
 [[nodiscard]]
-static PgString html_make_id(PgString s, PgAllocator *allocator) {
+static PgString html_make_slug(PgString s, PgAllocator *allocator) {
   PG_ASSERT(!pg_string_is_empty(s));
 
   Pgu8Dyn sb = {0};
@@ -459,7 +458,7 @@ static void html_collect_titles_rec(PgHtmlNode *node, TitleDyn *titles,
     Title new_title = {0};
     new_title.level = level;
     new_title.title = pg_html_node_get_simple_title_content(node);
-    new_title.content_html_id = html_make_id(new_title.title, allocator);
+    new_title.slug = html_make_slug(new_title.title, allocator);
     new_title.pos_start = node->token_start.start;
     new_title.pos_end = 2 + node->token_end.end;
     // Other fields backpatched.
@@ -557,12 +556,12 @@ static void html_write_decorated_titles(PgString html, Pgu8Dyn *sb,
     PG_DYN_APPEND_SLICE(sb, PG_S(" id=\""), allocator);
     pg_string_builder_append_u64(sb, title.hash, allocator);
     PG_DYN_APPEND_SLICE(sb, PG_S("-"), allocator);
-    PG_DYN_APPEND_SLICE(sb, title.content_html_id, allocator);
+    PG_DYN_APPEND_SLICE(sb, title.slug, allocator);
     PG_DYN_APPEND_SLICE(sb, PG_S("\">\n  <a class=\"title\" href=\"#"),
                         allocator);
     pg_string_builder_append_u64(sb, title.hash, allocator);
     PG_DYN_APPEND_SLICE(sb, PG_S("-"), allocator);
-    PG_DYN_APPEND_SLICE(sb, title.content_html_id, allocator);
+    PG_DYN_APPEND_SLICE(sb, title.slug, allocator);
     PG_DYN_APPEND_SLICE(sb, PG_S("\">"), allocator);
     PG_DYN_APPEND_SLICE(sb, title.title, allocator);
     PG_DYN_APPEND_SLICE(sb, PG_S("</a>\n"), allocator);
@@ -570,7 +569,7 @@ static void html_write_decorated_titles(PgString html, Pgu8Dyn *sb,
                         allocator);
     pg_string_builder_append_u64(sb, title.hash, allocator);
     PG_DYN_APPEND_SLICE(sb, PG_S("-"), allocator);
-    PG_DYN_APPEND_SLICE(sb, title.content_html_id, allocator);
+    PG_DYN_APPEND_SLICE(sb, title.slug, allocator);
     PG_DYN_APPEND_SLICE(
         sb,
         PG_S("\" aria-hidden=\"true\" "
@@ -596,7 +595,7 @@ static void article_write_toc_rec(Pgu8Dyn *sb, Title *title,
     PG_DYN_APPEND_SLICE(sb, PG_S("\n  <li>\n    <a href=\"#"), allocator);
     pg_string_builder_append_u64(sb, title->hash, allocator);
     PG_DYN_APPEND_SLICE(sb, PG_S("-"), allocator);
-    PG_DYN_APPEND_SLICE(sb, title->content_html_id, allocator);
+    PG_DYN_APPEND_SLICE(sb, title->slug, allocator);
     PG_DYN_APPEND_SLICE(sb, PG_S("\">"), allocator);
     PG_DYN_APPEND_SLICE(sb, title->title, allocator);
     PG_DYN_APPEND_SLICE(sb, PG_S("</a>\n"), allocator);
@@ -705,7 +704,7 @@ static void article_generate_html_file(PgFileDescriptor markdown_file,
   PG_DYN_APPEND_SLICE(&sb, PG_S("  <div class=\"tags\">"), allocator);
   for (u64 i = 0; i < article->tags.len; i++) {
     PgString tag = PG_SLICE_AT(article->tags, i);
-    PgString id = html_make_id(tag, allocator);
+    PgString id = html_make_slug(tag, allocator);
     PG_DYN_APPEND_SLICE(&sb, PG_S(" <a href=\"/blog/articles-by-tag.html#"),
                         allocator);
     PG_DYN_APPEND_SLICE(&sb, id, allocator);
@@ -902,7 +901,7 @@ static void home_page_generate(ArticleSlice articles, PgString header,
 
     for (u64 j = 0; j < a.tags.len; j++) {
       PgString tag = PG_SLICE_AT(a.tags, j);
-      PgString id = html_make_id(tag, allocator);
+      PgString id = html_make_slug(tag, allocator);
       PG_DYN_APPEND_SLICE(&sb, PG_S(" <a href=\"/blog/articles-by-tag.html#"),
                           allocator);
       PG_DYN_APPEND_SLICE(&sb, id, allocator);
@@ -1020,7 +1019,7 @@ static void tags_page_generate(ArticleSlice articles, PgString header,
     PgString tag = PG_SLICE_AT(tags_lexicographically_ordered, i);
 
     PG_DYN_APPEND_SLICE(&sb, PG_S("<li id=\""), allocator);
-    PG_DYN_APPEND_SLICE(&sb, html_make_id(tag, allocator), allocator);
+    PG_DYN_APPEND_SLICE(&sb, html_make_slug(tag, allocator), allocator);
     PG_DYN_APPEND_SLICE(&sb, PG_S("\"><span class=\"tag\">"), allocator);
     PG_DYN_APPEND_SLICE(&sb, tag, allocator);
     PG_DYN_APPEND_SLICE(&sb, PG_S("</span><ul>\n"), allocator);
