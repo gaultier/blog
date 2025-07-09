@@ -128,9 +128,11 @@ static void search_index_serialize_to_file(SearchIndex search_index,
         pg_string_builder_append_js_string_escaped(&sb, title.title, allocator);
         PG_DYN_APPEND_SLICE(&sb, PG_S("\",\n"), allocator);
 
-        PG_DYN_APPEND_SLICE(&sb, PG_S("counter:"), allocator);
-        pg_string_builder_append_u64(&sb, title.counter, allocator);
-        PG_DYN_APPEND_SLICE(&sb, PG_S(",\n"), allocator);
+        if (title.counter) {
+          PG_DYN_APPEND_SLICE(&sb, PG_S("counter:"), allocator);
+          pg_string_builder_append_u64(&sb, title.counter, allocator);
+          PG_DYN_APPEND_SLICE(&sb, PG_S(",\n"), allocator);
+        }
 
         PG_DYN_APPEND_SLICE(&sb, PG_S("slug:\""), allocator);
         pg_string_builder_append_js_string_escaped(&sb, title.slug, allocator);
