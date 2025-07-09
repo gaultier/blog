@@ -48,7 +48,7 @@ return {
         built_in: "trace copyin copyinstr stringof uregs print printf exit rindex strlen quantize lquantize timestamp"
     },
     illegal: "</",
-  contains: [ hljs.COMMENT('#', '$'), ]
+  contains: [ hljs.COMMENT('//', '$'), ]
 }
 });
 
