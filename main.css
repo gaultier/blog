@@ -292,7 +292,7 @@ p:has(img):has(em) {
 }
 
 .line-number {
-  width: 2rem;
+  width: 3rem;
   display: inline-block;
   text-align: right;
   padding: .2rem;
