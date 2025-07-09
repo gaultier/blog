@@ -347,40 +347,6 @@ static GitStatSlice git_get_articles_stats(PgAllocator *allocator) {
 }
 
 [[nodiscard]]
-static PgString html_make_slug(PgString s, PgAllocator *allocator) {
-  PG_ASSERT(!pg_string_is_empty(s));
-
-  Pgu8Dyn sb = {0};
-  PG_DYN_ENSURE_CAP(&sb, s.len * 2, allocator);
-
-  PgUtf8Iterator it = pg_make_utf8_iterator(s);
-  for (;;) {
-    PgRuneResult res = pg_utf8_iterator_next(&it);
-    PG_ASSERT(!res.err);
-    // FIXME: Proper 'end' detection in iterator.
-    if (!res.res) {
-      break;
-    }
-
-    PgRune rune = res.res;
-
-    if (pg_rune_ascii_is_alphanumeric(rune)) {
-      *PG_DYN_PUSH(&sb, allocator) = (u8)pg_rune_ascii_to_lower_case(rune);
-    } else if ('+' == rune) {
-      PG_DYN_APPEND_SLICE(&sb, PG_S("plus"), allocator);
-    } else if ('#' == rune) {
-      PG_DYN_APPEND_SLICE(&sb, PG_S("sharp"), allocator);
-    } else if (PG_SLICE_LAST(sb) != '-') {
-      // Other runes are mapped to `-`, but we avoid consecutive `-`.
-      *PG_DYN_PUSH(&sb, allocator) = '-';
-    }
-  }
-  PgString res = PG_DYN_SLICE(PgString, sb);
-
-  return pg_string_trim(res, '-');
-}
-
-[[nodiscard]]
 static PgString datetime_to_date(PgString datetime) {
   PgStringCut cut = pg_string_cut_rune(datetime, 'T');
   return cut.ok ? cut.left : datetime;
@@ -451,7 +417,7 @@ static void html_collect_titles_rec(PgHtmlNode *node, TitleDyn *titles,
     Title new_title = {0};
     new_title.level = level;
     new_title.title = pg_html_node_get_simple_title_content(node);
-    new_title.slug = html_make_slug(new_title.title, allocator);
+    new_title.slug = pg_html_make_slug(new_title.title, allocator);
     new_title.pos_start = node->token_start.start;
     new_title.pos_end = 2 + node->token_end.end;
     // Other fields backpatched.
@@ -708,7 +674,7 @@ static void article_generate_html_file(PgFileDescriptor markdown_file,
   PG_DYN_APPEND_SLICE(&sb, PG_S("  <div class=\"tags\">"), allocator);
   for (u64 i = 0; i < article->tags.len; i++) {
     PgString tag = PG_SLICE_AT(article->tags, i);
-    PgString id = html_make_slug(tag, allocator);
+    PgString id = pg_html_make_slug(tag, allocator);
     PG_DYN_APPEND_SLICE(&sb, PG_S(" <a href=\"/blog/articles-by-tag.html#"),
                         allocator);
     PG_DYN_APPEND_SLICE(&sb, id, allocator);
@@ -905,7 +871,7 @@ static void home_page_generate(ArticleSlice articles, PgString header,
 
     for (u64 j = 0; j < a.tags.len; j++) {
       PgString tag = PG_SLICE_AT(a.tags, j);
-      PgString id = html_make_slug(tag, allocator);
+      PgString id = pg_html_make_slug(tag, allocator);
       PG_DYN_APPEND_SLICE(&sb, PG_S(" <a href=\"/blog/articles-by-tag.html#"),
                           allocator);
       PG_DYN_APPEND_SLICE(&sb, id, allocator);
@@ -1025,7 +991,7 @@ static void tags_page_generate(ArticleSlice articles, PgString header,
     PgString tag = PG_SLICE_AT(tags_lexicographically_ordered, i);
 
     PG_DYN_APPEND_SLICE(&sb, PG_S("<li id=\""), allocator);
-    PG_DYN_APPEND_SLICE(&sb, html_make_slug(tag, allocator), allocator);
+    PG_DYN_APPEND_SLICE(&sb, pg_html_make_slug(tag, allocator), allocator);
     PG_DYN_APPEND_SLICE(&sb, PG_S("\"><span class=\"tag\">"), allocator);
     PG_DYN_APPEND_SLICE(&sb, tag, allocator);
     PG_DYN_APPEND_SLICE(&sb, PG_S("</span><ul>\n"), allocator);
