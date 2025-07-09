@@ -490,8 +490,6 @@ static TitleSlice html_collect_titles(PgHtmlNode *html_root,
       Title it = PG_SLICE_AT(titles, j);
       if (pg_string_eq(title->slug, it.slug)) {
         title->counter = it.counter + 1;
-        printf("[D001] %u %.*s\n", title->counter, (i32)title->slug.len,
-               title->slug.data);
         break;
       }
     }
