@@ -84,39 +84,39 @@ Do not edit it by hand.
 <ul>
 
   <li>
-    <a href="#3232213245-what-we-re-making">What we're making</a>
+    <a href="#what-we-re-making">What we're making</a>
   </li>
 
   <li>
-    <a href="#2281387754-authentication">Authentication</a>
+    <a href="#authentication">Authentication</a>
   </li>
 
   <li>
-    <a href="#526064357-opening-a-window">Opening a window</a>
+    <a href="#opening-a-window">Opening a window</a>
   </li>
 
   <li>
-    <a href="#2589078693-loading-assets">Loading assets</a>
+    <a href="#loading-assets">Loading assets</a>
   </li>
 
   <li>
-    <a href="#2972734494-the-game-entities">The game entities</a>
+    <a href="#the-game-entities">The game entities</a>
   </li>
 
   <li>
-    <a href="#4044658410-reacting-to-keyboard-and-mouse-events">Reacting to keyboard and mouse events</a>
+    <a href="#reacting-to-keyboard-and-mouse-events">Reacting to keyboard and mouse events</a>
   </li>
 
   <li>
-    <a href="#962123213-game-logic-uncover-a-cell">Game logic: uncover a cell</a>
+    <a href="#game-logic-uncover-a-cell">Game logic: uncover a cell</a>
   </li>
 
   <li>
-    <a href="#3796851539-conclusion">Conclusion</a>
+    <a href="#conclusion">Conclusion</a>
   </li>
 
   <li>
-    <a href="#1512890027-addendum-the-full-code">Addendum: the full code</a>
+    <a href="#addendum-the-full-code">Addendum: the full code</a>
   </li>
 </ul>
 
@@ -151,9 +151,9 @@ Do not edit it by hand.
 <blockquote>
 <p>If you spot an error, please open a <a href="https://github.com/gaultier/blog">Github issue</a>! And the source code repository for the game is <a href="https://github.com/gaultier/minesweeper-from-scratch">here</a>.</p>
 </blockquote>
-<h2 id="3232213245-what-we-re-making">
-  <a class="title" href="#3232213245-what-we-re-making">What we're making</a>
-  <a class="hash-anchor" href="#3232213245-what-we-re-making" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+<h2 id="what-we-re-making">
+  <a class="title" href="#what-we-re-making">What we're making</a>
+  <a class="hash-anchor" href="#what-we-re-making" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>The 11th version of the X protocol was born in 1987 and has not changed since. Since it predates GPUs by a decade or so, its model does not really fit the hardware of today. Still, it's everywhere. Any Unix has a X server, even macOS with XQuartz, and now Windows supports running GUI Linux applications inside WSL! X11 has never been so ubiquitous. The protocol is relatively simple and the entry bar is low: we only need to create a socket and we're off the races. And for 2D applications, there's no need to be a Vulkan wizard or even interact with the GPU. Hell, it will work even without any GPU!</p>
 <p>Everyone writing GUIs these days use a giant pile of libraries, starting with the <del>overly complicated</del> venerable <code>libX11</code> and <code>libxcb</code> libraries, to Qt and SDL.</p>
@@ -168,9 +168,9 @@ Do not edit it by hand.
 <p>We will implement this in the <a href="https://odin-lang.org/">Odin programming language</a> which I really enjoy. But if you want to follow along with C or anything really, go for it. All we need is to be able to open a Unix socket, send and receive data on it, and load an image into memory. We will use PNG for that, since Odin has in its standard library support for PNGs, but we could also very easily use a simple format like PPM (like I did in the linked Wayland article) that is trivial to parse. Since Odin has support for both in its standard library, it does not really matter, and I stuck with PNG since it's more space-efficient.</p>
 <p>Finally, if you're into writing X11 applications even with libraries, lots of things in X11 are undocumented or underdocumented, and this article can be a good learning resource. As a bonus, you can also follow along with pure Wayland, using my previous Wayland article.</p>
 <p>Or perhaps you simply enjoy, like me, peeking behind the curtain to understand the magician's tricks. It almost always ends up with: &quot;That's it? That's all there is to it?&quot;.</p>
-<h2 id="2281387754-authentication">
-  <a class="title" href="#2281387754-authentication">Authentication</a>
-  <a class="hash-anchor" href="#2281387754-authentication" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+<h2 id="authentication">
+  <a class="title" href="#authentication">Authentication</a>
+  <a class="hash-anchor" href="#authentication" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>In previous articles, we connected to the X server without any authentication.</p>
 <p>Let's be a bit more refined: we now also support the X authentication protocol.</p>
@@ -335,9 +335,9 @@ AuthEntry :: struct {
 <p>However, we do not want to retain the parsed entries from the file in memory after finding the 16 bytes token, so we <code>defer free_all(allocator)</code>. This is much better than going through each entry and freeing individually each field. We simply free the whole arena in one swoop (but the backing memory remains around to be reused later).</p>
 <p>Furthermore, using this arena places an upper bound (a few MiBs) on the allocations we can do. So if one entry in the file is huge, or malformed, we verifyingly cannot allocate many GiBs of memory. This is good news, because otherwise, the OS will start swapping like crazy and start killing random programs. In my experience it usually kills the window/desktop manager which kills all open windows. Very efficient from the OS perspective, and awful from the user perspective. So it's always good to place an upper bound on all resources including heap memory usage of your program.</p>
 <p>All in all I find Odin's approach very elegant. I usually want the ability to use a different allocator in a given function, but also if I don't care, it will do the right thing and use the standard allocator.</p>
-<h2 id="526064357-opening-a-window">
-  <a class="title" href="#526064357-opening-a-window">Opening a window</a>
-  <a class="hash-anchor" href="#526064357-opening-a-window" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+<h2 id="opening-a-window">
+  <a class="title" href="#opening-a-window">Opening a window</a>
+  <a class="hash-anchor" href="#opening-a-window" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>This part is almost exactly the same as the first linked article so I'll speed run this.</p>
 <p>First we open a UNIX domain socket:</p>
@@ -702,9 +702,9 @@ main :: proc() {
 <p>We now see:</p>
 <p><img src="game-x11-empty-background.png" alt="Empty yellow window" /></p>
 <p>Time to start programming the game itself!</p>
-<h2 id="2589078693-loading-assets">
-  <a class="title" href="#2589078693-loading-assets">Loading assets</a>
-  <a class="hash-anchor" href="#2589078693-loading-assets" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+<h2 id="loading-assets">
+  <a class="title" href="#loading-assets">Loading assets</a>
+  <a class="hash-anchor" href="#loading-assets" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>What's a game without nice looking pictures <del>stolen from somewhere on the internet</del> ?</p>
 <p>Here is our sprite, the one image containing all our assets:</p>
@@ -936,9 +936,9 @@ x11_copy_area :: proc(
 <p>Result:</p>
 <p><img src="game-x11-first-image.png" alt="First images on the screen" /></p>
 <p>We are now ready to focus on the game entities.</p>
-<h2 id="2972734494-the-game-entities">
-  <a class="title" href="#2972734494-the-game-entities">The game entities</a>
-  <a class="hash-anchor" href="#2972734494-the-game-entities" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+<h2 id="the-game-entities">
+  <a class="title" href="#the-game-entities">The game entities</a>
+  <a class="hash-anchor" href="#the-game-entities" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>We have a few different entities we want to show, each is a 16x16 section of the sprite sheet. Let's define their coordinates to be readable:</p>
 <pre><code class="language-odin">Position :: struct {
@@ -1031,9 +1031,9 @@ ASSET_COORDINATES: [Entity_kind]Position = {
 <p>And here is what we get:</p>
 <p><img src="game-x11-first-scene.png" alt="First scene" /></p>
 <p>The next step is to respond to events.</p>
-<h2 id="4044658410-reacting-to-keyboard-and-mouse-events">
-  <a class="title" href="#4044658410-reacting-to-keyboard-and-mouse-events">Reacting to keyboard and mouse events</a>
-  <a class="hash-anchor" href="#4044658410-reacting-to-keyboard-and-mouse-events" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+<h2 id="reacting-to-keyboard-and-mouse-events">
+  <a class="title" href="#reacting-to-keyboard-and-mouse-events">Reacting to keyboard and mouse events</a>
+  <a class="hash-anchor" href="#reacting-to-keyboard-and-mouse-events" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>This is very straightforward. Since the only messages we expect are for keyboard and mouse events, with a fixed size of 32 bytes, we simply read 32 bytes exactly in a blocking fashion. The first byte indicates which kind of event it is:</p>
 <pre><code class="language-odin">wait_for_x11_events :: proc(socket: os.Socket, scene: ^Scene) {
@@ -1118,9 +1118,9 @@ ASSET_COORDINATES: [Entity_kind]Position = {
 <p>If the event is the <code>Enter</code> key, we reset the state of the game and render. X11 differentiates between physical and logical keys on the keyboard but that does not matter here (or I would argue in most games: we are interested in the physical location of the key, not what the user mapped it to).</p>
 <p>If the event is (pressing and) releasing a mouse button, we run the game logic to uncover a cell and render.</p>
 <p>That's it!</p>
-<h2 id="962123213-game-logic-uncover-a-cell">
-  <a class="title" href="#962123213-game-logic-uncover-a-cell">Game logic: uncover a cell</a>
-  <a class="hash-anchor" href="#962123213-game-logic-uncover-a-cell" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+<h2 id="game-logic-uncover-a-cell">
+  <a class="title" href="#game-logic-uncover-a-cell">Game logic: uncover a cell</a>
+  <a class="hash-anchor" href="#game-logic-uncover-a-cell" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>The last thing to do is implementing the game rules.</p>
 <p>From my faint memory, when uncovering a cell, we have two cases:</p>
@@ -1217,18 +1217,18 @@ locate_entity_by_coordinate :: proc(win_x: u16, win_y: u16) -&gt; (idx: int, row
 </code></pre>
 <p>There are a few helpers here and there that are simple, but otherwise... that's it, that's the end. We're done! All under 1000 lines of code without any tricks or clever things.</p>
 <p><img src="https://github.com/gaultier/minesweeper-from-scratch/raw/master/screenshot.png" alt="Screenshot" /></p>
-<h2 id="3796851539-conclusion">
-  <a class="title" href="#3796851539-conclusion">Conclusion</a>
-  <a class="hash-anchor" href="#3796851539-conclusion" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+<h2 id="conclusion">
+  <a class="title" href="#conclusion">Conclusion</a>
+  <a class="hash-anchor" href="#conclusion" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>X11 is old and crufty, but also gets out of the way. Once a few utility functions to open the window, receive events, etc have been implemented, it can be forgotten and we can focus all our attention on the game. That's very valuable. How many libraries, frameworks and development environments can say the same?</p>
 <p>I also enjoy that it works with any programming language, any tech stack. Don't need no bindings, no FFI, just send some bytes over the socket. You can even do that in Bash (don't tempt me!).</p>
 <p>I did not implement a few accessory things from the original game, like planting a flag on a cell you suspect has a mine. Feel free to do this at home, it's not much work.</p>
 <p>Finally, give Odin a try, it's great! It's this weird mix of a sane C with a Go-ish syntax and a good standard library.</p>
 <p>I hope that you had as much fun as I did!</p>
-<h2 id="1512890027-addendum-the-full-code">
-  <a class="title" href="#1512890027-addendum-the-full-code">Addendum: the full code</a>
-  <a class="hash-anchor" href="#1512890027-addendum-the-full-code" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+<h2 id="addendum-the-full-code">
+  <a class="title" href="#addendum-the-full-code">Addendum: the full code</a>
+  <a class="hash-anchor" href="#addendum-the-full-code" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <details>
   <summary>The full code</summary>

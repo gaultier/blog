@@ -84,31 +84,31 @@ Do not edit it by hand.
 <ul>
 
   <li>
-    <a href="#1494239933-the-original-code">The original code</a>
+    <a href="#the-original-code">The original code</a>
   </li>
 
   <li>
-    <a href="#3090059536-symptoms-of-the-bug">Symptoms of the bug</a>
+    <a href="#symptoms-of-the-bug">Symptoms of the bug</a>
   </li>
 
   <li>
-    <a href="#3079523264-the-fix">The fix</a>
+    <a href="#the-fix">The fix</a>
   </li>
 
   <li>
-    <a href="#2813512653-explanation">Explanation</a>
+    <a href="#explanation">Explanation</a>
   </li>
 
   <li>
-    <a href="#3139033100-conclusion-and-recommendations">Conclusion and recommendations</a>
+    <a href="#conclusion-and-recommendations">Conclusion and recommendations</a>
   </li>
 
   <li>
-    <a href="#3446512891-addendum-a-reproducer-program-for-the-go-race-detector">Addendum: A reproducer program for the Go race detector</a>
+    <a href="#addendum-a-reproducer-program-for-the-go-race-detector">Addendum: A reproducer program for the Go race detector</a>
   </li>
 
   <li>
-    <a href="#82181600-addendum-the-fixed-code-in-full">Addendum: The fixed code in full</a>
+    <a href="#addendum-the-fixed-code-in-full">Addendum: The fixed code in full</a>
   </li>
 </ul>
 
@@ -116,9 +116,9 @@ Do not edit it by hand.
 <p>At work, a good colleague of mine opened a PR titled: 'fix data race'. Ok, I thought, let's see. They probably forgot a mutex or an atomic. Or perhaps they returned a pointer to an object when they intended to return a copy of the object. Easy to miss.</p>
 <p>Then I was completely puzzled.</p>
 <p>The diff for the fix was very small, just a few lines, and contained neither mutexes, nor pointers, nor goroutines, nor any concurrency construct for that matter. How could it be?</p>
-<h2 id="1494239933-the-original-code">
-  <a class="title" href="#1494239933-the-original-code">The original code</a>
-  <a class="hash-anchor" href="#1494239933-the-original-code" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+<h2 id="the-original-code">
+  <a class="title" href="#the-original-code">The original code</a>
+  <a class="hash-anchor" href="#the-original-code" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>I have managed to reproduce the race in a self-contained Go program resembling the real production code, and the diff for the fix is basically the same as the real one. It's a web server with a middleware to do rate limiting. The actual rate limiting code is omitted because it does not matter:</p>
 <pre><code class="language-go">package main
@@ -161,9 +161,9 @@ func main() {
 <p>It's very typical Go code I would say. The only interesting thing going on here, is that we never do rate-limiting for the admin section of the site. That's handy if a user is abusing the site, and the admin has to go disable their account as fast as possible in the admin section.</p>
 <p>The intent behind the <code>rateLimitEnabled</code> parameter was likely to have it 'off' in development mode, and 'on' in production, based on some environment variable read in <code>main</code> (also omitted here).</p>
 <p>Can you spot the data race? Feel free to pause for a second. I glanced at code very similar to this for like, 10 minutes, to even begin to form hypotheses about a data race, while knowing from the get go there is a data race, and having the fix in front of me.</p>
-<h2 id="3090059536-symptoms-of-the-bug">
-  <a class="title" href="#3090059536-symptoms-of-the-bug">Symptoms of the bug</a>
-  <a class="hash-anchor" href="#3090059536-symptoms-of-the-bug" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+<h2 id="symptoms-of-the-bug">
+  <a class="title" href="#symptoms-of-the-bug">Symptoms of the bug</a>
+  <a class="hash-anchor" href="#symptoms-of-the-bug" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>Let's observe the behavior with a few HTTP requests:</p>
 <pre><code class="language-shell">$ curl http://localhost:3001/
@@ -186,9 +186,9 @@ path=/ rate_limit_enabled=yes
 </code></pre>
 <p>The non-admin section of the site should be rate limited, always. But it's apparently not, starting from the second request. Trying to access the admin section disables rate limiting for everyone, until the next server restart! So this data race just became a security vulnerability as well!</p>
 <p>In the real code at work it was actually not a security issue, since the parameter in question governed something related to metrics about rate limiting, not rate limiting itself, so the consequence was only that some metrics were wrong. Which is how the bug was initially spotted.</p>
-<h2 id="3079523264-the-fix">
-  <a class="title" href="#3079523264-the-fix">The fix</a>
-  <a class="hash-anchor" href="#3079523264-the-fix" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+<h2 id="the-fix">
+  <a class="title" href="#the-fix">The fix</a>
+  <a class="hash-anchor" href="#the-fix" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>The diff for the fix looks like this:</p>
 <pre><code class="language-diff">diff --git a/http-race.go b/http-race.go
@@ -232,9 +232,9 @@ path=/ rate_limit_enabled=yes
 path=/ rate_limit_enabled=yes
 </code></pre>
 <p>As expected.</p>
-<h2 id="2813512653-explanation">
-  <a class="title" href="#2813512653-explanation">Explanation</a>
-  <a class="hash-anchor" href="#2813512653-explanation" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+<h2 id="explanation">
+  <a class="title" href="#explanation">Explanation</a>
+  <a class="hash-anchor" href="#explanation" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>Go, like many languages, has closures: functions that implicitly capture their environment as needed so that surrounding variables can be accessed within the function scope.</p>
 <p>The <code>NewMiddleware</code> function returns a closure (the middleware) that implicitly captures the <code>rateLimitEnabled</code> variable. The intent in the original code was to treat the function argument, which is passed by value (as most programming languages do), as essentially an automatic local variable. When mutated, nothing is visible outside of the scope of the function, as if we just used a local variable.</p>
@@ -274,9 +274,9 @@ func rateLimitMiddleware(w http.ResponseWriter, r *http.Request, env *ClosureEnv
 <pre><code class="language-shell">$ go build -gcflags='-d closure=1' http-race.go
 ./http-race.go:9:26: heap closure, captured vars = [handler]
 </code></pre>
-<h2 id="3139033100-conclusion-and-recommendations">
-  <a class="title" href="#3139033100-conclusion-and-recommendations">Conclusion and recommendations</a>
-  <a class="hash-anchor" href="#3139033100-conclusion-and-recommendations" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+<h2 id="conclusion-and-recommendations">
+  <a class="title" href="#conclusion-and-recommendations">Conclusion and recommendations</a>
+  <a class="hash-anchor" href="#conclusion-and-recommendations" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>This was quite a subtle data race which took me time to spot and understand. The go race detector did not notice it, even when throwing lots of concurrent requests at it. LLMs, when asked to analyze the code, did not spot it.</p>
 <p>The good news is: The Go memory model gives us some guarantees for data races. Contrary to C or C++, where a data race means the wild west of undefined behavior, it only means in Go that we may read/write the wrong value, when reading/writing machine word sizes or smaller (which is the case of booleans). We even find quite a strong guarantee in the <a href="https://go.dev/ref/mem#restrictions">Implementation Restrictions for Programs Containing Data Races</a> section:</p>
@@ -319,9 +319,9 @@ int res = fn();
 <li>Document precisely what is the memory model you offer and what are legal behaviors in the presence of data races. Big props to Go for doing this very well.</li>
 <li>Consider making function arguments not re-assignable. Force the developer to define a local variable instead.</li>
 </ol>
-<h2 id="3446512891-addendum-a-reproducer-program-for-the-go-race-detector">
-  <a class="title" href="#3446512891-addendum-a-reproducer-program-for-the-go-race-detector">Addendum: A reproducer program for the Go race detector</a>
-  <a class="hash-anchor" href="#3446512891-addendum-a-reproducer-program-for-the-go-race-detector" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+<h2 id="addendum-a-reproducer-program-for-the-go-race-detector">
+  <a class="title" href="#addendum-a-reproducer-program-for-the-go-race-detector">Addendum: A reproducer program for the Go race detector</a>
+  <a class="hash-anchor" href="#addendum-a-reproducer-program-for-the-go-race-detector" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>Here is a reproducer program with the same issue but this time the Go race detector finds the data race:</p>
 <pre><code class="language-go">package main
@@ -390,9 +390,9 @@ Goroutine 7 (running) created at:
 ==================
 </code></pre>
 <p>It's not completely clear to me why the Go race detector finds the race in this program but not in the original program since each HTTP request is handled in its own goroutine, both programs should be analogous. Maybe not enough concurrent HTTP traffic?</p>
-<h2 id="82181600-addendum-the-fixed-code-in-full">
-  <a class="title" href="#82181600-addendum-the-fixed-code-in-full">Addendum: The fixed code in full</a>
-  <a class="hash-anchor" href="#82181600-addendum-the-fixed-code-in-full" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+<h2 id="addendum-the-fixed-code-in-full">
+  <a class="title" href="#addendum-the-fixed-code-in-full">Addendum: The fixed code in full</a>
+  <a class="hash-anchor" href="#addendum-the-fixed-code-in-full" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <pre><code class="language-go">package main
 

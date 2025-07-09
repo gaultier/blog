@@ -84,35 +84,35 @@ Do not edit it by hand.
 <ul>
 
   <li>
-    <a href="#132857161-context">Context</a>
+    <a href="#context">Context</a>
   </li>
 
   <li>
-    <a href="#4000567472-how-hard-can-it-be">How hard can it be?</a>
+    <a href="#how-hard-can-it-be">How hard can it be?</a>
 <ul>
 
   <li>
-    <a href="#1539498158-a-helpful-mental-model">A helpful mental model</a>
+    <a href="#a-helpful-mental-model">A helpful mental model</a>
   </li>
 </ul>
   </li>
 
   <li>
-    <a href="#2855875514-troubleshooting-the-problem">Troubleshooting the problem</a>
+    <a href="#troubleshooting-the-problem">Troubleshooting the problem</a>
   </li>
 
   <li>
-    <a href="#1807516660-the-solution">The solution</a>
+    <a href="#the-solution">The solution</a>
   </li>
 
   <li>
-    <a href="#3796851539-conclusion">Conclusion</a>
+    <a href="#conclusion">Conclusion</a>
   </li>
 </ul>
 
-<h2 id="132857161-context">
-  <a class="title" href="#132857161-context">Context</a>
-  <a class="hash-anchor" href="#132857161-context" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+<h2 id="context">
+  <a class="title" href="#context">Context</a>
+  <a class="hash-anchor" href="#context" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>Lately I have been hardening the build at work of our Go services and one (seemingly) low-hanging fruit was <a href="https://en.wikipedia.org/wiki/Position-independent_code">PIE</a>. This is code built to be relocatable, meaning it can be loaded by the operating system at any memory address. That complicates the work of an attacker because they typically want to manipulate the return address of the current function (e.g. by overwriting the stack due to a buffer overflow) to jump to a specific function e.g. <code>system()</code> from libc to pop a shell. That's easy if <code>system</code> is always at the same address. If the target function is loaded at a different address each time, it makes it more difficult for the attacker to find it.</p>
 <p>This approach was already used in the sixties (!) and has been the default for years now in most OSes and toolchains when building system executables. There is practically no downside. Some people report a single digit percent slowdown in rare cases although it's not the rule. Amusingly this randomness can be used in interesting ways for example seeding a random number generator with the address of a function.</p>
@@ -120,9 +120,9 @@ Do not edit it by hand.
 <p>PIE is especially desirable when using CGO to call C functions from Go which is my case at work.
 But also Go is <a href="https://blog.stalkr.net/2015/04/golang-data-races-to-break-memory-safety.html">not entirely memory safe</a> so I'd argue having PIE enabled in all cases is preferable.</p>
 <p>So let's look into enabling it. And this is also a good excuse to learn more about how surprisingly complex it is for an OS to just execute a program.</p>
-<h2 id="4000567472-how-hard-can-it-be">
-  <a class="title" href="#4000567472-how-hard-can-it-be">How hard can it be?</a>
-  <a class="hash-anchor" href="#4000567472-how-hard-can-it-be" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+<h2 id="how-hard-can-it-be">
+  <a class="title" href="#how-hard-can-it-be">How hard can it be?</a>
+  <a class="hash-anchor" href="#how-hard-can-it-be" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p><code>go help buildmode</code> states:</p>
 <blockquote>
@@ -147,9 +147,9 @@ $ file ./main
 <pre><code class="language-text">exec /home/nonroot/my-service: no such file or directory
 </code></pre>
 <p>Oh oh. Let's investigate.</p>
-<h3 id="1539498158-a-helpful-mental-model">
-  <a class="title" href="#1539498158-a-helpful-mental-model">A helpful mental model</a>
-  <a class="hash-anchor" href="#1539498158-a-helpful-mental-model" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+<h3 id="a-helpful-mental-model">
+  <a class="title" href="#a-helpful-mental-model">A helpful mental model</a>
+  <a class="hash-anchor" href="#a-helpful-mental-model" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h3>
 <p>I'd argue that the wording of the tools and the online content is confusing because it conflates two different things.</p>
 <p>For example, invoking <code>lld</code> with the above executable prints <code>statically linked</code>. But <code>file</code> prints <code>dynamically linked</code> for the exact same file! So which is it?</p>
@@ -182,9 +182,9 @@ Program Headers:
 <p>I suppose that folks that ship executables to customer workstations would also have interest in doing that to remove one moving piece (the loader on each target machine).</p>
 <p>Also possibly people who want to obfuscate what their program does at startup and do not want anyone monkeying around with environment variables that impact the loader such as <code>LD_PRELOAD</code> (so, perhaps malware or anti-malware programs?).</p>
 <p><em>Addendum: I have found at least one <a href="https://seclists.org/oss-sec/2023/q4/18">CVE</a> in the glibc loader, and it seems it's a frequent occurrence, so in my opinion that's reason enough to remove one moving piece from the equation and prefer static loading!</em></p>
-<h2 id="2855875514-troubleshooting-the-problem">
-  <a class="title" href="#2855875514-troubleshooting-the-problem">Troubleshooting the problem</a>
-  <a class="hash-anchor" href="#2855875514-troubleshooting-the-problem" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+<h2 id="troubleshooting-the-problem">
+  <a class="title" href="#troubleshooting-the-problem">Troubleshooting the problem</a>
+  <a class="hash-anchor" href="#troubleshooting-the-problem" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>It turns out that PIE was historically designed for executables using dynamic loading.
 The loader loads at startup the sections of the executable at different places in memory, fills (eagerly or lazily) in a global table (the <a href="https://en.wikipedia.org/wiki/Global_Offset_Table">GOT</a>) the locations of symbols. And voila, functions are placed randomly in memory and function calls go through the GOT which is a level of indirection to know at runtime where the function they want to call is located. Blue team, rejoice! Red team, sad.</p>
@@ -209,9 +209,9 @@ $ sudo chroot /tmp/scratch ./a.out
 <p>For musl, it's the file <code>ldso/dlstart.c</code> and that's the code that runs before our <code>main</code>. Effectively libc doubles as a loader. And when statically linked, the loader gets embedded in our application and runs at startup before our code.</p>
 <p>That means that we can have our cake and eat it too: static linking and PIE! No loader required in the environment.</p>
 <p>So, how can we coerce Go to do the same?</p>
-<h2 id="1807516660-the-solution">
-  <a class="title" href="#1807516660-the-solution">The solution</a>
-  <a class="hash-anchor" href="#1807516660-the-solution" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+<h2 id="the-solution">
+  <a class="title" href="#the-solution">The solution</a>
+  <a class="hash-anchor" href="#the-solution" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>The only way I have found is to ask Go to link with an external linker and pass it the flag <code>-static-pie</code>. Due to the explanation above that means that CGO gets enabled automatically and we need to link a libc statically:</p>
 <pre><code class="language-shell">$ CGO_ENABLED=0 go build -buildmode=pie -ldflags '-linkmode external -extldflags &quot;-static-pie&quot;' main.go
@@ -254,9 +254,9 @@ $ sudo chroot /tmp/scratch ./main
 $ sudo chroot /tmp/scratch ./main
 0x48f0e0 0x48a160 hello
 </code></pre>
-<h2 id="3796851539-conclusion">
-  <a class="title" href="#3796851539-conclusion">Conclusion</a>
-  <a class="hash-anchor" href="#3796851539-conclusion" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+<h2 id="conclusion">
+  <a class="title" href="#conclusion">Conclusion</a>
+  <a class="hash-anchor" href="#conclusion" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>'Static PIE', or statically linked PIE executables, are a relatively new development: OpenBSD <a href="https://www.openbsd.org/papers/asiabsdcon2015-pie-slides.pdf">added</a> that in 2015 and builds all system executables in that mode, Clang only <a href="https://reviews.llvm.org/D58307">added</a> the flag in 2019, etc. Apparently the Go linker does not support this yet, I suppose because it does not ship with a loader and so has to rely on the libc loader (if someone knows for sure, I'd be curious to know!). After all, the preferred and default way for Go on Linux is 'static linking, static loading'.</p>
 <p>Still I think it's great to do since we get the best of both worlds, only requiring a little bit of finagling with linker flags.</p>

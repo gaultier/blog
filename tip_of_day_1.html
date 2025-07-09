@@ -84,7 +84,7 @@ Do not edit it by hand.
 <ul>
 
   <li>
-    <a href="#4091184562-addendum-exit">Addendum: exit</a>
+    <a href="#addendum-exit">Addendum: exit</a>
   </li>
 </ul>
 
@@ -124,9 +124,9 @@ $ wc -l src/***/.rs
 <li><code>END{print(count)}</code>: we print the count at the very end.</li>
 </ul>
 <p>And that's it. AWK is always very nifty.</p>
-<h2 id="4091184562-addendum-exit">
-  <a class="title" href="#4091184562-addendum-exit">Addendum: exit</a>
-  <a class="hash-anchor" href="#4091184562-addendum-exit" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+<h2 id="addendum-exit">
+  <a class="title" href="#addendum-exit">Addendum: exit</a>
+  <a class="hash-anchor" href="#addendum-exit" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>Originally I implemented it wrongly, like this:</p>
 <pre><code class="language-shell">$ awk '/mod tests/{exit 0} {count += 1} END{print(count)}'  src/***.rs

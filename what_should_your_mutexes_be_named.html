@@ -84,27 +84,27 @@ Do not edit it by hand.
 <ul>
 
   <li>
-    <a href="#404658211-structural-search">Structural search</a>
+    <a href="#structural-search">Structural search</a>
   </li>
 
   <li>
-    <a href="#2333177148-a-naming-convention-to-rule-them-all">A naming convention to rule them all</a>
+    <a href="#a-naming-convention-to-rule-them-all">A naming convention to rule them all</a>
   </li>
 
   <li>
-    <a href="#3017488881-low-tech-alternatives">Low-tech alternatives</a>
+    <a href="#low-tech-alternatives">Low-tech alternatives</a>
   </li>
 
   <li>
-    <a href="#2043966314-limitations-of-structural-search-tools">Limitations of structural search tools</a>
+    <a href="#limitations-of-structural-search-tools">Limitations of structural search tools</a>
   </li>
 
   <li>
-    <a href="#3796851539-conclusion">Conclusion</a>
+    <a href="#conclusion">Conclusion</a>
   </li>
 
   <li>
-    <a href="#1814398323-addendum-what-were-mutexes-named-in-the-c-implementation-of-the-go-compiler-and-runtime">Addendum: What were mutexes named in the C implementation of the Go compiler and runtime?</a>
+    <a href="#addendum-what-were-mutexes-named-in-the-c-implementation-of-the-go-compiler-and-runtime">Addendum: What were mutexes named in the C implementation of the Go compiler and runtime?</a>
   </li>
 </ul>
 
@@ -127,9 +127,9 @@ barMux.Unlock()
 <p>But I paused for a second: What should the mutex be named? I usually use the <code>xxxMtx</code> convention, so I'd have named it <code>barMtx</code>.</p>
 <p>To avoid a sterile 'you vs me' debate, I thought: What do other people do? What naming convention is in use in the project, if any? I'll demonstrate this method with the code of the Go standard library.</p>
 <p>And more generally, what is the best way to find out what naming conventions or code patterns are used in a project you don't know? I need a good tool to find these answers quickly.</p>
-<h2 id="404658211-structural-search">
-  <a class="title" href="#404658211-structural-search">Structural search</a>
-  <a class="hash-anchor" href="#404658211-structural-search" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+<h2 id="structural-search">
+  <a class="title" href="#structural-search">Structural search</a>
+  <a class="hash-anchor" href="#structural-search" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>I use <code>ripgrep</code> and <code>awk</code> all the time when developing, probably at least once a minute, and these tools can give us the answers... kind of, since they operate on raw text. Complex code constructs or contextual searches e.g. 'A function call whose third argument is a number and the function name starts with <code>get</code>' may be impossible to find correctly.</p>
 <p>What I often actually need to do is <em>search the code structurally</em>, meaning search the Abstract Syntax Tree (AST). And the good news is, there are tools nowadays than can do that! I never took the time to learn one, even though this came up a few times, so I felt this is finally the occasion.</p>
@@ -178,9 +178,9 @@ note[find-mtx-fields]: Mutex fields found
 </code></pre>
 <p>Very useful. The tool can do much more, but that's enough for us to discover that there isn't <em>one</em> naming convention in use. Also, the mutex is not always named after the variable it protects (e.g.: <code>mutex</code> protects <code>seq</code>).</p>
 <p>So, is there at least a convention used in the majority of cases? How can we aggregate the results?</p>
-<h2 id="2333177148-a-naming-convention-to-rule-them-all">
-  <a class="title" href="#2333177148-a-naming-convention-to-rule-them-all">A naming convention to rule them all</a>
-  <a class="hash-anchor" href="#2333177148-a-naming-convention-to-rule-them-all" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+<h2 id="a-naming-convention-to-rule-them-all">
+  <a class="title" href="#a-naming-convention-to-rule-them-all">A naming convention to rule them all</a>
+  <a class="hash-anchor" href="#a-naming-convention-to-rule-them-all" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>Unfortunately I did not find a built-in way to post-process the results from <code>ast-grep</code>, so I resorted to outputting the matches as JSON, extracting the matched text with <code>jq</code>, and finally aggregating the results with good old AWK:</p>
 <pre><code class="language-shell">$ ast-grep scan --rule ~/scratch/mtx.yaml --json | jq '.[].text' -r | awk -f ~/scratch/ast-grep-post.awk 
@@ -257,9 +257,9 @@ END {
         [...]
 }
 </code></pre>
-<h2 id="3017488881-low-tech-alternatives">
-  <a class="title" href="#3017488881-low-tech-alternatives">Low-tech alternatives</a>
-  <a class="hash-anchor" href="#3017488881-low-tech-alternatives" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+<h2 id="low-tech-alternatives">
+  <a class="title" href="#low-tech-alternatives">Low-tech alternatives</a>
+  <a class="hash-anchor" href="#low-tech-alternatives" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>A quick and dirty way to achieve the same with a regexp is:</p>
 <pre><code class="language-shell">$ rg -t go '^\s+\w+\s+sync\.Mutex$'
@@ -282,9 +282,9 @@ in_struct &amp;&amp; /^}$/ { in_struct = 0 }
 }
 </code></pre>
 <p>These approaches are not bullet-proof, but they will find most relevant code locations, which is enough.</p>
-<h2 id="2043966314-limitations-of-structural-search-tools">
-  <a class="title" href="#2043966314-limitations-of-structural-search-tools">Limitations of structural search tools</a>
-  <a class="hash-anchor" href="#2043966314-limitations-of-structural-search-tools" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+<h2 id="limitations-of-structural-search-tools">
+  <a class="title" href="#limitations-of-structural-search-tools">Limitations of structural search tools</a>
+  <a class="hash-anchor" href="#limitations-of-structural-search-tools" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <ul>
 <li>Most if not all structural search tools only work on a valid AST, and not every language is supported by every tool.</li>
@@ -297,16 +297,16 @@ in_struct &amp;&amp; /^}$/ { in_struct = 0 }
 </ul>
 </li>
 </ul>
-<h2 id="3796851539-conclusion">
-  <a class="title" href="#3796851539-conclusion">Conclusion</a>
-  <a class="hash-anchor" href="#3796851539-conclusion" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+<h2 id="conclusion">
+  <a class="title" href="#conclusion">Conclusion</a>
+  <a class="hash-anchor" href="#conclusion" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>I think having one structural search program in your toolbox is a good idea, especially if you intend to use it as a linter and mass refactoring tool.</p>
 <p>If all you want to do is a one-time search, text search programs such as <code>ripgrep</code> and <code>awk</code> should probably be your first stab at it.</p>
 <p>Also, I think I would prefer using a SQL-like syntax to define rules, over writing YAML with pseudo-code constructs.</p>
-<h2 id="1814398323-addendum-what-were-mutexes-named-in-the-c-implementation-of-the-go-compiler-and-runtime">
-  <a class="title" href="#1814398323-addendum-what-were-mutexes-named-in-the-c-implementation-of-the-go-compiler-and-runtime">Addendum: What were mutexes named in the C implementation of the Go compiler and runtime?</a>
-  <a class="hash-anchor" href="#1814398323-addendum-what-were-mutexes-named-in-the-c-implementation-of-the-go-compiler-and-runtime" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+<h2 id="addendum-what-were-mutexes-named-in-the-c-implementation-of-the-go-compiler-and-runtime">
+  <a class="title" href="#addendum-what-were-mutexes-named-in-the-c-implementation-of-the-go-compiler-and-runtime">Addendum: What were mutexes named in the C implementation of the Go compiler and runtime?</a>
+  <a class="hash-anchor" href="#addendum-what-were-mutexes-named-in-the-c-implementation-of-the-go-compiler-and-runtime" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>I wondered if the way mutexes are named in the Go project actually comes from the time were the Go compiler and much of the runtime were implemented in C.
 We can easily check this out with the same approach. This illustrates that <code>ast-grep</code> works for different languages, and also the slight differences.</p>

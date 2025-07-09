@@ -40,9 +40,12 @@ struct Title {
   PgString title;
   PgString slug;
   u8 level;
-  TitleHash hash;
   Title *parent, *first_child, *next_sibling;
   u32 pos_start, pos_end;
+
+  // If there are duplicate titles on the page (at different levels),
+  // the counter distinguishes them.
+  u32 counter;
 };
 PG_DYN(Title) TitleDyn;
 PG_SLICE(Title) TitleSlice;
@@ -128,8 +131,8 @@ static void search_index_serialize_to_file(SearchIndex search_index,
         pg_string_builder_append_js_string_escaped(&sb, title.title, allocator);
         PG_DYN_APPEND_SLICE(&sb, PG_S("\",\n"), allocator);
 
-        PG_DYN_APPEND_SLICE(&sb, PG_S("hash:"), allocator);
-        pg_string_builder_append_u64(&sb, title.hash, allocator);
+        PG_DYN_APPEND_SLICE(&sb, PG_S("counter:"), allocator);
+        pg_string_builder_append_u64(&sb, title.counter, allocator);
         PG_DYN_APPEND_SLICE(&sb, PG_S(",\n"), allocator);
 
         PG_DYN_APPEND_SLICE(&sb, PG_S("content_html_id:\""), allocator);
@@ -431,22 +434,6 @@ static PgString datetime_to_date(PgString datetime) {
   return status.stdout_captured;
 }
 
-[[nodiscard]] static TitleHash title_compute_hash(Title *title, u32 hash) {
-  // Reached root?
-  if (title == title->parent) {
-    return hash;
-  }
-
-  for (u64 i = 0; i < title->title.len; i++) {
-    u8 c = PG_SLICE_AT(title->title, i);
-    hash = (hash ^ (u32)c) * 0x01000193;
-  }
-  // Separator between titles.
-  hash = (hash ^ (u32)'/') * 0x01000193;
-
-  return title_compute_hash(title->parent, hash);
-}
-
 static void html_collect_titles_rec(PgHtmlNode *node, TitleDyn *titles,
                                     PgAllocator *allocator) {
   PG_ASSERT(node);
@@ -522,14 +509,33 @@ static TitleSlice html_collect_titles(PgHtmlNode *html_root,
     }
   }
 
-  // Backpatch `id` field which is a hash of the full path to this node
-  // including ancestors.
   for (u64 i = 0; i < titles.len; i++) {
     Title *title = PG_SLICE_AT_PTR(&titles, i);
-    title->hash = title_compute_hash(title, FNV_SEED);
+
+    // Backpatch `counter` which is a monotonically incrementing number in case
+    // of `slug` collisions.
+    for (i64 j = (i64)i - 1; j >= 0; j--) {
+      Title it = PG_SLICE_AT(titles, j);
+      if (pg_string_eq(title->slug, it.slug)) {
+        title->counter = it.counter + 1;
+        printf("[D001] %u %.*s\n", title->counter, (i32)title->slug.len,
+               title->slug.data);
+        break;
+      }
+    }
   }
   PG_ASSERT(nullptr == title_root->next_sibling);
+
   return PG_DYN_SLICE(TitleSlice, titles);
+}
+
+static void html_write_title_link(Pgu8Dyn *sb, Title title,
+                                  PgAllocator *allocator) {
+  PG_DYN_APPEND_SLICE(sb, title.slug, allocator);
+  if (title.counter) {
+    PG_DYN_APPEND_SLICE(sb, PG_S("-"), allocator);
+    pg_string_builder_append_u64(sb, title.counter, allocator);
+  }
 }
 
 static void html_write_decorated_titles(PgString html, Pgu8Dyn *sb,
@@ -554,22 +560,16 @@ static void html_write_decorated_titles(PgString html, Pgu8Dyn *sb,
     PG_DYN_APPEND_SLICE(sb, PG_S("h"), allocator);
     pg_string_builder_append_u64(sb, title.level, allocator);
     PG_DYN_APPEND_SLICE(sb, PG_S(" id=\""), allocator);
-    pg_string_builder_append_u64(sb, title.hash, allocator);
-    PG_DYN_APPEND_SLICE(sb, PG_S("-"), allocator);
-    PG_DYN_APPEND_SLICE(sb, title.slug, allocator);
+    html_write_title_link(sb, title, allocator);
     PG_DYN_APPEND_SLICE(sb, PG_S("\">\n  <a class=\"title\" href=\"#"),
                         allocator);
-    pg_string_builder_append_u64(sb, title.hash, allocator);
-    PG_DYN_APPEND_SLICE(sb, PG_S("-"), allocator);
-    PG_DYN_APPEND_SLICE(sb, title.slug, allocator);
+    html_write_title_link(sb, title, allocator);
     PG_DYN_APPEND_SLICE(sb, PG_S("\">"), allocator);
     PG_DYN_APPEND_SLICE(sb, title.title, allocator);
     PG_DYN_APPEND_SLICE(sb, PG_S("</a>\n"), allocator);
     PG_DYN_APPEND_SLICE(sb, PG_S("  <a class=\"hash-anchor\" href=\"#"),
                         allocator);
-    pg_string_builder_append_u64(sb, title.hash, allocator);
-    PG_DYN_APPEND_SLICE(sb, PG_S("-"), allocator);
-    PG_DYN_APPEND_SLICE(sb, title.slug, allocator);
+    html_write_title_link(sb, title, allocator);
     PG_DYN_APPEND_SLICE(
         sb,
         PG_S("\" aria-hidden=\"true\" "
@@ -593,9 +593,7 @@ static void article_write_toc_rec(Pgu8Dyn *sb, Title *title,
 
   if (title->level > 1) {
     PG_DYN_APPEND_SLICE(sb, PG_S("\n  <li>\n    <a href=\"#"), allocator);
-    pg_string_builder_append_u64(sb, title->hash, allocator);
-    PG_DYN_APPEND_SLICE(sb, PG_S("-"), allocator);
-    PG_DYN_APPEND_SLICE(sb, title->slug, allocator);
+    html_write_title_link(sb, *title, allocator);
     PG_DYN_APPEND_SLICE(sb, PG_S("\">"), allocator);
     PG_DYN_APPEND_SLICE(sb, title->title, allocator);
     PG_DYN_APPEND_SLICE(sb, PG_S("</a>\n"), allocator);

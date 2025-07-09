@@ -84,35 +84,35 @@ Do not edit it by hand.
 <ul>
 
   <li>
-    <a href="#1071142523-the-investigation">The investigation</a>
+    <a href="#the-investigation">The investigation</a>
   </li>
 
   <li>
-    <a href="#3047915491-when-there-s-one-there-s-many">When there's one, there's many</a>
+    <a href="#when-there-s-one-there-s-many">When there's one, there's many</a>
   </li>
 
   <li>
-    <a href="#2709289763-the-new-approach">The new approach</a>
+    <a href="#the-new-approach">The new approach</a>
   </li>
 
   <li>
-    <a href="#3854930553-the-new-implementation">The new implementation</a>
+    <a href="#the-new-implementation">The new implementation</a>
   </li>
 
   <li>
-    <a href="#3898000878-fossil">Fossil</a>
+    <a href="#fossil">Fossil</a>
   </li>
 
   <li>
-    <a href="#3796851539-conclusion">Conclusion</a>
+    <a href="#conclusion">Conclusion</a>
   </li>
 
   <li>
-    <a href="#4016320828-addendum">Addendum</a>
+    <a href="#addendum">Addendum</a>
   </li>
 
   <li>
-    <a href="#2077345490-addendum-2">Addendum 2</a>
+    <a href="#addendum-2">Addendum 2</a>
   </li>
 </ul>
 
@@ -123,9 +123,9 @@ Benchmark 1: ./master.bin
   Range (min … max):    1.806 s …  1.983 s    10 runs
 </code></pre>
 <p>~ 2 seconds is not the end of the world, but it's just enough to be annoying when doing lots of edit-view cycles. Worse, it seemed to become slower and slower as I wrote more articles. So today I finally dedicated some time to tackle this problem.</p>
-<h2 id="1071142523-the-investigation">
-  <a class="title" href="#1071142523-the-investigation">The investigation</a>
-  <a class="hash-anchor" href="#1071142523-the-investigation" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+<h2 id="the-investigation">
+  <a class="title" href="#the-investigation">The investigation</a>
+  <a class="hash-anchor" href="#the-investigation" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>In the early days of this blog, there were only a few articles, and the build process was a simple Makefile, something like this (simplified):</p>
 <pre><code class="language-make">%.html: %.md header.html footer.html
@@ -176,9 +176,9 @@ Benchmark 1: ./master.bin
 </ul>
 <p>The last option was my preferred one because it did not force me to re-architect the whole program.</p>
 <p>Note that the other two options are sill on the table regardless of whether our experiment works out or not.</p>
-<h2 id="3047915491-when-there-s-one-there-s-many">
-  <a class="title" href="#3047915491-when-there-s-one-there-s-many">When there's one, there's many</a>
-  <a class="hash-anchor" href="#3047915491-when-there-s-one-there-s-many" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+<h2 id="when-there-s-one-there-s-many">
+  <a class="title" href="#when-there-s-one-there-s-many">When there's one, there's many</a>
+  <a class="hash-anchor" href="#when-there-s-one-there-s-many" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>My intuition was to do a deep dive in the <code>git log</code> options, to see if I could instruct it to do less work. But then something struck me: we invoke <code>git log</code> to get all commits for one markdown file (even though we only are interested in the first and last, but that's the only interface Git provides us as far as I know). What if we invoked it once <em>for all markdown files</em>? Yes, the output might be a bit big... How big? Is it really faster? Let's measure!</p>
 <p>Conceptually we can simply do <code>git log '*.md'</code> and parse the output. We can refine that approach later with more options, but that's the gist of it:</p>
@@ -197,9 +197,9 @@ Executed in   73.69 millis    fish           external
 <p>Rule of thumb: When there is one, there is many. <sup class="footnote-ref"><a href="#fn-1" id="fnref-1" data-footnote-ref>1</a></sup></p>
 </blockquote>
 <p>Or: try to think in terms of arrays, not in terms of one isolated object at a time.</p>
-<h2 id="2709289763-the-new-approach">
-  <a class="title" href="#2709289763-the-new-approach">The new approach</a>
-  <a class="hash-anchor" href="#2709289763-the-new-approach" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+<h2 id="the-new-approach">
+  <a class="title" href="#the-new-approach">The new approach</a>
+  <a class="hash-anchor" href="#the-new-approach" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>We only want git to tell us, for each commit:</p>
 <ul>
@@ -239,9 +239,9 @@ R100    cross-platform-timers.md        the_missing_cross_platform_api_for_timer
 <p>In case of a rename or delete, we set the <code>tombstone</code> to <code>true</code>. Why not remove the entry from the map directly? Well, we are inspecting the list of commits from newest to oldest.
 So first we'll encounter the delete/rename commit for this file, and then later in the stream, a number of add/modify commits. When we are done, we need to remember that this markdown file should be ignored, otherwise, we'll try to open it, read it, and convert it to HTML, but we'll get a <code>ENOENT</code> error because it does not exist anymore on disk. We could avoid having this tombstone field and just bail on <code>ENOENT</code>, that's a matter of taste I guess, but this field was useful to me to ensure that the parsing code is correct.</p>
 <p>Alternatively, we could pass <code>--reverse</code> to <code>git log</code> and parse the commits in chronological order. When we see a delete/rename commit for a file, we can safely remove the entry from the map since no more commits about this file should show up after that.</p>
-<h2 id="3854930553-the-new-implementation">
-  <a class="title" href="#3854930553-the-new-implementation">The new implementation</a>
-  <a class="hash-anchor" href="#3854930553-the-new-implementation" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+<h2 id="the-new-implementation">
+  <a class="title" href="#the-new-implementation">The new implementation</a>
+  <a class="hash-anchor" href="#the-new-implementation" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <pre><code class="language-odin">GitStat :: struct {
 	creation_date:     string,
@@ -449,9 +449,9 @@ Summary
 <li>Use a library (e.g. <code>libgit2</code>) and hope that it offers a saner interface to query the commit log</li>
 </ul>
 <p>I wonder if there is a better way...</p>
-<h2 id="3898000878-fossil">
-  <a class="title" href="#3898000878-fossil">Fossil</a>
-  <a class="hash-anchor" href="#3898000878-fossil" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+<h2 id="fossil">
+  <a class="title" href="#fossil">Fossil</a>
+  <a class="hash-anchor" href="#fossil" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p><a href="https://fossil-scm.org">fossil</a> is an alternative version control system created by the same folks that created, and are still working on, SQLite. Naturally, a fossil repository is basically just one SQLite database file. That sounds very <em>queryable</em>!</p>
 <p>Let's import our git repository into a Fossil repository and enter the SQLite prompt:</p>
@@ -491,9 +491,9 @@ Benchmark 1: fossil sql -R new-repo.fossil &quot;[...]&quot;
 <p>But the golden ticket idea is really to store everything inside SQLite. Suddenly, we can query anything! And there is no weird parsing needed - SQLite supports various export formats and (some? all?) fossil commands support the <code>--sql</code> option to show you which SQL query they use to get the information. After all, the only thing the <code>fossil</code> command line does in this case, is craft a SQL query and run it on the SQLite database.</p>
 <p>It's quite magical to me that I can within a few seconds import my 6 years-long git repository into a SQLite database and start querying it, and the performance is great.</p>
 <p>Now I am not <em>quite</em> ready yet to move to Fossil, and the import is a one time thing as far as I know, so it is not a viable option for the problem at hand as long as git is the source of truth. But still, while I was trying to tackle <code>git log</code> into submission, I was thinking the whole time: why can't I do an arbitrary query of git data? Generally, the more generic approach is slower than the ad-hoc one, but here it's not even the case. Fossil is for this use case objectively more powerful, more generic, <em>and</em> faster.</p>
-<h2 id="3796851539-conclusion">
-  <a class="title" href="#3796851539-conclusion">Conclusion</a>
-  <a class="hash-anchor" href="#3796851539-conclusion" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+<h2 id="conclusion">
+  <a class="title" href="#conclusion">Conclusion</a>
+  <a class="hash-anchor" href="#conclusion" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>The issue was effectively a N+1 query problem. We issued a separate 'query' (in this case, <code>git log</code>) for each markdown file, in a sequential blocking fashion. This approach worked until it didn't because the number of entities (i.e. articles, and commits) grew over time.</p>
 <p>The solution is instead to do only one query for all entities. It may return a bit more data that we need, but that's much faster, and scales better, than the original version.</p>
@@ -510,9 +510,9 @@ Benchmark 1: fossil sql -R new-repo.fossil &quot;[...]&quot;
 <p>It also does not help that any querying in Git is ad-hoc and outputs a weird text format that we have to tediously parse. Please everyone, let's add the option to output structured data in our command line programs, damn it! String programming is no fun at all - that's why I moved away from concatenating the output of shell commands in a Makefile, to a real programming language, to do the static generation.</p>
 <p>All in all, I am pleased with my solution - I can now see any edit materialize <em>instantly</em>. It's a bit funny that my previous article was about SIMD and inspecting assembly instructions, while this issue is so obvious and high-level in retrospect.</p>
 <p>To the next 5 years of blogging, till I need to revisit the performance of this function!</p>
-<h2 id="4016320828-addendum">
-  <a class="title" href="#4016320828-addendum">Addendum</a>
-  <a class="hash-anchor" href="#4016320828-addendum" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+<h2 id="addendum">
+  <a class="title" href="#addendum">Addendum</a>
+  <a class="hash-anchor" href="#addendum" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>Running <code>git gc</code> and <code>git prune</code> also helps because all unreachable objects are removed, so git has to do less work scanning and parsing them on disk.</p>
 <p>Having done that, we get almost twice as fast:</p>
@@ -523,9 +523,9 @@ Benchmark 1: ./src.bin
 </code></pre>
 <p>But we have to remember to run it frequently or set up a periodic job that does it for us.</p>
 <p>That's a ~21x speed-up from the original time.</p>
-<h2 id="2077345490-addendum-2">
-  <a class="title" href="#2077345490-addendum-2">Addendum 2</a>
-  <a class="hash-anchor" href="#2077345490-addendum-2" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+<h2 id="addendum-2">
+  <a class="title" href="#addendum-2">Addendum 2</a>
+  <a class="hash-anchor" href="#addendum-2" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>Since spawning the <code>cmark</code> process, having <code>cmark</code> parsing the command line options, over and over, is still taking a good chunk of the time, we can switch to using <code>libcmark</code> directly. This is something I wanted to do anyway to extract a table of content, etc from the markdown. Since the running time is getting lower and lower, we add <code>--shell=none</code> and increase the warm-up to reduce statistical outliers:</p>
 <pre><code class="language-shell">$ hyperfine --shell=none --warmup 10 ./src.bin

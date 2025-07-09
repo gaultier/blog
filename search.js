@@ -31,7 +31,7 @@ function search_text(needle) {
       title = t;
     }
 
-    const link = title ? doc.html_file_name + '#' + title.hash + '-' + title.content_html_id : doc.html_file_name;
+    const link = title ? doc.html_file_name + '#' + title.slug + (title.counter ? '-' + title.counter : '') : doc.html_file_name;
 
     res.push({
       index: idx,

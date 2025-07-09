@@ -84,49 +84,49 @@ Do not edit it by hand.
 <ul>
 
   <li>
-    <a href="#3029713171-setting-the-stage">Setting the stage</a>
+    <a href="#setting-the-stage">Setting the stage</a>
   </li>
 
   <li>
-    <a href="#2883787522-profiling">Profiling</a>
+    <a href="#profiling">Profiling</a>
   </li>
 
   <li>
-    <a href="#809549190-get-a-precise-timing">Get a precise timing</a>
+    <a href="#get-a-precise-timing">Get a precise timing</a>
 <ul>
 
   <li>
-    <a href="#1978830282-dtrace-in-2-minutes">DTrace in 2 minutes</a>
+    <a href="#dtrace-in-2-minutes">DTrace in 2 minutes</a>
   </li>
 
   <li>
-    <a href="#3870928274-timing-a-function">Timing a function</a>
+    <a href="#timing-a-function">Timing a function</a>
   </li>
 </ul>
   </li>
 
   <li>
-    <a href="#1457903711-establishing-a-baseline">Establishing a baseline</a>
+    <a href="#establishing-a-baseline">Establishing a baseline</a>
   </li>
 
   <li>
-    <a href="#1398418838-what-the-hell-is-my-program-even-doing">What the hell is my program even doing?</a>
+    <a href="#what-the-hell-is-my-program-even-doing">What the hell is my program even doing?</a>
   </li>
 
   <li>
-    <a href="#2970770931-it-s-always-dns-wait-no-it-s-always-superlinear-algorithmic-complexity">It's always DNS - wait no, it's always: superlinear algorithmic complexity</a>
+    <a href="#it-s-always-dns-wait-no-it-s-always-superlinear-algorithmic-complexity">It's always DNS - wait no, it's always: superlinear algorithmic complexity</a>
   </li>
 
   <li>
-    <a href="#3796851539-conclusion">Conclusion</a>
+    <a href="#conclusion">Conclusion</a>
   </li>
 
   <li>
-    <a href="#1968454417-addendum-the-sorting-function-was-wrong">Addendum: The sorting function was wrong</a>
+    <a href="#addendum-the-sorting-function-was-wrong">Addendum: The sorting function was wrong</a>
   </li>
 
   <li>
-    <a href="#553173937-addendum-a-goroutine-aware-d-script">Addendum: A goroutine-aware D script</a>
+    <a href="#addendum-a-goroutine-aware-d-script">Addendum: A goroutine-aware D script</a>
   </li>
 </ul>
 
@@ -134,17 +134,17 @@ Do not edit it by hand.
 <p>I just started this job, not two months ago. I want to show methods that make it feasible to understand and diagnose a big body of software you don't know, where you did not write any of it, but you still have to fix it.</p>
 <p>If you want you can jump to the <a href="https://github.com/ory/x/pull/872">PR</a> directly.</p>
 <p>Oh, and if you always dreamt of playing the 'DTrace drinking game' with your friends, where you have to drink each time 'DTrace' gets mentioned, oh boy do I have something for you here.</p>
-<h2 id="3029713171-setting-the-stage">
-  <a class="title" href="#3029713171-setting-the-stage">Setting the stage</a>
-  <a class="hash-anchor" href="#3029713171-setting-the-stage" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+<h2 id="setting-the-stage">
+  <a class="title" href="#setting-the-stage">Setting the stage</a>
+  <a class="hash-anchor" href="#setting-the-stage" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>The nice thing when you work on an open-source project for work is that it's easy to write blog posts about it, and it's easy for readers to reproduce it! And when I'm done, it benefits the community. I like it.</p>
 <p>So, <a href="https://github.com/ory/kratos">Kratos</a> uses a database. Each schema change is done with a SQL migration file, like <code>add_some_column.up.sql</code> and its counterpart <code>add_some_column.down.sql</code>.</p>
 <p>Since each test is independent, each test creates a new database, collects all migrations, and applies them, before doing its thing.</p>
 <p>Now, there are a number of things we could do to speed things up, like only collect migrations once at startup, or merge them all in one (i.e. a snapshot). But that's how things are right now. And there are 10 years worth of SQL migrations piled up in the project.</p>
-<h2 id="2883787522-profiling">
-  <a class="title" href="#2883787522-profiling">Profiling</a>
-  <a class="hash-anchor" href="#2883787522-profiling" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+<h2 id="profiling">
+  <a class="title" href="#profiling">Profiling</a>
+  <a class="hash-anchor" href="#profiling" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>When I profile the test suite (the profiler collects the raw data behind the scenes using <a href="https://illumos.org/books/dtrace/preface.html#preface">DTrace</a>), I notice some weird things:</p>
 <p><object alt="CPU Profile" data="popx_profile.svg" type="image/svg+xml"></object></p>
@@ -152,15 +152,15 @@ Do not edit it by hand.
 <li>Pretty much all of the time (97%) in the test is spent in <code>NewMigrationBox</code> which applies SQL migrations. Strange.</li>
 <li>Pretty much all of the time (90+%) in <code>NewMigrationBox</code> is spent sorting. Maybe it is fine, but still surprising and worth investigating.</li>
 </ul>
-<h2 id="809549190-get-a-precise-timing">
-  <a class="title" href="#809549190-get-a-precise-timing">Get a precise timing</a>
-  <a class="hash-anchor" href="#809549190-get-a-precise-timing" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+<h2 id="get-a-precise-timing">
+  <a class="title" href="#get-a-precise-timing">Get a precise timing</a>
+  <a class="hash-anchor" href="#get-a-precise-timing" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>The CPU profile unfortunately does not show how much time is spent exactly in <code>NewMigrationBox</code>. At this point, I also do not know how many SQL files are present. If there are a bazillion SQL migrations, maybe it's expected that sorting them indeed takes the most time.</p>
 <p>Let's find out with <a href="https://illumos.org/books/dtrace/preface.html#preface">DTrace</a> how long the function really runs.</p>
-<h3 id="1978830282-dtrace-in-2-minutes">
-  <a class="title" href="#1978830282-dtrace-in-2-minutes">DTrace in 2 minutes</a>
-  <a class="hash-anchor" href="#1978830282-dtrace-in-2-minutes" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+<h3 id="dtrace-in-2-minutes">
+  <a class="title" href="#dtrace-in-2-minutes">DTrace in 2 minutes</a>
+  <a class="hash-anchor" href="#dtrace-in-2-minutes" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h3>
 <p>DTrace is a 'dynamic instrumentation tracing framework [...] to concisely answer arbitrary questions about the behavior of the operating system and user programs'. Let's unpack:</p>
 <ul>
@@ -175,9 +175,9 @@ That's the core idea behind DTrace: it exists to answer questions <em>we did not
 <p>What should also be added is that DTrace comes with the system on macOS (requires disabling System Integrity), which is where I did this whole investigation, FreeBSD, Illumos, Windows, etc.</p>
 <p>The advantage over a debugger is that DTrace does not stop the program. When inspecting a network heavy program, like a web server or a database, or a data race, or a scheduling bug, in production, this property is very important. Also, it can inspect the whole system, not just one single program: we can observe all writes happening on the system right now, or all files opened, etc. Sometimes this is a crucial property to have.</p>
 <p>The disadvantage is that it is less granular: it cannot (without much effort and assembly knowledge) inspect local variables, inlined functions, etc. However DTrace also supports static tracing where we define traces in our source code for these cases, assuming we know ahead of time that we need this information.</p>
-<h3 id="3870928274-timing-a-function">
-  <a class="title" href="#3870928274-timing-a-function">Timing a function</a>
-  <a class="hash-anchor" href="#3870928274-timing-a-function" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+<h3 id="timing-a-function">
+  <a class="title" href="#timing-a-function">Timing a function</a>
+  <a class="hash-anchor" href="#timing-a-function" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h3>
 <p>Back to the problem at hand.</p>
 <p>We check if the function <code>NewMigrationBox</code> is visible to DTrace by listing (<code>-l</code>) all probes matching the pattern <code>*ory*</code> in the executable <code>code.test.before</code> (i.e. before the fix):</p>
@@ -232,9 +232,9 @@ pid$target::*NewMigrationBox:return {
           &gt;= 800 |@@@@@@@@@@@@                             6  
 </code></pre>
 <p>So the duration is ~180 ms, ignoring impossible values.</p>
-<h2 id="1457903711-establishing-a-baseline">
-  <a class="title" href="#1457903711-establishing-a-baseline">Establishing a baseline</a>
-  <a class="hash-anchor" href="#1457903711-establishing-a-baseline" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+<h2 id="establishing-a-baseline">
+  <a class="title" href="#establishing-a-baseline">Establishing a baseline</a>
+  <a class="hash-anchor" href="#establishing-a-baseline" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>When doing some (light) optimization work, it is crucial to establish a baseline. What is the ideal time? How much do we differ from this time? And to establish this baseline, it is very important to understand what kind of work we are doing:</p>
 <ul>
@@ -271,9 +271,9 @@ CPU     ID                    FUNCTION:NAME
 </code></pre>
 <p>And if we run the same script on the test binary, we see that no SQL files on disk are being opened.</p>
 <p>Damn, so we are doing purely in-memory work. Alright, so is 180 ms still good in that light? How many files are we dealing with? According to <code>find</code>, ~1.6k. So, you're saying we are spending 180 ms to sort a measly 1.6k items in a linear array? That's <em>nothing</em> for a modern computer! It should be a small number of milliseconds!</p>
-<h2 id="1398418838-what-the-hell-is-my-program-even-doing">
-  <a class="title" href="#1398418838-what-the-hell-is-my-program-even-doing">What the hell is my program even doing?</a>
-  <a class="hash-anchor" href="#1398418838-what-the-hell-is-my-program-even-doing" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+<h2 id="what-the-hell-is-my-program-even-doing">
+  <a class="title" href="#what-the-hell-is-my-program-even-doing">What the hell is my program even doing?</a>
+  <a class="hash-anchor" href="#what-the-hell-is-my-program-even-doing" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>If you're like me, you're always asking yourself: what is taking my computer so damn long? Why is Microsoft Teams hanging again? (thankfully I do not have to use it anymore, thank God). Why is Slack taking 15s to simply start up?</p>
 <p>The problem with computer programs is that there are a black box. You normally have no idea what they are doing. If you're lucky they will print some stuff. If you're lucky.</p>
@@ -322,9 +322,9 @@ CPU FUNCTION
 </code></pre>
 <p>The <code>-&gt;</code> arrow means we enter the function, and <code>&lt;-</code> means we exit it. We see a nice call tree. Also I notice something weird (looking at the full output which is huge): we are calling <code>sort.Sort</code> way too much. It should be once, but we call it much more than that.</p>
 <p>That's the canary in the coal mine and it matches what we see on the CPU profile from the beginning.</p>
-<h2 id="2970770931-it-s-always-dns-wait-no-it-s-always-superlinear-algorithmic-complexity">
-  <a class="title" href="#2970770931-it-s-always-dns-wait-no-it-s-always-superlinear-algorithmic-complexity">It's always DNS - wait no, it's always: superlinear algorithmic complexity</a>
-  <a class="hash-anchor" href="#2970770931-it-s-always-dns-wait-no-it-s-always-superlinear-algorithmic-complexity" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+<h2 id="it-s-always-dns-wait-no-it-s-always-superlinear-algorithmic-complexity">
+  <a class="title" href="#it-s-always-dns-wait-no-it-s-always-superlinear-algorithmic-complexity">It's always DNS - wait no, it's always: superlinear algorithmic complexity</a>
+  <a class="hash-anchor" href="#it-s-always-dns-wait-no-it-s-always-superlinear-algorithmic-complexity" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>Time to inspect the code in <code>NewMigrationBox</code>, finally. Pretty quickly I stumble upon code like this (I simplified a bit - you can find the original code in the PR):</p>
 <pre><code class="language-go">fs.WalkDir(fm.Dir, &quot;.&quot;, func(p string, info fs.DirEntry, err error) error {
@@ -412,9 +412,9 @@ sort.Sort(mod)
           &gt;= 100 |@@@@                                     2
 
 </code></pre>
-<h2 id="3796851539-conclusion">
-  <a class="title" href="#3796851539-conclusion">Conclusion</a>
-  <a class="hash-anchor" href="#3796851539-conclusion" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+<h2 id="conclusion">
+  <a class="title" href="#conclusion">Conclusion</a>
+  <a class="hash-anchor" href="#conclusion" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>So we went from ~180 ms to ~11ms for the problematic function, a <em>16x</em> improvement that applies to every single test in the test suite. Not too bad. And we used DTrace at every turn along the way.</p>
 <p>What I find fascinating is that DTrace is a <em>general purpose</em> tool. Go was never designed with DTrace in mind, and vice-versa. Our code: same thing. And still, it works, no recompilation needed. I can instrument the highest levels of the stack to the kernel with one tool. That's pretty cool!</p>
@@ -422,18 +422,18 @@ sort.Sort(mod)
 <p>My favorite quirk is when an error in the script leads to an error message pointing at the bytecode (like Java and others, the D script gets compiled to bytecode before being sent to the kernel). What am I supposed to do with this :) ? It took me a while as a user to even understand that bytecode was involved at all.</p>
 <p>But it's very often a life-saver. So thank you to their creators.</p>
 <p>Another learning for me is that super-linear algorithms will go unnoticed and seem fine for the longest time and then bite you hard years later. If the issue is not addressed, each time a new item (here, a new SQL migration) is added, things will slow down until they halt to a crawl. So if you see something, say something. Or better yet, use DTrace to diagnose the problem!</p>
-<h2 id="1968454417-addendum-the-sorting-function-was-wrong">
-  <a class="title" href="#1968454417-addendum-the-sorting-function-was-wrong">Addendum: The sorting function was wrong</a>
-  <a class="hash-anchor" href="#1968454417-addendum-the-sorting-function-was-wrong" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+<h2 id="addendum-the-sorting-function-was-wrong">
+  <a class="title" href="#addendum-the-sorting-function-was-wrong">Addendum: The sorting function was wrong</a>
+  <a class="hash-anchor" href="#addendum-the-sorting-function-was-wrong" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>If you look at the PR you'll see that the diff is bigger than what I described.</p>
 <p>Initially I wanted to simply remove the sorting altogether, because <code>fs.WalkDir</code> already sorts lexically all the files, in order to always process the files in the same order. However this code uses a custom sorting logic so we need to still sort at the end, after walking the directory.</p>
 <p>So, the diff is bigger because I noticed that the sorting function had a flaw and did not abide by the requirements of the Go standard library. Have a look, I think it is pretty clear.</p>
 <p>Interestingly, <code>sort.Sort</code> and <code>slices.SortFunc</code> have different requirements! The first one requires the sorting function to be a <code>transitive ordering</code> whereas the second one requires it to be a <code>strict weak ordering</code>. The more you know!</p>
 <p>I encourage you, if you write a custom sorting function, to carefully read which requirements you have to comply with, and write tests that ensure that these requirements are met, lest you face subtle sorting bugs.</p>
-<h2 id="553173937-addendum-a-goroutine-aware-d-script">
-  <a class="title" href="#553173937-addendum-a-goroutine-aware-d-script">Addendum: A goroutine-aware D script</a>
-  <a class="hash-anchor" href="#553173937-addendum-a-goroutine-aware-d-script" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+<h2 id="addendum-a-goroutine-aware-d-script">
+  <a class="title" href="#addendum-a-goroutine-aware-d-script">Addendum: A goroutine-aware D script</a>
+  <a class="hash-anchor" href="#addendum-a-goroutine-aware-d-script" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>At the beginning I mentioned that <code>self-&gt;t = timestamp</code> means we are storing the current timestamp in a thread-local variable. However, since in the general case, multiple goroutines run on the same thread concurrently, this variable gets overriden by multiple goroutines all the time, and we observe as a result some non-sensical durations (negative or very high). I also mentioned that the fix would be to store this variable in a <em>goroutine-aware</em> way instead.</p>
 <p>Well, the good news is, there is a way!</p>

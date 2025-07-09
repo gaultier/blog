@@ -84,61 +84,61 @@ Do not edit it by hand.
 <ul>
 
   <li>
-    <a href="#3018859686-what-do-we-need">What do we need?</a>
+    <a href="#what-do-we-need">What do we need?</a>
   </li>
 
   <li>
-    <a href="#2474413437-wayland-basics">Wayland basics</a>
+    <a href="#wayland-basics">Wayland basics</a>
   </li>
 
   <li>
-    <a href="#4163415294-opening-a-socket">Opening a socket</a>
+    <a href="#opening-a-socket">Opening a socket</a>
   </li>
 
   <li>
-    <a href="#2693341289-creating-a-registry">Creating a registry</a>
+    <a href="#creating-a-registry">Creating a registry</a>
   </li>
 
   <li>
-    <a href="#3637969354-shared-memory-the-frame-buffer">Shared memory: the frame buffer</a>
+    <a href="#shared-memory-the-frame-buffer">Shared memory: the frame buffer</a>
   </li>
 
   <li>
-    <a href="#2024835768-chatting-with-the-compositor">Chatting with the compositor</a>
+    <a href="#chatting-with-the-compositor">Chatting with the compositor</a>
 <ul>
 
   <li>
-    <a href="#1038699131-reacting-to-events-binding-interfaces">Reacting to events: binding interfaces</a>
+    <a href="#reacting-to-events-binding-interfaces">Reacting to events: binding interfaces</a>
   </li>
 
   <li>
-    <a href="#663050396-using-the-interfaces-we-created">Using the interfaces we created</a>
+    <a href="#using-the-interfaces-we-created">Using the interfaces we created</a>
   </li>
 
   <li>
-    <a href="#3236706263-reacting-to-events-ping-pong">Reacting to events: ping/pong</a>
+    <a href="#reacting-to-events-ping-pong">Reacting to events: ping/pong</a>
   </li>
 
   <li>
-    <a href="#2838931666-reacting-to-events-configure-ack-configure">Reacting to events: configure/ACK configure</a>
+    <a href="#reacting-to-events-configure-ack-configure">Reacting to events: configure/ACK configure</a>
   </li>
 
   <li>
-    <a href="#3853643148-rendering-a-frame-the-red-rectangle">Rendering a frame: the red rectangle</a>
+    <a href="#rendering-a-frame-the-red-rectangle">Rendering a frame: the red rectangle</a>
   </li>
 
   <li>
-    <a href="#2039654787-rendering-a-frame-the-wayland-logo">Rendering a frame: The Wayland logo</a>
+    <a href="#rendering-a-frame-the-wayland-logo">Rendering a frame: The Wayland logo</a>
   </li>
 </ul>
   </li>
 
   <li>
-    <a href="#1770781618-the-end">The end</a>
+    <a href="#the-end">The end</a>
   </li>
 
   <li>
-    <a href="#1512890027-addendum-the-full-code">Addendum: the full code</a>
+    <a href="#addendum-the-full-code">Addendum: the full code</a>
   </li>
 </ul>
 
@@ -152,16 +152,16 @@ Do not edit it by hand.
 <blockquote>
 <p>If you spot an error, please open a <a href="https://github.com/gaultier/blog">Github issue</a>!</p>
 </blockquote>
-<h2 id="3018859686-what-do-we-need">
-  <a class="title" href="#3018859686-what-do-we-need">What do we need?</a>
-  <a class="hash-anchor" href="#3018859686-what-do-we-need" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+<h2 id="what-do-we-need">
+  <a class="title" href="#what-do-we-need">What do we need?</a>
+  <a class="hash-anchor" href="#what-do-we-need" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>Not much: We'll use C99 so any C compiler of the last 20 years will do. Having a Wayland desktop to test the application will also greatly help.</p>
 <p>Note that I have only run it on Linux; it should work (meaning: compile and run) on other platforms running Wayland such as FreeBSD, it's just that I have not tried.</p>
 <p><em>Note that the code in this article has not been written in the most robust way, it simply exits when things are not how they should be for example. So, not production ready, but still a good learning resource and a good foundation for more.</em></p>
-<h2 id="2474413437-wayland-basics">
-  <a class="title" href="#2474413437-wayland-basics">Wayland basics</a>
-  <a class="hash-anchor" href="#2474413437-wayland-basics" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+<h2 id="wayland-basics">
+  <a class="title" href="#wayland-basics">Wayland basics</a>
+  <a class="hash-anchor" href="#wayland-basics" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>Wayland is a protocol specification for GUI applications (and more), in short. We will write the client side, while the server side is a compositor which understands our protocol. If you have a Wayland desktop right now, a Wayland compositor is already running so there is nothing to do.</p>
 <p>Much like X11, a client opens a UNIX socket, sends some commands in a specific format (which are different from the X11 ones), to open a window and the server can also send messages to notify the client to resize the window, that there is some keyboard input, etc. It's important to note that contrary to X11, in Wayland, the client only has access to its own window.</p>
@@ -204,9 +204,9 @@ static const uint32_t wayland_header_size = 8;
 static const uint32_t color_channels = 4;
 </code></pre>
 <p>So, not that much!</p>
-<h2 id="4163415294-opening-a-socket">
-  <a class="title" href="#4163415294-opening-a-socket">Opening a socket</a>
-  <a class="hash-anchor" href="#4163415294-opening-a-socket" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+<h2 id="opening-a-socket">
+  <a class="title" href="#opening-a-socket">Opening a socket</a>
+  <a class="hash-anchor" href="#opening-a-socket" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>The first step is opening a UNIX domain socket. Note that this step is exactly the same as for X11, save for the path of the socket. Also, X11 is designed to be used over the network so it does not have to be a UNIX domain socket, on the same machine - but everybody does so on their desktop machine anyway.</p>
 <p>To craft the socket path, we follow these simple steps:</p>
@@ -262,9 +262,9 @@ static int wayland_display_connect() {
 }
 </code></pre>
 <p>In Wayland, there is no connection setup to do, such as sending some special messages, so there is nothing more to do.</p>
-<h2 id="2693341289-creating-a-registry">
-  <a class="title" href="#2693341289-creating-a-registry">Creating a registry</a>
-  <a class="hash-anchor" href="#2693341289-creating-a-registry" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+<h2 id="creating-a-registry">
+  <a class="title" href="#creating-a-registry">Creating a registry</a>
+  <a class="hash-anchor" href="#creating-a-registry" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>Now, to do anything useful, we want to create a registry: it is an object that allows us to query at runtime the capabilities of the compositor.</p>
 <p>In Wayland, to create an object, we simply send the right message followed by an id of our own. Ids should be unique so we simply increment a number each time we want to create a new resource. After this is done, we will remember this number to be able to refer to it in later messages:</p>
@@ -367,9 +367,9 @@ static void buf_read_n(char **buf, uint64_t *buf_size, char *dst, uint64_t n) {
 </code></pre>
 <p>And by calling it, we have created our very first Wayland resource!</p>
 <p><em>From this point on, the utility functions to send Wayland messages (<code>wayland_*</code>) will not be included in the code snippets for brevity (but you will find all of the code at the end!), just because they all are similar to the one above.</em></p>
-<h2 id="3637969354-shared-memory-the-frame-buffer">
-  <a class="title" href="#3637969354-shared-memory-the-frame-buffer">Shared memory: the frame buffer</a>
-  <a class="hash-anchor" href="#3637969354-shared-memory-the-frame-buffer" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+<h2 id="shared-memory-the-frame-buffer">
+  <a class="title" href="#shared-memory-the-frame-buffer">Shared memory: the frame buffer</a>
+  <a class="hash-anchor" href="#shared-memory-the-frame-buffer" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>To avoid drawing  a frame in our application, and having to send all of the bytes over the socket to the compositor, there is a smarter approach: the buffer should be shared between the two processes, so that no copying is required.</p>
 <p>We need to synchronize the access between the two so that presenting the frame does not happen while we are still drawing it, and Wayland has us covered here.</p>
@@ -453,9 +453,9 @@ All the Wayland calls would remain the same.</p>
 <p>We then resize with <code>ftruncate</code> and memory map this file with <code>mmap(2)</code>, effectively allocating memory, with the <code>MAP_SHARED</code> flag to allow the compositor to also read this memory.</p>
 <p>Later, we will send the file descriptor over the UNIX domain socket as ancillary data to the compositor.</p>
 <p>Alright, we now have some memory to draw our frame to, but the compositor does not know of it yet. Let's tackle that now.</p>
-<h2 id="2024835768-chatting-with-the-compositor">
-  <a class="title" href="#2024835768-chatting-with-the-compositor">Chatting with the compositor</a>
-  <a class="hash-anchor" href="#2024835768-chatting-with-the-compositor" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+<h2 id="chatting-with-the-compositor">
+  <a class="title" href="#chatting-with-the-compositor">Chatting with the compositor</a>
+  <a class="hash-anchor" href="#chatting-with-the-compositor" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>We are going to exchange messages back and forth over the socket with the compositor. Let's use plain old blocking calls in <code>main</code> like it's the 70's. We read as much as we can from the socket:</p>
 <pre><code class="language-c">  while (1) {
@@ -499,9 +499,9 @@ This might break if a message is spanning two different read buffers - a ring bu
   // Following: Lots of `if (opcode == ...) {... } else if (opcode = ...) { ... } [...]`
 }
 </code></pre>
-<h3 id="1038699131-reacting-to-events-binding-interfaces">
-  <a class="title" href="#1038699131-reacting-to-events-binding-interfaces">Reacting to events: binding interfaces</a>
-  <a class="hash-anchor" href="#1038699131-reacting-to-events-binding-interfaces" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+<h3 id="reacting-to-events-binding-interfaces">
+  <a class="title" href="#reacting-to-events-binding-interfaces">Reacting to events: binding interfaces</a>
+  <a class="hash-anchor" href="#reacting-to-events-binding-interfaces" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h3>
 <p>At this point we have sent one message to the compositor: <code>wl_display@1.get_registry()</code> thanks to our C function <code>wayland_wl_display_get_registry</code>.
 The compositor responds with a series of events, listing the available global objects, such as shared memory support, extension protocols, etc.</p>
@@ -564,9 +564,9 @@ The compositor responds with a series of events, listing the available global ob
 </code></pre>
 <p>Remember: Since the Wayland protocol is a kind of RPC, we need to create the objects first before calling remote methods on them.</p>
 <p>In terms of robustness, we do not have guarantees that every feature (i.e.: interface) we need in our application will be supported by the compositor. It could be a good idea to bail if the interfaces we require are not present.</p>
-<h3 id="663050396-using-the-interfaces-we-created">
-  <a class="title" href="#663050396-using-the-interfaces-we-created">Using the interfaces we created</a>
-  <a class="hash-anchor" href="#663050396-using-the-interfaces-we-created" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+<h3 id="using-the-interfaces-we-created">
+  <a class="title" href="#using-the-interfaces-we-created">Using the interfaces we created</a>
+  <a class="hash-anchor" href="#using-the-interfaces-we-created" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h3>
 <p>We can now call methods on the new interfaces to create more entities we will need, namely:</p>
 <ul>
@@ -591,9 +591,9 @@ The compositor responds with a series of events, listing the available global ob
     }
   }
 </code></pre>
-<h3 id="3236706263-reacting-to-events-ping-pong">
-  <a class="title" href="#3236706263-reacting-to-events-ping-pong">Reacting to events: ping/pong</a>
-  <a class="hash-anchor" href="#3236706263-reacting-to-events-ping-pong" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+<h3 id="reacting-to-events-ping-pong">
+  <a class="title" href="#reacting-to-events-ping-pong">Reacting to events: ping/pong</a>
+  <a class="hash-anchor" href="#reacting-to-events-ping-pong" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h3>
 <p>For some entities, the Wayland compositor will send us a ping message and expect a pong back to ensure our application is responsive and not deadlocked or frozen.</p>
 <p>We just have to add one more <code>if</code> to the long list of <code>if</code>s to handle each event from the compositor:</p>
@@ -606,9 +606,9 @@ The compositor responds with a series of events, listing the available global ob
     return;
   }
 </code></pre>
-<h3 id="2838931666-reacting-to-events-configure-ack-configure">
-  <a class="title" href="#2838931666-reacting-to-events-configure-ack-configure">Reacting to events: configure/ACK configure</a>
-  <a class="hash-anchor" href="#2838931666-reacting-to-events-configure-ack-configure" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+<h3 id="reacting-to-events-configure-ack-configure">
+  <a class="title" href="#reacting-to-events-configure-ack-configure">Reacting to events: configure/ACK configure</a>
+  <a class="hash-anchor" href="#reacting-to-events-configure-ack-configure" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h3>
 <p>Akin to the previous ping/pong mechanism, we receive a <code>configure</code> event for the <code>xdg_surface</code> and we reply with a <code>ack_configure</code> message.</p>
 <p>This is an important milestone since from that point on, we can start rendering our frame! We thus advance our little state machine:</p>
@@ -623,9 +623,9 @@ The compositor responds with a series of events, listing the available global ob
     return;
   } 
 </code></pre>
-<h3 id="3853643148-rendering-a-frame-the-red-rectangle">
-  <a class="title" href="#3853643148-rendering-a-frame-the-red-rectangle">Rendering a frame: the red rectangle</a>
-  <a class="hash-anchor" href="#3853643148-rendering-a-frame-the-red-rectangle" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+<h3 id="rendering-a-frame-the-red-rectangle">
+  <a class="title" href="#rendering-a-frame-the-red-rectangle">Rendering a frame: the red rectangle</a>
+  <a class="hash-anchor" href="#rendering-a-frame-the-red-rectangle" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h3>
 <p>Once the configure/ack configure step has been completed, we can render a frame.</p>
 <p>To do so, we need to create two final entities: a shared memory pool (<code>wl_shm_pool</code>) and a <code>wl_buffer</code> if they do not exist yet.</p>
@@ -667,9 +667,9 @@ The compositor responds with a series of events, listing the available global ob
 </code></pre>
 <p>Result:</p>
 <p><img src="wayland-screenshot-red.png" alt="Result, red" /></p>
-<h3 id="2039654787-rendering-a-frame-the-wayland-logo">
-  <a class="title" href="#2039654787-rendering-a-frame-the-wayland-logo">Rendering a frame: The Wayland logo</a>
-  <a class="hash-anchor" href="#2039654787-rendering-a-frame-the-wayland-logo" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+<h3 id="rendering-a-frame-the-wayland-logo">
+  <a class="title" href="#rendering-a-frame-the-wayland-logo">Rendering a frame: The Wayland logo</a>
+  <a class="hash-anchor" href="#rendering-a-frame-the-wayland-logo" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h3>
 <p>Let's render something more interesting. We download the <a href="https://wayland.freedesktop.org/wayland.png">Wayland logo</a>, but we do not want to have to deal with a complicated format like PNG (because we then have to uncompress the image data with <code>zlib</code> or similar).</p>
 <p>We thus convert it offline to a simpler image format, PPM6, and then embed the raw pixel data in our code as a byte array, skipping over the first 15 bytes which are metadata:</p>
@@ -698,18 +698,18 @@ $ sed -i 's/wayland_ppm/wayland_logo/g' wayland-logo.h
 <p>Tiled: <img src="wayland-screenshot-tiled1.png" alt="Result, tiled" /></p>
 <p>Floating: <img src="wayland-screenshot-floating.png" alt="Result, floating" /></p>
 <p><em>Note: We handle the absolute minimum set of events coming from the compositor to make it work in a simple way. If your particular compositor sends more events, they will have to be read (and possibly ignored). Since the Wayland protocol uses a Tag-Length-Value (TLV) encoding, one can simply skip over <code>&lt;length&gt;</code> bytes if the opcode is unknown. But some events will demand a reply (e.g. ping/pong)!</em></p>
-<h2 id="1770781618-the-end">
-  <a class="title" href="#1770781618-the-end">The end</a>
-  <a class="hash-anchor" href="#1770781618-the-end" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+<h2 id="the-end">
+  <a class="title" href="#the-end">The end</a>
+  <a class="hash-anchor" href="#the-end" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>It was not that much work to go from zero to a working GUI application, albeit a simplistic one.</p>
 <p>Compared to X11, it was a bit more work, but not that much. The barrier of entry is higher but the concepts and architecture are more sound, it seems to me.</p>
 <p>The setup is a bit tedious but once this is done, we are in practice going to spend all of our time in the frame rendering code, and perhaps add support for a few additional events (we do not yet support keyboard or mouse events, for example, or animations, which would require us to notify the compositor that a region was 'damaged' meaning modified, and needs re-rendering).</p>
 <p>Thus, I have the feeling that Wayland really goes out of the way once the initial scaffolding is done.</p>
 <p>As for the next steps, I would like to draw some text, and react to user input events. Maybe even port something like <a href="https://github.com/rxi/microui">microui</a>, which only needs a few drawing routines, to our application.</p>
-<h2 id="1512890027-addendum-the-full-code">
-  <a class="title" href="#1512890027-addendum-the-full-code">Addendum: the full code</a>
-  <a class="hash-anchor" href="#1512890027-addendum-the-full-code" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+<h2 id="addendum-the-full-code">
+  <a class="title" href="#addendum-the-full-code">Addendum: the full code</a>
+  <a class="hash-anchor" href="#addendum-the-full-code" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p><em>Do not forget to generate <code>wayland-logo.h</code> with the aforementioned commands!</em></p>
 <p>Compile with: <code>cc -std=c99 wayland.c -Ofast</code>.</p>
