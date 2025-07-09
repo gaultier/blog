@@ -353,24 +353,31 @@ static PgString html_make_slug(PgString s, PgAllocator *allocator) {
   Pgu8Dyn sb = {0};
   PG_DYN_ENSURE_CAP(&sb, s.len * 2, allocator);
 
-  // TODO: UTF8.
-  for (u64 i = 0; i < s.len; i++) {
-    u8 c = PG_SLICE_AT(s, i);
+  PgUtf8Iterator it = pg_make_utf8_iterator(s);
+  for (;;) {
+    PgRuneResult res = pg_utf8_iterator_next(&it);
+    PG_ASSERT(!res.err);
+    // FIXME: Proper 'end' detection in iterator.
+    if (!res.res) {
+      break;
+    }
 
-    if (pg_rune_ascii_is_alphanumeric(c)) {
-      // FIXME
-      u8 lowered = ('A' <= c && c <= 'Z') ? c + ('a' - 'A') : c;
-      *PG_DYN_PUSH(&sb, allocator) = lowered;
-    } else if ('+' == c) {
+    PgRune rune = res.res;
+
+    if (pg_rune_ascii_is_alphanumeric(rune)) {
+      *PG_DYN_PUSH(&sb, allocator) = (u8)pg_rune_ascii_to_lower_case(rune);
+    } else if ('+' == rune) {
       PG_DYN_APPEND_SLICE(&sb, PG_S("plus"), allocator);
-    } else if ('#' == c) {
+    } else if ('#' == rune) {
       PG_DYN_APPEND_SLICE(&sb, PG_S("sharp"), allocator);
-    } else if (i < s.len - 1 && sb.len > 0 && PG_SLICE_LAST(sb) != '-') {
+    } else if (PG_SLICE_LAST(sb) != '-') {
+      // Other runes are mapped to `-`, but we avoid consecutive `-`.
       *PG_DYN_PUSH(&sb, allocator) = '-';
     }
   }
+  PgString res = PG_DYN_SLICE(PgString, sb);
 
-  return PG_DYN_SLICE(PgString, sb);
+  return pg_string_trim(res, '-');
 }
 
 [[nodiscard]]
