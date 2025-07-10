@@ -215,3 +215,4 @@ pid$target::github.com?ory?kratos*CreateRecoveryFlow:entry {
 - [ ] gen: Highlight only the changed lines in a code snippet
 - [ ] gen: Link to related articles at the end (requires post-processing after all articles have been generated)
 - [ ] gen: Syntax highlighting done statically
+- [ ] std: debug allocator using the chrome trace format
