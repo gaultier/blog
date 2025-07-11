@@ -42,7 +42,7 @@ clean:
 
 .PHONY: dev
 dev: 
-	ls *.{c,h,md} submodules/cstd/*.{c,h} header.html footer.html | entr -c make gen
+	ls *.{c,h,md} submodules/cstd/*.{c,h} header.html footer.html | entr -cnr make gen
 
 # TODO: Consider moving all checks to `main.c`.
 .PHONY: check

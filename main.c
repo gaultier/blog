@@ -1100,15 +1100,39 @@ static void rss_generate(ArticleSlice articles, PgAllocator *allocator) {
                                     allocator));
 }
 
+static PgHttpResponse http_handler(PgHttpRequest req, PgLogger *logger,
+                                   PgAllocator *allocator, void *ctx) {
+  (void)ctx;
+
+  PgHttpResponse resp = {0};
+
+  pg_log(logger, PG_LOG_LEVEL_INFO, "http handler: handling request",
+         pg_log_c_u64("headers_count", req.headers.len),
+         pg_log_c_s("method", pg_http_method_to_string(req.method)),
+         pg_log_c_s("url", pg_url_to_string(req.url, allocator)));
+
+  resp.status = 201;
+  pg_http_push_header(&resp.headers, PG_S("Content-Type"),
+                      PG_S("application/html"), allocator);
+
+  return resp;
+}
+
 int main() {
   PgArena arena = pg_arena_make_from_virtual_mem(100 * PG_MiB);
   PgArenaAllocator arena_allocator = pg_make_arena_allocator(&arena);
   PgAllocator *allocator = pg_arena_allocator_as_allocator(&arena_allocator);
 
-#if 0
+#if 1
   {
-  PgLogger logger = pg_log_make_logger_stdout_logfmt(PG_LOG_LEVEL_INFO);
-    PgError err = pg_http_server_start(3001, 1024, 28 * PG_KiB, &logger);
+    PgLogger logger = pg_log_make_logger_stdout_logfmt(PG_LOG_LEVEL_INFO);
+    PgHttpServerOptions options = {
+        .port = 3001,
+        .listen_backlog = 1024,
+        .http_handler_arena_mem = 8 * PG_KiB,
+        .handler = http_handler,
+    };
+    PgError err = pg_http_server_start(options, &logger);
     if (err) {
       return (int)err;
     }
