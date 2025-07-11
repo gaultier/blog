@@ -192,8 +192,13 @@ pid$target::github.com?ory?kratos*CreateRecoveryFlow:entry {
 
   ustack(10);
 }
+```
 
+See all SQL queries:
 
+```
+ sudo dtrace -n 'pid$target::github.com?ory?pop?v6.Query.ToSQL:return {printf("%s\n", stringof(copyin(arg1,arg0)))}' -c './code.test -test.count=1 -test.v -test.run=Recovery' 
+```
 
 ## Blog implementation
 
