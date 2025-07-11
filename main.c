@@ -1100,7 +1100,8 @@ static void rss_generate(ArticleSlice articles, PgAllocator *allocator) {
                                     allocator));
 }
 
-static PgHttpResponse http_handler(PgHttpRequest req, PgLogger *logger,
+static PgHttpResponse http_handler(PgHttpRequest req, PgBufReader *buf_reader,
+                                   PgBufWriter *buf_writer, PgLogger *logger,
                                    PgAllocator *allocator, void *ctx) {
   (void)ctx;
 
@@ -1110,6 +1111,21 @@ static PgHttpResponse http_handler(PgHttpRequest req, PgLogger *logger,
          pg_log_c_u64("headers_count", req.headers.len),
          pg_log_c_s("method", pg_http_method_to_string(req.method)),
          pg_log_c_s("url", pg_url_to_string(req.url, allocator)));
+
+  PgError err_read = pg_buf_reader_fill_until_full_or_eof(buf_reader);
+  if (err_read) {
+    resp.status = 401;
+    return resp;
+  }
+  u8 tmp[4096] = {0};
+  Pgu8Slice tmp_slice = {
+      .data = tmp,
+      .len = PG_STATIC_ARRAY_LEN(tmp),
+  };
+  Pgu64Result res = pg_buf_reader_read(buf_reader, tmp_slice);
+
+  pg_log(logger, PG_LOG_LEVEL_DEBUG, "http handler: request body",
+         pg_log_c_s("body", req_body));
 
   resp.status = 201;
   pg_http_push_header(&resp.headers, PG_S("Content-Type"),
