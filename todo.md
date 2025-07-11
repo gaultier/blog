@@ -192,8 +192,13 @@ pid$target::github.com?ory?kratos*CreateRecoveryFlow:entry {
 
   ustack(10);
 }
+```
 
+See all SQL queries:
 
+```
+ sudo dtrace -n 'pid$target::github.com?ory?pop?v6.Query.ToSQL:return {printf("%s\n", stringof(copyin(arg1,arg0)))}' -c './code.test -test.count=1 -test.v -test.run=Recovery' 
+```
 
 ## Blog implementation
 
@@ -215,3 +220,4 @@ pid$target::github.com?ory?kratos*CreateRecoveryFlow:entry {
 - [ ] gen: Highlight only the changed lines in a code snippet
 - [ ] gen: Link to related articles at the end (requires post-processing after all articles have been generated)
 - [ ] gen: Syntax highlighting done statically
+- [ ] std: debug allocator using the chrome trace format
