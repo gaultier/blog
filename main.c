@@ -1101,11 +1101,12 @@ static void rss_generate(ArticleSlice articles, PgAllocator *allocator) {
 }
 
 [[maybe_unused]] [[nodiscard]]
-static PgHttpResponse http_handler(PgHttpRequest req, PgBufReader *buf_reader,
-                                   PgBufWriter *buf_writer, PgLogger *logger,
+static PgHttpResponse http_handler(PgHttpRequest req, PgReader *reader,
+                                   PgWriter *writer, PgLogger *logger,
                                    PgAllocator *allocator, void *ctx) {
   (void)ctx;
-  (void)buf_writer;
+  (void)reader;
+  (void)writer;
 
   PgHttpResponse resp = {0};
 
@@ -1114,11 +1115,6 @@ static PgHttpResponse http_handler(PgHttpRequest req, PgBufReader *buf_reader,
          pg_log_c_s("method", pg_http_method_to_string(req.method)),
          pg_log_c_s("url", pg_url_to_string(req.url, allocator)));
 
-  PgError err_read = pg_buf_reader_fill_until_full_or_eof(buf_reader);
-  if (err_read) {
-    resp.status = 401;
-    return resp;
-  }
   // u8 tmp[4096] = {0};
   // Pgu8Slice tmp_slice = {
   //     .data = tmp,
@@ -1142,11 +1138,12 @@ int main() {
 
 #if 0
   {
-    PgLogger logger = pg_log_make_logger_stdout_logfmt(PG_LOG_LEVEL_INFO);
+    PgLogger logger = pg_log_make_logger_stdout(
+        PG_LOG_LEVEL_INFO, PG_LOG_FORMAT_LOGFMT, allocator);
     PgHttpServerOptions options = {
         .port = 3001,
         .listen_backlog = 1024,
-        .http_handler_arena_mem = 8 * PG_KiB,
+        .http_handler_arena_mem = 32 * PG_KiB,
         .handler = http_handler,
     };
     PgError err = pg_http_server_start(options, &logger);
