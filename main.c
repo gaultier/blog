@@ -1100,20 +1100,60 @@ static void rss_generate(ArticleSlice articles, PgAllocator *allocator) {
                                     allocator));
 }
 
-[[maybe_unused]] [[nodiscard]]
-static PgHttpResponse http_handler(PgHttpRequest req, PgReader *reader,
-                                   PgWriter *writer, PgLogger *logger,
-                                   PgAllocator *allocator, void *ctx) {
+[[maybe_unused]]
+static void http_handler(PgHttpRequest req, PgReader *reader, PgWriter *writer,
+                         PgLogger *logger, PgAllocator *allocator, void *ctx) {
   (void)ctx;
   (void)reader;
-  (void)writer;
-
-  PgHttpResponse resp = {0};
 
   pg_log(logger, PG_LOG_LEVEL_INFO, "http handler: handling request",
          pg_log_c_u64("headers_count", req.headers.len),
          pg_log_c_s("method", pg_http_method_to_string(req.method)),
          pg_log_c_s("url", pg_url_to_string(req.url, allocator)));
+
+  Pgu64Result res_content_length =
+      pg_http_content_length(PG_DYN_SLICE(PgStringKeyValueSlice, req.headers));
+  if (res_content_length.err) {
+    pg_log(logger, PG_LOG_LEVEL_ERROR, "http handler: invalid content length",
+           pg_log_c_u64("headers_count", req.headers.len),
+           pg_log_c_s("method", pg_http_method_to_string(req.method)),
+           pg_log_c_s("url", pg_url_to_string(req.url, allocator)));
+    return;
+  }
+  u64 content_length = res_content_length.res;
+  Pgu8Slice req_body = pg_bytes_make(content_length, allocator);
+  PgError err = pg_reader_read_full(reader, req_body);
+  if (err) {
+    pg_log(logger, PG_LOG_LEVEL_ERROR, "http handler: failed to read body",
+           pg_log_c_u64("headers_count", req.headers.len),
+           pg_log_c_s("method", pg_http_method_to_string(req.method)),
+           pg_log_c_s("url", pg_url_to_string(req.url, allocator)));
+    return;
+  }
+
+  pg_log(logger, PG_LOG_LEVEL_INFO, "http handler: body read",
+         pg_log_c_u64("headers_count", req.headers.len),
+         pg_log_c_s("method", pg_http_method_to_string(req.method)),
+         pg_log_c_s("req_body", req_body),
+         pg_log_c_s("url", pg_url_to_string(req.url, allocator)));
+
+  PgHttpResponse resp = {0};
+  resp.version_major = 1;
+  resp.version_minor = 1;
+  resp.status = 201;
+  pg_http_push_header(&resp.headers, PG_S("Content-Type"),
+                      PG_S("application/html"), allocator);
+
+  err = pg_http_write_response(writer, resp, allocator);
+  if (err) {
+    pg_log(logger, PG_LOG_LEVEL_ERROR,
+           "http handler: failed to write http response",
+           pg_log_c_err("err", err));
+    return;
+  }
+
+  (void)pg_writer_write_full(writer, PG_S("Hi there"), allocator);
+  (void)pg_writer_flush(writer, allocator);
 
   // u8 tmp[4096] = {0};
   // Pgu8Slice tmp_slice = {
@@ -1123,12 +1163,6 @@ static PgHttpResponse http_handler(PgHttpRequest req, PgReader *reader,
   // Pgu64Result res = pg_buf_reader_read(buf_reader, tmp_slice);
   // pg_log(logger, PG_LOG_LEVEL_DEBUG, "http handler: request body",
   //        pg_log_c_s("body", req_body));
-
-  resp.status = 201;
-  pg_http_push_header(&resp.headers, PG_S("Content-Type"),
-                      PG_S("application/html"), allocator);
-
-  return resp;
 }
 
 int main() {
@@ -1136,7 +1170,7 @@ int main() {
   PgArenaAllocator arena_allocator = pg_make_arena_allocator(&arena);
   PgAllocator *allocator = pg_arena_allocator_as_allocator(&arena_allocator);
 
-#if 0
+#if 1
   {
     PgLogger logger = pg_log_make_logger_stdout(
         PG_LOG_LEVEL_INFO, PG_LOG_FORMAT_LOGFMT, allocator);
