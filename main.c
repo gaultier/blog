@@ -1170,7 +1170,7 @@ int main() {
   PgArenaAllocator arena_allocator = pg_make_arena_allocator(&arena);
   PgAllocator *allocator = pg_arena_allocator_as_allocator(&arena_allocator);
 
-#if 1
+#if 0
   {
     PgLogger logger = pg_log_make_logger_stdout(
         PG_LOG_LEVEL_INFO, PG_LOG_FORMAT_LOGFMT, allocator);

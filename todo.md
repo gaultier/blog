@@ -205,7 +205,6 @@ See all SQL queries:
 - [ ] browser: search shows the full title path to the match e.g. 'my_article: foo/bar/baz'
 - [ ] browser: search highlights matched terms (and jumps to them with a link?)
 - [ ] gen: Work mainly on markdown with libcmark instead of html for simplicity
-- [ ] lint: Add check for empty first line in code block
 - [ ] gen: Articles excerpt on the home page?
 - [ ] gen: Browser live reload: 
   + Depends on: custom HTTP server, builtin file watch.
