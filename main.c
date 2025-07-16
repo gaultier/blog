@@ -1165,27 +1165,35 @@ static void http_handler(PgHttpRequest req, PgReader *reader, PgWriter *writer,
   //        pg_log_c_s("body", req_body));
 }
 
+static void *run_http_server(void *) {
+  PgArena arena = pg_arena_make_from_virtual_mem(40 * PG_KiB);
+  PgArenaAllocator arena_allocator = pg_make_arena_allocator(&arena);
+  PgAllocator *allocator = pg_arena_allocator_as_allocator(&arena_allocator);
+
+  PgLogger logger = pg_log_make_logger_stdout(PG_LOG_LEVEL_INFO,
+                                              PG_LOG_FORMAT_LOGFMT, allocator);
+  PgHttpServerOptions options = {
+      .port = 3001,
+      .listen_backlog = 1024,
+      .http_handler_arena_mem = 32 * PG_KiB,
+      .handler = http_handler,
+  };
+  PgError err = pg_http_server_start(options, &logger);
+  if (err) {
+    return nullptr;
+  }
+  return nullptr;
+}
+
 int main() {
   PgArena arena = pg_arena_make_from_virtual_mem(100 * PG_MiB);
   PgArenaAllocator arena_allocator = pg_make_arena_allocator(&arena);
   PgAllocator *allocator = pg_arena_allocator_as_allocator(&arena_allocator);
 
-#if 1
   {
-    PgLogger logger = pg_log_make_logger_stdout(
-        PG_LOG_LEVEL_INFO, PG_LOG_FORMAT_LOGFMT, allocator);
-    PgHttpServerOptions options = {
-        .port = 3001,
-        .listen_backlog = 1024,
-        .http_handler_arena_mem = 32 * PG_KiB,
-        .handler = http_handler,
-    };
-    PgError err = pg_http_server_start(options, &logger);
-    if (err) {
-      return (int)err;
-    }
+    PgThreadResult res_thread = pg_thread_create(run_http_server, nullptr);
+    PG_ASSERT(!res_thread.err);
   }
-#endif
 
   PgStringResult res_header =
       pg_file_read_full_from_path(PG_S("header.html"), allocator);
