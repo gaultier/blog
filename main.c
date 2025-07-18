@@ -1198,6 +1198,35 @@ int main() {
   }
 #endif
 
+#if 0
+  {
+    PgFileDescriptorResult res_fs_init = pg_aio_fs_init();
+    PG_ASSERT(0 == res_fs_init.err);
+    PgFileDescriptor fs_manager = res_fs_init.res;
+
+    PgFileDescriptorResult res_fd = pg_aio_fs_register_interest(
+        fs_manager, PG_S("test.test"),
+        PG_AIO_EVENT_KIND_FILE_MODIFIED | PG_AIO_EVENT_KIND_FILE_CREATED);
+    PG_ASSERT(0 == res_fd.err);
+    PgFileDescriptor fs_fd = res_fd.res;
+    PG_ASSERT(0 != fs_fd.fd);
+
+    PgFileDescriptorResult res_init = pg_aio_init();
+    PG_ASSERT(0 == res_init.err);
+    PgFileDescriptor manager = res_init.res;
+
+    PgError err =
+        pg_aio_register_interest(manager, fs_fd, PG_AIO_EVENT_KIND_READABLE);
+    PG_ASSERT(0 == err);
+
+    for (u64 i = 0; i < 10; i++) {
+      PgAioEventResult res_fs_wait =
+          pg_aio_fs_wait_one(manager, fs_fd, (Pgu32Ok){0});
+      PG_ASSERT(0 == res_fs_wait.err);
+    }
+  }
+#endif
+
   PgStringResult res_header =
       pg_file_read_full_from_path(PG_S("header.html"), allocator);
   PG_ASSERT(0 == res_header.err);
