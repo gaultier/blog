@@ -1198,7 +1198,7 @@ int main() {
   }
 #endif
 
-#if 0
+#if 1
   {
     PgFileDescriptorResult res_fs_init = pg_aio_fs_init();
     PG_ASSERT(0 == res_fs_init.err);
@@ -1215,14 +1215,14 @@ int main() {
     PG_ASSERT(0 == res_init.err);
     PgFileDescriptor manager = res_init.res;
 
-    PgError err =
-        pg_aio_register_interest(manager, fs_fd, PG_AIO_EVENT_KIND_READABLE);
+    PgError err = pg_aio_register_interest(manager, fs_manager,
+                                           PG_AIO_EVENT_KIND_READABLE);
     PG_ASSERT(0 == err);
 
     for (u64 i = 0; i < 10; i++) {
-      PgAioEventResult res_fs_wait =
-          pg_aio_fs_wait_one(manager, fs_fd, (Pgu32Ok){0});
+      PgAioEventResult res_fs_wait = pg_aio_fs_wait_one(manager, (Pgu32Ok){0});
       PG_ASSERT(0 == res_fs_wait.err);
+      __builtin_dump_struct(&res_fs_wait, printf);
     }
   }
 #endif
