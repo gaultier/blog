@@ -14,9 +14,6 @@ C_FILES = main.c submodules/cstd/lib.c $(wildcard *.h)
 SANITIZERS = address,undefined
 
 
-compile_flags.txt: 
-	echo $(CFLAGS) | tr ' ' '\n' > $@
-
 
 .PHONY: gen
 gen: main_release.bin
@@ -62,3 +59,8 @@ check:
 	rg '\b[KMGT]ib\b' -t markdown || true
 # Catch empty first line in code block.
 	rg '^\s*```\w+\n\n' -t markdown --multiline || true
+
+
+compile_flags.txt: 
+	echo $(CFLAGS) | tr ' ' '\n' > $@
+
