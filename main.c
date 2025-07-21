@@ -1198,7 +1198,7 @@ int main() {
   }
 #endif
 
-#if 1
+#if 0
   {
     PgFileDescriptorResult res_fs_init = pg_aio_fs_init();
     PG_ASSERT(0 == res_fs_init.err);
