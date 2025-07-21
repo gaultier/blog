@@ -13,6 +13,11 @@ C_FILES = main.c submodules/cstd/lib.c $(wildcard *.h)
 
 SANITIZERS = address,undefined
 
+
+compile_flags.txt: 
+	echo $(CFLAGS) | tr ' ' '\n' > $@
+
+
 .PHONY: gen
 gen: main_release.bin
 	./$<
