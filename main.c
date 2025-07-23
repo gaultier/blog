@@ -193,18 +193,18 @@ static int article_cmp_by_creation_date_desc(const void *a, const void *b) {
 static GitStatSlice git_get_articles_stats(PgAllocator *allocator) {
   PgStringDyn args = {0};
   PG_DYN_ENSURE_CAP(&args, 16, allocator);
-  *PG_DYN_PUSH(&args, allocator) = PG_S("log");
+  PG_DYN_PUSH(&args, PG_S("log"), allocator);
   // Print the date in ISO format.
-  *PG_DYN_PUSH(&args, allocator) = PG_S("--format='%aI'");
+  PG_DYN_PUSH(&args, PG_S("--format='%aI'"), allocator);
   // Ignore merge commits since they do not carry useful information.
-  *PG_DYN_PUSH(&args, allocator) = PG_S("--no-merges");
+  PG_DYN_PUSH(&args, PG_S("--no-merges"), allocator);
   // Only interested in creation, modification, renaming, deletion.
-  *PG_DYN_PUSH(&args, allocator) = PG_S("--diff-filter=AMRD");
+  PG_DYN_PUSH(&args, PG_S("--diff-filter=AMRD"), allocator);
   // Show which modification took place:
   // A: added, M: modified, RXXX: renamed (with percentage score), etc.
-  *PG_DYN_PUSH(&args, allocator) = PG_S("--name-status");
-  *PG_DYN_PUSH(&args, allocator) = PG_S("--reverse");
-  *PG_DYN_PUSH(&args, allocator) = PG_S("*.md");
+  PG_DYN_PUSH(&args, PG_S("--name-status"), allocator);
+  PG_DYN_PUSH(&args, PG_S("--reverse"), allocator);
+  PG_DYN_PUSH(&args, PG_S("*.md"), allocator);
 
   PgProcessSpawnOptions options = {
       .stdout_capture = PG_CHILD_PROCESS_STD_IO_PIPE,
@@ -357,16 +357,16 @@ static PgString datetime_to_date(PgString datetime) {
                                                PgAllocator *allocator) {
   PgStringDyn args = {0};
   PG_DYN_ENSURE_CAP(&args, 16, allocator);
-  *PG_DYN_PUSH(&args, allocator) = PG_S("--validate-utf8");
-  *PG_DYN_PUSH(&args, allocator) = PG_S("-e");
-  *PG_DYN_PUSH(&args, allocator) = PG_S("table");
-  *PG_DYN_PUSH(&args, allocator) = PG_S("-e");
-  *PG_DYN_PUSH(&args, allocator) = PG_S("strikethrough");
-  *PG_DYN_PUSH(&args, allocator) = PG_S("-e");
-  *PG_DYN_PUSH(&args, allocator) = PG_S("footnotes");
-  *PG_DYN_PUSH(&args, allocator) = PG_S("--unsafe");
-  *PG_DYN_PUSH(&args, allocator) = PG_S("-t");
-  *PG_DYN_PUSH(&args, allocator) = PG_S("html");
+  PG_DYN_PUSH(&args, PG_S("--validate-utf8"), allocator);
+  PG_DYN_PUSH(&args, PG_S("-e"), allocator);
+  PG_DYN_PUSH(&args, PG_S("table"), allocator);
+  PG_DYN_PUSH(&args, PG_S("-e"), allocator);
+  PG_DYN_PUSH(&args, PG_S("strikethrough"), allocator);
+  PG_DYN_PUSH(&args, PG_S("-e"), allocator);
+  PG_DYN_PUSH(&args, PG_S("footnotes"), allocator);
+  PG_DYN_PUSH(&args, PG_S("--unsafe"), allocator);
+  PG_DYN_PUSH(&args, PG_S("-t"), allocator);
+  PG_DYN_PUSH(&args, PG_S("html"), allocator);
 
   PgProcessSpawnOptions options = {
       .stdin_capture = PG_CHILD_PROCESS_STD_IO_PIPE,
@@ -625,10 +625,10 @@ static void search_index_feed_document(SearchIndex *search_index,
     } else if (PG_HTML_TOKEN_KIND_TEXT == token.kind) {
       PG_DYN_APPEND_SLICE(&doc.text, pg_string_trim_space(token.text),
                           allocator);
-      *PG_DYN_PUSH(&doc.text, allocator) = ' ';
+      PG_DYN_PUSH(&doc.text, ' ', allocator);
     }
   }
-  *PG_DYN_PUSH(&search_index->documents, allocator) = doc;
+  PG_DYN_PUSH(&search_index->documents, doc, allocator);
 }
 
 static void article_generate_html_file(PgFileDescriptor markdown_file,
@@ -944,7 +944,7 @@ static PgStringSlice articles_by_tag_get_keys(ArticlesByTag table,
       continue;
     }
 
-    *PG_DYN_PUSH(&res, allocator) = key;
+    PG_DYN_PUSH(&res, key, allocator);
   }
 
   qsort(res.data, res.len, sizeof(PgString), pg_string_cmp_qsort);
@@ -970,7 +970,7 @@ static void tags_page_generate(ArticleSlice articles, PgString header,
       ArticleDyn *articles_for_tag =
           articles_by_tag_lohas_valueup(&articles_by_tag, tag);
       PG_DYN_ENSURE_CAP(articles_for_tag, 128, allocator);
-      *PG_DYN_PUSH(articles_for_tag, allocator) = article;
+      PG_DYN_PUSH(articles_for_tag, article, allocator);
     }
   }
   PgStringSlice tags_lexicographically_ordered =
