@@ -84,7 +84,7 @@ static void search_index_serialize_to_file(SearchIndex search_index,
   PgFileDescriptorResult res_file =
       pg_file_open(file_name, PG_FILE_ACCESS_WRITE, 0600, true, allocator);
   PG_ASSERT(0 == res_file.err);
-  PgFileDescriptor file = res_file.res;
+  PgFileDescriptor file = res_file.value;
 
   Pgu8Dyn sb = pg_string_builder_make(50 * PG_MiB, allocator);
   PG_DYN_APPEND_SLICE(&sb, PG_S("const raw_index={documents:["), allocator);
@@ -214,13 +214,13 @@ static GitStatSlice git_get_articles_stats(PgAllocator *allocator) {
       PG_S("git"), PG_DYN_SLICE(PgStringSlice, args), options, allocator);
   PG_ASSERT(0 == res_spawn.err);
 
-  PgProcess process = res_spawn.res;
+  PgProcess process = res_spawn.value;
 
   PgProcessExitResult res_wait =
       pg_process_wait(process, 256 * PG_KiB, 0, allocator);
   PG_ASSERT(0 == res_wait.err);
 
-  PgProcessStatus status = res_wait.res;
+  PgProcessStatus status = res_wait.value;
   PG_ASSERT(0 == status.exit_status);
   PG_ASSERT(0 == status.signal);
   PG_ASSERT(status.exited);
@@ -249,7 +249,7 @@ static GitStatSlice git_get_articles_stats(PgAllocator *allocator) {
     PgString date = {0};
     {
       PgStringCut cut = pg_string_cut_rune(remaining, '\n');
-      if (!cut.ok) { // End.
+      if (!cut.has_value) { // End.
         break;
       }
       remaining = cut.right;
@@ -262,7 +262,7 @@ static GitStatSlice git_get_articles_stats(PgAllocator *allocator) {
     // Empty line.
     {
       PgStringCut cut = pg_string_cut_rune(remaining, '\n');
-      PG_ASSERT(cut.ok);
+      PG_ASSERT(cut.has_value);
       remaining = cut.right;
 
       PG_ASSERT(pg_string_is_empty(cut.left));
@@ -276,7 +276,7 @@ static GitStatSlice git_get_articles_stats(PgAllocator *allocator) {
       }
 
       PgStringCut cut = pg_string_cut_rune(remaining, '\n');
-      if (!cut.ok) {
+      if (!cut.has_value) {
         break;
       }
       PgString line = cut.left;
@@ -291,12 +291,12 @@ static GitStatSlice git_get_articles_stats(PgAllocator *allocator) {
       {
         // Skip the 'action' part.
         cut = pg_string_cut_rune(line, '\t');
-        PG_ASSERT(cut.ok);
+        PG_ASSERT(cut.has_value);
         line = cut.right;
 
         cut = pg_string_cut_rune(line, '\t');
-        path_old = cut.ok ? cut.left : line;
-        path_new = cut.ok ? cut.right : path_old;
+        path_old = cut.has_value ? cut.left : line;
+        path_new = cut.has_value ? cut.right : path_old;
         PG_ASSERT(!pg_string_is_empty(path_old));
         PG_ASSERT(!pg_string_is_empty(path_new));
       }
@@ -349,7 +349,7 @@ static GitStatSlice git_get_articles_stats(PgAllocator *allocator) {
 [[nodiscard]]
 static PgString datetime_to_date(PgString datetime) {
   PgStringCut cut = pg_string_cut_rune(datetime, 'T');
-  return cut.ok ? cut.left : datetime;
+  return cut.has_value ? cut.left : datetime;
 }
 
 [[nodiscard]] static PgString markdown_to_html(PgFileDescriptor markdown_file,
@@ -378,7 +378,7 @@ static PgString datetime_to_date(PgString datetime) {
                        PG_DYN_SLICE(PgStringSlice, args), options, allocator);
   PG_ASSERT(0 == res_spawn.err);
 
-  PgProcess process = res_spawn.res;
+  PgProcess process = res_spawn.value;
 
   Pgu64Result res_markdown_file_size = pg_file_size(markdown_file);
   PG_ASSERT(0 == res_markdown_file_size.err);
@@ -387,14 +387,14 @@ static PgString datetime_to_date(PgString datetime) {
   PG_ASSERT(0 == pg_file_close(process.stdin_pipe));
   process.stdin_pipe.fd = 0;
 
-  u64 markdown_size = res_markdown_file_size.res;
+  u64 markdown_size = res_markdown_file_size.value;
   u64 stdio_size_hint = markdown_size * 5;
 
   PgProcessExitResult res_wait =
       pg_process_wait(process, stdio_size_hint, 0, allocator);
   PG_ASSERT(0 == res_wait.err);
 
-  PgProcessStatus status = res_wait.res;
+  PgProcessStatus status = res_wait.value;
   PG_ASSERT(0 == status.exit_status);
   PG_ASSERT(0 == status.signal);
   PG_ASSERT(status.exited);
@@ -642,7 +642,7 @@ static void article_generate_html_file(PgFileDescriptor markdown_file,
   PgHtmlNodePtrResult res_parse = pg_html_parse(article_html, allocator);
   PG_ASSERT(0 == res_parse.err);
 
-  PgHtmlNode *html_root = res_parse.res;
+  PgHtmlNode *html_root = res_parse.value;
 
   TitleSlice titles = html_collect_titles(html_root, allocator);
 
@@ -698,7 +698,7 @@ static void article_generate_html_file(PgFileDescriptor markdown_file,
     PG_ASSERT(0 == res_html_tokens.err);
 
     PgHtmlTokenSlice html_tokens =
-        PG_DYN_SLICE(PgHtmlTokenSlice, res_html_tokens.res);
+        PG_DYN_SLICE(PgHtmlTokenSlice, res_html_tokens.value);
     search_index_feed_document(search_index, html_tokens, *article, titles,
                                allocator);
   }
@@ -720,7 +720,7 @@ static Article article_generate(PgString header, PgString footer,
   PgFileDescriptorResult res_markdown_file = pg_file_open(
       git_stat.path_rel, PG_FILE_ACCESS_READ, 0600, false, allocator);
   PG_ASSERT(0 == res_markdown_file.err);
-  PgFileDescriptor markdown_file = res_markdown_file.res;
+  PgFileDescriptor markdown_file = res_markdown_file.value;
 
   u8 tmp[1024] = {0};
   PgString markdown_header = {
@@ -730,32 +730,32 @@ static Article article_generate(PgString header, PgString footer,
   Pgu64Result res_markdown_header =
       pg_file_read(markdown_file, markdown_header);
   PG_ASSERT(0 == res_markdown_header.err);
-  markdown_header.len = res_markdown_header.res;
+  markdown_header.len = res_markdown_header.value;
   PG_ASSERT(markdown_header.len > 16);
 
   PG_ASSERT(0 == pg_file_rewind_start(markdown_file));
 
   PgStringCut cut =
       pg_string_cut_string(markdown_header, PG_S(METADATA_DELIMITER));
-  PG_ASSERT(cut.ok);
+  PG_ASSERT(cut.has_value);
   PgString metadata_str = cut.left;
   PG_ASSERT(!pg_string_is_empty(metadata_str));
   u64 metadata_offset = cut.left.len + PG_STATIC_ARRAY_LEN(METADATA_DELIMITER);
 
   cut = pg_string_cut_rune(metadata_str, '\n');
-  PG_ASSERT(cut.ok);
+  PG_ASSERT(cut.has_value);
   PgString metadata_title = cut.left;
   PG_ASSERT(!pg_string_is_empty(metadata_title));
   PgString metadata_tags = cut.right;
   PG_ASSERT(!pg_string_is_empty(metadata_tags));
 
   cut = pg_string_cut_rune(metadata_title, ':');
-  PG_ASSERT(cut.ok);
+  PG_ASSERT(cut.has_value);
   article.title = pg_string_clone(pg_string_trim(cut.right, ' '), allocator);
   PG_ASSERT(!pg_string_is_empty(article.title));
 
   cut = pg_string_cut_rune(metadata_tags, ':');
-  PG_ASSERT(cut.ok);
+  PG_ASSERT(cut.has_value);
   PgString tags_str = cut.right;
   PG_ASSERT(!pg_string_is_empty(tags_str));
 
@@ -764,7 +764,7 @@ static Article article_generate(PgString header, PgString footer,
   PG_DYN_ENSURE_CAP(&tags, 32, allocator);
   for (;;) {
     cut = pg_string_cut_rune(remaining, ',');
-    if (!cut.ok) {
+    if (!cut.has_value) {
       PgString tag = pg_string_trim_space(remaining);
       *PG_DYN_PUSH_WITHIN_CAPACITY(&tags) = pg_string_clone(tag, allocator);
       break;
@@ -885,12 +885,12 @@ static void home_page_generate(ArticleSlice articles, PgString header,
   PgFileDescriptorResult res_markdown_file = pg_file_open(
       markdown_file_path, PG_FILE_ACCESS_READ, 0600, false, allocator);
   PG_ASSERT(0 == res_markdown_file.err);
-  PgString html = markdown_to_html(res_markdown_file.res, 0, allocator);
+  PgString html = markdown_to_html(res_markdown_file.value, 0, allocator);
 
   PgHtmlNodePtrResult res_parse = pg_html_parse(html, allocator);
   PG_ASSERT(0 == res_parse.err);
 
-  PgHtmlNode *html_root = res_parse.res;
+  PgHtmlNode *html_root = res_parse.value;
 
   TitleSlice titles = html_collect_titles(html_root, allocator);
   html_write_decorated_titles(html, &sb, titles, allocator);
@@ -899,7 +899,7 @@ static void home_page_generate(ArticleSlice articles, PgString header,
 
   PG_ASSERT(0 == pg_file_write_full(html_file_path, PG_DYN_SLICE(PgString, sb),
                                     0600, allocator));
-  PG_ASSERT(0 == pg_file_close(res_markdown_file.res));
+  PG_ASSERT(0 == pg_file_close(res_markdown_file.value));
 }
 
 #define HASH_TABLE_EXP 10
@@ -912,7 +912,8 @@ typedef struct {
 } ArticlesByTag;
 
 [[nodiscard]]
-static ArticleDyn *articles_by_tag_lookup(ArticlesByTag *table, PgString key) {
+static ArticleDyn *articles_by_tag_lohas_valueup(ArticlesByTag *table,
+                                                 PgString key) {
   u64 hash = pg_hash_fnv(key);
   u32 mask = (1 << HASH_TABLE_EXP) - 1;
   u32 step = (hash >> (64 - HASH_TABLE_EXP)) | 1;
@@ -967,7 +968,7 @@ static void tags_page_generate(ArticleSlice articles, PgString header,
       PG_ASSERT(!pg_string_is_empty(tag));
 
       ArticleDyn *articles_for_tag =
-          articles_by_tag_lookup(&articles_by_tag, tag);
+          articles_by_tag_lohas_valueup(&articles_by_tag, tag);
       PG_DYN_ENSURE_CAP(articles_for_tag, 128, allocator);
       *PG_DYN_PUSH(articles_for_tag, allocator) = article;
     }
@@ -995,7 +996,7 @@ static void tags_page_generate(ArticleSlice articles, PgString header,
     PG_DYN_APPEND_SLICE(&sb, PG_S("</span><ul>\n"), allocator);
 
     ArticleDyn *articles_for_tag =
-        articles_by_tag_lookup(&articles_by_tag, tag);
+        articles_by_tag_lohas_valueup(&articles_by_tag, tag);
     PG_ASSERT(articles_for_tag->len > 0);
 
     qsort(articles_for_tag->data, articles_for_tag->len, sizeof(Article),
@@ -1120,7 +1121,7 @@ static void http_handler(PgHttpRequest req, PgReader *reader, PgWriter *writer,
            pg_log_c_s("url", pg_url_to_string(req.url, allocator)));
     return;
   }
-  u64 content_length = res_content_length.res;
+  u64 content_length = res_content_length.value;
   Pgu8Slice req_body = pg_bytes_make(content_length, allocator);
   PgError err = pg_reader_read_full(reader, req_body);
   if (err) {
@@ -1221,7 +1222,7 @@ int main() {
 
     for (u64 i = 0; i < 10; i++) {
       PgAioEventResult res_fs_wait =
-          pg_aio_fs_wait_one(manager, (Pgu32Ok){0}, allocator);
+          pg_aio_fs_wait_one(manager, (Pgu32Option){0}, allocator);
       PG_ASSERT(0 == res_fs_wait.err);
       PgAioEvent ev = res_fs_wait.res;
       printf("%u %.*s\n", ev.kind, (i32)ev.name.len, ev.name.data);
@@ -1232,12 +1233,12 @@ int main() {
   PgStringResult res_header =
       pg_file_read_full_from_path(PG_S("header.html"), allocator);
   PG_ASSERT(0 == res_header.err);
-  PgString header = res_header.res;
+  PgString header = res_header.value;
 
   PgStringResult res_footer =
       pg_file_read_full_from_path(PG_S("footer.html"), allocator);
   PG_ASSERT(0 == res_footer.err);
-  PgString footer = res_footer.res;
+  PgString footer = res_footer.value;
 
   SearchIndex search_index = {0};
   ArticleSlice articles =
