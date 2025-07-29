@@ -199,6 +199,37 @@ See all SQL queries:
 ```
  sudo dtrace -n 'pid$target::github.com?ory?pop?v6.Query.ToSQL:return {printf("%s\n", stringof(copyin(arg1,arg0)))}' -c './code.test -test.count=1 -test.v -test.run=Recovery' 
 ```
+- JS rand:
+```js
+const count = parseInt(process.argv[2])
+
+for (let i=0;i<count;i++){
+  const s = Math.random().toString(36);
+  const n = parseInt(s.slice(2), 36)
+  console.log(n);
+}
+
+```
+
+```js
+const crypto = require('crypto');
+
+const count = parseInt(process.argv[2])
+
+
+for (let i=0;i<count;i++){
+  const randomBytes = new Uint8Array(4);
+  crypto.getRandomValues(randomBytes)
+  const n = randomBytes[0] | (randomBytes[1]<<8) | (randomBytes[2]<<16) | (randomBytes[3]<<24)
+  console.log(n);
+}
+```
+
+```gnuplot
+set terminal pngcairo size 800,600 enhanced font 'Arial,10' 
+set output 'rand.png'
+plot '~/scratch/rand.txt' with dots
+```
 
 ## Blog implementation
 
