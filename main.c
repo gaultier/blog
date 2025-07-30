@@ -45,8 +45,8 @@ struct Title {
   // the counter distinguishes them.
   u32 counter;
 };
-PG_DYN(Title) TitleDyn;
-PG_SLICE(Title) TitleSlice;
+PG_DYN_DECL(Title) TitleDyn;
+PG_SLICE_DECL(Title) TitleSlice;
 
 typedef struct {
   PgString html_file_name;
@@ -54,14 +54,14 @@ typedef struct {
   PgStringSlice tags;
   PgString creation_date, modification_date;
 } Article;
-PG_DYN(Article) ArticleDyn;
-PG_SLICE(Article) ArticleSlice;
+PG_DYN_DECL(Article) ArticleDyn;
+PG_SLICE_DECL(Article) ArticleSlice;
 
 typedef struct {
   PgString creation_date, modification_date, path_rel;
 } GitStat;
-PG_SLICE(GitStat) GitStatSlice;
-PG_DYN(GitStat) GitStatDyn;
+PG_SLICE_DECL(GitStat) GitStatSlice;
+PG_DYN_DECL(GitStat) GitStatDyn;
 
 typedef struct {
   PgString html_file_name;
@@ -70,7 +70,7 @@ typedef struct {
   Pgu32Dyn title_text_offsets;
   Pgu8Dyn text;
 } SearchDocument;
-PG_DYN(SearchDocument) SearchDocumentDyn;
+PG_DYN_DECL(SearchDocument) SearchDocumentDyn;
 
 typedef struct {
   SearchDocumentDyn documents;
