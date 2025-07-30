@@ -113,7 +113,7 @@ static void search_index_serialize_to_file(SearchIndex search_index,
     {
       PG_DYN_APPEND_SLICE(&sb, PG_S("text:\""), allocator);
       pg_string_builder_append_js_string_escaped(
-          &sb, PG_DYN_SLICE(PgString, doc.text), allocator);
+          &sb, PG_DYN_TO_SLICE(PgString, doc.text), allocator);
       PG_DYN_APPEND_SLICE(&sb, PG_S("\",\n"), allocator);
     }
 
@@ -157,7 +157,7 @@ static void search_index_serialize_to_file(SearchIndex search_index,
   PG_DYN_APPEND_SLICE(&sb, PG_S("export default { raw_index };"), allocator);
 
   PG_ASSERT(0 == pg_file_write_full_with_descriptor(
-                     file, PG_DYN_SLICE(PgString, sb)));
+                     file, PG_DYN_TO_SLICE(PgString, sb)));
 
   PG_ASSERT(0 == pg_file_close(file));
 }
@@ -213,7 +213,7 @@ static PG_SLICE(GitStat) git_get_articles_stats(PgAllocator *allocator) {
   };
   PG_RESULT(PgProcess)
   res_spawn = pg_process_spawn(
-      PG_S("git"), PG_DYN_SLICE(PG_SLICE(PgString), args), options, allocator);
+      PG_S("git"), PG_DYN_TO_SLICE(PG_SLICE(PgString), args), options, allocator);
   PG_ASSERT(0 == res_spawn.err);
 
   PgProcess process = res_spawn.value;
@@ -305,7 +305,7 @@ static PG_SLICE(GitStat) git_get_articles_stats(PgAllocator *allocator) {
 
       if ('D' == action) {
         i64 idx = git_stats_find_by_path_rel(
-            PG_DYN_SLICE(PG_SLICE(GitStat), stats), path_old);
+            PG_DYN_TO_SLICE(PG_SLICE(GitStat), stats), path_old);
         PG_ASSERT(idx >= 0);
         PG_SLICE_SWAP_REMOVE(&stats, idx);
         continue;
@@ -313,7 +313,7 @@ static PG_SLICE(GitStat) git_get_articles_stats(PgAllocator *allocator) {
 
       if ('R' == action) {
         i64 idx = git_stats_find_by_path_rel(
-            PG_DYN_SLICE(PG_SLICE(GitStat), stats), path_old);
+            PG_DYN_TO_SLICE(PG_SLICE(GitStat), stats), path_old);
         PG_ASSERT(idx >= 0);
         PG_SLICE_SWAP_REMOVE(&stats, idx);
 
@@ -322,7 +322,7 @@ static PG_SLICE(GitStat) git_get_articles_stats(PgAllocator *allocator) {
 
       // TODO: upsert entry.
       i64 idx = git_stats_find_by_path_rel(
-          PG_DYN_SLICE(PG_SLICE(GitStat), stats), path_new);
+          PG_DYN_TO_SLICE(PG_SLICE(GitStat), stats), path_new);
       if (-1 == idx) {
         GitStat new_entry = {
             .creation_date = date,
@@ -345,7 +345,7 @@ static PG_SLICE(GitStat) git_get_articles_stats(PgAllocator *allocator) {
     }
   }
 
-  return PG_DYN_SLICE(PG_SLICE(GitStat), stats);
+  return PG_DYN_TO_SLICE(PG_SLICE(GitStat), stats);
 }
 
 [[nodiscard]]
@@ -378,7 +378,7 @@ static PgString datetime_to_date(PgString datetime) {
   PG_RESULT(PgProcess)
   res_spawn = pg_process_spawn(
       PG_S("./submodules/cmark-gfm/build/src/cmark-gfm"),
-      PG_DYN_SLICE(PG_SLICE(PgString), args), options, allocator);
+      PG_DYN_TO_SLICE(PG_SLICE(PgString), args), options, allocator);
   PG_ASSERT(0 == res_spawn.err);
 
   PgProcess process = res_spawn.value;
@@ -499,7 +499,7 @@ static PG_SLICE(Title)
   }
   PG_ASSERT(nullptr == title_root->next_sibling);
 
-  return PG_DYN_SLICE(PG_SLICE(Title), titles);
+  return PG_DYN_TO_SLICE(PG_SLICE(Title), titles);
 }
 
 static void html_write_title_link(PG_DYN(u8) * sb, Title title,
@@ -694,14 +694,14 @@ static void article_generate_html_file(PgFileDescriptor markdown_file,
 
   PG_DYN_APPEND_SLICE(&sb, PG_S(BACK_LINK), allocator);
   PG_DYN_APPEND_SLICE(&sb, footer, allocator);
-  PgString html = PG_DYN_SLICE(PgString, sb);
+  PgString html = PG_DYN_TO_SLICE(PgString, sb);
   {
     PG_RESULT(PG_DYN(PgHtmlToken))
     res_html_tokens = pg_html_tokenize(article_html, allocator);
     PG_ASSERT(0 == res_html_tokens.err);
 
     PG_SLICE(PgHtmlToken)
-    html_tokens = PG_DYN_SLICE(PG_SLICE(PgHtmlToken), res_html_tokens.value);
+    html_tokens = PG_DYN_TO_SLICE(PG_SLICE(PgHtmlToken), res_html_tokens.value);
     search_index_feed_document(search_index, html_tokens, *article, titles,
                                allocator);
   }
@@ -780,7 +780,7 @@ static Article article_generate(PgString header, PgString footer,
     *PG_DYN_PUSH_WITHIN_CAPACITY(&tags) = pg_string_clone(tag, allocator);
   }
   PG_ASSERT(tags.len > 0);
-  article.tags = PG_DYN_SLICE(PG_SLICE(PgString), tags);
+  article.tags = PG_DYN_TO_SLICE(PG_SLICE(PgString), tags);
 
   PgString stem = pg_path_stem(git_stat.path_rel);
   article.html_file_name = pg_string_concat(stem, PG_S(".html"), allocator);
@@ -828,7 +828,7 @@ static PG_SLICE(Article)
     *PG_DYN_PUSH_WITHIN_CAPACITY(&articles) = article;
   }
 
-  return PG_DYN_SLICE(PG_SLICE(Article), articles);
+  return PG_DYN_TO_SLICE(PG_SLICE(Article), articles);
 }
 
 static void home_page_generate(PG_SLICE(Article) articles, PgString header,
@@ -902,7 +902,7 @@ static void home_page_generate(PG_SLICE(Article) articles, PgString header,
 
   PG_DYN_APPEND_SLICE(&sb, footer, allocator);
 
-  PG_ASSERT(0 == pg_file_write_full(html_file_path, PG_DYN_SLICE(PgString, sb),
+  PG_ASSERT(0 == pg_file_write_full(html_file_path, PG_DYN_TO_SLICE(PgString, sb),
                                     0600, allocator));
   PG_ASSERT(0 == pg_file_close(res_markdown_file.value));
 }
@@ -954,7 +954,7 @@ static PG_SLICE(PgString)
 
   qsort(res.data, res.len, sizeof(PgString), pg_string_cmp_qsort);
 
-  return PG_DYN_SLICE(PG_SLICE(PgString), res);
+  return PG_DYN_TO_SLICE(PG_SLICE(PgString), res);
 }
 
 static void tags_page_generate(PG_SLICE(Article) articles, PgString header,
@@ -1040,7 +1040,7 @@ static void tags_page_generate(PG_SLICE(Article) articles, PgString header,
   PG_DYN_APPEND_SLICE(&sb, footer, allocator);
 
   PgString html_file_name = PG_S("articles-by-tag.html");
-  PG_ASSERT(0 == pg_file_write_full(html_file_name, PG_DYN_SLICE(PgString, sb),
+  PG_ASSERT(0 == pg_file_write_full(html_file_name, PG_DYN_TO_SLICE(PgString, sb),
                                     0600, allocator));
 }
 
@@ -1103,7 +1103,7 @@ static void rss_generate(PG_SLICE(Article) articles, PgAllocator *allocator) {
   PG_DYN_APPEND_SLICE(&sb, PG_S("</feed>"), allocator);
 
   PG_ASSERT(0 == pg_file_write_full(PG_S("feed.xml"),
-                                    PG_DYN_SLICE(PgString, sb), 0600,
+                                    PG_DYN_TO_SLICE(PgString, sb), 0600,
                                     allocator));
 }
 
@@ -1119,7 +1119,7 @@ static void http_handler(PgHttpRequest req, PgReader *reader, PgWriter *writer,
          pg_log_c_s("url", pg_url_to_string(req.url, allocator)));
 
   Pgu64Result res_content_length = pg_http_content_length(
-      PG_DYN_SLICE(PG_SLICE(PgStringKeyValue), req.headers));
+      PG_DYN_TO_SLICE(PG_SLICE(PgStringKeyValue), req.headers));
   if (res_content_length.err) {
     pg_log(logger, PG_LOG_LEVEL_ERROR, "http handler: invalid content length",
            pg_log_c_u64("headers_count", req.headers.len),
