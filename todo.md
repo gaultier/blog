@@ -212,6 +212,15 @@ for (let i=0;i<count;i++){
 ```
 
 ```js
+const count = parseInt(process.argv[2])
+
+for (let i=0;i<count;i++){
+  const n = Math.random();
+  console.log(n);
+}
+```
+
+```js
 const crypto = require('crypto');
 
 const count = parseInt(process.argv[2])
