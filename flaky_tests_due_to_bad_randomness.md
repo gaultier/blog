@@ -67,7 +67,7 @@ set output 'rand.png'
 plot '~/scratch/rand.txt' with dots
 ```
 
-We run our scripts:
+We run our scripts for 10k values:
 
 ```sh
 $ node rand.js 10000 > ~/scratch/rand.txt
@@ -79,7 +79,31 @@ And we get:
 
 ![10 thousand random values with Math.random().toString(36)](js_rand_bad.png)
 
+*If there is only one column, Gnuplot uses the values from the file, one per line, for the Y axis by default, and their position in the input, meaning the line number, for the X axis.*
+
 That's bad randomness: there is a heavy bias towards lower values. What we would hope for is a well dispersed cloud of points, with no discernable clusters.
+
+Another visualisation often used in this space is a randomgram: we plot each consecutive pair of values produced by the generator as a `(x,y)` point. Let's try that:
+
+```js
+const count = parseInt(process.argv[2])
+
+let n1=parseInt(Math.random().toString(36).slice(2), 36)
+let n2=0
+
+for (let i = 1 ; i < count; i++){
+  const s2 = Math.random().toString(36);
+  n2 = parseInt(s2.slice(2), 36)
+
+  console.log(n1, n2)
+
+  n1 = n2
+}
+```
+
+
+![10 thousand random values with Math.random(), randomgram](randomgram_bad.png)
+
 
 Is it due to the underlying implementation of `Math.random` ? Let's try just `Math.random` then:
 
@@ -97,7 +121,13 @@ for (let i = 0 ; i < count; i++){
 }
 ```
 
+2D:
+
 ![10 thousand random values with Math.random()](rand_math.png)
+
+1D: 
+
+![10 thousand random values with Math.random()](rand_math_1d.png)
 
 Oh, that's much better! So what's going on? Well, `Math.random()` essentially generates a random `uint32`. It then converts it as float number between 0 (inclusive) and 1 (exclusive). The distribution is of reasonable quality. But `.toString(36)` makes it significantly worse.I am not sure exactly why, but the [docs](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number/toString) for `Number.toString` mention:
 
@@ -107,7 +137,7 @@ And the [implementation](https://github.com/v8/v8/blob/main/src/numbers/conversi
 
 ## The fix
 
-So what can we do? Recent Javascript version have added the `crypto` package with a cryptographically secure random generator. This should be good enough for us. Let's try that. We generate 4 random bytes and convert them to a `uint32`, to be as close as possible to `Math.random()` for our comparison:
+So what can we do? Recent Javascript version have added the `crypto` package with a cryptographically secure random generator. This should be good enough for us. Let's try that. We generate 4 random bytes and convert them to a `uint32` (we arbitrarily choose to interpret these bytes in a little-endian manner), to be as close as possible to `Math.random()` for our comparison:
 
 ```js
 const crypto = require('crypto');
@@ -145,4 +175,4 @@ Note for our use case, the fact that this is cryptographically secure is irrelev
 
 ## Conclusion
 
-My take away: a good random generator is invisible, a bad one is a door open to enigmatic bugs. When in doubt, plot the data. If the naked eye can discern clusters, a better random generator is needed. Also, floats always make everything harder. If you can deal with bytes, integers, and direct OS APIs, it's much simpler.
+My take away: a good random generator is invisible, a bad one is a door open to enigmatic issues. When in doubt, plot the data. If the naked eye can discern clusters, a better random generator is needed. Also, floats always make everything harder. If you can deal with bytes, integers, and direct OS APIs, it's much simpler.

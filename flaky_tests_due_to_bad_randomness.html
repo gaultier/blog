@@ -140,14 +140,31 @@ for (let i = 0 ; i &lt; count; i++){
 set output 'rand.png'
 plot '~/scratch/rand.txt' with dots
 </code></pre>
-<p>We run our scripts:</p>
+<p>We run our scripts for 10k values:</p>
 <pre><code class="language-sh">$ node rand.js 10000 &gt; ~/scratch/rand.txt
 $ gnuplot rand.gp
 $ open rand.png
 </code></pre>
 <p>And we get:</p>
 <p><img src="js_rand_bad.png" alt="10 thousand random values with Math.random().toString(36)" /></p>
+<p><em>If there is only one column, Gnuplot uses the values from the file, one per line, for the Y axis by default, and their position in the input, meaning the line number, for the X axis.</em></p>
 <p>That's bad randomness: there is a heavy bias towards lower values. What we would hope for is a well dispersed cloud of points, with no discernable clusters.</p>
+<p>Another visualisation often used in this space is a randomgram: we plot each consecutive pair of values produced by the generator as a <code>(x,y)</code> point. Let's try that:</p>
+<pre><code class="language-js">const count = parseInt(process.argv[2])
+
+let n1=parseInt(Math.random().toString(36).slice(2), 36)
+let n2=0
+
+for (let i = 1 ; i &lt; count; i++){
+  const s2 = Math.random().toString(36);
+  n2 = parseInt(s2.slice(2), 36)
+
+  console.log(n1, n2)
+
+  n1 = n2
+}
+</code></pre>
+<p><img src="randomgram_bad.png" alt="10 thousand random values with Math.random(), randomgram" /></p>
 <p>Is it due to the underlying implementation of <code>Math.random</code> ? Let's try just <code>Math.random</code> then:</p>
 <p>Try it by clicking this button:</p>
 <p><button class="random" id="random-values-math-random" onClick="document.getElementById('random-values-math-random').innerText=Math.random()" style="width:15rem; margin: 0 auto; display: block">Generate random value</button></p>
@@ -158,7 +175,10 @@ for (let i = 0 ; i &lt; count; i++){
   console.log(n);
 }
 </code></pre>
+<p>2D:</p>
 <p><img src="rand_math.png" alt="10 thousand random values with Math.random()" /></p>
+<p>1D:</p>
+<p><img src="rand_math_1d.png" alt="10 thousand random values with Math.random()" /></p>
 <p>Oh, that's much better! So what's going on? Well, <code>Math.random()</code> essentially generates a random <code>uint32</code>. It then converts it as float number between 0 (inclusive) and 1 (exclusive). The distribution is of reasonable quality. But <code>.toString(36)</code> makes it significantly worse.I am not sure exactly why, but the <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number/toString">docs</a> for <code>Number.toString</code> mention:</p>
 <blockquote>
 <p>However, the toString() method doesn't directly use this most precise representation of the number value. Rather, the algorithm uses the least number of significant figures necessary to distinguish the output from adjacent number values.</p>
@@ -168,7 +188,7 @@ for (let i = 0 ; i &lt; count; i++){
   <a class="title" href="#the-fix">The fix</a>
   <a class="hash-anchor" href="#the-fix" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
-<p>So what can we do? Recent Javascript version have added the <code>crypto</code> package with a cryptographically secure random generator. This should be good enough for us. Let's try that. We generate 4 random bytes and convert them to a <code>uint32</code>, to be as close as possible to <code>Math.random()</code> for our comparison:</p>
+<p>So what can we do? Recent Javascript version have added the <code>crypto</code> package with a cryptographically secure random generator. This should be good enough for us. Let's try that. We generate 4 random bytes and convert them to a <code>uint32</code> (we arbitrarily choose to interpret these bytes in a little-endian manner), to be as close as possible to <code>Math.random()</code> for our comparison:</p>
 <pre><code class="language-js">const crypto = require('crypto');
 
 const count = parseInt(process.argv[2])
@@ -195,7 +215,7 @@ for (let i = 0 ; i &lt; count; i++){
   <a class="title" href="#conclusion">Conclusion</a>
   <a class="hash-anchor" href="#conclusion" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
-<p>My take away: a good random generator is invisible, a bad one is a door open to enigmatic bugs. When in doubt, plot the data. If the naked eye can discern clusters, a better random generator is needed. Also, floats always make everything harder. If you can deal with bytes, integers, and direct OS APIs, it's much simpler.</p>
+<p>My take away: a good random generator is invisible, a bad one is a door open to enigmatic issues. When in doubt, plot the data. If the naked eye can discern clusters, a better random generator is needed. Also, floats always make everything harder. If you can deal with bytes, integers, and direct OS APIs, it's much simpler.</p>
 <p><a href="/blog"> ⏴ Back to all articles</a></p>
 
 <blockquote id="donate">
