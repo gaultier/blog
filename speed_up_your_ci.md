@@ -64,7 +64,7 @@ In no particular order:
 
 ## Miscellenaous tricks
 
-- Use `sed` to quickly edit big files in place. E.g.: you want to insert a line at the top of a Javascript file to skip linter warnings. Instead of doing: 
+- Use `sed` to quickly edit big files in place. E.g.: you want to insert a line at the top of a JavaScript file to skip linter warnings. Instead of doing: 
     ```shell
     $ printf '/* eslint-disable */\n\n' | cat - foo.js > foo_tmp && mv foo_tmp foo.js
     ```

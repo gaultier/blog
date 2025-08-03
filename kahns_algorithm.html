@@ -341,8 +341,8 @@ Note that this algorithm is not capable by itself to point out which cycle there
   <a class="title" href="#implementation">Implementation</a>
   <a class="hash-anchor" href="#implementation" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
-<p>I implemented this at the time in Go, but I will use for this article the lingua franca of the 2010s, Javascript.</p>
-<p><em>I don't write Javascript these days, I stopped many years ago, so apologies in advance if I am not using all the bells and whistles of 'Modern Javascript', or if the code is not quite idiomatic.</em></p>
+<p>I implemented this at the time in Go, but I will use for this article the lingua franca of the 2010s, JavaScript.</p>
+<p><em>I don't write JavaScript these days, I stopped many years ago, so apologies in advance if I am not using all the bells and whistles of 'Modern JavaScript', or if the code is not quite idiomatic.</em></p>
 <p>First, we define our adjacency matrix and the list of nodes. This is the naive format. We would get the nodes and edges in some format, for example JSON, in the API, and build the adjacency matrix, which is trivial. Let's take the very first example, the (valid) tree  of employees:</p>
 <pre><code class="language-js">const adjacencyMatrix = [
   [0, 0, 1, 0, 0, 0],
