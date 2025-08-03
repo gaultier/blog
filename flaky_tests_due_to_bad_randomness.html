@@ -115,8 +115,8 @@ const account = createAccount(email, accountName)
 }
 </code></pre>
 <p>Note: <code>.toString(36)</code> formats the number in base 36 (<code>a-zA-Z0-9</code>).</p>
-<p>Try it:</p>
-<p><button id="random-values" onClick="document.getElementById('random-values').innerText=Math.random().toString(36)" style="width:10rem">Generate random value</button></p>
+<p>Try it by clicking this button:</p>
+<p><button id="random-values-math-random-to-string-36" onClick="document.getElementById('random-values-math-random-to-string-36').innerText=Math.random().toString(36)" style="width:15rem; margin: 0 auto; display: block">Generate random value</button></p>
 <p>All the random functions were some variant of this. Hmm, how good is <code>Math.random</code>? It used to be pretty <a href="https://v8.dev/blog/math-random">bad</a> but it then got better.</p>
 <p>I thought, if this is the issue, then the fix should be quite simple and all tests would benefit from that fix.</p>
 <p>One of the best advice I heard in the field of Software Engineering is:</p>
@@ -149,6 +149,8 @@ $ open rand.png
 <p><img src="js_rand_bad.png" alt="10 thousand random values with Math.random().toString(36)" /></p>
 <p>That's bad randomness: there is a heavy bias towards lower values. What we would hope for is a well dispersed cloud of points, with no discernable clusters.</p>
 <p>Is it due to the underlying implementation of <code>Math.random</code> ? Let's try just <code>Math.random</code> then:</p>
+<p>Try it by clicking this button:</p>
+<p><button id="random-values-math-random" onClick="document.getElementById('random-values-math-random').innerText=Math.random()" style="width:15rem; margin: 0 auto; display: block">Generate random value</button></p>
 <pre><code class="language-js">const count = parseInt(process.argv[2])
 
 for (let i = 0 ; i &lt; count; i++){
@@ -185,6 +187,8 @@ for (let i = 0 ; i &lt; count; i++){
   return crypto.randomUUID() + '@ory.sh'
 }
 </code></pre>
+<p>Try it by clicking this button:</p>
+<p><button id="random-values-crypto" onClick="document.getElementById('random-values-crypto').innerText=crypto.randomUUID()+'@ory.sh'" style="width:20; margin: 0 auto; display: block">Generate random value</button></p>
 <h2 id="conclusion">
   <a class="title" href="#conclusion">Conclusion</a>
   <a class="hash-anchor" href="#conclusion" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>

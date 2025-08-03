@@ -30,9 +30,9 @@ function generateRandomEmail() {
 
 Note: `.toString(36)` formats the number in base 36 (`a-zA-Z0-9`).
 
-Try it: 
+Try it by clicking this button: 
 
-<button id="random-values" onClick="document.getElementById('random-values').innerText=Math.random().toString(36)" style="width:10rem">Generate random value</button>
+<button id="random-values-math-random-to-string-36" onClick="document.getElementById('random-values-math-random-to-string-36').innerText=Math.random().toString(36)" style="width:15rem; margin: 0 auto; display: block">Generate random value</button>
 
 All the random functions were some variant of this. Hmm, how good is `Math.random`? It used to be pretty [bad](https://v8.dev/blog/math-random) but it then got better.
 
@@ -83,6 +83,11 @@ That's bad randomness: there is a heavy bias towards lower values. What we would
 
 Is it due to the underlying implementation of `Math.random` ? Let's try just `Math.random` then:
 
+
+Try it by clicking this button: 
+
+<button id="random-values-math-random" onClick="document.getElementById('random-values-math-random').innerText=Math.random()" style="width:15rem; margin: 0 auto; display: block">Generate random value</button>
+
 ```js
 const count = parseInt(process.argv[2])
 
@@ -130,6 +135,10 @@ function generateRandomEmail() {
   return crypto.randomUUID() + '@ory.sh'
 }
 ```
+
+Try it by clicking this button: 
+
+<button id="random-values-crypto" onClick="document.getElementById('random-values-crypto').innerText=crypto.randomUUID()+'@ory.sh'" style="width:20; margin: 0 auto; display: block">Generate random value</button>
 
 ## Conclusion
 

@@ -2,7 +2,7 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
 <title>Philippe Gaultier's blog</title>
 <link href="https://gaultier.github.io/blog"/>
-<updated>2025-08-03T16:21:26+02:00</updated>
+<updated>2025-08-03T16:40:52+02:00</updated>
 <author>
 <name>Philippe Gaultier</name>
 </author>
@@ -292,7 +292,7 @@
 <title>Flaky tests due to bad randomness?</title>
 <link href="https://gaultier.github.io/blog/flaky_tests_due_to_bad_randomness.html"/>
 <id>urn:uuid:c8d2db72-04c8-5cec-aaea-c28c66914e40</id>
-<updated>2025-08-03T16:21:26+02:00</updated>
+<updated>2025-08-03T16:40:52+02:00</updated>
 <published>2025-08-03T16:21:26+02:00</published>
 </entry>
 </feed>
