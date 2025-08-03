@@ -2,7 +2,7 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
 <title>Philippe Gaultier's blog</title>
 <link href="https://gaultier.github.io/blog"/>
-<updated>2025-07-08T09:52:29+02:00</updated>
+<updated>2025-08-03T16:21:26+02:00</updated>
 <author>
 <name>Philippe Gaultier</name>
 </author>
@@ -28,7 +28,7 @@
 <title>Adventures in CI land, or how to speed up your CI</title>
 <link href="https://gaultier.github.io/blog/speed_up_your_ci.html"/>
 <id>urn:uuid:4663e8ea-73ab-56ef-9dc5-8dbb4743d84a</id>
-<updated>2025-07-07T21:14:38+02:00</updated>
+<updated>2025-08-03T16:05:09+02:00</updated>
 <published>2020-09-21T08:37:07+02:00</published>
 </entry>
 
@@ -44,7 +44,7 @@
 <title>Cycle detection in graphs does not have to be hard: A lesser known, simple way with Kahn&#39;s algorithm</title>
 <link href="https://gaultier.github.io/blog/kahns_algorithm.html"/>
 <id>urn:uuid:665ef523-5c28-5dad-8582-587bfea27205</id>
-<updated>2025-07-07T21:09:49+02:00</updated>
+<updated>2025-08-03T16:05:09+02:00</updated>
 <published>2023-06-03T09:20:51+02:00</published>
 </entry>
 
@@ -286,5 +286,13 @@
 <id>urn:uuid:f88592d4-3a30-5f83-aea7-ec456edbc848</id>
 <updated>2025-07-08T09:52:29+02:00</updated>
 <published>2025-07-01T19:20:47+02:00</published>
+</entry>
+
+<entry>
+<title>Flaky tests due to bad randomness?</title>
+<link href="https://gaultier.github.io/blog/flaky_tests_due_to_bad_randomness.html"/>
+<id>urn:uuid:c8d2db72-04c8-5cec-aaea-c28c66914e40</id>
+<updated>2025-08-03T16:21:26+02:00</updated>
+<published>2025-08-03T16:21:26+02:00</published>
 </entry>
 </feed>
