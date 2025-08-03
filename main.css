@@ -1,3 +1,14 @@
+button.random {
+  padding: .5rem;
+  background-color: #FB8C00;
+  color: white;
+  border: 0;
+}
+
+button:hover {
+  opacity: 75%;
+}
+
 input {
   padding: .3rem;
   margin: auto;

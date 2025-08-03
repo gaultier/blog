@@ -32,7 +32,7 @@ Note: `.toString(36)` formats the number in base 36 (`a-zA-Z0-9`).
 
 Try it by clicking this button: 
 
-<button id="random-values-math-random-to-string-36" onClick="document.getElementById('random-values-math-random-to-string-36').innerText=Math.random().toString(36)" style="width:15rem; margin: 0 auto; display: block">Generate random value</button>
+<button class="random" id="random-values-math-random-to-string-36" onClick="document.getElementById('random-values-math-random-to-string-36').innerText=Math.random().toString(36)" style="width:15rem; margin: 0 auto; display: block">Generate random value</button>
 
 All the random functions were some variant of this. Hmm, how good is `Math.random`? It used to be pretty [bad](https://v8.dev/blog/math-random) but it then got better.
 
@@ -86,7 +86,7 @@ Is it due to the underlying implementation of `Math.random` ? Let's try just `Ma
 
 Try it by clicking this button: 
 
-<button id="random-values-math-random" onClick="document.getElementById('random-values-math-random').innerText=Math.random()" style="width:15rem; margin: 0 auto; display: block">Generate random value</button>
+<button class="random" id="random-values-math-random" onClick="document.getElementById('random-values-math-random').innerText=Math.random()" style="width:15rem; margin: 0 auto; display: block">Generate random value</button>
 
 ```js
 const count = parseInt(process.argv[2])
@@ -128,7 +128,7 @@ The result?
 
 Looks good.
 
-We can thus use this approach in our original functions to generate random strings. The easiest way is to use `crypto.randomUUID()` which generates a random v4 UUID with the cryptographically secure random generator:
+We can thus use this approach in our original functions to generate random strings. The easiest way is to use `crypto.randomUUID()` which generates a random v4 UUID with a cryptographically secure random generator:
 
 ```js
 function generateRandomEmail() {
@@ -138,7 +138,9 @@ function generateRandomEmail() {
 
 Try it by clicking this button: 
 
-<button id="random-values-crypto" onClick="document.getElementById('random-values-crypto').innerText=crypto.randomUUID()+'@ory.sh'" style="width:20; margin: 0 auto; display: block">Generate random value</button>
+<button class="random" id="random-values-crypto" onClick="document.getElementById('random-values-crypto').innerText=crypto.randomUUID()+'@ory.sh'" style="width:20; margin: 0 auto; display: block">Generate random value</button>
+
+Note for our use case, the fact that this is cryptographically secure is irrelevant. 'cryptographically secure' means that future values cannot be predicted based on the observation of past values. In the context of test values, we do not care about this property. It's just that this API is the most flexible, does not constrain us to deal with floats, and most ressembles the underlying OS APIs (`arc4random`, `/dev/random`, etc).
 
 ## Conclusion
 

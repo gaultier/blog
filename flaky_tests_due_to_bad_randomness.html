@@ -116,7 +116,7 @@ const account = createAccount(email, accountName)
 </code></pre>
 <p>Note: <code>.toString(36)</code> formats the number in base 36 (<code>a-zA-Z0-9</code>).</p>
 <p>Try it by clicking this button:</p>
-<p><button id="random-values-math-random-to-string-36" onClick="document.getElementById('random-values-math-random-to-string-36').innerText=Math.random().toString(36)" style="width:15rem; margin: 0 auto; display: block">Generate random value</button></p>
+<p><button class="random" id="random-values-math-random-to-string-36" onClick="document.getElementById('random-values-math-random-to-string-36').innerText=Math.random().toString(36)" style="width:15rem; margin: 0 auto; display: block">Generate random value</button></p>
 <p>All the random functions were some variant of this. Hmm, how good is <code>Math.random</code>? It used to be pretty <a href="https://v8.dev/blog/math-random">bad</a> but it then got better.</p>
 <p>I thought, if this is the issue, then the fix should be quite simple and all tests would benefit from that fix.</p>
 <p>One of the best advice I heard in the field of Software Engineering is:</p>
@@ -150,7 +150,7 @@ $ open rand.png
 <p>That's bad randomness: there is a heavy bias towards lower values. What we would hope for is a well dispersed cloud of points, with no discernable clusters.</p>
 <p>Is it due to the underlying implementation of <code>Math.random</code> ? Let's try just <code>Math.random</code> then:</p>
 <p>Try it by clicking this button:</p>
-<p><button id="random-values-math-random" onClick="document.getElementById('random-values-math-random').innerText=Math.random()" style="width:15rem; margin: 0 auto; display: block">Generate random value</button></p>
+<p><button class="random" id="random-values-math-random" onClick="document.getElementById('random-values-math-random').innerText=Math.random()" style="width:15rem; margin: 0 auto; display: block">Generate random value</button></p>
 <pre><code class="language-js">const count = parseInt(process.argv[2])
 
 for (let i = 0 ; i &lt; count; i++){
@@ -182,13 +182,14 @@ for (let i = 0 ; i &lt; count; i++){
 <p>The result?</p>
 <p><img src="js_rand_good.png" alt="10 thousand random values with crypto" /></p>
 <p>Looks good.</p>
-<p>We can thus use this approach in our original functions to generate random strings. The easiest way is to use <code>crypto.randomUUID()</code> which generates a random v4 UUID with the cryptographically secure random generator:</p>
+<p>We can thus use this approach in our original functions to generate random strings. The easiest way is to use <code>crypto.randomUUID()</code> which generates a random v4 UUID with a cryptographically secure random generator:</p>
 <pre><code class="language-js">function generateRandomEmail() {
   return crypto.randomUUID() + '@ory.sh'
 }
 </code></pre>
 <p>Try it by clicking this button:</p>
-<p><button id="random-values-crypto" onClick="document.getElementById('random-values-crypto').innerText=crypto.randomUUID()+'@ory.sh'" style="width:20; margin: 0 auto; display: block">Generate random value</button></p>
+<p><button class="random" id="random-values-crypto" onClick="document.getElementById('random-values-crypto').innerText=crypto.randomUUID()+'@ory.sh'" style="width:20; margin: 0 auto; display: block">Generate random value</button></p>
+<p>Note for our use case, the fact that this is cryptographically secure is irrelevant. 'cryptographically secure' means that future values cannot be predicted based on the observation of past values. In the context of test values, we do not care about this property. It's just that this API is the most flexible, does not constrain us to deal with floats, and most ressembles the underlying OS APIs (<code>arc4random</code>, <code>/dev/random</code>, etc).</p>
 <h2 id="conclusion">
   <a class="title" href="#conclusion">Conclusion</a>
   <a class="hash-anchor" href="#conclusion" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
