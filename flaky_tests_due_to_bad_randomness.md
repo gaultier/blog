@@ -28,7 +28,7 @@ function generateRandomEmail() {
 }
 ```
 
-Note: `.toString(36)` formats the number in base 36 (`a-zA-Z0-9`).
+Note: `.toString(36)` formats the number in base 36 (`a-z`, `0-9`).
 
 Try it by clicking this button: 
 
@@ -103,6 +103,7 @@ Oh, that's much better! So what's going on? Well, `Math.random()` essentially ge
 
 >  However, the toString() method doesn't directly use this most precise representation of the number value. Rather, the algorithm uses the least number of significant figures necessary to distinguish the output from adjacent number values.
 
+And the [implementation](https://github.com/v8/v8/blob/main/src/numbers/conversions.cc#L1420) is non-trivial and does a lot of rounding, so that could be why.
 
 ## The fix
 
@@ -140,8 +141,8 @@ Try it by clicking this button:
 
 <button class="random" id="random-values-crypto" onClick="document.getElementById('random-values-crypto').innerText=crypto.randomUUID()+'@ory.sh'" style="width:20; margin: 0 auto; display: block">Generate random value</button>
 
-Note for our use case, the fact that this is cryptographically secure is irrelevant. 'cryptographically secure' means that future values cannot be predicted based on the observation of past values. In the context of test values, we do not care about this property. It's just that this API is the most flexible, does not constrain us to deal with floats, and most ressembles the underlying OS APIs (`arc4random`, `/dev/random`, etc).
+Note for our use case, the fact that this is cryptographically secure is irrelevant. 'cryptographically secure' means that future values cannot be predicted based on the observation of past values. In the context of tests, we do not care about this property. It's just that the `crypto` APIs are the most flexible, do not constrain us to deal with floats like `Math.random` did, and they most ressemble the underlying OS APIs (`arc4random`, `/dev/random`, etc) which means the browser/JS engine has to do little to no work.
 
 ## Conclusion
 
-My take away: make sure you use a good random generator, otherwise you'll have hard to diagnose issues. What 'good' means is context dependent, but using a cryptographically secure random generator is a good start. Also make sure to not lower the randomness quality like `.toString(36)` did.
+My take away: a good random generator is invisible, a bad one is a door open to enigmatic bugs. When in doubt, plot the data. If the naked eye can discern clusters, a better random generator is needed. Also, floats always make everything harder. If you can deal with bytes, integers, and direct OS APIs, it's much simpler.

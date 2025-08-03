@@ -114,7 +114,7 @@ const account = createAccount(email, accountName)
   return Math.random().toString(36) + '@ory.sh'
 }
 </code></pre>
-<p>Note: <code>.toString(36)</code> formats the number in base 36 (<code>a-zA-Z0-9</code>).</p>
+<p>Note: <code>.toString(36)</code> formats the number in base 36 (<code>a-z</code>, <code>0-9</code>).</p>
 <p>Try it by clicking this button:</p>
 <p><button class="random" id="random-values-math-random-to-string-36" onClick="document.getElementById('random-values-math-random-to-string-36').innerText=Math.random().toString(36)" style="width:15rem; margin: 0 auto; display: block">Generate random value</button></p>
 <p>All the random functions were some variant of this. Hmm, how good is <code>Math.random</code>? It used to be pretty <a href="https://v8.dev/blog/math-random">bad</a> but it then got better.</p>
@@ -163,6 +163,7 @@ for (let i = 0 ; i &lt; count; i++){
 <blockquote>
 <p>However, the toString() method doesn't directly use this most precise representation of the number value. Rather, the algorithm uses the least number of significant figures necessary to distinguish the output from adjacent number values.</p>
 </blockquote>
+<p>And the <a href="https://github.com/v8/v8/blob/main/src/numbers/conversions.cc#L1420">implementation</a> is non-trivial and does a lot of rounding, so that could be why.</p>
 <h2 id="the-fix">
   <a class="title" href="#the-fix">The fix</a>
   <a class="hash-anchor" href="#the-fix" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
@@ -189,12 +190,12 @@ for (let i = 0 ; i &lt; count; i++){
 </code></pre>
 <p>Try it by clicking this button:</p>
 <p><button class="random" id="random-values-crypto" onClick="document.getElementById('random-values-crypto').innerText=crypto.randomUUID()+'@ory.sh'" style="width:20; margin: 0 auto; display: block">Generate random value</button></p>
-<p>Note for our use case, the fact that this is cryptographically secure is irrelevant. 'cryptographically secure' means that future values cannot be predicted based on the observation of past values. In the context of test values, we do not care about this property. It's just that this API is the most flexible, does not constrain us to deal with floats, and most ressembles the underlying OS APIs (<code>arc4random</code>, <code>/dev/random</code>, etc).</p>
+<p>Note for our use case, the fact that this is cryptographically secure is irrelevant. 'cryptographically secure' means that future values cannot be predicted based on the observation of past values. In the context of tests, we do not care about this property. It's just that the <code>crypto</code> APIs are the most flexible, do not constrain us to deal with floats like <code>Math.random</code> did, and they most ressemble the underlying OS APIs (<code>arc4random</code>, <code>/dev/random</code>, etc) which means the browser/JS engine has to do little to no work.</p>
 <h2 id="conclusion">
   <a class="title" href="#conclusion">Conclusion</a>
   <a class="hash-anchor" href="#conclusion" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
-<p>My take away: make sure you use a good random generator, otherwise you'll have hard to diagnose issues. What 'good' means is context dependent, but using a cryptographically secure random generator is a good start. Also make sure to not lower the randomness quality like <code>.toString(36)</code> did.</p>
+<p>My take away: a good random generator is invisible, a bad one is a door open to enigmatic bugs. When in doubt, plot the data. If the naked eye can discern clusters, a better random generator is needed. Also, floats always make everything harder. If you can deal with bytes, integers, and direct OS APIs, it's much simpler.</p>
 <p><a href="/blog"> ⏴ Back to all articles</a></p>
 
 <blockquote id="donate">
