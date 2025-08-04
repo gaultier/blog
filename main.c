@@ -1121,7 +1121,7 @@ static void http_handler(PgHttpRequest req, PgReader *reader, PgWriter *writer,
   }
   u64 content_length = PG_UNWRAP(res_content_length);
   Pgu8Slice req_body = pg_bytes_make(content_length, allocator);
-  PgError err = pg_reader_read_full(reader, req_body);
+  PgError err = pg_reader_read_slice_full(reader, req_body);
   if (err) {
     pg_log(logger, PG_LOG_LEVEL_ERROR, "http handler: failed to read body",
            pg_log_c_u64("headers_count", req.headers.len),
