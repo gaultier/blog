@@ -1204,7 +1204,8 @@ static void watch_dir() {
     res_wait = pg_aio_fs_wait_one(aio, PG_NONE(u32), allocator);
     PgAioEvent event = PG_UNWRAP(res_wait);
 
-    if (!pg_string_is_empty(event.name)) {
+    PgString ext = pg_file_extension(event.name);
+    if (pg_string_eq(ext, PG_S("md"))) {
       fprintf(stderr, "file modified: %.*s %d\n", (i32)event.name.len,
               event.name.data, event.kind);
     }
