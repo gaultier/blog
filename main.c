@@ -1185,6 +1185,32 @@ static void *run_http_server(void *) {
   return nullptr;
 }
 
+static void watch_dir() {
+  PgArena arena = pg_arena_make_from_virtual_mem(4 * PG_KiB);
+  PgArenaAllocator arena_allocator = pg_make_arena_allocator(&arena);
+  PgAllocator *allocator = pg_arena_allocator_as_allocator(&arena_allocator);
+
+  PG_RESULT(PgAio, PgError) res_aio = pg_aio_init();
+  PgAio aio = PG_UNWRAP(res_aio);
+
+  PgError err = pg_aio_register_watch_directory(
+      &aio, PG_S("."),
+      PG_WALK_DIRECTORY_KIND_FILE | PG_WALK_DIRECTORY_KIND_DIRECTORY,
+      allocator);
+  PG_ASSERT(0 == err);
+
+  for (;;) {
+    PG_RESULT(PgAioEvent, PgError)
+    res_wait = pg_aio_fs_wait_one(aio, PG_NONE(u32), allocator);
+    PgAioEvent event = PG_UNWRAP(res_wait);
+
+    if (!pg_string_is_empty(event.name)) {
+      fprintf(stderr, "file modified: %.*s %d\n", (i32)event.name.len,
+              event.name.data, event.kind);
+    }
+  }
+}
+
 int main() {
   PgArena arena = pg_arena_make_from_virtual_mem(100 * PG_MiB);
   PgArenaAllocator arena_allocator = pg_make_arena_allocator(&arena);
@@ -1247,4 +1273,6 @@ int main() {
 
   printf("generated %" PRIu64 " articles (arena use=%" PRIu64 ")\n",
          articles.len, pg_arena_mem_use(arena));
+
+  watch_dir();
 }
