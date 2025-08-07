@@ -1185,6 +1185,7 @@ static void *run_http_server(void *) {
   return nullptr;
 }
 
+#if 0
 static void watch_dir() {
   PgArena arena = pg_arena_make_from_virtual_mem(4 * PG_KiB);
   PgArenaAllocator arena_allocator = pg_make_arena_allocator(&arena);
@@ -1211,6 +1212,7 @@ static void watch_dir() {
     }
   }
 }
+#endif
 
 int main() {
   PgArena arena = pg_arena_make_from_virtual_mem(100 * PG_MiB);
@@ -1275,5 +1277,7 @@ int main() {
   printf("generated %" PRIu64 " articles (arena use=%" PRIu64 ")\n",
          articles.len, pg_arena_mem_use(arena));
 
+#if 0
   watch_dir();
+#endif
 }
