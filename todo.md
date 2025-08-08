@@ -240,6 +240,127 @@ set output 'rand.png'
 plot '~/scratch/rand.txt' with dots
 ```
 
+### Article: Subtle bug with Go's `errgroup`
+
+```go
+package main
+
+import (
+	"context"
+	"fmt"
+	"io"
+	"net/http"
+	"slices"
+	"strings"
+
+	"golang.org/x/crypto/bcrypt"
+	"golang.org/x/sync/errgroup"
+)
+
+// Best effort: if the external API is down, swallow the error.
+func checkHaveIBeenPawned(ctx context.Context, pw string) error {
+	req, err := http.NewRequestWithContext(ctx, "GET", "http://localhost:8000/haveibeenpawned.txt", strings.NewReader(pw))
+	if err != nil {
+		return nil
+	}
+
+	resp, err := http.DefaultClient.Do(req)
+
+	if err != nil {
+		return nil
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil
+	}
+
+	respBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil
+	}
+	lines := strings.Split(string(respBody), "\n")
+
+	if slices.Contains(lines, pw) {
+		return fmt.Errorf("password might be compromised")
+	}
+
+	return nil
+}
+
+func changePassword(ctx context.Context, oldHash []byte, newPassword string) ([]byte, error) {
+	var newHash []byte
+
+	g, ctx := errgroup.WithContext(ctx)
+	g.Go(func() error {
+		var err error
+		newHash, err = bcrypt.GenerateFromPassword([]byte(newPassword), 10)
+		return err
+	})
+	g.Go(func() error {
+		if err := bcrypt.CompareHashAndPassword(oldHash, []byte(newPassword)); err == nil {
+			return fmt.Errorf("old and new password are the same")
+		}
+		return nil
+	})
+
+	if err := g.Wait(); err != nil {
+		return nil, err
+	}
+
+	if err := checkHaveIBeenPawned(ctx, newPassword); err != nil {
+		return nil, err
+	}
+
+	return newHash, nil
+}
+
+func main() {
+	ctx := context.Background()
+
+	oldPassword := "hello, world"
+	oldHash, err := bcrypt.GenerateFromPassword([]byte(oldPassword), 8)
+	if err != nil {
+		panic(err)
+	}
+
+	newPassword := "hello"
+	newHash, err := changePassword(ctx, oldHash, newPassword)
+	if err != nil {
+		fmt.Printf("failed to change password: %v", err)
+	} else {
+		fmt.Printf("new password set: %s", string(newHash))
+	}
+}
+```
+
+Fix:
+
+```diff
+diff --git a/main.go b/main.go
+index a918ac9..b617935 100644
+--- a/main.go
++++ b/main.go
+@@ -58,15 +58,14 @@ func changePassword(ctx context.Context, oldHash []byte, newPassword string) ([]
+ 		}
+ 		return nil
+ 	})
++	g.Go(func() error {
++		return checkHaveIBeenPawned(ctx, newPassword)
++	})
+ 
+ 	if err := g.Wait(); err != nil {
+ 		return nil, err
+ 	}
+ 
+-	if err := checkHaveIBeenPawned(ctx, newPassword); err != nil {
+-		return nil, err
+-	}
+-
+ 	return newHash, nil
+ }
+```
+
 ## Blog implementation
 
 - [ ] browser: search shows the full title path to the match e.g. 'my_article: foo/bar/baz'
