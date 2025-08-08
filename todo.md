@@ -361,6 +361,25 @@ index a918ac9..b617935 100644
  }
 ```
 
+
+Alternative fix:
+
+```diff
+diff --git a/main.go b/main.go
+index a918ac9..da28eed 100644
+--- a/main.go
++++ b/main.go
+@@ -46,7 +46,7 @@ func checkHaveIBeenPawned(ctx context.Context, pw string) error {
+ func changePassword(ctx context.Context, oldHash []byte, newPassword string) ([]byte, error) {
+ 	var newHash []byte
+ 
+-	g, ctx := errgroup.WithContext(ctx)
++	g, _ := errgroup.WithContext(ctx)
+ 	g.Go(func() error {
+ 		var err error
+ 		newHash, err = bcrypt.GenerateFromPassword([]byte(newPassword), 10)
+```
+
 ## Blog implementation
 
 - [ ] browser: search shows the full title path to the match e.g. 'my_article: foo/bar/baz'
