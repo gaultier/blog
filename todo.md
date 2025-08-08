@@ -324,7 +324,7 @@ func main() {
 		panic(err)
 	}
 
-	newPassword := "hello"
+	newPassword := os.Args[1]
 	newHash, err := changePassword(ctx, oldHash, newPassword)
 	if err != nil {
 		fmt.Printf("failed to change password: %v", err)
