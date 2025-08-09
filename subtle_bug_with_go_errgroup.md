@@ -4,7 +4,9 @@ Tags: Go
 
 Yesterday I got bitten by an insidious bug at work. Fortunately a test caught it before it got merged. The more I work on big, complex software, the more I deeply appreciate tests, even though I do not necessarily enjoy writing them. Anyways, I lost a few hours investigating this issue, and this could happen to anyone, I think. 
 
-Anyways let's go into it. I minimized the issue to a stand-alone program. 
+Let's go into it. I minimized the issue in a stand-alone program. 
+
+You can have a look at the real production code [here](https://github.com/ory/kratos/commit/a7f50abc99ddd7b6dac7dea09004feeb8e84c323) if you are interested. After all, it's open source!
 
 ## The program
 
@@ -242,6 +244,7 @@ new password set: $2a$10$.oyEO/cSmTWugfwdpoADYOB/AM.uHjz1HodOysS3ksIS.FS4RvTx.‚è
 
 It works correctly now!
 
+This is the fix I picked in the real production [code](https://github.com/ory/kratos/commit/c7fedfe21f2e95f89b54ced34bf9b49bd5f64fb9).
 
 ## Alternative fix
 

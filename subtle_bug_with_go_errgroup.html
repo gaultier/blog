@@ -101,7 +101,8 @@ Do not edit it by hand.
 </ul>
 
 <p>Yesterday I got bitten by an insidious bug at work. Fortunately a test caught it before it got merged. The more I work on big, complex software, the more I deeply appreciate tests, even though I do not necessarily enjoy writing them. Anyways, I lost a few hours investigating this issue, and this could happen to anyone, I think.</p>
-<p>Anyways let's go into it. I minimized the issue to a stand-alone program.</p>
+<p>Let's go into it. I minimized the issue in a stand-alone program.</p>
+<p>You can have a look at the real production code <a href="https://github.com/ory/kratos/commit/a7f50abc99ddd7b6dac7dea09004feeb8e84c323">here</a> if you are interested. After all, it's open source!</p>
 <h2 id="the-program">
   <a class="title" href="#the-program">The program</a>
   <a class="hash-anchor" href="#the-program" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
@@ -307,6 +308,7 @@ $ go run main.go 'correct horse battery staple'
 new password set: $2a$10$.oyEO/cSmTWugfwdpoADYOB/AM.uHjz1HodOysS3ksIS.FS4RvTx.⏎                   
 </code></pre>
 <p>It works correctly now!</p>
+<p>This is the fix I picked in the real production <a href="https://github.com/ory/kratos/commit/c7fedfe21f2e95f89b54ced34bf9b49bd5f64fb9">code</a>.</p>
 <h2 id="alternative-fix">
   <a class="title" href="#alternative-fix">Alternative fix</a>
   <a class="hash-anchor" href="#alternative-fix" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
