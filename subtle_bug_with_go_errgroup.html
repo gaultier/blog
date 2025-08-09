@@ -114,7 +114,7 @@ Do not edit it by hand.
 </ul>
 <p>For simplicity, the Have I Been Pawned API in our reproducer is just a text file with passwords in clear (do not do that in production!).</p>
 <p>One last thing: passwords are (obviously, I hope) never stored in clear, and we instead store a hash using a <a href="https://en.wikipedia.org/wiki/Bcrypt">password hashing function</a> specially designed to take up a lot of computational power to hinder brute-force attacks. Typically, that can take hundreds of milliseconds or even seconds (depending on the cost factor) for one hash.</p>
-<p>For performance, if we have to compute this hash, we try to do other things in parallel. To achieve this, we use an <a href="https://pkg.go.dev/golang.org/x/sync/errgroup">errgroup</a>, which has become pretty common place now.</p>
+<p>For performance, if we have to compute this hash, we try to do other things in parallel. To achieve this, we use an <a href="https://pkg.go.dev/golang.org/x/sync/errgroup">errgroup</a>, which has become pretty common place now in Go.</p>
 <p>Here goes:</p>
 <pre><code class="language-go">package main
 
@@ -217,7 +217,7 @@ func main() {
 }
 
 </code></pre>
-<p>I think it is pretty straightforward. The only 'clever' thing is using the errgroup, which cancels all tasks as soon as one fails. This is handy to avoid doing unecessary expensive computations.</p>
+<p>I think it is pretty straightforward. The only 'clever' thing is using <code>errgroup</code>, which cancels all tasks as soon as one fails. This is handy to avoid doing unecessary expensive computations.</p>
 <p>We serve the static text file <code>haveibeenpawned.txt</code> using a HTTP server to act as the Have I Been Pawned API, it just contains one password per line e.g.:</p>
 <pre><code class="language-txt">hello
 abc123
@@ -334,8 +334,9 @@ index ae602df..6bcbfa3 100644
 <p>The <code>errgroup</code> concept is pretty great. It greatly simplifies equivalent code written using Go channels which get real hairy real soon. But, as it is often the case in Go, you do need to read the fine print, because the type system is not expressive enough to reflect the pre- and post-conditions of the API.</p>
 <p>Shadowing is another concept that made this issue less visible. I have had quite a few bugs due to shadowing in Go and Rust, both languages that idiomatically use it a lot. Some newer programming languages have outright banned variable shadowing, like Zig.</p>
 <p>If you've ever heard of linear types, and never saw their utility, that's actually exactly what they are good for: a variable gets 'consumed' by a function, and the type system prevents us from using it after that point. Conceptually, <code>g.Wait(ctx)</code> consumes <code>ctx</code> and there is no point using this <code>ctx</code> afterwards. But the current Go type system does not prevent us from doing this, at all.</p>
-<p>Things get even muddier when we notice that after <code>g.Wait(ctx)</code>, we do the password length check, and that gets to run, contrary to the <code>checkHaveIBeenPawned</code> call. Since the length check does not care about a context, it runs just fine. This might be a case of Go actually having function coloring! The API code and the length check code get treated differently.</p>
-<p>So my take-away: any time a Go function takes a context as a parameter, you must assume that this function might not run fully. Some parts of this function may run (the parts not depending on the context), and some may not, because they will immediately result in an error and Go encourages returning early on error.</p>
+<p>Things get even muddier when we notice that after <code>g.Wait(ctx)</code>, we do the password length check, and that gets to run, contrary to the <code>checkHaveIBeenPawned</code> call. Since the length check does not care about a context, it runs just fine. And that's what puzzled me during the investigation for so long.</p>
+<p>My take-away: if you decide to use an API, take time to first read the docs in full and read the fine prints. It was the first time I used <code>errgroup</code> and I only had a cursory look at the docs.</p>
+<p>Finally: if the code is trivially simple, <em>except</em> for this one clever thing, and there is a bug, well... The bug is probably in this clever bit of code.</p>
 <p><a href="/blog"> ⏴ Back to all articles</a></p>
 
 <blockquote id="donate">

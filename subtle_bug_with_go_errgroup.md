@@ -18,7 +18,7 @@ For simplicity, the Have I Been Pawned API in our reproducer is just a text file
 
 One last thing: passwords are (obviously, I hope) never stored in clear, and we instead store a hash using a [password hashing function](https://en.wikipedia.org/wiki/Bcrypt) specially designed to take up a lot of computational power to hinder brute-force attacks. Typically, that can take hundreds of milliseconds or even seconds (depending on the cost factor) for one hash.
 
-For performance, if we have to compute this hash, we try to do other things in parallel. To achieve this, we use an [errgroup](https://pkg.go.dev/golang.org/x/sync/errgroup), which has become pretty common place now.
+For performance, if we have to compute this hash, we try to do other things in parallel. To achieve this, we use an [errgroup](https://pkg.go.dev/golang.org/x/sync/errgroup), which has become pretty common place now in Go.
 
 Here goes:
 
@@ -125,7 +125,7 @@ func main() {
 
 ```
 
-I think it is pretty straightforward. The only 'clever' thing is using the errgroup, which cancels all tasks as soon as one fails. This is handy to avoid doing unecessary expensive computations.
+I think it is pretty straightforward. The only 'clever' thing is using `errgroup`, which cancels all tasks as soon as one fails. This is handy to avoid doing unecessary expensive computations. 
 
  We serve the static text file `haveibeenpawned.txt` using a HTTP server to act as the Have I Been Pawned API, it just contains one password per line e.g.:
 
@@ -273,6 +273,8 @@ Shadowing is another concept that made this issue less visible. I have had quite
 
 If you've ever heard of linear types, and never saw their utility, that's actually exactly what they are good for: a variable gets 'consumed' by a function, and the type system prevents us from using it after that point. Conceptually, `g.Wait(ctx)` consumes `ctx` and there is no point using this `ctx` afterwards. But the current Go type system does not prevent us from doing this, at all. 
 
-Things get even muddier when we notice that after `g.Wait(ctx)`, we do the password length check, and that gets to run, contrary to the `checkHaveIBeenPawned` call. Since the length check does not care about a context, it runs just fine. This might be a case of Go actually having function coloring! The API code and the length check code get treated differently. 
+Things get even muddier when we notice that after `g.Wait(ctx)`, we do the password length check, and that gets to run, contrary to the `checkHaveIBeenPawned` call. Since the length check does not care about a context, it runs just fine. And that's what puzzled me during the investigation for so long.
 
-So my take-away: any time a Go function takes a context as a parameter, you must assume that this function might not run fully. Some parts of this function may run (the parts not depending on the context), and some may not, because they will immediately result in an error and Go encourages returning early on error. 
+My take-away: if you decide to use an API, take time to first read the docs in full and read the fine prints. It was the first time I used `errgroup` and I only had a cursory look at the docs.
+
+Finally: if the code is trivially simple, *except* for this one clever thing, and there is a bug, well... The bug is probably in this clever bit of code.
