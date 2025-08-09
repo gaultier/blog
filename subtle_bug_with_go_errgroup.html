@@ -218,12 +218,14 @@ func main() {
 
 </code></pre>
 <p>I think it is pretty straightforward. The only 'clever' thing is using the errgroup, which cancels all tasks as soon as one fails. This is handy to avoid doing unecessary expensive computations.</p>
-<p>Let's try it then. We serve the static text file <code>haveibeenpawned.txt</code> using a HTTP server to act as the Have I Been Pawned API, it just contains one password per line e.g.:</p>
+<p>We serve the static text file <code>haveibeenpawned.txt</code> using a HTTP server to act as the Have I Been Pawned API, it just contains one password per line e.g.:</p>
 <pre><code class="language-txt">hello
 abc123
 123456
 </code></pre>
-<pre><code class="language-sh">$ python3 -m http.server -d . &amp;
+<p>Let's try it then:</p>
+<pre><code class="language-sh"># Serve the leaked password file
+$ python3 -m http.server -d . &amp;
 
 # Fine new password, succeeds
 $ go run main.go 'correct horse battery staple'
@@ -245,29 +247,30 @@ new password set: $2a$10$pmOOg5VOFEIjFk47hstoQeFbgHFTzxChpsp77SuuE4yvlSK9Ds4SG‚è
 <p>We can use strace/dtrace, add logs, or simply look at the python static HTTP server, the verdict is the same: no request is made. How is this possible? I can see the Go function call!</p>
 <p>At first I thought a data race was happening between goroutines, having been recently <a href="/blog/a_subtle_data_race_in_go.html">burnt by that</a>. But it turned out it was something different.</p>
 <p>Let's log the errors inside <code>checkHaveIBeenPawned</code> that we so conveniently swallowed:</p>
-<pre><code class="language-diff">func checkHaveIBeenPawned(ctx context.Context, pw string) error {
-	req, err := http.NewRequestWithContext(ctx, &quot;GET&quot;, &quot;http://localhost:8000/haveibeenpawned.txt&quot;, strings.NewReader(pw))
-	if err != nil {
-		return nil
-	}
-
-	resp, err := http.DefaultClient.Do(req)
-
-	if err != nil {
-+   	fmt.Fprintf(os.Stderr, &quot;http request error: %v\n&quot;, err)
-		return nil
-	}
+<pre><code class="language-diff">diff --git a/main.go b/main.go
+index ae602df..17d0228 100644
+--- a/main.go
++++ b/main.go
+@@ -23,6 +23,7 @@ func checkHaveIBeenPawned(ctx context.Context, pw string) error {
+        resp, err := http.DefaultClient.Do(req)
+ 
+        if err != nil {
++               fmt.Fprintf(os.Stderr, &quot;http request error: %v\n&quot;, err)
+                return nil
+        }
+        defer resp.Body.Close()
 </code></pre>
 <p>And we see:</p>
 <pre><code class="language-text">http request error: Get &quot;http://localhost:8000/haveibeenpawned.txt&quot;: context canceled
 </code></pre>
-<p>Uh...what? We do not even have a timeout set!</p>
-<p>At that point, a great collegue of mine helped me debug and found the issue. He sent me this one line from the <code>errgroup</code> <a href="https://pkg.go.dev/golang.org/x/sync/errgroup#Group.Wait">documentation</a>:</p>
+<p>Uh...what? We do not even have a timeout set! How can the context be canceled?</p>
+<p>At that point, a great collegue of mine helped me debug and found the issue. He sent me this one line from the <code>errgroup</code> <a href="https://pkg.go.dev/golang.org/x/sync/errgroup#Group.WithContext">documentation</a>:</p>
 <blockquote>
-<p>Wait blocks until all function calls from the Go method have returned, then returns the first non-nil error (if any) from them.</p>
+<p>The derived Context is canceled the first time a function passed to Go returns a non-nil error or the first time Wait returns, whichever occurs first.</p>
 </blockquote>
-<p>Ah... that's why. Ok, how do we fix it then?</p>
-<p>This was my fix in the real program: since the HTTP call is the one that does not get to run, and this could take up some time, why not also run it in a goroutine in the <code>errgroup</code>? The real Have I Been Pawned API accepts a SHA1 hash of the password, not bcrypt, so this task is thus completely independent from the others.</p>
+<p>Ah... that's why. I mean, it makes sense that the context is canceled on the first error occurring, that's how operations in other goroutines can notice and also stop early. It's just surprising to me that this happens also when <code>Wait</code> returns and no error happened.</p>
+<p>Ok, how do we fix it then?</p>
+<p>This was my fix in the real program: since the HTTP call is the one that does not get to run, and this could take up some time, why not also run it in a goroutine in the <code>errgroup</code>? This task is completely independent from the others.</p>
 <p>Here it is, quite a short fix:</p>
 <pre><code class="language-diff">diff --git a/main.go b/main.go
 index ae602df..74371a5 100644
@@ -330,8 +333,9 @@ index ae602df..6bcbfa3 100644
 </h2>
 <p>The <code>errgroup</code> concept is pretty great. It greatly simplifies equivalent code written using Go channels which get real hairy real soon. But, as it is often the case in Go, you do need to read the fine print, because the type system is not expressive enough to reflect the pre- and post-conditions of the API.</p>
 <p>Shadowing is another concept that made this issue less visible. I have had quite a few bugs due to shadowing in Go and Rust, both languages that idiomatically use it a lot. Some newer programming languages have outright banned variable shadowing, like Zig.</p>
-<p>If you ever heard of linear types, and never saw their utility, that's actually exactly what they are for: a variable gets 'consumed' and the type system prevents us from using it after that point. Conceptually, <code>g.Wait(ctx)</code> consumes <code>ctx</code> and there is no point using this <code>ctx</code> afterwards. But the current Go type system does not prevent us from doing this, at all.</p>
-<p>Things get even muddier in the real program where the Have I Been Pawned API call was not the only thing we did after <code>g.Wait(ctx)</code>: a password length check was also done. Since this code does not care about a context, it ran just fine and the tests checking for this behavior passed. This might be a case of Go actually having function coloring! The API code and the length check code get treated differently.</p>
+<p>If you've ever heard of linear types, and never saw their utility, that's actually exactly what they are good for: a variable gets 'consumed' by a function, and the type system prevents us from using it after that point. Conceptually, <code>g.Wait(ctx)</code> consumes <code>ctx</code> and there is no point using this <code>ctx</code> afterwards. But the current Go type system does not prevent us from doing this, at all.</p>
+<p>Things get even muddier when we notice that after <code>g.Wait(ctx)</code>, we do the password length check, and that gets to run, contrary to the <code>checkHaveIBeenPawned</code> call. Since the length check does not care about a context, it runs just fine. This might be a case of Go actually having function coloring! The API code and the length check code get treated differently.</p>
+<p>So my take-away: any time a Go function takes a context as a parameter, you must assume that this function might not run fully. Some parts of this function may run (the parts not depending on the context), and some may not, because they will immediately result in an error and Go encourages returning early on error.</p>
 <p><a href="/blog"> ‚è¥ Back to all articles</a></p>
 
 <blockquote id="donate">

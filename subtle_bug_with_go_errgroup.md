@@ -127,15 +127,17 @@ func main() {
 
 I think it is pretty straightforward. The only 'clever' thing is using the errgroup, which cancels all tasks as soon as one fails. This is handy to avoid doing unecessary expensive computations.
 
-Let's try it then. We serve the static text file `haveibeenpawned.txt` using a HTTP server to act as the Have I Been Pawned API, it just contains one password per line e.g.:
+ We serve the static text file `haveibeenpawned.txt` using a HTTP server to act as the Have I Been Pawned API, it just contains one password per line e.g.:
 
 ```txt
 hello
 abc123
 123456
 ```
+Let's try it then:
 
 ```sh
+# Serve the leaked password file
 $ python3 -m http.server -d . &
 
 # Fine new password, succeeds
@@ -164,18 +166,18 @@ At first I thought a data race was happening between goroutines, having been rec
 Let's log the errors inside `checkHaveIBeenPawned` that we so conveniently swallowed:
 
 ```diff
-func checkHaveIBeenPawned(ctx context.Context, pw string) error {
-	req, err := http.NewRequestWithContext(ctx, "GET", "http://localhost:8000/haveibeenpawned.txt", strings.NewReader(pw))
-	if err != nil {
-		return nil
-	}
-
-	resp, err := http.DefaultClient.Do(req)
-
-	if err != nil {
-+   	fmt.Fprintf(os.Stderr, "http request error: %v\n", err)
-		return nil
-	}
+diff --git a/main.go b/main.go
+index ae602df..17d0228 100644
+--- a/main.go
++++ b/main.go
+@@ -23,6 +23,7 @@ func checkHaveIBeenPawned(ctx context.Context, pw string) error {
+        resp, err := http.DefaultClient.Do(req)
+ 
+        if err != nil {
++               fmt.Fprintf(os.Stderr, "http request error: %v\n", err)
+                return nil
+        }
+        defer resp.Body.Close()
 ```
 
 And we see:
@@ -184,15 +186,17 @@ And we see:
 http request error: Get "http://localhost:8000/haveibeenpawned.txt": context canceled
 ```
 
-Uh...what? We do not even have a timeout set!
+Uh...what? We do not even have a timeout set! How can the context be canceled?
 
-At that point, a great collegue of mine helped me debug and found the issue. He sent me this one line from the `errgroup` [documentation](https://pkg.go.dev/golang.org/x/sync/errgroup#Group.Wait):
+At that point, a great collegue of mine helped me debug and found the issue. He sent me this one line from the `errgroup` [documentation](https://pkg.go.dev/golang.org/x/sync/errgroup#Group.WithContext):
 
-> Wait blocks until all function calls from the Go method have returned, then returns the first non-nil error (if any) from them.
+> The derived Context is canceled the first time a function passed to Go returns a non-nil error or the first time Wait returns, whichever occurs first. 
 
-Ah... that's why. Ok, how do we fix it then? 
+Ah... that's why. I mean, it makes sense that the context is canceled on the first error occurring, that's how operations in other goroutines can notice and also stop early. It's just surprising to me that this happens also when `Wait` returns and no error happened.
 
-This was my fix in the real program: since the HTTP call is the one that does not get to run, and this could take up some time, why not also run it in a goroutine in the `errgroup`? The real Have I Been Pawned API accepts a SHA1 hash of the password, not bcrypt, so this task is thus completely independent from the others.
+Ok, how do we fix it then? 
+
+This was my fix in the real program: since the HTTP call is the one that does not get to run, and this could take up some time, why not also run it in a goroutine in the `errgroup`? This task is completely independent from the others.
 
 Here it is, quite a short fix:
 
@@ -267,6 +271,8 @@ The `errgroup` concept is pretty great. It greatly simplifies equivalent code wr
 
 Shadowing is another concept that made this issue less visible. I have had quite a few bugs due to shadowing in Go and Rust, both languages that idiomatically use it a lot. Some newer programming languages have outright banned variable shadowing, like Zig.
 
-If you ever heard of linear types, and never saw their utility, that's actually exactly what they are for: a variable gets 'consumed' and the type system prevents us from using it after that point. Conceptually, `g.Wait(ctx)` consumes `ctx` and there is no point using this `ctx` afterwards. But the current Go type system does not prevent us from doing this, at all. 
+If you've ever heard of linear types, and never saw their utility, that's actually exactly what they are good for: a variable gets 'consumed' by a function, and the type system prevents us from using it after that point. Conceptually, `g.Wait(ctx)` consumes `ctx` and there is no point using this `ctx` afterwards. But the current Go type system does not prevent us from doing this, at all. 
 
-Things get even muddier in the real program where the Have I Been Pawned API call was not the only thing we did after `g.Wait(ctx)`: a password length check was also done. Since this code does not care about a context, it ran just fine and the tests checking for this behavior passed. This might be a case of Go actually having function coloring! The API code and the length check code get treated differently.
+Things get even muddier when we notice that after `g.Wait(ctx)`, we do the password length check, and that gets to run, contrary to the `checkHaveIBeenPawned` call. Since the length check does not care about a context, it runs just fine. This might be a case of Go actually having function coloring! The API code and the length check code get treated differently. 
+
+So my take-away: any time a Go function takes a context as a parameter, you must assume that this function might not run fully. Some parts of this function may run (the parts not depending on the context), and some may not, because they will immediately result in an error and Go encourages returning early on error. 
