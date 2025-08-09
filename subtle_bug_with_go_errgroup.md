@@ -15,7 +15,7 @@ You can have a look at the real production code [here](https://github.com/ory/kr
 Today, we are writing a program validating passwords. Well, the most minimal version thereof. It contains the old password, takes the new password on the command line, and runs a few checks to see if this password is fine:
 
 - Checks if the new password is different from the old password. This can catch the case where the old password has leaked, we want to change it, and inadvertently use the same value as before. Which would leave us exposed.
-- Check the Have I Been Pawned API, which stores millions of leaked passwords. This serves to avoid commonly used and leaked passwords. The real production program has a in-memory cache in front of the API for performance, but we still have to do an API call at start-up and from time to time.
+- Check the Have I Been Pawned API, which stores millions of leaked passwords. This serves to avoid commonly used and leaked passwords. The real production program has an in-memory cache in front of the API for performance, but we still have to do an API call at start-up and from time to time.
 - Check that the password is long enough
 
 For simplicity, the Have I Been Pawned API in our reproducer is just a text file with passwords in clear.
@@ -138,6 +138,7 @@ hello
 abc123
 123456
 ```
+
 Let's try it then:
 
 ```sh
