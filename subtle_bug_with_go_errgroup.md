@@ -2,6 +2,8 @@ Title: A subtle bug with Go's errgroup
 Tags: Go
 ---
 
+*Comments: [HN](https://news.ycombinator.com/item?id=44845953), [/r/golang](https://old.reddit.com/r/golang/comments/1mlldh9/a_subtle_bug_with_gos_errgroup/).*
+
 Yesterday I got bitten by an insidious bug at work while working on [Kratos](https://github.com/ory/kratos). Fortunately a test caught it before it got merged. The more I work on big, complex software, the more I deeply appreciate tests, even though I do not necessarily enjoy writing them. Anyways, I lost a few hours investigating this issue, and this could happen to anyone, I think. 
 
 Let's get into it. I minimized the issue in a stand-alone program in just 100 lines. 
@@ -285,3 +287,11 @@ My main take-away: if you decide to use an API, take time to first read the docs
 Finally: if the code is trivially simple, *except* for this one clever thing, and there is a bug, well... The bug is probably in this one clever bit of code. In my case this was the `errgroup`.
 
 And again, big thanks to my colleague [Patrik](https://github.com/zepatrik) for finding the root cause!
+
+## Addendum
+
+Comments have pointed out that there is an old, known Github issue about this very API flaw: https://github.com/golang/go/issues/34510 :
+
+> I have also observed that the context returned by WithContext is occasionally misused for code other than the goroutines spawned by Go, in some cases by directly shadowing the ctx variable, which often results in spooky action at a distance where one failure causes code in another part of the application to have its context cancelled.
+
+But there is no consensus about fixing the API.
