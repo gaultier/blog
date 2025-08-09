@@ -1,4 +1,4 @@
-Title: Subtle bug with Go's `errgroup`
+Title: Subtle bug with Go's errgroup
 Tags: Go
 ---
 
@@ -8,11 +8,11 @@ Anyways let's go into it. I minimized the issue to a stand-alone program.
 
 ## The program
 
-Today, we are writing a program managing passwords. Well, the most minimal version thereof. It contains the old password, takes the new password on the command line, and runs a few checks to see if this password is fine:
+Today, we are writing a program validating passwords. Well, the most minimal version thereof. It contains the old password, takes the new password on the command line, and runs a few checks to see if this password is fine:
 
 - Checks if the new password is different from the old password. This can catch the case where the old password has leaked, we want to change it, and inadvertently use the same value as before. Which would leave us exposed.
 - Check the Have I Been Pawned API, which stores millions of leaked passwords. This serves to avoid commonly used and leaked passwords. The real production program has a in-memory cache in front of the API for performance, but we still have to do an API call at start-up and from time to time.
-- The real program also does more checks like minimal length, etc, but I left that out.
+- Check that the password is long enough
 
 For simplicity, the Have I Been Pawned API in our reproducer is just a text file with passwords in clear (do not do that in production!).
 
@@ -30,6 +30,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 	"slices"
 	"strings"
 
@@ -72,9 +73,9 @@ func changePassword(ctx context.Context, oldHash []byte, newPassword string) ([]
 	var newHash []byte
 
 	g, ctx := errgroup.WithContext(ctx)
-    // Do in parallel:
-    // - Compute the hash of the new password
-    // - Check that the new password is not the same as the old password
+	// Do in parallel:
+	// - Compute the hash of the new password
+	// - Check that the new password is not the same as the old password
 	g.Go(func() error {
 		var err error
 		newHash, err = bcrypt.GenerateFromPassword([]byte(newPassword), 10)
@@ -121,6 +122,7 @@ func main() {
 		fmt.Printf("new password set: %s", string(newHash))
 	}
 }
+
 ```
 
 I think it is pretty straightforward. The only 'clever' thing is using the errgroup, which cancels all tasks as soon as one fails. This is handy to avoid doing unecessary expensive computations.

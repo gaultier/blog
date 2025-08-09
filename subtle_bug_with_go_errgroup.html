@@ -5,7 +5,7 @@ Do not edit it by hand.
 <!DOCTYPE html>
 <html>
 <head>
-<title>Subtle bug with Go&#39;s `errgroup`</title>
+<title>Subtle bug with Go&#39;s errgroup</title>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link type="application/atom+xml" href="/blog/feed.xml" rel="self">
@@ -77,7 +77,7 @@ Do not edit it by hand.
   <p class="publication-date">Published on 2025-08-09</p>
 </div>
 <div class="article-title">
-<h1>Subtle bug with Go's `errgroup`</h1>
+<h1>Subtle bug with Go's errgroup</h1>
   <div class="tags"> <a href="/blog/articles-by-tag.html#go" class="tag">Go</a></div>
   </div>
  <strong>Table of contents</strong>
@@ -106,11 +106,11 @@ Do not edit it by hand.
   <a class="title" href="#the-program">The program</a>
   <a class="hash-anchor" href="#the-program" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
-<p>Today, we are writing a program managing passwords. Well, the most minimal version thereof. It contains the old password, takes the new password on the command line, and runs a few checks to see if this password is fine:</p>
+<p>Today, we are writing a program validating passwords. Well, the most minimal version thereof. It contains the old password, takes the new password on the command line, and runs a few checks to see if this password is fine:</p>
 <ul>
 <li>Checks if the new password is different from the old password. This can catch the case where the old password has leaked, we want to change it, and inadvertently use the same value as before. Which would leave us exposed.</li>
 <li>Check the Have I Been Pawned API, which stores millions of leaked passwords. This serves to avoid commonly used and leaked passwords. The real production program has a in-memory cache in front of the API for performance, but we still have to do an API call at start-up and from time to time.</li>
-<li>The real program also does more checks like minimal length, etc, but I left that out.</li>
+<li>Check that the password is long enough</li>
 </ul>
 <p>For simplicity, the Have I Been Pawned API in our reproducer is just a text file with passwords in clear (do not do that in production!).</p>
 <p>One last thing: passwords are (obviously, I hope) never stored in clear, and we instead store a hash using a <a href="https://en.wikipedia.org/wiki/Bcrypt">password hashing function</a> specially designed to take up a lot of computational power to hinder brute-force attacks. Typically, that can take hundreds of milliseconds or even seconds (depending on the cost factor) for one hash.</p>
@@ -123,6 +123,7 @@ import (
 	&quot;fmt&quot;
 	&quot;io&quot;
 	&quot;net/http&quot;
+	&quot;os&quot;
 	&quot;slices&quot;
 	&quot;strings&quot;
 
@@ -165,9 +166,9 @@ func changePassword(ctx context.Context, oldHash []byte, newPassword string) ([]
 	var newHash []byte
 
 	g, ctx := errgroup.WithContext(ctx)
-    // Do in parallel:
-    // - Compute the hash of the new password
-    // - Check that the new password is not the same as the old password
+	// Do in parallel:
+	// - Compute the hash of the new password
+	// - Check that the new password is not the same as the old password
 	g.Go(func() error {
 		var err error
 		newHash, err = bcrypt.GenerateFromPassword([]byte(newPassword), 10)
@@ -214,6 +215,7 @@ func main() {
 		fmt.Printf(&quot;new password set: %s&quot;, string(newHash))
 	}
 }
+
 </code></pre>
 <p>I think it is pretty straightforward. The only 'clever' thing is using the errgroup, which cancels all tasks as soon as one fails. This is handy to avoid doing unecessary expensive computations.</p>
 <p>Let's try it then. We serve the static text file <code>haveibeenpawned.txt</code> using a HTTP server to act as the Have I Been Pawned API, it just contains one password per line e.g.:</p>
