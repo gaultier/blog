@@ -270,7 +270,9 @@ Why does it work? Well, the `ctx` we get from `errgroup.WithContext(ctx)` is a c
 
 ## Conclusion
 
-The `errgroup` concept is pretty great. It greatly simplifies equivalent code written using Go channels which get real hairy real soon (you can check the [diff](https://github.com/ory/kratos/commit/a7f50abc99ddd7b6dac7dea09004feeb8e84c323) for the real production code: the old code used two naked channels + a goroutine, the new code uses the `errgroup`). But, as it is often the case in Go, you do need to read the fine print, because the type system is not expressive enough to reflect the pre- and post-conditions of APIs.
+The `errgroup` concept is pretty great. It greatly simplifies equivalent code written using Go channels which get real hairy real soon (you can check the [diff](https://github.com/ory/kratos/commit/a7f50abc99ddd7b6dac7dea09004feeb8e84c323) for the real production code: the old code used two naked channels + a goroutine, the new code uses the `errgroup`). And it can yield real performance gains.
+
+But, as it is often the case in Go, you do need to read the fine prints, because the type system is not expressive enough to reflect the pre- and post-conditions of APIs.
 
 Shadowing is another concept that made this issue less visible. I have had quite a few bugs due to shadowing in Go and Rust, both languages that idiomatically use this approach a lot. Some newer programming languages have outright banned variable shadowing, like [Zig](https://ziglang.org/documentation/0.14.1/#Shadowing), I presume to prevent such issues.
 
