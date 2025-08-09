@@ -275,6 +275,6 @@ If you've ever heard of linear types, and never saw their utility, that's actual
 
 Things get even muddier when we notice that after `g.Wait(ctx)`, we do the password length check, and that gets to run, contrary to the `checkHaveIBeenPawned` call. Since the length check does not care about a context, it runs just fine. And that's what puzzled me during the investigation for so long.
 
-My take-away: if you decide to use an API, take time to first read the docs in full and read the fine prints. It was the first time I used `errgroup` and I only had a cursory look at the docs.
+My main take-away: if you decide to use an API, take time to first read the docs in full. Probably more than once. And read the fine prints. Consider also skimming through the implementation. It will save time overall.
 
-Finally: if the code is trivially simple, *except* for this one clever thing, and there is a bug, well... The bug is probably in this clever bit of code.
+Finally: if the code is trivially simple, *except* for this one clever thing, and there is a bug, well... The bug is probably in this one clever bit of code.

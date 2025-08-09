@@ -335,8 +335,8 @@ index ae602df..6bcbfa3 100644
 <p>Shadowing is another concept that made this issue less visible. I have had quite a few bugs due to shadowing in Go and Rust, both languages that idiomatically use it a lot. Some newer programming languages have outright banned variable shadowing, like Zig.</p>
 <p>If you've ever heard of linear types, and never saw their utility, that's actually exactly what they are good for: a variable gets 'consumed' by a function, and the type system prevents us from using it after that point. Conceptually, <code>g.Wait(ctx)</code> consumes <code>ctx</code> and there is no point using this <code>ctx</code> afterwards. But the current Go type system does not prevent us from doing this, at all.</p>
 <p>Things get even muddier when we notice that after <code>g.Wait(ctx)</code>, we do the password length check, and that gets to run, contrary to the <code>checkHaveIBeenPawned</code> call. Since the length check does not care about a context, it runs just fine. And that's what puzzled me during the investigation for so long.</p>
-<p>My take-away: if you decide to use an API, take time to first read the docs in full and read the fine prints. It was the first time I used <code>errgroup</code> and I only had a cursory look at the docs.</p>
-<p>Finally: if the code is trivially simple, <em>except</em> for this one clever thing, and there is a bug, well... The bug is probably in this clever bit of code.</p>
+<p>My main take-away: if you decide to use an API, take time to first read the docs in full. Probably more than once. And read the fine prints. Consider also skimming through the implementation. It will save time overall.</p>
+<p>Finally: if the code is trivially simple, <em>except</em> for this one clever thing, and there is a bug, well... The bug is probably in this one clever bit of code.</p>
 <p><a href="/blog"> ⏴ Back to all articles</a></p>
 
 <blockquote id="donate">
