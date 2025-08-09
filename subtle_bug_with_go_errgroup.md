@@ -270,11 +270,11 @@ Why does it work? Well, the `ctx` we get from `errgroup.WithContext(ctx)` is a c
 
 ## Conclusion
 
-The `errgroup` concept is pretty great. It greatly simplifies equivalent code written using Go channels which get real hairy real soon (you can check the [diff](https://github.com/ory/kratos/commit/a7f50abc99ddd7b6dac7dea09004feeb8e84c323) for the real production code: the old code used two naked channels + a goroutine, the new code uses the `errgroup`). But, as it is often the case in Go, you do need to read the fine print, because the type system is not expressive enough to reflect the pre- and post-conditions of the API.
+The `errgroup` concept is pretty great. It greatly simplifies equivalent code written using Go channels which get real hairy real soon (you can check the [diff](https://github.com/ory/kratos/commit/a7f50abc99ddd7b6dac7dea09004feeb8e84c323) for the real production code: the old code used two naked channels + a goroutine, the new code uses the `errgroup`). But, as it is often the case in Go, you do need to read the fine print, because the type system is not expressive enough to reflect the pre- and post-conditions of APIs.
 
-Shadowing is another concept that made this issue less visible. I have had quite a few bugs due to shadowing in Go and Rust, both languages that idiomatically use it a lot. Some newer programming languages have outright banned variable shadowing, like Zig.
+Shadowing is another concept that made this issue less visible. I have had quite a few bugs due to shadowing in Go and Rust, both languages that idiomatically use this approach a lot. Some newer programming languages have outright banned variable shadowing, like [Zig](https://ziglang.org/documentation/0.14.1/#Shadowing), I presume to prevent such issues.
 
-If you've ever heard of linear types, and never saw their utility, that's actually exactly what they are good for: a variable gets 'consumed' by a function, and the type system prevents us from using it after that point. Conceptually, `g.Wait(ctx)` consumes `ctx` and there is no point using this `ctx` afterwards. But the current Go type system does not prevent us from doing this, at all. 
+If you've ever heard of [linear types](https://en.wikipedia.org/wiki/Substructural_type_system), and never saw their utility, that's actually exactly what they are good for: a variable gets 'consumed' by a function, and the type system prevents us from using it after that point. Conceptually, `g.Wait(ctx)` consumes `ctx` and there is no point using this `ctx` afterwards. But the current Go type system does not prevent us from doing this, at all. 
 
 Things get even muddier when we notice that after `g.Wait(ctx)`, we do the password length check, and that gets to run, contrary to the `checkHaveIBeenPawned` call. Since the length check does not care about a context, it runs just fine. And that's what puzzled me during the investigation for so long.
 
