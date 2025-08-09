@@ -1,4 +1,4 @@
-Title: Subtle bug with Go's errgroup
+Title: A subtle bug with Go's errgroup
 Tags: Go
 ---
 
