@@ -2,7 +2,7 @@ Title: Subtle bug with Go's errgroup
 Tags: Go
 ---
 
-Yesterday I got bitten by an insidious bug at work. Fortunately a test caught it before it got merged. The more I work on big, complex software, the more I deeply appreciate tests, even though I do not necessarily enjoy writing them. Anyways, I lost a few hours investigating this issue, and this could happen to anyone, I think. 
+Yesterday I got bitten by an insidious bug at work while working on [Kratos](https://github.com/ory/kratos). Fortunately a test caught it before it got merged. The more I work on big, complex software, the more I deeply appreciate tests, even though I do not necessarily enjoy writing them. Anyways, I lost a few hours investigating this issue, and this could happen to anyone, I think. 
 
 Let's get into it. I minimized the issue in a stand-alone program in just 100 lines. 
 
@@ -16,7 +16,7 @@ Today, we are writing a program validating passwords. Well, the most minimal ver
 - Check the Have I Been Pawned API, which stores millions of leaked passwords. This serves to avoid commonly used and leaked passwords. The real production program has a in-memory cache in front of the API for performance, but we still have to do an API call at start-up and from time to time.
 - Check that the password is long enough
 
-For simplicity, the Have I Been Pawned API in our reproducer is just a text file with passwords in clear (do not do that in production!).
+For simplicity, the Have I Been Pawned API in our reproducer is just a text file with passwords in clear.
 
 One last thing: passwords are (obviously, I hope) never stored in clear, and we instead store a hash using a [password hashing function](https://en.wikipedia.org/wiki/Bcrypt) specially designed to take up a lot of computational power to hinder brute-force attacks. Typically, that can take hundreds of milliseconds or even seconds (depending on the cost factor) for one hash.
 
@@ -194,7 +194,7 @@ At that point, a great collegue of mine helped me debug and found the issue. He 
 
 > The derived Context is canceled the first time a function passed to Go returns a non-nil error or the first time Wait returns, whichever occurs first. 
 
-Ah... that's why. I mean, it makes sense that the context is canceled on the first error occurring, that's how operations in other goroutines can notice and also stop early. It's just surprising to me that this happens also when `Wait` returns and no error happened.
+Ah... that's why. I mean, it makes sense that the context is canceled on the first error occurring, that's how operations in other goroutines can notice and also stop early. It's just surprising to me that this applies also when `Wait` returns and no error happened.
 
 Ok, how do we fix it then? 
 
@@ -244,7 +244,7 @@ new password set: $2a$10$.oyEO/cSmTWugfwdpoADYOB/AM.uHjz1HodOysS3ksIS.FS4RvTx.‚è
 
 It works correctly now!
 
-This is the fix I picked in the real production [code](https://github.com/ory/kratos/commit/c7fedfe21f2e95f89b54ced34bf9b49bd5f64fb9).
+This is the fix I went for in the real production [code](https://github.com/ory/kratos/commit/c7fedfe21f2e95f89b54ced34bf9b49bd5f64fb9).
 
 ## Alternative fix
 
@@ -281,3 +281,5 @@ Things get even muddier when we notice that after `g.Wait(ctx)`, we do the passw
 My main take-away: if you decide to use an API, take time to first read the docs in full. Probably more than once. And read the fine prints. Consider also skimming through the implementation. It will save time overall.
 
 Finally: if the code is trivially simple, *except* for this one clever thing, and there is a bug, well... The bug is probably in this one clever bit of code.
+
+And again, big thanks to my colleague [Patrik](https://github.com/zepatrik) for finding the root cause!

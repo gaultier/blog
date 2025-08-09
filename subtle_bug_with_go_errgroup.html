@@ -100,7 +100,7 @@ Do not edit it by hand.
   </li>
 </ul>
 
-<p>Yesterday I got bitten by an insidious bug at work. Fortunately a test caught it before it got merged. The more I work on big, complex software, the more I deeply appreciate tests, even though I do not necessarily enjoy writing them. Anyways, I lost a few hours investigating this issue, and this could happen to anyone, I think.</p>
+<p>Yesterday I got bitten by an insidious bug at work while working on <a href="https://github.com/ory/kratos">Kratos</a>. Fortunately a test caught it before it got merged. The more I work on big, complex software, the more I deeply appreciate tests, even though I do not necessarily enjoy writing them. Anyways, I lost a few hours investigating this issue, and this could happen to anyone, I think.</p>
 <p>Let's get into it. I minimized the issue in a stand-alone program in just 100 lines.</p>
 <p>You can have a look at the real production code <a href="https://github.com/ory/kratos/commit/a7f50abc99ddd7b6dac7dea09004feeb8e84c323">here</a> if you are interested. After all, it's open source!</p>
 <h2 id="the-program">
@@ -113,7 +113,7 @@ Do not edit it by hand.
 <li>Check the Have I Been Pawned API, which stores millions of leaked passwords. This serves to avoid commonly used and leaked passwords. The real production program has a in-memory cache in front of the API for performance, but we still have to do an API call at start-up and from time to time.</li>
 <li>Check that the password is long enough</li>
 </ul>
-<p>For simplicity, the Have I Been Pawned API in our reproducer is just a text file with passwords in clear (do not do that in production!).</p>
+<p>For simplicity, the Have I Been Pawned API in our reproducer is just a text file with passwords in clear.</p>
 <p>One last thing: passwords are (obviously, I hope) never stored in clear, and we instead store a hash using a <a href="https://en.wikipedia.org/wiki/Bcrypt">password hashing function</a> specially designed to take up a lot of computational power to hinder brute-force attacks. Typically, that can take hundreds of milliseconds or even seconds (depending on the cost factor) for one hash.</p>
 <p>For performance, if we have to compute this hash, we try to do other things in parallel. To achieve this, we use an <a href="https://pkg.go.dev/golang.org/x/sync/errgroup">errgroup</a>, which has become pretty common place now in Go.</p>
 <p>Here goes:</p>
@@ -269,7 +269,7 @@ index ae602df..17d0228 100644
 <blockquote>
 <p>The derived Context is canceled the first time a function passed to Go returns a non-nil error or the first time Wait returns, whichever occurs first.</p>
 </blockquote>
-<p>Ah... that's why. I mean, it makes sense that the context is canceled on the first error occurring, that's how operations in other goroutines can notice and also stop early. It's just surprising to me that this happens also when <code>Wait</code> returns and no error happened.</p>
+<p>Ah... that's why. I mean, it makes sense that the context is canceled on the first error occurring, that's how operations in other goroutines can notice and also stop early. It's just surprising to me that this applies also when <code>Wait</code> returns and no error happened.</p>
 <p>Ok, how do we fix it then?</p>
 <p>This was my fix in the real program: since the HTTP call is the one that does not get to run, and this could take up some time, why not also run it in a goroutine in the <code>errgroup</code>? This task is completely independent from the others.</p>
 <p>Here it is, quite a short fix:</p>
@@ -308,7 +308,7 @@ $ go run main.go 'correct horse battery staple'
 new password set: $2a$10$.oyEO/cSmTWugfwdpoADYOB/AM.uHjz1HodOysS3ksIS.FS4RvTx.⏎                   
 </code></pre>
 <p>It works correctly now!</p>
-<p>This is the fix I picked in the real production <a href="https://github.com/ory/kratos/commit/c7fedfe21f2e95f89b54ced34bf9b49bd5f64fb9">code</a>.</p>
+<p>This is the fix I went for in the real production <a href="https://github.com/ory/kratos/commit/c7fedfe21f2e95f89b54ced34bf9b49bd5f64fb9">code</a>.</p>
 <h2 id="alternative-fix">
   <a class="title" href="#alternative-fix">Alternative fix</a>
   <a class="hash-anchor" href="#alternative-fix" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
@@ -339,6 +339,7 @@ index ae602df..6bcbfa3 100644
 <p>Things get even muddier when we notice that after <code>g.Wait(ctx)</code>, we do the password length check, and that gets to run, contrary to the <code>checkHaveIBeenPawned</code> call. Since the length check does not care about a context, it runs just fine. And that's what puzzled me during the investigation for so long.</p>
 <p>My main take-away: if you decide to use an API, take time to first read the docs in full. Probably more than once. And read the fine prints. Consider also skimming through the implementation. It will save time overall.</p>
 <p>Finally: if the code is trivially simple, <em>except</em> for this one clever thing, and there is a bug, well... The bug is probably in this one clever bit of code.</p>
+<p>And again, big thanks to my colleague <a href="https://github.com/zepatrik">Patrik</a> for finding the root cause!</p>
 <p><a href="/blog"> ⏴ Back to all articles</a></p>
 
 <blockquote id="donate">

@@ -2,7 +2,7 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
 <title>Philippe Gaultier's blog</title>
 <link href="https://gaultier.github.io/blog"/>
-<updated>2025-08-09T10:46:17+02:00</updated>
+<updated>2025-08-09T10:55:05+02:00</updated>
 <author>
 <name>Philippe Gaultier</name>
 </author>
@@ -292,7 +292,7 @@
 <title>Subtle bug with Go&#39;s errgroup</title>
 <link href="https://gaultier.github.io/blog/subtle_bug_with_go_errgroup.html"/>
 <id>urn:uuid:91dd6f95-7f4d-5706-91b5-f2cbf6b89f09</id>
-<updated>2025-08-09T10:46:17+02:00</updated>
+<updated>2025-08-09T10:55:05+02:00</updated>
 <published>2025-08-09T10:07:00+02:00</published>
 </entry>
 </feed>
