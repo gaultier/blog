@@ -266,7 +266,7 @@ index ae602df..6bcbfa3 100644
         // - Check that the new password is not the same as the old password
 ```
 
-Why does it work? Well, the `ctx` we get from `errgroup.WithContext(ctx)` is a child of the `ctx` passed to our function, and also shadows it in the current scope. Then, when we call `checkHaveIBeenPawned(ctx, newPassword)`, we use this child context that just got canceled by `g.Wait()` the line before. By not shadowing the parent context, the same call `checkHaveIBeenPawned(ctx, newPassword)` now uses this parent context, which has *not* been canceled in any way. So it works.
+Why does it work? Well, the `ctx` we get from `errgroup.WithContext(ctx)` is a child of the `ctx` passed to our function, and also shadows it in the current scope. Then, when we call `checkHaveIBeenPawned(ctx, newPassword)`, we use this child context that just got canceled by `g.Wait()` the line before. By not shadowing the parent context, the same call `checkHaveIBeenPawned(ctx, newPassword)` now uses this parent context, which has *not* been canceled in any way. So it works as expected. We could also name the two contexts differently to avoid this pitfall.
 
 ## Conclusion
 

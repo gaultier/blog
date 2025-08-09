@@ -328,7 +328,7 @@ index ae602df..6bcbfa3 100644
         // - Compute the hash of the new password
         // - Check that the new password is not the same as the old password
 </code></pre>
-<p>Why does it work? Well, the <code>ctx</code> we get from <code>errgroup.WithContext(ctx)</code> is a child of the <code>ctx</code> passed to our function, and also shadows it in the current scope. Then, when we call <code>checkHaveIBeenPawned(ctx, newPassword)</code>, we use this child context that just got canceled by <code>g.Wait()</code> the line before. By not shadowing the parent context, the same call <code>checkHaveIBeenPawned(ctx, newPassword)</code> now uses this parent context, which has <em>not</em> been canceled in any way. So it works.</p>
+<p>Why does it work? Well, the <code>ctx</code> we get from <code>errgroup.WithContext(ctx)</code> is a child of the <code>ctx</code> passed to our function, and also shadows it in the current scope. Then, when we call <code>checkHaveIBeenPawned(ctx, newPassword)</code>, we use this child context that just got canceled by <code>g.Wait()</code> the line before. By not shadowing the parent context, the same call <code>checkHaveIBeenPawned(ctx, newPassword)</code> now uses this parent context, which has <em>not</em> been canceled in any way. So it works as expected. We could also name the two contexts differently to avoid this pitfall.</p>
 <h2 id="conclusion">
   <a class="title" href="#conclusion">Conclusion</a>
   <a class="hash-anchor" href="#conclusion" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
