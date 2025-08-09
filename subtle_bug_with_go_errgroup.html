@@ -188,6 +188,12 @@ func changePassword(ctx context.Context, oldHash []byte, newPassword string) ([]
 		return nil, err
 	}
 
+	// Reject passwords that are too short.
+	// In real programs, this value should be much higher!
+	if len(newPassword) &lt; 4 {
+		return nil, fmt.Errorf(&quot;password is too short&quot;)
+	}
+
 	return newHash, nil
 }
 
@@ -216,14 +222,20 @@ abc123
 123456
 </code></pre>
 <pre><code class="language-sh">$ python3 -m http.server -d . &amp;
- $ go run main.go 'correct horse battery staple'
+
+# Fine new password, succeeds
+$ go run main.go 'correct horse battery staple'
 new password set: $2a$10$6tIRwMIKaOZuzsT1dT3EVu5boCtautewpJYT6r5Fc6PV13i9ezcNS
-</code></pre>
-<p>It works! Now let's try with a leaked password:</p>
-<pre><code class="language-sh">$ go run main.go 'hello'
+
+# Password too short
+$ go run main.go 'hi'
+failed to change password: password is too short
+
+# Leaked password
+$ go run main.go 'hello'
 new password set: $2a$10$pmOOg5VOFEIjFk47hstoQeFbgHFTzxChpsp77SuuE4yvlSK9Ds4SG⏎                         
 </code></pre>
-<p>Wait, this should have been rejected, what's going on?</p>
+<p>Wait, the last one should have been rejected, what's going on?</p>
 <h2 id="bug-investigation">
   <a class="title" href="#bug-investigation">Bug investigation</a>
   <a class="hash-anchor" href="#bug-investigation" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
@@ -256,54 +268,58 @@ new password set: $2a$10$pmOOg5VOFEIjFk47hstoQeFbgHFTzxChpsp77SuuE4yvlSK9Ds4SG�
 <p>This was my fix in the real program: since the HTTP call is the one that does not get to run, and this could take up some time, why not also run it in a goroutine in the <code>errgroup</code>? The real Have I Been Pawned API accepts a SHA1 hash of the password, not bcrypt, so this task is thus completely independent from the others.</p>
 <p>Here it is, quite a short fix:</p>
 <pre><code class="language-diff">diff --git a/main.go b/main.go
-index a918ac9..b617935 100644
+index ae602df..74371a5 100644
 --- a/main.go
 +++ b/main.go
-@@ -58,15 +58,14 @@ func changePassword(ctx context.Context, oldHash []byte, newPassword string) ([]
- 		}
- 		return nil
- 	})
-+	g.Go(func() error {
-+		return checkHaveIBeenPawned(ctx, newPassword)
-+	})
+@@ -62,15 +62,14 @@ func changePassword(ctx context.Context, oldHash []byte, newPassword string) ([]
+                }
+                return nil
+        })
++       g.Go(func() error {
++               return checkHaveIBeenPawned(ctx, newPassword)
++       })
  
- 	if err := g.Wait(); err != nil {
- 		return nil, err
- 	}
+        if err := g.Wait(); err != nil {
+                return nil, err
+        }
  
--	if err := checkHaveIBeenPawned(ctx, newPassword); err != nil {
--		return nil, err
--	}
+-       if err := checkHaveIBeenPawned(ctx, newPassword); err != nil {
+-               return nil, err
+-       }
 -
- 	return newHash, nil
- }
+        // Reject passwords that are too short.
+        // In real programs, this value should be much higher!
+        if len(newPassword) &lt; 4 {
 </code></pre>
 <p>Let's test it then:</p>
-<pre><code class="language-sh">$ go run main.go 'hello'
+<pre><code class="language-sh"> $ go run main.go 'hi'
+failed to change password: password is too short
+
+$ go run main.go 'hello'
 failed to change password: the password appears in a leak
 
 $ go run main.go 'correct horse battery staple'
 new password set: $2a$10$.oyEO/cSmTWugfwdpoADYOB/AM.uHjz1HodOysS3ksIS.FS4RvTx.⏎                   
 </code></pre>
-<p>It works now!</p>
+<p>It works correctly now!</p>
 <h2 id="alternative-fix">
   <a class="title" href="#alternative-fix">Alternative fix</a>
   <a class="hash-anchor" href="#alternative-fix" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>What if I told you there is a one character change that fixes the issue?</p>
 <pre><code class="language-diff">diff --git a/main.go b/main.go
-index a918ac9..da28eed 100644
+index ae602df..6bcbfa3 100644
 --- a/main.go
 +++ b/main.go
-@@ -46,7 +46,7 @@ func checkHaveIBeenPawned(ctx context.Context, pw string) error {
+@@ -47,7 +47,7 @@ func checkHaveIBeenPawned(ctx context.Context, pw string) error {
  func changePassword(ctx context.Context, oldHash []byte, newPassword string) ([]byte, error) {
- 	var newHash []byte
+        var newHash []byte
  
--	g, ctx := errgroup.WithContext(ctx)
-+	g, _ := errgroup.WithContext(ctx)
- 	g.Go(func() error {
- 		var err error
- 		newHash, err = bcrypt.GenerateFromPassword([]byte(newPassword), 10)
+-       g, ctx := errgroup.WithContext(ctx)
++       g, _ := errgroup.WithContext(ctx)
+        // Do in parallel:
+        // - Compute the hash of the new password
+        // - Check that the new password is not the same as the old password
 </code></pre>
 <p>Why does it work? Well, the <code>ctx</code> we get from <code>errgroup.WithContext(ctx)</code> is a child of the <code>ctx</code> passed to our function, and also shadows it in the current scope. Then, when we call <code>checkHaveIBeenPawned(ctx, newPassword)</code>, we use this child context that just got cancelled by <code>g.Wait()</code> the line before. By not shadowing the parent context, the same call <code>checkHaveIBeenPawned(ctx, newPassword)</code> now uses this parent context, which has <em>not</em> been cancelled in any way. So it works.</p>
 <h2 id="conclusion">
@@ -311,7 +327,9 @@ index a918ac9..da28eed 100644
   <a class="hash-anchor" href="#conclusion" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>The <code>errgroup</code> concept is pretty great. It greatly simplifies equivalent code written using Go channels which get real hairy real soon. But, as it is often the case in Go, you do need to read the fine print, because the type system is not expressive enough to reflect the pre- and post-conditions of the API.</p>
-<p>Shadowing is another concept that made this issue less visible. I have had quite a few bugs due to shadowing in Go and Rust, both languages that idiomatically use it a lot.</p>
+<p>Shadowing is another concept that made this issue less visible. I have had quite a few bugs due to shadowing in Go and Rust, both languages that idiomatically use it a lot. Some newer programming languages have outright banned variable shadowing, like Zig.</p>
+<p>If you ever heard of linear types, and never saw their utility, that's actually exactly what they are for: a variable gets 'consumed' and the type system prevents us from using it after that point. Conceptually, <code>g.Wait(ctx)</code> consumes <code>ctx</code> and there is no point using this <code>ctx</code> afterwards. But the current Go type system does not prevent us from doing this, at all.</p>
+<p>Things get even muddier in the real program where the Have I Been Pawned API call was not the only thing we did after <code>g.Wait(ctx)</code>: a password length check was also done. Since this code does not care about a context, it ran just fine and the tests checking for this behavior passed. This might be a case of Go actually having function coloring! The API code and the length check code get treated differently.</p>
 <p><a href="/blog"> ⏴ Back to all articles</a></p>
 
 <blockquote id="donate">

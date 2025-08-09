@@ -95,6 +95,12 @@ func changePassword(ctx context.Context, oldHash []byte, newPassword string) ([]
 		return nil, err
 	}
 
+	// Reject passwords that are too short.
+	// In real programs, this value should be much higher!
+	if len(newPassword) < 4 {
+		return nil, fmt.Errorf("password is too short")
+	}
+
 	return newHash, nil
 }
 
@@ -129,18 +135,22 @@ abc123
 
 ```sh
 $ python3 -m http.server -d . &
- $ go run main.go 'correct horse battery staple'
+
+# Fine new password, succeeds
+$ go run main.go 'correct horse battery staple'
 new password set: $2a$10$6tIRwMIKaOZuzsT1dT3EVu5boCtautewpJYT6r5Fc6PV13i9ezcNS
-```
 
-It works! Now let's try with a leaked password:
+# Password too short
+$ go run main.go 'hi'
+failed to change password: password is too short
 
-```sh
+# Leaked password
 $ go run main.go 'hello'
 new password set: $2a$10$pmOOg5VOFEIjFk47hstoQeFbgHFTzxChpsp77SuuE4yvlSK9Ds4SG⏎                         
 ```
 
-Wait, this should have been rejected, what's going on? 
+
+Wait, the last one should have been rejected, what's going on? 
 
 ## Bug investigation
 
@@ -186,33 +196,37 @@ Here it is, quite a short fix:
 
 ```diff
 diff --git a/main.go b/main.go
-index a918ac9..b617935 100644
+index ae602df..74371a5 100644
 --- a/main.go
 +++ b/main.go
-@@ -58,15 +58,14 @@ func changePassword(ctx context.Context, oldHash []byte, newPassword string) ([]
- 		}
- 		return nil
- 	})
-+	g.Go(func() error {
-+		return checkHaveIBeenPawned(ctx, newPassword)
-+	})
+@@ -62,15 +62,14 @@ func changePassword(ctx context.Context, oldHash []byte, newPassword string) ([]
+                }
+                return nil
+        })
++       g.Go(func() error {
++               return checkHaveIBeenPawned(ctx, newPassword)
++       })
  
- 	if err := g.Wait(); err != nil {
- 		return nil, err
- 	}
+        if err := g.Wait(); err != nil {
+                return nil, err
+        }
  
--	if err := checkHaveIBeenPawned(ctx, newPassword); err != nil {
--		return nil, err
--	}
+-       if err := checkHaveIBeenPawned(ctx, newPassword); err != nil {
+-               return nil, err
+-       }
 -
- 	return newHash, nil
- }
+        // Reject passwords that are too short.
+        // In real programs, this value should be much higher!
+        if len(newPassword) < 4 {
 ```
 
 
 Let's test it then:
 
 ```sh
+ $ go run main.go 'hi'
+failed to change password: password is too short
+
 $ go run main.go 'hello'
 failed to change password: the password appears in a leak
 
@@ -220,7 +234,7 @@ $ go run main.go 'correct horse battery staple'
 new password set: $2a$10$.oyEO/cSmTWugfwdpoADYOB/AM.uHjz1HodOysS3ksIS.FS4RvTx.⏎                   
 ```
 
-It works now!
+It works correctly now!
 
 
 ## Alternative fix
@@ -229,18 +243,18 @@ What if I told you there is a one character change that fixes the issue?
 
 ```diff
 diff --git a/main.go b/main.go
-index a918ac9..da28eed 100644
+index ae602df..6bcbfa3 100644
 --- a/main.go
 +++ b/main.go
-@@ -46,7 +46,7 @@ func checkHaveIBeenPawned(ctx context.Context, pw string) error {
+@@ -47,7 +47,7 @@ func checkHaveIBeenPawned(ctx context.Context, pw string) error {
  func changePassword(ctx context.Context, oldHash []byte, newPassword string) ([]byte, error) {
- 	var newHash []byte
+        var newHash []byte
  
--	g, ctx := errgroup.WithContext(ctx)
-+	g, _ := errgroup.WithContext(ctx)
- 	g.Go(func() error {
- 		var err error
- 		newHash, err = bcrypt.GenerateFromPassword([]byte(newPassword), 10)
+-       g, ctx := errgroup.WithContext(ctx)
++       g, _ := errgroup.WithContext(ctx)
+        // Do in parallel:
+        // - Compute the hash of the new password
+        // - Check that the new password is not the same as the old password
 ```
 
 Why does it work? Well, the `ctx` we get from `errgroup.WithContext(ctx)` is a child of the `ctx` passed to our function, and also shadows it in the current scope. Then, when we call `checkHaveIBeenPawned(ctx, newPassword)`, we use this child context that just got cancelled by `g.Wait()` the line before. By not shadowing the parent context, the same call `checkHaveIBeenPawned(ctx, newPassword)` now uses this parent context, which has *not* been cancelled in any way. So it works.
@@ -249,4 +263,8 @@ Why does it work? Well, the `ctx` we get from `errgroup.WithContext(ctx)` is a c
 
 The `errgroup` concept is pretty great. It greatly simplifies equivalent code written using Go channels which get real hairy real soon. But, as it is often the case in Go, you do need to read the fine print, because the type system is not expressive enough to reflect the pre- and post-conditions of the API.
 
-Shadowing is another concept that made this issue less visible. I have had quite a few bugs due to shadowing in Go and Rust, both languages that idiomatically use it a lot.
+Shadowing is another concept that made this issue less visible. I have had quite a few bugs due to shadowing in Go and Rust, both languages that idiomatically use it a lot. Some newer programming languages have outright banned variable shadowing, like Zig.
+
+If you ever heard of linear types, and never saw their utility, that's actually exactly what they are for: a variable gets 'consumed' and the type system prevents us from using it after that point. Conceptually, `g.Wait(ctx)` consumes `ctx` and there is no point using this `ctx` afterwards. But the current Go type system does not prevent us from doing this, at all. 
+
+Things get even muddier in the real program where the Have I Been Pawned API call was not the only thing we did after `g.Wait(ctx)`: a password length check was also done. Since this code does not care about a context, it ran just fine and the tests checking for this behavior passed. This might be a case of Go actually having function coloring! The API code and the length check code get treated differently.
