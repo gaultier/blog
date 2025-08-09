@@ -20,7 +20,7 @@ For simplicity, the Have I Been Pawned API in our reproducer is just a text file
 
 One last thing: passwords are (obviously, I hope) never stored in clear, and we instead store a hash using a [password hashing function](https://en.wikipedia.org/wiki/Bcrypt) specially designed to take up a lot of computational power to hinder brute-force attacks. Typically, that can take hundreds of milliseconds or even seconds (depending on the cost factor) for one hash.
 
-For performance, if we have to compute this hash, we try to do other things in parallel. To achieve this, we use an [errgroup](https://pkg.go.dev/golang.org/x/sync/errgroup), which has become pretty common place now in Go.
+For performance, if we have to compute this hash, we try to do other things in parallel. To achieve this, we use an [errgroup](https://pkg.go.dev/golang.org/x/sync/errgroup), which has become pretty common place now in Go: it acts as a pool of concurrent tasks (like a wait group) but also takes care of cancelling all tasks whenever an error occurs. This is handy to avoid doing unecessary expensive computations. 
 
 Here goes:
 
@@ -127,7 +127,7 @@ func main() {
 
 ```
 
-I think it is pretty straightforward. The only 'clever' thing is using `errgroup`, which cancels all tasks as soon as one fails. This is handy to avoid doing unecessary expensive computations. 
+I think it is pretty straightforward.
 
  We serve the static text file `haveibeenpawned.txt` using a HTTP server to act as the Have I Been Pawned API, it just contains one password per line e.g.:
 
@@ -194,7 +194,7 @@ At that point, a great collegue of mine helped me debug and found the issue. He 
 
 > The derived Context is canceled the first time a function passed to Go returns a non-nil error or the first time Wait returns, whichever occurs first. 
 
-Ah... that's why. I mean, it makes sense that the context is canceled on the first error occurring, that's how operations in other goroutines can notice and also stop early. It's just surprising to me that this applies also when `Wait` returns and no error happened.
+Aha! That's why! I mean, it makes sense that the context is canceled on the first error occurring, that's how operations in other goroutines can notice and also stop early. It's just surprising to me that this applies also when `Wait` returns and no error happened.
 
 Ok, how do we fix it then? 
 
@@ -280,6 +280,6 @@ Things get even muddier when we notice that after `g.Wait(ctx)`, we do the passw
 
 My main take-away: if you decide to use an API, take time to first read the docs in full. Probably more than once. And read the fine prints. Consider also skimming through the implementation. It will save time overall.
 
-Finally: if the code is trivially simple, *except* for this one clever thing, and there is a bug, well... The bug is probably in this one clever bit of code.
+Finally: if the code is trivially simple, *except* for this one clever thing, and there is a bug, well... The bug is probably in this one clever bit of code. In my case this was the `errgroup`.
 
 And again, big thanks to my colleague [Patrik](https://github.com/zepatrik) for finding the root cause!
