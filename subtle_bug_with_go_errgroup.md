@@ -293,7 +293,7 @@ And again, big thanks to my colleague [Patrik](https://github.com/zepatrik) for 
 
 ## Addendum
 
-Comments have pointed out that there is an old, known Github issue about this very API flaw: https://github.com/golang/go/issues/34510 :
+Comments have pointed out that there is an old, known Github issue about this very API flaw: [https://github.com/golang/go/issues/34510](https://github.com/golang/go/issues/34510) :
 
 > I have also observed that the context returned by WithContext is occasionally misused for code other than the goroutines spawned by Go, in some cases by directly shadowing the ctx variable, which often results in spooky action at a distance where one failure causes code in another part of the application to have its context cancelled.
 
