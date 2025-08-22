@@ -5,7 +5,7 @@ Do not edit it by hand.
 <!DOCTYPE html>
 <html>
 <head>
-<title>An amusing Go static analysis blindspot</title>
+<title>An amusing blindspot in Go&#39;s static analysis</title>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link type="application/atom+xml" href="/blog/feed.xml" rel="self">
@@ -77,7 +77,7 @@ Do not edit it by hand.
   <p class="publication-date">Published on 2025-08-22</p>
 </div>
 <div class="article-title">
-<h1>An amusing Go static analysis blindspot</h1>
+<h1>An amusing blindspot in Go's static analysis</h1>
   <div class="tags"> <a href="/blog/articles-by-tag.html#go" class="tag">Go</a></div>
   </div>
 
@@ -111,7 +111,7 @@ Do not edit it by hand.
 	}
 }
 </code></pre>
-<p>This test checks that a middleware adds the HTTP header <code>Cache-Control</code> for all routes. This should happen when registering a HTTP handler with <code>router.GET</code>, <code>router.DELETE</code>, etc. Why and how do not matter.</p>
+<p>This test checks that a middleware adds the HTTP header <code>Cache-Control</code> for all routes. This should happen when registering a HTTP handler with <code>router.GET</code>, <code>router.DELETE</code>, etc. Why and how, that does not matter.</p>
 <p>So, did you notice the issue with this test? I initially did not. I tweaked the testing assert near the end to a different value but this test still passed. Uh, what?</p>
 <p>What if I told you this test does nothing?</p>
 <p>Because the <code>for</code> loop iterates on an empty array, so there are zero loop iterations.</p>
@@ -131,11 +131,13 @@ index 0f9dba5515..48d2873157 100644
  		require.NoError(t, err)
 
 </code></pre>
+<p>It's a trivial <a href="https://github.com/ory/kratos/commit/48f5adb9ce720f6906283372515b85f365a7f0b5#diff-083558e2f6efe440baaea9a5f2a1344a88f165216c261057e37249c89c276902L71">fix</a>.</p>
 <p>I think that is visually easy to miss because in Go, an array literal is defined with curly braces, often on multiple lines, so the beginning of the for-loop body looks very similar.</p>
-<p>Interestingly no linter catches this issue. In the meantime you can use this regexp to catch instances of this issue (which is what I did and I discovered a few more cases):</p>
+<p>Interestingly no linter catches this issue. In the meantime you can use this regexp to catch instances of this issue, which is what I did and I discovered a few more cases in the codebase:</p>
 <pre><code class="language-sh">$ rg -t go 'for .* range \[\].+\{\} \{'
 </code></pre>
-<p>It's vexing because the Go compiler detects that this for-loop is a no-op and optmizes it away, if you look at the generated assembly.</p>
+<p>It's vexing because the Go compiler detects that this for-loop is a no-op and optmizes it away, if you look at the generated assembly. But it generates no warning.</p>
+<p>Does your programming language prevent this issue?</p>
 <p><a href="/blog"> ⏴ Back to all articles</a></p>
 
 <blockquote id="donate">

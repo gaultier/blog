@@ -1,4 +1,4 @@
-Title: An amusing Go static analysis blindspot
+Title: An amusing blindspot in Go's static analysis
 Tags: Go
 ---
 
@@ -35,7 +35,7 @@ func TestCacheHandling(t *testing.T) {
 }
 ```
 
-This test checks that a middleware adds the HTTP header `Cache-Control` for all routes. This should happen when registering a HTTP handler with `router.GET`, `router.DELETE`, etc. Why and how do not matter.
+This test checks that a middleware adds the HTTP header `Cache-Control` for all routes. This should happen when registering a HTTP handler with `router.GET`, `router.DELETE`, etc. Why and how, that does not matter.
 
 So, did you notice the issue with this test? I initially did not. I tweaked the testing assert near the end to a different value but this test still passed. Uh, what? 
 
@@ -62,15 +62,19 @@ index 0f9dba5515..48d2873157 100644
 
 ```
 
+It's a trivial [fix](https://github.com/ory/kratos/commit/48f5adb9ce720f6906283372515b85f365a7f0b5#diff-083558e2f6efe440baaea9a5f2a1344a88f165216c261057e37249c89c276902L71).
+
 I think that is visually easy to miss because in Go, an array literal is defined with curly braces, often on multiple lines, so the beginning of the for-loop body looks very similar.
 
 
-Interestingly no linter catches this issue. In the meantime you can use this regexp to catch instances of this issue (which is what I did and I discovered a few more cases):
+Interestingly no linter catches this issue. In the meantime you can use this regexp to catch instances of this issue, which is what I did and I discovered a few more cases in the codebase:
 
 ```sh
 $ rg -t go 'for .* range \[\].+\{\} \{'
 ```
 
 
-It's vexing because the Go compiler detects that this for-loop is a no-op and optmizes it away, if you look at the generated assembly.
+It's vexing because the Go compiler detects that this for-loop is a no-op and optmizes it away, if you look at the generated assembly. But it generates no warning.
+
+Does your programming language prevent this issue?
 
