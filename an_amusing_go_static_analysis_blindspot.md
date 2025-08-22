@@ -64,7 +64,7 @@ index 0f9dba5515..48d2873157 100644
 
 It's a trivial [fix](https://github.com/ory/kratos/commit/48f5adb9ce720f6906283372515b85f365a7f0b5#diff-083558e2f6efe440baaea9a5f2a1344a88f165216c261057e37249c89c276902L71).
 
-I think that is visually easy to miss because in Go, an array literal is defined with curly braces, often on multiple lines, so the beginning of the for-loop body looks very similar.
+I think that is visually easy to miss because in Go, an array literal is defined with curly braces, often on multiple lines, so the beginning of the `for` loop body looks very similar.
 
 
 Interestingly no linter catches this issue. In the meantime you can use this regexp to catch instances of this issue, which is what I did and I discovered a few more cases in the codebase:
