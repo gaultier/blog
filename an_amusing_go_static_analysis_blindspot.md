@@ -2,6 +2,8 @@ Title: An amusing blind spot in Go's static analysis
 Tags: Go
 ---
 
+*Discussions: [/r/golang](https://old.reddit.com/r/golang/comments/1mx1sep/an_amusing_blind_spot_in_gos_static_analysis/?)*.
+
 A short one today. I stumbled upon this Go test at work:
 
 ```go
