@@ -2,7 +2,7 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
 <title>Philippe Gaultier's blog</title>
 <link href="https://gaultier.github.io/blog"/>
-<updated>2025-08-22T11:23:32+02:00</updated>
+<updated>2025-08-22T11:35:46+02:00</updated>
 <author>
 <name>Philippe Gaultier</name>
 </author>
@@ -300,7 +300,7 @@
 <title>An amusing blind spot in Go&#39;s static analysis</title>
 <link href="https://gaultier.github.io/blog/an_amusing_go_static_analysis_blindspot.html"/>
 <id>urn:uuid:cc97adce-0e6e-5ec7-89fe-db04808b1b4c</id>
-<updated>2025-08-22T11:23:32+02:00</updated>
+<updated>2025-08-22T11:35:46+02:00</updated>
 <published>2025-08-22T11:17:32+02:00</published>
 </entry>
 </feed>

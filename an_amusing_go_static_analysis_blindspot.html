@@ -136,7 +136,7 @@ index 0f9dba5515..48d2873157 100644
 <p>Interestingly no linter catches this issue. In the meantime you can use this regexp to catch instances of this issue, which is what I did and I discovered a few more cases in the codebase:</p>
 <pre><code class="language-sh">$ rg -t go 'for .* range \[\].+\{\} \{'
 </code></pre>
-<p>It's vexing because the Go compiler detects that this for-loop is a no-op and optimizes it away, if you look at the generated assembly. But it generates no warning.</p>
+<p>It's vexing because the Go compiler detects that this <code>for</code> loop is a no-op and optimizes it away, if you look at the generated assembly. But it generates no warning.</p>
 <p>Does your programming language prevent this issue?</p>
 <p><a href="/blog"> ⏴ Back to all articles</a></p>
 

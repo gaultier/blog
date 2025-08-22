@@ -74,7 +74,7 @@ $ rg -t go 'for .* range \[\].+\{\} \{'
 ```
 
 
-It's vexing because the Go compiler detects that this for-loop is a no-op and optimizes it away, if you look at the generated assembly. But it generates no warning.
+It's vexing because the Go compiler detects that this `for` loop is a no-op and optimizes it away, if you look at the generated assembly. But it generates no warning.
 
 Does your programming language prevent this issue?
 
