@@ -98,15 +98,21 @@ Do not edit it by hand.
   <li>
     <a href="#conclusion-and-remaining-work">Conclusion and remaining work</a>
   </li>
+
+  <li>
+    <a href="#addendum-the-full-code">Addendum: the full code</a>
+  </li>
 </ul>
 
 <p>You have a Go program that does <em>something</em> with a SQL database. What exactly? You don't know. You'd like to see live what SQL queries are being done.</p>
-<p>Well, this is easy to do with DTrace!</p>
+<p>That's what happened to me at work: I had to tweak an endpoint that does pagination, and the <a href="https://github.com/ory/kratos/blob/afb43c39e/persistence/sql/persister_courier.go#L36">Go code</a> was using an ORM to build the SQL query, making it really hard to know what was the final query being executed.</p>
+<p>Well, this is easy to do with DTrace, without any code modification or even restarting the running program!</p>
+<p>And since there were in my case a number of optional query arguments (essentially search parameters), passed as variadic <code>any</code> arguments, I was not sure if DTrace could handle that. Well, it turns out it can!</p>
 <h2 id="level-1-see-the-sql-query-without-arguments">
   <a class="title" href="#level-1-see-the-sql-query-without-arguments">Level 1: See the SQL query, without arguments</a>
   <a class="hash-anchor" href="#level-1-see-the-sql-query-without-arguments" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
-<p>Since most Go programs use the standard library package <code>database/sql</code>, we'll observe the function:</p>
+<p>Since most Go programs use the standard library package <code>database/sql</code>, we want to observe the function:</p>
 <pre><code class="language-go">func (db *DB) QueryContext(ctx context.Context, query string, args ...any) (*Rows, error)
 </code></pre>
 <p>As a first step, we'll only print the query string. In some cases, that's sufficient, for example if the query is <code>SELECT * from users</code>: there are no arguments.</p>
@@ -115,19 +121,18 @@ Do not edit it by hand.
 <pre><code class="language-dtrace">pid$target::database?sql.*.QueryContext:entry {
   printf(&quot;%p %p %p %p %p %p %p %p %p\n&quot;, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9);
 }
-
 </code></pre>
 <p>And we'll see something like this when the application being observed does a SQL query:</p>
 <pre><code class="language-txt">dtrace: description 'pid$target::database?sql.*.QueryContext:entry ' matched 4 probes
 CPU     ID                    FUNCTION:NAME
  12 140734 database/sql.(*DB).QueryContext:entry 140023cea90 1024bce78 14002519b30 140017c5400 25b 14000e08b40 4 4 100bf02ac 2
 </code></pre>
-<p>From the Go ABI documentation, we can infer that:</p>
+<p>We can infer that:</p>
 <ul>
-<li>The object whose method is being called (<code>db *DB</code>) is passed in the first register: <code>arg0</code></li>
-<li>The first argument (<code>ctx context.Context</code>) is an interface, which is 2 pointers, and it's very likely that each field is passed in a register: <code>arg1</code> and <code>arg2</code></li>
-<li>The second argument (<code>query string</code>) is a string, which is a pointer and a length, and it's very likely that each field is passed in a register: <code>arg3</code> and <code>arg4</code>. So here the string is <code>0x25b</code> bytes long, or 603 bytes</li>
-<li>Remaining arguments (<code>args ...any</code>) are variadic, and Go passes them to the function as a slice (i.e. <code>[]any</code>), which is a pointer, a length, and a capacity, and it's very likely that each field is passed in a register: <code>arg5</code>, <code>arg6</code>, <code>arg7</code>. Here there are <code>4</code> query arguments. We'll ignore them for now.</li>
+<li>The object (<code>db *DB</code>) whose method is being called is passed in the first register: <code>arg0</code></li>
+<li>The first argument (<code>ctx context.Context</code>) is an interface, which is 2 pointers, and it's very likely that each field is passed separately in a register: <code>arg1</code> and <code>arg2</code></li>
+<li>The second argument (<code>query string</code>) is a string, which is a pointer and a length: <code>arg3</code> and <code>arg4</code>. So here the string is <code>0x25b</code> bytes long, or 603 bytes</li>
+<li>Remaining arguments (<code>args ...any</code>) are variadic, and Go passes them to the function as a slice (i.e. <code>[]any</code>), which is a pointer, a length, and a capacity: <code>arg5</code>, <code>arg6</code>, <code>arg7</code>. Here we observe that there are <code>4</code> query arguments. We'll come back to them later.</li>
 </ul>
 <p>So let's for now only print the query string:</p>
 <pre><code class="language-dtrace">pid$target::database?sql.*.QueryContext:entry {
@@ -140,7 +145,7 @@ CPU     ID                    FUNCTION:NAME
 <p>We see something like this:</p>
 <pre><code class="language-sql">SELECT courier_messages.body, courier_messages.channel, courier_messages.created_at, courier_messages.id, courier_messages.nid, courier_messages.recipient, courier_messages.send_count, courier_messages.status, courier_messages.subject, courier_messages.template_data, courier_messages.template_type, courier_messages.type, courier_messages.updated_at FROM courier_messages AS courier_messages WHERE nid=? AND (&quot;courier_messages&quot;.&quot;created_at&quot; &lt; ? OR (&quot;courier_messages&quot;.&quot;created_at&quot; = ? AND &quot;courier_messages&quot;.&quot;id&quot; &gt; ?)) ORDER BY &quot;courier_messages&quot;.&quot;created_at&quot; DESC, &quot;courier_messages&quot;.&quot;id&quot; ASC LIMIT 11
 </code></pre>
-<p>Which is already very useful in my opinion.</p>
+<p>Which is already very useful in my opinion. But wouldn't it be nice to also see which arguments were passed to the query?</p>
 <h2 id="level-2-see-string-query-arguments">
   <a class="title" href="#level-2-see-string-query-arguments">Level 2: See string query arguments</a>
   <a class="hash-anchor" href="#level-2-see-string-query-arguments" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
@@ -395,9 +400,108 @@ GoType {
   <a class="title" href="#conclusion-and-remaining-work">Conclusion and remaining work</a>
   <a class="hash-anchor" href="#conclusion-and-remaining-work" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
-<p>With relatively little work (under 90 lines of DTrace including defining all types), we can inspect all live SQL queries. More importantly, this technique to print Go variadic function arguments of type <code>any</code> can be applied everywhere.</p>
+<p>With relatively little work (under 90 lines of DTrace including defining all types), we can inspect all live SQL queries. More importantly, this technique to print Go variadic function arguments of type <code>any</code> can be applied everywhere, not just in the context of SQL queries.</p>
 <p>Printing each remaining Go type is left as an exercise to the reader but should be very similar.</p>
-<p>A promising avenue I have not explored is printing the name of the type using the <code>name_offset</code> field. That's because Go stores are compile time in the executable this RTTI including the human readable name of all the user defined types. This data is used when doing <code>println(reflect.TypeOf(someAnyArgument).Name())</code>. That prints <code>uuid.UUID</code>. Useful, but tricky to use from DTrace due to varint encoding being used and it's non trivial to determine where in memory this information is stored (<code>name_offset</code> is just an offset into this data).</p>
+<p>Furthermore, we have focussed on the Go function <code>QueryContext</code> in this article, but the exact same can be done for <code>ExecContext</code>.</p>
+<p>A promising avenue I have not explored is printing the name of the type using the <code>name_offset</code> field. That's because Go stores at compile time in the executable this RTTI including the human readable name of all the user defined types. This data is used when doing <code>println(reflect.TypeOf(someAnyArgument).Name())</code>. That prints <code>uuid.UUID</code>. Useful, but tricky to use from DTrace due to varint encoding being used and it's non trivial to determine where in memory this information is stored (<code>name_offset</code> is just an offset into this data which is relocated by the linker... somewhere). Inspecting the generated assembly is one possible way to learn this address, but what about PIE... Perhaps possible, but not easy.</p>
+<h2 id="addendum-the-full-code">
+  <a class="title" href="#addendum-the-full-code">Addendum: the full code</a>
+  <a class="hash-anchor" href="#addendum-the-full-code" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+</h2>
+<details>
+  <summary>The full code</summary>
+<pre><code class="language-dtrace">#!/usr/sbin/dtrace -s
+
+#pragma D option strsize=16K
+
+typedef struct {
+  uint8_t* ptr;
+  size_t len;
+} GoString; 
+
+typedef struct {
+  uintptr_t size;  
+  uintptr_t ptr_bytes;  
+  uint32_t hash;
+  uint8_t tflag;
+  uint8_t align;
+  uint8_t field_align;
+  uint8_t kind;
+  void* equal_func;
+  uint8_t* gc_data;
+  int32_t name_offset;
+  int32_t ptr_to_this;
+} GoType;
+
+typedef struct {
+  GoType* rtti;
+  void* ptr;
+} GoInterface;
+
+
+typedef struct {
+  GoType type;
+  GoType* elem;
+  GoType* slice;
+  uintptr_t len;
+} GoArrayType;
+
+pid$target::database?sql.*.QueryContext:entry {
+  this-&gt;query = stringof(copyin(arg3, arg4)); // Query string.
+  printf(&quot;%p %d\n&quot;, arg5, arg6);
+
+  this-&gt;args_ptr = arg5;
+
+  printf(&quot;%s\n&quot;, this-&gt;query);
+  this-&gt;iface0 = (GoInterface*) copyin(this-&gt;args_ptr, sizeof(GoInterface));
+  this-&gt;rtti0 = (GoType*) copyin((user_addr_t)this-&gt;iface0-&gt;rtti, sizeof(GoType));
+  print(*(this-&gt;rtti0));
+  printf(&quot;\n&quot;);
+
+  this-&gt;go_arr0 = (GoArrayType*)copyin((user_addr_t)this-&gt;iface0-&gt;rtti, sizeof(GoArrayType));
+  print(*(this-&gt;go_arr0));
+  printf(&quot;\n&quot;);
+
+  this-&gt;go_arr0_elem = (GoType*)copyin((user_addr_t)this-&gt;go_arr0-&gt;elem, sizeof(GoType));
+  print(*(this-&gt;go_arr0_elem));
+  printf(&quot;\n&quot;);
+
+  this-&gt;go_arr0_slice = (GoType*)copyin((user_addr_t)this-&gt;go_arr0-&gt;slice, sizeof(GoType));
+  print(*(this-&gt;go_arr0_slice));
+  printf(&quot;\n&quot;);
+
+  this-&gt;go_str0 = (uint8_t*)copyin((user_addr_t)this-&gt;iface0-&gt;ptr, 16);
+  tracemem(this-&gt;go_str0, 16);
+
+  this-&gt;iface1 = (GoInterface*) copyin(this-&gt;args_ptr + 1*sizeof(GoInterface), sizeof(GoInterface));
+  this-&gt;rtti1 = (GoType*) copyin((user_addr_t)this-&gt;iface1-&gt;rtti, sizeof(GoType));
+  print(*(this-&gt;rtti1));
+  printf(&quot;\n&quot;);
+
+  this-&gt;iface2 = (GoInterface*) copyin(this-&gt;args_ptr + 2*sizeof(GoInterface), sizeof(GoInterface));
+  this-&gt;rtti2 = (GoType*) copyin((user_addr_t)this-&gt;iface2-&gt;rtti, sizeof(GoType));
+  print(*(this-&gt;rtti2));
+  printf(&quot;\n&quot;);
+
+  this-&gt;iface3 = (GoInterface*) copyin(this-&gt;args_ptr + 3*sizeof(GoInterface), sizeof(GoInterface));
+  this-&gt;rtti3 = (GoType*) copyin((user_addr_t)this-&gt;iface3-&gt;rtti, sizeof(GoType));
+  print(*(this-&gt;rtti3));
+  printf(&quot;\n&quot;);
+
+  this-&gt;go_str1 = (GoString*)copyin((user_addr_t)this-&gt;iface1-&gt;ptr, sizeof(GoString));
+  this-&gt;str1 = stringof(copyin((user_addr_t)this-&gt;go_str1-&gt;ptr, this-&gt;go_str1-&gt;len));
+  printf(&quot;str1=%s\n&quot;, this-&gt;str1);
+
+  this-&gt;go_str2 = (GoString*)copyin((user_addr_t)this-&gt;iface2-&gt;ptr, sizeof(GoString));
+  this-&gt;str2 = stringof(copyin((user_addr_t)this-&gt;go_str2-&gt;ptr, this-&gt;go_str2-&gt;len));
+  printf(&quot;str2=%s\n&quot;, this-&gt;str2);
+
+  this-&gt;go_str3 = (GoString*)copyin((user_addr_t)this-&gt;iface3-&gt;ptr, sizeof(GoString));
+  this-&gt;str3 = stringof(copyin((user_addr_t)this-&gt;go_str3-&gt;ptr, this-&gt;go_str3-&gt;len));
+  printf(&quot;str3=%s\n&quot;, this-&gt;str3);
+}
+</code></pre>
+</details>
 <p><a href="/blog"> ⏴ Back to all articles</a></p>
 
 <blockquote id="donate">

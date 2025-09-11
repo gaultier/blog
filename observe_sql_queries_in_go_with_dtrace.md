@@ -4,11 +4,16 @@ Tags: Go, DTrace
 
 You have a Go program that does *something* with a SQL database. What exactly? You don't know. You'd like to see live what SQL queries are being done.
 
-Well, this is easy to do with DTrace!
+
+That's what happened to me at work: I had to tweak an endpoint that does pagination, and the [Go code](https://github.com/ory/kratos/blob/afb43c39e/persistence/sql/persister_courier.go#L36) was using an ORM to build the SQL query, making it really hard to know what was the final query being executed.
+
+Well, this is easy to do with DTrace, without any code modification or even restarting the running program!
+
+And since there were in my case a number of optional query arguments (essentially search parameters), passed as variadic `any` arguments, I was not sure if DTrace could handle that. Well, it turns out it can!
 
 ## Level 1: See the SQL query, without arguments
 
-Since most Go programs use the standard library package `database/sql`, we'll observe the function:
+Since most Go programs use the standard library package `database/sql`, we want to observe the function:
 
 ```go
 func (db *DB) QueryContext(ctx context.Context, query string, args ...any) (*Rows, error)
@@ -24,7 +29,6 @@ Alternatively, we can brute-force our way by first printing all registers and in
 pid$target::database?sql.*.QueryContext:entry {
   printf("%p %p %p %p %p %p %p %p %p\n", arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9);
 }
-
 ```
 
 And we'll see something like this when the application being observed does a SQL query:
@@ -35,12 +39,12 @@ CPU     ID                    FUNCTION:NAME
  12 140734 database/sql.(*DB).QueryContext:entry 140023cea90 1024bce78 14002519b30 140017c5400 25b 14000e08b40 4 4 100bf02ac 2
 ```
 
-From the Go ABI documentation, we can infer that:
+We can infer that:
 
-- The object whose method is being called (`db *DB`) is passed in the first register: `arg0`
-- The first argument (`ctx context.Context`) is an interface, which is 2 pointers, and it's very likely that each field is passed in a register: `arg1` and `arg2`
-- The second argument (`query string`) is a string, which is a pointer and a length, and it's very likely that each field is passed in a register: `arg3` and `arg4`. So here the string is `0x25b` bytes long, or 603 bytes
-- Remaining arguments (`args ...any`) are variadic, and Go passes them to the function as a slice (i.e. `[]any`), which is a pointer, a length, and a capacity, and it's very likely that each field is passed in a register: `arg5`, `arg6`, `arg7`. Here there are `4` query arguments. We'll ignore them for now.
+- The object (`db *DB`) whose method is being called is passed in the first register: `arg0`
+- The first argument (`ctx context.Context`) is an interface, which is 2 pointers, and it's very likely that each field is passed separately in a register: `arg1` and `arg2`
+- The second argument (`query string`) is a string, which is a pointer and a length: `arg3` and `arg4`. So here the string is `0x25b` bytes long, or 603 bytes
+- Remaining arguments (`args ...any`) are variadic, and Go passes them to the function as a slice (i.e. `[]any`), which is a pointer, a length, and a capacity: `arg5`, `arg6`, `arg7`. Here we observe that there are `4` query arguments. We'll come back to them later.
 
 
 So let's for now only print the query string:
@@ -61,7 +65,7 @@ We see something like this:
 SELECT courier_messages.body, courier_messages.channel, courier_messages.created_at, courier_messages.id, courier_messages.nid, courier_messages.recipient, courier_messages.send_count, courier_messages.status, courier_messages.subject, courier_messages.template_data, courier_messages.template_type, courier_messages.type, courier_messages.updated_at FROM courier_messages AS courier_messages WHERE nid=? AND ("courier_messages"."created_at" < ? OR ("courier_messages"."created_at" = ? AND "courier_messages"."id" > ?)) ORDER BY "courier_messages"."created_at" DESC, "courier_messages"."id" ASC LIMIT 11
 ```
 
-Which is already very useful in my opinion.
+Which is already very useful in my opinion. But wouldn't it be nice to also see which arguments were passed to the query?
 
 ## Level 2: See string query arguments
 
@@ -359,9 +363,112 @@ This is in fact a UUID v4: `9c62c162-2011-4d3f-8fdd-bcc625735cb9`.
 ## Conclusion and remaining work
 
 
-With relatively little work (under 90 lines of DTrace including defining all types), we can inspect all live SQL queries. More importantly, this technique to print Go variadic function arguments of type `any` can be applied everywhere.
+With relatively little work (under 90 lines of DTrace including defining all types), we can inspect all live SQL queries. More importantly, this technique to print Go variadic function arguments of type `any` can be applied everywhere, not just in the context of SQL queries.
 
-Printing each remaining Go type is left as an exercise to the reader but should be very similar.
+Printing each remaining Go type is left as an exercise to the reader but should be very similar. 
 
-A promising avenue I have not explored is printing the name of the type using the `name_offset` field. That's because Go stores are compile time in the executable this RTTI including the human readable name of all the user defined types. This data is used when doing `println(reflect.TypeOf(someAnyArgument).Name())`. That prints `uuid.UUID`. Useful, but tricky to use from DTrace due to varint encoding being used and it's non trivial to determine where in memory this information is stored (`name_offset` is just an offset into this data).
+Furthermore, we have focussed on the Go function `QueryContext` in this article, but the exact same can be done for `ExecContext`.
+
+A promising avenue I have not explored is printing the name of the type using the `name_offset` field. That's because Go stores at compile time in the executable this RTTI including the human readable name of all the user defined types. This data is used when doing `println(reflect.TypeOf(someAnyArgument).Name())`. That prints `uuid.UUID`. Useful, but tricky to use from DTrace due to varint encoding being used and it's non trivial to determine where in memory this information is stored (`name_offset` is just an offset into this data which is relocated by the linker... somewhere). Inspecting the generated assembly is one possible way to learn this address, but what about PIE... Perhaps possible, but not easy.
+
+
+## Addendum: the full code
+
+<details>
+  <summary>The full code</summary>
+
+```dtrace
+#!/usr/sbin/dtrace -s
+
+#pragma D option strsize=16K
+
+typedef struct {
+  uint8_t* ptr;
+  size_t len;
+} GoString; 
+
+typedef struct {
+  uintptr_t size;  
+  uintptr_t ptr_bytes;  
+  uint32_t hash;
+  uint8_t tflag;
+  uint8_t align;
+  uint8_t field_align;
+  uint8_t kind;
+  void* equal_func;
+  uint8_t* gc_data;
+  int32_t name_offset;
+  int32_t ptr_to_this;
+} GoType;
+
+typedef struct {
+  GoType* rtti;
+  void* ptr;
+} GoInterface;
+
+
+typedef struct {
+  GoType type;
+  GoType* elem;
+  GoType* slice;
+  uintptr_t len;
+} GoArrayType;
+
+pid$target::database?sql.*.QueryContext:entry {
+  this->query = stringof(copyin(arg3, arg4)); // Query string.
+  printf("%p %d\n", arg5, arg6);
+
+  this->args_ptr = arg5;
+
+  printf("%s\n", this->query);
+  this->iface0 = (GoInterface*) copyin(this->args_ptr, sizeof(GoInterface));
+  this->rtti0 = (GoType*) copyin((user_addr_t)this->iface0->rtti, sizeof(GoType));
+  print(*(this->rtti0));
+  printf("\n");
+
+  this->go_arr0 = (GoArrayType*)copyin((user_addr_t)this->iface0->rtti, sizeof(GoArrayType));
+  print(*(this->go_arr0));
+  printf("\n");
+
+  this->go_arr0_elem = (GoType*)copyin((user_addr_t)this->go_arr0->elem, sizeof(GoType));
+  print(*(this->go_arr0_elem));
+  printf("\n");
+
+  this->go_arr0_slice = (GoType*)copyin((user_addr_t)this->go_arr0->slice, sizeof(GoType));
+  print(*(this->go_arr0_slice));
+  printf("\n");
+
+  this->go_str0 = (uint8_t*)copyin((user_addr_t)this->iface0->ptr, 16);
+  tracemem(this->go_str0, 16);
+
+  this->iface1 = (GoInterface*) copyin(this->args_ptr + 1*sizeof(GoInterface), sizeof(GoInterface));
+  this->rtti1 = (GoType*) copyin((user_addr_t)this->iface1->rtti, sizeof(GoType));
+  print(*(this->rtti1));
+  printf("\n");
+
+  this->iface2 = (GoInterface*) copyin(this->args_ptr + 2*sizeof(GoInterface), sizeof(GoInterface));
+  this->rtti2 = (GoType*) copyin((user_addr_t)this->iface2->rtti, sizeof(GoType));
+  print(*(this->rtti2));
+  printf("\n");
+
+  this->iface3 = (GoInterface*) copyin(this->args_ptr + 3*sizeof(GoInterface), sizeof(GoInterface));
+  this->rtti3 = (GoType*) copyin((user_addr_t)this->iface3->rtti, sizeof(GoType));
+  print(*(this->rtti3));
+  printf("\n");
+
+  this->go_str1 = (GoString*)copyin((user_addr_t)this->iface1->ptr, sizeof(GoString));
+  this->str1 = stringof(copyin((user_addr_t)this->go_str1->ptr, this->go_str1->len));
+  printf("str1=%s\n", this->str1);
+
+  this->go_str2 = (GoString*)copyin((user_addr_t)this->iface2->ptr, sizeof(GoString));
+  this->str2 = stringof(copyin((user_addr_t)this->go_str2->ptr, this->go_str2->len));
+  printf("str2=%s\n", this->str2);
+
+  this->go_str3 = (GoString*)copyin((user_addr_t)this->iface3->ptr, sizeof(GoString));
+  this->str3 = stringof(copyin((user_addr_t)this->go_str3->ptr, this->go_str3->len));
+  printf("str3=%s\n", this->str3);
+}
+```
+
+</details>
 
