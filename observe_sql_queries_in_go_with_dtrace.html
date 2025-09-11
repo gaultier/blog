@@ -480,9 +480,10 @@ str3=00000000-0000-0000-0000-000000000000
 <p>Furthermore, we have focused on the Go function <code>QueryContext</code> in this article, but the exact same can be done for <code>ExecContext</code>.</p>
 <p>Printing each remaining Go type is left as an exercise to the reader but should be very similar.</p>
 <p>More importantly, this technique to print Go variadic function arguments of type <code>any</code> can be applied everywhere, not just in the context of SQL queries.</p>
-<p>This is a bit unfortunate that the Go team and community never took an interest in adding static DTrace probes everywhere in the Go runtime and standard library, like numerous other programming languages have done. That forces us to do gymnastics to get the information we need.</p>
+<p>This is a bit unfortunate that the Go team and community never took an interest in adding static DTrace probes in key places in the Go runtime and standard library, like numerous other programming languages have done. That forces us to do gymnastics to get the information we need.</p>
 <p>Finally, DTrace limitations (no loops, difficult to write complex logic), prevent us from writing a generic D script that can print all arguments of all queries (our script is ad-hoc). Perhaps this is doable with a program that generates the right D script at runtime, possibly tailored to each query in order to print the arguments correctly, and this program also post-processes the DTrace output.</p>
 <p>I wonder if eBPF on Linux is more powerful in that regard? I am sure the same approach as outlined in this article can be done with eBPF.</p>
+<p>I fully understand why DTrace is so limited, to be able to run D scripts without fear on mission-critical production systems. However, I often yearn for a 'development' mode where arbitrary logic and control flow are allowed, even if that could crash my system.</p>
 <h2 id="addendum-the-full-code">
   <a class="title" href="#addendum-the-full-code">Addendum: the full code</a>
   <a class="hash-anchor" href="#addendum-the-full-code" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>

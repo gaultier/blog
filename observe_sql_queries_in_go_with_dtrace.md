@@ -434,12 +434,14 @@ Printing each remaining Go type is left as an exercise to the reader but should 
 
 More importantly, this technique to print Go variadic function arguments of type `any` can be applied everywhere, not just in the context of SQL queries.
 
-This is a bit unfortunate that the Go team and community never took an interest in adding static DTrace probes everywhere in the Go runtime and standard library, like numerous other programming languages have done. That forces us to do gymnastics to get the information we need. 
+This is a bit unfortunate that the Go team and community never took an interest in adding static DTrace probes in key places in the Go runtime and standard library, like numerous other programming languages have done. That forces us to do gymnastics to get the information we need. 
 
 
 Finally, DTrace limitations (no loops, difficult to write complex logic), prevent us from writing a generic D script that can print all arguments of all queries (our script is ad-hoc). Perhaps this is doable with a program that generates the right D script at runtime, possibly tailored to each query in order to print the arguments correctly, and this program also post-processes the DTrace output.
 
-I wonder if eBPF on Linux is more powerful in that regard? I am sure the same approach as outlined in this article can be done with eBPF.
+I wonder if eBPF on Linux is more powerful in that regard? I am sure the same approach as outlined in this article can be done with eBPF. 
+
+I fully understand why DTrace is so limited, to be able to run D scripts without fear on mission-critical production systems. However, I often yearn for a 'development' mode where arbitrary logic and control flow are allowed, even if that could crash my system.
 
 
 
