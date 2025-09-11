@@ -400,12 +400,22 @@ GoType {
   <a class="title" href="#conclusion-and-remaining-work">Conclusion and remaining work</a>
   <a class="hash-anchor" href="#conclusion-and-remaining-work" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
+<p>Our final output is pretty nice:</p>
+<pre><code>3 140734 database/sql.(*DB).QueryContext:entry SELECT courier_messages.body, courier_messages.channel, courier_messages.created_at, courier_messages.id, courier_messages.nid, courier_messages.recipient, courier_messages.send_count, courier_messages.status, courier_messages.subject, courier_messages.template_data, courier_messages.template_type, courier_messages.type, courier_messages.updated_at FROM courier_messages AS courier_messages WHERE nid=? AND (&quot;courier_messages&quot;.&quot;created_at&quot; &lt; ? OR (&quot;courier_messages&quot;.&quot;created_at&quot; = ? AND &quot;courier_messages&quot;.&quot;id&quot; &gt; ?)) ORDER BY &quot;courier_messages&quot;.&quot;created_at&quot; DESC, &quot;courier_messages&quot;.&quot;id&quot; ASC LIMIT 11
+
+             0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f  0123456789abcdef
+         0: 9c 62 c1 62 20 11 4d 3f 8f dd bc c6 25 73 5c b9  .b.b .M?....%s\.
+str1=2200-12-31 23:59:59
+str2=2200-12-31 23:59:59
+str3=00000000-0000-0000-0000-000000000000
+</code></pre>
 <p>With relatively little work (under 90 lines of DTrace including defining all types), we can inspect live SQL queries in our Go programs.</p>
 <p>Furthermore, we have focused on the Go function <code>QueryContext</code> in this article, but the exact same can be done for <code>ExecContext</code>.</p>
 <p>Printing each remaining Go type is left as an exercise to the reader but should be very similar.</p>
 <p>More importantly, this technique to print Go variadic function arguments of type <code>any</code> can be applied everywhere, not just in the context of SQL queries.</p>
 <p>A promising avenue I have not explored is printing the name of the type using the <code>name_offset</code> field. That's because Go stores at compile time in the executable this RTTI including the human readable name of all the user defined types. This data is used when doing <code>println(reflect.TypeOf(someAnyArgument).Name())</code>. That prints <code>uuid.UUID</code>. Useful, but tricky to use from DTrace due to varint encoding being used and it's non trivial to determine where in memory this information is stored (<code>name_offset</code> is just an offset into this data which is relocated by the linker... somewhere). Inspecting the generated assembly is one possible way to learn this address, but what about PIE... Perhaps possible, but not easy.</p>
-<p>Finally, DTrace limitations (no loops, difficult to write complex logic), prevent us from writing a generic script that can print all arguments of all queries. Perhaps this is possible with a program that generates the right DTrace script at runtime, and post-processes the DTrace output.</p>
+<p>This is a bit unfortunate that the Go team and community never took an interest in adding static DTrace probes everywhere in the Go runtime and standard library, like numerous other programming languages have done. That forces us to do gymnastics to get the information we need.</p>
+<p>Finally, DTrace limitations (no loops, difficult to write complex logic), prevent us from writing a generic D script that can print all arguments of all queries. Perhaps this is doable with a program that generates the right D script at runtime, possibly tailored to each query in order to print the arguments correctly, and this program also post-processes the DTrace output.</p>
 <h2 id="addendum-the-full-code">
   <a class="title" href="#addendum-the-full-code">Addendum: the full code</a>
   <a class="hash-anchor" href="#addendum-the-full-code" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>

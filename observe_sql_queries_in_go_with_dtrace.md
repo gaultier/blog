@@ -362,6 +362,18 @@ This is in fact a UUID v4: `9c62c162-2011-4d3f-8fdd-bcc625735cb9`.
 
 ## Conclusion and remaining work
 
+Our final output is pretty nice:
+
+```
+3 140734 database/sql.(*DB).QueryContext:entry SELECT courier_messages.body, courier_messages.channel, courier_messages.created_at, courier_messages.id, courier_messages.nid, courier_messages.recipient, courier_messages.send_count, courier_messages.status, courier_messages.subject, courier_messages.template_data, courier_messages.template_type, courier_messages.type, courier_messages.updated_at FROM courier_messages AS courier_messages WHERE nid=? AND ("courier_messages"."created_at" < ? OR ("courier_messages"."created_at" = ? AND "courier_messages"."id" > ?)) ORDER BY "courier_messages"."created_at" DESC, "courier_messages"."id" ASC LIMIT 11
+
+             0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f  0123456789abcdef
+         0: 9c 62 c1 62 20 11 4d 3f 8f dd bc c6 25 73 5c b9  .b.b .M?....%s\.
+str1=2200-12-31 23:59:59
+str2=2200-12-31 23:59:59
+str3=00000000-0000-0000-0000-000000000000
+```
+
 
 With relatively little work (under 90 lines of DTrace including defining all types), we can inspect live SQL queries in our Go programs.
 
@@ -376,8 +388,11 @@ More importantly, this technique to print Go variadic function arguments of type
 
 A promising avenue I have not explored is printing the name of the type using the `name_offset` field. That's because Go stores at compile time in the executable this RTTI including the human readable name of all the user defined types. This data is used when doing `println(reflect.TypeOf(someAnyArgument).Name())`. That prints `uuid.UUID`. Useful, but tricky to use from DTrace due to varint encoding being used and it's non trivial to determine where in memory this information is stored (`name_offset` is just an offset into this data which is relocated by the linker... somewhere). Inspecting the generated assembly is one possible way to learn this address, but what about PIE... Perhaps possible, but not easy.
 
+This is a bit unfortunate that the Go team and community never took an interest in adding static DTrace probes everywhere in the Go runtime and standard library, like numerous other programming languages have done. That forces us to do gymnastics to get the information we need. 
 
-Finally, DTrace limitations (no loops, difficult to write complex logic), prevent us from writing a generic script that can print all arguments of all queries. Perhaps this is possible with a program that generates the right DTrace script at runtime, and post-processes the DTrace output.
+Finally, DTrace limitations (no loops, difficult to write complex logic), prevent us from writing a generic D script that can print all arguments of all queries. Perhaps this is doable with a program that generates the right D script at runtime, possibly tailored to each query in order to print the arguments correctly, and this program also post-processes the DTrace output.
+
+
 
 ## Addendum: the full code
 
