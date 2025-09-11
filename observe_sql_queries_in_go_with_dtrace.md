@@ -273,3 +273,95 @@ typedef struct {
   uintptr_t len;
 } GoArrayType;
 ```
+
+We can know print the RTTI for the element type to finally learn its size. For good measure we can also print the RTTI for the slice type:
+
+```dtrace
+  this->go_arr0 = (GoArrayType*)copyin((user_addr_t)this->iface0->rtti, sizeof(GoArrayType));
+  print(*(this->go_arr0));
+  printf("\n");
+
+  this->go_arr0_elem = (GoType*)copyin((user_addr_t)this->go_arr0->elem, sizeof(GoType));
+  print(*(this->go_arr0_elem));
+  printf("\n");
+
+  this->go_arr0_slice = (GoType*)copyin((user_addr_t)this->go_arr0->slice, sizeof(GoType));
+  print(*(this->go_arr0_slice));
+  printf("\n");
+```
+
+```text
+GoArrayType {
+    GoType type = {
+        uintptr_t size = 0x10
+        uintptr_t ptr_bytes = 0
+        uint32_t hash = 0xd84999d2
+        uint8_t tflag = 0xf
+        uint8_t align = 0x1
+        uint8_t field_align = 0x1
+        uint8_t kind = 0x11
+        void *equal_func = 0x103fdf6a0
+        uint8_t *gc_data = 0x103a9ff40
+        int32_t name_offset = 0x147f6
+        int32_t ptr_to_this = 0x448a00
+    }
+    GoType *elem = 0x103c1b7a0
+    GoType *slice = 0x103be1760
+    uintptr_t len = 0x10
+}
+GoType {
+    uintptr_t size = 0x1
+    uintptr_t ptr_bytes = 0
+    uint32_t hash = 0x6a8c7679
+    uint8_t tflag = 0xf
+    uint8_t align = 0x1
+    uint8_t field_align = 0x1
+    uint8_t kind = 0x8
+    void *equal_func = 0x103fdf6e8
+    uint8_t *gc_data = 0x103a9ff40
+    int32_t name_offset = 0x2f98
+    int32_t ptr_to_this = 0xd09e0
+}
+GoType {
+    uintptr_t size = 0x18
+    uintptr_t ptr_bytes = 0x8
+    uint32_t hash = 0x7efbbf65
+    uint8_t tflag = 0x2
+    uint8_t align = 0x8
+    uint8_t field_align = 0x8
+    uint8_t kind = 0x17
+    void *equal_func = 0
+    uint8_t *gc_data = 0x103a90c18
+    int32_t name_offset = 0xb4c4
+    int32_t ptr_to_this = 0x1062e0
+}
+```
+
+We discover that the element size is just `0x1`, or 1. So this array is an array of 16 bytes. Time to finally print it:
+
+```dtrace
+  this->go_str0 = (uint8_t*)copyin((user_addr_t)this->iface0->ptr, 16);
+  tracemem(this->go_str0, 16);
+```
+
+Which shows:
+
+```txt
+             0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f  0123456789abcdef
+         0: 9c 62 c1 62 20 11 4d 3f 8f dd bc c6 25 73 5c b9  .b.b .M?....%s\.
+```
+
+This is in fact a UUID v4: `9c62c162-2011-4d3f-8fdd-bcc625735cb9`.
+
+
+
+
+## Conclusion and remaining work
+
+
+With relatively little work (under 90 lines of DTrace including defining all types), we can inspect all live SQL queries. More importantly, this technique to print Go variadic function arguments of type `any` can be applied everywhere.
+
+Printing each remaining Go type is left as an exercise to the reader but should be very similar.
+
+A promising avenue I have not explored is printing the name of the type using the `name_offset` field. That's because Go stores are compile time in the executable this RTTI including the human readable name of all the user defined types. This data is used when doing `println(reflect.TypeOf(someAnyArgument).Name())`. That prints `uuid.UUID`. Useful, but tricky to use from DTrace due to varint encoding being used and it's non trivial to determine where in memory this information is stored (`name_offset` is just an offset into this data).
+
