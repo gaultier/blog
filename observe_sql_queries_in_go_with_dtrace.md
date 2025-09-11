@@ -63,13 +63,44 @@ SELECT courier_messages.body, courier_messages.channel, courier_messages.created
 
 Which is already very useful in my opinion.
 
-## Level 2: See query arguments
+## Level 2: See string query arguments
 
 This technique is useful for all Go functions that have arguments of type `any`, which is simply an alias for `interface{}`, which is again just two pointers.
 
 Let's go step-wise: first we'll print each `any` argument along with their RTTI information, and the value will be an opaque pointer. In a second step we'll print the value.
 
-We create corresponding DTrace types for Go's `runtime.Type` as defined [here](https://github.com/golang/go/blob/release-branch.go1.25/src/internal/abi/type.go#L20).
+We create corresponding DTrace types for Go's `runtime.Type` as defined [here](https://github.com/golang/go/blob/release-branch.go1.25/src/internal/abi/type.go#L20):
+
+```go
+type Type struct {
+	Size_       uintptr
+	PtrBytes    uintptr // number of (prefix) bytes in the type that can contain pointers
+	Hash        uint32  // hash of type; avoids computation in hash tables
+	TFlag       TFlag   // extra type information flags
+	Align_      uint8   // alignment of variable with this type
+	FieldAlign_ uint8   // alignment of struct field with this type
+	Kind_       Kind    // enumeration for C
+	// function for comparing objects of this type
+	// (ptr to object A, ptr to object B) -> ==?
+	Equal func(unsafe.Pointer, unsafe.Pointer) bool
+	// GCData stores the GC type data for the garbage collector.
+	// Normally, GCData points to a bitmask that describes the
+	// ptr/nonptr fields of the type. The bitmask will have at
+	// least PtrBytes/ptrSize bits.
+	// If the TFlagGCMaskOnDemand bit is set, GCData is instead a
+	// **byte and the pointer to the bitmask is one dereference away.
+	// The runtime will build the bitmask if needed.
+	// (See runtime/type.go:getGCMask.)
+	// Note: multiple types may have the same value of GCData,
+	// including when TFlagGCMaskOnDemand is set. The types will, of course,
+	// have the same pointer layout (but not necessarily the same size).
+	GCData    *byte
+	Str       NameOff // string form
+	PtrToThis TypeOff // type for pointer to this type, may be zero
+}
+```
+
+We thus define the corresponding DTrace types:
 
 ```dtrace
 typedef struct {
@@ -181,3 +212,64 @@ GoType {
 }
 ```
 
+You might be thinking... that's not very useful... We'll, most fields are indeed not relevant. The only ones to look at, really, are `kind`, which indicates the type, and `size`. This is an enum value defined [here](https://github.com/golang/go/blob/release-branch.go1.25/src/internal/abi/type.go#L55). 
+
+The value `0x18` is `String`. So the last 3 variadic arguments are strings. Great, let's print them:
+
+
+```dtrace
+pid$target::database?sql.*.QueryContext:entry {
+  // [...]
+
+  this->go_str1 = (GoString*)copyin((user_addr_t)this->iface1->ptr, sizeof(GoString));
+  this->str1 = stringof(copyin((user_addr_t)this->go_str1->ptr, this->go_str1->len));
+  printf("str1=%s\n", this->str1);
+
+  this->go_str2 = (GoString*)copyin((user_addr_t)this->iface2->ptr, sizeof(GoString));
+  this->str2 = stringof(copyin((user_addr_t)this->go_str2->ptr, this->go_str2->len));
+  printf("str2=%s\n", this->str2);
+
+  this->go_str3 = (GoString*)copyin((user_addr_t)this->iface3->ptr, sizeof(GoString));
+  this->str3 = stringof(copyin((user_addr_t)this->go_str3->ptr, this->go_str3->len));
+  printf("str3=%s\n", this->str3);
+}
+```
+
+And we see (for example):
+
+```txt
+str1=2200-12-31 23:59:59
+str2=2200-12-31 23:59:59
+str3=00000000-0000-0000-0000-000000000000
+```
+
+Alright, pretty nice already.
+
+
+## Level 3: See array query arguments
+
+The first variadic argument is of `kind = 0x11`, which is `Array`. In Go, `Array` is a fixed-size array which is passed as a pointer only (the size is known by the compiler as compile time and as such does not appear at runtime). From the RTTI, we see that `size=0x10` so this is an array of 16 elements.
+
+We cannot print it yet, because we do not know the size of each invidiual element. To learn that, we have to explore a bit more RTTI.
+
+The `GoType` we defined at the beginning is just the base type, but Go defines several additional types based on this type (you could say in some programming languages that they are child classes). The one of interest is `ArrayType` defined [here](https://github.com/golang/go/blob/release-branch.go1.25/src/internal/abi/type.go#L271):
+
+```go
+type ArrayType struct {
+	Type
+	Elem  *Type // array element type
+	Slice *Type // slice type
+	Len   uintptr
+}
+```
+
+This is pretty easy to map to DTrace:
+
+```dtrace
+typedef struct {
+  GoType type;
+  GoType* elem;
+  GoType* slice;
+  uintptr_t len;
+} GoArrayType;
+```

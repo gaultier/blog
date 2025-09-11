@@ -88,7 +88,11 @@ Do not edit it by hand.
   </li>
 
   <li>
-    <a href="#level-2-see-query-arguments">Level 2: See query arguments</a>
+    <a href="#level-2-see-string-query-arguments">Level 2: See string query arguments</a>
+  </li>
+
+  <li>
+    <a href="#level-3-see-array-query-arguments">Level 3: See array query arguments</a>
   </li>
 </ul>
 
@@ -133,13 +137,41 @@ CPU     ID                    FUNCTION:NAME
 <pre><code class="language-sql">SELECT courier_messages.body, courier_messages.channel, courier_messages.created_at, courier_messages.id, courier_messages.nid, courier_messages.recipient, courier_messages.send_count, courier_messages.status, courier_messages.subject, courier_messages.template_data, courier_messages.template_type, courier_messages.type, courier_messages.updated_at FROM courier_messages AS courier_messages WHERE nid=? AND (&quot;courier_messages&quot;.&quot;created_at&quot; &lt; ? OR (&quot;courier_messages&quot;.&quot;created_at&quot; = ? AND &quot;courier_messages&quot;.&quot;id&quot; &gt; ?)) ORDER BY &quot;courier_messages&quot;.&quot;created_at&quot; DESC, &quot;courier_messages&quot;.&quot;id&quot; ASC LIMIT 11
 </code></pre>
 <p>Which is already very useful in my opinion.</p>
-<h2 id="level-2-see-query-arguments">
-  <a class="title" href="#level-2-see-query-arguments">Level 2: See query arguments</a>
-  <a class="hash-anchor" href="#level-2-see-query-arguments" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+<h2 id="level-2-see-string-query-arguments">
+  <a class="title" href="#level-2-see-string-query-arguments">Level 2: See string query arguments</a>
+  <a class="hash-anchor" href="#level-2-see-string-query-arguments" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>This technique is useful for all Go functions that have arguments of type <code>any</code>, which is simply an alias for <code>interface{}</code>, which is again just two pointers.</p>
 <p>Let's go step-wise: first we'll print each <code>any</code> argument along with their RTTI information, and the value will be an opaque pointer. In a second step we'll print the value.</p>
-<p>We create corresponding DTrace types for Go's <code>runtime.Type</code> as defined <a href="https://github.com/golang/go/blob/release-branch.go1.25/src/internal/abi/type.go#L20">here</a>.</p>
+<p>We create corresponding DTrace types for Go's <code>runtime.Type</code> as defined <a href="https://github.com/golang/go/blob/release-branch.go1.25/src/internal/abi/type.go#L20">here</a>:</p>
+<pre><code class="language-go">type Type struct {
+	Size_       uintptr
+	PtrBytes    uintptr // number of (prefix) bytes in the type that can contain pointers
+	Hash        uint32  // hash of type; avoids computation in hash tables
+	TFlag       TFlag   // extra type information flags
+	Align_      uint8   // alignment of variable with this type
+	FieldAlign_ uint8   // alignment of struct field with this type
+	Kind_       Kind    // enumeration for C
+	// function for comparing objects of this type
+	// (ptr to object A, ptr to object B) -&gt; ==?
+	Equal func(unsafe.Pointer, unsafe.Pointer) bool
+	// GCData stores the GC type data for the garbage collector.
+	// Normally, GCData points to a bitmask that describes the
+	// ptr/nonptr fields of the type. The bitmask will have at
+	// least PtrBytes/ptrSize bits.
+	// If the TFlagGCMaskOnDemand bit is set, GCData is instead a
+	// **byte and the pointer to the bitmask is one dereference away.
+	// The runtime will build the bitmask if needed.
+	// (See runtime/type.go:getGCMask.)
+	// Note: multiple types may have the same value of GCData,
+	// including when TFlagGCMaskOnDemand is set. The types will, of course,
+	// have the same pointer layout (but not necessarily the same size).
+	GCData    *byte
+	Str       NameOff // string form
+	PtrToThis TypeOff // type for pointer to this type, may be zero
+}
+</code></pre>
+<p>We thus define the corresponding DTrace types:</p>
 <pre><code class="language-dtrace">typedef struct {
   uintptr_t size;  
   uintptr_t ptr_bytes;  
@@ -241,6 +273,52 @@ GoType {
     int32_t name_offset = 0x8c14
     int32_t ptr_to_this = 0xd0960
 }
+</code></pre>
+<p>You might be thinking... that's not very useful... We'll, most fields are indeed not relevant. The only ones to look at, really, are <code>kind</code>, which indicates the type, and <code>size</code>. This is an enum value defined <a href="https://github.com/golang/go/blob/release-branch.go1.25/src/internal/abi/type.go#L55">here</a>.</p>
+<p>The value <code>0x18</code> is <code>String</code>. So the last 3 variadic arguments are strings. Great, let's print them:</p>
+<pre><code class="language-dtrace">pid$target::database?sql.*.QueryContext:entry {
+  // [...]
+
+  this-&gt;go_str1 = (GoString*)copyin((user_addr_t)this-&gt;iface1-&gt;ptr, sizeof(GoString));
+  this-&gt;str1 = stringof(copyin((user_addr_t)this-&gt;go_str1-&gt;ptr, this-&gt;go_str1-&gt;len));
+  printf(&quot;str1=%s\n&quot;, this-&gt;str1);
+
+  this-&gt;go_str2 = (GoString*)copyin((user_addr_t)this-&gt;iface2-&gt;ptr, sizeof(GoString));
+  this-&gt;str2 = stringof(copyin((user_addr_t)this-&gt;go_str2-&gt;ptr, this-&gt;go_str2-&gt;len));
+  printf(&quot;str2=%s\n&quot;, this-&gt;str2);
+
+  this-&gt;go_str3 = (GoString*)copyin((user_addr_t)this-&gt;iface3-&gt;ptr, sizeof(GoString));
+  this-&gt;str3 = stringof(copyin((user_addr_t)this-&gt;go_str3-&gt;ptr, this-&gt;go_str3-&gt;len));
+  printf(&quot;str3=%s\n&quot;, this-&gt;str3);
+}
+</code></pre>
+<p>And we see (for example):</p>
+<pre><code class="language-txt">str1=2200-12-31 23:59:59
+str2=2200-12-31 23:59:59
+str3=00000000-0000-0000-0000-000000000000
+</code></pre>
+<p>Alright, pretty nice already.</p>
+<h2 id="level-3-see-array-query-arguments">
+  <a class="title" href="#level-3-see-array-query-arguments">Level 3: See array query arguments</a>
+  <a class="hash-anchor" href="#level-3-see-array-query-arguments" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+</h2>
+<p>The first variadic argument is of <code>kind = 0x11</code>, which is <code>Array</code>. In Go, <code>Array</code> is a fixed-size array which is passed as a pointer only (the size is known by the compiler as compile time and as such does not appear at runtime). From the RTTI, we see that <code>size=0x10</code> so this is an array of 16 elements.</p>
+<p>We cannot print it yet, because we do not know the size of each invidiual element. To learn that, we have to explore a bit more RTTI.</p>
+<p>The <code>GoType</code> we defined at the beginning is just the base type, but Go defines several additional types based on this type (you could say in some programming languages that they are child classes). The one of interest is <code>ArrayType</code> defined <a href="https://github.com/golang/go/blob/release-branch.go1.25/src/internal/abi/type.go#L271">here</a>:</p>
+<pre><code class="language-go">type ArrayType struct {
+	Type
+	Elem  *Type // array element type
+	Slice *Type // slice type
+	Len   uintptr
+}
+</code></pre>
+<p>This is pretty easy to map to DTrace:</p>
+<pre><code class="language-dtrace">typedef struct {
+  GoType type;
+  GoType* elem;
+  GoType* slice;
+  uintptr_t len;
+} GoArrayType;
 </code></pre>
 <p><a href="/blog"> ⏴ Back to all articles</a></p>
 
