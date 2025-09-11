@@ -145,6 +145,7 @@ CPU     ID                    FUNCTION:NAME
 <li>The first argument (<code>ctx context.Context</code>) is an interface, which is 2 pointers, and it's very likely that each field is passed separately in a register: <code>arg1</code> and <code>arg2</code></li>
 <li>The second argument (<code>query string</code>) is a string, which is a pointer and a length: <code>arg3</code> and <code>arg4</code>. So here the string is <code>0x25b</code> bytes long, or 603 bytes</li>
 <li>Remaining arguments (<code>args ...any</code>) are variadic, and Go passes them to the function as a slice (i.e. <code>[]any</code>), which is a pointer, a length, and a capacity: <code>arg5</code>, <code>arg6</code>, <code>arg7</code>. Here we observe that there are <code>4</code> query arguments. We'll come back to them later.</li>
+<li>Unused registers for passing function arguments are here <code>arg8</code> and <code>arg9</code>, they should be ignored.</li>
 </ul>
 <p>So let's for now only print the query string:</p>
 <pre><code class="language-dtrace">pid$target::database?sql.*.QueryContext:entry {
@@ -341,7 +342,7 @@ str3=00000000-0000-0000-0000-000000000000
   uintptr_t len;
 } GoArrayType;
 </code></pre>
-<p>We can know print the RTTI for the element type to finally learn its size. For good measure we can also print the RTTI for the slice type:</p>
+<p>We can now print the RTTI for the element type to finally learn its size. For good measure we can also print the RTTI for the slice type:</p>
 <pre><code class="language-dtrace">  this-&gt;go_arr0 = (GoArrayType*)copyin((user_addr_t)this-&gt;iface0-&gt;rtti, sizeof(GoArrayType));
   print(*(this-&gt;go_arr0));
   printf(&quot;\n&quot;);
@@ -399,7 +400,7 @@ GoType {
     int32_t ptr_to_this = 0x1062e0
 }
 </code></pre>
-<p>We discover that the element size is just <code>0x1</code>, or 1. So this array is an array of 16 bytes. Time to finally print it:</p>
+<p>We discover that the element size is just <code>0x1</code>, or 1. So this array is an array of 16 bytes. Time to finally print it with <code>tracemem</code> which shows a raw memory dump:</p>
 <pre><code class="language-dtrace">  this-&gt;go_str0 = (uint8_t*)copyin((user_addr_t)this-&gt;iface0-&gt;ptr, 16);
   tracemem(this-&gt;go_str0, 16);
 </code></pre>
@@ -407,7 +408,7 @@ GoType {
 <pre><code class="language-txt">             0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f  0123456789abcdef
          0: 9c 62 c1 62 20 11 4d 3f 8f dd bc c6 25 73 5c b9  .b.b .M?....%s\.
 </code></pre>
-<p>This is in fact a UUID v4: <code>9c62c162-2011-4d3f-8fdd-bcc625735cb9</code>.</p>
+<p>This is in fact a UUID v4 (16 bytes): <code>9c62c162-2011-4d3f-8fdd-bcc625735cb9</code>.</p>
 <h2 id="caveats">
   <a class="title" href="#caveats">Caveats</a>
   <a class="hash-anchor" href="#caveats" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
@@ -468,7 +469,7 @@ Which is great for performance, but not so great for introspection using our app
   <a class="hash-anchor" href="#conclusion-and-remaining-work" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>Our final output is pretty helpful:</p>
-<pre><code>3 140734 database/sql.(*DB).QueryContext:entry SELECT courier_messages.body, courier_messages.channel, courier_messages.created_at, courier_messages.id, courier_messages.nid, courier_messages.recipient, courier_messages.send_count, courier_messages.status, courier_messages.subject, courier_messages.template_data, courier_messages.template_type, courier_messages.type, courier_messages.updated_at FROM courier_messages AS courier_messages WHERE nid=? AND (&quot;courier_messages&quot;.&quot;created_at&quot; &lt; ? OR (&quot;courier_messages&quot;.&quot;created_at&quot; = ? AND &quot;courier_messages&quot;.&quot;id&quot; &gt; ?)) ORDER BY &quot;courier_messages&quot;.&quot;created_at&quot; DESC, &quot;courier_messages&quot;.&quot;id&quot; ASC LIMIT 11
+<pre><code class="language-txt">3 140734 database/sql.(*DB).QueryContext:entry SELECT courier_messages.body, courier_messages.channel, courier_messages.created_at, courier_messages.id, courier_messages.nid, courier_messages.recipient, courier_messages.send_count, courier_messages.status, courier_messages.subject, courier_messages.template_data, courier_messages.template_type, courier_messages.type, courier_messages.updated_at FROM courier_messages AS courier_messages WHERE nid=? AND (&quot;courier_messages&quot;.&quot;created_at&quot; &lt; ? OR (&quot;courier_messages&quot;.&quot;created_at&quot; = ? AND &quot;courier_messages&quot;.&quot;id&quot; &gt; ?)) ORDER BY &quot;courier_messages&quot;.&quot;created_at&quot; DESC, &quot;courier_messages&quot;.&quot;id&quot; ASC LIMIT 11
 
              0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f  0123456789abcdef
          0: 9c 62 c1 62 20 11 4d 3f 8f dd bc c6 25 73 5c b9  .b.b .M?....%s\.
