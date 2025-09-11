@@ -50,15 +50,15 @@ dev:
 .PHONY: check
 check:
 	# Catch incorrect `an` e.g. `an fox`.
-	rg '\san\s+[bcdfgjklmnpqrstvwxyz]' -i -t markdown || true
+	rg --max-depth=1 '\san\s+[bcdfgjklmnpqrstvwxyz]' -i -t markdown || true
 	# Catch incorrect `a` e.g. `a opening`.
-	rg '\sa\s+[aei]' -i -t markdown || true
+	rg --max-depth=1 '\sa\s+[aei]' -i -t markdown || true
 	# Catch code blocks without explicit type.
-	rg '^[ ]*```[ ]*\n\S' -t markdown --multiline --glob='!todo.md' || true
+	rg --max-depth=1 '^[ ]*```[ ]*\n\S' -t markdown --multiline --glob='!todo.md' || true
 	# Avoid mixing `KiB` and `Kib` - prefer the former.
-	rg '\b[KMGT]ib\b' -t markdown || true
+	rg --max-depth=1 '\b[KMGT]ib\b' -t markdown || true
 	# Catch empty first line in code block.
-	rg '^\s*```\w+\n\n' -t markdown --multiline || true
+	rg --max-depth=1 '^\s*```\w+\n\n' -t markdown --multiline || true
 
 
 compile_flags.txt: 

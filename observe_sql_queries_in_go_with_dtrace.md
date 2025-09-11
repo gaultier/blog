@@ -278,7 +278,7 @@ typedef struct {
 } GoArrayType;
 ```
 
-We can know print the RTTI for the element type to finally learn its size. For good measure we can also print the RTTI for the slice type:
+We can now print the RTTI for the element type to finally learn its size. For good measure we can also print the RTTI for the slice type:
 
 ```dtrace
   this->go_arr0 = (GoArrayType*)copyin((user_addr_t)this->iface0->rtti, sizeof(GoArrayType));
@@ -414,7 +414,7 @@ Useful, but tricky to use from DTrace:
 
 Our final output is pretty helpful:
 
-```
+```txt
 3 140734 database/sql.(*DB).QueryContext:entry SELECT courier_messages.body, courier_messages.channel, courier_messages.created_at, courier_messages.id, courier_messages.nid, courier_messages.recipient, courier_messages.send_count, courier_messages.status, courier_messages.subject, courier_messages.template_data, courier_messages.template_type, courier_messages.type, courier_messages.updated_at FROM courier_messages AS courier_messages WHERE nid=? AND ("courier_messages"."created_at" < ? OR ("courier_messages"."created_at" = ? AND "courier_messages"."id" > ?)) ORDER BY "courier_messages"."created_at" DESC, "courier_messages"."id" ASC LIMIT 11
 
              0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f  0123456789abcdef
