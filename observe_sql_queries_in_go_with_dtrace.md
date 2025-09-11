@@ -6,7 +6,7 @@ You have a Go program that does *something* with a SQL database. What exactly? Y
 
 Well, this is easy to do with DTrace!
 
-# Level 1: See the SQL query, without arguments
+## Level 1: See the SQL query, without arguments
 
 Since most Go programs use the standard library package `database/sql`, we'll observe the function:
 
