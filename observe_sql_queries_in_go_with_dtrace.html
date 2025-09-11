@@ -120,6 +120,7 @@ Do not edit it by hand.
 <p>That's what happened to me at work: I had to tweak an endpoint that does pagination, and the <a href="https://github.com/ory/kratos/blob/afb43c39e/persistence/sql/persister_courier.go#L36">Go code</a> was using an ORM to build the SQL query, making it really hard to know what was the final query being executed.</p>
 <p>Well, this is easy to do with DTrace, without any code modification or even restarting the running program!</p>
 <p>And since there were in my case a number of optional query arguments (essentially search parameters), passed as variadic <code>any</code> arguments, I was not sure if DTrace could handle that. Well, it turns out it can!</p>
+<p><strong>tl;dr</strong>: We'll use DTrace to peek into the Go runtime's memory, inspect function arguments, and reconstruct the full SQL query with its parameters.</p>
 <h2 id="level-1-see-the-sql-query-without-arguments">
   <a class="title" href="#level-1-see-the-sql-query-without-arguments">Level 1: See the SQL query, without arguments</a>
   <a class="hash-anchor" href="#level-1-see-the-sql-query-without-arguments" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>

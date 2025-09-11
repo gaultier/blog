@@ -11,6 +11,8 @@ Well, this is easy to do with DTrace, without any code modification or even rest
 
 And since there were in my case a number of optional query arguments (essentially search parameters), passed as variadic `any` arguments, I was not sure if DTrace could handle that. Well, it turns out it can!
 
+**tl;dr**: We'll use DTrace to peek into the Go runtime's memory, inspect function arguments, and reconstruct the full SQL query with its parameters.
+
 ## Level 1: See the SQL query, without arguments
 
 Since most Go programs use the standard library package `database/sql`, we want to observe the function:
