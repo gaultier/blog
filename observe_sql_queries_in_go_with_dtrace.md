@@ -71,9 +71,9 @@ Which is already very useful in my opinion. But wouldn't it be nice to also see 
 
 This technique is useful for all Go functions that have arguments of type `any`, which is simply an alias for `interface{}`, which is again just two pointers.
 
-Let's go step-wise: first we'll print each `any` argument along with their RTTI information, and the value will be an opaque pointer. In a second step we'll print the value.
+Let's go step-wise: first we'll print each `any` argument along with their RTTI information, and the value will be an opaque pointer. In a second step we'll print the value if the RTTI indicates that the argument is in fact a string.
 
-We create corresponding DTrace types for Go's `runtime.Type` as defined [here](https://github.com/golang/go/blob/release-branch.go1.25/src/internal/abi/type.go#L20):
+This RTTI is defined by Go as `runtime.Type` [here](https://github.com/golang/go/blob/release-branch.go1.25/src/internal/abi/type.go#L20):
 
 ```go
 type Type struct {
@@ -252,11 +252,11 @@ Alright, pretty nice already.
 
 ## Level 3: See array query arguments
 
-The first variadic argument is of `kind = 0x11`, which is `Array`. In Go, `Array` is a fixed-size array which is passed as a pointer only (the size is known by the compiler as compile time and as such does not appear at runtime). From the RTTI, we see that `size=0x10` so this is an array of 16 elements.
+The first variadic argument is of `kind = 0x11`, which is `Array`. In Go, `Array` is a fixed-size array which is passed as a pointer only. The size is known by the compiler at build time, and as such does not appear at all at runtime, except in the RTTI. From the RTTI, we see that `size=0x10` so this is an array of 16 elements.
 
-We cannot print it yet, because we do not know the size of each invidiual element. To learn that, we have to explore a bit more RTTI.
+We cannot print the values in the array yet, because we do not know the size of each invididual element. To learn that, we have to explore a bit more the RTTI landscape.
 
-The `GoType` we defined at the beginning is just the base type, but Go defines several additional types based on this type (you could say in some programming languages that they are child classes). The one of interest is `ArrayType` defined [here](https://github.com/golang/go/blob/release-branch.go1.25/src/internal/abi/type.go#L271):
+The `GoType` we defined at the beginning is just the base type, and Go defines several additional types based on this type (you could say that they are child classes). The one of interest is `ArrayType` defined [here](https://github.com/golang/go/blob/release-branch.go1.25/src/internal/abi/type.go#L271):
 
 ```go
 type ArrayType struct {
@@ -363,14 +363,21 @@ This is in fact a UUID v4: `9c62c162-2011-4d3f-8fdd-bcc625735cb9`.
 ## Conclusion and remaining work
 
 
-With relatively little work (under 90 lines of DTrace including defining all types), we can inspect all live SQL queries. More importantly, this technique to print Go variadic function arguments of type `any` can be applied everywhere, not just in the context of SQL queries.
-
-Printing each remaining Go type is left as an exercise to the reader but should be very similar. 
+With relatively little work (under 90 lines of DTrace including defining all types), we can inspect live SQL queries in our Go programs.
 
 Furthermore, we have focussed on the Go function `QueryContext` in this article, but the exact same can be done for `ExecContext`.
 
+Printing each remaining Go type is left as an exercise to the reader but should be very similar. 
+
+
+More importantly, this technique to print Go variadic function arguments of type `any` can be applied everywhere, not just in the context of SQL queries.
+
+
+
 A promising avenue I have not explored is printing the name of the type using the `name_offset` field. That's because Go stores at compile time in the executable this RTTI including the human readable name of all the user defined types. This data is used when doing `println(reflect.TypeOf(someAnyArgument).Name())`. That prints `uuid.UUID`. Useful, but tricky to use from DTrace due to varint encoding being used and it's non trivial to determine where in memory this information is stored (`name_offset` is just an offset into this data which is relocated by the linker... somewhere). Inspecting the generated assembly is one possible way to learn this address, but what about PIE... Perhaps possible, but not easy.
 
+
+Finally, DTrace limitations (no loops, difficult to write complex logic), prevent us from writing a generic script that can print all arguments of all queries. Perhaps this is possible with a program that generates the right DTrace script at runtime, and post-processes the DTrace output.
 
 ## Addendum: the full code
 

@@ -151,8 +151,8 @@ CPU     ID                    FUNCTION:NAME
   <a class="hash-anchor" href="#level-2-see-string-query-arguments" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>This technique is useful for all Go functions that have arguments of type <code>any</code>, which is simply an alias for <code>interface{}</code>, which is again just two pointers.</p>
-<p>Let's go step-wise: first we'll print each <code>any</code> argument along with their RTTI information, and the value will be an opaque pointer. In a second step we'll print the value.</p>
-<p>We create corresponding DTrace types for Go's <code>runtime.Type</code> as defined <a href="https://github.com/golang/go/blob/release-branch.go1.25/src/internal/abi/type.go#L20">here</a>:</p>
+<p>Let's go step-wise: first we'll print each <code>any</code> argument along with their RTTI information, and the value will be an opaque pointer. In a second step we'll print the value if the RTTI indicates that the argument is in fact a string.</p>
+<p>This RTTI is defined by Go as <code>runtime.Type</code> <a href="https://github.com/golang/go/blob/release-branch.go1.25/src/internal/abi/type.go#L20">here</a>:</p>
 <pre><code class="language-go">type Type struct {
 	Size_       uintptr
 	PtrBytes    uintptr // number of (prefix) bytes in the type that can contain pointers
@@ -311,9 +311,9 @@ str3=00000000-0000-0000-0000-000000000000
   <a class="title" href="#level-3-see-array-query-arguments">Level 3: See array query arguments</a>
   <a class="hash-anchor" href="#level-3-see-array-query-arguments" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
-<p>The first variadic argument is of <code>kind = 0x11</code>, which is <code>Array</code>. In Go, <code>Array</code> is a fixed-size array which is passed as a pointer only (the size is known by the compiler as compile time and as such does not appear at runtime). From the RTTI, we see that <code>size=0x10</code> so this is an array of 16 elements.</p>
-<p>We cannot print it yet, because we do not know the size of each invidiual element. To learn that, we have to explore a bit more RTTI.</p>
-<p>The <code>GoType</code> we defined at the beginning is just the base type, but Go defines several additional types based on this type (you could say in some programming languages that they are child classes). The one of interest is <code>ArrayType</code> defined <a href="https://github.com/golang/go/blob/release-branch.go1.25/src/internal/abi/type.go#L271">here</a>:</p>
+<p>The first variadic argument is of <code>kind = 0x11</code>, which is <code>Array</code>. In Go, <code>Array</code> is a fixed-size array which is passed as a pointer only. The size is known by the compiler at build time, and as such does not appear at all at runtime, except in the RTTI. From the RTTI, we see that <code>size=0x10</code> so this is an array of 16 elements.</p>
+<p>We cannot print the values in the array yet, because we do not know the size of each invididual element. To learn that, we have to explore a bit more the RTTI landscape.</p>
+<p>The <code>GoType</code> we defined at the beginning is just the base type, and Go defines several additional types based on this type (you could say that they are child classes). The one of interest is <code>ArrayType</code> defined <a href="https://github.com/golang/go/blob/release-branch.go1.25/src/internal/abi/type.go#L271">here</a>:</p>
 <pre><code class="language-go">type ArrayType struct {
 	Type
 	Elem  *Type // array element type
@@ -400,10 +400,12 @@ GoType {
   <a class="title" href="#conclusion-and-remaining-work">Conclusion and remaining work</a>
   <a class="hash-anchor" href="#conclusion-and-remaining-work" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
-<p>With relatively little work (under 90 lines of DTrace including defining all types), we can inspect all live SQL queries. More importantly, this technique to print Go variadic function arguments of type <code>any</code> can be applied everywhere, not just in the context of SQL queries.</p>
-<p>Printing each remaining Go type is left as an exercise to the reader but should be very similar.</p>
+<p>With relatively little work (under 90 lines of DTrace including defining all types), we can inspect live SQL queries in our Go programs.</p>
 <p>Furthermore, we have focussed on the Go function <code>QueryContext</code> in this article, but the exact same can be done for <code>ExecContext</code>.</p>
+<p>Printing each remaining Go type is left as an exercise to the reader but should be very similar.</p>
+<p>More importantly, this technique to print Go variadic function arguments of type <code>any</code> can be applied everywhere, not just in the context of SQL queries.</p>
 <p>A promising avenue I have not explored is printing the name of the type using the <code>name_offset</code> field. That's because Go stores at compile time in the executable this RTTI including the human readable name of all the user defined types. This data is used when doing <code>println(reflect.TypeOf(someAnyArgument).Name())</code>. That prints <code>uuid.UUID</code>. Useful, but tricky to use from DTrace due to varint encoding being used and it's non trivial to determine where in memory this information is stored (<code>name_offset</code> is just an offset into this data which is relocated by the linker... somewhere). Inspecting the generated assembly is one possible way to learn this address, but what about PIE... Perhaps possible, but not easy.</p>
+<p>Finally, DTrace limitations (no loops, difficult to write complex logic), prevent us from writing a generic script that can print all arguments of all queries. Perhaps this is possible with a program that generates the right DTrace script at runtime, and post-processes the DTrace output.</p>
 <h2 id="addendum-the-full-code">
   <a class="title" href="#addendum-the-full-code">Addendum: the full code</a>
   <a class="hash-anchor" href="#addendum-the-full-code" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
