@@ -360,39 +360,35 @@ This is in fact a UUID v4: `9c62c162-2011-4d3f-8fdd-bcc625735cb9`.
 
 ## Caveats
 
-Go sometimes decides to pass arguments to functions using the stack. That makes things much more difficult to print them from DTrace: determining the right stack offset is non-trivial. 
+- Go sometimes decides to pass arguments to functions using the stack. That makes things much more difficult to print them from DTrace: determining the right stack offset is non-trivial. 
+- Go also sometimes inlines functions and eliminates interfaces completely. For example, this program does not use any interface after optimization (as seen in the generated assembly), it simply prints the values directly as if there never were any interfaces at play:
+    ```go
+    package main
 
-Go also sometimes inlines functions and eliminates interfaces completely. For example, this program does not use any interface after optimization (as seen in the generated assembly), it simply prints the values directly as if there never were any interfaces at play:
+    import (
+        "fmt"
+    )
 
-```go
-package main
+    type Bar struct {
+        A int
+        B string
+    }
 
-import (
-	"fmt"
-)
+    func Foo(s string, x uint, bar Bar) []any {
+        res := make([]any, 3)
+        res[0] = s
+        res[1] = x
+        res[2] = bar
+        return res
+    }
 
-type Bar struct {
-	A int
-	B string
-}
-
-func Foo(s string, x uint, bar Bar) []any {
-	res := make([]any, 3)
-	res[0] = s
-	res[1] = x
-	res[2] = bar
-	return res
-}
-
-func main() {
-	fmt.Println(Foo("foo", 123, Bar{A: 99, B: "bar"}))
-}
-```
-
-Which is great for performance, but not so great for introspection using our approach. That means we often have to introspect a different Go function in the call stack.
-
-
-Finally, the Go `runtime` types we have used could change in the future and break our script.
+    func main() {
+        fmt.Println(Foo("foo", 123, Bar{A: 99, B: "bar"}))
+    }
+    ```
+    Which is great for performance, but not so great for introspection using our approach. That means we often have to introspect a different Go function in the call stack.
+- the Go `runtime` types we have used could change in the future and break our script.
+- Determining how function arguments are passed in Go is machine, ABI, version, and function specific. 
 
 
 ## Print the name of the type from DTrace?

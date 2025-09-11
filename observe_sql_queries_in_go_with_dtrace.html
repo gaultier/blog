@@ -412,33 +412,36 @@ GoType {
   <a class="title" href="#caveats">Caveats</a>
   <a class="hash-anchor" href="#caveats" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
-<p>Go sometimes decides to pass arguments to functions using the stack. That makes things much more difficult to print them from DTrace: determining the right stack offset is non-trivial.</p>
-<p>Go also sometimes inlines functions and eliminates interfaces completely. For example, this program does not use any interface after optimization (as seen in the generated assembly), it simply prints the values directly as if there never were any interfaces at play:</p>
+<ul>
+<li>Go sometimes decides to pass arguments to functions using the stack. That makes things much more difficult to print them from DTrace: determining the right stack offset is non-trivial.</li>
+<li>Go also sometimes inlines functions and eliminates interfaces completely. For example, this program does not use any interface after optimization (as seen in the generated assembly), it simply prints the values directly as if there never were any interfaces at play:
 <pre><code class="language-go">package main
 
 import (
-	&quot;fmt&quot;
+    &quot;fmt&quot;
 )
 
 type Bar struct {
-	A int
-	B string
+    A int
+    B string
 }
 
 func Foo(s string, x uint, bar Bar) []any {
-	res := make([]any, 3)
-	res[0] = s
-	res[1] = x
-	res[2] = bar
-	return res
+    res := make([]any, 3)
+    res[0] = s
+    res[1] = x
+    res[2] = bar
+    return res
 }
 
 func main() {
-	fmt.Println(Foo(&quot;foo&quot;, 123, Bar{A: 99, B: &quot;bar&quot;}))
+    fmt.Println(Foo(&quot;foo&quot;, 123, Bar{A: 99, B: &quot;bar&quot;}))
 }
 </code></pre>
-<p>Which is great for performance, but not so great for introspection using our approach. That means we often have to introspect a different Go function in the call stack.</p>
-<p>Finally, the Go <code>runtime</code> types we have used could change in the future and break our script.</p>
+Which is great for performance, but not so great for introspection using our approach. That means we often have to introspect a different Go function in the call stack.</li>
+<li>the Go <code>runtime</code> types we have used could change in the future and break our script.</li>
+<li>Determining how function arguments are passed in Go is machine, ABI, version, and function specific.</li>
+</ul>
 <h2 id="print-the-name-of-the-type-from-dtrace">
   <a class="title" href="#print-the-name-of-the-type-from-dtrace">Print the name of the type from DTrace?</a>
   <a class="hash-anchor" href="#print-the-name-of-the-type-from-dtrace" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
