@@ -5,7 +5,7 @@ Do not edit it by hand.
 <!DOCTYPE html>
 <html>
 <head>
-<title>Observe SQL queries in Go with DTrace</title>
+<title>Observe live SQL queries in Go with DTrace</title>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link type="application/atom+xml" href="/blog/feed.xml" rel="self">
@@ -77,7 +77,7 @@ Do not edit it by hand.
   <p class="publication-date">Published on 2025-09-11</p>
 </div>
 <div class="article-title">
-<h1>Observe SQL queries in Go with DTrace</h1>
+<h1>Observe live SQL queries in Go with DTrace</h1>
   <div class="tags"> <a href="/blog/articles-by-tag.html#go" class="tag">Go</a> <a href="/blog/articles-by-tag.html#dtrace" class="tag">DTrace</a></div>
   </div>
  <strong>Table of contents</strong>
@@ -110,11 +110,11 @@ Do not edit it by hand.
 
 </code></pre>
 <p>And we'll see something like this when the application being observed does a SQL query:</p>
-<pre><code>dtrace: description 'pid$target::database?sql.*.QueryContext:entry ' matched 4 probes
+<pre><code class="language-txt">dtrace: description 'pid$target::database?sql.*.QueryContext:entry ' matched 4 probes
 CPU     ID                    FUNCTION:NAME
  12 140734 database/sql.(*DB).QueryContext:entry 140023cea90 1024bce78 14002519b30 140017c5400 25b 14000e08b40 4 4 100bf02ac 2
 </code></pre>
-<p>From the Go ABI documentation, we know that:</p>
+<p>From the Go ABI documentation, we can infer that:</p>
 <ul>
 <li>The object whose method is being called (<code>db *DB</code>) is passed in the first register: <code>arg0</code></li>
 <li>The first argument (<code>ctx context.Context</code>) is an interface, which is 2 pointers, and it's very likely that each field is passed in a register: <code>arg1</code> and <code>arg2</code></li>
@@ -130,7 +130,7 @@ CPU     ID                    FUNCTION:NAME
 </code></pre>
 <p>An important note: since the string is quite long, we should pass to the DTrace command <code>-x strsize=16K</code> or use the pragma <code>#pragma D option strsize=16K</code> to allocate more memory for temporary strings. Otherwise DTrace will truncate our string.</p>
 <p>We see something like this:</p>
-<pre><code>SELECT courier_messages.body, courier_messages.channel, courier_messages.created_at, courier_messages.id, courier_messages.nid, courier_messages.recipient, courier_messages.send_count, courier_messages.status, courier_messages.subject, courier_messages.template_data, courier_messages.template_type, courier_messages.type, courier_messages.updated_at FROM courier_messages AS courier_messages WHERE nid=? AND (&quot;courier_messages&quot;.&quot;created_at&quot; &lt; ? OR (&quot;courier_messages&quot;.&quot;created_at&quot; = ? AND &quot;courier_messages&quot;.&quot;id&quot; &gt; ?)) ORDER BY &quot;courier_messages&quot;.&quot;created_at&quot; DESC, &quot;courier_messages&quot;.&quot;id&quot; ASC LIMIT 11
+<pre><code class="language-sql">SELECT courier_messages.body, courier_messages.channel, courier_messages.created_at, courier_messages.id, courier_messages.nid, courier_messages.recipient, courier_messages.send_count, courier_messages.status, courier_messages.subject, courier_messages.template_data, courier_messages.template_type, courier_messages.type, courier_messages.updated_at FROM courier_messages AS courier_messages WHERE nid=? AND (&quot;courier_messages&quot;.&quot;created_at&quot; &lt; ? OR (&quot;courier_messages&quot;.&quot;created_at&quot; = ? AND &quot;courier_messages&quot;.&quot;id&quot; &gt; ?)) ORDER BY &quot;courier_messages&quot;.&quot;created_at&quot; DESC, &quot;courier_messages&quot;.&quot;id&quot; ASC LIMIT 11
 </code></pre>
 <p>Which is already very useful in my opinion.</p>
 <h2 id="level-2-see-query-arguments">
@@ -138,8 +138,109 @@ CPU     ID                    FUNCTION:NAME
   <a class="hash-anchor" href="#level-2-see-query-arguments" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>This technique is useful for all Go functions that have arguments of type <code>any</code>, which is simply an alias for <code>interface{}</code>, which is again just two pointers.</p>
-<p>Let's go step-wise: first we'll print each <code>any</code> argument:</p>
-<pre><code class="language-dtrace">
+<p>Let's go step-wise: first we'll print each <code>any</code> argument along with their RTTI information, and the value will be an opaque pointer. In a second step we'll print the value.</p>
+<p>We create corresponding DTrace types for Go's <code>runtime.Type</code> as defined <a href="https://github.com/golang/go/blob/release-branch.go1.25/src/internal/abi/type.go#L20">here</a>.</p>
+<pre><code class="language-dtrace">typedef struct {
+  uintptr_t size;  
+  uintptr_t ptr_bytes;  
+  uint32_t hash;
+  uint8_t tflag;
+  uint8_t align;
+  uint8_t field_align;
+  uint8_t kind;
+  void* equal_func;
+  uint8_t* gc_data;
+  int32_t name_offset;
+  int32_t ptr_to_this;
+} GoType;
+
+typedef struct {
+  GoType* rtti;
+  void* ptr;
+} GoInterface;
+</code></pre>
+<p>We can then print the RTTI information of each of the four <code>any</code> arguments passed. Since DTrace intentionally does not have loops, we do that manually.
+The only challenge is to remember to use <code>copyin</code>, since our DTrace script executes in kernel space but we are inspecting user-space memory.</p>
+<pre><code class="language-dtrace">pid$target::database?sql.*.QueryContext:entry {
+  this-&gt;query = stringof(copyin(arg3, arg4)); // Query string.
+  printf(&quot;%s\n&quot;, this-&gt;query);
+
+  this-&gt;args_ptr = arg5;
+
+  this-&gt;iface0 = (GoInterface*) copyin(this-&gt;args_ptr, sizeof(GoInterface));
+  this-&gt;rtti0 = (GoType*) copyin((user_addr_t)this-&gt;iface0-&gt;rtti, sizeof(GoType));
+  print(*(this-&gt;rtti0));
+  printf(&quot;\n&quot;);
+
+  this-&gt;iface1 = (GoInterface*) copyin(this-&gt;args_ptr + 1*sizeof(GoInterface), sizeof(GoInterface));
+  this-&gt;rtti1 = (GoType*) copyin((user_addr_t)this-&gt;iface1-&gt;rtti, sizeof(GoType));
+  print(*(this-&gt;rtti1));
+  printf(&quot;\n&quot;);
+
+  this-&gt;iface2 = (GoInterface*) copyin(this-&gt;args_ptr + 2*sizeof(GoInterface), sizeof(GoInterface));
+  this-&gt;rtti2 = (GoType*) copyin((user_addr_t)this-&gt;iface2-&gt;rtti, sizeof(GoType));
+  print(*(this-&gt;rtti2));
+  printf(&quot;\n&quot;);
+
+  this-&gt;iface3 = (GoInterface*) copyin(this-&gt;args_ptr + 3*sizeof(GoInterface), sizeof(GoInterface));
+  this-&gt;rtti3 = (GoType*) copyin((user_addr_t)this-&gt;iface3-&gt;rtti, sizeof(GoType));
+  print(*(this-&gt;rtti3));
+  printf(&quot;\n&quot;);
+}
+</code></pre>
+<p>And we see:</p>
+<pre><code class="language-txt">GoType {
+    uintptr_t size = 0x10
+    uintptr_t ptr_bytes = 0
+    uint32_t hash = 0xd84999d2
+    uint8_t tflag = 0xf
+    uint8_t align = 0x1
+    uint8_t field_align = 0x1
+    uint8_t kind = 0x11
+    void *equal_func = 0x1024976c0
+    uint8_t *gc_data = 0x101f57c38
+    int32_t name_offset = 0x147f6
+    int32_t ptr_to_this = 0x448a20
+}
+GoType {
+    uintptr_t size = 0x10
+    uintptr_t ptr_bytes = 0x8
+    uint32_t hash = 0xf88732b8
+    uint8_t tflag = 0x7
+    uint8_t align = 0x8
+    uint8_t field_align = 0x8
+    uint8_t kind = 0x18
+    void *equal_func = 0x1024976a0
+    uint8_t *gc_data = 0x101f48910
+    int32_t name_offset = 0x8c14
+    int32_t ptr_to_this = 0xd0960
+}
+GoType {
+    uintptr_t size = 0x10
+    uintptr_t ptr_bytes = 0x8
+    uint32_t hash = 0xf88732b8
+    uint8_t tflag = 0x7
+    uint8_t align = 0x8
+    uint8_t field_align = 0x8
+    uint8_t kind = 0x18
+    void *equal_func = 0x1024976a0
+    uint8_t *gc_data = 0x101f48910
+    int32_t name_offset = 0x8c14
+    int32_t ptr_to_this = 0xd0960
+}
+GoType {
+    uintptr_t size = 0x10
+    uintptr_t ptr_bytes = 0x8
+    uint32_t hash = 0xf88732b8
+    uint8_t tflag = 0x7
+    uint8_t align = 0x8
+    uint8_t field_align = 0x8
+    uint8_t kind = 0x18
+    void *equal_func = 0x1024976a0
+    uint8_t *gc_data = 0x101f48910
+    int32_t name_offset = 0x8c14
+    int32_t ptr_to_this = 0xd0960
+}
 </code></pre>
 <p><a href="/blog"> ⏴ Back to all articles</a></p>
 
