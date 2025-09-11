@@ -45,6 +45,7 @@ We can infer that:
 - The first argument (`ctx context.Context`) is an interface, which is 2 pointers, and it's very likely that each field is passed separately in a register: `arg1` and `arg2`
 - The second argument (`query string`) is a string, which is a pointer and a length: `arg3` and `arg4`. So here the string is `0x25b` bytes long, or 603 bytes
 - Remaining arguments (`args ...any`) are variadic, and Go passes them to the function as a slice (i.e. `[]any`), which is a pointer, a length, and a capacity: `arg5`, `arg6`, `arg7`. Here we observe that there are `4` query arguments. We'll come back to them later.
+- Unused registers for passing function arguments are here `arg8` and `arg9`, they should be ignored.
 
 
 So let's for now only print the query string:
