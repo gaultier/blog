@@ -342,7 +342,7 @@ GoType {
 }
 ```
 
-We discover that the element size is just `0x1`, or 1. So this array is an array of 16 bytes. Time to finally print it:
+We discover that the element size is just `0x1`, or 1. So this array is an array of 16 bytes. Time to finally print it with `tracemem` which shows a raw memory dump:
 
 ```dtrace
   this->go_str0 = (uint8_t*)copyin((user_addr_t)this->iface0->ptr, 16);
@@ -356,7 +356,7 @@ Which shows:
          0: 9c 62 c1 62 20 11 4d 3f 8f dd bc c6 25 73 5c b9  .b.b .M?....%s\.
 ```
 
-This is in fact a UUID v4: `9c62c162-2011-4d3f-8fdd-bcc625735cb9`.
+This is in fact a UUID v4 (16 bytes): `9c62c162-2011-4d3f-8fdd-bcc625735cb9`.
 
 
 ## Caveats
