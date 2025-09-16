@@ -2,7 +2,7 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
 <title>Philippe Gaultier's blog</title>
 <link href="https://gaultier.github.io/blog"/>
-<updated>2025-09-11T13:43:04+02:00</updated>
+<updated>2025-09-11T13:52:35+02:00</updated>
 <author>
 <name>Philippe Gaultier</name>
 </author>
@@ -308,7 +308,7 @@
 <title>Observe live SQL queries in Go with DTrace</title>
 <link href="https://gaultier.github.io/blog/observe_sql_queries_in_go_with_dtrace.html"/>
 <id>urn:uuid:e0b0bae7-993a-5691-9efe-b7615415b944</id>
-<updated>2025-09-11T13:43:04+02:00</updated>
+<updated>2025-09-11T13:52:35+02:00</updated>
 <published>2025-09-11T11:37:44+02:00</published>
 </entry>
 </feed>

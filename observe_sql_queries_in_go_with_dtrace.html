@@ -116,6 +116,7 @@ Do not edit it by hand.
   </li>
 </ul>
 
+<p><em>Discussions: <a href="https://old.reddit.com/r/golang/comments/1ne6rvs/observe_live_sql_queries_in_go_with_dtrace/">/r/golang</a>.</em></p>
 <p>You have a Go program that does <em>something</em> with a SQL database. What exactly? You don't know. You'd like to see live what SQL queries are being done.</p>
 <p>That's what happened to me at work: I had to tweak an endpoint that does pagination, and the <a href="https://github.com/ory/kratos/blob/afb43c39e/persistence/sql/persister_courier.go#L36">Go code</a> was using an ORM to build the SQL query, making it really hard to know what was the final query being executed.</p>
 <p>Well, this is easy to do with DTrace, without any code modification or even restarting the running program!</p>
