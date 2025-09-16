@@ -134,14 +134,19 @@ $ go test .
 # In another terminal.
 $ sudo dtrace -s ~/scratch/io.d -q
 
+go ??/sql/20250623113513000000_hydra_secret_pagination.down.sql
 go ??/sql/20250623113513000000_hydra_secret_pagination.up.sql
+go ??/sql/20250624111454000000_keto_secret_pagination.down.sql
+go ??/sql/20250624111454000000_keto_secret_pagination.up.sql
 
 [...]
 
-migratest.test ??/testdata/20250905160000_testdata.sql
+migratest.test ??/testdata/20231129123900_testdata.sql
+migratest.test ??/testdata/20240113512800_testdata.sql
+migratest.test ??/testdata/20240131100001_testdata.sql
 </code></pre>
-<p>Looking at the first few lines of output: The executable name is <code>go</code> (the first field) so this particular SQL file is read at build time and baked into the test executable.</p>
-<p>Then, looking at the last few lines of output: The executable name is this time <code>migratest.test</code> so that other SQL file is read at run time.</p>
+<p>Looking at the first few lines of output: The executable name is <code>go</code> (the first field) so these particular SQL files are read at build time and baked into the test executable.</p>
+<p>Then, looking at the last few lines of output: The executable name is this time <code>migratest.test</code> so those other SQL files are read at run time.</p>
 <h2 id="the-root-cause">
   <a class="title" href="#the-root-cause">The root cause</a>
   <a class="hash-anchor" href="#the-root-cause" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>

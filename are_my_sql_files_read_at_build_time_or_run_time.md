@@ -53,16 +53,21 @@ $ go test .
 # In another terminal.
 $ sudo dtrace -s ~/scratch/io.d -q
 
+go ??/sql/20250623113513000000_hydra_secret_pagination.down.sql
 go ??/sql/20250623113513000000_hydra_secret_pagination.up.sql
+go ??/sql/20250624111454000000_keto_secret_pagination.down.sql
+go ??/sql/20250624111454000000_keto_secret_pagination.up.sql
 
 [...]
 
-migratest.test ??/testdata/20250905160000_testdata.sql
+migratest.test ??/testdata/20231129123900_testdata.sql
+migratest.test ??/testdata/20240113512800_testdata.sql
+migratest.test ??/testdata/20240131100001_testdata.sql
 ```
 
-Looking at the first few lines of output: The executable name is `go` (the first field) so this particular SQL file is read at build time and baked into the test executable.
+Looking at the first few lines of output: The executable name is `go` (the first field) so these particular SQL files are read at build time and baked into the test executable.
 
-Then, looking at the last few lines of output: The executable name is this time `migratest.test` so that other SQL file is read at run time.
+Then, looking at the last few lines of output: The executable name is this time `migratest.test` so those other SQL files are read at run time.
 
 ## The root cause
 
