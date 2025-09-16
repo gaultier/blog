@@ -1584,6 +1584,28 @@ offset:18738,
 },
 ],
 },
+{
+html_file_name:"are_my_sql_files_read_at_build_time_or_run_time.html",
+title:"Are my SQL files read at build time or run time?",
+text:"Continuing my Go + DTrace series, but this time with is a small entry. tl;dr: We use DTrace to monitor \'file opened\' system-wide events to determine whether the Go compiler (build time) or our tests (run time) read some SQL files. The problem Go can bake files into the final executable at build time with the //go:embed syntax. This is handy for example for SQL migration files, so that the application can apply pending SQL migrations (if any) at start-up.\nAnd files can also be read at runtime of course. While debugging an issue with a failing test, I had to answer this question: are the SQL migration files being read at build time or run time (this topic has bit me in the past )? The source code had the annotation: //go:embed migrations/*.sql , but a test complained that the SQL migration file some_file.go could not be applied. That makes sense that throwing Go code at a SQL database would not go so well. So how is it possible? The glob pattern should only select SQL files! My first instinct was to turn to opensnoop but it does not have any way to filter by the file name and on a busy machine, with lots of files being opened all the time, this is simply too noisy. I could also inspect system calls, but I would need to both watch open , open_nocancel , open_extended , on some platforms open64 , and perhaps mmap , and also follow child processes ( opensnoop uses this approach by the way)... There surely is an easier way? The solution Well, yes! The DTrace docs mention the io provider which is exactly what we need. We are interested in args[2] which is a fileinfo_t structure, whose field fi_pathname has... the path name, you guessed it. The D script is fairly straightforward: io:::start \n/execname == &quot;go&quot; || execname == &quot;migratest.test&quot; /\n{\n    this-&gt;p = args[2]-&gt;fi_pathname;\n    \n    if (rindex(this-&gt;p, &quot;.sql&quot;) == strlen(this-&gt;p)-4){\n        printf(&quot;%s %s\\n&quot;, execname, this-&gt;p);\n        print(*args[2]);\n    }\n} We watch for executables named go (the Go compiler - build time) or migratest.test (the faulty test - run time) that open files ending with .sql , in which case we print the file name and some additional metadata. The nice thing is that we can keep our D script running forever, if we feel like it, even on a busy system, and run the test suite many times, it will work just fine. When we run go test , it first builds the code and produces the test executable migratest.test which is subsequently run. So this one command obscures which phase reads the SQL files. Assuming some code has been modified and Go needs to rebuild it before running the tests, we see with our D script something like this: # In one terminal.\n$ go test .\n\n# In another terminal.\n$ sudo dtrace -s ~/scratch/io.d\n\n\n 11 499892               buf_strategy:start go ??/sql/20250912000000000000_kratos_secret_pagination.autocommit.up.sql\nfileinfo_t {\n    string fi_name = [ &quot;20250912000000000000_kratos_secret_pagination.autocommit.up.sql&quot; ]\n    string fi_dirname = [ &quot;sql&quot; ]\n    string fi_pathname = [ &quot;??/sql/20250912000000000000_kratos_secret_pagination.autocommit.up.sql&quot; ]\n    offset_t fi_offset = 0\n    string fi_fs = [ &quot;apfs&quot; ]\n    string fi_mount = [ &quot;Data&quot; ]\n    int fi_oflags = 0\n}\n\n[...]\n\n  6 499892               buf_strategy:start migratest.test ??/testdata/20250623113513_testdata.sql\nfileinfo_t {\n    string fi_name = [ &quot;20250623113513_testdata.sql&quot; ]\n    string fi_dirname = [ &quot;testdata&quot; ]\n    string fi_pathname = [ &quot;??/testdata/20250623113513_testdata.sql&quot; ]\n    offset_t fi_offset = 0\n    string fi_fs = [ &quot;apfs&quot; ]\n    string fi_mount = [ &quot;Data&quot; ]\n    int fi_oflags = 0\n} Looking at the first few lines of output: The executable name is go (the fourth field) so this particular SQL file is read at build time and baked into the test executable. Then, looking at the last few lines of output: The executable name is this time migratest.test so that other SQL file is read at run time. The root cause So this was the problem: the test decided to walk the file system by itself at run time without any globbing, it stumbled on a .go file that happened to be in the migrations folder, and errored out. With DTrace, we unveiled the truth in a few lines of D script: some SQL files (schema migrations) were read at build time, and some at run time (also schema migrations for some reason, as well as test data). ",
+titles:[
+{
+title:"The problem",
+slug:"the-problem",
+offset:231,
+},
+{
+title:"The solution",
+slug:"the-solution",
+offset:1442,
+},
+{
+title:"The root cause",
+slug:"the-root-cause",
+offset:4070,
+},
+],
+},
 ],
 };
 export default { raw_index };
