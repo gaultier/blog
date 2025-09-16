@@ -45,7 +45,7 @@ return {
     keywords: {
         keyword: "if else self this BEGIN END typedef struct uintptr_t uint8_t uint16_t uint32_t uint64_t intptr_t int8_t int16_t int32_t int64_t size_t void",
         literal: "",
-        built_in: "trace copyin copyinstr stringof uregs print printf exit rindex strlen quantize lquantize timestamp"
+        built_in: "trace copyin copyinstr stringof uregs print printf exit rindex strlen quantize lquantize timestamp execname pid $target io start args"
     },
     illegal: "</",
   contains: [ hljs.COMMENT('//', '$'), ]

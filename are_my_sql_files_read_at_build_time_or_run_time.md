@@ -30,10 +30,8 @@ io:::start
 /execname == "go" || execname == "migratest.test" /
 {
     this->p = args[2]->fi_pathname;
-    
     if (rindex(this->p, ".sql") == strlen(this->p)-4){
         printf("%s %s\n", execname, this->p);
-        print(*args[2]);
     }
 }
 ```
@@ -41,6 +39,8 @@ io:::start
 We watch for executables named `go` (the Go compiler - build time) or `migratest.test` (the faulty test - run time) that open files ending with `.sql`, in which case we print the file name and some additional metadata.
 
 The nice thing is that we can keep our D script running forever, if we feel like it, even on a busy system, and run the test suite many times, it will work just fine.
+
+This is useful for instance to avoid restarting a long-running application, to catch a bug that rarely happens, or just to iterate quickly on the problem.
 
 When we run `go test`, it first builds the code and produces the test executable `migratest.test` which is subsequently run. So this one command obscures which phase reads the SQL files.
 
@@ -51,35 +51,16 @@ Assuming some code has been modified and Go needs to rebuild it before running t
 $ go test .
 
 # In another terminal.
-$ sudo dtrace -s ~/scratch/io.d
+$ sudo dtrace -s ~/scratch/io.d -q
 
-
- 11 499892               buf_strategy:start go ??/sql/20250912000000000000_kratos_secret_pagination.autocommit.up.sql
-fileinfo_t {
-    string fi_name = [ "20250912000000000000_kratos_secret_pagination.autocommit.up.sql" ]
-    string fi_dirname = [ "sql" ]
-    string fi_pathname = [ "??/sql/20250912000000000000_kratos_secret_pagination.autocommit.up.sql" ]
-    offset_t fi_offset = 0
-    string fi_fs = [ "apfs" ]
-    string fi_mount = [ "Data" ]
-    int fi_oflags = 0
-}
+go ??/sql/20250623113513000000_hydra_secret_pagination.up.sql
 
 [...]
 
-  6 499892               buf_strategy:start migratest.test ??/testdata/20250623113513_testdata.sql
-fileinfo_t {
-    string fi_name = [ "20250623113513_testdata.sql" ]
-    string fi_dirname = [ "testdata" ]
-    string fi_pathname = [ "??/testdata/20250623113513_testdata.sql" ]
-    offset_t fi_offset = 0
-    string fi_fs = [ "apfs" ]
-    string fi_mount = [ "Data" ]
-    int fi_oflags = 0
-}
+migratest.test ??/testdata/20250905160000_testdata.sql
 ```
 
-Looking at the first few lines of output: The executable name is `go` (the fourth field) so this particular SQL file is read at build time and baked into the test executable.
+Looking at the first few lines of output: The executable name is `go` (the first field) so this particular SQL file is read at build time and baked into the test executable.
 
 Then, looking at the last few lines of output: The executable name is this time `migratest.test` so that other SQL file is read at run time.
 
