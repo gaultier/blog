@@ -153,6 +153,7 @@ migratest.test ??/testdata/20240131100001_testdata.sql
 </h2>
 <p>So this was the problem: the test decided to walk the file system by itself at run time without any globbing, it stumbled on a <code>.go</code> file that happened to be in the <code>migrations</code> folder, and errored out.</p>
 <p>With DTrace, we unveiled the truth in a few lines of D script: some SQL files (schema migrations) were read at build time, and some at run time (also schema migrations for some reason, as well as test data).</p>
+<p>The question that started it all could be answered a number of different ways, but by using DTrace we have access to all the niceties it offers such as call stacks, etc.</p>
 <p><a href="/blog"> ⏴ Back to all articles</a></p>
 
 <blockquote id="donate">

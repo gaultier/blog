@@ -74,3 +74,5 @@ Then, looking at the last few lines of output: The executable name is this time 
 So this was the problem: the test decided to walk the file system by itself at run time without any globbing, it stumbled on a `.go` file that happened to be in the `migrations` folder, and errored out.
 
 With DTrace, we unveiled the truth in a few lines of D script: some SQL files (schema migrations) were read at build time, and some at run time (also schema migrations for some reason, as well as test data).
+
+The question that started it all could be answered a number of different ways, but by using DTrace we have access to all the niceties it offers such as call stacks, etc.
