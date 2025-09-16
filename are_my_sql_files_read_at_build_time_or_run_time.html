@@ -105,9 +105,9 @@ Do not edit it by hand.
 <p>Go can bake files into the final executable at build time with the <code>//go:embed</code> syntax. This is handy for example for SQL migration files, so that the application can apply pending SQL migrations (if any) at start-up.
 And files can also be read at runtime of course.</p>
 <p>While debugging an issue with a failing test, I had to answer this question: are the SQL migration files being read at build time or run time (this topic has bit me <a href="/blog/an_optimization_and_debugging_story_go_dtrace.html#establishing-a-baseline">in the past</a>)? The source code had the annotation: <code>//go:embed migrations/*.sql</code>, but a test complained that the SQL migration file <code>some_file.go</code> could not be applied. That makes sense that throwing Go code at a SQL database would not go so well.</p>
-<p>So how is it possible? The glob pattern should only select SQL files!</p>
+<p>So how is it possible? The glob pattern should only select SQL files, and only at build time! What is happening then? Are some files read at runtime?</p>
 <p>My first instinct was to turn to <a href="https://ss64.com/mac/opensnoop.html">opensnoop</a> but it does not have any way to filter by the file name and on a busy machine, with lots of files being opened all the time, this is simply too noisy.</p>
-<p>I could also inspect system calls, but I would need to both watch <code>open</code>, <code>open_nocancel</code>, <code>open_extended</code>, on some platforms <code>open64</code>, and perhaps <code>mmap</code>, and also follow child processes (<code>opensnoop</code> uses this approach by the way)... There surely is an easier way?</p>
+<p>I could also inspect system calls, but I would need watch <code>open</code>, <code>open_nocancel</code>, <code>open_extended</code>, on some platforms <code>open64</code>, and perhaps <code>mmap</code>, and also follow child processes (<code>opensnoop</code> uses this approach by the way)... There surely is an easier way?</p>
 <h2 id="the-solution">
   <a class="title" href="#the-solution">The solution</a>
   <a class="hash-anchor" href="#the-solution" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>

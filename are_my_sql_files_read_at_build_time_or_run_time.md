@@ -13,11 +13,11 @@ Go can bake files into the final executable at build time with the `//go:embed` 
 
 While debugging an issue with a failing test, I had to answer this question: are the SQL migration files being read at build time or run time (this topic has bit me [in the past](/blog/an_optimization_and_debugging_story_go_dtrace.html#establishing-a-baseline))? The source code had the annotation: `//go:embed migrations/*.sql`, but a test complained that the SQL migration file `some_file.go` could not be applied. That makes sense that throwing Go code at a SQL database would not go so well. 
 
-So how is it possible? The glob pattern should only select SQL files!
+So how is it possible? The glob pattern should only select SQL files, and only at build time! What is happening then? Are some files read at runtime?
 
 My first instinct was to turn to [opensnoop](https://ss64.com/mac/opensnoop.html) but it does not have any way to filter by the file name and on a busy machine, with lots of files being opened all the time, this is simply too noisy.
 
-I could also inspect system calls, but I would need to both watch `open`, `open_nocancel`, `open_extended`, on some platforms `open64`, and perhaps `mmap`, and also follow child processes (`opensnoop` uses this approach by the way)... There surely is an easier way? 
+I could also inspect system calls, but I would need watch `open`, `open_nocancel`, `open_extended`, on some platforms `open64`, and perhaps `mmap`, and also follow child processes (`opensnoop` uses this approach by the way)... There surely is an easier way? 
 
 ## The solution
 
