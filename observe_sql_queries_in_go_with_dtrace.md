@@ -4,6 +4,8 @@ Tags: Go, DTrace
 
 *Discussions: [/r/golang](https://old.reddit.com/r/golang/comments/1ne6rvs/observe_live_sql_queries_in_go_with_dtrace/).*
 
+*For a gentle introduction to DTrace especially in conjunction with Go, see my past article: [An optimization and debugging story with Go and DTrace](/blog/an_optimization_and_debugging_story_go_dtrace.html).*
+
 You have a Go program that does *something* with a SQL database. What exactly? You don't know. You'd like to see live what SQL queries are being done.
 
 
