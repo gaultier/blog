@@ -14,13 +14,13 @@ An entry in the cache in this case is a slice of bytes (a blob) so it's not stat
 
 This distribution of entry sizes is however easy to uncover: all entries in the cache are inserted by one callback. It happens to be a Go function that is passed to a C library (via CGO) but this trick works with any language. This function takes as argument a slice of bytes to be inserted in the cache. So, add a log in this callback, print the slice length, process all the relevant logs, compute some statistics, and done? Or, add a custom Prometheus metric, deploy, done?
 
-Well... why modify the source code when we don't have too? Let's use [bpftrace](https://github.com/bpftrace/bpftrace) to determine the distribution of entry sizes *at runtime* on the unmodified program! In the past I have used [dtrace](https://illumos.org/books/dtrace/preface.html#preface) on macOS/FreeBSD which is similar and the direct inspiration for `bpftrace`. I find `dtrace` more powerful in some regards - although `bpftrace` has support for loops whereas `dtrace` does not. Point being, the `bpftrace` incantation can be adapted for `dtrace` pretty easily. Both of these tools are essential workhorses of exploratory programming and troubleshooting.
+Well... why modify the source code when we don't have too? Let's use [bpftrace](https://github.com/bpftrace/bpftrace) to determine the distribution of entry sizes *at runtime* on the unmodified program! In the past I have used [DTrace](https://illumos.org/books/dtrace/preface.html#preface) on macOS/FreeBSD which is similar and the direct inspiration for `bpftrace`. I find DTrace more powerful in some regards - although bpftrace has support for loops whereas DTrace does not. Point being, the bpftrace incantation can be adapted for DTrace pretty easily. Both of these tools are essential workhorses of exploratory programming and troubleshooting.
 
 ## Bpftrace
 
 So, the plan is: I run the tests under `bpftrace`, collect a histogram of the slice of bytes to be inserted in the cache, and voila! 
 
-We can also run the real service with a load test to generate traffic, or simply wait for real traffic to come - all of that works, and `dtrace`/`bpftrace` are designed to inspect production programs without the risk of crashing them, or adversely impacting the system. The `bpftrace` incantation will be the same in all of these cases, only the binary (or process id) will change.
+We can also run the real service with a load test to generate traffic, or simply wait for real traffic to come - all of that works, and DTrace/bpftrace are designed to inspect production programs without the risk of crashing them, or adversely impacting the system. The `bpftrace` incantation will be the same in all of these cases, only the binary (or process id) will change.
 
 Here, my function to insert a slice of bytes in the cache is called `cache_insert`, the executable is called `itest.test`, and the length of the slice of bytes happens to be passed as the third function argument. Arguments are zero-indexed so that means `arg2`:
 
@@ -57,7 +57,7 @@ and we get the same output.
 
 ---
 
-Note that we are doing very basic runtime inspection in this case, but we could also for example look at the hit rate of cache lookups, how much time inserting a new entry takes, etc. `bpftrace` and `dtrace` are really designed to be lightweight swiss-army knives.
+Note that we are doing very basic runtime inspection in this case, but we could also for example look at the hit rate of cache lookups, how much time inserting a new entry takes, etc. bpftrace and DTrace are really designed to be lightweight swiss-army knives.
 
 ## Addendum: Function arguments in bpftrace
 

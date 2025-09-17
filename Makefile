@@ -59,6 +59,8 @@ check:
 	rg --max-depth=1 '\b[KMGT]ib\b' -t markdown || true
 	# Catch empty first line in code block.
 	rg --max-depth=1 '^\s*```\w+\n\n' -t markdown --multiline || true
+	# Catch incorrect casing of `DTrace`.
+	rg --max-depth=1 '[^`](dt|dT|Dt)race\b' -t markdown --multiline || true
 
 
 compile_flags.txt: 

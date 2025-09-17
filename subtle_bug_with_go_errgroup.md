@@ -164,7 +164,7 @@ Wait, the last one should have been rejected, what's going on?
 ## Bug investigation
 
 
-We can use the debugger, or strace/dtrace, or add logs, or simply look at the python static HTTP server, the verdict is the same: no HTTP request is made in `checkHaveIBeenPawned`. How is this possible? I can see the Go function call!
+We can use the debugger, or strace/DTrace, or add logs, or simply look at the python static HTTP server, the verdict is the same: no HTTP request is made in `checkHaveIBeenPawned`. How is this possible? I can see the Go function call!
 
 At first I thought a data race was happening between goroutines, having been recently [burnt by that](/blog/a_subtle_data_race_in_go.html). But it turned out it was something different.
 

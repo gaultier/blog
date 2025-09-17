@@ -250,7 +250,7 @@ new password set: $2a$10$pmOOg5VOFEIjFk47hstoQeFbgHFTzxChpsp77SuuE4yvlSK9Ds4SG‚è
   <a class="title" href="#bug-investigation">Bug investigation</a>
   <a class="hash-anchor" href="#bug-investigation" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
-<p>We can use the debugger, or strace/dtrace, or add logs, or simply look at the python static HTTP server, the verdict is the same: no HTTP request is made in <code>checkHaveIBeenPawned</code>. How is this possible? I can see the Go function call!</p>
+<p>We can use the debugger, or strace/DTrace, or add logs, or simply look at the python static HTTP server, the verdict is the same: no HTTP request is made in <code>checkHaveIBeenPawned</code>. How is this possible? I can see the Go function call!</p>
 <p>At first I thought a data race was happening between goroutines, having been recently <a href="/blog/a_subtle_data_race_in_go.html">burnt by that</a>. But it turned out it was something different.</p>
 <p>Let's log the errors inside <code>checkHaveIBeenPawned</code> that we so conveniently swallowed:</p>
 <pre><code class="language-diff">diff --git a/main.go b/main.go
