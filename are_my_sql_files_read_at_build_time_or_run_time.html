@@ -171,7 +171,6 @@ migratest.test ??/testdata/20240131100001_testdata.sql
 </h2>
 <p>The advantage of using the <code>io</code> provider is that it should be cross-platform, whereas observing particular syscalls is not.</p>
 <p>Additionally, the <code>io</code> provider gives our D script kernel-space data, but <code>syscall</code> gives us user-space data, which we must remember to copy manually with <code>copyin</code> before inspecting it. So it's easier with <code>io</code> and potentially faster.</p>
-<p>Alternatively, we could have just modified the D script that <code>opensnoop</code> uses to filter files with our glob pattern.</p>
 <p><a href="/blog"> ⏴ Back to all articles</a></p>
 
 <blockquote id="donate">

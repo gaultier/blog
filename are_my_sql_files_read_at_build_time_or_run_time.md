@@ -94,5 +94,3 @@ But in a more dynamic way: in DTrace, if we observe some event happening, for ex
 The advantage of using the `io` provider is that it should be cross-platform, whereas observing particular syscalls is not. 
 
 Additionally, the `io` provider gives our D script kernel-space data, but `syscall` gives us user-space data, which we must remember to copy manually with `copyin` before inspecting it. So it's easier with `io` and potentially faster.
-
-Alternatively, we could have just modified the D script that `opensnoop` uses to filter files with our glob pattern.
