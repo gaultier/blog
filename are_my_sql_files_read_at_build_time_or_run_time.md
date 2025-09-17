@@ -21,7 +21,7 @@ I could also inspect system calls, but I would need watch `open`, `open_nocancel
 
 ## The solution
 
-Well, yes! The DTrace docs mention the [io](https://illumos.org/books/dtrace/chp-io.html#chp-io) provider, whith the `start` probe, which is exactly what we need:
+Well, yes! The DTrace docs mention the [io](https://illumos.org/books/dtrace/chp-io.html#chp-io) provider, with the `start` probe, which is exactly what we need:
 
 > probe that fires when an I/O request is about to be made
 
