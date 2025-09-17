@@ -100,15 +100,15 @@ Do not edit it by hand.
   </li>
 </ul>
 
-<p>Continuing my Go + DTrace series, but this time with is a small entry.</p>
-<p><strong>tl;dr:</strong> We use DTrace to monitor 'file opened' system-wide events to determine whether the Go compiler (build time) or our tests (run time) read some SQL files.</p>
+<p><em>Continuing my Go + DTrace series, but this time with is a small entry.</em></p>
 <h2 id="the-problem">
   <a class="title" href="#the-problem">The problem</a>
   <a class="hash-anchor" href="#the-problem" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
+<p>We've all been there: a test fails, and you're digging through code, wondering how or if a file is being accessed.</p>
 <p>Go can bake files into the final executable at build time with the <code>//go:embed</code> syntax. This is handy for example for SQL migration files, so that the application can apply pending SQL migrations (if any) at start-up.
 And files can also be read at runtime of course.</p>
-<p>While debugging an issue with a failing test, I had to answer this question: are the SQL migration files being read at build time or run time (this topic has bit me <a href="/blog/an_optimization_and_debugging_story_go_dtrace.html#establishing-a-baseline">in the past</a>)? The source code had the annotation: <code>//go:embed migrations/*.sql</code>, but it seemed that some I/O was still happening at runtime?</p>
+<p>While debugging an issue with a failing test, I had to answer this question: are the SQL migration files being read at build time or run time (this topic has bit me <a href="/blog/an_optimization_and_debugging_story_go_dtrace.html#establishing-a-baseline">in the past</a>)? The source code had the annotation: <code>//go:embed migrations/*.sql</code>, but it seemed that somehow, some I/O was still happening at runtime?</p>
 <p>For someone who has joined the company recently and does not know the system very well yet, this kind of question pops up very often and this is important to have an easy way to answer it.</p>
 <p>My first instinct was to turn to <a href="https://ss64.com/mac/opensnoop.html">opensnoop</a> but it does not have any way to filter by the file name and on a busy machine, with lots of files being opened all the time, this is simply too noisy.</p>
 <p>I could also inspect system calls, but I would need watch <code>open</code>, <code>open_nocancel</code>, <code>open_extended</code>, on some platforms <code>open64</code>, and also follow child processes (<code>opensnoop</code> uses this approach by the way)... There surely is an easier way?</p>
@@ -123,11 +123,11 @@ And files can also be read at runtime of course.</p>
 <p><em>We could also use the other probes like <code>done</code>, that fires when an I/O request has been fulfilled, etc, but for our purpose, any probe will do.</em></p>
 <p>We are interested in <code>args[2]</code> which is a <code>fileinfo_t</code> structure, whose field <code>fi_pathname</code> has... the file path, you guessed it.</p>
 <p>The D script is fairly straightforward:</p>
-<pre><code class="language-dtrace">io:::start 
-/execname == &quot;go&quot; || execname == &quot;migratest.test&quot; /
+<pre><code class="language-dtrace">io:::start // Listen to I/O requests.
+/execname == &quot;go&quot; || execname == &quot;migratest.test&quot; / // Filter by executable name.
 {
-    this-&gt;p = args[2]-&gt;fi_pathname;
-    if (rindex(this-&gt;p, &quot;.sql&quot;) == strlen(this-&gt;p)-4){
+    this-&gt;p = args[2]-&gt;fi_pathname; // Get the file name.
+    if (rindex(this-&gt;p, &quot;.sql&quot;) == strlen(this-&gt;p)-4){ // Only consider files with a `.sql` extension.
         printf(&quot;%s %s\n&quot;, execname, this-&gt;p);
     }
 }
@@ -169,7 +169,7 @@ migratest.test ??/testdata/20240131100001_testdata.sql
   <a class="title" href="#addendum-the-io-provider-vs-the-syscall-provider">Addendum: The io provider vs. the syscall provider</a>
   <a class="hash-anchor" href="#addendum-the-io-provider-vs-the-syscall-provider" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
-<p>The advantage of using the <code>io</code> provider is that it should be cross-platform, whereas observing particular syscalls is not.</p>
+<p>The advantage of using the <code>io</code> provider is that it should be cross-platform, whereas observing particular syscalls is not (did you know that DTrace works on Windows? What are the syscalls there to open a file? I don't know).</p>
 <p>Additionally, the <code>io</code> provider gives our D script kernel-space data, but <code>syscall</code> gives us user-space data, which we must remember to copy manually with <code>copyin</code> before inspecting it. So it's easier with <code>io</code> and potentially faster.</p>
 <p><a href="/blog"> ⏴ Back to all articles</a></p>
 

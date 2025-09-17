@@ -2,16 +2,16 @@ Title: Are my SQL files read at build time or run time?
 Tags: Go, DTrace
 ---
 
-Continuing my Go + DTrace series, but this time with is a small entry.
-
-**tl;dr:** We use DTrace to monitor 'file opened' system-wide events to determine whether the Go compiler (build time) or our tests (run time) read some SQL files.
+*Continuing my Go + DTrace series, but this time with is a small entry.*
 
 ## The problem
+
+We've all been there: a test fails, and you're digging through code, wondering how or if a file is being accessed.
 
 Go can bake files into the final executable at build time with the `//go:embed` syntax. This is handy for example for SQL migration files, so that the application can apply pending SQL migrations (if any) at start-up.
  And files can also be read at runtime of course.
 
-While debugging an issue with a failing test, I had to answer this question: are the SQL migration files being read at build time or run time (this topic has bit me [in the past](/blog/an_optimization_and_debugging_story_go_dtrace.html#establishing-a-baseline))? The source code had the annotation: `//go:embed migrations/*.sql`, but it seemed that some I/O was still happening at runtime? 
+While debugging an issue with a failing test, I had to answer this question: are the SQL migration files being read at build time or run time (this topic has bit me [in the past](/blog/an_optimization_and_debugging_story_go_dtrace.html#establishing-a-baseline))? The source code had the annotation: `//go:embed migrations/*.sql`, but it seemed that somehow, some I/O was still happening at runtime? 
 
 For someone who has joined the company recently and does not know the system very well yet, this kind of question pops up very often and this is important to have an easy way to answer it.
 
@@ -32,11 +32,11 @@ We are interested in `args[2]` which is a `fileinfo_t` structure, whose field `f
 The D script is fairly straightforward:
 
 ```dtrace
-io:::start 
-/execname == "go" || execname == "migratest.test" /
+io:::start // Listen to I/O requests.
+/execname == "go" || execname == "migratest.test" / // Filter by executable name.
 {
-    this->p = args[2]->fi_pathname;
-    if (rindex(this->p, ".sql") == strlen(this->p)-4){
+    this->p = args[2]->fi_pathname; // Get the file name.
+    if (rindex(this->p, ".sql") == strlen(this->p)-4){ // Only consider files with a `.sql` extension.
         printf("%s %s\n", execname, this->p);
     }
 }
@@ -91,6 +91,6 @@ But in a more dynamic way: in DTrace, if we observe some event happening, for ex
 
 ## Addendum: The io provider vs. the syscall provider
 
-The advantage of using the `io` provider is that it should be cross-platform, whereas observing particular syscalls is not. 
+The advantage of using the `io` provider is that it should be cross-platform, whereas observing particular syscalls is not (did you know that DTrace works on Windows? What are the syscalls there to open a file? I don't know). 
 
 Additionally, the `io` provider gives our D script kernel-space data, but `syscall` gives us user-space data, which we must remember to copy manually with `copyin` before inspecting it. So it's easier with `io` and potentially faster.
