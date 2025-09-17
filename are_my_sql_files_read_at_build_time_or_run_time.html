@@ -92,7 +92,11 @@ Do not edit it by hand.
   </li>
 
   <li>
-    <a href="#the-root-cause">The root cause</a>
+    <a href="#conclusion">Conclusion</a>
+  </li>
+
+  <li>
+    <a href="#addendum-the">Addendum: The </a>
   </li>
 </ul>
 
@@ -104,15 +108,20 @@ Do not edit it by hand.
 </h2>
 <p>Go can bake files into the final executable at build time with the <code>//go:embed</code> syntax. This is handy for example for SQL migration files, so that the application can apply pending SQL migrations (if any) at start-up.
 And files can also be read at runtime of course.</p>
-<p>While debugging an issue with a failing test, I had to answer this question: are the SQL migration files being read at build time or run time (this topic has bit me <a href="/blog/an_optimization_and_debugging_story_go_dtrace.html#establishing-a-baseline">in the past</a>)? The source code had the annotation: <code>//go:embed migrations/*.sql</code>, but a test complained that the SQL migration file <code>some_file.go</code> could not be applied. That makes sense that throwing Go code at a SQL database would not go so well.</p>
-<p>So how is it possible? The glob pattern should only select SQL files, and only at build time! What is happening then? Are some files read at runtime?</p>
+<p>While debugging an issue with a failing test, I had to answer this question: are the SQL migration files being read at build time or run time (this topic has bit me <a href="/blog/an_optimization_and_debugging_story_go_dtrace.html#establishing-a-baseline">in the past</a>)? The source code had the annotation: <code>//go:embed migrations/*.sql</code>, but it seemed that some I/O was still happening at runtime?</p>
+<p>For someone who has joined the company recently and does not know the system very well yet, this kind of question pops up very often and this is important to have an easy way to answer it.</p>
 <p>My first instinct was to turn to <a href="https://ss64.com/mac/opensnoop.html">opensnoop</a> but it does not have any way to filter by the file name and on a busy machine, with lots of files being opened all the time, this is simply too noisy.</p>
-<p>I could also inspect system calls, but I would need watch <code>open</code>, <code>open_nocancel</code>, <code>open_extended</code>, on some platforms <code>open64</code>, and perhaps <code>mmap</code>, and also follow child processes (<code>opensnoop</code> uses this approach by the way)... There surely is an easier way?</p>
+<p>I could also inspect system calls, but I would need watch <code>open</code>, <code>open_nocancel</code>, <code>open_extended</code>, on some platforms <code>open64</code>, and also follow child processes (<code>opensnoop</code> uses this approach by the way)... There surely is an easier way?</p>
 <h2 id="the-solution">
   <a class="title" href="#the-solution">The solution</a>
   <a class="hash-anchor" href="#the-solution" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
-<p>Well, yes! The DTrace docs mention the <a href="https://illumos.org/books/dtrace/chp-io.html#chp-io">io</a> provider which is exactly what we need. We are interested in <code>args[2]</code> which is a <code>fileinfo_t</code> structure, whose field <code>fi_pathname</code> has... the path name, you guessed it.</p>
+<p>Well, yes! The DTrace docs mention the <a href="https://illumos.org/books/dtrace/chp-io.html#chp-io">io</a> provider, whith the <code>start</code> probe, which is exactly what we need:</p>
+<blockquote>
+<p>probe that fires when an I/O request is about to be made</p>
+</blockquote>
+<p><em>We could also use the other probes like <code>done</code>, that fires when an I/O request has been fulfilled, etc, but for our purpose, any probe will do.</em></p>
+<p>We are interested in <code>args[2]</code> which is a <code>fileinfo_t</code> structure, whose field <code>fi_pathname</code> has... the file path, you guessed it.</p>
 <p>The D script is fairly straightforward:</p>
 <pre><code class="language-dtrace">io:::start 
 /execname == &quot;go&quot; || execname == &quot;migratest.test&quot; /
@@ -123,10 +132,10 @@ And files can also be read at runtime of course.</p>
     }
 }
 </code></pre>
-<p>We watch for executables named <code>go</code> (the Go compiler - build time) or <code>migratest.test</code> (the faulty test - run time) that open files ending with <code>.sql</code>, in which case we print the file name and some additional metadata.</p>
+<p>We watch for executables named <code>go</code> (the Go compiler - build time) or <code>migratest.test</code> (the faulty test - run time) that open files ending with <code>.sql</code>, in which case we print the executable name and file name.</p>
 <p>The nice thing is that we can keep our D script running forever, if we feel like it, even on a busy system, and run the test suite many times, it will work just fine.</p>
 <p>This is useful for instance to avoid restarting a long-running application, to catch a bug that rarely happens, or just to iterate quickly on the problem.</p>
-<p>When we run <code>go test</code>, it first builds the code and produces the test executable <code>migratest.test</code> which is subsequently run. So this one command obscures which phase reads the SQL files.</p>
+<p>When we run <code>go test</code>, it first builds the code and transparently produces the test executable <code>migratest.test</code> which is subsequently run. So this one command obscures which phase reads the SQL files.</p>
 <p>Assuming some code has been modified and Go needs to rebuild it before running the tests, we see with our D script something like this:</p>
 <pre><code class="language-shell"># In one terminal.
 $ go test .
@@ -147,13 +156,22 @@ migratest.test ??/testdata/20240131100001_testdata.sql
 </code></pre>
 <p>Looking at the first few lines of output: The executable name is <code>go</code> (the first field) so these particular SQL files are read at build time and baked into the test executable.</p>
 <p>Then, looking at the last few lines of output: The executable name is this time <code>migratest.test</code> so those other SQL files are read at run time.</p>
-<h2 id="the-root-cause">
-  <a class="title" href="#the-root-cause">The root cause</a>
-  <a class="hash-anchor" href="#the-root-cause" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+<h2 id="conclusion">
+  <a class="title" href="#conclusion">Conclusion</a>
+  <a class="hash-anchor" href="#conclusion" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
-<p>So this was the problem: the test decided to walk the file system by itself at run time without any globbing, it stumbled on a <code>.go</code> file that happened to be in the <code>migrations</code> folder, and errored out.</p>
 <p>With DTrace, we unveiled the truth in a few lines of D script: some SQL files (schema migrations) were read at build time, and some at run time (also schema migrations for some reason, as well as test data).</p>
-<p>The question that started it all could be answered a number of different ways, but by using DTrace we have access to all the niceties it offers such as call stacks, etc.</p>
+<p>The question that started it all could be answered a number of different ways, but by using DTrace we have access to all the niceties it offers such as call stacks, a view into the kernel, custom logic, etc.</p>
+<p>You could also discover with this approach, if some source files are not even being considered by the build system in a C or C++ codebase (I have seen codebases where lots of files are lying around but not listed in the Make/CMake, so lying around completely unused), by printing all files opened by the compiler, and comparing that with what source files are in the repository.</p>
+<p>Often, using DTrace feels like crafting a SQL query against a database with real-time data: we first need to find the right table(s) to query (in DTrace: the probes, in SQL: <code>FROM ...</code>), then filter the data we need (in DTrace: the predicate and sometimes <code>if</code> conditionals in the clause, in SQL: <code>WHERE ...</code>), and finally print the fields we are interested in (in DTrace: <code>printf</code>, in SQL: <code>SELECT ...</code>).</p>
+<p>But in a more dynamic way: in DTrace, if we observe some event happening, for example a child process being spawned, we can enter a different branch of our logic and print different things, thanks to the imperative-ish nature of the D language. This kind of thing would not be easy to do in SQL.</p>
+<h2 id="addendum-the">
+  <a class="title" href="#addendum-the">Addendum: The </a>
+  <a class="hash-anchor" href="#addendum-the" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+</h2>
+<p>The advantage of using the <code>io</code> provider is that it should be cross-platform, whereas observing particular syscalls is not.</p>
+<p>Additionally, the <code>io</code> provider gives our D script kernel-space data, but <code>syscall</code> gives us user-space data, which we must remember to copy manually with <code>copyin</code> before inspecting it. So it's easier with <code>io</code> and potentially faster.</p>
+<p>Alternatively, we could have just modified the D script that <code>opensnoop</code> uses to filter files with our glob pattern.</p>
 <p><a href="/blog"> ⏴ Back to all articles</a></p>
 
 <blockquote id="donate">
