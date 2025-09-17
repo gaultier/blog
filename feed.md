@@ -1,5 +1,5 @@
 Title: This blog now has an Atom feed, and yours should probably too
-Tags: Feed, Atom, UUID
+Tags: Blog
 ---
 
 *Find it [here](https://gaultier.github.io/blog/feed.xml) or in the header on the top right-hand corner.*

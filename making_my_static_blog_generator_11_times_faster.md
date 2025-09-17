@@ -1,5 +1,5 @@
 Title: Making my static blog generator <del>11</del> 33 times faster
-Tags: Optimization, Git, Odin, Fossil
+Tags: Optimization, Git, Odin, Fossil, Blog
 ---
 
 This blog is statically generated from Markdown files. It used to be fast, but nowadays it's not:
