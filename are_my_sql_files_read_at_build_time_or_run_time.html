@@ -96,7 +96,7 @@ Do not edit it by hand.
   </li>
 
   <li>
-    <a href="#addendum-the">Addendum: The </a>
+    <a href="#addendum-the-io-provider-vs-the-syscall-provider">Addendum: The io provider vs. the syscall provider</a>
   </li>
 </ul>
 
@@ -165,9 +165,9 @@ migratest.test ??/testdata/20240131100001_testdata.sql
 <p>You could also discover with this approach, if some source files are not even being considered by the build system in a C or C++ codebase (I have seen codebases where lots of files are lying around but not listed in the Make/CMake, so lying around completely unused), by printing all files opened by the compiler, and comparing that with what source files are in the repository.</p>
 <p>Often, using DTrace feels like crafting a SQL query against a database with real-time data: we first need to find the right table(s) to query (in DTrace: the probes, in SQL: <code>FROM ...</code>), then filter the data we need (in DTrace: the predicate and sometimes <code>if</code> conditionals in the clause, in SQL: <code>WHERE ...</code>), and finally print the fields we are interested in (in DTrace: <code>printf</code>, in SQL: <code>SELECT ...</code>).</p>
 <p>But in a more dynamic way: in DTrace, if we observe some event happening, for example a child process being spawned, we can enter a different branch of our logic and print different things, thanks to the imperative-ish nature of the D language. This kind of thing would not be easy to do in SQL.</p>
-<h2 id="addendum-the">
-  <a class="title" href="#addendum-the">Addendum: The </a>
-  <a class="hash-anchor" href="#addendum-the" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+<h2 id="addendum-the-io-provider-vs-the-syscall-provider">
+  <a class="title" href="#addendum-the-io-provider-vs-the-syscall-provider">Addendum: The io provider vs. the syscall provider</a>
+  <a class="hash-anchor" href="#addendum-the-io-provider-vs-the-syscall-provider" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>The advantage of using the <code>io</code> provider is that it should be cross-platform, whereas observing particular syscalls is not.</p>
 <p>Additionally, the <code>io</code> provider gives our D script kernel-space data, but <code>syscall</code> gives us user-space data, which we must remember to copy manually with <code>copyin</code> before inspecting it. So it's easier with <code>io</code> and potentially faster.</p>

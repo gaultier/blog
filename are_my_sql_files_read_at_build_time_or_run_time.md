@@ -89,7 +89,7 @@ But in a more dynamic way: in DTrace, if we observe some event happening, for ex
 
 
 
-## Addendum: The `io` provider vs the `syscall` provider
+## Addendum: The io provider vs. the syscall provider
 
 The advantage of using the `io` provider is that it should be cross-platform, whereas observing particular syscalls is not. 
 
