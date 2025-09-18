@@ -22,6 +22,13 @@
   + some less than optimal encodings are forced to avoid accidentally using RIP relative addressing, e.g. `lea rax, [r13]` gets encoded as `lea rax, [r13 + 0]`
 - [ ] How to get the current SQL schema when all you have is lots of migrations (deltas)
 - [ ] Search and replace fish function
+- [ ] How DTrace works
+      + mmap `/dev/dtrace`
+      + Load `.d` files with definitions
+      + Use `ioctl` on `/dev/dtrace`'s fd with commands (`DTRACEIOC_GO`, `DTRACEIOC_STOP`) and optionally data (e.g. DOF)
+      + DOF is a bit like ELF: contains metadata about the machine etc, several sections, including one for the DIF (bytecode for the in-kernel DTrace VM). It's a lot like a Java .class file. Interestingly DOF supports sections for comments and source code?
+      + Probes are enabled with `ioctl` commands
+      + `ioctl` is both a command and also gets its (optional) 3rd argument filled by the kernel.
 
 ## Blog implementation
 
