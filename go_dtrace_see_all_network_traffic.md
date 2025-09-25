@@ -2,9 +2,13 @@ Title: See all network traffic in a Go program, even encrypted data
 Tags: Go, DTrace
 ---
 
+My most common use of DTrace is to observe I/O data received and sent by various programs. This is so valuable!
+
+However, sometimes this data is encrypted and/or compressed which makes simplistic approaches not viable. Let's see how we can solve this problem one step at a time.
+
 ## Level 1: Observe all write/read system calls
 
-This is the easiest and also what `iosnoop` does. This is in fact how I came to DTrace: I wanted to see the I/O data my program was sending to and receiving from the world.
+This is the easiest and also what `iosnoop` or `dtruss` do.
 
 
 The simplest form is this:

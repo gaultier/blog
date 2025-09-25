@@ -102,11 +102,13 @@ Do not edit it by hand.
   </li>
 </ul>
 
+<p>My most common use of DTrace is to observe I/O data received and sent by various programs. This is so valuable!</p>
+<p>However, sometimes this data is encrypted and/or compressed which makes simplistic approaches not viable. Let's see how we can solve this problem one step at a time.</p>
 <h2 id="level-1-observe-all-write-read-system-calls">
   <a class="title" href="#level-1-observe-all-write-read-system-calls">Level 1: Observe all write/read system calls</a>
   <a class="hash-anchor" href="#level-1-observe-all-write-read-system-calls" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
-<p>This is the easiest and also what <code>iosnoop</code> does. This is in fact how I came to DTrace: I wanted to see the I/O data my program was sending to and receiving from the world.</p>
+<p>This is the easiest and also what <code>iosnoop</code> or <code>dtruss</code> do.</p>
 <p>The simplest form is this:</p>
 <pre><code class="language-dtrace">#pragma D option strsize=16K
 
