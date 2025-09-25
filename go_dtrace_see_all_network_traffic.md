@@ -58,7 +58,7 @@ syscall::write:entry
 
 ### Trace all system calls for networking
 
-Multiple probes can be grouped with commas when they share the same action, so we can instrument *all* system calls that do networking. Fortunately, they share the same first few arguments in the same order. I did not list every single one here, this just for illustrative purposes:
+Multiple probes can be grouped with commas when they share the same action, so we can instrument *all* system calls that do networking in a compact manner. Fortunately, they share the same first few arguments in the same order. I did not list every single one here, this just for illustrative purposes:
 
 ```dtrace
 syscall::write:entry, syscall::sendto_nocancel:entry, syscall::sendto:entry 
@@ -115,9 +115,9 @@ When using our previous approach, we only see gibberish, as expected:
                                                  �c��ҿ��^�L#��Ue	
 ```
 
-How do we see the data in clear? Well, we need to find where the data gets encrypted/decrypted in our program and observe the input/output, respectively.
+How can we see the data in clear? Well, we need to find where the data gets encrypted/decrypted in our program and observe the input/output, respectively.
 
-In Go, the functions of interest are `crypto/tls.(*halfConn).decrypt` and `crypto/tls.(*halfConn).encrypt`. Since they are private functions, there is a risk that the Go compiler would inline them which would make them invisible to DTrace. But since they have relatively long and complex bodies, this is unlikely.
+In a typical Go program, the functions of interest are `crypto/tls.(*halfConn).decrypt` and `crypto/tls.(*halfConn).encrypt`. Since they are private functions, there is a risk that the Go compiler would inline them which would make them invisible to DTrace. But since they have relatively long and complex bodies, this is unlikely.
 
 Their signatures are: 
 
@@ -163,4 +163,4 @@ Set-Cookie: AEC=AaJma5t2IauygzCrcZIEVudn3SEoGHoVuevRl4vUfxpCR5b6Hnusm3RgLIU; exp
 Set-Cookie: __Se
 ```
 
-
+Note that some data printed from the `read(2)` and `write(2)` system calls will still inevitably appear gibberish because it corresponds to binary data, for example DNS requests.

@@ -152,7 +152,7 @@ syscall::write:entry
   <a class="title" href="#trace-all-system-calls-for-networking">Trace all system calls for networking</a>
   <a class="hash-anchor" href="#trace-all-system-calls-for-networking" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h3>
-<p>Multiple probes can be grouped with commas when they share the same action, so we can instrument <em>all</em> system calls that do networking. Fortunately, they share the same first few arguments in the same order. I did not list every single one here, this just for illustrative purposes:</p>
+<p>Multiple probes can be grouped with commas when they share the same action, so we can instrument <em>all</em> system calls that do networking in a compact manner. Fortunately, they share the same first few arguments in the same order. I did not list every single one here, this just for illustrative purposes:</p>
 <pre><code class="language-dtrace">syscall::write:entry, syscall::sendto_nocancel:entry, syscall::sendto:entry 
 / pid == $target &amp;&amp; arg0&gt;2 &amp;&amp; arg0 &gt; 0/
 {
@@ -201,8 +201,8 @@ func main() {
 10    175                      read:return size=1216 fd=8: ��O��b�%�e�ڡXw2d�q�$���NX�d�P�|�`HY-To�dpK	�x�8to�DO���_ibc��y��]�ވe��
                                                  �c��ҿ��^�L#��Ue	
 </code></pre>
-<p>How do we see the data in clear? Well, we need to find where the data gets encrypted/decrypted in our program and observe the input/output, respectively.</p>
-<p>In Go, the functions of interest are <code>crypto/tls.(*halfConn).decrypt</code> and <code>crypto/tls.(*halfConn).encrypt</code>. Since they are private functions, there is a risk that the Go compiler would inline them which would make them invisible to DTrace. But since they have relatively long and complex bodies, this is unlikely.</p>
+<p>How can we see the data in clear? Well, we need to find where the data gets encrypted/decrypted in our program and observe the input/output, respectively.</p>
+<p>In a typical Go program, the functions of interest are <code>crypto/tls.(*halfConn).decrypt</code> and <code>crypto/tls.(*halfConn).encrypt</code>. Since they are private functions, there is a risk that the Go compiler would inline them which would make them invisible to DTrace. But since they have relatively long and complex bodies, this is unlikely.</p>
 <p>Their signatures are:</p>
 <ul>
 <li><code>func (hc *halfConn) decrypt(record []byte) ([]byte, recordType, error)</code></li>
@@ -241,6 +241,7 @@ X-Frame-Options: SAMEORIGIN
 Set-Cookie: AEC=AaJma5t2IauygzCrcZIEVudn3SEoGHoVuevRl4vUfxpCR5b6Hnusm3RgLIU; expires=Tue, 24-Mar-2026 15:39:00 GMT; path=/; domain=.google.com; Secure; HttpOnly; SameSite=lax
 Set-Cookie: __Se
 </code></pre>
+<p>Note that some data printed from the <code>read(2)</code> and <code>write(2)</code> system calls will still inevitably appear gibberish because it corresponds to binary data, for example DNS requests.</p>
 <p><a href="/blog"> ⏴ Back to all articles</a></p>
 
 <blockquote id="donate">
