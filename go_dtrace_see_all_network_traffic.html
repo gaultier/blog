@@ -241,7 +241,7 @@ X-Frame-Options: SAMEORIGIN
 Set-Cookie: AEC=AaJma5t2IauygzCrcZIEVudn3SEoGHoVuevRl4vUfxpCR5b6Hnusm3RgLIU; expires=Tue, 24-Mar-2026 15:39:00 GMT; path=/; domain=.google.com; Secure; HttpOnly; SameSite=lax
 Set-Cookie: __Se
 </code></pre>
-<p>Note that some data printed from the <code>read(2)</code> and <code>write(2)</code> system calls will still inevitably appear gibberish because it corresponds to binary data, for example DNS requests.</p>
+<p>Note that some data printed from the <code>read(2)</code> and <code>write(2)</code> system calls will still inevitably appear gibberish because it corresponds to binary data, for example DNS requests, compressed HTTP bodies, etc. For compressed data, the same trick as for encrypted data can be used.</p>
 <p><a href="/blog"> ⏴ Back to all articles</a></p>
 
 <blockquote id="donate">

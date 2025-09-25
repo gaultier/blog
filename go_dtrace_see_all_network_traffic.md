@@ -163,4 +163,4 @@ Set-Cookie: AEC=AaJma5t2IauygzCrcZIEVudn3SEoGHoVuevRl4vUfxpCR5b6Hnusm3RgLIU; exp
 Set-Cookie: __Se
 ```
 
-Note that some data printed from the `read(2)` and `write(2)` system calls will still inevitably appear gibberish because it corresponds to binary data, for example DNS requests.
+Note that some data printed from the `read(2)` and `write(2)` system calls will still inevitably appear gibberish because it corresponds to binary data, for example DNS requests, compressed HTTP bodies, etc. For compressed data, the same trick as for encrypted data can be used.
