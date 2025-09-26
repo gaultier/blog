@@ -4,7 +4,13 @@ Tags: Go, DTrace
 
 My most common use of DTrace is to observe I/O data received and sent by various programs. This is so valuable!
 
-However, sometimes this data is encrypted and/or compressed which makes simplistic approaches not viable. Let's see how we can solve this problem one step at a time.
+However, sometimes this data is encrypted and/or compressed which makes simplistic approaches not viable.
+
+I hit this problem when implementing the [Oauth2](https://en.wikipedia.org/wiki/OAuth) login flow. If you're not familiar, this allows a user with an account on a 'big' website such as Facebook, Google, etc, known as the 'authorization server', to sign-up/login on a third-party website using their existing account, without having to manage additional credentials. In my particular case, this was 'Login with Amazon'. Yes, this exists.
+
+Since there are 3 actors exchanging data back and forth, this is paramount to observe all the data on the wire to understand what's going on (and what's going wrong). The catch is, for security, most of this data is sent over TLS (HTTPS), meaning, encrypted. Thankfully we can use DTrace to still see the data in clear.
+
+Let's see how, one step at a time.
 
 ## Level 1: Observe all write/read system calls
 
@@ -109,7 +115,7 @@ func main() {
 }
 ```
 
-*I force HTTP 1 because most people are familiar with it, contrary to HTTP 2 or 3. But this is just for readability, the DTrace script works either way.*
+*I force HTTP 1 because most people are familiar with it, and the data is text, contrary to HTTP 2 or 3 which use binary. But this is just for readability, the DTrace script works either way. For binary data, `tracemem` should be used to print a hexdump.*
 
 When using our previous approach, we only see gibberish, as expected:
 
