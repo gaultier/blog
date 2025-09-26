@@ -106,6 +106,10 @@ Do not edit it by hand.
   </li>
 
   <li>
+    <a href="#level-4-see-compressed-data-in-clear">Level 4: See compressed data in clear</a>
+  </li>
+
+  <li>
     <a href="#conclusion">Conclusion</a>
   </li>
 </ul>
@@ -292,13 +296,61 @@ X-Frame-Options: SAMEORIGIN
 Set-Cookie: AEC=AaJma5t2IauygzCrcZIEVudn3SEoGHoVuevRl4vUfxpCR5b6Hnusm3RgLIU; expires=Tue, 24-Mar-2026 15:39:00 GMT; path=/; domain=.google.com; Secure; HttpOnly; SameSite=lax
 Set-Cookie: __Se
 </code></pre>
+<h2 id="level-4-see-compressed-data-in-clear">
+  <a class="title" href="#level-4-see-compressed-data-in-clear">Level 4: See compressed data in clear</a>
+  <a class="hash-anchor" href="#level-4-see-compressed-data-in-clear" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+</h2>
+<p>For compressed data, the same trick as for encrypted data can be used: find the encode/decode functions and print the input/output, respectively.</p>
+<p>Let's take a contrived example where our program sends a random, gzipped string over the network:</p>
+<pre><code class="language-go">package main
+
+import (
+	&quot;compress/gzip&quot;
+	&quot;crypto/rand&quot;
+	&quot;crypto/tls&quot;
+	&quot;net/http&quot;
+	&quot;strings&quot;
+)
+
+func main() {
+	// Force HTTP v1.
+	http.DefaultClient.Transport = &amp;http.Transport{TLSNextProto: make(map[string]func(authority string, c *tls.Conn) http.RoundTripper)}
+
+	w := strings.Builder{}
+	gzipWriter := gzip.NewWriter(&amp;w)
+	msg := &quot;hello &quot; + rand.Text()
+	gzipWriter.Write([]byte(msg))
+	gzipWriter.Close()
+
+	http.Post(&quot;http://google.com&quot;, &quot;application/octet-stream&quot;, strings.NewReader(w.String()))
+}
+</code></pre>
+<p>If we run our previous D script, we can see the HTTP headers just fine, but the body is gibberish (as expected):</p>
+<pre><code class="language-text">  9    176                      write:entry action=write pid=46367 execname=go-get size=208 fd=6: POST / HTTP/1.1
+Host: google.com
+User-Agent: Go-http-client/1.1
+Content-Length: 56
+Content-Type: application/octet-stream
+Accept-Encoding: gzip
+
+�
+</code></pre>
+<p>We can trace the method <code>compress/gzip.(*Writer).Write</code> to print its input:</p>
+<pre><code class="language-dtrace">pid$target::compress?gzip.(?Writer).Write:entry 
+{
+  printf(&quot;%s\n&quot;, stringof(copyin(arg1, arg2)));
+}
+</code></pre>
+<p>And we see:</p>
+<pre><code class="language-text"> 10 530790 compress/gzip.(*Writer).Write:entry hello ZYDEDSRZBY7D65DQHWWVSUOVJ5
+</code></pre>
 <h2 id="conclusion">
   <a class="title" href="#conclusion">Conclusion</a>
   <a class="hash-anchor" href="#conclusion" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
+<p>All of these approaches can be used in conjunction to see data that has been first compressed, perhaps hashed, then encrypted, etc.</p>
 <p>Once again, DTrace shines by its versatility compared to other tools such as Wireshark (can only observe data on the wire, if it's encrypted then tough luck) or strace (can only see system calls). It can programmatically inspect user-space memory, kernel memory, get the stack trace, etc.</p>
-<p>Note that some data printed from the <code>read(2)</code> and <code>write(2)</code> system calls will still inevitably appear gibberish because it corresponds to binary data, for example DNS requests, compressed HTTP headers or bodies, etc.</p>
-<p>For compressed data, the same trick as for encrypted data can be used: find the encode/decode functions and print the input/output, respectively.</p>
+<p>Note that some data printed from the <code>read(2)</code> and <code>write(2)</code> system calls will still inevitably appear gibberish because it corresponds to a binary protocol, for example DNS requests.</p>
 <p>Finally, let's all note that none of this intricate dance would be necessary, if there were some DTrace static probes judiciously placed in the Go standard library or runtime (wink wink to the Go team).</p>
 <p><a href="/blog"> ⏴ Back to all articles</a></p>
 

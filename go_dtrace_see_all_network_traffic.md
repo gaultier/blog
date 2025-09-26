@@ -219,12 +219,72 @@ Set-Cookie: AEC=AaJma5t2IauygzCrcZIEVudn3SEoGHoVuevRl4vUfxpCR5b6Hnusm3RgLIU; exp
 Set-Cookie: __Se
 ```
 
+## Level 4: See compressed data in clear
+
+For compressed data, the same trick as for encrypted data can be used: find the encode/decode functions and print the input/output, respectively.
+
+Let's take a contrived example where our program sends a random, gzipped string over the network:
+
+```go
+package main
+
+import (
+	"compress/gzip"
+	"crypto/rand"
+	"crypto/tls"
+	"net/http"
+	"strings"
+)
+
+func main() {
+	// Force HTTP v1.
+	http.DefaultClient.Transport = &http.Transport{TLSNextProto: make(map[string]func(authority string, c *tls.Conn) http.RoundTripper)}
+
+	w := strings.Builder{}
+	gzipWriter := gzip.NewWriter(&w)
+	msg := "hello " + rand.Text()
+	gzipWriter.Write([]byte(msg))
+	gzipWriter.Close()
+
+	http.Post("http://google.com", "application/octet-stream", strings.NewReader(w.String()))
+}
+```
+
+If we run our previous D script, we can see the HTTP headers just fine, but the body is gibberish (as expected):
+
+```text
+  9    176                      write:entry action=write pid=46367 execname=go-get size=208 fd=6: POST / HTTP/1.1
+Host: google.com
+User-Agent: Go-http-client/1.1
+Content-Length: 56
+Content-Type: application/octet-stream
+Accept-Encoding: gzip
+
+�
+```
+
+We can trace the method `compress/gzip.(*Writer).Write` to print its input:
+
+```dtrace
+pid$target::compress?gzip.(?Writer).Write:entry 
+{
+  printf("%s\n", stringof(copyin(arg1, arg2)));
+}
+```
+
+And we see:
+
+```text
+ 10 530790 compress/gzip.(*Writer).Write:entry hello ZYDEDSRZBY7D65DQHWWVSUOVJ5
+```
+
 ## Conclusion
+
+All of these approaches can be used in conjunction to see data that has been first compressed, perhaps hashed, then encrypted, etc.
 
 Once again, DTrace shines by its versatility compared to other tools such as Wireshark (can only observe data on the wire, if it's encrypted then tough luck) or strace (can only see system calls). It can programmatically inspect user-space memory, kernel memory, get the stack trace, etc.
 
-Note that some data printed from the `read(2)` and `write(2)` system calls will still inevitably appear gibberish because it corresponds to binary data, for example DNS requests, compressed HTTP headers or bodies, etc. 
+Note that some data printed from the `read(2)` and `write(2)` system calls will still inevitably appear gibberish because it corresponds to a binary protocol, for example DNS requests. 
 
-For compressed data, the same trick as for encrypted data can be used: find the encode/decode functions and print the input/output, respectively.
 
 Finally, let's all note that none of this intricate dance would be necessary, if there were some DTrace static probes judiciously placed in the Go standard library or runtime (wink wink to the Go team).
