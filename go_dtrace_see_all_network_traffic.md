@@ -2,6 +2,8 @@ Title: See all network traffic in a Go program, even encrypted data
 Tags: Go, DTrace
 ---
 
+*For a gentle introduction to DTrace especially in conjunction with Go, see my past article: [An optimization and debugging story with Go and DTrace](/blog/an_optimization_and_debugging_story_go_dtrace.html).*
+
 My most common use of DTrace is to observe I/O data received and sent by various programs. This is so valuable and that's why I started using DTrace in the first place!
 
 However, sometimes this data is encrypted and/or compressed which makes simplistic approaches not viable.
@@ -45,6 +47,8 @@ syscall::read:return
   self->read_fd = 0;
 }
 ```
+
+We run it like this: `sudo dtrace -s myscript.d -p <pid>` or `sudo dtrace -s myscript.d -c ./myprogram`.
 
 `write(2)` is the easiest since it is enough to instrument the entrypoint of the system call. `read(2)` must be done in two steps, at the entrypoint we record what is the pointer to the source data, and in the return probe we know how much data was actually read and we can print it.
 
@@ -187,6 +191,8 @@ pid$target::crypto?tls.(?halfConn).encrypt:entry
   printf("%s\n", stringof(copyin(arg4, arg3)));
 }
 ```
+
+We need to replace the `*` character by `?` since `*` is interpreted by DTrace as a wildcard (any character, any number of times) in the probe name. `?` is interpreted as: any character, once.
 
 And boom, we can now see the data in clear:
 

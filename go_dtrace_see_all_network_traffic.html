@@ -110,6 +110,7 @@ Do not edit it by hand.
   </li>
 </ul>
 
+<p><em>For a gentle introduction to DTrace especially in conjunction with Go, see my past article: <a href="/blog/an_optimization_and_debugging_story_go_dtrace.html">An optimization and debugging story with Go and DTrace</a>.</em></p>
 <p>My most common use of DTrace is to observe I/O data received and sent by various programs. This is so valuable and that's why I started using DTrace in the first place!</p>
 <p>However, sometimes this data is encrypted and/or compressed which makes simplistic approaches not viable.</p>
 <p>I hit this problem when implementing the <a href="https://en.wikipedia.org/wiki/OAuth">Oauth2</a> login flow. If you're not familiar, this allows a user with an account on a 'big' website such as Facebook, Google, etc, known as the 'authorization server', to sign-up/login on a third-party website using their existing account, without having to manage additional credentials. In my particular case, this was 'Login with Amazon' (yes, this exists).</p>
@@ -146,6 +147,7 @@ syscall::read:return
   self-&gt;read_fd = 0;
 }
 </code></pre>
+<p>We run it like this: <code>sudo dtrace -s myscript.d -p &lt;pid&gt;</code> or <code>sudo dtrace -s myscript.d -c ./myprogram</code>.</p>
 <p><code>write(2)</code> is the easiest since it is enough to instrument the entrypoint of the system call. <code>read(2)</code> must be done in two steps, at the entrypoint we record what is the pointer to the source data, and in the return probe we know how much data was actually read and we can print it.</p>
 <p>What's important is to only trace successful reads/writes (<code>/ arg0 &gt; 0 /</code>). Otherwise, we'll try to copy data with a size of <code>-1</code> which will be cast to an unsigned number with the maximum value, and result in a <code>out of scratch space</code> message from DTrace. Which is DTrace's own 'Out Of Memory' case. Fortunately, DTrace has been designed up-front to handle misbehaving D scripts so that they do not impact the stability of the system, so there are not other consequences than our action failing.</p>
 <p>Another point: we could be slightly more conservative by also instrumenting the <code>write(2)</code> system call in two steps, because technically, the data that is going to be written, has not yet been paged in by the kernel, and thus could result in a page fault when we try to copy it. The solution is to do it in two steps, same as <code>read(2)</code>, because at the return point, the data has definitely been paged in. I think this is most likely to happen if you write data from the <code>.rodata</code> or <code>.data</code> sections of the executable which have not yet been accessed, but I have found that nearly all real-world programs write dynamic data which has already been faulted in. The <a href="https://illumos.org/books/dtrace/chp-user.html#chp-user">docs</a> mention this fact.</p>
@@ -267,6 +269,7 @@ pid$target::crypto?tls.(?halfConn).encrypt:entry
   printf(&quot;%s\n&quot;, stringof(copyin(arg4, arg3)));
 }
 </code></pre>
+<p>We need to replace the <code>*</code> character by <code>?</code> since <code>*</code> is interpreted by DTrace as a wildcard (any character, any number of times) in the probe name. <code>?</code> is interpreted as: any character, once.</p>
 <p>And boom, we can now see the data in clear:</p>
 <pre><code class="language-text"> 12 273146 crypto/tls.(*halfConn).encrypt:entry GET / HTTP/1.1
 Host: google.com
