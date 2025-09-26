@@ -1,4 +1,4 @@
-Title: See all network traffic in a Go program, even encrypted data
+Title: See all network traffic in a Go program, even when encrypted and compressed
 Tags: Go, DTrace
 ---
 
@@ -70,6 +70,8 @@ syscall::write:entry
 }
 ```
 
+Then, no need to provide a PID in the DTrace invocation: `sudo dtrace -s myscript.d`.
+
 ### Trace all system calls for networking
 
 Multiple probes can be grouped with commas when they share the same action, so we can instrument *all* system calls that do networking in a compact manner. Fortunately, they share the same first few arguments in the same order. I did not list every single one here, this just for illustrative purposes:
@@ -138,6 +140,54 @@ When a socket is closed, we need to remove it from our set, since this file desc
 This trick is occasionally useful, but this script has one big requirement: it must start before a socket of interest is opened by the program, otherwise this socket will not be traced. For a web server, if we intend to only trace new connections, that's completely fine, but for a program with long-lived connections that we cannot restart, that approach will not work as is.
 
 In this case, we could first run `lsof -i TCP -p <pid` to see the file descriptor for these connections and then in the `BEGIN {}` clause of our D script, add these file descriptors to the `socket_fds` set manually.
+
+
+### Alternative: the tcp provider
+
+
+The [tcp](https://docs.oracle.com/en/operating-systems/solaris/oracle-solaris/11.4/dtrace-guide/tcp-probes.html) provider offers two probes of interest for us: `send` and `receive`. With these, we can see what data gets sent over tcp, to/from which address and port, etc. This is quite low-level and seems more designed to help debug the TCP stack, but it can be used.
+
+Let's see an example:
+
+```dtrace
+tcp:::send, tcp:::receive
+/pid==$target/ 
+{
+  tracemem(args[0]->pkt_addr->M_dat.MH_databuf, 288);
+}
+```
+
+We see:
+
+```
+[...]
+  9 511191                           .:send 
+             0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f  0123456789abcdef
+         0: 00 00 00 00 00 00 00 00 11 27 00 00 02 00 00 00  .........'......
+        10: 60 0c 05 00 00 14 06 ff 20 03 00 e8 77 32 44 00  `....... ...w2D.
+        20: b1 fa c3 e4 9c bd 36 62 2a 00 14 50 40 01 08 27  ......6b*..P@..'
+        30: 00 00 00 00 00 00 20 04 f4 68 00 50 41 29 e5 72  ...... ..h.PA).r
+        40: d9 5e 76 73 80 18 08 10 cc 3a 00 00 01 01 08 0a  .^vs.....:......
+        50: e8 0c ec 49 e5 ac 84 15 47 45 54 20 2f 20 48 54  ...I....GET / HT
+        60: 54 50 2f 31 2e 31 0d 0a 48 6f 73 74 3a 20 77 77  TP/1.1..Host: ww
+        70: 77 2e 67 6f 6f 67 6c 65 2e 63 6f 6d 0d 0a 55 73  w.google.com..Us
+        80: 65 72 2d 41 67 65 6e 74 3a 20 47 6f 2d 68 74 74  er-Agent: Go-htt
+        90: 70 2d 63 6c 69 65 6e 74 2f 31 2e 31 0d 0a 52 65  p-client/1.1..Re
+        a0: 66 65 72 65 72 3a 20 68 74 74 70 3a 2f 2f 67 6f  ferer: http://go
+        b0: 6f 67 6c 65 2e 63 6f 6d 0d 0a 41 63 63 65 70 74  ogle.com..Accept
+        c0: 2d 45 6e 63 6f 64 69 6e 67 3a 20 67 7a 69 70 0d  -Encoding: gzip.
+        d0: 0a 0d 0a 0a 0c 1a 07 03 8b 89 b2 8a 89 00 22 01  ..............".
+        e0: 04 1a 00 b0 01 00 00 65 00 00 00 00 00 00 00 00  .......e........
+        f0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+       100: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+       110: 00 00 00 00 00 00 00 00 00 9b 10 01 00 00 00 00  ................
+
+[...]
+```
+
+The only advantage I can see is that we will only see network data (and not disk I/O, stdout logs, etc). Otherwise, the data is hard to read because the probe fires for each TCP frame and the hexdump contains the TCP header. On top, since this is a kernel probe, wean only see the kernel call stack, not the application call stack.
+
+So this approach is mentioned for completeness, but unless you are a kernel developer working on the TCP stack... This is not so useful.
 
 ## Level 3: See encrypted data in clear
 

@@ -5,7 +5,7 @@ Do not edit it by hand.
 <!DOCTYPE html>
 <html>
 <head>
-<title>See all network traffic in a Go program, even encrypted data</title>
+<title>See all network traffic in a Go program, even when encrypted and compressed</title>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link type="application/atom+xml" href="/blog/feed.xml" rel="self">
@@ -77,7 +77,7 @@ Do not edit it by hand.
   <p class="publication-date">Published on 2025-09-25</p>
 </div>
 <div class="article-title">
-<h1>See all network traffic in a Go program, even encrypted data</h1>
+<h1>See all network traffic in a Go program, even when encrypted and compressed</h1>
   <div class="tags"> <a href="/blog/articles-by-tag.html#go" class="tag">Go</a> <a href="/blog/articles-by-tag.html#dtrace" class="tag">DTrace</a></div>
   </div>
  <strong>Table of contents</strong>
@@ -99,6 +99,12 @@ Do not edit it by hand.
 
   <li>
     <a href="#level-2-only-observe-network-data">Level 2: Only observe network data</a>
+<ul>
+
+  <li>
+    <a href="#alternative-the-tcp-provider">Alternative: the tcp provider</a>
+  </li>
+</ul>
   </li>
 
   <li>
@@ -167,6 +173,7 @@ syscall::write:entry
    printf(&quot;fd=%d len=%d data=%s\n&quot;, arg0, arg2, stringof(copyin(arg1, arg2)));
 }
 </code></pre>
+<p>Then, no need to provide a PID in the DTrace invocation: <code>sudo dtrace -s myscript.d</code>.</p>
 <h3 id="trace-all-system-calls-for-networking">
   <a class="title" href="#trace-all-system-calls-for-networking">Trace all system calls for networking</a>
   <a class="hash-anchor" href="#trace-all-system-calls-for-networking" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
@@ -230,6 +237,45 @@ syscall::read:entry, syscall::recvfrom_nocancel:entry, syscall::recvfrom:entry
 <p>When a socket is closed, we need to remove it from our set, since this file descriptor could be used later for a file, etc.</p>
 <p>This trick is occasionally useful, but this script has one big requirement: it must start before a socket of interest is opened by the program, otherwise this socket will not be traced. For a web server, if we intend to only trace new connections, that's completely fine, but for a program with long-lived connections that we cannot restart, that approach will not work as is.</p>
 <p>In this case, we could first run <code>lsof -i TCP -p &lt;pid</code> to see the file descriptor for these connections and then in the <code>BEGIN {}</code> clause of our D script, add these file descriptors to the <code>socket_fds</code> set manually.</p>
+<h3 id="alternative-the-tcp-provider">
+  <a class="title" href="#alternative-the-tcp-provider">Alternative: the tcp provider</a>
+  <a class="hash-anchor" href="#alternative-the-tcp-provider" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+</h3>
+<p>The <a href="https://docs.oracle.com/en/operating-systems/solaris/oracle-solaris/11.4/dtrace-guide/tcp-probes.html">tcp</a> provider offers two probes of interest for us: <code>send</code> and <code>receive</code>. With these, we can see what data gets sent over tcp, to/from which address and port, etc. This is quite low-level and seems more designed to help debug the TCP stack, but it can be used.</p>
+<p>Let's see an example:</p>
+<pre><code class="language-dtrace">tcp:::send, tcp:::receive
+/pid==$target/ 
+{
+  tracemem(args[0]-&gt;pkt_addr-&gt;M_dat.MH_databuf, 288);
+}
+</code></pre>
+<p>We see:</p>
+<pre><code>[...]
+  9 511191                           .:send 
+             0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f  0123456789abcdef
+         0: 00 00 00 00 00 00 00 00 11 27 00 00 02 00 00 00  .........'......
+        10: 60 0c 05 00 00 14 06 ff 20 03 00 e8 77 32 44 00  `....... ...w2D.
+        20: b1 fa c3 e4 9c bd 36 62 2a 00 14 50 40 01 08 27  ......6b*..P@..'
+        30: 00 00 00 00 00 00 20 04 f4 68 00 50 41 29 e5 72  ...... ..h.PA).r
+        40: d9 5e 76 73 80 18 08 10 cc 3a 00 00 01 01 08 0a  .^vs.....:......
+        50: e8 0c ec 49 e5 ac 84 15 47 45 54 20 2f 20 48 54  ...I....GET / HT
+        60: 54 50 2f 31 2e 31 0d 0a 48 6f 73 74 3a 20 77 77  TP/1.1..Host: ww
+        70: 77 2e 67 6f 6f 67 6c 65 2e 63 6f 6d 0d 0a 55 73  w.google.com..Us
+        80: 65 72 2d 41 67 65 6e 74 3a 20 47 6f 2d 68 74 74  er-Agent: Go-htt
+        90: 70 2d 63 6c 69 65 6e 74 2f 31 2e 31 0d 0a 52 65  p-client/1.1..Re
+        a0: 66 65 72 65 72 3a 20 68 74 74 70 3a 2f 2f 67 6f  ferer: http://go
+        b0: 6f 67 6c 65 2e 63 6f 6d 0d 0a 41 63 63 65 70 74  ogle.com..Accept
+        c0: 2d 45 6e 63 6f 64 69 6e 67 3a 20 67 7a 69 70 0d  -Encoding: gzip.
+        d0: 0a 0d 0a 0a 0c 1a 07 03 8b 89 b2 8a 89 00 22 01  ..............&quot;.
+        e0: 04 1a 00 b0 01 00 00 65 00 00 00 00 00 00 00 00  .......e........
+        f0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+       100: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+       110: 00 00 00 00 00 00 00 00 00 9b 10 01 00 00 00 00  ................
+
+[...]
+</code></pre>
+<p>The only advantage I can see is that we will only see network data (and not disk I/O, stdout logs, etc). Otherwise, the data is hard to read because the probe fires for each TCP frame and the hexdump contains the TCP header. On top, since this is a kernel probe, wean only see the kernel call stack, not the application call stack.</p>
+<p>So this approach is mentioned for completeness, but unless you are a kernel developer working on the TCP stack... This is not so useful.</p>
 <h2 id="level-3-see-encrypted-data-in-clear">
   <a class="title" href="#level-3-see-encrypted-data-in-clear">Level 3: See encrypted data in clear</a>
   <a class="hash-anchor" href="#level-3-see-encrypted-data-in-clear" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
