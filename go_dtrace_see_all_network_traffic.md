@@ -8,7 +8,7 @@ My most common use of DTrace is to observe I/O data received and sent by various
 
 However, sometimes this data is encrypted and/or compressed which makes simplistic approaches not viable.
 
-I hit this problem when implementing the [Oauth2](https://en.wikipedia.org/wiki/OAuth) login flow. If you're not familiar, this allows a user with an account on a 'big' website such as Facebook, Google, etc, known as the 'authorization server', to sign-up/login on a third-party website using their existing account, without having to manage additional credentials. In my particular case, this was 'Login with Amazon' (yes, this exists).
+I hit this problem when implementing the [OAuth2](https://en.wikipedia.org/wiki/OAuth) login flow. If you're not familiar, this allows a user with an account on a 'big' website such as Facebook, Google, etc, known as the 'authorization server', to sign-up/login on a third-party website using their existing account, without having to manage additional credentials. In my particular case, this was 'Login with Amazon' (yes, this exists).
 
 Since there are 3 actors exchanging data back and forth, this is paramount to observe all the data on the wire to understand what's going on (and what's going wrong). The catch is, for security, most of this data is sent over TLS (HTTPS), meaning, encrypted. Thankfully we can use DTrace to still see the data in clear.
 
@@ -50,7 +50,7 @@ syscall::read:return
 
 We run it like this: `sudo dtrace -s myscript.d -p <pid>` or `sudo dtrace -s myscript.d -c ./myprogram`.
 
-`write(2)` is the easiest since it is enough to instrument the entrypoint of the system call. `read(2)` must be done in two steps, at the entrypoint we record what is the pointer to the source data, and in the return probe we know how much data was actually read and we can print it.
+`write(2)` is the easiest since it is enough to instrument the entry point of the system call. `read(2)` must be done in two steps, at the entry point we record what is the pointer to the source data, and in the return probe we know how much data was actually read and we can print it.
 
 What's important is to only trace successful reads/writes (`/ arg0 > 0 /`). Otherwise, we'll try to copy data with a size of `-1` which will be cast to an unsigned number with the maximum value, and result in a `out of scratch space` message from DTrace. Which is DTrace's own 'Out Of Memory' case. Fortunately, DTrace has been designed up-front to handle misbehaving D scripts so that they do not impact the stability of the system, so there are not other consequences than our action failing.
 
@@ -152,7 +152,7 @@ import (
 )
 
 func main() {
-	// Force HTTP v1.
+	// Force HTTP 1.
 	http.DefaultClient.Transport = &http.Transport{TLSNextProto: make(map[string]func(authority string, c *tls.Conn) http.RoundTripper)}
 
 	http.Get("https://google.com")
@@ -237,7 +237,7 @@ import (
 )
 
 func main() {
-	// Force HTTP v1.
+	// Force HTTP 1.
 	http.DefaultClient.Transport = &http.Transport{TLSNextProto: make(map[string]func(authority string, c *tls.Conn) http.RoundTripper)}
 
 	w := strings.Builder{}
@@ -282,7 +282,7 @@ And we see:
 
 All of these approaches can be used in conjunction to see data that has been first compressed, perhaps hashed, then encrypted, etc.
 
-Once again, DTrace shines by its versatility compared to other tools such as Wireshark (can only observe data on the wire, if it's encrypted then tough luck) or strace (can only see system calls). It can programmatically inspect user-space memory, kernel memory, get the stack trace, etc.
+Once again, DTrace shines by its versatility compared to other tools such as Wireshark (can only observe data on the wire, if it's encrypted then tough luck) or `strace` (can only see system calls). It can programmatically inspect user-space memory, kernel memory, get the stack trace, etc.
 
 Note that some data printed from the `read(2)` and `write(2)` system calls will still inevitably appear gibberish because it corresponds to a binary protocol, for example DNS requests. 
 
