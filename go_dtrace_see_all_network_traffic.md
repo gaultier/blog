@@ -2,11 +2,11 @@ Title: See all network traffic in a Go program, even encrypted data
 Tags: Go, DTrace
 ---
 
-My most common use of DTrace is to observe I/O data received and sent by various programs. This is so valuable!
+My most common use of DTrace is to observe I/O data received and sent by various programs. This is so valuable and that's why I started using DTrace in the first place!
 
 However, sometimes this data is encrypted and/or compressed which makes simplistic approaches not viable.
 
-I hit this problem when implementing the [Oauth2](https://en.wikipedia.org/wiki/OAuth) login flow. If you're not familiar, this allows a user with an account on a 'big' website such as Facebook, Google, etc, known as the 'authorization server', to sign-up/login on a third-party website using their existing account, without having to manage additional credentials. In my particular case, this was 'Login with Amazon'. Yes, this exists.
+I hit this problem when implementing the [Oauth2](https://en.wikipedia.org/wiki/OAuth) login flow. If you're not familiar, this allows a user with an account on a 'big' website such as Facebook, Google, etc, known as the 'authorization server', to sign-up/login on a third-party website using their existing account, without having to manage additional credentials. In my particular case, this was 'Login with Amazon' (yes, this exists).
 
 Since there are 3 actors exchanging data back and forth, this is paramount to observe all the data on the wire to understand what's going on (and what's going wrong). The catch is, for security, most of this data is sent over TLS (HTTPS), meaning, encrypted. Thankfully we can use DTrace to still see the data in clear.
 
@@ -48,14 +48,14 @@ syscall::read:return
 
 `write(2)` is the easiest since it is enough to instrument the entrypoint of the system call. `read(2)` must be done in two steps, at the entrypoint we record what is the pointer to the source data, and in the return probe we know how much data was actually read and we can print it.
 
-What's important is to only trace successful reads/writes (`/ arg0 > 0 /`). Otherwise, we'll try to copy data with a size of `-1` which will be cast as an unsigned number with the maximum value, and result in a `out of scratch space` message from DTrace. Which is DTrace's 'Out Of Memory' case.
+What's important is to only trace successful reads/writes (`/ arg0 > 0 /`). Otherwise, we'll try to copy data with a size of `-1` which will be cast to an unsigned number with the maximum value, and result in a `out of scratch space` message from DTrace. Which is DTrace's own 'Out Of Memory' case. Fortunately, DTrace has been designed up-front to handle misbehaving D scripts so that they do not impact the stability of the system, so there are not other consequences than our action failing.
 
-Another point: we could be slightly more conservative by also instrumenting the `write(2)` system call in two steps, because technically, the data that is going to be written, has not yet been paged in by the kernel, and thus could result in a page fault when we try to copy it. The solution is to do it in two steps, same as `read(2)`, because at the return point, the data has definitely been paged in. I think this is most likely to happen if you write data from the `.rodata` or `.data` sections of the executable which have not yet been accessed, but I have found that nearly all real-world programs write dynamic data which has already been faulted in. See the [docs](https://illumos.org/books/dtrace/chp-user.html#chp-user) for more details.
+Another point: we could be slightly more conservative by also instrumenting the `write(2)` system call in two steps, because technically, the data that is going to be written, has not yet been paged in by the kernel, and thus could result in a page fault when we try to copy it. The solution is to do it in two steps, same as `read(2)`, because at the return point, the data has definitely been paged in. I think this is most likely to happen if you write data from the `.rodata` or `.data` sections of the executable which have not yet been accessed, but I have found that nearly all real-world programs write dynamic data which has already been faulted in. The [docs](https://illumos.org/books/dtrace/chp-user.html#chp-user) mention this fact.
 
 
 ### Trace multiple processes
 
-This approach also has the advantage that we can trace multiple processes (by PID or name) in the same script, which is quite nice:
+Observing system calls system-wide also has the advantage that we can trace multiple processes (by PID or name) in the same script, which is quite nice:
 
 ```dtrace
 
@@ -95,7 +95,47 @@ syscall::read:return, syscall::recvfrom_nocancel:return, syscall::recvfrom:retur
 }
 ```
 
-## See encrypted data in clear
+## Level 2: Only observe network data
+
+A typical program will print things on stderr and stdout, load files from disk, and generally do I/O that's not related to networking, and this will show up in our script.
+
+The approach I have used is to record which file descriptors are real sockets. We can do this by  tracing the `socket(2)` or `listen(2)` system calls and recording the file descriptor in a global map. Then, we only trace I/O system calls that operate on these file descriptors:
+
+```diff
++ syscall::socket:return, syscall::listen:return
++ / pid == $target && arg0 != -1 /
++ {
++   socket_fds[arg0] = 1;
++ }
++ 
++ syscall::close:entry
++ / pid == $target && socket_fds[arg0] != 0 /
++ {
++   socket_fds[arg0] = 0;
++ }
+
+syscall::write:entry, syscall::sendto_nocancel:entry, syscall::sendto:entry 
+- / pid == $target && arg1 != 0 /
++ / pid == $target && arg1 != 0 && socket_fds[arg0] != 0 /
+{ 
+  // [...]
+}
+
+syscall::read:entry, syscall::recvfrom_nocancel:entry, syscall::recvfrom:entry 
+- / pid == $target /
++ / pid == $target && socket_fds[arg0] != 0 /
+{ 
+  // [...]
+}
+```
+
+When a socket is closed, we need to remove it from our set, since this file descriptor could be used later for a file, etc.
+
+This trick is occasionally useful, but this script has one big requirement: it must start before a socket of interest is opened by the program, otherwise this socket will not be traced. For a web server, if we intend to only trace new connections, that's completely fine, but for a program with long-lived connections that we cannot restart, that approach will not work as is.
+
+In this case, we could first run `lsof -i TCP -p <pid` to see the file descriptor for these connections and then in the `BEGIN {}` clause of our D script, add these file descriptors to the `socket_fds` set manually.
+
+## Level 3: See encrypted data in clear
 
 Most websites use TLS nowadays (`https://`) and will encrypt their data before sending it over the wire. Let's take a simple Go program that makes an HTTP GET request over TLS to demonstrate:
 
@@ -173,4 +213,12 @@ Set-Cookie: AEC=AaJma5t2IauygzCrcZIEVudn3SEoGHoVuevRl4vUfxpCR5b6Hnusm3RgLIU; exp
 Set-Cookie: __Se
 ```
 
-Note that some data printed from the `read(2)` and `write(2)` system calls will still inevitably appear gibberish because it corresponds to binary data, for example DNS requests, compressed HTTP bodies, etc. For compressed data, the same trick as for encrypted data can be used.
+## Conclusion
+
+Once again, DTrace shines by its versatility compared to other tools such as Wireshark (can only observe data on the wire, if it's encrypted then tough luck) or strace (can only see system calls). It can programmatically inspect user-space memory, kernel memory, get the stack trace, etc.
+
+Note that some data printed from the `read(2)` and `write(2)` system calls will still inevitably appear gibberish because it corresponds to binary data, for example DNS requests, compressed HTTP headers or bodies, etc. 
+
+For compressed data, the same trick as for encrypted data can be used: find the encode/decode functions and print the input/output, respectively.
+
+Finally, let's all note that none of this intricate dance would be necessary, if there were some DTrace static probes judiciously placed in the Go standard library or runtime (wink wink to the Go team).

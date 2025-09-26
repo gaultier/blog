@@ -2,7 +2,7 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
 <title>Philippe Gaultier's blog</title>
 <link href="https://gaultier.github.io/blog"/>
-<updated>2025-09-25T17:50:03+02:00</updated>
+<updated>2025-09-26T09:40:55+02:00</updated>
 <author>
 <name>Philippe Gaultier</name>
 </author>
@@ -324,7 +324,7 @@
 <title>See all network traffic in a Go program, even encrypted data</title>
 <link href="https://gaultier.github.io/blog/go_dtrace_see_all_network_traffic.html"/>
 <id>urn:uuid:0c714eff-cc83-539a-99a7-b9043996241d</id>
-<updated>2025-09-25T17:50:03+02:00</updated>
+<updated>2025-09-26T09:40:55+02:00</updated>
 <published>2025-09-25T16:50:53+02:00</published>
 </entry>
 </feed>
