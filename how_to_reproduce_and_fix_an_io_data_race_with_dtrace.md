@@ -241,6 +241,7 @@ Alright, so how do we systematically reproduce the issue, to convince ourselves 
 My first attempt was to use in DTrace the `system` action: 
 
 > void system(string program, ...) 
+>
 > The system action causes the program specified by program to be executed as if it were given to the shell as input. 
 
 For example: `system("sleep 10")`.
@@ -252,6 +253,7 @@ However this did nothing, because this action happens asynchronously, as noted b
 Alright, let's try something else, maybe `chill`?
 
 > void chill(int nanoseconds)
+>
 > The chill action causes DTrace to spin for the specified number of nanoseconds. chill is primarily useful for exploring problems that might be timing related. For example, you can use this action to open race condition windows, or to bring periodic events into or out of phase with one another. Because interrupts are disabled while in DTrace probe context, any use of chill will induce interrupt latency, scheduling latency, and dispatch latency.
 
 Perfect! Let's try it (and remember to use the `-w` option on the DTrace command line to allow destructive actions):

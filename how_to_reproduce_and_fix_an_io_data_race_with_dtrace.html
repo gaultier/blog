@@ -321,8 +321,8 @@ dtrace: pid 432 has exited
 <p>Alright, so how do we systematically reproduce the issue, to convince ourselves that this is indeed the root cause? We would like to ideally add write latency, to simulate a slow disk. This is ultimately the main factor: if the write is too slow, the read finishes too early before data appears.</p>
 <p>My first attempt was to use in DTrace the <code>system</code> action:</p>
 <blockquote>
-<p>void system(string program, ...)
-The system action causes the program specified by program to be executed as if it were given to the shell as input.</p>
+<p>void system(string program, ...)</p>
+<p>The system action causes the program specified by program to be executed as if it were given to the shell as input.</p>
 </blockquote>
 <p>For example: <code>system(&quot;sleep 10&quot;)</code>.</p>
 <p>However this did nothing, because this action happens asynchronously, as noted by the <a href="https://illumos.org/books/dtrace/chp-actsub.html#chp-actsub-4">docs</a>:</p>
@@ -331,8 +331,8 @@ The system action causes the program specified by program to be executed as if i
 </blockquote>
 <p>Alright, let's try something else, maybe <code>chill</code>?</p>
 <blockquote>
-<p>void chill(int nanoseconds)
-The chill action causes DTrace to spin for the specified number of nanoseconds. chill is primarily useful for exploring problems that might be timing related. For example, you can use this action to open race condition windows, or to bring periodic events into or out of phase with one another. Because interrupts are disabled while in DTrace probe context, any use of chill will induce interrupt latency, scheduling latency, and dispatch latency.</p>
+<p>void chill(int nanoseconds)</p>
+<p>The chill action causes DTrace to spin for the specified number of nanoseconds. chill is primarily useful for exploring problems that might be timing related. For example, you can use this action to open race condition windows, or to bring periodic events into or out of phase with one another. Because interrupts are disabled while in DTrace probe context, any use of chill will induce interrupt latency, scheduling latency, and dispatch latency.</p>
 </blockquote>
 <p>Perfect! Let's try it (and remember to use the <code>-w</code> option on the DTrace command line to allow destructive actions):</p>
 <pre><code class="language-diff">syscall::write:entry 
