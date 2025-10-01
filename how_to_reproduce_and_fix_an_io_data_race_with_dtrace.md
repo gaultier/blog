@@ -93,93 +93,90 @@ We have two main possible approaches: observe system calls, or observe Go functi
 pid$target::os.ReadFile:entry  {
   this->name = stringof(copyin(arg0, arg1)); 
   ustack();
-  printf("timestamp=%d name=%s\n", timestamp, this->name); 
+  printf("name=%s\n", this->name); 
 }
 
-pid$target::os.ReadFile:return  {
-  printf("timestamp=%d\n", timestamp); 
-}
+pid$target::os.ReadFile:return  {}
 
 pid$target::os.WriteFile:entry  {
   this->name = stringof(copyin(arg0, arg1)); 
-  printf("timestamp=%d name=%s\n", timestamp, this->name); 
+  ustack();
+  printf("name=%s\n", this->name); 
 }
 
-pid$target::os.WriteFile:return  {
-  printf("timestamp=%d\n", timestamp); 
-}
+pid$target::os.WriteFile:return  {}
 
-pid$target::os.Stat:entry  {
-  printf("timestamp=%d\n", timestamp); 
-}
+pid$target::os.Stat:entry  {}
 
 pid$target::os.Stat:return  {
-  printf("timestamp=%d err=%d\n", timestamp, arg2); 
+  printf("err=%d\n", arg2); 
 }
 
 syscall::write:entry 
-/pid==$target/
+/pid==$target && arg0 > 2/
 {
-  chill(500000000);
-  printf("write entry: timestamp=%d\n", timestamp);
+  self->trace = 1;
 }
 
 syscall::write:return 
-/pid==$target/
+/pid==$target && self->trace != 0/
 {
-  printf("write return: timestamp=%d res=%d\n", timestamp, arg0);
+  printf("write return: res=%d\n", arg0);
+  self->trace = 0;
 }
+
+syscall::read:entry 
+/pid==$target && arg0 > 2/
+{
+  printf("fd=%d\n", arg0);
+  self->trace = 0;
+}
+
 
 syscall::read:return 
-/pid==$target/
+/pid==$target && self->trace != 0/
 {
-  printf("read return: timestamp=%d res=%d\n", timestamp, arg0);
+  printf("read return: res=%d\n", arg0);
+  self->trace = 0;
 }
-
 ```
 
 Let's observe the happy case:
 
 
 ```shell
-dtrace: script '/Users/philippe.gaultier/scratch/data_race_rw.d' matched 9 probes
-host=localhost addr=13522
+dtrace: script '/Users/philippe.gaultier/scratch/data_race_rw.d' matched 10 probes
+host=localhost addr=28331
 CPU     ID                    FUNCTION:NAME
-  6   5600                    os.Stat:entry timestamp=737339518872833
+  6  28403                    os.Stat:entry 
+  6  28404                   os.Stat:return err=0
 
-  6   5601                   os.Stat:return timestamp=737339518889791 err=0
+  7  28401               os.WriteFile:entry 
+              io_race`os.WriteFile
+              io_race`main.writeHostAndPortToFile+0x88
+              io_race`runtime.goexit.abi0+0x4
+name=test.addr
 
-  6   5598               os.WriteFile:entry timestamp=737339519060791 name=test.addr
+  7    177                     write:return write return: res=15
 
-  6    176                      write:entry write entry: timestamp=737340019123416
+  7  28402              os.WriteFile:return 
+  6  28403                    os.Stat:entry 
+  6  28404                   os.Stat:return err=0
 
-  5   5600                    os.Stat:entry timestamp=737340019144000
-
-  5   5601                   os.Stat:return timestamp=737340019165416 err=0
-
-  5   5596                os.ReadFile:entry 
+  6  28399                os.ReadFile:entry 
               io_race`os.ReadFile
               io_race`main.readHostAndPortFromFile+0x34
               io_race`main.main+0x3c
               io_race`runtime.main+0x278
               io_race`runtime.goexit.abi0+0x4
-timestamp=737340019167208 name=test.addr
+name=test.addr
 
-  6    177                     write:return write return: timestamp=737340019170541 res=15
+  6    174                       read:entry fd=4
 
-  4   5599              os.WriteFile:return timestamp=737340019244541
+  6    174                       read:entry fd=4
 
-  5    175                      read:return read return: timestamp=737340019284708 res=15
-
-  5    175                      read:return read return: timestamp=737340019286416 res=0
-
-  5   5597               os.ReadFile:return timestamp=737340019297416
-
-  5    176                      write:entry write entry: timestamp=737340519303083
-
-  5    177                     write:return write return: timestamp=737340519319041 res=26
-
-dtrace: pid 69396 has exited
+  6  28400               os.ReadFile:return 
+dtrace: pid 96987 has exited
 ```
 
 We see that this case worked out well because the write fully finished before the read started.
@@ -188,42 +185,36 @@ We see that this case worked out well because the write fully finished before th
 And now the error case (note how the syscalls are interleaved differently from the previous case):
 
 ```shell
-dtrace: script '/Users/philippe.gaultier/scratch/data_race_rw.d' matched 9 probes
+dtrace: script '/Users/philippe.gaultier/scratch/data_race_rw.d' matched 10 probes
 error reading: missing port in address
 CPU     ID                    FUNCTION:NAME
-  8  13249                    os.Stat:entry timestamp=737345784501250
+  4 529035                    os.Stat:entry 
+  4 529036                   os.Stat:return err=0
 
-  8  13268                   os.Stat:return timestamp=737345784519666 err=0
+  7 529033               os.WriteFile:entry 
+              io_race`os.WriteFile
+              io_race`main.writeHostAndPortToFile+0x88
+              io_race`runtime.goexit.abi0+0x4
+name=test.addr
 
-  5  13247               os.WriteFile:entry timestamp=737345784520375 name=test.addr
+  6 529035                    os.Stat:entry 
+  6 529036                   os.Stat:return err=0
 
-  5    176                      write:entry write entry: timestamp=737346284588458
-
-  7  13249                    os.Stat:entry timestamp=737345794709250
-
-  7  13268                   os.Stat:return timestamp=737345794727916 err=0
-
-  7  13245                os.ReadFile:entry 
+  6 529031                os.ReadFile:entry 
               io_race`os.ReadFile
               io_race`main.readHostAndPortFromFile+0x34
               io_race`main.main+0x3c
               io_race`runtime.main+0x278
               io_race`runtime.goexit.abi0+0x4
-timestamp=737345794729125 name=test.addr
+name=test.addr
 
-  7    175                      read:return read return: timestamp=737345794755250 res=0
+  6    174                       read:entry fd=5
 
-  7  13246               os.ReadFile:return timestamp=737345794767458
+  6 529032               os.ReadFile:return 
+  7    177                     write:return write return: res=15
 
-  7    176                      write:entry write entry: timestamp=737346295126125
-
-  5    177                     write:return write return: timestamp=737346284651458 res=15
-
-  4  13248              os.WriteFile:return timestamp=737346284756208
-
-  7    177                     write:return write return: timestamp=737346295143500 res=39
-
-dtrace: pid 69414 has exited
+  6 529034              os.WriteFile:return 
+dtrace: pid 97623 has exited
 ```
 
 Now, the bug triggered because the read operation finished before the write operation could. Thus, the read sees no data (`res=0`).
@@ -263,7 +254,7 @@ syscall::write:entry
 /pid==$target/
 {
 + chill(500000000);
-  printf("write entry: timestamp=%d\n", timestamp);
+  self->trace = 1;
 }
 ```
 
