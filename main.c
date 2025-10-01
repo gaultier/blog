@@ -1215,7 +1215,7 @@ static void watch_dir() {
 #endif
 
 int main() {
-  PgArena arena = pg_arena_make_from_virtual_mem(100 * PG_MiB);
+  PgArena arena = pg_arena_make_from_virtual_mem(120 * PG_MiB);
   PgArenaAllocator arena_allocator = pg_make_arena_allocator(&arena);
   PgAllocator *allocator = pg_arena_allocator_as_allocator(&arena_allocator);
 
