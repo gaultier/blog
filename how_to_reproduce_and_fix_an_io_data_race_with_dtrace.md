@@ -129,7 +129,7 @@ syscall::read:entry
 /pid==$target && arg0 > 2/
 {
   printf("fd=%d\n", arg0);
-  self->trace = 0;
+  self->trace = 1;
 }
 
 
@@ -144,14 +144,14 @@ syscall::read:return
 Let's observe the happy case:
 
 
-```shell
+```text
 dtrace: script '/Users/philippe.gaultier/scratch/data_race_rw.d' matched 10 probes
-host=localhost addr=28331
+host=localhost addr=45564
 CPU     ID                    FUNCTION:NAME
-  6  28403                    os.Stat:entry 
-  6  28404                   os.Stat:return err=0
+  5  65087                    os.Stat:entry 
+  5  65162                   os.Stat:return err=0
 
-  7  28401               os.WriteFile:entry 
+  7  65081               os.WriteFile:entry 
               io_race`os.WriteFile
               io_race`main.writeHostAndPortToFile+0x88
               io_race`runtime.goexit.abi0+0x4
@@ -159,11 +159,11 @@ name=test.addr
 
   7    177                     write:return write return: res=15
 
-  7  28402              os.WriteFile:return 
-  6  28403                    os.Stat:entry 
-  6  28404                   os.Stat:return err=0
+  7  65130              os.WriteFile:return 
+  7  65087                    os.Stat:entry 
+  7  65162                   os.Stat:return err=0
 
-  6  28399                os.ReadFile:entry 
+  7  62760                os.ReadFile:entry 
               io_race`os.ReadFile
               io_race`main.readHostAndPortFromFile+0x34
               io_race`main.main+0x3c
@@ -171,13 +171,18 @@ name=test.addr
               io_race`runtime.goexit.abi0+0x4
 name=test.addr
 
-  6    174                       read:entry fd=4
+  7    174                       read:entry fd=4
 
-  6    174                       read:entry fd=4
+  7    175                      read:return read return: res=15
 
-  6  28400               os.ReadFile:return 
-dtrace: pid 96987 has exited
+  7    174                       read:entry fd=4
+
+  7    175                      read:return read return: res=0
+
+  7  65044               os.ReadFile:return 
+dtrace: pid 99037 has exited
 ```
+*The last read returning 0 is normal: this is how `os.ReadFile` detects the end of the file.*
 
 We see that this case worked out well because the write fully finished before the read started.
 
@@ -188,19 +193,19 @@ And now the error case (note how the syscalls are interleaved differently from t
 dtrace: script '/Users/philippe.gaultier/scratch/data_race_rw.d' matched 10 probes
 error reading: missing port in address
 CPU     ID                    FUNCTION:NAME
-  4 529035                    os.Stat:entry 
-  4 529036                   os.Stat:return err=0
+  7 532133                    os.Stat:entry 
+  7 532134                   os.Stat:return err=0
 
-  7 529033               os.WriteFile:entry 
+  6 532131               os.WriteFile:entry 
               io_race`os.WriteFile
               io_race`main.writeHostAndPortToFile+0x88
               io_race`runtime.goexit.abi0+0x4
 name=test.addr
 
-  6 529035                    os.Stat:entry 
-  6 529036                   os.Stat:return err=0
+  8 532133                    os.Stat:entry 
+  8 532134                   os.Stat:return err=0
 
-  6 529031                os.ReadFile:entry 
+  8 532129                os.ReadFile:entry 
               io_race`os.ReadFile
               io_race`main.readHostAndPortFromFile+0x34
               io_race`main.main+0x3c
@@ -208,13 +213,15 @@ name=test.addr
               io_race`runtime.goexit.abi0+0x4
 name=test.addr
 
-  6    174                       read:entry fd=5
+  8    174                       read:entry fd=5
 
-  6 529032               os.ReadFile:return 
-  7    177                     write:return write return: res=15
+  8    175                      read:return read return: res=0
 
-  6 529034              os.WriteFile:return 
-dtrace: pid 97623 has exited
+ 10 532130               os.ReadFile:return 
+  6    177                     write:return write return: res=15
+
+  6 532132              os.WriteFile:return 
+dtrace: pid 432 has exited
 ```
 
 Now, the bug triggered because the read operation finished before the write operation could. Thus, the read sees no data (`res=0`).

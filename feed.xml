@@ -2,7 +2,7 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
 <title>Philippe Gaultier's blog</title>
 <link href="https://gaultier.github.io/blog"/>
-<updated>2025-10-01T18:22:52+02:00</updated>
+<updated>2025-10-01T18:33:00+02:00</updated>
 <author>
 <name>Philippe Gaultier</name>
 </author>
@@ -332,7 +332,7 @@
 <title>How to reproduce and fix an I/O data race with DTrace</title>
 <link href="https://gaultier.github.io/blog/how_to_reproduce_and_fix_an_io_data_race_with_dtrace.html"/>
 <id>urn:uuid:8d5cd0cd-5a6d-5e55-80e9-63cd36488f07</id>
-<updated>2025-10-01T18:22:52+02:00</updated>
+<updated>2025-10-01T18:33:00+02:00</updated>
 <published>2025-10-01T16:47:19+02:00</published>
 </entry>
 </feed>
