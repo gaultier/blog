@@ -326,5 +326,5 @@ There are other possible ways to fix this problem such as using a lockfile, etc,
 
 Every time you use a `stat(2)` syscall, ask yourself if this is necessary and if a TOCTOU bug is possible. 
 
-Also, I'm happy to have discovered the `chill` DTrace action to simulate disk (or network, or anything really) latency. I can see myself running the test suite with this on, to detect other cases of TOCTOU.
+Also, I'm happy to have discovered the `chill` DTrace action to simulate disk (or network, or anything really) latency. I can see myself running the test suite with this on, to detect other cases of TOCTOU. Another tool in the toolbox!
 
