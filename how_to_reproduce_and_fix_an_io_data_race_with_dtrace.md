@@ -1,4 +1,4 @@
-Title: How to reproduce and fix an I/O data race with DTrace
+Title: How to reproduce and fix an I/O data race with Go and DTrace
 Tags: DTrace, Go
 ---
 
