@@ -7,6 +7,8 @@ Today I was confronted at work with a bizarre test failure happening only in CI,
 Ok, so can we try to confirm this idea, without knowing anything about the codebase, armed only with the knowledge of the line and test file that fails?
 
 
+For the impatient, here is the [fix](https://github.com/ory/keto/commit/bfa248ed009c17ceb2b2b534e321e01a64d58e73#diff-a0a8ff9cd805ffadfa2802d755c475cc08e2b9ee3825c23323858cd8df48727f).
+
 ## A minimal reproducer
 
 The real codebase is big but here is a minimal reproducer. It's conceptually quite simple: a goroutine writes to the file, and another goroutine reads from this file as soon as it is present, and parses the data (which is simply a host and port e.g. `localhost:4567`). In the real code, the two goroutines are in different components (they might even run in different OS processes now that I think of it) and thus an in-memory synchronization mechanism (mutex, etc) is not feasible:

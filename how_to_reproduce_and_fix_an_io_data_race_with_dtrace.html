@@ -106,6 +106,7 @@ Do not edit it by hand.
 
 <p>Today I was confronted at work with a bizarre test failure happening only in CI, in a project I do not know. An esteemed <a href="https://github.com/zepatrik">colleague</a> of mine hypothesized this was a data race on a file. A component is writing to the file, another component is concurrently reading from this file, and due to improper synchronization, the latter sometimes reads empty or partial data. This would only happen in CI, sometimes, due to slow I/O, and possibly a low number of threads, in this environment.</p>
 <p>Ok, so can we try to confirm this idea, without knowing anything about the codebase, armed only with the knowledge of the line and test file that fails?</p>
+<p>For the impatient, here is the <a href="https://github.com/ory/keto/commit/bfa248ed009c17ceb2b2b534e321e01a64d58e73#diff-a0a8ff9cd805ffadfa2802d755c475cc08e2b9ee3825c23323858cd8df48727f">fix</a>.</p>
 <h2 id="a-minimal-reproducer">
   <a class="title" href="#a-minimal-reproducer">A minimal reproducer</a>
   <a class="hash-anchor" href="#a-minimal-reproducer" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
