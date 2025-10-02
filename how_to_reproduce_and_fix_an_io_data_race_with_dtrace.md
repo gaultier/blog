@@ -2,16 +2,18 @@ Title: How to reproduce and fix an I/O data race with DTrace
 Tags: DTrace, Go
 ---
 
-Today I was confronted at work with a bizarre test failure happening only in CI, in a project I do not know. An esteemed [colleague](https://github.com/zepatrik) of mine hypothesized this was a data race on a file. A component is writing to the file, another component is concurrently reading from this file, and due to improper synchronization, the latter sometimes reads empty or partial data. This would only happen in CI, sometimes, due to slow I/O, and possibly a low number of threads, in this environment.
+Today I was confronted at work with a bizarre test failure happening only in CI, in a project I do not know. This would only happen in CI, sometimes, probably due to slow I/O and a low number of threads in this environment.
 
-Ok, so can we try to confirm this idea, without knowing anything about the codebase, armed only with the knowledge of the line and test file that fails?
+ An esteemed [colleague](https://github.com/zepatrik) of mine hypothesized this was a data race on a file. A component is writing to the file, another component is concurrently reading from this file, and due to improper synchronization, the latter sometimes reads empty or partial data. 
+
+My job was to prove it, without knowing anything about the codebase, armed only with the knowledge of the line and test file that fails.
 
 
 For the impatient, here is the [fix](https://github.com/ory/keto/commit/bfa248ed009c17ceb2b2b534e321e01a64d58e73#diff-a0a8ff9cd805ffadfa2802d755c475cc08e2b9ee3825c23323858cd8df48727f).
 
 ## A minimal reproducer
 
-The real codebase is big but here is a minimal reproducer. It's conceptually quite simple: a goroutine writes to the file, and another goroutine reads from this file as soon as it is present, and parses the data (which is simply a host and port e.g. `localhost:4567`). In the real code, the two goroutines are in different components (they might even run in different OS processes now that I think of it) and thus an in-memory synchronization mechanism (mutex, etc) is not feasible:
+The real codebase is big but here is a minimal reproducer for this article. It's conceptually quite simple: a goroutine writes to the file, and another goroutine reads from this file as soon as it is present, and parses the data (which is simply a host and port e.g. `localhost:4567`). In the real code, the two goroutines are in different components (they might even run in different OS processes now that I think of it) and thus an in-memory synchronization mechanism (mutex, etc) is not feasible:
 
 ```go
 package main
@@ -88,7 +90,7 @@ The astute  reader may have already detected a classic [TOCTOU](https://en.wikip
 
 ## Observe reads and writes
 
-We have two main possible approaches: observe system calls, or observe Go function calls. Let's do both because it will turn out useful in a moment:
+We have two main possible approaches: observe system calls (with the `syscall::read:entry` syntax), or observe Go function calls (with the `pid$target::os.ReadFile:entry` syntax). Let's do both because it will turn out useful in a moment:
 
 
 ```dtrace
@@ -325,5 +327,4 @@ There are other possible ways to fix this problem such as using a lockfile, etc 
 Every time you use a `stat(2)` syscall, ask yourself if this is necessary and if a TOCTOU bug is possible. 
 
 Also, I'm happy to have discovered the `chill` DTrace action to simulate disk (or network, or anything really) latency. I can see myself running the test suite with this on, to detect other cases of TOCTOU.
-
 

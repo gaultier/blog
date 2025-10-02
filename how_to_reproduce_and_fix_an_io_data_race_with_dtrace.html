@@ -104,14 +104,15 @@ Do not edit it by hand.
   </li>
 </ul>
 
-<p>Today I was confronted at work with a bizarre test failure happening only in CI, in a project I do not know. An esteemed <a href="https://github.com/zepatrik">colleague</a> of mine hypothesized this was a data race on a file. A component is writing to the file, another component is concurrently reading from this file, and due to improper synchronization, the latter sometimes reads empty or partial data. This would only happen in CI, sometimes, due to slow I/O, and possibly a low number of threads, in this environment.</p>
-<p>Ok, so can we try to confirm this idea, without knowing anything about the codebase, armed only with the knowledge of the line and test file that fails?</p>
+<p>Today I was confronted at work with a bizarre test failure happening only in CI, in a project I do not know. This would only happen in CI, sometimes, probably due to slow I/O and a low number of threads in this environment.</p>
+<p>An esteemed <a href="https://github.com/zepatrik">colleague</a> of mine hypothesized this was a data race on a file. A component is writing to the file, another component is concurrently reading from this file, and due to improper synchronization, the latter sometimes reads empty or partial data.</p>
+<p>My job was to prove it, without knowing anything about the codebase, armed only with the knowledge of the line and test file that fails.</p>
 <p>For the impatient, here is the <a href="https://github.com/ory/keto/commit/bfa248ed009c17ceb2b2b534e321e01a64d58e73#diff-a0a8ff9cd805ffadfa2802d755c475cc08e2b9ee3825c23323858cd8df48727f">fix</a>.</p>
 <h2 id="a-minimal-reproducer">
   <a class="title" href="#a-minimal-reproducer">A minimal reproducer</a>
   <a class="hash-anchor" href="#a-minimal-reproducer" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
-<p>The real codebase is big but here is a minimal reproducer. It's conceptually quite simple: a goroutine writes to the file, and another goroutine reads from this file as soon as it is present, and parses the data (which is simply a host and port e.g. <code>localhost:4567</code>). In the real code, the two goroutines are in different components (they might even run in different OS processes now that I think of it) and thus an in-memory synchronization mechanism (mutex, etc) is not feasible:</p>
+<p>The real codebase is big but here is a minimal reproducer for this article. It's conceptually quite simple: a goroutine writes to the file, and another goroutine reads from this file as soon as it is present, and parses the data (which is simply a host and port e.g. <code>localhost:4567</code>). In the real code, the two goroutines are in different components (they might even run in different OS processes now that I think of it) and thus an in-memory synchronization mechanism (mutex, etc) is not feasible:</p>
 <pre><code class="language-go">package main
 
 import (
@@ -182,7 +183,7 @@ exit status 1
   <a class="title" href="#observe-reads-and-writes">Observe reads and writes</a>
   <a class="hash-anchor" href="#observe-reads-and-writes" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
-<p>We have two main possible approaches: observe system calls, or observe Go function calls. Let's do both because it will turn out useful in a moment:</p>
+<p>We have two main possible approaches: observe system calls (with the <code>syscall::read:entry</code> syntax), or observe Go function calls (with the <code>pid$target::os.ReadFile:entry</code> syntax). Let's do both because it will turn out useful in a moment:</p>
 <pre><code class="language-dtrace">pid$target::os.ReadFile:entry  {
   this-&gt;name = stringof(copyin(arg0, arg1)); 
   ustack();
