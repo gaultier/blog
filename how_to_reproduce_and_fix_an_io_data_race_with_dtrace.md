@@ -9,7 +9,7 @@ Ok, so can we try to confirm this idea, without knowing anything about the codeb
 
 ## A minimal reproducer
 
-The codebase is big but here is a minimal reproducer mimicking what the real code does. It's conceptually quite simple: a goroutine writes to the file at random intervals, and another goroutine reads from this file and parses the data (which is simple a host and port e.g. `localhost:4567`). In the real code, the two goroutines are in different components (they might even run in different OS processes now that I think of it) and thus an in-memory synchronization mechanism (mutex, etc) is not feasible:
+The codebase is big but here is a minimal reproducer mimicking what the real code does. It's conceptually quite simple: a goroutine writes to the file, and another goroutine reads from this file as soon as it is present, and parses the data (which is simply a host and port e.g. `localhost:4567`). In the real code, the two goroutines are in different components (they might even run in different OS processes now that I think of it) and thus an in-memory synchronization mechanism (mutex, etc) is not feasible:
 
 ```go
 package main
@@ -236,7 +236,7 @@ Note the order of operations for this bug to occur:
 
 ## Add disk latency
 
-Alright, so how do we systematically reproduce the issue, to convince ourselves that this is indeed the root cause? We would like to ideally add write latency, to simulate a slow disk. This is ultimately the main factor: if the write is too slow, the read finishes too early before data appears.
+Alright, so how do we systematically reproduce the issue, to convince ourselves that this is indeed the root cause? We would like to ideally add write latency, to simulate a slow disk. This is ultimately the main factor: if the write is too slow to complete, the read finishes too early before data appears.
 
 My first attempt was to use in DTrace the `system` action: 
 
@@ -273,13 +273,15 @@ To limit adverse effects on the system, DTrace limits the `chill` value to 500 m
 
 This means that we increased significantly our odds of this bug occurring, but not to 100%. Still, this is enough.
 
-Note that since goroutines are involved, the number of threads on the system and the Go scheduler are also factors.
+Note that since goroutines are involved, the number of threads on the system and the behavior of the Go scheduler are also factors.
 
 ## The fix
 
-My biggest pet peeve is the use of `stat(2)` before doing an operation on the file. Not only is this unnecessary in nearly every case (the I/O operation such as `read(2)` or `write(2)` will report `EEXIST` if the file does not exist), not only is this a waste of time and battery, not only will many standard libraries do a `stat(2)` call anyway as part of reading/writing a file, but it also opens the door to various, hard-to-diagnose, TOCTOU issues, such as here.
+My biggest, niche pet peeve is seeing the use of `stat(2)` before doing an operation on the file. Not only is this unnecessary in nearly every case (the I/O operation such as `read(2)` or `write(2)` will report `EEXIST` if the file does not exist), not only is this a waste of time and battery, not only will many standard libraries do a `stat(2)` call anyway as part of reading/writing a file, but it also opens the door to various, hard-to-diagnose, TOCTOU issues, such as here. 
 
-Let's fix the bug by doing less (as it is often the case, I have found). We can simply try to read the file and parse its content. If we fail, we retry.
+I guess a fine use of `stat(2)` before reading a file is to discover the file size, in order to reserve capacity in a growable array before reading the file data into it. It is just a hint anyway to avoid lots of reallocations.
+
+Now, let's fix the bug by doing less (as it is often the case, I have found). We can simply try to read the file and parse its content. If we fail, we retry.
 
 ```diff
 --- io_race.go	2025-10-01 18:01:47
@@ -312,14 +314,14 @@ Let's fix the bug by doing less (as it is often the case, I have found). We can 
  }
 ```
 
-Now, we see in the DTrace output, even with the write delay, that we do multiple reads until one succeeds with the right data.
+Now, we see in the DTrace output, even with the write delay, that the bug is fixed. We sometimes do multiple reads until one succeeds with the right data.
 
-There other possible ways to fix this problem such as using a lockfile, etc.
+There are other possible ways to fix this problem such as using a lockfile, etc.
 
 ## Conclusion
 
 Every time you use a `stat(2)` syscall, ask yourself if this is necessary. 
 
-Also, I'm happy to have discovered and used successfully the `chill` DTrace action to simulate disk latency. I can see myself running the test suite with this on, to detect other cases of TOCTOU.
+Also, I'm happy to have discovered and successfully used the `chill` DTrace action to simulate disk latency. I can see myself running the test suite with this on, to detect other cases of TOCTOU.
 
 

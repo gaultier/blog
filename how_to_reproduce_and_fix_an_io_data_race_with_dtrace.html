@@ -110,7 +110,7 @@ Do not edit it by hand.
   <a class="title" href="#a-minimal-reproducer">A minimal reproducer</a>
   <a class="hash-anchor" href="#a-minimal-reproducer" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
-<p>The codebase is big but here is a minimal reproducer mimicking what the real code does. It's conceptually quite simple: a goroutine writes to the file at random intervals, and another goroutine reads from this file and parses the data (which is simple a host and port e.g. <code>localhost:4567</code>). In the real code, the two goroutines are in different components (they might even run in different OS processes now that I think of it) and thus an in-memory synchronization mechanism (mutex, etc) is not feasible:</p>
+<p>The codebase is big but here is a minimal reproducer mimicking what the real code does. It's conceptually quite simple: a goroutine writes to the file, and another goroutine reads from this file as soon as it is present, and parses the data (which is simply a host and port e.g. <code>localhost:4567</code>). In the real code, the two goroutines are in different components (they might even run in different OS processes now that I think of it) and thus an in-memory synchronization mechanism (mutex, etc) is not feasible:</p>
 <pre><code class="language-go">package main
 
 import (
@@ -318,7 +318,7 @@ dtrace: pid 432 has exited
   <a class="title" href="#add-disk-latency">Add disk latency</a>
   <a class="hash-anchor" href="#add-disk-latency" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
-<p>Alright, so how do we systematically reproduce the issue, to convince ourselves that this is indeed the root cause? We would like to ideally add write latency, to simulate a slow disk. This is ultimately the main factor: if the write is too slow, the read finishes too early before data appears.</p>
+<p>Alright, so how do we systematically reproduce the issue, to convince ourselves that this is indeed the root cause? We would like to ideally add write latency, to simulate a slow disk. This is ultimately the main factor: if the write is too slow to complete, the read finishes too early before data appears.</p>
 <p>My first attempt was to use in DTrace the <code>system</code> action:</p>
 <blockquote>
 <p>void system(string program, ...)</p>
@@ -347,13 +347,14 @@ dtrace: pid 432 has exited
 <p>DTrace will refuse to execute the chill action for more than 500 milliseconds out of each one-second interval on any given CPU.</p>
 </blockquote>
 <p>This means that we increased significantly our odds of this bug occurring, but not to 100%. Still, this is enough.</p>
-<p>Note that since goroutines are involved, the number of threads on the system and the Go scheduler are also factors.</p>
+<p>Note that since goroutines are involved, the number of threads on the system and the behavior of the Go scheduler are also factors.</p>
 <h2 id="the-fix">
   <a class="title" href="#the-fix">The fix</a>
   <a class="hash-anchor" href="#the-fix" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
-<p>My biggest pet peeve is the use of <code>stat(2)</code> before doing an operation on the file. Not only is this unnecessary in nearly every case (the I/O operation such as <code>read(2)</code> or <code>write(2)</code> will report <code>EEXIST</code> if the file does not exist), not only is this a waste of time and battery, not only will many standard libraries do a <code>stat(2)</code> call anyway as part of reading/writing a file, but it also opens the door to various, hard-to-diagnose, TOCTOU issues, such as here.</p>
-<p>Let's fix the bug by doing less (as it is often the case, I have found). We can simply try to read the file and parse its content. If we fail, we retry.</p>
+<p>My biggest, niche pet peeve is seeing the use of <code>stat(2)</code> before doing an operation on the file. Not only is this unnecessary in nearly every case (the I/O operation such as <code>read(2)</code> or <code>write(2)</code> will report <code>EEXIST</code> if the file does not exist), not only is this a waste of time and battery, not only will many standard libraries do a <code>stat(2)</code> call anyway as part of reading/writing a file, but it also opens the door to various, hard-to-diagnose, TOCTOU issues, such as here.</p>
+<p>I guess a fine use of <code>stat(2)</code> before reading a file is to discover the file size, in order to reserve capacity in a growable array before reading the file data into it. It is just a hint anyway to avoid lots of reallocations.</p>
+<p>Now, let's fix the bug by doing less (as it is often the case, I have found). We can simply try to read the file and parse its content. If we fail, we retry.</p>
 <pre><code class="language-diff">--- io_race.go	2025-10-01 18:01:47
 +++ io_race_fixed.go	2025-10-01 18:14:51
 @@ -25,18 +25,18 @@
@@ -383,14 +384,14 @@ dtrace: pid 432 has exited
  	return host, addr, err
  }
 </code></pre>
-<p>Now, we see in the DTrace output, even with the write delay, that we do multiple reads until one succeeds with the right data.</p>
-<p>There other possible ways to fix this problem such as using a lockfile, etc.</p>
+<p>Now, we see in the DTrace output, even with the write delay, that the bug is fixed. We sometimes do multiple reads until one succeeds with the right data.</p>
+<p>There are other possible ways to fix this problem such as using a lockfile, etc.</p>
 <h2 id="conclusion">
   <a class="title" href="#conclusion">Conclusion</a>
   <a class="hash-anchor" href="#conclusion" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>Every time you use a <code>stat(2)</code> syscall, ask yourself if this is necessary.</p>
-<p>Also, I'm happy to have discovered and used successfully the <code>chill</code> DTrace action to simulate disk latency. I can see myself running the test suite with this on, to detect other cases of TOCTOU.</p>
+<p>Also, I'm happy to have discovered and successfully used the <code>chill</code> DTrace action to simulate disk latency. I can see myself running the test suite with this on, to detect other cases of TOCTOU.</p>
 <p><a href="/blog"> ⏴ Back to all articles</a></p>
 
 <blockquote id="donate">
