@@ -320,7 +320,7 @@ Now, let's fix the bug by doing less (as it is often the case, I have found). We
 
 With the patch applied, we see in the DTrace output, even with the write delay, that the bug is fixed. We sometimes do multiple reads until one succeeds with the right data.
 
-There are other possible ways to fix this problem such as using a lockfile, etc but this is the simplest.
+There are other possible ways to fix this problem such as using a lockfile, etc, but this is the simplest.
 
 ## Conclusion
 
