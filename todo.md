@@ -1,5 +1,6 @@
 ## Ideas for articles
 
+- [ ] sql differences between databases
 - [ ] HTTP server using arenas
 - [ ] ~~Migration from mbedtls to aws-lc~~
 - [ ] ~~ASM crypto~~
