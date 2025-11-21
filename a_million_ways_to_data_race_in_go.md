@@ -24,7 +24,7 @@ With this out of the way, let's take a tour of real data races in Go code that I
 
 I also recommend reading the paper [A Study of Real-World Data Races in Golang](https://arxiv.org/pdf/2204.00764). This article humbly hopes to be a spiritual companion to it. Some items here are also present in this paper, and some are new.
 
-In the code I will often use `errgroup.WaitGroup` or `sync.WaitGroup` because they act as a fork-join pattern, shortening the code. The exact same can be done with 'raw' Go channels and goroutines. This also serves to show that using higher-level concepts does not magically protect against data races.
+In the code I will often use `errgroup.WaitGroup` or `sync.WaitGroup` because they act as a fork-join pattern, shortening the code. The exact same can be done with 'raw' Go channels and goroutines. This also serves to show that using higher-level concepts does not magically protect against all data races.
 
 ## Accidental capture in a closure of an outer variable
 

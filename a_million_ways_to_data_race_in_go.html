@@ -164,7 +164,7 @@ Do not edit it by hand.
 </blockquote>
 <p>With this out of the way, let's take a tour of real data races in Go code that I have encountered and fixed. At the end I will emit some recommendations to (try to) avoid them.</p>
 <p>I also recommend reading the paper <a href="https://arxiv.org/pdf/2204.00764">A Study of Real-World Data Races in Golang</a>. This article humbly hopes to be a spiritual companion to it. Some items here are also present in this paper, and some are new.</p>
-<p>In the code I will often use <code>errgroup.WaitGroup</code> or <code>sync.WaitGroup</code> because they act as a fork-join pattern, shortening the code. The exact same can be done with 'raw' Go channels and goroutines. This also serves to show that using higher-level concepts does not magically protect against data races.</p>
+<p>In the code I will often use <code>errgroup.WaitGroup</code> or <code>sync.WaitGroup</code> because they act as a fork-join pattern, shortening the code. The exact same can be done with 'raw' Go channels and goroutines. This also serves to show that using higher-level concepts does not magically protect against all data races.</p>
 <h2 id="accidental-capture-in-a-closure-of-an-outer-variable">
   <a class="title" href="#accidental-capture-in-a-closure-of-an-outer-variable">Accidental capture in a closure of an outer variable</a>
   <a class="hash-anchor" href="#accidental-capture-in-a-closure-of-an-outer-variable" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
