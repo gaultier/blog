@@ -2,7 +2,7 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
 <title>Philippe Gaultier's blog</title>
 <link href="https://gaultier.github.io/blog"/>
-<updated>2025-11-21T16:52:02+01:00</updated>
+<updated>2025-11-21T17:06:09+01:00</updated>
 <author>
 <name>Philippe Gaultier</name>
 </author>
@@ -340,7 +340,7 @@
 <title>A million ways to data-race in Go</title>
 <link href="https://gaultier.github.io/blog/a_million_ways_to_data_race_in_go.html"/>
 <id>urn:uuid:a13c572e-50c1-5844-90f1-55aef92bda42</id>
-<updated>2025-11-21T16:52:02+01:00</updated>
+<updated>2025-11-21T17:06:09+01:00</updated>
 <published>2025-11-21T13:38:45+01:00</published>
 </entry>
 </feed>

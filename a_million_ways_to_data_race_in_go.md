@@ -479,7 +479,7 @@ func main() {
 
 So, the issue may be clear from the description but here it is spelled out: one goroutine writes to a (growing) byte buffer, another one reads from it, and there is no synchronization: that's a clear data race.
 
-What is interesting here is that we have to pass an `io.Writer` for the `OutputStream` of the `docker` library, and this library will write to the writer we passed. We cannot insert a mutex lock anywhere around the write site, since we do not control the library and there no hooks (e.g. pre/post write callbacks) to do so.
+What is interesting here is that we have to pass an `io.Writer` for the `OutputStream` to the library, and this library will write to the writer we passed. We cannot insert a mutex lock anywhere around the write site, since we do not control the library and there no hooks (e.g. pre/post write callbacks) to do so.
 
 
 ### The fix
@@ -617,6 +617,7 @@ Ideas for Go programs:
 1. Consider spawning an OS process instead of a goroutine for isolation. No sharing of data means no data race possible.
 1. Deep clone abundantly (just like in Rust). Memory (especially cache) is lightning fast. Your Go program will anyways not be bottlenecked by that, I guarantee it. Memory usage should be monitored, though, but will probably be fine.
 1. Avoid global mutable variables.
-1. Carefully audit resource sharing code: caches, connection pools, OS process pools, etc. They are likely to contain data races.
+1. Carefully audit resource sharing code: caches, connection pools, OS process pools, HTTP clients, etc. They are likely to contain data races.
 1. Run the tests with the race detector on, all of them, always, from day one. Inspect the test coverage to know which areas may be uncharted areas in terms of concurrency safety.
 1. Study places where a shallow copy may take place, e.g. function arguments passed by value and assignments. Does the type require a deep copy? Each non-trivial type should have documentation stating that.
+1. If a type can be implemented in an immutable fashion, then it's great because there is no data race possible. For example, the `string` type in Go is immutable.

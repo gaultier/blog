@@ -581,7 +581,7 @@ func main() {
 }
 </code></pre>
 <p>So, the issue may be clear from the description but here it is spelled out: one goroutine writes to a (growing) byte buffer, another one reads from it, and there is no synchronization: that's a clear data race.</p>
-<p>What is interesting here is that we have to pass an <code>io.Writer</code> for the <code>OutputStream</code> of the <code>docker</code> library, and this library will write to the writer we passed. We cannot insert a mutex lock anywhere around the write site, since we do not control the library and there no hooks (e.g. pre/post write callbacks) to do so.</p>
+<p>What is interesting here is that we have to pass an <code>io.Writer</code> for the <code>OutputStream</code> to the library, and this library will write to the writer we passed. We cannot insert a mutex lock anywhere around the write site, since we do not control the library and there no hooks (e.g. pre/post write callbacks) to do so.</p>
 <h3 id="the-fix-3">
   <a class="title" href="#the-fix-3">The fix</a>
   <a class="hash-anchor" href="#the-fix-3" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
@@ -710,9 +710,10 @@ index 5529d90..42571b9 100644
 <li>Consider spawning an OS process instead of a goroutine for isolation. No sharing of data means no data race possible.</li>
 <li>Deep clone abundantly (just like in Rust). Memory (especially cache) is lightning fast. Your Go program will anyways not be bottlenecked by that, I guarantee it. Memory usage should be monitored, though, but will probably be fine.</li>
 <li>Avoid global mutable variables.</li>
-<li>Carefully audit resource sharing code: caches, connection pools, OS process pools, etc. They are likely to contain data races.</li>
+<li>Carefully audit resource sharing code: caches, connection pools, OS process pools, HTTP clients, etc. They are likely to contain data races.</li>
 <li>Run the tests with the race detector on, all of them, always, from day one. Inspect the test coverage to know which areas may be uncharted areas in terms of concurrency safety.</li>
 <li>Study places where a shallow copy may take place, e.g. function arguments passed by value and assignments. Does the type require a deep copy? Each non-trivial type should have documentation stating that.</li>
+<li>If a type can be implemented in an immutable fashion, then it's great because there is no data race possible. For example, the <code>string</code> type in Go is immutable.</li>
 </ol>
 <p><a href="/blog"> ⏴ Back to all articles</a></p>
 
