@@ -163,7 +163,7 @@ Do not edit it by hand.
 <p>This means that races on multiword data structures can lead to inconsistent values not corresponding to a single write. When the values depend on the consistency of internal (pointer, length) or (pointer, type) pairs, as can be the case for interface values, maps, slices, and strings in most Go implementations, such races can in turn lead to arbitrary memory corruption.</p>
 </blockquote>
 <p>With this out of the way, let's take a tour of real data races in Go code that I have encountered and fixed. At the end I will emit some recommendations to (try to) avoid them.</p>
-<p>I also recommend reading the paper <a href="https://arxiv.org/pdf/2204.00764">A Study of Real-World Data Races in Golang</a>. This article aims to be a spiritual successor to it. Some items here are also present in this paper, and some are new.</p>
+<p>I also recommend reading the paper <a href="https://arxiv.org/pdf/2204.00764">A Study of Real-World Data Races in Golang</a>. This article humbly hopes to be a spiritual companion to it. Some items here are also present in this paper, and some are new.</p>
 <p>In the code I will often use <code>errgroup.WaitGroup</code> or <code>sync.WaitGroup</code> because they act as a fork-join pattern, shortening the code. The exact same can be done with 'raw' Go channels and goroutines. This also serves to show that using higher-level concepts does not magically protect against data races.</p>
 <h2 id="accidental-capture-in-a-closure-of-an-outer-variable">
   <a class="title" href="#accidental-capture-in-a-closure-of-an-outer-variable">Accidental capture in a closure of an outer variable</a>
@@ -443,7 +443,7 @@ func TestMain(t *testing.T) {
 	}
 }
 </code></pre>
-<p>The reason why is because the data and the mutex guarding it do not have the same 'lifetime'. The <code>pricingInfo</code> map is global and exists from the start of the program to the end. But the mutex <code>infoMtx</code> exists only for the duration of the HTTP handler (and thus HTTP requests). We effectively have 1 map and N mutexes, none of them shared between HTTP handlers. So HTTP handlers cannot synchronize access to the map.</p>
+<p>The reason why is because the data, and the mutex guarding it, do not have the same 'lifetime'. The <code>pricingInfo</code> map is global and exists from the start of the program to the end. But the mutex <code>infoMtx</code> exists only for the duration of the HTTP handler (and thus HTTP request). We effectively have 1 map and N mutexes, none of them shared between HTTP handlers. So HTTP handlers cannot synchronize access to the map.</p>
 <p>The intent of the code was (I think) to do a deep clone of the pricing information at the beginning of the HTTP handler in <code>NewPricingService</code>. Unfortunately, Go does a shallow copy of structures and thus each <code>PricingService</code> instance ends up sharing the same underlying <code>plans</code> map, which is this global map. It could be that for a long time, it worked because the <code>PricingInfo</code> struct did not yet contain the map (in the real code it contains a lot of <code>int</code>s and <code>string</code>s which are value types and will be copied correctly by a shallow copy), and the map was only added later.</p>
 <p>This data race is akin to copying a mutex by value when passing it to a function, which then locks it. This does no synchronization at all since a copy of the mutex is being locked - no mutex is shared between concurrent units.</p>
 <h3 id="the-fix-2">
@@ -492,8 +492,8 @@ index fb59f5c..c7a7a94 100644
 </h3>
 <p>It's annoying to have to implement this manually and especially to have to check every single nested field to determine if it's a value type or a reference type (the former will behave correctly with a shallow copy, the latter needs a custom deep copy implementation). I miss the <code>derive(Clone)</code> annotation in Rust. This is something that the compiler can (and should) do better than me.</p>
 <p>Furthermore, as mentioned in the previous section, some types from the standard library or third-party libraries do not implement a deep <code>Clone()</code> function and contain private fields which prevent us from implementing that ourselves.</p>
-<p>Again, I think Rust's API for a mutex is better because a Rust mutex wraps the data it protects and thus it is harder to have uncorrelated lifetimes for the data and the mutex.</p>
-<p>Go's mutex API likely could not have been implemented this way since it would have required generics which did not exist at the time. But as of today: it could.</p>
+<p>I think Rust's API for a mutex is better because a Rust mutex wraps the data it protects and thus it is harder to have uncorrelated lifetimes for the data and the mutex.</p>
+<p>Go's mutex API likely could not have been implemented this way since it would have required generics which did not exist at the time. But as of today: I think it could.</p>
 <p>Nonetheless, the Go compiler has no way to detect accidental shallow copying, whereas Rust's compiler has the concepts of <code>Copy</code> and <code>Clone</code> - so that issue remains in Go, and is not a simple API mistake in the standard library we can fix.</p>
 <h2 id="concurrent-reads-and-writes-to-standard-library-containers">
   <a class="title" href="#concurrent-reads-and-writes-to-standard-library-containers">Concurrent reads and writes to standard library containers</a>

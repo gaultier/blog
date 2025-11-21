@@ -22,7 +22,7 @@ Quoting the Go memory model:
 
 With this out of the way, let's take a tour of real data races in Go code that I have encountered and fixed. At the end I will emit some recommendations to (try to) avoid them.
 
-I also recommend reading the paper [A Study of Real-World Data Races in Golang](https://arxiv.org/pdf/2204.00764). This article aims to be a spiritual successor to it. Some items here are also present in this paper, and some are new.
+I also recommend reading the paper [A Study of Real-World Data Races in Golang](https://arxiv.org/pdf/2204.00764). This article humbly hopes to be a spiritual companion to it. Some items here are also present in this paper, and some are new.
 
 In the code I will often use `errgroup.WaitGroup` or `sync.WaitGroup` because they act as a fork-join pattern, shortening the code. The exact same can be done with 'raw' Go channels and goroutines. This also serves to show that using higher-level concepts does not magically protect against data races.
 
@@ -328,7 +328,7 @@ func TestMain(t *testing.T) {
 ```
 
 
-The reason why is because the data and the mutex guarding it do not have the same 'lifetime'. The `pricingInfo` map is global and exists from the start of the program to the end. But the mutex `infoMtx` exists only for the duration of the HTTP handler (and thus HTTP requests). We effectively have 1 map and N mutexes, none of them shared between HTTP handlers. So HTTP handlers cannot synchronize access to the map.
+The reason why is because the data, and the mutex guarding it, do not have the same 'lifetime'. The `pricingInfo` map is global and exists from the start of the program to the end. But the mutex `infoMtx` exists only for the duration of the HTTP handler (and thus HTTP request). We effectively have 1 map and N mutexes, none of them shared between HTTP handlers. So HTTP handlers cannot synchronize access to the map.
 
 The intent of the code was (I think) to do a deep clone of the pricing information at the beginning of the HTTP handler in `NewPricingService`. Unfortunately, Go does a shallow copy of structures and thus each `PricingService` instance ends up sharing the same underlying `plans` map, which is this global map. It could be that for a long time, it worked because the `PricingInfo` struct did not yet contain the map (in the real code it contains a lot of `int`s and `string`s which are value types and will be copied correctly by a shallow copy), and the map was only added later. 
 
@@ -383,9 +383,9 @@ It's annoying to have to implement this manually and especially to have to check
 Furthermore, as mentioned in the previous section, some types from the standard library or third-party libraries do not implement a deep `Clone()` function and contain private fields which prevent us from implementing that ourselves.
 
 
-Again, I think Rust's API for a mutex is better because a Rust mutex wraps the data it protects and thus it is harder to have uncorrelated lifetimes for the data and the mutex. 
+I think Rust's API for a mutex is better because a Rust mutex wraps the data it protects and thus it is harder to have uncorrelated lifetimes for the data and the mutex. 
 
-Go's mutex API likely could not have been implemented this way since it would have required generics which did not exist at the time. But as of today: it could. 
+Go's mutex API likely could not have been implemented this way since it would have required generics which did not exist at the time. But as of today: I think it could. 
 
 Nonetheless, the Go compiler has no way to detect accidental shallow copying, whereas Rust's compiler has the concepts of `Copy` and `Clone` - so that issue remains in Go, and is not a simple API mistake in the standard library we can fix.
 
