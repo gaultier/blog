@@ -388,3 +388,10 @@ Again, I think Rust's API for a mutex is better because a Rust mutex wraps the d
 Go's mutex API likely could not have been implemented this way since it would have required generics which did not exist at the time. But as of today: it could. 
 
 Nonetheless, the Go compiler has no way to detect accidental shallow copying, whereas Rust's compiler has the concepts of `Copy` and `Clone` - so that issue remains in Go, and is not a simple API mistake in the standard library we can fix.
+
+
+## Concurrent reads and writes to standard library containers
+
+I encountered many cases of concurrently modifying a `map`, `slice`, etc without any synchronization. That's you're run of the mill data race and they typically fixed by 'slapping a mutex on it' or using a concurrency safe data structure such as `sync.Map`. 
+
+I will thus share here a more interesting one where none of these solutions are possible:

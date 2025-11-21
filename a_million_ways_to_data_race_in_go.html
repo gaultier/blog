@@ -124,6 +124,10 @@ Do not edit it by hand.
   </li>
 </ul>
   </li>
+
+  <li>
+    <a href="#concurrent-reads-and-writes-to-standard-library-containers">Concurrent reads and writes to standard library containers</a>
+  </li>
 </ul>
 
 <p>I have been writing production applications in Go for a few years now. I like some aspects of Go. One aspect I do not like is how easy it is to create data races in Go.</p>
@@ -473,6 +477,12 @@ index fb59f5c..c7a7a94 100644
 <p>Again, I think Rust's API for a mutex is better because a Rust mutex wraps the data it protects and thus it is harder to have decorrelated lifetimes for the data and the mutex.</p>
 <p>Go's mutex API likely could not have been implemented this way since it would have required generics which did not exist at the time. But as of today: it could.</p>
 <p>Nonetheless, the Go compiler has no way to detect accidental shallow copying, whereas Rust's compiler has the concepts of <code>Copy</code> and <code>Clone</code> - so that issue remains in Go, and is not a simple API mistake in the standard library we can fix.</p>
+<h2 id="concurrent-reads-and-writes-to-standard-library-containers">
+  <a class="title" href="#concurrent-reads-and-writes-to-standard-library-containers">Concurrent reads and writes to standard library containers</a>
+  <a class="hash-anchor" href="#concurrent-reads-and-writes-to-standard-library-containers" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+</h2>
+<p>I encountered many cases of concurrently modifying a <code>map</code>, <code>slice</code>, etc without any synchronization. That's you're run of the mill data race and they typically fixed by 'slapping a mutex on it' or using a concurrency safe data structure such as <code>sync.Map</code>.</p>
+<p>I will thus share here a more interesting one where none of these solutions are possible:</p>
 <p><a href="/blog"> ⏴ Back to all articles</a></p>
 
 <blockquote id="donate">
