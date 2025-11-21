@@ -127,6 +127,16 @@ Do not edit it by hand.
 
   <li>
     <a href="#concurrent-reads-and-writes-to-standard-library-containers">Concurrent reads and writes to standard library containers</a>
+<ul>
+
+  <li>
+    <a href="#the-fix-3">The fix</a>
+  </li>
+
+  <li>
+    <a href="#learnings-3">Learnings</a>
+  </li>
+</ul>
   </li>
 </ul>
 
@@ -482,7 +492,183 @@ index fb59f5c..c7a7a94 100644
   <a class="hash-anchor" href="#concurrent-reads-and-writes-to-standard-library-containers" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>I encountered many cases of concurrently modifying a <code>map</code>, <code>slice</code>, etc without any synchronization. That's you're run of the mill data race and they typically fixed by 'slapping a mutex on it' or using a concurrency safe data structure such as <code>sync.Map</code>.</p>
-<p>I will thus share here a more interesting one where none of these solutions are possible:</p>
+<p>I will thus share here a more interesting one where none of these solutions are possible.</p>
+<p>This time, the code is convoluted but what it does is relatively simple:</p>
+<ol>
+<li>Spawn a docker container and capture its standard output in a byte buffer</li>
+<li>Concurrently (in a different goroutine), read this output and find a given token.</li>
+<li>Once the token is found, the context is canceled and thus the container is automatically stopped.</li>
+<li>The token is returned</li>
+</ol>
+<pre><code class="language-go">package main
+
+import (
+	&quot;bytes&quot;
+	&quot;context&quot;
+	&quot;io&quot;
+	&quot;strings&quot;
+	&quot;time&quot;
+
+	&quot;github.com/ory/dockertest/v3&quot;
+	&quot;github.com/ory/dockertest/v3/docker&quot;
+	&quot;golang.org/x/sync/errgroup&quot;
+)
+func GetSigningSecretFromStripeContainer() string {
+	dp, err := dockertest.NewPool(&quot;&quot;)
+	if err != nil {
+		panic(err)
+	}
+
+	forwarder, err := dp.RunWithOptions(&amp;dockertest.RunOptions{
+		Repository: &quot;stripe/stripe-cli&quot;,
+		Tag:        &quot;v1.19.1&quot;,
+	})
+	if err != nil {
+		panic(err)
+	}
+
+	output := &amp;bytes.Buffer{}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	var signingSecret string
+	eg := errgroup.Group{}
+	eg.Go(func() error {
+		defer cancel()
+
+		for {
+			ln, err := output.ReadString('\n')
+			if err == io.EOF {
+				&lt;-time.After(100 * time.Millisecond)
+				continue
+			}
+			if err != nil {
+				return err
+			}
+			if strings.Contains(ln, &quot;Ready!&quot;) {
+				ln = ln[strings.Index(ln, &quot;whsec_&quot;):]
+				signingSecret = ln[:strings.Index(ln, &quot; &quot;)]
+				return nil
+			}
+		}
+	})
+
+	dp.Client.Logs(docker.LogsOptions{
+		Context:      ctx,
+		Stderr:       true,
+		Follow:       true,
+		RawTerminal:  true,
+		Container:    forwarder.Container.ID,
+		OutputStream: output,
+	})
+
+	eg.Wait()
+
+	return signingSecret
+}
+
+func main() {
+	println(GetSigningSecretFromStripeContainer())
+}
+</code></pre>
+<p>So the issue here may be clear from the description but here it is spelled out: one goroutine writes to a (growing) byte buffer, another one reads from it, and there is no synchronization: that's a data race.</p>
+<p>What is interesting here is that we have to pass a <code>io.Writer</code> for the <code>OutputStream</code> of the <code>docker</code> library, and this library will write to the writer we passed. We cannot insert a mutex lock anywhere since we do not control the library.</p>
+<h3 id="the-fix-3">
+  <a class="title" href="#the-fix-3">The fix</a>
+  <a class="hash-anchor" href="#the-fix-3" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+</h3>
+<p>We implement our own writer that does the synchronization with a mutex:</p>
+<pre><code class="language-go">type SyncWriter struct {
+	Writer io.Writer
+	Mtx    *sync.Mutex
+}
+
+func NewSyncWriter(w io.Writer, mtx *sync.Mutex) io.Writer {
+	return &amp;SyncWriter{Writer: w, Mtx: mtx}
+}
+
+func (w *SyncWriter) Write(p []byte) (n int, err error) {
+	w.Mtx.Lock()
+	defer w.Mtx.Unlock()
+
+	written, err := w.Writer.Write(p)
+
+	return written, err
+}
+</code></pre>
+<p>We pass it as is to the third-party library, and when we want to read the byte buffer, we lock the mutex first:</p>
+<pre><code class="language-diff">diff --git a/cmd-sg/main.go b/cmd-sg/main.go
+index 5529d90..42571b9 100644
+--- a/cmd-sg/main.go
++++ b/cmd-sg/main.go
+@@ -5,6 +5,7 @@ import (
+ 	&quot;context&quot;
+ 	&quot;io&quot;
+ 	&quot;strings&quot;
++	&quot;sync&quot;
+ 	&quot;time&quot;
+ 
+ 	&quot;github.com/ory/dockertest/v3&quot;
+@@ -12,6 +13,24 @@ import (
+ 	&quot;golang.org/x/sync/errgroup&quot;
+ )
+ 
++type SyncWriter struct {
++	Writer io.Writer
++	Mtx    *sync.Mutex
++}
++
++func NewSyncWriter(w io.Writer, mtx *sync.Mutex) io.Writer {
++	return &amp;SyncWriter{Writer: w, Mtx: mtx}
++}
++
++func (w *SyncWriter) Write(p []byte) (n int, err error) {
++	w.Mtx.Lock()
++	defer w.Mtx.Unlock()
++
++	written, err := w.Writer.Write(p)
++
++	return written, err
++}
++
+ func GetSigningSecretFromStripeContainer() string {
+ 	dp, err := dockertest.NewPool(&quot;&quot;)
+ 	if err != nil {
+@@ -27,6 +46,8 @@ func GetSigningSecretFromStripeContainer() string {
+ 	}
+ 
+ 	output := &amp;bytes.Buffer{}
++	outputMtx := sync.Mutex{}
++	writer := NewSyncWriter(output, &amp;outputMtx)
+ 
+ 	ctx, cancel := context.WithCancel(context.Background())
+ 	defer cancel()
+@@ -37,7 +58,9 @@ func GetSigningSecretFromStripeContainer() string {
+ 		defer cancel()
+ 
+ 		for {
++			outputMtx.Lock()
+ 			ln, err := output.ReadString('\n')
++			outputMtx.Unlock()
+ 			if err == io.EOF {
+ 				&lt;-time.After(100 * time.Millisecond)
+ 				continue
+@@ -59,7 +82,7 @@ func GetSigningSecretFromStripeContainer() string {
+ 		Follow:       true,
+ 		RawTerminal:  true,
+ 		Container:    forwarder.Container.ID,
+-		OutputStream: output,
++		OutputStream: writer,
+ 	})
+ 
+ 	eg.Wait()
+</code></pre>
+<h3 id="learnings-3">
+  <a class="title" href="#learnings-3">Learnings</a>
+  <a class="hash-anchor" href="#learnings-3" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+</h3>
+<p>Most types in the Go standard library (or third-party libraries for that matter) are <em>not</em> concurrency safe and synchronization is typically on you. It would be nice if more types have a 'sync' version, e.g. <code>SyncWriter</code>, <code>SyncReader</code>, etc.</p>
 <p><a href="/blog"> ⏴ Back to all articles</a></p>
 
 <blockquote id="donate">

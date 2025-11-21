@@ -394,4 +394,191 @@ Nonetheless, the Go compiler has no way to detect accidental shallow copying, wh
 
 I encountered many cases of concurrently modifying a `map`, `slice`, etc without any synchronization. That's you're run of the mill data race and they typically fixed by 'slapping a mutex on it' or using a concurrency safe data structure such as `sync.Map`. 
 
-I will thus share here a more interesting one where none of these solutions are possible:
+I will thus share here a more interesting one where none of these solutions are possible.
+
+This time, the code is convoluted but what it does is relatively simple:
+
+1. Spawn a docker container and capture its standard output in a byte buffer
+2. Concurrently (in a different goroutine), read this output and find a given token. 
+3. Once the token is found, the context is canceled and thus the container is automatically stopped. 
+4. The token is returned
+
+```go
+package main
+
+import (
+	"bytes"
+	"context"
+	"io"
+	"strings"
+	"time"
+
+	"github.com/ory/dockertest/v3"
+	"github.com/ory/dockertest/v3/docker"
+	"golang.org/x/sync/errgroup"
+)
+func GetSigningSecretFromStripeContainer() string {
+	dp, err := dockertest.NewPool("")
+	if err != nil {
+		panic(err)
+	}
+
+	forwarder, err := dp.RunWithOptions(&dockertest.RunOptions{
+		Repository: "stripe/stripe-cli",
+		Tag:        "v1.19.1",
+	})
+	if err != nil {
+		panic(err)
+	}
+
+	output := &bytes.Buffer{}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	var signingSecret string
+	eg := errgroup.Group{}
+	eg.Go(func() error {
+		defer cancel()
+
+		for {
+			ln, err := output.ReadString('\n')
+			if err == io.EOF {
+				<-time.After(100 * time.Millisecond)
+				continue
+			}
+			if err != nil {
+				return err
+			}
+			if strings.Contains(ln, "Ready!") {
+				ln = ln[strings.Index(ln, "whsec_"):]
+				signingSecret = ln[:strings.Index(ln, " ")]
+				return nil
+			}
+		}
+	})
+
+	dp.Client.Logs(docker.LogsOptions{
+		Context:      ctx,
+		Stderr:       true,
+		Follow:       true,
+		RawTerminal:  true,
+		Container:    forwarder.Container.ID,
+		OutputStream: output,
+	})
+
+	eg.Wait()
+
+	return signingSecret
+}
+
+func main() {
+	println(GetSigningSecretFromStripeContainer())
+}
+```
+
+So the issue here may be clear from the description but here it is spelled out: one goroutine writes to a (growing) byte buffer, another one reads from it, and there is no synchronization: that's a data race.
+
+What is interesting here is that we have to pass a `io.Writer` for the `OutputStream` of the `docker` library, and this library will write to the writer we passed. We cannot insert a mutex lock anywhere since we do not control the library.
+
+
+### The fix
+
+We implement our own writer that does the synchronization with a mutex:
+
+```go
+type SyncWriter struct {
+	Writer io.Writer
+	Mtx    *sync.Mutex
+}
+
+func NewSyncWriter(w io.Writer, mtx *sync.Mutex) io.Writer {
+	return &SyncWriter{Writer: w, Mtx: mtx}
+}
+
+func (w *SyncWriter) Write(p []byte) (n int, err error) {
+	w.Mtx.Lock()
+	defer w.Mtx.Unlock()
+
+	written, err := w.Writer.Write(p)
+
+	return written, err
+}
+```
+
+We pass it as is to the third-party library, and when we want to read the byte buffer, we lock the mutex first:
+
+```diff
+diff --git a/cmd-sg/main.go b/cmd-sg/main.go
+index 5529d90..42571b9 100644
+--- a/cmd-sg/main.go
++++ b/cmd-sg/main.go
+@@ -5,6 +5,7 @@ import (
+ 	"context"
+ 	"io"
+ 	"strings"
++	"sync"
+ 	"time"
+ 
+ 	"github.com/ory/dockertest/v3"
+@@ -12,6 +13,24 @@ import (
+ 	"golang.org/x/sync/errgroup"
+ )
+ 
++type SyncWriter struct {
++	Writer io.Writer
++	Mtx    *sync.Mutex
++}
++
++func NewSyncWriter(w io.Writer, mtx *sync.Mutex) io.Writer {
++	return &SyncWriter{Writer: w, Mtx: mtx}
++}
++
++func (w *SyncWriter) Write(p []byte) (n int, err error) {
++	w.Mtx.Lock()
++	defer w.Mtx.Unlock()
++
++	written, err := w.Writer.Write(p)
++
++	return written, err
++}
++
+ func GetSigningSecretFromStripeContainer() string {
+ 	dp, err := dockertest.NewPool("")
+ 	if err != nil {
+@@ -27,6 +46,8 @@ func GetSigningSecretFromStripeContainer() string {
+ 	}
+ 
+ 	output := &bytes.Buffer{}
++	outputMtx := sync.Mutex{}
++	writer := NewSyncWriter(output, &outputMtx)
+ 
+ 	ctx, cancel := context.WithCancel(context.Background())
+ 	defer cancel()
+@@ -37,7 +58,9 @@ func GetSigningSecretFromStripeContainer() string {
+ 		defer cancel()
+ 
+ 		for {
++			outputMtx.Lock()
+ 			ln, err := output.ReadString('\n')
++			outputMtx.Unlock()
+ 			if err == io.EOF {
+ 				<-time.After(100 * time.Millisecond)
+ 				continue
+@@ -59,7 +82,7 @@ func GetSigningSecretFromStripeContainer() string {
+ 		Follow:       true,
+ 		RawTerminal:  true,
+ 		Container:    forwarder.Container.ID,
+-		OutputStream: output,
++		OutputStream: writer,
+ 	})
+ 
+ 	eg.Wait()
+```
+
+
+### Learnings
+
+Most types in the Go standard library (or third-party libraries for that matter) are *not* concurrency safe and synchronization is typically on you. It would be nice if more types have a 'sync' version, e.g. `SyncWriter`, `SyncReader`, etc.
+
+
