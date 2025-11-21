@@ -274,11 +274,146 @@ index 351ecc0..8abee1c 100644
 
 </code></pre>
 <p>This may affect performance negatively since some resources will not be shared anymore.</p>
+<p>Additionally, in some situations, this is not so easy because <code>http.Client</code> does not offer a <code>Clone()</code> method (a recurring issue in Go as we'll see). For example, a Go test may start a <code>httptest.Server</code> and then call <code>.Client()</code> on this server to obtain a pre-configured HTTP client for this server. Then, there is no easy way to duplicate this client to use from two different tests running in parallel.</p>
 <p>Again here, I would not blame the original developer. In my view, the docs for <code>http.Client</code> are misleading and should mention that not every single operation is concurrency safe. Perhaps with the wording: 'once a http.Client is constructed, performing a HTTP request is concurrency safe, provided that the http.Client fields are not modified concurrently'. Which is less catchy than 'Clients are safe for concurrent use' ;)</p>
 <h2 id="improper-use-of-mutex">
   <a class="title" href="#improper-use-of-mutex">Improper use of mutex</a>
   <a class="hash-anchor" href="#improper-use-of-mutex" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
+<p>The next data race is one that baffled me for a bit, because the code was using a mutex properly and I could not fathom why a race would be possible.</p>
+<p>Here's a minimal reproducer:</p>
+<pre><code class="language-go">package main
+
+import (
+	&quot;encoding/json&quot;
+	&quot;net/http&quot;
+	&quot;sync&quot;
+)
+
+type Plans map[string]int
+
+type PricingInfo struct {
+	plans Plans
+}
+
+var pricingInfo = PricingInfo{plans: Plans{&quot;cheap plan&quot;: 1, &quot;expensive plan&quot;: 5}}
+
+type PricingService struct {
+	info    PricingInfo
+	infoMtx sync.Mutex
+}
+
+func NewPricingService() *PricingService {
+	return &amp;PricingService{info: pricingInfo, infoMtx: sync.Mutex{}}
+}
+
+func AddPricing(w http.ResponseWriter, r *http.Request) {
+	pricingService := NewPricingService()
+
+	pricingService.infoMtx.Lock()
+	defer pricingService.infoMtx.Unlock()
+
+	pricingService.info.plans[&quot;middle plan&quot;] = 3
+
+	encoder := json.NewEncoder(w)
+	encoder.Encode(pricingService.info)
+}
+
+func GetPricing(w http.ResponseWriter, r *http.Request) {
+	pricingService := NewPricingService()
+
+	pricingService.infoMtx.Lock()
+	defer pricingService.infoMtx.Unlock()
+
+	encoder := json.NewEncoder(w)
+	encoder.Encode(pricingService.info)
+}
+
+func main() {
+	http.HandleFunc(&quot;POST /add-pricing&quot;, AddPricing)
+	http.HandleFunc(&quot;GET /pricing&quot;, GetPricing)
+	http.ListenAndServe(&quot;:12345&quot;, nil)
+}
+</code></pre>
+<p>A global mutable map of pricing information is guarded by a mutex. One HTTP endpoint reads the map, another adds an item to it. Pretty simple I would say. The locking is done correctly.</p>
+<p>Yet the map suffers from a data race. Here is a reproducer:</p>
+<pre><code class="language-go">package main
+
+import (
+	&quot;net/http&quot;
+	&quot;net/http/httptest&quot;
+	&quot;testing&quot;
+)
+
+func TestMain(t *testing.T) {
+	mux := http.NewServeMux()
+	mux.HandleFunc(&quot;POST /add-pricing&quot;, AddPricing)
+	mux.HandleFunc(&quot;GET /pricing&quot;, GetPricing)
+
+	server := httptest.NewServer(mux)
+	t.Cleanup(server.Close)
+
+	t.Run(&quot;get pricing&quot;, func(t *testing.T) {
+		t.Parallel()
+
+		_, err := server.Client().Get(server.URL + &quot;/pricing&quot;)
+		if err != nil {
+			panic(err)
+		}
+	})
+
+	for range 5 {
+		t.Run(&quot;add pricing&quot;, func(t *testing.T) {
+			t.Parallel()
+
+			_, err := server.Client().Post(server.URL+&quot;/add-pricing&quot;, &quot;application/json&quot;, nil)
+			if err != nil {
+				panic(err)
+			}
+		})
+	}
+}
+</code></pre>
+<p>The reason why is because the data and the mutex guarding it do not have the same 'lifetime'. The <code>pricingInfo</code> map is global and exists from the very start of the program to the end. But the mutex <code>infoMtx</code> exists for the duration of the HTTP handler (and thus HTTP requests).</p>
+<p>The intent of the code was (I think) to do a deep clone of the pricing information at the beginning of the HTTP handler in <code>NewPricingService</code>. Unfortunately, Go does a shallow copy of structures and thus each <code>PricingService</code> instance ends up sharing the same underlying <code>plans</code> map, which is this global map. It could be that for a long time, it worked because the <code>PricingInfo</code> struct did not yet contain the map (in the real code it contains a lot of <code>int</code>s and <code>string</code>s which are value types and will be copied correctly by a shallow copy), and the map was only added later.</p>
+<p>In any event, the fix is to align the lifetime of the data and the mutex:</p>
+<ul>
+<li>We can keep the map global and make the mutex also global, or</li>
+<li>We make the map scoped to the HTTP handler by implementing a deep clone function</li>
+</ul>
+<p>I went with the second approach in the real code because it seemed to be the original intent:</p>
+<pre><code class="language-diff">diff --git a/cmd-sg/main.go b/cmd-sg/main.go
+index fb59f5c..c7a7a94 100644
+--- a/cmd-sg/main.go
++++ b/cmd-sg/main.go
+@@ -2,6 +2,7 @@ package main
+ 
+ import (
+ 	&quot;encoding/json&quot;
++	&quot;maps&quot;
+ 	&quot;net/http&quot;
+ 	&quot;sync&quot;
+ )
+@@ -19,8 +20,15 @@ type PricingService struct {
+ 	infoMtx sync.Mutex
+ }
+ 
++func ClonePricing(pricingInfo PricingInfo) PricingInfo {
++	cloned := PricingInfo{plans: make(Plans, len(pricingInfo.plans))}
++	maps.Copy(cloned.plans, pricingInfo.plans)
++
++	return cloned
++}
++
+ func NewPricingService() *PricingService {
+-	return &amp;PricingService{info: pricingInfo, infoMtx: sync.Mutex{}}
++	return &amp;PricingService{info: ClonePricing(pricingInfo), infoMtx: sync.Mutex{}}
+ }
+ 
+ func AddPricing(w http.ResponseWriter, r *http.Request) {
+</code></pre>
+<p>It's annoying to have to implement this manually and especially to have to check every single nested field to determine if it's a value type or a reference type (the former will behave correctly with a shallow copy, the latter needs a custom deep copy implementation). I miss the <code>derive(Clone)</code> annotation in Rust. This is something that the compiler can (and should) do better than me.</p>
+<p>Furthermore, as mentioned in the previous section, some types from the standard library or third-party libraries do not implement a deep <code>Clone()</code> function and contain private fields which prevent us from implementing that ourselves.</p>
 <p><a href="/blog"> ⏴ Back to all articles</a></p>
 
 <blockquote id="donate">
