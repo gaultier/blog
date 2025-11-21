@@ -216,7 +216,7 @@ Additionally, in some situations, this is not so easy because `http.Client` does
 Again here, I would not blame the original developer. In my view, the docs for `http.Client` are misleading and should mention that not every single operation is concurrency safe. Perhaps with the wording: 'once a http.Client is constructed, performing a HTTP request is concurrency safe, provided that the http.Client fields are not modified concurrently'. Which is less catchy than 'Clients are safe for concurrent use', period.
 
 
-## Improper use of mutex
+## Improper lifetime of a mutex
 
 The next data race is one that baffled me for a bit, because the code was using a mutex properly and I could not fathom why a race would be possible. 
 
@@ -321,14 +321,17 @@ func TestMain(t *testing.T) {
 ```
 
 
-The reason why is because the data and the mutex guarding it do not have the same 'lifetime'. The `pricingInfo` map is global and exists from the very start of the program to the end. But the mutex `infoMtx` exists for the duration of the HTTP handler (and thus HTTP requests). 
+The reason why is because the data and the mutex guarding it do not have the same 'lifetime'. The `pricingInfo` map is global and exists from the start of the program to the end. But the mutex `infoMtx` exists only for the duration of the HTTP handler (and thus HTTP requests). We effectively have 1 map and N mutexes, none of them shared between HTTP handlers. So HTTP handlers cannot synchronize access to the map.
 
 The intent of the code was (I think) to do a deep clone of the pricing information at the beginning of the HTTP handler in `NewPricingService`. Unfortunately, Go does a shallow copy of structures and thus each `PricingService` instance ends up sharing the same underlying `plans` map, which is this global map. It could be that for a long time, it worked because the `PricingInfo` struct did not yet contain the map (in the real code it contains a lot of `int`s and `string`s which are value types and will be copied correctly by a shallow copy), and the map was only added later. 
 
+
+This data race is akin to copying a mutex by value when passing it to a function, which then locks it. This does no synchronization at all since a copy of the mutex is being locked - no mutex is shared between concurrent units.
+
 In any event, the fix is to align the lifetime of the data and the mutex:
 
-- We can keep the map global and make the mutex also global, or
-- We make the map scoped to the HTTP handler by implementing a deep clone function
+- We can keep the map global and make the mutex also global, so that it is shared by every HTTP handler, thus we have 1 map and 1 mutex; or
+- We make the map scoped to the HTTP handler by implementing a deep clone function, thus we have N maps and N mutexes
 
 I went with the second approach in the real code because it seemed to be the original intent:
 
@@ -367,3 +370,10 @@ index fb59f5c..c7a7a94 100644
 It's annoying to have to implement this manually and especially to have to check every single nested field to determine if it's a value type or a reference type (the former will behave correctly with a shallow copy, the latter needs a custom deep copy implementation). I miss the `derive(Clone)` annotation in Rust. This is something that the compiler can (and should) do better than me. 
 
 Furthermore, as mentioned in the previous section, some types from the standard library or third-party libraries do not implement a deep `Clone()` function and contain private fields which prevent us from implementing that ourselves.
+
+
+Again, I think Rust's API for a mutex is better because a Rust mutex wraps the data it protects and thus it is harder to have decorrelated lifetimes for the data and the mutex. 
+
+Go's mutex API likely could not have been implemented this way since it would have required generics which did not exist at the time. But as of today: it could. 
+
+Nonetheless, the Go compiler has no way to detect accidental shallow copying, whereas Rust's compiler has the concepts of `Copy` and `Clone` - so that issue remains in Go, and is not a simple API mistake in the standard library we can fix.
