@@ -1690,6 +1690,18 @@ offset:11166,
 },
 ],
 },
+{
+html_file_name:"a_million_ways_to_data_race_in_go.html",
+title:"A million ways to data-race in Go",
+text:"I have been writing production applications in Go for a few years now. I like some aspects of Go. One aspect I do not like is how easy it is to create data races in Go. Go is often touted for its ease to write highly concurrent programs. However, it is also mind-boggling how many ways Go happily gives us developers to shoot ourselves in the foot. Over the years I have encountered and fixed many interesting kinds of data races in Go. If that interests you, I have written about Go concurrency in the past and about some existing footguns, whithout them being necessarily \'Go data races\': What should your mutexes be named? A subtle data race in Go A subtle bug with Go\'s errgroup How to reproduce and fix an I/O data race with Go and DTrace So what is a \'Go data race\'? Quite simply, it is Go code that does not conform to the Go memory model . Importantly, Go defines in its memory model what a Go compiler MUST do and MAY do when faced with a non-conforming program exhibiting data races. Not everything is allowed, quite the contrary in fact. Data races in Go are not benign either: their effects can range from \'no symptoms\' to \'arbitrary memory corruption\'. Quoting the Go memory model: This means that races on multiword data structures can lead to inconsistent values not corresponding to a single write. When the values depend on the consistency of internal (pointer, length) or (pointer, type) pairs, as can be the case for interface values, maps, slices, and strings in most Go implementations, such races can in turn lead to arbitrary memory corruption. With this out of the way, let\'s take a tour of real data races in Go code that I have encountered and fixed. At the end I will emit some recommendations to (try to) avoid them. I also recommend reading the paper A Study of Real-World Data Races in Golang . This article aims to be a spiritual successor to it. Some items here are also present in this paper, and some are new. Accidental capture in a closure of an outer variable This one is very common in Go and also very easy to fall into. Here is a simplified reproducer: err := Foo()\nif err != nil {\n  return err\n}\n\ngo func() error {\n    err = Bar()\n    if err != nil {\n      return err\n    }\n\n    return nil\n}() ",
+titles:[
+{
+title:"Accidental capture in a closure of an outer variable",
+slug:"accidental-capture-in-a-closure-of-an-outer-variable",
+offset:1944,
+},
+],
+},
 ],
 };
 export default { raw_index };
