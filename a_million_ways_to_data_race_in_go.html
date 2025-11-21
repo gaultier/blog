@@ -491,7 +491,7 @@ index fb59f5c..c7a7a94 100644
   <a class="title" href="#concurrent-reads-and-writes-to-standard-library-containers">Concurrent reads and writes to standard library containers</a>
   <a class="hash-anchor" href="#concurrent-reads-and-writes-to-standard-library-containers" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
-<p>I encountered many cases of concurrently modifying a <code>map</code>, <code>slice</code>, etc without any synchronization. That's you're run of the mill data race and they typically fixed by 'slapping a mutex on it' or using a concurrency safe data structure such as <code>sync.Map</code>.</p>
+<p>I encountered many cases of concurrently modifying a <code>map</code>, <code>slice</code>, etc without any synchronization. That's your run of the mill data race and they typically fixed by 'slapping a mutex on it' or using a concurrency safe data structure such as <code>sync.Map</code>.</p>
 <p>I will thus share here a more interesting one where none of these solutions are possible.</p>
 <p>This time, the code is convoluted but what it does is relatively simple:</p>
 <ol>

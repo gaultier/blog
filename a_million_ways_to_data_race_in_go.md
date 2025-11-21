@@ -392,7 +392,7 @@ Nonetheless, the Go compiler has no way to detect accidental shallow copying, wh
 
 ## Concurrent reads and writes to standard library containers
 
-I encountered many cases of concurrently modifying a `map`, `slice`, etc without any synchronization. That's you're run of the mill data race and they typically fixed by 'slapping a mutex on it' or using a concurrency safe data structure such as `sync.Map`. 
+I encountered many cases of concurrently modifying a `map`, `slice`, etc without any synchronization. That's your run of the mill data race and they typically fixed by 'slapping a mutex on it' or using a concurrency safe data structure such as `sync.Map`. 
 
 I will thus share here a more interesting one where none of these solutions are possible.
 
