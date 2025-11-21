@@ -392,9 +392,9 @@ Nonetheless, the Go compiler has no way to detect accidental shallow copying, wh
 
 ## Concurrent reads and writes to standard library containers
 
-I encountered many cases of concurrently modifying a `map`, `slice`, etc without any synchronization. That's your run of the mill data race and they typically fixed by 'slapping a mutex on it' or using a concurrency safe data structure such as `sync.Map`. 
+I encountered many cases of concurrently modifying a `map`, `slice`, etc without any synchronization. That's your run of the mill data race and they are typically fixed by 'slapping a mutex on it' or using a concurrency safe data structure such as `sync.Map`. 
 
-I will thus share here a more interesting one where none of these solutions are possible.
+I will thus share here a more interesting one where it is not as straightforward.
 
 This time, the code is convoluted but what it does is relatively simple:
 
@@ -477,9 +477,9 @@ func main() {
 }
 ```
 
-So the issue here may be clear from the description but here it is spelled out: one goroutine writes to a (growing) byte buffer, another one reads from it, and there is no synchronization: that's a data race.
+So, the issue may be clear from the description but here it is spelled out: one goroutine writes to a (growing) byte buffer, another one reads from it, and there is no synchronization: that's a clear data race.
 
-What is interesting here is that we have to pass a `io.Writer` for the `OutputStream` of the `docker` library, and this library will write to the writer we passed. We cannot insert a mutex lock anywhere since we do not control the library.
+What is interesting here is that we have to pass an `io.Writer` for the `OutputStream` of the `docker` library, and this library will write to the writer we passed. We cannot insert a mutex lock anywhere around the write site, since we do not control the library and there no hooks (e.g. pre/post write callbacks) to do so.
 
 
 ### The fix

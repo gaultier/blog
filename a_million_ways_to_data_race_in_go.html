@@ -491,8 +491,8 @@ index fb59f5c..c7a7a94 100644
   <a class="title" href="#concurrent-reads-and-writes-to-standard-library-containers">Concurrent reads and writes to standard library containers</a>
   <a class="hash-anchor" href="#concurrent-reads-and-writes-to-standard-library-containers" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
-<p>I encountered many cases of concurrently modifying a <code>map</code>, <code>slice</code>, etc without any synchronization. That's your run of the mill data race and they typically fixed by 'slapping a mutex on it' or using a concurrency safe data structure such as <code>sync.Map</code>.</p>
-<p>I will thus share here a more interesting one where none of these solutions are possible.</p>
+<p>I encountered many cases of concurrently modifying a <code>map</code>, <code>slice</code>, etc without any synchronization. That's your run of the mill data race and they are typically fixed by 'slapping a mutex on it' or using a concurrency safe data structure such as <code>sync.Map</code>.</p>
+<p>I will thus share here a more interesting one where it is not as straightforward.</p>
 <p>This time, the code is convoluted but what it does is relatively simple:</p>
 <ol>
 <li>Spawn a docker container and capture its standard output in a byte buffer</li>
@@ -572,8 +572,8 @@ func main() {
 	println(GetSigningSecretFromStripeContainer())
 }
 </code></pre>
-<p>So the issue here may be clear from the description but here it is spelled out: one goroutine writes to a (growing) byte buffer, another one reads from it, and there is no synchronization: that's a data race.</p>
-<p>What is interesting here is that we have to pass a <code>io.Writer</code> for the <code>OutputStream</code> of the <code>docker</code> library, and this library will write to the writer we passed. We cannot insert a mutex lock anywhere since we do not control the library.</p>
+<p>So, the issue may be clear from the description but here it is spelled out: one goroutine writes to a (growing) byte buffer, another one reads from it, and there is no synchronization: that's a clear data race.</p>
+<p>What is interesting here is that we have to pass an <code>io.Writer</code> for the <code>OutputStream</code> of the <code>docker</code> library, and this library will write to the writer we passed. We cannot insert a mutex lock anywhere around the write site, since we do not control the library and there no hooks (e.g. pre/post write callbacks) to do so.</p>
 <h3 id="the-fix-3">
   <a class="title" href="#the-fix-3">The fix</a>
   <a class="hash-anchor" href="#the-fix-3" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
