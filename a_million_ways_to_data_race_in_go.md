@@ -6,7 +6,7 @@ I have been writing production applications in Go for a few years now. I like so
 
 Go is often touted for its ease to write highly concurrent programs. However, it is also mind-boggling how many ways Go happily gives us developers to shoot ourselves in the foot.
 
-Over the years I have encountered and fixed many interesting kinds of data races in Go. If that interests you, I have written about Go concurrency in the past and about some existing footguns, whithout them being necessarily 'Go data races':
+Over the years I have encountered and fixed many interesting kinds of data races in Go. If that interests you, I have written about Go concurrency in the past and about some existing footguns, without them being necessarily 'Go data races':
 
 - [What should your mutexes be named?](/blog/what_should_your_mutexes_be_named.html)
 - [A subtle data race in Go](/blog/a_subtle_data_race_in_go.html)
@@ -218,7 +218,7 @@ index 351ecc0..8abee1c 100644
 
 This may affect performance negatively since some resources will not be shared anymore.
 
-Additionally, in some situations, this is not so easy because `http.Client` does not offer a `Clone()` method (a recurring issue in Go as we'll see). For example, a Go test may start a `httptest.Server` and then call `.Client()` on this server to obtain a pre-configured HTTP client for this server. Then, there is no easy way to duplicate this client to use it from two different tests running in parallel.
+Additionally, in some situations, this is not so easy because `http.Client` does not offer a `Clone()` method (a recurring issue in Go as we'll see). For example, a Go test may start a `httptest.Server` and then call `.Client()` on this server to obtain a preconfigured HTTP client for this server. Then, there is no easy way to duplicate this client to use it from two different tests running in parallel.
 
 Again here, I would not blame the original developer. In my view, the docs for `http.Client` are misleading and should mention that not every single operation is concurrency safe. Perhaps with the wording: 'once a http.Client is constructed, performing a HTTP request is concurrency safe, provided that the http.Client fields are not modified concurrently'. Which is less catchy than 'Clients are safe for concurrent use', period.
 
@@ -383,7 +383,7 @@ It's annoying to have to implement this manually and especially to have to check
 Furthermore, as mentioned in the previous section, some types from the standard library or third-party libraries do not implement a deep `Clone()` function and contain private fields which prevent us from implementing that ourselves.
 
 
-Again, I think Rust's API for a mutex is better because a Rust mutex wraps the data it protects and thus it is harder to have decorrelated lifetimes for the data and the mutex. 
+Again, I think Rust's API for a mutex is better because a Rust mutex wraps the data it protects and thus it is harder to have uncorrelated lifetimes for the data and the mutex. 
 
 Go's mutex API likely could not have been implemented this way since it would have required generics which did not exist at the time. But as of today: it could. 
 
