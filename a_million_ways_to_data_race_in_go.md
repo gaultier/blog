@@ -80,6 +80,8 @@ The issue might not be immediately visible.
 
 The problem is that the `err` outer variable is implicitly captured by the closures running each in a separate goroutine. They then mutate `err` concurrently. What they meant to do is instead use a variable local to the closure and return that instead. There is conceptually no need to share any data; this is purely accidental. 
 
+### The fix
+
 The fix is simple, I'll show two variants in the same diff: define a local variable, or use a named return value.
 
 ```diff
@@ -106,6 +108,8 @@ index 7eabdbc..4349157 100644
  			return err
 
 ```
+
+### Learnings 
 
 It is unfortunate that a one character difference is all we need to fall into this trap. I feel for the original developer who wrote this code without realizing the implicit capture. As mentioned in a [previous article](/blog/a_subtle_data_race_in_go.html) where this silent behavior bit me, we can use the build flag `-gcflags='-d closure=1'` to make the Go compiler print which variables are being captured by the closure:
 
@@ -178,6 +182,7 @@ This code also suffers from an I/O race: depending on the network speed and resp
 
 Alternatively, the `http.Client` could end up calling a `nil` callback if the callback was set when the `http.Client` checked whether it was nil or not, but before `http.Client` had the chance to call it, the other goroutine set it to `nil`. Boom, `nil` dereference.
 
+### The fix
 
 Here, the simplest fix is to use two different HTTP clients:
 
@@ -208,6 +213,8 @@ index 351ecc0..8abee1c 100644
  		return err
 
 ```
+
+### Learnings
 
 This may affect performance negatively since some resources will not be shared anymore.
 
@@ -328,6 +335,8 @@ The intent of the code was (I think) to do a deep clone of the pricing informati
 
 This data race is akin to copying a mutex by value when passing it to a function, which then locks it. This does no synchronization at all since a copy of the mutex is being locked - no mutex is shared between concurrent units.
 
+### The fix
+
 In any event, the fix is to align the lifetime of the data and the mutex:
 
 - We can keep the map global and make the mutex also global, so that it is shared by every HTTP handler, thus we have 1 map and 1 mutex; or
@@ -366,6 +375,8 @@ index fb59f5c..c7a7a94 100644
  
  func AddPricing(w http.ResponseWriter, r *http.Request) {
 ```
+
+### Learnings
 
 It's annoying to have to implement this manually and especially to have to check every single nested field to determine if it's a value type or a reference type (the former will behave correctly with a shallow copy, the latter needs a custom deep copy implementation). I miss the `derive(Clone)` annotation in Rust. This is something that the compiler can (and should) do better than me. 
 
