@@ -239,13 +239,14 @@ func main() {
 	println(Run(context.Background()))
 }
 </code></pre>
-<p>The program makes two concurrent HTTP requests to two different URLs. For the first one, the code restricts redirects (I invented the exact logic for that, no need to look into it). For the second one, no redirect checks are performed, by setting <code>CheckRedirect</code> to nil. This code is idiomatic and follows the recommendations from the documentation:</p>
+<p>The program makes two concurrent HTTP requests to two different URLs. For the first one, the code restricts redirects (I invented the exact logic for that, no need to look too much into it, the real code has complex logic here). For the second one, no redirect checks are performed, by setting <code>CheckRedirect</code> to nil. This code is idiomatic and follows the recommendations from the documentation:</p>
 <blockquote>
 <p>CheckRedirect specifies the policy for handling redirects. If CheckRedirect is not nil, the client calls it before following an HTTP redirect.
 If CheckRedirect is nil, the Client uses its default policy [...].</p>
 </blockquote>
 <p>The problem is: the <code>CheckRedirect</code> field is modified concurrently without any synchronization which is a data race.</p>
-<p>This code also suffers from a I/O race: depending on the network speed and response time for both URLs, the redirects might or might be checked, since the callback might get overwritten from the other goroutine, right when the HTTP client would call it.</p>
+<p>This code also suffers from an I/O race: depending on the network speed and response time for both URLs, the redirects might or might be checked, since the callback might get overwritten from the other goroutine, right when the HTTP client would call it.</p>
+<p>Alternatively, the <code>http.Client</code> could end up calling a <code>nil</code> callback if the callback was set when the <code>http.Client</code> checked whether it was nil or not, but before <code>http.Client</code> had the chance to call it, the other goroutine set it to <code>nil</code>. Boom, <code>nil</code> dereference.</p>
 <p>Here, the simplest fix is to use two different HTTP clients:</p>
 <pre><code class="language-diff">diff --git a/cmd-sg/main.go b/cmd-sg/main.go
 index 351ecc0..8abee1c 100644
@@ -274,8 +275,8 @@ index 351ecc0..8abee1c 100644
 
 </code></pre>
 <p>This may affect performance negatively since some resources will not be shared anymore.</p>
-<p>Additionally, in some situations, this is not so easy because <code>http.Client</code> does not offer a <code>Clone()</code> method (a recurring issue in Go as we'll see). For example, a Go test may start a <code>httptest.Server</code> and then call <code>.Client()</code> on this server to obtain a pre-configured HTTP client for this server. Then, there is no easy way to duplicate this client to use from two different tests running in parallel.</p>
-<p>Again here, I would not blame the original developer. In my view, the docs for <code>http.Client</code> are misleading and should mention that not every single operation is concurrency safe. Perhaps with the wording: 'once a http.Client is constructed, performing a HTTP request is concurrency safe, provided that the http.Client fields are not modified concurrently'. Which is less catchy than 'Clients are safe for concurrent use' ;)</p>
+<p>Additionally, in some situations, this is not so easy because <code>http.Client</code> does not offer a <code>Clone()</code> method (a recurring issue in Go as we'll see). For example, a Go test may start a <code>httptest.Server</code> and then call <code>.Client()</code> on this server to obtain a pre-configured HTTP client for this server. Then, there is no easy way to duplicate this client to use it from two different tests running in parallel.</p>
+<p>Again here, I would not blame the original developer. In my view, the docs for <code>http.Client</code> are misleading and should mention that not every single operation is concurrency safe. Perhaps with the wording: 'once a http.Client is constructed, performing a HTTP request is concurrency safe, provided that the http.Client fields are not modified concurrently'. Which is less catchy than 'Clients are safe for concurrent use', period.</p>
 <h2 id="improper-use-of-mutex">
   <a class="title" href="#improper-use-of-mutex">Improper use of mutex</a>
   <a class="hash-anchor" href="#improper-use-of-mutex" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>

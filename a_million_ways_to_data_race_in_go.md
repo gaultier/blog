@@ -166,7 +166,7 @@ func main() {
 }
 ```
 
-The program makes two concurrent HTTP requests to two different URLs. For the first one, the code restricts redirects (I invented the exact logic for that, no need to look into it). For the second one, no redirect checks are performed, by setting `CheckRedirect` to nil. This code is idiomatic and follows the recommendations from the documentation:
+The program makes two concurrent HTTP requests to two different URLs. For the first one, the code restricts redirects (I invented the exact logic for that, no need to look too much into it, the real code has complex logic here). For the second one, no redirect checks are performed, by setting `CheckRedirect` to nil. This code is idiomatic and follows the recommendations from the documentation:
 
 > CheckRedirect specifies the policy for handling redirects. If CheckRedirect is not nil, the client calls it before following an HTTP redirect.
 > If CheckRedirect is nil, the Client uses its default policy [...].
@@ -174,7 +174,9 @@ The program makes two concurrent HTTP requests to two different URLs. For the fi
 
 The problem is: the `CheckRedirect` field is modified concurrently without any synchronization which is a data race. 
 
-This code also suffers from a I/O race: depending on the network speed and response time for both URLs, the redirects might or might be checked, since the callback might get overwritten from the other goroutine, right when the HTTP client would call it.
+This code also suffers from an I/O race: depending on the network speed and response time for both URLs, the redirects might or might be checked, since the callback might get overwritten from the other goroutine, right when the HTTP client would call it. 
+
+Alternatively, the `http.Client` could end up calling a `nil` callback if the callback was set when the `http.Client` checked whether it was nil or not, but before `http.Client` had the chance to call it, the other goroutine set it to `nil`. Boom, `nil` dereference.
 
 
 Here, the simplest fix is to use two different HTTP clients:
@@ -209,9 +211,9 @@ index 351ecc0..8abee1c 100644
 
 This may affect performance negatively since some resources will not be shared anymore.
 
-Additionally, in some situations, this is not so easy because `http.Client` does not offer a `Clone()` method (a recurring issue in Go as we'll see). For example, a Go test may start a `httptest.Server` and then call `.Client()` on this server to obtain a pre-configured HTTP client for this server. Then, there is no easy way to duplicate this client to use from two different tests running in parallel.
+Additionally, in some situations, this is not so easy because `http.Client` does not offer a `Clone()` method (a recurring issue in Go as we'll see). For example, a Go test may start a `httptest.Server` and then call `.Client()` on this server to obtain a pre-configured HTTP client for this server. Then, there is no easy way to duplicate this client to use it from two different tests running in parallel.
 
-Again here, I would not blame the original developer. In my view, the docs for `http.Client` are misleading and should mention that not every single operation is concurrency safe. Perhaps with the wording: 'once a http.Client is constructed, performing a HTTP request is concurrency safe, provided that the http.Client fields are not modified concurrently'. Which is less catchy than 'Clients are safe for concurrent use' ;)
+Again here, I would not blame the original developer. In my view, the docs for `http.Client` are misleading and should mention that not every single operation is concurrency safe. Perhaps with the wording: 'once a http.Client is constructed, performing a HTTP request is concurrency safe, provided that the http.Client fields are not modified concurrently'. Which is less catchy than 'Clients are safe for concurrent use', period.
 
 
 ## Improper use of mutex
