@@ -76,7 +76,7 @@ func main() {
 }
 ```
 
-The issue does not immediately jump up to us. 
+The issue might not be immediately visible.
 
 The problem is that the `err` outer variable is implicitly captured by the closures running each in a separate goroutine. They then mutate `err` concurrently. What they meant to do is instead use a variable local to the closure and return that instead. There is conceptually no need to share any data; this is purely accidental. 
 
@@ -106,3 +106,107 @@ index 7eabdbc..4349157 100644
  			return err
 
 ```
+
+It is unfortunate that a one character difference is all we need to fall into this trap. I feel for the original developer who wrote this code without realizing the implicit capture. As mentioned in a [previous article](/blog/a_subtle_data_race_in_go.html) where this silent behavior bit me, we can use the build flag `-gcflags='-d closure=1'` to make the Go compiler print which variables are being captured by the closure:
+
+```shell
+$ go build -gcflags='-d closure=1' 
+./main.go:20:8: heap closure, captured vars = [err]
+./main.go:28:8: heap closure, captured vars = [err]
+```
+
+But this is not realistic to do that in a big codebase and inspect each closure. It's useful if you know that a given closure might suffer from this problem.
+
+
+## Concurrent use of `http.Client`
+
+The Go docs state about `http.Client`: 
+
+> [...] Clients should be reused instead of created as needed. Clients are safe for concurrent use by multiple goroutines. 
+
+So imagine my surprise when the Go race detector flagged a race tied to `http.Client`. The code looked like this:
+
+
+```go
+package main
+
+import (
+	"context"
+	"net/http"
+
+	"golang.org/x/sync/errgroup"
+)
+
+func Run(ctx context.Context) error {
+	client := http.Client{}
+
+	wg, ctx := errgroup.WithContext(ctx)
+	wg.Go(func() error {
+		client.CheckRedirect = func(req *http.Request, via []*http.Request) error {
+			if req.Host == "google.com" {
+				return nil
+			} else {
+				return http.ErrUseLastResponse
+			}
+		}
+		_, err := client.Get("http://google.com")
+		return err
+	})
+	wg.Go(func() error {
+		client.CheckRedirect = nil
+		_, err := client.Get("http://amazon.com")
+		return err
+	})
+
+	return wg.Wait()
+}
+
+func main() {
+	println(Run(context.Background()))
+}
+```
+
+The program makes two concurrent HTTP requests to two different URLs. For the first one, the code restricts redirects (I invented the exact logic for that, no need to look into it). For the second one, no redirect checks are performed, by setting `CheckRedirect` to nil. This code is idiomatic and follows the recommendations from the documentation:
+
+> CheckRedirect specifies the policy for handling redirects. If CheckRedirect is not nil, the client calls it before following an HTTP redirect.
+> If CheckRedirect is nil, the Client uses its default policy [...].
+
+
+The problem is: the `CheckRedirect` field is modified concurrently without any synchronization which is a data race. 
+
+This code also suffers from a I/O race: depending on the network speed and response time for both URLs, the redirects might or might be checked, since the callback might get overwritten from the other goroutine, right when the HTTP client would call it.
+
+
+Here, the simplest fix is to use two different HTTP clients:
+
+```diff
+diff --git a/cmd-sg/main.go b/cmd-sg/main.go
+index 351ecc0..8abee1c 100644
+--- a/cmd-sg/main.go
++++ b/cmd-sg/main.go
+@@ -8,10 +8,10 @@ import (
+ )
+ 
+ func Run(ctx context.Context) error {
+-	client := http.Client{}
+ 
+ 	wg, ctx := errgroup.WithContext(ctx)
+ 	wg.Go(func() error {
++		client := http.Client{}
+ 		client.CheckRedirect = func(req *http.Request, via []*http.Request) error {
+ 			if req.Host == "google.com" {
+ 				return nil
+@@ -23,6 +23,7 @@ func Run(ctx context.Context) error {
+ 		return err
+ 	})
+ 	wg.Go(func() error {
++		client := http.Client{}
+ 		client.CheckRedirect = nil
+ 		_, err := client.Get("http://amazon.com")
+ 		return err
+
+```
+
+This may affect performance negatively since some resources will not be shared anymore.
+
+I would not blame the original developer 
