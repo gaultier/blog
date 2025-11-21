@@ -1,4 +1,4 @@
-Title: A million ways to data-race in Go
+Title: A million ways to die from a data race in Go
 Tags: Go, Concurrency
 ---
 
