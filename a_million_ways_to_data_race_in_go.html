@@ -88,7 +88,11 @@ Do not edit it by hand.
   </li>
 
   <li>
-    <a href="#concurrent-use-of">Concurrent use of </a>
+    <a href="#concurrent-use-of-http-client">Concurrent use of http.Client</a>
+  </li>
+
+  <li>
+    <a href="#improper-use-of-mutex">Improper use of mutex</a>
   </li>
 </ul>
 
@@ -189,9 +193,9 @@ index 7eabdbc..4349157 100644
 ./main.go:28:8: heap closure, captured vars = [err]
 </code></pre>
 <p>But this is not realistic to do that in a big codebase and inspect each closure. It's useful if you know that a given closure might suffer from this problem.</p>
-<h2 id="concurrent-use-of">
-  <a class="title" href="#concurrent-use-of">Concurrent use of </a>
-  <a class="hash-anchor" href="#concurrent-use-of" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+<h2 id="concurrent-use-of-http-client">
+  <a class="title" href="#concurrent-use-of-http-client">Concurrent use of http.Client</a>
+  <a class="hash-anchor" href="#concurrent-use-of-http-client" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>The Go docs state about <code>http.Client</code>:</p>
 <blockquote>
@@ -270,7 +274,11 @@ index 351ecc0..8abee1c 100644
 
 </code></pre>
 <p>This may affect performance negatively since some resources will not be shared anymore.</p>
-<p>I would not blame the original developer</p>
+<p>Again here, I would not blame the original developer. In my view, the docs for <code>http.Client</code> are misleading and should mention that not every single operation is concurrency safe. Perhaps with the wording: 'once a http.Client is constructed, performing a HTTP request is concurrency safe, provided that the http.Client fields are not modified concurrently'. Which is less catchy than 'Clients are safe for concurrent use' ;)</p>
+<h2 id="improper-use-of-mutex">
+  <a class="title" href="#improper-use-of-mutex">Improper use of mutex</a>
+  <a class="hash-anchor" href="#improper-use-of-mutex" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+</h2>
 <p><a href="/blog"> ⏴ Back to all articles</a></p>
 
 <blockquote id="donate">

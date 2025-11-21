@@ -118,7 +118,7 @@ $ go build -gcflags='-d closure=1'
 But this is not realistic to do that in a big codebase and inspect each closure. It's useful if you know that a given closure might suffer from this problem.
 
 
-## Concurrent use of `http.Client`
+## Concurrent use of http.Client
 
 The Go docs state about `http.Client`: 
 
@@ -209,4 +209,7 @@ index 351ecc0..8abee1c 100644
 
 This may affect performance negatively since some resources will not be shared anymore.
 
-I would not blame the original developer 
+Again here, I would not blame the original developer. In my view, the docs for `http.Client` are misleading and should mention that not every single operation is concurrency safe. Perhaps with the wording: 'once a http.Client is constructed, performing a HTTP request is concurrency safe, provided that the http.Client fields are not modified concurrently'. Which is less catchy than 'Clients are safe for concurrent use' ;)
+
+
+## Improper use of mutex
