@@ -579,6 +579,44 @@ index 5529d90..42571b9 100644
 
 ### Learnings
 
-Most types in the Go standard library (or third-party libraries for that matter) are *not* concurrency safe and synchronization is typically on you. It would be nice if more types have a 'sync' version, e.g. `SyncWriter`, `SyncReader`, etc.
+Most types in the Go standard library (or third-party libraries for that matter) are *not* concurrency safe and synchronization is typically on you. I still often see questions on the internet about that, so assume it is not until the documentation states otherwise.
 
+It would also be nice if more types have a 'sync' version, e.g. `SyncWriter`, `SyncReader`, etc.
 
+## Conclusion
+
+The Go race detector is great but will not detect all data races. Data races will cause you pain and suffering, be it flaky tests, weird production errors, or in the worst case memory corruption. 
+
+Due to how easy it is to spawn goroutines without a care in the world (and also to run tests in parallel), it will happen to you. It's not a question of if, just when, how bad, and how many days/weeks it will cost you to find them and fix them.
+
+If you are not running your test suite with the race detector enabled, you have numerous data races in your code. That's just a fact.
+
+Go the language and the Go linter ecosystem do not have nearly enough answers to this problem. Some language features make it way too easy to trigger data races, for example implicit capture of outer variables in closures.
+
+The best option left to Go developers is to try to reach 100% test coverage of their code and run the tests with the race detector on.
+
+We should be able to do better in 2025. Just like with memory safety, when even expert developers regularly produce data races, it's the fault of the language/tooling/APIs/etc. It is not enough to blame humans and demand they just 'do better'.
+
+## Ideas to improve the status quo
+
+Ideas for the Go language:
+
+1. Add explicit capture lists for closures, just like in C++.
+1. Add a lint to forbid using the implicit capture syntax in closures (a.k.a.: current Go closures). I am fine writing a stand-alone plain function instead, if that means keeping my sanity and removing an entire category of errors. I have also seen implicit captures cause logic bugs and high memory usage in the past.
+1. Support `const` in more places. If something is constant, there cannot be data races with it.
+1. Generate a `Clone()` function in the compiler for every type (like Rust's `derive(Clone)`). Maybe it's opt-in or opt-out, not sure. Or perhaps it's a built-in like `make`.
+1. Add a `freeze()` functionality like JavaScript's `Object.freeze()` to prevent an object from being mutated.
+1. Expand the standard library documentation to have more details concerning the concurrency safety of certain types and APIs.
+1. Expand the Go memory model documentation and add examples. I have read it many times and I am still unsure if concurrent writes to separate fields of a struct is legal or not, for example.
+1. Consider adding better, higher-level APIs for synchronization primitives e.g. `Mutex` by taking inspiration from other languages. This has been done successfully in the past with `WaitGroup` compared to using raw goroutines and channels.
+
+Ideas for Go programs:
+
+1. Consider never using Go closures, and instead using plain functions that cannot implicit capture outer variables.
+1. Consider using goroutines as little as possible, whatever the API to manage them.
+1. Consider spawning an OS process instead of a goroutine for isolation. No sharing of data means no data race possible.
+1. Deep clone abundantly (just like in Rust). Memory (especially cache) is lightning fast. Your Go program will anyways not be bottlenecked by that, I guarantee it. Memory usage should be monitored, though, but will probably be fine.
+1. Avoid global mutable variables.
+1. Carefully audit resource sharing code: caches, connection pools, OS process pools, etc. They are likely to contain data races.
+1. Run the tests with the race detector on, all of them, always, from day one. Inspect the test coverage to know which areas may be uncharted areas in terms of concurrency safety.
+1. Study places where a shallow copy may take place, e.g. function arguments passed by value and assignments. Does the type require a deep copy? Each non-trivial type should have documentation stating that.
