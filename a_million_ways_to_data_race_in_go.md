@@ -24,25 +24,85 @@ With this out of the way, let's take a tour of real data races in Go code that I
 
 I also recommend reading the paper [A Study of Real-World Data Races in Golang](https://arxiv.org/pdf/2204.00764). This article aims to be a spiritual successor to it. Some items here are also present in this paper, and some are new.
 
+In the code I will often use `errgroup.WaitGroup` or `sync.WaitGroup` because they act as a fork-join pattern, shortening the code. The exact same can be done with 'raw' Go channels and goroutines. This also serves to show that using higher-level concepts does not magically protect against data races.
+
 ## Accidental capture in a closure of an outer variable
 
 This one is very common in Go and also very easy to fall into. Here is a simplified reproducer:
 
 
 ```go
-err := Foo()
-if err != nil {
-  return err
+package main
+
+import (
+	"context"
+
+	"golang.org/x/sync/errgroup"
+)
+
+func Foo() error { return nil }
+func Bar() error { return nil }
+func Baz() error { return nil }
+
+func Run(ctx context.Context) error {
+	err := Foo()
+	if err != nil {
+		return err
+	}
+
+	wg, ctx := errgroup.WithContext(ctx)
+	wg.Go(func() error {
+		err = Baz()
+		if err != nil {
+			return err
+		}
+
+		return nil
+	})
+	wg.Go(func() error {
+		err = Bar()
+		if err != nil {
+			return err
+		}
+
+		return nil
+	})
+
+	return wg.Wait()
 }
 
-go func() error {
-    err = Bar()
-    if err != nil {
-      return err
-    }
-
-    return nil
-}()
+func main() {
+	println(Run(context.Background()))
+}
 ```
 
+The issue does not immediately jump up to us. 
 
+The problem is that the `err` outer variable is implicitly captured by the closures running each in a separate goroutine. They then mutate `err` concurrently. What they meant to do is instead use a variable local to the closure and return that instead. There is conceptually no need to share any data; this is purely accidental. 
+
+The fix is simple, I'll show two variants in the same diff: define a local variable, or use a named return value.
+
+```diff
+diff --git a/cmd-sg/main.go b/cmd-sg/main.go
+index 7eabdbc..4349157 100644
+--- a/cmd-sg/main.go
++++ b/cmd-sg/main.go
+@@ -18,14 +18,14 @@ func Run(ctx context.Context) error {
+ 
+ 	wg, ctx := errgroup.WithContext(ctx)
+ 	wg.Go(func() error {
+-		err = Baz()
++		err := Baz()
+ 		if err != nil {
+ 			return err
+ 		}
+ 
+ 		return nil
+ 	})
+-	wg.Go(func() error {
++	wg.Go(func() (err error) {
+ 		err = Bar()
+ 		if err != nil {
+ 			return err
+
+```
