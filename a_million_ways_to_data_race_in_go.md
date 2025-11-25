@@ -2,7 +2,7 @@ Title: A million ways to die from a data race in Go
 Tags: Go, Concurrency
 ---
 
-*Comments: [r/golang](https://www.reddit.com/r/golang/comments/1p5avp3/a_million_ways_to_die_from_a_data_race_in_go/).*
+*Comments: [r/golang](https://www.reddit.com/r/golang/comments/1p5avp3/a_million_ways_to_die_from_a_data_race_in_go/), [HN](https://news.ycombinator.com/item?id=46015095).*
 
 I have been writing production applications in Go for a few years now. I like some aspects of Go. One aspect I do not like is how easy it is to create data races in Go. 
 
