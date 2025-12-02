@@ -1,9 +1,9 @@
 ## Ideas for articles
 
-- [ ] sql differences between databases
+- [ ] How DWARF works/Solving an AOC problem with DWARF (VM)
+- [ ] How register allocation works (with visualization)
+- [ ] sql differences between databases - porting an application to MySQL/PostgreSQL/SQLite
 - [ ] HTTP server using arenas
-- [ ] ~~Migration from mbedtls to aws-lc~~
-- [ ] ~~ASM crypto~~
 - [ ] How this blog is made. Line numbers in code snippets.
 - [ ] Banjo chords
 - [ ] Dtrace VM
@@ -11,9 +11,6 @@
 - [ ] A faster HTTP parser than NodeJS's one
 - [ ] SHA1 multi-block hash
 - [ ] How CGO calls are implemented in assembly
-- [ ] How I develop Windows applications from the comfort of Linux
-- [ ] ~~Add a JS/Wasm live running version of the programs described in each article. As a fallback: Video/Gif.
-    + [ ] Kahn's algorithm~~
 - [ ] Blog search implementation
 - [ ] Weird and surprising things about x64 assembly
   + non symetric mnemonics (`cmp 1, rax` vs `cmp rax, 1`)
@@ -21,9 +18,7 @@
   + diffent calling convention for functions & system calls in the SysV ABI (4th argument)
   + no (to my knowledge) mnemonic accepts 2 immediates or effective addresses as operands  e.g. `cmp 1, 0`
   + some less than optimal encodings are forced to avoid accidentally using RIP relative addressing, e.g. `lea rax, [r13]` gets encoded as `lea rax, [r13 + 0]`
-- [ ] How to get the current SQL schema when all you have is lots of migrations (deltas)
-- [ ] Search and replace fish function
-- [ ] How DTrace works
+- [ ] Implement DTrace from scratch, from first principles
       + mmap `/dev/dtrace`
       + Load `.d` files with definitions
       + Use `ioctl` on `/dev/dtrace`'s fd with commands (`DTRACEIOC_GO`, `DTRACEIOC_STOP`) and optionally data (e.g. DOF)
