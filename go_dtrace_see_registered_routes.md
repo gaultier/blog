@@ -46,8 +46,10 @@ DELETE /admin/sessions/{$}
 This is very useful to know what features are enabled at runtime.
 
 
-One thing to note is that these Go functions are concurrency-safe, meaning they could get called concurrently from different goroutines just fine (a mutex is used in the implementation to enable that).
-In this case, our DTrace script would likely mix the different strings in the output. The standard solution for that case, is to store all these strings in map, and at the end, print the map. The order of registration is lost but that should not matter since this API defines pretty well route precedence based on how specific a route is. And if that *did* matter, we could also store a incrementing number in the map (globals are thread-safe in DTrace and can be safely mutated concurrently).
+One thing to note is that these Go functions are concurrency-safe, meaning they could get called concurrently from different goroutines just fine (a mutex is used in the implementation to enable that). This application does not do that to my knowledge.
+
+It that was the case, our DTrace script would likely mix the different strings in the output. The standard solution for that case, is to store all these strings in map, and at the end, print the map. The order of registration is lost but that should not matter since this API defines pretty well route precedence based on how specific a route is, and not based on registration order. 
+And for an API where that registration order *did* matter, we could also store a incrementing number in the map (globals are thread-safe in DTrace and can be safely mutated concurrently) to remember and print the order.
 
 Once again, DTrace shines!
 
