@@ -1,5 +1,6 @@
 ## Ideas for articles
 
+- [ ] A physical simulation of the transverse flute
 - [ ] How DWARF works/Solving an AOC problem with DWARF (VM)
 - [ ] How register allocation works (with visualization)
 - [ ] sql differences between databases - porting an application to MySQL/PostgreSQL/SQLite
