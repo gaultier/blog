@@ -81,7 +81,7 @@ Do not edit it by hand.
   <div class="tags"> <a href="/blog/articles-by-tag.html#go" class="tag">Go</a> <a href="/blog/articles-by-tag.html#dtrace" class="tag">DTrace</a></div>
   </div>
 
-<p>Quick one today. I have a <a href="https://github.com/ory/kratos">Go HTTP application</a> that has many HTTP routes. These routes get dynamically registered at startup based on feature flags, whether an enterprise license was found, etc. So it's hard to know what routes exist.</p>
+<p>Quick one today. I have a <a href="https://github.com/ory/kratos">Go HTTP application</a> that has many HTTP routes. These routes get dynamically registered at startup based on feature flags, configuration, whether an enterprise license was found, etc. So it's hard to know what routes exist.</p>
 <p>Since this application uses the Go HTTP router from the standard library, this question is quickly answered by DTrace. The two Go functions of interest are located in the <code>net/http</code> package:</p>
 <pre><code class="language-go">func (mux *ServeMux) HandleFunc(pattern string, handler func(ResponseWriter, *Request))
 
