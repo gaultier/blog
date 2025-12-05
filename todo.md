@@ -4,6 +4,7 @@
     + `ctx` accidental reassignement
     + mutating cache entry
     + using `*testing.T` from multiple goroutines.
+    + adding synchronization does not fix it: e.g. `pop.SetNowFunc()`
 - [ ] A physical simulation of the transverse flute
 - [ ] How DWARF works/Solving an AOC problem with DWARF (VM)
 - [ ] How register allocation works (with visualization)
