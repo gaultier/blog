@@ -1,5 +1,9 @@
 ## Ideas for articles
 
+- [ ] 2 million ways to die from a data race in Go
+    + `ctx` accidental reassignement
+    + mutating cache entry
+    + using `*testing.T` from multiple goroutines.
 - [ ] A physical simulation of the transverse flute
 - [ ] How DWARF works/Solving an AOC problem with DWARF (VM)
 - [ ] How register allocation works (with visualization)
