@@ -578,6 +578,8 @@ index 5529d90..42571b9 100644
  	eg.Wait()
 ```
 
+Note: A [comment](https://news.ycombinator.com/item?id=46050516) pointed out that `reader, writer := io.Pipe()` is tailored exactly for this. Indeed, this is an elegant solution: we just have to also wrap the reader returned by `io.Pipe()` in a `bufio.NewReader()` which gives us the `ReadString('\n')` method. So, this is probably the preferrable solution. As it is often the case in Go, there are two ways to solve this concurrency problem: with a mutex (the custom `SyncWriter`) or with a channel (which `io.Pipe()` uses under the hood).
+
 
 ### Learnings
 
