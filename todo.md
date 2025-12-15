@@ -1,5 +1,8 @@
 ## Ideas for articles
 
+- [ ] Catch data races with DTrace?
+- [ ] a weird advantage of using TLA+ (using TLA+ generated traces as input for the real program)
+- [ ] compiler architecture and implementation with live playground
 - [ ] 2 million ways to die from a data race in Go
     + `ctx` accidental reassignement
     + mutating cache entry
