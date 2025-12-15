@@ -2,7 +2,7 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
 <title>Philippe Gaultier's blog</title>
 <link href="https://gaultier.github.io/blog"/>
-<updated>2025-12-03T10:26:11+01:00</updated>
+<updated>2025-12-03T10:26:28+01:00</updated>
 <author>
 <name>Philippe Gaultier</name>
 </author>
@@ -340,7 +340,7 @@
 <title>A million ways to die from a data race in Go</title>
 <link href="https://gaultier.github.io/blog/a_million_ways_to_data_race_in_go.html"/>
 <id>urn:uuid:a13c572e-50c1-5844-90f1-55aef92bda42</id>
-<updated>2025-11-25T08:44:38+01:00</updated>
+<updated>2025-12-15T09:12:45+01:00</updated>
 <published>2025-11-21T13:38:45+01:00</published>
 </entry>
 
@@ -348,7 +348,7 @@
 <title>What HTTP routes does your application provide?</title>
 <link href="https://gaultier.github.io/blog/go_dtrace_see_registered_routes.html"/>
 <id>urn:uuid:c3d78b44-758d-5770-aaa6-959f126eb04e</id>
-<updated>2025-12-03T10:26:11+01:00</updated>
+<updated>2025-12-03T10:26:28+01:00</updated>
 <published>2025-12-03T10:20:30+01:00</published>
 </entry>
 </feed>

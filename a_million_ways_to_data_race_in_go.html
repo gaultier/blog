@@ -673,6 +673,7 @@ index 5529d90..42571b9 100644
  
  	eg.Wait()
 </code></pre>
+<p>Note: A <a href="https://news.ycombinator.com/item?id=46050516">comment</a> pointed out that <code>reader, writer := io.Pipe()</code> is tailored exactly for this. Indeed, this is an elegant solution: we just have to also wrap the reader returned by <code>io.Pipe()</code> in a <code>bufio.NewReader()</code> which gives us the <code>ReadString('\n')</code> method. So, this is probably the preferrable solution. As it is often the case in Go, there are two ways to solve this concurrency problem: with a mutex (the custom <code>SyncWriter</code>) or with a channel (which <code>io.Pipe()</code> uses under the hood).</p>
 <h3 id="learnings-3">
   <a class="title" href="#learnings-3">Learnings</a>
   <a class="hash-anchor" href="#learnings-3" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
