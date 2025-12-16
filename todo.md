@@ -9,6 +9,8 @@
     + using `*testing.T` from multiple goroutines.
     + adding synchronization does not fix it: e.g. `pop.SetNowFunc()`
     + custom concurrent map implementation vs sync.Map
+    + using random number generator concurrently
+    + have to document invariants in comments instead of in the type system
 - [ ] A physical simulation of the transverse flute
 - [ ] How DWARF works/Solving an AOC problem with DWARF (VM)
 - [ ] How register allocation works (with visualization)
