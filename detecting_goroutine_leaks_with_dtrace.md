@@ -228,3 +228,11 @@ Which is pretty cool if you ask me, given that:
 - No need to change and recompile the application
 - No overhead when not running, and safe to use in production. 
 - Same behavior when on or off. The Go runtime has a lot of different code paths depending if tracing is enabled, if the race detector is enabled, if valgrind is enabled... that makes the code quite complex, and potentially behave differently depending on what is on/off. With DTrace, we know that peeking inside the inner workings of the Go runtime does not change its behavior.
+
+Oh and by the way, try these probes:
+
+- `runtime.*chan*`: see channel operations such as sends and receives
+- `runtime.gc*`: see GC operations such as mark, sweep, marking roots
+- `runtime.*alloc*`: see memory allocator operations
+
+When used in conjunction with tracking functions from our code, like with did in the first DTrace snippet in this article, Go feels a lot less magic! I wish I did that as a beginner.
