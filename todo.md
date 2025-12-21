@@ -1,5 +1,9 @@
 ## Ideas for articles
 
+- [ ] Track goroutines spawning & leaks with dtrace
+```
+sudo dtrace -n ' int c; pid$target::go-sql-insert.TestGather:entry {t=1} pid$target::runtime.newproc1:return /t!=0/ {c += 1; ustack(); goroutines[arg1]=1; printf("%p %p\n", arg0, arg1);} pid$target::runtime.gdestroy:entry /t!=0 && goroutines[arg0] != 0/  {c -= 1; ustack(); printf("%p\n", arg0); goroutines[arg0]=0} END{print(c);ustack()}' -c ./closed.exe -F
+```
 - [ ] Catch data races with DTrace?
 - [ ] a weird advantage of using TLA+ (using TLA+ generated traces as input for the real program)
 - [ ] compiler architecture and implementation with live playground
