@@ -142,7 +142,7 @@ In a big, real program, goroutines are being destroyed left and right, even whil
 
 So do it correctly, we need to maintain a set of our own goroutines. Since `runtime.newproc1` returns a pointer to a newly allocated goroutine object, we can use this as a 'goroutine id'. This is accessible in `arg1` in DTrace (this depends on the system we are running our D script on. The Go ABI is documented but differs between systems and so it requires a bit of trial and error in DTrace to know which `argN` contains the information we need).
 
-Then, in `runtime.gdestroy`, we only react to our own goroutines being destroyed. There, `arg0` 
+Then, in `runtime.gdestroy`, we only react to our own goroutines being destroyed. There, `arg0` contains the goroutine id/pointer being destroyed: 
 
 ```dtrace
 pid$target::main.main:entry 
@@ -162,6 +162,8 @@ pid$target::runtime.gdestroy:entry
 {
     
     printf("goroutine %p destroyed\n", arg0);
+    goroutines[arg0] = 0;
+
 }
 ```
 
@@ -184,3 +186,31 @@ goroutine 14000003a40 destroyed
 goroutine 14000003880 destroyed
 goroutine 140000036c0 destroyed
 ```
+
+
+
+We can even use an aggregation to print which goroutines are still alive (aggregations are printed by default at the end of the DTrace program):
+
+<!-- ```dtrace -->
+<!-- pid$target::main.main:entry  -->
+<!-- { -->
+<!--     t=1; -->
+<!-- } -->
+<!---->
+<!-- pid$target::runtime.newproc1:return  -->
+<!-- /t!=0/  -->
+<!-- { -->
+<!--     @goroutines[arg1] = min(1); -->
+<!--     goroutines[arg1] = 1; -->
+<!-- }  -->
+<!---->
+<!-- pid$target::runtime.gdestroy:entry  -->
+<!-- /goroutines[arg0] != 0/  -->
+<!-- { -->
+<!---->
+<!--     @goroutines[arg0] = min(0); -->
+<!--     goroutines[arg0] = 0; -->
+<!-- } -->
+<!-- ``` -->
+<!---->
+<!-- And we see: -->

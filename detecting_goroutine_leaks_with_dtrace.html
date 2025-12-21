@@ -200,7 +200,7 @@ pid$target::runtime.gdestroy:entry
 <p>The reason why we track <code>runtime.newproc1:return</code> and <code>runtime.gdestroy:entry</code> in particular, will become clear in a second.</p>
 <p>In a big, real program, goroutines are being destroyed left and right, even while our function is executing, and even goroutines not spawned by it. This is noisy and might hide leaks.</p>
 <p>So do it correctly, we need to maintain a set of our own goroutines. Since <code>runtime.newproc1</code> returns a pointer to a newly allocated goroutine object, we can use this as a 'goroutine id'. This is accessible in <code>arg1</code> in DTrace (this depends on the system we are running our D script on. The Go ABI is documented but differs between systems and so it requires a bit of trial and error in DTrace to know which <code>argN</code> contains the information we need).</p>
-<p>Then, in <code>runtime.gdestroy</code>, we only react to our own goroutines being destroyed. There, <code>arg0</code></p>
+<p>Then, in <code>runtime.gdestroy</code>, we only react to our own goroutines being destroyed. There, <code>arg0</code> contains the goroutine id/pointer being destroyed:</p>
 <pre><code class="language-dtrace">pid$target::main.main:entry 
 {
     t=1;
@@ -218,6 +218,8 @@ pid$target::runtime.gdestroy:entry
 {
     
     printf(&quot;goroutine %p destroyed\n&quot;, arg0);
+    goroutines[arg0] = 0;
+
 }
 </code></pre>
 <p>Our leaky program  shows again no goroutine deletion:</p>
@@ -233,6 +235,30 @@ goroutine 14000003a40 destroyed
 goroutine 14000003880 destroyed
 goroutine 140000036c0 destroyed
 </code></pre>
+<p>We can even use an aggregation to print which goroutines are still alive (aggregations are printed by default at the end of the DTrace program):</p>
+<!-- ```dtrace -->
+<!-- pid$target::main.main:entry  -->
+<!-- { -->
+<!--     t=1; -->
+<!-- } -->
+<!---->
+<!-- pid$target::runtime.newproc1:return  -->
+<!-- /t!=0/  -->
+<!-- { -->
+<!--     @goroutines[arg1] = min(1); -->
+<!--     goroutines[arg1] = 1; -->
+<!-- }  -->
+<!---->
+<!-- pid$target::runtime.gdestroy:entry  -->
+<!-- /goroutines[arg0] != 0/  -->
+<!-- { -->
+<!---->
+<!--     @goroutines[arg0] = min(0); -->
+<!--     goroutines[arg0] = 0; -->
+<!-- } -->
+<!-- ``` -->
+<!---->
+<!-- And we see: -->
 <p><a href="/blog"> ⏴ Back to all articles</a></p>
 
 <blockquote id="donate">
