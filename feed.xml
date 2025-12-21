@@ -2,7 +2,7 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
 <title>Philippe Gaultier's blog</title>
 <link href="https://gaultier.github.io/blog"/>
-<updated>2025-12-03T10:26:28+01:00</updated>
+<updated>2025-12-21T18:06:44+01:00</updated>
 <author>
 <name>Philippe Gaultier</name>
 </author>
@@ -350,5 +350,13 @@
 <id>urn:uuid:c3d78b44-758d-5770-aaa6-959f126eb04e</id>
 <updated>2025-12-03T10:26:28+01:00</updated>
 <published>2025-12-03T10:20:30+01:00</published>
+</entry>
+
+<entry>
+<title>Detecting goroutine leaks with DTrace</title>
+<link href="https://gaultier.github.io/blog/detecting_goroutine_leaks_with_dtrace.html"/>
+<id>urn:uuid:5390e265-a3aa-5972-a291-25b7c90c8fcf</id>
+<updated>2025-12-21T18:06:44+01:00</updated>
+<published>2025-12-21T18:06:44+01:00</published>
 </entry>
 </feed>
