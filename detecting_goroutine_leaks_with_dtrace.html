@@ -80,11 +80,124 @@ Do not edit it by hand.
 <h1>Detecting goroutine leaks with DTrace</h1>
   <div class="tags"> <a href="/blog/articles-by-tag.html#go" class="tag">Go</a> <a href="/blog/articles-by-tag.html#dtrace" class="tag">DTrace</a></div>
   </div>
+ <strong>Table of contents</strong>
+<ul>
+
+  <li>
+    <a href="#watch-goroutine-be-created-and-destroyed">Watch goroutine be created and destroyed</a>
+  </li>
+
+  <li>
+    <a href="#the-d-script">The D script</a>
+  </li>
+
+  <li>
+    <a href="#a-leaky-program">A leaky program</a>
+  </li>
+
+  <li>
+    <a href="#conclusion">Conclusion</a>
+  </li>
+</ul>
 
 <p>Recently I read a cool blog <a href="https://antonz.org/detecting-goroutine-leaks/">article</a> about new changes in Go 1.25 and (as the time of writing, upcoming) 1.26 to more easily track goroutine leaks.</p>
-<p>I thought: ok, that's nice, that's a real problem. But what if you cannot use this <code>goroutineleak</code> profile? Perhaps you are stuck on an old Go version, perhaps you cannot change the code easily.</p>
-<p>What to do then? Well, as always, DTrace comes to the rescue. Let's track the creation and deletion of goroutines in our function. If there are more created gourtines than deleted, we have a leak.</p>
-<p>We can take the exact same leaky Go program as in the original article:</p>
+<p>I thought: ok, that's nice, that's a real problem. But what if you cannot use this <code>goroutineleak</code> profile? Perhaps you are stuck on an old Go version, perhaps you cannot change the code easily to enable this profile.</p>
+<p>What to do then? Well, as always, DTrace comes to the rescue. Let's track the creation and deletion of goroutines in our function. If there are more created goroutines than deleted ones, we have a leak.</p>
+<h2 id="watch-goroutine-be-created-and-destroyed">
+  <a class="title" href="#watch-goroutine-be-created-and-destroyed">Watch goroutine be created and destroyed</a>
+  <a class="hash-anchor" href="#watch-goroutine-be-created-and-destroyed" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+</h2>
+<p>Let's start with the simplest Go program using goroutines we can think of:</p>
+<pre><code class="language-go">package main
+
+import (
+	&quot;time&quot;
+)
+
+func Foo() {
+	go func() int { return 1 }() // Obviously does not leak!
+}
+
+func main() {
+	Foo()
+}
+</code></pre>
+<p>Let's trace all goroutine creations and deletions, as well as the functions entry and return in this program, with the <code>-F</code> DTrace command line option:</p>
+<pre><code class="language-dtrace">// Creates a new goroutine.
+pid$target::runtime.newproc1:
+
+// Destroys a goroutine.
+pid$target::runtime.gdestroy:
+
+pid$target::main.*: 
+</code></pre>
+<p><em>Functions starting with <code>runtime.</code> are from the Go runtime.</em></p>
+<p>We see:</p>
+<pre><code class="language-text">CPU FUNCTION                                 
+
+[...] // Some Go runtime goroutines elided, spawned before `main`.
+
+ 12  -&gt; main.main                             
+ 12    -&gt; main.main                           
+ 12      -&gt; main.Foo                          
+ 12        -&gt; runtime.newproc1                
+ 12        &lt;- runtime.newproc1                
+ 12      &lt;- main.Foo                          
+ 12      -&gt; main.Foo.gowrap1                  
+ 12        -&gt; main.Foo.func1                  
+ 12        &lt;- main.Foo.func1                  
+ 12      &lt;- main.Foo.gowrap1                  
+ 12      -&gt; runtime.gdestroy                  
+ 12      &lt;- runtime.gdestroy  
+dtrace: pid 28627 has exited
+  0 | main.main:return                        
+  0  &lt;- main.main 
+</code></pre>
+<p>We notice a few interesting things:</p>
+<ul>
+<li>The Go runtime spawns itself some goroutines, which we should ignore</li>
+<li>The <code>go</code> keyword only enqueues a task in a thread-pool to be run later, essentially. The task (<code>main.Foo.func1</code>) does not run yet. Experienced Go developers know this of course, but I find the Go syntax confusing: <code>go bar()</code> or <code>go func()  {} ()</code> looks like the function in the goroutine starts executing right away, but no: when it will get to run is unknown.</li>
+<li>Thus, and as we see in the output, the closure (<code>main.Foo.func1</code>) in the goroutine spawned inside the <code>Foo</code> function, starts running in this case <em>after</em> <code>Foo</code> returned, and as a result, the goroutine is destroyed after <code>Foo</code> has returned. However, it is obviously not a leak: the goroutine does basically nothing.</li>
+</ul>
+<p>At this point we should define what a 'goroutine leak' is: [TODO]</p>
+<p>In a big, real program, goroutines are being destroyed left and right, even while our function is executing, or after it is done executing.</p>
+<p>So to do it correctly, we need to track the set of our own goroutines. The function of interest in the Go runtime is <code>runtime.newproc1</code>: it returns a pointer to a newly allocated goroutine object, so we can use this as a 'goroutine id'. This value is accessible in <code>arg1</code> in DTrace (on my system; this depends on the system we are running our D script on. The Go ABI is documented but differs between systems and so it requires a bit of trial and error in DTrace to know which <code>argN</code> contains the information we need).</p>
+<p>Then, in <code>runtime.gdestroy</code>, we can react only to our own goroutines being destroyed. There, <code>arg0</code> contains the goroutine id/pointer to be destroyed.</p>
+<h2 id="the-d-script">
+  <a class="title" href="#the-d-script">The D script</a>
+  <a class="hash-anchor" href="#the-d-script" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+</h2>
+<pre><code class="language-dtrace">int goroutines_count;
+
+pid$target::main.main:entry 
+{
+    t=1;  // Only track goroutines spawned from inside `main` (and its callees).
+}
+
+pid$target::runtime.newproc1:return 
+/t!=0/ 
+{
+    goroutines[arg1] = 1; // Add the new goroutine to the tracking set of active goroutines we have spawned.
+    goroutines_count += 1; // Increment the counter of active goroutines.
+    printf(&quot;goroutine %p created: count=%d\n&quot;, arg1, goroutines_count);
+} 
+
+pid$target::runtime.gdestroy:entry 
+/goroutines[arg0] != 0/ 
+{
+    
+    goroutines_count -= 1; // Decrement the counter of active goroutines.
+    printf(&quot;goroutine %p destroyed: count=%d\n&quot;, arg0, goroutines_count);
+    goroutines[arg0] = 0; // Remove the goroutine from the tracking set of active goroutines we have spawned.
+
+}
+</code></pre>
+<p>We could even use <code>ustack()</code> in the <code>runtime.newproc1:return</code> probe to see what Go function in our code is creating the goroutine. This is not the case for <code>runtime.gdestroy:entry</code>: the goroutine could be destroyed at any point in the program as explained before, even after the function that created it is long gone (along with its callers, etc), so a call stack here does not make sense in the general case.</p>
+<h2 id="a-leaky-program">
+  <a class="title" href="#a-leaky-program">A leaky program</a>
+  <a class="hash-anchor" href="#a-leaky-program" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+</h2>
+<p>We can take the first leaky Go program from the original article mentioned at the beginning:</p>
 <pre><code class="language-go">package main
 
 import (
@@ -117,148 +230,68 @@ func main() {
 	fmt.Println(&quot;nGoro =&quot;, nGoro)
 }
 </code></pre>
-<p>This prints <code>3</code> since our code spawns a goroutine for each argument, and there are 3 arguments. Since the channel is unbuffered and never read from, the goroutines run forever and leak.</p>
-<p>Let's track the creation and deletion of goroutines with DTrace. We only track goroutines created inside our function, to avoid observing goroutines from other parts of our code, or from the Go runtime:</p>
-<pre><code class="language-dtrace">pid$target::main.main:entry 
-{
-    t=1;
-}
-
-pid$target::runtime.newproc1:return 
-/t!=0/ 
-{
-    ustack(); 
-} 
-
-pid$target::runtime.gdestroy:entry 
-/t!=0/ 
-{}
+<p>This prints <code>3</code> since our code spawns a goroutine for each argument, and there are 3 arguments. Since the channel is unbuffered and never read from, the 3 goroutines run forever and leak. Oops.</p>
+<p>Note that our D script is already more powerful than the naive Go way of using <code>runtime.NumGoroutine()</code> which returns <em>all</em> goroutines active in the program, even goroutines that our function did not spawn itself (hence the <code>-1</code> in the Go code in this simplistic example).</p>
+<p>Let's use our brand new D script on this program:</p>
+<pre><code class="language-text">goroutine 14000102fc0 created: count=1
+goroutine 14000103180 created: count=2
+goroutine 14000103340 created: count=3
 </code></pre>
-<p>And we see as expected, 3 goroutines created and none deleted:</p>
-<pre><code class="language-text">CPU     ID                    FUNCTION:NAME
- 12   8323          runtime.newproc1:return 
-              leaky.exe`runtime.newproc.func1+0x2c
-              leaky.exe`runtime.systemstack.abi0+0x68
-              leaky.exe`runtime.newproc+0x38
-              leaky.exe`main.Gather+0x44
-              leaky.exe`main.main+0x48
-              leaky.exe`runtime.main+0x278
-              leaky.exe`runtime.goexit.abi0+0x4
-
- 12   8323          runtime.newproc1:return 
-              leaky.exe`runtime.newproc.func1+0x2c
-              leaky.exe`runtime.systemstack.abi0+0x68
-              leaky.exe`runtime.newproc+0x38
-              leaky.exe`main.Gather+0x44
-              leaky.exe`main.main+0x48
-              leaky.exe`runtime.main+0x278
-              leaky.exe`runtime.goexit.abi0+0x4
-
- 12   8323          runtime.newproc1:return 
-              leaky.exe`runtime.newproc.func1+0x2c
-              leaky.exe`runtime.systemstack.abi0+0x68
-              leaky.exe`runtime.newproc+0x38
-              leaky.exe`main.Gather+0x44
-              leaky.exe`main.main+0x48
-              leaky.exe`runtime.main+0x278
-              leaky.exe`runtime.goexit.abi0+0x4
+<p>We see indeed that there are 3 leaky goroutines (not destroyed) by the end of the program.</p>
+<p>Let's now fix the program by reading from the returned channel:</p>
+<pre><code class="language-diff">diff --git a/main.go b/main.go
+index 01659c2..bfd7ee4 100644
+--- a/main.go
++++ b/main.go
+@@ -19,12 +19,17 @@ func Gather(funcs ...func() int) &lt;-chan int {
+ }
+ 
+ func main() {
+-	Gather(
++	out := Gather(
+ 		func() int { return 11 },
+ 		func() int { return 22 },
+ 		func() int { return 33 },
+ 	)
+ 
++	total := 0
++	for range 3 {
++		total += &lt;-out
++	}
++
+ 	time.Sleep(50 * time.Millisecond)
+ 	nGoro := runtime.NumGoroutine() - 1 // minus the main goroutine
+ 	fmt.Println(&quot;nGoro =&quot;, nGoro)
 </code></pre>
-<p>Let's compare this with the fixed version of the program:</p>
-<pre><code class="language-text">CPU     ID                    FUNCTION:NAME
-  9  11006          runtime.newproc1:return 
-              not_leaky.exe`runtime.newproc.func1+0x2c
-              not_leaky.exe`runtime.systemstack.abi0+0x68
-              not_leaky.exe`runtime.newproc+0x38
-              not_leaky.exe`main.Gather+0x44
-              not_leaky.exe`main.main+0x4c
-              not_leaky.exe`runtime.main+0x278
-              not_leaky.exe`runtime.goexit.abi0+0x4
-
-  9  11006          runtime.newproc1:return 
-              not_leaky.exe`runtime.newproc.func1+0x2c
-              not_leaky.exe`runtime.systemstack.abi0+0x68
-              not_leaky.exe`runtime.newproc+0x38
-              not_leaky.exe`main.Gather+0x44
-              not_leaky.exe`main.main+0x4c
-              not_leaky.exe`runtime.main+0x278
-              not_leaky.exe`runtime.goexit.abi0+0x4
-
-  9  11006          runtime.newproc1:return 
-              not_leaky.exe`runtime.newproc.func1+0x2c
-              not_leaky.exe`runtime.systemstack.abi0+0x68
-              not_leaky.exe`runtime.newproc+0x38
-              not_leaky.exe`main.Gather+0x44
-              not_leaky.exe`main.main+0x4c
-              not_leaky.exe`runtime.main+0x278
-              not_leaky.exe`runtime.goexit.abi0+0x4
-
-  9  11007           runtime.gdestroy:entry 
-  9  11007           runtime.gdestroy:entry 
-  9  11007           runtime.gdestroy:entry 
+<p>And the fixed program now shows all of our goroutines being deleted, no more leaks:</p>
+<pre><code class="language-text">goroutine 140000036c0 created: count=1
+goroutine 14000003880 created: count=2
+goroutine 14000003a40 created: count=3
+goroutine 14000003a40 destroyed: count=2
+goroutine 14000003880 destroyed: count=1
+goroutine 140000036c0 destroyed: count=0
 </code></pre>
-<p>There, we see the 3 <code>runtime.gdestroy</code> calls as expected.</p>
-<p>The reason why we track <code>runtime.newproc1:return</code> and <code>runtime.gdestroy:entry</code> in particular, will become clear in a second.</p>
-<p>In a big, real program, goroutines are being destroyed left and right, even while our function is executing, and even goroutines not spawned by it. This is noisy and might hide leaks.</p>
-<p>So do it correctly, we need to maintain a set of our own goroutines. Since <code>runtime.newproc1</code> returns a pointer to a newly allocated goroutine object, we can use this as a 'goroutine id'. This is accessible in <code>arg1</code> in DTrace (this depends on the system we are running our D script on. The Go ABI is documented but differs between systems and so it requires a bit of trial and error in DTrace to know which <code>argN</code> contains the information we need).</p>
-<p>Then, in <code>runtime.gdestroy</code>, we only react to our own goroutines being destroyed. There, <code>arg0</code> contains the goroutine id/pointer being destroyed:</p>
-<pre><code class="language-dtrace">pid$target::main.main:entry 
-{
-    t=1;
-}
-
-pid$target::runtime.newproc1:return 
-/t!=0/ 
-{
-    goroutines[arg1] = 1;
-    printf(&quot;goroutine %p created\n&quot;, arg1);
-} 
-
-pid$target::runtime.gdestroy:entry 
-/goroutines[arg0] != 0/ 
-{
-    
-    printf(&quot;goroutine %p destroyed\n&quot;, arg0);
-    goroutines[arg0] = 0;
-
-}
-</code></pre>
-<p>Our leaky program  shows again no goroutine deletion:</p>
-<pre><code class="language-text">goroutine 140000aa1c0 created
-goroutine 140000aa380 created
-goroutine 140000aa540 created
-</code></pre>
-<p>And the fixed program shows all of our goroutines being deleted:</p>
-<pre><code>goroutine 140000036c0 created
-goroutine 14000003880 created
-goroutine 14000003a40 created
-goroutine 14000003a40 destroyed
-goroutine 14000003880 destroyed
-goroutine 140000036c0 destroyed
-</code></pre>
-<p>We can even use an aggregation to print which goroutines are still alive (aggregations are printed by default at the end of the DTrace program):</p>
-<!-- ```dtrace -->
-<!-- pid$target::main.main:entry  -->
-<!-- { -->
-<!--     t=1; -->
-<!-- } -->
-<!---->
-<!-- pid$target::runtime.newproc1:return  -->
-<!-- /t!=0/  -->
-<!-- { -->
-<!--     @goroutines[arg1] = min(1); -->
-<!--     goroutines[arg1] = 1; -->
-<!-- }  -->
-<!---->
-<!-- pid$target::runtime.gdestroy:entry  -->
-<!-- /goroutines[arg0] != 0/  -->
-<!-- { -->
-<!---->
-<!--     @goroutines[arg0] = min(0); -->
-<!--     goroutines[arg0] = 0; -->
-<!-- } -->
-<!-- ``` -->
-<!---->
-<!-- And we see: -->
+<p>If we were willing to do some post-processing of the DTrace output, we could even print the call stack with <code>ustack()</code> when a goroutine is created along with the goroutine id/pointer, to be able to track down where the leaky goroutines came from. Since DTrace maps cannot be iterated on and cannot be printed as a whole, we cannot simply store that call stack information in the <code>goroutines</code> map and print the whole map at the end.</p>
+<h2 id="conclusion">
+  <a class="title" href="#conclusion">Conclusion</a>
+  <a class="hash-anchor" href="#conclusion" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+</h2>
+<p>With two simple DTrace probes, we can observe the Go runtime creating and destroying goroutines, along with a way to uniquely identify this goroutine. From these two primitives, we can track goroutine leaks, but that's not all! We could do a lot more, all in DTrace (or possibly with a bit of post-processing):</p>
+<ul>
+<li>How long does a goroutine live, with a histogram? (Hint: <code>pid$target::runtime.gdestroy:return { @[&quot;&quot;] = quantize(timestamp - spawned[arg0]) }</code>)</li>
+<li>What is the peak (maximum) number of active goroutines? (Hint: <code>pid$target::runtime.newproc1:return { @[ustack()] = max() }</code>)</li>
+<li>What places in the code spawn the most goroutines? (Hint: <code>pid$target::runtime.newproc1:return { @[ustack()] = count() }</code></li>
+<li>How much time passes between asking the Go runtime to create the goroutine, and the code in the goroutine actually running?</li>
+<li>Etc</li>
+</ul>
+<p>Which is pretty cool if you ask me, given that:</p>
+<ul>
+<li>All of that works for all versions of Go, no need to wait for a new version</li>
+<li>No need to ask the Go maintainers to add one more metric or profile we need</li>
+<li>No need to change and recompile the application</li>
+<li>No overhead when not running, and safe to use in production.</li>
+<li>Same behavior when on or off. The Go runtime has a lot of different code paths depending if tracing is enabled, if the race detector is enabled, if valgrind is enabled... that makes the code quite complex, and potentially behave differently depending on what is on/off. With DTrace, we know that peeking inside the inner workings of the Go runtime does not change its behavior.</li>
+</ul>
 <p><a href="/blog"> ⏴ Back to all articles</a></p>
 
 <blockquote id="donate">
