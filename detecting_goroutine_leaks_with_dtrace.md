@@ -70,7 +70,7 @@ dtrace: pid 28627 has exited
 We notice a few interesting things:
 
 - The Go runtime spawns itself some goroutines, which we should ignore
-- The `go` keyword only enqueues a task in a thread-pool to be run later, essentially. The task (`main.Foo.func1`) does not run yet. Experienced Go developers know this of course, but I find the Go syntax confusing: `go bar()` or `go func()  {} ()` looks like the function in the goroutine starts executing right away, but no: when it will get to run is unknown.
+- The `go` keyword only enqueues a task in a thread-pool to be run later, essentially (it does some more stuff such as allocating a stack for our goroutine on the heap, etc). The task (here, the closure `main.Foo.func1`) does not run yet. Experienced Go developers know this of course, but I find the Go syntax confusing: `go bar()` or `go func()  {} ()` looks like the function in the goroutine starts executing right away, but no: when it will get to run is unknown.
 - Thus, and as we see in the output, the closure (`main.Foo.func1`) in the goroutine spawned inside the `Foo` function, starts running in this case *after* `Foo` returned, and as a result, the goroutine is destroyed after `Foo` has returned. However, it is obviously not a leak: the goroutine does basically nothing.
 
 At this point we should define what a 'goroutine leak' is: [TODO]
@@ -117,7 +117,7 @@ We could even use `ustack()` in the `runtime.newproc1:return` probe to see what 
 
 ## A leaky program
 
-We can take the first leaky Go program from the original article mentioned at the beginning:
+Let's take the same leaky Go program as the original [article](https://antonz.org/detecting-goroutine-leaks/):
 
 ```go
 package main
@@ -153,7 +153,7 @@ func main() {
 }
 ```
 
-This prints `3` since our code spawns a goroutine for each argument, and there are 3 arguments. Since the channel is unbuffered and never read from, the 3 goroutines run forever and leak. Oops.
+This prints `3` since our code spawns a goroutine for each argument, and there are 3 arguments. Because the channel is unbuffered and never read from, the 3 goroutines run forever and leak. Oops.
 
 
 Note that our D script is already more powerful than the naive Go way of using `runtime.NumGoroutine()` which returns *all* goroutines active in the program, even goroutines that our function did not spawn itself (hence the `-1` in the Go code in this simplistic example).
@@ -166,9 +166,9 @@ goroutine 14000103180 created: count=2
 goroutine 14000103340 created: count=3
 ```
 
-We see indeed that there are 3 leaky goroutines (not destroyed) by the end of the program.
+We see indeed that there are 3 leaky goroutines (created and never destroyed) by the end of the program.
 
-Let's now fix the program by reading from the returned channel:
+Let's now fix the Go program by reading from the returned channel:
 
 
 ```diff
@@ -208,7 +208,7 @@ goroutine 14000003880 destroyed: count=1
 goroutine 140000036c0 destroyed: count=0
 ```
 
-If we were willing to do some post-processing of the DTrace output, we could even print the call stack with `ustack()` when a goroutine is created along with the goroutine id/pointer, to be able to track down where the leaky goroutines came from. Since DTrace maps cannot be iterated on and cannot be printed as a whole, we cannot simply store that call stack information in the `goroutines` map and print the whole map at the end.
+If we were willing to do some post-processing of the DTrace output, we could even print the call stack with `ustack()` when a goroutine is created along with the goroutine id/pointer, to be able to track down where the leaky goroutines came from. Since DTrace maps cannot be iterated on and cannot be printed as a whole, we cannot simply store that call stack information in the `goroutines` map and print the whole map at the end, in pure DTrace.
 
 
 ## Conclusion
@@ -223,7 +223,7 @@ With two simple DTrace probes, we can observe the Go runtime creating and destro
 
 Which is pretty cool if you ask me, given that:
 
-- All of that works for all versions of Go, no need to wait for a new version
+- All of that works for all versions of Go, even the very first one, and no need to upgrade to a new version
 - No need to ask the Go maintainers to add one more metric or profile we need
 - No need to change and recompile the application
 - No overhead when not running, and safe to use in production. 
@@ -235,4 +235,4 @@ Oh and by the way, try these probes:
 - `runtime.gc*`: see GC operations such as mark, sweep, marking roots
 - `runtime.*alloc*`: see memory allocator operations
 
-When used in conjunction with tracking functions from our code, like with did in the first DTrace snippet in this article, Go feels a lot less magic! I wish I did that as a beginner.
+When used in conjunction with tracking functions from our code, like we did in the first DTrace snippet in this article, Go feels a lot less magic! I wish I did that as a beginner.
