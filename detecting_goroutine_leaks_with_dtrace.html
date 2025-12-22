@@ -520,6 +520,15 @@ so this could get confusing.</p>
 </h2>
 <p>The <code>runtime/HACKING.md</code> document mentions:</p>
 <blockquote>
+<p>A &quot;G&quot; is simply a goroutine. It's represented by type <code>g</code>. When a
+goroutine exits, its <code>g</code> object is returned to a pool of free <code>g</code>s and
+can later be reused for some other goroutine.</p>
+<p>An &quot;M&quot; is an OS thread that can be executing user Go code, runtime
+code, a system call, or be idle. It's represented by type <code>m</code>. There
+can be any number of Ms at a time since any number of threads may be
+blocked in system calls.</p>
+</blockquote>
+<blockquote>
 <p><code>getg()</code> and <code>getg().m.curg</code></p>
 <p>To get the current user <code>g</code>, use <code>getg().m.curg</code>.</p>
 <p><code>getg()</code> alone returns the current <code>g</code>, but when executing on the
@@ -535,7 +544,7 @@ use <code>getg() == getg().m.curg</code>.</p>
 <ul>
 <li>We define minimally the struct for <code>g</code> (goroutine) and <code>m</code> (an OS thread) with the exact same layout as in the Go runtime</li>
 <li>We use <code>copyin()</code> to copy the data in these structs</li>
-<li>We use <code>*</code> and <code>-&gt;</code> to dereference and follow the pointers like <code>getg().m.curg</code></li>
+<li>We use <code>*</code> and <code>-&gt;</code> to dereference and follow the pointers like <code>getg().m</code> and then <code>m.curg</code></li>
 </ul>
 <pre><code class="language-dtrace">struct g {
   uint8_t pad[48];

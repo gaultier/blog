@@ -471,6 +471,16 @@ so this could get confusing.
 
 The `runtime/HACKING.md` document mentions: 
 
+> A "G" is simply a goroutine. It's represented by type `g`. When a
+> goroutine exits, its `g` object is returned to a pool of free `g`s and
+> can later be reused for some other goroutine.
+> 
+> An "M" is an OS thread that can be executing user Go code, runtime
+> code, a system call, or be idle. It's represented by type `m`. There
+> can be any number of Ms at a time since any number of threads may be
+> blocked in system calls.
+
+
 > `getg()` and `getg().m.curg`
 > 
 > To get the current user `g`, use `getg().m.curg`.
@@ -493,7 +503,7 @@ This is easy to do in DTrace:
 
 - We define minimally the struct for `g` (goroutine) and `m` (an OS thread) with the exact same layout as in the Go runtime
 - We use `copyin()` to copy the data in these structs
-- We use `*` and `->` to dereference and follow the pointers like `getg().m.curg`
+- We use `*` and `->` to dereference and follow the pointers like `getg().m` and then `m.curg`
 
 ```dtrace
 struct g {
