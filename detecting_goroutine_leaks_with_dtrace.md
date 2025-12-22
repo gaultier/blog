@@ -730,6 +730,12 @@ Which is pretty cool if you ask me, given that:
 - Same behavior when on or off. The Go runtime has a lot of different code paths depending if tracing is enabled, if the race detector is enabled, if Valgrind is enabled... that makes the code quite complex, and potentially behave differently depending on what is on/off. With DTrace, we know that peeking inside the inner workings of the Go runtime does not change its behavior.
 - We can attach with DTrace to a running Go program, observe the goroutines lifecycle for a while, and then detach, without the program being disturbed or restarted
 
+
+However, the Go built-in tracing can do some things that DTrace cannot:
+
+- Serve these metrics remotely over HTTP
+- Run on Linux. In *theory*, `bpftrace` should be able to do the same stuff on Linux as DTrace, but I have not tried and I have been let down before. So, maybe it works?
+
 Oh and by the way, try these probes:
 
 - `runtime.*chan*`: see channel operations such as sends and receives
