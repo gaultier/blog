@@ -696,14 +696,14 @@ struct g {
 
 ## Conclusion
 
-With a few simple DTrace probes, we can observe the Go runtime creating, parking, unparking, and destroying goroutines, along with a way to uniquely identify the goroutine in question. From these two primitives, we can track goroutine leaks, but that's not all! We could do a lot more, all in DTrace (or possibly with a bit of post-processing):
+With a few simple DTrace probes, we can observe the Go runtime creating, parking, unparking, and destroying goroutines, along with a way to uniquely identify the goroutine in question. From these primitives, we can track goroutine leaks, but that's not all! We could do a lot more, all in DTrace (or possibly with a bit of post-processing):
 
 - How long does a goroutine live, with a histogram?
 - What is the peak (maximum) number of active goroutines?
 - What places in the code spawn the most goroutines?
 - How much time passes between asking the Go runtime to create the goroutine, and the code in the goroutine actually running?
 - How long do goroutines sleep, with a histogram?
-- Print a goroutine graph of what goroutine spawned which goroutine. `runtime.newproc1:entry` takes the parent goroutine as argument, so we know the parent-child relationship.
+- Print a goroutine tree of what goroutine spawned which goroutine. `runtime.newproc1:entry` takes the parent goroutine as argument, so we know the parent-child relationship.
 - How much do goroutines consume, with a histogram: the goroutine structure in the Go runtime has the `stack.lo` and `stack.hi` fields which describe the bounds of the goroutine memory.
 - How long does a goroutine wait to run, when it is not waiting on any object, and it could run at any time? The goroutine struct in the Go runtime has this field: `runnableTime    int64 // the amount of time spent runnable, cleared when running, only used when tracking` but it only is updated in 'tracking' mode.
 - How many goroutines are currently on the free list?
