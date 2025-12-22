@@ -455,7 +455,7 @@ With a few simple DTrace probes, we can observe the Go runtime creating, parking
 
 Which is pretty cool if you ask me, given that:
 
-- All of that works for all versions of Go, even the very first one, and no need to upgrade to a new version
+- All of that works for all versions of Go, even the very first one, and no need to upgrade to a new version (although, the Go runtime was written in C up to version 1.4 so the probes from the C functions might be named differently)
 - No need to ask the Go maintainers to add one more metric or profile we need
 - No need to change and recompile the application
 - No overhead when not running, and safe to use in production. 

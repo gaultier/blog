@@ -506,7 +506,7 @@ so this could get confusing.</p>
 </ul>
 <p>Which is pretty cool if you ask me, given that:</p>
 <ul>
-<li>All of that works for all versions of Go, even the very first one, and no need to upgrade to a new version</li>
+<li>All of that works for all versions of Go, even the very first one, and no need to upgrade to a new version (although, the Go runtime was written in C up to version 1.4 so the probes from the C functions might be named differently)</li>
 <li>No need to ask the Go maintainers to add one more metric or profile we need</li>
 <li>No need to change and recompile the application</li>
 <li>No overhead when not running, and safe to use in production.</li>
