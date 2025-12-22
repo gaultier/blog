@@ -4,7 +4,7 @@ Tags: Go, DTrace
 
 **Or: a deep dive into how the Go runtime models and manages goroutines, and how DTrace can help us observe and understand it.**
 
-*For a gentle introduction to DTrace especially in conjunction with Go, see my past article: [An optimization and debugging story with Go and DTrace](/blog/an_optimization_and_debugging_story_go_dtrace.html).*
+*For a gentle introduction to DTrace especially in conjunction with Go, see my past article: [An optimization and debugging story with Go and DTrace](/blog/an_optimization_and_debugging_story_go_dtrace.html), or my other [DTrace articles](/blog/articles-by-tag.html#dtrace).*
 
 Recently I read a cool blog [article](https://antonz.org/detecting-goroutine-leaks/) about new changes in Go 1.25 and (as the time of writing, upcoming) 1.26 to more easily track goroutine leaks.
 
@@ -616,6 +616,82 @@ struct g {
 }; 
 ```
 
+and when we print the goroutine data from inside DTrace we see:
+
+```text
+struct g {
+    uintptr_t [2] stack = [ 0x14000052000, 0x14000052800 ]
+    uintptr_t stackguard0 = 0x140000523a0
+    uintptr_t stackguard1 = 0xffffffffffffffff
+    uintptr_t _panic = 0
+    uintptr_t _defer = 0
+    struct m *m = 0x14000080008
+    uintptr_t [6] sched = [ 0, 0x100a6d448, 0x14000102540, 0, 0, 0 ]
+    uintptr_t syscallsp = 0
+    uintptr_t syscallpc = 0
+    uintptr_t syscallbp = 0
+    uintptr_t stktopsp = 0x140000527d0
+    uintptr_t param = 0
+    uint32_t status = 0x2
+    uint32_t stackLock = 0
+    uint64_t goid = 0x12
+    uintptr_t schedlink = 0
+    int64_t waitsince = 0
+    uint8_t waitreason = 0
+    uint8_t preempt = 0
+    uint8_t preemptStop = 0
+    uint8_t preemptShrink = 0
+    uint8_t asyncSafePoint = 0
+    uint8_t paniconfault = 0
+    uint8_t gcscandone = 0
+    uint8_t throwsplit = 0
+    uint8_t activeStackChans = 0
+    uint8_t [3] pad1 = [ 0, 0, 0 ]
+    uint32_t parkingOnChan = 0x1c000000
+    uint8_t inMarkAssist = 0
+    uint8_t coroexit = 0
+    int8_t raceignore = '\0'
+    uint8_t nocgocallback = 0
+    uint8_t tracking = 0
+    uint8_t trackingSeq = 0
+    uint8_t [2] pad2 = [ 0, 0 ]
+    int64_t trackingStamp = 0
+    int64_t runnableTime = 0
+    uintptr_t lockedm = 0
+    uint8_t fipsIndicator = 0
+    uint8_t syncSafePoint = 0
+    uint8_t [2] pad3 = [ 0, 0 ]
+    uint32_t runningCleanups = 0
+    uint32_t sig = 0
+    uint8_t [4] pad4 = [ 0, 0, 0, 0 ]
+    uintptr_t writebuf_ptr = 0
+    uint64_t writebuf_len = 0
+    uint64_t writebuf_cap = 0
+    uintptr_t sigcode0 = 0
+    uintptr_t sigcode1 = 0x1
+    uintptr_t sigpc = 0x100a7818c
+    uint64_t parentGoid = 0
+    uintptr_t gopc = 0x100a781b0
+    uintptr_t ancestors = 0
+    uintptr_t startpc = 0
+    uintptr_t racectx = 0
+    uintptr_t waiting = 0
+    uintptr_t cgoCtxt_ptr = 0
+    uint64_t cgoCtxt_len = 0
+    uint64_t cgoCtxt_cap = 0
+    uintptr_t labels = 0
+    uintptr_t timer = 0
+    int64_t sleepWhen = 0
+    uint32_t selectDone = 0
+    uint32_t goroutineProfiled = 0
+    uintptr_t coro = 0
+    uintptr_t bubble = 0
+    uint64_t [4] trace = [ 0, 0, 0, 0 ]
+    int64_t gcAssistBytes = 0
+    uintptr_t valgrindStackID = 0
+}
+```
+
 </details>
 
 ## Conclusion
@@ -640,6 +716,7 @@ Which is pretty cool if you ask me, given that:
 - No need to ask the Go maintainers to add one more metric or profile we need
 - No need to change and recompile the application
 - No overhead when not running, and safe to use in production. 
+- Enabling tracing in the Go runtime incurs locking overhead
 - Same behavior when on or off. The Go runtime has a lot of different code paths depending if tracing is enabled, if the race detector is enabled, if Valgrind is enabled... that makes the code quite complex, and potentially behave differently depending on what is on/off. With DTrace, we know that peeking inside the inner workings of the Go runtime does not change its behavior.
 
 Oh and by the way, try these probes:
