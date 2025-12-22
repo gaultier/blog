@@ -2,11 +2,13 @@ Title: Detecting goroutine leaks with DTrace
 Tags: Go, DTrace
 ---
 
+*For a gentle introduction to DTrace especially in conjunction with Go, see my past article: [An optimization and debugging story with Go and DTrace](/blog/an_optimization_and_debugging_story_go_dtrace.html).*
+
 Recently I read a cool blog [article](https://antonz.org/detecting-goroutine-leaks/) about new changes in Go 1.25 and (as the time of writing, upcoming) 1.26 to more easily track goroutine leaks.
 
 I thought: ok, that's nice, that's a real problem. But what if you cannot use this `goroutineleak` profile? Perhaps you are stuck on an old Go version, perhaps you cannot change the code easily to enable this profile. 
 
-What to do then? Well, as always, DTrace comes to the rescue. Let's track the creation and deletion of goroutines in our function. If there are more created goroutines than deleted ones, we have a leak.
+What to do then? Well, as always, DTrace comes to the rescue to inspect the inner workings of the Go runtime!
 
 ## What is a goroutine leak, and why is it a problem?
 
@@ -14,7 +16,7 @@ Simply, a goroutine 'leaks' if it is blocked waiting on an unreachable object: a
 
 And it turns out that Go currently offers us various ways to accidentally enter this case: forgetting to read from a channel for example.
 
-Why is this an issue? Well, goroutines are designed to not take much memory, at least initially (around 2 KiB), so that our program can spawn millions. Note that the memory used by a goroutine can and usually does grow. 
+Why is this an issue? Well, goroutines are designed to not take much memory, at least initially (around 2 KiB), so that our program can spawn millions of them. Note that the memory used by a goroutine can and usually does grow. 
 
 This memory is not reclaimed until the goroutine is destroyed. If the goroutine lives forever, we have a memory leak on our hands.
 
@@ -85,10 +87,11 @@ We notice a few interesting things:
 - The Go runtime spawns itself some goroutines at the beginning (before `main` runs), which we should ignore
 - The `go` keyword only enqueues a task in a thread-pool to be run later, essentially (it does some more stuff such as allocating a stack for our goroutine on the heap, etc). The task (here, the closure `main.Foo.func1`) does not run yet. Experienced Go developers know this of course, but I find the Go syntax confusing: `go bar()` or `go func()  {} ()` looks like the function in the goroutine starts executing right away, but no: when it will get to run is unknown.
 - Thus, and as we see in the output, the closure (`main.Foo.func1`) in the goroutine spawned inside the `Foo` function, starts running in this case *after* `Foo` returned, and as a result, the goroutine is destroyed after `Foo` has returned. However, it is obviously not a leak: the goroutine does nothing and returns immediately.
+- We create goroutines ourselves, but the Go runtime destroys the goroutine for us, automatically, when the function running in the goroutine returns
 
 In a big, real program, goroutines are being destroyed left and right, even while our function is executing, or after it is done executing.
 
-So to do it correctly, we need to track the set of our own goroutines. The function of interest in the Go runtime is `runtime.newproc1`: it returns a pointer to a newly allocated goroutine object, so we can use this as a 'goroutine id'. This value is accessible in `arg1` in DTrace (on my system; this depends on the system we are running our D script on. The Go ABI is documented but differs between systems and so it requires a bit of trial and error in DTrace to know which `argN` contains the information we need).
+So we need to track the set of our own goroutines. The function of interest in the Go runtime is `runtime.newproc1`: it returns a pointer to a newly allocated goroutine object, so we can use this as a 'goroutine id'. This value is accessible in `arg1` in DTrace (on my system; this depends on the system we are running our D script on. The Go ABI is documented but differs between systems and so it requires a bit of trial and error in DTrace to know which `argN` contains the information we need).
 
 Then, in `runtime.gdestroy`, we can react only to our own goroutines being destroyed. There, `arg0` contains the goroutine id/pointer to be destroyed.
 
@@ -105,23 +108,26 @@ pid$target::main.main:entry
 pid$target::runtime.newproc1:return 
 /t!=0/ 
 {
-    goroutines[arg1] = 1; // Add the new goroutine to the tracking set of active goroutines we have spawned.
+    this->g = arg1;
+    goroutines[this->g] = 1; // Add the new goroutine to the tracking set of active goroutines we have spawned.
     goroutines_count += 1; // Increment the counter of active goroutines.
-    printf("goroutine %p created: count=%d\n", arg1, goroutines_count);
+    printf("goroutine %p created: count=%d\n", this->g, goroutines_count);
 } 
 
 pid$target::runtime.gdestroy:entry 
 /goroutines[arg0] != 0/ 
 {
-    
+    this->g = arg0;
     goroutines_count -= 1; // Decrement the counter of active goroutines.
-    printf("goroutine %p destroyed: count=%d\n", arg0, goroutines_count);
-    goroutines[arg0] = 0; // Remove the goroutine from the tracking set of active goroutines we have spawned.
+    printf("goroutine %p destroyed: count=%d\n", this->g, goroutines_count);
+    goroutines[this->g] = 0; // Remove the goroutine from the tracking set of active goroutines we have spawned.
 }
 ```
 
+A few notes:
 
-We could even use `ustack()` in the `runtime.newproc1:return` probe to see what Go function in our code is creating the goroutine. This is not the case for `runtime.gdestroy:entry`: the goroutine could be destroyed at any point in the program as explained before, even after the function that created it is long gone (along with its callers, etc), so a call stack here does not make sense in the general case.
+- Here we start tracking when entering `main`, but you could choose to do it after the program has initialized some things, or when entering a given component, etc
+- We could even use `ustack()` in the `runtime.newproc1:return` probe to see what Go function in our code is creating the goroutine. This is not the case for `runtime.gdestroy:entry`: the goroutine could be destroyed at any point in the program as explained before, even after the function that created it is long gone (along with its callers, etc), so a call stack here does not make sense in the general case and only shows internals from the Go runtime.
 
 ## A leaky program
 
@@ -216,7 +222,6 @@ goroutine 14000003880 destroyed: count=1
 goroutine 140000036c0 destroyed: count=0
 ```
 
-If we were willing to do some post-processing of the DTrace output, we could even print the call stack with `ustack()` when a goroutine is created along with the goroutine id/pointer, to be able to track down where the leaky goroutines came from. Since DTrace maps cannot be iterated on and cannot be printed as a whole, we cannot simply store that call stack information in the `goroutines` map and print the whole map at the end, in pure DTrace.
 
 ## A better approach: Track blocked goroutines
 
@@ -226,11 +231,40 @@ Well, remember the initial definition of a goroutine leak:
 
 > a goroutine 'leaks' if it is blocked waiting on an unreachable object: a mutex, channel, wait condition, etc
 
-Each goroutine has a 'status' field which is 'running', 'blocked', 'dead', etc. We need to track that to know how many goroutines are indeed blocked!
+Each goroutine has a 'status' field which is 'running', 'blocked', 'dead', etc. We need to track that to know how many goroutines are really blocked and leaking!
 
-The Go runtime has a easy function to watch that does this state transition: `runtime.gopark`. Its fourth argument is a 'block reason' which explains why (if at all) the goroutine is blocked. This way, the Go scheduler knows not to try to run the blocked goroutines since they have no chance to do anything, until the object they are blocked on is unblocked (for example a mutex).
+The Go runtime has a easy function to watch that does this state transition: `runtime.gopark`. Its fourth argument is a 'block reason' which explains why (if at all) the goroutine is blocked. This way, the Go scheduler knows not to try to run the blocked goroutines since they have no chance to do anything, until the object they are blocked on is unblocked (for example a mutex). This field is [defined](https://github.com/golang/go/blob/master/src/runtime/traceruntime.go#L91) like this in the Go runtime:
 
-Let's track that then. We maintain a set of blocked goroutines. If a goroutine goes from unblocked -> blocked, it gets added to this set. If it goes from blocked to unblocked, it gets removed from it:
+
+```go
+// traceBlockReason is an enumeration of reasons a goroutine might block.
+[...]
+type traceBlockReason uint8
+
+const (
+	traceBlockGeneric traceBlockReason = iota
+	traceBlockForever
+	traceBlockNet
+	traceBlockSelect
+	traceBlockCondWait
+	traceBlockSync
+	traceBlockChanSend
+	traceBlockChanRecv
+	traceBlockGCMarkAssist
+	traceBlockGCSweep
+	traceBlockSystemGoroutine
+	traceBlockPreempted
+	traceBlockDebugCall
+	traceBlockUntilGCEnds
+	traceBlockSleep
+	traceBlockGCWeakToStrongWait
+	traceBlockSynctest
+)
+```
+
+Let's track that then. We maintain a set of blocked goroutines. If a goroutine goes from unblocked to blocked, it gets added to this set. If it goes from blocked to unblocked, it gets removed from the set:
+
+*Note: according to the [Go ABI](https://github.com/golang/go/blob/master/src/cmd/compile/abi-internal.md), a register is reserved to store the current goroutine. On my system (ARM64), it is `R28` [accessible](/blog/an_optimization_and_debugging_story_go_dtrace.html#addendum-a-goroutine-aware-d-script) in DTrace with `uregs[R_X28]`. This is handy when a Go runtime function does not take the goroutine to act on, as an argument.*
 
 ```dtrace
 pid$target::runtime.gopark:entry 
@@ -274,7 +308,7 @@ pid$target::runtime.gdestroy:entry
 +   goroutines_blocked_count -= 1;
 + }
 
-+ printf("godestroy: goroutine=%p count=%d blocked_count=%d\n", this->g, goroutines_count, goroutines_blocked_count);
+  printf("godestroy: goroutine=%p count=%d blocked_count=%d\n", this->g, goroutines_count, goroutines_blocked_count);
 }
 ```
 
@@ -415,6 +449,7 @@ With a few simple DTrace probes, we can observe the Go runtime creating, parking
 - How long do goroutines sleep, with a histogram?
 - Print a goroutine graph of what goroutine spawned which goroutine. `runtime.newproc1:entry` takes the parent goroutine as argument, so we know the parent-child relationship.
 - How much do goroutines consume, with a histogram: the goroutine structure in the Go runtime has the `stack.lo` and `stack.hi` fields which describe the bounds of the goroutine memory.
+- How long does a goroutine wait to run, when it is not waiting on any object, and it could run at any time? The goroutine struct in the Go runtime has this field: `runnableTime    int64 // the amount of time spent runnable, cleared when running, only used when tracking` but it only is updated in 'tracking' mode.
 - Etc
 
 Which is pretty cool if you ask me, given that:
