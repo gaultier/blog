@@ -548,6 +548,13 @@ pid$target::runtime.gdestroy:entry
   printf("godestroy: goroutine=%p count=%d blocked_count=%d\n", this->g, goroutines_count, goroutines_blocked_count);
 }
 
+pid$target::runtime.ready:entry 
+/goroutines[arg0] != 0/ 
+{
+    goroutines_blocked[this->g] = 0;
+    goroutines_blocked_count -= 1;
+}
+
 pid$target::runtime.gopark:entry 
 // arg3 = traceBlockReason.
 /t!=0 && goroutines[uregs[R_X28]] != 0/
