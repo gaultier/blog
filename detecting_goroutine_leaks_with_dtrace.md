@@ -742,7 +742,7 @@ Oh and by the way, try these DTrace probes:
 - `runtime.gc*`: see Garbage Collector operations such as mark, sweep, marking roots
 - `runtime.*alloc*`: see memory allocator operations
 
-When used in conjunction with tracking functions from our code, like we did in the first DTrace snippet in this article, Go feels a lot less magic! I wish I did that as a beginner.
+When used in conjunction with tracking functions from our code, like we did in the first DTrace snippet in this article, Go feels a lot less magic! I wish I did that as a beginner. Computer, the power of DTrace compels you! Show me what you are doing!
 
 
 ## Addendum: The full script
