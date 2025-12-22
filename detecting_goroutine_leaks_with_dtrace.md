@@ -233,7 +233,7 @@ Well, remember the initial definition of a goroutine leak:
 
 Each goroutine in the Go runtime has a 'status' field which is 'running', 'blocked', 'dead', etc. We need to track that, in order to know how many goroutines are really blocked and leaking!
 
-The Go runtime has a easy function to watch that does this state transition: `runtime.gopark`. Its fourth argument is a 'block reason' which explains why (if at all) the goroutine is blocked. This way, the Go scheduler knows not to try to run the blocked goroutines since they have no chance to do anything, until the object they are blocked on is unblocked (for example a mutex). This field is [defined](https://github.com/golang/go/blob/master/src/runtime/traceruntime.go#L91) like this in the Go runtime:
+The Go runtime has an easy function to watch that does this state transition: `runtime.gopark`. Its fourth argument is a 'block reason' which explains why (if at all) the goroutine is blocked. This way, the Go scheduler knows not to try to run the blocked goroutines since they have no chance to do anything, until the object they are blocked on is unblocked (for example a mutex). This field is [defined](https://github.com/golang/go/blob/master/src/runtime/traceruntime.go#L91) like this in the Go runtime:
 
 
 ```go
@@ -549,4 +549,5 @@ profile-1s, END {
 }
 
 ```
+
 </details>

@@ -62,7 +62,6 @@ Another point: we could be slightly more conservative by also instrumenting the 
 Observing system calls system-wide also has the advantage that we can trace multiple processes (by PID or name) in the same script, which is quite nice:
 
 ```dtrace
-
 syscall::write:entry
 / pid == 123 || pid == 456 || execname == "curl" /
 {
@@ -159,7 +158,7 @@ tcp:::send, tcp:::receive
 
 We see:
 
-```
+```text
 [...]
   9 511191                           .:send 
              0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f  0123456789abcdef

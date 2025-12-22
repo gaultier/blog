@@ -186,6 +186,7 @@ name=test.addr
   7  65044               os.ReadFile:return 
 dtrace: pid 99037 has exited
 ```
+
 *The last read returning 0 is normal: this is how `os.ReadFile` detects the end of the file.*
 
 We see that this case worked out well because the write fully finished before the read started.

@@ -166,8 +166,7 @@ syscall::read:return
   <a class="hash-anchor" href="#trace-multiple-processes" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h3>
 <p>Observing system calls system-wide also has the advantage that we can trace multiple processes (by PID or name) in the same script, which is quite nice:</p>
-<pre><code class="language-dtrace">
-syscall::write:entry
+<pre><code class="language-dtrace">syscall::write:entry
 / pid == 123 || pid == 456 || execname == &quot;curl&quot; /
 {
    printf(&quot;fd=%d len=%d data=%s\n&quot;, arg0, arg2, stringof(copyin(arg1, arg2)));
@@ -250,7 +249,7 @@ syscall::read:entry, syscall::recvfrom_nocancel:entry, syscall::recvfrom:entry
 }
 </code></pre>
 <p>We see:</p>
-<pre><code>[...]
+<pre><code class="language-text">[...]
   9 511191                           .:send 
              0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f  0123456789abcdef
          0: 00 00 00 00 00 00 00 00 11 27 00 00 02 00 00 00  .........'......
