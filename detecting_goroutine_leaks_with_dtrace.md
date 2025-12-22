@@ -127,7 +127,7 @@ pid$target::runtime.gdestroy:entry
 A few notes:
 
 - Here we start tracking when entering `main`, but you could choose to do it after the program has initialized some things, or when entering a given component, etc
-- We could even use `ustack()` in the `runtime.newproc1:return` probe to see what Go function in our code is creating the goroutine. This is not the case for `runtime.gdestroy:entry`: the goroutine could be destroyed at any point in the program as explained before, even after the function that created it is long gone (along with its callers, etc), so a call stack here does not make sense in the general case and only shows internals from the Go runtime.
+- We could even use `ustack()` in the `runtime.newproc1:return` probe to see what Go function in our code is creating the goroutine. This is not the case for `runtime.gdestroy:entry`: the goroutine could be destroyed at any point in the program as explained before, even after the function that created it is long gone (along with its callers, etc), so a call stack here does not make sense in the general case and only shows internals from the Go runtime. This is the same as a memory allocation: our code creates a new object with `new()`, and there a call stack is meaningful, and later, the Go runtime will garbage collect it, at which point a call stack does not carry meaning.
 
 ## A leaky program
 
@@ -455,7 +455,8 @@ With a few simple DTrace probes, we can observe the Go runtime creating, parking
 
 Which is pretty cool if you ask me, given that:
 
-- All of that works for all versions of Go, even the very first one, and no need to upgrade to a new version (although, the Go runtime was written in C up to version 1.4 so the probes from the C functions might be named differently)
+- All of that works for all versions of Go, even the very first one, and no need to upgrade to a new version (although, the Go runtime was written in C up to version 1.4 so the probes stemming from the C functions might be named differently)
+- Third-party tools to find goroutine leaks use `time.Sleep` extensively, which might change the behavior of our program, and take longer
 - No need to ask the Go maintainers to add one more metric or profile we need
 - No need to change and recompile the application
 - No overhead when not running, and safe to use in production. 

@@ -222,7 +222,7 @@ pid$target::runtime.gdestroy:entry
 <p>A few notes:</p>
 <ul>
 <li>Here we start tracking when entering <code>main</code>, but you could choose to do it after the program has initialized some things, or when entering a given component, etc</li>
-<li>We could even use <code>ustack()</code> in the <code>runtime.newproc1:return</code> probe to see what Go function in our code is creating the goroutine. This is not the case for <code>runtime.gdestroy:entry</code>: the goroutine could be destroyed at any point in the program as explained before, even after the function that created it is long gone (along with its callers, etc), so a call stack here does not make sense in the general case and only shows internals from the Go runtime.</li>
+<li>We could even use <code>ustack()</code> in the <code>runtime.newproc1:return</code> probe to see what Go function in our code is creating the goroutine. This is not the case for <code>runtime.gdestroy:entry</code>: the goroutine could be destroyed at any point in the program as explained before, even after the function that created it is long gone (along with its callers, etc), so a call stack here does not make sense in the general case and only shows internals from the Go runtime. This is the same as a memory allocation: our code creates a new object with <code>new()</code>, and there a call stack is meaningful, and later, the Go runtime will garbage collect it, at which point a call stack does not carry meaning.</li>
 </ul>
 <h2 id="a-leaky-program">
   <a class="title" href="#a-leaky-program">A leaky program</a>
@@ -506,7 +506,8 @@ so this could get confusing.</p>
 </ul>
 <p>Which is pretty cool if you ask me, given that:</p>
 <ul>
-<li>All of that works for all versions of Go, even the very first one, and no need to upgrade to a new version (although, the Go runtime was written in C up to version 1.4 so the probes from the C functions might be named differently)</li>
+<li>All of that works for all versions of Go, even the very first one, and no need to upgrade to a new version (although, the Go runtime was written in C up to version 1.4 so the probes stemming from the C functions might be named differently)</li>
+<li>Third-party tools to find goroutine leaks use <code>time.Sleep</code> extensively, which might change the behavior of our program, and take longer</li>
 <li>No need to ask the Go maintainers to add one more metric or profile we need</li>
 <li>No need to change and recompile the application</li>
 <li>No overhead when not running, and safe to use in production.</li>
