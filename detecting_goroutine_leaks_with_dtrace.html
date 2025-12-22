@@ -120,6 +120,7 @@ Do not edit it by hand.
   </li>
 </ul>
 
+<p><strong>Or: a deep dive into how the Go runtime models and manages goroutines, and how DTrace can help us observe and understand it.</strong></p>
 <p><em>For a gentle introduction to DTrace especially in conjunction with Go, see my past article: <a href="/blog/an_optimization_and_debugging_story_go_dtrace.html">An optimization and debugging story with Go and DTrace</a>.</em></p>
 <p>Recently I read a cool blog <a href="https://antonz.org/detecting-goroutine-leaks/">article</a> about new changes in Go 1.25 and (as the time of writing, upcoming) 1.26 to more easily track goroutine leaks.</p>
 <p>I thought: ok, that's nice, that's a real problem. But what if you cannot use this <code>goroutineleak</code> profile? Perhaps you are stuck on an old Go version, perhaps you cannot change the code easily to enable this profile.</p>

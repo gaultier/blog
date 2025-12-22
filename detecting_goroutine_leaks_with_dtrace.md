@@ -2,6 +2,8 @@ Title: Detecting goroutine leaks with DTrace
 Tags: Go, DTrace
 ---
 
+**Or: a deep dive into how the Go runtime models and manages goroutines, and how DTrace can help us observe and understand it.**
+
 *For a gentle introduction to DTrace especially in conjunction with Go, see my past article: [An optimization and debugging story with Go and DTrace](/blog/an_optimization_and_debugging_story_go_dtrace.html).*
 
 Recently I read a cool blog [article](https://antonz.org/detecting-goroutine-leaks/) about new changes in Go 1.25 and (as the time of writing, upcoming) 1.26 to more easily track goroutine leaks.
