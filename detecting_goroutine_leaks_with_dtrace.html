@@ -188,7 +188,7 @@ dtrace: pid 28627 has exited
 <li>We create the goroutine ourselves, but the Go runtime destroys it for us, automatically, when the function running in the goroutine returns</li>
 </ul>
 <p>In a big, real program, goroutines are being destroyed left and right, even while our function is executing, or after it is done executing.</p>
-<p>So we need to track the set of our own goroutines. The function of interest in the Go runtime is <code>runtime.newproc1</code>: it returns a pointer to a newly allocated goroutine object, so we can use this as a 'goroutine id'. This value is accessible in <code>arg1</code> in DTrace (on my system; this depends on the system we are running our D script on. The Go ABI is documented but differs between systems and so it requires a bit of trial and error in DTrace to know which <code>argN</code> contains the information we need).</p>
+<p>So we need to track the set of our own goroutines. The function of interest in the Go runtime is <code>runtime.newproc1</code>: it returns a pointer to a newly allocated goroutine object, so we can use this as a 'goroutine id'. This value is accessible in <code>arg1</code> in DTrace (on my system; this depends on the system we are running our D script on. The <a href="https://github.com/golang/go/blob/master/src/cmd/compile/abi-internal.md">Go ABI</a> is documented but differs between systems and so it requires a bit of trial and error in DTrace to know which <code>argN</code> contains the information we need).</p>
 <p>Then, in <code>runtime.gdestroy</code>, we can react only to our own goroutines being destroyed. There, <code>arg0</code> contains the goroutine id/pointer to be destroyed.</p>
 <h2 id="a-naive-approach-count-goroutines-creations-and-deletions">
   <a class="title" href="#a-naive-approach-count-goroutines-creations-and-deletions">A naive approach: count goroutines creations and deletions</a>
@@ -340,7 +340,7 @@ const (
 )
 </code></pre>
 <p>Let's track that then. We maintain a set of blocked goroutines. If a goroutine goes from unblocked to blocked, it gets added to this set. If it goes from blocked to unblocked, it gets removed from the set.</p>
-<p><em>Note: according to the <a href="https://github.com/golang/go/blob/master/src/cmd/compile/abi-internal.md">Go ABI</a>, a register is reserved to store the current goroutine. On my system (ARM64), it is <code>R28</code> <a href="/blog/an_optimization_and_debugging_story_go_dtrace.html#addendum-a-goroutine-aware-d-script">accessible</a> in DTrace with <code>uregs[R_X28]</code>. This is handy when a Go runtime function does not take the goroutine to act on, as an argument.</em></p>
+<p><em>Note: according to the <a href="https://github.com/golang/go/blob/master/src/cmd/compile/abi-internal.md">Go ABI</a>, a register is reserved to store the current goroutine. On my system (ARM64), it is the <code>R28</code> register, <a href="/blog/an_optimization_and_debugging_story_go_dtrace.html#addendum-a-goroutine-aware-d-script">accessible</a> in DTrace with <code>uregs[R_X28]</code>. On x86_64, it is the <code>r14</code> register. This is handy when a Go runtime function does not take the goroutine to act on, as an argument.</em></p>
 <pre><code class="language-dtrace">pid$target::runtime.gopark:entry 
 // arg3 = traceBlockReason.
 /t!=0 &amp;&amp; goroutines[uregs[R_X28]] != 0/

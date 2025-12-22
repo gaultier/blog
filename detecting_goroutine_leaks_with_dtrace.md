@@ -91,7 +91,7 @@ We notice a few interesting things:
 
 In a big, real program, goroutines are being destroyed left and right, even while our function is executing, or after it is done executing.
 
-So we need to track the set of our own goroutines. The function of interest in the Go runtime is `runtime.newproc1`: it returns a pointer to a newly allocated goroutine object, so we can use this as a 'goroutine id'. This value is accessible in `arg1` in DTrace (on my system; this depends on the system we are running our D script on. The Go ABI is documented but differs between systems and so it requires a bit of trial and error in DTrace to know which `argN` contains the information we need).
+So we need to track the set of our own goroutines. The function of interest in the Go runtime is `runtime.newproc1`: it returns a pointer to a newly allocated goroutine object, so we can use this as a 'goroutine id'. This value is accessible in `arg1` in DTrace (on my system; this depends on the system we are running our D script on. The [Go ABI](https://github.com/golang/go/blob/master/src/cmd/compile/abi-internal.md) is documented but differs between systems and so it requires a bit of trial and error in DTrace to know which `argN` contains the information we need).
 
 Then, in `runtime.gdestroy`, we can react only to our own goroutines being destroyed. There, `arg0` contains the goroutine id/pointer to be destroyed.
 
@@ -268,7 +268,7 @@ const (
 
 Let's track that then. We maintain a set of blocked goroutines. If a goroutine goes from unblocked to blocked, it gets added to this set. If it goes from blocked to unblocked, it gets removed from the set.
 
-*Note: according to the [Go ABI](https://github.com/golang/go/blob/master/src/cmd/compile/abi-internal.md), a register is reserved to store the current goroutine. On my system (ARM64), it is `R28` [accessible](/blog/an_optimization_and_debugging_story_go_dtrace.html#addendum-a-goroutine-aware-d-script) in DTrace with `uregs[R_X28]`. This is handy when a Go runtime function does not take the goroutine to act on, as an argument.*
+*Note: according to the [Go ABI](https://github.com/golang/go/blob/master/src/cmd/compile/abi-internal.md), a register is reserved to store the current goroutine. On my system (ARM64), it is the `R28` register, [accessible](/blog/an_optimization_and_debugging_story_go_dtrace.html#addendum-a-goroutine-aware-d-script) in DTrace with `uregs[R_X28]`. On x86_64, it is the `r14` register. This is handy when a Go runtime function does not take the goroutine to act on, as an argument.*
 
 ```dtrace
 pid$target::runtime.gopark:entry 
