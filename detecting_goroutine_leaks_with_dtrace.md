@@ -718,6 +718,7 @@ Which is pretty cool if you ask me, given that:
 - No overhead when not running, and safe to use in production. 
 - Enabling tracing in the Go runtime incurs locking overhead
 - Same behavior when on or off. The Go runtime has a lot of different code paths depending if tracing is enabled, if the race detector is enabled, if Valgrind is enabled... that makes the code quite complex, and potentially behave differently depending on what is on/off. With DTrace, we know that peeking inside the inner workings of the Go runtime does not change its behavior.
+- We can attach with DTrace to a running Go program, observe the goroutines lifecycle for a while, and then detach, without the program being disturbed or restarted
 
 Oh and by the way, try these probes:
 
