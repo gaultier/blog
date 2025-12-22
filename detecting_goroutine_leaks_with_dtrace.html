@@ -119,7 +119,7 @@ Do not edit it by hand.
 <p><em>For a gentle introduction to DTrace especially in conjunction with Go, see my past article: <a href="/blog/an_optimization_and_debugging_story_go_dtrace.html">An optimization and debugging story with Go and DTrace</a>.</em></p>
 <p>Recently I read a cool blog <a href="https://antonz.org/detecting-goroutine-leaks/">article</a> about new changes in Go 1.25 and (as the time of writing, upcoming) 1.26 to more easily track goroutine leaks.</p>
 <p>I thought: ok, that's nice, that's a real problem. But what if you cannot use this <code>goroutineleak</code> profile? Perhaps you are stuck on an old Go version, perhaps you cannot change the code easily to enable this profile.</p>
-<p>What to do then? Well, as always, DTrace comes to the rescue to inspect the inner workings of our programs!</p>
+<p>What to do then? Well, as always, DTrace comes to the rescue!</p>
 <h2 id="what-is-a-goroutine-leak-and-why-is-it-a-problem">
   <a class="title" href="#what-is-a-goroutine-leak-and-why-is-it-a-problem">What is a goroutine leak, and why is it a problem?</a>
   <a class="hash-anchor" href="#what-is-a-goroutine-leak-and-why-is-it-a-problem" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>

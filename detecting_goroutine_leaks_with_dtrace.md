@@ -8,7 +8,7 @@ Recently I read a cool blog [article](https://antonz.org/detecting-goroutine-lea
 
 I thought: ok, that's nice, that's a real problem. But what if you cannot use this `goroutineleak` profile? Perhaps you are stuck on an old Go version, perhaps you cannot change the code easily to enable this profile. 
 
-What to do then? Well, as always, DTrace comes to the rescue to inspect the inner workings of our programs!
+What to do then? Well, as always, DTrace comes to the rescue!
 
 ## What is a goroutine leak, and why is it a problem?
 
