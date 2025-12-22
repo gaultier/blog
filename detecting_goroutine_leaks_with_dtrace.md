@@ -736,7 +736,7 @@ However, the Go built-in tracing can do some things that DTrace cannot:
 - Serve these metrics remotely over HTTP
 - Run on Linux. In *theory*, `bpftrace` should be able to do the same stuff on Linux as DTrace, but I have not tried and I have been let down before. So, maybe it works?
 
-Oh and by the way, try these probes:
+Oh and by the way, try these DTrace probes:
 
 - `runtime.*chan*`: see channel operations such as sends and receives
 - `runtime.gc*`: see Garbage Collector operations such as mark, sweep, marking roots
