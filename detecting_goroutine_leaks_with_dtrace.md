@@ -8,10 +8,23 @@ I thought: ok, that's nice, that's a real problem. But what if you cannot use th
 
 What to do then? Well, as always, DTrace comes to the rescue. Let's track the creation and deletion of goroutines in our function. If there are more created goroutines than deleted ones, we have a leak.
 
+## What is a goroutine leak, and why is it a problem?
 
-## Watch goroutine be created and destroyed
+Simply, a goroutine 'leaks' if it is blocked waiting on an unreachable object: a mutex, channel, wait condition, etc. No place in the program still holds a reference to this object, which means this object can never be 'unlocked' and the goroutine can never be unblocked.
 
-Let's start with the simplest Go program using goroutines we can think of:
+And it turns out that Go currently offers us various ways to accidentally enter this case: forgetting to read from a channel for example.
+
+Why is this an issue? Well, goroutines are designed to not take much memory, at least initially (around 2 KiB), so that our program can spawn millions. Note that the memory used by a goroutine can and usually does grow. 
+
+This memory is not reclaimed until the goroutine is destroyed. If the goroutine lives forever, we have a memory leak on our hands.
+
+Additionally, due to the M:N model, the Go runtime juggles N goroutines on M physical cores. So having lots of 'zombie' goroutines mixed with valid goroutines means having a bigger memory and CPU usage than normal when 
+doing garbage collection, scheduling, collecting statistics, etc, in the Go runtime.
+
+
+## Watch goroutines be created and destroyed with DTrace
+
+Alright, let's start slow first with the simplest Go program using goroutines we can think of:
 
 ```go
 package main
@@ -21,7 +34,7 @@ import (
 )
 
 func Foo() {
-	go func() int { return 1 }() // Obviously does not leak!
+	go func() int { return 1 }()
 }
 
 func main() {
@@ -69,13 +82,9 @@ dtrace: pid 28627 has exited
 
 We notice a few interesting things:
 
-- The Go runtime spawns itself some goroutines, which we should ignore
+- The Go runtime spawns itself some goroutines at the beginning (before `main` runs), which we should ignore
 - The `go` keyword only enqueues a task in a thread-pool to be run later, essentially (it does some more stuff such as allocating a stack for our goroutine on the heap, etc). The task (here, the closure `main.Foo.func1`) does not run yet. Experienced Go developers know this of course, but I find the Go syntax confusing: `go bar()` or `go func()  {} ()` looks like the function in the goroutine starts executing right away, but no: when it will get to run is unknown.
-- Thus, and as we see in the output, the closure (`main.Foo.func1`) in the goroutine spawned inside the `Foo` function, starts running in this case *after* `Foo` returned, and as a result, the goroutine is destroyed after `Foo` has returned. However, it is obviously not a leak: the goroutine does basically nothing.
-
-At this point we should define what a 'goroutine leak' is: [TODO]
-
-
+- Thus, and as we see in the output, the closure (`main.Foo.func1`) in the goroutine spawned inside the `Foo` function, starts running in this case *after* `Foo` returned, and as a result, the goroutine is destroyed after `Foo` has returned. However, it is obviously not a leak: the goroutine does nothing and returns immediately.
 
 In a big, real program, goroutines are being destroyed left and right, even while our function is executing, or after it is done executing.
 
@@ -83,7 +92,7 @@ So to do it correctly, we need to track the set of our own goroutines. The funct
 
 Then, in `runtime.gdestroy`, we can react only to our own goroutines being destroyed. There, `arg0` contains the goroutine id/pointer to be destroyed.
 
-## The D script
+## A naive approach: count goroutines creations and deletions
 
 ```dtrace
 int goroutines_count;
@@ -108,7 +117,6 @@ pid$target::runtime.gdestroy:entry
     goroutines_count -= 1; // Decrement the counter of active goroutines.
     printf("goroutine %p destroyed: count=%d\n", arg0, goroutines_count);
     goroutines[arg0] = 0; // Remove the goroutine from the tracking set of active goroutines we have spawned.
-
 }
 ```
 
@@ -210,15 +218,202 @@ goroutine 140000036c0 destroyed: count=0
 
 If we were willing to do some post-processing of the DTrace output, we could even print the call stack with `ustack()` when a goroutine is created along with the goroutine id/pointer, to be able to track down where the leaky goroutines came from. Since DTrace maps cannot be iterated on and cannot be printed as a whole, we cannot simply store that call stack information in the `goroutines` map and print the whole map at the end, in pure DTrace.
 
+## A better approach: Track blocked goroutines
+
+Our current D script is flawed: consider a goroutine that does `time.Sleep(10*time.Second)`. It will appear as 'leaking' for 10 seconds, after which it will be destroyed and not appear as 'leaking' anymore. So what's the cutoff? Should we wait one minute, one hour? 
+
+Well, remember the initial definition of a goroutine leak:
+
+> a goroutine 'leaks' if it is blocked waiting on an unreachable object: a mutex, channel, wait condition, etc
+
+Each goroutine has a 'status' field which is 'running', 'blocked', 'dead', etc. We need to track that to know how many goroutines are indeed blocked!
+
+The Go runtime has a easy function to watch that does this state transition: `runtime.gopark`. Its fourth argument is a 'block reason' which explains why (if at all) the goroutine is blocked. This way, the Go scheduler knows not to try to run the blocked goroutines since they have no chance to do anything, until the object they are blocked on is unblocked (for example a mutex).
+
+Let's track that then. We maintain a set of blocked goroutines. If a goroutine goes from unblocked -> blocked, it gets added to this set. If it goes from blocked to unblocked, it gets removed from it:
+
+```dtrace
+pid$target::runtime.gopark:entry 
+// arg3 = traceBlockReason.
+/t!=0 && goroutines[uregs[R_X28]] != 0/
+{
+  this->g = uregs[R_X28]; 
+  this->waitreason = arg3;
+  
+  this->blocked = 
+    this->waitreason == 1 || // traceBlockForever
+    this->waitreason == 3 || // traceBlockSelect
+    this->waitreason == 4 || // traceBlockCondWait
+    this->waitreason == 5 || // traceBlockSync
+    this->waitreason == 6 || // traceBlockChanSend
+    this->waitreason == 7;   // traceBlockChanRecv
+  if (goroutines_blocked[this->g] == 0 && this->blocked) {
+    goroutines_blocked_count += 1;
+  } else if (goroutines_blocked[this->g] == 1 && this->blocked == 0) {
+    goroutines_blocked_count -= 1;
+  }
+  goroutines_blocked[this->g] = this->blocked;
+
+  printf("gopark: goroutine=%p blocked=%d reason=%d blocked_count=%d\n", this->g, this->blocked, this->waitreason, goroutines_blocked_count);
+}
+```
+
+And of course, if the goroutine gets destroyed, we also remove it from this set (if it was present in it):
+
+```diff
+pid$target::runtime.gdestroy:entry 
+/goroutines[arg0] != 0/
+{
+  this->g = arg0; // goroutine id.
+
+  goroutines[this->g] = 0; 
+  goroutines_count -= 1;
+
++ if (goroutines_blocked[this->g] != 0) {
++   goroutines_blocked[this->g] = 0;
++   goroutines_blocked_count -= 1;
++ }
+
++ printf("godestroy: goroutine=%p count=%d blocked_count=%d\n", this->g, goroutines_count, goroutines_blocked_count);
+}
+```
+
+
+Here is the whole script (click to expand):
+
+<details>
+  <summary>The full script</summary>
+```dtrace
+int goroutines_count;
+int goroutines_blocked_count;
+int goroutines[int]; 
+int goroutines_blocked[int]; 
+
+pid$target::main.main:entry { 
+  t=1;
+}
+
+pid$target::runtime.newproc1:entry {
+  self->gparent = arg1;
+} 
+
+pid$target::runtime.newproc1:return 
+/t!=0/
+{
+  this->g = arg1; // goroutine id.
+
+  goroutines[this->g] = 1;
+  goroutines_count += 1;
+
+  printf("newproc1: goroutine=%p parent=%d count=%d blocked_count=%d\n", this->g, self->gparent, goroutines_count, goroutines_blocked_count);
+
+  self->gparent = 0;
+}
+
+pid$target::runtime.gdestroy:entry 
+/goroutines[arg0] != 0/
+{
+  this->g = arg0; // goroutine id.
+
+  goroutines[this->g] = 0; 
+  goroutines_count -= 1;
+
+  if (goroutines_blocked[this->g] != 0) {
+    goroutines_blocked[this->g] = 0;
+    goroutines_blocked_count -= 1;
+  }
+
+  printf("godestroy: goroutine=%p count=%d blocked_count=%d\n", this->g, goroutines_count, goroutines_blocked_count);
+}
+
+pid$target::runtime.gopark:entry 
+// arg3 = traceBlockReason.
+/t!=0 && goroutines[uregs[R_X28]] != 0/
+{
+  this->g = uregs[R_X28]; 
+  this->waitreason = arg3;
+  
+  this->blocked = 
+    this->waitreason == 1 || // traceBlockForever
+    this->waitreason == 3 || // traceBlockSelect
+    this->waitreason == 4 || // traceBlockCondWait
+    this->waitreason == 5 || // traceBlockSync
+    this->waitreason == 6 || // traceBlockChanSend
+    this->waitreason == 7;   // traceBlockChanRecv
+  if (goroutines_blocked[this->g] == 0 && this->blocked) {
+    goroutines_blocked_count += 1;
+  } else if (goroutines_blocked[this->g] == 1 && this->blocked == 0) {
+    goroutines_blocked_count -= 1;
+  }
+  goroutines_blocked[this->g] = this->blocked;
+
+  printf("gopark: goroutine=%p blocked=%d reason=%d blocked_count=%d\n", this->g, this->blocked, this->waitreason, goroutines_blocked_count);
+}
+
+profile-1s, END {
+  printf("%s: count=%d blocked_count=%d\n", probename, goroutines_count, goroutines_blocked_count);
+}
+
+```
+</details>
+
+
+Let's try it on the leaky program:
+
+```shell
+$ sudo dtrace -s /Users/philippe.gaultier/my-code/dtrace-tools/goroutines.d -c ./leaky.exe -q
+nGoro = 3
+newproc1: goroutine=140000036c0 parent=1374389543360 count=1 blocked_count=0
+newproc1: goroutine=14000003880 parent=1374389543360 count=2 blocked_count=0
+newproc1: goroutine=14000003a40 parent=1374389543360 count=3 blocked_count=0
+gopark: goroutine=140000036c0 blocked=1 reason=6 blocked_count=1
+gopark: goroutine=14000003a40 blocked=1 reason=6 blocked_count=2
+gopark: goroutine=14000003880 blocked=1 reason=6 blocked_count=3
+END: count=3 blocked_count=3
+```
+
+And on the non-leaky program:
+
+```shell
+$ sudo dtrace -s /Users/philippe.gaultier/my-code/dtrace-tools/goroutines.d -c ./not_leaky.exe -q
+nGoro = 0
+newproc1: goroutine=140000036c0 parent=1374389543360 count=1 blocked_count=0
+newproc1: goroutine=14000003880 parent=1374389543360 count=2 blocked_count=0
+newproc1: goroutine=14000003a40 parent=1374389543360 count=3 blocked_count=0
+godestroy: goroutine=140000036c0 count=2 blocked_count=1
+gopark: goroutine=14000003a40 blocked=1 reason=6 blocked_count=1
+godestroy: goroutine=14000003a40 count=1 blocked_count=0
+godestroy: goroutine=14000003880 count=0 blocked_count=0
+END: count=0 blocked_count=0
+```
+
+
+## Discussion
+
+This D script is much better, however it does not implement the full algorithm from Go's new goroutine leak detector: We know what goroutines are blocked on an object, but in order to mark them officially as leaking, the object should be unreachable. 
+
+Thus, we would need to also 1) track which object is being blocked on, and 2) track the Garbage Collector operations, to know when said object gets garbage collected, which means it becomes unreachable.
+
+For 1), the goroutine structure in the Go runtime has the field `parkingOnChan` to know on which channel to goroutine is waiting on. That's a good start, but I do not know if there is an equivalent for mutexes and other synchronization objects. 
+
+For 2), we have the DTrace probes `runtime.gc*:` at our disposal to watch the GC. I believe this is possible, just some more work.
+
+Finally, it's important to note that when a goroutine is destroyed, we need to remove it from the various maps we maintain. This is not only to reduce the DTrace memory usage, but also because the Go runtime puts the freshly destroyed goroutine on a free list to be possibly reused, 
+so this could get confusing.
+
+
 
 ## Conclusion
 
-With two simple DTrace probes, we can observe the Go runtime creating and destroying goroutines, along with a way to uniquely identify this goroutine. From these two primitives, we can track goroutine leaks, but that's not all! We could do a lot more, all in DTrace (or possibly with a bit of post-processing):
+With a few simple DTrace probes, we can observe the Go runtime creating, parking, unparking, and destroying goroutines, along with a way to uniquely identify the goroutine in question. From these two primitives, we can track goroutine leaks, but that's not all! We could do a lot more, all in DTrace (or possibly with a bit of post-processing):
 
 - How long does a goroutine live, with a histogram? (Hint: `pid$target::runtime.gdestroy:return { @[""] = quantize(timestamp - spawned[arg0]) }`)
 - What is the peak (maximum) number of active goroutines? (Hint: `pid$target::runtime.newproc1:return { @[ustack()] = max() }`)
 - What places in the code spawn the most goroutines? (Hint: `pid$target::runtime.newproc1:return { @[ustack()] = count() }`
 - How much time passes between asking the Go runtime to create the goroutine, and the code in the goroutine actually running?
+- How long do goroutines sleep, with a histogram?
+- Print a goroutine graph of what goroutine spawned which goroutine. `runtime.newproc1:entry` takes the parent goroutine as argument, so we know the parent-child relationship.
+- How much do goroutines consume, with a histogram: the goroutine structure in the Go runtime has the `stack.lo` and `stack.hi` fields which describe the bounds of the goroutine memory.
 - Etc
 
 Which is pretty cool if you ask me, given that:
