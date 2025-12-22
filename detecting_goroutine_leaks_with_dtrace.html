@@ -563,6 +563,8 @@ pid$target::runtime.gopark:entry
 </code></pre>
 <p>And voila!</p>
 <p>Of course, if we want to see all the data about the goroutine, we can define the <code>g</code> struct faithfully and get even more insights:</p>
+<details>
+  <summary>The full <code>g</code> struct</summary>
 <pre><code class="language-dtrace">struct g {
   uintptr_t stack[2];
   uintptr_t stackguard0;
@@ -648,6 +650,7 @@ pid$target::runtime.gopark:entry
   uintptr_t valgrindStackID;
 }; 
 </code></pre>
+</details>
 <h2 id="conclusion">
   <a class="title" href="#conclusion">Conclusion</a>
   <a class="hash-anchor" href="#conclusion" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>

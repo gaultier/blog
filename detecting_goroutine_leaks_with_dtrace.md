@@ -524,6 +524,9 @@ And voila!
 
 Of course, if we want to see all the data about the goroutine, we can define the `g` struct faithfully and get even more insights:
 
+<details>
+  <summary>The full <code>g</code> struct</summary>
+
 ```dtrace
 struct g {
   uintptr_t stack[2];
@@ -610,6 +613,8 @@ struct g {
   uintptr_t valgrindStackID;
 }; 
 ```
+
+</details>
 
 ## Conclusion
 
