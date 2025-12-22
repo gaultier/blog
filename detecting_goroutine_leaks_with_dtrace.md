@@ -87,7 +87,7 @@ We notice a few interesting things:
 - The Go runtime spawns itself some goroutines at the beginning (before `main` runs), which we should ignore
 - The `go` keyword only enqueues a task in a thread-pool to be run later, essentially (it does some more stuff such as allocating a stack for our goroutine on the heap, etc). The task (here, the closure `main.Foo.func1`) does not run yet. Experienced Go developers know this of course, but I find the Go syntax confusing: `go bar()` or `go func()  {} ()` looks like the function in the goroutine starts executing right away, but no: when it will get to run is unknown.
 - Thus, and as we see in the output, the closure (`main.Foo.func1`) in the goroutine spawned inside the `Foo` function, starts running in this case *after* `Foo` returned, and as a result, the goroutine is destroyed after `Foo` has returned. However, it is obviously not a leak: the goroutine does nothing and returns immediately.
-- We create goroutines ourselves, but the Go runtime destroys the goroutine for us, automatically, when the function running in the goroutine returns
+- We create the goroutine ourselves, but the Go runtime destroys it for us, automatically, when the function running in the goroutine returns
 
 In a big, real program, goroutines are being destroyed left and right, even while our function is executing, or after it is done executing.
 
