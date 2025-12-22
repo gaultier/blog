@@ -283,6 +283,7 @@ Here is the whole script (click to expand):
 
 <details>
   <summary>The full script</summary>
+
 ```dtrace
 int goroutines_count;
 int goroutines_blocked_count;
@@ -353,8 +354,8 @@ pid$target::runtime.gopark:entry
 profile-1s, END {
   printf("%s: count=%d blocked_count=%d\n", probename, goroutines_count, goroutines_blocked_count);
 }
-
 ```
+
 </details>
 
 
@@ -431,3 +432,84 @@ Oh and by the way, try these probes:
 - `runtime.*alloc*`: see memory allocator operations
 
 When used in conjunction with tracking functions from our code, like we did in the first DTrace snippet in this article, Go feels a lot less magic! I wish I did that as a beginner.
+
+
+## Addendum: The full script
+
+
+<details>
+  <summary>The full script</summary>
+
+```dtrace
+int goroutines_count;
+int goroutines_blocked_count;
+int goroutines[int]; 
+int goroutines_blocked[int]; 
+
+pid$target::main.main:entry { 
+  t=1;
+}
+
+pid$target::runtime.newproc1:entry {
+  self->gparent = arg1;
+} 
+
+pid$target::runtime.newproc1:return 
+/t!=0/
+{
+  this->g = arg1; // goroutine id.
+
+  goroutines[this->g] = 1;
+  goroutines_count += 1;
+
+  printf("newproc1: goroutine=%p parent=%d count=%d blocked_count=%d\n", this->g, self->gparent, goroutines_count, goroutines_blocked_count);
+
+  self->gparent = 0;
+}
+
+pid$target::runtime.gdestroy:entry 
+/goroutines[arg0] != 0/
+{
+  this->g = arg0; // goroutine id.
+
+  goroutines[this->g] = 0; 
+  goroutines_count -= 1;
+
+  if (goroutines_blocked[this->g] != 0) {
+    goroutines_blocked[this->g] = 0;
+    goroutines_blocked_count -= 1;
+  }
+
+  printf("godestroy: goroutine=%p count=%d blocked_count=%d\n", this->g, goroutines_count, goroutines_blocked_count);
+}
+
+pid$target::runtime.gopark:entry 
+// arg3 = traceBlockReason.
+/t!=0 && goroutines[uregs[R_X28]] != 0/
+{
+  this->g = uregs[R_X28]; 
+  this->waitreason = arg3;
+  
+  this->blocked = 
+    this->waitreason == 1 || // traceBlockForever
+    this->waitreason == 3 || // traceBlockSelect
+    this->waitreason == 4 || // traceBlockCondWait
+    this->waitreason == 5 || // traceBlockSync
+    this->waitreason == 6 || // traceBlockChanSend
+    this->waitreason == 7;   // traceBlockChanRecv
+  if (goroutines_blocked[this->g] == 0 && this->blocked) {
+    goroutines_blocked_count += 1;
+  } else if (goroutines_blocked[this->g] == 1 && this->blocked == 0) {
+    goroutines_blocked_count -= 1;
+  }
+  goroutines_blocked[this->g] = this->blocked;
+
+  printf("gopark: goroutine=%p blocked=%d reason=%d blocked_count=%d\n", this->g, this->blocked, this->waitreason, goroutines_blocked_count);
+}
+
+profile-1s, END {
+  printf("%s: count=%d blocked_count=%d\n", probename, goroutines_count, goroutines_blocked_count);
+}
+
+```
+</details>

@@ -104,7 +104,15 @@ Do not edit it by hand.
   </li>
 
   <li>
+    <a href="#discussion">Discussion</a>
+  </li>
+
+  <li>
     <a href="#conclusion">Conclusion</a>
+  </li>
+
+  <li>
+    <a href="#addendum-the-full-script">Addendum: The full script</a>
   </li>
 </ul>
 
@@ -342,16 +350,125 @@ goroutine 140000036c0 destroyed: count=0
 }
 </code></pre>
 <p>Here is the whole script (click to expand):</p>
+<details>
+  <summary>The full script</summary>
+<pre><code class="language-dtrace">int goroutines_count;
+int goroutines_blocked_count;
+int goroutines[int]; 
+int goroutines_blocked[int]; 
+
+pid$target::main.main:entry { 
+  t=1;
+}
+
+pid$target::runtime.newproc1:entry {
+  self-&gt;gparent = arg1;
+} 
+
+pid$target::runtime.newproc1:return 
+/t!=0/
+{
+  this-&gt;g = arg1; // goroutine id.
+
+  goroutines[this-&gt;g] = 1;
+  goroutines_count += 1;
+
+  printf(&quot;newproc1: goroutine=%p parent=%d count=%d blocked_count=%d\n&quot;, this-&gt;g, self-&gt;gparent, goroutines_count, goroutines_blocked_count);
+
+  self-&gt;gparent = 0;
+}
+
+pid$target::runtime.gdestroy:entry 
+/goroutines[arg0] != 0/
+{
+  this-&gt;g = arg0; // goroutine id.
+
+  goroutines[this-&gt;g] = 0; 
+  goroutines_count -= 1;
+
+  if (goroutines_blocked[this-&gt;g] != 0) {
+    goroutines_blocked[this-&gt;g] = 0;
+    goroutines_blocked_count -= 1;
+  }
+
+  printf(&quot;godestroy: goroutine=%p count=%d blocked_count=%d\n&quot;, this-&gt;g, goroutines_count, goroutines_blocked_count);
+}
+
+pid$target::runtime.gopark:entry 
+// arg3 = traceBlockReason.
+/t!=0 &amp;&amp; goroutines[uregs[R_X28]] != 0/
+{
+  this-&gt;g = uregs[R_X28]; 
+  this-&gt;waitreason = arg3;
+  
+  this-&gt;blocked = 
+    this-&gt;waitreason == 1 || // traceBlockForever
+    this-&gt;waitreason == 3 || // traceBlockSelect
+    this-&gt;waitreason == 4 || // traceBlockCondWait
+    this-&gt;waitreason == 5 || // traceBlockSync
+    this-&gt;waitreason == 6 || // traceBlockChanSend
+    this-&gt;waitreason == 7;   // traceBlockChanRecv
+  if (goroutines_blocked[this-&gt;g] == 0 &amp;&amp; this-&gt;blocked) {
+    goroutines_blocked_count += 1;
+  } else if (goroutines_blocked[this-&gt;g] == 1 &amp;&amp; this-&gt;blocked == 0) {
+    goroutines_blocked_count -= 1;
+  }
+  goroutines_blocked[this-&gt;g] = this-&gt;blocked;
+
+  printf(&quot;gopark: goroutine=%p blocked=%d reason=%d blocked_count=%d\n&quot;, this-&gt;g, this-&gt;blocked, this-&gt;waitreason, goroutines_blocked_count);
+}
+
+profile-1s, END {
+  printf(&quot;%s: count=%d blocked_count=%d\n&quot;, probename, goroutines_count, goroutines_blocked_count);
+}
+</code></pre>
+</details>
+<p>Let's try it on the leaky program:</p>
+<pre><code class="language-shell">$ sudo dtrace -s /Users/philippe.gaultier/my-code/dtrace-tools/goroutines.d -c ./leaky.exe -q
+nGoro = 3
+newproc1: goroutine=140000036c0 parent=1374389543360 count=1 blocked_count=0
+newproc1: goroutine=14000003880 parent=1374389543360 count=2 blocked_count=0
+newproc1: goroutine=14000003a40 parent=1374389543360 count=3 blocked_count=0
+gopark: goroutine=140000036c0 blocked=1 reason=6 blocked_count=1
+gopark: goroutine=14000003a40 blocked=1 reason=6 blocked_count=2
+gopark: goroutine=14000003880 blocked=1 reason=6 blocked_count=3
+END: count=3 blocked_count=3
+</code></pre>
+<p>And on the non-leaky program:</p>
+<pre><code class="language-shell">$ sudo dtrace -s /Users/philippe.gaultier/my-code/dtrace-tools/goroutines.d -c ./not_leaky.exe -q
+nGoro = 0
+newproc1: goroutine=140000036c0 parent=1374389543360 count=1 blocked_count=0
+newproc1: goroutine=14000003880 parent=1374389543360 count=2 blocked_count=0
+newproc1: goroutine=14000003a40 parent=1374389543360 count=3 blocked_count=0
+godestroy: goroutine=140000036c0 count=2 blocked_count=1
+gopark: goroutine=14000003a40 blocked=1 reason=6 blocked_count=1
+godestroy: goroutine=14000003a40 count=1 blocked_count=0
+godestroy: goroutine=14000003880 count=0 blocked_count=0
+END: count=0 blocked_count=0
+</code></pre>
+<h2 id="discussion">
+  <a class="title" href="#discussion">Discussion</a>
+  <a class="hash-anchor" href="#discussion" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+</h2>
+<p>This D script is much better, however it does not implement the full algorithm from Go's new goroutine leak detector: We know what goroutines are blocked on an object, but in order to mark them officially as leaking, the object should be unreachable.</p>
+<p>Thus, we would need to also 1) track which object is being blocked on, and 2) track the Garbage Collector operations, to know when said object gets garbage collected, which means it becomes unreachable.</p>
+<p>For 1), the goroutine structure in the Go runtime has the field <code>parkingOnChan</code> to know on which channel to goroutine is waiting on. That's a good start, but I do not know if there is an equivalent for mutexes and other synchronization objects.</p>
+<p>For 2), we have the DTrace probes <code>runtime.gc*:</code> at our disposal to watch the GC. I believe this is possible, just some more work.</p>
+<p>Finally, it's important to note that when a goroutine is destroyed, we need to remove it from the various maps we maintain. This is not only to reduce the DTrace memory usage, but also because the Go runtime puts the freshly destroyed goroutine on a free list to be possibly reused,
+so this could get confusing.</p>
 <h2 id="conclusion">
   <a class="title" href="#conclusion">Conclusion</a>
   <a class="hash-anchor" href="#conclusion" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
-<p>With two simple DTrace probes, we can observe the Go runtime creating and destroying goroutines, along with a way to uniquely identify this goroutine. From these two primitives, we can track goroutine leaks, but that's not all! We could do a lot more, all in DTrace (or possibly with a bit of post-processing):</p>
+<p>With a few simple DTrace probes, we can observe the Go runtime creating, parking, unparking, and destroying goroutines, along with a way to uniquely identify the goroutine in question. From these two primitives, we can track goroutine leaks, but that's not all! We could do a lot more, all in DTrace (or possibly with a bit of post-processing):</p>
 <ul>
 <li>How long does a goroutine live, with a histogram? (Hint: <code>pid$target::runtime.gdestroy:return { @[&quot;&quot;] = quantize(timestamp - spawned[arg0]) }</code>)</li>
 <li>What is the peak (maximum) number of active goroutines? (Hint: <code>pid$target::runtime.newproc1:return { @[ustack()] = max() }</code>)</li>
 <li>What places in the code spawn the most goroutines? (Hint: <code>pid$target::runtime.newproc1:return { @[ustack()] = count() }</code></li>
 <li>How much time passes between asking the Go runtime to create the goroutine, and the code in the goroutine actually running?</li>
+<li>How long do goroutines sleep, with a histogram?</li>
+<li>Print a goroutine graph of what goroutine spawned which goroutine. <code>runtime.newproc1:entry</code> takes the parent goroutine as argument, so we know the parent-child relationship.</li>
+<li>How much do goroutines consume, with a histogram: the goroutine structure in the Go runtime has the <code>stack.lo</code> and <code>stack.hi</code> fields which describe the bounds of the goroutine memory.</li>
 <li>Etc</li>
 </ul>
 <p>Which is pretty cool if you ask me, given that:</p>
@@ -369,6 +486,84 @@ goroutine 140000036c0 destroyed: count=0
 <li><code>runtime.*alloc*</code>: see memory allocator operations</li>
 </ul>
 <p>When used in conjunction with tracking functions from our code, like we did in the first DTrace snippet in this article, Go feels a lot less magic! I wish I did that as a beginner.</p>
+<h2 id="addendum-the-full-script">
+  <a class="title" href="#addendum-the-full-script">Addendum: The full script</a>
+  <a class="hash-anchor" href="#addendum-the-full-script" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+</h2>
+<details>
+  <summary>The full script</summary>
+<pre><code class="language-dtrace">int goroutines_count;
+int goroutines_blocked_count;
+int goroutines[int]; 
+int goroutines_blocked[int]; 
+
+pid$target::main.main:entry { 
+  t=1;
+}
+
+pid$target::runtime.newproc1:entry {
+  self-&gt;gparent = arg1;
+} 
+
+pid$target::runtime.newproc1:return 
+/t!=0/
+{
+  this-&gt;g = arg1; // goroutine id.
+
+  goroutines[this-&gt;g] = 1;
+  goroutines_count += 1;
+
+  printf(&quot;newproc1: goroutine=%p parent=%d count=%d blocked_count=%d\n&quot;, this-&gt;g, self-&gt;gparent, goroutines_count, goroutines_blocked_count);
+
+  self-&gt;gparent = 0;
+}
+
+pid$target::runtime.gdestroy:entry 
+/goroutines[arg0] != 0/
+{
+  this-&gt;g = arg0; // goroutine id.
+
+  goroutines[this-&gt;g] = 0; 
+  goroutines_count -= 1;
+
+  if (goroutines_blocked[this-&gt;g] != 0) {
+    goroutines_blocked[this-&gt;g] = 0;
+    goroutines_blocked_count -= 1;
+  }
+
+  printf(&quot;godestroy: goroutine=%p count=%d blocked_count=%d\n&quot;, this-&gt;g, goroutines_count, goroutines_blocked_count);
+}
+
+pid$target::runtime.gopark:entry 
+// arg3 = traceBlockReason.
+/t!=0 &amp;&amp; goroutines[uregs[R_X28]] != 0/
+{
+  this-&gt;g = uregs[R_X28]; 
+  this-&gt;waitreason = arg3;
+  
+  this-&gt;blocked = 
+    this-&gt;waitreason == 1 || // traceBlockForever
+    this-&gt;waitreason == 3 || // traceBlockSelect
+    this-&gt;waitreason == 4 || // traceBlockCondWait
+    this-&gt;waitreason == 5 || // traceBlockSync
+    this-&gt;waitreason == 6 || // traceBlockChanSend
+    this-&gt;waitreason == 7;   // traceBlockChanRecv
+  if (goroutines_blocked[this-&gt;g] == 0 &amp;&amp; this-&gt;blocked) {
+    goroutines_blocked_count += 1;
+  } else if (goroutines_blocked[this-&gt;g] == 1 &amp;&amp; this-&gt;blocked == 0) {
+    goroutines_blocked_count -= 1;
+  }
+  goroutines_blocked[this-&gt;g] = this-&gt;blocked;
+
+  printf(&quot;gopark: goroutine=%p blocked=%d reason=%d blocked_count=%d\n&quot;, this-&gt;g, this-&gt;blocked, this-&gt;waitreason, goroutines_blocked_count);
+}
+
+profile-1s, END {
+  printf(&quot;%s: count=%d blocked_count=%d\n&quot;, probename, goroutines_count, goroutines_blocked_count);
+}
+
+</code></pre>
+</details>
 <p><a href="/blog"> ⏴ Back to all articles</a></p>
 
 <blockquote id="donate">
