@@ -108,6 +108,10 @@ Do not edit it by hand.
   </li>
 
   <li>
+    <a href="#limitations">Limitations</a>
+  </li>
+
+  <li>
     <a href="#conclusion">Conclusion</a>
   </li>
 
@@ -370,7 +374,7 @@ const (
   printf(&quot;gopark: goroutine=%p blocked=%d reason=%d blocked_count=%d\n&quot;, this-&gt;g, this-&gt;blocked, this-&gt;waitreason, goroutines_blocked_count);
 }
 </code></pre>
-<p>The counterpart of <code>runtime.gopark</code> is <code>runtime.goready</code> (typically inlined and calls <code>runtime.ready</code> which we can watch), that marks a goroutine as running again (unblocked). So, we remove the goroutine from the 'blocked' set:</p>
+<p>The counterpart of <code>runtime.gopark</code> is <code>runtime.goready</code> (typically inlined and calls <code>runtime.ready</code> which we can watch), that marks a goroutine as runnable again (unblocked). So, we remove the goroutine from the 'blocked' set:</p>
 <pre><code class="language-dtrace">pid$target::runtime.ready:entry 
 /goroutines[arg0] != 0/ 
 {
@@ -509,6 +513,141 @@ END: count=0 blocked_count=0
 <p>For 2), we have the DTrace probes <code>runtime.gc*:</code> at our disposal to watch the Garbage Collector. I believe this is possible, just some more work.</p>
 <p>Finally, it's important to note that when a goroutine is destroyed, we need to remove it from the various maps we maintain. This is not only to reduce the DTrace memory usage, but also because the Go runtime puts the freshly destroyed goroutine on a free list to be possibly reused,
 so this could get confusing.</p>
+<h2 id="limitations">
+  <a class="title" href="#limitations">Limitations</a>
+  <a class="hash-anchor" href="#limitations" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+</h2>
+<p>The <code>runtime/HACKING.md</code> document mentions:</p>
+<blockquote>
+<p><code>getg()</code> and <code>getg().m.curg</code></p>
+<p>To get the current user <code>g</code>, use <code>getg().m.curg</code>.</p>
+<p><code>getg()</code> alone returns the current <code>g</code>, but when executing on the
+system or signal stacks, this will return the current M's &quot;g0&quot; or
+&quot;gsignal&quot;, respectively. This is usually not what you want.</p>
+<p>To determine if you're running on the user stack or the system stack,
+use <code>getg() == getg().m.curg</code>.</p>
+</blockquote>
+<p><code>g</code> is the name of the goroutine struct in the Go runtime. <code>getg()</code> gets the current goroutine, which is a pointer to a <code>g</code> struct, and this call gets transformed by the compiler into a register lookup. In DTrace, we do it with <code>uregs[R_X28]</code>. So far so good.</p>
+<p>However, we do not do <code>getg().m.curg</code> currently. In my testing I have not seen a difference, it was always the case of <code>getg() == getg().m.curg</code>.</p>
+<p>But we should be rigorous.</p>
+<p>This is easy to do in DTrace:</p>
+<ul>
+<li>We define minimally the struct for <code>g</code> (goroutine) and <code>m</code> (an OS thread) with the exact same layout as in the Go runtime</li>
+<li>We use <code>copyin()</code> to copy the data in these structs</li>
+<li>We use <code>*</code> and <code>-&gt;</code> to dereference and follow the pointers like <code>getg().m.curg</code></li>
+</ul>
+<pre><code class="language-dtrace">struct g {
+  uint8_t pad[48];
+  struct m* m;
+};
+
+struct m {
+  uint8_t pad[184];
+  struct g* curg;
+};
+
+
+pid$target::runtime.gopark:entry 
+// arg3 = traceBlockReason.
+/goroutines[uregs[R_X28]] != 0/
+{
+  this-&gt;g_addr = uregs[R_X28]; 
+  this-&gt;go = (struct g*)copyin(this-&gt;g_addr, sizeof(struct g));
+  this-&gt;m = (struct m*)copyin((user_addr_t)this-&gt;go-&gt;m, sizeof(struct m));
+  this-&gt;curg_addr = (uintptr_t)this-&gt;m-&gt;curg;
+  this-&gt;curg = (struct g*)copyin((user_addr_t)this-&gt;curg_addr, sizeof(struct g));
+  print(*this-&gt;curg);
+
+  [..]
+}
+</code></pre>
+<p>And voila!</p>
+<p>Of course, if we want to see all the data about the goroutine, we can define the <code>g</code> struct faithfully and get even more insights:</p>
+<pre><code class="language-dtrace">struct g {
+  uintptr_t stack[2];
+  uintptr_t stackguard0;
+  uintptr_t stackguard1;
+  uintptr_t _panic;
+  uintptr_t _defer;
+  struct m* m;
+  uintptr_t sched[6];
+  uintptr_t syscallsp;
+  uintptr_t syscallpc;
+  uintptr_t syscallbp;
+  uintptr_t stktopsp;
+  uintptr_t param;
+
+  uint32_t status;
+  uint32_t stackLock;
+    
+  uint64_t goid;
+  uintptr_t schedlink;
+  int64_t waitsince;
+
+  uint8_t waitreason;
+  uint8_t preempt;
+  uint8_t preemptStop;
+  uint8_t preemptShrink;
+  uint8_t asyncSafePoint;
+  uint8_t paniconfault;
+  uint8_t gcscandone;
+  uint8_t throwsplit;
+
+  uint8_t activeStackChans;
+  uint8_t pad1[3];
+  uint32_t parkingOnChan;
+
+  uint8_t inMarkAssist;
+  uint8_t coroexit;
+  int8_t raceignore;
+  uint8_t nocgocallback;
+  uint8_t tracking;
+  uint8_t trackingSeq;
+  uint8_t pad2[2];
+
+  int64_t trackingStamp;
+  int64_t runnableTime;
+  uintptr_t lockedm;
+
+  uint8_t fipsIndicator;
+  uint8_t syncSafePoint;
+  uint8_t pad3[2];
+  uint32_t runningCleanups;
+
+  uint32_t sig;
+  uint8_t pad4[4];
+
+  uintptr_t writebuf_ptr;
+  uint64_t writebuf_len;
+  uint64_t writebuf_cap;
+  uintptr_t sigcode0;
+  uintptr_t sigcode1;
+  uintptr_t sigpc;
+  uint64_t parentGoid;
+  uintptr_t gopc;
+  uintptr_t ancestors;
+  uintptr_t startpc;
+  uintptr_t racectx;
+  uintptr_t waiting;
+  uintptr_t cgoCtxt_ptr;
+  uint64_t cgoCtxt_len;
+  uint64_t cgoCtxt_cap;
+  uintptr_t labels;
+  uintptr_t timer;
+  int64_t sleepWhen;
+
+  uint32_t selectDone;
+  uint32_t goroutineProfiled;
+  
+  uintptr_t coro;
+  uintptr_t bubble;
+
+  uint64_t trace[4];
+  int64_t gcAssistBytes;
+
+  uintptr_t valgrindStackID;
+}; 
+</code></pre>
 <h2 id="conclusion">
   <a class="title" href="#conclusion">Conclusion</a>
   <a class="hash-anchor" href="#conclusion" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>

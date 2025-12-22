@@ -302,7 +302,7 @@ pid$target::runtime.gopark:entry
 }
 ```
 
-The counterpart of `runtime.gopark` is `runtime.goready` (typically inlined and calls `runtime.ready` which we can watch), that marks a goroutine as running again (unblocked). So, we remove the goroutine from the 'blocked' set:
+The counterpart of `runtime.gopark` is `runtime.goready` (typically inlined and calls `runtime.ready` which we can watch), that marks a goroutine as runnable again (unblocked). So, we remove the goroutine from the 'blocked' set:
 
 ```dtrace
 pid$target::runtime.ready:entry 
@@ -465,6 +465,151 @@ Finally, it's important to note that when a goroutine is destroyed, we need to r
 so this could get confusing.
 
 
+## Limitations
+
+The `runtime/HACKING.md` document mentions: 
+
+> `getg()` and `getg().m.curg`
+> 
+> To get the current user `g`, use `getg().m.curg`.
+> 
+> `getg()` alone returns the current `g`, but when executing on the
+> system or signal stacks, this will return the current M's "g0" or
+> "gsignal", respectively. This is usually not what you want.
+> 
+> To determine if you're running on the user stack or the system stack,
+> use `getg() == getg().m.curg`.
+
+
+`g` is the name of the goroutine struct in the Go runtime. `getg()` gets the current goroutine, which is a pointer to a `g` struct, and this call gets transformed by the compiler into a register lookup. In DTrace, we do it with `uregs[R_X28]`. So far so good. 
+
+However, we do not do `getg().m.curg` currently. In my testing I have not seen a difference, it was always the case of `getg() == getg().m.curg`.
+
+But we should be rigorous. 
+
+This is easy to do in DTrace:
+
+- We define minimally the struct for `g` (goroutine) and `m` (an OS thread) with the exact same layout as in the Go runtime
+- We use `copyin()` to copy the data in these structs
+- We use `*` and `->` to dereference and follow the pointers like `getg().m.curg`
+
+```dtrace
+struct g {
+  uint8_t pad[48];
+  struct m* m;
+};
+
+struct m {
+  uint8_t pad[184];
+  struct g* curg;
+};
+
+
+pid$target::runtime.gopark:entry 
+// arg3 = traceBlockReason.
+/goroutines[uregs[R_X28]] != 0/
+{
+  this->g_addr = uregs[R_X28]; 
+  this->go = (struct g*)copyin(this->g_addr, sizeof(struct g));
+  this->m = (struct m*)copyin((user_addr_t)this->go->m, sizeof(struct m));
+  this->curg_addr = (uintptr_t)this->m->curg;
+  this->curg = (struct g*)copyin((user_addr_t)this->curg_addr, sizeof(struct g));
+  print(*this->curg);
+
+  [..]
+}
+```
+
+And voila!
+
+Of course, if we want to see all the data about the goroutine, we can define the `g` struct faithfully and get even more insights:
+
+```dtrace
+struct g {
+  uintptr_t stack[2];
+  uintptr_t stackguard0;
+  uintptr_t stackguard1;
+  uintptr_t _panic;
+  uintptr_t _defer;
+  struct m* m;
+  uintptr_t sched[6];
+  uintptr_t syscallsp;
+  uintptr_t syscallpc;
+  uintptr_t syscallbp;
+  uintptr_t stktopsp;
+  uintptr_t param;
+
+  uint32_t status;
+  uint32_t stackLock;
+    
+  uint64_t goid;
+  uintptr_t schedlink;
+  int64_t waitsince;
+
+  uint8_t waitreason;
+  uint8_t preempt;
+  uint8_t preemptStop;
+  uint8_t preemptShrink;
+  uint8_t asyncSafePoint;
+  uint8_t paniconfault;
+  uint8_t gcscandone;
+  uint8_t throwsplit;
+
+  uint8_t activeStackChans;
+  uint8_t pad1[3];
+  uint32_t parkingOnChan;
+
+  uint8_t inMarkAssist;
+  uint8_t coroexit;
+  int8_t raceignore;
+  uint8_t nocgocallback;
+  uint8_t tracking;
+  uint8_t trackingSeq;
+  uint8_t pad2[2];
+
+  int64_t trackingStamp;
+  int64_t runnableTime;
+  uintptr_t lockedm;
+
+  uint8_t fipsIndicator;
+  uint8_t syncSafePoint;
+  uint8_t pad3[2];
+  uint32_t runningCleanups;
+
+  uint32_t sig;
+  uint8_t pad4[4];
+
+  uintptr_t writebuf_ptr;
+  uint64_t writebuf_len;
+  uint64_t writebuf_cap;
+  uintptr_t sigcode0;
+  uintptr_t sigcode1;
+  uintptr_t sigpc;
+  uint64_t parentGoid;
+  uintptr_t gopc;
+  uintptr_t ancestors;
+  uintptr_t startpc;
+  uintptr_t racectx;
+  uintptr_t waiting;
+  uintptr_t cgoCtxt_ptr;
+  uint64_t cgoCtxt_len;
+  uint64_t cgoCtxt_cap;
+  uintptr_t labels;
+  uintptr_t timer;
+  int64_t sleepWhen;
+
+  uint32_t selectDone;
+  uint32_t goroutineProfiled;
+  
+  uintptr_t coro;
+  uintptr_t bubble;
+
+  uint64_t trace[4];
+  int64_t gcAssistBytes;
+
+  uintptr_t valgrindStackID;
+}; 
+```
 
 ## Conclusion
 
