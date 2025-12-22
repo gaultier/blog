@@ -370,7 +370,15 @@ const (
   printf(&quot;gopark: goroutine=%p blocked=%d reason=%d blocked_count=%d\n&quot;, this-&gt;g, this-&gt;blocked, this-&gt;waitreason, goroutines_blocked_count);
 }
 </code></pre>
-<p>And of course, if the goroutine gets destroyed, we also remove it from this set (if it was present in it):</p>
+<p>The counterpart of <code>runtime.gopark</code> is <code>runtime.goready</code> (typically inlined and calls <code>runtime.ready</code> which we can watch), that marks a goroutine as running again (unblocked). So, we remove the goroutine from the 'blocked' set:</p>
+<pre><code class="language-dtrace">pid$target::runtime.ready:entry 
+/goroutines[arg0] != 0/ 
+{
+    goroutines_blocked[this-&gt;g] = 0;
+    goroutines_blocked_count -= 1;
+}
+</code></pre>
+<p>And of course, if the goroutine gets destroyed, we also remove it from the 'blocked' set (if it was inside it):</p>
 <pre><code class="language-diff">pid$target::runtime.gdestroy:entry 
 /goroutines[arg0] != 0/
 {
@@ -430,6 +438,13 @@ pid$target::runtime.gdestroy:entry
   }
 
   printf(&quot;godestroy: goroutine=%p count=%d blocked_count=%d\n&quot;, this-&gt;g, goroutines_count, goroutines_blocked_count);
+}
+
+pid$target::runtime.ready:entry 
+/goroutines[arg0] != 0/ 
+{
+    goroutines_blocked[this-&gt;g] = 0;
+    goroutines_blocked_count -= 1;
 }
 
 pid$target::runtime.gopark:entry 

@@ -302,7 +302,18 @@ pid$target::runtime.gopark:entry
 }
 ```
 
-And of course, if the goroutine gets destroyed, we also remove it from this set (if it was present in it):
+The counterpart of `runtime.gopark` is `runtime.goready` (typically inlined and calls `runtime.ready` which we can watch), that marks a goroutine as running again (unblocked). So, we remove the goroutine from the 'blocked' set:
+
+```dtrace
+pid$target::runtime.ready:entry 
+/goroutines[arg0] != 0/ 
+{
+    goroutines_blocked[this->g] = 0;
+    goroutines_blocked_count -= 1;
+}
+```
+
+And of course, if the goroutine gets destroyed, we also remove it from the 'blocked' set (if it was inside it):
 
 ```diff
 pid$target::runtime.gdestroy:entry 
@@ -369,6 +380,13 @@ pid$target::runtime.gdestroy:entry
   }
 
   printf("godestroy: goroutine=%p count=%d blocked_count=%d\n", this->g, goroutines_count, goroutines_blocked_count);
+}
+
+pid$target::runtime.ready:entry 
+/goroutines[arg0] != 0/ 
+{
+    goroutines_blocked[this->g] = 0;
+    goroutines_blocked_count -= 1;
 }
 
 pid$target::runtime.gopark:entry 
