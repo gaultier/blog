@@ -149,7 +149,12 @@ func main() {
 	Foo()
 }
 </code></pre>
-<p>Let's trace all goroutine creations and deletions, as well as the functions entry and return in this program, with the <code>-F</code> DTrace command line option:</p>
+<p>Let's trace all goroutine creations and deletions, as well as the functions entry and return in this program.</p>
+<p>Peeking at the Go runtime <a href="https://github.com/golang/go/blob/master/src/runtime/proc.go">code</a>, we identify two functions of interest:</p>
+<ul>
+<li><code>runtime.newproc1</code> creates a new goroutine object and returns it. When we use the <code>go</code> keyword in our Go code, the compiler generates a call to <code>runtime.newproc</code> which in turn calls <code>runtime.newproc1</code>.</li>
+<li><code>runtime.gdestroy</code> takes a goroutine object as an argument and destroys it. It is called from inside the Go runtime.</li>
+</ul>
 <pre><code class="language-dtrace">// Creates a new goroutine.
 pid$target::runtime.newproc1:
 
@@ -159,7 +164,7 @@ pid$target::runtime.gdestroy:
 pid$target::main.*: 
 </code></pre>
 <p><em>Functions starting with <code>runtime.</code> are from the Go runtime.</em></p>
-<p>We see:</p>
+<p>We can use the <code>-F</code> DTrace command line option to see the function call tree and see:</p>
 <pre><code class="language-text">CPU FUNCTION                                 
 
 [...] // Some Go runtime goroutines elided, spawned before `main`.

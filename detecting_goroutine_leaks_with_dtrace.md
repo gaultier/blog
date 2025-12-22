@@ -44,7 +44,13 @@ func main() {
 }
 ```
 
-Let's trace all goroutine creations and deletions, as well as the functions entry and return in this program, with the `-F` DTrace command line option:
+Let's trace all goroutine creations and deletions, as well as the functions entry and return in this program.
+
+Peeking at the Go runtime [code](https://github.com/golang/go/blob/master/src/runtime/proc.go), we identify two functions of interest:
+
+- `runtime.newproc1` creates a new goroutine object and returns it. When we use the `go` keyword in our Go code, the compiler generates a call to `runtime.newproc` which in turn calls `runtime.newproc1`.
+- `runtime.gdestroy` takes a goroutine object as an argument and destroys it. It is called from inside the Go runtime.
+
 
 ```dtrace
 // Creates a new goroutine.
@@ -58,7 +64,7 @@ pid$target::main.*:
 
 *Functions starting with `runtime.` are from the Go runtime.*
 
-We see:
+We can use the `-F` DTrace command line option to see the function call tree and see:
 
 ```text
 CPU FUNCTION                                 
