@@ -231,7 +231,7 @@ Well, remember the initial definition of a goroutine leak:
 
 > a goroutine 'leaks' if it is blocked waiting on an unreachable object: a mutex, channel, wait condition, etc
 
-Each goroutine has a 'status' field which is 'running', 'blocked', 'dead', etc. We need to track that to know how many goroutines are really blocked and leaking!
+Each goroutine in the Go runtime has a 'status' field which is 'running', 'blocked', 'dead', etc. We need to track that, in order to know how many goroutines are really blocked and leaking!
 
 The Go runtime has a easy function to watch that does this state transition: `runtime.gopark`. Its fourth argument is a 'block reason' which explains why (if at all) the goroutine is blocked. This way, the Go scheduler knows not to try to run the blocked goroutines since they have no chance to do anything, until the object they are blocked on is unblocked (for example a mutex). This field is [defined](https://github.com/golang/go/blob/master/src/runtime/traceruntime.go#L91) like this in the Go runtime:
 
@@ -262,7 +262,7 @@ const (
 )
 ```
 
-Let's track that then. We maintain a set of blocked goroutines. If a goroutine goes from unblocked to blocked, it gets added to this set. If it goes from blocked to unblocked, it gets removed from the set:
+Let's track that then. We maintain a set of blocked goroutines. If a goroutine goes from unblocked to blocked, it gets added to this set. If it goes from blocked to unblocked, it gets removed from the set.
 
 *Note: according to the [Go ABI](https://github.com/golang/go/blob/master/src/cmd/compile/abi-internal.md), a register is reserved to store the current goroutine. On my system (ARM64), it is `R28` [accessible](/blog/an_optimization_and_debugging_story_go_dtrace.html#addendum-a-goroutine-aware-d-script) in DTrace with `uregs[R_X28]`. This is handy when a Go runtime function does not take the goroutine to act on, as an argument.*
 
@@ -431,7 +431,7 @@ Thus, we would need to also 1) track which object is being blocked on, and 2) tr
 
 For 1), the goroutine structure in the Go runtime has the field `parkingOnChan` to know on which channel to goroutine is waiting on. That's a good start, but I do not know if there is an equivalent for mutexes and other synchronization objects. 
 
-For 2), we have the DTrace probes `runtime.gc*:` at our disposal to watch the GC. I believe this is possible, just some more work.
+For 2), we have the DTrace probes `runtime.gc*:` at our disposal to watch the Garbage Collector. I believe this is possible, just some more work.
 
 Finally, it's important to note that when a goroutine is destroyed, we need to remove it from the various maps we maintain. This is not only to reduce the DTrace memory usage, but also because the Go runtime puts the freshly destroyed goroutine on a free list to be possibly reused, 
 so this could get confusing.
@@ -442,14 +442,15 @@ so this could get confusing.
 
 With a few simple DTrace probes, we can observe the Go runtime creating, parking, unparking, and destroying goroutines, along with a way to uniquely identify the goroutine in question. From these two primitives, we can track goroutine leaks, but that's not all! We could do a lot more, all in DTrace (or possibly with a bit of post-processing):
 
-- How long does a goroutine live, with a histogram? (Hint: `pid$target::runtime.gdestroy:return { @[""] = quantize(timestamp - spawned[arg0]) }`)
-- What is the peak (maximum) number of active goroutines? (Hint: `pid$target::runtime.newproc1:return { @[ustack()] = max() }`)
-- What places in the code spawn the most goroutines? (Hint: `pid$target::runtime.newproc1:return { @[ustack()] = count() }`
+- How long does a goroutine live, with a histogram?
+- What is the peak (maximum) number of active goroutines?
+- What places in the code spawn the most goroutines?
 - How much time passes between asking the Go runtime to create the goroutine, and the code in the goroutine actually running?
 - How long do goroutines sleep, with a histogram?
 - Print a goroutine graph of what goroutine spawned which goroutine. `runtime.newproc1:entry` takes the parent goroutine as argument, so we know the parent-child relationship.
 - How much do goroutines consume, with a histogram: the goroutine structure in the Go runtime has the `stack.lo` and `stack.hi` fields which describe the bounds of the goroutine memory.
 - How long does a goroutine wait to run, when it is not waiting on any object, and it could run at any time? The goroutine struct in the Go runtime has this field: `runnableTime    int64 // the amount of time spent runnable, cleared when running, only used when tracking` but it only is updated in 'tracking' mode.
+- How many goroutines are currently on the free list?
 - Etc
 
 Which is pretty cool if you ask me, given that:
@@ -458,12 +459,12 @@ Which is pretty cool if you ask me, given that:
 - No need to ask the Go maintainers to add one more metric or profile we need
 - No need to change and recompile the application
 - No overhead when not running, and safe to use in production. 
-- Same behavior when on or off. The Go runtime has a lot of different code paths depending if tracing is enabled, if the race detector is enabled, if valgrind is enabled... that makes the code quite complex, and potentially behave differently depending on what is on/off. With DTrace, we know that peeking inside the inner workings of the Go runtime does not change its behavior.
+- Same behavior when on or off. The Go runtime has a lot of different code paths depending if tracing is enabled, if the race detector is enabled, if Valgrind is enabled... that makes the code quite complex, and potentially behave differently depending on what is on/off. With DTrace, we know that peeking inside the inner workings of the Go runtime does not change its behavior.
 
 Oh and by the way, try these probes:
 
 - `runtime.*chan*`: see channel operations such as sends and receives
-- `runtime.gc*`: see GC operations such as mark, sweep, marking roots
+- `runtime.gc*`: see Garbage Collector operations such as mark, sweep, marking roots
 - `runtime.*alloc*`: see memory allocator operations
 
 When used in conjunction with tracking functions from our code, like we did in the first DTrace snippet in this article, Go feels a lot less magic! I wish I did that as a beginner.
