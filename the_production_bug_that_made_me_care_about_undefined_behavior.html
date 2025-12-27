@@ -104,6 +104,10 @@ Do not edit it by hand.
   </li>
 
   <li>
+    <a href="#runtime-analysis-to-the-rescue">Runtime analysis to the rescue</a>
+  </li>
+
+  <li>
     <a href="#the-aftermath">The aftermath</a>
   </li>
 
@@ -245,6 +249,22 @@ int main() {
 </blockquote>
 <p>But now, it seems it has improved, and reports all problematic locations, and not only in function calls, which is great.</p>
 <p>I also wrote in my notes at the time that <code>cppcheck</code> 'spots this without issues', but when I try it today, it does not spot anything even with <code>--enable=all</code>. So, maybe it's a regression, or I am not using it correctly.</p>
+<h2 id="runtime-analysis-to-the-rescue">
+  <a class="title" href="#runtime-analysis-to-the-rescue">Runtime analysis to the rescue</a>
+  <a class="hash-anchor" href="#runtime-analysis-to-the-rescue" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+</h2>
+<p>Most experienced C or C++ developers are probably screaming at their screen right now, thinking: just use Address Sanitizer!</p>
+<p>Let's try it on the problematic code:</p>
+<pre><code class="language-shell">$ clang++ main.cpp -Weverything -std=c++11 -g -fsanitize=address,undefined -Wno-padded
+$ ./a.out
+a.out(46953,0x1f7f4a0c0) malloc: nano zone abandoned due to inability to reserve vm space.
+main.cpp:21:41: runtime error: load of value 8, which is not a valid value for type 'bool'
+SUMMARY: UndefinedBehaviorSanitizer: undefined-behavior main.cpp:21:41 
+error=0 success=1
+</code></pre>
+<p>Great, the undefined behavior is spotted! Even if the error message is not super clear.</p>
+<p>But: it means that we need to have 100% test coverage now to be certain that our code does not have undefined behavior. That's a big ask.</p>
+<p>Also, in my testing, Address Sanitizer did not always report the issue. That's the nature of the tool: it is meant to be conservative and avoid false positives, to avoid alerting fatigue, but that means it won't catch all issues.</p>
 <h2 id="the-aftermath">
   <a class="title" href="#the-aftermath">The aftermath</a>
   <a class="hash-anchor" href="#the-aftermath" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>

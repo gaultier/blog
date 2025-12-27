@@ -181,6 +181,28 @@ But now, it seems it has improved, and reports all problematic locations, and no
 I also wrote in my notes at the time that `cppcheck` 'spots this without issues', but when I try it today, it does not spot anything even with `--enable=all`. So, maybe it's a regression, or I am not using it correctly.
 
 
+## Runtime analysis to the rescue
+
+Most experienced C or C++ developers are probably screaming at their screen right now, thinking: just use Address Sanitizer!
+
+Let's try it on the problematic code:
+
+```shell
+$ clang++ main.cpp -Weverything -std=c++11 -g -fsanitize=address,undefined -Wno-padded
+$ ./a.out
+a.out(46953,0x1f7f4a0c0) malloc: nano zone abandoned due to inability to reserve vm space.
+main.cpp:21:41: runtime error: load of value 8, which is not a valid value for type 'bool'
+SUMMARY: UndefinedBehaviorSanitizer: undefined-behavior main.cpp:21:41 
+error=0 success=1
+```
+
+Great, the undefined behavior is spotted! Even if the error message is not super clear.
+
+But: it means that we need to have 100% test coverage now to be certain that our code does not have undefined behavior. That's a big ask.
+
+Also, in my testing, Address Sanitizer did not always report the issue. That's the nature of the tool: it is meant to be conservative and avoid false positives, to avoid alerting fatigue, but that means it won't catch all issues.
+
+
 ## The aftermath
 
 I wrote a `libclang` plugin at the time to catch other instances of this problem in the codebase: [https://github.com/gaultier/c/tree/master/libclang-plugin](https://github.com/gaultier/c/tree/master/libclang-plugin) . 
