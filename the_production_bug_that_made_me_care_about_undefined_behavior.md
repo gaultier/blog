@@ -264,7 +264,7 @@ Now, if we use `bool` (for example) instead:
   assert(c == d);
 ```
 
-This is undefined behavior and immediately triggers ASan errors! Even if the code is the same in terms of stack layout, assembly instructions, etc!
+This is undefined behavior and immediately triggers ASan errors! Even if the code is the same in terms of type sizes, stack layout, assembly instructions, etc!
 
 I do not know why the C++ standard felt the need to muddy the water even more, but they surely had a reason. Right?
 
