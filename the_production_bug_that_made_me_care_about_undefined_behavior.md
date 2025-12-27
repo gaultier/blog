@@ -196,11 +196,15 @@ SUMMARY: UndefinedBehaviorSanitizer: undefined-behavior main.cpp:21:41
 error=0 success=1
 ```
 
-Great, the undefined behavior is spotted! Even if the error message is not super clear.
+Great, the undefined behavior is spotted! Even if the error message is not super clear. 
 
-But: it means that we need to have 100% test coverage now to be certain that our code does not have undefined behavior. That's a big ask.
+We alternatively could also have used Valgrind to the same effect.
 
-Also, in my testing, Address Sanitizer did not always report the issue. That's the nature of the tool: it is meant to be conservative and avoid false positives, to avoid alerting fatigue, but that means it won't catch all issues.
+But: it means that we now need to have 100% test coverage to be certain that our code does not have undefined behavior. That's a big ask.
+
+Also, in my testing, Address Sanitizer did not always report the issue. That's the nature of the tool: it is meant to be conservative and avoid false positives, to avoid alerting fatigue, but that means it won't catch all issues. 
+
+Additionally, these tools have a performance cost and can make the build process a bit more complex.
 
 
 ## The aftermath
