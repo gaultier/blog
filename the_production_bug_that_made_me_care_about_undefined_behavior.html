@@ -96,6 +96,10 @@ Do not edit it by hand.
   </li>
 
   <li>
+    <a href="#aftermath">Aftermath</a>
+  </li>
+
+  <li>
     <a href="#static-analysis-to-the-rescue">Static analysis to the rescue?</a>
   </li>
 
@@ -110,6 +114,7 @@ Do not edit it by hand.
 
 <p>Years ago, I maintained a big C++ codebase at my day job. This product was the bread winner for the company and offered a public HTTP API for online payments. We are talking billions of euros of processed payments a year.</p>
 <p>I was not yet a seasoned C++ developer yet. I knew about undefined behavior of course, but it was an abstract concept, something only beginners fall into. Oh boy was I wrong.</p>
+<p>Please note that I am not and never was a C++ expert, and it's been a few years since I have been writing C++ for a living, so hopefully I got the wording and details right, but please tell me if I did not.</p>
 <h2 id="the-bug-report">
   <a class="title" href="#the-bug-report">The bug report</a>
   <a class="hash-anchor" href="#the-bug-report" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
@@ -118,21 +123,17 @@ Do not edit it by hand.
 <pre><code class="language-json">{
   &quot;error&quot;: false,
   &quot;succeeded&quot;: true,
-
-  // some other fields
 }
 </code></pre>
 <p>or</p>
 <pre><code class="language-json">{
   &quot;error&quot;: true,
   &quot;succeeded&quot;: false,
-
-  // some other fields
 }
 
 </code></pre>
 <p><em>The actual format was probably not JSON, it was probably form encoded, I cannot exactly remember, but that does not matter for this bug.</em></p>
-<p>This format is not ideal but that's what the software did. Obviously, either <code>error</code> or <code>succeeded</code> is set but not both or either (it's a XOR).</p>
+<p>This data model is not ideal but that's what the software did. Obviously, either <code>error</code> or <code>succeeded</code> is set but not both or either (it's a XOR).</p>
 <p>Anyway, the bug report says that the client received this reply:</p>
 <pre><code class="language-json">{
   &quot;error&quot;: true,
@@ -159,13 +160,13 @@ void handle() {
     // [..] Lots of database operations *not* touching `response`.
 
     response.succeeded = true;
-    response.data = &quot;some stuff from the database&quot;;
   } catch(...) {
     response.error = true;
   }
   response.write();
 }
 </code></pre>
+<p><em>Here is a <a href="https://godbolt.org/z/5Wbbq3P7a">godbolt</a> link with roughly this code.</em></p>
 <p>There's only one place that sets the <code>succeeded</code> field. And only one that sets the <code>error</code> field. No other place in the code touches these two fields.</p>
 <p>So now I am flabbergasted. How is that possible that both fields are true? The code is straightforward. Each field is only set once and exclusively. It should be impossible to have both fields with the same value.</p>
 <h2 id="just-enough-rope-to-hang-yourself">
@@ -173,19 +174,19 @@ void handle() {
   <a class="hash-anchor" href="#just-enough-rope-to-hang-yourself" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>At this point, my C developer spider senses are tingling: is <code>Response response;</code> the culprit? It has to be, right? In C, that's clear undefined behavior to read fields from <code>response</code>: The C struct is not initialized.</p>
-<p>But right after, I stumble upon official C++ examples that use this syntax. So now I am confused. C++ intialization rules are different from C, after all.</p>
+<p>But right after, I stumble upon official C++ examples that use this syntax. So now I am confused. C++ initialization rules are different from C, after all.</p>
 <p>Cue a training montage with 80's music of me reading the C++ standard for hours. The short answer is: yes, the rules are different (enough to fill a book, and also they vary by C++ version) and <em>in some conditions</em>, <code>Response response;</code> is perfectly fine. In some other cases, this is undefined behavior.</p>
 <p>In a nutshell: The <a href="https://en.cppreference.com/w/cpp/language/default_initialization">default initialization</a> rule applies when a variable is declared without an initializer. It's quite complex but I'll try to simplify it here.</p>
 <p>Default initialization occurs under certain circumstances when using the syntax <code>T object;</code>:</p>
 <ol>
-<li>If <code>T</code> is a non class, non array type such as <code>int</code>, no initialization is performed at all. This is obvious undefined behavior.</li>
-<li>If <code>T</code> is an array, this is fine: each element is default-initialized</li>
-<li>If <code>T</code> is a <a href="https://en.cppreference.com/w/cpp/named_req/PODType">POD</a> (Plain Old Data, pre C++11. The wording in the standard changed with C++11 but the idea remains), no initialization is performed at all. This is akin to doing <code>int a;</code> and then using <code>a</code>. This is obvious undefined behavior.</li>
-<li>If <code>T</code> is not a POD, the default constructor is called, and is responsible for initializing all fields. It is easy to miss one, or even forget to implement a default constructor entirely, leading to undefined behavior.</li>
+<li>If <code>T</code> is a non class, non array type, e.g. <code>int a;</code>, no initialization is performed at all. This is obvious undefined behavior.</li>
+<li>If <code>T</code> is an array, e.g. <code>std::string a[10];</code>, this is fine: each element is default-initialized. But note that some types do not have default initialization, such as <code>int</code>: <code>int a[10]</code> would leave each element uninitialized.</li>
+<li>If <code>T</code> is a <a href="https://en.cppreference.com/w/cpp/named_req/PODType">POD</a> (Plain Old Data, pre C++11. The wording in the standard changed with C++11 but the idea remains), e.g. <code>Foo foo;</code> no initialization is performed at all. This is akin to doing <code>int a;</code> and then using <code>a</code>. This is obvious undefined behavior.</li>
+<li>If <code>T</code> is <em>not</em> a POD, e.g. <code>Bar bar;</code> the default constructor is called, and is responsible for initializing all fields. It is easy to miss one, or even forget to implement a default constructor entirely, leading to undefined behavior.</li>
 </ol>
-<p>It's important to distinguish the first and last case: in the first case, no call to the default constructor is emitted by the compiler. In the last case, the default constructor is called. If no default constructor is declared in the struct, the compiler generates one for us, and calls it. This can be confirmed by inspecting the generated assembly.</p>
+<p>It's important to distinguish the first and last case: in the first case, no call to the default constructor is emitted by the compiler. In the last case, the default constructor is called. If no default constructor is declared in the struct/class, the compiler generates one for us, and calls it. This can be confirmed by inspecting the generated assembly.</p>
 <p>With this bug, we are in the last case: the default constructor is called. Our type <code>Response</code> does not implement a default constructor. This means  that the compiler generates a default constructor for us, and in this generated code, each field is default initialized. So, the <code>std::string</code> constructor is called for the <code>data</code> field and all is well. Except, the other two fields are <em>not</em> initialized in any way. Oopsi.</p>
-<p>Thus, the only way to fix the struct without having to fix all call sites is to implement a default constructor that properly initializes every field:</p>
+<p>Thus, the only way to fix the struct/class without having to fix all call sites is to implement a default constructor that properly initializes every field:</p>
 <pre><code class="language-c++">struct Response {
   bool error;
   bool succeeded;
@@ -197,28 +198,58 @@ void handle() {
   }
 };
 </code></pre>
+<p><em>Here is a <a href="https://godbolt.org/z/bveKbxGeM">godbolt</a> link with this code.</em></p>
 <p>Of course, due to the rule of 6 (is it 6 these days? when I started to learn C++ it was 3?), we now have to implement the default destructor, the default move constructor etc etc etc.</p>
+<h2 id="aftermath">
+  <a class="title" href="#aftermath">Aftermath</a>
+  <a class="hash-anchor" href="#aftermath" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+</h2>
 <p>My fix at the time was to simply change the call site to:</p>
 <pre><code class="language-c++">  Response response{};
 </code></pre>
-<p>That forces zero initialization of the <code>error</code> and <code>succeeded</code> fields as well as default initialization of the <code>data</code> field. And no need to change the struct definition.</p>
+<p><em>Here is a <a href="https://godbolt.org/z/bveKbxGeM">godbolt</a> link with this code.</em></p>
+<p>That forces zero initialization of the <code>error</code> and <code>succeeded</code> fields as well as default initialization of the <code>data</code> field. And no need to change the struct/class definition.</p>
 <p>This was my recommendation to my teammates at the time: do not tempt the devil, just <em>always</em> zero initialize when declaring a variable.</p>
+<hr />
+<p>It is important to note that in some cases, the declaration syntax <code>Response response;</code> is perfectly correct, provided that:</p>
+<ul>
+<li>The type is an array, or the type is a struct/class is <em>not</em> a POD, and</li>
+<li>Each field has a default constructor</li>
+</ul>
+<p>Then, the default constructor of the struct/class is invoked, which invokes the default constructor of each field.</p>
+<p>For example:</p>
+<pre><code class="language-c++">struct Bar {
+  std::string s;
+  std::vector&lt;std::string&gt; vec;
+};
+
+int main() {
+  Bar bar;
+
+  // Prints: s=`` v.len=0
+  // No undefined behavior.
+  printf(&quot;s=%s v.len=%zu\n&quot;, bar.s.c_str(), bar.vec.size());
+}
+</code></pre>
+<p>But to know that, you need to inspect each field (recursively) of the struct/class, or assume that every default constructor initializes each field.</p>
+<p>Finally, it's also worth nothing that it is only undefined behavior to read an unitialized value. Simply having uninitialized fields is not undefined behavior. If the fields are never read, or written to with a known value, before being read, there is no undefined behavior.</p>
 <h2 id="static-analysis-to-the-rescue">
   <a class="title" href="#static-analysis-to-the-rescue">Static analysis to the rescue?</a>
   <a class="hash-anchor" href="#static-analysis-to-the-rescue" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
-<p>The compiler (<code>clang</code>) does not catch this issue even with all warnings enabled. This is frustrating because the compiler happily generates, and calls, a default constructor that does not initialize all the fields. So, the caller is expected to set all the uninitialized fields to some value manually? This is non-sense to me.</p>
+<p>The compiler (<code>clang</code>) does not catch this issue even with all warnings enabled. This is frustrating because the compiler happily generates, and calls, a default constructor that does not initialize all the fields. So, the caller is expected to set all the uninitialized fields to some value manually? This is nonsense to me.</p>
 <p><code>clang-tidy</code> catches the issue. However at the time it was imperfect, quoting my notes from back then:</p>
 <blockquote>
 <p><code>clang-tidy</code> reports this issue when trying to pass such a variable as argument to a function, but that's all. We want to detect all problematic locations, even when the variable is not passed to a function. Also, <code>clang-tidy</code> only reports one location and exits.</p>
 </blockquote>
-<p>I also wrote in my notes that <code>cppcheck</code> 'spots this without issues', but when I try it today, it does not spot anything even with <code>--enable=all</code>. So, maybe there is a regression there, or I am not using it correctly.</p>
+<p>But now, it has improved, and reports all problematic locations, and not only in function calls, which is great.</p>
+<p>I also wrote in my notes at the time that <code>cppcheck</code> 'spots this without issues', but when I try it today, it does not spot anything even with <code>--enable=all</code>. So, maybe it's a regression, or I am not using it correctly.</p>
 <h2 id="the-aftermath">
   <a class="title" href="#the-aftermath">The aftermath</a>
   <a class="hash-anchor" href="#the-aftermath" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
-<p>I wrote a <code>libclang</code> plugin at the time to catch other instances of this problem in the codebase: https://github.com/gaultier/c/tree/master/libclang-plugin .</p>
-<p>Amazingly, there was only one other case, and it was a false positive because by chance, the caller set the uninitialized fields right after, like this:</p>
+<p>I wrote a <code>libclang</code> plugin at the time to catch other instances of this problem in the codebase: <a href="https://github.com/gaultier/c/tree/master/libclang-plugin">https://github.com/gaultier/c/tree/master/libclang-plugin</a> .</p>
+<p>Amazingly, there was only one other case in the whole codebase, and it was a false positive because by chance, the caller set the uninitialized fields right after, like this:</p>
 <pre><code class="language-c++">Response response;
 response.error = false;
 response.success = true;
@@ -230,16 +261,19 @@ response.success = true;
 </h2>
 <p>In my opinion, this bug is C++ in a nutshell:</p>
 <ul>
-<li>Syntax that looks like C but <em>sometimes</em> does something completely different than C, invisibly. This syntax can be perfectly correct (e.g. in the case of an array) or be undefined behavior. This makes code review really difficult.</li>
-<li>The compiler does not warn about undefined behavior and we have to rely on third-party linters, and these linters have limitations</li>
+<li>Syntax that looks like C but <em>sometimes</em> does something completely different than C, invisibly. This syntax can be perfectly correct (e.g. in the case of an array, or a non POD type in some cases) or be undefined behavior. This makes code review really difficult.</li>
+<li>The compiler does not warn about undefined behavior and we have to rely on third-party linters, and these linters have limitations, and are usually slow</li>
 <li>The compiler happily generates a default constructor that leaves the object in a half-initialized state</li>
 <li>The rules in the standard are intricate and change with every new standard version (or at least the language they use). I just noticed that C++26 changed again these rules and introduced new language. Urgh.</li>
 <li>So many ways to initialize a variable, and most are wrong.</li>
 <li>For the code to behave correctly, the developer must not only consider the call site, but also the full struct definition.</li>
 <li>Adding or removing one struct field (e.g. the <code>data</code> field) makes the compiler generate completely different code at the call sites.</li>
+<li>You need a PhD in programming legalese to understand what is undefined behavior in the standard, and how you can trigger it</li>
 </ul>
-<p>But I am thankful for this bug, because it made me aware for the first time that undefined behavior is real and dangerous, for one simple reason: it makes your program behave completely differently than the code. By reading the code, you cannot predict the behavior of the program in any way. The code stopped to be the source of truth. And you can very easily, and invisibly, trigger undefined behavior.</p>
-<p>And that is really, really bad when writing production code for mission critical systems.</p>
+<p>In contrast I really, really like the 'POD' approach that many languages have taken, from C, to Go, to Rust: a struct/class is just plain data. Either the compiler forces you to set each field in the struct when creating it, or it does not, but zero-initializes all unmentioned fields. This is so simple it is obviously correct (but let's not talk about uninitialized padding between fields in C :/ ).</p>
+<p>In the end I am thankful for this bug, because it made me aware for the first time that undefined behavior is real and dangerous, for one simple reason: it makes your program behave completely differently than the code. By reading the code, you cannot predict the behavior of the program in any way. The code stopped being the source of truth. Impossible values appear in the program, as if a cosmic ray hit your machine and flipped some bits.
+And you can very easily, and invisibly, trigger undefined behavior.</p>
+<p>We programmers are only humans, and we only internalize that something (data corruption, undefined behavior, data races, etc) is a big issue when we have been bitten by it and it ruined our day.</p>
 <p><a href="/blog"> ⏴ Back to all articles</a></p>
 
 <blockquote id="donate">
