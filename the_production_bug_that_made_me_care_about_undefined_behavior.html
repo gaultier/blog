@@ -216,9 +216,14 @@ void handle() {
 <td>Indeterminate (All fields garbage)</td>
 </tr>
 <tr>
-<td>Array</td>
+<td>Array of Objects</td>
 <td>std::string x[10];</td>
-<td>Calls Default Constructor (Structs ok, primitives garbage)</td>
+<td>Safe (All strings initialized)</td>
+</tr>
+<tr>
+<td>Array of Primitives</td>
+<td>int x[10];</td>
+<td>Indeterminate (All garbage)</td>
 </tr>
 <tr>
 <td>Non-Trivial Struct</td>
@@ -356,6 +361,8 @@ response.success = true;
 </code></pre>
 <p>This is undefined behavior and immediately triggers ASan errors! Even if the code is the same in terms of type sizes and stack layout!</p>
 <p>I do not know why the C++ standard felt the need to muddy the water even more, but they surely had a reason. Right?</p>
+<p>Some quick research seems to indicate that these types are special cases to allow code to manipulate raw bytes like memcpy or buffer management without
+the compiler freaking out. Which...maybe makes sense?</p>
 <h2 id="conclusion">
   <a class="title" href="#conclusion">Conclusion</a>
   <a class="hash-anchor" href="#conclusion" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>

@@ -108,7 +108,8 @@ Here is a quick summary:
 |----|-------|---------------------|
 |Primitive (int, bool, etc)|int x;|Indeterminate (Garbage value)|
 |POD / Trivial Struct|Point p;|Indeterminate (All fields garbage)|
-| Array|std::string x[10];| Calls Default Constructor (Structs ok, primitives garbage)|
+|Array of Objects|std::string x[10];|Safe (All strings initialized)|
+|Array of Primitives|int x[10];|Indeterminate (All garbage)|
 |Non-Trivial Struct|Response r;|Calls Default Constructor (Structs ok, primitives garbage)|
 |Any Type (Braces)|T obj{};|Value Initialized (Safe / Zeroed)|
 
@@ -281,6 +282,9 @@ Now, if we use `bool` (for example) instead:
 This is undefined behavior and immediately triggers ASan errors! Even if the code is the same in terms of type sizes and stack layout!
 
 I do not know why the C++ standard felt the need to muddy the water even more, but they surely had a reason. Right?
+
+Some quick research seems to indicate that these types are special cases to allow code to manipulate raw bytes like memcpy or buffer management without
+the compiler freaking out. Which...maybe makes sense?
 
 
 ## Conclusion
