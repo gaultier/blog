@@ -93,8 +93,8 @@ Default initialization occurs under certain circumstances when using the syntax 
 
 1. If `T` is a non class, non array type, e.g. `int a;`, no initialization is performed at all. This is obvious undefined behavior.
 1. If `T` is an array, e.g. `std::string a[10];`, this is fine: each element is default-initialized. But note that some types do not have default initialization, such as `int`: `int a[10]` would leave each element uninitialized.
-1. If `T` is a [POD](https://en.cppreference.com/w/cpp/named_req/PODType) (Plain Old Data, pre C++11. The wording in the standard changed with C++11 but the idea remains), e.g. `Foo foo;` no initialization is performed at all. This is akin to doing `int a;` and then reading `a`. This is obvious undefined behavior.
-1. If `T` is *not* a POD, e.g. `Bar bar;` the default constructor is called, and is responsible for initializing all fields. It is easy to miss one, or even forget to implement a default constructor entirely, leading to undefined behavior.
+1. If `T` is a [POD](https://en.cppreference.com/w/cpp/named_req/PODType) (Plain Old Data, pre C++11. The wording in the standard changed with C++11 but the idea remains) struct/class, e.g. `Foo foo;` no initialization is performed at all. This is akin to doing `int a;` and then reading `a`. This is obvious undefined behavior.
+1. If `T` is a non-POD struct/class, e.g. `Bar bar;` the default constructor is called, and is responsible for initializing all fields. It is easy to miss one, or even forget to implement a default constructor entirely, leading to undefined behavior.
 
 It's important to distinguish the first and last case: in the first case, no call to the default constructor is emitted by the compiler. In the last case, the default constructor is called. If no default constructor is declared in the struct/class, the compiler generates one for us, and calls it. This can be confirmed by inspecting the generated assembly.
 
