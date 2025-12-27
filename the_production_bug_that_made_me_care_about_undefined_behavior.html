@@ -185,7 +185,7 @@ void handle() {
 <li>If <code>T</code> is <em>not</em> a POD, e.g. <code>Bar bar;</code> the default constructor is called, and is responsible for initializing all fields. It is easy to miss one, or even forget to implement a default constructor entirely, leading to undefined behavior.</li>
 </ol>
 <p>It's important to distinguish the first and last case: in the first case, no call to the default constructor is emitted by the compiler. In the last case, the default constructor is called. If no default constructor is declared in the struct/class, the compiler generates one for us, and calls it. This can be confirmed by inspecting the generated assembly.</p>
-<p>With this bug, we are in the last case: the default constructor is called. Our type <code>Response</code> does not implement a default constructor. This means  that the compiler generates a default constructor for us, and in this generated code, each field is default initialized. So, the <code>std::string</code> constructor is called for the <code>data</code> field and all is well. Except, the other two fields are <em>not</em> initialized in any way. Oopsi.</p>
+<p>With this bug, we are in the last case: the default constructor is called. Our type <code>Response</code> does not implement a default constructor. This means  that the compiler generates a default constructor for us, and in this generated code, each field is default initialized. So, the <code>std::string</code> constructor is called for the <code>data</code> field and all is well. Except, the other two fields are <em>not</em> initialized in any way. Oops.</p>
 <p>Thus, the only way to fix the struct/class without having to fix all call sites is to implement a default constructor that properly initializes every field:</p>
 <pre><code class="language-c++">struct Response {
   bool error;
@@ -199,7 +199,7 @@ void handle() {
 };
 </code></pre>
 <p><em>Here is a <a href="https://godbolt.org/z/bveKbxGeM">godbolt</a> link with this code.</em></p>
-<p>Of course, due to the rule of 6 (is it 6 these days? when I started to learn C++ it was 3?), we now have to implement the default destructor, the default move constructor etc etc etc.</p>
+<p>Of course, due to the rule of 6 (is it 6 these days? When I started to learn C++ it was 3?), we now have to implement the default destructor, the default move constructor etc etc etc.</p>
 <h2 id="aftermath">
   <a class="title" href="#aftermath">Aftermath</a>
   <a class="hash-anchor" href="#aftermath" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
@@ -232,7 +232,7 @@ int main() {
 }
 </code></pre>
 <p>But to know that, you need to inspect each field (recursively) of the struct/class, or assume that every default constructor initializes each field.</p>
-<p>Finally, it's also worth nothing that it is only undefined behavior to read an unitialized value. Simply having uninitialized fields is not undefined behavior. If the fields are never read, or written to with a known value, before being read, there is no undefined behavior.</p>
+<p>Finally, it's also worth nothing that it is only undefined behavior to read an uninitialized value. Simply having uninitialized fields is not undefined behavior. If the fields are never read, or written to with a known value, before being read, there is no undefined behavior.</p>
 <h2 id="static-analysis-to-the-rescue">
   <a class="title" href="#static-analysis-to-the-rescue">Static analysis to the rescue?</a>
   <a class="hash-anchor" href="#static-analysis-to-the-rescue" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
@@ -274,6 +274,7 @@ response.success = true;
 <p>In the end I am thankful for this bug, because it made me aware for the first time that undefined behavior is real and dangerous, for one simple reason: it makes your program behave completely differently than the code. By reading the code, you cannot predict the behavior of the program in any way. The code stopped being the source of truth. Impossible values appear in the program, as if a cosmic ray hit your machine and flipped some bits.
 And you can very easily, and invisibly, trigger undefined behavior.</p>
 <p>We programmers are only humans, and we only internalize that something (data corruption, undefined behavior, data races, etc) is a big real issue when we have been bitten by it and it ruined our day.</p>
+<hr />
 <p>Post-Scriptum: This is not a hit piece on C++: C++ paid my bills for 10 years. I have been able to take a mortgage and build a house thanks to C++. But it is also a deeply flawed language, and I would not start a new professional project in C++ today without a very good reason. If you like C++, all the power to you. I just want to raise awareness on this (perhaps) little-known rule in the language that might trip you up.</p>
 <p><a href="/blog"> ⏴ Back to all articles</a></p>
 

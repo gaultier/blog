@@ -98,7 +98,7 @@ Default initialization occurs under certain circumstances when using the syntax 
 
 It's important to distinguish the first and last case: in the first case, no call to the default constructor is emitted by the compiler. In the last case, the default constructor is called. If no default constructor is declared in the struct/class, the compiler generates one for us, and calls it. This can be confirmed by inspecting the generated assembly.
 
-With this bug, we are in the last case: the default constructor is called. Our type `Response` does not implement a default constructor. This means  that the compiler generates a default constructor for us, and in this generated code, each field is default initialized. So, the `std::string` constructor is called for the `data` field and all is well. Except, the other two fields are *not* initialized in any way. Oopsi.
+With this bug, we are in the last case: the default constructor is called. Our type `Response` does not implement a default constructor. This means  that the compiler generates a default constructor for us, and in this generated code, each field is default initialized. So, the `std::string` constructor is called for the `data` field and all is well. Except, the other two fields are *not* initialized in any way. Oops.
 
 
 Thus, the only way to fix the struct/class without having to fix all call sites is to implement a default constructor that properly initializes every field:
@@ -118,7 +118,7 @@ struct Response {
 
 *Here is a [godbolt](https://godbolt.org/z/bveKbxGeM) link with this code.*
 
-Of course, due to the rule of 6 (is it 6 these days? when I started to learn C++ it was 3?), we now have to implement the default destructor, the default move constructor etc etc etc.
+Of course, due to the rule of 6 (is it 6 these days? When I started to learn C++ it was 3?), we now have to implement the default destructor, the default move constructor etc etc etc.
 
 ## Aftermath
 
@@ -163,7 +163,7 @@ int main() {
 But to know that, you need to inspect each field (recursively) of the struct/class, or assume that every default constructor initializes each field.
 
 
-Finally, it's also worth nothing that it is only undefined behavior to read an unitialized value. Simply having uninitialized fields is not undefined behavior. If the fields are never read, or written to with a known value, before being read, there is no undefined behavior.
+Finally, it's also worth nothing that it is only undefined behavior to read an uninitialized value. Simply having uninitialized fields is not undefined behavior. If the fields are never read, or written to with a known value, before being read, there is no undefined behavior.
 
 
 ## Static analysis to the rescue?
@@ -216,6 +216,7 @@ And you can very easily, and invisibly, trigger undefined behavior.
 We programmers are only humans, and we only internalize that something (data corruption, undefined behavior, data races, etc) is a big real issue when we have been bitten by it and it ruined our day.
 
 
+---
 
 Post-Scriptum: This is not a hit piece on C++: C++ paid my bills for 10 years. I have been able to take a mortgage and build a house thanks to C++. But it is also a deeply flawed language, and I would not start a new professional project in C++ today without a very good reason. If you like C++, all the power to you. I just want to raise awareness on this (perhaps) little-known rule in the language that might trip you up.
 
