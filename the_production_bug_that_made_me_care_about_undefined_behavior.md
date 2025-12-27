@@ -213,11 +213,11 @@ In contrast I really, really like the 'POD' approach that many languages have ta
 In the end I am thankful for this bug, because it made me aware for the first time that undefined behavior is real and dangerous, for one simple reason: it makes your program behave completely differently than the code. By reading the code, you cannot predict the behavior of the program in any way. The code stopped being the source of truth. Impossible values appear in the program, as if a cosmic ray hit your machine and flipped some bits.
 And you can very easily, and invisibly, trigger undefined behavior. 
 
-We programmers are only humans, and we only internalize that something (data corruption, undefined behavior, data races, etc) is a big issue when we have been bitten by it and it ruined our day.
+We programmers are only humans, and we only internalize that something (data corruption, undefined behavior, data races, etc) is a big real issue when we have been bitten by it and it ruined our day.
 
 
 
-
+Post-Scriptum: This is not a hit piece on C++: C++ paid my bills for 10 years. I have been able to take a mortgage and build a house thanks to C++. But it is also a deeply flawed language, and I would not start a new professional project in C++ today without a very good reason. If you like C++, all the power to you. I just want to raise awareness on this (perhaps) little-known rule in the language that might trip you up.
 
 
 
