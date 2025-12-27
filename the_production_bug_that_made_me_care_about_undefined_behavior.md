@@ -2,6 +2,8 @@ Title: The production bug that made me care about undefined behavior
 Tags: C++, Undefined behavior, Bug
 ---
 
+*Discussions: [/r/programming](https://www.reddit.com/r/programming/comments/1px4uug/the_production_bug_that_made_me_care_about/?).*
+
 Years ago, I maintained a big C++ codebase at my day job. This product was the bread winner for the company and offered a public HTTP API for online payments. We are talking billions of euros of processed payments a year.
 
 I was not a seasoned C++ developer yet. I knew about undefined behavior of course, but it was an abstract concept, something only beginners fall into. Oh boy was I wrong.

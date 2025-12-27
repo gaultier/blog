@@ -276,7 +276,7 @@
 <title>A subtle data race in Go</title>
 <link href="https://gaultier.github.io/blog/a_subtle_data_race_in_go.html"/>
 <id>urn:uuid:2bbc9f5e-3d29-5c97-8568-795307bafe6c</id>
-<updated>2025-11-21T14:01:53+01:00</updated>
+<updated>2025-12-27T19:35:52+01:00</updated>
 <published>2025-06-10T20:02:21+02:00</published>
 </entry>
 
@@ -292,7 +292,7 @@
 <title>A subtle bug with Go&#39;s errgroup</title>
 <link href="https://gaultier.github.io/blog/subtle_bug_with_go_errgroup.html"/>
 <id>urn:uuid:91dd6f95-7f4d-5706-91b5-f2cbf6b89f09</id>
-<updated>2025-09-17T09:24:20+02:00</updated>
+<updated>2025-12-27T19:35:52+01:00</updated>
 <published>2025-08-09T10:07:00+02:00</published>
 </entry>
 
@@ -332,7 +332,7 @@
 <title>How to reproduce and fix an I/O data race with Go and DTrace</title>
 <link href="https://gaultier.github.io/blog/how_to_reproduce_and_fix_an_io_data_race_with_dtrace.html"/>
 <id>urn:uuid:8d5cd0cd-5a6d-5e55-80e9-63cd36488f07</id>
-<updated>2025-12-22T15:50:13+01:00</updated>
+<updated>2025-12-27T19:35:52+01:00</updated>
 <published>2025-10-01T16:47:19+02:00</published>
 </entry>
 
