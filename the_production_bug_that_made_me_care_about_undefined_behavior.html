@@ -290,7 +290,7 @@ int main() {
   <a class="title" href="#runtime-analysis-to-the-rescue">Runtime analysis to the rescue</a>
   <a class="hash-anchor" href="#runtime-analysis-to-the-rescue" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
-<p>Most experienced C or C++ developers are probably screaming at their screen right now, thinking: just use Address Sanitizer!</p>
+<p>Most experienced C or C++ developers are probably screaming at their screen right now, thinking: just use Address Sanitizer (or ASan for short)!</p>
 <p>Let's try it on the problematic code:</p>
 <pre><code class="language-shell">$ clang++ main.cpp -Weverything -std=c++11 -g -fsanitize=address,undefined -Wno-padded
 $ ./a.out
@@ -299,7 +299,7 @@ main.cpp:21:41: runtime error: load of value 8, which is not a valid value for t
 SUMMARY: UndefinedBehaviorSanitizer: undefined-behavior main.cpp:21:41 
 error=0 success=1
 </code></pre>
-<p>Great, the undefined behavior is spotted! Even if the error message is not super clear.  This is Asan's way of saying: &quot;I expected a 0 or 1 for this boolean, but I found a random 8 in that memory slot.&quot;</p>
+<p>Great, the undefined behavior is spotted! Even if the error message is not super clear.  This is ASan's way of saying: &quot;I expected a 0 or 1 for this boolean, but I found a random 8 in that memory slot.&quot;</p>
 <p>We alternatively could also have used Valgrind to the same effect.</p>
 <p>But: it means that we now need to have 100% test coverage to be certain that our code does not have undefined behavior. That's a big ask.</p>
 <p>Also, in my testing, Address Sanitizer did not always report the issue. That's the nature of the tool: it is meant to be conservative and avoid false positives, to avoid alerting fatigue, but that means it won't catch all issues.</p>

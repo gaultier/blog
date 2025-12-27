@@ -193,7 +193,7 @@ I also wrote in my notes at the time that `cppcheck` 'spots this without issues'
 
 ## Runtime analysis to the rescue
 
-Most experienced C or C++ developers are probably screaming at their screen right now, thinking: just use Address Sanitizer!
+Most experienced C or C++ developers are probably screaming at their screen right now, thinking: just use Address Sanitizer (or ASan for short)!
 
 Let's try it on the problematic code:
 
@@ -206,7 +206,7 @@ SUMMARY: UndefinedBehaviorSanitizer: undefined-behavior main.cpp:21:41
 error=0 success=1
 ```
 
-Great, the undefined behavior is spotted! Even if the error message is not super clear.  This is Asan's way of saying: "I expected a 0 or 1 for this boolean, but I found a random 8 in that memory slot."
+Great, the undefined behavior is spotted! Even if the error message is not super clear.  This is ASan's way of saying: "I expected a 0 or 1 for this boolean, but I found a random 8 in that memory slot."
 
 We alternatively could also have used Valgrind to the same effect.
 
