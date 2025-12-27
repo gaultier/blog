@@ -32,7 +32,7 @@ or
 
 *The actual format was probably not JSON, it was probably form encoded, I cannot exactly remember, but that does not matter for this bug.*
 
-This data model is not ideal but that's what the software did. Obviously, either `error` or `succeeded` is set but not both or either (it's a XOR).
+This data model is not ideal but that's what the software did. Obviously, either `error` or `succeeded` is set but not both or neither (it's a XOR).
 
 
 Anyway, the bug report says that the client received this reply:

@@ -133,7 +133,7 @@ Do not edit it by hand.
 
 </code></pre>
 <p><em>The actual format was probably not JSON, it was probably form encoded, I cannot exactly remember, but that does not matter for this bug.</em></p>
-<p>This data model is not ideal but that's what the software did. Obviously, either <code>error</code> or <code>succeeded</code> is set but not both or either (it's a XOR).</p>
+<p>This data model is not ideal but that's what the software did. Obviously, either <code>error</code> or <code>succeeded</code> is set but not both or neither (it's a XOR).</p>
 <p>Anyway, the bug report says that the client received this reply:</p>
 <pre><code class="language-json">{
   &quot;error&quot;: true,
