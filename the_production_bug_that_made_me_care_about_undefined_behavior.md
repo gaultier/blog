@@ -9,6 +9,8 @@ I was not yet a seasoned C++ developer yet. I knew about undefined behavior of c
 
 Please note that I am not and never was a C++ expert, and it's been a few years since I have been writing C++ for a living, so hopefully I got the wording and details right, but please tell me if I did not.
 
+*In this article I always say 'struct' when I mean 'struct or class'.*
+
 ## The bug report
 
 So, one day I receive a bug report. There is this HTTP endpoint that returns a simple response to  inform the client that the operation either succeeded or had an error:
@@ -93,15 +95,15 @@ Default initialization occurs under certain circumstances when using the syntax 
 
 1. If `T` is a non class, non array type, e.g. `int a;`, no initialization is performed at all. This is obvious undefined behavior.
 1. If `T` is an array, e.g. `std::string a[10];`, this is fine: each element is default-initialized. But note that some types do not have default initialization, such as `int`: `int a[10]` would leave each element uninitialized.
-1. If `T` is a [POD](https://en.cppreference.com/w/cpp/named_req/PODType) (Plain Old Data, pre C++11. The wording in the standard changed with C++11 but the idea remains) struct/class, e.g. `Foo foo;` no initialization is performed at all. This is akin to doing `int a;` and then reading `a`. This is obvious undefined behavior.
-1. If `T` is a non-POD struct/class, e.g. `Bar bar;` the default constructor is called, and it is responsible for initializing all fields. It is easy to miss one, or even forget to implement a default constructor entirely, leading to undefined behavior.
+1. If `T` is a [POD](https://en.cppreference.com/w/cpp/named_req/PODType) (Plain Old Data, pre C++11. The wording in the standard changed with C++11 but the idea remains) struct, e.g. `Foo foo;` no initialization is performed at all. This is akin to doing `int a;` and then reading `a`. This is obvious undefined behavior.
+1. If `T` is a non-POD struct, e.g. `Bar bar;` the default constructor is called, and it is responsible for initializing all fields. It is easy to miss one, or even forget to implement a default constructor entirely, leading to undefined behavior.
 
-It's important to distinguish the first and last case: in the first case, no call to the default constructor is emitted by the compiler. In the last case, the default constructor is called. If no default constructor is declared in the struct/class, the compiler generates one for us, and calls it. This can be confirmed by inspecting the generated assembly.
+It's important to distinguish the first and last case: in the first case, no call to the default constructor is emitted by the compiler. In the last case, the default constructor is called. If no default constructor is declared in the struct, the compiler generates one for us, and calls it. This can be confirmed by inspecting the generated assembly.
 
-With this bug, we are in the last case: the `Response` type is a non-POD struct/class (due to the `std::string data` field), so the default constructor is called. `Response` does not implement a default constructor. This means  that the compiler generates a default constructor for us, and in this generated code, each struct/class field is default initialized. So, the `std::string` constructor is called for the `data` field and all is well. Except, the other two fields are *not* initialized in any way. Oops.
+With this bug, we are in the last case: the `Response` type is a non-POD struct (due to the `std::string data` field), so the default constructor is called. `Response` does not implement a default constructor. This means  that the compiler generates a default constructor for us, and in this generated code, each struct field is default initialized. So, the `std::string` constructor is called for the `data` field and all is well. Except, the other two fields are *not* initialized in any way. Oops.
 
 
-Thus, the only way to fix the struct/class without having to fix all call sites is to implement a default constructor that properly initializes every field:
+Thus, the only way to fix the struct without having to fix all call sites is to implement a default constructor that properly initializes every field:
 
 ```c++
 struct Response {
@@ -129,7 +131,7 @@ My fix at the time was to simply change the call site to:
 ```
 *Here is a [godbolt](https://godbolt.org/z/rTqernMfq) link with this code.*
 
-That forces zero initialization of the `error` and `succeeded` fields as well as default initialization of the `data` field. And no need to change the struct/class definition. 
+That forces zero initialization of the `error` and `succeeded` fields as well as default initialization of the `data` field. And no need to change the struct definition. 
 
 This was my recommendation to my teammates at the time: do not tempt the devil, just *always* zero initialize when declaring a variable.
 
@@ -138,10 +140,10 @@ This was my recommendation to my teammates at the time: do not tempt the devil, 
 
 It is important to note that in some cases, the declaration syntax `Response response;` is perfectly correct, provided that:
 
-- The type is an array, or the type is a struct/class is *not* a POD, and
+- The type is an array, or the type is a struct is *not* a POD, and
 - Each field has a default constructor
 
-Then, the default constructor of the struct/class is invoked, which invokes the default constructor of each field.
+Then, the default constructor of the struct is invoked, which invokes the default constructor of each field.
 
 For example:
 
@@ -160,7 +162,7 @@ int main() {
 }
 ```
 
-But to know that, you need to inspect each field (recursively) of the struct/class, or assume that every default constructor initializes each field.
+But to know that, you need to inspect each field (recursively) of the struct, or assume that every default constructor initializes each field.
 
 
 Finally, it's also worth nothing that it is only undefined behavior to read an uninitialized value. Simply having uninitialized fields is not undefined behavior. If the fields are never read, or written to with a known value, before being read, there is no undefined behavior.
@@ -204,11 +206,11 @@ In my opinion, this bug is C++ in a nutshell:
 - The compiler happily generates a default constructor that leaves the object in a half-initialized state
 - The rules in the standard are intricate and change with every new standard version (or at least the language they use). I just noticed that C++26 changed again these rules and introduced new language. Urgh.
 - So many ways to initialize a variable, and most are wrong.
-- For the code to behave correctly, the developer must not only consider the call site, but also the full struct/class definition, and whether it is a POD type.
+- For the code to behave correctly, the developer must not only consider the call site, but also the full struct definition, and whether it is a POD type.
 - Adding or removing one struct field (e.g. the `data` field) makes the compiler generate completely different code at the call sites.
 - You need a PhD in programming legalese to understand what is undefined behavior in the standard, and how you can trigger it
 
-In contrast I really, really like the 'POD' approach that many languages have taken, from C, to Go, to Rust: a struct/class is just plain data. Either the compiler forces you to set each field in the struct when creating it, or it does not force you, and in this case, it zero-initializes all unmentioned fields. This is so simple it is obviously correct (but let's not talk about uninitialized padding between fields in C :/ ).
+In contrast I really, really like the 'POD' approach that many languages have taken, from C, to Go, to Rust: a struct is just plain data. Either the compiler forces you to set each field in the struct when creating it, or it does not force you, and in this case, it zero-initializes all unmentioned fields. This is so simple it is obviously correct (but let's not talk about uninitialized padding between fields in C :/ ).
 
 In the end I am thankful for this bug, because it made me aware for the first time that undefined behavior is real and dangerous, for one simple reason: it makes your program behave completely differently than the code. By reading the code, you cannot predict the behavior of the program in any way. The code stopped being the source of truth. Impossible values appear in the program, as if a cosmic ray hit your machine and flipped some bits.
 And you can very easily, and invisibly, trigger undefined behavior. 
