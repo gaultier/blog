@@ -98,7 +98,7 @@ Default initialization occurs under certain circumstances when using the syntax 
 
 It's important to distinguish the first and last case: in the first case, no call to the default constructor is emitted by the compiler. In the last case, the default constructor is called. If no default constructor is declared in the struct/class, the compiler generates one for us, and calls it. This can be confirmed by inspecting the generated assembly.
 
-With this bug, we are in the last case: the default constructor is called. Our type `Response` does not implement a default constructor. This means  that the compiler generates a default constructor for us, and in this generated code, each field is default initialized. So, the `std::string` constructor is called for the `data` field and all is well. Except, the other two fields are *not* initialized in any way. Oops.
+With this bug, we are in the last case: the `Response` type is a non-POD struct/class (due to the `std::string data` field), so the default constructor is called. `Response` does not implement a default constructor. This means  that the compiler generates a default constructor for us, and in this generated code, each field is default initialized. So, the `std::string` constructor is called for the `data` field and all is well. Except, the other two fields are *not* initialized in any way. Oops.
 
 
 Thus, the only way to fix the struct/class without having to fix all call sites is to implement a default constructor that properly initializes every field:
