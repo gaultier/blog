@@ -214,7 +214,7 @@ void handle() {
 <hr />
 <p>It is important to note that in some cases, the declaration syntax <code>Response response;</code> is perfectly correct, provided that:</p>
 <ul>
-<li>The type is an array, or the type is a struct is <em>not</em> a POD, and</li>
+<li>The type is an array, or the type is a non-POD struct and</li>
 <li>Each field has a default constructor</li>
 </ul>
 <p>Then, the default constructor of the struct is invoked, which invokes the default constructor of each field.</p>

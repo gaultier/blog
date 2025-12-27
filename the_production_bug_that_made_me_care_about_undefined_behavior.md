@@ -140,7 +140,7 @@ This was my recommendation to my teammates at the time: do not tempt the devil, 
 
 It is important to note that in some cases, the declaration syntax `Response response;` is perfectly correct, provided that:
 
-- The type is an array, or the type is a struct is *not* a POD, and
+- The type is an array, or the type is a non-POD struct and
 - Each field has a default constructor
 
 Then, the default constructor of the struct is invoked, which invokes the default constructor of each field.
