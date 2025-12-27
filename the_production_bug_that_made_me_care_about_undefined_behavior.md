@@ -228,7 +228,7 @@ I have no idea if this `libclang` plugin still works today because I have heard 
 In my opinion, this bug is C++ in a nutshell:
 
 - Syntax that looks like C but *sometimes* does something completely different than C, invisibly. This syntax can be perfectly correct (e.g. in the case of an array, or a non POD type in some cases) or be undefined behavior. This makes code review really difficult. C and C++ really are two different languages.
-- The compiler does not warn about undefined behavior and we have to rely on third-party linters, and these linters have limitations, and are usually slow
+- The compiler does not warn about undefined behavior and we have to rely on third-party tools, and these have limitations, and are usually slow
 - The compiler happily generates a default constructor that leaves the object in a half-initialized state
 - The rules in the standard are intricate and change with every new standard version (or at least the language they use). I just noticed that C++26 changed again these rules and introduced new language. Urgh.
 - So many ways to initialize a variable, and most are wrong.
