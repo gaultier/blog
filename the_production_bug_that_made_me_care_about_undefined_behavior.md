@@ -319,6 +319,15 @@ Post-Scriptum: This is not a hit piece on C++: C++ paid my bills for 10 years. I
 
 
 
+## Addendum
+
+A commenter posted this Forrest Gump gif that I had completely forgotten about, so thank you :) 
+
+<video loop="true" muted="true" preload="false" autoplay controls>
+<source src="/blog/forrest_gump_c++.mp4" type="video/mp4" />
+<source src="/blog/forrest_gump_c++.webm" type="video/webm" />
+<source src="/blog/forrest_gump_c++.gif" type="image/gif" />
+</video>
 
 
 
