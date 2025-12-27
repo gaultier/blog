@@ -1,5 +1,5 @@
 Title: A subtle data race in Go
-Tags: Go, Concurrency
+Tags: Go, Concurrency, Bug
 ---
 
 *Discussions: [/r/golang](https://www.reddit.com/r/golang/comments/1l92qe9/a_subtle_data_race_in_go).*

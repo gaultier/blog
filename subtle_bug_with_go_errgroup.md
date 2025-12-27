@@ -1,5 +1,5 @@
 Title: A subtle bug with Go's errgroup
-Tags: Go
+Tags: Go, Bug
 ---
 
 *Comments: [HN](https://news.ycombinator.com/item?id=44845953), [/r/golang](https://old.reddit.com/r/golang/comments/1mlldh9/a_subtle_bug_with_gos_errgroup/).*

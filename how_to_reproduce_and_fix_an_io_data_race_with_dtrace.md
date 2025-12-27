@@ -1,5 +1,5 @@
 Title: How to reproduce and fix an I/O data race with Go and DTrace
-Tags: DTrace, Go
+Tags: DTrace, Go, Bug
 ---
 
 Today I was confronted at work with a bizarre test failure happening only in CI, in a project I do not know. This would only happen in CI, sometimes, probably due to slow I/O and a low number of threads in this environment.
