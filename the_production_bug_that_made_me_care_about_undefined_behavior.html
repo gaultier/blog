@@ -168,7 +168,7 @@ void handle() {
 </code></pre>
 <p><em>Here is a <a href="https://godbolt.org/z/5Wbbq3P7a">godbolt</a> link with roughly this code.</em></p>
 <p>There's only one place that sets the <code>succeeded</code> field. And only one that sets the <code>error</code> field. No other place in the code touches these two fields.</p>
-<p>So now I am flabbergasted. How is that possible that both fields are true? The code is straightforward. Each field is only set once and exclusively. It should be impossible to have both fields with the same value.</p>
+<p>So now I am flabbergasted. How is that possible that both fields are true? The code is straightforward. Each field is only set once and exclusively. It should be impossible to have both fields with the value <code>true</code>.</p>
 <h2 id="just-enough-rope-to-hang-yourself">
   <a class="title" href="#just-enough-rope-to-hang-yourself">Just enough rope to hang yourself</a>
   <a class="hash-anchor" href="#just-enough-rope-to-hang-yourself" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
@@ -177,7 +177,7 @@ void handle() {
 <p>But right after, I stumble upon official C++ examples that use this syntax. So now I am confused. C++ initialization rules are different from C, after all.</p>
 <p>Cue a training montage with 80's music of me reading the C++ standard for hours. The short answer is: yes, the rules are different (enough to fill a book, and also they vary by C++ version) and <em>in some conditions</em>, <code>Response response;</code> is perfectly fine. In some other cases, this is undefined behavior.</p>
 <p>In a nutshell: The <a href="https://en.cppreference.com/w/cpp/language/default_initialization">default initialization</a> rule applies when a variable is declared without an initializer. It's quite complex but I'll try to simplify it here.</p>
-<p>Default initialization occurs under certain circumstances when using the syntax <code>T object;</code>:</p>
+<p>Default initialization occurs under certain circumstances when using the syntax <code>T object;</code> :</p>
 <ol>
 <li>If <code>T</code> is a non class, non array type, e.g. <code>int a;</code>, no initialization is performed at all. This is obvious undefined behavior.</li>
 <li>If <code>T</code> is an array, e.g. <code>std::string a[10];</code>, this is fine: each element is default-initialized. But note that some types do not have default initialization, such as <code>int</code>: <code>int a[10]</code> would leave each element uninitialized.</li>
@@ -207,7 +207,7 @@ void handle() {
 <p>My fix at the time was to simply change the call site to:</p>
 <pre><code class="language-c++">  Response response{};
 </code></pre>
-<p><em>Here is a <a href="https://godbolt.org/z/bveKbxGeM">godbolt</a> link with this code.</em></p>
+<p><em>Here is a <a href="https://godbolt.org/z/rTqernMfq">godbolt</a> link with this code.</em></p>
 <p>That forces zero initialization of the <code>error</code> and <code>succeeded</code> fields as well as default initialization of the <code>data</code> field. And no need to change the struct/class definition.</p>
 <p>This was my recommendation to my teammates at the time: do not tempt the devil, just <em>always</em> zero initialize when declaring a variable.</p>
 <hr />
@@ -242,7 +242,7 @@ int main() {
 <blockquote>
 <p><code>clang-tidy</code> reports this issue when trying to pass such a variable as argument to a function, but that's all. We want to detect all problematic locations, even when the variable is not passed to a function. Also, <code>clang-tidy</code> only reports one location and exits.</p>
 </blockquote>
-<p>But now, it has improved, and reports all problematic locations, and not only in function calls, which is great.</p>
+<p>But now, it seems it has improved, and reports all problematic locations, and not only in function calls, which is great.</p>
 <p>I also wrote in my notes at the time that <code>cppcheck</code> 'spots this without issues', but when I try it today, it does not spot anything even with <code>--enable=all</code>. So, maybe it's a regression, or I am not using it correctly.</p>
 <h2 id="the-aftermath">
   <a class="title" href="#the-aftermath">The aftermath</a>
@@ -261,12 +261,12 @@ response.success = true;
 </h2>
 <p>In my opinion, this bug is C++ in a nutshell:</p>
 <ul>
-<li>Syntax that looks like C but <em>sometimes</em> does something completely different than C, invisibly. This syntax can be perfectly correct (e.g. in the case of an array, or a non POD type in some cases) or be undefined behavior. This makes code review really difficult.</li>
+<li>Syntax that looks like C but <em>sometimes</em> does something completely different than C, invisibly. This syntax can be perfectly correct (e.g. in the case of an array, or a non POD type in some cases) or be undefined behavior. This makes code review really difficult. C and C++ really are two different languages.</li>
 <li>The compiler does not warn about undefined behavior and we have to rely on third-party linters, and these linters have limitations, and are usually slow</li>
 <li>The compiler happily generates a default constructor that leaves the object in a half-initialized state</li>
 <li>The rules in the standard are intricate and change with every new standard version (or at least the language they use). I just noticed that C++26 changed again these rules and introduced new language. Urgh.</li>
 <li>So many ways to initialize a variable, and most are wrong.</li>
-<li>For the code to behave correctly, the developer must not only consider the call site, but also the full struct definition.</li>
+<li>For the code to behave correctly, the developer must not only consider the call site, but also the full struct/class definition, and whether it is a POD type.</li>
 <li>Adding or removing one struct field (e.g. the <code>data</code> field) makes the compiler generate completely different code at the call sites.</li>
 <li>You need a PhD in programming legalese to understand what is undefined behavior in the standard, and how you can trigger it</li>
 </ul>

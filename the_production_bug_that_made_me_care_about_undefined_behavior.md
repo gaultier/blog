@@ -77,7 +77,7 @@ void handle() {
 
 There's only one place that sets the `succeeded` field. And only one that sets the `error` field. No other place in the code touches these two fields.
 
-So now I am flabbergasted. How is that possible that both fields are true? The code is straightforward. Each field is only set once and exclusively. It should be impossible to have both fields with the same value.
+So now I am flabbergasted. How is that possible that both fields are true? The code is straightforward. Each field is only set once and exclusively. It should be impossible to have both fields with the value `true`.
 
 ## Just enough rope to hang yourself
 
@@ -89,7 +89,7 @@ Cue a training montage with 80's music of me reading the C++ standard for hours.
 
 In a nutshell: The [default initialization](https://en.cppreference.com/w/cpp/language/default_initialization) rule applies when a variable is declared without an initializer. It's quite complex but I'll try to simplify it here.
 
-Default initialization occurs under certain circumstances when using the syntax `T object;`:
+Default initialization occurs under certain circumstances when using the syntax `T object;` :
 
 1. If `T` is a non class, non array type, e.g. `int a;`, no initialization is performed at all. This is obvious undefined behavior.
 1. If `T` is an array, e.g. `std::string a[10];`, this is fine: each element is default-initialized. But note that some types do not have default initialization, such as `int`: `int a[10]` would leave each element uninitialized.
@@ -127,7 +127,7 @@ My fix at the time was to simply change the call site to:
 ```c++
   Response response{};
 ```
-*Here is a [godbolt](https://godbolt.org/z/bveKbxGeM) link with this code.*
+*Here is a [godbolt](https://godbolt.org/z/rTqernMfq) link with this code.*
 
 That forces zero initialization of the `error` and `succeeded` fields as well as default initialization of the `data` field. And no need to change the struct/class definition. 
 
@@ -174,7 +174,7 @@ The compiler (`clang`) does not catch this issue even with all warnings enabled.
 
 > `clang-tidy` reports this issue when trying to pass such a variable as argument to a function, but that's all. We want to detect all problematic locations, even when the variable is not passed to a function. Also, `clang-tidy` only reports one location and exits.
 
-But now, it has improved, and reports all problematic locations, and not only in function calls, which is great.
+But now, it seems it has improved, and reports all problematic locations, and not only in function calls, which is great.
 
 I also wrote in my notes at the time that `cppcheck` 'spots this without issues', but when I try it today, it does not spot anything even with `--enable=all`. So, maybe it's a regression, or I am not using it correctly.
 
@@ -199,12 +199,12 @@ I have no idea if this `libclang` plugin still works today because I have heard 
 
 In my opinion, this bug is C++ in a nutshell:
 
-- Syntax that looks like C but *sometimes* does something completely different than C, invisibly. This syntax can be perfectly correct (e.g. in the case of an array, or a non POD type in some cases) or be undefined behavior. This makes code review really difficult.
+- Syntax that looks like C but *sometimes* does something completely different than C, invisibly. This syntax can be perfectly correct (e.g. in the case of an array, or a non POD type in some cases) or be undefined behavior. This makes code review really difficult. C and C++ really are two different languages.
 - The compiler does not warn about undefined behavior and we have to rely on third-party linters, and these linters have limitations, and are usually slow
 - The compiler happily generates a default constructor that leaves the object in a half-initialized state
 - The rules in the standard are intricate and change with every new standard version (or at least the language they use). I just noticed that C++26 changed again these rules and introduced new language. Urgh.
 - So many ways to initialize a variable, and most are wrong.
-- For the code to behave correctly, the developer must not only consider the call site, but also the full struct definition.
+- For the code to behave correctly, the developer must not only consider the call site, but also the full struct/class definition, and whether it is a POD type.
 - Adding or removing one struct field (e.g. the `data` field) makes the compiler generate completely different code at the call sites.
 - You need a PhD in programming legalese to understand what is undefined behavior in the standard, and how you can trigger it
 
