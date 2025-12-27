@@ -1,5 +1,5 @@
 Title: The production bug that made me care about undefined behavior
-Tags: C++, Undefined behavior
+Tags: C++, Undefined behavior, Bug
 ---
 
 Years ago, I maintained a big C++ codebase at my day job. This product was the bread winner for the company and offered a public HTTP API for online payments. We are talking billions of euros of processed payments a year.
@@ -208,7 +208,7 @@ In my opinion, this bug is C++ in a nutshell:
 - Adding or removing one struct field (e.g. the `data` field) makes the compiler generate completely different code at the call sites.
 - You need a PhD in programming legalese to understand what is undefined behavior in the standard, and how you can trigger it
 
-In contrast I really, really like the 'POD' approach that many languages have taken, from C, to Go, to Rust: a struct/class is just plain data. Either the compiler forces you to set each field in the struct when creating it, or it does not, but zero-initializes all unmentioned fields. This is so simple it is obviously correct (but let's not talk about uninitialized padding between fields in C :/ ).
+In contrast I really, really like the 'POD' approach that many languages have taken, from C, to Go, to Rust: a struct/class is just plain data. Either the compiler forces you to set each field in the struct when creating it, or it does not force you, and in this case, it zero-initializes all unmentioned fields. This is so simple it is obviously correct (but let's not talk about uninitialized padding between fields in C :/ ).
 
 In the end I am thankful for this bug, because it made me aware for the first time that undefined behavior is real and dangerous, for one simple reason: it makes your program behave completely differently than the code. By reading the code, you cannot predict the behavior of the program in any way. The code stopped being the source of truth. Impossible values appear in the program, as if a cosmic ray hit your machine and flipped some bits.
 And you can very easily, and invisibly, trigger undefined behavior. 

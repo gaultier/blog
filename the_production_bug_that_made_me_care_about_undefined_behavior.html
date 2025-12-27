@@ -78,7 +78,7 @@ Do not edit it by hand.
 </div>
 <div class="article-title">
 <h1>The production bug that made me care about undefined behavior</h1>
-  <div class="tags"> <a href="/blog/articles-by-tag.html#cplusplus" class="tag">C++</a> <a href="/blog/articles-by-tag.html#undefined-behavior" class="tag">Undefined behavior</a></div>
+  <div class="tags"> <a href="/blog/articles-by-tag.html#cplusplus" class="tag">C++</a> <a href="/blog/articles-by-tag.html#undefined-behavior" class="tag">Undefined behavior</a> <a href="/blog/articles-by-tag.html#bug" class="tag">Bug</a></div>
   </div>
  <strong>Table of contents</strong>
 <ul>
@@ -270,7 +270,7 @@ response.success = true;
 <li>Adding or removing one struct field (e.g. the <code>data</code> field) makes the compiler generate completely different code at the call sites.</li>
 <li>You need a PhD in programming legalese to understand what is undefined behavior in the standard, and how you can trigger it</li>
 </ul>
-<p>In contrast I really, really like the 'POD' approach that many languages have taken, from C, to Go, to Rust: a struct/class is just plain data. Either the compiler forces you to set each field in the struct when creating it, or it does not, but zero-initializes all unmentioned fields. This is so simple it is obviously correct (but let's not talk about uninitialized padding between fields in C :/ ).</p>
+<p>In contrast I really, really like the 'POD' approach that many languages have taken, from C, to Go, to Rust: a struct/class is just plain data. Either the compiler forces you to set each field in the struct when creating it, or it does not force you, and in this case, it zero-initializes all unmentioned fields. This is so simple it is obviously correct (but let's not talk about uninitialized padding between fields in C :/ ).</p>
 <p>In the end I am thankful for this bug, because it made me aware for the first time that undefined behavior is real and dangerous, for one simple reason: it makes your program behave completely differently than the code. By reading the code, you cannot predict the behavior of the program in any way. The code stopped being the source of truth. Impossible values appear in the program, as if a cosmic ray hit your machine and flipped some bits.
 And you can very easily, and invisibly, trigger undefined behavior.</p>
 <p>We programmers are only humans, and we only internalize that something (data corruption, undefined behavior, data races, etc) is a big real issue when we have been bitten by it and it ruined our day.</p>
