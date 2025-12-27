@@ -231,6 +231,43 @@ response.success = true;
 
 I have no idea if this `libclang` plugin still works today because I have heard that the `libclang` API often has breaking changes.
 
+## Some bonus C++ rules for you
+
+Remember all these rules we have just gone through? You want more? What if we added some sweet *special cases* to them? 
+
+Some types, when the value is not initialized, do **not** trigger undefined behavior, if they are used in certain ways:
+
+- `std::byte`
+- `unsigned char`
+- `char` if the underlying representation is `unsigned`
+
+
+For example, this code is perfectly valid and free of undefined behavior:
+
+```cpp
+    unsigned char c;     // “c” has an indeterminate/erroneous value
+ 
+    unsigned char d = c; // no undefined/erroneous behavior,
+                         // but “d” has an indeterminate/erroneous value
+ 
+    assert(c == d);  // holds, but both integral promotions have
+                         // undefined/erroneous behavior
+```
+
+And this runs perfectly fine under ASan. Clang throws some warnings but compiles fine, and this is valid (in terms of the C++ standard) code. 
+
+Now, if we use `bool` (for example) instead:
+
+```cpp
+  bool c; 
+  bool d = c;
+  assert(c == d);
+```
+
+This is undefined behavior and immediately triggers ASan errors! Even if the code is the same in terms of stack layout, assembly instructions, etc!
+
+I do not know why the C++ standard felt the need to muddy the water even more, but they surely had a reason. Right?
+
 
 ## Conclusion
 

@@ -112,6 +112,10 @@ Do not edit it by hand.
   </li>
 
   <li>
+    <a href="#some-bonus-cplusplus-rules-for-you">Some bonus C++ rules for you</a>
+  </li>
+
+  <li>
     <a href="#conclusion">Conclusion</a>
   </li>
 </ul>
@@ -315,6 +319,34 @@ response.error = false;
 response.success = true;
 </code></pre>
 <p>I have no idea if this <code>libclang</code> plugin still works today because I have heard that the <code>libclang</code> API often has breaking changes.</p>
+<h2 id="some-bonus-cplusplus-rules-for-you">
+  <a class="title" href="#some-bonus-cplusplus-rules-for-you">Some bonus C++ rules for you</a>
+  <a class="hash-anchor" href="#some-bonus-cplusplus-rules-for-you" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+</h2>
+<p>Remember all these rules we have just gone through? You want more? What if we added some sweet <em>special cases</em> to them?</p>
+<p>Some types, when the value is not initialized, do <strong>not</strong> trigger undefined behavior, if they are used in certain ways:</p>
+<ul>
+<li><code>std::byte</code></li>
+<li><code>unsigned char</code></li>
+<li><code>char</code> if the underlying representation is <code>unsigned</code></li>
+</ul>
+<p>For example, this code is perfectly valid and free of undefined behavior:</p>
+<pre><code class="language-cpp">    unsigned char c;     // “c” has an indeterminate/erroneous value
+ 
+    unsigned char d = c; // no undefined/erroneous behavior,
+                         // but “d” has an indeterminate/erroneous value
+ 
+    assert(c == d);  // holds, but both integral promotions have
+                         // undefined/erroneous behavior
+</code></pre>
+<p>And this runs perfectly fine under ASan. Clang throws some warnings but compiles fine, and this is valid (in terms of the C++ standard) code.</p>
+<p>Now, if we use <code>bool</code> (for example) instead:</p>
+<pre><code class="language-cpp">  bool c; 
+  bool d = c;
+  assert(c == d);
+</code></pre>
+<p>This is undefined behavior and immediately triggers ASan errors! Even if the code is the same in terms of stack layout, assembly instructions, etc!</p>
+<p>I do not know why the C++ standard felt the need to muddy the water even more, but they surely had a reason. Right?</p>
 <h2 id="conclusion">
   <a class="title" href="#conclusion">Conclusion</a>
   <a class="hash-anchor" href="#conclusion" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
