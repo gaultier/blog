@@ -354,7 +354,7 @@ response.success = true;
   bool d = c;
   assert(c == d);
 </code></pre>
-<p>This is undefined behavior and immediately triggers ASan errors! Even if the code is the same in terms of type sizes, stack layout, assembly instructions, etc!</p>
+<p>This is undefined behavior and immediately triggers ASan errors! Even if the code is the same in terms of type sizes and stack layout!</p>
 <p>I do not know why the C++ standard felt the need to muddy the water even more, but they surely had a reason. Right?</p>
 <h2 id="conclusion">
   <a class="title" href="#conclusion">Conclusion</a>
