@@ -4,7 +4,7 @@ Tags: C++, Undefined behavior, Bug
 
 Years ago, I maintained a big C++ codebase at my day job. This product was the bread winner for the company and offered a public HTTP API for online payments. We are talking billions of euros of processed payments a year.
 
-I was not yet a seasoned C++ developer yet. I knew about undefined behavior of course, but it was an abstract concept, something only beginners fall into. Oh boy was I wrong.
+I was not a seasoned C++ developer yet. I knew about undefined behavior of course, but it was an abstract concept, something only beginners fall into. Oh boy was I wrong.
 
 
 Please note that I am not and never was a C++ expert, and it's been a few years since I have been writing C++ for a living, so hopefully I got the wording and details right, but please tell me if I did not.
@@ -95,12 +95,22 @@ Default initialization occurs under certain circumstances when using the syntax 
 
 1. If `T` is a non class, non array type, e.g. `int a;`, no initialization is performed at all. This is obvious undefined behavior.
 1. If `T` is an array, e.g. `std::string a[10];`, this is fine: each element is default-initialized. But note that some types do not have default initialization, such as `int`: `int a[10]` would leave each element uninitialized.
-1. If `T` is a [POD](https://en.cppreference.com/w/cpp/named_req/PODType) (Plain Old Data, pre C++11. The wording in the standard changed with C++11 but the idea remains) struct, e.g. `Foo foo;` no initialization is performed at all. This is akin to doing `int a;` and then reading `a`. This is obvious undefined behavior.
+1. If `T` is a [POD](https://en.cppreference.com/w/cpp/named_req/PODType) (Plain Old Data, pre C++11. The wording in the standard changed with C++11 but the idea remains under the term Trivially Default Constructible) struct, e.g. `Foo foo;` no initialization is performed at all. This is akin to doing `int a;` and then reading `a`. This is obvious undefined behavior.
 1. If `T` is a non-POD struct, e.g. `Bar bar;` the default constructor is called, and it is responsible for initializing all fields. It is easy to miss one, or even forget to implement a default constructor entirely, leading to undefined behavior.
 
 It's important to distinguish the first and last case: in the first case, no call to the default constructor is emitted by the compiler. In the last case, the default constructor is called. If no default constructor is declared in the struct, the compiler generates one for us, and calls it. This can be confirmed by inspecting the generated assembly.
 
 With this bug, we are in the last case: the `Response` type is a non-POD struct (due to the `std::string data` field), so the default constructor is called. `Response` does not implement a default constructor. This means  that the compiler generates a default constructor for us, and in this generated code, each struct field is default initialized. So, the `std::string` constructor is called for the `data` field and all is well. Except, the other two fields are *not* initialized in any way. Oops.
+
+Here is a quick summary:
+
+|Type|Example|Result (Default Init)|
+|----|-------|---------------------|
+|Primitive (int, bool, etc)|int x;|Indeterminate (Garbage value)|
+|POD / Trivial Struct|Point p;|Indeterminate (All fields garbage)|
+| Array|std::string x[10];| Calls Default Constructor (Structs ok, primitives garbage)|
+|Non-Trivial Struct|Response r;|Calls Default Constructor (Structs ok, primitives garbage)|
+|Any Type (Braces)|T obj{};|Value Initialized (Safe / Zeroed)|
 
 
 Thus, the only way to fix the struct without having to fix all call sites is to implement a default constructor that properly initializes every field:
@@ -120,7 +130,7 @@ struct Response {
 
 *Here is a [godbolt](https://godbolt.org/z/bveKbxGeM) link with this code.*
 
-Of course, due to the rule of 6 (is it 6 these days? When I started to learn C++ it was 3?), we now have to implement the default destructor, the default move constructor etc etc etc.
+Of course, due to the rule of 6 (when I started to learn C++ it was 3), we now have to implement the default destructor, the default move constructor etc etc etc.
 
 ## Aftermath
 
@@ -141,7 +151,7 @@ This was my recommendation to my teammates at the time: do not tempt the devil, 
 It is important to note that in some cases, the declaration syntax `Response response;` is perfectly correct, provided that:
 
 - The type is an array, or the type is a non-POD struct and
-- Each field has a default constructor
+- Each field has a default constructor, or has a default value in the struct definition
 
 Then, the default constructor of the struct is invoked, which invokes the default constructor of each field.
 
@@ -165,7 +175,7 @@ int main() {
 But to know that, you need to inspect each field (recursively) of the struct, or assume that every default constructor initializes each field.
 
 
-Finally, it's also worth nothing that it is only undefined behavior to read an uninitialized value. Simply having uninitialized fields is not undefined behavior. If the fields are never read, or written to with a known value, before being read, there is no undefined behavior.
+Finally, it's also worth noting that it is only undefined behavior to read an uninitialized value. Simply having uninitialized fields is not undefined behavior. If the fields are never read, or written to with a known value, before being read, there is no undefined behavior.
 
 
 ## Static analysis to the rescue?
@@ -196,7 +206,7 @@ SUMMARY: UndefinedBehaviorSanitizer: undefined-behavior main.cpp:21:41
 error=0 success=1
 ```
 
-Great, the undefined behavior is spotted! Even if the error message is not super clear. 
+Great, the undefined behavior is spotted! Even if the error message is not super clear.  This is Asan's way of saying: "I expected a 0 or 1 for this boolean, but I found a random 8 in that memory slot."
 
 We alternatively could also have used Valgrind to the same effect.
 

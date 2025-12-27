@@ -117,7 +117,7 @@ Do not edit it by hand.
 </ul>
 
 <p>Years ago, I maintained a big C++ codebase at my day job. This product was the bread winner for the company and offered a public HTTP API for online payments. We are talking billions of euros of processed payments a year.</p>
-<p>I was not yet a seasoned C++ developer yet. I knew about undefined behavior of course, but it was an abstract concept, something only beginners fall into. Oh boy was I wrong.</p>
+<p>I was not a seasoned C++ developer yet. I knew about undefined behavior of course, but it was an abstract concept, something only beginners fall into. Oh boy was I wrong.</p>
 <p>Please note that I am not and never was a C++ expert, and it's been a few years since I have been writing C++ for a living, so hopefully I got the wording and details right, but please tell me if I did not.</p>
 <p><em>In this article I always say 'struct' when I mean 'struct or class'.</em></p>
 <h2 id="the-bug-report">
@@ -186,11 +186,48 @@ void handle() {
 <ol>
 <li>If <code>T</code> is a non class, non array type, e.g. <code>int a;</code>, no initialization is performed at all. This is obvious undefined behavior.</li>
 <li>If <code>T</code> is an array, e.g. <code>std::string a[10];</code>, this is fine: each element is default-initialized. But note that some types do not have default initialization, such as <code>int</code>: <code>int a[10]</code> would leave each element uninitialized.</li>
-<li>If <code>T</code> is a <a href="https://en.cppreference.com/w/cpp/named_req/PODType">POD</a> (Plain Old Data, pre C++11. The wording in the standard changed with C++11 but the idea remains) struct, e.g. <code>Foo foo;</code> no initialization is performed at all. This is akin to doing <code>int a;</code> and then reading <code>a</code>. This is obvious undefined behavior.</li>
+<li>If <code>T</code> is a <a href="https://en.cppreference.com/w/cpp/named_req/PODType">POD</a> (Plain Old Data, pre C++11. The wording in the standard changed with C++11 but the idea remains under the term Trivially Default Constructible) struct, e.g. <code>Foo foo;</code> no initialization is performed at all. This is akin to doing <code>int a;</code> and then reading <code>a</code>. This is obvious undefined behavior.</li>
 <li>If <code>T</code> is a non-POD struct, e.g. <code>Bar bar;</code> the default constructor is called, and it is responsible for initializing all fields. It is easy to miss one, or even forget to implement a default constructor entirely, leading to undefined behavior.</li>
 </ol>
 <p>It's important to distinguish the first and last case: in the first case, no call to the default constructor is emitted by the compiler. In the last case, the default constructor is called. If no default constructor is declared in the struct, the compiler generates one for us, and calls it. This can be confirmed by inspecting the generated assembly.</p>
 <p>With this bug, we are in the last case: the <code>Response</code> type is a non-POD struct (due to the <code>std::string data</code> field), so the default constructor is called. <code>Response</code> does not implement a default constructor. This means  that the compiler generates a default constructor for us, and in this generated code, each struct field is default initialized. So, the <code>std::string</code> constructor is called for the <code>data</code> field and all is well. Except, the other two fields are <em>not</em> initialized in any way. Oops.</p>
+<p>Here is a quick summary:</p>
+<table>
+<thead>
+<tr>
+<th>Type</th>
+<th>Example</th>
+<th>Result (Default Init)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Primitive (int, bool, etc)</td>
+<td>int x;</td>
+<td>Indeterminate (Garbage value)</td>
+</tr>
+<tr>
+<td>POD / Trivial Struct</td>
+<td>Point p;</td>
+<td>Indeterminate (All fields garbage)</td>
+</tr>
+<tr>
+<td>Array</td>
+<td>std::string x[10];</td>
+<td>Calls Default Constructor (Structs ok, primitives garbage)</td>
+</tr>
+<tr>
+<td>Non-Trivial Struct</td>
+<td>Response r;</td>
+<td>Calls Default Constructor (Structs ok, primitives garbage)</td>
+</tr>
+<tr>
+<td>Any Type (Braces)</td>
+<td>T obj{};</td>
+<td>Value Initialized (Safe / Zeroed)</td>
+</tr>
+</tbody>
+</table>
 <p>Thus, the only way to fix the struct without having to fix all call sites is to implement a default constructor that properly initializes every field:</p>
 <pre><code class="language-c++">struct Response {
   bool error;
@@ -204,7 +241,7 @@ void handle() {
 };
 </code></pre>
 <p><em>Here is a <a href="https://godbolt.org/z/bveKbxGeM">godbolt</a> link with this code.</em></p>
-<p>Of course, due to the rule of 6 (is it 6 these days? When I started to learn C++ it was 3?), we now have to implement the default destructor, the default move constructor etc etc etc.</p>
+<p>Of course, due to the rule of 6 (when I started to learn C++ it was 3), we now have to implement the default destructor, the default move constructor etc etc etc.</p>
 <h2 id="aftermath">
   <a class="title" href="#aftermath">Aftermath</a>
   <a class="hash-anchor" href="#aftermath" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
@@ -219,7 +256,7 @@ void handle() {
 <p>It is important to note that in some cases, the declaration syntax <code>Response response;</code> is perfectly correct, provided that:</p>
 <ul>
 <li>The type is an array, or the type is a non-POD struct and</li>
-<li>Each field has a default constructor</li>
+<li>Each field has a default constructor, or has a default value in the struct definition</li>
 </ul>
 <p>Then, the default constructor of the struct is invoked, which invokes the default constructor of each field.</p>
 <p>For example:</p>
@@ -237,7 +274,7 @@ int main() {
 }
 </code></pre>
 <p>But to know that, you need to inspect each field (recursively) of the struct, or assume that every default constructor initializes each field.</p>
-<p>Finally, it's also worth nothing that it is only undefined behavior to read an uninitialized value. Simply having uninitialized fields is not undefined behavior. If the fields are never read, or written to with a known value, before being read, there is no undefined behavior.</p>
+<p>Finally, it's also worth noting that it is only undefined behavior to read an uninitialized value. Simply having uninitialized fields is not undefined behavior. If the fields are never read, or written to with a known value, before being read, there is no undefined behavior.</p>
 <h2 id="static-analysis-to-the-rescue">
   <a class="title" href="#static-analysis-to-the-rescue">Static analysis to the rescue?</a>
   <a class="hash-anchor" href="#static-analysis-to-the-rescue" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
@@ -262,7 +299,7 @@ main.cpp:21:41: runtime error: load of value 8, which is not a valid value for t
 SUMMARY: UndefinedBehaviorSanitizer: undefined-behavior main.cpp:21:41 
 error=0 success=1
 </code></pre>
-<p>Great, the undefined behavior is spotted! Even if the error message is not super clear.</p>
+<p>Great, the undefined behavior is spotted! Even if the error message is not super clear.  This is Asan's way of saying: &quot;I expected a 0 or 1 for this boolean, but I found a random 8 in that memory slot.&quot;</p>
 <p>We alternatively could also have used Valgrind to the same effect.</p>
 <p>But: it means that we now need to have 100% test coverage to be certain that our code does not have undefined behavior. That's a big ask.</p>
 <p>Also, in my testing, Address Sanitizer did not always report the issue. That's the nature of the tool: it is meant to be conservative and avoid false positives, to avoid alerting fatigue, but that means it won't catch all issues.</p>
