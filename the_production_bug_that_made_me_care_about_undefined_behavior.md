@@ -209,7 +209,7 @@ Additionally, these tools have a performance cost and can make the build process
 
 ## The aftermath
 
-I wrote a `libclang` plugin at the time to catch other instances of this problem in the codebase: [https://github.com/gaultier/c/tree/master/libclang-plugin](https://github.com/gaultier/c/tree/master/libclang-plugin) . 
+I wrote a `libclang` plugin at the time to catch other instances of this problem in the codebase at build time: [https://github.com/gaultier/c/tree/master/libclang-plugin](https://github.com/gaultier/c/tree/master/libclang-plugin) . 
 
 Amazingly, there was only one other case in the whole codebase, and it was a false positive because by chance, the caller set the uninitialized fields right after, like this:
 

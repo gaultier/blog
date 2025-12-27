@@ -271,7 +271,7 @@ error=0 success=1
   <a class="title" href="#the-aftermath">The aftermath</a>
   <a class="hash-anchor" href="#the-aftermath" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
-<p>I wrote a <code>libclang</code> plugin at the time to catch other instances of this problem in the codebase: <a href="https://github.com/gaultier/c/tree/master/libclang-plugin">https://github.com/gaultier/c/tree/master/libclang-plugin</a> .</p>
+<p>I wrote a <code>libclang</code> plugin at the time to catch other instances of this problem in the codebase at build time: <a href="https://github.com/gaultier/c/tree/master/libclang-plugin">https://github.com/gaultier/c/tree/master/libclang-plugin</a> .</p>
 <p>Amazingly, there was only one other case in the whole codebase, and it was a false positive because by chance, the caller set the uninitialized fields right after, like this:</p>
 <pre><code class="language-c++">Response response;
 response.error = false;
