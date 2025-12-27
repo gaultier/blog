@@ -2,7 +2,7 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
 <title>Philippe Gaultier's blog</title>
 <link href="https://gaultier.github.io/blog"/>
-<updated>2025-12-27T14:14:14+01:00</updated>
+<updated>2025-12-27T14:15:20+01:00</updated>
 <author>
 <name>Philippe Gaultier</name>
 </author>
@@ -364,7 +364,7 @@
 <title>The production bug that made me care about undefined behavior</title>
 <link href="https://gaultier.github.io/blog/the_production_bug_that_made_me_care_about_undefined_behavior.html"/>
 <id>urn:uuid:5e8b603b-49e4-5967-b798-c0f06d2034d8</id>
-<updated>2025-12-27T14:14:14+01:00</updated>
+<updated>2025-12-27T14:15:20+01:00</updated>
 <published>2025-12-27T10:45:59+01:00</published>
 </entry>
 </feed>
