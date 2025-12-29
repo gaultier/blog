@@ -2,7 +2,7 @@ Title: The production bug that made me care about undefined behavior
 Tags: C++, Undefined behavior, Bug
 ---
 
-*Discussions: [/r/programming](https://www.reddit.com/r/programming/comments/1px4uug/the_production_bug_that_made_me_care_about/?).*
+*Discussions: [/r/programming](https://www.reddit.com/r/programming/comments/1px4uug/the_production_bug_that_made_me_care_about/?), [lobsters](https://lobste.rs/s/c7jhl3/production_bug_made_me_care_about).*
 
 Years ago, I maintained a big C++ codebase at my day job. This product was the bread winner for the company and offered a public HTTP API for online payments. We are talking billions of euros of processed payments a year.
 
