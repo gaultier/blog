@@ -3,7 +3,7 @@
 - [ ] Catch data races with DTrace?
 - [ ] a weird advantage of using TLA+ (using TLA+ generated traces as input for the real program)
 - [ ] compiler architecture and implementation with live playground
-- [ ] 2 million ways to die from a data race in Go
+- [ ] For a few data races more
     + `ctx` accidental reassignement
     + mutating cache entry
     + using `*testing.T` from multiple goroutines.
@@ -30,6 +30,7 @@
   + diffent calling convention for functions & system calls in the SysV ABI (4th argument)
   + no (to my knowledge) mnemonic accepts 2 immediates or effective addresses as operands  e.g. `cmp 1, 0`
   + some less than optimal encodings are forced to avoid accidentally using RIP relative addressing, e.g. `lea rax, [r13]` gets encoded as `lea rax, [r13 + 0]`
+  + Some operands size are small and force using a move-to-register e.g. `add rax, 1<<32` is illegal, need `mov rbx, 1<<32; add rax, rbx`
 - [ ] Implement DTrace from scratch, from first principles
       + mmap `/dev/dtrace`
       + Load `.d` files with definitions
