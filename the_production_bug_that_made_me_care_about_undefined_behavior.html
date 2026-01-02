@@ -105,6 +105,12 @@ Do not edit it by hand.
 
   <li>
     <a href="#runtime-analysis-to-the-rescue">Runtime analysis to the rescue</a>
+<ul>
+
+  <li>
+    <a href="#what-about-memory-sanitizer">What about Memory Sanitizer?</a>
+  </li>
+</ul>
   </li>
 
   <li>
@@ -327,6 +333,13 @@ error=0 success=1
 <p>But: it means that we now need to have 100% test coverage to be certain that our code does not have undefined behavior. That's a big ask.</p>
 <p>Also, in my testing, Address Sanitizer did not always report the issue. That's the nature of the tool: it is meant to be conservative and avoid false positives, to avoid alerting fatigue, but that means it won't catch all issues.</p>
 <p>Additionally, these tools have a performance cost and can make the build process a bit more complex.</p>
+<h3 id="what-about-memory-sanitizer">
+  <a class="title" href="#what-about-memory-sanitizer">What about Memory Sanitizer?</a>
+  <a class="hash-anchor" href="#what-about-memory-sanitizer" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+</h3>
+<p>Some commenters have pointed out that there is a sanitizer dedicated to find such issues: <a href="https://clang.llvm.org/docs/MemorySanitizer.html">Memory Sanitizer</a>.</p>
+<p>That's great, but neither Windows nor macOS are supported platforms as of the time of writing, and it does not work with static linking, from the docs.</p>
+<p>So, not really usable in general.</p>
 <h2 id="the-aftermath">
   <a class="title" href="#the-aftermath">The aftermath</a>
   <a class="hash-anchor" href="#the-aftermath" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>

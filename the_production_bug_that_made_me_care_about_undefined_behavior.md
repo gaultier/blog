@@ -234,6 +234,15 @@ Also, in my testing, Address Sanitizer did not always report the issue. That's t
 Additionally, these tools have a performance cost and can make the build process a bit more complex.
 
 
+### What about Memory Sanitizer?
+
+Some commenters have pointed out that there is a sanitizer dedicated to find such issues: [Memory Sanitizer](https://clang.llvm.org/docs/MemorySanitizer.html).
+
+That's great, but neither Windows nor macOS are supported platforms as of the time of writing, and it does not work with static linking, from the docs.
+
+So, not really usable in general.
+
+
 ## The aftermath
 
 I wrote a `libclang` plugin at the time to catch other instances of this problem in the codebase at build time: [https://github.com/gaultier/c/tree/master/libclang-plugin](https://github.com/gaultier/c/tree/master/libclang-plugin) . 
