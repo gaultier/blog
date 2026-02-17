@@ -165,6 +165,9 @@ body {
   --color-main: light-dark(black, white);
   --color-main-bg: light-dark(white, black);
   --color-code-bg: light-dark(#ECEFF1, #1A237E);
+  --hljs-bg: light-dark(#ffffff, #0d1117);
+  --hljs-color: light-dark(#24292e, #c9d1d9);
+  --hljs-keyword: light-dark(#d73a49, #ff7bf2);
 
   color: var(--color-main);
   background-color: var(--color-main-bg);
@@ -340,4 +343,21 @@ summary {
   border-bottom: 1px solid var(--color-less-important);
   padding: 1rem;
   margin: 2rem 1rem;
+}
+
+.hljs {
+  background: var(--hljs-bg);
+  color: var(--hljs-color);
+}
+.hljs-keyword {
+  color: var(--hljs-keyword);
+}
+.hljs-title {
+  color: var(--hljs-title);
+}
+.hljs-function {
+  color: var(--hljs-function);
+}
+.hljs-string {
+  color: var(--hljs-string);
 }
