@@ -105,9 +105,9 @@ p {
 
 .tag {
   border-radius: 10px;
-  background-color: var(--color-less-important);
+  background-color: var(--color-code-bg);
   padding: 0.1rem 0.5rem;
-  color: var(--color-main-bg);
+  color: var(--color-main);
   text-decoration: none;
   margin: .2rem;
 }
@@ -163,11 +163,12 @@ body {
   font-size: 1.1rem;
   tab-size: 2;
 
-  --color-less-important: #BDBDBD;
-  --color-banner: #FB8C00;
-  --color-main: black;
-  --color-main-bg: white;
-  --color-code-bg: #FFF3E0;
+  color-scheme: light dark;
+  --color-less-important: light-dark(#9E9E9E, #9E9E9E);
+  --color-banner: light-dark(#FB8C00,#FB8C00);
+  --color-main: light-dark(black, white);
+  --color-main-bg: light-dark(white, black);
+  --color-code-bg: light-dark(#ECEFF1, #1A237E);
 
   color: var(--color-main);
   background-color: var(--color-main-bg);
@@ -207,6 +208,7 @@ pre {
 
 code {
   background: var(--color-code-bg) !important;
+  color: var(--color-main) !important;
   word-wrap: break-word;
   white-space: pre-wrap;
 }
