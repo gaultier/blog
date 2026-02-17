@@ -98,10 +98,6 @@ p {
   margin-right: 1rem;
 }
 
-.home-link > a {
-  text-decoration: none;
-  font-weight: bold;
-}
 
 .tag {
   border-radius: 10px;
