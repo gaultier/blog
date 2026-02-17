@@ -554,7 +554,7 @@ static x11_connect_to_server:function
   syscall
 
   cmp rax, 0
-  jle die
+  js die
 
   mov rdi, rax ; Store socket fd in `rdi` for the remainder of the function.
 
@@ -645,7 +645,7 @@ static x11_connect_to_server:function
   syscall
 
   cmp rax, 0
-  jle die
+  js die
 
   mov rdi, rax ; Store socket fd in `rdi` for the remainder of the function.
 
@@ -701,11 +701,20 @@ static x11_connect_to_server:function
 <p>In C, we would do:</p>
 <pre><code class="language-c">  x11_connection_req_t req = {.order = 'l', .major = 11};
 </code></pre>
-<p>This structure is only 12 bytes long, since we do not use authorization (we leave all subsequent fields after the <code>minor_version</code> as 0).</p>
+<p>This structure is only 12 bytes long, since we do not use authorization (we set all subsequent fields after the <code>minor_version</code> to 0).</p>
 <p>But since we will have to read the response from the server which is quite big (around 14 KiB during my testing), we will right away reserve a lot of space on the stack, 32 KiB, to be safe:</p>
 <pre><code class="language-x86asm">  sub rsp, 1&lt;&lt;15
   mov BYTE [rsp + 0], 'l' ; Set order to 'l'.
-  mov WORD [rsp + 2], 11 ; Set major version to 11.
+  mov BYTE [rsp + 1], 0
+  mov WORD [rsp + 2], 11
+  mov BYTE [rsp + 4], 0
+  mov BYTE [rsp + 5], 0
+  mov BYTE [rsp + 6], 0
+  mov BYTE [rsp + 7], 0
+  mov BYTE [rsp + 8], 0
+  mov BYTE [rsp + 9], 0
+  mov BYTE [rsp + 10], 0
+  mov BYTE [rsp + 11], 0
 </code></pre>
 <p>Then we send it to the server:</p>
 <pre><code class="language-x86asm">  ; Send the handshake to the server: write(2).
@@ -830,7 +839,16 @@ static x11_send_handshake:function
 
   sub rsp, 1&lt;&lt;15
   mov BYTE [rsp + 0], 'l' ; Set order to 'l'.
-  mov WORD [rsp + 2], 11 ; Set major version to 11.
+  mov BYTE [rsp + 1], 0
+  mov WORD [rsp + 2], 11
+  mov BYTE [rsp + 4], 0
+  mov BYTE [rsp + 5], 0
+  mov BYTE [rsp + 6], 0
+  mov BYTE [rsp + 7], 0
+  mov BYTE [rsp + 8], 0
+  mov BYTE [rsp + 9], 0
+  mov BYTE [rsp + 10], 0
+  mov BYTE [rsp + 11], 0
 
   ; Send the handshake to the server: write(2).
   mov rax, SYSCALL_WRITE
@@ -1428,7 +1446,7 @@ static x11_connect_to_server:function
   syscall
 
   cmp rax, 0
-  jle die
+  js die
 
   mov rdi, rax ; Store socket fd in `rdi` for the remainder of the function.
 
@@ -1470,7 +1488,16 @@ static x11_send_handshake:function
 
   sub rsp, 1&lt;&lt;15
   mov BYTE [rsp + 0], 'l' ; Set order to 'l'.
-  mov WORD [rsp + 2], 11 ; Set major version to 11.
+  mov BYTE [rsp + 1], 0
+  mov WORD [rsp + 2], 11
+  mov BYTE [rsp + 4], 0
+  mov BYTE [rsp + 5], 0
+  mov BYTE [rsp + 6], 0
+  mov BYTE [rsp + 7], 0
+  mov BYTE [rsp + 8], 0
+  mov BYTE [rsp + 9], 0
+  mov BYTE [rsp + 10], 0
+  mov BYTE [rsp + 11], 0
 
   ; Send the handshake to the server: write(2).
   mov rax, SYSCALL_WRITE
