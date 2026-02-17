@@ -1,10 +1,3 @@
-button.random {
-  padding: .5rem;
-  background-color: #FB8C00;
-  color: white;
-  border: 0;
-}
-
 button:hover {
   opacity: 75%;
 }
@@ -60,9 +53,6 @@ p {
   margin: 0;
 }
 
-#banner > ul > li > a:hover {
-  background-color: #FFA726;
-}
 
 #banner > ul > li > a {
   text-decoration: none;
@@ -110,7 +100,6 @@ p {
 
 .home-link > a {
   text-decoration: none;
-  color: #E65100;
   font-weight: bold;
 }
 
@@ -261,24 +250,24 @@ h2, h3, h4, h5, h6 {
   margin: 3rem 2rem 1rem 0;
 }
 
-a.title {
+a {
+  color: black;
   text-decoration: none !important;
-  color: initial;
 }
+
 
 summary:hover {
   cursor: pointer;
 }
 
-a.title:hover {
+a:hover {
   cursor: pointer;
-  color: blue;
   text-decoration: underline !important;
 }
 
 .hash-anchor {
   opacity: 0;
-  color: blue;
+  color: black;
 }
 
 .title:hover + .hash-anchor {
