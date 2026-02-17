@@ -30,7 +30,7 @@ p {
 }
 
 #banner {
-  background-color: var(--color-banner);
+  background-color: var(--color-banner-bg);
   display: inline-flex;
   width: 100%;
   justify-content: space-between;
@@ -105,9 +105,9 @@ p {
 
 .tag {
   border-radius: 10px;
-  background-color: var(--color-code-bg);
+  background-color: var(--color-banner-bg);
   padding: 0.1rem 0.5rem;
-  color: var(--color-main);
+  color: var(--color-main-bg);
   text-decoration: none;
   margin: .2rem;
 }
@@ -165,13 +165,17 @@ body {
 
   color-scheme: light dark;
   --color-less-important: light-dark(#9E9E9E, #9E9E9E);
-  --color-banner: light-dark(#FB8C00,#FB8C00);
+  --color-banner-bg: light-dark(#FB8C00,#FB8C00);
   --color-main: light-dark(black, white);
   --color-main-bg: light-dark(white, black);
   --color-code-bg: light-dark(#ECEFF1, #1A237E);
 
   color: var(--color-main);
   background-color: var(--color-main-bg);
+}
+
+#dark-light-mode {
+  width: 2rem;
 }
 
 li {

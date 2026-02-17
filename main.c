@@ -658,7 +658,7 @@ static void article_generate_html_file(PgFileDescriptor markdown_file,
   PG_DYN_APPEND_SLICE(
       &sb, PG_S("\n  <p class=\"publication-date\">Published on "), allocator);
   PG_DYN_APPEND_SLICE(&sb, datetime_to_date(article->creation_date), allocator);
-  PG_DYN_APPEND_SLICE(&sb, PG_S("</p>\n"), allocator);
+  PG_DYN_APPEND_SLICE(&sb, PG_S(".</p>\n"), allocator);
   PG_DYN_APPEND_SLICE(&sb, PG_S("</div>\n"), allocator);
   PG_DYN_APPEND_SLICE(&sb, PG_S("<div class=\"article-title\">\n"), allocator);
   PG_DYN_APPEND_SLICE(&sb, PG_S("<h1>"), allocator);

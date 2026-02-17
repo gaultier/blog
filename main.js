@@ -54,6 +54,22 @@ return {
 
 hljs.highlightAll();
 
+document.body.style['color-scheme'] = 'light dark';
+let dark_light_mode_button = document.querySelector('#dark-light-mode');
+dark_light_mode_button.textContent = document.body.style.colorScheme === 'dark' ? '🔆' : '🌙' ;
+dark_light_mode_button.addEventListener('click', function(e) {
+  e.preventDefault();
+
+  let cur = document.body.style.colorScheme || 'dark';
+  if (cur === 'dark') {
+    document.body.style.colorScheme = 'light';
+    dark_light_mode_button.textContent = '🌙';
+  } else {
+    document.body.style.colorScheme = 'dark';
+    dark_light_mode_button.textContent = '🔆';
+  }
+});
+
 document.querySelectorAll('code').forEach((el, _i) => {
   if (el.parentElement.tagName == "PRE"){
     var header = document.createElement('div');
