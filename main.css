@@ -271,7 +271,7 @@ td, th {
 }
 
 th {
-  color: var(--color-main-bg);
+  color: var(--color-main);
   background: var(--color-less-important);
 }
 
@@ -426,10 +426,15 @@ summary {
 .hljs-variable,
 .hljs-template-variable,
 .hljs-attribute,
+.hljs-attr,
 .hljs-tag,
 .hljs-name {
   color: light-dark(#076678, #83a598) !important;
   font-weight: initial !important;
+}
+
+.hljs-punctuation {
+  color: light-dark(#928374, #928374) !important;
 }
 
 /* Aqua: faded_aqua / bright_aqua */
