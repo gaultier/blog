@@ -310,6 +310,7 @@ a:hover {
 
 summary:hover {
   cursor: pointer;
+  color: var(--color-link-hover) !important;
 }
 
 
