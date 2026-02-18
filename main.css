@@ -38,6 +38,15 @@ p {
   flex-wrap: wrap;
 }
 
+.code-header {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  background-color: var(--color-less-important);
+  align-self: stretch;
+  color: var(--color-main);
+}
+
 #banner > ul {
   list-style: none;
   padding: 0 .5rem;

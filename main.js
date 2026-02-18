@@ -73,11 +73,7 @@ dark_light_mode_button.addEventListener('click', function(e) {
 document.querySelectorAll('code').forEach((el, _i) => {
   if (el.parentElement.tagName == "PRE"){
     var header = document.createElement('div');
-    header.style['display'] = 'inline-flex';
-    header.style['align-items'] = 'center';
-    header.style['justify-content'] = 'space-between';
-    header.style['background-color'] = '#BDBDBD';
-    header.style['align-self'] = 'stretch';
+    header.classList.add('code-header');
 
     var header_text = document.createElement('span');
     var lang = 'text';
