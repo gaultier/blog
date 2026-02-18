@@ -268,10 +268,12 @@ td, th {
   border: 1px solid black;
   padding: 0.5rem;
   text-align: center;
+  border: 1px solid var(--color-banner-bg);
 }
 
 th {
-  background: rgb(255,250,240);
+  color: var(--color-main-bg);
+  background: var(--color-less-important);
 }
 
 h1 {
