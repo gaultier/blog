@@ -93,9 +93,9 @@ p {
 #me {
   border-radius: 231px;
   padding: .5rem;
-  max-width: 6rem;
+  width: 3rem;
+  height: 3rem;
   margin-right: 1rem;
-  max-height: 3rem;
 }
 
 #pseudo-body, #search-matches {
