@@ -19,7 +19,7 @@ This blog does not and will not employ any tracking or cookie of any sort. The o
 Content is **not** LLM-generated.
 
 
-Syntax highlighting uses the [Gruvbox color scheme](https://github.com/morhetz/gruvbox/tree/master), thanks to them!.
+Syntax highlighting uses the [Gruvbox color scheme](https://github.com/morhetz/gruvbox/tree/master), thanks to them!
 
 ## I am grateful
 
