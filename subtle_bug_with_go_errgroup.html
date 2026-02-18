@@ -81,7 +81,7 @@ Do not edit it by hand.
 <h1>A subtle bug with Go's errgroup</h1>
   <div class="tags"> <a href="/blog/articles-by-tag.html#go" class="tag">Go</a> <a href="/blog/articles-by-tag.html#bug" class="tag">Bug</a></div>
   </div>
- <strong>Table of contents</strong>
+ <details class="toc"><summary>Table of contents</summary>
 <ul>
 
   <li>
@@ -104,6 +104,7 @@ Do not edit it by hand.
     <a href="#addendum">Addendum</a>
   </li>
 </ul>
+</details>
 
 <p><em>Comments: <a href="https://news.ycombinator.com/item?id=44845953">HN</a>, <a href="https://old.reddit.com/r/golang/comments/1mlldh9/a_subtle_bug_with_gos_errgroup/">/r/golang</a>.</em></p>
 <p>Yesterday I got bitten by an insidious bug at work while working on <a href="https://github.com/ory/kratos">Kratos</a>. Fortunately a test caught it before it got merged. The more I work on big, complex software, the more I deeply appreciate tests, even though I do not necessarily enjoy writing them. Anyways, I lost a few hours investigating this issue, and this could happen to anyone, I think.</p>

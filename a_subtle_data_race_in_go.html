@@ -81,7 +81,7 @@ Do not edit it by hand.
 <h1>A subtle data race in Go</h1>
   <div class="tags"> <a href="/blog/articles-by-tag.html#go" class="tag">Go</a> <a href="/blog/articles-by-tag.html#concurrency" class="tag">Concurrency</a> <a href="/blog/articles-by-tag.html#bug" class="tag">Bug</a></div>
   </div>
- <strong>Table of contents</strong>
+ <details class="toc"><summary>Table of contents</summary>
 <ul>
 
   <li>
@@ -112,6 +112,7 @@ Do not edit it by hand.
     <a href="#addendum-the-fixed-code-in-full">Addendum: The fixed code in full</a>
   </li>
 </ul>
+</details>
 
 <p><em>Discussions: <a href="https://www.reddit.com/r/golang/comments/1l92qe9/a_subtle_data_race_in_go">/r/golang</a>.</em></p>
 <p>At work, a good colleague of mine opened a PR titled: 'fix data race'. Ok, I thought, let's see. They probably forgot a mutex or an atomic. Or perhaps they returned a pointer to an object when they intended to return a copy of the object. Easy to miss.</p>

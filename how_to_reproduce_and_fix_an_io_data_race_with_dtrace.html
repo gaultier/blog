@@ -81,7 +81,7 @@ Do not edit it by hand.
 <h1>How to reproduce and fix an I/O data race with Go and DTrace</h1>
   <div class="tags"> <a href="/blog/articles-by-tag.html#dtrace" class="tag">DTrace</a> <a href="/blog/articles-by-tag.html#go" class="tag">Go</a> <a href="/blog/articles-by-tag.html#bug" class="tag">Bug</a></div>
   </div>
- <strong>Table of contents</strong>
+ <details class="toc"><summary>Table of contents</summary>
 <ul>
 
   <li>
@@ -104,6 +104,7 @@ Do not edit it by hand.
     <a href="#conclusion">Conclusion</a>
   </li>
 </ul>
+</details>
 
 <p>Today I was confronted at work with a bizarre test failure happening only in CI, in a project I do not know. This would only happen in CI, sometimes, probably due to slow I/O and a low number of threads in this environment.</p>
 <p>An esteemed <a href="https://github.com/zepatrik">colleague</a> of mine hypothesized this was a data race on a file. A component is writing to the file, another component is concurrently reading from this file, and due to improper synchronization, the latter sometimes reads empty or partial data.</p>

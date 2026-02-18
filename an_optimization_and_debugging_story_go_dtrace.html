@@ -81,7 +81,7 @@ Do not edit it by hand.
 <h1>An optimization and debugging story with Go and DTrace</h1>
   <div class="tags"> <a href="/blog/articles-by-tag.html#go" class="tag">Go</a> <a href="/blog/articles-by-tag.html#optimization" class="tag">Optimization</a> <a href="/blog/articles-by-tag.html#dtrace" class="tag">DTrace</a></div>
   </div>
- <strong>Table of contents</strong>
+ <details class="toc"><summary>Table of contents</summary>
 <ul>
 
   <li>
@@ -130,6 +130,7 @@ Do not edit it by hand.
     <a href="#addendum-a-goroutine-aware-d-script">Addendum: A goroutine-aware D script</a>
   </li>
 </ul>
+</details>
 
 <p>Today at work, I was hacking on <a href="https://github.com/ory/kratos">Kratos</a> (a Go application), and I noticed running the tests took a bit too long to my liking. So I profiled the tests, and unknowingly embarked on a fun optimization and debugging adventure. I thought it could be interesting and perhaps educational.</p>
 <p>I just started this job, not two months ago. I want to show methods that make it feasible to understand and diagnose a big body of software you don't know, where you did not write any of it, but you still have to fix it.</p>

@@ -589,9 +589,12 @@ static void article_write_toc(PG_DYN(u8) * sb, PG_SLICE(Title) titles,
     return;
   }
 
-  PG_DYN_APPEND_SLICE(sb, PG_S(" <strong>Table of contents</strong>\n"),
-                      allocator);
+  PG_DYN_APPEND_SLICE(
+      sb,
+      PG_S(" <details class=\"toc\"><summary>Table of contents</summary>\n"),
+      allocator);
   article_write_toc_rec(sb, root, allocator);
+  PG_DYN_APPEND_SLICE(sb, PG_S("</details>\n"), allocator);
 }
 
 static void search_index_feed_document(SearchIndex *search_index,

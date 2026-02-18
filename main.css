@@ -1,5 +1,17 @@
 button:hover {
   opacity: 75%;
+  border: 1px solid var(--color-main);
+}
+
+button {
+  border-radius: 0.2rem;
+  margin: 0.2rem;
+  border: 1px solid transparent;
+}
+
+.copy-code {
+  align-self: flex-end;
+  background-color: initial;
 }
 
 input {
@@ -42,7 +54,7 @@ p {
   display: inline-flex;
   align-items: center;
   justify-content: space-between;
-  background-color: var(--color-less-important);
+  background-color: var(--color-banner-bg);
   align-self: stretch;
   color: var(--color-main);
 }
@@ -54,6 +66,7 @@ p {
   flex-wrap: wrap;
   justify-content: space-evenly;
   gap: .5rem;
+  margin: 0;
 }
 
 #banner > ul > li {
@@ -79,11 +92,10 @@ p {
 
 #me {
   border-radius: 231px;
-  border: 15px;
   padding: .5rem;
   max-width: 6rem;
-  margin: 0;
   margin-right: 1rem;
+  max-height: 3rem;
 }
 
 #pseudo-body, #search-matches {
@@ -132,9 +144,6 @@ p {
   display: inline-flex;
   flex-wrap: wrap;
   align-items: center;
-  margin: 0;
-  border-radius: 8px;
-  border: 15px;
 }
 
 figure {
@@ -169,11 +178,15 @@ body {
   tab-size: 2;
 
   color-scheme: light dark;
+  /* Most colors are from gruvbox: https://github.com/morhetz/gruvbox/tree/master . */
   --color-less-important: #928374;
-  --color-banner-bg: light-dark(#FB8C00,#FB8C00);
-  --color-main: light-dark(black, white);
-  --color-main-bg: light-dark(white, black);
+  --color-banner-bg: #FB8C00;
+  --color-main: light-dark(#1d2021, white);
+  --color-main-bg: light-dark(white, #1d2021);
   --color-code-bg: light-dark(#fbf1c7, #282828);
+
+  /* --color-link: light-dark(#7c6f64, #a89984);*/
+  --color-link: light-dark(#076678, #83a598);
 
   color: var(--color-main);
   background-color: var(--color-main-bg);
@@ -181,6 +194,7 @@ body {
 
 #dark-light-mode {
   width: 2rem;
+  background-color: var(--color-main);
 }
 
 li {
@@ -269,10 +283,21 @@ h2, h3, h4, h5, h6 {
   margin: 3rem 2rem 1rem 0;
 }
 
-a {
-  color: var(--color-main);
-  text-decoration: none !important;
+.toc  {
+  border: 1px solid var(--color-less-important);
+  border-radius: .2rem;
+  padding: .5rem;
 }
+
+:is(h1, h2, h3, h4, h5, h6) > a {
+  color: var(--color-main);
+}
+
+a {
+  text-decoration: none !important;
+  color: var(--color-link);
+}
+
 
 
 summary:hover {
@@ -282,6 +307,7 @@ summary:hover {
 a:hover {
   cursor: pointer;
   text-decoration: underline !important;
+  color: var(--color-link);
 }
 
 .hash-anchor {
@@ -338,7 +364,6 @@ details > pre {
 }
 
 summary {
-  text-align: center;
   font-weight: bold;
 }
 
