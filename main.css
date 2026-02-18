@@ -160,14 +160,11 @@ body {
   tab-size: 2;
 
   color-scheme: light dark;
-  --color-less-important: light-dark(#9E9E9E, #9E9E9E);
+  --color-less-important: #928374;
   --color-banner-bg: light-dark(#FB8C00,#FB8C00);
   --color-main: light-dark(black, white);
   --color-main-bg: light-dark(white, black);
-  --color-code-bg: light-dark(#ECEFF1, #1A237E);
-  --hljs-bg: light-dark(#ffffff, #0d1117);
-  --hljs-color: light-dark(#24292e, #c9d1d9);
-  --hljs-keyword: light-dark(#d73a49, #ff7bf2);
+  --color-code-bg: light-dark(#fbf1c7, #282828);
 
   color: var(--color-main);
   background-color: var(--color-main-bg);
@@ -313,6 +310,8 @@ p:has(img):has(em) {
   user-select: none;
   border-right: 1px dotted black;
   padding-right: .5rem;
+  color: var(--color-less-important);
+  border-color: var(--color-less-important);
 }
 
 @media only screen and (max-width: 650px) {
@@ -345,19 +344,81 @@ summary {
   margin: 2rem 1rem;
 }
 
+/* Gruvbox colors for code */
+
 .hljs {
-  background: var(--hljs-bg);
-  color: var(--hljs-color);
+  background: light-dark(#fbf1c7, #282828);
 }
-.hljs-keyword {
-  color: var(--hljs-keyword);
+
+/* Gray: gray_245 / gray_245 */
+.hljs-comment,
+.hljs-quote {
+  color: light-dark(#928374, #928374) !important;
+  font-weight: initial !important;
 }
-.hljs-title {
-  color: var(--hljs-title);
+
+/* Red: faded_red / bright_red */
+.hljs-keyword,
+.hljs-selector-tag,
+.hljs-addition {
+  color: light-dark(#9d0006, #fb4934) !important;
+  font-weight: initial !important;
 }
-.hljs-function {
-  color: var(--hljs-function);
+
+/* Green: faded_green / bright_green */
+.hljs-number,
+.hljs-string,
+.hljs-meta .hljs-string,
+.hljs-literal,
+.hljs-regexp {
+  color: light-dark(#79740e, #b8bb26) !important;
+  font-weight: initial !important;
 }
-.hljs-string {
-  color: var(--hljs-string);
+
+/* Yellow: faded_yellow / bright_yellow */
+.hljs-type,
+.hljs-built_in,
+.hljs-class,
+.hljs-title,
+.hljs-title.class_ {
+  color: light-dark(#b57614, #fabd2f) !important;
+  font-weight: initial !important;
 }
+
+/* Blue: faded_blue / bright_blue */
+.hljs-variable,
+.hljs-template-variable,
+.hljs-attribute,
+.hljs-tag,
+.hljs-name {
+  color: light-dark(#076678, #83a598) !important;
+  font-weight: initial !important;
+}
+
+/* Aqua: faded_aqua / bright_aqua */
+.hljs-function,
+.hljs-formula,
+.hljs-subst,
+.hljs-selector-id,
+.hljs-selector-class {
+  color: light-dark(#427b58, #8ec07c) !important;
+  font-weight: initial !important;
+}
+
+/* Purple: faded_purple / bright_purple */
+.hljs-symbol,
+.hljs-bullet,
+.hljs-link,
+.hljs-meta,
+.hljs-selector-attr,
+.hljs-selector-pseudo {
+  color: light-dark(#8f3f71, #d3869b) !important;
+  font-weight: initial !important;
+}
+
+/* Orange: faded_orange / bright_orange */
+.hljs-deletion {
+  color: light-dark(#af3a03, #fe8019) !important;
+  font-weight: initial !important;
+}
+
