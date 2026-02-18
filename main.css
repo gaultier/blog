@@ -76,7 +76,7 @@ p {
 }
 
 
-#banner > ul > li > a {
+#banner li a {
   text-decoration: none;
   border-radius: 8px;
   border: 15px;
@@ -99,7 +99,10 @@ p {
 }
 
 #pseudo-body, #search-matches {
-  padding: .7rem;
+  padding-inline: clamp(0.5rem, 3vw, 2rem);
+  padding: clamp(0.5rem, 3vw, 2rem);
+  padding-block: 0.5rem;
+  margin-inline: auto;
 }
 
 .articles > ul {
@@ -147,21 +150,16 @@ p {
 }
 
 figure {
-  display: flex;
-  justify-content: center;
-  flex-wrap: wrap;
+  width: 100%;
+  margin: 0;
 }
 
 figure > figcaption {
-  width: 100%;
   text-align: center;
 }
 
 img, video {
-  max-width: 95%;
-  padding: 1rem;
-  display: block;
-  margin: auto;
+  width: 100%;
 }
 
 hr {
@@ -289,10 +287,13 @@ h2, h3, h4, h5, h6 {
 .toc  {
   border: 1px solid var(--color-less-important);
   border-radius: .2rem;
-  padding: .5rem;
+
+  ul {
+    padding: 1rem;
+  }
 }
 
-:is(h1, h2, h3, h4, h5, h6, #banner > ul > li) > a {
+:is(h1, h2, h3, h4, h5, h6, #banner li) > a {
   color: var(--color-main);
 }
 
@@ -302,14 +303,12 @@ a {
 }
 
 a:hover {
-  cursor: pointer;
   text-decoration: underline !important;
   color: var(--color-link-hover) !important;
 }
 
 
 summary:hover {
-  cursor: pointer;
   color: var(--color-link-hover) !important;
 }
 
