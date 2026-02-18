@@ -55,6 +55,11 @@ return {
 hljs.highlightAll();
 
 document.body.style['color-scheme'] = 'light dark';
+let colorScheme = localStorage.getItem('colorScheme');
+if (colorScheme !== null) {
+  document.body.style.colorScheme = colorScheme;
+}
+
 let dark_light_mode_button = document.querySelector('#dark-light-mode');
 dark_light_mode_button.textContent = document.body.style.colorScheme === 'dark' ? '🔆' : '🌙' ;
 dark_light_mode_button.addEventListener('click', function(e) {
@@ -68,6 +73,8 @@ dark_light_mode_button.addEventListener('click', function(e) {
     document.body.style.colorScheme = 'dark';
     dark_light_mode_button.textContent = '🔆';
   }
+
+  localStorage.setItem('colorScheme', document.body.style.colorScheme);
 });
 
 document.querySelectorAll('code').forEach((el, _i) => {

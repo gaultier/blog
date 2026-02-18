@@ -289,7 +289,7 @@ h2, h3, h4, h5, h6 {
   padding: .5rem;
 }
 
-:is(h1, h2, h3, h4, h5, h6) > a {
+:is(h1, h2, h3, h4, h5, h6, #banner > ul > li) > a {
   color: var(--color-main);
 }
 
@@ -298,17 +298,17 @@ a {
   color: var(--color-link);
 }
 
+a:hover {
+  cursor: pointer;
+  text-decoration: underline !important;
+  color: var(--color-link) !important;
+}
 
 
 summary:hover {
   cursor: pointer;
 }
 
-a:hover {
-  cursor: pointer;
-  text-decoration: underline !important;
-  color: var(--color-link);
-}
 
 .hash-anchor {
   opacity: 0;
