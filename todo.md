@@ -54,7 +54,6 @@
   + The client reloads the page when a SSE event is received.
 - [ ] gen: Built-in file watch
 - [ ] gen: Built-in http server
-- [ ] browser: Dark mode
 - [ ] gen: Highlight only the changed lines in a code snippet
 - [ ] gen: Link to related articles at the end (requires post-processing after all articles have been generated)
 - [ ] gen: Syntax highlighting done statically
