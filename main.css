@@ -122,7 +122,7 @@ p {
 
 .tag {
   border-radius: 10px;
-  background-color: var(--color-code-bg);
+  background-color: var(--color-banner-bg);
   padding: 0.1rem 0.5rem;
   color: var(--color-main);
   text-decoration: none;
