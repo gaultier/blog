@@ -124,7 +124,7 @@ p {
   border-radius: 10px;
   background-color: var(--color-banner-bg);
   padding: 0.1rem 0.5rem;
-  color: var(--color-main-bg);
+  color: var(--color-main);
   text-decoration: none;
   margin: .2rem;
 }
@@ -187,6 +187,7 @@ body {
 
   /* --color-link: light-dark(#7c6f64, #a89984);*/
   --color-link: light-dark(#076678, #83a598);
+  --color-link-hover: #458588;
 
   color: var(--color-main);
   background-color: var(--color-main-bg);
@@ -303,7 +304,7 @@ a {
 a:hover {
   cursor: pointer;
   text-decoration: underline !important;
-  color: var(--color-link) !important;
+  color: var(--color-link-hover) !important;
 }
 
 
