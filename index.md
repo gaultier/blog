@@ -19,6 +19,8 @@ This blog does not and will not employ any tracking or cookie of any sort. The o
 Content is **not** LLM-generated.
 
 
+Syntax highlighting uses the [Gruvbox color scheme](https://github.com/morhetz/gruvbox/tree/master), thanks to them!.
+
 ## I am grateful
 
 I often am frustrated with the state of the software industry; however there is software out there that I am deeply grateful for.
