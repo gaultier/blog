@@ -1,7 +1,0 @@
-digraph {
-  ceo[label="Ellen, CEO"];
-  cfo[label="Jane, CFO", fillcolor="turquoise", style="filled"];
-
-
-  cfo -> ceo;
-}
