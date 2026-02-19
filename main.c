@@ -1188,77 +1188,10 @@ static void *run_http_server(void *) {
   return nullptr;
 }
 
-#if 0
-static void watch_dir() {
-  PgArena arena = pg_arena_make_from_virtual_mem(4 * PG_KiB);
-  PgArenaAllocator arena_allocator = pg_make_arena_allocator(&arena);
-  PgAllocator *allocator = pg_arena_allocator_as_allocator(&arena_allocator);
-
-  PG_RESULT(PgAio, PgError) res_aio = pg_aio_init();
-  PgAio aio = PG_UNWRAP(res_aio);
-
-  PgError err = pg_aio_register_watch_directory(
-      &aio, PG_S("."),
-      PG_WALK_DIRECTORY_KIND_FILE | PG_WALK_DIRECTORY_KIND_DIRECTORY,
-      allocator);
-  PG_ASSERT(0 == err);
-
-  for (;;) {
-    PG_RESULT(PgAioEvent, PgError)
-    res_wait = pg_aio_fs_wait_one(aio, PG_NONE(u32), allocator);
-    PgAioEvent event = PG_UNWRAP(res_wait);
-
-    PgString ext = pg_file_extension(event.name);
-    if (pg_string_eq(ext, PG_S("md"))) {
-      fprintf(stderr, "file modified: %.*s %d\n", (i32)event.name.len,
-              event.name.data, event.kind);
-    }
-  }
-}
-#endif
-
 int main() {
   PgArena arena = pg_arena_make_from_virtual_mem(120 * PG_MiB);
   PgArenaAllocator arena_allocator = pg_make_arena_allocator(&arena);
   PgAllocator *allocator = pg_arena_allocator_as_allocator(&arena_allocator);
-
-#if 0
-  {
-    PgThreadResult res_thread = pg_thread_create(run_http_server, nullptr);
-    PG_ASSERT(!res_thread.err);
-  }
-#endif
-
-#if 0
-  {
-    PG_RESULT(PgFileDescriptor) res_fs_init = pg_aio_fs_init();
-    PG_ASSERT(0 == res_fs_init.err);
-    PgFileDescriptor fs_manager = res_fs_init.res;
-
-    PG_RESULT(PgFileDescriptor) res_fd = pg_aio_fs_register_interest(
-        fs_manager, PG_S("."),
-        PG_AIO_EVENT_KIND_FILE_MODIFIED | PG_AIO_EVENT_KIND_FILE_CREATED);
-    PG_ASSERT(0 == res_fd.err);
-    PgFileDescriptor fs_fd = res_fd.res;
-    PG_ASSERT(0 != fs_fd.fd);
-
-    PG_RESULT(PgFileDescriptor) res_init = pg_aio_init();
-    PG_ASSERT(0 == res_init.err);
-    PgFileDescriptor manager = res_init.res;
-
-    PgError err = pg_aio_register_interest(manager, fs_manager,
-                                           PG_AIO_EVENT_KIND_READABLE);
-    PG_ASSERT(0 == err);
-
-    for (u64 i = 0; i < 10; i++) {
-      PgAioEventResult res_fs_wait =
-          pg_aio_fs_wait_one(manager, (Pgu32Option){0}, allocator);
-      PG_ASSERT(0 == res_fs_wait.err);
-      PgAioEvent ev = res_fs_wait.res;
-      printf("%u %.*s\n", ev.kind, (i32)ev.name.len, ev.name.data);
-    }
-  }
-#endif
 
   PG_RESULT(PgString, PgError)
   res_header = pg_file_read_full_from_path(PG_S("header.html"), allocator);
@@ -1279,8 +1212,4 @@ int main() {
 
   printf("generated %" PRIu64 " articles (arena use=%" PRIu64 ")\n",
          articles.len, pg_arena_mem_use(arena));
-
-#if 0
-  watch_dir();
-#endif
 }
