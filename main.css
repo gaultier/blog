@@ -284,15 +284,6 @@ h2, h3, h4, h5, h6 {
   margin: 3rem 2rem 1rem 0;
 }
 
-.toc  {
-  border: 1px solid var(--color-less-important);
-  border-radius: .2rem;
-
-  ul {
-    padding: 1rem;
-  }
-}
-
 :is(h1, h2, h3, h4, h5, h6, #banner li) > a {
   color: var(--color-main);
 }
@@ -464,9 +455,23 @@ summary {
   font-weight: initial !important;
 }
 
+
+.toc  {
+  border: 1px solid var(--color-less-important);
+  border-radius: .2rem;
+}
+
+
 /* Prepend title counters in the TOC e.g. `3.4.1 Foobar the baz`. */
-.toc ul { counter-reset: section; }
-.toc li { list-style-type: none; }
+.toc ul { 
+  counter-reset: section;
+}
+
+.toc li { 
+  list-style-type: none;
+  margin: 0.5rem;
+}
+
 .toc li::before {
   counter-increment: section;
   content: counters(section, ".") " ";
