@@ -464,3 +464,10 @@ summary {
   font-weight: initial !important;
 }
 
+/* Prepend title counters in the TOC e.g. `3.4.1 Foobar the baz`. */
+.toc ul { counter-reset: section; }
+.toc li { list-style-type: none; }
+.toc li::before {
+  counter-increment: section;
+  content: counters(section, ".") " ";
+}
