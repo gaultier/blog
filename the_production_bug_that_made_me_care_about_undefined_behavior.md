@@ -156,6 +156,7 @@ My fix at the time was to simply change the call site to:
 ```c++
   Response response{};
 ```
+
 *Here is a [godbolt](https://godbolt.org/z/rTqernMfq) link with this code.*
 
 That forces zero initialization of the `error` and `succeeded` fields as well as default initialization of the `data` field. And no need to change the struct definition. 
