@@ -41,6 +41,8 @@
 
 ## Blog implementation
 
+- [ ] gen: link checker
+- [ ] browser: search with `/` shortcut and appears on the side
 - [ ] browser: search shows the full title path to the match e.g. 'my_article: foo/bar/baz'
 - [ ] browser: search highlights matched terms (and jumps to them with a link?)
 - [ ] gen: Work mainly on markdown with libcmark instead of html for simplicity
