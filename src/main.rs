@@ -1,7 +1,7 @@
 use notify::{RecursiveMode, Result};
 use notify_debouncer_mini::new_debouncer;
 use rouille::{router, try_or_400, websocket};
-use std::{ffi::OsString, path::Path, thread, time::Duration};
+use std::{ffi::OsString, fs, path::Path, thread, time::Duration};
 
 fn main() -> Result<()> {
     rouille::start_server("localhost:8001", move |request| {
@@ -40,10 +40,11 @@ fn main() -> Result<()> {
 
                 let (response, websocket) = try_or_400!(websocket::start(request, Some("echo")));
 
+                let watching_path = request.url();
                 thread::spawn(move || {
                     // This line will block until the `response` above has been returned.
                     let ws = websocket.recv().unwrap();
-                    websocket_handling_thread(ws);
+                    websocket_handling_thread(ws, watching_path);
                 });
                 response
             },
@@ -52,10 +53,11 @@ fn main() -> Result<()> {
     });
 }
 
-fn websocket_handling_thread(mut websocket: websocket::Websocket) {
+fn websocket_handling_thread(mut websocket: websocket::Websocket, watching_path: String) {
     println!("new websocket");
     let (etx, erx) = std::sync::mpsc::channel();
-    let mut debouncer = new_debouncer(Duration::from_millis(20), etx).unwrap();
+
+    let mut debouncer = new_debouncer(Duration::from_millis(200), etx).unwrap();
 
     debouncer
         .watcher()
@@ -69,11 +71,27 @@ fn websocket_handling_thread(mut websocket: websocket::Websocket) {
         match res {
             Ok(events) => {
                 for event in events {
+                    let stem = event
+                        .path
+                        .file_stem()
+                        .unwrap()
+                        .to_string_lossy()
+                        .to_string();
                     if event.path.extension().unwrap_or_default() == md_ext {
                         println!("event: {:?}", event);
+
+                        let md_content_bytes = fs::read(&event.path).unwrap();
+                        let md_content_utf8 = String::from_utf8(md_content_bytes).unwrap();
+                        let html_content = markdown::to_html(&md_content_utf8);
+
+                        let html_path = event.path.clone().with_extension("html");
+                        println!("write to: {:?}", &html_path);
+                        fs::write(html_path, html_content).unwrap();
+
                         let file_path_str =
                             event.path.file_stem().unwrap_or_default().to_string_lossy();
                         websocket.send_text(&file_path_str).unwrap();
+                        return;
                     }
                 }
             }

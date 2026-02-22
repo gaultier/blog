@@ -5,6 +5,7 @@ edition = "2024"
 
 [dependencies]
 crossbeam-channel = "0.5.15"
+markdown = "1.0.0"
 notify = "8.2.0"
 notify-debouncer-mini = "0.7.0"
 rouille = {version="3.6.2", features=[]}
