@@ -12,3 +12,8 @@ vgcore.*
 main.bin*
 *.dSYM
 *dwo
+
+
+# Added by cargo
+
+/target

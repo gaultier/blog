@@ -1,0 +1,8 @@
+[package]
+name = "blog"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+notify = "8.2.0"
+notify-debouncer-mini = "0.7.0"
