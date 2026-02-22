@@ -1,63 +1,31 @@
 use notify::{RecursiveMode, Result};
 use notify_debouncer_mini::new_debouncer;
-use rouille::{Response, router, try_or_400, websocket};
+use rouille::{router, try_or_400, websocket};
 use std::{ffi::OsString, path::Path, thread, time::Duration};
 
 fn main() -> Result<()> {
-    let (tx, rx) = crossbeam_channel::bounded::<String>(20);
+    rouille::start_server("localhost:8001", move |request| {
+        println!("req: {:#?}", &request);
+        {
+            // The `match_assets` function tries to find a file whose name corresponds to the URL
+            // of the request. The second parameter (`"."`) tells where the files to look for are
+            // located.
+            // In order to avoid potential security threats, `match_assets` will never return any
+            // file outside of this directory even if the URL is for example `/../../foo.txt`.
+            let response = rouille::match_assets(request, ".");
 
-    std::thread::spawn(move || {
-        let md_ext: OsString = "md".into();
-
-        let (etx, erx) = std::sync::mpsc::channel();
-
-        let mut debouncer = new_debouncer(Duration::from_millis(20), etx).unwrap();
-
-        debouncer
-            .watcher()
-            .watch(Path::new("."), RecursiveMode::Recursive)
-            .unwrap();
-
-        debouncer
-            .watcher()
-            .watch(Path::new("."), RecursiveMode::Recursive)
-            .unwrap();
-        // Block forever, printing out events as they come in
-        for res in erx {
-            match res {
-                Ok(events) => {
-                    for event in events {
-                        if event.path.extension().unwrap_or_default() == md_ext {
-                            println!("event: {:?}", event);
-                            let file_path_str = event
-                                .path
-                                .file_stem()
-                                .unwrap_or_default()
-                                .to_string_lossy()
-                                .to_string();
-                            tx.send(file_path_str).unwrap();
-                        }
-                    }
-                }
-                Err(e) => println!("watch error: {:?}", e),
+            // If a file is found, the `match_assets` function will return a response with a 200
+            // status code and the content of the file. If no file is found, it will instead return
+            // an empty 404 response.
+            // Here we check whether if a file is found, and if so we return the response.
+            if response.is_success() {
+                return response;
             }
         }
-    });
 
-    rouille::start_server("localhost:8001", move |request| {
         router!(request,
-            (GET) (/) => {
-                // The / route outputs an HTML client so that the user can try the websockets.
-                // Note that in a real website you should probably use some templating system, or
-                // at least load the HTML from a file.
-                Response::html("<script type=\"text/javascript\">
-                    var socket = new WebSocket(\"ws://localhost:8001/ws\", \"echo\");
-                    socket.onmessage = function(event) {{
-                        console.log(event.data);
-                    }}
-                    </script>
-                    ")
-            },
+
+
 
             (GET) (/ws) => {
                 // This is the websockets route.
@@ -73,11 +41,10 @@ fn main() -> Result<()> {
 
                 let (response, websocket) = try_or_400!(websocket::start(request, Some("echo")));
 
-                let rx = rx.clone();
                 thread::spawn(move || {
                     // This line will block until the `response` above has been returned.
                     let ws = websocket.recv().unwrap();
-                    websocket_handling_thread(ws, rx);
+                    websocket_handling_thread(ws);
                 });
                 response
             },
@@ -86,19 +53,33 @@ fn main() -> Result<()> {
     });
 }
 
-fn websocket_handling_thread(
-    mut websocket: websocket::Websocket,
-    rx: crossbeam_channel::Receiver<String>,
-) {
+fn websocket_handling_thread(mut websocket: websocket::Websocket) {
     println!("new websocket");
+    let (etx, erx) = std::sync::mpsc::channel();
+    let mut debouncer = new_debouncer(Duration::from_millis(20), etx).unwrap();
 
-    match rx.recv() {
-        Ok(file_path) => {
-            println!("path: {}", file_path);
-            websocket.send_text(&file_path).unwrap();
+    debouncer
+        .watcher()
+        .watch(Path::new("."), RecursiveMode::Recursive)
+        .unwrap();
+
+    let md_ext: OsString = "md".into();
+
+    // Block forever, printing out events as they come in
+    for res in erx {
+        match res {
+            Ok(events) => {
+                for event in events {
+                    if event.path.extension().unwrap_or_default() == md_ext {
+                        println!("event: {:?}", event);
+                        let file_path_str =
+                            event.path.file_stem().unwrap_or_default().to_string_lossy();
+                        websocket.send_text(&file_path_str).unwrap();
+                    }
+                }
+            }
+            Err(e) => eprintln!("watch error: {:?}", e),
         }
-        Err(err) => {
-            eprintln!("err recv: {}", err);
-        }
-    };
+    }
+    println!("end of file watch & websocket handling");
 }

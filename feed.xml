@@ -2,7 +2,7 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
 <title>Philippe Gaultier's blog</title>
 <link href="https://gaultier.github.io/blog"/>
-<updated>2026-01-02T07:58:34+01:00</updated>
+<updated>2026-02-19T10:15:35+01:00</updated>
 <author>
 <name>Philippe Gaultier</name>
 </author>
@@ -36,7 +36,7 @@
 <title>Learn x86-64 assembly by writing a GUI from scratch</title>
 <link href="https://gaultier.github.io/blog/x11_x64.html"/>
 <id>urn:uuid:fa923100-dd66-531e-bdab-8eed3527960f</id>
-<updated>2026-02-18T12:22:30+01:00</updated>
+<updated>2026-02-22T18:52:20+01:00</updated>
 <published>2023-05-31T14:24:11+02:00</published>
 </entry>
 
@@ -364,7 +364,7 @@
 <title>The production bug that made me care about undefined behavior</title>
 <link href="https://gaultier.github.io/blog/the_production_bug_that_made_me_care_about_undefined_behavior.html"/>
 <id>urn:uuid:5e8b603b-49e4-5967-b798-c0f06d2034d8</id>
-<updated>2026-01-02T07:58:34+01:00</updated>
+<updated>2026-02-19T10:15:35+01:00</updated>
 <published>2025-12-27T10:45:59+01:00</published>
 </entry>
 </feed>

@@ -32,7 +32,7 @@ main_release_sanitizer.bin: $(C_FILES) submodules/cmark-gfm/build/src/cmark-gfm
 	$(CC) $(CFLAGS) $(LDFLAGS) main.c -o $@ -O2 -flto -fsanitize=$(SANITIZERS)
 
 submodules/cmark-gfm/build/src/cmark-gfm: 
-	make -C ./submodules/cmark
+	make -C ./submodules/cmark-gfm
 
 .PHONY: all
 all: main_debug.bin main_debug_sanitizer.bin main_release.bin main_release_sanitizer.bin
