@@ -7,8 +7,9 @@ use notify_debouncer_mini::new_debouncer;
 use rouille::{router, try_or_400, websocket};
 use std::{
     ffi::OsString,
-    fs,
+    fs::{self, File},
     path::{Path, PathBuf},
+    process::Command,
     thread,
     time::Duration,
 };
@@ -40,16 +41,44 @@ fn md_collect_titles(node: &Node, titles: &mut Vec<(String, u8)>) {
     }
 }
 
-fn main() -> Result<()> {
-    let md_path = PathBuf::from("x11_x64.md");
+fn md_parse_metadata(md_content: &str) -> (&str, Vec<&str>) {
+    let title_line = md_content.lines().next().unwrap();
+    let title = title_line.strip_prefix("Title: ").unwrap().trim();
+
+    let tags_line = md_content.lines().nth(1).unwrap();
+    let tags_str = tags_line.strip_prefix("Tags: ").unwrap();
+    let tags: Vec<&str> = tags_str.split(", ").map(|s| s.trim()).collect();
+
+    (title, tags)
+}
+
+fn md_render_article(html_header: &[u8], html_footer: &[u8], md_path: &Path) {
     let md_content_bytes = fs::read(&md_path).unwrap();
-    let md_content_utf8 = String::from_utf8(md_content_bytes).unwrap();
-    let md_ast = markdown::to_mdast(&md_content_utf8, &ParseOptions::default()).unwrap();
-    println!("{:#?}", md_ast);
+    let md_content_bytes_len = md_content_bytes.len();
+    let md_content = String::from_utf8(md_content_bytes).unwrap();
+    let modified_at = std::fs::metadata(md_path).unwrap().modified().unwrap();
+    let md_metadata = md_parse_metadata(&md_content);
+    println!("md_metadata={:#?}", md_metadata);
+
+    let metadata_delim = "---";
+    let metadata_delim_pos = md_content.find(metadata_delim).unwrap();
+    let (_, md_content) = md_content.split_at(metadata_delim_pos + metadata_delim.len());
+    println!("md_content_start={}", &md_content[..20]);
+
+    let md_ast = markdown::to_mdast(&md_content, &ParseOptions::default()).unwrap();
 
     let mut titles = Vec::with_capacity(12);
     md_collect_titles(&md_ast, &mut titles);
     println!("titles: {:#?}", titles);
+
+    let mut html_content: Vec<u8> = Vec::with_capacity(md_content_bytes_len * 8);
+}
+
+fn main() -> Result<()> {
+    let md_path = PathBuf::from("x11_x64.md");
+    let html_header = fs::read("header.html").unwrap();
+    let html_footer = fs::read("footer.html").unwrap();
+    md_render_article(&html_header, &html_footer, &md_path);
 
     rouille::start_server("localhost:8001", move |request| {
         {
