@@ -283,7 +283,7 @@ fn md_render_article(html_header: &[u8], html_footer: &[u8], md_path: &Path) {
     writeln!(
         html_content,
         r#"{}
-<p class=\"publication-date\">Published on {}.</p>"#,
+<p class="publication-date">Published on {}.</p>"#,
         BACK_LINK, modified_at_formatted
     )
     .unwrap();
