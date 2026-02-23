@@ -7,12 +7,15 @@ use notify_debouncer_mini::new_debouncer;
 use rouille::{router, try_or_400, websocket};
 use std::{
     ffi::OsString,
-    fs::{self, File},
+    fs::{self},
     path::{Path, PathBuf},
-    process::Command,
     thread,
     time::Duration,
 };
+
+use std::io::Write;
+
+const BACK_LINK: &str = r#"<p><a href="/blog"> ⏴ Back to all articles</a></p>"#;
 
 fn md_collect_titles(node: &Node, titles: &mut Vec<(String, u8)>) {
     match node {
@@ -53,12 +56,16 @@ fn md_parse_metadata(md_content: &str) -> (&str, Vec<&str>) {
 }
 
 fn md_render_article(html_header: &[u8], html_footer: &[u8], md_path: &Path) {
+    assert!(!html_header.is_empty());
+    assert!(!html_footer.is_empty());
+
     let md_content_bytes = fs::read(&md_path).unwrap();
     let md_content_bytes_len = md_content_bytes.len();
     let md_content = String::from_utf8(md_content_bytes).unwrap();
     let modified_at = std::fs::metadata(md_path).unwrap().modified().unwrap();
-    let md_metadata = md_parse_metadata(&md_content);
-    println!("md_metadata={:#?}", md_metadata);
+    // TODO: format modified_at.
+
+    let (md_root_title, md_tags) = md_parse_metadata(&md_content);
 
     let metadata_delim = "---";
     let metadata_delim_pos = md_content.find(metadata_delim).unwrap();
@@ -67,11 +74,20 @@ fn md_render_article(html_header: &[u8], html_footer: &[u8], md_path: &Path) {
 
     let md_ast = markdown::to_mdast(&md_content, &ParseOptions::default()).unwrap();
 
-    let mut titles = Vec::with_capacity(12);
-    md_collect_titles(&md_ast, &mut titles);
-    println!("titles: {:#?}", titles);
+    let mut md_titles = Vec::with_capacity(12);
+    md_collect_titles(&md_ast, &mut md_titles);
+    println!("titles: {:#?}", md_titles);
 
     let mut html_content: Vec<u8> = Vec::with_capacity(md_content_bytes_len * 8);
+    writeln!(
+        html_content,
+        "<!DOCTYPE html>\n<html>\n<head>\n<title>{}</title>",
+        md_root_title
+    )
+    .unwrap();
+    writeln!(html_content, r#"<div class="article-prelude">{}<p class=\"publication-date\">Published on {:?}.</p></div>"#, BACK_LINK, modified_at).unwrap();
+
+    println!("html: {}", String::from_utf8(html_content).unwrap());
 }
 
 fn main() -> Result<()> {
