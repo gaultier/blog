@@ -12,6 +12,7 @@ use std::{
     thread,
     time::Duration,
 };
+use time::OffsetDateTime;
 
 use std::io::Write;
 
@@ -251,6 +252,9 @@ fn md_render_article(html_header: &[u8], html_footer: &[u8], md_path: &Path) {
     let md_content_bytes_len = md_content_bytes.len();
     let md_content = String::from_utf8(md_content_bytes).unwrap();
     let modified_at = std::fs::metadata(md_path).unwrap().modified().unwrap();
+    let datetime: OffsetDateTime = modified_at.into();
+    let format = time::format_description::parse("[year]-[month]-[day]").unwrap();
+    let modified_at_formatted = datetime.format(&format).unwrap();
     // TODO: format modified_at.
 
     let (md_root_title, tags) = md_parse_metadata(&md_content);
@@ -279,8 +283,8 @@ fn md_render_article(html_header: &[u8], html_footer: &[u8], md_path: &Path) {
     writeln!(
         html_content,
         r#"{}
-<p class=\"publication-date\">Published on {:?}.</p>"#,
-        BACK_LINK, modified_at
+<p class=\"publication-date\">Published on {}.</p>"#,
+        BACK_LINK, modified_at_formatted
     )
     .unwrap();
     writeln!(html_content, r#"</div>"#).unwrap();
