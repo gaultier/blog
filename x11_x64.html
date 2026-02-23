@@ -172,12 +172,10 @@ Do not edit it by hand.
 <p>I will be using the <code>nasm</code> assembler which is simple, cross-platform, fast, and has quite a readable syntax.</p>
 <p>For the GUI, I will be using X11 since I am based on Linux and it has some interesting properties that make it easy to do without external libraries. If you are running Wayland, it should work with XWayland out of the box (<em>EDIT: After testing it, I can confirm it does work</em>), and perhaps also on macOS with XQuartz, but I have not tested those (for macOS, remember to tell <code>nasm</code> to use the <code>macho64</code> format, since macOS does not use the ELF format! Also, the stock linker on macOS does not support <code>-static</code>.).</p>
 <p>Note that the only difference between *nix operating systems in the context of this program is the system call values. Since I am based on Linux I will be using the Linux system call values, but 'porting' this program to, say, FreeBSD, would only require to change those values, possibly using the <code>nasm</code> macros:</p>
-<pre><code class="language-x86asm">%ifdef linux ; Linux
+<pre><code class="language-x86asm">%ifdef linux
   %define SYSCALL_EXIT 60
-%elifdef freebsd ; FreeBSD
+%elifdef freebsd
   %define SYSCALL_EXIT 1
-%elifdef darwin ; macOS 
-  %define SYSCALL_EXIT 0x2000001
 %endif
 </code></pre>
 <blockquote>

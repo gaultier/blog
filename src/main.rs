@@ -1,9 +1,56 @@
+use markdown::{
+    ParseOptions,
+    mdast::{Node, Text},
+};
 use notify::{RecursiveMode, Result};
 use notify_debouncer_mini::new_debouncer;
 use rouille::{router, try_or_400, websocket};
-use std::{ffi::OsString, fs, path::Path, thread, time::Duration};
+use std::{
+    ffi::OsString,
+    fs,
+    path::{Path, PathBuf},
+    thread,
+    time::Duration,
+};
+
+fn md_collect_titles(node: &Node, titles: &mut Vec<(String, u8)>) {
+    match node {
+        Node::Root(root) => {
+            for child in &root.children {
+                md_collect_titles(child, titles);
+            }
+        }
+        Node::Heading(heading) => {
+            let level = heading.depth;
+            // TODO: Handle markdown title!
+            assert_eq!(1, heading.children.len());
+            let child = heading.children.first().unwrap();
+            let content = match child {
+                Node::Text(Text { value, .. }) => value.clone(),
+                other => panic!("unexpected value: {:#?}", other),
+            };
+            titles.push((content, level));
+        }
+        Node::Paragraph(paragraph) => {
+            for child in &paragraph.children {
+                md_collect_titles(child, titles);
+            }
+        }
+        _ => {}
+    }
+}
 
 fn main() -> Result<()> {
+    let md_path = PathBuf::from("x11_x64.md");
+    let md_content_bytes = fs::read(&md_path).unwrap();
+    let md_content_utf8 = String::from_utf8(md_content_bytes).unwrap();
+    let md_ast = markdown::to_mdast(&md_content_utf8, &ParseOptions::default()).unwrap();
+    println!("{:#?}", md_ast);
+
+    let mut titles = Vec::with_capacity(12);
+    md_collect_titles(&md_ast, &mut titles);
+    println!("titles: {:#?}", titles);
+
     rouille::start_server("localhost:8001", move |request| {
         {
             // The `match_assets` function tries to find a file whose name corresponds to the URL
@@ -82,6 +129,8 @@ fn websocket_handling_thread(mut websocket: websocket::Websocket, watching_path:
 
                         let md_content_bytes = fs::read(&event.path).unwrap();
                         let md_content_utf8 = String::from_utf8(md_content_bytes).unwrap();
+                        let md_ast = markdown::to_mdast(&md_content_utf8, &ParseOptions::default());
+                        println!("{:#?}", md_ast);
                         let html_content = markdown::to_html(&md_content_utf8);
 
                         let html_path = event.path.clone().with_extension("html");
