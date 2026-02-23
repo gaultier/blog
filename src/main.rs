@@ -74,6 +74,53 @@ fn html_slug(s: &str) -> String {
     String::from_utf8(res).unwrap()
 }
 
+fn md_render_article_content(content: &mut Vec<u8>, node: &Node) {
+    match node {
+        Node::Root(root) => {
+            for child in &root.children {
+                md_render_article_content(content, child);
+            }
+        }
+        Node::Blockquote(blockquote) => {
+            for child in &blockquote.children {
+                md_render_article_content(content, child);
+            }
+        }
+        Node::FootnoteDefinition(footnote_definition) => todo!(),
+        Node::MdxJsxFlowElement(mdx_jsx_flow_element) => todo!(),
+        Node::List(list) => todo!(),
+        Node::MdxjsEsm(mdxjs_esm) => todo!(),
+        Node::Toml(toml) => todo!(),
+        Node::Yaml(yaml) => todo!(),
+        Node::Break(_) => todo!(),
+        Node::InlineCode(inline_code) => todo!(),
+        Node::InlineMath(inline_math) => todo!(),
+        Node::Delete(delete) => todo!(),
+        Node::Emphasis(emphasis) => todo!(),
+        Node::MdxTextExpression(mdx_text_expression) => todo!(),
+        Node::FootnoteReference(footnote_reference) => todo!(),
+        Node::Html(html) => todo!(),
+        Node::Image(image) => todo!(),
+        Node::ImageReference(image_reference) => todo!(),
+        Node::MdxJsxTextElement(mdx_jsx_text_element) => todo!(),
+        Node::Link(link) => todo!(),
+        Node::LinkReference(link_reference) => todo!(),
+        Node::Strong(strong) => todo!(),
+        Node::Text(text) => todo!(),
+        Node::Code(code) => todo!(),
+        Node::Math(math) => todo!(),
+        Node::MdxFlowExpression(mdx_flow_expression) => todo!(),
+        Node::Heading(heading) => todo!(),
+        Node::Table(table) => todo!(),
+        Node::ThematicBreak(thematic_break) => todo!(),
+        Node::TableRow(table_row) => todo!(),
+        Node::TableCell(table_cell) => todo!(),
+        Node::ListItem(list_item) => todo!(),
+        Node::Definition(definition) => todo!(),
+        Node::Paragraph(paragraph) => todo!(),
+    }
+}
+
 fn md_render_article(html_header: &[u8], html_footer: &[u8], md_path: &Path) {
     assert!(!html_header.is_empty());
     assert!(!html_footer.is_empty());
@@ -133,6 +180,8 @@ fn md_render_article(html_header: &[u8], html_footer: &[u8], md_path: &Path) {
     writeln!(html_content, r#"</div>"#).unwrap();
 
     // TODO: TOC.
+
+    md_render_article_content(&mut html_content, &md_ast);
 
     html_content.extend(BACK_LINK.as_bytes());
     html_content.extend(html_footer);
