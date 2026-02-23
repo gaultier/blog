@@ -192,7 +192,7 @@ fn md_render_article_content(content: &mut Vec<u8>, node: &Node) {
             for child in &table.children {
                 md_render_article_content(content, child);
             }
-            writeln!(content, "</table>").unwrap();
+            writeln!(content, "</table>\n\n").unwrap();
         }
         Node::ThematicBreak(_) => {
             writeln!(content, "<hr />").unwrap();
