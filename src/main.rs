@@ -82,35 +82,78 @@ fn md_render_article_content(content: &mut Vec<u8>, node: &Node) {
             }
         }
         Node::Blockquote(blockquote) => {
+            write!(content, "<blockquote>").unwrap();
+
             for child in &blockquote.children {
                 md_render_article_content(content, child);
             }
+            write!(content, "</blockquote>").unwrap();
         }
         Node::FootnoteDefinition(footnote_definition) => todo!(),
-        Node::MdxJsxFlowElement(mdx_jsx_flow_element) => todo!(),
+        Node::MdxJsxFlowElement(_mdx_jsx_flow_element) => todo!(),
         Node::List(list) => todo!(),
-        Node::MdxjsEsm(mdxjs_esm) => todo!(),
-        Node::Toml(toml) => todo!(),
-        Node::Yaml(yaml) => todo!(),
+        Node::MdxjsEsm(_mdxjs_esm) => todo!(),
+        Node::Toml(_toml) => todo!(),
+        Node::Yaml(_yaml) => todo!(),
         Node::Break(_) => todo!(),
-        Node::InlineCode(inline_code) => todo!(),
-        Node::InlineMath(inline_math) => todo!(),
+        Node::InlineCode(inline_code) => {
+            write!(content, "<code>{}</code>", inline_code.value).unwrap();
+        }
+        Node::InlineMath(_inline_math) => todo!(),
         Node::Delete(delete) => todo!(),
-        Node::Emphasis(emphasis) => todo!(),
-        Node::MdxTextExpression(mdx_text_expression) => todo!(),
+        Node::Emphasis(emphasis) => {
+            write!(content, "<em>").unwrap();
+            for child in &emphasis.children {
+                md_render_article_content(content, child);
+            }
+            write!(content, "</em>").unwrap();
+        }
+        Node::MdxTextExpression(_mdx_text_expression) => todo!(),
         Node::FootnoteReference(footnote_reference) => todo!(),
-        Node::Html(html) => todo!(),
-        Node::Image(image) => todo!(),
-        Node::ImageReference(image_reference) => todo!(),
-        Node::MdxJsxTextElement(mdx_jsx_text_element) => todo!(),
-        Node::Link(link) => todo!(),
-        Node::LinkReference(link_reference) => todo!(),
-        Node::Strong(strong) => todo!(),
-        Node::Text(text) => todo!(),
-        Node::Code(code) => todo!(),
-        Node::Math(math) => todo!(),
-        Node::MdxFlowExpression(mdx_flow_expression) => todo!(),
-        Node::Heading(heading) => todo!(),
+        Node::Html(html) => {
+            write!(content, "{}", html.value).unwrap();
+        }
+        Node::Image(image) => {
+            write!(content, r#"<img src="{}" alt="{}"/>"#, image.url, image.alt).unwrap();
+        }
+        Node::ImageReference(_image_reference) => todo!(),
+        Node::MdxJsxTextElement(_mdx_jsx_text_element) => todo!(),
+        Node::Link(link) => {
+            write!(content, r#"<a href="{}">"#, link.url).unwrap();
+            for child in &link.children {
+                md_render_article_content(content, child);
+            }
+            write!(content, r#"</a>"#).unwrap();
+        }
+        Node::LinkReference(_link_reference) => todo!(),
+        Node::Strong(strong) => {
+            write!(content, "<strong>").unwrap();
+            for child in &strong.children {
+                md_render_article_content(content, child);
+            }
+            write!(content, "</strong>").unwrap();
+        }
+        Node::Text(text) => {
+            write!(content, "{}", text.value).unwrap();
+        }
+        Node::Code(code) => {
+            write!(
+                content,
+                r#"<pre><code class="language-{}">{}</code></pre>"#,
+                code.lang.as_ref().unwrap(),
+                code.value
+            )
+            .unwrap();
+        }
+        Node::Math(_math) => todo!(),
+        Node::MdxFlowExpression(_mdx_flow_expression) => todo!(),
+        Node::Heading(heading) => {
+            writeln!(content, "<h{}>", heading.depth).unwrap();
+            for child in &heading.children {
+                md_render_article_content(content, child);
+            }
+            writeln!(content, "</h{}>", heading.depth).unwrap();
+        }
         Node::Table(table) => todo!(),
         Node::ThematicBreak(thematic_break) => todo!(),
         Node::TableRow(table_row) => todo!(),
@@ -243,54 +286,55 @@ fn main() -> Result<()> {
     //        _ => rouille::Response::empty_404()
     //    )
     //});
+    Ok(())
 }
 
-fn websocket_handling_thread(mut websocket: websocket::Websocket, watching_path: String) {
-    println!("new websocket");
-    let (etx, erx) = std::sync::mpsc::channel();
-
-    let mut debouncer = new_debouncer(Duration::from_millis(200), etx).unwrap();
-
-    debouncer
-        .watcher()
-        .watch(Path::new("."), RecursiveMode::Recursive)
-        .unwrap();
-
-    let md_ext: OsString = "md".into();
-
-    // Block forever, printing out events as they come in
-    for res in erx {
-        match res {
-            Ok(events) => {
-                for event in events {
-                    let stem = event
-                        .path
-                        .file_stem()
-                        .unwrap()
-                        .to_string_lossy()
-                        .to_string();
-                    if event.path.extension().unwrap_or_default() == md_ext {
-                        println!("event: {:?}", event);
-
-                        let md_content_bytes = fs::read(&event.path).unwrap();
-                        let md_content_utf8 = String::from_utf8(md_content_bytes).unwrap();
-                        let md_ast = markdown::to_mdast(&md_content_utf8, &ParseOptions::default());
-                        println!("{:#?}", md_ast);
-                        let html_content = markdown::to_html(&md_content_utf8);
-
-                        let html_path = event.path.clone().with_extension("html");
-                        println!("write to: {:?}", &html_path);
-                        fs::write(html_path, html_content).unwrap();
-
-                        let file_path_str =
-                            event.path.file_stem().unwrap_or_default().to_string_lossy();
-                        websocket.send_text(&file_path_str).unwrap();
-                        return;
-                    }
-                }
-            }
-            Err(e) => eprintln!("watch error: {:?}", e),
-        }
-    }
-    println!("end of file watch & websocket handling");
-}
+//fn websocket_handling_thread(mut websocket: websocket::Websocket, watching_path: String) {
+//    println!("new websocket");
+//    let (etx, erx) = std::sync::mpsc::channel();
+//
+//    let mut debouncer = new_debouncer(Duration::from_millis(200), etx).unwrap();
+//
+//    debouncer
+//        .watcher()
+//        .watch(Path::new("."), RecursiveMode::Recursive)
+//        .unwrap();
+//
+//    let md_ext: OsString = "md".into();
+//
+//    // Block forever, printing out events as they come in
+//    for res in erx {
+//        match res {
+//            Ok(events) => {
+//                for event in events {
+//                    let stem = event
+//                        .path
+//                        .file_stem()
+//                        .unwrap()
+//                        .to_string_lossy()
+//                        .to_string();
+//                    if event.path.extension().unwrap_or_default() == md_ext {
+//                        println!("event: {:?}", event);
+//
+//                        let md_content_bytes = fs::read(&event.path).unwrap();
+//                        let md_content_utf8 = String::from_utf8(md_content_bytes).unwrap();
+//                        let md_ast = markdown::to_mdast(&md_content_utf8, &ParseOptions::default());
+//                        println!("{:#?}", md_ast);
+//                        let html_content = markdown::to_html(&md_content_utf8);
+//
+//                        let html_path = event.path.clone().with_extension("html");
+//                        println!("write to: {:?}", &html_path);
+//                        fs::write(html_path, html_content).unwrap();
+//
+//                        let file_path_str =
+//                            event.path.file_stem().unwrap_or_default().to_string_lossy();
+//                        websocket.send_text(&file_path_str).unwrap();
+//                        return;
+//                    }
+//                }
+//            }
+//            Err(e) => eprintln!("watch error: {:?}", e),
+//        }
+//    }
+//    println!("end of file watch & websocket handling");
+//}
