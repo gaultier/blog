@@ -228,6 +228,21 @@ fn md_render_article_content(content: &mut Vec<u8>, node: &Node) {
     }
 }
 
+fn md_render_toc(content: &mut Vec<u8>) {
+    writeln!(
+        content,
+        r#"  <details class="toc"><summary>Table of contents</summary>
+<ul>"#
+    )
+    .unwrap();
+    writeln!(
+        content,
+        r#"</ul>
+</details>"#
+    )
+    .unwrap();
+}
+
 fn md_render_article(html_header: &[u8], html_footer: &[u8], md_path: &Path) {
     assert!(!html_header.is_empty());
     assert!(!html_footer.is_empty());
@@ -289,7 +304,7 @@ fn md_render_article(html_header: &[u8], html_footer: &[u8], md_path: &Path) {
     writeln!(html_content, r#"</div>"#).unwrap();
     writeln!(html_content, r#"</div>"#).unwrap();
 
-    // TODO: TOC.
+    md_render_toc(&mut html_content);
 
     md_render_article_content(&mut html_content, &md_ast);
 
