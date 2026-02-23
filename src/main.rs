@@ -71,7 +71,8 @@ fn html_slug(s: &str) -> String {
             _ => {}
         };
     }
-    String::from_utf8(res).unwrap()
+    let s = String::from_utf8(res).unwrap();
+    s.trim_matches(|c| c == '-').to_owned()
 }
 
 fn md_render_article_content(content: &mut Vec<u8>, node: &Node) {
@@ -128,7 +129,12 @@ fn md_render_article_content(content: &mut Vec<u8>, node: &Node) {
             write!(content, "{}", html.value).unwrap();
         }
         Node::Image(image) => {
-            write!(content, r#"<img src="{}" alt="{}"/>"#, image.url, image.alt).unwrap();
+            write!(
+                content,
+                r#"<img src="{}" alt="{}" />"#,
+                image.url, image.alt
+            )
+            .unwrap();
         }
         Node::ImageReference(_image_reference) => todo!(),
         Node::MdxJsxTextElement(_mdx_jsx_text_element) => todo!(),
@@ -169,10 +175,15 @@ fn md_render_article_content(content: &mut Vec<u8>, node: &Node) {
                 other => panic!("unexpected node: {:#?}", other),
             };
 
-            write!(content, r#"<h{} id="{}">"#, heading.depth, html_slug(value)).unwrap();
+            let slug = html_slug(value);
+
+            writeln!(content, r#"<h{} id="{}">"#, heading.depth, slug).unwrap();
+            write!(content, r#"  <a class="title" href="{}{}">"#, "#", slug).unwrap();
             for child in &heading.children {
                 md_render_article_content(content, child);
             }
+            writeln!(content, "</a>").unwrap();
+            writeln!(content, r#"  <a class="hash-anchor" href="{}{}" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>"#,"#", slug).unwrap();
             writeln!(content, "</h{}>", heading.depth).unwrap();
         }
         Node::Table(table) => {
@@ -252,7 +263,8 @@ fn md_render_article(html_header: &[u8], html_footer: &[u8], md_path: &Path) {
     writeln!(html_content, r#"<div class="article-prelude">"#).unwrap();
     writeln!(
         html_content,
-        r#"{}<p class=\"publication-date\">Published on {:?}.</p>"#,
+        r#"{}
+<p class=\"publication-date\">Published on {:?}.</p>"#,
         BACK_LINK, modified_at
     )
     .unwrap();
