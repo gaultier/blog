@@ -102,11 +102,11 @@ Do not edit it by hand.
 <ul>
 
   <li>
-    <a href="#the-fix">The fix</a>
+    <a href="#the-fix-1">The fix</a>
 </li>
 
   <li>
-    <a href="#learnings">Learnings</a>
+    <a href="#learnings-1">Learnings</a>
 </li>
 </ul>
 </li>
@@ -116,11 +116,11 @@ Do not edit it by hand.
 <ul>
 
   <li>
-    <a href="#the-fix">The fix</a>
+    <a href="#the-fix-2">The fix</a>
 </li>
 
   <li>
-    <a href="#learnings">Learnings</a>
+    <a href="#learnings-2">Learnings</a>
 </li>
 </ul>
 </li>
@@ -130,11 +130,11 @@ Do not edit it by hand.
 <ul>
 
   <li>
-    <a href="#the-fix">The fix</a>
+    <a href="#the-fix-3">The fix</a>
 </li>
 
   <li>
-    <a href="#learnings">Learnings</a>
+    <a href="#learnings-3">Learnings</a>
 </li>
 </ul>
 </li>
@@ -309,9 +309,9 @@ If CheckRedirect is nil, the Client uses its default policy [...].</p>
 <p>The problem is: the <code>CheckRedirect</code> field is modified concurrently without any synchronization which is a data race.</p>
 <p>This code also suffers from an I/O race: depending on the network speed and response time for both URLs, the redirects might or might be checked, since the callback might get overwritten from the other goroutine, right when the HTTP client would call it.</p>
 <p>Alternatively, the <code>http.Client</code> could end up calling a <code>nil</code> callback if the callback was set when the <code>http.Client</code> checked whether it was nil or not, but before <code>http.Client</code> had the chance to call it, the other goroutine set it to <code>nil</code>. Boom, <code>nil</code> dereference.</p>
-<h3 id="the-fix">
-  <a class="title" href="#the-fix">The fix</a>
-  <a class="hash-anchor" href="#the-fix" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+<h3 id="the-fix-1">
+  <a class="title" href="#the-fix-1">The fix</a>
+  <a class="hash-anchor" href="#the-fix-1" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h3>
 <p>Here, the simplest fix is to use two different HTTP clients:</p>
 <pre><code class="language-diff">diff --git a/cmd-sg/main.go b/cmd-sg/main.go
@@ -340,9 +340,9 @@ index 351ecc0..8abee1c 100644
  		return err
 
 </code></pre>
-<h3 id="learnings">
-  <a class="title" href="#learnings">Learnings</a>
-  <a class="hash-anchor" href="#learnings" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+<h3 id="learnings-1">
+  <a class="title" href="#learnings-1">Learnings</a>
+  <a class="hash-anchor" href="#learnings-1" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h3>
 <p>This may affect performance negatively since some resources will not be shared anymore.</p>
 <p>Additionally, in some situations, this is not so easy because <code>http.Client</code> does not offer a <code>Clone()</code> method (a recurring issue in Go as we'll see). For example, a Go test may start a <code>httptest.Server</code> and then call <code>.Client()</code> on this server to obtain a preconfigured HTTP client for this server. Then, there is no easy way to duplicate this client to use it from two different tests running in parallel.</p>
@@ -448,9 +448,9 @@ func TestMain(t *testing.T) {
 <p>The reason why is because the data, and the mutex guarding it, do not have the same 'lifetime'. The <code>pricingInfo</code> map is global and exists from the start of the program to the end. But the mutex <code>infoMtx</code> exists only for the duration of the HTTP handler (and thus HTTP request). We effectively have 1 map and N mutexes, none of them shared between HTTP handlers. So HTTP handlers cannot synchronize access to the map.</p>
 <p>The intent of the code was (I think) to do a deep clone of the pricing information at the beginning of the HTTP handler in <code>NewPricingService</code>. Unfortunately, Go does a shallow copy of structures and thus each <code>PricingService</code> instance ends up sharing the same underlying <code>plans</code> map, which is this global map. It could be that for a long time, it worked because the <code>PricingInfo</code> struct did not yet contain the map (in the real code it contains a lot of <code>int</code>s and <code>string</code>s which are value types and will be copied correctly by a shallow copy), and the map was only added later.</p>
 <p>This data race is akin to copying a mutex by value when passing it to a function, which then locks it. This does no synchronization at all since a copy of the mutex is being locked - no mutex is shared between concurrent units.</p>
-<h3 id="the-fix">
-  <a class="title" href="#the-fix">The fix</a>
-  <a class="hash-anchor" href="#the-fix" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+<h3 id="the-fix-2">
+  <a class="title" href="#the-fix-2">The fix</a>
+  <a class="hash-anchor" href="#the-fix-2" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h3>
 <p>In any event, the fix is to align the lifetime of the data and the mutex:</p>
 <ul>
@@ -488,9 +488,9 @@ index fb59f5c..c7a7a94 100644
  
  func AddPricing(w http.ResponseWriter, r *http.Request) {
 </code></pre>
-<h3 id="learnings">
-  <a class="title" href="#learnings">Learnings</a>
-  <a class="hash-anchor" href="#learnings" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+<h3 id="learnings-2">
+  <a class="title" href="#learnings-2">Learnings</a>
+  <a class="hash-anchor" href="#learnings-2" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h3>
 <p>It's annoying to have to implement this manually and especially to have to check every single nested field to determine if it's a value type or a reference type (the former will behave correctly with a shallow copy, the latter needs a custom deep copy implementation). I miss the <code>derive(Clone)</code> annotation in Rust. This is something that the compiler can (and should) do better than me.</p>
 <p>Furthermore, as mentioned in the previous section, some types from the standard library or third-party libraries do not implement a deep <code>Clone()</code> function and contain private fields which prevent us from implementing that ourselves.</p>
@@ -584,9 +584,9 @@ func main() {
 </code></pre>
 <p>So, the issue may be clear from the description but here it is spelled out: one goroutine writes to a (growing) byte buffer, another one reads from it, and there is no synchronization: that's a clear data race.</p>
 <p>What is interesting here is that we have to pass an <code>io.Writer</code> for the <code>OutputStream</code> to the library, and this library will write to the writer we passed. We cannot insert a mutex lock anywhere around the write site, since we do not control the library and there no hooks (e.g. pre/post write callbacks) to do so.</p>
-<h3 id="the-fix">
-  <a class="title" href="#the-fix">The fix</a>
-  <a class="hash-anchor" href="#the-fix" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+<h3 id="the-fix-3">
+  <a class="title" href="#the-fix-3">The fix</a>
+  <a class="hash-anchor" href="#the-fix-3" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h3>
 <p>We implement our own writer that does the synchronization with a mutex:</p>
 <pre><code class="language-go">type SyncWriter struct {
@@ -675,9 +675,9 @@ index 5529d90..42571b9 100644
  	eg.Wait()
 </code></pre>
 <p>Note: A <a href="https://news.ycombinator.com/item?id=46050516">comment</a> pointed out that <code>reader, writer := io.Pipe()</code> is tailored exactly for this. Indeed, this is an elegant solution: we just have to also wrap the reader returned by <code>io.Pipe()</code> in a <code>bufio.NewReader()</code> which gives us the <code>ReadString('\n')</code> method. So, this is probably the preferrable solution. As it is often the case in Go, there are two ways to solve this concurrency problem: with a mutex (the custom <code>SyncWriter</code>) or with a channel (which <code>io.Pipe()</code> uses under the hood).</p>
-<h3 id="learnings">
-  <a class="title" href="#learnings">Learnings</a>
-  <a class="hash-anchor" href="#learnings" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+<h3 id="learnings-3">
+  <a class="title" href="#learnings-3">Learnings</a>
+  <a class="hash-anchor" href="#learnings-3" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h3>
 <p>Most types in the Go standard library (or third-party libraries for that matter) are <em>not</em> concurrency safe and synchronization is typically on you. I still often see questions on the internet about that, so assume it is not until the documentation states otherwise.</p>
 <p>It would also be nice if more types have a 'sync' version, e.g. <code>SyncWriter</code>, <code>SyncReader</code>, etc.</p>
