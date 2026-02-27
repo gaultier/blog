@@ -157,7 +157,7 @@ Do not edit it by hand.
   <a class="hash-anchor" href="#what-we-re-making" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>The 11th version of the X protocol was born in 1987 and has not changed since. Since it predates GPUs by a decade or so, its model does not really fit the hardware of today. Still, it's everywhere. Any Unix has a X server, even macOS with XQuartz, and now Windows supports running GUI Linux applications inside WSL! X11 has never been so ubiquitous. The protocol is relatively simple and the entry bar is low: we only need to create a socket and we're off the races. And for 2D applications, there's no need to be a Vulkan wizard or even interact with the GPU. Hell, it will work even without any GPU!</p>
-<p>Everyone writing GUIs these days use a giant pile of libraries, starting with the ~~overly complicated~~ venerable <code>libX11</code> and <code>libxcb</code> libraries, to Qt and SDL.</p>
+<p>Everyone writing GUIs these days use a giant pile of libraries, starting with the <del>overly complicated</del> venerable <code>libX11</code> and <code>libxcb</code> libraries, to Qt and SDL.</p>
 <p>Here are the steps we need to take:</p>
 <ul>
 <li>Open a window</li>
@@ -707,7 +707,7 @@ main :: proc() {
   <a class="title" href="#loading-assets">Loading assets</a>
   <a class="hash-anchor" href="#loading-assets" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
-<p>What's a game without nice looking pictures ~~stolen from somewhere on the internet~~ ?</p>
+<p>What's a game without nice looking pictures <del>stolen from somewhere on the internet</del> ?</p>
 <p>Here is our sprite, the one image containing all our assets:</p>
 <p><img src="game-x11-sprite.png" alt="Our sprite" /></p>
 <p>Odin has a nice feature to embed the image file in our executable which makes redistribution a breeze and startup a bit faster, so we'll do that:</p>

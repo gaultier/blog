@@ -1,6 +1,6 @@
 use markdown::{
     ParseOptions,
-    mdast::{Node, Text},
+    mdast::{FootnoteDefinition, Node, Text},
 };
 use notify::{RecursiveMode, Result};
 use notify_debouncer_mini::new_debouncer;
@@ -104,22 +104,30 @@ fn html_slug(s: &str) -> String {
     res.trim_matches(|c| c == '-').to_owned()
 }
 
-fn md_render_article_content(content: &mut Vec<u8>, node: &Node, titles: &[Title]) {
+fn md_render_article_content(
+    content: &mut Vec<u8>,
+    footnote_defs: &mut Vec<FootnoteDefinition>,
+    node: &Node,
+    titles: &[Title],
+) {
     match node {
         Node::Root(root) => {
             for child in &root.children {
-                md_render_article_content(content, child, titles);
+                md_render_article_content(content, footnote_defs, child, titles);
             }
         }
         Node::Blockquote(blockquote) => {
             writeln!(content, "<blockquote>").unwrap();
 
             for child in &blockquote.children {
-                md_render_article_content(content, child, titles);
+                md_render_article_content(content, footnote_defs, child, titles);
             }
             writeln!(content, "</blockquote>").unwrap();
         }
-        Node::FootnoteDefinition(_footnote_definition) => todo!(),
+        Node::FootnoteDefinition(footnote_definition) => {
+            dbg!(footnote_definition);
+            footnote_defs.push(footnote_definition.clone());
+        }
         Node::MdxJsxFlowElement(_mdx_jsx_flow_element) => todo!(),
         Node::List(list) => {
             if list.ordered {
@@ -128,7 +136,7 @@ fn md_render_article_content(content: &mut Vec<u8>, node: &Node, titles: &[Title
                 writeln!(content, "<ul>").unwrap();
             }
             for child in &list.children {
-                md_render_article_content(content, child, titles);
+                md_render_article_content(content, footnote_defs, child, titles);
             }
             if list.ordered {
                 writeln!(content, "</ol>").unwrap();
@@ -145,16 +153,34 @@ fn md_render_article_content(content: &mut Vec<u8>, node: &Node, titles: &[Title
             write!(content, "<code>{}</code>", sanitized).unwrap();
         }
         Node::InlineMath(_inline_math) => todo!(),
-        Node::Delete(_delete) => todo!(),
+        Node::Delete(delete) => {
+            write!(content, "<del>").unwrap();
+            for child in &delete.children {
+                md_render_article_content(content, footnote_defs, child, titles);
+            }
+            write!(content, "</del>").unwrap();
+        }
         Node::Emphasis(emphasis) => {
             write!(content, "<em>").unwrap();
             for child in &emphasis.children {
-                md_render_article_content(content, child, titles);
+                md_render_article_content(content, footnote_defs, child, titles);
             }
             write!(content, "</em>").unwrap();
         }
         Node::MdxTextExpression(_mdx_text_expression) => todo!(),
-        Node::FootnoteReference(_footnote_reference) => todo!(),
+        Node::FootnoteReference(footnote_reference) => {
+            dbg!(&footnote_reference);
+
+            writeln!(
+                content,
+                r#"<sup class="footnote-ref"><a href="{}fn-{}" id="fnref-{}" data-footnote-ref>{}</a></sup>"#,
+                "#",
+                &footnote_reference.identifier,
+                footnote_reference.identifier,
+                footnote_reference.label.as_ref().unwrap(),
+            )
+            .unwrap();
+        }
         Node::Html(html) => {
             writeln!(content, "{}", html.value).unwrap();
         }
@@ -171,7 +197,7 @@ fn md_render_article_content(content: &mut Vec<u8>, node: &Node, titles: &[Title
         Node::Link(link) => {
             write!(content, r#"<a href="{}">"#, link.url).unwrap();
             for child in &link.children {
-                md_render_article_content(content, child, titles);
+                md_render_article_content(content, footnote_defs, child, titles);
             }
             write!(content, r#"</a>"#).unwrap();
         }
@@ -179,7 +205,7 @@ fn md_render_article_content(content: &mut Vec<u8>, node: &Node, titles: &[Title
         Node::Strong(strong) => {
             write!(content, "<strong>").unwrap();
             for child in &strong.children {
-                md_render_article_content(content, child, titles);
+                md_render_article_content(content, footnote_defs, child, titles);
             }
             write!(content, "</strong>").unwrap();
         }
@@ -202,7 +228,6 @@ fn md_render_article_content(content: &mut Vec<u8>, node: &Node, titles: &[Title
         Node::MdxFlowExpression(_mdx_flow_expression) => todo!(),
         Node::Heading(heading) => {
             assert_eq!(heading.children.len(), 1);
-            dbg!(&heading.position);
             let title = titles
                 .iter()
                 .find(|t| t.start_md_offset == heading.position.as_ref().unwrap().start.offset)
@@ -216,7 +241,7 @@ fn md_render_article_content(content: &mut Vec<u8>, node: &Node, titles: &[Title
             )
             .unwrap();
             for child in &heading.children {
-                md_render_article_content(content, child, titles);
+                md_render_article_content(content, footnote_defs, child, titles);
             }
             writeln!(content, "</a>").unwrap();
             writeln!(content, r#"  <a class="hash-anchor" href="{}{}" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>"#,"#", title.slug).unwrap();
@@ -225,7 +250,7 @@ fn md_render_article_content(content: &mut Vec<u8>, node: &Node, titles: &[Title
         Node::Table(table) => {
             writeln!(content, "<table>").unwrap();
             for child in &table.children {
-                md_render_article_content(content, child, titles);
+                md_render_article_content(content, footnote_defs, child, titles);
             }
             writeln!(content, "</table>\n\n").unwrap();
         }
@@ -235,14 +260,14 @@ fn md_render_article_content(content: &mut Vec<u8>, node: &Node, titles: &[Title
         Node::TableRow(table_row) => {
             writeln!(content, "<tr>").unwrap();
             for child in &table_row.children {
-                md_render_article_content(content, child, titles);
+                md_render_article_content(content, footnote_defs, child, titles);
             }
             writeln!(content, "</tr>").unwrap();
         }
         Node::TableCell(table_cell) => {
             writeln!(content, "<td>").unwrap();
             for child in &table_cell.children {
-                md_render_article_content(content, child, titles);
+                md_render_article_content(content, footnote_defs, child, titles);
             }
             writeln!(content, "</td>").unwrap();
         }
@@ -256,7 +281,7 @@ fn md_render_article_content(content: &mut Vec<u8>, node: &Node, titles: &[Title
                 &list_item.children
             };
             for child in children {
-                md_render_article_content(content, child, titles);
+                md_render_article_content(content, footnote_defs, child, titles);
             }
             writeln!(content, "</li>").unwrap();
         }
@@ -264,7 +289,7 @@ fn md_render_article_content(content: &mut Vec<u8>, node: &Node, titles: &[Title
         Node::Paragraph(paragraph) => {
             write!(content, "<p>").unwrap();
             for child in &paragraph.children {
-                md_render_article_content(content, child, titles);
+                md_render_article_content(content, footnote_defs, child, titles);
             }
             writeln!(content, "</p>").unwrap();
         }
@@ -357,7 +382,15 @@ fn md_render_article(html_header: &[u8], html_footer: &[u8], md_path: &Path) {
     let metadata_delim_pos = md_content.find(metadata_delim).unwrap();
     let (_, md_content) = md_content.split_at(metadata_delim_pos + metadata_delim.len());
 
-    let md_ast = markdown::to_mdast(&md_content, &ParseOptions::default()).unwrap();
+    let md_ast = markdown::to_mdast(
+        &md_content,
+        &ParseOptions {
+            constructs: markdown::Constructs::gfm(),
+            gfm_strikethrough_single_tilde: true,
+            ..Default::default()
+        },
+    )
+    .unwrap();
 
     let mut md_titles = Vec::with_capacity(12);
     let mut title_to_counter: BTreeMap<String, u8> = BTreeMap::new();
@@ -403,13 +436,58 @@ fn md_render_article(html_header: &[u8], html_footer: &[u8], md_path: &Path) {
 
     md_render_toc(&mut html_content, &md_titles);
 
-    md_render_article_content(&mut html_content, &md_ast, &md_titles);
+    let mut footnote_defs = Vec::with_capacity(8);
+    md_render_article_content(&mut html_content, &mut footnote_defs, &md_ast, &md_titles);
+    md_render_footnote_definitions(&mut html_content, &footnote_defs);
 
     write!(html_content, "\n{}", BACK_LINK).unwrap();
     html_content.extend(html_footer);
 
     let html_path = md_path.with_extension("html");
     fs::write(html_path, html_content).unwrap();
+}
+
+fn md_render_footnote_definitions(content: &mut Vec<u8>, footnote_defs: &[FootnoteDefinition]) {
+    if footnote_defs.is_empty() {
+        return;
+    }
+
+    writeln!(
+        content,
+        r#"<section class="footnotes" data-footnotes>
+<ol>"#
+    )
+    .unwrap();
+
+    for def in footnote_defs {
+        writeln!(content, r#"<li id="fn-{}">"#, def.identifier).unwrap();
+
+        assert_eq!(1, def.children.len());
+        let child = &def.children[0];
+        let children = match child {
+            Node::Paragraph(p) => &p.children,
+            other => panic!("unexpected footnote definition: {:#?}", other),
+        };
+        writeln!(content, r#"<p>"#).unwrap();
+        for child in children {
+            md_render_article_content(content, &mut vec![], child, &[]);
+        }
+
+        writeln!(content, r#"<a href="{}fnref-{}" class="footnote-backref" data-footnote-backref data-footnote-backref-idx="{}" aria-label="Back to reference {}">↩</a>"#,"#", &def.identifier, &def.identifier, &def.identifier).unwrap();
+
+        writeln!(
+            content,
+            r#"</p>
+</li>"#
+        )
+        .unwrap();
+    }
+    writeln!(
+        content,
+        r#"</ol>
+</section>"#
+    )
+    .unwrap();
 }
 
 fn main() -> Result<()> {

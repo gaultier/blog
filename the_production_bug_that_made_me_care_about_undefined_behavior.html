@@ -208,14 +208,66 @@ void handle() {
 <p>It's important to distinguish the first and last case: in the first case, no call to the default constructor is emitted by the compiler. In the last case, the default constructor is called. If no default constructor is declared in the struct, the compiler generates one for us, and calls it. This can be confirmed by inspecting the generated assembly.</p>
 <p>With this bug, we are in the last case: the <code>Response</code> type is a non-POD struct (due to the <code>std::string data</code> field), so the default constructor is called. <code>Response</code> does not implement a default constructor. This means  that the compiler generates a default constructor for us, and in this generated code, each struct field is default initialized. So, the <code>std::string</code> constructor is called for the <code>data</code> field and all is well. Except, the other two fields are <em>not</em> initialized in any way. Oops.</p>
 <p>Here is a quick summary:</p>
-<p>|Type|Example|Result (Default Init)|
-|----|-------|---------------------|
-|Primitive (int, bool, etc)|int x;|Indeterminate (Garbage value)|
-|POD / Trivial Struct|Point p;|Indeterminate (All fields garbage)|
-|Array of Objects|std::string x[10];|Safe (All strings initialized)|
-|Array of Primitives|int x[10];|Indeterminate (All garbage)|
-|Non-Trivial Struct|Response r;|Calls Default Constructor (Structs ok, primitives garbage)|
-|Any Type (Braces)|T obj{};|Value Initialized (Safe / Zeroed)|</p>
+<table>
+<tr>
+<td>
+Type</td>
+<td>
+Example</td>
+<td>
+Result (Default Init)</td>
+</tr>
+<tr>
+<td>
+Primitive (int, bool, etc)</td>
+<td>
+int x;</td>
+<td>
+Indeterminate (Garbage value)</td>
+</tr>
+<tr>
+<td>
+POD / Trivial Struct</td>
+<td>
+Point p;</td>
+<td>
+Indeterminate (All fields garbage)</td>
+</tr>
+<tr>
+<td>
+Array of Objects</td>
+<td>
+std::string x[10];</td>
+<td>
+Safe (All strings initialized)</td>
+</tr>
+<tr>
+<td>
+Array of Primitives</td>
+<td>
+int x[10];</td>
+<td>
+Indeterminate (All garbage)</td>
+</tr>
+<tr>
+<td>
+Non-Trivial Struct</td>
+<td>
+Response r;</td>
+<td>
+Calls Default Constructor (Structs ok, primitives garbage)</td>
+</tr>
+<tr>
+<td>
+Any Type (Braces)</td>
+<td>
+T obj{};</td>
+<td>
+Value Initialized (Safe / Zeroed)</td>
+</tr>
+</table>
+
+
 <p>Thus, the only way to fix the struct without having to fix all call sites is to implement a default constructor that properly initializes every field:</p>
 <pre><code class="language-c++">struct Response {
   bool error;
@@ -312,7 +364,7 @@ error=0 success=1
   <a class="title" href="#the-aftermath">The aftermath</a>
   <a class="hash-anchor" href="#the-aftermath" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
-<p>I wrote a <code>libclang</code> plugin at the time to catch other instances of this problem in the codebase at build time: <a href="https://github.com/gaultier/c/tree/master/libclang-plugin">https://github.com/gaultier/c/tree/master/libclang-plugin</a> .</p>
+<p>I wrote a <code>libclang</code> plugin at the time to catch other instances of this problem in the codebase at build time: <a href="https://github.com/gaultier/c/tree/master/libclang-plugin"><a href="https://github.com/gaultier/c/tree/master/libclang-plugin">https://github.com/gaultier/c/tree/master/libclang-plugin</a></a> .</p>
 <p>Amazingly, there was only one other case in the whole codebase, and it was a false positive because by chance, the caller set the uninitialized fields right after, like this:</p>
 <pre><code class="language-c++">Response response;
 response.error = false;

@@ -322,7 +322,7 @@ Total: 0.0 MB
   <a class="title" href="#generating-a-pprof-profile">Generating a pprof profile</a>
   <a class="hash-anchor" href="#generating-a-pprof-profile" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
-<p>Let's start with a very simple arena (directly based on <a href="https://nullprogram.com/blog/2023/09/27/">https://nullprogram.com/blog/2023/09/27/</a>) and show how it is used:</p>
+<p>Let's start with a very simple arena (directly based on <a href="https://nullprogram.com/blog/2023/09/27/"><a href="https://nullprogram.com/blog/2023/09/27/">https://nullprogram.com/blog/2023/09/27/</a></a>) and show how it is used:</p>
 <pre><code class="language-c">#define _GNU_SOURCE
 #include &lt;stdint.h&gt;
 #include &lt;stdio.h&gt;
@@ -596,7 +596,7 @@ $ pprof --web ./a.out heap.profile
 <p>To make use of these, our application needs to generate the information we gathered in the format the profiler expects, just like we did with <code>pprof</code>.</p>
 <ul>
 <li>Chrome expects a <a href="https://docs.google.com/document/d/1CvAClvFfyA5R-PhYUmn5OOQtYMH4h6I0nSsKchNAySU/preview">JSON file</a>, which I did not experiment with yet.</li>
-<li><p>Firefox expects a <a href="https://github.com/firefox-devtools/profiler/blob/main/docs-developer/processed-profile-format.md">different JSON file</a>. A good starting point is <a href="https://github.com/mstange/samply">https://github.com/mstange/samply</a>. I experimented with it but dropped this avenue because of several frustrating aspects:</p>
+<li><p>Firefox expects a <a href="https://github.com/firefox-devtools/profiler/blob/main/docs-developer/processed-profile-format.md">different JSON file</a>. A good starting point is <a href="https://github.com/mstange/samply"><a href="https://github.com/mstange/samply">https://github.com/mstange/samply</a></a>. I experimented with it but dropped this avenue because of several frustrating aspects:</p>
 <ul>
 <li>It is very JS-centric so much of the profile has to be filled with <code>null</code> values or explicitly saying that the each sample is not for JS.</li>
 <li>All fields must be provided even if empty, including arrays. Failing to do so throws an obscure exception in the profiler, that has to be tracked in the browser debugger, which shows the minified JS profiler code, which is not fun (yes, the profiler is written mostly/entirely in JS). The consequence is that most of the profile file is made of lengthy arrays only containing <code>null</code> values. Thus, most of the code to generate it is boilerplate noise.</li>

@@ -91,8 +91,8 @@ Do not edit it by hand.
 <li><p>For each article (<code>*.html</code>) file in the directory, we add an entry (<code>&lt;entry&gt;</code>) in the XML document with:</p>
 <ul>
 <li>The link to the article, that's just the filename in my case.</li>
-<li>The 'updated at' field, which is ~~just the <code>mtime</code> of the file locally~~ queried from git</li>
-<li>The 'published at' field, which is ~~just the <code>ctime</code> of the file locally~~ queried from git</li>
+<li>The 'updated at' field, which is <del>just the <code>mtime</code> of the file locally</del> queried from git</li>
+<li>The 'published at' field, which is <del>just the <code>ctime</code> of the file locally</del> queried from git</li>
 <li>A UUID. Here I went with UUIDv5 which is simply the sha1 of the file name in the UUID format. It's nifty because it means that the script is stateless and idempotent. If the article is later updated, the UUID remains the same (but the <code>updated at</code> will still hint at the update).</li>
 </ul>
 </li>

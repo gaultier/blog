@@ -217,13 +217,46 @@ END {
 }
 </code></pre>
 <p>And here are the statistics (commit <code>7800f4f</code>, 2025-06-08):</p>
-<p>|Variable name suffix|Count|
-|--------------------|-----|
-| <code>mu</code>               | 131 |
-| <code>mutex</code>            | 11  |
-| something else     | 11  |
-| <code>lock</code>             | 6   |
-| <code>mux</code>              | 0   |</p>
+<table>
+<tr>
+<td>
+Variable name suffix</td>
+<td>
+Count</td>
+</tr>
+<tr>
+<td>
+<code>mu</code></td>
+<td>
+131</td>
+</tr>
+<tr>
+<td>
+<code>mutex</code></td>
+<td>
+11</td>
+</tr>
+<tr>
+<td>
+something else</td>
+<td>
+11</td>
+</tr>
+<tr>
+<td>
+<code>lock</code></td>
+<td>
+6</td>
+</tr>
+<tr>
+<td>
+<code>mux</code></td>
+<td>
+0</td>
+</tr>
+</table>
+
+
 <p>So according to these statistics: if you want to follow the same naming convention as the Go project, use <code>xxxMu</code> as a name for your mutexes.</p>
 <p>More importantly, I would add, and this is subjective: <strong>name the mutex after the variable it protects for clarity, e.g.: <code>bar</code> and <code>barMu</code></strong>. In nearly every case in the Go project where this rule of thumb was not followed, a code comment was present to explain which variable the mutex protects. We might as well have this information in the mutex variable name.</p>
 <p>Even for cases where the mutex protects multiple variables, the Go developers often picked one of the variables and named the mutex after it:</p>

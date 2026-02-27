@@ -119,7 +119,7 @@ Do not edit it by hand.
 
 <p><em>Or, how FFI in Rust is a pain in the neck.</em></p>
 <p><em>Discussions: <a href="https://old.reddit.com/r/rust/comments/1gktuw6/perhaps_rust_needs_defer/?">/r/rust</a>, <a href="https://old.reddit.com/r/programming/comments/1gktum4/perhaps_rust_needs_defer/?">/r/programming</a>, <a href="https://news.ycombinator.com/item?id=42058091">HN</a>, <a href="https://lobste.rs/s/2ka0ps/perhaps_rust_needs_defer">lobsters</a></em></p>
-<p>In a previous article I <a href="/blog/lessons_learned_from_a_successful_rust_rewrite.html#i-am-still-chasing-memory-leaks">mentioned</a> that we use the <code>defer</code> idiom in Rust through a crate, but that it actually rarely gets past the borrow checker. Some comments were ~~claiming this issue does not exist~~ surprised and I did not have an example at hand.</p>
+<p>In a previous article I <a href="/blog/lessons_learned_from_a_successful_rust_rewrite.html#i-am-still-chasing-memory-leaks">mentioned</a> that we use the <code>defer</code> idiom in Rust through a crate, but that it actually rarely gets past the borrow checker. Some comments were <del>claiming this issue does not exist</del> surprised and I did not have an example at hand.</p>
 <p>Well, today at work I hit this issue again so I thought I would document it. And the whole experience showcases well how working in Rust with lots of FFI interop feels like.</p>
 <h2 id="setting-the-stage">
   <a class="title" href="#setting-the-stage">Setting the stage</a>
@@ -277,7 +277,7 @@ brk(0x213c0000)                         = 0x213c0000
   <a class="title" href="#second-attempt-at-freeing-the-memory-properly">Second attempt at freeing the memory properly</a>
   <a class="hash-anchor" href="#second-attempt-at-freeing-the-memory-properly" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
-<p>So, let's first try to dodge the problem the ~~hacky~~ simple way by pretending that the memory is allocated by a <code>Box</code>, which only needs the pointer, just like <code>free()</code>:</p>
+<p>So, let's first try to dodge the problem the <del>hacky</del> simple way by pretending that the memory is allocated by a <code>Box</code>, which only needs the pointer, just like <code>free()</code>:</p>
 <pre><code class="language-rust">    #[test]
     fn test_get_foos() {
         ...
@@ -442,7 +442,7 @@ fn main() {
 </h2>
 <p>Rust + FFI is nasty and has a lot of friction. I went at work through all these steps I went through in this article, and this happens a lot.</p>
 <p>The crux of the issue is that there is a lot of knowledge to keep in our heads, lots of easy ways to shoot ourselves in the foot, and we have to reconcile what various tools tell us: even if the compiler is happy, the tests might not be. Even the tests are happy, Miri might not be. Even if we think we have done the right thing, we discover later, buried deep in the docs, that in fact, we didn't. It's definitely for experts only.</p>
-<p>This should not be so hard! Won't somebody think of the ~~children~~ Rust FFI users?</p>
+<p>This should not be so hard! Won't somebody think of the <del>children</del> Rust FFI users?</p>
 <p>EDIT: It's been <a href="https://chaos.social/@filmroellchen/113464336212759405">pointed</a> out to me that there are two on-going internal discussions by the Rust developers about this topic to possibly reserve the <code>defer</code> keyword for future use and maybe one day add this facility to the language: <a href="https://internals.rust-lang.org/t/pre-rfc-defer-statement/16644">1</a>, <a href="https://internals.rust-lang.org/t/a-defer-discussion/20387/71">2</a>.</p>
 <h2 id="addendum-one-more-gotcha">
   <a class="title" href="#addendum-one-more-gotcha">Addendum: One more gotcha</a>
