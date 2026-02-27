@@ -239,7 +239,6 @@ fn md_ast_extract_children_text(nodes: &[Node]) -> Option<&str> {
     if nodes.len() == 1
         && let Some(child) = nodes.first()
     {
-        dbg!(child);
         match child {
             Node::Text(t) => Some(&t.value),
             Node::Paragraph(p) if p.children.len() == 1 => match &p.children[0] {
@@ -272,19 +271,59 @@ fn text_sanitize_for_html(s: &str) -> Cow<'_, str> {
     }
 }
 
-fn md_render_toc(content: &mut Vec<u8>) {
+fn md_render_toc(content: &mut Vec<u8>, titles: &[(String, u8)]) {
+    if titles.is_empty() {
+        return;
+    }
+
+    dbg!(titles);
+
     writeln!(
         content,
         r#"  <details class="toc"><summary>Table of contents</summary>
 <ul>"#
     )
     .unwrap();
-    writeln!(
-        content,
-        r#"</ul>
-</details>"#
-    )
-    .unwrap();
+
+    let mut current_level = titles[0].1;
+
+    for (i, (title, level)) in titles.iter().enumerate() {
+        let level = *level;
+        if level > current_level {
+            for _ in 0..(level - current_level) {
+                writeln!(content, "<ul>").unwrap();
+            }
+        } else if level < current_level {
+            // Close the current <li>, then close the <ul> levels, then close the parent <li>.
+            for _ in 0..(current_level - level) {
+                writeln!(content, "</li></ul>").unwrap();
+            }
+            writeln!(content, "</li>").unwrap(); // Close the <li> of the previous same-level item.
+        } else if i > 0 {
+            // Same level: just close the previous item.
+            writeln!(content, "</li>").unwrap();
+        }
+        current_level = level;
+
+        writeln!(
+            content,
+            r#"{}  <li>
+    <a href="{}{}">{}</a>
+  </li>"#,
+            "\n",
+            "#",
+            html_slug(&title),
+            &title,
+        )
+        .unwrap();
+    }
+
+    // 3. Final Cleanup: Close all remaining open tags.
+    let base_level = titles[0].1;
+    for _ in 0..(current_level - base_level) {
+        writeln!(content, "</li></ul>").unwrap();
+    }
+    writeln!(content, "</ul>\n</details>").unwrap();
 }
 
 fn md_render_article(html_header: &[u8], html_footer: &[u8], md_path: &Path) {
@@ -305,13 +344,11 @@ fn md_render_article(html_header: &[u8], html_footer: &[u8], md_path: &Path) {
     let metadata_delim = "---";
     let metadata_delim_pos = md_content.find(metadata_delim).unwrap();
     let (_, md_content) = md_content.split_at(metadata_delim_pos + metadata_delim.len());
-    println!("md_content_start={}", &md_content[..20]);
 
     let md_ast = markdown::to_mdast(&md_content, &ParseOptions::default()).unwrap();
 
     let mut md_titles = Vec::with_capacity(12);
     md_collect_titles(&md_ast, &mut md_titles);
-    println!("titles: {:#?}", md_titles);
 
     let mut html_content: Vec<u8> = Vec::with_capacity(md_content_bytes_len * 8);
     writeln!(
@@ -351,7 +388,7 @@ fn md_render_article(html_header: &[u8], html_footer: &[u8], md_path: &Path) {
     writeln!(html_content, r#"</div>"#).unwrap();
     writeln!(html_content, r#"</div>"#).unwrap();
 
-    md_render_toc(&mut html_content);
+    md_render_toc(&mut html_content, &md_titles);
 
     md_render_article_content(&mut html_content, &md_ast);
 
