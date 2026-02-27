@@ -171,11 +171,7 @@ fn md_render_article_content(content: &mut Vec<u8>, node: &Node) {
         Node::MdxFlowExpression(_mdx_flow_expression) => todo!(),
         Node::Heading(heading) => {
             assert_eq!(heading.children.len(), 1);
-            let value = match heading.children.first().unwrap() {
-                Node::Text(t) => &t.value,
-                other => panic!("unexpected node: {:#?}", other),
-            };
-
+            let value = md_ast_extract_children_text(&heading.children).unwrap();
             let slug = html_slug(value);
 
             writeln!(content, r#"<h{} id="{}">"#, heading.depth, slug).unwrap();
@@ -213,8 +209,12 @@ fn md_render_article_content(content: &mut Vec<u8>, node: &Node) {
         }
         Node::ListItem(list_item) => {
             write!(content, "<li>").unwrap();
-            for child in &list_item.children {
-                md_render_article_content(content, child);
+            if let Some(text) = md_ast_extract_children_text(&list_item.children) {
+                write!(content, "{}", text).unwrap();
+            } else {
+                for child in &list_item.children {
+                    md_render_article_content(content, child);
+                }
             }
             writeln!(content, "</li>").unwrap();
         }
@@ -226,6 +226,23 @@ fn md_render_article_content(content: &mut Vec<u8>, node: &Node) {
             }
             writeln!(content, "</p>").unwrap();
         }
+    }
+}
+
+fn md_ast_extract_children_text(nodes: &[Node]) -> Option<&str> {
+    if nodes.len() == 1
+        && let Some(child) = nodes.first()
+    {
+        match child {
+            Node::Text(t) => Some(&t.value),
+            Node::Paragraph(p) if p.children.len() == 1 => match &p.children[0] {
+                Node::Text(t) => Some(&t.value),
+                _ => None,
+            },
+            _ => None,
+        }
+    } else {
+        None
     }
 }
 
