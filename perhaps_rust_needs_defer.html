@@ -5,7 +5,7 @@ Do not edit it by hand.
 <!DOCTYPE html>
 <html>
 <head>
-<title>Perhaps Rust needs &quot;defer&quot;</title>
+<title>Perhaps Rust needs "defer"</title>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link type="application/atom+xml" href="/blog/feed.xml" rel="self">
@@ -73,54 +73,53 @@ Do not edit it by hand.
 <div id="pseudo-body">
 
 <div class="article-prelude">
-  <p><a href="/blog"> ⏴ Back to all articles</a></p>
-
-  <p class="publication-date">Published on 2024-11-06.</p>
+<p><a href="/blog"> ⏴ Back to all articles</a></p>
+  <p class="publication-date">Published on 2026-02-27.</p>
 </div>
 <div class="article-title">
-<h1>Perhaps Rust needs "defer"</h1>
-  <div class="tags"> <a href="/blog/articles-by-tag.html#rust" class="tag">Rust</a> <a href="/blog/articles-by-tag.html#c" class="tag">C</a></div>
-  </div>
- <details class="toc"><summary>Table of contents</summary>
+  <h1>Perhaps Rust needs "defer"</h1>
+<div class="tags"> <a href="/blog/articles-by-tag.html#rust" class="tag">Rust</a> <a href="/blog/articles-by-tag.html#c" class="tag">C</a> </div>
+</div>
+  <details class="toc"><summary>Table of contents</summary>
 <ul>
 
   <li>
     <a href="#setting-the-stage">Setting the stage</a>
-  </li>
+</li>
 
   <li>
     <a href="#first-attempt-at-freeing-the-memory-properly">First attempt at freeing the memory properly</a>
-  </li>
+</li>
 
   <li>
     <a href="#second-attempt-at-freeing-the-memory-properly">Second attempt at freeing the memory properly</a>
-  </li>
+</li>
 
   <li>
     <a href="#third-attempt-at-freeing-the-memory-properly">Third attempt at freeing the memory properly</a>
-  </li>
+</li>
 
   <li>
     <a href="#defer">Defer</a>
-  </li>
+</li>
 
   <li>
     <a href="#possible-solutions">Possible solutions</a>
-  </li>
+</li>
 
   <li>
     <a href="#conclusion">Conclusion</a>
-  </li>
+</li>
 
   <li>
     <a href="#addendum-one-more-gotcha">Addendum: One more gotcha</a>
-  </li>
+</li>
 </ul>
 </details>
 
 <p><em>Or, how FFI in Rust is a pain in the neck.</em></p>
 <p><em>Discussions: <a href="https://old.reddit.com/r/rust/comments/1gktuw6/perhaps_rust_needs_defer/?">/r/rust</a>, <a href="https://old.reddit.com/r/programming/comments/1gktum4/perhaps_rust_needs_defer/?">/r/programming</a>, <a href="https://news.ycombinator.com/item?id=42058091">HN</a>, <a href="https://lobste.rs/s/2ka0ps/perhaps_rust_needs_defer">lobsters</a></em></p>
-<p>In a previous article I <a href="/blog/lessons_learned_from_a_successful_rust_rewrite.html#i-am-still-chasing-memory-leaks">mentioned</a> that we use the <code>defer</code> idiom in Rust through a crate, but that it actually rarely gets past the borrow checker. Some comments were <del>claiming this issue does not exist</del> surprised and I did not have an example at hand.</p>
+<p>In a previous article I <a href="/blog/lessons_learned_from_a_successful_rust_rewrite.html#i-am-still-chasing-memory-leaks">mentioned</a> that we use the <code>defer</code> idiom in Rust through a crate, but that it actually rarely gets past the borrow checker. Some comments were ~~claiming this issue does not exist~~ surprised and I did not have an example at hand.</p>
 <p>Well, today at work I hit this issue again so I thought I would document it. And the whole experience showcases well how working in Rust with lots of FFI interop feels like.</p>
 <h2 id="setting-the-stage">
   <a class="title" href="#setting-the-stage">Setting the stage</a>
@@ -278,7 +277,7 @@ brk(0x213c0000)                         = 0x213c0000
   <a class="title" href="#second-attempt-at-freeing-the-memory-properly">Second attempt at freeing the memory properly</a>
   <a class="hash-anchor" href="#second-attempt-at-freeing-the-memory-properly" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
-<p>So, let's first try to dodge the problem the <del>hacky</del> simple way by pretending that the memory is allocated by a <code>Box</code>, which only needs the pointer, just like <code>free()</code>:</p>
+<p>So, let's first try to dodge the problem the ~~hacky~~ simple way by pretending that the memory is allocated by a <code>Box</code>, which only needs the pointer, just like <code>free()</code>:</p>
 <pre><code class="language-rust">    #[test]
     fn test_get_foos() {
         ...
@@ -405,11 +404,8 @@ error[E0502]: cannot borrow `foos.len` as immutable because it is also borrowed 
 <p>So that is why I argue that Rust should get a <code>defer</code> statement in the language and the borrow checker should be made aware of this construct to allow this approach to take place.</p>
 <p>But what can we do otherwise? Are there any alternatives?</p>
 <ul>
-<li>
-<p>We can be very careful and make sure we deallocate everything by hand in every code paths. Obviously that doesn't scale to team size, code complexity, etc. And it's unfortunate since using a defer-like approach in C with <code>__attribute(cleanup)</code> and in C++ by implementing our <a href="https://www.gingerbill.org/article/2015/08/19/defer-in-cpp/">own</a> <code>defer</code> is trivial. And even Go which is garbage-collected has a first-class <code>defer</code>. So not being able to do so in Rust is unfortunate.</p>
-</li>
-<li>
-<p>We can use a goto-like approach, as a reader <a href="https://lobste.rs/s/n6gciw/lessons_learned_from_successful_rust#c_8pzmqg">suggested</a> in a previous article, even though Rust does not have <code>goto</code> per se:</p>
+<li>We can be very careful and make sure we deallocate everything by hand in every code paths. Obviously that doesn't scale to team size, code complexity, etc. And it's unfortunate since using a defer-like approach in C with <code>__attribute(cleanup)</code> and in C++ by implementing our <a href="https://www.gingerbill.org/article/2015/08/19/defer-in-cpp/">own</a> <code>defer</code> is trivial. And even Go which is garbage-collected has a first-class <code>defer</code>. So not being able to do so in Rust is unfortunate.</li>
+<li><p>We can use a goto-like approach, as a reader <a href="https://lobste.rs/s/n6gciw/lessons_learned_from_successful_rust#c_8pzmqg">suggested</a> in a previous article, even though Rust does not have <code>goto</code> per se:</p>
 <pre><code class="language-rust">fn foo_init() -&gt; *mut () { &amp;mut () }
 fn foo_bar(_: *mut ()) -&gt; bool { false }
 fn foo_baz(_: *mut ()) -&gt; bool { true }
@@ -435,18 +431,10 @@ fn main() {
 </code></pre>
 <p>It's very nifty, but I am not sure I would enjoy reading and writing this kind of code, especially with multiple levels of nesting. Again, it does not scale very well. But it's something.</p>
 </li>
-<li>
-<p>We can work-around the borrow-checker to still use <code>defer</code> by refactoring our code to make it happy. Again, tedious and not always possible. One thing that possibly works is using handles (numerical ids) instead of pointers, so that they are <code>Copy</code> and the borrow checker does not see an issue with sharing/copying them. Like file descriptors work in Unix. The potential downside here is that it creates global state since some component has to bookkeep these handles and their mapping to the real pointer. But it's a <a href="https://floooh.github.io/2018/06/17/handles-vs-pointers.html">common</a> pattern in gamedev.</p>
-</li>
-<li>
-<p>Perhaps the borrow checker can be improved upon without adding <code>defer</code> to the language, 'just' by making it smarter?</p>
-</li>
-<li>
-<p>We can use arenas everywhere and sail away in the sunset, leaving all these nasty problems behind us</p>
-</li>
-<li>
-<p>Rust can stabilize various nightly APIs and tools, like custom allocators and sanitizers, to make development simpler</p>
-</li>
+<li>We can work-around the borrow-checker to still use <code>defer</code> by refactoring our code to make it happy. Again, tedious and not always possible. One thing that possibly works is using handles (numerical ids) instead of pointers, so that they are <code>Copy</code> and the borrow checker does not see an issue with sharing/copying them. Like file descriptors work in Unix. The potential downside here is that it creates global state since some component has to bookkeep these handles and their mapping to the real pointer. But it's a <a href="https://floooh.github.io/2018/06/17/handles-vs-pointers.html">common</a> pattern in gamedev.</li>
+<li>Perhaps the borrow checker can be improved upon without adding <code>defer</code> to the language, 'just' by making it smarter?</li>
+<li>We can use arenas everywhere and sail away in the sunset, leaving all these nasty problems behind us</li>
+<li>Rust can stabilize various nightly APIs and tools, like custom allocators and sanitizers, to make development simpler</li>
 </ul>
 <h2 id="conclusion">
   <a class="title" href="#conclusion">Conclusion</a>
@@ -454,7 +442,7 @@ fn main() {
 </h2>
 <p>Rust + FFI is nasty and has a lot of friction. I went at work through all these steps I went through in this article, and this happens a lot.</p>
 <p>The crux of the issue is that there is a lot of knowledge to keep in our heads, lots of easy ways to shoot ourselves in the foot, and we have to reconcile what various tools tell us: even if the compiler is happy, the tests might not be. Even the tests are happy, Miri might not be. Even if we think we have done the right thing, we discover later, buried deep in the docs, that in fact, we didn't. It's definitely for experts only.</p>
-<p>This should not be so hard! Won't somebody think of the <del>children</del> Rust FFI users?</p>
+<p>This should not be so hard! Won't somebody think of the ~~children~~ Rust FFI users?</p>
 <p>EDIT: It's been <a href="https://chaos.social/@filmroellchen/113464336212759405">pointed</a> out to me that there are two on-going internal discussions by the Rust developers about this topic to possibly reserve the <code>defer</code> keyword for future use and maybe one day add this facility to the language: <a href="https://internals.rust-lang.org/t/pre-rfc-defer-statement/16644">1</a>, <a href="https://internals.rust-lang.org/t/a-defer-discussion/20387/71">2</a>.</p>
 <h2 id="addendum-one-more-gotcha">
   <a class="title" href="#addendum-one-more-gotcha">Addendum: One more gotcha</a>
@@ -482,8 +470,8 @@ pub extern &quot;C&quot; fn MYLIB_free_foos(foos: &amp;mut OwningArrayC&lt;Foo&g
 }
 </code></pre>
 <p>It might be a bit surprising to a pure Rust developer given the <code>Vec</code> guarantees, but since the C side could pass anything, we must be defensive.</p>
-<p><a href="/blog"> ⏴ Back to all articles</a></p>
 
+<p><a href="/blog"> ⏴ Back to all articles</a></p>
 <blockquote id="donate">
   <p>If you enjoy what you're reading, you want to support me, and can afford it: <a href="https://paypal.me/philigaultier?country.x=DE&locale.x=en_US">Support me</a>. That allows me to write more cool articles!</p>
 

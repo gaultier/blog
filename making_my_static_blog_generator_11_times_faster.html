@@ -5,7 +5,7 @@ Do not edit it by hand.
 <!DOCTYPE html>
 <html>
 <head>
-<title>Making my static blog generator &lt;del&gt;11&lt;/del&gt; 33 times faster</title>
+<title>Making my static blog generator <del>11</del> 33 times faster</title>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link type="application/atom+xml" href="/blog/feed.xml" rel="self">
@@ -73,48 +73,47 @@ Do not edit it by hand.
 <div id="pseudo-body">
 
 <div class="article-prelude">
-  <p><a href="/blog"> ⏴ Back to all articles</a></p>
-
-  <p class="publication-date">Published on 2025-02-19.</p>
+<p><a href="/blog"> ⏴ Back to all articles</a></p>
+  <p class="publication-date">Published on 2026-02-27.</p>
 </div>
 <div class="article-title">
-<h1>Making my static blog generator <del>11</del> 33 times faster</h1>
-  <div class="tags"> <a href="/blog/articles-by-tag.html#optimization" class="tag">Optimization</a> <a href="/blog/articles-by-tag.html#git" class="tag">Git</a> <a href="/blog/articles-by-tag.html#odin" class="tag">Odin</a> <a href="/blog/articles-by-tag.html#fossil" class="tag">Fossil</a> <a href="/blog/articles-by-tag.html#blog" class="tag">Blog</a></div>
-  </div>
- <details class="toc"><summary>Table of contents</summary>
+  <h1>Making my static blog generator <del>11</del> 33 times faster</h1>
+<div class="tags"> <a href="/blog/articles-by-tag.html#optimization" class="tag">Optimization</a> <a href="/blog/articles-by-tag.html#git" class="tag">Git</a> <a href="/blog/articles-by-tag.html#odin" class="tag">Odin</a> <a href="/blog/articles-by-tag.html#fossil" class="tag">Fossil</a> <a href="/blog/articles-by-tag.html#blog" class="tag">Blog</a> </div>
+</div>
+  <details class="toc"><summary>Table of contents</summary>
 <ul>
 
   <li>
     <a href="#the-investigation">The investigation</a>
-  </li>
+</li>
 
   <li>
     <a href="#when-there-s-one-there-s-many">When there's one, there's many</a>
-  </li>
+</li>
 
   <li>
     <a href="#the-new-approach">The new approach</a>
-  </li>
+</li>
 
   <li>
     <a href="#the-new-implementation">The new implementation</a>
-  </li>
+</li>
 
   <li>
     <a href="#fossil">Fossil</a>
-  </li>
+</li>
 
   <li>
     <a href="#conclusion">Conclusion</a>
-  </li>
+</li>
 
   <li>
     <a href="#addendum">Addendum</a>
-  </li>
+</li>
 
   <li>
     <a href="#addendum-2">Addendum 2</a>
-  </li>
+</li>
 </ul>
 </details>
 
@@ -148,7 +147,7 @@ Benchmark 1: ./master.bin
 <p>As I added more and more features to this blog, like a list of article by tags, a home page that automatically lists all of the articles, a RSS feed, the 'last modified' date for an article, etc, I outgrew the Makefile approach and wrote a small <a href="https://github.com/gaultier/blog/blob/master/src/main.odin">program</a> (initially in Zig, then in <a href="https://odin-lang.org/">Odin</a>, now in C) to do all that. But the core approach remained:</p>
 <ul>
 <li>List all markdown files in the current directory (e.g. <code>ls *.md</code>, the Makefile did that for us with <code>%.md</code>)</li>
-<li>For each markdown file, sequentially:
+<li><p>For each markdown file, sequentially:</p>
 <ul>
 <li>Run <code>git log article.md</code> to get the date of the first and last commits for this file (respectively 'created at' and 'modified at')</li>
 <li>Convert the markdown content to HTML</li>
@@ -157,7 +156,9 @@ Benchmark 1: ./master.bin
 </li>
 </ul>
 <p>For long time, it was all good. It was single-threaded, but plenty fast. So I wrote more and more articles. But now it's too slow. Why? Let's profile it:</p>
-<p><object alt="Profile before the optimization" data="making_my_static_blog_generator_11_times_faster_profile_before.svg" type="image/svg+xml"></object></p>
+<p><object alt="Profile before the optimization" data="making_my_static_blog_generator_11_times_faster_profile_before.svg" type="image/svg+xml">
+</object>
+</p>
 <p>Yeah...I think it might be [git] [git] [git] [git] [git] [git] [git] [git]...</p>
 <p>Another way to confirm this is with <code>strace</code>:</p>
 <pre><code class="language-shell">$ strace --summary-only ./src.bin
@@ -196,7 +197,7 @@ Executed in   73.69 millis    fish           external
 <p>Looks like we got our solution. There is one added benefit: we do not need to list all <code>.md</code> files in the directory at startup. Git gives us this information (in my case there are no markdown files <em>not</em> tracked by Git).</p>
 <p>Mike Acton and <a href="https://en.wikipedia.org/wiki/Data-oriented_design">Data Oriented Design</a> are right once again:</p>
 <blockquote>
-<p>Rule of thumb: When there is one, there is many. <sup class="footnote-ref"><a href="#fn-1" id="fnref-1" data-footnote-ref>1</a></sup></p>
+<p>Rule of thumb: When there is one, there is many. [^1]</p>
 </blockquote>
 <p>Or: try to think in terms of arrays, not in terms of one isolated object at a time.</p>
 <h2 id="the-new-approach">
@@ -443,7 +444,9 @@ Summary
 </code></pre>
 <p>Around 11 times faster, and well within our ideal target of 500 ms ! And all we had to do was convert many <code>git log</code> invocations (one per markdown file) to just one.</p>
 <p>Here's the CPU profile now:</p>
-<p><object alt="CPU profile after the optimization" data="making_my_static_blog_generator_11_times_faster_profile_after.svg" type="image/svg+xml"></object></p>
+<p><object alt="CPU profile after the optimization" data="making_my_static_blog_generator_11_times_faster_profile_after.svg" type="image/svg+xml">
+</object>
+</p>
 <hr />
 <p>Overall it's a pretty simple change, located in one function. Almost all of the complexity is due to parsing Git custom text output and skipping over irrelevant commits. We don't really have a choice either: that's all Git provides to query the commit log. The alternatives are all worse:</p>
 <ul>
@@ -503,15 +506,18 @@ Benchmark 1: fossil sql -R new-repo.fossil &quot;[...]&quot;
 <p>Furthermore, the initial approach was fine because it only looked at the creation date, so we could do <code>git log --reverse article.md | head -n1</code> which is faster than sifting through the whole commit log for this file. However, as it is always the case, requirements (again, a big word for: my taste concerning what should my personal blog look like) change and the modification date now had to also be extracted from git. This forced us, with the current Git functionality, to scan through the whole commit log, for each file, which became too slow.</p>
 <p>As Mike Acton and Data Oriented Design state:</p>
 <blockquote>
-<p>Different problems require different solutions.<sup class="footnote-ref"><a href="#fn-2" id="fnref-2" data-footnote-ref>2</a></sup></p>
+<p>Different problems require different solutions.[^2]</p>
 </blockquote>
 <p>And:</p>
 <blockquote>
-<p>If you have different data, you have a different problem. <sup class="footnote-ref"><a href="#fn-3" id="fnref-3" data-footnote-ref>3</a></sup></p>
+<p>If you have different data, you have a different problem. [^3]</p>
 </blockquote>
 <p>It also does not help that any querying in Git is ad-hoc and outputs a weird text format that we have to tediously parse. Please everyone, let's add the option to output structured data in our command line programs, damn it! String programming is no fun at all - that's why I moved away from concatenating the output of shell commands in a Makefile, to a real programming language, to do the static generation.</p>
 <p>All in all, I am pleased with my solution - I can now see any edit materialize <em>instantly</em>. It's a bit funny that my previous article was about SIMD and inspecting assembly instructions, while this issue is so obvious and high-level in retrospect.</p>
 <p>To the next 5 years of blogging, till I need to revisit the performance of this function!</p>
+<p>[^1]: <a href="https://www.youtube.com/watch?v=rX0ItVEVjHc&t=14m33s">CppCon 2014: Mike Acton &quot;Data-Oriented Design and C++&quot;</a>
+[^2]: <a href="https://www.youtube.com/watch?v=rX0ItVEVjHc&t=13m13s">CppCon 2014: Mike Acton &quot;Data-Oriented Design and C++&quot;</a>
+[^3]: <a href="https://www.youtube.com/watch?v=rX0ItVEVjHc&t=13m21s">CppCon 2014: Mike Acton &quot;Data-Oriented Design and C++&quot;</a></p>
 <h2 id="addendum">
   <a class="title" href="#addendum">Addendum</a>
   <a class="hash-anchor" href="#addendum" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
@@ -536,21 +542,8 @@ Benchmark 1: ./src.bin
   Range (min … max):    53.1 ms …  61.0 ms    55 runs
 </code></pre>
 <p><em>In fine</em>: a x33 speed-up from the original time.</p>
-<section class="footnotes" data-footnotes>
-<ol>
-<li id="fn-1">
-<p><a href="https://www.youtube.com/watch?v=rX0ItVEVjHc&amp;t=14m33s">CppCon 2014: Mike Acton &quot;Data-Oriented Design and C++&quot;</a> <a href="#fnref-1" class="footnote-backref" data-footnote-backref data-footnote-backref-idx="1" aria-label="Back to reference 1">↩</a></p>
-</li>
-<li id="fn-2">
-<p><a href="https://www.youtube.com/watch?v=rX0ItVEVjHc&amp;t=13m13s">CppCon 2014: Mike Acton &quot;Data-Oriented Design and C++&quot;</a> <a href="#fnref-2" class="footnote-backref" data-footnote-backref data-footnote-backref-idx="2" aria-label="Back to reference 2">↩</a></p>
-</li>
-<li id="fn-3">
-<p><a href="https://www.youtube.com/watch?v=rX0ItVEVjHc&amp;t=13m21s">CppCon 2014: Mike Acton &quot;Data-Oriented Design and C++&quot;</a> <a href="#fnref-3" class="footnote-backref" data-footnote-backref data-footnote-backref-idx="3" aria-label="Back to reference 3">↩</a></p>
-</li>
-</ol>
-</section>
-<p><a href="/blog"> ⏴ Back to all articles</a></p>
 
+<p><a href="/blog"> ⏴ Back to all articles</a></p>
 <blockquote id="donate">
   <p>If you enjoy what you're reading, you want to support me, and can afford it: <a href="https://paypal.me/philigaultier?country.x=DE&locale.x=en_US">Support me</a>. That allows me to write more cool articles!</p>
 

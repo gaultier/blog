@@ -73,15 +73,13 @@ Do not edit it by hand.
 <div id="pseudo-body">
 
 <div class="article-prelude">
-  <p><a href="/blog"> ⏴ Back to all articles</a></p>
-
-  <p class="publication-date">Published on 2025-12-03.</p>
+<p><a href="/blog"> ⏴ Back to all articles</a></p>
+  <p class="publication-date">Published on 2026-02-27.</p>
 </div>
 <div class="article-title">
-<h1>What HTTP routes does your application provide?</h1>
-  <div class="tags"> <a href="/blog/articles-by-tag.html#go" class="tag">Go</a> <a href="/blog/articles-by-tag.html#dtrace" class="tag">DTrace</a></div>
-  </div>
-
+  <h1>What HTTP routes does your application provide?</h1>
+<div class="tags"> <a href="/blog/articles-by-tag.html#go" class="tag">Go</a> <a href="/blog/articles-by-tag.html#dtrace" class="tag">DTrace</a> </div>
+</div>
 <p>Quick one today. I have a <a href="https://github.com/ory/kratos">Go HTTP application</a> that has many HTTP routes. These routes get dynamically registered at startup based on feature flags, configuration, whether an enterprise license was found, etc. So it's hard to know what routes exist.</p>
 <p>Since this application uses the Go HTTP router from the standard library, this question is quickly answered by DTrace. The two Go functions of interest are located in the <code>net/http</code> package:</p>
 <pre><code class="language-go">func (mux *ServeMux) HandleFunc(pattern string, handler func(ResponseWriter, *Request))
@@ -117,8 +115,8 @@ DELETE /admin/sessions/{$}
 <p>If that was the case, our DTrace script would likely mix the different strings in the output. The standard solution for that case, is to store all these strings in map, and at the end, print the map. The order of registration is lost but that should not matter since this API defines pretty well route precedence based on how specific a route is, and not based on registration order.
 And for an API where that registration order <em>did</em> matter, we could also store an incrementing number in the map (globals are thread-safe in DTrace and can be safely mutated concurrently) to remember and print the order.</p>
 <p>Once again, DTrace shines!</p>
-<p><a href="/blog"> ⏴ Back to all articles</a></p>
 
+<p><a href="/blog"> ⏴ Back to all articles</a></p>
 <blockquote id="donate">
   <p>If you enjoy what you're reading, you want to support me, and can afford it: <a href="https://paypal.me/philigaultier?country.x=DE&locale.x=en_US">Support me</a>. That allows me to write more cool articles!</p>
 

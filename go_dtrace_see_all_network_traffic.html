@@ -73,15 +73,14 @@ Do not edit it by hand.
 <div id="pseudo-body">
 
 <div class="article-prelude">
-  <p><a href="/blog"> ⏴ Back to all articles</a></p>
-
-  <p class="publication-date">Published on 2025-09-25.</p>
+<p><a href="/blog"> ⏴ Back to all articles</a></p>
+  <p class="publication-date">Published on 2026-02-27.</p>
 </div>
 <div class="article-title">
-<h1>See all network traffic in a Go program, even when encrypted and compressed</h1>
-  <div class="tags"> <a href="/blog/articles-by-tag.html#go" class="tag">Go</a> <a href="/blog/articles-by-tag.html#dtrace" class="tag">DTrace</a></div>
-  </div>
- <details class="toc"><summary>Table of contents</summary>
+  <h1>See all network traffic in a Go program, even when encrypted and compressed</h1>
+<div class="tags"> <a href="/blog/articles-by-tag.html#go" class="tag">Go</a> <a href="/blog/articles-by-tag.html#dtrace" class="tag">DTrace</a> </div>
+</div>
+  <details class="toc"><summary>Table of contents</summary>
 <ul>
 
   <li>
@@ -90,13 +89,13 @@ Do not edit it by hand.
 
   <li>
     <a href="#trace-multiple-processes">Trace multiple processes</a>
-  </li>
+</li>
 
   <li>
     <a href="#trace-all-system-calls-for-networking">Trace all system calls for networking</a>
-  </li>
+</li>
 </ul>
-  </li>
+</li>
 
   <li>
     <a href="#level-2-only-observe-network-data">Level 2: Only observe network data</a>
@@ -104,21 +103,21 @@ Do not edit it by hand.
 
   <li>
     <a href="#alternative-the-tcp-provider">Alternative: the tcp provider</a>
-  </li>
+</li>
 </ul>
-  </li>
+</li>
 
   <li>
     <a href="#level-3-see-encrypted-data-in-clear">Level 3: See encrypted data in clear</a>
-  </li>
+</li>
 
   <li>
     <a href="#level-4-see-compressed-data-in-clear">Level 4: See compressed data in clear</a>
-  </li>
+</li>
 
   <li>
     <a href="#conclusion">Conclusion</a>
-  </li>
+</li>
 </ul>
 </details>
 
@@ -399,8 +398,8 @@ Accept-Encoding: gzip
 <p>Once again, DTrace shines by its versatility compared to other tools such as Wireshark (can only observe data on the wire, if it's encrypted then tough luck) or <code>strace</code> (can only see system calls). It can programmatically inspect user-space memory, kernel memory, get the stack trace, etc.</p>
 <p>Note that some data printed from the <code>read(2)</code> and <code>write(2)</code> system calls will still inevitably appear gibberish because it corresponds to a binary protocol, for example DNS requests.</p>
 <p>Finally, let's all note that none of this intricate dance would be necessary, if there were some DTrace static probes judiciously placed in the Go standard library or runtime (wink wink to the Go team).</p>
-<p><a href="/blog"> ⏴ Back to all articles</a></p>
 
+<p><a href="/blog"> ⏴ Back to all articles</a></p>
 <blockquote id="donate">
   <p>If you enjoy what you're reading, you want to support me, and can afford it: <a href="https://paypal.me/philigaultier?country.x=DE&locale.x=en_US">Support me</a>. That allows me to write more cool articles!</p>
 
