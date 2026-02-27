@@ -73,20 +73,19 @@ Do not edit it by hand.
 <div id="pseudo-body">
 
 <div class="article-prelude">
-  <p><a href="/blog"> ⏴ Back to all articles</a></p>
-
-  <p class="publication-date">Published on 2025-02-18.</p>
+<p><a href="/blog"> ⏴ Back to all articles</a></p>
+  <p class="publication-date">Published on 2026-02-27.</p>
 </div>
 <div class="article-title">
-<h1>Making my debug build run 100x faster so that it is finally usable</h1>
-  <div class="tags"> <a href="/blog/articles-by-tag.html#c" class="tag">C</a> <a href="/blog/articles-by-tag.html#simd" class="tag">SIMD</a> <a href="/blog/articles-by-tag.html#sha1" class="tag">SHA1</a> <a href="/blog/articles-by-tag.html#torrent" class="tag">Torrent</a> <a href="/blog/articles-by-tag.html#optimization" class="tag">Optimization</a> <a href="/blog/articles-by-tag.html#x86-64" class="tag">x86_64</a></div>
-  </div>
- <details class="toc"><summary>Table of contents</summary>
+  <h1>Making my debug build run 100x faster so that it is finally usable</h1>
+<div class="tags"> <a href="/blog/articles-by-tag.html#c" class="tag">C</a> <a href="/blog/articles-by-tag.html#simd" class="tag">SIMD</a> <a href="/blog/articles-by-tag.html#sha1" class="tag">SHA1</a> <a href="/blog/articles-by-tag.html#torrent" class="tag">Torrent</a> <a href="/blog/articles-by-tag.html#optimization" class="tag">Optimization</a> <a href="/blog/articles-by-tag.html#x86-64" class="tag">x86_64</a> </div>
+</div>
+  <details class="toc"><summary>Table of contents</summary>
 <ul>
 
   <li>
     <a href="#why-is-it-a-problem-at-all-and-how-did-it-come-to-be">Why is it a problem at all and how did it come to be?</a>
-  </li>
+</li>
 
   <li>
     <a href="#non-simd-implementation">Non-SIMD implementation</a>
@@ -94,21 +93,21 @@ Do not edit it by hand.
 
   <li>
     <a href="#explanation">Explanation</a>
-  </li>
+</li>
 
   <li>
     <a href="#the-code">The code</a>
-  </li>
+</li>
 
   <li>
     <a href="#results">Results</a>
-  </li>
+</li>
 
   <li>
     <a href="#possible-optimizations">Possible optimizations</a>
-  </li>
+</li>
 </ul>
-  </li>
+</li>
 
   <li>
     <a href="#simd-sse-implementation">SIMD (SSE) implementation</a>
@@ -116,17 +115,17 @@ Do not edit it by hand.
 
   <li>
     <a href="#explanation-1">Explanation</a>
-  </li>
+</li>
 
   <li>
     <a href="#the-code-1">The code</a>
-  </li>
+</li>
 
   <li>
     <a href="#results-1">Results</a>
-  </li>
+</li>
 </ul>
-  </li>
+</li>
 
   <li>
     <a href="#intel-sha-extension-implementation">Intel SHA extension implementation</a>
@@ -134,29 +133,29 @@ Do not edit it by hand.
 
   <li>
     <a href="#explanations">Explanations</a>
-  </li>
+</li>
 
   <li>
     <a href="#the-code-2">The code</a>
-  </li>
+</li>
 
   <li>
     <a href="#results-2">Results</a>
-  </li>
+</li>
 </ul>
-  </li>
+</li>
 
   <li>
     <a href="#openssl-hand-crafted-assembly-implementation">OpenSSL hand crafted assembly implementation</a>
-  </li>
+</li>
 
   <li>
     <a href="#additional-improvements">Additional improvements</a>
-  </li>
+</li>
 
   <li>
     <a href="#conclusion">Conclusion</a>
-  </li>
+</li>
 </ul>
 </details>
 
@@ -193,7 +192,9 @@ Benchmark 1: sha1sum ./NetBSD-9.4-amd64.iso
 </code></pre>
 <p>Granted, computing the hash for the whole file should be slightly faster than computing the hash for N pieces, because the final step for SHA1 is about padding the data to make it 64 bytes aligned and extracting the digest value from the state computed so far with some bit operations. But still, it's a marginal difference.</p>
 <p>Why is it so slow then? I can see on CPU profiles that the SHA1 function takes all of the startup time:</p>
-<p><object alt="CPU Profile of the SIMD-less code, debug + Address Sanitizer build" data="cpu_profile_sha1_sw_debug_asan.svg" type="image/svg+xml"></object></p>
+<p><object alt="CPU Profile of the SIMD-less code, debug + Address Sanitizer build" data="cpu_profile_sha1_sw_debug_asan.svg" type="image/svg+xml">
+</object>
+</p>
 <p>The SHA1 code is simplistic, it does not use any SIMD or intrinsics directly. And that's fine, because when it's compiled with optimizations on, the compiler does a pretty good job at optimizing, and it's really fast, around ~300 ms. But the issue is that this code is working one byte at a time. And Address Sanitizer, with its nice runtime and bounds checks, makes each memory access <strong>very</strong> expensive. So we basically have just written a worst-case stress-test for Address Sanitizer.</p>
 <p>Let's first review the simple SIMD-less C version to understand the baseline.</p>
 <h2 id="non-simd-implementation">
@@ -289,8 +290,7 @@ int main(int argc, char *argv[]) {
   <a class="hash-anchor" href="#explanation" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h3>
 <ul>
-<li>
-<p>In Intel words, what is SHA1?</p>
+<li><p>In Intel words, what is SHA1?</p>
 <blockquote>
 <p>SHA-1 produces a 160 bit (20 byte) hash value (digest), taking as an input a sequence of 1 or more 512 bit (64 byte) data blocks. The original source data also requires some padding according to the standard. The data is treated as an array of big-endian 32-bit values. Processing each of the 64-byte input blocks consists of 80 iterations also known as rounds.</p>
 </blockquote>
@@ -301,14 +301,9 @@ int main(int argc, char *argv[]) {
 <li>Padding and finalization is done with <code>SHA1_Final</code>: the last chunk is padded to 64 bytes if it is too short, processed, and the digest (the final 20 bytes we are after) is the current state, after endianness conversion.</li>
 </ul>
 </li>
-<li>
-<p>The SHA1 algorithm and some implementations support architectures where 1 byte is <em>not</em> 8 bits. But knowing that 1 byte <em>is indeed</em> 8 bits on our architecture unlocks a ton of performance as we'll see.</p>
-</li>
-<li>
-<p>SHA1 expects data in big-endian but nearly all CPU nowadays are little-endian so we need to swap the bytes when loading the input data to do SHA1 computations, and back when storing the intermediate results (the SHA1 state). It is done here with lots of clever bit tricks, one <code>uint32_t</code> at a time.</p>
-</li>
-<li>
-<p>The main loop operating on the 64 bytes chunk is unrolled, which avoids having conditionals in the middle of the loop, which might tank performance due to mispredicted branches. The algorithm lends itself to that really well:</p>
+<li>The SHA1 algorithm and some implementations support architectures where 1 byte is <em>not</em> 8 bits. But knowing that 1 byte <em>is indeed</em> 8 bits on our architecture unlocks a ton of performance as we'll see.</li>
+<li>SHA1 expects data in big-endian but nearly all CPU nowadays are little-endian so we need to swap the bytes when loading the input data to do SHA1 computations, and back when storing the intermediate results (the SHA1 state). It is done here with lots of clever bit tricks, one <code>uint32_t</code> at a time.</li>
+<li><p>The main loop operating on the 64 bytes chunk is unrolled, which avoids having conditionals in the middle of the loop, which might tank performance due to mispredicted branches. The algorithm lends itself to that really well:</p>
 <pre><code class="language-text">  for i from 0 to 79
           if 0 ≤ i ≤ 19 then
             [..]
@@ -589,7 +584,7 @@ Benchmark 1: ./a.out ./NetBSD-9.4-amd64.iso ~/Downloads/NetBSD-9.4-amd64.iso.tor
 <p>So what can we do about it?</p>
 <ul>
 <li>We can build the SHA1 code separately with optimizations on, always (and potentially without Address Sanitizer). That's a bit annoying, because I currently do a Unity build meaning there is only one compilation unit. So having suddenly multiple compilation units with different build flags makes the build system more complex. And clang has <a href="https://clang.llvm.org/docs/AttributeReference.html#optnone">annotations</a> to <em>lower</em> the optimization level for one function but not to <em>raise</em> it.</li>
-<li>We can compute the hash of each piece in parallel for example in a thread pool, since each piece is independent. That works and that's what <a href="https://blog.libtorrent.org/2011/11/multi-threaded-piece-hashing/">libtorrent did/does</a>, but that assumes that the target computer has cores to spare, and it creates some complexity:
+<li><p>We can compute the hash of each piece in parallel for example in a thread pool, since each piece is independent. That works and that's what <a href="https://blog.libtorrent.org/2011/11/multi-threaded-piece-hashing/">libtorrent did/does</a>, but that assumes that the target computer has cores to spare, and it creates some complexity:</p>
 <ul>
 <li>We need to implement a thread pool (spawning a new thread for each piece will not perform well) and pick a reasonable thread pool size given the number of cores, in a cross-platform way</li>
 <li>We need a M:N scheduling logic to compute the hash of M pieces on N threads. It could be a work-stealing queue where each thread picks the next item when its finished with its piece, or we read the whole file in memory and split the data in equal parts for each thread to plow through (but beware that the data for each thread must be aligned with the piece size!)</li>
@@ -614,11 +609,8 @@ Benchmark 1: ./a.out ./NetBSD-9.4-amd64.iso ~/Downloads/NetBSD-9.4-amd64.iso.tor
 </h3>
 <p>I really am a SIMD beginner but I found a few interesting nuggets of wisdom here:</p>
 <ul>
-<li>
-<p>Just like the SIMD-less implementation, the loops are unrolled</p>
-</li>
-<li>
-<p>Going from little-endian to big-endian (or back) is done with a SIMD shuffle. The way it works is by providing a bit mask that indicates which bits to copy from the source to the destination, and where to place them:</p>
+<li>Just like the SIMD-less implementation, the loops are unrolled</li>
+<li><p>Going from little-endian to big-endian (or back) is done with a SIMD shuffle. The way it works is by providing a bit mask that indicates which bits to copy from the source to the destination, and where to place them:</p>
 <pre><code class="language-c">  // `0x1b` == `0b0001_1011`.
   // Will result in:
   // [31:0] == [127:96] (due to bits [1:0] being `11`).
@@ -630,9 +622,7 @@ Benchmark 1: ./a.out ./NetBSD-9.4-amd64.iso ~/Downloads/NetBSD-9.4-amd64.iso.tor
 </code></pre>
 <p>It's nifty because we can copy the data in and out of SIMD registers, while also doing the endianness conversion, in one operation that typically compiles down to one assembly instruction. And this approach also works from a SIMD register to another SIMD register or inside the same register.</p>
 </li>
-<li>
-<p>Typical SIMD code processes the data in groups of N bytes at a time, and the few excess bytes at the end use the normal SIMD-less code path. Here, we have to deal with an additional grouping: SHA1 processes data in chunks of 64 bytes and the last chunk is padded to be 64 bytes if it is too short. Hence, for the last short chunk we use the SIMD-less code path. We could try to be clever about doing the padding, and re-using the SIMD code path for this last chunk, since 64 bytes is a nice round number that is SIMD friendly, but this last chunk is not going to really make a difference in practice when we are dealing with megabytes or gigabytes of data.</p>
-</li>
+<li>Typical SIMD code processes the data in groups of N bytes at a time, and the few excess bytes at the end use the normal SIMD-less code path. Here, we have to deal with an additional grouping: SHA1 processes data in chunks of 64 bytes and the last chunk is padded to be 64 bytes if it is too short. Hence, for the last short chunk we use the SIMD-less code path. We could try to be clever about doing the padding, and re-using the SIMD code path for this last chunk, since 64 bytes is a nice round number that is SIMD friendly, but this last chunk is not going to really make a difference in practice when we are dealing with megabytes or gigabytes of data.</li>
 </ul>
 <h3 id="the-code-1">
   <a class="title" href="#the-code-1">The code</a>
@@ -1014,14 +1004,9 @@ Benchmark 1: ./a.out ./NetBSD-9.4-amd64.iso ~/Downloads/NetBSD-9.4-amd64.iso.tor
   <a class="hash-anchor" href="#explanations" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h3>
 <ul>
-<li>
-<p>The unit of work here is still 128 bits (or 4 <code>uint32_t</code>). Unfortunately, the SHA1 state that we are continuously updating, and from which the final digest is extracted, is <strong>5</strong> <code>uint32_t</code>. So we are in a pickle since it does not fit neatly in one SIMD register.  Thus, we have to do one SIMD operation on the first 4 <code>uint32_t</code>, named <code>ABCD</code>, and another one with the last <code>uint32_t</code>, named <code>E</code>. So this second operation is a bit wasteful: our 128 bits only contain 1/4 of useful data, and our CPU does computations on a bunch of zeroes which will be thrown away. But there is no other way: SIMD uses a different set of registers from the standard ones. We want to stay in SIMD land as much as possible, that's where the performance is.</p>
-</li>
-<li>
-<p>Endianness conversion is done with one SIMD instruction, same as before (so 4 <code>uint32_t</code> at a time).</p>
-</li>
-<li>
-<p>The SHA Intel extension provides 4 operations:</p>
+<li>The unit of work here is still 128 bits (or 4 <code>uint32_t</code>). Unfortunately, the SHA1 state that we are continuously updating, and from which the final digest is extracted, is <strong>5</strong> <code>uint32_t</code>. So we are in a pickle since it does not fit neatly in one SIMD register.  Thus, we have to do one SIMD operation on the first 4 <code>uint32_t</code>, named <code>ABCD</code>, and another one with the last <code>uint32_t</code>, named <code>E</code>. So this second operation is a bit wasteful: our 128 bits only contain 1/4 of useful data, and our CPU does computations on a bunch of zeroes which will be thrown away. But there is no other way: SIMD uses a different set of registers from the standard ones. We want to stay in SIMD land as much as possible, that's where the performance is.</li>
+<li>Endianness conversion is done with one SIMD instruction, same as before (so 4 <code>uint32_t</code> at a time).</li>
+<li><p>The SHA Intel extension provides 4 operations:</p>
 <ul>
 <li><code>sha1rnds4</code> to compute the next <code>ABCD</code> state</li>
 <li><code>sha1nexte</code>: to compute the next <code>E</code> state (remember, <code>E</code> is alone in its 128 bits register)</li>
@@ -1029,8 +1014,7 @@ Benchmark 1: ./a.out ./NetBSD-9.4-amd64.iso ~/Downloads/NetBSD-9.4-amd64.iso.tor
 </ul>
 <p>Thus we alternate between SHA1 computations with <code>sha1msg1/sha1msg2</code>, and state calculations with <code>sha1rnds4/sha1nexte</code>, always 4 <code>uint32_t</code> at a time.</p>
 </li>
-<li>
-<p>What's a &quot;SHA computation&quot;? It's basically a recombination, or shuffling, of its input. For example, <code>sha1msg1</code> in pseudo-code does:</p>
+<li><p>What's a &quot;SHA computation&quot;? It's basically a recombination, or shuffling, of its input. For example, <code>sha1msg1</code> in pseudo-code does:</p>
 <pre><code class="language-text">  W0 &lt;- SRC1[127:96] ;
   W1 &lt;- SRC1[95:64] ;
   W2 &lt;- SRC1[63: 32] ;
@@ -1353,8 +1337,8 @@ Benchmark 1: ./a.out ./NetBSD-9.4-amd64.iso ~/Downloads/NetBSD-9.4-amd64.iso.tor
 <p>And it's wild to see different implementations range from 30s to 300 ms (a factor of 100!) to do the same thing. Also, optimizers these days are god damn impressive.</p>
 <p>If you want to learn more about SIMD, I recommend this <a href="https://www.youtube.com/watch?v=6BIfqfC1i7U">talk</a> from the Titanfall developers at GDC where they explain how they use a lot of SIMD in their game engine, but also their thought process to go from a standard procedural code to a SIMD version:</p>
 <img style="height:30rem" src="simd_talk.png" alt="GDC talk">
-<p><a href="/blog"> ⏴ Back to all articles</a></p>
 
+<p><a href="/blog"> ⏴ Back to all articles</a></p>
 <blockquote id="donate">
   <p>If you enjoy what you're reading, you want to support me, and can afford it: <a href="https://paypal.me/philigaultier?country.x=DE&locale.x=en_US">Support me</a>. That allows me to write more cool articles!</p>
 

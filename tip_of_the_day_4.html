@@ -73,15 +73,13 @@ Do not edit it by hand.
 <div id="pseudo-body">
 
 <div class="article-prelude">
-  <p><a href="/blog"> ⏴ Back to all articles</a></p>
-
-  <p class="publication-date">Published on 2025-02-11.</p>
+<p><a href="/blog"> ⏴ Back to all articles</a></p>
+  <p class="publication-date">Published on 2026-02-27.</p>
 </div>
 <div class="article-title">
-<h1>Tip of the day #4: Type annotations on Rust match patterns</h1>
-  <div class="tags"> <a href="/blog/articles-by-tag.html#rust" class="tag">Rust</a> <a href="/blog/articles-by-tag.html#tip-of-the-day" class="tag">Tip of the day</a></div>
-  </div>
-
+  <h1>Tip of the day #4: Type annotations on Rust match patterns</h1>
+<div class="tags"> <a href="/blog/articles-by-tag.html#rust" class="tag">Rust</a> <a href="/blog/articles-by-tag.html#tip-of-the-day" class="tag">Tip of the day</a> </div>
+</div>
 <p><em>Discussions: <a href="https://old.reddit.com/r/rust/comments/1in1wyr/tip_of_the_day_4_type_annotations_on_rust_match/">/r/rust</a></em></p>
 <p>Today at work I was adding error logs to our Rust codebase and I hit an interesting case. I had a match pattern, and the compiler asked me to add type annotations to a branch of the pattern, because it could not infer by itself the right type.</p>
 <pre><code class="language-rust">fn decode_foo(input: &amp;[u8]) -&gt; Result&lt;(&amp;[u8], [u8; 33]), Error&gt; {
@@ -214,9 +212,10 @@ Do not edit it by hand.
    |                            ^^^^^^^^ expected `bool`, found `TryFromSliceError`
 </code></pre>
 <p>So...it <em>does</em> actually know the type of <code>err</code>... You naughty compiler, playing games with me! It reminds me of this picture:</p>
-<p><img style="max-width: 50%; margin: 0 auto; display: block" src="coffee_or_tea.png" alt="Coffee or tea?">Coffee or tea?</p>
-<p><a href="/blog"> ⏴ Back to all articles</a></p>
+<p><img style="max-width: 50%; margin: 0 auto; display: block" src="coffee_or_tea.png" alt="Coffee or tea?">
+Coffee or tea?</p>
 
+<p><a href="/blog"> ⏴ Back to all articles</a></p>
 <blockquote id="donate">
   <p>If you enjoy what you're reading, you want to support me, and can afford it: <a href="https://paypal.me/philigaultier?country.x=DE&locale.x=en_US">Support me</a>. That allows me to write more cool articles!</p>
 

@@ -5,7 +5,7 @@ Do not edit it by hand.
 <!DOCTYPE html>
 <html>
 <head>
-<title>A subtle bug with Go&#39;s errgroup</title>
+<title>A subtle bug with Go's errgroup</title>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link type="application/atom+xml" href="/blog/feed.xml" rel="self">
@@ -73,36 +73,35 @@ Do not edit it by hand.
 <div id="pseudo-body">
 
 <div class="article-prelude">
-  <p><a href="/blog"> ⏴ Back to all articles</a></p>
-
-  <p class="publication-date">Published on 2025-08-09.</p>
+<p><a href="/blog"> ⏴ Back to all articles</a></p>
+  <p class="publication-date">Published on 2026-02-27.</p>
 </div>
 <div class="article-title">
-<h1>A subtle bug with Go's errgroup</h1>
-  <div class="tags"> <a href="/blog/articles-by-tag.html#go" class="tag">Go</a> <a href="/blog/articles-by-tag.html#bug" class="tag">Bug</a></div>
-  </div>
- <details class="toc"><summary>Table of contents</summary>
+  <h1>A subtle bug with Go's errgroup</h1>
+<div class="tags"> <a href="/blog/articles-by-tag.html#go" class="tag">Go</a> <a href="/blog/articles-by-tag.html#bug" class="tag">Bug</a> </div>
+</div>
+  <details class="toc"><summary>Table of contents</summary>
 <ul>
 
   <li>
     <a href="#the-program">The program</a>
-  </li>
+</li>
 
   <li>
     <a href="#bug-investigation">Bug investigation</a>
-  </li>
+</li>
 
   <li>
     <a href="#alternative-fix">Alternative fix</a>
-  </li>
+</li>
 
   <li>
     <a href="#conclusion">Conclusion</a>
-  </li>
+</li>
 
   <li>
     <a href="#addendum">Addendum</a>
-  </li>
+</li>
 </ul>
 </details>
 
@@ -353,14 +352,14 @@ index ae602df..6bcbfa3 100644
   <a class="title" href="#addendum">Addendum</a>
   <a class="hash-anchor" href="#addendum" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
-<p>Comments have pointed out that there is an old, known Github issue about this very API flaw: <a href="https://github.com/golang/go/issues/34510">https://github.com/golang/go/issues/34510</a> :</p>
+<p>Comments have pointed out that there is an old, known Github issue about this very API flaw: <a href="https://github.com/golang/go/issues/34510"><a href="https://github.com/golang/go/issues/34510">https://github.com/golang/go/issues/34510</a></a> :</p>
 <blockquote>
 <p>I have also observed that the context returned by WithContext is occasionally misused for code other than the goroutines spawned by Go, in some cases by directly shadowing the ctx variable, which often results in spooky action at a distance where one failure causes code in another part of the application to have its context cancelled.</p>
 </blockquote>
 <p>But there is no consensus about fixing the API.</p>
 <p>Some commenters have mentioned that there is unfortunately no current lint about this footgun, and that they discovered instances of this exact bug in their code after reading this article and checking if they also are affected.</p>
-<p><a href="/blog"> ⏴ Back to all articles</a></p>
 
+<p><a href="/blog"> ⏴ Back to all articles</a></p>
 <blockquote id="donate">
   <p>If you enjoy what you're reading, you want to support me, and can afford it: <a href="https://paypal.me/philigaultier?country.x=DE&locale.x=en_US">Support me</a>. That allows me to write more cool articles!</p>
 

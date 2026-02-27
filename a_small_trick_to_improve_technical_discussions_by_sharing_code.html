@@ -73,20 +73,19 @@ Do not edit it by hand.
 <div id="pseudo-body">
 
 <div class="article-prelude">
-  <p><a href="/blog"> ⏴ Back to all articles</a></p>
-
-  <p class="publication-date">Published on 2024-03-07.</p>
+<p><a href="/blog"> ⏴ Back to all articles</a></p>
+  <p class="publication-date">Published on 2026-02-27.</p>
 </div>
 <div class="article-title">
-<h1>A small trick to improve technical discussions by sharing code</h1>
-  <div class="tags"> <a href="/blog/articles-by-tag.html#lua" class="tag">Lua</a> <a href="/blog/articles-by-tag.html#neovim" class="tag">Neovim</a> <a href="/blog/articles-by-tag.html#git" class="tag">Git</a></div>
-  </div>
- <details class="toc"><summary>Table of contents</summary>
+  <h1>A small trick to improve technical discussions by sharing code</h1>
+<div class="tags"> <a href="/blog/articles-by-tag.html#lua" class="tag">Lua</a> <a href="/blog/articles-by-tag.html#neovim" class="tag">Neovim</a> <a href="/blog/articles-by-tag.html#git" class="tag">Git</a> </div>
+</div>
+  <details class="toc"><summary>Table of contents</summary>
 <ul>
 
   <li>
     <a href="#addendum-the-full-code">Addendum: the full code</a>
-  </li>
+</li>
 </ul>
 </details>
 
@@ -95,8 +94,8 @@ Do not edit it by hand.
 <p>Copy pasting code, taking screenshots, or screen sharing may work at times but I have found a low-tech solution that's superior: Sharing a link to a region of code in the codebase. It's shorter, easier, and can be used in chats, documentation and PRs.
 It works for any code, be it existing code on the main branch, or experimental code on a branch:</p>
 <p><img src="git_web_ui_link.png" alt="Link in Github's web UI" /></p>
-<p>Every web UI of every Version Control System (VCS) worth its salt has that feature, let's take Github for example: <a href="https://github.com/gaultier/micro-kotlin/blob/master/class_file.h#L773-L775">https://github.com/gaultier/micro-kotlin/blob/master/class_file.h#L773-L775</a></p>
-<p>The hurdle is that every hosting provider has its own URL 'shape' and it's not always documented, so there is a tiny bit of reverse-engineering involved. Compare the previous URL with this one: <a href="https://gitlab.com/philigaultier/jvm-bytecode/-/blob/master/class_file.h?ref_type=heads#L125-127">https://gitlab.com/philigaultier/jvm-bytecode/-/blob/master/class_file.h?ref_type=heads#L125-127</a>. It's slightly different.</p>
+<p>Every web UI of every Version Control System (VCS) worth its salt has that feature, let's take Github for example: <a href="https://github.com/gaultier/micro-kotlin/blob/master/class_file.h#L773-L775"><a href="https://github.com/gaultier/micro-kotlin/blob/master/class_file.h#L773-L775">https://github.com/gaultier/micro-kotlin/blob/master/class_file.h#L773-L775</a></a></p>
+<p>The hurdle is that every hosting provider has its own URL 'shape' and it's not always documented, so there is a tiny bit of reverse-engineering involved. Compare the previous URL with this one: <a href="https://gitlab.com/philigaultier/jvm-bytecode/-/blob/master/class_file.h?ref_type=heads#L125-127"><a href="https://gitlab.com/philigaultier/jvm-bytecode/-/blob/master/class_file.h?ref_type=heads#L125-127">https://gitlab.com/philigaultier/jvm-bytecode/-/blob/master/class_file.h?ref_type=heads#L125-127</a></a>. It's slightly different.</p>
 <p>So to make it easy to share a link to code with coworkers, I've written a tiny script to craft the URL for me, inside my editor. I select a few lines, hit a keystroke, and the URL is now in the clipboard for me to paste anywhere.</p>
 <p>Since I use Neovim and Lua, this is what I'll cover, but I'm sure any editor can do that. Now that I think of it, there should be an existing extension for this? Back when I started using this trick I remember searching for one and finding nothing.</p>
 <p>This article could also serve as a gentle introduction to using Lua in Neovim. The code is also directly mappable to Vimscript, Vim9 script or anything really.</p>
@@ -262,8 +261,8 @@ end,
 {force=true, range=true, nargs=0, desc='Copy to clipboard a URL to a git webui for the current line'})
 </code></pre>
 </details>
-<p><a href="/blog"> ⏴ Back to all articles</a></p>
 
+<p><a href="/blog"> ⏴ Back to all articles</a></p>
 <blockquote id="donate">
   <p>If you enjoy what you're reading, you want to support me, and can afford it: <a href="https://paypal.me/philigaultier?country.x=DE&locale.x=en_US">Support me</a>. That allows me to write more cool articles!</p>
 

@@ -73,40 +73,39 @@ Do not edit it by hand.
 <div id="pseudo-body">
 
 <div class="article-prelude">
-  <p><a href="/blog"> ⏴ Back to all articles</a></p>
-
-  <p class="publication-date">Published on 2025-06-09.</p>
+<p><a href="/blog"> ⏴ Back to all articles</a></p>
+  <p class="publication-date">Published on 2026-02-27.</p>
 </div>
 <div class="article-title">
-<h1>What should your mutexes be named?</h1>
-  <div class="tags"> <a href="/blog/articles-by-tag.html#go" class="tag">Go</a> <a href="/blog/articles-by-tag.html#awk" class="tag">Awk</a> <a href="/blog/articles-by-tag.html#search" class="tag">Search</a></div>
-  </div>
- <details class="toc"><summary>Table of contents</summary>
+  <h1>What should your mutexes be named?</h1>
+<div class="tags"> <a href="/blog/articles-by-tag.html#go" class="tag">Go</a> <a href="/blog/articles-by-tag.html#awk" class="tag">Awk</a> <a href="/blog/articles-by-tag.html#search" class="tag">Search</a> </div>
+</div>
+  <details class="toc"><summary>Table of contents</summary>
 <ul>
 
   <li>
     <a href="#structural-search">Structural search</a>
-  </li>
+</li>
 
   <li>
     <a href="#a-naming-convention-to-rule-them-all">A naming convention to rule them all</a>
-  </li>
+</li>
 
   <li>
     <a href="#low-tech-alternatives">Low-tech alternatives</a>
-  </li>
+</li>
 
   <li>
     <a href="#limitations-of-structural-search-tools">Limitations of structural search tools</a>
-  </li>
+</li>
 
   <li>
     <a href="#conclusion">Conclusion</a>
-  </li>
+</li>
 
   <li>
     <a href="#addendum-what-were-mutexes-named-in-the-c-implementation-of-the-go-compiler-and-runtime">Addendum: What were mutexes named in the C implementation of the Go compiler and runtime?</a>
-  </li>
+</li>
 </ul>
 </details>
 
@@ -219,35 +218,45 @@ END {
 </code></pre>
 <p>And here are the statistics (commit <code>7800f4f</code>, 2025-06-08):</p>
 <table>
-<thead>
 <tr>
-<th>Variable name suffix</th>
-<th>Count</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>mu</code></td>
-<td>131</td>
+<td>
+Variable name suffix</td>
+<td>
+Count</td>
 </tr>
 <tr>
-<td><code>mutex</code></td>
-<td>11</td>
+<td>
+<code>mu</code></td>
+<td>
+131</td>
 </tr>
 <tr>
-<td>something else</td>
-<td>11</td>
+<td>
+<code>mutex</code></td>
+<td>
+11</td>
 </tr>
 <tr>
-<td><code>lock</code></td>
-<td>6</td>
+<td>
+something else</td>
+<td>
+11</td>
 </tr>
 <tr>
-<td><code>mux</code></td>
-<td>0</td>
+<td>
+<code>lock</code></td>
+<td>
+6</td>
 </tr>
-</tbody>
+<tr>
+<td>
+<code>mux</code></td>
+<td>
+0</td>
+</tr>
 </table>
+
+
 <p>So according to these statistics: if you want to follow the same naming convention as the Go project, use <code>xxxMu</code> as a name for your mutexes.</p>
 <p>More importantly, I would add, and this is subjective: <strong>name the mutex after the variable it protects for clarity, e.g.: <code>bar</code> and <code>barMu</code></strong>. In nearly every case in the Go project where this rule of thumb was not followed, a code comment was present to explain which variable the mutex protects. We might as well have this information in the mutex variable name.</p>
 <p>Even for cases where the mutex protects multiple variables, the Go developers often picked one of the variables and named the mutex after it:</p>
@@ -291,7 +300,7 @@ in_struct &amp;&amp; /^}$/ { in_struct = 0 }
 <ul>
 <li>Most if not all structural search tools only work on a valid AST, and not every language is supported by every tool.</li>
 <li>The rule syntax is arcane and in parts language specific (see the addendum for details).</li>
-<li>Speed can be an issue: <code>ast-grep</code> is relatively fast but still slower than <code>ripgrep</code> and it states that it is one of the fastest in its category. On my (admittedly very old) laptop:
+<li><p>Speed can be an issue: <code>ast-grep</code> is relatively fast but still slower than <code>ripgrep</code> and it states that it is one of the fastest in its category. On my (admittedly very old) laptop:</p>
 <ul>
 <li><code>ast-grep</code> takes  ~10s to scan ~2 millions LOC. Which is pretty good!</li>
 <li><code>find + awk</code> takes ~1.5s.</li>
@@ -385,8 +394,8 @@ note[find-mtx-fields-vars]: Mutex variables found
 </code></pre>
 <hr />
 <p>Funnily, it seems that: 1) the C code has much less variability in naming than the Go code: it's mostly <code>xxxlock</code>, and 2) The naming in the Go code does not stem from the C code since it's completely different.</p>
-<p><a href="/blog"> ⏴ Back to all articles</a></p>
 
+<p><a href="/blog"> ⏴ Back to all articles</a></p>
 <blockquote id="donate">
   <p>If you enjoy what you're reading, you want to support me, and can afford it: <a href="https://paypal.me/philigaultier?country.x=DE&locale.x=en_US">Support me</a>. That allows me to write more cool articles!</p>
 

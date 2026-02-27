@@ -73,15 +73,14 @@ Do not edit it by hand.
 <div id="pseudo-body">
 
 <div class="article-prelude">
-  <p><a href="/blog"> ⏴ Back to all articles</a></p>
-
-  <p class="publication-date">Published on 2025-11-21.</p>
+<p><a href="/blog"> ⏴ Back to all articles</a></p>
+  <p class="publication-date">Published on 2026-02-27.</p>
 </div>
 <div class="article-title">
-<h1>A million ways to die from a data race in Go</h1>
-  <div class="tags"> <a href="/blog/articles-by-tag.html#go" class="tag">Go</a> <a href="/blog/articles-by-tag.html#concurrency" class="tag">Concurrency</a></div>
-  </div>
- <details class="toc"><summary>Table of contents</summary>
+  <h1>A million ways to die from a data race in Go</h1>
+<div class="tags"> <a href="/blog/articles-by-tag.html#go" class="tag">Go</a> <a href="/blog/articles-by-tag.html#concurrency" class="tag">Concurrency</a> </div>
+</div>
+  <details class="toc"><summary>Table of contents</summary>
 <ul>
 
   <li>
@@ -90,13 +89,13 @@ Do not edit it by hand.
 
   <li>
     <a href="#the-fix">The fix</a>
-  </li>
+</li>
 
   <li>
     <a href="#learnings">Learnings</a>
-  </li>
+</li>
 </ul>
-  </li>
+</li>
 
   <li>
     <a href="#concurrent-use-of-http-client">Concurrent use of http.Client</a>
@@ -104,13 +103,13 @@ Do not edit it by hand.
 
   <li>
     <a href="#the-fix-1">The fix</a>
-  </li>
+</li>
 
   <li>
     <a href="#learnings-1">Learnings</a>
-  </li>
+</li>
 </ul>
-  </li>
+</li>
 
   <li>
     <a href="#improper-lifetime-of-a-mutex">Improper lifetime of a mutex</a>
@@ -118,13 +117,13 @@ Do not edit it by hand.
 
   <li>
     <a href="#the-fix-2">The fix</a>
-  </li>
+</li>
 
   <li>
     <a href="#learnings-2">Learnings</a>
-  </li>
+</li>
 </ul>
-  </li>
+</li>
 
   <li>
     <a href="#concurrent-reads-and-writes-to-standard-library-containers">Concurrent reads and writes to standard library containers</a>
@@ -132,21 +131,21 @@ Do not edit it by hand.
 
   <li>
     <a href="#the-fix-3">The fix</a>
-  </li>
+</li>
 
   <li>
     <a href="#learnings-3">Learnings</a>
-  </li>
+</li>
 </ul>
-  </li>
+</li>
 
   <li>
     <a href="#conclusion">Conclusion</a>
-  </li>
+</li>
 
   <li>
     <a href="#ideas-to-improve-the-status-quo">Ideas to improve the status quo</a>
-  </li>
+</li>
 </ul>
 </details>
 
@@ -719,8 +718,8 @@ index 5529d90..42571b9 100644
 <li>Study places where a shallow copy may take place, e.g. function arguments passed by value and assignments. Does the type require a deep copy? Each non-trivial type should have documentation stating that.</li>
 <li>If a type can be implemented in an immutable fashion, then it's great because there is no data race possible. For example, the <code>string</code> type in Go is immutable.</li>
 </ol>
-<p><a href="/blog"> ⏴ Back to all articles</a></p>
 
+<p><a href="/blog"> ⏴ Back to all articles</a></p>
 <blockquote id="donate">
   <p>If you enjoy what you're reading, you want to support me, and can afford it: <a href="https://paypal.me/philigaultier?country.x=DE&locale.x=en_US">Support me</a>. That allows me to write more cool articles!</p>
 

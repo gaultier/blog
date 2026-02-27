@@ -125,24 +125,22 @@ fn md_render_article_content(
             writeln!(content, "</blockquote>").unwrap();
         }
         Node::FootnoteDefinition(footnote_definition) => {
-            dbg!(footnote_definition);
             footnote_defs.push(footnote_definition.clone());
         }
         Node::MdxJsxFlowElement(_mdx_jsx_flow_element) => todo!(),
         Node::List(list) => {
-            if list.ordered {
-                writeln!(content, "<ol>").unwrap();
+            let tag = if list.ordered { "ol" } else { "ul" };
+            if let Some(start) = list.start
+                && start > 1
+            {
+                writeln!(content, r#"<{} start="{}">"#, tag, start).unwrap();
             } else {
-                writeln!(content, "<ul>").unwrap();
+                writeln!(content, r#"<{}>"#, tag).unwrap();
             }
             for child in &list.children {
                 md_render_article_content(content, footnote_defs, child, titles);
             }
-            if list.ordered {
-                writeln!(content, "</ol>").unwrap();
-            } else {
-                writeln!(content, "</ul>").unwrap();
-            }
+            writeln!(content, "</{}>", tag).unwrap();
         }
         Node::MdxjsEsm(_mdxjs_esm) => todo!(),
         Node::Toml(_toml) => todo!(),
@@ -169,8 +167,6 @@ fn md_render_article_content(
         }
         Node::MdxTextExpression(_mdx_text_expression) => todo!(),
         Node::FootnoteReference(footnote_reference) => {
-            dbg!(&footnote_reference);
-
             writeln!(
                 content,
                 r#"<sup class="footnote-ref"><a href="{}fn-{}" id="fnref-{}" data-footnote-ref>{}</a></sup>"#,
