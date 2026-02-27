@@ -73,19 +73,20 @@ Do not edit it by hand.
 <div id="pseudo-body">
 
 <div class="article-prelude">
-<p><a href="/blog"> ⏴ Back to all articles</a></p>
-  <p class="publication-date">Published on 2026-02-27.</p>
+  <p><a href="/blog"> ⏴ Back to all articles</a></p>
+
+  <p class="publication-date">Published on 2024-10-30.</p>
 </div>
 <div class="article-title">
-  <h1>Lessons learned from a successful Rust rewrite</h1>
-<div class="tags"> <a href="/blog/articles-by-tag.html#rust" class="tag">Rust</a> <a href="/blog/articles-by-tag.html#cplusplus" class="tag">C++</a> <a href="/blog/articles-by-tag.html#rewrite" class="tag">Rewrite</a> </div>
-</div>
-  <details class="toc"><summary>Table of contents</summary>
+<h1>Lessons learned from a successful Rust rewrite</h1>
+  <div class="tags"> <a href="/blog/articles-by-tag.html#rust" class="tag">Rust</a> <a href="/blog/articles-by-tag.html#cplusplus" class="tag">C++</a> <a href="/blog/articles-by-tag.html#rewrite" class="tag">Rewrite</a></div>
+  </div>
+ <details class="toc"><summary>Table of contents</summary>
 <ul>
 
   <li>
     <a href="#what-worked-well">What worked well</a>
-</li>
+  </li>
 
   <li>
     <a href="#what-did-not-work-so-well">What did not work so well</a>
@@ -93,41 +94,41 @@ Do not edit it by hand.
 
   <li>
     <a href="#i-am-still-chasing-undefined-behavior">I am still chasing Undefined Behavior</a>
-</li>
+  </li>
 
   <li>
     <a href="#miri-does-not-always-work-and-i-still-have-to-use-valgrind">Miri does not always work and I still have to use Valgrind</a>
-</li>
+  </li>
 
   <li>
     <a href="#i-am-still-chasing-memory-leaks">I am still chasing memory leaks</a>
-</li>
+  </li>
 
   <li>
     <a href="#cross-compilation-does-not-always-work">Cross-compilation does not always work</a>
-</li>
+  </li>
 
   <li>
     <a href="#cbindgen-does-not-always-work">Cbindgen does not always work</a>
-</li>
+  </li>
 
   <li>
     <a href="#unstable-abi">Unstable ABI</a>
-</li>
+  </li>
 
   <li>
     <a href="#no-support-for-custom-memory-allocators">No support for custom memory allocators</a>
-</li>
+  </li>
 
   <li>
     <a href="#complexity">Complexity</a>
-</li>
+  </li>
 </ul>
-</li>
+  </li>
 
   <li>
     <a href="#conclusion">Conclusion</a>
-</li>
+  </li>
 </ul>
 </details>
 
@@ -310,8 +311,8 @@ Now, I think that Rust is still mostly easier to learn than C++, but admittedly 
 <p>If you do not yet know Rust, I recommend for your first project to use pure Rust, and stay far away from the whole FFI topic.</p>
 <p>I initially considered using Zig or Odin for this rewrite, but I really did not want to use a pre v1.0 language for an enterprise production codebase (and I anticipated that it would be hard to convince other engineers and managers). Now, I am wondering if the experience would have really been worse than with Rust. Perhaps the Rust model is really at odds with the C model (or with the C++ model for that matter) and there is simply too much friction when using both together.</p>
 <p>If I have to undertake a similar effort in the future, I think I would strongly consider going with Zig instead. We'll see. In any case, the next time someone say 'just rewrite it in Rust', point them to this article, and ask them if that changed their mind ;)</p>
-
 <p><a href="/blog"> ⏴ Back to all articles</a></p>
+
 <blockquote id="donate">
   <p>If you enjoy what you're reading, you want to support me, and can afford it: <a href="https://paypal.me/philigaultier?country.x=DE&locale.x=en_US">Support me</a>. That allows me to write more cool articles!</p>
 

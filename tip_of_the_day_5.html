@@ -73,13 +73,15 @@ Do not edit it by hand.
 <div id="pseudo-body">
 
 <div class="article-prelude">
-<p><a href="/blog"> ⏴ Back to all articles</a></p>
-  <p class="publication-date">Published on 2026-02-27.</p>
+  <p><a href="/blog"> ⏴ Back to all articles</a></p>
+
+  <p class="publication-date">Published on 2025-02-18.</p>
 </div>
 <div class="article-title">
-  <h1>Tip of the day #5: Install Go tools with a specific version</h1>
-<div class="tags"> <a href="/blog/articles-by-tag.html#go" class="tag">Go</a> <a href="/blog/articles-by-tag.html#tip-of-the-day" class="tag">Tip of the day</a> </div>
-</div>
+<h1>Tip of the day #5: Install Go tools with a specific version</h1>
+  <div class="tags"> <a href="/blog/articles-by-tag.html#go" class="tag">Go</a> <a href="/blog/articles-by-tag.html#tip-of-the-day" class="tag">Tip of the day</a></div>
+  </div>
+
 <p>I had an issue with Go tools around versioning, and here's how I solved it. It could be useful to others. This was the error:</p>
 <pre><code class="language-shell">$ staticcheck  ./...
 -: module requires at least go1.23.6, but Staticcheck was built with go1.23.1 (compile)
@@ -98,7 +100,7 @@ $ staticcheck  ./...
 -: module requires at least go1.23.6, but Staticcheck was built with go1.23.1 (compile)
 </code></pre>
 <p>I even tried the <code>-a</code> flag for <code>go install</code> to force a clean build (since <code>go install</code> fetches the sources and builds them) to no avail.</p>
-<p><strong>Solution:</strong> following <a href="https://go.dev/doc/manage-install"><a href="https://go.dev/doc/manage-install">https://go.dev/doc/manage-install</a></a>, I installed the specific version of Go I needed and used that to install the tool:</p>
+<p><strong>Solution:</strong> following <a href="https://go.dev/doc/manage-install">https://go.dev/doc/manage-install</a>, I installed the specific version of Go I needed and used that to install the tool:</p>
 <pre><code class="language-shell">$ go install golang.org/dl/go1.23.6@latest
 $ go1.23.6 download
 $ go1.23.6 install honnef.co/go/tools/cmd/staticcheck@v0.5.1
@@ -106,8 +108,8 @@ $ staticcheck  -tags=integration_tests ./... # Works!
 </code></pre>
 <p>That was a TIL for me.</p>
 <p>Note that Go 1.24 supports the project listing tools directly in <code>go.mod</code> which would probably solve this issue directly.</p>
-
 <p><a href="/blog"> ⏴ Back to all articles</a></p>
+
 <blockquote id="donate">
   <p>If you enjoy what you're reading, you want to support me, and can afford it: <a href="https://paypal.me/philigaultier?country.x=DE&locale.x=en_US">Support me</a>. That allows me to write more cool articles!</p>
 

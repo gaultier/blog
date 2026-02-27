@@ -73,47 +73,48 @@ Do not edit it by hand.
 <div id="pseudo-body">
 
 <div class="article-prelude">
-<p><a href="/blog"> ⏴ Back to all articles</a></p>
-  <p class="publication-date">Published on 2026-02-27.</p>
+  <p><a href="/blog"> ⏴ Back to all articles</a></p>
+
+  <p class="publication-date">Published on 2025-09-11.</p>
 </div>
 <div class="article-title">
-  <h1>Observe live SQL queries in Go with DTrace</h1>
-<div class="tags"> <a href="/blog/articles-by-tag.html#go" class="tag">Go</a> <a href="/blog/articles-by-tag.html#dtrace" class="tag">DTrace</a> </div>
-</div>
-  <details class="toc"><summary>Table of contents</summary>
+<h1>Observe live SQL queries in Go with DTrace</h1>
+  <div class="tags"> <a href="/blog/articles-by-tag.html#go" class="tag">Go</a> <a href="/blog/articles-by-tag.html#dtrace" class="tag">DTrace</a></div>
+  </div>
+ <details class="toc"><summary>Table of contents</summary>
 <ul>
 
   <li>
     <a href="#level-1-see-the-sql-query-without-arguments">Level 1: See the SQL query, without arguments</a>
-</li>
+  </li>
 
   <li>
     <a href="#level-2-see-string-query-arguments">Level 2: See string query arguments</a>
-</li>
+  </li>
 
   <li>
     <a href="#level-3-see-array-query-arguments">Level 3: See array query arguments</a>
-</li>
+  </li>
 
   <li>
     <a href="#caveats">Caveats</a>
-</li>
+  </li>
 
   <li>
     <a href="#print-the-name-of-the-type-from-dtrace">Print the name of the type from DTrace?</a>
-</li>
+  </li>
 
   <li>
     <a href="#alternatives">Alternatives</a>
-</li>
+  </li>
 
   <li>
     <a href="#conclusion-and-remaining-work">Conclusion and remaining work</a>
-</li>
+  </li>
 
   <li>
     <a href="#addendum-the-full-code">Addendum: the full code</a>
-</li>
+  </li>
 </ul>
 </details>
 
@@ -419,7 +420,7 @@ GoType {
 </h2>
 <ul>
 <li>Go sometimes decides to pass arguments to functions using the stack. That makes things much more difficult to print them from DTrace: determining the right stack offset is non-trivial.</li>
-<li><p>Go also sometimes inlines functions and eliminates interfaces completely. For example, this program does not use any interface after optimization (as seen in the generated assembly), it simply prints the values directly as if there never were any interfaces at play:</p>
+<li>Go also sometimes inlines functions and eliminates interfaces completely. For example, this program does not use any interface after optimization (as seen in the generated assembly), it simply prints the values directly as if there never were any interfaces at play:
 <pre><code class="language-go">package main
 
 import (
@@ -443,8 +444,7 @@ func main() {
     fmt.Println(Foo(&quot;foo&quot;, 123, Bar{A: 99, B: &quot;bar&quot;}))
 }
 </code></pre>
-<p>Which is great for performance, but not so great for introspection using our approach. That means we often have to introspect a different Go function in the call stack.</p>
-</li>
+Which is great for performance, but not so great for introspection using our approach. That means we often have to introspect a different Go function in the call stack.</li>
 <li>the Go <code>runtime</code> types we have used could change in the future and break our script.</li>
 <li>Determining how function arguments are passed in Go is machine, ABI, version, and function specific.</li>
 </ul>
@@ -588,8 +588,8 @@ pid$target::database?sql.*.QueryContext:entry {
 }
 </code></pre>
 </details>
-
 <p><a href="/blog"> ⏴ Back to all articles</a></p>
+
 <blockquote id="donate">
   <p>If you enjoy what you're reading, you want to support me, and can afford it: <a href="https://paypal.me/philigaultier?country.x=DE&locale.x=en_US">Support me</a>. That allows me to write more cool articles!</p>
 

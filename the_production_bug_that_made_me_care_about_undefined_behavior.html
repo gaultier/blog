@@ -73,35 +73,36 @@ Do not edit it by hand.
 <div id="pseudo-body">
 
 <div class="article-prelude">
-<p><a href="/blog"> ⏴ Back to all articles</a></p>
-  <p class="publication-date">Published on 2026-02-27.</p>
+  <p><a href="/blog"> ⏴ Back to all articles</a></p>
+
+  <p class="publication-date">Published on 2025-12-27.</p>
 </div>
 <div class="article-title">
-  <h1>The production bug that made me care about undefined behavior</h1>
-<div class="tags"> <a href="/blog/articles-by-tag.html#cplusplus" class="tag">C++</a> <a href="/blog/articles-by-tag.html#undefined-behavior" class="tag">Undefined behavior</a> <a href="/blog/articles-by-tag.html#bug" class="tag">Bug</a> </div>
-</div>
-  <details class="toc"><summary>Table of contents</summary>
+<h1>The production bug that made me care about undefined behavior</h1>
+  <div class="tags"> <a href="/blog/articles-by-tag.html#cplusplus" class="tag">C++</a> <a href="/blog/articles-by-tag.html#undefined-behavior" class="tag">Undefined behavior</a> <a href="/blog/articles-by-tag.html#bug" class="tag">Bug</a></div>
+  </div>
+ <details class="toc"><summary>Table of contents</summary>
 <ul>
 
   <li>
     <a href="#the-bug-report">The bug report</a>
-</li>
+  </li>
 
   <li>
     <a href="#investigating">Investigating</a>
-</li>
+  </li>
 
   <li>
     <a href="#just-enough-rope-to-hang-yourself">Just enough rope to hang yourself</a>
-</li>
+  </li>
 
   <li>
     <a href="#aftermath">Aftermath</a>
-</li>
+  </li>
 
   <li>
     <a href="#static-analysis-to-the-rescue">Static analysis to the rescue?</a>
-</li>
+  </li>
 
   <li>
     <a href="#runtime-analysis-to-the-rescue">Runtime analysis to the rescue</a>
@@ -109,25 +110,25 @@ Do not edit it by hand.
 
   <li>
     <a href="#what-about-memory-sanitizer">What about Memory Sanitizer?</a>
-</li>
+  </li>
 </ul>
-</li>
+  </li>
 
   <li>
     <a href="#the-aftermath">The aftermath</a>
-</li>
+  </li>
 
   <li>
     <a href="#some-bonus-cplusplus-rules-for-you">Some bonus C++ rules for you</a>
-</li>
+  </li>
 
   <li>
     <a href="#conclusion">Conclusion</a>
-</li>
+  </li>
 
   <li>
     <a href="#addendum">Addendum</a>
-</li>
+  </li>
 </ul>
 </details>
 
@@ -209,65 +210,46 @@ void handle() {
 <p>With this bug, we are in the last case: the <code>Response</code> type is a non-POD struct (due to the <code>std::string data</code> field), so the default constructor is called. <code>Response</code> does not implement a default constructor. This means  that the compiler generates a default constructor for us, and in this generated code, each struct field is default initialized. So, the <code>std::string</code> constructor is called for the <code>data</code> field and all is well. Except, the other two fields are <em>not</em> initialized in any way. Oops.</p>
 <p>Here is a quick summary:</p>
 <table>
+<thead>
 <tr>
-<td>
-Type</td>
-<td>
-Example</td>
-<td>
-Result (Default Init)</td>
+<th>Type</th>
+<th>Example</th>
+<th>Result (Default Init)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Primitive (int, bool, etc)</td>
+<td>int x;</td>
+<td>Indeterminate (Garbage value)</td>
 </tr>
 <tr>
-<td>
-Primitive (int, bool, etc)</td>
-<td>
-int x;</td>
-<td>
-Indeterminate (Garbage value)</td>
+<td>POD / Trivial Struct</td>
+<td>Point p;</td>
+<td>Indeterminate (All fields garbage)</td>
 </tr>
 <tr>
-<td>
-POD / Trivial Struct</td>
-<td>
-Point p;</td>
-<td>
-Indeterminate (All fields garbage)</td>
+<td>Array of Objects</td>
+<td>std::string x[10];</td>
+<td>Safe (All strings initialized)</td>
 </tr>
 <tr>
-<td>
-Array of Objects</td>
-<td>
-std::string x[10];</td>
-<td>
-Safe (All strings initialized)</td>
+<td>Array of Primitives</td>
+<td>int x[10];</td>
+<td>Indeterminate (All garbage)</td>
 </tr>
 <tr>
-<td>
-Array of Primitives</td>
-<td>
-int x[10];</td>
-<td>
-Indeterminate (All garbage)</td>
+<td>Non-Trivial Struct</td>
+<td>Response r;</td>
+<td>Calls Default Constructor (Structs ok, primitives garbage)</td>
 </tr>
 <tr>
-<td>
-Non-Trivial Struct</td>
-<td>
-Response r;</td>
-<td>
-Calls Default Constructor (Structs ok, primitives garbage)</td>
+<td>Any Type (Braces)</td>
+<td>T obj{};</td>
+<td>Value Initialized (Safe / Zeroed)</td>
 </tr>
-<tr>
-<td>
-Any Type (Braces)</td>
-<td>
-T obj{};</td>
-<td>
-Value Initialized (Safe / Zeroed)</td>
-</tr>
+</tbody>
 </table>
-
-
 <p>Thus, the only way to fix the struct without having to fix all call sites is to implement a default constructor that properly initializes every field:</p>
 <pre><code class="language-c++">struct Response {
   bool error;
@@ -364,7 +346,7 @@ error=0 success=1
   <a class="title" href="#the-aftermath">The aftermath</a>
   <a class="hash-anchor" href="#the-aftermath" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
-<p>I wrote a <code>libclang</code> plugin at the time to catch other instances of this problem in the codebase at build time: <a href="https://github.com/gaultier/c/tree/master/libclang-plugin"><a href="https://github.com/gaultier/c/tree/master/libclang-plugin">https://github.com/gaultier/c/tree/master/libclang-plugin</a></a> .</p>
+<p>I wrote a <code>libclang</code> plugin at the time to catch other instances of this problem in the codebase at build time: <a href="https://github.com/gaultier/c/tree/master/libclang-plugin">https://github.com/gaultier/c/tree/master/libclang-plugin</a> .</p>
 <p>Amazingly, there was only one other case in the whole codebase, and it was a false positive because by chance, the caller set the uninitialized fields right after, like this:</p>
 <pre><code class="language-c++">Response response;
 response.error = false;
@@ -432,8 +414,8 @@ And you can very easily, and invisibly, trigger undefined behavior.</p>
 <source src="/blog/forrest_gump_c++.webm" type="video/webm" />
 <source src="/blog/forrest_gump_c++.gif" type="image/gif" />
 </video>
-
 <p><a href="/blog"> ⏴ Back to all articles</a></p>
+
 <blockquote id="donate">
   <p>If you enjoy what you're reading, you want to support me, and can afford it: <a href="https://paypal.me/philigaultier?country.x=DE&locale.x=en_US">Support me</a>. That allows me to write more cool articles!</p>
 

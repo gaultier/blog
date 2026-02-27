@@ -5,7 +5,7 @@ Do not edit it by hand.
 <!DOCTYPE html>
 <html>
 <head>
-<title>You've just inherited a legacy C++ codebase, now what?</title>
+<title>You&#39;ve just inherited a legacy C++ codebase, now what?</title>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link type="application/atom+xml" href="/blog/feed.xml" rel="self">
@@ -73,79 +73,80 @@ Do not edit it by hand.
 <div id="pseudo-body">
 
 <div class="article-prelude">
-<p><a href="/blog"> ⏴ Back to all articles</a></p>
-  <p class="publication-date">Published on 2026-02-27.</p>
+  <p><a href="/blog"> ⏴ Back to all articles</a></p>
+
+  <p class="publication-date">Published on 2024-02-29.</p>
 </div>
 <div class="article-title">
-  <h1>You've just inherited a legacy C++ codebase, now what?</h1>
-<div class="tags"> <a href="/blog/articles-by-tag.html#cplusplus" class="tag">C++</a> <a href="/blog/articles-by-tag.html#c" class="tag">C</a> <a href="/blog/articles-by-tag.html#legacy" class="tag">Legacy</a> <a href="/blog/articles-by-tag.html#ci" class="tag">CI</a> <a href="/blog/articles-by-tag.html#git" class="tag">Git</a> <a href="/blog/articles-by-tag.html#rewrite" class="tag">Rewrite</a> </div>
-</div>
-  <details class="toc"><summary>Table of contents</summary>
+<h1>You've just inherited a legacy C++ codebase, now what?</h1>
+  <div class="tags"> <a href="/blog/articles-by-tag.html#cplusplus" class="tag">C++</a> <a href="/blog/articles-by-tag.html#c" class="tag">C</a> <a href="/blog/articles-by-tag.html#legacy" class="tag">Legacy</a> <a href="/blog/articles-by-tag.html#ci" class="tag">CI</a> <a href="/blog/articles-by-tag.html#git" class="tag">Git</a> <a href="/blog/articles-by-tag.html#rewrite" class="tag">Rewrite</a></div>
+  </div>
+ <details class="toc"><summary>Table of contents</summary>
 <ul>
 
   <li>
     <a href="#get-buy-in">Get buy-in</a>
-</li>
+  </li>
 
   <li>
     <a href="#write-down-the-platforms-you-support">Write down the platforms you support</a>
-</li>
+  </li>
 
   <li>
     <a href="#get-the-build-working-on-your-machine">Get the build working on your machine</a>
-</li>
+  </li>
 
   <li>
     <a href="#get-the-tests-passing-on-your-machine">Get the tests passing on your machine</a>
-</li>
+  </li>
 
   <li>
     <a href="#write-down-in-the-readme-how-to-build-and-test-the-application">Write down in the README how to build and test the application</a>
-</li>
+  </li>
 
   <li>
     <a href="#find-low-hanging-fruits-to-speed-up-the-build-and-tests">Find low hanging fruits to speed up the build and tests</a>
-</li>
+  </li>
 
   <li>
     <a href="#remove-all-unnecessary-code">Remove all unnecessary code</a>
-</li>
+  </li>
 
   <li>
     <a href="#linters">Linters</a>
-</li>
+  </li>
 
   <li>
     <a href="#code-formatting">Code formatting</a>
-</li>
+  </li>
 
   <li>
     <a href="#sanitizers">Sanitizers</a>
-</li>
+  </li>
 
   <li>
     <a href="#add-a-ci-pipeline">Add a CI pipeline</a>
-</li>
+  </li>
 
   <li>
     <a href="#incremental-code-improvements">Incremental code improvements</a>
-</li>
+  </li>
 
   <li>
     <a href="#rewrite-in-a-memory-safe-language">Rewrite in a memory safe language?</a>
-</li>
+  </li>
 
   <li>
     <a href="#conclusion">Conclusion</a>
-</li>
+  </li>
 
   <li>
     <a href="#addendum-dependency-management">Addendum: Dependency management</a>
-</li>
+  </li>
 
   <li>
     <a href="#addendum-suggestions-from-readers">Addendum: suggestions from readers</a>
-</li>
+  </li>
 </ul>
 </details>
 
@@ -394,8 +395,8 @@ Any other: well you're out of luck buddy. I guess you'll have to pick a mainstre
 <li><em>The book 'Working effectively with Legacy Code' has good advice</em>: I don't think I have ever read it from start to finish, so thanks for the recommendation. I seem to recall I skimmed it and found it very object-oriented specific with lots of OOP design patterns, and that was not helpful to me at the time, but my memory is fuzzy.</li>
 <li><em>Generally, touch as little as possible, focus on what adds value (actual value, like, sales dollars).</em>: I agree generally (see the point: don't be beauty queen), however in a typical big C++ codebase, the moment you start to examine it under the lens of security, you will find lots and lots a security vulnerabilities that need fixing. And that does not translate in a financial gain - it's reducing risk. And I find that extremely valuable. Although, some fields are more sensitive than others.</li>
 </ul>
-
 <p><a href="/blog"> ⏴ Back to all articles</a></p>
+
 <blockquote id="donate">
   <p>If you enjoy what you're reading, you want to support me, and can afford it: <a href="https://paypal.me/philigaultier?country.x=DE&locale.x=en_US">Support me</a>. That allows me to write more cool articles!</p>
 

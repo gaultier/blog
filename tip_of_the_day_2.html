@@ -73,27 +73,28 @@ Do not edit it by hand.
 <div id="pseudo-body">
 
 <div class="article-prelude">
-<p><a href="/blog"> ⏴ Back to all articles</a></p>
-  <p class="publication-date">Published on 2026-02-27.</p>
+  <p><a href="/blog"> ⏴ Back to all articles</a></p>
+
+  <p class="publication-date">Published on 2024-10-29.</p>
 </div>
 <div class="article-title">
-  <h1>Tip of the day #2: A safer arena allocator</h1>
-<div class="tags"> <a href="/blog/articles-by-tag.html#c" class="tag">C</a> <a href="/blog/articles-by-tag.html#allocator" class="tag">Allocator</a> <a href="/blog/articles-by-tag.html#safety" class="tag">Safety</a> <a href="/blog/articles-by-tag.html#tip-of-the-day" class="tag">Tip of the day</a> </div>
-</div>
-  <details class="toc"><summary>Table of contents</summary>
+<h1>Tip of the day #2: A safer arena allocator</h1>
+  <div class="tags"> <a href="/blog/articles-by-tag.html#c" class="tag">C</a> <a href="/blog/articles-by-tag.html#allocator" class="tag">Allocator</a> <a href="/blog/articles-by-tag.html#safety" class="tag">Safety</a> <a href="/blog/articles-by-tag.html#tip-of-the-day" class="tag">Tip of the day</a></div>
+  </div>
+ <details class="toc"><summary>Table of contents</summary>
 <ul>
 
   <li>
     <a href="#the-standard-arena">The standard arena</a>
-</li>
+  </li>
 
   <li>
     <a href="#the-bug">The bug</a>
-</li>
+  </li>
 
   <li>
     <a href="#the-solution">The solution</a>
-</li>
+  </li>
 
   <li>
     <a href="#variations">Variations</a>
@@ -101,17 +102,17 @@ Do not edit it by hand.
 
   <li>
     <a href="#the-paranoid-approach">The paranoid approach</a>
-</li>
+  </li>
 
   <li>
     <a href="#the-bucket-per-type-approach">The bucket per type approach</a>
-</li>
+  </li>
 </ul>
-</li>
+  </li>
 
   <li>
     <a href="#see-also">See also</a>
-</li>
+  </li>
 </ul>
 </details>
 
@@ -252,8 +253,8 @@ int main() {
 </h2>
 <p><em>Astute readers have also mentioned: using canaries in the available space in the arena to detect illegal accesses, putting the real data at the start or end of the page to catch out-of-bounds accesses respectively before and after the allocation, periodic checks for long-running applications, randomizing where the guard pages are placed relative to the allocation, running the tests a number of times to catch inconsistent behavior, and finally, teaching Address Sanitizer to be aware of our custom arena allocator so that it does these checks for us. That's super cool! See the linked discussions at the start.</em></p>
 <p>I wrote in the past about adding memory profiling to an arena allocator: <a href="/blog/roll_your_own_memory_profiling.html">Roll your own memory profiling: it's actually not hard</a>.</p>
-
 <p><a href="/blog"> ⏴ Back to all articles</a></p>
+
 <blockquote id="donate">
   <p>If you enjoy what you're reading, you want to support me, and can afford it: <a href="https://paypal.me/philigaultier?country.x=DE&locale.x=en_US">Support me</a>. That allows me to write more cool articles!</p>
 

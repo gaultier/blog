@@ -73,31 +73,32 @@ Do not edit it by hand.
 <div id="pseudo-body">
 
 <div class="article-prelude">
-<p><a href="/blog"> ⏴ Back to all articles</a></p>
-  <p class="publication-date">Published on 2026-02-27.</p>
+  <p><a href="/blog"> ⏴ Back to all articles</a></p>
+
+  <p class="publication-date">Published on 2025-09-16.</p>
 </div>
 <div class="article-title">
-  <h1>Are my SQL files read at build time or run time?</h1>
-<div class="tags"> <a href="/blog/articles-by-tag.html#go" class="tag">Go</a> <a href="/blog/articles-by-tag.html#dtrace" class="tag">DTrace</a> </div>
-</div>
-  <details class="toc"><summary>Table of contents</summary>
+<h1>Are my SQL files read at build time or run time?</h1>
+  <div class="tags"> <a href="/blog/articles-by-tag.html#go" class="tag">Go</a> <a href="/blog/articles-by-tag.html#dtrace" class="tag">DTrace</a></div>
+  </div>
+ <details class="toc"><summary>Table of contents</summary>
 <ul>
 
   <li>
     <a href="#the-problem">The problem</a>
-</li>
+  </li>
 
   <li>
     <a href="#the-solution">The solution</a>
-</li>
+  </li>
 
   <li>
     <a href="#conclusion">Conclusion</a>
-</li>
+  </li>
 
   <li>
     <a href="#addendum-the-io-provider-vs-the-syscall-provider">Addendum: The io provider vs. the syscall provider</a>
-</li>
+  </li>
 </ul>
 </details>
 
@@ -172,8 +173,8 @@ migratest.test ??/testdata/20240131100001_testdata.sql
 </h2>
 <p>The advantage of using the <code>io</code> provider is that it should be cross-platform, whereas observing particular syscalls is not (did you know that DTrace works on Windows? What are the syscalls there to open a file? I don't know).</p>
 <p>Additionally, the <code>io</code> provider gives our D script kernel-space data, but <code>syscall</code> gives us user-space data, which we must remember to copy manually with <code>copyin</code> before inspecting it. So it's easier with <code>io</code> and potentially faster.</p>
-
 <p><a href="/blog"> ⏴ Back to all articles</a></p>
+
 <blockquote id="donate">
   <p>If you enjoy what you're reading, you want to support me, and can afford it: <a href="https://paypal.me/philigaultier?country.x=DE&locale.x=en_US">Support me</a>. That allows me to write more cool articles!</p>
 

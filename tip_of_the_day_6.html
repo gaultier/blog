@@ -73,27 +73,28 @@ Do not edit it by hand.
 <div id="pseudo-body">
 
 <div class="article-prelude">
-<p><a href="/blog"> ⏴ Back to all articles</a></p>
-  <p class="publication-date">Published on 2026-02-27.</p>
+  <p><a href="/blog"> ⏴ Back to all articles</a></p>
+
+  <p class="publication-date">Published on 2025-03-12.</p>
 </div>
 <div class="article-title">
-  <h1>Tip of the day #6: Use Bpftrace to estimate how much memory an in-memory cache will use</h1>
-<div class="tags"> <a href="/blog/articles-by-tag.html#go" class="tag">Go</a> <a href="/blog/articles-by-tag.html#tip-of-the-day" class="tag">Tip of the day</a> <a href="/blog/articles-by-tag.html#bpftrace" class="tag">Bpftrace</a> <a href="/blog/articles-by-tag.html#c" class="tag">C</a> </div>
-</div>
-  <details class="toc"><summary>Table of contents</summary>
+<h1>Tip of the day #6: Use Bpftrace to estimate how much memory an in-memory cache will use</h1>
+  <div class="tags"> <a href="/blog/articles-by-tag.html#go" class="tag">Go</a> <a href="/blog/articles-by-tag.html#tip-of-the-day" class="tag">Tip of the day</a> <a href="/blog/articles-by-tag.html#bpftrace" class="tag">Bpftrace</a> <a href="/blog/articles-by-tag.html#c" class="tag">C</a></div>
+  </div>
+ <details class="toc"><summary>Table of contents</summary>
 <ul>
 
   <li>
     <a href="#context">Context</a>
-</li>
+  </li>
 
   <li>
     <a href="#bpftrace">Bpftrace</a>
-</li>
+  </li>
 
   <li>
     <a href="#addendum-function-arguments-in-bpftrace">Addendum: Function arguments in bpftrace</a>
-</li>
+  </li>
 </ul>
 </details>
 
@@ -153,8 +154,8 @@ void cache_insert(const uint8_t *key, struct ByteSliceView value, [...]);
 <p>So, it's a mess ...</p>
 <p>I fired up <code>gdb</code> and printed registers directly when the <code>cache_insert</code> function is entered. I discovered by doing <code>info registers</code> that (on my machine, with this compiler and build flags, yada yada yada), the <code>rdx</code> register contains <code>value.len</code>. I.e. the compiler unpacks <code>value</code> which is a struct of two fields, into <code>arg1</code> (i.e. the <code>rsi</code> register) and <code>arg2</code> (i.e. the <code>rdx</code> register).</p>
 <p>Thus, this call: <code>cache_insert(foo, bar)</code> gets transformed by the compiler into <code>cache_insert(foo, bar.data, bar.len)</code>, and the third function argument (aka <code>arg2</code>) is our length.</p>
-
 <p><a href="/blog"> ⏴ Back to all articles</a></p>
+
 <blockquote id="donate">
   <p>If you enjoy what you're reading, you want to support me, and can afford it: <a href="https://paypal.me/philigaultier?country.x=DE&locale.x=en_US">Support me</a>. That allows me to write more cool articles!</p>
 

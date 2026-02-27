@@ -73,39 +73,40 @@ Do not edit it by hand.
 <div id="pseudo-body">
 
 <div class="article-prelude">
-<p><a href="/blog"> ⏴ Back to all articles</a></p>
-  <p class="publication-date">Published on 2026-02-27.</p>
+  <p><a href="/blog"> ⏴ Back to all articles</a></p>
+
+  <p class="publication-date">Published on 2025-02-14.</p>
 </div>
 <div class="article-title">
-  <h1>Addressing CGO pains, one at a time</h1>
-<div class="tags"> <a href="/blog/articles-by-tag.html#go" class="tag">Go</a> <a href="/blog/articles-by-tag.html#c" class="tag">C</a> <a href="/blog/articles-by-tag.html#rust" class="tag">Rust</a> <a href="/blog/articles-by-tag.html#zig" class="tag">Zig</a> <a href="/blog/articles-by-tag.html#docker" class="tag">Docker</a> <a href="/blog/articles-by-tag.html#cross-compilation" class="tag">Cross-compilation</a> <a href="/blog/articles-by-tag.html#musl" class="tag">Musl</a> </div>
-</div>
-  <details class="toc"><summary>Table of contents</summary>
+<h1>Addressing CGO pains, one at a time</h1>
+  <div class="tags"> <a href="/blog/articles-by-tag.html#go" class="tag">Go</a> <a href="/blog/articles-by-tag.html#c" class="tag">C</a> <a href="/blog/articles-by-tag.html#rust" class="tag">Rust</a> <a href="/blog/articles-by-tag.html#zig" class="tag">Zig</a> <a href="/blog/articles-by-tag.html#docker" class="tag">Docker</a> <a href="/blog/articles-by-tag.html#cross-compilation" class="tag">Cross-compilation</a> <a href="/blog/articles-by-tag.html#musl" class="tag">Musl</a></div>
+  </div>
+ <details class="toc"><summary>Table of contents</summary>
 <ul>
 
   <li>
     <a href="#cgo-does-not-have-unions">CGO does not have unions</a>
-</li>
+  </li>
 
   <li>
     <a href="#slices-vs-strings">Slices vs Strings</a>
-</li>
+  </li>
 
   <li>
     <a href="#test-a-c-function-in-go-tests">Test a C function in Go tests</a>
-</li>
+  </li>
 
   <li>
     <a href="#the-go-compiler-does-not-detect-changes">The Go compiler does not detect changes</a>
-</li>
+  </li>
 
   <li>
     <a href="#false-positive-warnings">False positive warnings</a>
-</li>
+  </li>
 
   <li>
     <a href="#white-space-is-significant">White space is significant</a>
-</li>
+  </li>
 
   <li>
     <a href="#debug-go-and-c-rust">Debug Go and C/Rust</a>
@@ -113,21 +114,21 @@ Do not edit it by hand.
 
   <li>
     <a href="#strace-bpftrace">Strace, bpftrace</a>
-</li>
+  </li>
 </ul>
-</li>
+  </li>
 
   <li>
     <a href="#cross-compile">Cross-compile</a>
-</li>
+  </li>
 
   <li>
     <a href="#conclusion">Conclusion</a>
-</li>
+  </li>
 
   <li>
     <a href="#addendum-the-full-code">Addendum: the full code</a>
-</li>
+  </li>
 </ul>
 </details>
 
@@ -387,7 +388,7 @@ Kitty
 <p><strong>My recommendation:</strong></p>
 <ul>
 <li>In Go, do not use <code>unsafe.String</code>, just use <code>unsafe.Slice</code> and accept that it's mutable everywhere in the program</li>
-<li><p>If you really want to use <code>unsafe.String</code>, make sure that the string data returned by the C code is immutable, <strong>enforced by the OS</strong>, so either:</p>
+<li>If you really want to use <code>unsafe.String</code>, make sure that the string data returned by the C code is immutable, <strong>enforced by the OS</strong>, so either:
 <ul>
 <li>It's a constant string placed in the read-only segment</li>
 <li>The string data is allocated in its own virtual memory page and the page permissions are changed to read-only before returning the pointer to Go</li>
@@ -1000,8 +1001,8 @@ func main() {
 go 1.23.1
 </code></pre>
 </details>
-
 <p><a href="/blog"> ⏴ Back to all articles</a></p>
+
 <blockquote id="donate">
   <p>If you enjoy what you're reading, you want to support me, and can afford it: <a href="https://paypal.me/philigaultier?country.x=DE&locale.x=en_US">Support me</a>. That allows me to write more cool articles!</p>
 

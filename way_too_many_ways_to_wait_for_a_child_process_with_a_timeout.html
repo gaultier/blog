@@ -73,27 +73,28 @@ Do not edit it by hand.
 <div id="pseudo-body">
 
 <div class="article-prelude">
-<p><a href="/blog"> ⏴ Back to all articles</a></p>
-  <p class="publication-date">Published on 2026-02-27.</p>
+  <p><a href="/blog"> ⏴ Back to all articles</a></p>
+
+  <p class="publication-date">Published on 2024-11-10.</p>
 </div>
 <div class="article-title">
-  <h1>Way too many ways to wait on a child process with a timeout</h1>
-<div class="tags"> <a href="/blog/articles-by-tag.html#unix" class="tag">Unix</a> <a href="/blog/articles-by-tag.html#signals" class="tag">Signals</a> <a href="/blog/articles-by-tag.html#c" class="tag">C</a> <a href="/blog/articles-by-tag.html#linux" class="tag">Linux</a> <a href="/blog/articles-by-tag.html#freebsd" class="tag">FreeBSD</a> <a href="/blog/articles-by-tag.html#illumos" class="tag">Illumos</a> <a href="/blog/articles-by-tag.html#macos" class="tag">MacOS</a> </div>
-</div>
-  <details class="toc"><summary>Table of contents</summary>
+<h1>Way too many ways to wait on a child process with a timeout</h1>
+  <div class="tags"> <a href="/blog/articles-by-tag.html#unix" class="tag">Unix</a> <a href="/blog/articles-by-tag.html#signals" class="tag">Signals</a> <a href="/blog/articles-by-tag.html#c" class="tag">C</a> <a href="/blog/articles-by-tag.html#linux" class="tag">Linux</a> <a href="/blog/articles-by-tag.html#freebsd" class="tag">FreeBSD</a> <a href="/blog/articles-by-tag.html#illumos" class="tag">Illumos</a> <a href="/blog/articles-by-tag.html#macos" class="tag">MacOS</a></div>
+  </div>
+ <details class="toc"><summary>Table of contents</summary>
 <ul>
 
   <li>
     <a href="#what-are-we-building">What are we building?</a>
-</li>
+  </li>
 
   <li>
     <a href="#first-approach-old-school-sigsuspend">First approach: old-school sigsuspend</a>
-</li>
+  </li>
 
   <li>
     <a href="#second-approach-sigtimedwait">Second approach: sigtimedwait</a>
-</li>
+  </li>
 
   <li>
     <a href="#third-approach-self-pipe-trick">Third approach: Self-pipe trick</a>
@@ -101,17 +102,17 @@ Do not edit it by hand.
 
   <li>
     <a href="#a-simpler-self-pipe-trick">A simpler self-pipe trick</a>
-</li>
+  </li>
 </ul>
-</li>
+  </li>
 
   <li>
     <a href="#fourth-approach-linux-s-signalfd">Fourth approach: Linux's signalfd</a>
-</li>
+  </li>
 
   <li>
     <a href="#fifth-approach-process-descriptors">Fifth approach: process descriptors</a>
-</li>
+  </li>
 
   <li>
     <a href="#sixth-approach-macos-s-and-bsd-s-kqueue">Sixth approach: MacOS's and BSD's kqueue</a>
@@ -119,33 +120,33 @@ Do not edit it by hand.
 
   <li>
     <a href="#a-parenthesis-libkqueue">A parenthesis: libkqueue</a>
-</li>
+  </li>
 
   <li>
     <a href="#another-parenthesis-solaris-illumos-s-ports">Another parenthesis: Solaris/illumos's ports</a>
-</li>
+  </li>
 </ul>
-</li>
+  </li>
 
   <li>
     <a href="#seventh-approach-linux-s-io-uring">Seventh approach: Linux's io_uring</a>
-</li>
+  </li>
 
   <li>
     <a href="#eigth-approach-threads">Eigth approach: Threads</a>
-</li>
+  </li>
 
   <li>
     <a href="#ninth-approach-active-polling">Ninth approach: Active polling.</a>
-</li>
+  </li>
 
   <li>
     <a href="#conclusion">Conclusion</a>
-</li>
+  </li>
 
   <li>
     <a href="#addendum-the-code">Addendum: The code</a>
-</li>
+  </li>
 </ul>
 </details>
 
@@ -424,7 +425,7 @@ int main(int argc, char *argv[]) {
 <ul>
 <li>Contrary to <code>sigtimedwait</code>, <code>poll</code> does not give us the exit status of the child, we have to get it with <code>wait</code>. Which is fine.</li>
 <li>In the case that the timeout fired, we <code>kill</code> the child process. However, the child process, being forcefully ended, will result in a <code>SIGCHLD</code> signal being sent to our program. Which will then trigger our signal handler, which will then write a value to the pipe. So we need to unconditionally read from the pipe after killing the child and before retrying. If we only read from the pipe if the child ended by itself, that will result in the pipe and the child process being desynced.</li>
-<li><p>In some complex programs, we'd have to use <code>ppoll</code> instead of <code>poll</code>. <code>ppoll</code> prevents a set of signals from interrupting the polling. That's to avoid some data races (again, more data races!). Quoting from the man page for <code>pselect</code> which is analogous to <code>ppoll</code>:</p>
+<li>In some complex programs, we'd have to use <code>ppoll</code> instead of <code>poll</code>. <code>ppoll</code> prevents a set of signals from interrupting the polling. That's to avoid some data races (again, more data races!). Quoting from the man page for <code>pselect</code> which is analogous to <code>ppoll</code>:
 <blockquote>
 <p>The  reason  that pselect() is needed is that if one wants to wait for either a signal
 or for a file descriptor to become ready, then an atomic test  is  needed  to  prevent
@@ -536,7 +537,7 @@ int main(int argc, char *argv[]) {
 <ul>
 <li>PIDs are recycled and the space is small, so collisions will happen. Typically, a process spawns a child process, some work happens, and then the parent decides to send a signal to the PID of the child. But it turns out that the child already terminated (unbeknownst to the parent) and another process took its place with the same PID. So now the parent is sending signals, or communicating with, a process that it thinks is its original child but is in fact something completely different. Chaos and security issues ensue. Now, in our very simple case, that would not really happen, but perhaps the root user is running our program, or, imagine that you are implementing the init process with PID 1, e.g. systemd: you can kill any process on the machine! Or think of the case of re-parenting a process. Or sending a certain PID to another process and they send a signal to it at some point in the future. It becomes hairy and it's a very real problem.</li>
 <li>Data races are hard to escape (see the previous point).</li>
-<li><p>It's easy to accidentally send a signal to all processes with <code>kill(0, SIGKILL)</code> or <code>kill(-1, SIGKILL)</code> if the developer has not checked that all previous operations succeeded. This is a classic mistake:</p>
+<li>It's easy to accidentally send a signal to all processes with <code>kill(0, SIGKILL)</code> or <code>kill(-1, SIGKILL)</code> if the developer has not checked that all previous operations succeeded. This is a classic mistake:
 <pre><code class="language-c">int child_pid = fork();  // This fork fails and returns -1.
 ... // (do not check that fork succeeded);
 kill(child_pid, SIGKILL); // Effectively: kill(-1, SIGKILL)
@@ -707,7 +708,7 @@ int main(int argc, char *argv[]) {
 <p>So...How do they do it then? How can we, on an OS like Linux, watch a PID with the <code>kqueue</code> API, when the OS does not support that functionality (neither with <code>poll</code> or <code>epoll</code>)? Well, the solution is actually very simple:</p>
 <ul>
 <li>On Linux 5.3+, they use <code>pidfd_open</code> + <code>poll/epoll</code>. Hey, we just did that a few sections above!</li>
-<li><p>On older versions of Linux, they handle the signals, like GNU's <code>timeout</code>. It has a number of known shortcomings which is testament to the hardships of using signals. To just quote one piece:</p>
+<li>On older versions of Linux, they handle the signals, like GNU's <code>timeout</code>. It has a number of known shortcomings which is testament to the hardships of using signals. To just quote one piece:
 <blockquote>
 <p>Because the Linux kernel coalesces SIGCHLD (and other signals), the only way to reliably determine if a monitored process has exited, is to loop through all PIDs registered by any kqueue when we receive a SIGCHLD. This involves many calls to waitid(2) and may have a negative performance impact.</p>
 </blockquote>
@@ -847,8 +848,8 @@ int main(int argc, char *argv[]) {
 </h2>
 <p>The code is available <a href="https://github.com/gaultier/c/tree/master/ueb">here</a>. It does not have any dependencies except libc (well, and libkqueue for <code>kqueue.c</code> on Linux). All of these programs are in the worst case 27 KiB in size, with debug symbols enabled and linking statically to musl. They do not allocate any memory themselves.
 For comparison, <a href="https://github.com/rye/eb">eb</a> has 24 dependencies and is 1.2 MiB! That's roughly 50x times more.</p>
-
 <p><a href="/blog"> ⏴ Back to all articles</a></p>
+
 <blockquote id="donate">
   <p>If you enjoy what you're reading, you want to support me, and can afford it: <a href="https://paypal.me/philigaultier?country.x=DE&locale.x=en_US">Support me</a>. That allows me to write more cool articles!</p>
 

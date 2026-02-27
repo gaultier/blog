@@ -73,23 +73,24 @@ Do not edit it by hand.
 <div id="pseudo-body">
 
 <div class="article-prelude">
-<p><a href="/blog"> ⏴ Back to all articles</a></p>
-  <p class="publication-date">Published on 2026-02-27.</p>
+  <p><a href="/blog"> ⏴ Back to all articles</a></p>
+
+  <p class="publication-date">Published on 2025-07-01.</p>
 </div>
 <div class="article-title">
-  <h1>An optimization and debugging story with Go and DTrace</h1>
-<div class="tags"> <a href="/blog/articles-by-tag.html#go" class="tag">Go</a> <a href="/blog/articles-by-tag.html#optimization" class="tag">Optimization</a> <a href="/blog/articles-by-tag.html#dtrace" class="tag">DTrace</a> </div>
-</div>
-  <details class="toc"><summary>Table of contents</summary>
+<h1>An optimization and debugging story with Go and DTrace</h1>
+  <div class="tags"> <a href="/blog/articles-by-tag.html#go" class="tag">Go</a> <a href="/blog/articles-by-tag.html#optimization" class="tag">Optimization</a> <a href="/blog/articles-by-tag.html#dtrace" class="tag">DTrace</a></div>
+  </div>
+ <details class="toc"><summary>Table of contents</summary>
 <ul>
 
   <li>
     <a href="#setting-the-stage">Setting the stage</a>
-</li>
+  </li>
 
   <li>
     <a href="#profiling">Profiling</a>
-</li>
+  </li>
 
   <li>
     <a href="#get-a-precise-timing">Get a precise timing</a>
@@ -97,37 +98,37 @@ Do not edit it by hand.
 
   <li>
     <a href="#dtrace-in-2-minutes">DTrace in 2 minutes</a>
-</li>
+  </li>
 
   <li>
     <a href="#timing-a-function">Timing a function</a>
-</li>
+  </li>
 </ul>
-</li>
+  </li>
 
   <li>
     <a href="#establishing-a-baseline">Establishing a baseline</a>
-</li>
+  </li>
 
   <li>
     <a href="#what-the-hell-is-my-program-even-doing">What the hell is my program even doing?</a>
-</li>
+  </li>
 
   <li>
     <a href="#it-s-always-dns-wait-no-it-s-always-superlinear-algorithmic-complexity">It's always DNS - wait no, it's always: superlinear algorithmic complexity</a>
-</li>
+  </li>
 
   <li>
     <a href="#conclusion">Conclusion</a>
-</li>
+  </li>
 
   <li>
     <a href="#addendum-the-sorting-function-was-wrong">Addendum: The sorting function was wrong</a>
-</li>
+  </li>
 
   <li>
     <a href="#addendum-a-goroutine-aware-d-script">Addendum: A goroutine-aware D script</a>
-</li>
+  </li>
 </ul>
 </details>
 
@@ -148,9 +149,7 @@ Do not edit it by hand.
   <a class="hash-anchor" href="#profiling" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>When I profile the test suite (the profiler collects the raw data behind the scenes using <a href="https://illumos.org/books/dtrace/preface.html#preface">DTrace</a>), I notice some weird things:</p>
-<p><object alt="CPU Profile" data="popx_profile.svg" type="image/svg+xml">
-</object>
-</p>
+<p><object alt="CPU Profile" data="popx_profile.svg" type="image/svg+xml"></object></p>
 <ul>
 <li>Pretty much all of the time (97%) in the test is spent in <code>NewMigrationBox</code> which applies SQL migrations. Strange.</li>
 <li>Pretty much all of the time (90+%) in <code>NewMigrationBox</code> is spent sorting. Maybe it is fine, but still surprising and worth investigating.</li>
@@ -478,7 +477,7 @@ pid$target::*NewMigrationBox:return {
 <p>This approach is:</p>
 <ul>
 <li>Safe: reading and writing to global variables, including global maps, is thread-safe by design in DTrace.</li>
-<li><p>Correct: because the (current) Go garbage collector is <strong>non-moving</strong>, and because goroutine pointers are handled specially by the Go runtime, it means in practice that between our two probes (the entry and the exit of the function being traced):</p>
+<li>Correct: because the (current) Go garbage collector is <strong>non-moving</strong>, and because goroutine pointers are handled specially by the Go runtime, it means in practice that between our two probes (the entry and the exit of the function being traced):
 <ul>
 <li>The 'goroutine id', which is a pointer to the current goroutine, cannot change.</li>
 <li>Another goroutine cannot take the place of the current goroutine pointed to by the goroutine pointer we read.</li>
@@ -487,8 +486,8 @@ pid$target::*NewMigrationBox:return {
 </ul>
 <p>However, you should know that if our function body panics between the entry and return probes, and the panic is not recovered, the return probe will not fire, because of the way Go implements panics: the program simply exits the OS process in the middle of the function.</p>
 <p>In conclusion, if you are using DTrace with Go, I would encourage you to use this trick. Note that the right register to use differs per architecture: <code>R14</code> on AMD64, <code>R28</code> on ARM64, etc.</p>
-
 <p><a href="/blog"> ⏴ Back to all articles</a></p>
+
 <blockquote id="donate">
   <p>If you enjoy what you're reading, you want to support me, and can afford it: <a href="https://paypal.me/philigaultier?country.x=DE&locale.x=en_US">Support me</a>. That allows me to write more cool articles!</p>
 
