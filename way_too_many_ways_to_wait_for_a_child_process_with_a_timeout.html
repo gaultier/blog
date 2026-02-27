@@ -805,7 +805,7 @@ int main(int argc, char *argv[]) {
   <a class="title" href="#eigth-approach-threads">Eigth approach: Threads</a>
   <a class="hash-anchor" href="#eigth-approach-threads" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
-<p>Readers have <a href="https://news.ycombinator.com/vote?id=42107420&how=up&auth=20ac3216e63a60ca250d82b6a051d7dfaa9f18c9&goto=item%3Fid%3D42103200#42107420">pointed out</a> that threads are also a solution, albeit a suboptimal one. Here's the approach:</p>
+<p>Readers have <a href="https://news.ycombinator.com/vote?id=42107420&amp;how=up&amp;auth=20ac3216e63a60ca250d82b6a051d7dfaa9f18c9&amp;goto=item%3Fid%3D42103200#42107420">pointed out</a> that threads are also a solution, albeit a suboptimal one. Here's the approach:</p>
 <ol>
 <li>Spawn a thread, it will be in charge of spawning the child process, storing the child PID in a global thread-safe variable (e.g. protected by a mutex). It then <code>wait</code>s on the child in a blocking way.</li>
 <li>If the child exits, <code>wait</code> will return the status, which is also written in a global thread-safe variable, and the thread ends.</li>

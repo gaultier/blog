@@ -195,7 +195,12 @@ fn md_render_article_content(
         Node::ImageReference(_image_reference) => todo!(),
         Node::MdxJsxTextElement(_mdx_jsx_text_element) => todo!(),
         Node::Link(link) => {
-            write!(content, r#"<a href="{}">"#, link.url).unwrap();
+            write!(
+                content,
+                r#"<a href="{}">"#,
+                text_sanitize_for_html(&link.url)
+            )
+            .unwrap();
             for child in &link.children {
                 md_render_article_content(content, footnote_defs, child, titles);
             }
