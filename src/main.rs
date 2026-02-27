@@ -400,10 +400,60 @@ fn md_render_article(html_header: &[u8], html_footer: &[u8], md_path: &Path) {
 }
 
 fn main() -> Result<()> {
-    let md_path = PathBuf::from("x11_x64.md");
+    let md_files = [
+        "a_million_ways_to_data_race_in_go.md",
+        "a_small_trick_to_improve_technical_discussions_by_sharing_code.md",
+        "a_subtle_data_race_in_go.md",
+        "addressing_cgo_pains_one_at_a_time.md",
+        "advent_of_code_2018_5_revisited.md",
+        "advent_of_code_2018_5.md",
+        "an_amusing_go_static_analysis_blindspot.md",
+        "an_optimization_and_debugging_story_go_dtrace.md",
+        "are_my_sql_files_read_at_build_time_or_run_time.md",
+        "body_of_work.md",
+        "build-pie-executables-with-pie.md",
+        "compile_ziglang_from_source_on_alpine_2020_9.md",
+        "detecting_goroutine_leaks_with_dtrace.md",
+        "feed.md",
+        "gnuplot_lang.md",
+        "go_dtrace_see_all_network_traffic.md",
+        "go_dtrace_see_registered_routes.md",
+        "how_to_reproduce_and_fix_an_io_data_race_with_dtrace.md",
+        "how_to_rewrite_a_cpp_codebase_successfully.md",
+        "image_size_reduction.md",
+        "index.md",
+        "kahns_algorithm.md",
+        "lessons_learned_from_a_successful_rust_rewrite.md",
+        "making_my_debug_build_run_100_times_faster.md",
+        "making_my_static_blog_generator_11_times_faster.md",
+        "observe_sql_queries_in_go_with_dtrace.md",
+        "odin_and_musl.md",
+        "perhaps_rust_needs_defer.md",
+        "roll_your_own_memory_profiling.md",
+        "rust_c++_interop_trick.md",
+        "speed_up_your_ci.md",
+        "subtle_bug_with_go_errgroup.md",
+        "the_missing_cross_platform_os_api_for_timers.md",
+        "the_production_bug_that_made_me_care_about_undefined_behavior.md",
+        "tip_of_day_1.md",
+        "tip_of_day_3.md",
+        "tip_of_the_day_2.md",
+        "tip_of_the_day_4.md",
+        "tip_of_the_day_5.md",
+        "tip_of_the_day_6.md",
+        "way_too_many_ways_to_wait_for_a_child_process_with_a_timeout.md",
+        "wayland_from_scratch.md",
+        "what_should_your_mutexes_be_named.md",
+        "write_a_video_game_from_scratch_like_1987.md",
+        "x11_x64.md",
+        "you_inherited_a_legacy_cpp_codebase_now_what.md",
+    ];
     let html_header = fs::read("header.html").unwrap();
     let html_footer = fs::read("footer.html").unwrap();
-    md_render_article(&html_header, &html_footer, &md_path);
+    for md_path in md_files {
+        let path = PathBuf::from(md_path);
+        md_render_article(&html_header, &html_footer, &path);
+    }
     Ok(())
 
     //rouille::start_server("localhost:8001", move |request| {
