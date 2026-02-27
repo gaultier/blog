@@ -130,7 +130,7 @@ fn md_render_article_content(content: &mut Vec<u8>, node: &Node) {
         Node::MdxTextExpression(_mdx_text_expression) => todo!(),
         Node::FootnoteReference(footnote_reference) => todo!(),
         Node::Html(html) => {
-            write!(content, "{}", html.value).unwrap();
+            writeln!(content, "{}", html.value).unwrap();
         }
         Node::Image(image) => {
             write!(
@@ -215,12 +215,15 @@ fn md_render_article_content(content: &mut Vec<u8>, node: &Node) {
         }
         Node::ListItem(list_item) => {
             write!(content, "<li>").unwrap();
-            if let Some(text) = md_ast_extract_children_text(&list_item.children) {
-                write!(content, "{}", text_sanitize_for_html(text)).unwrap();
+            let children = if list_item.children.len() == 1
+                && let Node::Paragraph(p) = &list_item.children[0]
+            {
+                &p.children
             } else {
-                for child in &list_item.children {
-                    md_render_article_content(content, child);
-                }
+                &list_item.children
+            };
+            for child in children {
+                md_render_article_content(content, child);
             }
             writeln!(content, "</li>").unwrap();
         }
@@ -263,7 +266,7 @@ fn text_sanitize_for_html(s: &str) -> Cow<'_, str> {
                 '<' => result.push_str("&lt;"),
                 '>' => result.push_str("&gt;"),
                 '"' => result.push_str("&quot;"),
-                '\'' => result.push_str("&#39;"),
+                // '\'' => result.push_str("&#39;"),
                 other => result.push(other),
             }
         }
@@ -275,8 +278,6 @@ fn md_render_toc(content: &mut Vec<u8>, titles: &[(String, u8)]) {
     if titles.is_empty() {
         return;
     }
-
-    dbg!(titles);
 
     writeln!(
         content,
@@ -296,7 +297,7 @@ fn md_render_toc(content: &mut Vec<u8>, titles: &[(String, u8)]) {
         } else if level < current_level {
             // Close the current <li>, then close the <ul> levels, then close the parent <li>.
             for _ in 0..(current_level - level) {
-                writeln!(content, "</li></ul>").unwrap();
+                writeln!(content, "</li>\n</ul>").unwrap();
             }
             writeln!(content, "</li>").unwrap(); // Close the <li> of the previous same-level item.
         } else if i > 0 {
@@ -308,8 +309,7 @@ fn md_render_toc(content: &mut Vec<u8>, titles: &[(String, u8)]) {
         writeln!(
             content,
             r#"{}  <li>
-    <a href="{}{}">{}</a>
-  </li>"#,
+    <a href="{}{}">{}</a>"#,
             "\n",
             "#",
             html_slug(&title),
@@ -320,10 +320,10 @@ fn md_render_toc(content: &mut Vec<u8>, titles: &[(String, u8)]) {
 
     // 3. Final Cleanup: Close all remaining open tags.
     let base_level = titles[0].1;
-    for _ in 0..(current_level - base_level) {
-        writeln!(content, "</li></ul>").unwrap();
+    for _ in 0..=(current_level - base_level) {
+        writeln!(content, "</li>\n</ul>").unwrap();
     }
-    writeln!(content, "</ul>\n</details>").unwrap();
+    writeln!(content, "</details>\n").unwrap();
 }
 
 fn md_render_article(html_header: &[u8], html_footer: &[u8], md_path: &Path) {
@@ -359,7 +359,7 @@ fn md_render_article(html_header: &[u8], html_footer: &[u8], md_path: &Path) {
     )
     .unwrap();
     html_content.extend(html_header);
-    writeln!(html_content, r#"<div class="article-prelude">"#).unwrap();
+    writeln!(html_content, r#"{}<div class="article-prelude">"#, "\n").unwrap();
     writeln!(
         html_content,
         r#"{}
@@ -404,54 +404,55 @@ fn main() -> Result<()> {
     let html_header = fs::read("header.html").unwrap();
     let html_footer = fs::read("footer.html").unwrap();
     md_render_article(&html_header, &html_footer, &md_path);
+    Ok(())
 
-    rouille::start_server("localhost:8001", move |request| {
-        {
-            // The `match_assets` function tries to find a file whose name corresponds to the URL
-            // of the request. The second parameter (`"."`) tells where the files to look for are
-            // located.
-            // In order to avoid potential security threats, `match_assets` will never return any
-            // file outside of this directory even if the URL is for example `/../../foo.txt`.
-            let response = rouille::match_assets(request, "..");
-
-            // If a file is found, the `match_assets` function will return a response with a 200
-            // status code and the content of the file. If no file is found, it will instead return
-            // an empty 404 response.
-            // Here we check whether if a file is found, and if so we return the response.
-            if response.is_success() {
-                return response;
-            }
-        }
-
-        router!(request,
-
-
-
-            (GET) (/ws) => {
-                // This is the websockets route.
-
-                // In order to start using websockets we call `websocket::start`.
-                // The function returns an error if the client didn't request websockets, in which
-                // case we return an error 400 to the client thanks to the `try_or_400!` macro.
-                //
-                // The function returns a response to send back as part of the `start_server`
-                // function, and a `websocket` variable of type `Receiver<Websocket>`.
-                // Once the response has been sent back to the client, the `Receiver` will be
-                // filled by rouille with a `Websocket` object representing the websocket.
-
-                let (response, websocket) = try_or_400!(websocket::start(request, Some("echo")));
-
-                let watching_path = request.url();
-                thread::spawn(move || {
-                    // This line will block until the `response` above has been returned.
-                    let ws = websocket.recv().unwrap();
-                    websocket_handling_thread(ws, watching_path);
-                });
-                response
-            },
-            _ => rouille::Response::empty_404()
-        )
-    });
+    //rouille::start_server("localhost:8001", move |request| {
+    //    {
+    //        // The `match_assets` function tries to find a file whose name corresponds to the URL
+    //        // of the request. The second parameter (`"."`) tells where the files to look for are
+    //        // located.
+    //        // In order to avoid potential security threats, `match_assets` will never return any
+    //        // file outside of this directory even if the URL is for example `/../../foo.txt`.
+    //        let response = rouille::match_assets(request, "..");
+    //
+    //        // If a file is found, the `match_assets` function will return a response with a 200
+    //        // status code and the content of the file. If no file is found, it will instead return
+    //        // an empty 404 response.
+    //        // Here we check whether if a file is found, and if so we return the response.
+    //        if response.is_success() {
+    //            return response;
+    //        }
+    //    }
+    //
+    //    router!(request,
+    //
+    //
+    //
+    //        (GET) (/ws) => {
+    //            // This is the websockets route.
+    //
+    //            // In order to start using websockets we call `websocket::start`.
+    //            // The function returns an error if the client didn't request websockets, in which
+    //            // case we return an error 400 to the client thanks to the `try_or_400!` macro.
+    //            //
+    //            // The function returns a response to send back as part of the `start_server`
+    //            // function, and a `websocket` variable of type `Receiver<Websocket>`.
+    //            // Once the response has been sent back to the client, the `Receiver` will be
+    //            // filled by rouille with a `Websocket` object representing the websocket.
+    //
+    //            let (response, websocket) = try_or_400!(websocket::start(request, Some("echo")));
+    //
+    //            let watching_path = request.url();
+    //            thread::spawn(move || {
+    //                // This line will block until the `response` above has been returned.
+    //                let ws = websocket.recv().unwrap();
+    //                websocket_handling_thread(ws, watching_path);
+    //            });
+    //            response
+    //        },
+    //        _ => rouille::Response::empty_404()
+    //    )
+    //});
 }
 
 fn websocket_handling_thread(mut websocket: websocket::Websocket, watching_path: String) {
