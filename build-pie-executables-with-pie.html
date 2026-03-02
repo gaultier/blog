@@ -264,8 +264,8 @@ $ sudo chroot /tmp/scratch ./main
 <p>Still I think it's great to do since we get the best of both worlds, only requiring a little bit of finagling with linker flags.</p>
 <p>Also it would be nice that the Go documentation talks at least a little about this topic. In the meantime, there is this article, which I hope does not contain inaccuracies and helps a bit.</p>
 <p>A further hardening on top of PIE, that I have not yet explored yet, but is on my to do list, is <a href="https://www.redhat.com/en/blog/hardening-elf-binaries-using-relocation-read-only-relro">read-only relocations</a> which makes the Global Offset Table read-only to prevent an attacker from overwriting the relocation entries there. On Fedora for example, all system executables are built with this mitigation on.</p>
-
 <p><a href="/blog"> ⏴ Back to all articles</a></p>
+
 <blockquote id="donate">
   <p>If you enjoy what you're reading, you want to support me, and can afford it: <a href="https://paypal.me/philigaultier?country.x=DE&locale.x=en_US">Support me</a>. That allows me to write more cool articles!</p>
 

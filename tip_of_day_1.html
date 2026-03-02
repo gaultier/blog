@@ -137,8 +137,8 @@ $ wc -l src/***/.rs
 <p>Running this on the same Rust codebase prints: <code>1038</code> which is obviously wrong.</p>
 <p>Why is it wrong then?</p>
 <p>Well, as I understand it, AWK processes all inputs files one by one, as if it was one big sequential file (it will still fill the builtin constant <code>FILENAME</code> though, that's why the solution above works). Since there is no isolation between the processing each file (AWK does not spawn a subprocess for each file), it means we simply stop altogether at the first encountered test in any file.</p>
-
 <p><a href="/blog"> ⏴ Back to all articles</a></p>
+
 <blockquote id="donate">
   <p>If you enjoy what you're reading, you want to support me, and can afford it: <a href="https://paypal.me/philigaultier?country.x=DE&locale.x=en_US">Support me</a>. That allows me to write more cool articles!</p>
 

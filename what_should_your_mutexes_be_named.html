@@ -219,42 +219,34 @@ END {
 </code></pre>
 <p>And here are the statistics (commit <code>7800f4f</code>, 2025-06-08):</p>
 <table>
+<thead>
 <tr>
-<td>
-Variable name suffix</td>
-<td>
-Count</td>
+<th>Variable name suffix</th>
+<th>Count</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>mu</code></td>
+<td>131</td>
 </tr>
 <tr>
-<td>
-<code>mu</code></td>
-<td>
-131</td>
+<td><code>mutex</code></td>
+<td>11</td>
 </tr>
 <tr>
-<td>
-<code>mutex</code></td>
-<td>
-11</td>
+<td>something else</td>
+<td>11</td>
 </tr>
 <tr>
-<td>
-something else</td>
-<td>
-11</td>
+<td><code>lock</code></td>
+<td>6</td>
 </tr>
 <tr>
-<td>
-<code>lock</code></td>
-<td>
-6</td>
+<td><code>mux</code></td>
+<td>0</td>
 </tr>
-<tr>
-<td>
-<code>mux</code></td>
-<td>
-0</td>
-</tr>
+</tbody>
 </table>
 
 
@@ -395,8 +387,8 @@ note[find-mtx-fields-vars]: Mutex variables found
 </code></pre>
 <hr />
 <p>Funnily, it seems that: 1) the C code has much less variability in naming than the Go code: it's mostly <code>xxxlock</code>, and 2) The naming in the Go code does not stem from the C code since it's completely different.</p>
-
 <p><a href="/blog"> ⏴ Back to all articles</a></p>
+
 <blockquote id="donate">
   <p>If you enjoy what you're reading, you want to support me, and can afford it: <a href="https://paypal.me/philigaultier?country.x=DE&locale.x=en_US">Support me</a>. That allows me to write more cool articles!</p>
 

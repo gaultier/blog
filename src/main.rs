@@ -15,7 +15,6 @@ use std::{
     process::Command,
     time::Duration,
 };
-use time::OffsetDateTime;
 
 use std::io::Write;
 
@@ -236,18 +235,19 @@ fn md_render_article_content(
     footnote_defs: &mut Vec<FootnoteDefinition>,
     node: &Node,
     titles: &[Title],
+    inside_thead: bool,
 ) {
     match node {
         Node::Root(root) => {
             for child in &root.children {
-                md_render_article_content(content, footnote_defs, child, titles);
+                md_render_article_content(content, footnote_defs, child, titles, false);
             }
         }
         Node::Blockquote(blockquote) => {
             writeln!(content, "<blockquote>").unwrap();
 
             for child in &blockquote.children {
-                md_render_article_content(content, footnote_defs, child, titles);
+                md_render_article_content(content, footnote_defs, child, titles, false);
             }
             writeln!(content, "</blockquote>").unwrap();
         }
@@ -265,7 +265,7 @@ fn md_render_article_content(
                 writeln!(content, r#"<{}>"#, tag).unwrap();
             }
             for child in &list.children {
-                md_render_article_content(content, footnote_defs, child, titles);
+                md_render_article_content(content, footnote_defs, child, titles, false);
             }
             writeln!(content, "</{}>", tag).unwrap();
         }
@@ -281,14 +281,14 @@ fn md_render_article_content(
         Node::Delete(delete) => {
             write!(content, "<del>").unwrap();
             for child in &delete.children {
-                md_render_article_content(content, footnote_defs, child, titles);
+                md_render_article_content(content, footnote_defs, child, titles, false);
             }
             write!(content, "</del>").unwrap();
         }
         Node::Emphasis(emphasis) => {
             write!(content, "<em>").unwrap();
             for child in &emphasis.children {
-                md_render_article_content(content, footnote_defs, child, titles);
+                md_render_article_content(content, footnote_defs, child, titles, false);
             }
             write!(content, "</em>").unwrap();
         }
@@ -325,7 +325,7 @@ fn md_render_article_content(
             )
             .unwrap();
             for child in &link.children {
-                md_render_article_content(content, footnote_defs, child, titles);
+                md_render_article_content(content, footnote_defs, child, titles, false);
             }
             write!(content, r#"</a>"#).unwrap();
         }
@@ -333,7 +333,7 @@ fn md_render_article_content(
         Node::Strong(strong) => {
             write!(content, "<strong>").unwrap();
             for child in &strong.children {
-                md_render_article_content(content, footnote_defs, child, titles);
+                md_render_article_content(content, footnote_defs, child, titles, false);
             }
             write!(content, "</strong>").unwrap();
         }
@@ -369,17 +369,26 @@ fn md_render_article_content(
             )
             .unwrap();
             for child in &heading.children {
-                md_render_article_content(content, footnote_defs, child, titles);
+                md_render_article_content(content, footnote_defs, child, titles, false);
             }
             writeln!(content, "</a>").unwrap();
             writeln!(content, r#"  <a class="hash-anchor" href="{}{}" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>"#,"#", title.slug).unwrap();
             writeln!(content, "</h{}>", heading.depth).unwrap();
         }
         Node::Table(table) => {
+            dbg!(table);
             writeln!(content, "<table>").unwrap();
-            for child in &table.children {
-                md_render_article_content(content, footnote_defs, child, titles);
+            let (thead, tbdody) = table.children.split_first().unwrap();
+            writeln!(content, "<thead>").unwrap();
+            md_render_article_content(content, footnote_defs, thead, titles, true);
+            writeln!(content, "</thead>").unwrap();
+
+            writeln!(content, "<tbody>").unwrap();
+            for child in tbdody {
+                md_render_article_content(content, footnote_defs, child, titles, false);
             }
+            writeln!(content, "</tbody>").unwrap();
+
             writeln!(content, "</table>\n\n").unwrap();
         }
         Node::ThematicBreak(_) => {
@@ -388,16 +397,17 @@ fn md_render_article_content(
         Node::TableRow(table_row) => {
             writeln!(content, "<tr>").unwrap();
             for child in &table_row.children {
-                md_render_article_content(content, footnote_defs, child, titles);
+                md_render_article_content(content, footnote_defs, child, titles, inside_thead);
             }
             writeln!(content, "</tr>").unwrap();
         }
         Node::TableCell(table_cell) => {
-            writeln!(content, "<td>").unwrap();
+            let tag = if inside_thead { "th" } else { "td" };
+            write!(content, "<{}>", tag).unwrap();
             for child in &table_cell.children {
-                md_render_article_content(content, footnote_defs, child, titles);
+                md_render_article_content(content, footnote_defs, child, titles, false);
             }
-            writeln!(content, "</td>").unwrap();
+            writeln!(content, "</{}>", tag).unwrap();
         }
         Node::ListItem(list_item) => {
             write!(content, "<li>").unwrap();
@@ -409,7 +419,7 @@ fn md_render_article_content(
                 &list_item.children
             };
             for child in children {
-                md_render_article_content(content, footnote_defs, child, titles);
+                md_render_article_content(content, footnote_defs, child, titles, false);
             }
             writeln!(content, "</li>").unwrap();
         }
@@ -417,7 +427,7 @@ fn md_render_article_content(
         Node::Paragraph(paragraph) => {
             write!(content, "<p>").unwrap();
             for child in &paragraph.children {
-                md_render_article_content(content, footnote_defs, child, titles);
+                md_render_article_content(content, footnote_defs, child, titles, false);
             }
             writeln!(content, "</p>").unwrap();
         }
@@ -573,10 +583,16 @@ fn md_render_article(file: &GitStat, html_header: &[u8], html_footer: &[u8]) {
     md_render_toc(&mut html_content, &md_titles);
 
     let mut footnote_defs = Vec::with_capacity(8);
-    md_render_article_content(&mut html_content, &mut footnote_defs, &md_ast, &md_titles);
+    md_render_article_content(
+        &mut html_content,
+        &mut footnote_defs,
+        &md_ast,
+        &md_titles,
+        false,
+    );
     md_render_footnote_definitions(&mut html_content, &footnote_defs);
 
-    write!(html_content, "\n{}", BACK_LINK).unwrap();
+    writeln!(html_content, "{}", BACK_LINK).unwrap();
     html_content.extend(html_footer);
 
     let md_path = PathBuf::from(&file.path_from_git_root);
@@ -607,7 +623,7 @@ fn md_render_footnote_definitions(content: &mut Vec<u8>, footnote_defs: &[Footno
         };
         writeln!(content, r#"<p>"#).unwrap();
         for child in children {
-            md_render_article_content(content, &mut vec![], child, &[]);
+            md_render_article_content(content, &mut vec![], child, &[], false);
         }
 
         writeln!(content, r#"<a href="{}fnref-{}" class="footnote-backref" data-footnote-backref data-footnote-backref-idx="{}" aria-label="Back to reference {}">↩</a>"#,"#", &def.identifier, &def.identifier, &def.identifier).unwrap();

@@ -488,8 +488,8 @@ pid$target::*NewMigrationBox:return {
 </ul>
 <p>However, you should know that if our function body panics between the entry and return probes, and the panic is not recovered, the return probe will not fire, because of the way Go implements panics: the program simply exits the OS process in the middle of the function.</p>
 <p>In conclusion, if you are using DTrace with Go, I would encourage you to use this trick. Note that the right register to use differs per architecture: <code>R14</code> on AMD64, <code>R28</code> on ARM64, etc.</p>
-
 <p><a href="/blog"> ⏴ Back to all articles</a></p>
+
 <blockquote id="donate">
   <p>If you enjoy what you're reading, you want to support me, and can afford it: <a href="https://paypal.me/philigaultier?country.x=DE&locale.x=en_US">Support me</a>. That allows me to write more cool articles!</p>
 

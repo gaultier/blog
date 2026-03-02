@@ -210,62 +210,45 @@ void handle() {
 <p>With this bug, we are in the last case: the <code>Response</code> type is a non-POD struct (due to the <code>std::string data</code> field), so the default constructor is called. <code>Response</code> does not implement a default constructor. This means  that the compiler generates a default constructor for us, and in this generated code, each struct field is default initialized. So, the <code>std::string</code> constructor is called for the <code>data</code> field and all is well. Except, the other two fields are <em>not</em> initialized in any way. Oops.</p>
 <p>Here is a quick summary:</p>
 <table>
+<thead>
 <tr>
-<td>
-Type</td>
-<td>
-Example</td>
-<td>
-Result (Default Init)</td>
+<th>Type</th>
+<th>Example</th>
+<th>Result (Default Init)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Primitive (int, bool, etc)</td>
+<td>int x;</td>
+<td>Indeterminate (Garbage value)</td>
 </tr>
 <tr>
-<td>
-Primitive (int, bool, etc)</td>
-<td>
-int x;</td>
-<td>
-Indeterminate (Garbage value)</td>
+<td>POD / Trivial Struct</td>
+<td>Point p;</td>
+<td>Indeterminate (All fields garbage)</td>
 </tr>
 <tr>
-<td>
-POD / Trivial Struct</td>
-<td>
-Point p;</td>
-<td>
-Indeterminate (All fields garbage)</td>
+<td>Array of Objects</td>
+<td>std::string x[10];</td>
+<td>Safe (All strings initialized)</td>
 </tr>
 <tr>
-<td>
-Array of Objects</td>
-<td>
-std::string x[10];</td>
-<td>
-Safe (All strings initialized)</td>
+<td>Array of Primitives</td>
+<td>int x[10];</td>
+<td>Indeterminate (All garbage)</td>
 </tr>
 <tr>
-<td>
-Array of Primitives</td>
-<td>
-int x[10];</td>
-<td>
-Indeterminate (All garbage)</td>
+<td>Non-Trivial Struct</td>
+<td>Response r;</td>
+<td>Calls Default Constructor (Structs ok, primitives garbage)</td>
 </tr>
 <tr>
-<td>
-Non-Trivial Struct</td>
-<td>
-Response r;</td>
-<td>
-Calls Default Constructor (Structs ok, primitives garbage)</td>
+<td>Any Type (Braces)</td>
+<td>T obj{};</td>
+<td>Value Initialized (Safe / Zeroed)</td>
 </tr>
-<tr>
-<td>
-Any Type (Braces)</td>
-<td>
-T obj{};</td>
-<td>
-Value Initialized (Safe / Zeroed)</td>
-</tr>
+</tbody>
 </table>
 
 
@@ -433,8 +416,8 @@ And you can very easily, and invisibly, trigger undefined behavior.</p>
 <source src="/blog/forrest_gump_c++.webm" type="video/webm" />
 <source src="/blog/forrest_gump_c++.gif" type="image/gif" />
 </video>
-
 <p><a href="/blog"> ⏴ Back to all articles</a></p>
+
 <blockquote id="donate">
   <p>If you enjoy what you're reading, you want to support me, and can afford it: <a href="https://paypal.me/philigaultier?country.x=DE&locale.x=en_US">Support me</a>. That allows me to write more cool articles!</p>
 
