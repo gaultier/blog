@@ -554,7 +554,7 @@ fn md_render_article(file: &GitStat, html_header: &[u8], html_footer: &[u8]) {
         html_content,
         r#"{}
 
-  <p class="publication-date">Published on {}.</p>"#,
+<p class="publication-date">Published on {}.</p>"#,
         BACK_LINK, date,
     )
     .unwrap();
