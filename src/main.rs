@@ -52,6 +52,15 @@ fn git_get_articles_stats() -> Vec<GitStat> {
     assert_eq!(Some(0), output.status.code());
     assert!(output.stderr.is_empty());
 
+    // Sample git output:
+    // 2024-10-31T16:09:02+01:00
+    //
+    // M       lessons_learned_from_a_successful_rust_rewrite.md
+    // A       tip_of_day_3.md
+    // 2025-02-18T08:07:55+01:00
+    //
+    // R100    sha.md  making_my_debug_build_run_100_times_faster.md
+
     let output_str = String::from_utf8_lossy(&output.stdout);
     let mut lines = output_str.lines().into_iter().peekable();
 
@@ -64,7 +73,7 @@ fn git_get_articles_stats() -> Vec<GitStat> {
             break;
         }
 
-        let date_trimmed = line.unwrap().trim_ascii();
+        let date_trimmed = line.unwrap().trim_matches('\'').trim_ascii();
         println!("[D001] date={}", date_trimmed);
         assert!(!date_trimmed.is_empty());
 
@@ -485,18 +494,13 @@ fn md_render_toc(content: &mut Vec<u8>, titles: &[Title]) {
     writeln!(content, "</details>\n").unwrap();
 }
 
-fn md_render_article(html_header: &[u8], html_footer: &[u8], md_path: &Path) {
+fn md_render_article(file: &GitStat, html_header: &[u8], html_footer: &[u8]) {
     assert!(!html_header.is_empty());
     assert!(!html_footer.is_empty());
 
-    let md_content_bytes = fs::read(&md_path).unwrap();
+    let md_content_bytes = fs::read(&file.path_from_git_root).unwrap();
     let md_content_bytes_len = md_content_bytes.len();
     let md_content = String::from_utf8(md_content_bytes).unwrap();
-    let modified_at = std::fs::metadata(md_path).unwrap().modified().unwrap();
-    let datetime: OffsetDateTime = modified_at.into();
-    let format = time::format_description::parse("[year]-[month]-[day]").unwrap();
-    let modified_at_formatted = datetime.format(&format).unwrap();
-    // TODO: format modified_at.
 
     let (md_root_title, tags) = md_parse_metadata(&md_content);
 
@@ -528,11 +532,13 @@ fn md_render_article(html_header: &[u8], html_footer: &[u8], md_path: &Path) {
     .unwrap();
     html_content.extend(html_header);
     writeln!(html_content, r#"{}<div class="article-prelude">"#, "\n").unwrap();
+
+    let (date, _time) = file.creation_date.split_once("T").unwrap();
     writeln!(
         html_content,
         r#"{}
   <p class="publication-date">Published on {}.</p>"#,
-        BACK_LINK, modified_at_formatted
+        BACK_LINK, date,
     )
     .unwrap();
     writeln!(html_content, r#"</div>"#).unwrap();
@@ -565,6 +571,7 @@ fn md_render_article(html_header: &[u8], html_footer: &[u8], md_path: &Path) {
     write!(html_content, "\n{}", BACK_LINK).unwrap();
     html_content.extend(html_footer);
 
+    let md_path = PathBuf::from(&file.path_from_git_root);
     let html_path = md_path.with_extension("html");
     fs::write(html_path, html_content).unwrap();
 }
@@ -616,7 +623,7 @@ fn main() -> Result<()> {
     let git_stats = git_get_articles_stats();
     let html_header = fs::read("header.html").unwrap();
     let html_footer = fs::read("footer.html").unwrap();
-    for file in git_stats {
+    for file in &git_stats {
         if file.path_from_git_root == "README.md"
             || file.path_from_git_root == "todo.md"
             || file.path_from_git_root == "index.md"
@@ -625,8 +632,7 @@ fn main() -> Result<()> {
         }
 
         println!("generating {}", file.path_from_git_root);
-        let path = PathBuf::from(file.path_from_git_root);
-        md_render_article(&html_header, &html_footer, &path);
+        md_render_article(file, &html_header, &html_footer);
     }
     Ok(())
 
@@ -706,10 +712,10 @@ fn websocket_handling_thread(mut websocket: websocket::Websocket, _watching_path
                     if event.path.extension().unwrap_or_default() == md_ext {
                         println!("event: {:?}", event);
 
-                        let md_path = PathBuf::from(&event.path);
-                        let html_header = fs::read("header.html").unwrap();
-                        let html_footer = fs::read("footer.html").unwrap();
-                        md_render_article(&html_header, &html_footer, &md_path);
+                        //let md_path = PathBuf::from(&event.path);
+                        //let html_header = fs::read("header.html").unwrap();
+                        //let html_footer = fs::read("footer.html").unwrap();
+                        //md_render_article(&html_header, &html_footer, &md_path);
 
                         let file_path_str =
                             event.path.file_stem().unwrap_or_default().to_string_lossy();
