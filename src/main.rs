@@ -7,10 +7,12 @@ use notify_debouncer_mini::new_debouncer;
 use rouille::{router, try_or_400, websocket};
 use std::{
     borrow::Cow,
-    collections::BTreeMap,
+    cmp::Ordering,
+    collections::{BTreeMap, HashMap},
     ffi::OsString,
     fs::{self},
     path::{Path, PathBuf},
+    process::Command,
     time::Duration,
 };
 use time::OffsetDateTime;
@@ -25,6 +27,125 @@ struct Title {
     depth: u8,
     start_md_offset: usize,
     slug: String,
+}
+
+#[derive(Debug)]
+struct GitStat {
+    creation_date: String,
+    modification_date: String,
+    path_from_git_root: String,
+}
+
+fn git_get_articles_stats() -> Vec<GitStat> {
+    let output = Command::new("git")
+        .args(&[
+            "log",
+            "--format='%aI'",
+            "--no-merges",
+            "--diff-filter=AMRD",
+            "--name-status",
+            "--reverse",
+            "*.md",
+        ])
+        .output()
+        .unwrap();
+    assert_eq!(Some(0), output.status.code());
+    assert!(output.stderr.is_empty());
+
+    let output_str = String::from_utf8_lossy(&output.stdout);
+    let mut lines = output_str.lines().into_iter().peekable();
+
+    let mut res: HashMap<String, GitStat> = HashMap::with_capacity(256);
+
+    loop {
+        // End?
+        let line = lines.next();
+        if line.is_none() {
+            break;
+        }
+
+        let date_trimmed = line.unwrap().trim_ascii();
+        println!("[D001] date={}", date_trimmed);
+        assert!(!date_trimmed.is_empty());
+
+        let empty = lines.next().unwrap().trim_ascii();
+        assert!(empty.is_empty());
+
+        // Files.
+        loop {
+            // End?
+            {
+                let line = lines.peek();
+                if line.is_none() {
+                    break;
+                }
+                let line = line.unwrap();
+                println!("[D003] line=`{}`", line);
+
+                if line.trim_ascii().is_empty() {
+                    break;
+                }
+                // Start of a new commit?
+                if line.starts_with("'20") {
+                    break;
+                }
+            }
+
+            let line = lines.next().unwrap();
+
+            let path_trimmed = line.trim_ascii();
+            assert!(!path_trimmed.is_empty());
+            println!("[D002] path={}", path_trimmed);
+            let mut path_split = path_trimmed.split_ascii_whitespace();
+            let action = path_split.next().unwrap().chars().next().unwrap();
+            assert!(action == 'A' || action == 'M' || action == 'R' || action == 'D');
+
+            let path_old = path_split.next().unwrap();
+            assert!(!path_old.is_empty());
+
+            let path_new = path_split.next();
+            if action == 'R' {
+                assert!(path_new.is_some());
+            } else {
+                assert!(path_new.is_none());
+            }
+
+            match action {
+                'D' => {
+                    res.remove(path_old).unwrap();
+                }
+                'R' => {
+                    let git_stat = GitStat {
+                        creation_date: date_trimmed.to_owned(),
+                        modification_date: date_trimmed.to_owned(),
+                        path_from_git_root: path_new.unwrap().to_owned(),
+                    };
+                    res.remove(path_old);
+                    res.insert(path_new.unwrap().to_owned(), git_stat);
+                }
+                'A' => {
+                    let git_stat = GitStat {
+                        creation_date: date_trimmed.to_owned(),
+                        modification_date: date_trimmed.to_owned(),
+                        path_from_git_root: path_old.to_owned(),
+                    };
+                    res.insert(path_old.to_owned(), git_stat);
+                }
+                'M' => {
+                    let entry = res.get_mut(path_old).unwrap();
+                    assert_ne!(
+                        entry.modification_date.as_str().cmp(date_trimmed),
+                        Ordering::Greater
+                    );
+                    // Update the modification date.
+                    entry.modification_date = date_trimmed.to_owned();
+                }
+                _ => unreachable!(),
+            }
+        }
+    }
+
+    res.into_values().collect()
 }
 
 // TODO: Return Rc<String> or Cow<str>?
@@ -77,11 +198,11 @@ fn md_collect_titles(
 
 fn md_parse_metadata(md_content: &str) -> (&str, Vec<&str>) {
     let title_line = md_content.lines().next().unwrap();
-    let title = title_line.strip_prefix("Title: ").unwrap().trim();
+    let title = title_line.strip_prefix("Title: ").unwrap().trim_ascii();
 
     let tags_line = md_content.lines().nth(1).unwrap();
     let tags_str = tags_line.strip_prefix("Tags: ").unwrap();
-    let tags: Vec<&str> = tags_str.split(", ").map(|s| s.trim()).collect();
+    let tags: Vec<&str> = tags_str.split(", ").map(|s| s.trim_ascii()).collect();
 
     (title, tags)
 }
@@ -492,59 +613,19 @@ fn md_render_footnote_definitions(content: &mut Vec<u8>, footnote_defs: &[Footno
 }
 
 fn main() -> Result<()> {
-    let md_files = [
-        "a_million_ways_to_data_race_in_go.md",
-        "a_small_trick_to_improve_technical_discussions_by_sharing_code.md",
-        "a_subtle_data_race_in_go.md",
-        "addressing_cgo_pains_one_at_a_time.md",
-        "advent_of_code_2018_5_revisited.md",
-        "advent_of_code_2018_5.md",
-        "an_amusing_go_static_analysis_blindspot.md",
-        "an_optimization_and_debugging_story_go_dtrace.md",
-        "are_my_sql_files_read_at_build_time_or_run_time.md",
-        "body_of_work.md",
-        "build-pie-executables-with-pie.md",
-        "compile_ziglang_from_source_on_alpine_2020_9.md",
-        "detecting_goroutine_leaks_with_dtrace.md",
-        "feed.md",
-        "gnuplot_lang.md",
-        "go_dtrace_see_all_network_traffic.md",
-        "go_dtrace_see_registered_routes.md",
-        "how_to_reproduce_and_fix_an_io_data_race_with_dtrace.md",
-        "how_to_rewrite_a_cpp_codebase_successfully.md",
-        "image_size_reduction.md",
-        //"index.md",
-        "kahns_algorithm.md",
-        "lessons_learned_from_a_successful_rust_rewrite.md",
-        "making_my_debug_build_run_100_times_faster.md",
-        "making_my_static_blog_generator_11_times_faster.md",
-        "observe_sql_queries_in_go_with_dtrace.md",
-        "odin_and_musl.md",
-        "perhaps_rust_needs_defer.md",
-        "roll_your_own_memory_profiling.md",
-        "rust_c++_interop_trick.md",
-        "speed_up_your_ci.md",
-        "subtle_bug_with_go_errgroup.md",
-        "the_missing_cross_platform_os_api_for_timers.md",
-        "the_production_bug_that_made_me_care_about_undefined_behavior.md",
-        "tip_of_day_1.md",
-        "tip_of_day_3.md",
-        "tip_of_the_day_2.md",
-        "tip_of_the_day_4.md",
-        "tip_of_the_day_5.md",
-        "tip_of_the_day_6.md",
-        "way_too_many_ways_to_wait_for_a_child_process_with_a_timeout.md",
-        "wayland_from_scratch.md",
-        "what_should_your_mutexes_be_named.md",
-        "write_a_video_game_from_scratch_like_1987.md",
-        "x11_x64.md",
-        "you_inherited_a_legacy_cpp_codebase_now_what.md",
-    ];
+    let git_stats = git_get_articles_stats();
     let html_header = fs::read("header.html").unwrap();
     let html_footer = fs::read("footer.html").unwrap();
-    for md_path in md_files {
-        println!("generating {}", md_path);
-        let path = PathBuf::from(md_path);
+    for file in git_stats {
+        if file.path_from_git_root == "README.md"
+            || file.path_from_git_root == "todo.md"
+            || file.path_from_git_root == "index.md"
+        {
+            continue;
+        }
+
+        println!("generating {}", file.path_from_git_root);
+        let path = PathBuf::from(file.path_from_git_root);
         md_render_article(&html_header, &html_footer, &path);
     }
     Ok(())
