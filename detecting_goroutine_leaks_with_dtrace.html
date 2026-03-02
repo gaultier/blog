@@ -74,6 +74,7 @@ Do not edit it by hand.
 
 <div class="article-prelude">
 <p><a href="/blog"> ⏴ Back to all articles</a></p>
+
   <p class="publication-date">Published on 2025-12-21.</p>
 </div>
 <div class="article-title">
@@ -124,23 +125,23 @@ Do not edit it by hand.
 <p><strong>Or: a deep dive into how the Go runtime models and manages goroutines, and how DTrace can help us observe and understand it.</strong></p>
 <p><em>For a gentle introduction to DTrace especially in conjunction with Go, see my past article: <a href="/blog/an_optimization_and_debugging_story_go_dtrace.html">An optimization and debugging story with Go and DTrace</a>, or my other <a href="/blog/articles-by-tag.html#dtrace">DTrace articles</a>.</em></p>
 <p>Recently I read a cool blog <a href="https://antonz.org/detecting-goroutine-leaks/">article</a> about new changes in Go 1.25 and (as the time of writing, upcoming) 1.26 to more easily track goroutine leaks.</p>
-<p>I thought: ok, that&#39;s nice, that&#39;s a real problem. But what if you cannot use this <code>goroutineleak</code> profile? Perhaps you are stuck on an old Go version, perhaps you cannot change the code easily to enable this profile.</p>
+<p>I thought: ok, that's nice, that's a real problem. But what if you cannot use this <code>goroutineleak</code> profile? Perhaps you are stuck on an old Go version, perhaps you cannot change the code easily to enable this profile.</p>
 <p>What to do then? Well, as always, DTrace comes to the rescue!</p>
 <h2 id="what-is-a-goroutine-leak-and-why-is-it-a-problem">
   <a class="title" href="#what-is-a-goroutine-leak-and-why-is-it-a-problem">What is a goroutine leak, and why is it a problem?</a>
   <a class="hash-anchor" href="#what-is-a-goroutine-leak-and-why-is-it-a-problem" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
-<p>Simply, a goroutine &#39;leaks&#39; if it is blocked waiting on an unreachable object: a mutex, channel, wait condition, etc. No place in the program still holds a reference to this object, which means this object can never be &#39;unlocked&#39; and the goroutine can never be unblocked.</p>
+<p>Simply, a goroutine 'leaks' if it is blocked waiting on an unreachable object: a mutex, channel, wait condition, etc. No place in the program still holds a reference to this object, which means this object can never be 'unlocked' and the goroutine can never be unblocked.</p>
 <p>And it turns out that Go currently offers us various ways to accidentally enter this case: forgetting to read from a channel for example.</p>
 <p>Why is this an issue? Well, goroutines are designed to not take much memory, at least initially (around 2 KiB), so that our program can spawn millions of them. Note that the memory used by a goroutine can and usually does grow.</p>
 <p>This memory is not reclaimed until the goroutine is destroyed. If the goroutine lives forever, we have a memory leak on our hands.</p>
-<p>Additionally, due to the M:N model, the Go runtime juggles N goroutines on M physical cores. So having lots of &#39;zombie&#39; goroutines mixed with valid goroutines means having a bigger memory and CPU usage than normal when
+<p>Additionally, due to the M:N model, the Go runtime juggles N goroutines on M physical cores. So having lots of 'zombie' goroutines mixed with valid goroutines means having a bigger memory and CPU usage than normal when
 doing garbage collection, scheduling, collecting statistics, etc, in the Go runtime.</p>
 <h2 id="watch-goroutines-be-created-and-destroyed-with-dtrace">
   <a class="title" href="#watch-goroutines-be-created-and-destroyed-with-dtrace">Watch goroutines be created and destroyed with DTrace</a>
   <a class="hash-anchor" href="#watch-goroutines-be-created-and-destroyed-with-dtrace" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
-<p>Alright, let&#39;s start slow first with the simplest Go program using goroutines we can think of:</p>
+<p>Alright, let's start slow first with the simplest Go program using goroutines we can think of:</p>
 <pre><code class="language-go">package main
 
 import (
@@ -155,7 +156,7 @@ func main() {
 	Foo()
 }
 </code></pre>
-<p>Let&#39;s trace all goroutine creations and deletions, as well as the functions entry and return in this program.</p>
+<p>Let's trace all goroutine creations and deletions, as well as the functions entry and return in this program.</p>
 <p>Peeking at the Go runtime <a href="https://github.com/golang/go/blob/master/src/runtime/proc.go">code</a>, we identify two functions of interest:</p>
 <ul>
 <li><code>runtime.newproc1</code> creates a new goroutine object and returns it. When we use the <code>go</code> keyword in our Go code, the compiler generates a call to <code>runtime.newproc</code> which in turn calls <code>runtime.newproc1</code>.</li>
@@ -199,7 +200,7 @@ dtrace: pid 28627 has exited
 <li>We create the goroutine ourselves, but the Go runtime destroys it for us, automatically, when the function running in the goroutine returns</li>
 </ul>
 <p>In a big, real program, goroutines are being destroyed left and right, even while our function is executing, or after it is done executing.</p>
-<p>So we need to track the set of our own goroutines. The function of interest in the Go runtime is <code>runtime.newproc1</code>: it returns a pointer to a newly allocated goroutine object, so we can use this as a &#39;goroutine id&#39;. This value is accessible in <code>arg1</code> in DTrace (on my system; this depends on the system we are running our D script on. The <a href="https://github.com/golang/go/blob/master/src/cmd/compile/abi-internal.md">Go ABI</a> is documented but differs between systems and so it requires a bit of trial and error in DTrace to know which <code>argN</code> contains the information we need).</p>
+<p>So we need to track the set of our own goroutines. The function of interest in the Go runtime is <code>runtime.newproc1</code>: it returns a pointer to a newly allocated goroutine object, so we can use this as a 'goroutine id'. This value is accessible in <code>arg1</code> in DTrace (on my system; this depends on the system we are running our D script on. The <a href="https://github.com/golang/go/blob/master/src/cmd/compile/abi-internal.md">Go ABI</a> is documented but differs between systems and so it requires a bit of trial and error in DTrace to know which <code>argN</code> contains the information we need).</p>
 <p>Then, in <code>runtime.gdestroy</code>, we can react only to our own goroutines being destroyed. There, <code>arg0</code> contains the goroutine id/pointer to be destroyed.</p>
 <h2 id="a-naive-approach-count-goroutines-creations-and-deletions">
   <a class="title" href="#a-naive-approach-count-goroutines-creations-and-deletions">A naive approach: count goroutines creations and deletions</a>
@@ -239,7 +240,7 @@ pid$target::runtime.gdestroy:entry
   <a class="title" href="#a-leaky-program">A leaky program</a>
   <a class="hash-anchor" href="#a-leaky-program" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
-<p>Let&#39;s take the same leaky Go program as the original <a href="https://antonz.org/detecting-goroutine-leaks/">article</a>:</p>
+<p>Let's take the same leaky Go program as the original <a href="https://antonz.org/detecting-goroutine-leaks/">article</a>:</p>
 <pre><code class="language-go">package main
 
 import (
@@ -274,13 +275,13 @@ func main() {
 </code></pre>
 <p>This prints <code>3</code> since our code spawns a goroutine for each argument, and there are 3 arguments. Because the channel is unbuffered and never read from, the 3 goroutines run forever and leak. Oops.</p>
 <p>Note that our D script is already more powerful than the naive Go way of using <code>runtime.NumGoroutine()</code> which returns <em>all</em> goroutines active in the program, even goroutines that our function did not spawn itself (hence the <code>-1</code> in the Go code in this simplistic example).</p>
-<p>Let&#39;s use our brand new D script on this program:</p>
+<p>Let's use our brand new D script on this program:</p>
 <pre><code class="language-text">goroutine 14000102fc0 created: count=1
 goroutine 14000103180 created: count=2
 goroutine 14000103340 created: count=3
 </code></pre>
 <p>We see indeed that there are 3 leaky goroutines (created and never destroyed) by the end of the program.</p>
-<p>Let&#39;s now fix the Go program by reading from the returned channel:</p>
+<p>Let's now fix the Go program by reading from the returned channel:</p>
 <pre><code class="language-diff">diff --git a/main.go b/main.go
 index 01659c2..bfd7ee4 100644
 --- a/main.go
@@ -317,15 +318,15 @@ goroutine 140000036c0 destroyed: count=0
   <a class="title" href="#a-better-approach-track-blocked-goroutines">A better approach: Track blocked goroutines</a>
   <a class="hash-anchor" href="#a-better-approach-track-blocked-goroutines" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
-<p>Our current D script is flawed: consider a goroutine that does <code>time.Sleep(10*time.Second)</code>. It will appear as &#39;leaking&#39; for 10 seconds, after which it will be destroyed and not appear as &#39;leaking&#39; anymore. So what&#39;s the cutoff? Should we wait one minute, one hour?</p>
+<p>Our current D script is flawed: consider a goroutine that does <code>time.Sleep(10*time.Second)</code>. It will appear as 'leaking' for 10 seconds, after which it will be destroyed and not appear as 'leaking' anymore. So what's the cutoff? Should we wait one minute, one hour?</p>
 <p>Well, remember the initial definition of a goroutine leak:</p>
 <blockquote>
-<p>a goroutine &#39;leaks&#39; if it is blocked waiting on an unreachable object: a mutex, channel, wait condition, etc</p>
+<p>a goroutine 'leaks' if it is blocked waiting on an unreachable object: a mutex, channel, wait condition, etc</p>
 </blockquote>
-<p>Each goroutine in the Go runtime has a &#39;status&#39; field which is &#39;idle&#39;, &#39;running&#39;, &#39;waiting&#39; (meaning blocked), &#39;dead&#39;, etc. We need to track that, in order to know how many goroutines are really blocked and leaking!</p>
+<p>Each goroutine in the Go runtime has a 'status' field which is 'idle', 'running', 'waiting' (meaning blocked), 'dead', etc. We need to track that, in order to know how many goroutines are really blocked and leaking!</p>
 <p>The Go runtime has a key function to watch, that does this state transition: <code>runtime.gopark</code>.</p>
-<p>A goroutine is typically &#39;parked&#39;, meaning taken off CPU, when it is waiting on something such as a synchronization object, the network, a system call, etc, to make room for other goroutines to run. Doing so changes the goroutine status from &#39;running&#39; to something else.</p>
-<p>The fourth argument of <code>runtime.gopark</code> is a &#39;block reason&#39; which explains why (if at all) the goroutine is blocked. This way, the Go scheduler knows not to try to run the blocked goroutines since they have no chance to do anything, until the object they are blocked on is unblocked (for example a mutex). This field is <a href="https://github.com/golang/go/blob/master/src/runtime/traceruntime.go#L91">defined</a> like this in the Go runtime:</p>
+<p>A goroutine is typically 'parked', meaning taken off CPU, when it is waiting on something such as a synchronization object, the network, a system call, etc, to make room for other goroutines to run. Doing so changes the goroutine status from 'running' to something else.</p>
+<p>The fourth argument of <code>runtime.gopark</code> is a 'block reason' which explains why (if at all) the goroutine is blocked. This way, the Go scheduler knows not to try to run the blocked goroutines since they have no chance to do anything, until the object they are blocked on is unblocked (for example a mutex). This field is <a href="https://github.com/golang/go/blob/master/src/runtime/traceruntime.go#L91">defined</a> like this in the Go runtime:</p>
 <pre><code class="language-go">// traceBlockReason is an enumeration of reasons a goroutine might block.
 [...]
 type traceBlockReason uint8
@@ -350,7 +351,7 @@ const (
 	traceBlockSynctest
 )
 </code></pre>
-<p>Let&#39;s track that then. We maintain a set of blocked goroutines. If a goroutine goes from unblocked to blocked, it gets added to this set. If it goes from blocked to unblocked, it gets removed from the set.</p>
+<p>Let's track that then. We maintain a set of blocked goroutines. If a goroutine goes from unblocked to blocked, it gets added to this set. If it goes from blocked to unblocked, it gets removed from the set.</p>
 <p><em>Note: according to the <a href="https://github.com/golang/go/blob/master/src/cmd/compile/abi-internal.md">Go ABI</a>, a register is reserved to store the current goroutine. On my system (ARM64), it is the <code>R28</code> register, <a href="/blog/an_optimization_and_debugging_story_go_dtrace.html#addendum-a-goroutine-aware-d-script">accessible</a> in DTrace with <code>uregs[R_X28]</code>. On x86_64, it is the <code>r14</code> register. This is handy when a Go runtime function does not take the goroutine to act on, as an argument.</em></p>
 <pre><code class="language-dtrace">pid$target::runtime.gopark:entry 
 // arg3 = traceBlockReason.
@@ -376,7 +377,7 @@ const (
   printf(&quot;gopark: goroutine=%p blocked=%d reason=%d blocked_count=%d\n&quot;, this-&gt;g, this-&gt;blocked, this-&gt;waitreason, goroutines_blocked_count);
 }
 </code></pre>
-<p>The counterpart of <code>runtime.gopark</code> is <code>runtime.goready</code> (typically inlined and calls <code>runtime.ready</code> which we can watch), that marks a goroutine as runnable again (unblocked). So, we remove the goroutine from the &#39;blocked&#39; set:</p>
+<p>The counterpart of <code>runtime.gopark</code> is <code>runtime.goready</code> (typically inlined and calls <code>runtime.ready</code> which we can watch), that marks a goroutine as runnable again (unblocked). So, we remove the goroutine from the 'blocked' set:</p>
 <pre><code class="language-dtrace">pid$target::runtime.ready:entry 
 /goroutines[arg0] != 0/ 
 {
@@ -384,7 +385,7 @@ const (
     goroutines_blocked_count -= 1;
 }
 </code></pre>
-<p>And of course, if the goroutine gets destroyed, we also remove it from the &#39;blocked&#39; set (if it was inside it):</p>
+<p>And of course, if the goroutine gets destroyed, we also remove it from the 'blocked' set (if it was inside it):</p>
 <pre><code class="language-diff">pid$target::runtime.gdestroy:entry 
 /goroutines[arg0] != 0/
 {
@@ -482,7 +483,7 @@ profile-1s, END {
 }
 </code></pre>
 </details>
-<p>Let&#39;s try it on the leaky program:</p>
+<p>Let's try it on the leaky program:</p>
 <pre><code class="language-shell">$ sudo dtrace -s /Users/philippe.gaultier/my-code/dtrace-tools/goroutines.d -c ./leaky.exe -q
 nGoro = 3
 newproc1: goroutine=140000036c0 parent=1374389543360 count=1 blocked_count=0
@@ -509,11 +510,11 @@ END: count=0 blocked_count=0
   <a class="title" href="#discussion">Discussion</a>
   <a class="hash-anchor" href="#discussion" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
-<p>This D script is much better, however it does not implement the full algorithm from Go&#39;s new goroutine leak detector: We know what goroutines are blocked on an object, but in order to mark them officially as leaking, the object should be unreachable.</p>
+<p>This D script is much better, however it does not implement the full algorithm from Go's new goroutine leak detector: We know what goroutines are blocked on an object, but in order to mark them officially as leaking, the object should be unreachable.</p>
 <p>Thus, we would need to also 1) track which object is being blocked on, and 2) track the Garbage Collector operations, to know when said object gets garbage collected, which means it becomes unreachable.</p>
-<p>For 1), the goroutine structure in the Go runtime has the field <code>parkingOnChan</code> to know on which channel to goroutine is waiting on. That&#39;s a good start, but I do not know if there is an equivalent for mutexes and other synchronization objects.</p>
+<p>For 1), the goroutine structure in the Go runtime has the field <code>parkingOnChan</code> to know on which channel to goroutine is waiting on. That's a good start, but I do not know if there is an equivalent for mutexes and other synchronization objects.</p>
 <p>For 2), we have the DTrace probes <code>runtime.gc*:</code> at our disposal to watch the Garbage Collector. I believe this is possible, just some more work.</p>
-<p>Finally, it&#39;s important to note that when a goroutine is destroyed, we need to remove it from the various maps we maintain. This is not only to reduce the DTrace memory usage, but also because the Go runtime puts the freshly destroyed goroutine on a free list to be possibly reused,
+<p>Finally, it's important to note that when a goroutine is destroyed, we need to remove it from the various maps we maintain. This is not only to reduce the DTrace memory usage, but also because the Go runtime puts the freshly destroyed goroutine on a free list to be possibly reused,
 so this could get confusing.</p>
 <h2 id="limitations">
   <a class="title" href="#limitations">Limitations</a>
@@ -521,11 +522,11 @@ so this could get confusing.</p>
 </h2>
 <p>The <code>runtime/HACKING.md</code> document mentions:</p>
 <blockquote>
-<p>A &quot;G&quot; is simply a goroutine. It&#39;s represented by type <code>g</code>. When a
+<p>A &quot;G&quot; is simply a goroutine. It's represented by type <code>g</code>. When a
 goroutine exits, its <code>g</code> object is returned to a pool of free <code>g</code>s and
 can later be reused for some other goroutine.</p>
 <p>An &quot;M&quot; is an OS thread that can be executing user Go code, runtime
-code, a system call, or be idle. It&#39;s represented by type <code>m</code>. There
+code, a system call, or be idle. It's represented by type <code>m</code>. There
 can be any number of Ms at a time since any number of threads may be
 blocked in system calls.</p>
 </blockquote>
@@ -533,9 +534,9 @@ blocked in system calls.</p>
 <p><code>getg()</code> and <code>getg().m.curg</code></p>
 <p>To get the current user <code>g</code>, use <code>getg().m.curg</code>.</p>
 <p><code>getg()</code> alone returns the current <code>g</code>, but when executing on the
-system or signal stacks, this will return the current M&#39;s &quot;g0&quot; or
+system or signal stacks, this will return the current M's &quot;g0&quot; or
 &quot;gsignal&quot;, respectively. This is usually not what you want.</p>
-<p>To determine if you&#39;re running on the user stack or the system stack,
+<p>To determine if you're running on the user stack or the system stack,
 use <code>getg() == getg().m.curg</code>.</p>
 </blockquote>
 <p><code>g</code> is the name of the goroutine struct in the Go runtime. <code>getg()</code> gets the current goroutine, which is a pointer to a <code>g</code> struct, and this call gets transformed by the compiler into a register lookup. In DTrace, we do it with <code>uregs[R_X28]</code>. So far so good.</p>
@@ -693,7 +694,7 @@ pid$target::runtime.gopark:entry
     uint32_t parkingOnChan = 0x1c000000
     uint8_t inMarkAssist = 0
     uint8_t coroexit = 0
-    int8_t raceignore = &#39;\0&#39;
+    int8_t raceignore = '\0'
     uint8_t nocgocallback = 0
     uint8_t tracking = 0
     uint8_t trackingSeq = 0
@@ -739,7 +740,7 @@ pid$target::runtime.gopark:entry
   <a class="title" href="#conclusion">Conclusion</a>
   <a class="hash-anchor" href="#conclusion" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
-<p>With a few simple DTrace probes, we can observe the Go runtime creating, parking, unparking, and destroying goroutines, along with a way to uniquely identify the goroutine in question. From these primitives, we can track goroutine leaks, but that&#39;s not all! We could do a lot more, all in DTrace (or possibly with a bit of post-processing):</p>
+<p>With a few simple DTrace probes, we can observe the Go runtime creating, parking, unparking, and destroying goroutines, along with a way to uniquely identify the goroutine in question. From these primitives, we can track goroutine leaks, but that's not all! We could do a lot more, all in DTrace (or possibly with a bit of post-processing):</p>
 <ul>
 <li>How long does a goroutine live, with a histogram?</li>
 <li>What is the peak (maximum) number of active goroutines?</li>
@@ -748,7 +749,7 @@ pid$target::runtime.gopark:entry
 <li>How long do goroutines sleep, with a histogram?</li>
 <li>Print a goroutine tree of what goroutine spawned which goroutine. <code>runtime.newproc1:entry</code> takes the parent goroutine as argument, so we know the parent-child relationship.</li>
 <li>How much do goroutines consume, with a histogram: the goroutine structure in the Go runtime has the <code>stack.lo</code> and <code>stack.hi</code> fields which describe the bounds of the goroutine memory.</li>
-<li>How long does a goroutine wait to run, when it is not waiting on any object, and it could run at any time? The goroutine struct in the Go runtime has this field: <code>runnableTime    int64 // the amount of time spent runnable, cleared when running, only used when tracking</code> but it only is updated in &#39;tracking&#39; mode.</li>
+<li>How long does a goroutine wait to run, when it is not waiting on any object, and it could run at any time? The goroutine struct in the Go runtime has this field: <code>runnableTime    int64 // the amount of time spent runnable, cleared when running, only used when tracking</code> but it only is updated in 'tracking' mode.</li>
 <li>How many goroutines are currently on the free list?</li>
 <li>Etc</li>
 </ul>

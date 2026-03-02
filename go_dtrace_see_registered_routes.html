@@ -74,13 +74,14 @@ Do not edit it by hand.
 
 <div class="article-prelude">
 <p><a href="/blog"> ⏴ Back to all articles</a></p>
+
   <p class="publication-date">Published on 2025-12-03.</p>
 </div>
 <div class="article-title">
   <h1>What HTTP routes does your application provide?</h1>
 <div class="tags"> <a href="/blog/articles-by-tag.html#go" class="tag">Go</a> <a href="/blog/articles-by-tag.html#dtrace" class="tag">DTrace</a> </div>
 </div>
-<p>Quick one today. I have a <a href="https://github.com/ory/kratos">Go HTTP application</a> that has many HTTP routes. These routes get dynamically registered at startup based on feature flags, configuration, whether an enterprise license was found, etc. So it&#39;s hard to know what routes exist.</p>
+<p>Quick one today. I have a <a href="https://github.com/ory/kratos">Go HTTP application</a> that has many HTTP routes. These routes get dynamically registered at startup based on feature flags, configuration, whether an enterprise license was found, etc. So it's hard to know what routes exist.</p>
 <p>Since this application uses the Go HTTP router from the standard library, this question is quickly answered by DTrace. The two Go functions of interest are located in the <code>net/http</code> package:</p>
 <pre><code class="language-go">func (mux *ServeMux) HandleFunc(pattern string, handler func(ResponseWriter, *Request))
 
@@ -88,9 +89,9 @@ func HandleFunc(pattern string, handler func(ResponseWriter, *Request))
 </code></pre>
 <p>We are interested only in the first argument (<code>pattern</code>), which gets passed as a pointer in <code>arg1</code> and length in <code>arg2</code>.
 And so the DTrace invocation is:</p>
-<pre><code class="language-sh">$ sudo dtrace -n &#39;pid$target::net?http*HandleFunc:entry {printf(&quot;%s\n&quot;, stringof(copyin(arg1, arg2)));}&#39; -c &quot;./kratos serve -c $HOME/.kratos.yml --dev&quot; -x strsize=16K -b 4G -q
+<pre><code class="language-sh">$ sudo dtrace -n 'pid$target::net?http*HandleFunc:entry {printf(&quot;%s\n&quot;, stringof(copyin(arg1, arg2)));}' -c &quot;./kratos serve -c $HOME/.kratos.yml --dev&quot; -x strsize=16K -b 4G -q
 </code></pre>
-<p>And we see no less than 248 HTTP routes are registered, and we also see the HTTP method for each route (that&#39;s how the Go API works, the method is passed in the same string as the route):</p>
+<p>And we see no less than 248 HTTP routes are registered, and we also see the HTTP method for each route (that's how the Go API works, the method is passed in the same string as the route):</p>
 <pre><code class="language-text">GET /self-service/login/browser
 GET /self-service/login/browser/{$}
 GET /self-service/login/api
@@ -109,7 +110,7 @@ DELETE /admin/sessions
 DELETE /admin/sessions/{$}
 [...]
 </code></pre>
-<p><em>The <code>{$}</code> string is not erroneous data, it&#39;s part of the syntax this Go API uses, see the <a href="https://pkg.go.dev/net/http#ServeMux">docs</a>.</em></p>
+<p><em>The <code>{$}</code> string is not erroneous data, it's part of the syntax this Go API uses, see the <a href="https://pkg.go.dev/net/http#ServeMux">docs</a>.</em></p>
 <p>This is very useful to know what features are enabled at runtime.</p>
 <p>One thing to note is that these Go functions are concurrency-safe, meaning they could get called concurrently from different goroutines just fine (a mutex is used in the Go implementation to enable that). This application does not do that to my knowledge.</p>
 <p>If that was the case, our DTrace script would likely mix the different strings in the output. The standard solution for that case, is to store all these strings in map, and at the end, print the map. The order of registration is lost but that should not matter since this API defines pretty well route precedence based on how specific a route is, and not based on registration order.

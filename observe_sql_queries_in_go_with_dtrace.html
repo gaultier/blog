@@ -74,6 +74,7 @@ Do not edit it by hand.
 
 <div class="article-prelude">
 <p><a href="/blog"> ⏴ Back to all articles</a></p>
+
   <p class="publication-date">Published on 2025-09-11.</p>
 </div>
 <div class="article-title">
@@ -119,11 +120,11 @@ Do not edit it by hand.
 
 <p><em>Discussions: <a href="https://old.reddit.com/r/golang/comments/1ne6rvs/observe_live_sql_queries_in_go_with_dtrace/">/r/golang</a>.</em></p>
 <p><em>For a gentle introduction to DTrace especially in conjunction with Go, see my past article: <a href="/blog/an_optimization_and_debugging_story_go_dtrace.html">An optimization and debugging story with Go and DTrace</a>.</em></p>
-<p>You have a Go program that does <em>something</em> with a SQL database. What exactly? You don&#39;t know. You&#39;d like to see live what SQL queries are being done.</p>
-<p>That&#39;s what happened to me at work: I had to tweak an endpoint that does pagination, and the <a href="https://github.com/ory/kratos/blob/afb43c39e/persistence/sql/persister_courier.go#L36">Go code</a> was using an ORM to build the SQL query, making it really hard to know what was the final query being executed.</p>
+<p>You have a Go program that does <em>something</em> with a SQL database. What exactly? You don't know. You'd like to see live what SQL queries are being done.</p>
+<p>That's what happened to me at work: I had to tweak an endpoint that does pagination, and the <a href="https://github.com/ory/kratos/blob/afb43c39e/persistence/sql/persister_courier.go#L36">Go code</a> was using an ORM to build the SQL query, making it really hard to know what was the final query being executed.</p>
 <p>Well, this is easy to do with DTrace, without any code modification or even restarting the running program!</p>
 <p>And since there were in my case a number of optional query arguments (essentially search parameters), passed as variadic <code>any</code> arguments, I was not sure if DTrace could handle that. Well, it turns out it can!</p>
-<p><strong>tl;dr</strong>: We&#39;ll use DTrace to peek into the Go runtime&#39;s memory, inspect function arguments, and reconstruct the full SQL query with its parameters.</p>
+<p><strong>tl;dr</strong>: We'll use DTrace to peek into the Go runtime's memory, inspect function arguments, and reconstruct the full SQL query with its parameters.</p>
 <h2 id="level-1-see-the-sql-query-without-arguments">
   <a class="title" href="#level-1-see-the-sql-query-without-arguments">Level 1: See the SQL query, without arguments</a>
   <a class="hash-anchor" href="#level-1-see-the-sql-query-without-arguments" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
@@ -131,27 +132,27 @@ Do not edit it by hand.
 <p>Since most Go programs use the standard library package <code>database/sql</code>, we want to observe the function:</p>
 <pre><code class="language-go">func (db *DB) QueryContext(ctx context.Context, query string, args ...any) (*Rows, error)
 </code></pre>
-<p>As a first step, we&#39;ll only print the query string. In some cases, that&#39;s sufficient, for example if the query is <code>SELECT * from users</code>: there are no arguments.</p>
+<p>As a first step, we'll only print the query string. In some cases, that's sufficient, for example if the query is <code>SELECT * from users</code>: there are no arguments.</p>
 <p>The only challenge here is to know which registers the string is passed in. One good resource is the <a href="https://github.com/golang/go/blob/master/src/cmd/compile/abi-internal.md">Go ABI documentation</a>.</p>
 <p>Alternatively, we can brute-force our way by first printing all registers and inferring from their value what is what:</p>
 <pre><code class="language-dtrace">pid$target::database?sql.*.QueryContext:entry {
   printf(&quot;%p %p %p %p %p %p %p %p %p\n&quot;, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9);
 }
 </code></pre>
-<p>And we&#39;ll see something like this when the application being observed does a SQL query:</p>
-<pre><code class="language-txt">dtrace: description &#39;pid$target::database?sql.*.QueryContext:entry &#39; matched 4 probes
+<p>And we'll see something like this when the application being observed does a SQL query:</p>
+<pre><code class="language-txt">dtrace: description 'pid$target::database?sql.*.QueryContext:entry ' matched 4 probes
 CPU     ID                    FUNCTION:NAME
  12 140734 database/sql.(*DB).QueryContext:entry 140023cea90 1024bce78 14002519b30 140017c5400 25b 14000e08b40 4 4 100bf02ac 2
 </code></pre>
 <p>We can infer that:</p>
 <ul>
 <li>The object (<code>db *DB</code>) whose method is being called is passed in the first register: <code>arg0</code></li>
-<li>The first argument (<code>ctx context.Context</code>) is an interface, which is 2 pointers, and it&#39;s very likely that each field is passed separately in a register: <code>arg1</code> and <code>arg2</code></li>
+<li>The first argument (<code>ctx context.Context</code>) is an interface, which is 2 pointers, and it's very likely that each field is passed separately in a register: <code>arg1</code> and <code>arg2</code></li>
 <li>The second argument (<code>query string</code>) is a string, which is a pointer and a length: <code>arg3</code> and <code>arg4</code>. So here the string is <code>0x25b</code> bytes long, or 603 bytes</li>
-<li>Remaining arguments (<code>args ...any</code>) are variadic, and Go passes them to the function as a slice (i.e. <code>[]any</code>), which is a pointer, a length, and a capacity: <code>arg5</code>, <code>arg6</code>, <code>arg7</code>. Here we observe that there are <code>4</code> query arguments. We&#39;ll come back to them later.</li>
+<li>Remaining arguments (<code>args ...any</code>) are variadic, and Go passes them to the function as a slice (i.e. <code>[]any</code>), which is a pointer, a length, and a capacity: <code>arg5</code>, <code>arg6</code>, <code>arg7</code>. Here we observe that there are <code>4</code> query arguments. We'll come back to them later.</li>
 <li>Unused registers for passing function arguments are here <code>arg8</code> and <code>arg9</code>, they should be ignored.</li>
 </ul>
-<p>So let&#39;s for now only print the query string:</p>
+<p>So let's for now only print the query string:</p>
 <pre><code class="language-dtrace">pid$target::database?sql.*.QueryContext:entry {
   this-&gt;query = stringof(copyin(arg3, arg4)); 
 
@@ -162,13 +163,13 @@ CPU     ID                    FUNCTION:NAME
 <p>We see something like this:</p>
 <pre><code class="language-sql">SELECT courier_messages.body, courier_messages.channel, courier_messages.created_at, courier_messages.id, courier_messages.nid, courier_messages.recipient, courier_messages.send_count, courier_messages.status, courier_messages.subject, courier_messages.template_data, courier_messages.template_type, courier_messages.type, courier_messages.updated_at FROM courier_messages AS courier_messages WHERE nid=? AND (&quot;courier_messages&quot;.&quot;created_at&quot; &lt; ? OR (&quot;courier_messages&quot;.&quot;created_at&quot; = ? AND &quot;courier_messages&quot;.&quot;id&quot; &gt; ?)) ORDER BY &quot;courier_messages&quot;.&quot;created_at&quot; DESC, &quot;courier_messages&quot;.&quot;id&quot; ASC LIMIT 11
 </code></pre>
-<p>Which is already very useful in my opinion. But wouldn&#39;t it be nice to also see which arguments were passed to the query?</p>
+<p>Which is already very useful in my opinion. But wouldn't it be nice to also see which arguments were passed to the query?</p>
 <h2 id="level-2-see-string-query-arguments">
   <a class="title" href="#level-2-see-string-query-arguments">Level 2: See string query arguments</a>
   <a class="hash-anchor" href="#level-2-see-string-query-arguments" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>This technique is useful for all Go functions that have arguments of type <code>any</code>, which is simply an alias for <code>interface{}</code>, which is again just two pointers.</p>
-<p>Let&#39;s go step-wise: first we&#39;ll print each <code>any</code> argument along with their RTTI (Run-Time Type Information), and the value will be an opaque pointer. In a second step we&#39;ll print the value if the RTTI indicates that the argument is in fact a string.</p>
+<p>Let's go step-wise: first we'll print each <code>any</code> argument along with their RTTI (Run-Time Type Information), and the value will be an opaque pointer. In a second step we'll print the value if the RTTI indicates that the argument is in fact a string.</p>
 <p>This RTTI is defined by Go as <code>runtime.Type</code> <a href="https://github.com/golang/go/blob/release-branch.go1.25/src/internal/abi/type.go#L20">here</a>:</p>
 <pre><code class="language-go">type Type struct {
 	Size_       uintptr
@@ -300,8 +301,8 @@ GoType {
     int32_t ptr_to_this = 0xd0960
 }
 </code></pre>
-<p>You might be thinking... that&#39;s not very useful... We&#39;ll, most fields are indeed not relevant. The only ones to look at, really, are <code>kind</code>, which indicates the type, and <code>size</code>. This is an enum value defined <a href="https://github.com/golang/go/blob/release-branch.go1.25/src/internal/abi/type.go#L55">here</a>.</p>
-<p>The value <code>0x18</code> is <code>String</code>. So the last 3 variadic arguments are strings. Great, let&#39;s print them:</p>
+<p>You might be thinking... that's not very useful... We'll, most fields are indeed not relevant. The only ones to look at, really, are <code>kind</code>, which indicates the type, and <code>size</code>. This is an enum value defined <a href="https://github.com/golang/go/blob/release-branch.go1.25/src/internal/abi/type.go#L55">here</a>.</p>
+<p>The value <code>0x18</code> is <code>String</code>. So the last 3 variadic arguments are strings. Great, let's print them:</p>
 <pre><code class="language-dtrace">pid$target::database?sql.*.QueryContext:entry {
   // [...]
 
@@ -452,7 +453,7 @@ func main() {
   <a class="title" href="#print-the-name-of-the-type-from-dtrace">Print the name of the type from DTrace?</a>
   <a class="hash-anchor" href="#print-the-name-of-the-type-from-dtrace" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
-<p>A promising avenue I have not explored is printing the name of the type using the <code>name_offset</code> field. That&#39;s because Go stores at compile time in the executable this RTTI including the human readable name of all the user defined types.</p>
+<p>A promising avenue I have not explored is printing the name of the type using the <code>name_offset</code> field. That's because Go stores at compile time in the executable this RTTI including the human readable name of all the user defined types.</p>
 <p>This data is used when doing <code>println(reflect.TypeOf(someAnyArgument).Name())</code>. That prints <code>uuid.UUID</code>.</p>
 <p>Useful, but tricky to use from DTrace:</p>
 <ul>
@@ -489,7 +490,7 @@ str3=00000000-0000-0000-0000-000000000000
 <p>This is a bit unfortunate that the Go team and community never took an interest in adding static DTrace probes in key places in the Go runtime and standard library, like numerous other programming languages have done. That forces us to do gymnastics to get the information we need.</p>
 <p>Finally, DTrace limitations (no loops, difficult to write complex logic), prevent us from writing a generic D script that can print all arguments of all queries (our script is ad-hoc). Perhaps this is doable with a program that generates the right D script at runtime, possibly tailored to each query in order to print the arguments correctly, and this program also post-processes the DTrace output.</p>
 <p>I wonder if eBPF on Linux is more powerful in that regard? I am sure the same approach as outlined in this article can be done with eBPF.</p>
-<p>I fully understand why DTrace is so limited, to be able to run D scripts without fear on mission-critical production systems. However, I often yearn for a &#39;development&#39; mode where arbitrary logic and control flow are allowed, even if that could crash my system.</p>
+<p>I fully understand why DTrace is so limited, to be able to run D scripts without fear on mission-critical production systems. However, I often yearn for a 'development' mode where arbitrary logic and control flow are allowed, even if that could crash my system.</p>
 <h2 id="addendum-the-full-code">
   <a class="title" href="#addendum-the-full-code">Addendum: the full code</a>
   <a class="hash-anchor" href="#addendum-the-full-code" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>

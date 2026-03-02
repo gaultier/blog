@@ -74,6 +74,7 @@ Do not edit it by hand.
 
 <div class="article-prelude">
 <p><a href="/blog"> ⏴ Back to all articles</a></p>
+
   <p class="publication-date">Published on 2023-06-03.</p>
 </div>
 <div class="article-title">
@@ -148,11 +149,11 @@ Do not edit it by hand.
   <a class="hash-anchor" href="#introduction" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>Graphs are everywhere in Software Engineering, or so we are told by Computer Science teachers and interviewers. But sometimes, they do show up in real problems.</p>
-<p>Not too long ago, I was tasked to create a Web API to create and update a company&#39;s hierarchy of employee, and display that on a web page. Basically, who reports to whom.</p>
-<p>In the simple case, it&#39;s a tree, when an employee reports to exactly one manager.</p>
+<p>Not too long ago, I was tasked to create a Web API to create and update a company's hierarchy of employee, and display that on a web page. Basically, who reports to whom.</p>
+<p>In the simple case, it's a tree, when an employee reports to exactly one manager.</p>
 <p><img src="kahns_algorithm_1.svg" alt="Employee hierarchy" /></p>
-<p>Here&#39;s the tree of employees in an organization. An employee reports to a manager, and this forms a tree. The root is the CEO since they report to no one and so they have no outgoing edge.</p>
-<p>An arrow (or &#39;edge&#39;) between two nodes means <code>&lt;source&gt; reports to &lt;destination&gt;</code>, for example: <code>Jane the CFO reports to Ellen the CEO</code>.</p>
+<p>Here's the tree of employees in an organization. An employee reports to a manager, and this forms a tree. The root is the CEO since they report to no one and so they have no outgoing edge.</p>
+<p>An arrow (or 'edge') between two nodes means <code>&lt;source&gt; reports to &lt;destination&gt;</code>, for example: <code>Jane the CFO reports to Ellen the CEO</code>.</p>
 <p>But here is the twist: our API receives a list of <code>employee -&gt; manager</code> links, in any order:</p>
 <pre><code class="language-text">Jane -&gt; Ellen
 Angela -&gt; Ellen
@@ -176,22 +177,22 @@ Miranda -&gt; Angela
 <p>This is not a novel idea, actually this is one of the examples in the official <a href="https://www.sqlite.org/lang_with.html">SQLite documentation</a>.</p>
 </blockquote>
 <p>For example, to save <code>Ellen, CEO</code> inside the database, we do:</p>
-<pre><code class="language-sql">INSERT INTO people VALUES(&#39;Ellen, CEO&#39;, NULL)
+<pre><code class="language-sql">INSERT INTO people VALUES('Ellen, CEO', NULL)
 </code></pre>
 <p>And to save <code>Jane, CFO</code> in the database:</p>
-<pre><code class="language-sql">INSERT INTO people VALUES(&#39;Jane, CFO&#39;, 1)
+<pre><code class="language-sql">INSERT INTO people VALUES('Jane, CFO', 1)
 </code></pre>
-<p>Where <code>Ellen, CEO</code>, Jane&#39;s boss, which we just inserted before, has the id <code>1</code>.</p>
+<p>Where <code>Ellen, CEO</code>, Jane's boss, which we just inserted before, has the id <code>1</code>.</p>
 <p>Immediately, we notice that to insert an employee, their manager needs to already by in the database, by virtue of the self-referential foreign key <code>manager BIGINT REFERENCES people</code>.</p>
-<p>So we need a way to sort the big list of <code>employee -&gt; manager</code> links (or &#39;edges&#39; in graph parlance), to insert them in the right order. First we insert the CEO, who reports to no one. Then we insert the employees directly reporting to the CEO. Then the employees reporting to those. Etc.</p>
-<p>And that&#39;s called a topological sort.</p>
+<p>So we need a way to sort the big list of <code>employee -&gt; manager</code> links (or 'edges' in graph parlance), to insert them in the right order. First we insert the CEO, who reports to no one. Then we insert the employees directly reporting to the CEO. Then the employees reporting to those. Etc.</p>
+<p>And that's called a topological sort.</p>
 <p>A big benefit is that we hit three birds with one stone:</p>
 <ul>
 <li>We detect cycles</li>
 <li>We have the nodes in a convenient order to insert them in the database</li>
 <li>Since the algorithm for the topological sort takes as input an adjacency matrix (more on this later), we can easily detect the invalid case of a node having more than one outgoing edge (i.e. more than one manager, i.e. multiple roots).</li>
 </ul>
-<p>From now one, I will use the graph of employees (where <code>Zoe</code> has two managers) as example since that&#39;s a possible input to our API and we need to detect this case.</p>
+<p>From now one, I will use the graph of employees (where <code>Zoe</code> has two managers) as example since that's a possible input to our API and we need to detect this case.</p>
 <h2 id="topological-sort">
   <a class="title" href="#topological-sort">Topological sort</a>
   <a class="hash-anchor" href="#topological-sort" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
@@ -200,8 +201,8 @@ Miranda -&gt; Angela
 <blockquote>
 <p>A topological sort or topological ordering of a directed graph is a linear ordering of its vertices such that for every directed edge uv from vertex u to vertex v, u comes before v in the ordering. For instance, the vertices of the graph may represent tasks to be performed, and the edges may represent constraints that one task must be performed before another; in this application, a topological ordering is just a valid sequence for the tasks</p>
 </blockquote>
-<p>That&#39;s a mouthful but it&#39;s not too hard.</p>
-<p>A useful command line utility that&#39;s already on your (Unix) machine is <code>tsort</code>, which takes a list of edges as input, and outputs a topological sort. Here is the input in a text file (<code>people.txt</code>):</p>
+<p>That's a mouthful but it's not too hard.</p>
+<p>A useful command line utility that's already on your (Unix) machine is <code>tsort</code>, which takes a list of edges as input, and outputs a topological sort. Here is the input in a text file (<code>people.txt</code>):</p>
 <pre><code class="language-text">Jane Ellen
 Angela Ellen
 Zoe Jane
@@ -212,7 +213,7 @@ Miranda Angela
 <blockquote>
 <p><code>tsort</code> uses a simple way of defining each edge <code>A -&gt; B</code> on its own line with the syntax: <code>A B</code>. The order of the lines does not matter.</p>
 </blockquote>
-<p>And here&#39;s the <code>tsort</code> output:</p>
+<p>And here's the <code>tsort</code> output:</p>
 <pre><code class="language-shell">$ tsort &lt; people.txt
 Bella
 Miranda
@@ -240,16 +241,16 @@ Angela
 Ellen
 Zoe
 </code></pre>
-<p>So, how can we implement something like <code>tsort</code> for our problem at hand? That&#39;s where <a href="https://en.wikipedia.org/wiki/Topological_sorting#Kahn&#39;s_algorithm">Kahn&#39;s algorithm</a> comes in to do exactly that: find cycles in the graph and output a topological sort.</p>
-<p><em>Note that that&#39;s not the only solution and there are ways to detect cycles without creating a topological sort, but this algorithm seems relatively unknown and does not come up often on the Internet, so let&#39;s discover how it works and implement it. I promise, it&#39;s not complex.</em></p>
+<p>So, how can we implement something like <code>tsort</code> for our problem at hand? That's where <a href="https://en.wikipedia.org/wiki/Topological_sorting#Kahn's_algorithm">Kahn's algorithm</a> comes in to do exactly that: find cycles in the graph and output a topological sort.</p>
+<p><em>Note that that's not the only solution and there are ways to detect cycles without creating a topological sort, but this algorithm seems relatively unknown and does not come up often on the Internet, so let's discover how it works and implement it. I promise, it's not complex.</em></p>
 <h2 id="how-to-store-the-graph-in-memory">
   <a class="title" href="#how-to-store-the-graph-in-memory">How to store the graph in memory</a>
   <a class="hash-anchor" href="#how-to-store-the-graph-in-memory" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
-<p>There are many ways to do so, and Kahn&#39;s algorithm does not dictate which one to use.</p>
-<p>We&#39;ll use an <a href="https://en.wikipedia.org/wiki/Adjacency_matrix">adjacency matrix</a>, because it&#39;s simple conceptually, maps well to Kahn&#39;s algorithm, and can be optimized if needed.</p>
-<p>It&#39;s just a 2D square table of size <code>n x n</code> (where <code>n</code> is the number of nodes), where the cell at row <code>i</code> and column <code>j</code> is 1 if there is an edge from the node <code>i</code> to the node <code>j</code>, and otherwise, <code>0</code>.</p>
-<p>The order of the nodes is arbitrary, I&#39;ll use the alphabetical order because again, it&#39;s simple to do:</p>
+<p>There are many ways to do so, and Kahn's algorithm does not dictate which one to use.</p>
+<p>We'll use an <a href="https://en.wikipedia.org/wiki/Adjacency_matrix">adjacency matrix</a>, because it's simple conceptually, maps well to Kahn's algorithm, and can be optimized if needed.</p>
+<p>It's just a 2D square table of size <code>n x n</code> (where <code>n</code> is the number of nodes), where the cell at row <code>i</code> and column <code>j</code> is 1 if there is an edge from the node <code>i</code> to the node <code>j</code>, and otherwise, <code>0</code>.</p>
+<p>The order of the nodes is arbitrary, I'll use the alphabetical order because again, it's simple to do:</p>
 <pre><code class="language-text">Angela
 Bella
 Ellen
@@ -273,8 +274,8 @@ Zoe
 </table>
 <p>The way to read this table is:</p>
 <ul>
-<li>For a given row, all the <code>1</code>&#39;s indicate outgoing edges</li>
-<li>For a given column, all the <code>1</code>&#39;s indicate incoming edges</li>
+<li>For a given row, all the <code>1</code>'s indicate outgoing edges</li>
+<li>For a given column, all the <code>1</code>'s indicate incoming edges</li>
 <li>If there is a <code>1</code> on the diagonal, it means there is an edge going out of a node and going to the same node.</li>
 </ul>
 <p>There are a lot of zeroes in this table. Some may think this is horribly inefficient, which it is, but it really depends on number of nodes, i.e. the number of employees in the organization.
@@ -282,16 +283,16 @@ But note that this adjacency matrix is a concept, it shows what information is p
 <p>For this article, we will store it the naive way, in a 2D array. Here are two optimization ideas I considered but have not had time to experiment with:</p>
 <ul>
 <li>Make this a bitarray. We are already only storing zeroes and ones, so it maps perfectly to this format.</li>
-<li>Since there are a ton of zeroes (in the valid case, a regular employee&#39;s row only has one <code>1</code> and the CEO&#39;s row is only zeroes), it is very compressible. An easy way would be to use run-length encoding, meaning, instead of <code>0 0 0 0</code>, we just store the number of times the number occurs: <code>4 0</code>. Easy to implement, easy to understand. A row compresses to just a few bytes. And this size would be constant, whatever the size of the organization (i.e. number of employees) is.</li>
+<li>Since there are a ton of zeroes (in the valid case, a regular employee's row only has one <code>1</code> and the CEO's row is only zeroes), it is very compressible. An easy way would be to use run-length encoding, meaning, instead of <code>0 0 0 0</code>, we just store the number of times the number occurs: <code>4 0</code>. Easy to implement, easy to understand. A row compresses to just a few bytes. And this size would be constant, whatever the size of the organization (i.e. number of employees) is.</li>
 </ul>
-<p>Wikipedia lists others if you are interested, it&#39;s a well-known problem.</p>
+<p>Wikipedia lists others if you are interested, it's a well-known problem.</p>
 <p>Alright, now that we know how our graph is represented, on to the algorithm.</p>
 <h2 id="kahn-s-algorithm">
-  <a class="title" href="#kahn-s-algorithm">Kahn&#39;s algorithm</a>
+  <a class="title" href="#kahn-s-algorithm">Kahn's algorithm</a>
   <a class="hash-anchor" href="#kahn-s-algorithm" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
-<p><a href="https://en.wikipedia.org/wiki/Topological_sorting#Kahn&#39;s_algorithm">Kahn&#39;s algorithm</a> keeps track of nodes with no incoming edge, and mutates the graph (in our case the adjacency matrix), by removing one edge at a time, until there are no more edges, and builds a list of nodes in the right order, which is the output.</p>
-<p>Here&#39;s the pseudo-code:</p>
+<p><a href="https://en.wikipedia.org/wiki/Topological_sorting#Kahn's_algorithm">Kahn's algorithm</a> keeps track of nodes with no incoming edge, and mutates the graph (in our case the adjacency matrix), by removing one edge at a time, until there are no more edges, and builds a list of nodes in the right order, which is the output.</p>
+<p>Here's the pseudo-code:</p>
 <pre><code class="language-text">L ← Empty list that will contain the sorted elements
 S ← Set of all nodes with no incoming edge
 
@@ -315,9 +316,9 @@ else
 <li>Line 4: Self-explanatory, we continue until the working set is empty and there is no more work to do.</li>
 <li>Line 5: We first pick a node with no incoming edge (it does not matter which one). For example, <code>Zoe</code>, and remove it from <code>S</code>. <code>S</code> is now: <code>[Bella, Miranda]</code>.</li>
 <li>Line 6: We add this node to the list of topologically sorted nodes, <code>L</code>. It now is: <code>[Zoe]</code>.</li>
-<li>Line 7: We then inspect each node that <code>Zoe</code> has an edge to. That means <code>Jane</code> and <code>Angela</code>. In terms of adjacency matrix, we simply read <code>Zoe&#39;s</code> row, and inspect cells with a <code>1</code> in it.</li>
+<li>Line 7: We then inspect each node that <code>Zoe</code> has an edge to. That means <code>Jane</code> and <code>Angela</code>. In terms of adjacency matrix, we simply read <code>Zoe's</code> row, and inspect cells with a <code>1</code> in it.</li>
 <li>Line 8: We remove such an edge, for example, <code>Zoe -&gt; Jane</code>. In terms of adjacency matrix, it means setting the cell on the row <code>Zoe</code> and column <code>Jane</code> to <code>0</code>. At this point, the graph looks like this: <img src="kahns_algorithm_2.svg" alt="Employee hierarchy, step 1" /></li>
-<li>Line 9: If <code>Jane</code> does not have another incoming edge, we add it to the set of all nodes with no incoming edge. That&#39;s the case here, so <code>S</code> now looks like: <code>[Bella, Miranda, Jane]</code>. We now loop to line 7 and handle the node <code>Angela</code> since <code>Jane</code> is taken care of.</li>
+<li>Line 9: If <code>Jane</code> does not have another incoming edge, we add it to the set of all nodes with no incoming edge. That's the case here, so <code>S</code> now looks like: <code>[Bella, Miranda, Jane]</code>. We now loop to line 7 and handle the node <code>Angela</code> since <code>Jane</code> is taken care of.</li>
 <li>Line 7-10: We are now handling the node <code>Angela</code>. We remove the edge <code>Zoe -&gt; Angela</code>. We check whether the node <code>Angela</code> has incoming edges. It does, so we do <strong>not</strong> add it to <code>S</code>. The graph is now: <img src="kahns_algorithm_2_1.svg" alt="Employee hierarchy, step 2" /></li>
 <li>We are now done with the line 7 for loop, so go back to line 5 and pick this time <code>Bella</code>. And so on. The graph would now, to the algorithm, look like: <img src="kahns_algorithm_2_2.svg" alt="Employee hierarchy, step 3" /></li>
 </ul>
@@ -335,7 +336,7 @@ else
 <hr />
 <ul>
 <li>Line 12-15: Once the loop at line 4 is finished, we inspect our graph. If there are no more edges, we are done. If there is still an edge, it means there was a cycle in the graph, and we return an error.
-Note that this algorithm is not capable by itself to point out which cycle there was exactly, only that there was one. That&#39;s because we mutated the graph by removing edges. If this information was important, we could keep track of which edges we removed in order, and re-add them back, or perhaps apply the algorithm to a copy of the graph (the adjacency matrix is trivial to clone).</li>
+Note that this algorithm is not capable by itself to point out which cycle there was exactly, only that there was one. That's because we mutated the graph by removing edges. If this information was important, we could keep track of which edges we removed in order, and re-add them back, or perhaps apply the algorithm to a copy of the graph (the adjacency matrix is trivial to clone).</li>
 </ul>
 <p>This algorithm is loose concerning the order of some operations, for example, picking a node with no incoming edge, or in which order the nodes in <code>S</code> are stored. That gives room for an implementation to use certain data structures or orders that are faster, but in some cases we want the order to be always the same to solve ties in the stable way and to be reproducible. In order to do that, we simply use the alphabetical order. So in our example above, at line 5, we picked <code>Zoe</code> out of <code>[Zoe, Bella, Miranda]</code>. Using this method, we would keep the working set <code>S</code> sorted alphabetically and pick <code>Bella</code> out of <code>[Bella, Miranda, Zoe]</code>.</p>
 <h2 id="implementation">
@@ -343,8 +344,8 @@ Note that this algorithm is not capable by itself to point out which cycle there
   <a class="hash-anchor" href="#implementation" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>I implemented this at the time in Go, but I will use for this article the lingua franca of the 2010s, JavaScript.</p>
-<p><em>I don&#39;t write JavaScript these days, I stopped many years ago, so apologies in advance if I am not using all the bells and whistles of &#39;Modern JavaScript&#39;, or if the code is not quite idiomatic.</em></p>
-<p>First, we define our adjacency matrix and the list of nodes. This is the naive format. We would get the nodes and edges in some format, for example JSON, in the API, and build the adjacency matrix, which is trivial. Let&#39;s take the very first example, the (valid) tree  of employees:</p>
+<p><em>I don't write JavaScript these days, I stopped many years ago, so apologies in advance if I am not using all the bells and whistles of 'Modern JavaScript', or if the code is not quite idiomatic.</em></p>
+<p>First, we define our adjacency matrix and the list of nodes. This is the naive format. We would get the nodes and edges in some format, for example JSON, in the API, and build the adjacency matrix, which is trivial. Let's take the very first example, the (valid) tree  of employees:</p>
 <pre><code class="language-js">const adjacencyMatrix = [
   [0, 0, 1, 0, 0, 0],
   [1, 0, 0, 0, 0, 0],
@@ -383,7 +384,7 @@ const nodes = [&quot;Angela&quot;, &quot;Bella&quot;, &quot;Ellen&quot;, &quot;J
 <pre><code class="language-js">console.log(getNodesWithNoIncomingEdge(adjacencyMatrix, nodes));
 </code></pre>
 <p>And it outputs:</p>
-<pre><code class="language-js">[ &#39;Bella&#39;, &#39;Miranda&#39;, &#39;Zoe&#39; ]
+<pre><code class="language-js">[ 'Bella', 'Miranda', 'Zoe' ]
 </code></pre>
 <p>We need one final helper, to determine if the graph has edges (line 12), which is straightforward:</p>
 <pre><code class="language-js">function graphHasEdges(adjacencyMatrix) {
@@ -400,7 +401,7 @@ const nodes = [&quot;Angela&quot;, &quot;Bella&quot;, &quot;Ellen&quot;, &quot;J
   <a class="title" href="#the-algorithm">The algorithm</a>
   <a class="hash-anchor" href="#the-algorithm" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h3>
-<p>We are finally ready to implement the algorithm. It&#39;s a straightforward, line by line, translation of the pseudo-code:</p>
+<p>We are finally ready to implement the algorithm. It's a straightforward, line by line, translation of the pseudo-code:</p>
 <pre><code class="language-js">function topologicalSort(adjacencyMatrix) {
   const L = [];
   const S = getNodesWithNoIncomingEdge(adjacencyMatrix, nodes);
@@ -430,13 +431,13 @@ const nodes = [&quot;Angela&quot;, &quot;Bella&quot;, &quot;Ellen&quot;, &quot;J
   return L;
 }
 </code></pre>
-<p>Let&#39;s try it:</p>
+<p>Let's try it:</p>
 <pre><code class="language-js">console.log(topologicalSort(adjacencyMatrix, nodes));
 </code></pre>
 <p>We get:</p>
-<pre><code class="language-js">[ &#39;Zoe&#39;, &#39;Jane&#39;, &#39;Miranda&#39;, &#39;Bella&#39;, &#39;Angela&#39;, &#39;Ellen&#39; ]
+<pre><code class="language-js">[ 'Zoe', 'Jane', 'Miranda', 'Bella', 'Angela', 'Ellen' ]
 </code></pre>
-<p>Interestingly, it is not the same order as <code>tsort</code>, but it is indeed a valid topological ordering. That&#39;s because there are ties between some nodes and we do not resolve those ties the exact same way <code>tsort</code> does.</p>
+<p>Interestingly, it is not the same order as <code>tsort</code>, but it is indeed a valid topological ordering. That's because there are ties between some nodes and we do not resolve those ties the exact same way <code>tsort</code> does.</p>
 <p>But in our specific case, we just want a valid insertion order in the database, and so this is enough.</p>
 <h3 id="inserting-entries-in-the-database">
   <a class="title" href="#inserting-entries-in-the-database">Inserting entries in the database</a>
@@ -472,13 +473,13 @@ INSERT INTO people SELECT &quot;Zoe&quot;, rowid FROM people WHERE name = &quot;
   <a class="title" href="#detecting-cycles">Detecting cycles</a>
   <a class="hash-anchor" href="#detecting-cycles" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h3>
-<p>As we said earlier, we get that for free, so let&#39;s check our implementation against this invalid example:</p>
+<p>As we said earlier, we get that for free, so let's check our implementation against this invalid example:</p>
 <p><img src="kahns_algorithm_4.svg" alt="Employee hierarchy with cycle" /></p>
 <p>We add the edge <code>Ellen -&gt; Zoe</code> to create a cycle:</p>
 <pre><code class="language-js">const adjacencyMatrix = [
   [0, 0, 1, 0, 0, 0],
   [1, 0, 0, 0, 0, 0],
-  [0, 0, 0, 0, 0, 1], // =&gt; We change the last element of this row (Ellen&#39;s row, Zoe&#39;s column) from 0 to 1.
+  [0, 0, 0, 0, 0, 1], // =&gt; We change the last element of this row (Ellen's row, Zoe's column) from 0 to 1.
   [0, 0, 1, 0, 0, 0],
   [1, 0, 0, 0, 0, 0],
   [0, 0, 0, 1, 0, 0],
@@ -519,7 +520,7 @@ Error: Graph has at least one cycle
   return countOfRowsWithOnlyZeroes &gt; 1;
 }
 </code></pre>
-<p>Let&#39;s try it with our invalid example from above:</p>
+<p>Let's try it with our invalid example from above:</p>
 <pre><code class="language-js">const adjacencyMatrix = [
   [0, 0, 1, 0, 0, 0, 0],
   [1, 0, 0, 0, 0, 0, 0],
@@ -541,21 +542,21 @@ console.log(hasMultipleRoots(adjacencyMatrix));
   <a class="hash-anchor" href="#playing-with-the-database" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>We can query each employee along with their manager name so:</p>
-<pre><code class="language-sql">SELECT a.name as employee_name, COALESCE(b.name, &#39;&#39;) as manager_name FROM people a LEFT JOIN people b ON a.manager = b.rowid;
+<pre><code class="language-sql">SELECT a.name as employee_name, COALESCE(b.name, '') as manager_name FROM people a LEFT JOIN people b ON a.manager = b.rowid;
 </code></pre>
-<p>To query the manager (N+1) and the manager&#39;s manager (N+2) of an employee:</p>
-<pre><code class="language-sql">SELECT COALESCE(n_plus_1.name, &#39;&#39;), COALESCE(n_plus_2.name, &#39;&#39;)
+<p>To query the manager (N+1) and the manager's manager (N+2) of an employee:</p>
+<pre><code class="language-sql">SELECT COALESCE(n_plus_1.name, ''), COALESCE(n_plus_2.name, '')
 FROM people employee
 LEFT JOIN people n_plus_1 ON employee.manager = n_plus_1.rowid
 LEFT JOIN people n_plus_2 ON n_plus_1.manager = n_plus_2.rowid
 WHERE employee.name = ?
 </code></pre>
-<p>We can also do this with hairy recursive Common Table Expression (CTE) but I&#39;ll leave that to the reader.</p>
+<p>We can also do this with hairy recursive Common Table Expression (CTE) but I'll leave that to the reader.</p>
 <h2 id="closing-thoughts">
   <a class="title" href="#closing-thoughts">Closing thoughts</a>
   <a class="hash-anchor" href="#closing-thoughts" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
-<p>Graphs and algorithms operating on them do not have to be complicated. Using an adjacency matrix and Kahn&#39;s algorithm, we can achieve a lot with little and it remains simple.</p>
+<p>Graphs and algorithms operating on them do not have to be complicated. Using an adjacency matrix and Kahn's algorithm, we can achieve a lot with little and it remains simple.</p>
 <p>There are many ways to optimize the code in this article; the point was not to write the most efficient code, but to showcase in the clearest, simplest way possible to detect cycles and store a graph/tree in memory and in a database.</p>
 <p>If you want to play with the code here and try to make it faster, go at it!</p>
 <h2 id="addendum-the-full-code">

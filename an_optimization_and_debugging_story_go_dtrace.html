@@ -74,6 +74,7 @@ Do not edit it by hand.
 
 <div class="article-prelude">
 <p><a href="/blog"> ⏴ Back to all articles</a></p>
+
   <p class="publication-date">Published on 2025-07-01.</p>
 </div>
 <div class="article-title">
@@ -132,17 +133,17 @@ Do not edit it by hand.
 </details>
 
 <p>Today at work, I was hacking on <a href="https://github.com/ory/kratos">Kratos</a> (a Go application), and I noticed running the tests took a bit too long to my liking. So I profiled the tests, and unknowingly embarked on a fun optimization and debugging adventure. I thought it could be interesting and perhaps educational.</p>
-<p>I just started this job, not two months ago. I want to show methods that make it feasible to understand and diagnose a big body of software you don&#39;t know, where you did not write any of it, but you still have to fix it.</p>
+<p>I just started this job, not two months ago. I want to show methods that make it feasible to understand and diagnose a big body of software you don't know, where you did not write any of it, but you still have to fix it.</p>
 <p>If you want you can jump to the <a href="https://github.com/ory/x/pull/872">PR</a> directly.</p>
-<p>Oh, and if you always dreamt of playing the &#39;DTrace drinking game&#39; with your friends, where you have to drink each time &#39;DTrace&#39; gets mentioned, oh boy do I have something for you here.</p>
+<p>Oh, and if you always dreamt of playing the 'DTrace drinking game' with your friends, where you have to drink each time 'DTrace' gets mentioned, oh boy do I have something for you here.</p>
 <h2 id="setting-the-stage">
   <a class="title" href="#setting-the-stage">Setting the stage</a>
   <a class="hash-anchor" href="#setting-the-stage" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
-<p>The nice thing when you work on an open-source project for work is that it&#39;s easy to write blog posts about it, and it&#39;s easy for readers to reproduce it! And when I&#39;m done, it benefits the community. I like it.</p>
+<p>The nice thing when you work on an open-source project for work is that it's easy to write blog posts about it, and it's easy for readers to reproduce it! And when I'm done, it benefits the community. I like it.</p>
 <p>So, <a href="https://github.com/ory/kratos">Kratos</a> uses a database. Each schema change is done with a SQL migration file, like <code>add_some_column.up.sql</code> and its counterpart <code>add_some_column.down.sql</code>.</p>
 <p>Since each test is independent, each test creates a new database, collects all migrations, and applies them, before doing its thing.</p>
-<p>Now, there are a number of things we could do to speed things up, like only collect migrations once at startup, or merge them all in one (i.e. a snapshot). But that&#39;s how things are right now. And there are 10 years worth of SQL migrations piled up in the project.</p>
+<p>Now, there are a number of things we could do to speed things up, like only collect migrations once at startup, or merge them all in one (i.e. a snapshot). But that's how things are right now. And there are 10 years worth of SQL migrations piled up in the project.</p>
 <h2 id="profiling">
   <a class="title" href="#profiling">Profiling</a>
   <a class="hash-anchor" href="#profiling" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
@@ -159,21 +160,21 @@ Do not edit it by hand.
   <a class="title" href="#get-a-precise-timing">Get a precise timing</a>
   <a class="hash-anchor" href="#get-a-precise-timing" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
-<p>The CPU profile unfortunately does not show how much time is spent exactly in <code>NewMigrationBox</code>. At this point, I also do not know how many SQL files are present. If there are a bazillion SQL migrations, maybe it&#39;s expected that sorting them indeed takes the most time.</p>
-<p>Let&#39;s find out with <a href="https://illumos.org/books/dtrace/preface.html#preface">DTrace</a> how long the function really runs.</p>
+<p>The CPU profile unfortunately does not show how much time is spent exactly in <code>NewMigrationBox</code>. At this point, I also do not know how many SQL files are present. If there are a bazillion SQL migrations, maybe it's expected that sorting them indeed takes the most time.</p>
+<p>Let's find out with <a href="https://illumos.org/books/dtrace/preface.html#preface">DTrace</a> how long the function really runs.</p>
 <h3 id="dtrace-in-2-minutes">
   <a class="title" href="#dtrace-in-2-minutes">DTrace in 2 minutes</a>
   <a class="hash-anchor" href="#dtrace-in-2-minutes" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h3>
-<p>DTrace is a &#39;dynamic instrumentation tracing framework [...] to concisely answer arbitrary questions about the behavior of the operating system and user programs&#39;. Let&#39;s unpack:</p>
+<p>DTrace is a 'dynamic instrumentation tracing framework [...] to concisely answer arbitrary questions about the behavior of the operating system and user programs'. Let's unpack:</p>
 <ul>
-<li>&#39;Tracing&#39; means that it can show which functions run, what is the value of their arguments, etc, at runtime.</li>
-<li>&#39;Instrumentation&#39; means that it inserts code in programs of interest to see into what they are doing. When DTrace is not in use, there is no negative effect on performance. Thus, it can instrument programs that do not even know what DTrace is. Consequently, there is no need to recompile programs in a certain way, or even have debug information present, or even have the source code.</li>
-<li>&#39;Dynamic&#39; means that it can be turned on and off at will, or with conditionals based on whatever you want, like the time of day, after a specific file gets opened on the system, etc. That&#39;s done by writing a script in a custom language (D).
-That&#39;s the core idea behind DTrace: it exists to answer questions <em>we did not know we would need to answer</em>. Ahead of time tracing is great and all, but the reality is that there will be plenty of cases where this is not sufficient.</li>
-<li>&#39;Framework&#39; means that it is general purpose, with the D language, and also that it&#39;s more of a toolbox than a user-friendly product. You typically do not call a ready-made command to answer a question, you write a small custom script. Although, lots of reusable scripts are available on Github, and I suppose LLMs can help nowadays.</li>
-<li>&#39;Answer questions&#39;: DTrace is not something that is on all the time like logs or OpenTelemetry traces (all of these work well together and are not exclusive). It&#39;s more of a detective tool to investigate, akin to the forensic police on a crime scene.</li>
-<li>&#39;Operating system and user programs&#39;: That&#39;s the big advantage of DTrace, it can equally look into a user-space binary program, a program running in a virtual machine (like a Java or JavaScript program), the virtual machine itself (JVM, V8, etc), and the kernel, <em>all in one script</em>. That&#39;s really important when you are looking for a bug that could be at any level of the stack, in a complex program that perhaps does things in multiple programming languages: a web browser, an OS, a database, etc.</li>
+<li>'Tracing' means that it can show which functions run, what is the value of their arguments, etc, at runtime.</li>
+<li>'Instrumentation' means that it inserts code in programs of interest to see into what they are doing. When DTrace is not in use, there is no negative effect on performance. Thus, it can instrument programs that do not even know what DTrace is. Consequently, there is no need to recompile programs in a certain way, or even have debug information present, or even have the source code.</li>
+<li>'Dynamic' means that it can be turned on and off at will, or with conditionals based on whatever you want, like the time of day, after a specific file gets opened on the system, etc. That's done by writing a script in a custom language (D).
+That's the core idea behind DTrace: it exists to answer questions <em>we did not know we would need to answer</em>. Ahead of time tracing is great and all, but the reality is that there will be plenty of cases where this is not sufficient.</li>
+<li>'Framework' means that it is general purpose, with the D language, and also that it's more of a toolbox than a user-friendly product. You typically do not call a ready-made command to answer a question, you write a small custom script. Although, lots of reusable scripts are available on Github, and I suppose LLMs can help nowadays.</li>
+<li>'Answer questions': DTrace is not something that is on all the time like logs or OpenTelemetry traces (all of these work well together and are not exclusive). It's more of a detective tool to investigate, akin to the forensic police on a crime scene.</li>
+<li>'Operating system and user programs': That's the big advantage of DTrace, it can equally look into a user-space binary program, a program running in a virtual machine (like a Java or JavaScript program), the virtual machine itself (JVM, V8, etc), and the kernel, <em>all in one script</em>. That's really important when you are looking for a bug that could be at any level of the stack, in a complex program that perhaps does things in multiple programming languages: a web browser, an OS, a database, etc.</li>
 </ul>
 <p>What should also be added is that DTrace comes with the system on macOS (requires disabling System Integrity), which is where I did this whole investigation, FreeBSD, Illumos, Windows, etc.</p>
 <p>The advantage over a debugger is that DTrace does not stop the program. When inspecting a network heavy program, like a web server or a database, or a data race, or a scheduling bug, in production, this property is very important. Also, it can inspect the whole system, not just one single program: we can observe all writes happening on the system right now, or all files opened, etc. Sometimes this is a crucial property to have.</p>
@@ -184,14 +185,14 @@ That&#39;s the core idea behind DTrace: it exists to answer questions <em>we did
 </h3>
 <p>Back to the problem at hand.</p>
 <p>We check if the function <code>NewMigrationBox</code> is visible to DTrace by listing (<code>-l</code>) all probes matching the pattern <code>*ory*</code> in the executable <code>code.test.before</code> (i.e. before the fix):</p>
-<pre><code class="language-shell">$ sudo dtrace -n &#39;pid$target:code.test.before:*ory*: &#39; -c ./code.test.before -l | grep NewMigrationBox
+<pre><code class="language-shell">$ sudo dtrace -n 'pid$target:code.test.before:*ory*: ' -c ./code.test.before -l | grep NewMigrationBox
 209591   pid47446  code.test.before github.com/ory/x/popx.NewMigrationBox return
 209592   pid47446  code.test.before github.com/ory/x/popx.NewMigrationBox entry
 209593   pid47446  code.test.before github.com/ory/x/popx.NewMigrationBox.(*MigrationBox).findMigrations.func4 return
 209594   pid47446  code.test.before github.com/ory/x/popx.NewMigrationBox.(*MigrationBox).findMigrations.func4 entry
 [...]
 </code></pre>
-<p>Ok, the first two are the ones we need. Let&#39;s time the function duration then with a D script <code>time.d</code>:</p>
+<p>Ok, the first two are the ones we need. Let's time the function duration then with a D script <code>time.d</code>:</p>
 <pre><code class="language-dtrace">pid$target::*NewMigrationBox:entry { self-&gt;t=timestamp } 
 
 pid$target::*NewMigrationBox:return {
@@ -244,15 +245,15 @@ pid$target::*NewMigrationBox:return {
 <li>Are we doing any I/O at all or is the workload purely in-memory?</li>
 <li>How much work is there? How many items are we handling? Is it a handful, a few thousands, a few millions?</li>
 </ul>
-<p>So let&#39;s see what the baseline is when simply finding all the SQL files on disk:</p>
-<pre><code class="language-shell">hyperfine --shell=none --warmup=5 &quot;find ./persistence/sql/migrations -name &#39;*.sql&#39; -type f&quot;
-Benchmark 1: find ./persistence/sql/migrations -name &#39;*.sql&#39; -type f
+<p>So let's see what the baseline is when simply finding all the SQL files on disk:</p>
+<pre><code class="language-shell">hyperfine --shell=none --warmup=5 &quot;find ./persistence/sql/migrations -name '*.sql' -type f&quot;
+Benchmark 1: find ./persistence/sql/migrations -name '*.sql' -type f
   Time (mean ± σ):     206.6 ms ±   4.8 ms    [User: 2.4 ms, System: 5.0 ms]
   Range (min … max):   199.5 ms … 214.4 ms    14 runs
 </code></pre>
 <p>Ok, so 200ms, which is pretty close to our 180ms in Go...</p>
 <p>Wait a minute... Are we doing any I/O in Go at all? Could it be that we <em>embed</em> all the SQL files in our binary at build time ?!</p>
-<p>Let&#39;s print with DTrace the files that are being opened, whose extension is <code>.sql</code>:</p>
+<p>Let's print with DTrace the files that are being opened, whose extension is <code>.sql</code>:</p>
 <pre><code class="language-dtrace">syscall::open:entry { 
   self-&gt;filename = copyinstr(arg0);
 
@@ -263,7 +264,7 @@ Benchmark 1: find ./persistence/sql/migrations -name &#39;*.sql&#39; -type f
 </code></pre>
 <p><code>copyinstr</code> is <a href="https://illumos.org/books/dtrace/chp-user.html#chp-user">required</a> because our D script runs inside the kernel but we are trying to access user-space memory.</p>
 <p>When we run this script on <code>go test -c</code> which builds the test executable, we see that all the SQL files are being opened by the Go compiler and subsequently embedded in the test binary:</p>
-<pre><code class="language-shell">$ sudo dtrace -s ~/scratch/sql_files.d -c &#39;go test -tags=sqlite -c&#39;
+<pre><code class="language-shell">$ sudo dtrace -s ~/scratch/sql_files.d -c 'go test -tags=sqlite -c'
 
 CPU     ID                    FUNCTION:NAME
  10    178                       open:entry /Users/philippe.gaultier/company-code/x/networkx/migrations/sql/20150100000001000000_networks.cockroach.down.sql
@@ -273,17 +274,17 @@ CPU     ID                    FUNCTION:NAME
 [...]
 </code></pre>
 <p>And if we run the same script on the test binary, we see that no SQL files on disk are being opened.</p>
-<p>Damn, so we are doing purely in-memory work. Alright, so is 180 ms still good in that light? How many files are we dealing with? According to <code>find</code>, ~1.6k. So, you&#39;re saying we are spending 180 ms to sort a measly 1.6k items in a linear array? That&#39;s <em>nothing</em> for a modern computer! It should be a small number of milliseconds!</p>
+<p>Damn, so we are doing purely in-memory work. Alright, so is 180 ms still good in that light? How many files are we dealing with? According to <code>find</code>, ~1.6k. So, you're saying we are spending 180 ms to sort a measly 1.6k items in a linear array? That's <em>nothing</em> for a modern computer! It should be a small number of milliseconds!</p>
 <h2 id="what-the-hell-is-my-program-even-doing">
   <a class="title" href="#what-the-hell-is-my-program-even-doing">What the hell is my program even doing?</a>
   <a class="hash-anchor" href="#what-the-hell-is-my-program-even-doing" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
-<p>If you&#39;re like me, you&#39;re always asking yourself: what is taking my computer so damn long? Why is Microsoft Teams hanging again? (thankfully I do not have to use it anymore, thank God). Why is Slack taking 15s to simply start up?</p>
-<p>The problem with computer programs is that there are a black box. You normally have no idea what they are doing. If you&#39;re lucky they will print some stuff. If you&#39;re lucky.</p>
+<p>If you're like me, you're always asking yourself: what is taking my computer so damn long? Why is Microsoft Teams hanging again? (thankfully I do not have to use it anymore, thank God). Why is Slack taking 15s to simply start up?</p>
+<p>The problem with computer programs is that there are a black box. You normally have no idea what they are doing. If you're lucky they will print some stuff. If you're lucky.</p>
 <p>If only there was a tool that shows me precisely what the hell my program is doing... And I could dynamically choose what to show and what to hide to avoid noise... Oh wait this has been existing for 20 years. DTrace of course!</p>
 <p>A debugger would also work in that case (command line program running on a developer workstation), but it pretty much requires recompiling with different Go build options which kills iteration times.</p>
-<p>Contrary to popular belief, Go is not a crazy fast compiler. It&#39;s a smart compiler that avoids compiling stuff it already compiled in the past. But if a lot of code <em>does</em> need to be recompiled, it&#39;s not <em>that</em> fast.</p>
-<p>If you&#39;re still not convinced to use DTrace yet, let me show you its superpower. It can show you <em>every</em> function call your program does! That&#39;s sooo useful when you do not know the codebase. Let&#39;s try it, but we are only interested in calls from within <code>NewMigrationBox</code>, and when we exit <code>NewMigrationBox</code>, we should stop tracing, because each invocation will anyway be the same:</p>
+<p>Contrary to popular belief, Go is not a crazy fast compiler. It's a smart compiler that avoids compiling stuff it already compiled in the past. But if a lot of code <em>does</em> need to be recompiled, it's not <em>that</em> fast.</p>
+<p>If you're still not convinced to use DTrace yet, let me show you its superpower. It can show you <em>every</em> function call your program does! That's sooo useful when you do not know the codebase. Let's try it, but we are only interested in calls from within <code>NewMigrationBox</code>, and when we exit <code>NewMigrationBox</code>, we should stop tracing, because each invocation will anyway be the same:</p>
 <pre><code class="language-dtrace">pid$target:code.test.before:*NewMigrationBox:entry { self-&gt;t = 1}
 
 pid$target:code.test.before:*NewMigrationBox:return { exit(0) }
@@ -293,8 +294,8 @@ pid$target:code.test.before:sort*: /self-&gt;t != 0/ {}
 <p>I have written more specific probes in this script by specifying more parts of the probe (the second part of the probe is the module name, here it is the executable name), to try to reduce noise (by accidentally matching probes we do not care about) and also to help with performance (the more probes are being matched, the more the performance tanks). Since we know that the performance issue is located in the sorting part, we only need to trace that.</p>
 <p>For example if all your company code is under some prefix, like for me, <code>github.com/ory</code>, and you want to see all calls to company code, the probe can be <code>pid$target::github.com?ory*:</code>. The only issue is that the Go stdlib code has no prefix and we want to see it as well...</p>
 <p>The <code>self-&gt;t</code> variable is used to toggle tracing on when we enter a specific function of interest, and to toggle it off when we leave the function. Very useful to reduce noise and avoid a post-processing filtering step.</p>
-<p>So, let&#39;s run our script with the <code>-F</code> option to get a nicely formatted output:</p>
-<pre><code class="language-shell">$ sudo dtrace -s ~/scratch/trace_calls.d -c &#39;./code.test.before&#39; -F
+<p>So, let's run our script with the <code>-F</code> option to get a nicely formatted output:</p>
+<pre><code class="language-shell">$ sudo dtrace -s ~/scratch/trace_calls.d -c './code.test.before' -F
 
 CPU FUNCTION                                 
   7  -&gt; sort.Sort                             
@@ -324,9 +325,9 @@ CPU FUNCTION
 [...]
 </code></pre>
 <p>The <code>-&gt;</code> arrow means we enter the function, and <code>&lt;-</code> means we exit it. We see a nice call tree. Also I notice something weird (looking at the full output which is huge): we are calling <code>sort.Sort</code> way too much. It should be once, but we call it much more than that.</p>
-<p>That&#39;s the canary in the coal mine and it matches what we see on the CPU profile from the beginning.</p>
+<p>That's the canary in the coal mine and it matches what we see on the CPU profile from the beginning.</p>
 <h2 id="it-s-always-dns-wait-no-it-s-always-superlinear-algorithmic-complexity">
-  <a class="title" href="#it-s-always-dns-wait-no-it-s-always-superlinear-algorithmic-complexity">It&#39;s always DNS - wait no, it&#39;s always: superlinear algorithmic complexity</a>
+  <a class="title" href="#it-s-always-dns-wait-no-it-s-always-superlinear-algorithmic-complexity">It's always DNS - wait no, it's always: superlinear algorithmic complexity</a>
   <a class="hash-anchor" href="#it-s-always-dns-wait-no-it-s-always-superlinear-algorithmic-complexity" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>Time to inspect the code in <code>NewMigrationBox</code>, finally. Pretty quickly I stumble upon code like this (I simplified a bit - you can find the original code in the PR):</p>
@@ -339,9 +340,9 @@ CPU FUNCTION
 }
 </code></pre>
 <p>For the uninitiated: <code>fs.Walkdir</code> recursively traverses a directory and calls the passed function on each entry.</p>
-<p>Aaah... We are sorting the slice of files <em>every time we find a new file</em>. That explains it. The sort has <code>O(n * log(n))</code> complexity and we turned that into <code>O(n² * log(n))</code>. That&#39;s &#39;very very super-linear&#39;, as the scientists call it.</p>
+<p>Aaah... We are sorting the slice of files <em>every time we find a new file</em>. That explains it. The sort has <code>O(n * log(n))</code> complexity and we turned that into <code>O(n² * log(n))</code>. That's 'very very super-linear', as the scientists call it.</p>
 <p>Furthermore, most sort algorithms have worst-case performance when the input is already sorted, so we are paying full price each time, essentially doing <code>sort(sort(sort(...)))</code>.</p>
-<p>Let&#39;s confirm this finding with DTrace by printing how many elements are being sorted in <code>sort.Sort</code>. We rely on the fact that the first thing <code>sort.Sort</code> does, is to call <code>.Len()</code> on its argument:</p>
+<p>Let's confirm this finding with DTrace by printing how many elements are being sorted in <code>sort.Sort</code>. We rely on the fact that the first thing <code>sort.Sort</code> does, is to call <code>.Len()</code> on its argument:</p>
 <pre><code class="language-dtrace">pid$target::*NewMigrationBox:entry { self-&gt;t = 1}
 
 pid$target::*NewMigrationBox:return { self-&gt;t = 0}
@@ -371,10 +372,10 @@ pid$target::sort*Len:return /self-&gt;t != 0/ {printf(&quot;%d\n&quot;, uregs[0]
 
  11  52085       sort.(*reverse).Len:return 1693
 </code></pre>
-<p>So it&#39;s confirmed.</p>
+<p>So it's confirmed.</p>
 <p>Remember when I said at the beginning:</p>
 <blockquote>
-<p>That&#39;s the core idea behind DTrace: it exists to answer questions <em>we did not know we would need to answer</em>.</p>
+<p>That's the core idea behind DTrace: it exists to answer questions <em>we did not know we would need to answer</em>.</p>
 </blockquote>
 <p>This is a perfect example: we would never add an OpenTelemetry trace or a log to the <code>.Len()</code> function ahead of time - that would be too costly and almost never useful. But DTrace can dynamically instrument this function when we need it.</p>
 <p>The fix is easy: collect all files into the slice and then sort them once at the end:</p>
@@ -388,7 +389,7 @@ sort.Sort(mod)
 </code></pre>
 <p>The real fix uses <code>slices.SortFunc</code> instead of <code>sort.Sort</code> because the official docs mention the performance of the former is better than the latter. Likely because <code>slices.SortFunc</code> uses compile-time generics whereas <code>sort.Sort</code> uses runtime interfaces. And also we see that the Go compiler inlines the call to <code>slices.SortFunc</code>, which probably helps further.</p>
 <p>With this done, we can measure again the duration of <code>NewMigrationBox</code> (with a lower maximum value for the histogram since we know it got faster):</p>
-<pre><code class="language-shell">$ sudo dtrace -s ~/scratch/time.d -c &#39;./code.test.after&#39; 
+<pre><code class="language-shell">$ sudo dtrace -s ~/scratch/time.d -c './code.test.after' 
 
   NewMigrationBox                                   
            value  ------------- Distribution ------------- count    
@@ -420,16 +421,16 @@ sort.Sort(mod)
   <a class="hash-anchor" href="#conclusion" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>So we went from ~180 ms to ~11ms for the problematic function, a <em>16x</em> improvement that applies to every single test in the test suite. Not too bad. And we used DTrace at every turn along the way.</p>
-<p>What I find fascinating is that DTrace is a <em>general purpose</em> tool. Go was never designed with DTrace in mind, and vice-versa. Our code: same thing. And still, it works, no recompilation needed. I can instrument the highest levels of the stack to the kernel with one tool. That&#39;s pretty cool!</p>
-<p>Of course DTrace is not perfect. User friendliness is, I think, pretty <del>rough</del> quirky. It&#39;s an arcane power tool for people who took the time to decipher incomplete manuals. For example registers on <code>aarch64</code> are not documented, but the ones on <code>SPARC</code> are (because that&#39;s were DTrace originated from...). Fortunately I found that piece of information after some digging: the file <code>/usr/lib/dtrace/arm64/regs_arm64.d</code> on macOS.</p>
+<p>What I find fascinating is that DTrace is a <em>general purpose</em> tool. Go was never designed with DTrace in mind, and vice-versa. Our code: same thing. And still, it works, no recompilation needed. I can instrument the highest levels of the stack to the kernel with one tool. That's pretty cool!</p>
+<p>Of course DTrace is not perfect. User friendliness is, I think, pretty <del>rough</del> quirky. It's an arcane power tool for people who took the time to decipher incomplete manuals. For example registers on <code>aarch64</code> are not documented, but the ones on <code>SPARC</code> are (because that's were DTrace originated from...). Fortunately I found that piece of information after some digging: the file <code>/usr/lib/dtrace/arm64/regs_arm64.d</code> on macOS.</p>
 <p>My favorite quirk is when an error in the script leads to an error message pointing at the bytecode (like Java and others, the D script gets compiled to bytecode before being sent to the kernel). What am I supposed to do with this :) ? It took me a while as a user to even understand that bytecode was involved at all.</p>
-<p>But it&#39;s very often a life-saver. So thank you to their creators.</p>
+<p>But it's very often a life-saver. So thank you to their creators.</p>
 <p>Another learning for me is that super-linear algorithms will go unnoticed and seem fine for the longest time and then bite you hard years later. If the issue is not addressed, each time a new item (here, a new SQL migration) is added, things will slow down until they halt to a crawl. So if you see something, say something. Or better yet, use DTrace to diagnose the problem!</p>
 <h2 id="addendum-the-sorting-function-was-wrong">
   <a class="title" href="#addendum-the-sorting-function-was-wrong">Addendum: The sorting function was wrong</a>
   <a class="hash-anchor" href="#addendum-the-sorting-function-was-wrong" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
-<p>If you look at the PR you&#39;ll see that the diff is bigger than what I described.</p>
+<p>If you look at the PR you'll see that the diff is bigger than what I described.</p>
 <p>Initially I wanted to simply remove the sorting altogether, because <code>fs.WalkDir</code> already sorts lexically all the files, in order to always process the files in the same order. However this code uses a custom sorting logic so we need to still sort at the end, after walking the directory.</p>
 <p>So, the diff is bigger because I noticed that the sorting function had a flaw and did not abide by the requirements of the Go standard library. Have a look, I think it is pretty clear.</p>
 <p>Interestingly, <code>sort.Sort</code> and <code>slices.SortFunc</code> have different requirements! The first one requires the sorting function to be a <code>transitive ordering</code> whereas the second one requires it to be a <code>strict weak ordering</code>. The more you know!</p>
@@ -440,10 +441,10 @@ sort.Sort(mod)
 </h2>
 <p>At the beginning I mentioned that <code>self-&gt;t = timestamp</code> means we are storing the current timestamp in a thread-local variable. However, since in the general case, multiple goroutines run on the same thread concurrently, this variable gets overriden by multiple goroutines all the time, and we observe as a result some non-sensical durations (negative or very high). I also mentioned that the fix would be to store this variable in a <em>goroutine-aware</em> way instead.</p>
 <p>Well, the good news is, there is a way!</p>
-<p>Reading carefully the <a href="https://github.com/golang/go/blob/master/src/cmd/compile/abi-internal.md">Go ABI</a> document again, we see that on ARM64 (a.k.a. AARCH64), the register <code>R28</code> stores the current goroutine. Great! That means that we can treat the value in this register as the &#39;goroutine id&#39; and we can store all timestamps per goroutine.</p>
-<p>My approach is to store all timestamps in a global map where the key is the goroutine id and the value is the timestamp. It&#39;s conceptually the same as thread-local DTrace variables, from the docs:</p>
+<p>Reading carefully the <a href="https://github.com/golang/go/blob/master/src/cmd/compile/abi-internal.md">Go ABI</a> document again, we see that on ARM64 (a.k.a. AARCH64), the register <code>R28</code> stores the current goroutine. Great! That means that we can treat the value in this register as the 'goroutine id' and we can store all timestamps per goroutine.</p>
+<p>My approach is to store all timestamps in a global map where the key is the goroutine id and the value is the timestamp. It's conceptually the same as thread-local DTrace variables, from the docs:</p>
 <blockquote>
-<p>You can think of a thread-local variable as an associative array that is implicitly indexed by a tuple that describes the thread&#39;s identity in the system.</p>
+<p>You can think of a thread-local variable as an associative array that is implicitly indexed by a tuple that describes the thread's identity in the system.</p>
 </blockquote>
 <p>So here goes:</p>
 <pre><code class="language-dtrace">pid$target::*NewMigrationBox:entry { 
@@ -480,7 +481,7 @@ pid$target::*NewMigrationBox:return {
 <li>Safe: reading and writing to global variables, including global maps, is thread-safe by design in DTrace.</li>
 <li><p>Correct: because the (current) Go garbage collector is <strong>non-moving</strong>, and because goroutine pointers are handled specially by the Go runtime, it means in practice that between our two probes (the entry and the exit of the function being traced):</p>
 <ul>
-<li>The &#39;goroutine id&#39;, which is a pointer to the current goroutine, cannot change.</li>
+<li>The 'goroutine id', which is a pointer to the current goroutine, cannot change.</li>
 <li>Another goroutine cannot take the place of the current goroutine pointed to by the goroutine pointer we read.</li>
 </ul>
 </li>

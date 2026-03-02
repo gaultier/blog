@@ -74,6 +74,7 @@ Do not edit it by hand.
 
 <div class="article-prelude">
 <p><a href="/blog"> ⏴ Back to all articles</a></p>
+
   <p class="publication-date">Published on 2024-10-31.</p>
 </div>
 <div class="article-title">
@@ -81,9 +82,9 @@ Do not edit it by hand.
 <div class="tags"> <a href="/blog/articles-by-tag.html#markdown" class="tag">Markdown</a> <a href="/blog/articles-by-tag.html#csv" class="tag">Csv</a> <a href="/blog/articles-by-tag.html#awk" class="tag">Awk</a> <a href="/blog/articles-by-tag.html#tip-of-the-day" class="tag">Tip of the day</a> </div>
 </div>
 <p>The other day at work, I found myself having to produce a human-readable table of all the direct dependencies in the project, for auditing purposes.</p>
-<p>There is a <a href="https://github.com/onur/cargo-license">tool</a> for Rust projects that outputs a TSV (meaning: a CSV where the separator is the tab character) of this data. That&#39;s great, but not really fit for consumption by a non-technical person.</p>
+<p>There is a <a href="https://github.com/onur/cargo-license">tool</a> for Rust projects that outputs a TSV (meaning: a CSV where the separator is the tab character) of this data. That's great, but not really fit for consumption by a non-technical person.</p>
 <p>I just need to convert that to a human readable table in markdown or HTML, and voila!</p>
-<p>Here&#39;s the output of this tool in my open-source Rust <a href="https://github.com/gaultier/kotlin-rs">project</a>:</p>
+<p>Here's the output of this tool in my open-source Rust <a href="https://github.com/gaultier/kotlin-rs">project</a>:</p>
 <pre><code class="language-shell">$ cargo license --all-features --avoid-build-deps --avoid-dev-deps --direct-deps-only --tsv
 name	version	authors	repository	license	license_file	description
 clap	2.33.0	Kevin K. &lt;kbknapp@gmail.com&gt;	https://github.com/clap-rs/clap	MIT		A simple to use, efficient, and full-featured Command Line Argument Parser
@@ -100,15 +101,15 @@ termcolor	1.1.0	Andrew Gallant &lt;jamslam@gmail.com&gt;	https://github.com/Burn
 | Content Cell  | Content Cell  |
 </code></pre>
 <p>Technically, markdown tables are an extension to standard markdown (if there is such a thing), but they are very common and supported by all the major platforms e.g. Github, Azure, etc. So how do we do that?</p>
-<p>Once again, I turn to the trusty AWK. It&#39;s always been there for me. And it&#39;s present on every UNIX system out of the box.</p>
-<p>AWK neatly handles all the &#39;decoding&#39; of the CSV format for us, we just need to output the right thing:</p>
+<p>Once again, I turn to the trusty AWK. It's always been there for me. And it's present on every UNIX system out of the box.</p>
+<p>AWK neatly handles all the 'decoding' of the CSV format for us, we just need to output the right thing:</p>
 <ul>
-<li>Given a line (which AWK calls &#39;record&#39;): output each field interleaved with the <code>|</code> character</li>
+<li>Given a line (which AWK calls 'record'): output each field interleaved with the <code>|</code> character</li>
 <li>Output a delimiting line between the table headers and rows. The markdown table spec states that this delimiter should be at least 3 <code>-</code> characters in each cell.</li>
-<li>Alignment is not a goal, it does not matter for a markdown parser. If you want to produce a pretty markdown table, it&#39;s easy to achieve, it simply makes the implementation a bit bigger</li>
+<li>Alignment is not a goal, it does not matter for a markdown parser. If you want to produce a pretty markdown table, it's easy to achieve, it simply makes the implementation a bit bigger</li>
 </ul>
-<p>Here&#39;s the full implementation (don&#39;t forget to mark the file executable). The shebang line instructs AWK to use the tab character <code>\t</code> as the delimiter between fields:</p>
-<pre><code class="language-awk">#!/usr/bin/env -S awk -F &#39;\t&#39; -f
+<p>Here's the full implementation (don't forget to mark the file executable). The shebang line instructs AWK to use the tab character <code>\t</code> as the delimiter between fields:</p>
+<pre><code class="language-awk">#!/usr/bin/env -S awk -F '\t' -f
 
 {
     printf(&quot;|&quot;);
@@ -135,7 +136,7 @@ NR==1 { # Output the delimiting line
 The for loop then iterates over each field and outputs the right thing.</p>
 <p>The second clause will execute only for the first line (<code>NR</code> is the line number).</p>
 <p>The same line can trigger multiple clauses, here, the first line of the input will trigger both clauses, whilst the remaining lines will only trigger the first clause.</p>
-<p>So let&#39;s run it!</p>
+<p>So let's run it!</p>
 <pre><code class="language-shell">$ cargo license --all-features --avoid-build-deps --avoid-dev-deps --direct-deps-only --tsv | ./md-table.awk 
 | name | version | authors | repository | license | license_file | description |
 | --- |  --- |  --- |  --- |  --- |  --- |  --- | 
@@ -146,7 +147,7 @@ The for loop then iterates over each field and outputs the right thing.</p>
 | pretty_env_logger | 0.3.1 | Sean McArthur &lt;sean@seanmonstar&gt; | https://github.com/seanmonstar/pretty-env-logger | Apache-2.0 OR MIT |  | a visually pretty env_logger |
 | termcolor | 1.1.0 | Andrew Gallant &lt;jamslam@gmail.com&gt; | https://github.com/BurntSushi/termcolor | MIT OR Unlicense |  | A simple cross platform library for writing colored text to a terminal. |
 </code></pre>
-<p>Ok, it&#39;s hard to really know if that&#39;s correct or not. Let&#39;s pipe it into <a href="https://github.com/github/cmark-gfm">cmark-gfm</a> to render this markdown table as HTML:</p>
+<p>Ok, it's hard to really know if that's correct or not. Let's pipe it into <a href="https://github.com/github/cmark-gfm">cmark-gfm</a> to render this markdown table as HTML:</p>
 <pre><code class="language-shell">$ cargo license --all-features --avoid-build-deps --avoid-dev-deps --direct-deps-only --tsv | ./md-table.awk | cmark-gfm -e table
 </code></pre>
 <p>And voila:</p>

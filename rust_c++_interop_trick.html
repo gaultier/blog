@@ -74,6 +74,7 @@ Do not edit it by hand.
 
 <div class="article-prelude">
 <p><a href="/blog"> ⏴ Back to all articles</a></p>
+
   <p class="publication-date">Published on 2024-09-19.</p>
 </div>
 <div class="article-title">
@@ -118,13 +119,13 @@ Do not edit it by hand.
   <a class="hash-anchor" href="#the-trick" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <ol>
-<li>Make the C++ class a <a href="https://en.cppreference.com/w/cpp/language/classes#Standard-layout_class">standard layout class</a>. This is defined by the C++ standard. In layman terms, this makes the C++ class be similar to a plain C struct. With a few allowances, for example the C++ class can still use inheritance and a few other things. Most notably, virtual methods are forbidden. I don&#39;t care about this limitation because I never use virtual methods myself and this is my least favorite feature in any programming language.</li>
+<li>Make the C++ class a <a href="https://en.cppreference.com/w/cpp/language/classes#Standard-layout_class">standard layout class</a>. This is defined by the C++ standard. In layman terms, this makes the C++ class be similar to a plain C struct. With a few allowances, for example the C++ class can still use inheritance and a few other things. Most notably, virtual methods are forbidden. I don't care about this limitation because I never use virtual methods myself and this is my least favorite feature in any programming language.</li>
 <li>Create a Rust struct with the <em>exact</em> same layout as the C++ class.</li>
 <li>Create a Rust function with a C calling convention, whose first argument is this Rust class. You can now access every C++ member of the class!</li>
 </ol>
 <p>Note: Depending on the C++ codebase you find yourself in, the first point could be either trivial or not feasible at all. It depends on the amount of virtual methods used, etc.</p>
 <p>In my case, there were a handful of virtual methods, which could all be advantageously made non virtual, so I first did this.</p>
-<p>This is all very abstract? Let&#39;s proceed with an example!</p>
+<p>This is all very abstract? Let's proceed with an example!</p>
 <h2 id="example">
   <a class="title" href="#example">Example</a>
   <a class="hash-anchor" href="#example" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
@@ -171,13 +172,13 @@ int main() {
   // Comment count: 1
 }
 </code></pre>
-<p>So let&#39;s first ensure it is a standard layout class. We add this compile-time assertion in the constructor (could be placed anywhere, but the constructor is as good a place as any):</p>
+<p>So let's first ensure it is a standard layout class. We add this compile-time assertion in the constructor (could be placed anywhere, but the constructor is as good a place as any):</p>
 <pre><code class="language-c++">// Path: user.cpp
 
     static_assert(std::is_standard_layout_v&lt;User&gt;);
 </code></pre>
 <p>And... it builds!</p>
-<p>Now onto the second step: let&#39;s define the equivalent class on the Rust side.</p>
+<p>Now onto the second step: let's define the equivalent class on the Rust side.</p>
 <p>We create a new Rust library project:</p>
 <pre><code class="language-shell">$ cargo new --lib user-rs-lib
 </code></pre>
@@ -193,8 +194,8 @@ pub struct UserC {
 }
 </code></pre>
 <p>Note that the fields can be named differently from the C++ fields if you so choose.</p>
-<p>Also note that <code>std::string</code> is represented here by an opaque array of 32 bytes. That&#39;s because on my machine, with the standard library I have, <code>sizeof(std::string)</code> is 32. That is <em>not</em> guaranteed by the standard, so this makes it very much not portable. We&#39;ll go over some options to work-around this at the end. I wanted to include a standard library type to show that it does not prevent the class from being a &#39;standard layout class&#39;, but that is also creates challenges.</p>
-<p>For now, let&#39;s forget about this hurdle.</p>
+<p>Also note that <code>std::string</code> is represented here by an opaque array of 32 bytes. That's because on my machine, with the standard library I have, <code>sizeof(std::string)</code> is 32. That is <em>not</em> guaranteed by the standard, so this makes it very much not portable. We'll go over some options to work-around this at the end. I wanted to include a standard library type to show that it does not prevent the class from being a 'standard layout class', but that is also creates challenges.</p>
+<p>For now, let's forget about this hurdle.</p>
 <p>We can also write a stub for the Rust function equivalent to the C++ method:</p>
 <pre><code class="language-rust">// Path: ./user-rs-lib/src/lib.rs
 
@@ -203,7 +204,7 @@ pub extern &quot;C&quot; fn RUST_write_comment(user: &amp;mut UserC, comment: *c
     todo!()
 }
 </code></pre>
-<p>Now, let&#39;s use the tool <a href="https://github.com/mozilla/cbindgen">cbindgen</a> to generate the C header corresponding to this Rust code:</p>
+<p>Now, let's use the tool <a href="https://github.com/mozilla/cbindgen">cbindgen</a> to generate the C header corresponding to this Rust code:</p>
 <pre><code class="language-shell">$ cargo install cbindgen
 $ cbindgen -v src/lib.rs --lang=c++ -o ../user-rs-lib.h
 </code></pre>
@@ -228,7 +229,7 @@ void RUST_write_comment(UserC *user, const uint8_t *comment, uintptr_t comment_l
 
 } // extern &quot;C&quot;
 </code></pre>
-<p>Now, let&#39;s go back to C++, include this C header, and add lots of compile-time assertions to ensure that the layouts are indeed the same. Again, I place these asserts in the constructor:</p>
+<p>Now, let's go back to C++, include this C header, and add lots of compile-time assertions to ensure that the layouts are indeed the same. Again, I place these asserts in the constructor:</p>
 <pre><code class="language-c++">#include &quot;user-rs-lib.h&quot;
 
 class User {
@@ -249,8 +250,8 @@ class User {
   // [..]
 }
 </code></pre>
-<p>With that, we are certain that the layout in memory of the C++ class and the Rust struct are the same. We could probably generate all of these asserts, with a macro or with a code generator, but for this article, it&#39;s fine to do manually.</p>
-<p>So let&#39;s rewrite the C++ method in Rust. We will for now leave out the <code>name</code> field since it is a bit problematic. Later we will see how we can still use it from Rust:</p>
+<p>With that, we are certain that the layout in memory of the C++ class and the Rust struct are the same. We could probably generate all of these asserts, with a macro or with a code generator, but for this article, it's fine to do manually.</p>
+<p>So let's rewrite the C++ method in Rust. We will for now leave out the <code>name</code> field since it is a bit problematic. Later we will see how we can still use it from Rust:</p>
 <pre><code class="language-rust">// Path: ./user-rs-lib/src/lib.rs
 
 #[no_mangle]
@@ -298,8 +299,8 @@ Comment count: 2
 <p>A couple of thoughts:</p>
 <ul>
 <li>The calls <code>alice.write_comment(..)</code> and <code>RUST_write_comment(alice, ..)</code> are strictly equivalent and in fact, a C++ compiler will transform the former into the latter in a pure C++ codebase, if you look at the assembly generated. So our Rust function is just mimicking what the C++ compiler would do anyway. However, we are free to have the <code>User</code> argument be in any position in the function. An other way to say it: We rely on the API, not the ABI, compatibility.</li>
-<li>The Rust implementation can freely read and modify private members of the C++ class, for example the <code>comment_count</code> field is only accessible in C++ through the getter, but Rust can just access it as if it was public. That&#39;s because <code>public/private</code> are just rules enforced by the C++ compiler. However your CPU does not know nor care. The bytes are the bytes. If you can access the bytes at runtime, it does not matter that they were marked &#39;private&#39; in the source code.</li>
-<li>We have to use tedious casts which is normal. We are indeed reinterpreting memory from one type (<code>User</code>) to another (<code>UserC</code>). This is allowed by the standard because the C++ class is a &#39;standard layout class&#39;. If it was not the case, this would be undefined behavior and likely work on some platforms but break on others.</li>
+<li>The Rust implementation can freely read and modify private members of the C++ class, for example the <code>comment_count</code> field is only accessible in C++ through the getter, but Rust can just access it as if it was public. That's because <code>public/private</code> are just rules enforced by the C++ compiler. However your CPU does not know nor care. The bytes are the bytes. If you can access the bytes at runtime, it does not matter that they were marked 'private' in the source code.</li>
+<li>We have to use tedious casts which is normal. We are indeed reinterpreting memory from one type (<code>User</code>) to another (<code>UserC</code>). This is allowed by the standard because the C++ class is a 'standard layout class'. If it was not the case, this would be undefined behavior and likely work on some platforms but break on others.</li>
 </ul>
 <h2 id="accessing-std-string-from-rust">
   <a class="title" href="#accessing-std-string-from-rust">Accessing std::string from Rust</a>
@@ -381,7 +382,7 @@ Comment count: 2
 <p>Still, I have employed this technique at work a lot and I really enjoy its relative simplicity and incremental nature.</p>
 <p>It can also be in theory automated, say with tree-sitter or libclang to operate on the C++ AST:</p>
 <ol>
-<li>Add a compile-time assert in the C++ class constructor to ensure it is a &#39;standard layout class&#39; e.g. <code>static_assert(std::is_standard_layout_v&lt;User&gt;);</code>. If this fails, skip this class, it requires manual intervention.</li>
+<li>Add a compile-time assert in the C++ class constructor to ensure it is a 'standard layout class' e.g. <code>static_assert(std::is_standard_layout_v&lt;User&gt;);</code>. If this fails, skip this class, it requires manual intervention.</li>
 <li>Generate the equivalent Rust struct e.g. the struct <code>UserC.</code></li>
 <li>For each field of the C++ class/Rust struct, add a compile-time assert to make sure the layout is the same e.g. <code>static_assert(sizeof(User) == sizeof(UserC)); static_assert(offsetof(User, name) == offsetof(UserC, name));</code>. If this fails, bail.</li>
 <li>For each C++ method, generate an (empty) equivalent Rust function. E.g. <code>RUST_write_comment</code>.</li>

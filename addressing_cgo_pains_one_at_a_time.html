@@ -74,6 +74,7 @@ Do not edit it by hand.
 
 <div class="article-prelude">
 <p><a href="/blog"> ⏴ Back to all articles</a></p>
+
   <p class="publication-date">Published on 2025-02-14.</p>
 </div>
 <div class="article-title">
@@ -132,10 +133,10 @@ Do not edit it by hand.
 </details>
 
 <p>Rust? Go? Cgo!</p>
-<p>I maintain a Go codebase at work which does most of its work through a Rust library that exposes a C API. So they interact via Cgo, Go&#39;s FFI mechanism. And it works!</p>
-<p>Also, Cgo has many weird limitations and surprises. Fortunately, over the two years or so I have been working in this project, I have (re-)discovered solutions for most of these issues. Let&#39;s go through them, and hopefully the next time you use Cgo, you&#39;ll have a smooth experience.</p>
-<p><em>From Go&#39;s perspective, Rust is invisible, the C library looks like a pure C library (and indeed it used to be 100% C++ before it got incrementally rewritten to Rust). So I will use C snippets in this article, because that&#39;s what the public C header of the library looks like, and not everybody knows Rust, but most people know a C-like language. But worry not, I will still talk at lengths about Rust in the last section.</em></p>
-<p>Let&#39;s create a sample app:</p>
+<p>I maintain a Go codebase at work which does most of its work through a Rust library that exposes a C API. So they interact via Cgo, Go's FFI mechanism. And it works!</p>
+<p>Also, Cgo has many weird limitations and surprises. Fortunately, over the two years or so I have been working in this project, I have (re-)discovered solutions for most of these issues. Let's go through them, and hopefully the next time you use Cgo, you'll have a smooth experience.</p>
+<p><em>From Go's perspective, Rust is invisible, the C library looks like a pure C library (and indeed it used to be 100% C++ before it got incrementally rewritten to Rust). So I will use C snippets in this article, because that's what the public C header of the library looks like, and not everybody knows Rust, but most people know a C-like language. But worry not, I will still talk at lengths about Rust in the last section.</em></p>
+<p>Let's create a sample app:</p>
 <pre><code class="language-text">.
 ├── app
 │   └── app.go
@@ -155,7 +156,7 @@ Do not edit it by hand.
   <a class="title" href="#cgo-does-not-have-unions">CGO does not have unions</a>
   <a class="hash-anchor" href="#cgo-does-not-have-unions" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
-<p>This is known to Go developers: Go does not have tagged unions, also called sum types, algebraic data types, etc. But C, and Rust, do have them, and Go needs to generate Go types for each C type, so that we can use them! So what does it do? Let&#39;s have a look.</p>
+<p>This is known to Go developers: Go does not have tagged unions, also called sum types, algebraic data types, etc. But C, and Rust, do have them, and Go needs to generate Go types for each C type, so that we can use them! So what does it do? Let's have a look.</p>
 <p>So, here is a (very useful) C tagged union:</p>
 <pre><code class="language-c">// c/api.h
 
@@ -225,7 +226,7 @@ void animal_print(Animal *animal) {
   }
 }
 </code></pre>
-<p>And here&#39;s how we use it in Go:</p>
+<p>And here's how we use it in Go:</p>
 <pre><code class="language-go">// app/app.go
 
 package app
@@ -244,21 +245,21 @@ func DoStuff() {
 	C.animal_print(&amp;cat)
 }
 </code></pre>
-<p>So far, so good. Let&#39;s run it (our <code>main.go</code> simply calls <code>app.DoStuff()</code>):</p>
+<p>So far, so good. Let's run it (our <code>main.go</code> simply calls <code>app.DoStuff()</code>):</p>
 <pre><code class="language-shell">$ go run .
 Dog: 42
 Cat: kitty
 </code></pre>
 <p>Great!</p>
-<p>Now, let&#39;s say we want to access the fields of the C tagged union. We can to have some logic based on whether our cat&#39;s name is greater than a limit, say 255? What does the Go struct look like for <code>Animal</code>?</p>
+<p>Now, let's say we want to access the fields of the C tagged union. We can to have some logic based on whether our cat's name is greater than a limit, say 255? What does the Go struct look like for <code>Animal</code>?</p>
 <pre><code class="language-go">type _Ctype_struct___0 struct {
 	kind	_Ctype_AnimalKind
 	_	[4]byte
 	anon0	[16]byte
 }
 </code></pre>
-<p>So it&#39;s a struct with a <code>kind</code> field, so far so good. Then comes 4 bytes of padding, as expected (the C struct also has them). But then, we only see 16 opaque bytes. The size is correct: the C union is the size of its largest member which is 16 bytes long (<code>String</code>). But then, how do we access <code>String.len</code>?</p>
-<p>Here&#39;s the very tedious way, by hand:</p>
+<p>So it's a struct with a <code>kind</code> field, so far so good. Then comes 4 bytes of padding, as expected (the C struct also has them). But then, we only see 16 opaque bytes. The size is correct: the C union is the size of its largest member which is 16 bytes long (<code>String</code>). But then, how do we access <code>String.len</code>?</p>
+<p>Here's the very tedious way, by hand:</p>
 <pre><code class="language-go">// app/app.go
 func DoStuff() {
     // [...]
@@ -276,7 +277,7 @@ Cat: kitty
 5
 </code></pre>
 <p>Ok, we are a C compiler now. Back to computing fields offsets by hand! I sure hope you do not forget about alignment! And keep the offsets in sync with the C struct when its layout changes!</p>
-<p>Well we all agree this sucks, but that&#39;s all what the <code>unsafe</code> package offers. Cherry on the cake, every pointer in this code has the same type: <code>unsafe.Pointer</code>, even though the first one really is a <code>Animal*</code>, the second one is a <code>String*</code>, and the third one is a <code>uint64_t*</code>. Not great.</p>
+<p>Well we all agree this sucks, but that's all what the <code>unsafe</code> package offers. Cherry on the cake, every pointer in this code has the same type: <code>unsafe.Pointer</code>, even though the first one really is a <code>Animal*</code>, the second one is a <code>String*</code>, and the third one is a <code>uint64_t*</code>. Not great.</p>
 <p>So the solution is: treat C unions as opaque values in Go, and only access them with C functions (essentially, getters and setters):</p>
 <pre><code class="language-c">// c/api.h
 
@@ -305,14 +306,14 @@ func DoStuff() {
 	fmt.Println(cat_name.len)
 }
 </code></pre>
-<p>And as a bonus, whenever the layout of <code>Animal</code> changes, for example the order of fields gets changed, or a new field gets added which changes the alignment and thus the padding (here it&#39;s not the case because the alignment is already 8 which is the maximum, but in other cases it could happen), the C code gets recompiled, it does the right thing automatically, and everything works as expected.</p>
+<p>And as a bonus, whenever the layout of <code>Animal</code> changes, for example the order of fields gets changed, or a new field gets added which changes the alignment and thus the padding (here it's not the case because the alignment is already 8 which is the maximum, but in other cases it could happen), the C code gets recompiled, it does the right thing automatically, and everything works as expected.</p>
 <p><strong>My recommendation:</strong> never role-play as a compiler, just use getters and setters for unions and let the C compiler do the dirty work.</p>
-<p><strong>My ask to the Go team:</strong> mention the approach with getters and setters in the docs. The only thing the <a href="https://pkg.go.dev/cmd/cgo">docs</a> have to say about unions right now is: <code>As Go doesn&#39;t have support for C&#39;s union type in the general case, C&#39;s union types are represented as a Go byte array with the same length</code>. And I don&#39;t expect Go to have (tagged) unions anytime soon, so that&#39;s the best we can do.</p>
+<p><strong>My ask to the Go team:</strong> mention the approach with getters and setters in the docs. The only thing the <a href="https://pkg.go.dev/cmd/cgo">docs</a> have to say about unions right now is: <code>As Go doesn't have support for C's union type in the general case, C's union types are represented as a Go byte array with the same length</code>. And I don't expect Go to have (tagged) unions anytime soon, so that's the best we can do.</p>
 <h2 id="slices-vs-strings">
   <a class="title" href="#slices-vs-strings">Slices vs Strings</a>
   <a class="hash-anchor" href="#slices-vs-strings" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
-<p>Quick Go trivia question: what&#39;s the difference between <code>[]byte</code> (a slice of bytes) and <code>string</code> (which is a slice of bytes underneath)?</p>
+<p>Quick Go trivia question: what's the difference between <code>[]byte</code> (a slice of bytes) and <code>string</code> (which is a slice of bytes underneath)?</p>
 <p>...</p>
 <p>The former is mutable while the latter is immutable.
 Yes, I might have learned that while writing this article.</p>
@@ -336,7 +337,7 @@ Cat: kitty
 [107 105 116 116 121]
 kitty
 </code></pre>
-<p>Ok, but just reading them is boring, let&#39;s try to mutate them. First, we need to allocate a fresh string in C, otherwise the string constant will be located in the read-only part of the executable, mapped to read-only page, and we will segfault when trying to mutate it. So we modify <code>animal_make_cat</code>:</p>
+<p>Ok, but just reading them is boring, let's try to mutate them. First, we need to allocate a fresh string in C, otherwise the string constant will be located in the read-only part of the executable, mapped to read-only page, and we will segfault when trying to mutate it. So we modify <code>animal_make_cat</code>:</p>
 <pre><code class="language-c">// c/api.c
 
 Animal animal_make_cat() {
@@ -350,12 +351,12 @@ Animal animal_make_cat() {
   };
 }
 </code></pre>
-<p>Let&#39;s mutate all the things!</p>
+<p>Let's mutate all the things!</p>
 <pre><code class="language-go">// app/app.go
 func DoStuff() {
     // [...]
 
-	slice[0] -= 32 // Poor man&#39;s uppercase.
+	slice[0] -= 32 // Poor man's uppercase.
 	fmt.Println(slice)
 	fmt.Println(str)
 }
@@ -386,21 +387,21 @@ Kitty
 <p>Nope... so what can we do about it? In my real-life program I have almost no strings to deal with, but some programs will.</p>
 <p><strong>My recommendation:</strong></p>
 <ul>
-<li>In Go, do not use <code>unsafe.String</code>, just use <code>unsafe.Slice</code> and accept that it&#39;s mutable everywhere in the program</li>
+<li>In Go, do not use <code>unsafe.String</code>, just use <code>unsafe.Slice</code> and accept that it's mutable everywhere in the program</li>
 <li><p>If you really want to use <code>unsafe.String</code>, make sure that the string data returned by the C code is immutable, <strong>enforced by the OS</strong>, so either:</p>
 <ul>
-<li>It&#39;s a constant string placed in the read-only segment</li>
+<li>It's a constant string placed in the read-only segment</li>
 <li>The string data is allocated in its own virtual memory page and the page permissions are changed to read-only before returning the pointer to Go</li>
 </ul>
 </li>
-<li>In C, do not expose string data directly to Go, only expose opaque values (<code>void*</code>), and mutations are only done by calling a C function. That way, the Go caller simply cannot use <code>unsafe.String</code> (I guess they could with lots of casts, but that&#39;s not in the realm of a <em>honest mistake</em> anymore).</li>
+<li>In C, do not expose string data directly to Go, only expose opaque values (<code>void*</code>), and mutations are only done by calling a C function. That way, the Go caller simply cannot use <code>unsafe.String</code> (I guess they could with lots of casts, but that's not in the realm of a <em>honest mistake</em> anymore).</li>
 </ul>
 <p><strong>My ask to the Go team:</strong> attempt to develop more advanced checks to detect this issue at runtime.</p>
 <h2 id="test-a-c-function-in-go-tests">
   <a class="title" href="#test-a-c-function-in-go-tests">Test a C function in Go tests</a>
   <a class="hash-anchor" href="#test-a-c-function-in-go-tests" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
-<p>We are principled programmers who write tests. Let&#39;s write a test to ensure that <code>animal_make_dog()</code> does indeed create a dog, i.e. the kind is <code>ANIMAL_KIND_DOG</code>:</p>
+<p>We are principled programmers who write tests. Let's write a test to ensure that <code>animal_make_dog()</code> does indeed create a dog, i.e. the kind is <code>ANIMAL_KIND_DOG</code>:</p>
 <pre><code class="language-go">// app/app_test.go
 
 package app
@@ -413,7 +414,7 @@ func TestAnimalMakeDog(t *testing.T) {
 	_ = dog
 }
 </code></pre>
-<p>Let&#39;s run it:</p>
+<p>Let's run it:</p>
 <pre><code class="language-shell">$ go test ./app/
 use of cgo in test app_test.go not supported
 </code></pre>
@@ -449,18 +450,18 @@ func TestAnimalMakeDog(t *testing.T) {
 PASS
 ok  	cgo/app	0.003s
 </code></pre>
-<p>So... that works, and also: that&#39;s annoying boilerplate that no one wants to have to write. And if you&#39;re feeling smug, thinking your favorite LLM will do the right thing for you, I can tell you I tried and the LLM generated the wrong thing, with the test trying to use Cgo directly.</p>
+<p>So... that works, and also: that's annoying boilerplate that no one wants to have to write. And if you're feeling smug, thinking your favorite LLM will do the right thing for you, I can tell you I tried and the LLM generated the wrong thing, with the test trying to use Cgo directly.</p>
 <p><strong>My recommendation:</strong></p>
 <ul>
 <li>Test the C code in C directly (or Rust, or whatever language it is)</li>
-<li>There is some glue code sometimes that is only useful to the Go codebase, and that&#39;s written in C. In that case wrap each C utility function in a Go one and write a Go test, hopefully it&#39;s not that much.</li>
+<li>There is some glue code sometimes that is only useful to the Go codebase, and that's written in C. In that case wrap each C utility function in a Go one and write a Go test, hopefully it's not that much.</li>
 </ul>
-<p><strong>My ask to the Go team:</strong> let&#39;s allow the use of Cgo in tests.</p>
+<p><strong>My ask to the Go team:</strong> let's allow the use of Cgo in tests.</p>
 <h2 id="the-go-compiler-does-not-detect-changes">
   <a class="title" href="#the-go-compiler-does-not-detect-changes">The Go compiler does not detect changes</a>
   <a class="hash-anchor" href="#the-go-compiler-does-not-detect-changes" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
-<p>People are used to say: Go builds so fast! And yes, it&#39;s not a slow compiler, but if you have ever built the Go compiler from scratch, you will have noticed it takes a significant amount of time still. What Go is really good at, is caching: it&#39;s really smart at detecting what changed, and only rebuilding that. And that&#39;s great! Until it isn&#39;t.</p>
+<p>People are used to say: Go builds so fast! And yes, it's not a slow compiler, but if you have ever built the Go compiler from scratch, you will have noticed it takes a significant amount of time still. What Go is really good at, is caching: it's really smart at detecting what changed, and only rebuilding that. And that's great! Until it isn't.</p>
 <p>Sometimes, changes to the Cgo build flags, or to the <code>.a</code> library, were not detected by Go. I could not really reproduce these issues reliably, but they do happen.</p>
 <p>Solution: force a clean build with <code>go build -a</code>.</p>
 <h2 id="false-positive-warnings">
@@ -497,11 +498,11 @@ void initial_setup(){
 */
 import &quot;C&quot;
 </code></pre>
-<p>Yes, we can write C code directly in Go files. Inside comments. Not, it&#39;s not weird at all.</p>
+<p>Yes, we can write C code directly in Go files. Inside comments. Not, it's not weird at all.</p>
 <p>We build, everything is fine:</p>
 <pre><code class="language-shell">$ go build .
 </code></pre>
-<p>Since we are serious programmers, we want to enable C warnings, right? Let&#39;s add <code>-Wall</code> to the <code>CFLAGS</code>:</p>
+<p>Since we are serious programmers, we want to enable C warnings, right? Let's add <code>-Wall</code> to the <code>CFLAGS</code>:</p>
 <pre><code class="language-go">// app/app.go
 
 [...]
@@ -517,12 +518,12 @@ cgo-gcc-prolog:78:49: warning: unused variable ‘_cgo_a’ [-Wunused-variable]
 <p>Wait, we do not have <em>any</em> variable in <code>initial_setup</code>, how come a variable is unused?</p>
 <p>Some searching around turns up this <a href="https://github.com/golang/go/issues/6883#issuecomment-383800123,">Github issue</a> where the official recommendation is: do not use <code>-Wall</code>, it creates false positives. Ok.</p>
 <p><strong>My recommendation:</strong> Write C code in C files and enable all the warnings you want.</p>
-<p><strong>My ask to the Go team:</strong> Let&#39;s please fix the false positives and allow people to enable some basic warnings. <code>-Wall</code> is the bare minimum!</p>
+<p><strong>My ask to the Go team:</strong> Let's please fix the false positives and allow people to enable some basic warnings. <code>-Wall</code> is the bare minimum!</p>
 <h2 id="white-space-is-significant">
   <a class="title" href="#white-space-is-significant">White space is significant</a>
   <a class="hash-anchor" href="#white-space-is-significant" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
-<p>Let&#39;s go back to the <code>app/cfuncs.go</code> we just created that builds fine:</p>
+<p>Let's go back to the <code>app/cfuncs.go</code> we just created that builds fine:</p>
 <pre><code class="language-go">package app
 
 /*
@@ -530,7 +531,7 @@ void initial_setup(){}
 */
 import &quot;C&quot;
 </code></pre>
-<p>Let&#39;s add one empty line near the end:</p>
+<p>Let's add one empty line near the end:</p>
 <pre><code class="language-go">package app
 
 /*
@@ -539,17 +540,17 @@ void initial_setup(){}
 
 import &quot;C&quot;
 </code></pre>
-<p>Let&#39;s build:</p>
+<p>Let's build:</p>
 <pre><code class="language-shell">$ go build .
 # cgo
 /home/pg/Downloads/go/pkg/tool/linux_amd64/link: running gcc failed: exit status 1
 /usr/bin/gcc -m64 -o $WORK/b001/exe/a.out -Wl,--export-dynamic-symbol=_cgo_panic -Wl,--export-dynamic-symbol=_cgo_topofstack -Wl,--export-dynamic-symbol=crosscall2 -Wl,--compress-debug-sections=zlib /tmp/go-link-2748897775/go.o /tmp/go-link-2748897775/000000.o /tmp/go-link-2748897775/000001.o /tmp/go-link-2748897775/000002.o /tmp/go-link-2748897775/000003.o /tmp/go-link-2748897775/000004.o /tmp/go-link-2748897775/000005.o /tmp/go-link-2748897775/000006.o /tmp/go-link-2748897775/000007.o /tmp/go-link-2748897775/000008.o /tmp/go-link-2748897775/000009.o /tmp/go-link-2748897775/000010.o /tmp/go-link-2748897775/000011.o /tmp/go-link-2748897775/000012.o /tmp/go-link-2748897775/000013.o /tmp/go-link-2748897775/000014.o /tmp/go-link-2748897775/000015.o /tmp/go-link-2748897775/000016.o -O2 -g /home/pg/scratch/cgo/app/../c/libapi.a -O2 -g -lpthread -no-pie
-/usr/bin/ld: /tmp/go-link-2748897775/000001.o: in function `_cgo_f1a74d84225f_Cfunc_initial_setup&#39;:
-/tmp/go-build/cgo-gcc-prolog:80:(.text+0x53): undefined reference to `initial_setup&#39;
+/usr/bin/ld: /tmp/go-link-2748897775/000001.o: in function `_cgo_f1a74d84225f_Cfunc_initial_setup':
+/tmp/go-build/cgo-gcc-prolog:80:(.text+0x53): undefined reference to `initial_setup'
 collect2: error: ld returned 1 exit status
 </code></pre>
 <p>Ok... not much to say here.</p>
-<p>Here&#39;s another example. We add a comment about not using <code>-Wall</code>:</p>
+<p>Here's another example. We add a comment about not using <code>-Wall</code>:</p>
 <pre><code class="language-go">// app/app.go
 
 package app
@@ -566,11 +567,11 @@ import &quot;C&quot;
 <p>We rebuild, and boom:</p>
 <pre><code class="language-shell">$ go build .
 # cgo/app
-app/app.go:3:6: error: expected &#39;=&#39;, &#39;,&#39;, &#39;;&#39;, &#39;asm&#39; or &#39;__attribute__&#39; before &#39;:&#39; token
+app/app.go:3:6: error: expected '=', ',', ';', 'asm' or '__attribute__' before ':' token
     3 | // NOTE: Do not use -Wall.
       |      ^
 </code></pre>
-<p>That&#39;s because when seeing a <code>#cgo</code> directive in the comments, the Go compiler parses what it recognizes, passes the rest to the C compiler, which chokes on it.</p>
+<p>That's because when seeing a <code>#cgo</code> directive in the comments, the Go compiler parses what it recognizes, passes the rest to the C compiler, which chokes on it.</p>
 <p>Solution: insert a blank line between the comment and the <code>#cgo</code> directive to avoid that:</p>
 <pre><code class="language-go">// app/app.go
 
@@ -592,12 +593,12 @@ import &quot;C&quot;
   <a class="title" href="#debug-go-and-c-rust">Debug Go and C/Rust</a>
   <a class="hash-anchor" href="#debug-go-and-c-rust" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
-<p>It&#39;s very simple, you have two exclusive choices:</p>
+<p>It's very simple, you have two exclusive choices:</p>
 <ul>
 <li>Use a C/Rust debugger (e.g gdb, lldb, etc), which does not understand the Go calling convention so you can see the C/Rust call stack, but it ends at the Cgo FFI boundary, or</li>
 <li>Use a Go debugger (e.g. delve) which does not (really) understand the C/Rust calling convention so you can see the Go stack, but it ends at the Cgo FFI boundary</li>
 </ul>
-<p>Let&#39;s see it for ourselves:</p>
+<p>Let's see it for ourselves:</p>
 <pre><code class="language-shell">$ gdb ./cgo
 (gdb) break animal_print
 Breakpoint 1 at 0x469b6c
@@ -719,15 +720,15 @@ Values returned:
 <blockquote>
 <p>GDB does not understand Go programs well. The stack management, threading, and runtime contain aspects that differ enough from the execution model GDB expects that they can confuse the debugger and cause incorrect results even when the program is compiled with gccgo. As a consequence, although GDB can be useful in some situations (e.g., debugging Cgo code, or debugging the runtime itself), it is not a reliable debugger for Go programs, particularly heavily concurrent ones. Moreover, it is not a priority for the Go project to address these issues, which are difficult.</p>
 </blockquote>
-<p>And it&#39;s not an issue of missing debugging information, I compiled the C code with <code>-g</code>, or <code>-g3</code>.</p>
-<p>This point is close to being a deal-breaker for me. Debugging is really important! A language/tech stack is IMHO only as good as we developers can understand and troubleshoot production applications. Can&#39;t debug, can&#39;t pinpoint where the bug is? Not sure if that program is worth much.</p>
-<p><strong>My recommendation:</strong>: Have both debuggers at hand and locate where the problem is: is it on the Go side or on the C/Rust side? Then use the right debugger to inspect local variables and such. Yes, it&#39;s a pity. I guess you can try to build Go code with Gccgo, perhaps gdb understands the full call stack then? My approach was to insert logs everywhere in the code, both Go and Rust, with logs. Not ideal. It&#39;s a bit too close to &#39;printf debugging&#39; to my taste.</p>
-<p><strong>My ask for the Go team:</strong>: Well, ideally both debuggers would work fully with CGO. But since this issue is known for years...I don&#39;t have much hope.</p>
+<p>And it's not an issue of missing debugging information, I compiled the C code with <code>-g</code>, or <code>-g3</code>.</p>
+<p>This point is close to being a deal-breaker for me. Debugging is really important! A language/tech stack is IMHO only as good as we developers can understand and troubleshoot production applications. Can't debug, can't pinpoint where the bug is? Not sure if that program is worth much.</p>
+<p><strong>My recommendation:</strong>: Have both debuggers at hand and locate where the problem is: is it on the Go side or on the C/Rust side? Then use the right debugger to inspect local variables and such. Yes, it's a pity. I guess you can try to build Go code with Gccgo, perhaps gdb understands the full call stack then? My approach was to insert logs everywhere in the code, both Go and Rust, with logs. Not ideal. It's a bit too close to 'printf debugging' to my taste.</p>
+<p><strong>My ask for the Go team:</strong>: Well, ideally both debuggers would work fully with CGO. But since this issue is known for years...I don't have much hope.</p>
 <h3 id="strace-bpftrace">
   <a class="title" href="#strace-bpftrace">Strace, bpftrace</a>
   <a class="hash-anchor" href="#strace-bpftrace" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h3>
-<p>It&#39;s the same issue manifesting in a different way: it&#39;s not just debuggers than do not understand the call stack, it&#39;s also <code>strace</code>:</p>
+<p>It's the same issue manifesting in a different way: it's not just debuggers than do not understand the call stack, it's also <code>strace</code>:</p>
 <pre><code class="language-shell">$ strace -k -e write ./cgo
 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=438876, si_uid=1000} ---
  &gt; /usr/lib64/libc.so.6(pthread_sigmask@GLIBC_2.2.5+0x48) [0x783b8]
@@ -753,7 +754,7 @@ write(1, &quot;Dog: 42\n&quot;, 8Dog: 42
 </code></pre>
 <p>Same as gdb, the call stack stops at the Cgo FFI boundary.</p>
 <p>But surprisingly, <code>bpftrace</code> seems to work:</p>
-<pre><code class="language-shell">$ sudo bpftrace -e &#39;uprobe:./cgo:animal_print {print(ustack(perf, 64))}&#39; -c ./cgo
+<pre><code class="language-shell">$ sudo bpftrace -e 'uprobe:./cgo:animal_print {print(ustack(perf, 64))}' -c ./cgo
 Attaching 1 probe...
 Dog: 42
 
@@ -766,7 +767,7 @@ Dog: 42
 	437a07 runtime.main+583 (./cgo)
 	46c301 runtime.goexit.abi0+1 (./cgo)
 </code></pre>
-<p>So, let&#39;s use <code>bpftrace</code>, I guess.</p>
+<p>So, let's use <code>bpftrace</code>, I guess.</p>
 <h2 id="cross-compile">
   <a class="title" href="#cross-compile">Cross-compile</a>
   <a class="hash-anchor" href="#cross-compile" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
@@ -777,9 +778,9 @@ Dog: 42
 [...]
 Total execution time 101.664413146
 </code></pre>
-<p>That&#39;s in seconds. Every. Single. Time. Urgh.</p>
+<p>That's in seconds. Every. Single. Time. Urgh.</p>
 <p>The issue is that little to no caching is being leveraged by either compiler. Dependencies are fetched from the internet, and essentially, a clean release build is performed. That takes a looong time. Past developers tried to fix this by volume mounting host directories inside Docker but apparently, they missed a few.</p>
-<p>That&#39;s why I am convinced that Docker is not meant to build stuff. Only to run stuff. I have seen the same problem with C++ codebases being built in Docker, with Rust codebases being built in Docker, etc. Even with JavaScript/Typescript codebases built in docker (these were for some reason often the slowest to build). In the worst cases it would take over an hour to build, and developers resorted to duplicate the deployment setup to be able to run (and thus test) the app locally, completely bypassing Docker.</p>
+<p>That's why I am convinced that Docker is not meant to build stuff. Only to run stuff. I have seen the same problem with C++ codebases being built in Docker, with Rust codebases being built in Docker, etc. Even with JavaScript/Typescript codebases built in docker (these were for some reason often the slowest to build). In the worst cases it would take over an hour to build, and developers resorted to duplicate the deployment setup to be able to run (and thus test) the app locally, completely bypassing Docker.</p>
 <p>I think the original intent to do a clean build inside Docker was because developers feared that the local environment was somehow tainted and/or that the compiler would mess up with the caching and result in a borked build. And that was the case I believe, with most C/C++ codebase relying on globally installed libraries built how-knows-how. But modern compilers are, from my perspective, really good at identifying changes, correctly caching what did not change, and rebuilding with the correct build flags, what does need to be rebuilt. And developers have improved on the Bill Of Material side. Much work has been done on existing tools to get reproducible builds. New tools have emerged, like Nix, that focus on controlled reproducible builds.</p>
 <p>So in my opinion, the ideal Docker build process is: a single static executable is built locally, relying on caching of previous builds (or possibly in CI, remote intermediate artifacts). Then, it is copied inside the image which, again ideally, for security purposes, is very bare bone. The dockerfile can look like this:</p>
 <pre><code class="language-dockerfile">FROM gcr.io/distroless/static:nonroot
@@ -790,20 +791,20 @@ COPY --chown=nonroot:nonroot app.exe .
 
 CMD [&quot;/home/nonroot/app.exe&quot;]
 </code></pre>
-<p>It&#39;s fast, simple, secure. But, to make it work, regardless of the host, we need to cross-compile.</p>
-<p>Go is praised for its uncomplicated cross-compiling support. But this goes out of the window when Cgo is enabled. Let&#39;s try:</p>
+<p>It's fast, simple, secure. But, to make it work, regardless of the host, we need to cross-compile.</p>
+<p>Go is praised for its uncomplicated cross-compiling support. But this goes out of the window when Cgo is enabled. Let's try:</p>
 <pre><code class="language-sh">$ GOOS=linux GOARCH=arm go build  .
 cgo/app: build constraints exclude all Go files in /home/pg/scratch/cgo/app
 </code></pre>
 <p>It fails. But fortunately, Go still supports cross-compiling with Cgo as long as we provide it with a cross-compiler.</p>
 <p>After some experimentation, my favorite way is to use <a href="https://dev.to/kristoff/zig-makes-go-cross-compilation-just-work-29ho">Zig</a> for that. That way it works the same way for people using macOS, Linux, be it on ARM, on x86_64, etc. And it makes it trivial to build native Docker images for ARM without changing the whole build system or installing additional tools.</p>
 <p>The work on Zig is fantastic, please consider supporting them!</p>
-<p>So, how does it look like? Let&#39;s assume we want to target <code>x86_64-linux-musl</code>, built statically, since we use a distroless image that does not come with a libc. The benefit is that our service looks like any other Go service without Cgo.</p>
+<p>So, how does it look like? Let's assume we want to target <code>x86_64-linux-musl</code>, built statically, since we use a distroless image that does not come with a libc. The benefit is that our service looks like any other Go service without Cgo.</p>
 <p>We could also target a specific glibc version and deploy on a LTS version of Ubuntu, Debian, etc. Zig supports that.</p>
 <p>First, we cross-compile our C code:</p>
 <pre><code class="language-shell">$ CC=&quot;zig cc --target=x86_64-linux-musl&quot; make -C ./c
 </code></pre>
-<p>Or, bring your own cross-compiler, you don&#39;t have to use Zig:</p>
+<p>Or, bring your own cross-compiler, you don't have to use Zig:</p>
 <pre><code class="language-shell">$ CC=musl-gcc make -C ./c
 </code></pre>
 <p>If we have Rust code, we do instead:</p>
@@ -815,18 +816,18 @@ $ cargo build --release --all-features --target=x86_64-unknown-linux-musl
 $ file cgo
 cgo: ELF 64-bit LSB executable, x86-64, version 1 (SYSV), dynamically linked, interpreter /lib64/ld-linux-x86-64.so.2, BuildID[sha1]=9d5da9b6a211c5635a83e4a8a346ff605f7b6e3b, for GNU/Linux 3.2.0, with debug_info, not stripped
 
-$ CGO_ENABLED=1 CC=&#39;zig cc --target=x86_64-linux-musl -static&#39; GOOS=linux GOARCH=amd64 go build .
+$ CGO_ENABLED=1 CC='zig cc --target=x86_64-linux-musl -static' GOOS=linux GOARCH=amd64 go build .
 $ file cgo
 cgo: ELF 64-bit LSB executable, x86-64, version 1 (SYSV), statically linked, Go BuildID=gTeiH1YL9FSvJJ2euuGd/P0s07MkwoQlcaBA6EXDD/NOYPaeKuxUZ0cnLxfpC9/YeAu_C7s53nGjPEKZDYI, with debug_info, not stripped
 </code></pre>
 <p>Ta dam!</p>
 <p>Time to build a native ARM image? No problem:</p>
 <pre><code class="language-shell">$ CC=&quot;zig cc --target=aarch64-linux-musl&quot; make -C ./c
-$ CGO_ENABLED=1 CC=&#39;zig cc --target=aarch64-linux-musl -static&#39; GOOS=linux GOARCH=arm64 go build .
+$ CGO_ENABLED=1 CC='zig cc --target=aarch64-linux-musl -static' GOOS=linux GOARCH=arm64 go build .
 $ file ./cgo
 ./cgo: ELF 64-bit LSB executable, ARM aarch64, version 1 (SYSV), statically linked, Go BuildID=QRDa72MrAj44K3mt54PK/_aJwgCwTO37mKpnfElWN/0TEmGFNLMEZCx3Zv_PKs/lgDlIHFQ6-LxhCOsdhQI, with debug_info, not stripped
 </code></pre>
-<p>If you&#39;ve done <em>any</em> work with cross-compilation, you know that this is magic. It&#39;s supposed to take weeks to make it work, dammit!</p>
+<p>If you've done <em>any</em> work with cross-compilation, you know that this is magic. It's supposed to take weeks to make it work, dammit!</p>
 <blockquote>
 <p>Note: Rust code typically needs libunwind for printing a backtrace, so it needs to be cross-compiled and linked as well. But no worries, Zig has you covered, it ships with libunwind sources and will, just like with musl, build it for your target, and cache the results! Just add <code>-lunwind</code> to the <code>zig cc</code> invocation, and voila.</p>
 </blockquote>

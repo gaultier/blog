@@ -74,6 +74,7 @@ Do not edit it by hand.
 
 <div class="article-prelude">
 <p><a href="/blog"> ⏴ Back to all articles</a></p>
+
   <p class="publication-date">Published on 2025-03-18.</p>
 </div>
 <div class="article-title">
@@ -115,12 +116,12 @@ Do not edit it by hand.
   <a class="title" href="#context">Context</a>
   <a class="hash-anchor" href="#context" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
-<p>Lately I have been hardening the build at work of our Go services and one (seemingly) low-hanging fruit was <a href="https://en.wikipedia.org/wiki/Position-independent_code">PIE</a>. This is code built to be relocatable, meaning it can be loaded by the operating system at any memory address. That complicates the work of an attacker because they typically want to manipulate the return address of the current function (e.g. by overwriting the stack due to a buffer overflow) to jump to a specific function e.g. <code>system()</code> from libc to pop a shell. That&#39;s easy if <code>system</code> is always at the same address. If the target function is loaded at a different address each time, it makes it more difficult for the attacker to find it.</p>
-<p>This approach was already used in the sixties (!) and has been the default for years now in most OSes and toolchains when building system executables. There is practically no downside. Some people report a single digit percent slowdown in rare cases although it&#39;s not the rule. Amusingly this randomness can be used in interesting ways for example seeding a random number generator with the address of a function.</p>
+<p>Lately I have been hardening the build at work of our Go services and one (seemingly) low-hanging fruit was <a href="https://en.wikipedia.org/wiki/Position-independent_code">PIE</a>. This is code built to be relocatable, meaning it can be loaded by the operating system at any memory address. That complicates the work of an attacker because they typically want to manipulate the return address of the current function (e.g. by overwriting the stack due to a buffer overflow) to jump to a specific function e.g. <code>system()</code> from libc to pop a shell. That's easy if <code>system</code> is always at the same address. If the target function is loaded at a different address each time, it makes it more difficult for the attacker to find it.</p>
+<p>This approach was already used in the sixties (!) and has been the default for years now in most OSes and toolchains when building system executables. There is practically no downside. Some people report a single digit percent slowdown in rare cases although it's not the rule. Amusingly this randomness can be used in interesting ways for example seeding a random number generator with the address of a function.</p>
 <p>Go supports PIE as well, however this is not the default so we have to opt in.</p>
 <p>PIE is especially desirable when using CGO to call C functions from Go which is my case at work.
-But also Go is <a href="https://blog.stalkr.net/2015/04/golang-data-races-to-break-memory-safety.html">not entirely memory safe</a> so I&#39;d argue having PIE enabled in all cases is preferable.</p>
-<p>So let&#39;s look into enabling it. And this is also a good excuse to learn more about how surprisingly complex it is for an OS to just execute a program.</p>
+But also Go is <a href="https://blog.stalkr.net/2015/04/golang-data-races-to-break-memory-safety.html">not entirely memory safe</a> so I'd argue having PIE enabled in all cases is preferable.</p>
+<p>So let's look into enabling it. And this is also a good excuse to learn more about how surprisingly complex it is for an OS to just execute a program.</p>
 <h2 id="how-hard-can-it-be">
   <a class="title" href="#how-hard-can-it-be">How hard can it be?</a>
   <a class="hash-anchor" href="#how-hard-can-it-be" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
@@ -133,26 +134,26 @@ position independent executables (PIE). Packages not named
 main are ignored.</p>
 </blockquote>
 <p>Easy enough, right?</p>
-<p>Let&#39;s build a hello world program (<em>not</em> using CGO) with default options:</p>
+<p>Let's build a hello world program (<em>not</em> using CGO) with default options:</p>
 <pre><code class="language-shell">$ go build main.go
 $ file ./main
 ./main: ELF 64-bit LSB executable [..] statically linked [..]
 </code></pre>
-<p>Now, let&#39;s add the <code>-buildmode=pie</code> option:</p>
+<p>Now, let's add the <code>-buildmode=pie</code> option:</p>
 <pre><code class="language-shell">$ go build -buildmode=pie ./main.go
 $ file ./main
 ./main: ELF 64-bit LSB pie executable [..] dynamically linked, interpreter /lib64/ld-linux-x86-64.so.2 [..]
 </code></pre>
-<p>Ok, it worked, but also: why did we go from a statically linked to a dynamically linked executable? PIE should be orthogonal to static/dynamic linking! Or is it? We&#39;ll come back to that in a second.</p>
+<p>Ok, it worked, but also: why did we go from a statically linked to a dynamically linked executable? PIE should be orthogonal to static/dynamic linking! Or is it? We'll come back to that in a second.</p>
 <p>When we run our freshly built Go executable in a bare-bone Docker image (distroless), we get a nice cryptic error at runtime:</p>
 <pre><code class="language-text">exec /home/nonroot/my-service: no such file or directory
 </code></pre>
-<p>Oh oh. Let&#39;s investigate.</p>
+<p>Oh oh. Let's investigate.</p>
 <h3 id="a-helpful-mental-model">
   <a class="title" href="#a-helpful-mental-model">A helpful mental model</a>
   <a class="hash-anchor" href="#a-helpful-mental-model" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h3>
-<p>I&#39;d argue that the wording of the tools and the online content is confusing because it conflates two different things.</p>
+<p>I'd argue that the wording of the tools and the online content is confusing because it conflates two different things.</p>
 <p>For example, invoking <code>lld</code> with the above executable prints <code>statically linked</code>. But <code>file</code> prints <code>dynamically linked</code> for the exact same file! So which is it?</p>
 <p>A <a href="https://www.quora.com/Systems-Programming/What-is-the-exact-difference-between-dynamic-loading-and-dynamic-linking/answer/Jeff-Darcy">helpful mental model</a> is to split <em>linking</em> from <em>loading</em> and have thus two orthogonal dimensions:</p>
 <ul>
@@ -161,7 +162,7 @@ $ file ./main
 <li>dynamic linking, static loading</li>
 <li>dynamic linking, dynamic loading</li>
 </ul>
-<p>The first dimension (static vs dynamic linking) is, from the point of view of the OS trying to launch our program, decided by the field &#39;Type&#39; in the ELF header (bytes 16-20): if it&#39;s <code>EXEC</code>, it&#39;s a statically linked executable. If it&#39;s <code>DYN</code>, it&#39;s a shared object file or a statically linked PIE executable (note that the same file can be both a shared library and an executable. Pretty cool, no?).</p>
+<p>The first dimension (static vs dynamic linking) is, from the point of view of the OS trying to launch our program, decided by the field 'Type' in the ELF header (bytes 16-20): if it's <code>EXEC</code>, it's a statically linked executable. If it's <code>DYN</code>, it's a shared object file or a statically linked PIE executable (note that the same file can be both a shared library and an executable. Pretty cool, no?).</p>
 <p>The second dimension (static vs dynamic loading) is decided by the ELF program headers: if there is one program header of type <code>INTERP</code> (which specifies the loader to use), our executable is using dynamic loading meaning it requires a loader (a.k.a. interpreter) at runtime. Otherwise it does not. This aspect can be observed with <code>readelf</code>:</p>
 <pre><code class="language-shell">$ readelf --program-headers ./main
 [..]
@@ -177,19 +178,19 @@ Program Headers:
   [..]
 </code></pre>
 <p>Our newly built Go executable is in the second category: static linking, dynamic loading.</p>
-<p>And that&#39;s an issue because we deploy it in a distroless Docker container where there is not even a libc available or the loader <code>ld.so</code>.</p>
+<p>And that's an issue because we deploy it in a distroless Docker container where there is not even a libc available or the loader <code>ld.so</code>.</p>
 <p>It means we now need to change our Docker image to include a loader at runtime.</p>
-<p>So not ideal. What can we do? We&#39;d like to be in the first category: static linking, static loading.</p>
+<p>So not ideal. What can we do? We'd like to be in the first category: static linking, static loading.</p>
 <p>I suppose that folks that ship executables to customer workstations would also have interest in doing that to remove one moving piece (the loader on each target machine).</p>
 <p>Also possibly people who want to obfuscate what their program does at startup and do not want anyone monkeying around with environment variables that impact the loader such as <code>LD_PRELOAD</code> (so, perhaps malware or anti-malware programs?).</p>
-<p><em>Addendum: I have found at least one <a href="https://seclists.org/oss-sec/2023/q4/18">CVE</a> in the glibc loader, and it seems it&#39;s a frequent occurrence, so in my opinion that&#39;s reason enough to remove one moving piece from the equation and prefer static loading!</em></p>
+<p><em>Addendum: I have found at least one <a href="https://seclists.org/oss-sec/2023/q4/18">CVE</a> in the glibc loader, and it seems it's a frequent occurrence, so in my opinion that's reason enough to remove one moving piece from the equation and prefer static loading!</em></p>
 <h2 id="troubleshooting-the-problem">
   <a class="title" href="#troubleshooting-the-problem">Troubleshooting the problem</a>
   <a class="hash-anchor" href="#troubleshooting-the-problem" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>It turns out that PIE was historically designed for executables using dynamic loading.
 The loader loads at startup the sections of the executable at different places in memory, fills (eagerly or lazily) in a global table (the <a href="https://en.wikipedia.org/wiki/Global_Offset_Table">GOT</a>) the locations of symbols. And voila, functions are placed randomly in memory and function calls go through the GOT which is a level of indirection to know at runtime where the function they want to call is located. Blue team, rejoice! Red team, sad.</p>
-<p>So how does it work with a statically linked executable where a loader is not even <em>present</em> on the system? Here&#39;s a bare-bone C program that uses PIE <em>and</em> is statically linked:</p>
+<p>So how does it work with a statically linked executable where a loader is not even <em>present</em> on the system? Here's a bare-bone C program that uses PIE <em>and</em> is statically linked:</p>
 <pre><code class="language-c">#include &lt;stdio.h&gt;
 
 int main() { printf(&quot;%p %p hello!\n&quot;, &amp;main, &amp;printf); }
@@ -207,7 +208,7 @@ $ sudo chroot /tmp/scratch ./a.out
 0x7f891d95e419 0x7f891d95e7e0 hello!
 </code></pre>
 <p>So... how does it work when no loader is present in the environment? Well, what is the only thing that we link in our bare-bone program? Libc! And what does libc contain? You guessed it, a loader!</p>
-<p>For musl, it&#39;s the file <code>ldso/dlstart.c</code> and that&#39;s the code that runs before our <code>main</code>. Effectively libc doubles as a loader. And when statically linked, the loader gets embedded in our application and runs at startup before our code.</p>
+<p>For musl, it's the file <code>ldso/dlstart.c</code> and that's the code that runs before our <code>main</code>. Effectively libc doubles as a loader. And when statically linked, the loader gets embedded in our application and runs at startup before our code.</p>
 <p>That means that we can have our cake and eat it too: static linking and PIE! No loader required in the environment.</p>
 <p>So, how can we coerce Go to do the same?</p>
 <h2 id="the-solution">
@@ -215,16 +216,16 @@ $ sudo chroot /tmp/scratch ./a.out
   <a class="hash-anchor" href="#the-solution" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>The only way I have found is to ask Go to link with an external linker and pass it the flag <code>-static-pie</code>. Due to the explanation above that means that CGO gets enabled automatically and we need to link a libc statically:</p>
-<pre><code class="language-shell">$ CGO_ENABLED=0 go build -buildmode=pie -ldflags &#39;-linkmode external -extldflags &quot;-static-pie&quot;&#39; main.go
+<pre><code class="language-shell">$ CGO_ENABLED=0 go build -buildmode=pie -ldflags '-linkmode external -extldflags &quot;-static-pie&quot;' main.go
 -linkmode requires external (cgo) linking, but cgo is not enabled
 </code></pre>
 <p>We use <code>musl-gcc</code> again for simplicity but you can also use the Zig build system to automatically build musl from source, or provide your own build of musl, etc:</p>
-<pre><code class="language-shell">$ CC=musl-gcc go build -ldflags &#39;-linkmode external -extldflags &quot;--static-pie&quot;&#39; -buildmode=pie main.go
+<pre><code class="language-shell">$ CC=musl-gcc go build -ldflags '-linkmode external -extldflags &quot;--static-pie&quot;' -buildmode=pie main.go
 $ file ./main
 ./main: ELF 64-bit LSB pie executable [..] static-pie linked
 </code></pre>
 <p>Yeah!</p>
-<p>We can check that it works in our empty <code>chroot</code> again. Here&#39;s is our Go program:</p>
+<p>We can check that it works in our empty <code>chroot</code> again. Here's is our Go program:</p>
 <pre><code class="language-go">package main
 
 import (
@@ -235,8 +236,8 @@ func main() {
 	fmt.Println(main, fmt.Println, &quot;hello&quot;)
 }
 </code></pre>
-<p>And here&#39;s how we build and run it:</p>
-<pre><code class="language-shell">$ CC=musl-gcc go build -ldflags &#39;-linkmode external -extldflags &quot;--static-pie&quot;&#39; -buildmode=pie main.go
+<p>And here's how we build and run it:</p>
+<pre><code class="language-shell">$ CC=musl-gcc go build -ldflags '-linkmode external -extldflags &quot;--static-pie&quot;' -buildmode=pie main.go
 $ cp ./main /tmp/scratch/
 $ sudo chroot /tmp/scratch ./main
 0x7f0701b17220 0x7f0701b122a0 hello
@@ -259,8 +260,8 @@ $ sudo chroot /tmp/scratch ./main
   <a class="title" href="#conclusion">Conclusion</a>
   <a class="hash-anchor" href="#conclusion" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
-<p>&#39;Static PIE&#39;, or statically linked PIE executables, are a relatively new development: OpenBSD <a href="https://www.openbsd.org/papers/asiabsdcon2015-pie-slides.pdf">added</a> that in 2015 and builds all system executables in that mode, Clang only <a href="https://reviews.llvm.org/D58307">added</a> the flag in 2019, etc. Apparently the Go linker does not support this yet, I suppose because it does not ship with a loader and so has to rely on the libc loader (if someone knows for sure, I&#39;d be curious to know!). After all, the preferred and default way for Go on Linux is &#39;static linking, static loading&#39;.</p>
-<p>Still I think it&#39;s great to do since we get the best of both worlds, only requiring a little bit of finagling with linker flags.</p>
+<p>'Static PIE', or statically linked PIE executables, are a relatively new development: OpenBSD <a href="https://www.openbsd.org/papers/asiabsdcon2015-pie-slides.pdf">added</a> that in 2015 and builds all system executables in that mode, Clang only <a href="https://reviews.llvm.org/D58307">added</a> the flag in 2019, etc. Apparently the Go linker does not support this yet, I suppose because it does not ship with a loader and so has to rely on the libc loader (if someone knows for sure, I'd be curious to know!). After all, the preferred and default way for Go on Linux is 'static linking, static loading'.</p>
+<p>Still I think it's great to do since we get the best of both worlds, only requiring a little bit of finagling with linker flags.</p>
 <p>Also it would be nice that the Go documentation talks at least a little about this topic. In the meantime, there is this article, which I hope does not contain inaccuracies and helps a bit.</p>
 <p>A further hardening on top of PIE, that I have not yet explored yet, but is on my to do list, is <a href="https://www.redhat.com/en/blog/hardening-elf-binaries-using-relocation-read-only-relro">read-only relocations</a> which makes the Global Offset Table read-only to prevent an attacker from overwriting the relocation entries there. On Fedora for example, all system executables are built with this mitigation on.</p>
 

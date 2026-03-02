@@ -74,6 +74,7 @@ Do not edit it by hand.
 
 <div class="article-prelude">
 <p><a href="/blog"> ⏴ Back to all articles</a></p>
+
   <p class="publication-date">Published on 2023-10-05.</p>
 </div>
 <div class="article-title">
@@ -136,10 +137,10 @@ It means we want to remove adjacent characters which are the same letter and hav
   <a class="title" href="#the-new-solution">The new solution</a>
   <a class="hash-anchor" href="#the-new-solution" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
-<p>I came up with a new algorithm, which on paper does less work. It&#39;s one linear pass on the input, and does not allocate.</p>
+<p>I came up with a new algorithm, which on paper does less work. It's one linear pass on the input, and does not allocate.</p>
 <p>Since the result we care about is the number of remaining characters, we simply keep track of the count as we sift through the input.</p>
-<p>We maintain two pointers, <code>current</code> and <code>next</code>, which we compare to decide whether we should merge the characters they point to. &#39;Merging&#39; means setting the two characters to <code>0</code> (it&#39;s basically a tombstone) and lower the count.</p>
-<p><code>next</code> is always incremented by one in each loop iteration, that&#39;s the easy one.</p>
+<p>We maintain two pointers, <code>current</code> and <code>next</code>, which we compare to decide whether we should merge the characters they point to. 'Merging' means setting the two characters to <code>0</code> (it's basically a tombstone) and lower the count.</p>
+<p><code>next</code> is always incremented by one in each loop iteration, that's the easy one.</p>
 <p><code>current</code> is always pointing to a character before <code>current</code>, but not always directly adjacent, because there may be tombstones, i.e. zeroes, in-between.</p>
 <p>In pseudo-code:</p>
 <pre><code class="language-text">remaining_count = len(input)
@@ -170,7 +171,7 @@ endwhile
 print(remaining_count)
 </code></pre>
 <p>The easy case is when there is no need to merge: <code>current</code> simply becomes <code>next</code> (and <code>next</code> is incremented at the end of the loop iteration).</p>
-<p>The &#39;hard&#39; case is merging: we set the two tombstones, lower the count, and now we are in a pickle: <code>current</code> needs to go backwards, but we do not know to where. There might be an arbitrary number of zeroes preceding the character <code>current</code> points to: the data on the left of <code>next</code> is sparse, the data on the right of <code>next</code> is not.</p>
+<p>The 'hard' case is merging: we set the two tombstones, lower the count, and now we are in a pickle: <code>current</code> needs to go backwards, but we do not know to where. There might be an arbitrary number of zeroes preceding the character <code>current</code> points to: the data on the left of <code>next</code> is sparse, the data on the right of <code>next</code> is not.</p>
 <pre><code class="language-text">[...] 0 0 A 0 0 0 0 B 0 0 0 0 C D E F [...]
           ^         ^         ^
           |         |         |
@@ -181,7 +182,7 @@ print(remaining_count)
 <p>So we have to do a backwards search to find the first non zero character.
 We could memoize this location, but that would basically come down to the Scheme solution, having an output array of the same size as the input.</p>
 <p>Astute readers might have noticed a potential issue with the backwards search: We may underflow the <code>input</code> and go out of bounds! To avoid that, we could clamp <code>current</code>, but the branch misprediction is costly (an earlier implementation of mine did this and that was almost twice as slow!), and we can simplify the code as well as improve the performance by simply prefixing the <code>input</code> with a non-zero value that has no chance of being merged with the rest of the input, say, <code>1</code>.</p>
-<p>Let&#39;s implement it in x86_64 assembly!</p>
+<p>Let's implement it in x86_64 assembly!</p>
 <h2 id="the-x86-64-implementation">
   <a class="title" href="#the-x86-64-implementation">The x86_64 implementation</a>
   <a class="hash-anchor" href="#the-x86-64-implementation" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
@@ -257,7 +258,7 @@ static write_int:function
     mov rdx, 0 ; Reset rem.
     div rcx ; rax /= rcx
 
-    add rdx, &#39;0&#39; ; Convert to ascii.
+    add rdx, '0' ; Convert to ascii.
 
     ; *(end--) = rem
     dec BUF_END
@@ -307,7 +308,7 @@ _start:
   call exit
 </code></pre>
 <hr />
-<p>We now can focus on implementing <code>solve</code>. It&#39;s a one to one translation of the pseudo-code. We just have to judiciously choose which registers to use based on the x64 System V ABI to avoid bookkeeping work of saving and restoring registers. For example, we use <code>rax</code> to store <code>remaining_count</code> since this will be the return value, so that we do not have to do anything special at the end of the function.</p>
+<p>We now can focus on implementing <code>solve</code>. It's a one to one translation of the pseudo-code. We just have to judiciously choose which registers to use based on the x64 System V ABI to avoid bookkeeping work of saving and restoring registers. For example, we use <code>rax</code> to store <code>remaining_count</code> since this will be the return value, so that we do not have to do anything special at the end of the function.</p>
 <p>Another pitfall to be aware of is that since we are dealing with ASCII characters, we could use the 8 bit form of the registers. However, some opcode such as <code>imul</code> are not usable with these. We have to use the 16, 32, or 64 bit form. This does not compile:</p>
 <pre><code class="language-x86asm">  mov dl, 2
   imul dl, dl
@@ -384,7 +385,7 @@ static solve:function
   <a class="title" href="#benchmarking">Benchmarking</a>
   <a class="hash-anchor" href="#benchmarking" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
-<p>So, did it work? Is it fast? Let&#39;s compare the old C solution (also embedding the input data for a fair comparison) with our new Assembly one:</p>
+<p>So, did it work? Is it fast? Let's compare the old C solution (also embedding the input data for a fair comparison) with our new Assembly one:</p>
 <pre><code class="language-shell">$ clang -Ofast -g3 -march=native aoc2018_5.c -o aoc2018_5-c
 $ hyperfine --warmup 3 --shell=none ./aoc2018_5 ./aoc2018_5-c
 
@@ -397,8 +398,8 @@ Benchmark 2: ./aoc2018_5-c
   Range (min … max):     4.1 ms …  10.4 ms    442 runs
  
 Summary
-  &#39;./aoc2018_5&#39; ran
-    1.95 ± 0.86 times faster than &#39;./aoc2018_5-c&#39;
+  './aoc2018_5' ran
+    1.95 ± 0.86 times faster than './aoc2018_5-c'
 </code></pre>
 <p>Yes, indeed, almost twice as fast!</p>
 <h2 id="learnings">
@@ -407,7 +408,7 @@ Summary
 </h2>
 <ul>
 <li>Assembly can absolutely be written by hand, although with (much) more effort and a harder time troubleshooting what goes wrong.</li>
-<li>Some tools (profilers, reverse-engineering tools) expect that the assembly they consume came from a C source file and will be confused when it&#39;s not the case.</li>
+<li>Some tools (profilers, reverse-engineering tools) expect that the assembly they consume came from a C source file and will be confused when it's not the case.</li>
 <li>There is no need to reach for esoteric, vendor specific instructions (such as SIMD or Intel string opcodes) to go fast and even beat a C implementation that does a bit more work than necessary.</li>
 <li>Doing less work is the most important thing when optimizing.</li>
 <li>At the same time, doing a bit of work instead of memoizing can be fast(er), even though it seems counter-intuitive, due to memory latency and cache misses.</li>
@@ -1180,7 +1181,7 @@ static write_int:function
     mov rdx, 0 ; Reset rem.
     div rcx ; rax /= rcx
 
-    add rdx, &#39;0&#39; ; Convert to ascii.
+    add rdx, '0' ; Convert to ascii.
 
     ; *(end--) = rem
     dec BUF_END

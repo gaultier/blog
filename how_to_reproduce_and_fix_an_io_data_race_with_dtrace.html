@@ -74,6 +74,7 @@ Do not edit it by hand.
 
 <div class="article-prelude">
 <p><a href="/blog"> ⏴ Back to all articles</a></p>
+
   <p class="publication-date">Published on 2025-10-01.</p>
 </div>
 <div class="article-title">
@@ -113,7 +114,7 @@ Do not edit it by hand.
   <a class="title" href="#a-minimal-reproducer">A minimal reproducer</a>
   <a class="hash-anchor" href="#a-minimal-reproducer" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
-<p>The real codebase is big but here is a minimal reproducer for this article. It&#39;s conceptually quite simple: a goroutine writes to the file, and another goroutine reads from this file as soon as it is present, and parses the data (which is simply a host and port e.g. <code>localhost:4567</code>). In the real code, the two goroutines are in different components (they might even run in different OS processes now that I think of it) and thus an in-memory synchronization mechanism (mutex, etc) is not feasible:</p>
+<p>The real codebase is big but here is a minimal reproducer for this article. It's conceptually quite simple: a goroutine writes to the file, and another goroutine reads from this file as soon as it is present, and parses the data (which is simply a host and port e.g. <code>localhost:4567</code>). In the real code, the two goroutines are in different components (they might even run in different OS processes now that I think of it) and thus an in-memory synchronization mechanism (mutex, etc) is not feasible:</p>
 <pre><code class="language-go">package main
 
 import (
@@ -184,7 +185,7 @@ exit status 1
   <a class="title" href="#observe-reads-and-writes">Observe reads and writes</a>
   <a class="hash-anchor" href="#observe-reads-and-writes" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
-<p>We have two main possible approaches: observe system calls (with the <code>syscall::read:entry</code> syntax), or observe Go function calls (with the <code>pid$target::os.ReadFile:entry</code> syntax). Let&#39;s do both because it will turn out useful in a moment:</p>
+<p>We have two main possible approaches: observe system calls (with the <code>syscall::read:entry</code> syntax), or observe Go function calls (with the <code>pid$target::os.ReadFile:entry</code> syntax). Let's do both because it will turn out useful in a moment:</p>
 <pre><code class="language-dtrace">pid$target::os.ReadFile:entry  {
   this-&gt;name = stringof(copyin(arg0, arg1)); 
   ustack();
@@ -235,8 +236,8 @@ syscall::read:return
   self-&gt;trace = 0;
 }
 </code></pre>
-<p>Let&#39;s observe the happy case:</p>
-<pre><code class="language-text">dtrace: script &#39;/Users/philippe.gaultier/scratch/data_race_rw.d&#39; matched 10 probes
+<p>Let's observe the happy case:</p>
+<pre><code class="language-text">dtrace: script '/Users/philippe.gaultier/scratch/data_race_rw.d' matched 10 probes
 host=localhost addr=45564
 CPU     ID                    FUNCTION:NAME
   5  65087                    os.Stat:entry 
@@ -276,7 +277,7 @@ dtrace: pid 99037 has exited
 <p><em>The last read returning 0 is normal: this is how <code>os.ReadFile</code> detects the end of the file.</em></p>
 <p>We see that this case worked out well because the write fully finished before the read started.</p>
 <p>And now the error case (note how the syscalls are interleaved differently from the previous case):</p>
-<pre><code class="language-shell">dtrace: script &#39;/Users/philippe.gaultier/scratch/data_race_rw.d&#39; matched 10 probes
+<pre><code class="language-shell">dtrace: script '/Users/philippe.gaultier/scratch/data_race_rw.d' matched 10 probes
 error reading: missing port in address
 CPU     ID                    FUNCTION:NAME
   7 532133                    os.Stat:entry 
@@ -332,12 +333,12 @@ dtrace: pid 432 has exited
 <blockquote>
 <p>The execution of the specified command does not occur in the context of the firing probe – it occurs when the buffer containing the details of the system action are processed at user-level. How and when this processing occurs depends on the buffering policy, described in Buffers and Buffering.</p>
 </blockquote>
-<p>Alright, let&#39;s try something else, maybe <code>chill</code>?</p>
+<p>Alright, let's try something else, maybe <code>chill</code>?</p>
 <blockquote>
 <p>void chill(int nanoseconds)</p>
 <p>The chill action causes DTrace to spin for the specified number of nanoseconds. chill is primarily useful for exploring problems that might be timing related. For example, you can use this action to open race condition windows, or to bring periodic events into or out of phase with one another. Because interrupts are disabled while in DTrace probe context, any use of chill will induce interrupt latency, scheduling latency, and dispatch latency.</p>
 </blockquote>
-<p>Perfect! Let&#39;s try it (and remember to use the <code>-w</code> option on the DTrace command line to allow destructive actions):</p>
+<p>Perfect! Let's try it (and remember to use the <code>-w</code> option on the DTrace command line to allow destructive actions):</p>
 <pre><code class="language-diff">syscall::write:entry 
 /pid==$target/
 {
@@ -357,7 +358,7 @@ dtrace: pid 432 has exited
 </h2>
 <p>My biggest, niche pet peeve is seeing the use of <code>stat(2)</code> before doing an operation on the file. Not only is this unnecessary in nearly every case (the I/O operation such as <code>read(2)</code> or <code>write(2)</code> will report <code>EEXIST</code> if the file does not exist), not only is this a waste of time and battery, not only will many standard libraries do a <code>stat(2)</code> call anyway as part of reading/writing a file, but it also opens the door to various, hard-to-diagnose, TOCTOU issues, such as here.</p>
 <p>I guess a fine use of <code>stat(2)</code> before reading a file is to discover the file size, in order to reserve capacity in a growable array before reading the file data into it. It is just a hint anyway to avoid lots of reallocations. This is in fact exactly what <code>os.ReadFile</code> does under the covers. Which makes our use of <code>os.Stat</code> even more redundant.</p>
-<p>Now, let&#39;s fix the bug by doing less (as it is often the case, I have found). We can simply try to read the file and parse its content. If we fail, we retry.</p>
+<p>Now, let's fix the bug by doing less (as it is often the case, I have found). We can simply try to read the file and parse its content. If we fail, we retry.</p>
 <pre><code class="language-diff">--- io_race.go	2025-10-01 18:01:47
 +++ io_race_fixed.go	2025-10-01 18:14:51
 @@ -25,18 +25,18 @@
@@ -394,7 +395,7 @@ dtrace: pid 432 has exited
   <a class="hash-anchor" href="#conclusion" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>Every time you use a <code>stat(2)</code> syscall, ask yourself if this is necessary and if a TOCTOU bug is possible.</p>
-<p>Also, I&#39;m happy to have discovered the <code>chill</code> DTrace action to simulate disk (or network, or anything really) latency. I can see myself running the test suite with this on, to detect other cases of TOCTOU. Another tool in the toolbox!</p>
+<p>Also, I'm happy to have discovered the <code>chill</code> DTrace action to simulate disk (or network, or anything really) latency. I can see myself running the test suite with this on, to detect other cases of TOCTOU. Another tool in the toolbox!</p>
 
 <p><a href="/blog"> ⏴ Back to all articles</a></p>
 <blockquote id="donate">

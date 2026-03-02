@@ -74,6 +74,7 @@ Do not edit it by hand.
 
 <div class="article-prelude">
 <p><a href="/blog"> ⏴ Back to all articles</a></p>
+
   <p class="publication-date">Published on 2025-09-16.</p>
 </div>
 <div class="article-title">
@@ -106,7 +107,7 @@ Do not edit it by hand.
   <a class="title" href="#the-problem">The problem</a>
   <a class="hash-anchor" href="#the-problem" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
-<p>We&#39;ve all been there: a test fails, and you&#39;re digging through code, wondering how or if a file is being accessed.</p>
+<p>We've all been there: a test fails, and you're digging through code, wondering how or if a file is being accessed.</p>
 <p>Go can bake files into the final executable at build time with the <code>//go:embed</code> syntax. This is handy for example for SQL migration files, so that the application can apply pending SQL migrations (if any) at start-up.
 And files can also be read at runtime of course.</p>
 <p>While debugging an issue with a failing test, I had to answer this question: are the SQL migration files being read at build time or run time (this topic has bit me <a href="/blog/an_optimization_and_debugging_story_go_dtrace.html#establishing-a-baseline">in the past</a>)? The source code had the annotation: <code>//go:embed migrations/*.sql</code>, but it seemed that somehow, some I/O was still happening at runtime?</p>
@@ -170,8 +171,8 @@ migratest.test ??/testdata/20240131100001_testdata.sql
   <a class="title" href="#addendum-the-io-provider-vs-the-syscall-provider">Addendum: The io provider vs. the syscall provider</a>
   <a class="hash-anchor" href="#addendum-the-io-provider-vs-the-syscall-provider" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
-<p>The advantage of using the <code>io</code> provider is that it should be cross-platform, whereas observing particular syscalls is not (did you know that DTrace works on Windows? What are the syscalls there to open a file? I don&#39;t know).</p>
-<p>Additionally, the <code>io</code> provider gives our D script kernel-space data, but <code>syscall</code> gives us user-space data, which we must remember to copy manually with <code>copyin</code> before inspecting it. So it&#39;s easier with <code>io</code> and potentially faster.</p>
+<p>The advantage of using the <code>io</code> provider is that it should be cross-platform, whereas observing particular syscalls is not (did you know that DTrace works on Windows? What are the syscalls there to open a file? I don't know).</p>
+<p>Additionally, the <code>io</code> provider gives our D script kernel-space data, but <code>syscall</code> gives us user-space data, which we must remember to copy manually with <code>copyin</code> before inspecting it. So it's easier with <code>io</code> and potentially faster.</p>
 
 <p><a href="/blog"> ⏴ Back to all articles</a></p>
 <blockquote id="donate">

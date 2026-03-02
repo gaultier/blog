@@ -74,6 +74,7 @@ Do not edit it by hand.
 
 <div class="article-prelude">
 <p><a href="/blog"> ⏴ Back to all articles</a></p>
+
   <p class="publication-date">Published on 2023-11-23.</p>
 </div>
 <div class="article-title">
@@ -124,7 +125,7 @@ Do not edit it by hand.
 <li>I want a flamegraph showing allocations by function</li>
 </ul>
 <p>What to do? Mainstream allocators such as <code>tcmalloc</code> and <code>jemalloc</code> can provide us this information but we have lost this ability by using our own!</p>
-<p>Well, it turns out that this can all be achieved very simply without adding dependencies to your application, in ~100 lines of code (including lots of comments). I&#39;ll show one way and then explore other possibilities. And here are the results we are working towards:</p>
+<p>Well, it turns out that this can all be achieved very simply without adding dependencies to your application, in ~100 lines of code (including lots of comments). I'll show one way and then explore other possibilities. And here are the results we are working towards:</p>
 <p><img src="mem_prof1.png" alt="1" />
 <em>Profiling the memory usage of my <a href="https://github.com/gaultier/micro-kotlin">micro-kotlin</a> project.</em></p>
 <p><img src="mem_prof2.png" alt="2" />
@@ -132,7 +133,7 @@ Do not edit it by hand.
 <p><img src="mem_prof3.png" alt="3" />
 <em>A flamegraph based on the previous data.</em></p>
 <p>The only requirement to make it all work is to be able to run a bit of code on each allocation.</p>
-<p>Another good reason to do this, is when the system&#39;s <code>malloc</code> comes with some form of memory profiling which is not suitable for your needs and you want something different/better/the same on every platform.</p>
+<p>Another good reason to do this, is when the system's <code>malloc</code> comes with some form of memory profiling which is not suitable for your needs and you want something different/better/the same on every platform.</p>
 <blockquote>
 <p>If you spot an error, please open a <a href="https://github.com/gaultier/blog">Github issue</a>!</p>
 </blockquote>
@@ -166,8 +167,8 @@ MAPPED_LIBRARIES:
 <p>The first line is a header identifying that this is a heap profile (contrary to a CPU profile which <code>pprof</code> can also analyze, which uses a different, binary, format) and gives for each of the four fields we will record, their sum.</p>
 <p>Then comes one line per entry. Each entry has these four fields that the header just gave us a sum of:</p>
 <ul>
-<li><code>in use objects</code>: How many objects are &#39;live&#39; i.e. in use on the heap at the time of the allocation. Allocating increases its value, freeing decreases it.</li>
-<li><code>in use bytes</code>: How many bytes are &#39;live&#39; i.e. in use on the heap at the time of the allocation. Allocating increases its value, freeing decreases it.</li>
+<li><code>in use objects</code>: How many objects are 'live' i.e. in use on the heap at the time of the allocation. Allocating increases its value, freeing decreases it.</li>
+<li><code>in use bytes</code>: How many bytes are 'live' i.e. in use on the heap at the time of the allocation. Allocating increases its value, freeing decreases it.</li>
 <li><code>space objects</code>: How many objects have been allocated since the start of the program. It is not affected by freeing memory, it only increases.</li>
 <li><code>space bytes</code>: How many bytes have been allocated since the start of the program. It is not affected by freeing memory, it only increases.</li>
 </ul>
@@ -193,7 +194,7 @@ MAPPED_LIBRARIES:
 </ul>
 <p>These 4 dimensions are really useful to spot memory leaks (<code>in use objects</code> and <code>in use bytes</code> increase over time), peak memory usage (<code>space bytes</code>), whether we are doing many small allocations versus a few big allocations, etc.
 <code>pprof</code> also supports sampling and we could supply a sampling rate here optionally but we want to track each and every allocation so we do not bother with that.</p>
-<p>Each entry (i.e. line) ends with the call stack which is a space-separated list of addresses. We&#39;ll see that it is easy to get that information without resorting to external libraries such as <code>libunwind</code> by simply walking the stack, a topic I touched on in a previous <a href="/blog/x11_x64.html#a-stack-primer">article</a>.</p>
+<p>Each entry (i.e. line) ends with the call stack which is a space-separated list of addresses. We'll see that it is easy to get that information without resorting to external libraries such as <code>libunwind</code> by simply walking the stack, a topic I touched on in a previous <a href="/blog/x11_x64.html#a-stack-primer">article</a>.</p>
 <p>Very importantly, multiple allocation records with the same stack must be merged together into one, summing their values. In that sense, each line conceptually an entry in a hashmap where the key is the call stack (the part of the right of the <code>@</code> character) and the value is a 4-tuple: <code>(u64, u64, u64, u64)</code> (the part on the left of the <code>@</code> character).</p>
 <p>The text file ends with a trailer which is crucial for symbolication (to transform memory addresses into source code locations), which on Linux is trivial to get: This is just a copy of the file <code>/proc/self/maps</code>. It lists of the loaded libraries and at which address they are.</p>
 <p>I have not implemented it myself but a quick internet search shows that the other major operating systems have a similar capability, named differently:</p>
@@ -322,7 +323,7 @@ Total: 0.0 MB
   <a class="title" href="#generating-a-pprof-profile">Generating a pprof profile</a>
   <a class="hash-anchor" href="#generating-a-pprof-profile" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
-<p>Let&#39;s start with a very simple arena (directly based on <a href="https://nullprogram.com/blog/2023/09/27/">https://nullprogram.com/blog/2023/09/27/</a>) and show how it is used:</p>
+<p>Let's start with a very simple arena (directly based on <a href="https://nullprogram.com/blog/2023/09/27/">https://nullprogram.com/blog/2023/09/27/</a>) and show how it is used:</p>
 <pre><code class="language-c">#define _GNU_SOURCE
 #include &lt;stdint.h&gt;
 #include &lt;stdio.h&gt;
@@ -438,7 +439,7 @@ int main(){
     // `rip` points to the return instruction in the caller, once this call is
     // done. But: We want the location of the call i.e. the `call xxx`
     // instruction, so we subtract one byte to point inside it, which is not
-    // quite &#39;at&#39; it, but good enough.
+    // quite 'at' it, but good enough.
     dst[len++] = rip - 1;
 
     if (len &gt;= cap)
@@ -448,8 +449,8 @@ int main(){
 }
 </code></pre>
 <p>Now we can record the allocation proper, upserting the new record into our existing list of records, trying to find an existing record with the same call stack.
-That part is important to avoid having a huge profile and that&#39;s why <code>pprof</code> made this design decision.</p>
-<p>The code is slightly lengthy because we need to roll our own arrays here in this minimal example, but in a real application you&#39;d have your own array structure and helper functions, most likely:</p>
+That part is important to avoid having a huge profile and that's why <code>pprof</code> made this design decision.</p>
+<p>The code is slightly lengthy because we need to roll our own arrays here in this minimal example, but in a real application you'd have your own array structure and helper functions, most likely:</p>
 <pre><code class="language-c">static void mem_profile_record_alloc(mem_profile_t *profile,
                                      uint64_t objects_count,
                                      uint64_t bytes_count) {
@@ -520,7 +521,7 @@ That part is important to avoid having a huge profile and that&#39;s why <code>p
     for (uint64_t j = 0; j &lt; r.call_stack_len; j++) {
       fprintf(out, &quot;%#lx &quot;, r.call_stack[j]);
     }
-    fputc(&#39;\n&#39;, out);
+    fputc('\n', out);
   }
 
   fputs(&quot;\nMAPPED_LIBRARIES:\n&quot;, out);
@@ -537,7 +538,7 @@ That part is important to avoid having a huge profile and that&#39;s why <code>p
   fflush(out);
 }
 </code></pre>
-<p>And we&#39;re done! Let&#39;s try it with our initial example (bumping the size of the allocations a bit because <code>pprof</code> ignores tiny allocations for readability - although this is configurable):</p>
+<p>And we're done! Let's try it with our initial example (bumping the size of the allocations a bit because <code>pprof</code> ignores tiny allocations for readability - although this is configurable):</p>
 <pre><code class="language-c">void b(int n, arena_t *arena) {
   arena_alloc(arena, sizeof(int), _Alignof(int), n);
 }
@@ -580,7 +581,7 @@ $ pprof --web ./a.out heap.profile
 <li>For this article we always do memory profiling and abort once the arena is full; but it does not have to be this way. Memory profiling could be enabled in a CLI program with a command line flag; if it is disabled we do not create a memory profile nor an arena for it. Or, it could be enabled/disabled dynamically, after a given amount of time, etc. It could also stop when its dedicated arena is full instead of aborting the whole program.</li>
 <li>Sampling could be easily added to <code>mem_profile_record_alloc</code> to only record some records, say 1%</li>
 <li>The current maximum call stack depth is 64, for brevity in the context of this article. We can store a bigger one by having a dynamically sized array or storing each address in a more compact format, e.g. varint instead of a fixed 8 bytes</li>
-<li>Stack traces won&#39;t work across library calls that are compiled without frame pointers. To which I&#39;d say: It&#39;s likely easier to compile all of the code you depend on with the build flags you require than try to come up with alternative ways to walk the stack. Your mileage may vary.</li>
+<li>Stack traces won't work across library calls that are compiled without frame pointers. To which I'd say: It's likely easier to compile all of the code you depend on with the build flags you require than try to come up with alternative ways to walk the stack. Your mileage may vary.</li>
 <li>We use linear scanning to find an existing record with the same call stack. When having lots of records, it would be advantageous to use a binary search on a sorted array or perhaps a hashtable.</li>
 </ul>
 <h2 id="alternatives">
@@ -609,9 +610,9 @@ $ pprof --web ./a.out heap.profile
   <a class="title" href="#conclusion">Conclusion</a>
   <a class="hash-anchor" href="#conclusion" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
-<p>I like that one of the most common memory profilers uses a very simple text format that anyone can generate, and that&#39;s it&#39;s stand-alone. It&#39;s very UNIXy!</p>
-<p>Nonetheless, I will in the future explore the other aforementioned profilers (probably the Chrome one because it seems the most straightforward) and I do not think it should be much additional work. It&#39;s nice to leverage the existing browser to avoid having to install a profiler.</p>
-<p>After all, it&#39;s been <a href="https://technology.riotgames.com/news/profiling-real-world-performance-league">done before</a>!</p>
+<p>I like that one of the most common memory profilers uses a very simple text format that anyone can generate, and that's it's stand-alone. It's very UNIXy!</p>
+<p>Nonetheless, I will in the future explore the other aforementioned profilers (probably the Chrome one because it seems the most straightforward) and I do not think it should be much additional work. It's nice to leverage the existing browser to avoid having to install a profiler.</p>
+<p>After all, it's been <a href="https://technology.riotgames.com/news/profiling-real-world-performance-league">done before</a>!</p>
 <h2 id="addendum-the-full-code">
   <a class="title" href="#addendum-the-full-code">Addendum: the full code</a>
   <a class="hash-anchor" href="#addendum-the-full-code" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
@@ -663,7 +664,7 @@ static uint8_t record_call_stack(uint64_t *dst, uint64_t cap) {
     // `rip` points to the return instruction in the caller, once this call is
     // done. But: We want the location of the call i.e. the `call xxx`
     // instruction, so we subtract one byte to point inside it, which is not
-    // quite &#39;at&#39; it, but good enough.
+    // quite 'at' it, but good enough.
     dst[len++] = rip - 1;
 
     if (len &gt;= cap)
@@ -740,7 +741,7 @@ static void mem_profile_write(mem_profile_t *profile, FILE *out) {
     for (uint64_t j = 0; j &lt; r.call_stack_len; j++) {
       fprintf(out, &quot;%#lx &quot;, r.call_stack[j]);
     }
-    fputc(&#39;\n&#39;, out);
+    fputc('\n', out);
   }
 
   fputs(&quot;\nMAPPED_LIBRARIES:\n&quot;, out);
