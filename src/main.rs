@@ -376,7 +376,6 @@ fn md_render_article_content(
             writeln!(content, "</h{}>", heading.depth).unwrap();
         }
         Node::Table(table) => {
-            dbg!(table);
             writeln!(content, "<table>").unwrap();
             let (thead, tbdody) = table.children.split_first().unwrap();
             writeln!(content, "<thead>").unwrap();
