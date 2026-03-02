@@ -90,7 +90,7 @@ Do not edit it by hand.
 </details>
 
 <p>I have a Rust codebase at work. The other day, I was wondering how many lines of code were in there. Whether you use <code>wc -l ***.rs</code> or a more fancy tool like <code>tokei</code>, there is an issue: this will count the source code <em>as well as</em> tests.</p>
-<p>That's because in Rust and in some other languages, people write their tests in the same files as the implementation. Typically it looks like that:</p>
+<p>That&#39;s because in Rust and in some other languages, people write their tests in the same files as the implementation. Typically it looks like that:</p>
 <pre><code class="language-rust">// src/foo.rs
 
 fn foo() { 
@@ -106,36 +106,36 @@ mod tests {
     ...
 }
 </code></pre>
-<p>But I only want to know how big is the implementation. I don't care about the tests. And <code>wc</code> or <code>tokei</code> will not show me that.</p>
-<p>So I resorted to my trusty <code>awk</code>. Let's first count all lines, like <code>wc</code> does:</p>
-<pre><code class="language-shell">$ awk '{count += 1} END{print(count)}' src/***.rs
+<p>But I only want to know how big is the implementation. I don&#39;t care about the tests. And <code>wc</code> or <code>tokei</code> will not show me that.</p>
+<p>So I resorted to my trusty <code>awk</code>. Let&#39;s first count all lines, like <code>wc</code> does:</p>
+<pre><code class="language-shell">$ awk &#39;{count += 1} END{print(count)}&#39; src/***.rs
 # Equivalent to:
 $ wc -l src/***/.rs
 </code></pre>
 <p>On my open-source Rust <a href="https://github.com/gaultier/kotlin-rs">project</a>, this prints <code>11485</code>.</p>
-<p>Alright, now let's exclude the tests. When we encounter the line <code>mod tests</code>, we stop counting. Note that this name is just a convention, but that's one that followed pretty much universally in Rust code, and there is usually no more code after this section. Tweak the name if needed:</p>
-<pre><code class="language-shell">$ awk '/mod tests/{skip[FILENAME]=1}  !skip[FILENAME]{count += 1} END{print(count)}'  src/***.rs
+<p>Alright, now let&#39;s exclude the tests. When we encounter the line <code>mod tests</code>, we stop counting. Note that this name is just a convention, but that&#39;s one that followed pretty much universally in Rust code, and there is usually no more code after this section. Tweak the name if needed:</p>
+<pre><code class="language-shell">$ awk &#39;/mod tests/{skip[FILENAME]=1}  !skip[FILENAME]{count += 1} END{print(count)}&#39;  src/***.rs
 </code></pre>
 <p>And this prints in the same project: <code>10057</code>.</p>
-<p>Let's unpack it:</p>
+<p>Let&#39;s unpack it:</p>
 <ul>
 <li>We maintain a hashtable called <code>skip</code> which is a mapping of the file name to whether or not we should skip the rest of this file. In AWK we do not need to initialize variables, we can use them right away and they are zero initialized. AWK also automatically stores the name of the current file in the global builtin variable <code>FILENAME</code>.</li>
-<li><code>/mod tests/</code>: this pattern matches the line containing <code>mod tests</code>. The action for this line is to flag this file as 'skipped', by setting the value in the map for this file to <code>1</code> (i.e. <code>true</code>).</li>
-<li><code>!skip[FILENAME]{count += 1}</code>: If this line for the current file is not flagged as 'skipped', we increment for each line, the global counter. Most people think that AWK can only use patterns as clauses before the action, but in fact it also supports boolean conditions, and both can be use together, e.g.: <code>/foo/ &amp;&amp; !skip[FILENAME] {print(&quot;hello&quot;)}</code></li>
+<li><code>/mod tests/</code>: this pattern matches the line containing <code>mod tests</code>. The action for this line is to flag this file as &#39;skipped&#39;, by setting the value in the map for this file to <code>1</code> (i.e. <code>true</code>).</li>
+<li><code>!skip[FILENAME]{count += 1}</code>: If this line for the current file is not flagged as &#39;skipped&#39;, we increment for each line, the global counter. Most people think that AWK can only use patterns as clauses before the action, but in fact it also supports boolean conditions, and both can be use together, e.g.: <code>/foo/ &amp;&amp; !skip[FILENAME] {print(&quot;hello&quot;)}</code></li>
 <li><code>END{print(count)}</code>: we print the count at the very end.</li>
 </ul>
-<p>And that's it. AWK is always very nifty.</p>
+<p>And that&#39;s it. AWK is always very nifty.</p>
 <h2 id="addendum-exit">
   <a class="title" href="#addendum-exit">Addendum: exit</a>
   <a class="hash-anchor" href="#addendum-exit" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>Originally I implemented it wrongly, like this:</p>
-<pre><code class="language-shell">$ awk '/mod tests/{exit 0} {count += 1} END{print(count)}'  src/***.rs
+<pre><code class="language-shell">$ awk &#39;/mod tests/{exit 0} {count += 1} END{print(count)}&#39;  src/***.rs
 </code></pre>
 <p>If we encounter tests, stop processing the file altogether, with the builtin statement <code>exit</code> (<a href="https://www.gnu.org/software/gawk/manual/html_node/Exit-Statement.html">docs</a>).</p>
 <p>Running this on the same Rust codebase prints: <code>1038</code> which is obviously wrong.</p>
 <p>Why is it wrong then?</p>
-<p>Well, as I understand it, AWK processes all inputs files one by one, as if it was one big sequential file (it will still fill the builtin constant <code>FILENAME</code> though, that's why the solution above works). Since there is no isolation between the processing each file (AWK does not spawn a subprocess for each file), it means we simply stop altogether at the first encountered test in any file.</p>
+<p>Well, as I understand it, AWK processes all inputs files one by one, as if it was one big sequential file (it will still fill the builtin constant <code>FILENAME</code> though, that&#39;s why the solution above works). Since there is no isolation between the processing each file (AWK does not spawn a subprocess for each file), it means we simply stop altogether at the first encountered test in any file.</p>
 
 <p><a href="/blog"> ⏴ Back to all articles</a></p>
 <blockquote id="donate">

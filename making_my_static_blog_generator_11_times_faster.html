@@ -5,7 +5,7 @@ Do not edit it by hand.
 <!DOCTYPE html>
 <html>
 <head>
-<title>Making my static blog generator <del>11</del> 33 times faster</title>
+<title>Making my static blog generator &lt;del&gt;11&lt;/del&gt; 33 times faster</title>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link type="application/atom+xml" href="/blog/feed.xml" rel="self">
@@ -117,13 +117,13 @@ Do not edit it by hand.
 </ul>
 </details>
 
-<p>This blog is statically generated from Markdown files. It used to be fast, but nowadays it's not:</p>
+<p>This blog is statically generated from Markdown files. It used to be fast, but nowadays it&#39;s not:</p>
 <pre><code class="language-shell"> $ hyperfine --warmup 2 ./master.bin 
 Benchmark 1: ./master.bin
   Time (mean ± σ):      1.873 s ±  0.053 s    [User: 1.351 s, System: 0.486 s]
   Range (min … max):    1.806 s …  1.983 s    10 runs
 </code></pre>
-<p>~ 2 seconds is not the end of the world, but it's just enough to be annoying when doing lots of edit-view cycles. Worse, it seemed to become slower and slower as I wrote more articles. So today I finally dedicated some time to tackle this problem.</p>
+<p>~ 2 seconds is not the end of the world, but it&#39;s just enough to be annoying when doing lots of edit-view cycles. Worse, it seemed to become slower and slower as I wrote more articles. So today I finally dedicated some time to tackle this problem.</p>
 <h2 id="the-investigation">
   <a class="title" href="#the-investigation">The investigation</a>
   <a class="hash-anchor" href="#the-investigation" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
@@ -138,24 +138,24 @@ Benchmark 1: ./master.bin
 <p>Later on, I added the publication date:</p>
 <pre><code class="language-make">%.html: %.md header.html footer.html
         cat header.html &gt;&gt; $@
-        printf '&lt;p id=&quot;publication_date&quot;&gt;Published on %s.&lt;/p&gt;\n' $$(git log --format='%as' --reverse -- $&lt; | head -n1)  &gt;&gt; $@; fi
+        printf &#39;&lt;p id=&quot;publication_date&quot;&gt;Published on %s.&lt;/p&gt;\n&#39; $$(git log --format=&#39;%as&#39; --reverse -- $&lt; | head -n1)  &gt;&gt; $@; fi
         pandoc --toc $&lt; &gt;&gt; $@
         cat footer.html &gt;&gt; $@
 </code></pre>
-<p>The publication date is the creation date, that is: the date of the first Git commit for this file. So we ask Git for the list of commits for this file (they are provided by default from newest to oldest, so we <code>--reverse</code> the list), take the first one with <code>head</code>, done. It's simple.</p>
-<p><em>Note: My initial approach was to get the creation and modification date from the file system, but it's incorrect, as soon as you work on more than one machine. The way Git works is that when you pull commits that created a file, it creates the file on the file system and does not try to hack the creation date. Thus the file creation date is the time of the Git pull, not the date of the commit that first created it.</em></p>
-<p>As I added more and more features to this blog, like a list of article by tags, a home page that automatically lists all of the articles, a RSS feed, the 'last modified' date for an article, etc, I outgrew the Makefile approach and wrote a small <a href="https://github.com/gaultier/blog/blob/master/src/main.odin">program</a> (initially in Zig, then in <a href="https://odin-lang.org/">Odin</a>, now in C) to do all that. But the core approach remained:</p>
+<p>The publication date is the creation date, that is: the date of the first Git commit for this file. So we ask Git for the list of commits for this file (they are provided by default from newest to oldest, so we <code>--reverse</code> the list), take the first one with <code>head</code>, done. It&#39;s simple.</p>
+<p><em>Note: My initial approach was to get the creation and modification date from the file system, but it&#39;s incorrect, as soon as you work on more than one machine. The way Git works is that when you pull commits that created a file, it creates the file on the file system and does not try to hack the creation date. Thus the file creation date is the time of the Git pull, not the date of the commit that first created it.</em></p>
+<p>As I added more and more features to this blog, like a list of article by tags, a home page that automatically lists all of the articles, a RSS feed, the &#39;last modified&#39; date for an article, etc, I outgrew the Makefile approach and wrote a small <a href="https://github.com/gaultier/blog/blob/master/src/main.odin">program</a> (initially in Zig, then in <a href="https://odin-lang.org/">Odin</a>, now in C) to do all that. But the core approach remained:</p>
 <ul>
 <li>List all markdown files in the current directory (e.g. <code>ls *.md</code>, the Makefile did that for us with <code>%.md</code>)</li>
 <li><p>For each markdown file, sequentially:</p>
 <ul>
-<li>Run <code>git log article.md</code> to get the date of the first and last commits for this file (respectively 'created at' and 'modified at')</li>
+<li>Run <code>git log article.md</code> to get the date of the first and last commits for this file (respectively &#39;created at&#39; and &#39;modified at&#39;)</li>
 <li>Convert the markdown content to HTML</li>
 <li>Save this HTML to <code>article.html</code></li>
 </ul>
 </li>
 </ul>
-<p>For long time, it was all good. It was single-threaded, but plenty fast. So I wrote more and more articles. But now it's too slow. Why? Let's profile it:</p>
+<p>For long time, it was all good. It was single-threaded, but plenty fast. So I wrote more and more articles. But now it&#39;s too slow. Why? Let&#39;s profile it:</p>
 <p><object alt="Profile before the optimization" data="making_my_static_blog_generator_11_times_faster_profile_before.svg" type="image/svg+xml">
 </object>
 </p>
@@ -167,25 +167,25 @@ Benchmark 1: ./master.bin
  94.85    0.479290        3928       122           waitid
 [...]
 </code></pre>
-<p>So ~ <strong>95 %</strong> of the running time is spent waiting on a subprocess. It's mainly git - we also run <code>cmark</code> as a subprocess but it's really really fast. We could further investigate with <code>strace</code> which process we are waiting on but the CPU profile already points the finger at Git and <code>cmark</code> is not even visible on it.</p>
-<p>At this point it's important to mention that this program is a very simplistic static site generator: it is stateless and processes every markdown file in the repository one by one. You could say that it's a regression compared to the Makefile because <code>make</code> has built-in parallelism with <code>-j</code> and change detection. But in reality, change detection in make is primitive and I often want to reprocess everything because of a change that applies to every file. For example, I reword the <code>Donate</code> section at the end of each article (wink wink), or the header, or the footer, etc.</p>
-<p>Also, I really am fond of this 'pure function' approach. There is no caching issue to debug, no complicated code to write, no data races, no async callbacks, etc.</p>
+<p>So ~ <strong>95 %</strong> of the running time is spent waiting on a subprocess. It&#39;s mainly git - we also run <code>cmark</code> as a subprocess but it&#39;s really really fast. We could further investigate with <code>strace</code> which process we are waiting on but the CPU profile already points the finger at Git and <code>cmark</code> is not even visible on it.</p>
+<p>At this point it&#39;s important to mention that this program is a very simplistic static site generator: it is stateless and processes every markdown file in the repository one by one. You could say that it&#39;s a regression compared to the Makefile because <code>make</code> has built-in parallelism with <code>-j</code> and change detection. But in reality, change detection in make is primitive and I often want to reprocess everything because of a change that applies to every file. For example, I reword the <code>Donate</code> section at the end of each article (wink wink), or the header, or the footer, etc.</p>
+<p>Also, I really am fond of this &#39;pure function&#39; approach. There is no caching issue to debug, no complicated code to write, no data races, no async callbacks, etc.</p>
 <p>My performance target was to process every file within 1s, or possibly even 0.5s.</p>
 <p>I could see a few options:</p>
 <ul>
-<li>Do not block on <code>git log</code>. We can use a thread pool, or an <a href="/blog/way_too_many_ways_to_wait_for_a_child_process_with_a_timeout.html">asynchronous approach</a> to spawn all the git processes at once, and wait for all of them to finish. But it's more complex.</li>
+<li>Do not block on <code>git log</code>. We can use a thread pool, or an <a href="/blog/way_too_many_ways_to_wait_for_a_child_process_with_a_timeout.html">asynchronous approach</a> to spawn all the git processes at once, and wait for all of them to finish. But it&#39;s more complex.</li>
 <li>Implement caching so that only the changed markdown files get regenerated.</li>
 <li>Make <code>git log</code> faster somehow.</li>
 </ul>
 <p>The last option was my preferred one because it did not force me to re-architect the whole program.</p>
 <p>Note that the other two options are sill on the table regardless of whether our experiment works out or not.</p>
 <h2 id="when-there-s-one-there-s-many">
-  <a class="title" href="#when-there-s-one-there-s-many">When there's one, there's many</a>
+  <a class="title" href="#when-there-s-one-there-s-many">When there&#39;s one, there&#39;s many</a>
   <a class="hash-anchor" href="#when-there-s-one-there-s-many" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
-<p>My intuition was to do a deep dive in the <code>git log</code> options, to see if I could instruct it to do less work. But then something struck me: we invoke <code>git log</code> to get all commits for one markdown file (even though we only are interested in the first and last, but that's the only interface Git provides us as far as I know). What if we invoked it once <em>for all markdown files</em>? Yes, the output might be a bit big... How big? Is it really faster? Let's measure!</p>
-<p>Conceptually we can simply do <code>git log '*.md'</code> and parse the output. We can refine that approach later with more options, but that's the gist of it:</p>
-<pre><code class="language-shell"> $ time git log '*.md' | wc -c
+<p>My intuition was to do a deep dive in the <code>git log</code> options, to see if I could instruct it to do less work. But then something struck me: we invoke <code>git log</code> to get all commits for one markdown file (even though we only are interested in the first and last, but that&#39;s the only interface Git provides us as far as I know). What if we invoked it once <em>for all markdown files</em>? Yes, the output might be a bit big... How big? Is it really faster? Let&#39;s measure!</p>
+<p>Conceptually we can simply do <code>git log &#39;*.md&#39;</code> and parse the output. We can refine that approach later with more options, but that&#39;s the gist of it:</p>
+<pre><code class="language-shell"> $ time git log &#39;*.md&#39; | wc -c
 191196
 
 ________________________________________________________
@@ -193,7 +193,7 @@ Executed in   73.69 millis    fish           external
    usr time   61.04 millis  738.00 micros   60.30 millis
    sys time   15.95 millis  191.00 micros   15.76 millis
 </code></pre>
-<p>So it's much faster than doing it per file, and also it's entire output is ~ 186 KiB. And these numbers should grow very slowly because each new commit only adds 20-100 bytes to the output.</p>
+<p>So it&#39;s much faster than doing it per file, and also it&#39;s entire output is ~ 186 KiB. And these numbers should grow very slowly because each new commit only adds 20-100 bytes to the output.</p>
 <p>Looks like we got our solution. There is one added benefit: we do not need to list all <code>.md</code> files in the directory at startup. Git gives us this information (in my case there are no markdown files <em>not</em> tracked by Git).</p>
 <p>Mike Acton and <a href="https://en.wikipedia.org/wiki/Data-oriented_design">Data Oriented Design</a> are right once again:</p>
 <blockquote>
@@ -212,13 +212,13 @@ Executed in   73.69 millis    fish           external
 </ul>
 <p>Hence we pass to <code>git log</code>:</p>
 <ul>
-<li><code>--format='%aI'</code> to get the date in ISO format</li>
+<li><code>--format=&#39;%aI&#39;</code> to get the date in ISO format</li>
 <li><code>--name-status</code> to know which files this commit added (<code>A</code>), modified (<code>M</code>), deleted (<code>D</code>), or renamed (<code>R</code>)</li>
 <li><code>--no-merges</code> to skip merge commits since they do not directly affect any file</li>
 <li><code>--diff-filter=AMRD</code> to only get commits that add/modify/delete/rename files. We are not interested in commits changing the permissions on a file, or modifying symbolic links, etc.</li>
 </ul>
 <p>With these options we get even better numbers:</p>
-<pre><code class="language-shell">$ time git log --format='%aI' --name-status --no-merges --diff-filter=AMDR  -- '*.md' | wc -c
+<pre><code class="language-shell">$ time git log --format=&#39;%aI&#39; --name-status --no-merges --diff-filter=AMDR  -- &#39;*.md&#39; | wc -c
 77832
 
 ________________________________________________________
@@ -231,7 +231,7 @@ Executed in  108.38 millis    fish           external
                                                                                      | [1] Empty line
 M       how_to_rewrite_a_cpp_codebase_successfully.md                                | [1] A list of files affected by this commit.
 M       write_a_video_game_from_scratch_like_1987.md                                 | [1] Each starts with a letter describing the action.
-M       x11_x64.md                                                                   | [1] Here it's all modifications.
+M       x11_x64.md                                                                   | [1] Here it&#39;s all modifications.
 M       you_inherited_a_legacy_cpp_codebase_now_what.md                              | [1]
 2025-02-02T22:54:23+01:00                                                            | [2] The second entry starts.
                                                                                      | [2] 
@@ -241,7 +241,7 @@ R100    cross-platform-timers.md        the_missing_cross_platform_api_for_timer
 <p>Parsing this commit log is tedious but not extremely difficult.</p>
 <p>We maintain a map while inspecting each commit: <code>map&lt;Path, (creation_date, modification_date, tombstone)&gt;</code>.</p>
 <p>In case of a rename or delete, we set the <code>tombstone</code> to <code>true</code>. Why not remove the entry from the map directly? Well, we are inspecting the list of commits from newest to oldest.
-So first we'll encounter the delete/rename commit for this file, and then later in the stream, a number of add/modify commits. When we are done, we need to remember that this markdown file should be ignored, otherwise, we'll try to open it, read it, and convert it to HTML, but we'll get a <code>ENOENT</code> error because it does not exist anymore on disk. We could avoid having this tombstone field and just bail on <code>ENOENT</code>, that's a matter of taste I guess, but this field was useful to me to ensure that the parsing code is correct.</p>
+So first we&#39;ll encounter the delete/rename commit for this file, and then later in the stream, a number of add/modify commits. When we are done, we need to remember that this markdown file should be ignored, otherwise, we&#39;ll try to open it, read it, and convert it to HTML, but we&#39;ll get a <code>ENOENT</code> error because it does not exist anymore on disk. We could avoid having this tombstone field and just bail on <code>ENOENT</code>, that&#39;s a matter of taste I guess, but this field was useful to me to ensure that the parsing code is correct.</p>
 <p>Alternatively, we could pass <code>--reverse</code> to <code>git log</code> and parse the commits in chronological order. When we see a delete/rename commit for a file, we can safely remove the entry from the map since no more commits about this file should show up after that.</p>
 <h2 id="the-new-implementation">
   <a class="title" href="#the-new-implementation">The new implementation</a>
@@ -263,7 +263,7 @@ get_articles_creation_and_modification_date :: proc() -&gt; ([]GitStat, os2.Erro
 				&quot;git&quot;,
 				&quot;log&quot;,
 				// Print the date in ISO format.
-				&quot;--format='%aI'&quot;,
+				&quot;--format=&#39;%aI&#39;&quot;,
 				// Ignore merge commits since they do not carry useful information.
 				&quot;--no-merges&quot;,
 				// Only interested in creation, modification, renaming, deletion.
@@ -307,9 +307,9 @@ get_articles_creation_and_modification_date :: proc() -&gt; ([]GitStat, os2.Erro
 		{
 			line := strings.split_lines_iterator(&amp;stdout) or_break
 
-			assert(strings.starts_with(line, &quot;'20&quot;))
+			assert(strings.starts_with(line, &quot;&#39;20&quot;))
 			line_without_quotes := line[1:len(line) - 1]
-			date = strings.clone(strings.trim(line_without_quotes, &quot;' \n&quot;))
+			date = strings.clone(strings.trim(line_without_quotes, &quot;&#39; \n&quot;))
 		}
 
 		// Empty line
@@ -323,18 +323,18 @@ get_articles_creation_and_modification_date :: proc() -&gt; ([]GitStat, os2.Erro
 		// Files.
 		for {
 			// Start of a new commit?
-			if strings.starts_with(stdout, &quot;'20&quot;) do break
+			if strings.starts_with(stdout, &quot;&#39;20&quot;) do break
 
 			line := strings.split_lines_iterator(&amp;stdout) or_break
 			assert(line != &quot;&quot;)
 
 			action := line[0]
-			assert(action == 'A' || action == 'M' || action == 'R' || action == 'D')
+			assert(action == &#39;A&#39; || action == &#39;M&#39; || action == &#39;R&#39; || action == &#39;D&#39;)
 
 			old_path: string
 			new_path: string
 			{
-				// Skip the 'action' part.
+				// Skip the &#39;action&#39; part.
 				_, ok := strings.split_iterator(&amp;line, &quot;\t&quot;)
 				assert(ok)
 
@@ -342,7 +342,7 @@ get_articles_creation_and_modification_date :: proc() -&gt; ([]GitStat, os2.Erro
 				assert(ok)
 				assert(old_path != &quot;&quot;)
 
-				if action == 'R' { 	// Rename has two operands.
+				if action == &#39;R&#39; { 	// Rename has two operands.
 					new_path, ok = strings.split_iterator(&amp;line, &quot;\t&quot;)
 					assert(ok)
 					assert(new_path != &quot;&quot;)
@@ -369,8 +369,8 @@ get_articles_creation_and_modification_date :: proc() -&gt; ([]GitStat, os2.Erro
 			// Or its first commit is a rename but then there additional commits to modify it. 
 			// Case being: these two things are orthogonal.
 
-			if action == 'R' {
-				// Mark the old path as 'deleted'.
+			if action == &#39;R&#39; {
+				// Mark the old path as &#39;deleted&#39;.
 				stats_by_path[old_path] = GitStatInternal {
 					modification_date = date,
 					tombstone         = true,
@@ -379,8 +379,8 @@ get_articles_creation_and_modification_date :: proc() -&gt; ([]GitStat, os2.Erro
 				// The creation date of the new path is the date of the rename operation.
 				v.creation_date = date
 			}
-			if action == 'D' {
-				// Mark as 'deleted'.
+			if action == &#39;D&#39; {
+				// Mark as &#39;deleted&#39;.
 				v.tombstone = true
 			}
 		}
@@ -411,7 +411,7 @@ get_articles_creation_and_modification_date :: proc() -&gt; ([]GitStat, os2.Erro
 <ul>
 <li>Odin has first class support for allocators so we allocate everything in this function with the temporary allocator. It is backed by an arena and emptied at the start and end of the function. Only the final result is allocated with the standard allocator. That way, even if Git starts spewing lots of data, as soon as we exit the function, all of that is gone, in one call, and the the program carries on with only the necessary data heap-allocated.</li>
 <li>In this program, the main allocator and the temporary allocator are both arenas. The memory usage is a constant ~ 4 MiB, mainly located in the Odin standard library. The memory usage of my code is around ~ 65 KiB.</li>
-<li>A <code>map</code> is a bit of an overkill for ~30 entries, but it's fine, and we expect the number of articles to grow</li>
+<li>A <code>map</code> is a bit of an overkill for ~30 entries, but it&#39;s fine, and we expect the number of articles to grow</li>
 </ul>
 <hr />
 <p>We can log the final result:</p>
@@ -430,7 +430,7 @@ GitStat{creation_date = &quot;2023-11-23T11:26:11+01:00&quot;, modification_date
  [...]
 </code></pre>
 <p>Then we benchmark:</p>
-<pre><code class="language-shell"> $ hyperfine --warmup 2 './src-main.bin' './src.bin'
+<pre><code class="language-shell"> $ hyperfine --warmup 2 &#39;./src-main.bin&#39; &#39;./src.bin&#39;
 Benchmark 1: ./src-main.bin
   Time (mean ± σ):      1.773 s ±  0.022 s    [User: 1.267 s, System: 0.472 s]
   Range (min … max):    1.748 s …  1.816 s    10 runs
@@ -444,12 +444,12 @@ Summary
    11.17 ± 0.48 times faster than ./src-main.bin
 </code></pre>
 <p>Around 11 times faster, and well within our ideal target of 500 ms ! And all we had to do was convert many <code>git log</code> invocations (one per markdown file) to just one.</p>
-<p>Here's the CPU profile now:</p>
+<p>Here&#39;s the CPU profile now:</p>
 <p><object alt="CPU profile after the optimization" data="making_my_static_blog_generator_11_times_faster_profile_after.svg" type="image/svg+xml">
 </object>
 </p>
 <hr />
-<p>Overall it's a pretty simple change, located in one function. Almost all of the complexity is due to parsing Git custom text output and skipping over irrelevant commits. We don't really have a choice either: that's all Git provides to query the commit log. The alternatives are all worse:</p>
+<p>Overall it&#39;s a pretty simple change, located in one function. Almost all of the complexity is due to parsing Git custom text output and skipping over irrelevant commits. We don&#39;t really have a choice either: that&#39;s all Git provides to query the commit log. The alternatives are all worse:</p>
 <ul>
 <li>Parse directly the Git object files - no thank you</li>
 <li>Use a library (e.g. <code>libgit2</code>) and hope that it offers a saner interface to query the commit log</li>
@@ -460,13 +460,13 @@ Summary
   <a class="hash-anchor" href="#fossil" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p><a href="https://fossil-scm.org">fossil</a> is an alternative version control system created by the same folks that created, and are still working on, SQLite. Naturally, a fossil repository is basically just one SQLite database file. That sounds very <em>queryable</em>!</p>
-<p>Let's import our git repository into a Fossil repository and enter the SQLite prompt:</p>
+<p>Let&#39;s import our git repository into a Fossil repository and enter the SQLite prompt:</p>
 <pre><code class="language-shell">$ git fast-export --all | fossil import --git new-repo.fossil
 $ file new-repo.fossil 
 new-repo.fossil: SQLite 3.x database (Fossil repository), [...]
 $ fossil sql -R new-repo.fossil
 </code></pre>
-<p>There are lots of tables in this database. We craft this query after a few trials and errors (don't know if it is optimal or not):</p>
+<p>There are lots of tables in this database. We craft this query after a few trials and errors (don&#39;t know if it is optimal or not):</p>
 <pre><code class="language-sql">sqlite&gt; .mode json
 sqlite&gt; SELECT 
             f.name as filename,
@@ -475,7 +475,7 @@ sqlite&gt; SELECT
         FROM repository.filename f
         JOIN repository.mlink m ON f.fnid = m.fnid
         JOIN repository.event e ON m.mid = e.objid
-        WHERE filename LIKE '%.md'
+        WHERE filename LIKE &#39;%.md&#39;
         GROUP BY f.name
         ORDER BY f.name;
 </code></pre>
@@ -486,24 +486,24 @@ sqlite&gt; SELECT
 {&quot;filename&quot;:&quot;compile_ziglang_from_source_on_alpine_2020_9.md&quot;,&quot;creation_date&quot;:&quot;2020-09-07 18:49:20&quot;,&quot;last_modified&quot;:&quot;2024-11-04 08:24:17&quot;},
 [...]
 </code></pre>
-<p>Note that this does not filter out deleted/removed files yet. I'm sure that it can be done by tweaking the query a bit, but there's not time! We need to benchmark!</p>
-<pre><code class="language-shell">$ hyperfine --shell=none 'fossil sql -R new-repo.fossil &quot;SELECT [...]&quot;'
+<p>Note that this does not filter out deleted/removed files yet. I&#39;m sure that it can be done by tweaking the query a bit, but there&#39;s not time! We need to benchmark!</p>
+<pre><code class="language-shell">$ hyperfine --shell=none &#39;fossil sql -R new-repo.fossil &quot;SELECT [...]&quot;&#39;
 Benchmark 1: fossil sql -R new-repo.fossil &quot;[...]&quot;
   Time (mean ± σ):       3.0 ms ±   0.5 ms    [User: 1.5 ms, System: 1.4 ms]
   Range (min … max):     2.2 ms …   5.6 ms    776 runs
 </code></pre>
-<p>Damn that's fast.</p>
+<p>Damn that&#39;s fast.</p>
 <p>I do not use Fossil, but I eye it from time to time - generally when I need to extract some piece of information from Git and I discover it does not let me, or when I see the Gitlab bill  my (ex-) company pays, or when the Jira page takes more than 10 seconds to load... yeah, Fossil is the complete package, with issues, forums, a web UI, a timeline, a wiki, a chat... it has it all!</p>
 <p>But the golden ticket idea is really to store everything inside SQLite. Suddenly, we can query anything! And there is no weird parsing needed - SQLite supports various export formats and (some? all?) fossil commands support the <code>--sql</code> option to show you which SQL query they use to get the information. After all, the only thing the <code>fossil</code> command line does in this case, is craft a SQL query and run it on the SQLite database.</p>
-<p>It's quite magical to me that I can within a few seconds import my 6 years-long git repository into a SQLite database and start querying it, and the performance is great.</p>
-<p>Now I am not <em>quite</em> ready yet to move to Fossil, and the import is a one time thing as far as I know, so it is not a viable option for the problem at hand as long as git is the source of truth. But still, while I was trying to tackle <code>git log</code> into submission, I was thinking the whole time: why can't I do an arbitrary query of git data? Generally, the more generic approach is slower than the ad-hoc one, but here it's not even the case. Fossil is for this use case objectively more powerful, more generic, <em>and</em> faster.</p>
+<p>It&#39;s quite magical to me that I can within a few seconds import my 6 years-long git repository into a SQLite database and start querying it, and the performance is great.</p>
+<p>Now I am not <em>quite</em> ready yet to move to Fossil, and the import is a one time thing as far as I know, so it is not a viable option for the problem at hand as long as git is the source of truth. But still, while I was trying to tackle <code>git log</code> into submission, I was thinking the whole time: why can&#39;t I do an arbitrary query of git data? Generally, the more generic approach is slower than the ad-hoc one, but here it&#39;s not even the case. Fossil is for this use case objectively more powerful, more generic, <em>and</em> faster.</p>
 <h2 id="conclusion">
   <a class="title" href="#conclusion">Conclusion</a>
   <a class="hash-anchor" href="#conclusion" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
-<p>The issue was effectively a N+1 query problem. We issued a separate 'query' (in this case, <code>git log</code>) for each markdown file, in a sequential blocking fashion. This approach worked until it didn't because the number of entities (i.e. articles, and commits) grew over time.</p>
-<p>The solution is instead to do only one query for all entities. It may return a bit more data that we need, but that's much faster, and scales better, than the original version.</p>
-<p>It's obvious in retrospect but it's easy to let it happen when the 'codebase' (a big word for only one file that started as a basic Makefile) is a few years old, it's only looked at briefly from time to time, and the initial implementation did not really allow for the correct approach - who wants to parse the <code>git log</code> output in the Makefile language?</p>
+<p>The issue was effectively a N+1 query problem. We issued a separate &#39;query&#39; (in this case, <code>git log</code>) for each markdown file, in a sequential blocking fashion. This approach worked until it didn&#39;t because the number of entities (i.e. articles, and commits) grew over time.</p>
+<p>The solution is instead to do only one query for all entities. It may return a bit more data that we need, but that&#39;s much faster, and scales better, than the original version.</p>
+<p>It&#39;s obvious in retrospect but it&#39;s easy to let it happen when the &#39;codebase&#39; (a big word for only one file that started as a basic Makefile) is a few years old, it&#39;s only looked at briefly from time to time, and the initial implementation did not really allow for the correct approach - who wants to parse the <code>git log</code> output in the Makefile language?</p>
 <p>Furthermore, the initial approach was fine because it only looked at the creation date, so we could do <code>git log --reverse article.md | head -n1</code> which is faster than sifting through the whole commit log for this file. However, as it is always the case, requirements (again, a big word for: my taste concerning what should my personal blog look like) change and the modification date now had to also be extracted from git. This forced us, with the current Git functionality, to scan through the whole commit log, for each file, which became too slow.</p>
 <p>As Mike Acton and Data Oriented Design state:</p>
 <blockquote>
@@ -515,8 +515,8 @@ Benchmark 1: fossil sql -R new-repo.fossil &quot;[...]&quot;
 <p>If you have different data, you have a different problem. <sup class="footnote-ref"><a href="#fn-3" id="fnref-3" data-footnote-ref>3</a></sup>
 </p>
 </blockquote>
-<p>It also does not help that any querying in Git is ad-hoc and outputs a weird text format that we have to tediously parse. Please everyone, let's add the option to output structured data in our command line programs, damn it! String programming is no fun at all - that's why I moved away from concatenating the output of shell commands in a Makefile, to a real programming language, to do the static generation.</p>
-<p>All in all, I am pleased with my solution - I can now see any edit materialize <em>instantly</em>. It's a bit funny that my previous article was about SIMD and inspecting assembly instructions, while this issue is so obvious and high-level in retrospect.</p>
+<p>It also does not help that any querying in Git is ad-hoc and outputs a weird text format that we have to tediously parse. Please everyone, let&#39;s add the option to output structured data in our command line programs, damn it! String programming is no fun at all - that&#39;s why I moved away from concatenating the output of shell commands in a Makefile, to a real programming language, to do the static generation.</p>
+<p>All in all, I am pleased with my solution - I can now see any edit materialize <em>instantly</em>. It&#39;s a bit funny that my previous article was about SIMD and inspecting assembly instructions, while this issue is so obvious and high-level in retrospect.</p>
 <p>To the next 5 years of blogging, till I need to revisit the performance of this function!</p>
 <h2 id="addendum">
   <a class="title" href="#addendum">Addendum</a>
@@ -524,13 +524,13 @@ Benchmark 1: fossil sql -R new-repo.fossil &quot;[...]&quot;
 </h2>
 <p>Running <code>git gc</code> and <code>git prune</code> also helps because all unreachable objects are removed, so git has to do less work scanning and parsing them on disk.</p>
 <p>Having done that, we get almost twice as fast:</p>
-<pre><code class="language-shell">$ hyperfine --shell=none --warmup 2 './src.bin'
+<pre><code class="language-shell">$ hyperfine --shell=none --warmup 2 &#39;./src.bin&#39;
 Benchmark 1: ./src.bin
   Time (mean ± σ):      89.7 ms ±   2.6 ms    [User: 63.6 ms, System: 59.5 ms]
   Range (min … max):    85.0 ms …  94.3 ms    31 runs
 </code></pre>
 <p>But we have to remember to run it frequently or set up a periodic job that does it for us.</p>
-<p>That's a ~21x speed-up from the original time.</p>
+<p>That&#39;s a ~21x speed-up from the original time.</p>
 <h2 id="addendum-2">
   <a class="title" href="#addendum-2">Addendum 2</a>
   <a class="hash-anchor" href="#addendum-2" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>

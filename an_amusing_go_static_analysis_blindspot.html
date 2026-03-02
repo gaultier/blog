@@ -5,7 +5,7 @@ Do not edit it by hand.
 <!DOCTYPE html>
 <html>
 <head>
-<title>An amusing blind spot in Go's static analysis</title>
+<title>An amusing blind spot in Go&#39;s static analysis</title>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link type="application/atom+xml" href="/blog/feed.xml" rel="self">
@@ -131,12 +131,12 @@ index 0f9dba5515..48d2873157 100644
  		require.NoError(t, err)
 
 </code></pre>
-<p>It's a trivial <a href="https://github.com/ory/kratos/commit/48f5adb9ce720f6906283372515b85f365a7f0b5#diff-083558e2f6efe440baaea9a5f2a1344a88f165216c261057e37249c89c276902L71">fix</a>.</p>
+<p>It&#39;s a trivial <a href="https://github.com/ory/kratos/commit/48f5adb9ce720f6906283372515b85f365a7f0b5#diff-083558e2f6efe440baaea9a5f2a1344a88f165216c261057e37249c89c276902L71">fix</a>.</p>
 <p>I think that is visually easy to miss because in Go, an array literal is defined with curly braces, often on multiple lines, so the beginning of the <code>for</code> loop body looks very similar.</p>
 <p>Interestingly no linter catches this issue. In the meantime you can use this regexp to catch instances of this issue, which is what I did and I discovered a few more cases in the codebase:</p>
-<pre><code class="language-sh">$ rg -t go 'for .* range \[\].+\{\} \{'
+<pre><code class="language-sh">$ rg -t go &#39;for .* range \[\].+\{\} \{&#39;
 </code></pre>
-<p>It's vexing because the Go compiler detects that this <code>for</code> loop is a no-op and optimizes it away, if you look at the generated assembly. But it generates no warning.</p>
+<p>It&#39;s vexing because the Go compiler detects that this <code>for</code> loop is a no-op and optimizes it away, if you look at the generated assembly. But it generates no warning.</p>
 <p>Does your programming language prevent this issue?</p>
 
 <p><a href="/blog"> ⏴ Back to all articles</a></p>

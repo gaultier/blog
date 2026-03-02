@@ -122,11 +122,11 @@ Do not edit it by hand.
 </details>
 
 <p><em>For a gentle introduction to DTrace especially in conjunction with Go, see my past article: <a href="/blog/an_optimization_and_debugging_story_go_dtrace.html">An optimization and debugging story with Go and DTrace</a>.</em></p>
-<p>My most common use of DTrace is to observe I/O data received and sent by various programs. This is so valuable and that's why I started using DTrace in the first place!</p>
+<p>My most common use of DTrace is to observe I/O data received and sent by various programs. This is so valuable and that&#39;s why I started using DTrace in the first place!</p>
 <p>However, sometimes this data is encrypted and/or compressed which makes simplistic approaches not viable.</p>
-<p>I hit this problem when implementing the <a href="https://en.wikipedia.org/wiki/OAuth">OAuth2</a> login flow. If you're not familiar, this allows a user with an account on a 'big' website such as Facebook, Google, etc, known as the 'authorization server', to sign-up/login on a third-party website using their existing account, without having to manage additional credentials. In my particular case, this was 'Login with Amazon' (yes, this exists).</p>
-<p>Since there are 3 actors exchanging data back and forth, this is paramount to observe all the data on the wire to understand what's going on (and what's going wrong). The catch is, for security, most of this data is sent over TLS (HTTPS), meaning, encrypted. Thankfully we can use DTrace to still see the data in clear.</p>
-<p>Let's see how, one step at a time.</p>
+<p>I hit this problem when implementing the <a href="https://en.wikipedia.org/wiki/OAuth">OAuth2</a> login flow. If you&#39;re not familiar, this allows a user with an account on a &#39;big&#39; website such as Facebook, Google, etc, known as the &#39;authorization server&#39;, to sign-up/login on a third-party website using their existing account, without having to manage additional credentials. In my particular case, this was &#39;Login with Amazon&#39; (yes, this exists).</p>
+<p>Since there are 3 actors exchanging data back and forth, this is paramount to observe all the data on the wire to understand what&#39;s going on (and what&#39;s going wrong). The catch is, for security, most of this data is sent over TLS (HTTPS), meaning, encrypted. Thankfully we can use DTrace to still see the data in clear.</p>
+<p>Let&#39;s see how, one step at a time.</p>
 <h2 id="level-1-observe-all-write-read-system-calls">
   <a class="title" href="#level-1-observe-all-write-read-system-calls">Level 1: Observe all write/read system calls</a>
   <a class="hash-anchor" href="#level-1-observe-all-write-read-system-calls" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
@@ -160,7 +160,7 @@ syscall::read:return
 </code></pre>
 <p>We run it like this: <code>sudo dtrace -s myscript.d -p &lt;pid&gt;</code> or <code>sudo dtrace -s myscript.d -c ./myprogram</code>.</p>
 <p><code>write(2)</code> is the easiest since it is enough to instrument the entry point of the system call. <code>read(2)</code> must be done in two steps, at the entry point we record what is the pointer to the source data, and in the return probe we know how much data was actually read and we can print it.</p>
-<p>What's important is to only trace successful reads/writes (<code>/ arg0 &gt; 0 /</code>). Otherwise, we'll try to copy data with a size of <code>-1</code> which will be cast to an unsigned number with the maximum value, and result in a <code>out of scratch space</code> message from DTrace. Which is DTrace's own 'Out Of Memory' case. Fortunately, DTrace has been designed up-front to handle misbehaving D scripts so that they do not impact the stability of the system, so there are not other consequences than our action failing.</p>
+<p>What&#39;s important is to only trace successful reads/writes (<code>/ arg0 &gt; 0 /</code>). Otherwise, we&#39;ll try to copy data with a size of <code>-1</code> which will be cast to an unsigned number with the maximum value, and result in a <code>out of scratch space</code> message from DTrace. Which is DTrace&#39;s own &#39;Out Of Memory&#39; case. Fortunately, DTrace has been designed up-front to handle misbehaving D scripts so that they do not impact the stability of the system, so there are not other consequences than our action failing.</p>
 <p>Another point: we could be slightly more conservative by also instrumenting the <code>write(2)</code> system call in two steps, because technically, the data that is going to be written, has not yet been paged in by the kernel, and thus could result in a page fault when we try to copy it. The solution is to do it in two steps, same as <code>read(2)</code>, because at the return point, the data has definitely been paged in. I think this is most likely to happen if you write data from the <code>.rodata</code> or <code>.data</code> sections of the executable which have not yet been accessed, but I have found that nearly all real-world programs write dynamic data which has already been faulted in. The <a href="https://illumos.org/books/dtrace/chp-user.html#chp-user">docs</a> mention this fact.</p>
 <h3 id="trace-multiple-processes">
   <a class="title" href="#trace-multiple-processes">Trace multiple processes</a>
@@ -206,7 +206,7 @@ syscall::read:return, syscall::recvfrom_nocancel:return, syscall::recvfrom:retur
   <a class="title" href="#level-2-only-observe-network-data">Level 2: Only observe network data</a>
   <a class="hash-anchor" href="#level-2-only-observe-network-data" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
-<p>A typical program will print things on stderr and stdout, load files from disk, and generally do I/O that's not related to networking, and this will show up in our script.</p>
+<p>A typical program will print things on stderr and stdout, load files from disk, and generally do I/O that&#39;s not related to networking, and this will show up in our script.</p>
 <p>The approach I have used is to record which file descriptors are real sockets. We can do this by  tracing the <code>socket(2)</code> or <code>listen(2)</code> system calls and recording the file descriptor in a global map. Then, we only trace I/O system calls that operate on these file descriptors:</p>
 <pre><code class="language-diff">+ syscall::socket:return, syscall::listen:return
 + / pid == $target &amp;&amp; arg0 != -1 /
@@ -235,14 +235,14 @@ syscall::read:entry, syscall::recvfrom_nocancel:entry, syscall::recvfrom:entry
 }
 </code></pre>
 <p>When a socket is closed, we need to remove it from our set, since this file descriptor could be used later for a file, etc.</p>
-<p>This trick is occasionally useful, but this script has one big requirement: it must start before a socket of interest is opened by the program, otherwise this socket will not be traced. For a web server, if we intend to only trace new connections, that's completely fine, but for a program with long-lived connections that we cannot restart, that approach will not work as is.</p>
+<p>This trick is occasionally useful, but this script has one big requirement: it must start before a socket of interest is opened by the program, otherwise this socket will not be traced. For a web server, if we intend to only trace new connections, that&#39;s completely fine, but for a program with long-lived connections that we cannot restart, that approach will not work as is.</p>
 <p>In this case, we could first run <code>lsof -i TCP -p &lt;pid</code> to see the file descriptor for these connections and then in the <code>BEGIN {}</code> clause of our D script, add these file descriptors to the <code>socket_fds</code> set manually.</p>
 <h3 id="alternative-the-tcp-provider">
   <a class="title" href="#alternative-the-tcp-provider">Alternative: the tcp provider</a>
   <a class="hash-anchor" href="#alternative-the-tcp-provider" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h3>
 <p>The <a href="https://docs.oracle.com/en/operating-systems/solaris/oracle-solaris/11.4/dtrace-guide/tcp-probes.html">tcp</a> provider offers two probes of interest for us: <code>send</code> and <code>receive</code>. With these, we can see what data gets sent over tcp, to/from which address and port, etc. This is quite low-level and seems more designed to help debug the TCP stack, but it can be used.</p>
-<p>Let's see an example:</p>
+<p>Let&#39;s see an example:</p>
 <pre><code class="language-dtrace">tcp:::send, tcp:::receive
 /pid==$target/ 
 {
@@ -253,9 +253,9 @@ syscall::read:entry, syscall::recvfrom_nocancel:entry, syscall::recvfrom:entry
 <pre><code class="language-text">[...]
   9 511191                           .:send 
              0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f  0123456789abcdef
-         0: 00 00 00 00 00 00 00 00 11 27 00 00 02 00 00 00  .........'......
+         0: 00 00 00 00 00 00 00 00 11 27 00 00 02 00 00 00  .........&#39;......
         10: 60 0c 05 00 00 14 06 ff 20 03 00 e8 77 32 44 00  `....... ...w2D.
-        20: b1 fa c3 e4 9c bd 36 62 2a 00 14 50 40 01 08 27  ......6b*..P@..'
+        20: b1 fa c3 e4 9c bd 36 62 2a 00 14 50 40 01 08 27  ......6b*..P@..&#39;
         30: 00 00 00 00 00 00 20 04 f4 68 00 50 41 29 e5 72  ...... ..h.PA).r
         40: d9 5e 76 73 80 18 08 10 cc 3a 00 00 01 01 08 0a  .^vs.....:......
         50: e8 0c ec 49 e5 ac 84 15 47 45 54 20 2f 20 48 54  ...I....GET / HT
@@ -280,7 +280,7 @@ syscall::read:entry, syscall::recvfrom_nocancel:entry, syscall::recvfrom:entry
   <a class="title" href="#level-3-see-encrypted-data-in-clear">Level 3: See encrypted data in clear</a>
   <a class="hash-anchor" href="#level-3-see-encrypted-data-in-clear" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
-<p>Most websites use TLS nowadays (<code>https://</code>) and will encrypt their data before sending it over the wire. Let's take a simple Go program that makes an HTTP GET request over TLS to demonstrate:</p>
+<p>Most websites use TLS nowadays (<code>https://</code>) and will encrypt their data before sending it over the wire. Let&#39;s take a simple Go program that makes an HTTP GET request over TLS to demonstrate:</p>
 <pre><code class="language-go">package main
 
 import (
@@ -332,7 +332,7 @@ Date: Thu, 25 Sep 2025 15:39:00 GMT
 Expires: -1
 Cache-Control: private, max-age=0
 Content-Type: text/html; charset=ISO-8859-1
-Content-Security-Policy-Report-Only: object-src 'none';base-uri 'self';script-src 'nonce-NNo3yQEGH1Cydlkm4FuhSg' 'strict-dynamic' 'report-sample' 'unsafe-eval' 'unsafe-inline' https: http:;report-uri https://csp.withgoogle.com/csp/gws/other-hp
+Content-Security-Policy-Report-Only: object-src &#39;none&#39;;base-uri &#39;self&#39;;script-src &#39;nonce-NNo3yQEGH1Cydlkm4FuhSg&#39; &#39;strict-dynamic&#39; &#39;report-sample&#39; &#39;unsafe-eval&#39; &#39;unsafe-inline&#39; https: http:;report-uri https://csp.withgoogle.com/csp/gws/other-hp
 Accept-CH: Sec-CH-Prefers-Color-Scheme
 P3P: CP=&quot;This is not a P3P policy! See g.co/p3phelp for more info.&quot;
 Content-Encoding: gzip
@@ -347,7 +347,7 @@ Set-Cookie: __Se
   <a class="hash-anchor" href="#level-4-see-compressed-data-in-clear" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>For compressed data, the same trick as for encrypted data can be used: find the encode/decode functions and print the input/output, respectively.</p>
-<p>Let's take a contrived example where our program sends a random, gzipped string over the network:</p>
+<p>Let&#39;s take a contrived example where our program sends a random, gzipped string over the network:</p>
 <pre><code class="language-go">package main
 
 import (
@@ -395,9 +395,9 @@ Accept-Encoding: gzip
   <a class="hash-anchor" href="#conclusion" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>All of these approaches can be used in conjunction to see data that has been first compressed, perhaps hashed, then encrypted, etc.</p>
-<p>Once again, DTrace shines by its versatility compared to other tools such as Wireshark (can only observe data on the wire, if it's encrypted then tough luck) or <code>strace</code> (can only see system calls). It can programmatically inspect user-space memory, kernel memory, get the stack trace, etc.</p>
+<p>Once again, DTrace shines by its versatility compared to other tools such as Wireshark (can only observe data on the wire, if it&#39;s encrypted then tough luck) or <code>strace</code> (can only see system calls). It can programmatically inspect user-space memory, kernel memory, get the stack trace, etc.</p>
 <p>Note that some data printed from the <code>read(2)</code> and <code>write(2)</code> system calls will still inevitably appear gibberish because it corresponds to a binary protocol, for example DNS requests.</p>
-<p>Finally, let's all note that none of this intricate dance would be necessary, if there were some DTrace static probes judiciously placed in the Go standard library or runtime (wink wink to the Go team).</p>
+<p>Finally, let&#39;s all note that none of this intricate dance would be necessary, if there were some DTrace static probes judiciously placed in the Go standard library or runtime (wink wink to the Go team).</p>
 
 <p><a href="/blog"> ⏴ Back to all articles</a></p>
 <blockquote id="donate">

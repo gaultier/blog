@@ -5,7 +5,7 @@ Do not edit it by hand.
 <!DOCTYPE html>
 <html>
 <head>
-<title>Let's write a video game from scratch like it's 1987</title>
+<title>Let&#39;s write a video game from scratch like it&#39;s 1987</title>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link type="application/atom+xml" href="/blog/feed.xml" rel="self">
@@ -122,12 +122,12 @@ Do not edit it by hand.
 </details>
 
 <p><em>Discussions: <a href="https://news.ycombinator.com/item?id=40737370">Hacker News</a>, <a href="https://old.reddit.com/r/programming/comments/1dkahjw/lets_write_a_video_game_from_scratch_like_its_1987/">/r/programming</a></em></p>
-<p>In a <a href="/blog/x11_x64.html">previous article</a> I've done the 'Hello, world!' of GUIs in assembly: A black window with a white text, using X11 without any libraries, just talking directly over a socket.</p>
-<p>In a <a href="/blog/wayland_from_scratch.html">later article</a> I've done the same with Wayland in C, displaying a static image.</p>
+<p>In a <a href="/blog/x11_x64.html">previous article</a> I&#39;ve done the &#39;Hello, world!&#39; of GUIs in assembly: A black window with a white text, using X11 without any libraries, just talking directly over a socket.</p>
+<p>In a <a href="/blog/wayland_from_scratch.html">later article</a> I&#39;ve done the same with Wayland in C, displaying a static image.</p>
 <p>I showed that this is not complex and results in a very lean and small application.</p>
 <p>Recently, I stumbled upon this <a href="https://news.ycombinator.com/item?id=40647278">Hacker News post</a>:</p>
 <blockquote>
-<p>Microsoft's official Minesweeper app has ads, pay-to-win, and is hundreds of MBs</p>
+<p>Microsoft&#39;s official Minesweeper app has ads, pay-to-win, and is hundreds of MBs</p>
 </blockquote>
 <p>And I thought it would be fun to make with the same principles a full-fledged GUI application: the cult video game Minesweeper.</p>
 <p>Will it be hundred of megabytes when we finish? How much work is it really? Can a hobbyist make this in a few hours?</p>
@@ -146,17 +146,17 @@ Do not edit it by hand.
 </figure>
 <p><em>Press enter to reset and press any mouse button to uncover the cell under the mouse cursor.</em></p>
 <p>Here is a <a href="https://youtube.com/shorts/HLS0xS8KKQY?feature=share">Youtube link</a> in case the video does not play (I tried lots of things so that it plays on iOS to no avail).</p>
-<p>The result is a ~300 KiB statically linked executable, that requires no libraries, and uses a constant ~1 MiB of resident heap memory (allocated at the start, to hold the assets). That's roughly a thousand times smaller in size than Microsoft's. And it only is a few hundred lines of code.</p>
-<p>The advantage of this approach is that the application is tiny and stand-alone: statically linked with the few bits of libC it uses (and that's it), it can be trivially compiled on every Unix, and copied around, and it will work on every machine (with the same OS/architecture that is). Even on ancient Linuxes from 20 years ago.</p>
-<p>I remember playing this game as a kid (must have been on Windows 98). It was a lot of fun! I don't exactly remember the rules though so it's a best approximation.</p>
+<p>The result is a ~300 KiB statically linked executable, that requires no libraries, and uses a constant ~1 MiB of resident heap memory (allocated at the start, to hold the assets). That&#39;s roughly a thousand times smaller in size than Microsoft&#39;s. And it only is a few hundred lines of code.</p>
+<p>The advantage of this approach is that the application is tiny and stand-alone: statically linked with the few bits of libC it uses (and that&#39;s it), it can be trivially compiled on every Unix, and copied around, and it will work on every machine (with the same OS/architecture that is). Even on ancient Linuxes from 20 years ago.</p>
+<p>I remember playing this game as a kid (must have been on Windows 98). It was a lot of fun! I don&#39;t exactly remember the rules though so it&#39;s a best approximation.</p>
 <blockquote>
 <p>If you spot an error, please open a <a href="https://github.com/gaultier/blog">Github issue</a>! And the source code repository for the game is <a href="https://github.com/gaultier/minesweeper-from-scratch">here</a>.</p>
 </blockquote>
 <h2 id="what-we-re-making">
-  <a class="title" href="#what-we-re-making">What we're making</a>
+  <a class="title" href="#what-we-re-making">What we&#39;re making</a>
   <a class="hash-anchor" href="#what-we-re-making" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
-<p>The 11th version of the X protocol was born in 1987 and has not changed since. Since it predates GPUs by a decade or so, its model does not really fit the hardware of today. Still, it's everywhere. Any Unix has a X server, even macOS with XQuartz, and now Windows supports running GUI Linux applications inside WSL! X11 has never been so ubiquitous. The protocol is relatively simple and the entry bar is low: we only need to create a socket and we're off the races. And for 2D applications, there's no need to be a Vulkan wizard or even interact with the GPU. Hell, it will work even without any GPU!</p>
+<p>The 11th version of the X protocol was born in 1987 and has not changed since. Since it predates GPUs by a decade or so, its model does not really fit the hardware of today. Still, it&#39;s everywhere. Any Unix has a X server, even macOS with XQuartz, and now Windows supports running GUI Linux applications inside WSL! X11 has never been so ubiquitous. The protocol is relatively simple and the entry bar is low: we only need to create a socket and we&#39;re off the races. And for 2D applications, there&#39;s no need to be a Vulkan wizard or even interact with the GPU. Hell, it will work even without any GPU!</p>
 <p>Everyone writing GUIs these days use a giant pile of libraries, starting with the <del>overly complicated</del> venerable <code>libX11</code> and <code>libxcb</code> libraries, to Qt and SDL.</p>
 <p>Here are the steps we need to take:</p>
 <ul>
@@ -165,21 +165,21 @@ Do not edit it by hand.
 <li>Draw parts of the sprite to the window</li>
 <li>React to keyboard/mouse events</li>
 </ul>
-<p>And that's it. Spoiler alert: every step is 1-3 X11 messages that we need to craft and send. The only messages that we receive are the keyboard and mouse events. It's really not much at all!</p>
-<p>We will implement this in the <a href="https://odin-lang.org/">Odin programming language</a> which I really enjoy. But if you want to follow along with C or anything really, go for it. All we need is to be able to open a Unix socket, send and receive data on it, and load an image into memory. We will use PNG for that, since Odin has in its standard library support for PNGs, but we could also very easily use a simple format like PPM (like I did in the linked Wayland article) that is trivial to parse. Since Odin has support for both in its standard library, it does not really matter, and I stuck with PNG since it's more space-efficient.</p>
-<p>Finally, if you're into writing X11 applications even with libraries, lots of things in X11 are undocumented or underdocumented, and this article can be a good learning resource. As a bonus, you can also follow along with pure Wayland, using my previous Wayland article.</p>
-<p>Or perhaps you simply enjoy, like me, peeking behind the curtain to understand the magician's tricks. It almost always ends up with: &quot;That's it? That's all there is to it?&quot;.</p>
+<p>And that&#39;s it. Spoiler alert: every step is 1-3 X11 messages that we need to craft and send. The only messages that we receive are the keyboard and mouse events. It&#39;s really not much at all!</p>
+<p>We will implement this in the <a href="https://odin-lang.org/">Odin programming language</a> which I really enjoy. But if you want to follow along with C or anything really, go for it. All we need is to be able to open a Unix socket, send and receive data on it, and load an image into memory. We will use PNG for that, since Odin has in its standard library support for PNGs, but we could also very easily use a simple format like PPM (like I did in the linked Wayland article) that is trivial to parse. Since Odin has support for both in its standard library, it does not really matter, and I stuck with PNG since it&#39;s more space-efficient.</p>
+<p>Finally, if you&#39;re into writing X11 applications even with libraries, lots of things in X11 are undocumented or underdocumented, and this article can be a good learning resource. As a bonus, you can also follow along with pure Wayland, using my previous Wayland article.</p>
+<p>Or perhaps you simply enjoy, like me, peeking behind the curtain to understand the magician&#39;s tricks. It almost always ends up with: &quot;That&#39;s it? That&#39;s all there is to it?&quot;.</p>
 <h2 id="authentication">
   <a class="title" href="#authentication">Authentication</a>
   <a class="hash-anchor" href="#authentication" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>In previous articles, we connected to the X server without any authentication.</p>
-<p>Let's be a bit more refined: we now also support the X authentication protocol.</p>
-<p>That's because when running under Wayland with XWayland in some desktop environments like Gnome, we have to use authentication.</p>
-<p>This requires our application to read a 16 bytes long token that's present in a file in the user's home directory, and include it in the handshake we send to the X server.</p>
+<p>Let&#39;s be a bit more refined: we now also support the X authentication protocol.</p>
+<p>That&#39;s because when running under Wayland with XWayland in some desktop environments like Gnome, we have to use authentication.</p>
+<p>This requires our application to read a 16 bytes long token that&#39;s present in a file in the user&#39;s home directory, and include it in the handshake we send to the X server.</p>
 <p>This mechanism is called <code>MIT-MAGIC-COOKIE-1</code>.</p>
 <p>The catch is that this file contains multiple tokens for various authentication mechanisms, and network hosts. Remember, X11 is designed to work over the network. However we only care here about the entry for localhost.</p>
-<p>So we need to parse a little bit. It's basically what <code>libXau</code> does. From its docs:</p>
+<p>So we need to parse a little bit. It&#39;s basically what <code>libXau</code> does. From its docs:</p>
 <pre><code class="language-text">The .Xauthority file is a binary file consisting of a sequence of entries
 in the following format:
 	2 bytes		Family value (second byte is as in protocol HOST)
@@ -192,7 +192,7 @@ in the following format:
 	2 bytes		data length (always MSB first)
 	D bytes		authorization data string
 </code></pre>
-<p>First let's define some types and constants:</p>
+<p>First let&#39;s define some types and constants:</p>
 <pre><code class="language-odin">AUTH_ENTRY_FAMILY_LOCAL: u16 : 1
 AUTH_ENTRY_MAGIC_COOKIE: string : &quot;MIT-MAGIC-COOKIE-1&quot;
 
@@ -205,7 +205,7 @@ AuthEntry :: struct {
 }
 </code></pre>
 <p>We only define fields we are interested in.</p>
-<p>Let's now parse each entry accordingly:</p>
+<p>Let&#39;s now parse each entry accordingly:</p>
 <pre><code class="language-odin">read_x11_auth_entry :: proc(buffer: ^bytes.Buffer) -&gt; (AuthEntry, bool) {
 	entry := AuthEntry{}
 
@@ -332,15 +332,15 @@ AuthEntry :: struct {
 <p>One interesting thing: in Odin, similarly to Zig, allocators are passed to functions wishing to allocate memory. Contrary to Zig though, Odin has a mechanism to make that less tedious (and more implicit as a result) by essentially passing the allocator as the last function argument which is optional.</p>
 <p>Odin is nice enough to also provide us two allocators that we can use right away: A general purpose allocator, and a temporary allocator that uses an arena.</p>
 <p>Since authentication entries can be large, we have to allocate - the stack is only so big. It would be unfortunate to stack overflow because a hostname is a tiny bit too long in this file.</p>
-<p><em>Some readers have pointed out that it is likely it would all fit on the stack here, but this was also a perfect opportunity to describe Odin's approach to memory management.</em></p>
+<p><em>Some readers have pointed out that it is likely it would all fit on the stack here, but this was also a perfect opportunity to describe Odin&#39;s approach to memory management.</em></p>
 <p>However, we do not want to retain the parsed entries from the file in memory after finding the 16 bytes token, so we <code>defer free_all(allocator)</code>. This is much better than going through each entry and freeing individually each field. We simply free the whole arena in one swoop (but the backing memory remains around to be reused later).</p>
-<p>Furthermore, using this arena places an upper bound (a few MiBs) on the allocations we can do. So if one entry in the file is huge, or malformed, we verifyingly cannot allocate many GiBs of memory. This is good news, because otherwise, the OS will start swapping like crazy and start killing random programs. In my experience it usually kills the window/desktop manager which kills all open windows. Very efficient from the OS perspective, and awful from the user perspective. So it's always good to place an upper bound on all resources including heap memory usage of your program.</p>
-<p>All in all I find Odin's approach very elegant. I usually want the ability to use a different allocator in a given function, but also if I don't care, it will do the right thing and use the standard allocator.</p>
+<p>Furthermore, using this arena places an upper bound (a few MiBs) on the allocations we can do. So if one entry in the file is huge, or malformed, we verifyingly cannot allocate many GiBs of memory. This is good news, because otherwise, the OS will start swapping like crazy and start killing random programs. In my experience it usually kills the window/desktop manager which kills all open windows. Very efficient from the OS perspective, and awful from the user perspective. So it&#39;s always good to place an upper bound on all resources including heap memory usage of your program.</p>
+<p>All in all I find Odin&#39;s approach very elegant. I usually want the ability to use a different allocator in a given function, but also if I don&#39;t care, it will do the right thing and use the standard allocator.</p>
 <h2 id="opening-a-window">
   <a class="title" href="#opening-a-window">Opening a window</a>
   <a class="hash-anchor" href="#opening-a-window" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
-<p>This part is almost exactly the same as the first linked article so I'll speed run this.</p>
+<p>This part is almost exactly the same as the first linked article so I&#39;ll speed run this.</p>
 <p>First we open a UNIX domain socket:</p>
 <pre><code class="language-odin">connect_x11_socket :: proc() -&gt; os.Socket {
 	SockaddrUn :: struct #packed {
@@ -366,7 +366,7 @@ AuthEntry :: struct {
 }
 </code></pre>
 <p>We try a few possible paths for the socket, that can vary a bit from distribution to distribution.</p>
-<p>We now can send the handshake, and receive general information from the server. Let's define some structs for that per the X11 protocol:</p>
+<p>We now can send the handshake, and receive general information from the server. Let&#39;s define some structs for that per the X11 protocol:</p>
 <pre><code class="language-odin">Screen :: struct #packed {
 	id:             u32,
 	colormap:       u32,
@@ -426,7 +426,7 @@ test_round_up_4 :: proc(_: ^testing.T) {
 	}
 
 	request := Request {
-		endianness             = 'l',
+		endianness             = &#39;l&#39;,
 		major_version          = 11,
 		authorization_len      = len(AUTH_ENTRY_MAGIC_COOKIE),
 		authorization_data_len = size_of(AuthToken),
@@ -677,7 +677,7 @@ main :: proc() {
 }
 </code></pre>
 <p>Note that the window dimensions are a hint, they might now be respected, for example in a tiling window manager. We do not handle this case here since the assets are fixed size.</p>
-<p>If you have followed along, you will now see... nothing. That's because we need to tell X11 to show our window with the <code>map_window</code> call:</p>
+<p>If you have followed along, you will now see... nothing. That&#39;s because we need to tell X11 to show our window with the <code>map_window</code> call:</p>
 <pre><code class="language-odin">x11_map_window :: proc(socket: os.Socket, window_id: u32) {
 	opcode: u8 : 8
 
@@ -707,10 +707,10 @@ main :: proc() {
   <a class="title" href="#loading-assets">Loading assets</a>
   <a class="hash-anchor" href="#loading-assets" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
-<p>What's a game without nice looking pictures <del>stolen from somewhere on the internet</del> ?</p>
+<p>What&#39;s a game without nice looking pictures <del>stolen from somewhere on the internet</del> ?</p>
 <p>Here is our sprite, the one image containing all our assets:</p>
 <p><img src="game-x11-sprite.png" alt="Our sprite" /></p>
-<p>Odin has a nice feature to embed the image file in our executable which makes redistribution a breeze and startup a bit faster, so we'll do that:</p>
+<p>Odin has a nice feature to embed the image file in our executable which makes redistribution a breeze and startup a bit faster, so we&#39;ll do that:</p>
 <pre><code class="language-odin">	png_data := #load(&quot;sprite.png&quot;)
 	sprite, err := png.load_from_bytes(png_data, {})
 	assert(err == nil)
@@ -728,19 +728,19 @@ main :: proc() {
 </code></pre>
 <p>The <code>A</code> component is actually unused since we do not have transparency.</p>
 <p>Now that our image is in (client) memory, how to make it available to the server? Which, again, in the X11 model, might be running on a totally different machine across the world!</p>
-<p>X11 has 3 useful calls for images: <code>CreatePixmap</code> and <code>PutImage</code>. A <code>Pixmap</code> is an off-screen image buffer. <code>PutImage</code> uploads image data either to a pixmap or to the window directly (a 'drawable' in X11 parlance). <code>CopyArea</code> copies one rectangle in one drawable to another drawable.</p>
-<p>In my humble opinion, these are complete misnomers. <code>CreatePixmap</code> should have been called <code>CreateOffscreenImageBuffer</code> and <code>PutImage</code> should have been <code>UploadImageData</code>. <code>CopyArea</code>: you're fine buddy, carry on.</p>
+<p>X11 has 3 useful calls for images: <code>CreatePixmap</code> and <code>PutImage</code>. A <code>Pixmap</code> is an off-screen image buffer. <code>PutImage</code> uploads image data either to a pixmap or to the window directly (a &#39;drawable&#39; in X11 parlance). <code>CopyArea</code> copies one rectangle in one drawable to another drawable.</p>
+<p>In my humble opinion, these are complete misnomers. <code>CreatePixmap</code> should have been called <code>CreateOffscreenImageBuffer</code> and <code>PutImage</code> should have been <code>UploadImageData</code>. <code>CopyArea</code>: you&#39;re fine buddy, carry on.</p>
 <p>We cannot simply use <code>PutImage</code> here since that would show the whole sprite on the screen (there are no fields to specify that only part of the image should be displayed). We could show only parts of it, with separate <code>PutImage</code> calls for each entity, but that would mean uploading the image data to the server each time.</p>
 <p>What we want is to upload the image data once, off-screen, with one <code>PutImage</code> call, and then copy parts of it onto the window. Here is the dance we need to do:</p>
 <ul>
 <li><code>CreatePixmap</code></li>
 <li><code>PutImage</code> to upload the image data to the pixmap - at that point nothing is shown on the window, everything is still off-screen</li>
-<li>For each entity in our game, issue a cheap <code>CopyArea</code> call which copies parts of the pixmap onto the window - now it's visible!</li>
+<li>For each entity in our game, issue a cheap <code>CopyArea</code> call which copies parts of the pixmap onto the window - now it&#39;s visible!</li>
 </ul>
-<p>The X server can actually upload the image data to the GPU on a <code>PutImage</code> call (this is implementation dependent). After that, <code>CopyArea</code> calls can be translated by the X server to GPU commands to copy the image data from one GPU buffer to another: that's really performant! The image data is only uploaded once to the GPU and then resides there for the remainder of the program.</p>
-<p>Unfortunately, the X standard does not enforce that (it says: &quot;may or may not [...]&quot;), but that's a useful model to have in mind.</p>
-<p>Another useful model is to think of what happens when the X server is running across the network: We only want to send the image data once because that's time-consuming, and afterwards issue cheap <code>CopyArea</code> commands that are only a few bytes each.</p>
-<p>Ok, let's implement that then:</p>
+<p>The X server can actually upload the image data to the GPU on a <code>PutImage</code> call (this is implementation dependent). After that, <code>CopyArea</code> calls can be translated by the X server to GPU commands to copy the image data from one GPU buffer to another: that&#39;s really performant! The image data is only uploaded once to the GPU and then resides there for the remainder of the program.</p>
+<p>Unfortunately, the X standard does not enforce that (it says: &quot;may or may not [...]&quot;), but that&#39;s a useful model to have in mind.</p>
+<p>Another useful model is to think of what happens when the X server is running across the network: We only want to send the image data once because that&#39;s time-consuming, and afterwards issue cheap <code>CopyArea</code> commands that are only a few bytes each.</p>
+<p>Ok, let&#39;s implement that then:</p>
 <pre><code class="language-odin">x11_create_pixmap :: proc(
 	socket: os.Socket,
 	window_id: u32,
@@ -884,7 +884,7 @@ x11_copy_area :: proc(
 	}
 }
 </code></pre>
-<p>Let's try in <code>main</code>:</p>
+<p>Let&#39;s try in <code>main</code>:</p>
 <pre><code class="language-odin">	img_depth: u8 = 24
 	pixmap_id := next_x11_id(window_id, connection_information)
 	x11_create_pixmap(
@@ -908,7 +908,7 @@ x11_copy_area :: proc(
 		sprite_data,
 	)
 
-    // Let's render two different assets: an exploded mine and an idle mine.
+    // Let&#39;s render two different assets: an exploded mine and an idle mine.
 	x11_copy_area(
 		socket,
 		pixmap_id,
@@ -941,7 +941,7 @@ x11_copy_area :: proc(
   <a class="title" href="#the-game-entities">The game entities</a>
   <a class="hash-anchor" href="#the-game-entities" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
-<p>We have a few different entities we want to show, each is a 16x16 section of the sprite sheet. Let's define their coordinates to be readable:</p>
+<p>We have a few different entities we want to show, each is a 16x16 section of the sprite sheet. Let&#39;s define their coordinates to be readable:</p>
 <pre><code class="language-odin">Position :: struct {
 	x: u16,
 	y: u16,
@@ -977,7 +977,7 @@ ASSET_COORDINATES: [Entity_kind]Position = {
 	.Mine_idle = {x = 64, y = 40},
 }
 </code></pre>
-<p>And we'll group everything we need in one struct called <code>Scene</code>:</p>
+<p>And we&#39;ll group everything we need in one struct called <code>Scene</code>:</p>
 <pre><code class="language-odin">Scene :: struct {
 	window_id:              u32,
 	gc_id:                  u32,
@@ -1115,10 +1115,10 @@ ASSET_COORDINATES: [Entity_kind]Position = {
 	}
 }
 </code></pre>
-<p>If the event is <code>Exposed</code>, we simply render (that's our first render when the window becomes visible - or if the window was minimized and then made visible again).</p>
+<p>If the event is <code>Exposed</code>, we simply render (that&#39;s our first render when the window becomes visible - or if the window was minimized and then made visible again).</p>
 <p>If the event is the <code>Enter</code> key, we reset the state of the game and render. X11 differentiates between physical and logical keys on the keyboard but that does not matter here (or I would argue in most games: we are interested in the physical location of the key, not what the user mapped it to).</p>
 <p>If the event is (pressing and) releasing a mouse button, we run the game logic to uncover a cell and render.</p>
-<p>That's it!</p>
+<p>That&#39;s it!</p>
 <h2 id="game-logic-uncover-a-cell">
   <a class="title" href="#game-logic-uncover-a-cell">Game logic: uncover a cell</a>
   <a class="hash-anchor" href="#game-logic-uncover-a-cell" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
@@ -1126,8 +1126,8 @@ ASSET_COORDINATES: [Entity_kind]Position = {
 <p>The last thing to do is implementing the game rules.</p>
 <p>From my faint memory, when uncovering a cell, we have two cases:</p>
 <ul>
-<li>If it's a mine, we lost</li>
-<li>If it's not a mine, we uncover this cell and neighboring cells, in a flood fill fashion. We only uncover non-mines of course. An uncovered cell shows how many neighboring mines are around with a number (0 is simply empty, no number is shown).</li>
+<li>If it&#39;s a mine, we lost</li>
+<li>If it&#39;s not a mine, we uncover this cell and neighboring cells, in a flood fill fashion. We only uncover non-mines of course. An uncovered cell shows how many neighboring mines are around with a number (0 is simply empty, no number is shown).</li>
 </ul>
 <p>The one thing that tripped me is that we inspect all 8 neighboring cells to count mines, but when doing the flood fill, we only visit the 4 neighboring cells: up, right, down, left - not the diagonal neighbors. Otherwise the flood fill ends up uncovering all cells in the game at once.</p>
 <p>First, we need to translate the mouse position in the window to a cell index/row/column in our grid:</p>
@@ -1216,16 +1216,16 @@ locate_entity_by_coordinate :: proc(win_x: u16, win_y: u16) -&gt; (idx: int, row
 	}
 }
 </code></pre>
-<p>There are a few helpers here and there that are simple, but otherwise... that's it, that's the end. We're done! All under 1000 lines of code without any tricks or clever things.</p>
+<p>There are a few helpers here and there that are simple, but otherwise... that&#39;s it, that&#39;s the end. We&#39;re done! All under 1000 lines of code without any tricks or clever things.</p>
 <p><img src="https://github.com/gaultier/minesweeper-from-scratch/raw/master/screenshot.png" alt="Screenshot" /></p>
 <h2 id="conclusion">
   <a class="title" href="#conclusion">Conclusion</a>
   <a class="hash-anchor" href="#conclusion" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
-<p>X11 is old and crufty, but also gets out of the way. Once a few utility functions to open the window, receive events, etc have been implemented, it can be forgotten and we can focus all our attention on the game. That's very valuable. How many libraries, frameworks and development environments can say the same?</p>
-<p>I also enjoy that it works with any programming language, any tech stack. Don't need no bindings, no FFI, just send some bytes over the socket. You can even do that in Bash (don't tempt me!).</p>
-<p>I did not implement a few accessory things from the original game, like planting a flag on a cell you suspect has a mine. Feel free to do this at home, it's not much work.</p>
-<p>Finally, give Odin a try, it's great! It's this weird mix of a sane C with a Go-ish syntax and a good standard library.</p>
+<p>X11 is old and crufty, but also gets out of the way. Once a few utility functions to open the window, receive events, etc have been implemented, it can be forgotten and we can focus all our attention on the game. That&#39;s very valuable. How many libraries, frameworks and development environments can say the same?</p>
+<p>I also enjoy that it works with any programming language, any tech stack. Don&#39;t need no bindings, no FFI, just send some bytes over the socket. You can even do that in Bash (don&#39;t tempt me!).</p>
+<p>I did not implement a few accessory things from the original game, like planting a flag on a cell you suspect has a mine. Feel free to do this at home, it&#39;s not much work.</p>
+<p>Finally, give Odin a try, it&#39;s great! It&#39;s this weird mix of a sane C with a Go-ish syntax and a good standard library.</p>
 <p>I hope that you had as much fun as I did!</p>
 <h2 id="addendum-the-full-code">
   <a class="title" href="#addendum-the-full-code">Addendum: the full code</a>
@@ -1479,7 +1479,7 @@ x11_handshake :: proc(socket: os.Socket, auth_token: ^AuthToken) -&gt; Connectio
 	}
 
 	request := Request {
-		endianness             = 'l',
+		endianness             = &#39;l&#39;,
 		major_version          = 11,
 		authorization_len      = len(AUTH_ENTRY_MAGIC_COOKIE),
 		authorization_data_len = size_of(AuthToken),
