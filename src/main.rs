@@ -671,9 +671,9 @@ fn md_render_article(
     cache.insert(md_content, res.clone());
 
     println!(
-        "⏳ cache miss: generated {} in {} ms",
+        "⏳ cache miss: generated {} in {} us",
         &md_path.to_str().unwrap(),
-        Instant::now().duration_since(start).as_millis()
+        Instant::now().duration_since(start).as_micros()
     );
 
     res
@@ -778,8 +778,8 @@ fn generate_tags_page(articles: &[Article], html_header: &[u8], html_footer: &[u
     fs::write("articles-by-tag.html", sb).unwrap();
 
     println!(
-        "⚙️ generated articles-by-tag.html: {} ms",
-        Instant::now().duration_since(start).as_millis()
+        "⚙️ generated articles-by-tag.html: {} us",
+        Instant::now().duration_since(start).as_micros()
     );
 }
 
@@ -846,8 +846,8 @@ fn generate_rss(articles: &mut [Article]) {
     fs::write("feed.xml", sb).unwrap();
 
     println!(
-        "⚙️ generated feed.xml: {} ms",
-        Instant::now().duration_since(start).as_millis()
+        "⚙️ generated feed.xml: {} us",
+        Instant::now().duration_since(start).as_micros()
     );
 }
 
@@ -914,8 +914,8 @@ fn generate_home_page(articles: &mut [Article], html_header: &[u8], html_footer:
     fs::write("index.html", sb).unwrap();
 
     println!(
-        "⚙️ generated index.html: {} ms",
-        Instant::now().duration_since(start).as_millis()
+        "⚙️ generated index.html: {} us",
+        Instant::now().duration_since(start).as_micros()
     );
 }
 
@@ -1004,6 +1004,7 @@ fn websocket_handling_thread(
                         match path_str {
                             "header.html" | "footer.html" => {
                                 let mut cache = cache.lock().unwrap();
+                                cache.clear();
                                 generate_all(&mut cache);
                                 websocket.send_text(&file_path_str).unwrap();
                             }
