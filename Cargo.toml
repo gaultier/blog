@@ -8,3 +8,4 @@ markdown = "1.0.0"
 notify = "8.2.0"
 notify-debouncer-mini = "0.7.0"
 rouille = {version="3.6.2", features=[]}
+uuid = {version="1.21.0", features=["v5"]}
