@@ -2,7 +2,7 @@ let socket = new WebSocket("ws://localhost:8001/ws", "echo");
 socket.onmessage = function(event) {
   console.log(event.data);
   let html = event.data + '.html';
-  if (navigation.currentEntry.url.endsWith(html)){
+  if (event.data ==='' || navigation.currentEntry.url.endsWith(html)){
     navigation.reload();
   }
 }

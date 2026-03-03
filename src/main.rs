@@ -9,7 +9,6 @@ use std::{
     borrow::Cow,
     cmp::Ordering,
     collections::{BTreeMap, HashMap},
-    ffi::OsString,
     fs::{self},
     path::{Path, PathBuf},
     process::Command,
@@ -990,34 +989,33 @@ fn websocket_handling_thread(
         .watch(Path::new("."), RecursiveMode::Recursive)
         .unwrap();
 
-    let md_ext: OsString = "md".into();
-
     // Block forever, printing out events as they come in
     for res in erx {
         match res {
             Ok(events) => {
                 for event in events {
-                    if event.path.extension().unwrap_or_default() == md_ext {
-                        let file_path_str =
-                            event.path.file_stem().unwrap_or_default().to_string_lossy();
-                        let path_str = event.path.to_str().unwrap();
-                        match path_str {
-                            "header.html" | "footer.html" => {
-                                let mut cache = cache.lock().unwrap();
-                                cache.clear();
-                                generate_all(&mut cache);
-                                websocket.send_text(&file_path_str).unwrap();
-                            }
-                            _ if path_str.ends_with(".md") => {
-                                let mut cache = cache.lock().unwrap();
-                                generate_all(&mut cache);
-                                websocket.send_text(&file_path_str).unwrap();
-                            }
-                            _ => {}
-                        };
+                    let file_path_str =
+                        event.path.file_stem().unwrap_or_default().to_string_lossy();
+                    let path_str = event.path.to_str().unwrap();
+                    dbg!(path_str);
+                    match path_str {
+                        _ if path_str.ends_with("header.html")
+                            || path_str.ends_with("footer.html") =>
+                        {
+                            let mut cache = cache.lock().unwrap();
+                            cache.clear();
+                            generate_all(&mut cache);
+                            websocket.send_text("").unwrap();
+                        }
+                        _ if path_str.ends_with(".md") => {
+                            let mut cache = cache.lock().unwrap();
+                            generate_all(&mut cache);
+                            websocket.send_text(&file_path_str).unwrap();
+                        }
+                        _ => {}
+                    };
 
-                        return;
-                    }
+                    return;
                 }
             }
             Err(e) => eprintln!("watch error: {:?}", e),
