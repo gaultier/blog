@@ -681,6 +681,60 @@ fn md_render_footnote_definitions(content: &mut Vec<u8>, footnote_defs: &[Footno
     .unwrap();
 }
 
+fn generate_tags_page(articles: &[Article], html_header: &[u8], html_footer: &[u8]) {
+    let mut tag_to_articles = BTreeMap::new();
+
+    for article in articles {
+        for tag in &article.tags {
+            tag_to_articles
+                .entry(tag.clone())
+                .or_insert_with(Vec::new)
+                .push(article);
+        }
+    }
+
+    let mut sb: Vec<u8> = Vec::with_capacity(64000);
+    writeln!(
+        sb,
+        "<!DOCTYPE html>\n<html>\n<head>\n<title>Articles by tag</title>",
+    )
+    .unwrap();
+    sb.extend(html_header);
+    sb.extend(BACK_LINK.as_bytes());
+
+    writeln!(sb, "\n<h1>Articles by tag</h1>\n<ul>",).unwrap();
+
+    for (tag, articles) in &mut tag_to_articles {
+        articles.sort_by(|a, b| a.git_stat.creation_date.cmp(&b.git_stat.creation_date));
+
+        writeln!(
+            sb,
+            "<li id=\"{}\"><span class=\"tag\">{}</span><ul>",
+            html_slug(tag),
+            tag
+        )
+        .unwrap();
+
+        for a in articles {
+            sb.extend(b"<li>\n");
+            let (date, _time) = a.git_stat.creation_date.split_once("T").unwrap();
+            writeln!(sb, "  <span class=\"date\">{}</span>", date).unwrap();
+            writeln!(
+                sb,
+                "  <a href=\"{}\">{}</a>\n</li>",
+                &a.html_path.to_string_lossy(),
+                &a.md_title
+            )
+            .unwrap();
+        }
+        writeln!(sb, "</ul></li>",).unwrap();
+    }
+    writeln!(sb, "</ul>",).unwrap();
+
+    sb.extend(html_footer);
+    fs::write("articles-by-tag.html", sb).unwrap();
+}
+
 fn generate_home_page(articles: &mut [Article], html_header: &[u8], html_footer: &[u8]) {
     articles.sort_by(|a, b| {
         b.git_stat
@@ -761,6 +815,7 @@ fn main() -> Result<()> {
         .collect();
 
     generate_home_page(&mut articles, &html_header, &html_footer);
+    generate_tags_page(&articles, &html_header, &html_footer);
 
     Ok(())
 
