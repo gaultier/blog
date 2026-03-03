@@ -37,6 +37,7 @@ struct GitStat {
 struct Article {
     git_stat: GitStat,
     html_title: String,
+    md_title: String,
     html_path: PathBuf,
     tags: Vec<String>,
 }
@@ -236,7 +237,31 @@ fn html_slug(s: &str) -> String {
     res.trim_matches(|c| c == '-').to_owned()
 }
 
-fn md_render_article_content(
+fn md_to_html(md_content: &str, html_content: &mut Vec<u8>) {
+    let mut footnote_defs = Vec::new();
+
+    let md_ast = markdown::to_mdast(
+        &md_content,
+        &ParseOptions {
+            constructs: markdown::Constructs {
+                gfm_autolink_literal: false,
+                ..markdown::Constructs::gfm()
+            },
+            gfm_strikethrough_single_tilde: true,
+            ..Default::default()
+        },
+    )
+    .unwrap();
+
+    let mut md_titles = Vec::with_capacity(12);
+    let mut title_to_counter: BTreeMap<String, u8> = BTreeMap::new();
+    md_collect_titles(&md_ast, &mut title_to_counter, &mut md_titles);
+
+    md_to_html_impl(html_content, &mut footnote_defs, &md_ast, &md_titles, false);
+    md_render_footnote_definitions(html_content, &footnote_defs);
+}
+
+fn md_to_html_impl(
     content: &mut Vec<u8>,
     footnote_defs: &mut Vec<FootnoteDefinition>,
     node: &Node,
@@ -246,14 +271,14 @@ fn md_render_article_content(
     match node {
         Node::Root(root) => {
             for child in &root.children {
-                md_render_article_content(content, footnote_defs, child, titles, false);
+                md_to_html_impl(content, footnote_defs, child, titles, false);
             }
         }
         Node::Blockquote(blockquote) => {
             writeln!(content, "<blockquote>").unwrap();
 
             for child in &blockquote.children {
-                md_render_article_content(content, footnote_defs, child, titles, false);
+                md_to_html_impl(content, footnote_defs, child, titles, false);
             }
             writeln!(content, "</blockquote>").unwrap();
         }
@@ -271,7 +296,7 @@ fn md_render_article_content(
                 writeln!(content, r#"<{}>"#, tag).unwrap();
             }
             for child in &list.children {
-                md_render_article_content(content, footnote_defs, child, titles, false);
+                md_to_html_impl(content, footnote_defs, child, titles, false);
             }
             writeln!(content, "</{}>", tag).unwrap();
         }
@@ -287,14 +312,14 @@ fn md_render_article_content(
         Node::Delete(delete) => {
             write!(content, "<del>").unwrap();
             for child in &delete.children {
-                md_render_article_content(content, footnote_defs, child, titles, false);
+                md_to_html_impl(content, footnote_defs, child, titles, false);
             }
             write!(content, "</del>").unwrap();
         }
         Node::Emphasis(emphasis) => {
             write!(content, "<em>").unwrap();
             for child in &emphasis.children {
-                md_render_article_content(content, footnote_defs, child, titles, false);
+                md_to_html_impl(content, footnote_defs, child, titles, false);
             }
             write!(content, "</em>").unwrap();
         }
@@ -331,7 +356,7 @@ fn md_render_article_content(
             )
             .unwrap();
             for child in &link.children {
-                md_render_article_content(content, footnote_defs, child, titles, false);
+                md_to_html_impl(content, footnote_defs, child, titles, false);
             }
             write!(content, r#"</a>"#).unwrap();
         }
@@ -339,7 +364,7 @@ fn md_render_article_content(
         Node::Strong(strong) => {
             write!(content, "<strong>").unwrap();
             for child in &strong.children {
-                md_render_article_content(content, footnote_defs, child, titles, false);
+                md_to_html_impl(content, footnote_defs, child, titles, false);
             }
             write!(content, "</strong>").unwrap();
         }
@@ -375,7 +400,7 @@ fn md_render_article_content(
             )
             .unwrap();
             for child in &heading.children {
-                md_render_article_content(content, footnote_defs, child, titles, false);
+                md_to_html_impl(content, footnote_defs, child, titles, false);
             }
             writeln!(content, "</a>").unwrap();
             writeln!(content, r#"  <a class="hash-anchor" href="{}{}" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>"#,"#", title.slug).unwrap();
@@ -385,12 +410,12 @@ fn md_render_article_content(
             writeln!(content, "<table>").unwrap();
             let (thead, tbdody) = table.children.split_first().unwrap();
             writeln!(content, "<thead>").unwrap();
-            md_render_article_content(content, footnote_defs, thead, titles, true);
+            md_to_html_impl(content, footnote_defs, thead, titles, true);
             writeln!(content, "</thead>").unwrap();
 
             writeln!(content, "<tbody>").unwrap();
             for child in tbdody {
-                md_render_article_content(content, footnote_defs, child, titles, false);
+                md_to_html_impl(content, footnote_defs, child, titles, false);
             }
             writeln!(content, "</tbody>").unwrap();
 
@@ -402,7 +427,7 @@ fn md_render_article_content(
         Node::TableRow(table_row) => {
             writeln!(content, "<tr>").unwrap();
             for child in &table_row.children {
-                md_render_article_content(content, footnote_defs, child, titles, inside_thead);
+                md_to_html_impl(content, footnote_defs, child, titles, inside_thead);
             }
             writeln!(content, "</tr>").unwrap();
         }
@@ -410,7 +435,7 @@ fn md_render_article_content(
             let tag = if inside_thead { "th" } else { "td" };
             write!(content, "<{}>", tag).unwrap();
             for child in &table_cell.children {
-                md_render_article_content(content, footnote_defs, child, titles, false);
+                md_to_html_impl(content, footnote_defs, child, titles, false);
             }
             writeln!(content, "</{}>", tag).unwrap();
         }
@@ -424,7 +449,7 @@ fn md_render_article_content(
                 &list_item.children
             };
             for child in children {
-                md_render_article_content(content, footnote_defs, child, titles, false);
+                md_to_html_impl(content, footnote_defs, child, titles, false);
             }
             writeln!(content, "</li>").unwrap();
         }
@@ -432,7 +457,7 @@ fn md_render_article_content(
         Node::Paragraph(paragraph) => {
             write!(content, "<p>").unwrap();
             for child in &paragraph.children {
-                md_render_article_content(content, footnote_defs, child, titles, false);
+                md_to_html_impl(content, footnote_defs, child, titles, false);
             }
             writeln!(content, "</p>").unwrap();
         }
@@ -539,10 +564,6 @@ fn md_render_article(git_stat: GitStat, html_header: &[u8], html_footer: &[u8]) 
     )
     .unwrap();
 
-    let mut md_titles = Vec::with_capacity(12);
-    let mut title_to_counter: BTreeMap<String, u8> = BTreeMap::new();
-    md_collect_titles(&md_ast, &mut title_to_counter, &mut md_titles);
-
     let mut html_content: Vec<u8> = Vec::with_capacity(md_content_bytes_len * 8);
     let html_root_title = text_sanitize_for_html(md_root_title, true);
     writeln!(
@@ -585,10 +606,14 @@ fn md_render_article(git_stat: GitStat, html_header: &[u8], html_footer: &[u8]) 
     writeln!(html_content, r#"</div>"#).unwrap();
     writeln!(html_content, r#"</div>"#).unwrap();
 
+    let mut md_titles = Vec::with_capacity(12);
+    let mut title_to_counter: BTreeMap<String, u8> = BTreeMap::new();
+    md_collect_titles(&md_ast, &mut title_to_counter, &mut md_titles);
+
     md_render_toc(&mut html_content, &md_titles);
 
     let mut footnote_defs = Vec::with_capacity(8);
-    md_render_article_content(
+    md_to_html_impl(
         &mut html_content,
         &mut footnote_defs,
         &md_ast,
@@ -607,6 +632,7 @@ fn md_render_article(git_stat: GitStat, html_header: &[u8], html_footer: &[u8]) 
     Article {
         git_stat,
         html_title: html_root_title.to_string(),
+        md_title: md_root_title.to_string(),
         html_path,
         tags: tags.iter().map(|t| t.to_string()).collect(),
     }
@@ -635,7 +661,7 @@ fn md_render_footnote_definitions(content: &mut Vec<u8>, footnote_defs: &[Footno
         };
         writeln!(content, r#"<p>"#).unwrap();
         for child in children {
-            md_render_article_content(content, &mut vec![], child, &[], false);
+            md_to_html_impl(content, &mut vec![], child, &[], false);
         }
 
         writeln!(content, r#"<a href="{}fnref-{}" class="footnote-backref" data-footnote-backref data-footnote-backref-idx="{}" aria-label="Back to reference {}">↩</a>"#,"#", &def.identifier, &def.identifier, &def.identifier).unwrap();
@@ -673,7 +699,6 @@ fn generate_home_page(articles: &mut [Article], html_header: &[u8], html_footer:
     sb.extend(b"  <h2 id=\"articles\">Articles</h2>\n");
     sb.extend(b"  <ul>\n");
 
-    // 4. Iterate through articles
     for a in articles {
         if a.git_stat.path_from_git_root == "body_of_work.md" {
             continue;
@@ -682,22 +707,23 @@ fn generate_home_page(articles: &mut [Article], html_header: &[u8], html_footer:
         sb.extend(b"\n  <li>\n    <div class=\"home-link\">\n");
         sb.extend(b"      <span class=\"date\">");
         // Assuming a helper for date formatting
-        sb.extend(a.git_stat.creation_date.as_bytes());
+        let (date, _time) = a.git_stat.creation_date.split_once("T").unwrap();
+        sb.extend(date.as_bytes());
         sb.extend(b"</span>\n");
 
         writeln!(
             sb,
-            "      <a href=\"/blog/{}\">{}</a>\n",
+            "      <a href=\"/blog/{}\">{}</a>",
             &a.html_path.to_string_lossy(),
-            &a.html_title
+            &a.md_title
         )
         .unwrap();
 
         sb.extend(b"    </div>\n<div class=\"tags\">\n");
 
         for tag in &a.tags {
-            let slug = html_slug(tag); // Helper to slugify tags
-            writeln!(
+            let slug = html_slug(tag);
+            write!(
                 sb,
                 " <a href=\"/blog/articles-by-tag.html#{}\" class=\"tag\">{}</a>",
                 slug, tag
@@ -709,16 +735,9 @@ fn generate_home_page(articles: &mut [Article], html_header: &[u8], html_footer:
 
     sb.extend(b"  </ul>\n</div>\n");
 
-    // 5. Read and process Markdown file
     let markdown_content = fs::read_to_string("index.md").unwrap();
-    let html_content = markdown_to_html(&markdown_content); // Assuming a markdown library
+    md_to_html(&markdown_content, &mut sb);
 
-    // 6. Title extraction/decoration (Equivalent to your html_collect_titles)
-    // Note: In Rust, you'd likely use a crate like 'scraper' or 'pulldown-cmark'
-    let decorated_titles = decorate_titles(&html_content);
-    sb.push_str(&decorated_titles);
-
-    // 7. Footer and Write to file
     sb.extend(html_footer);
     fs::write("index.html", sb).unwrap();
 }
@@ -728,7 +747,7 @@ fn main() -> Result<()> {
     let html_header = fs::read("header.html").unwrap();
     let html_footer = fs::read("footer.html").unwrap();
 
-    let articles: Vec<Article> = git_stats
+    let mut articles: Vec<Article> = git_stats
         .into_iter()
         .filter(|gs| {
             gs.path_from_git_root != "README.md"
@@ -740,6 +759,8 @@ fn main() -> Result<()> {
             md_render_article(gs, &html_header, &html_footer)
         })
         .collect();
+
+    generate_home_page(&mut articles, &html_header, &html_footer);
 
     Ok(())
 
