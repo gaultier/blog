@@ -261,11 +261,11 @@ fn md_to_html(md_content: &str, html_content: &mut Vec<u8>) {
     let mut title_to_counter: BTreeMap<String, u8> = BTreeMap::new();
     md_collect_titles(&md_ast, &mut title_to_counter, &mut md_titles);
 
-    md_to_html_impl(html_content, &mut footnote_defs, &md_ast, &md_titles, false);
+    md_to_html_rec(html_content, &mut footnote_defs, &md_ast, &md_titles, false);
     md_render_footnote_definitions(html_content, &footnote_defs);
 }
 
-fn md_to_html_impl(
+fn md_to_html_rec(
     content: &mut Vec<u8>,
     footnote_defs: &mut Vec<FootnoteDefinition>,
     node: &Node,
@@ -275,14 +275,14 @@ fn md_to_html_impl(
     match node {
         Node::Root(root) => {
             for child in &root.children {
-                md_to_html_impl(content, footnote_defs, child, titles, false);
+                md_to_html_rec(content, footnote_defs, child, titles, false);
             }
         }
         Node::Blockquote(blockquote) => {
             writeln!(content, "<blockquote>").unwrap();
 
             for child in &blockquote.children {
-                md_to_html_impl(content, footnote_defs, child, titles, false);
+                md_to_html_rec(content, footnote_defs, child, titles, false);
             }
             writeln!(content, "</blockquote>").unwrap();
         }
@@ -300,7 +300,7 @@ fn md_to_html_impl(
                 writeln!(content, r#"<{}>"#, tag).unwrap();
             }
             for child in &list.children {
-                md_to_html_impl(content, footnote_defs, child, titles, false);
+                md_to_html_rec(content, footnote_defs, child, titles, false);
             }
             writeln!(content, "</{}>", tag).unwrap();
         }
@@ -316,14 +316,14 @@ fn md_to_html_impl(
         Node::Delete(delete) => {
             write!(content, "<del>").unwrap();
             for child in &delete.children {
-                md_to_html_impl(content, footnote_defs, child, titles, false);
+                md_to_html_rec(content, footnote_defs, child, titles, false);
             }
             write!(content, "</del>").unwrap();
         }
         Node::Emphasis(emphasis) => {
             write!(content, "<em>").unwrap();
             for child in &emphasis.children {
-                md_to_html_impl(content, footnote_defs, child, titles, false);
+                md_to_html_rec(content, footnote_defs, child, titles, false);
             }
             write!(content, "</em>").unwrap();
         }
@@ -360,7 +360,7 @@ fn md_to_html_impl(
             )
             .unwrap();
             for child in &link.children {
-                md_to_html_impl(content, footnote_defs, child, titles, false);
+                md_to_html_rec(content, footnote_defs, child, titles, false);
             }
             write!(content, r#"</a>"#).unwrap();
         }
@@ -368,7 +368,7 @@ fn md_to_html_impl(
         Node::Strong(strong) => {
             write!(content, "<strong>").unwrap();
             for child in &strong.children {
-                md_to_html_impl(content, footnote_defs, child, titles, false);
+                md_to_html_rec(content, footnote_defs, child, titles, false);
             }
             write!(content, "</strong>").unwrap();
         }
@@ -404,7 +404,7 @@ fn md_to_html_impl(
             )
             .unwrap();
             for child in &heading.children {
-                md_to_html_impl(content, footnote_defs, child, titles, false);
+                md_to_html_rec(content, footnote_defs, child, titles, false);
             }
             writeln!(content, "</a>").unwrap();
             writeln!(content, r#"  <a class="hash-anchor" href="{}{}" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>"#,"#", title.slug).unwrap();
@@ -414,12 +414,12 @@ fn md_to_html_impl(
             writeln!(content, "<table>").unwrap();
             let (thead, tbdody) = table.children.split_first().unwrap();
             writeln!(content, "<thead>").unwrap();
-            md_to_html_impl(content, footnote_defs, thead, titles, true);
+            md_to_html_rec(content, footnote_defs, thead, titles, true);
             writeln!(content, "</thead>").unwrap();
 
             writeln!(content, "<tbody>").unwrap();
             for child in tbdody {
-                md_to_html_impl(content, footnote_defs, child, titles, false);
+                md_to_html_rec(content, footnote_defs, child, titles, false);
             }
             writeln!(content, "</tbody>").unwrap();
 
@@ -431,7 +431,7 @@ fn md_to_html_impl(
         Node::TableRow(table_row) => {
             writeln!(content, "<tr>").unwrap();
             for child in &table_row.children {
-                md_to_html_impl(content, footnote_defs, child, titles, inside_thead);
+                md_to_html_rec(content, footnote_defs, child, titles, inside_thead);
             }
             writeln!(content, "</tr>").unwrap();
         }
@@ -439,7 +439,7 @@ fn md_to_html_impl(
             let tag = if inside_thead { "th" } else { "td" };
             write!(content, "<{}>", tag).unwrap();
             for child in &table_cell.children {
-                md_to_html_impl(content, footnote_defs, child, titles, false);
+                md_to_html_rec(content, footnote_defs, child, titles, false);
             }
             writeln!(content, "</{}>", tag).unwrap();
         }
@@ -453,7 +453,7 @@ fn md_to_html_impl(
                 &list_item.children
             };
             for child in children {
-                md_to_html_impl(content, footnote_defs, child, titles, false);
+                md_to_html_rec(content, footnote_defs, child, titles, false);
             }
             writeln!(content, "</li>").unwrap();
         }
@@ -461,7 +461,7 @@ fn md_to_html_impl(
         Node::Paragraph(paragraph) => {
             write!(content, "<p>").unwrap();
             for child in &paragraph.children {
-                md_to_html_impl(content, footnote_defs, child, titles, false);
+                md_to_html_rec(content, footnote_defs, child, titles, false);
             }
             writeln!(content, "</p>").unwrap();
         }
@@ -617,7 +617,7 @@ fn md_render_article(git_stat: GitStat, html_header: &[u8], html_footer: &[u8]) 
     md_render_toc(&mut html_content, &md_titles);
 
     let mut footnote_defs = Vec::with_capacity(8);
-    md_to_html_impl(
+    md_to_html_rec(
         &mut html_content,
         &mut footnote_defs,
         &md_ast,
@@ -664,7 +664,7 @@ fn md_render_footnote_definitions(content: &mut Vec<u8>, footnote_defs: &[Footno
         };
         writeln!(content, r#"<p>"#).unwrap();
         for child in children {
-            md_to_html_impl(content, &mut vec![], child, &[], false);
+            md_to_html_rec(content, &mut vec![], child, &[], false);
         }
 
         writeln!(content, r#"<a href="{}fnref-{}" class="footnote-backref" data-footnote-backref data-footnote-backref-idx="{}" aria-label="Back to reference {}">↩</a>"#,"#", &def.identifier, &def.identifier, &def.identifier).unwrap();
