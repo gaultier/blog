@@ -2,14 +2,15 @@ use markdown::{
     ParseOptions,
     mdast::{FootnoteDefinition, Node, Text},
 };
-use notify::{RecursiveMode, Result};
+use notify::RecursiveMode;
 use notify_debouncer_mini::new_debouncer;
 use rouille::{router, try_or_400, websocket};
+use serde::Serialize;
 use std::{
     borrow::Cow,
     cmp::Ordering,
-    collections::{BTreeMap, HashMap},
-    fs::{self},
+    collections::{BTreeMap, HashMap, HashSet},
+    fs::{self, File},
     path::{Path, PathBuf},
     process::Command,
     sync::{Arc, Mutex},
@@ -46,6 +47,138 @@ struct Article {
     md_title: String,
     html_path: PathBuf,
     tags: Vec<String>,
+}
+
+type Trigram = String;
+
+type FileIdx = usize;
+
+#[derive(Serialize)]
+struct SearchIndex {
+    trigram_to_file_idx: HashMap<Trigram, HashSet<FileIdx>>,
+    file_to_idx: HashMap<String, FileIdx>,
+}
+
+impl SearchIndex {
+    fn new(git_stats: &[GitStat]) -> Self {
+        let mut file_to_idx = HashMap::new();
+        let mut idx = 0;
+        for gs in git_stats {
+            let path = PathBuf::from(&gs.path_from_git_root).with_extension("html");
+            let path_str = path.to_string_lossy();
+            file_to_idx.entry(path_str.to_string()).or_insert_with(|| {
+                idx += 1;
+                idx - 1
+            });
+        }
+        Self {
+            trigram_to_file_idx: HashMap::new(),
+            file_to_idx,
+        }
+    }
+
+    fn ingest_md_ast(&mut self, node: &Node, file_idx: FileIdx) {
+        match node {
+            Node::Root(x) => {
+                for child in &x.children {
+                    self.ingest_md_ast(child, file_idx);
+                }
+            }
+            Node::Blockquote(x) => {
+                for child in &x.children {
+                    self.ingest_md_ast(child, file_idx);
+                }
+            }
+            Node::FootnoteDefinition(_) => {}
+            Node::MdxJsxFlowElement(_) => {}
+            Node::List(x) => {
+                for child in &x.children {
+                    self.ingest_md_ast(child, file_idx);
+                }
+            }
+            Node::MdxjsEsm(_) => {}
+            Node::Toml(_) => {}
+            Node::Yaml(_) => {}
+            Node::Break(_) => {}
+            Node::InlineCode(_) => {}
+            Node::InlineMath(_inline_math) => todo!(),
+            Node::Delete(x) => {
+                for child in &x.children {
+                    self.ingest_md_ast(child, file_idx);
+                }
+            }
+            Node::Emphasis(x) => {
+                for child in &x.children {
+                    self.ingest_md_ast(child, file_idx);
+                }
+            }
+            Node::MdxTextExpression(_) => {}
+            Node::FootnoteReference(_) => {}
+            Node::Html(_) => {}
+            Node::Image(_) => {}
+            Node::ImageReference(_) => {}
+            Node::MdxJsxTextElement(_) => {}
+            Node::Link(_) => {}
+            Node::LinkReference(_) => {}
+            Node::Strong(x) => {
+                for child in &x.children {
+                    self.ingest_md_ast(child, file_idx);
+                }
+            }
+            Node::Text(text) => {
+                self.ingest_text(&text.value, file_idx);
+            }
+            Node::Code(_) => {}
+            Node::Math(_) => {}
+            Node::MdxFlowExpression(_) => {}
+            Node::Heading(x) => {
+                for child in &x.children {
+                    self.ingest_md_ast(child, file_idx);
+                }
+            }
+            Node::Table(x) => {
+                for child in &x.children {
+                    self.ingest_md_ast(child, file_idx);
+                }
+            }
+            Node::ThematicBreak(_) => {}
+            Node::TableRow(x) => {
+                for child in &x.children {
+                    self.ingest_md_ast(child, file_idx);
+                }
+            }
+            Node::TableCell(x) => {
+                for child in &x.children {
+                    self.ingest_md_ast(child, file_idx);
+                }
+            }
+            Node::ListItem(x) => {
+                for child in &x.children {
+                    self.ingest_md_ast(child, file_idx);
+                }
+            }
+            Node::Definition(_) => {}
+            Node::Paragraph(x) => {
+                for child in &x.children {
+                    self.ingest_md_ast(child, file_idx);
+                }
+            }
+        }
+    }
+
+    fn ingest_text(&mut self, text: &str, file_idx: FileIdx) {
+        let chars: Vec<char> = text.to_lowercase().chars().collect();
+
+        chars.windows(3).for_each(|w| {
+            let trigram = w.iter().collect();
+            self.trigram_to_file_idx
+                .entry(trigram)
+                .and_modify(|e| {
+                    e.insert(file_idx);
+                })
+                .or_default();
+        });
+    }
 }
 
 fn git_get_articles_stats() -> Vec<GitStat> {
@@ -344,7 +477,6 @@ fn md_to_html_rec(
             writeln!(
                 content,
                 r##"<sup class="footnote-ref"><a href="#fn-{}" id="fnref-{}" data-footnote-ref>{}</a></sup>"##,
-                
                 &footnote_reference.identifier,
                 footnote_reference.identifier,
                 footnote_reference.label.as_ref().unwrap(),
@@ -554,6 +686,7 @@ fn md_render_article(
     html_header: &[u8],
     html_footer: &[u8],
     cache: &mut HashMap<String, Article>,
+    search_index: &mut SearchIndex,
 ) -> Article {
     let start = Instant::now();
     assert!(!html_header.is_empty());
@@ -590,6 +723,14 @@ fn md_render_article(
         },
     )
     .unwrap();
+
+    let md_path = PathBuf::from(&git_stat.path_from_git_root);
+    let html_path = md_path.with_extension("html");
+    let file_idx = search_index
+        .file_to_idx
+        .get(html_path.to_str().unwrap())
+        .unwrap();
+    search_index.ingest_md_ast(&md_ast, *file_idx);
 
     let mut html_content: Vec<u8> = Vec::with_capacity(md_content_bytes_len * 8);
     let html_root_title = text_sanitize_for_html(md_root_title, true);
@@ -652,8 +793,6 @@ fn md_render_article(
     writeln!(html_content, "{}", BACK_LINK).unwrap();
     html_content.extend(html_footer);
 
-    let md_path = PathBuf::from(&git_stat.path_from_git_root);
-    let html_path = md_path.with_extension("html");
     fs::write(&html_path, html_content).unwrap();
 
     let res = Article {
@@ -920,6 +1059,7 @@ fn generate_all(cache: &mut HashMap<String, Article>) {
     let html_footer = fs::read("footer.html").unwrap();
 
     let git_stats = git_get_articles_stats();
+    let mut search_index = SearchIndex::new(&git_stats);
     let mut articles: Vec<Article> = git_stats
         .into_iter()
         .filter(|gs| {
@@ -927,9 +1067,12 @@ fn generate_all(cache: &mut HashMap<String, Article>) {
                 && gs.path_from_git_root != "todo.md"
                 && gs.path_from_git_root != "index.md"
         })
-        .map(|gs| md_render_article(gs, &html_header, &html_footer, cache))
+        .map(|gs| md_render_article(gs, &html_header, &html_footer, cache, &mut search_index))
         .collect();
 
+    dbg!(search_index.trigram_to_file_idx.get("x11"));
+    let search_index_file = File::create("search_index.json").unwrap();
+    serde_json::to_writer(search_index_file, &search_index).unwrap();
     generate_home_page(&mut articles, &html_header, &html_footer);
     generate_tags_page(&articles, &html_header, &html_footer);
     generate_rss(&mut articles);
@@ -941,34 +1084,39 @@ fn generate_all(cache: &mut HashMap<String, Article>) {
     );
 }
 
-fn main() -> Result<()> {
+fn main() {
     let mut cache = HashMap::new();
 
     generate_all(&mut cache);
 
-    let cache = Arc::new(Mutex::new(cache));
-    rouille::start_server("localhost:8001", move |request| {
-        router!(request,
-            (GET) (/blog) => {
-                 rouille::Response::redirect_302("/blog/index.html")
-            },
-            (GET) (/blog/) => {
-                 rouille::Response::redirect_302("/blog/index.html")
-            },
-            (GET) (/ws) => {
-                let (response, websocket) = try_or_400!(websocket::start(request, Some("echo")));
+    let mut args = std::env::args().skip(1);
+    if let Some(arg) = args.next()
+        && arg == "watch"
+    {
+        let cache = Arc::new(Mutex::new(cache));
+        rouille::start_server("localhost:8001", move |request| {
+            router!(request,
+                (GET) (/blog) => {
+                     rouille::Response::redirect_302("/blog/index.html")
+                },
+                (GET) (/blog/) => {
+                     rouille::Response::redirect_302("/blog/index.html")
+                },
+                (GET) (/ws) => {
+                    let (response, websocket) = try_or_400!(websocket::start(request, Some("echo")));
 
-                let cache = cache.clone();
-                thread::spawn(move || {
-                    // This line will block until the `response` above has been returned.
-                    let ws = websocket.recv().unwrap();
-                    websocket_handling_thread(ws, cache);
-                });
-                response
-            },
-            _ => rouille::match_assets(request, "..")
-        )
-    });
+                    let cache = cache.clone();
+                    thread::spawn(move || {
+                        // This line will block until the `response` above has been returned.
+                        let ws = websocket.recv().unwrap();
+                        websocket_handling_thread(ws, cache);
+                    });
+                    response
+                },
+                _ => rouille::match_assets(request, "..")
+            )
+        });
+    }
 }
 
 fn websocket_handling_thread(

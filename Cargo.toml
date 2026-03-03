@@ -8,4 +8,6 @@ markdown = "1.0.0"
 notify = "8.2.0"
 notify-debouncer-mini = "0.7.0"
 rouille = {version="3.6.2", features=[]}
+serde = {version="1.0.228", features=["serde_derive"]}
+serde_json = "1.0.149"
 uuid = {version="1.21.0", features=["v5"]}

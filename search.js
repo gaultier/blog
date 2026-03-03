@@ -1,50 +1,49 @@
-import search from './search_index.js';
-const {raw_index}=search;
 
 const excerpt_len_around = 100;
 
 function search_text(needle) {
+  needle = needle.toLowerCase();
   console.time("search_text");
 
-  const matches=[];
-  for (const [doc_i, doc] of raw_index.documents.entries()){
-    let start = 0;
-    for (let _i =0; _i < doc.text.length; _i++){
-      const idx = doc.text.slice(start).indexOf(needle);
-      if (-1==idx) { break; }
+  const file_scores = new Map();
 
-      matches.push([doc_i | 0, start+idx]);
-      start += idx + 1;
+  for (let i = 0; i <= needle.length - 3; i++) {
+    const trigram = needle[i] + needle[i+1] + needle[i+2];
+
+    const match = window.search_index.trigram_to_file_idx[trigram];
+    console.log('trigram: ', trigram, match);
+    if (match === undefined) {
+      continue;
     }
-  }
-  console.timeEnd("search_text");
 
-  const res = [];
-  for (const [doc_i, idx] of matches) {
-    const doc = raw_index.documents[doc_i];
-
-    let title = undefined;
-    for (const t of doc.titles){
-      if (idx < t.offset) {
-        break;
+    for (let file of match) {
+      const score = file_scores.get(file);
+      console.log("match: ", file, match, score);
+      if (score == undefined) {
+        file_scores.set(file, 1);
+      } else {
+        file_scores.set(file, score + 1);
       }
-      title = t;
     }
-
-    const link = title ? doc.html_file_name + '#' + title.slug + (title.counter ? '-' + title.counter : '') : doc.html_file_name;
-
-    res.push({
-      index: idx,
-      title: title,
-      link: link,
-      document_index: doc_i,
-    });
   }
-
-  return res;
+  
+  console.timeEnd("search_text");
+  return file_scores;
 }
 
 window.onload = function() {
+  fetch('/blog/search_index.json')
+    .then(r => r.json())
+    .then(j => {
+      console.log('loaded search index', j); 
+      j.idx_to_file = new Map();
+
+      for (const [file, idx] of Object.entries(j.file_to_idx)) {
+        j.idx_to_file.set(idx, file);
+      }
+    window.search_index = j;
+  });
+
   const dom_search_matches = window.document.getElementById('search-matches');
   const dom_input = window.document.getElementById('search');
   const dom_pseudo_body = window.document.getElementById('pseudo-body');
@@ -57,47 +56,23 @@ window.onload = function() {
       return;
     }
 
-    dom_pseudo_body.hidden = true;
+    dom_pseudo_body.hidden = false;
     dom_search_matches.hidden = false;
     dom_search_matches.innerHTML = '';
 
-    const matches = search_text(dom_input.value);
+    const scores = search_text(dom_input.value);
 
-    const dom_search_title = window.document.createElement('h2');
-    dom_search_title.innerText = `Search results (${matches.length}):`;
-    dom_search_matches.append(dom_search_title);
+    dom_pseudo_body.innerHTML = '<h3>Search results</h3><ul>' ;
 
-    const match_entries = matches.entries();
-    for (const [i, match] of match_entries) {
-      const doc = raw_index.documents[match.document_index];
-      const dom_match = window.document.createElement('p');
+    let search_results = [...scores.entries()];
+    search_results.sort((a,b) => b[0] - a[0]);
+    for (const [file_idx, score] of scores.entries()) {
+      const file = search_index.idx_to_file.get(file_idx);
 
-      const dom_doc = window.document.createElement('h3');
-      dom_doc.innerHTML = `<a href="/blog/${doc.html_file_name}">${doc.title}</a>`
-      if (match.title) {
-        dom_doc.innerHTML += `: <a href="/blog/${match.link}">${match.title.title}</a>`;
-      }
-      dom_match.append(dom_doc);
-
-      const dom_excerpt = window.document.createElement('p');
-      const excerpt_idx_start = match.index - excerpt_len_around < 0 ? 0 : match.index - excerpt_len_around;
-      const excerpt_idx_end = match.index + needle.length + excerpt_len_around;
-      dom_excerpt.innerHTML = '...' + 
-        doc.text.slice(excerpt_idx_start, match.index) +
-        '<strong>' +
-        doc.text.slice(match.index, match.index + needle.length) + 
-        '</strong>' +
-        doc.text.slice(match.index + needle.length, excerpt_idx_end) +
-        '...';
-      dom_match.append(dom_excerpt);
-
-      if (i + 1 < matches.length){
-        const dom_hr = window.document.createElement('hr');
-        dom_match.append(dom_hr);
-      }
-
-      dom_search_matches.append(dom_match);
+      dom_pseudo_body.innerHTML += `<li> <a href="${file}">${file}: ${score}</a></li>`
     }
+    dom_pseudo_body.innerHTML += '</ul>' ;
+
   };
   dom_input.oninput = search_and_display_results;
   dom_input.onfocus = search_and_display_results;
