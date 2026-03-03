@@ -1001,12 +1001,27 @@ fn websocket_handling_thread(
                         _ if path_str.ends_with("header.html")
                             || path_str.ends_with("footer.html") =>
                         {
+                            println!("header/footer changed, rebuilding & reloading all files");
                             let mut cache = cache.lock().unwrap();
                             cache.clear();
                             generate_all(&mut cache);
                             websocket.send_text("").unwrap();
                         }
+                        _ if path_str.ends_with(".js")
+                            || path_str.ends_with(".css")
+                            || path_str.ends_with(".svg")
+                            || path_str.ends_with(".png")
+                            || path_str.ends_with(".webm")
+                            || path_str.ends_with(".mp4")
+                            || path_str.ends_with(".jpeg")
+                            || path_str.ends_with(".ico")
+                            || path_str.ends_with(".gif") =>
+                        {
+                            println!("asset changed, reloading all files: {}", path_str);
+                            websocket.send_text("").unwrap();
+                        }
                         _ if path_str.ends_with(".md") => {
+                            println!("md file changed, rebuilding & reloading it: {}", path_str);
                             let mut cache = cache.lock().unwrap();
                             generate_all(&mut cache);
                             websocket.send_text(&file_path_str).unwrap();
