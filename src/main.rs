@@ -9,7 +9,7 @@ use serde::Serialize;
 use std::{
     borrow::Cow,
     cmp::Ordering,
-    collections::{BTreeMap, HashMap, HashSet},
+    collections::{BTreeMap, HashMap},
     fs::{self, File},
     path::{Path, PathBuf},
     process::Command,
@@ -55,7 +55,7 @@ type FileIdx = usize;
 
 #[derive(Serialize)]
 struct SearchIndex {
-    trigram_to_file_idx: HashMap<Trigram, HashSet<FileIdx>>,
+    trigram_to_file_idx: HashMap<Trigram, HashMap<FileIdx, usize>>,
     file_to_idx: HashMap<String, FileIdx>,
 }
 
@@ -174,7 +174,11 @@ impl SearchIndex {
             self.trigram_to_file_idx
                 .entry(trigram)
                 .and_modify(|e| {
-                    e.insert(file_idx);
+                    e.entry(file_idx)
+                        .and_modify(|e| {
+                            *e += 1;
+                        })
+                        .or_default();
                 })
                 .or_default();
         });

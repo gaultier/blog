@@ -11,19 +11,15 @@ function search_text(needle) {
     const trigram = needle[i] + needle[i+1] + needle[i+2];
 
     const match = window.search_index.trigram_to_file_idx[trigram];
-    console.log('trigram: ', trigram, match);
     if (match === undefined) {
       continue;
     }
 
-    for (let file of match) {
-      const score = file_scores.get(file);
-      console.log("match: ", file, match, score);
-      if (score == undefined) {
-        file_scores.set(file, 1);
-      } else {
-        file_scores.set(file, score + 1);
-      }
+    const docs_with_this_trigram = Object.entries(match).length;
+
+    for (const [file, count] of Object.entries(match)) {
+      const score = file_scores.get(file) || 0;
+      file_scores.set(file, score + count * (1/docs_with_this_trigram) );
     }
   }
   
@@ -35,7 +31,6 @@ window.onload = function() {
   fetch('/blog/search_index.json')
     .then(r => r.json())
     .then(j => {
-      console.log('loaded search index', j); 
       j.idx_to_file = new Map();
 
       for (const [file, idx] of Object.entries(j.file_to_idx)) {
@@ -65,9 +60,9 @@ window.onload = function() {
     dom_pseudo_body.innerHTML = '<h3>Search results</h3><ul>' ;
 
     let search_results = [...scores.entries()];
-    search_results.sort((a,b) => b[0] - a[0]);
-    for (const [file_idx, score] of scores.entries()) {
-      const file = search_index.idx_to_file.get(file_idx);
+    search_results.sort((a,b) => b[1] - a[1]);
+    for (const [file_idx, score] of search_results) {
+      const file = search_index.idx_to_file.get(Number(file_idx));
 
       dom_pseudo_body.innerHTML += `<li> <a href="${file}">${file}: ${score}</a></li>`
     }
