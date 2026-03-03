@@ -979,7 +979,7 @@ fn websocket_handling_thread(
     mut websocket: websocket::Websocket,
     cache: Arc<Mutex<HashMap<String, Article>>>,
 ) {
-    println!("new websocket");
+    println!("🚀 new websocket");
     let (etx, erx) = std::sync::mpsc::channel();
 
     let mut debouncer = new_debouncer(Duration::from_millis(200), etx).unwrap();
@@ -1001,7 +1001,7 @@ fn websocket_handling_thread(
                         _ if path_str.ends_with("header.html")
                             || path_str.ends_with("footer.html") =>
                         {
-                            println!("header/footer changed, rebuilding & reloading all files");
+                            println!("🔄 header/footer changed, rebuilding & reloading all files");
                             let mut cache = cache.lock().unwrap();
                             cache.clear();
                             generate_all(&mut cache);
@@ -1017,11 +1017,14 @@ fn websocket_handling_thread(
                             || path_str.ends_with(".ico")
                             || path_str.ends_with(".gif") =>
                         {
-                            println!("asset changed, reloading all files: {}", path_str);
+                            println!("🔄 asset changed, reloading all files: {}", path_str);
                             websocket.send_text("").unwrap();
                         }
                         _ if path_str.ends_with(".md") => {
-                            println!("md file changed, rebuilding & reloading it: {}", path_str);
+                            println!(
+                                "🔄 md file changed, rebuilding & reloading it: {}",
+                                path_str
+                            );
                             let mut cache = cache.lock().unwrap();
                             generate_all(&mut cache);
                             websocket.send_text(&file_path_str).unwrap();
