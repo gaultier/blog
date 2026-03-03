@@ -343,8 +343,8 @@ fn md_to_html_rec(
         Node::FootnoteReference(footnote_reference) => {
             writeln!(
                 content,
-                r#"<sup class="footnote-ref"><a href="{}fn-{}" id="fnref-{}" data-footnote-ref>{}</a></sup>"#,
-                "#",
+                r##"<sup class="footnote-ref"><a href="#fn-{}" id="fnref-{}" data-footnote-ref>{}</a></sup>"##,
+                
                 &footnote_reference.identifier,
                 footnote_reference.identifier,
                 footnote_reference.label.as_ref().unwrap(),
@@ -409,17 +409,12 @@ fn md_to_html_rec(
                 .unwrap();
 
             writeln!(content, r#"<h{} id="{}">"#, heading.depth, title.slug).unwrap();
-            write!(
-                content,
-                r#"  <a class="title" href="{}{}">"#,
-                "#", title.slug
-            )
-            .unwrap();
+            write!(content, r##"  <a class="title" href="#{}">"##, title.slug).unwrap();
             for child in &heading.children {
                 md_to_html_rec(content, footnote_defs, child, titles, false);
             }
             writeln!(content, "</a>").unwrap();
-            writeln!(content, r#"  <a class="hash-anchor" href="{}{}" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>"#,"#", title.slug).unwrap();
+            writeln!(content, r##"  <a class="hash-anchor" href="#{}" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>"##, title.slug).unwrap();
             writeln!(content, "</h{}>", heading.depth).unwrap();
         }
         Node::Table(table) => {
@@ -538,9 +533,10 @@ fn md_render_toc(content: &mut Vec<u8>, titles: &[Title]) {
 
         writeln!(
             content,
-            r#"{}  <li>
-    <a href="{}{}">{}</a>"#,
-            "\n", "#", title.slug, &title.text,
+            r##"
+  <li>
+    <a href="#{}">{}</a>"##,
+            title.slug, &title.text,
         )
         .unwrap();
     }
@@ -704,7 +700,7 @@ fn md_render_footnote_definitions(content: &mut Vec<u8>, footnote_defs: &[Footno
             md_to_html_rec(content, &mut vec![], child, &[], false);
         }
 
-        writeln!(content, r#"<a href="{}fnref-{}" class="footnote-backref" data-footnote-backref data-footnote-backref-idx="{}" aria-label="Back to reference {}">↩</a>"#,"#", &def.identifier, &def.identifier, &def.identifier).unwrap();
+        writeln!(content, r##"<a href="#fnref-{}" class="footnote-backref" data-footnote-backref data-footnote-backref-idx="{}" aria-label="Back to reference {}">↩</a>"##, &def.identifier, &def.identifier, &def.identifier).unwrap();
 
         writeln!(
             content,
