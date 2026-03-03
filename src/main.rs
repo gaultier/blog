@@ -935,6 +935,7 @@ fn websocket_handling_thread(mut websocket: websocket::Websocket) {
                         let file_path_str =
                             event.path.file_stem().unwrap_or_default().to_string_lossy();
                         let path_str = event.path.to_str().unwrap();
+                        let start = std::time::Instant::now();
                         match path_str {
                             "header.html" | "footer.html" => {
                                 generate_all();
@@ -946,6 +947,8 @@ fn websocket_handling_thread(mut websocket: websocket::Websocket) {
                             }
                             _ => {}
                         };
+                        let end = std::time::Instant::now();
+                        println!("{:?}", end - start);
 
                         return;
                     }

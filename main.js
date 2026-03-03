@@ -1,10 +1,17 @@
-                    var socket = new WebSocket("ws://localhost:8001/ws", "echo");
+let socket = new WebSocket("ws://localhost:8001/ws", "echo");
 socket.onmessage = function(event) {
   console.log(event.data);
   let html = event.data + '.html';
   if (navigation.currentEntry.url.endsWith(html)){
     navigation.reload();
   }
+}
+socket.onclose = function() {
+  // TODO: Reconnect?
+  console.log('closed');
+}
+socket.onerror = function(ev) {
+  console.log('error', ev);
 }
 
 hljs.registerLanguage("odin", function(e) {
