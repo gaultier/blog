@@ -52,7 +52,7 @@ fn git_get_articles_stats() -> Vec<GitStat> {
     let start = Instant::now();
 
     let output = Command::new("git")
-        .args(&[
+        .args([
             "log",
             "--format='%aI'",
             "--no-merges",
@@ -76,7 +76,7 @@ fn git_get_articles_stats() -> Vec<GitStat> {
     // R100    sha.md  making_my_debug_build_run_100_times_faster.md
 
     let output_str = String::from_utf8_lossy(&output.stdout);
-    let mut lines = output_str.lines().into_iter().peekable();
+    let mut lines = output_str.lines().peekable();
 
     let mut res: HashMap<String, GitStat> = HashMap::with_capacity(256);
 
@@ -244,7 +244,7 @@ fn html_slug(s: &str) -> String {
             '#' => res.push_str("sharp"),
             c if c.is_ascii_alphanumeric() => res.push(c.to_ascii_lowercase()),
             // Other runes are mapped to `-`, but we avoid consecutive `-`.
-            _ if res.chars().last() != Some('-') => {
+            _ if !res.ends_with('-') => {
                 res.push('-');
             }
             _ => {}
@@ -257,7 +257,7 @@ fn md_to_html(md_content: &str, html_content: &mut Vec<u8>) {
     let mut footnote_defs = Vec::new();
 
     let md_ast = markdown::to_mdast(
-        &md_content,
+        md_content,
         &ParseOptions {
             constructs: markdown::Constructs {
                 gfm_autolink_literal: false,
@@ -583,7 +583,7 @@ fn md_render_article(
     let (_, md_content_article) = md_content.split_at(metadata_delim_pos + metadata_delim.len());
 
     let md_ast = markdown::to_mdast(
-        &md_content_article,
+        md_content_article,
         &ParseOptions {
             constructs: markdown::Constructs {
                 gfm_autolink_literal: false,
@@ -993,7 +993,7 @@ fn websocket_handling_thread(
     for res in erx {
         match res {
             Ok(events) => {
-                for event in events {
+                if let Some(event) = events.into_iter().next() {
                     let file_path_str =
                         event.path.file_stem().unwrap_or_default().to_string_lossy();
                     let path_str = event.path.to_str().unwrap();
