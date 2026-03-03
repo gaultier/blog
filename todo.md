@@ -1,5 +1,6 @@
 ## Ideas for articles
 
+- [ ] A tale of two APIs: Device Attestation on iOS and Android
 - [ ] Catch data races with DTrace?
 - [ ] a weird advantage of using TLA+ (using TLA+ generated traces as input for the real program)
 - [ ] compiler architecture and implementation with live playground
@@ -41,20 +42,11 @@
 
 ## Blog implementation
 
+- [ ] gen: lints on markdown AST
 - [ ] gen: link checker
 - [ ] browser: search with `/` shortcut and appears on the side
 - [ ] browser: search shows the full title path to the match e.g. 'my_article: foo/bar/baz'
 - [ ] browser: search highlights matched terms (and jumps to them with a link?)
-- [ ] gen: Work mainly on markdown with libcmark instead of html for simplicity
 - [ ] gen: Articles excerpt on the home page?
-- [ ] gen: Browser live reload: 
-  + Depends on: custom HTTP server, builtin file watch.
-  + HTTP server serves and watches files for changes.
-  + HTTP server injects a JS snippet when serving HTML files which listens for SSE events on a separate endpoint (e.g. `/live-reload`).
-  + When a client sends a request to the server on `/live-reload` (i.e. subscribes), the server adds it the list of clients (of 1).
-  + When a file changes on disk, the server sends a SSE to all registered clients.
-  + The client reloads the page when a SSE event is received.
-- [ ] gen: Built-in file watch
-- [ ] gen: Built-in http server
 - [ ] gen: Link to related articles at the end (requires post-processing after all articles have been generated)
 - [ ] gen: Syntax highlighting done statically
