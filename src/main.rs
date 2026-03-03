@@ -13,8 +13,9 @@ use std::{
     fs::{self},
     path::{Path, PathBuf},
     process::Command,
+    sync::{Arc, Mutex},
     thread,
-    time::Duration,
+    time::{Duration, Instant},
 };
 
 use std::io::Write;
@@ -33,12 +34,14 @@ struct Title {
     slug: String,
 }
 
+#[derive(Clone)]
 struct GitStat {
     creation_date: String,
     modification_date: String,
     path_from_git_root: String,
 }
 
+#[derive(Clone)]
 struct Article {
     git_stat: GitStat,
     md_title: String,
@@ -47,6 +50,8 @@ struct Article {
 }
 
 fn git_get_articles_stats() -> Vec<GitStat> {
+    let start = Instant::now();
+
     let output = Command::new("git")
         .args(&[
             "log",
@@ -161,7 +166,15 @@ fn git_get_articles_stats() -> Vec<GitStat> {
         }
     }
 
-    res.into_values().collect()
+    let res: Vec<GitStat> = res.into_values().collect();
+
+    println!(
+        "🗄️ git stats: {} files in {} ms",
+        res.len(),
+        Instant::now().duration_since(start).as_millis()
+    );
+
+    res
 }
 
 // TODO: Return Rc<String> or Cow<str>?
@@ -541,7 +554,13 @@ fn md_render_toc(content: &mut Vec<u8>, titles: &[Title]) {
     writeln!(content, "</details>\n").unwrap();
 }
 
-fn md_render_article(git_stat: GitStat, html_header: &[u8], html_footer: &[u8]) -> Article {
+fn md_render_article(
+    git_stat: GitStat,
+    html_header: &[u8],
+    html_footer: &[u8],
+    cache: &mut HashMap<String, Article>,
+) -> Article {
+    let start = Instant::now();
     assert!(!html_header.is_empty());
     assert!(!html_footer.is_empty());
 
@@ -549,14 +568,23 @@ fn md_render_article(git_stat: GitStat, html_header: &[u8], html_footer: &[u8]) 
     let md_content_bytes_len = md_content_bytes.len();
     let md_content = String::from_utf8(md_content_bytes).unwrap();
 
+    if let Some(article) = cache.get(&md_content) {
+        let res = article.clone();
+        println!(
+            "⚡ cache hit: {} {} us",
+            git_stat.path_from_git_root,
+            Instant::now().duration_since(start).as_micros()
+        );
+        return res;
+    }
     let (md_root_title, tags) = md_parse_metadata(&md_content);
 
     let metadata_delim = "---";
     let metadata_delim_pos = md_content.find(metadata_delim).unwrap();
-    let (_, md_content) = md_content.split_at(metadata_delim_pos + metadata_delim.len());
+    let (_, md_content_article) = md_content.split_at(metadata_delim_pos + metadata_delim.len());
 
     let md_ast = markdown::to_mdast(
-        &md_content,
+        &md_content_article,
         &ParseOptions {
             constructs: markdown::Constructs {
                 gfm_autolink_literal: false,
@@ -633,12 +661,22 @@ fn md_render_article(git_stat: GitStat, html_header: &[u8], html_footer: &[u8]) 
     let html_path = md_path.with_extension("html");
     fs::write(&html_path, html_content).unwrap();
 
-    Article {
+    let res = Article {
         git_stat,
         md_title: md_root_title.to_string(),
         html_path,
         tags: tags.iter().map(|t| t.to_string()).collect(),
-    }
+    };
+
+    cache.insert(md_content, res.clone());
+
+    println!(
+        "⏳ cache miss: generated {} in {} ms",
+        &md_path.to_str().unwrap(),
+        Instant::now().duration_since(start).as_millis()
+    );
+
+    res
 }
 
 fn md_render_footnote_definitions(content: &mut Vec<u8>, footnote_defs: &[FootnoteDefinition]) {
@@ -685,6 +723,8 @@ fn md_render_footnote_definitions(content: &mut Vec<u8>, footnote_defs: &[Footno
 }
 
 fn generate_tags_page(articles: &[Article], html_header: &[u8], html_footer: &[u8]) {
+    let start = Instant::now();
+
     let mut tag_to_articles = BTreeMap::new();
 
     for article in articles {
@@ -736,6 +776,11 @@ fn generate_tags_page(articles: &[Article], html_header: &[u8], html_footer: &[u
 
     sb.extend(html_footer);
     fs::write("articles-by-tag.html", sb).unwrap();
+
+    println!(
+        "⚙️ generated articles-by-tag.html: {} ms",
+        Instant::now().duration_since(start).as_millis()
+    );
 }
 
 fn generate_article_rss(sb: &mut Vec<u8>, base_uuid: &uuid::Uuid, article: &Article) {
@@ -763,6 +808,8 @@ fn generate_article_rss(sb: &mut Vec<u8>, base_uuid: &uuid::Uuid, article: &Arti
 }
 
 fn generate_rss(articles: &mut [Article]) {
+    let start = Instant::now();
+
     articles.sort_by(|a, b| {
         a.git_stat
             .creation_date
@@ -797,9 +844,16 @@ fn generate_rss(articles: &mut [Article]) {
 
     sb.extend(b"</feed>");
     fs::write("feed.xml", sb).unwrap();
+
+    println!(
+        "⚙️ generated feed.xml: {} ms",
+        Instant::now().duration_since(start).as_millis()
+    );
 }
 
 fn generate_home_page(articles: &mut [Article], html_header: &[u8], html_footer: &[u8]) {
+    let start = Instant::now();
+
     articles.sort_by(|a, b| {
         b.git_stat
             .creation_date
@@ -858,9 +912,15 @@ fn generate_home_page(articles: &mut [Article], html_header: &[u8], html_footer:
 
     sb.extend(html_footer);
     fs::write("index.html", sb).unwrap();
+
+    println!(
+        "⚙️ generated index.html: {} ms",
+        Instant::now().duration_since(start).as_millis()
+    );
 }
 
-fn generate_all() {
+fn generate_all(cache: &mut HashMap<String, Article>) {
+    let start = std::time::Instant::now();
     let html_header = fs::read("header.html").unwrap();
     let html_footer = fs::read("footer.html").unwrap();
 
@@ -872,22 +932,26 @@ fn generate_all() {
                 && gs.path_from_git_root != "todo.md"
                 && gs.path_from_git_root != "index.md"
         })
-        .map(|gs| {
-            println!("generating {}", gs.path_from_git_root);
-            md_render_article(gs, &html_header, &html_footer)
-        })
+        .map(|gs| md_render_article(gs, &html_header, &html_footer, cache))
         .collect();
 
     generate_home_page(&mut articles, &html_header, &html_footer);
     generate_tags_page(&articles, &html_header, &html_footer);
     generate_rss(&mut articles);
 
-    println!("generated {} articles", articles.len());
+    println!(
+        "⚙️ generated {} articles in {} ms",
+        articles.len(),
+        Instant::now().duration_since(start).as_millis()
+    );
 }
 
 fn main() -> Result<()> {
-    generate_all();
+    let mut cache = HashMap::new();
 
+    generate_all(&mut cache);
+
+    let cache = Arc::new(Mutex::new(cache));
     rouille::start_server("localhost:8001", move |request| {
         router!(request,
             (GET) (/blog) => {
@@ -899,10 +963,11 @@ fn main() -> Result<()> {
             (GET) (/ws) => {
                 let (response, websocket) = try_or_400!(websocket::start(request, Some("echo")));
 
+                let cache = cache.clone();
                 thread::spawn(move || {
                     // This line will block until the `response` above has been returned.
                     let ws = websocket.recv().unwrap();
-                    websocket_handling_thread(ws);
+                    websocket_handling_thread(ws, cache);
                 });
                 response
             },
@@ -911,7 +976,10 @@ fn main() -> Result<()> {
     });
 }
 
-fn websocket_handling_thread(mut websocket: websocket::Websocket) {
+fn websocket_handling_thread(
+    mut websocket: websocket::Websocket,
+    cache: Arc<Mutex<HashMap<String, Article>>>,
+) {
     println!("new websocket");
     let (etx, erx) = std::sync::mpsc::channel();
 
@@ -930,25 +998,22 @@ fn websocket_handling_thread(mut websocket: websocket::Websocket) {
             Ok(events) => {
                 for event in events {
                     if event.path.extension().unwrap_or_default() == md_ext {
-                        println!("event: {:?}", event);
-
                         let file_path_str =
                             event.path.file_stem().unwrap_or_default().to_string_lossy();
                         let path_str = event.path.to_str().unwrap();
-                        let start = std::time::Instant::now();
                         match path_str {
                             "header.html" | "footer.html" => {
-                                generate_all();
+                                let mut cache = cache.lock().unwrap();
+                                generate_all(&mut cache);
                                 websocket.send_text(&file_path_str).unwrap();
                             }
                             _ if path_str.ends_with(".md") => {
-                                generate_all();
+                                let mut cache = cache.lock().unwrap();
+                                generate_all(&mut cache);
                                 websocket.send_text(&file_path_str).unwrap();
                             }
                             _ => {}
                         };
-                        let end = std::time::Instant::now();
-                        println!("{:?}", end - start);
 
                         return;
                     }
