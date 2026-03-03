@@ -882,6 +882,8 @@ fn main() -> Result<()> {
     generate_tags_page(&articles, &html_header, &html_footer);
     generate_rss(&mut articles);
 
+    println!("generated {} articles", articles.len());
+
     Ok(())
 
     //rouille::start_server("localhost:8001", move |request| {
