@@ -3,25 +3,8 @@ https://gaultier.github.io/blog/
 
 ## Quickstart
 
-*Ensure git submodules are present e.g. `git submodule update --init`.*
-
-Requirements: 
-- A C23 compiler
-- `git`
-
-Build this blog (i.e. convert markdown files to HTML):
-
 ```shell
-# Build once.
-$ make gen
-# Watch & rebuild on change (requires `entr`).
-$ make dev
-```
-
-Serve the files locally:
-
-```shell
-$ python3 -m http.server -d ..
+$ cargo run [--release]
 ```
 
 Optimize a PNG (requires `pngquant`):
@@ -34,4 +17,10 @@ Spell (in Neovim):
 
 ```text
 :setlocal spell spelllang=en_us
+```
+
+Optimize git stats:
+
+```shell
+$ git gc --aggressive --prune=now
 ```
