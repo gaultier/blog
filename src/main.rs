@@ -860,7 +860,7 @@ fn generate_home_page(articles: &mut [Article], html_header: &[u8], html_footer:
     fs::write("index.html", sb).unwrap();
 }
 
-fn main() -> Result<()> {
+fn generate_all() {
     let html_header = fs::read("header.html").unwrap();
     let html_footer = fs::read("footer.html").unwrap();
 
@@ -883,10 +883,12 @@ fn main() -> Result<()> {
     generate_rss(&mut articles);
 
     println!("generated {} articles", articles.len());
+}
+
+fn main() -> Result<()> {
+    generate_all();
 
     rouille::start_server("localhost:8001", move |request| {
-        dbg!(&request);
-
         router!(request,
             (GET) (/blog) => {
                  rouille::Response::redirect_302("/blog/index.html")
@@ -897,11 +899,10 @@ fn main() -> Result<()> {
             (GET) (/ws) => {
                 let (response, websocket) = try_or_400!(websocket::start(request, Some("echo")));
 
-                let watching_path = request.url();
                 thread::spawn(move || {
                     // This line will block until the `response` above has been returned.
                     let ws = websocket.recv().unwrap();
-                    websocket_handling_thread(ws, watching_path);
+                    websocket_handling_thread(ws);
                 });
                 response
             },
@@ -910,7 +911,7 @@ fn main() -> Result<()> {
     });
 }
 
-fn websocket_handling_thread(mut websocket: websocket::Websocket, _watching_path: String) {
+fn websocket_handling_thread(mut websocket: websocket::Websocket) {
     println!("new websocket");
     let (etx, erx) = std::sync::mpsc::channel();
 
@@ -928,23 +929,24 @@ fn websocket_handling_thread(mut websocket: websocket::Websocket, _watching_path
         match res {
             Ok(events) => {
                 for event in events {
-                    let _stem = event
-                        .path
-                        .file_stem()
-                        .unwrap()
-                        .to_string_lossy()
-                        .to_string();
                     if event.path.extension().unwrap_or_default() == md_ext {
                         println!("event: {:?}", event);
 
-                        //let md_path = PathBuf::from(&event.path);
-                        //let html_header = fs::read("header.html").unwrap();
-                        //let html_footer = fs::read("footer.html").unwrap();
-                        //md_render_article(&html_header, &html_footer, &md_path);
-
                         let file_path_str =
                             event.path.file_stem().unwrap_or_default().to_string_lossy();
-                        websocket.send_text(&file_path_str).unwrap();
+                        let path_str = event.path.to_str().unwrap();
+                        match path_str {
+                            "header.html" | "footer.html" => {
+                                generate_all();
+                                websocket.send_text(&file_path_str).unwrap();
+                            }
+                            _ if path_str.ends_with(".md") => {
+                                generate_all();
+                                websocket.send_text(&file_path_str).unwrap();
+                            }
+                            _ => {}
+                        };
+
                         return;
                     }
                 }

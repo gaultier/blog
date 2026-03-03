@@ -5,7 +5,6 @@ Tags: Graph, Algorithm, JavaScript, SQL
 
 ## Introduction 
 
-
 Graphs are everywhere in Software Engineering, or so we are told by Computer Science teachers and interviewers. But sometimes, they do show up in real problems.
 
 Not too long ago, I was tasked to create a Web API to create and update a company's hierarchy of employee, and display that on a web page. Basically, who reports to whom.
