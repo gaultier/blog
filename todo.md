@@ -42,6 +42,7 @@
 
 ## Blog implementation
 
+- [ ] gen: background job for `git gc --aggressive --prune=now`
 - [ ] gen: lints on markdown AST
 - [ ] gen: link checker
 - [ ] browser: search with `/` shortcut and appears on the side
