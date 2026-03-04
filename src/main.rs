@@ -5,7 +5,7 @@ use markdown::{
 use notify::RecursiveMode;
 use notify_debouncer_mini::new_debouncer;
 use rouille::{router, try_or_400, websocket};
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use std::{
     borrow::Cow,
     cmp::Ordering,
@@ -53,16 +53,16 @@ type Trigram = String;
 
 type FileIdx = u16;
 
-#[derive(Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 struct SearchIndex {
-    trigram_to_file_idx: HashMap<Trigram, Vec<(FileIdx, u32)>>,
+    trigram_to_file_idx: BTreeMap<Trigram, Vec<(FileIdx, u32)>>,
     files: Vec<String>,
 }
 
 impl SearchIndex {
     fn new() -> Self {
         Self {
-            trigram_to_file_idx: HashMap::with_capacity(32000),
+            trigram_to_file_idx: BTreeMap::new(),
             files: Vec::with_capacity(128),
         }
     }
@@ -1213,12 +1213,23 @@ fn generate_all(cache: &mut HashMap<String, Article>) {
 }
 
 fn main() {
+    let mut args = std::env::args().skip(1);
+    let arg1 = args.next();
+
+    if let Some(arg) = &arg1
+        && arg == "postcard_deserialize"
+    {
+        let search_index_data = std::fs::read("search_index.postcard").unwrap();
+        let search_index: SearchIndex = postcard::from_bytes(&search_index_data).unwrap();
+        println!("{:#?}", search_index);
+        return;
+    }
+
     let mut cache = HashMap::new();
 
     generate_all(&mut cache);
 
-    let mut args = std::env::args().skip(1);
-    if let Some(arg) = args.next()
+    if let Some(arg) = arg1
         && arg == "watch"
     {
         let cache = Arc::new(Mutex::new(cache));
