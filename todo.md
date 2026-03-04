@@ -48,5 +48,3 @@
 - [ ] browser: search shows the full title path to the match e.g. 'my_article: foo/bar/baz'
 - [ ] gen: Articles excerpt on the home page?
 - [ ] gen: Link to related articles at the end (requires post-processing after all articles have been generated)
-- [ ] gen: Syntax highlighting done statically
-- [ ] gen: move more JS things to static generation
