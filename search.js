@@ -105,10 +105,15 @@ async function search_and_display_results(_event) {
   const scores = search_text(needle);
   // Sort by score DESC.
   const search_results = [...scores.entries()].filter(([_, score]) => score !== 0).sort((a, b) => b[1] - a[1]);
+  if (search_results.length === 0) {
+    dom_search_matches.innerHTML = '<h3>Search results</h3><p>No results found.</p>';
+    return;
+  }
 
   dom_search_matches.innerHTML = '<h3>Search results</h3><ul id="results-list"></ul>';
   const list = document.getElementById('results-list');
 
+  const excerptPromises = [];
 
   for (const [file_idx, score] of search_results) {
     const file = search_index.idx_to_file.get(Number(file_idx));
@@ -119,7 +124,7 @@ async function search_and_display_results(_event) {
     list.appendChild(li);
 
     // 3. Fetch the excerpt and update this specific 'li'.
-    getExcerpt(file, needle).then(excerpt => {
+    const p = getExcerpt(file, needle).then(excerpt => {
         if (excerpt === ''){
           li.hidden = true;
         } else {
@@ -132,7 +137,15 @@ async function search_and_display_results(_event) {
     }).catch(() => {
         li.innerHTML = `<a href="${file}">${file}</a> (Score: ${score.toFixed(2)})`;
     });
+
+    excerptPromises.push(p);
   }
-};
+
+  await Promise.allSettled(excerptPromises);
+  const visibleItems = Array.from(list.children).filter(li => !li.hidden);
+  if (visibleItems.length === 0) {
+    list.insertAdjacentHTML('afterend', '<p id="no-results-msg">No results found.</p>');
+  }
+}
 
 dom_input.oninput = search_and_display_results;
