@@ -75,7 +75,7 @@ Do not edit it by hand.
 </div>
 <div class="article-title">
   <h1>A silly shell pitfall</h1>
-<div class="tags"> <a href="/blog/articles-by-tag.html#shell" class="tag">Shell</a> </div>
+<div class="tags"> <a href="/blog/articles-by-tag.html#shell" class="tag">Shell</a> <a href="/blog/articles-by-tag.html#go" class="tag">Go</a> <a href="/blog/articles-by-tag.html#rust" class="tag">Rust</a> </div>
 </div>
 <p>Super short article today.</p>
 <p>At <a href="https://github.com/ory/sdk">work</a> we maintain an OpenAPI (formerly known as Swagger) specification of our APIs.
@@ -152,8 +152,17 @@ Then we use generators we produce client code in various languages.</p>
 <span class="line-number"></span><span class="code-hl">     = help: a `loop` may express intention better if this is on purpose</span>
 <span class="line-number"></span><span class="code-hl">     = note: `#[warn(unconditional_recursion)]` on by default</span>
 </code></pre>
-<p><em>Ahem... While writing this article and testing with a few languages, I noticed Go does <strong>not</strong> warn us in this case...</em></p>
-<p>So that will be my advice: the shell is fine for one-liners. Anything else, just use your favorite general purpose programming language, it'll be simpler, better, faster, stronger.</p>
+<p>Ahem... While writing this article and testing with a few languages, I noticed Go does <strong>not</strong> warn us in this case... However third-party linters like <code>staticheck</code> do:</p>
+<pre>
+  <div class="code-header">
+    <span>Shell</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-shell"><span class="line-number"></span><span class="code-hl">$ go build /tmp/main.go</span>
+<span class="line-number"></span><span class="code-hl">$ staticcheck /tmp/main.go</span>
+<span class="line-number"></span><span class="code-hl">/tmp/main.go:7:2: infinite recursive call (SA5007)</span>
+</code></pre>
+<p>So that will be my advice: the shell is fine for one-liners. Anything else, just use your favorite general purpose programming language (and accompanying linters), it'll be simpler, better, faster, stronger.</p>
 <p><a href="/blog"> ⏴ Back to all articles</a></p>
 
 <blockquote id="donate">

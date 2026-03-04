@@ -1,5 +1,5 @@
 Title: A silly shell pitfall
-Tags: Shell
+Tags: Shell, Go, Rust
 ---
 
 Super short article today.
@@ -81,7 +81,13 @@ warning: function cannot return without recursing
      = note: `#[warn(unconditional_recursion)]` on by default
 ```
 
-*Ahem... While writing this article and testing with a few languages, I noticed Go does **not** warn us in this case...*
+Ahem... While writing this article and testing with a few languages, I noticed Go does **not** warn us in this case... However third-party linters like `staticheck` do:
+
+```shell
+$ go build /tmp/main.go
+$ staticcheck /tmp/main.go
+/tmp/main.go:7:2: infinite recursive call (SA5007)
+```
 
 
-So that will be my advice: the shell is fine for one-liners. Anything else, just use your favorite general purpose programming language, it'll be simpler, better, faster, stronger.
+So that will be my advice: the shell is fine for one-liners. Anything else, just use your favorite general purpose programming language (and accompanying linters), it'll be simpler, better, faster, stronger.
