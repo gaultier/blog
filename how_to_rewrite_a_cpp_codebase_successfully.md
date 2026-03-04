@@ -163,7 +163,7 @@ To get to a high coverage, the quality of the corpus data is paramount, since fu
 
 I realized that the existing tests in C++ had lots of useful data in them, e.g.:
 
-```c++
+```cpp
 const std::vector<char> input = {0x32, 0x01, 0x49, ...}; // <= This is the interesting data.
 assert(foo(input) == ...);
 ```
@@ -330,7 +330,7 @@ pub extern "C" fn foo_free(foo: &FooC) {
 
 And the C or C++ calling code would have to do:
 
-```c++
+```cpp
 FooC foo{};
 if (foo_parse(&foo, bytes) == SUCCESS) {
     // do something with foo...
@@ -342,7 +342,7 @@ if (foo_parse(&foo, bytes) == SUCCESS) {
 
 To simplify this, I introduced a `defer` [construct](https://www.gingerbill.org/article/2015/08/19/defer-in-cpp/) to C++ (thanks Gingerbill!):
 
-```c++
+```cpp
 FooC foo{};
 defer({foo_free(foo);});
 
@@ -414,7 +414,7 @@ If you're lucky, `cargo test` would fail at the last assertion saying that the v
 
 Let's run the test with Miri:
 
-```text
+```plaintext
 running 1 test
 test api::tests::bar ... error: Undefined Behavior: out-of-bounds pointer use: alloc195648 has been freed, so this pointer is dangling
     --> src/tlv.rs:321:18
@@ -454,7 +454,7 @@ int main() {
 
 And I get:
 
-```text
+```plaintext
 ==805913== Conditional jump or move depends on uninitialised value(s)
 ==805913==    at 0x127C34: main (src/example.cpp:13)
 ==805913== 
@@ -520,7 +520,7 @@ pub extern "C" fn free_foo(foo: &mut FooC) {
 
 And the calling code:
 
-```c++
+```cpp
 FooC foo{};
 
 const uint8_t data[] = { 1 };
@@ -534,7 +534,7 @@ free_foo(&foo);
 
 This is undefined behavior if the array is of size 1, since in that case the Rust allocator will free a pointer allocated by the C allocator, and address sanitizer catches it:
 
-```text
+```plaintext
 SUMMARY: AddressSanitizer: alloc-dealloc-mismatch /home/runner/work/llvm-project/llvm-project/final/llvm-project/compiler-rt/lib/asan/asan_malloc_linux.cpp:52:3 in free
 ```
 

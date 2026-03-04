@@ -15,13 +15,13 @@ func HandleFunc(pattern string, handler func(ResponseWriter, *Request))
 We are interested only in the first argument (`pattern`), which gets passed as a pointer in `arg1` and length in `arg2`.
 And so the DTrace invocation is:
 
-```sh
+```shell
 $ sudo dtrace -n 'pid$target::net?http*HandleFunc:entry {printf("%s\n", stringof(copyin(arg1, arg2)));}' -c "./kratos serve -c $HOME/.kratos.yml --dev" -x strsize=16K -b 4G -q
 ```
 
 And we see no less than 248 HTTP routes are registered, and we also see the HTTP method for each route (that's how the Go API works, the method is passed in the same string as the route):
 
-```text
+```plaintext
 GET /self-service/login/browser
 GET /self-service/login/browser/{$}
 GET /self-service/login/api

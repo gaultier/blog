@@ -133,7 +133,7 @@ I think it is pretty straightforward.
 
  We serve the static text file `haveibeenpawned.txt` using a HTTP server to act as the Have I Been Pawned API, it just contains one password per line e.g.:
 
-```txt
+```plaintext
 hello
 abc123
 123456
@@ -141,7 +141,7 @@ abc123
 
 Let's try it then:
 
-```sh
+```shell
 # Serve the leaked password file
 $ python3 -m http.server -d . &
 
@@ -187,7 +187,7 @@ index ae602df..17d0228 100644
 
 And we see:
 
-```text
+```plaintext
 http request error: Get "http://localhost:8000/haveibeenpawned.txt": context canceled
 ```
 
@@ -234,7 +234,7 @@ index ae602df..74371a5 100644
 
 Let's test it then:
 
-```sh
+```shell
  $ go run main.go 'hi'
 failed to change password: password is too short
 

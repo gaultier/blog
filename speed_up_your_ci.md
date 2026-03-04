@@ -51,7 +51,7 @@ In no particular order:
 - Don't build the static and dynamic variants of the same library (in C or C++). You probably only want one, preferably the static one. Otherwise, you are doing twice the work!
 - Fetch statically built binaries instead of building them from source. Go, and sometimes Rust, are great for this. As long as the OS and the architecture are the same, of course. E.g.: you can simply fetch `kubectl` which is a Go static binary instead of installing lots of Kubernetes packages, if you simply need to talk to a Kubernetes cluster. Naturally, the same goes for single file, dependency-less script: shell, awk, python, lua, perl, and ruby, assuming the interpreter is the right one. But this case is rarer and you might as well vendor the script at this point.
 - Groom your 'ignore' files. `.gitignore` is the mainstream one, but were you aware Docker has the mechanism in the form of a `.dockerignore` file? My advice: whitelist the files you need, e.g.:
-    ```text
+    ```plaintext
     **/*
     !**/*.js
     ```

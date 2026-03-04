@@ -163,7 +163,7 @@ int main(int argc, char *argv[]) {
 - The SHA1 algorithm and some implementations support architectures where 1 byte is *not* 8 bits. But knowing that 1 byte *is indeed* 8 bits on our architecture unlocks a ton of performance as we'll see.
 - SHA1 expects data in big-endian but nearly all CPU nowadays are little-endian so we need to swap the bytes when loading the input data to do SHA1 computations, and back when storing the intermediate results (the SHA1 state). It is done here with lots of clever bit tricks, one `uint32_t` at a time.
 - The main loop operating on the 64 bytes chunk is unrolled, which avoids having conditionals in the middle of the loop, which might tank performance due to mispredicted branches. The algorithm lends itself to that really well:
-  ```text
+  ```plaintext
     for i from 0 to 79
             if 0 ≤ i ≤ 19 then
               [..]
@@ -883,7 +883,7 @@ The implementation is a pure work of art, and comes from this [Github repository
 
   Thus we alternate between SHA1 computations with `sha1msg1/sha1msg2`, and state calculations with `sha1rnds4/sha1nexte`, always 4 `uint32_t` at a time.
 - What's a "SHA computation"? It's basically a recombination, or shuffling, of its input. For example, `sha1msg1` in pseudo-code does:
-  ```text
+  ```plaintext
     W0 <- SRC1[127:96] ;
     W1 <- SRC1[95:64] ;
     W2 <- SRC1[63: 32] ;
@@ -1196,7 +1196,7 @@ Also, in both versions, as the SHA1 code got much faster, we start to see on the
 
 That means that we are starting to be limited by I/O. Which is good!  Using `hdparm` to measure my disk performance, I get:
 
-```text
+```plaintext
  Timing buffered disk reads: 6518 MB in  3.00 seconds = 2171.34 MB/sec
 ```
 

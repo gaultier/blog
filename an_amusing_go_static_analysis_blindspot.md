@@ -71,7 +71,7 @@ I think that is visually easy to miss because in Go, an array literal is defined
 
 Interestingly no linter catches this issue. In the meantime you can use this regexp to catch instances of this issue, which is what I did and I discovered a few more cases in the codebase:
 
-```sh
+```shell
 $ rg -t go 'for .* range \[\].+\{\} \{'
 ```
 

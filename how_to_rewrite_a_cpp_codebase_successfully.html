@@ -11,10 +11,8 @@ Do not edit it by hand.
 <link type="application/atom+xml" href="/blog/feed.xml" rel="self">
 <link rel="shortcut icon" type="image/ico" href="/blog/favicon.ico">
 <link rel="stylesheet" type="text/css" href="main.css">
-<!-- <link rel="stylesheet" href="https://unpkg.com/@highlightjs/cdn-assets@11.8.0/styles/default.min.css"> -->
-<!-- <script src="highlight.min.js" defer></script> -->
-<!-- <script src="x86asm.min.js" defer></script> -->
-<script src="main.js" async></script>
+<link rel="stylesheet" href="https://unpkg.com/@highlightjs/cdn-assets@11.8.0/styles/default.min.css">
+<script type="module" src="main.js" async></script>
 <script type="module" src="search.js" async></script>
 </head>
 <body>
@@ -262,10 +260,10 @@ Do not edit it by hand.
 <p>I realized that the existing tests in C++ had lots of useful data in them, e.g.:</p>
 <pre>
   <div class="code-header">
-    <span>C++</span>
+    <span>Cpp</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-c++"><span class="line-number"></span>const std::vector&lt;char&gt; input = {0x32, 0x01, 0x49, ...}; // &lt;= This is the interesting data.
+  <code class="language-cpp"><span class="line-number"></span>const std::vector&lt;char&gt; input = {0x32, 0x01, 0x49, ...}; // &lt;= This is the interesting data.
 <span class="line-number"></span>assert(foo(input) == ...);
 </code></pre>
 <p>So I had the idea of extracting all the <code>input = ...</code> data from the tests to build a good fuzzing corpus. My first go at it was a hand-written quick and dirty C++ lexer in Rust. It worked but it was clunky. Right after I finished it, I thought: why don't I use <code>tree-sitter</code> to properly parse C++ in Rust?</p>
@@ -433,10 +431,10 @@ Do not edit it by hand.
 <p>And the C or C++ calling code would have to do:</p>
 <pre>
   <div class="code-header">
-    <span>C++</span>
+    <span>Cpp</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-c++"><span class="line-number"></span>FooC foo{};
+  <code class="language-cpp"><span class="line-number"></span>FooC foo{};
 <span class="line-number"></span>if (foo_parse(&amp;foo, bytes) == SUCCESS) {
 <span class="line-number"></span>    // do something with foo...
 <span class="line-number"></span>    ...
@@ -447,10 +445,10 @@ Do not edit it by hand.
 <p>To simplify this, I introduced a <code>defer</code> <a href="https://www.gingerbill.org/article/2015/08/19/defer-in-cpp/">construct</a> to C++ (thanks Gingerbill!):</p>
 <pre>
   <div class="code-header">
-    <span>C++</span>
+    <span>Cpp</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-c++"><span class="line-number"></span>FooC foo{};
+  <code class="language-cpp"><span class="line-number"></span>FooC foo{};
 <span class="line-number"></span>defer({foo_free(foo);});
 <span class="line-number"></span>
 <span class="line-number"></span>if (foo_parse(&amp;foo, bytes) == SUCCESS) {
@@ -521,10 +519,10 @@ Do not edit it by hand.
 <p>Let's run the test with Miri:</p>
 <pre>
   <div class="code-header">
-    <span>Text</span>
+    <span>Plaintext</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-text"><span class="line-number"></span>running 1 test
+  <code class="language-plaintext"><span class="line-number"></span>running 1 test
 <span class="line-number"></span>test api::tests::bar ... error: Undefined Behavior: out-of-bounds pointer use: alloc195648 has been freed, so this pointer is dangling
 <span class="line-number"></span>    --&gt; src/tlv.rs:321:18
 <span class="line-number"></span>     |
@@ -562,10 +560,10 @@ Do not edit it by hand.
 <p>And I get:</p>
 <pre>
   <div class="code-header">
-    <span>Text</span>
+    <span>Plaintext</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-text"><span class="line-number"></span>==805913== Conditional jump or move depends on uninitialised value(s)
+  <code class="language-plaintext"><span class="line-number"></span>==805913== Conditional jump or move depends on uninitialised value(s)
 <span class="line-number"></span>==805913==    at 0x127C34: main (src/example.cpp:13)
 <span class="line-number"></span>==805913== 
 <span class="line-number"></span>==805913== Conditional jump or move depends on uninitialised value(s)
@@ -624,10 +622,10 @@ Miri again is the MVP here since it detected the issue of mixing the C and Rust 
 <p>And the calling code:</p>
 <pre>
   <div class="code-header">
-    <span>C++</span>
+    <span>Cpp</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-c++"><span class="line-number"></span>FooC foo{};
+  <code class="language-cpp"><span class="line-number"></span>FooC foo{};
 <span class="line-number"></span>
 <span class="line-number"></span>const uint8_t data[] = { 1 };
 <span class="line-number"></span>parse_foo(data, sizeof(data), &amp;foo);
@@ -640,10 +638,10 @@ Miri again is the MVP here since it detected the issue of mixing the C and Rust 
 <p>This is undefined behavior if the array is of size 1, since in that case the Rust allocator will free a pointer allocated by the C allocator, and address sanitizer catches it:</p>
 <pre>
   <div class="code-header">
-    <span>Text</span>
+    <span>Plaintext</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-text"><span class="line-number"></span>SUMMARY: AddressSanitizer: alloc-dealloc-mismatch /home/runner/work/llvm-project/llvm-project/final/llvm-project/compiler-rt/lib/asan/asan_malloc_linux.cpp:52:3 in free
+  <code class="language-plaintext"><span class="line-number"></span>SUMMARY: AddressSanitizer: alloc-dealloc-mismatch /home/runner/work/llvm-project/llvm-project/final/llvm-project/compiler-rt/lib/asan/asan_malloc_linux.cpp:52:3 in free
 </code></pre>
 <p>However, it is only detected with sanitizers on and if a test (or fuzzing) triggers this case. Or by Miri if a Rust test covers this function.</p>
 <hr />

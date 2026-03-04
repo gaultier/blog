@@ -158,7 +158,7 @@ tcp:::send, tcp:::receive
 
 We see:
 
-```text
+```plaintext
 [...]
   9 511191                           .:send 
              0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f  0123456789abcdef
@@ -212,7 +212,7 @@ func main() {
 
 When using our previous approach, we only see gibberish, as expected:
 
-```text
+```plaintext
 9    176                      write:entry size=1502 fd=8: �
 10    175                      read:return size=1216 fd=8: ��O��b�%�e�ڡXw2d�q�$���NX�d�P�|�`HY-To�dpK	�x�8to�DO���_ibc��y��]�ވe��
                                                  �c��ҿ��^�L#��Ue	
@@ -245,7 +245,7 @@ We need to replace the `*` character by `?` since `*` is interpreted by DTrace a
 
 And boom, we can now see the data in clear:
 
-```text
+```plaintext
  12 273146 crypto/tls.(*halfConn).encrypt:entry GET / HTTP/1.1
 Host: google.com
 User-Agent: Go-http-client/1.1
@@ -301,7 +301,7 @@ func main() {
 
 If we run our previous D script, we can see the HTTP headers just fine, but the body is gibberish (as expected):
 
-```text
+```plaintext
   9    176                      write:entry action=write pid=46367 execname=go-get size=208 fd=6: POST / HTTP/1.1
 Host: google.com
 User-Agent: Go-http-client/1.1
@@ -323,7 +323,7 @@ pid$target::compress?gzip.(?Writer).Write:entry
 
 And we see:
 
-```text
+```plaintext
  10 530790 compress/gzip.(*Writer).Write:entry hello ZYDEDSRZBY7D65DQHWWVSUOVJ5
 ```
 

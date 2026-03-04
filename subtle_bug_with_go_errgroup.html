@@ -11,10 +11,8 @@ Do not edit it by hand.
 <link type="application/atom+xml" href="/blog/feed.xml" rel="self">
 <link rel="shortcut icon" type="image/ico" href="/blog/favicon.ico">
 <link rel="stylesheet" type="text/css" href="main.css">
-<!-- <link rel="stylesheet" href="https://unpkg.com/@highlightjs/cdn-assets@11.8.0/styles/default.min.css"> -->
-<!-- <script src="highlight.min.js" defer></script> -->
-<!-- <script src="x86asm.min.js" defer></script> -->
-<script src="main.js" async></script>
+<link rel="stylesheet" href="https://unpkg.com/@highlightjs/cdn-assets@11.8.0/styles/default.min.css">
+<script type="module" src="main.js" async></script>
 <script type="module" src="search.js" async></script>
 </head>
 <body>
@@ -231,20 +229,20 @@ Do not edit it by hand.
 <p>We serve the static text file <code>haveibeenpawned.txt</code> using a HTTP server to act as the Have I Been Pawned API, it just contains one password per line e.g.:</p>
 <pre>
   <div class="code-header">
-    <span>Txt</span>
+    <span>Plaintext</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-txt"><span class="line-number"></span>hello
+  <code class="language-plaintext"><span class="line-number"></span>hello
 <span class="line-number"></span>abc123
 <span class="line-number"></span>123456
 </code></pre>
 <p>Let's try it then:</p>
 <pre>
   <div class="code-header">
-    <span>Sh</span>
+    <span>Shell</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-sh"><span class="line-number"></span># Serve the leaked password file
+  <code class="language-shell"><span class="line-number"></span># Serve the leaked password file
 <span class="line-number"></span>$ python3 -m http.server -d . &amp;
 <span class="line-number"></span>
 <span class="line-number"></span># Fine new password, succeeds
@@ -288,10 +286,10 @@ Do not edit it by hand.
 <p>And we see:</p>
 <pre>
   <div class="code-header">
-    <span>Text</span>
+    <span>Plaintext</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-text"><span class="line-number"></span>http request error: Get &quot;http://localhost:8000/haveibeenpawned.txt&quot;: context canceled
+  <code class="language-plaintext"><span class="line-number"></span>http request error: Get &quot;http://localhost:8000/haveibeenpawned.txt&quot;: context canceled
 </code></pre>
 <p>Uh...what? We do not even have a timeout set! How can the context be canceled?</p>
 <p>At that point, a great collegue of mine helped me debug and found the issue. He sent me this one line from the <code>errgroup</code> <a href="https://pkg.go.dev/golang.org/x/sync/errgroup#Group.WithContext">documentation</a>:</p>
@@ -334,10 +332,10 @@ Do not edit it by hand.
 <p>Let's test it then:</p>
 <pre>
   <div class="code-header">
-    <span>Sh</span>
+    <span>Shell</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-sh"><span class="line-number"></span> $ go run main.go 'hi'
+  <code class="language-shell"><span class="line-number"></span> $ go run main.go 'hi'
 <span class="line-number"></span>failed to change password: password is too short
 <span class="line-number"></span>
 <span class="line-number"></span>$ go run main.go 'hello'

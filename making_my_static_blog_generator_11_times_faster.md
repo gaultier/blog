@@ -140,7 +140,7 @@ Executed in  108.38 millis    fish           external
 
 The output looks like this (I annotated each part along with the commit number):
 
-```text
+```plaintext
 2024-11-05T15:43:44+01:00                                                            | [1] A commit starts with the date.
                                                                                      | [1] Empty line
 M       how_to_rewrite_a_cpp_codebase_successfully.md                                | [1] A list of files affected by this commit.
@@ -337,7 +337,7 @@ A few things of interest:
 
 We can log the final result:
 
-```text
+```plaintext
 [...]
 GitStat{creation_date = "2020-09-07T20:49:20+02:00", modification_date = "2024-11-04T09:24:17+01:00", path_rel = "compile_ziglang_from_source_on_alpine_2020_9.md"}
 GitStat{creation_date = "2024-09-10T12:59:04+02:00", modification_date = "2024-09-12T12:14:42+02:00", path_rel = "odin_and_musl.md"}
@@ -424,7 +424,7 @@ sqlite> SELECT
 
 Which outputs what we want:
 
-```text
+```plaintext
 [...]
 {"filename":"body_of_work.md","creation_date":"2023-12-19 13:27:40","last_modified":"2024-11-05 15:11:55"},
 {"filename":"communicate_by_sharing_code.md","creation_date":"2024-03-07 09:48:39","last_modified":"2024-03-07 10:14:09"},

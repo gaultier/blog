@@ -266,6 +266,7 @@ fn md_lint_rec(node: &Node, md_path: &Path) {
                 md_path.to_str().unwrap(),
                 code.position
             );
+            println!("[D001] {}", code.lang.as_ref().unwrap());
         }
         Node::Math(_) => {}
         Node::MdxFlowExpression(_) => {}

@@ -11,10 +11,8 @@ Do not edit it by hand.
 <link type="application/atom+xml" href="/blog/feed.xml" rel="self">
 <link rel="shortcut icon" type="image/ico" href="/blog/favicon.ico">
 <link rel="stylesheet" type="text/css" href="main.css">
-<!-- <link rel="stylesheet" href="https://unpkg.com/@highlightjs/cdn-assets@11.8.0/styles/default.min.css"> -->
-<!-- <script src="highlight.min.js" defer></script> -->
-<!-- <script src="x86asm.min.js" defer></script> -->
-<script src="main.js" async></script>
+<link rel="stylesheet" href="https://unpkg.com/@highlightjs/cdn-assets@11.8.0/styles/default.min.css">
+<script type="module" src="main.js" async></script>
 <script type="module" src="search.js" async></script>
 </head>
 <body>
@@ -143,10 +141,10 @@ It means we want to remove adjacent characters which are the same letter and hav
 <p>In pseudo-code:</p>
 <pre>
   <div class="code-header">
-    <span>Text</span>
+    <span>Plaintext</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-text"><span class="line-number"></span>remaining_count = len(input)
+  <code class="language-plaintext"><span class="line-number"></span>remaining_count = len(input)
 <span class="line-number"></span>end = input + len(input)
 <span class="line-number"></span>current = &amp;input[0]
 <span class="line-number"></span>next = &amp;input[1]
@@ -177,10 +175,10 @@ It means we want to remove adjacent characters which are the same letter and hav
 <p>The 'hard' case is merging: we set the two tombstones, lower the count, and now we are in a pickle: <code>current</code> needs to go backwards, but we do not know to where. There might be an arbitrary number of zeroes preceding the character <code>current</code> points to: the data on the left of <code>next</code> is sparse, the data on the right of <code>next</code> is not.</p>
 <pre>
   <div class="code-header">
-    <span>Text</span>
+    <span>Plaintext</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-text"><span class="line-number"></span>[...] 0 0 A 0 0 0 0 B 0 0 0 0 C D E F [...]
+  <code class="language-plaintext"><span class="line-number"></span>[...] 0 0 A 0 0 0 0 B 0 0 0 0 C D E F [...]
 <span class="line-number"></span>          ^         ^         ^
 <span class="line-number"></span>          |         |         |
 <span class="line-number"></span>          target    |         |

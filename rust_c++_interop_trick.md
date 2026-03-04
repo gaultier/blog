@@ -72,7 +72,7 @@ int main() {
 
 So let's first ensure it is a standard layout class. We add this compile-time assertion in the constructor (could be placed anywhere, but the constructor is as good a place as any):
 
-```c++
+```cpp
 // Path: user.cpp
 
     static_assert(std::is_standard_layout_v<User>);
@@ -153,7 +153,7 @@ void RUST_write_comment(UserC *user, const uint8_t *comment, uintptr_t comment_l
 
 Now, let's go back to C++, include this C header, and add lots of compile-time assertions to ensure that the layouts are indeed the same. Again, I place these asserts in the constructor:
 
-```c++
+```cpp
 #include "user-rs-lib.h"
 
 class User {
@@ -210,7 +210,7 @@ $ ls target/debug/libuser_rs_lib.a
 
 We can use our Rust function from C++ in `main`, with some cumbersome casts:
 
-```c++
+```cpp
 // Path: user.cpp
 
 int main() {
@@ -288,7 +288,7 @@ pub extern "C" fn RUST_write_comment(
 
 We re-run cbindgen, and now C++ has access to the `ByteSliceView` type. We thus write a helper to convert a `std::string` to this type, and pass the additional parameter to the Rust function (we also define a trivial `get_name()` getter for `User` since `name` is still private):
 
-```c++
+```cpp
 // Path: user.cpp
 
 ByteSliceView get_std_string_pointer_and_length(const std::string &str) {
@@ -309,7 +309,7 @@ int main() {
 
 We re-build, re-run, and lo and behold, the Rust implementation now prints the name:
 
-```text
+```plaintext
 alice (69b7c41491ccfbd28c269ea4091652d) says: hello, world!
 Comment count: 1
 alice ([69, b7, c4, 14, 9, 1c, cf, bd, 28, c2, 69, ea, 40, 91, 65, 2d]) says: hello, world!

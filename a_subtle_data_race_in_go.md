@@ -72,7 +72,7 @@ $ curl http://localhost:3001/
 
 We see these server logs:
 
-```text
+```plaintext
 path=/ rate_limit_enabled=yes
 path=/admin rate_limit_enabled=no
 path=/ rate_limit_enabled=no
@@ -83,7 +83,7 @@ path=/ rate_limit_enabled=no
 
 The third and fourth log are definitely wrong. We would have expected:
 
-```text
+```plaintext
 path=/ rate_limit_enabled=yes
 path=/admin rate_limit_enabled=no
 path=/ rate_limit_enabled=yes
@@ -140,7 +140,7 @@ $ curl http://localhost:3001/
 
 Server logs:
 
-```text
+```plaintext
 path=/ rate_limit_enabled=yes
 path=/admin rate_limit_enabled=no
 path=/ rate_limit_enabled=yes
@@ -226,7 +226,7 @@ So how can we avoid this kind of data race from occurring? How can we adapt our 
 
 The root cause is that the environment is captured implicitly. When I was writing C++ I actually liked the lambda [syntax](https://en.cppreference.com/w/cpp/language/lambda.html) because it started with a capture list. Every capture was explicit! It was slightly verbose but as we have seen: it serves to avoid real production bugs! For example:
 
-```c++
+```cpp
 int a = 1, b = 2, c = 3;
 auto fn =  [a, b, c]() { return a + b + c; };
 int res = fn();

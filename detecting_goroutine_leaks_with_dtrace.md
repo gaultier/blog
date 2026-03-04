@@ -68,7 +68,7 @@ pid$target::main.*:
 
 We can use the `-F` DTrace command line option to see the function call tree and see:
 
-```text
+```plaintext
 CPU FUNCTION                                 
 
 [...] // Some Go runtime goroutines elided, spawned before `main`.
@@ -182,7 +182,7 @@ Note that our D script is already more powerful than the naive Go way of using `
 
 Let's use our brand new D script on this program:
 
-```text
+```plaintext
 goroutine 14000102fc0 created: count=1
 goroutine 14000103180 created: count=2
 goroutine 14000103340 created: count=3
@@ -221,7 +221,7 @@ index 01659c2..bfd7ee4 100644
 
 And the fixed program now shows all of our goroutines being deleted, no more leaks:
 
-```text
+```plaintext
 goroutine 140000036c0 created: count=1
 goroutine 14000003880 created: count=2
 goroutine 14000003a40 created: count=3
@@ -628,7 +628,7 @@ struct g {
 
 and when we print the goroutine data from inside DTrace we see:
 
-```text
+```plaintext
 struct g {
     uintptr_t [2] stack = [ 0x14000052000, 0x14000052800 ]
     uintptr_t stackguard0 = 0x140000523a0

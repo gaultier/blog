@@ -39,7 +39,7 @@ pid$target::database?sql.*.QueryContext:entry {
 
 And we'll see something like this when the application being observed does a SQL query:
 
-```txt
+```plaintext
 dtrace: description 'pid$target::database?sql.*.QueryContext:entry ' matched 4 probes
 CPU     ID                    FUNCTION:NAME
  12 140734 database/sql.(*DB).QueryContext:entry 140023cea90 1024bce78 14002519b30 140017c5400 25b 14000e08b40 4 4 100bf02ac 2
@@ -168,7 +168,7 @@ pid$target::database?sql.*.QueryContext:entry {
 
 And we see:
 
-```txt
+```plaintext
 GoType {
     uintptr_t size = 0x10
     uintptr_t ptr_bytes = 0
@@ -248,7 +248,7 @@ pid$target::database?sql.*.QueryContext:entry {
 
 And we see (for example):
 
-```txt
+```plaintext
 str1=2200-12-31 23:59:59
 str2=2200-12-31 23:59:59
 str3=00000000-0000-0000-0000-000000000000
@@ -301,7 +301,7 @@ We can now print the RTTI for the element type to finally learn its size. For go
   printf("\n");
 ```
 
-```text
+```plaintext
 GoArrayType {
     GoType type = {
         uintptr_t size = 0x10
@@ -357,7 +357,7 @@ We discover that the element size is just `0x1`, or 1. So this array is an array
 
 Which shows:
 
-```txt
+```plaintext
              0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f  0123456789abcdef
          0: 9c 62 c1 62 20 11 4d 3f 8f dd bc c6 25 73 5c b9  .b.b .M?....%s\.
 ```
@@ -421,7 +421,7 @@ Useful, but tricky to use from DTrace:
 
 Our final output is pretty helpful:
 
-```txt
+```plaintext
 3 140734 database/sql.(*DB).QueryContext:entry SELECT courier_messages.body, courier_messages.channel, courier_messages.created_at, courier_messages.id, courier_messages.nid, courier_messages.recipient, courier_messages.send_count, courier_messages.status, courier_messages.subject, courier_messages.template_data, courier_messages.template_type, courier_messages.type, courier_messages.updated_at FROM courier_messages AS courier_messages WHERE nid=? AND ("courier_messages"."created_at" < ? OR ("courier_messages"."created_at" = ? AND "courier_messages"."id" > ?)) ORDER BY "courier_messages"."created_at" DESC, "courier_messages"."id" ASC LIMIT 11
 
              0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f  0123456789abcdef

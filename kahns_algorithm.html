@@ -11,10 +11,8 @@ Do not edit it by hand.
 <link type="application/atom+xml" href="/blog/feed.xml" rel="self">
 <link rel="shortcut icon" type="image/ico" href="/blog/favicon.ico">
 <link rel="stylesheet" type="text/css" href="main.css">
-<!-- <link rel="stylesheet" href="https://unpkg.com/@highlightjs/cdn-assets@11.8.0/styles/default.min.css"> -->
-<!-- <script src="highlight.min.js" defer></script> -->
-<!-- <script src="x86asm.min.js" defer></script> -->
-<script src="main.js" async></script>
+<link rel="stylesheet" href="https://unpkg.com/@highlightjs/cdn-assets@11.8.0/styles/default.min.css">
+<script type="module" src="main.js" async></script>
 <script type="module" src="search.js" async></script>
 </head>
 <body>
@@ -155,10 +153,10 @@ Do not edit it by hand.
 <p>But here is the twist: our API receives a list of <code>employee -&gt; manager</code> links, in any order:</p>
 <pre>
   <div class="code-header">
-    <span>Text</span>
+    <span>Plaintext</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-text"><span class="line-number"></span>Jane -&gt; Ellen
+  <code class="language-plaintext"><span class="line-number"></span>Jane -&gt; Ellen
 <span class="line-number"></span>Angela -&gt; Ellen
 <span class="line-number"></span>Zoe -&gt; Jane
 <span class="line-number"></span>Zoe -&gt; Angela
@@ -223,10 +221,10 @@ Do not edit it by hand.
 <p>A useful command line utility that's already on your (Unix) machine is <code>tsort</code>, which takes a list of edges as input, and outputs a topological sort. Here is the input in a text file (<code>people.txt</code>):</p>
 <pre>
   <div class="code-header">
-    <span>Text</span>
+    <span>Plaintext</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-text"><span class="line-number"></span>Jane Ellen
+  <code class="language-plaintext"><span class="line-number"></span>Jane Ellen
 <span class="line-number"></span>Angela Ellen
 <span class="line-number"></span>Zoe Jane
 <span class="line-number"></span>Zoe Angela
@@ -286,10 +284,10 @@ Do not edit it by hand.
 <p>The order of the nodes is arbitrary, I'll use the alphabetical order because again, it's simple to do:</p>
 <pre>
   <div class="code-header">
-    <span>Text</span>
+    <span>Plaintext</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-text"><span class="line-number"></span>Angela
+  <code class="language-plaintext"><span class="line-number"></span>Angela
 <span class="line-number"></span>Bella
 <span class="line-number"></span>Ellen
 <span class="line-number"></span>Jane
@@ -333,10 +331,10 @@ But note that this adjacency matrix is a concept, it shows what information is p
 <p>Here's the pseudo-code:</p>
 <pre>
   <div class="code-header">
-    <span>Text</span>
+    <span>Plaintext</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-text"><span class="line-number"></span>L ← Empty list that will contain the sorted elements
+  <code class="language-plaintext"><span class="line-number"></span>L ← Empty list that will contain the sorted elements
 <span class="line-number"></span>S ← Set of all nodes with no incoming edge
 <span class="line-number"></span>
 <span class="line-number"></span>while S is not empty do
@@ -391,10 +389,10 @@ Note that this algorithm is not capable by itself to point out which cycle there
 <p>First, we define our adjacency matrix and the list of nodes. This is the naive format. We would get the nodes and edges in some format, for example JSON, in the API, and build the adjacency matrix, which is trivial. Let's take the very first example, the (valid) tree  of employees:</p>
 <pre>
   <div class="code-header">
-    <span>Js</span>
+    <span>Javascript</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-js"><span class="line-number"></span>const adjacencyMatrix = [
+  <code class="language-javascript"><span class="line-number"></span>const adjacencyMatrix = [
 <span class="line-number"></span>  [0, 0, 1, 0, 0, 0],
 <span class="line-number"></span>  [1, 0, 0, 0, 0, 0],
 <span class="line-number"></span>  [0, 0, 0, 0, 0, 0],
@@ -412,10 +410,10 @@ Note that this algorithm is not capable by itself to point out which cycle there
 <p>We need a helper function to check if a node has no incoming edge (line 9 in the algorithm):</p>
 <pre>
   <div class="code-header">
-    <span>Js</span>
+    <span>Javascript</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-js"><span class="line-number"></span>function hasNodeNoIncomingEdge(adjacencyMatrix, nodeIndex) {
+  <code class="language-javascript"><span class="line-number"></span>function hasNodeNoIncomingEdge(adjacencyMatrix, nodeIndex) {
 <span class="line-number"></span>  const column = nodeIndex;
 <span class="line-number"></span>
 <span class="line-number"></span>  for (let row = 0; row &lt; adjacencyMatrix.length; row += 1) {
@@ -431,36 +429,36 @@ Note that this algorithm is not capable by itself to point out which cycle there
 <p>Then, using this helper, we can define a second helper to initially collect all the nodes with no incoming edge (line 2 in the algorithm):</p>
 <pre>
   <div class="code-header">
-    <span>Js</span>
+    <span>Javascript</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-js"><span class="line-number"></span>function getNodesWithNoIncomingEdge(adjacencyMatrix, nodes) {
+  <code class="language-javascript"><span class="line-number"></span>function getNodesWithNoIncomingEdge(adjacencyMatrix, nodes) {
 <span class="line-number"></span>  return nodes.filter((_, i) =&gt; hasNodeNoIncomingEdge(adjacencyMatrix, i));
 <span class="line-number"></span>}
 </code></pre>
 <p>We can try it:</p>
 <pre>
   <div class="code-header">
-    <span>Js</span>
+    <span>Javascript</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-js"><span class="line-number"></span>console.log(getNodesWithNoIncomingEdge(adjacencyMatrix, nodes));
+  <code class="language-javascript"><span class="line-number"></span>console.log(getNodesWithNoIncomingEdge(adjacencyMatrix, nodes));
 </code></pre>
 <p>And it outputs:</p>
 <pre>
   <div class="code-header">
-    <span>Js</span>
+    <span>Javascript</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-js"><span class="line-number"></span>[ 'Bella', 'Miranda', 'Zoe' ]
+  <code class="language-javascript"><span class="line-number"></span>[ 'Bella', 'Miranda', 'Zoe' ]
 </code></pre>
 <p>We need one final helper, to determine if the graph has edges (line 12), which is straightforward:</p>
 <pre>
   <div class="code-header">
-    <span>Js</span>
+    <span>Javascript</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-js"><span class="line-number"></span>function graphHasEdges(adjacencyMatrix) {
+  <code class="language-javascript"><span class="line-number"></span>function graphHasEdges(adjacencyMatrix) {
 <span class="line-number"></span>  for (let row = 0; row &lt; adjacencyMatrix.length; row += 1) {
 <span class="line-number"></span>    for (let column = 0; column &lt; adjacencyMatrix.length; column += 1) {
 <span class="line-number"></span>      if (adjacencyMatrix[row][column] == 1) return true;
@@ -477,10 +475,10 @@ Note that this algorithm is not capable by itself to point out which cycle there
 <p>We are finally ready to implement the algorithm. It's a straightforward, line by line, translation of the pseudo-code:</p>
 <pre>
   <div class="code-header">
-    <span>Js</span>
+    <span>Javascript</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-js"><span class="line-number"></span>function topologicalSort(adjacencyMatrix) {
+  <code class="language-javascript"><span class="line-number"></span>function topologicalSort(adjacencyMatrix) {
 <span class="line-number"></span>  const L = [];
 <span class="line-number"></span>  const S = getNodesWithNoIncomingEdge(adjacencyMatrix, nodes);
 <span class="line-number"></span>
@@ -512,18 +510,18 @@ Note that this algorithm is not capable by itself to point out which cycle there
 <p>Let's try it:</p>
 <pre>
   <div class="code-header">
-    <span>Js</span>
+    <span>Javascript</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-js"><span class="line-number"></span>console.log(topologicalSort(adjacencyMatrix, nodes));
+  <code class="language-javascript"><span class="line-number"></span>console.log(topologicalSort(adjacencyMatrix, nodes));
 </code></pre>
 <p>We get:</p>
 <pre>
   <div class="code-header">
-    <span>Js</span>
+    <span>Javascript</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-js"><span class="line-number"></span>[ 'Zoe', 'Jane', 'Miranda', 'Bella', 'Angela', 'Ellen' ]
+  <code class="language-javascript"><span class="line-number"></span>[ 'Zoe', 'Jane', 'Miranda', 'Bella', 'Angela', 'Ellen' ]
 </code></pre>
 <p>Interestingly, it is not the same order as <code>tsort</code>, but it is indeed a valid topological ordering. That's because there are ties between some nodes and we do not resolve those ties the exact same way <code>tsort</code> does.</p>
 <p>But in our specific case, we just want a valid insertion order in the database, and so this is enough.</p>
@@ -535,10 +533,10 @@ Note that this algorithm is not capable by itself to point out which cycle there
 <p>We handle the special case of the root first, which is the last element, and then we go through the topologically sorted list of employees in reverse order, and insert each one. We use a one liner to get the manager id by name when inserting to avoid many round trips to the database:</p>
 <pre>
   <div class="code-header">
-    <span>Js</span>
+    <span>Javascript</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-js"><span class="line-number"></span>const employeesTopologicallySorted = topologicalSort(structuredClone(adjacencyMatrix), nodes)
+  <code class="language-javascript"><span class="line-number"></span>const employeesTopologicallySorted = topologicalSort(structuredClone(adjacencyMatrix), nodes)
 <span class="line-number"></span>
 <span class="line-number"></span>const root = employeesTopologicallySorted[employeesTopologicallySorted.length - 1];
 <span class="line-number"></span>console.log(`INSERT INTO people VALUES(&quot;${root}&quot;, NULL)`);
@@ -576,10 +574,10 @@ Note that this algorithm is not capable by itself to point out which cycle there
 <p>We add the edge <code>Ellen -&gt; Zoe</code> to create a cycle:</p>
 <pre>
   <div class="code-header">
-    <span>Js</span>
+    <span>Javascript</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-js"><span class="line-number"></span>const adjacencyMatrix = [
+  <code class="language-javascript"><span class="line-number"></span>const adjacencyMatrix = [
 <span class="line-number"></span>  [0, 0, 1, 0, 0, 0],
 <span class="line-number"></span>  [1, 0, 0, 0, 0, 0],
 <span class="line-number"></span>  [0, 0, 0, 0, 0, 1], // =&gt; We change the last element of this row (Ellen's row, Zoe's column) from 0 to 1.
@@ -613,10 +611,10 @@ Note that this algorithm is not capable by itself to point out which cycle there
 <p>To do this, we simply scan the adjacency matrix and verify that there is only one row with only zeroes, that is, only one node that has no outgoing edges:</p>
 <pre>
   <div class="code-header">
-    <span>Js</span>
+    <span>Javascript</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-js"><span class="line-number"></span>function hasMultipleRoots(adjacencyMatrix) {
+  <code class="language-javascript"><span class="line-number"></span>function hasMultipleRoots(adjacencyMatrix) {
 <span class="line-number"></span>  let countOfRowsWithOnlyZeroes = 0;
 <span class="line-number"></span>
 <span class="line-number"></span>  for (let row = 0; row &lt; adjacencyMatrix.length; row += 1) {
@@ -636,10 +634,10 @@ Note that this algorithm is not capable by itself to point out which cycle there
 <p>Let's try it with our invalid example from above:</p>
 <pre>
   <div class="code-header">
-    <span>Js</span>
+    <span>Javascript</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-js"><span class="line-number"></span>const adjacencyMatrix = [
+  <code class="language-javascript"><span class="line-number"></span>const adjacencyMatrix = [
 <span class="line-number"></span>  [0, 0, 1, 0, 0, 0, 0],
 <span class="line-number"></span>  [1, 0, 0, 0, 0, 0, 0],
 <span class="line-number"></span>  [0, 0, 0, 0, 0, 0, 0],
@@ -695,10 +693,10 @@ Note that this algorithm is not capable by itself to point out which cycle there
   <summary>The full code</summary>
 <pre>
   <div class="code-header">
-    <span>Js</span>
+    <span>Javascript</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-js"><span class="line-number"></span>const adjacencyMatrix = [
+  <code class="language-javascript"><span class="line-number"></span>const adjacencyMatrix = [
 <span class="line-number"></span>  [0, 0, 1, 0, 0, 0],
 <span class="line-number"></span>  [1, 0, 0, 0, 0, 0],
 <span class="line-number"></span>  [0, 0, 0, 0, 0, 0],

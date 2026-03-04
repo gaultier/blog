@@ -19,7 +19,7 @@ An arrow (or 'edge') between two nodes means `<source> reports to <destination>`
 
  But here is the twist: our API receives a list of `employee -> manager` links, in any order:
 
- ```text
+ ```plaintext
 Jane -> Ellen
 Angela -> Ellen
 Zoe -> Jane
@@ -87,7 +87,7 @@ That's a mouthful but it's not too hard.
 
 A useful command line utility that's already on your (Unix) machine is `tsort`, which takes a list of edges as input, and outputs a topological sort. Here is the input in a text file (`people.txt`):
 
-```text
+```plaintext
 Jane Ellen
 Angela Ellen
 Zoe Jane
@@ -148,7 +148,7 @@ It's just a 2D square table of size `n x n` (where `n` is the number of nodes), 
 
 The order of the nodes is arbitrary, I'll use the alphabetical order because again, it's simple to do:
 
-```text
+```plaintext
 Angela
 Bella
 Ellen
@@ -201,7 +201,7 @@ Alright, now that we know how our graph is represented, on to the algorithm.
 
 Here's the pseudo-code:
 
-```text
+```plaintext
 L ← Empty list that will contain the sorted elements
 S ← Set of all nodes with no incoming edge
 
@@ -262,7 +262,7 @@ I implemented this at the time in Go, but I will use for this article the lingua
 
 First, we define our adjacency matrix and the list of nodes. This is the naive format. We would get the nodes and edges in some format, for example JSON, in the API, and build the adjacency matrix, which is trivial. Let's take the very first example, the (valid) tree  of employees:
 
-```js
+```javascript
 const adjacencyMatrix = [
   [0, 0, 1, 0, 0, 0],
   [1, 0, 0, 0, 0, 0],
@@ -279,7 +279,7 @@ const nodes = ["Angela", "Bella", "Ellen", "Jane", "Miranda", "Zoe"];
 
 We need a helper function to check if a node has no incoming edge (line 9 in the algorithm):
 
-```js
+```javascript
 function hasNodeNoIncomingEdge(adjacencyMatrix, nodeIndex) {
   const column = nodeIndex;
 
@@ -296,7 +296,7 @@ function hasNodeNoIncomingEdge(adjacencyMatrix, nodeIndex) {
 
 Then, using this helper, we can define a second helper to initially collect all the nodes with no incoming edge (line 2 in the algorithm):
 
-```js
+```javascript
 function getNodesWithNoIncomingEdge(adjacencyMatrix, nodes) {
   return nodes.filter((_, i) => hasNodeNoIncomingEdge(adjacencyMatrix, i));
 }
@@ -304,19 +304,19 @@ function getNodesWithNoIncomingEdge(adjacencyMatrix, nodes) {
 
 We can try it:
 
-```js
+```javascript
 console.log(getNodesWithNoIncomingEdge(adjacencyMatrix, nodes));
 ```
 
 And it outputs: 
 
-```js
+```javascript
 [ 'Bella', 'Miranda', 'Zoe' ]
 ```
 
 We need one final helper, to determine if the graph has edges (line 12), which is straightforward:
 
-```js
+```javascript
 function graphHasEdges(adjacencyMatrix) {
   for (let row = 0; row < adjacencyMatrix.length; row += 1) {
     for (let column = 0; column < adjacencyMatrix.length; column += 1) {
@@ -333,7 +333,7 @@ function graphHasEdges(adjacencyMatrix) {
 
 We are finally ready to implement the algorithm. It's a straightforward, line by line, translation of the pseudo-code:
 
-```js
+```javascript
 function topologicalSort(adjacencyMatrix) {
   const L = [];
   const S = getNodesWithNoIncomingEdge(adjacencyMatrix, nodes);
@@ -367,13 +367,13 @@ function topologicalSort(adjacencyMatrix) {
 
 Let's try it:
 
-```js
+```javascript
 console.log(topologicalSort(adjacencyMatrix, nodes));
 ```
 
 We get:
 
-```js
+```javascript
 [ 'Zoe', 'Jane', 'Miranda', 'Bella', 'Angela', 'Ellen' ]
 ```
 
@@ -387,7 +387,7 @@ Now, we can produce the SQL code to insert our entries. We operate on a clone of
 
 We handle the special case of the root first, which is the last element, and then we go through the topologically sorted list of employees in reverse order, and insert each one. We use a one liner to get the manager id by name when inserting to avoid many round trips to the database:
 
-```js
+```javascript
 const employeesTopologicallySorted = topologicalSort(structuredClone(adjacencyMatrix), nodes)
 
 const root = employeesTopologicallySorted[employeesTopologicallySorted.length - 1];
@@ -424,7 +424,7 @@ As we said earlier, we get that for free, so let's check our implementation agai
 
 We add the edge `Ellen -> Zoe` to create a cycle:
 
-```js
+```javascript
 const adjacencyMatrix = [
   [0, 0, 1, 0, 0, 0],
   [1, 0, 0, 0, 0, 0],
@@ -459,7 +459,7 @@ One thing that topological sorting does not do for us is to detect the case of m
 
 To do this, we simply scan the adjacency matrix and verify that there is only one row with only zeroes, that is, only one node that has no outgoing edges:
 
-```js
+```javascript
 function hasMultipleRoots(adjacencyMatrix) {
   let countOfRowsWithOnlyZeroes = 0;
 
@@ -480,7 +480,7 @@ function hasMultipleRoots(adjacencyMatrix) {
 
 Let's try it with our invalid example from above:
 
-```js
+```javascript
 const adjacencyMatrix = [
   [0, 0, 1, 0, 0, 0, 0],
   [1, 0, 0, 0, 0, 0, 0],
@@ -533,7 +533,7 @@ If you want to play with the code here and try to make it faster, go at it!
 <details>
   <summary>The full code</summary>
 
-```js
+```javascript
 const adjacencyMatrix = [
   [0, 0, 1, 0, 0, 0],
   [1, 0, 0, 0, 0, 0],

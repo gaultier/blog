@@ -148,7 +148,7 @@ syscall::read:return
 Let's observe the happy case:
 
 
-```text
+```plaintext
 dtrace: script '/Users/philippe.gaultier/scratch/data_race_rw.d' matched 10 probes
 host=localhost addr=45564
 CPU     ID                    FUNCTION:NAME

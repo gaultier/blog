@@ -12,7 +12,7 @@ Also, Cgo has many weird limitations and surprises. Fortunately, over the two ye
 
 Let's create a sample app:
 
-```text
+```plaintext
 .
 ├── app
 │   └── app.go
@@ -296,7 +296,7 @@ func DoStuff() {
 
 And we get the additional output:
 
-```text
+```plaintext
 [75 105 116 116 121]
 Kitty
 ```
@@ -425,7 +425,7 @@ Solution: force a clean build with `go build -a`.
 
 Sometimes we need to run some C code once at startup, when the package gets initialized:
 
-```Go
+```go
 // app/app.go
 
 package app
