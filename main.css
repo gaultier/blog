@@ -235,8 +235,8 @@ pre {
 }
 
 code {
-  background: var(--color-code-bg) !important;
-  color: var(--color-main) !important;
+  background: light-dark(#fbf1c7, #282828);
+  color: light-dark(#282828, #fbf1c7);
   word-wrap: break-word;
   white-space: pre-wrap;
   padding: .1rem;
