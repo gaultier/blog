@@ -1251,6 +1251,13 @@ fn generate_all(cache: &mut HashMap<String, Article>) {
     {
         let start = std::time::Instant::now();
         let search_index_file = File::create("search_index.postcard").unwrap();
+        // Sort to avoid spurious diffs (and cache busting in the browser).
+        search_index
+            .trigram_to_file_idx
+            .values_mut()
+            .for_each(|v| v.sort_by(|a, b| a.0.cmp(&b.0)));
+        search_index.files.sort_by(|a, b| a.cmp(&b));
+
         postcard::to_io(&search_index, search_index_file).unwrap();
         println!(
             "🔍 marshalled search index (count:{}) in {} ms",
