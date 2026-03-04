@@ -27,6 +27,30 @@ const FEED_UUID: [u8; 16] = [
     0x9c, 0x06, 0x5c, 0x53, 0x31, 0xbc, 0x40, 0x49, 0xa7, 0x95, 0x93, 0x68, 0x02, 0xa6, 0xb1, 0xdf,
 ];
 
+const STANDARD_LANGS: [&str; 19] = [
+    "c",
+    "cmake",
+    "cpp",
+    "diff",
+    "dockerfile",
+    "go",
+    "javascript",
+    "json",
+    "kotlin",
+    "lua",
+    "makefile",
+    "markdown",
+    "plaintext",
+    "rust",
+    "scheme",
+    "shell",
+    "sql",
+    "x86asm",
+    "yaml",
+];
+
+const CUSTOM_LANGS: [&'static str; 5] = ["awk", "dtrace", "gnuplot", "odin", "toml"];
+
 struct Title {
     text: String,
     depth: u8,
@@ -266,7 +290,14 @@ fn md_lint_rec(node: &Node, md_path: &Path) {
                 md_path.to_str().unwrap(),
                 code.position
             );
-            println!("[D001] {}", code.lang.as_ref().unwrap());
+
+            let lang = code.lang.as_ref().unwrap().as_str();
+            assert!(
+                STANDARD_LANGS.contains(&lang) || CUSTOM_LANGS.contains(&lang),
+                "unknown lang: {} position={:?}",
+                lang,
+                code.position
+            );
         }
         Node::Math(_) => {}
         Node::MdxFlowExpression(_) => {}
@@ -1233,6 +1264,13 @@ fn generate_all(cache: &mut HashMap<String, Article>) {
     );
 }
 
+fn check_langs() {
+    for lang in STANDARD_LANGS {
+        let exists = fs::exists(format!("{}.min.js", lang)).unwrap_or_default();
+        assert!(exists, "{}", lang);
+    }
+}
+
 fn main() {
     let mut args = std::env::args().skip(1);
     let arg1 = args.next();
@@ -1246,6 +1284,8 @@ fn main() {
         println!("{:#?}", search_index);
         return;
     }
+
+    check_langs();
 
     let mut cache = HashMap::new();
 

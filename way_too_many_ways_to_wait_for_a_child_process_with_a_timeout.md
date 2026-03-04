@@ -88,7 +88,7 @@ Immediately, we notice something: even though there are a bazillion ways to wait
 
 We'd like the pseudo-code to be something like:
 
-```pseudocode
+```plaintext
 wait_ms := 128
 
 for retry in 0..<10:

@@ -1,5 +1,8 @@
-import hljs from 'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/es/highlight.min.js';
-// import * as x86asm from './x86asm.min.js';
+import hljs from './highlight.min.js';
+import * as cmake from './cmake.min.js';
+import * as scheme from './scheme.min.js';
+import * as x86asm from './x86asm.min.js';
+import * as dockerfile from './dockerfile.min.js';
 
 let socket = new WebSocket("ws://localhost:8001/ws", "echo");
 socket.onmessage = function(event) {
@@ -17,6 +20,13 @@ socket.onerror = function(ev) {
   console.log('error', ev);
 }
 
+hljs.configure({
+  ignoreUnescapedHTML: true,
+});
+hljs.registerLanguage("cmake", cmake.default);
+hljs.registerLanguage("scheme", scheme.default);
+hljs.registerLanguage("x86asm", x86asm.default);
+hljs.registerLanguage("dockerfile", dockerfile.default);
 hljs.registerLanguage("odin", function(e) {
 return {
     aliases: ["odin", "odinlang", "odin-lang"],

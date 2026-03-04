@@ -986,10 +986,10 @@ must not be modified as long as the returned string value exists.</p>
 <p>Go is praised for its uncomplicated cross-compiling support. But this goes out of the window when Cgo is enabled. Let's try:</p>
 <pre>
   <div class="code-header">
-    <span>Sh</span>
+    <span>Shell</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-sh"><span class="line-number"></span>$ GOOS=linux GOARCH=arm go build  .
+  <code class="language-shell"><span class="line-number"></span>$ GOOS=linux GOARCH=arm go build  .
 <span class="line-number"></span>cgo/app: build constraints exclude all Go files in /home/pg/scratch/cgo/app
 </code></pre>
 <p>It fails. But fortunately, Go still supports cross-compiling with Cgo as long as we provide it with a cross-compiler.</p>
@@ -1079,10 +1079,10 @@ must not be modified as long as the returned string value exists.</p>
 <p><code>c/Makefile:</code></p>
 <pre>
   <div class="code-header">
-    <span>Make</span>
+    <span>Makefile</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-make"><span class="line-number"></span>libapi.a: api.o
+  <code class="language-makefile"><span class="line-number"></span>libapi.a: api.o
 <span class="line-number"></span>	$(AR) -rcs libapi.a api.o
 <span class="line-number"></span>
 <span class="line-number"></span>api.o: api.c

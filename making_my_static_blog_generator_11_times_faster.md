@@ -17,7 +17,7 @@ Benchmark 1: ./master.bin
 
 In the early days of this blog, there were only a few articles, and the build process was a simple Makefile, something like this (simplified):
 
-```make
+```makefile
 %.html: %.md header.html footer.html
         cat header.html >> $@
         pandoc --toc $< >> $@
@@ -29,7 +29,7 @@ For each markdown file, say `wayland_from_scratch.md`, we transform the markdown
 
 Later on, I added the publication date:
 
-```make
+```makefile
 %.html: %.md header.html footer.html
         cat header.html >> $@
         printf '<p id="publication_date">Published on %s.</p>\n' $$(git log --format='%as' --reverse -- $< | head -n1)  >> $@; fi

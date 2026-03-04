@@ -819,7 +819,7 @@ It's fast, simple, secure. But, to make it work, regardless of the host, we need
 
 Go is praised for its uncomplicated cross-compiling support. But this goes out of the window when Cgo is enabled. Let's try:
 
-```sh 
+```shell
 $ GOOS=linux GOARCH=arm go build  .
 cgo/app: build constraints exclude all Go files in /home/pg/scratch/cgo/app
 ```
@@ -910,7 +910,7 @@ Cgo is rocky, but there are no real blocking issues, apart from the debugging pa
 
 `c/Makefile:`
 
-```make
+```makefile
 libapi.a: api.o
 	$(AR) -rcs libapi.a api.o
 
