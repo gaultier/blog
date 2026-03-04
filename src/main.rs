@@ -67,7 +67,6 @@ impl SearchIndex {
         }
     }
 
-    #[inline(never)]
     fn ingest_md_ast(&mut self, md_ast: &Node, html_path: &Path) {
         self.files.push(html_path.to_str().unwrap().to_string());
         self.ingest_md_ast_rec(md_ast, FileIdx::try_from(self.files.len() - 1).unwrap());
@@ -178,6 +177,103 @@ impl SearchIndex {
                 })
                 .or_default();
         });
+    }
+}
+
+fn md_lint_rec(node: &Node, md_path: &Path) {
+    match node {
+        Node::Root(x) => {
+            for child in &x.children {
+                md_lint_rec(child, md_path);
+            }
+        }
+        Node::Blockquote(x) => {
+            for child in &x.children {
+                md_lint_rec(child, md_path);
+            }
+        }
+        Node::FootnoteDefinition(_) => {}
+        Node::MdxJsxFlowElement(_) => {}
+        Node::List(x) => {
+            for child in &x.children {
+                md_lint_rec(child, md_path);
+            }
+        }
+        Node::MdxjsEsm(_) => {}
+        Node::Toml(_) => {}
+        Node::Yaml(_) => {}
+        Node::Break(_) => {}
+        Node::InlineCode(_) => {}
+        Node::InlineMath(_inline_math) => todo!(),
+        Node::Delete(x) => {
+            for child in &x.children {
+                md_lint_rec(child, md_path);
+            }
+        }
+        Node::Emphasis(x) => {
+            for child in &x.children {
+                md_lint_rec(child, md_path);
+            }
+        }
+        Node::MdxTextExpression(_) => {}
+        Node::FootnoteReference(_) => {}
+        Node::Html(_) => {}
+        Node::Image(_) => {}
+        Node::ImageReference(_) => {}
+        Node::MdxJsxTextElement(_) => {}
+        Node::Link(_) => {}
+        Node::LinkReference(_) => {}
+        Node::Strong(x) => {
+            for child in &x.children {
+                md_lint_rec(child, md_path);
+            }
+        }
+        Node::Text(_text) => {
+            // TODO
+            //md_lint_rec(&text.value);
+        }
+        Node::Code(code) => {
+            assert!(
+                code.lang.is_some(),
+                "missing language for code block: file={} position={:?}",
+                md_path.to_str().unwrap(),
+                code.position
+            );
+        }
+        Node::Math(_) => {}
+        Node::MdxFlowExpression(_) => {}
+        Node::Heading(x) => {
+            for child in &x.children {
+                md_lint_rec(child, md_path);
+            }
+        }
+        Node::Table(x) => {
+            for child in &x.children {
+                md_lint_rec(child, md_path);
+            }
+        }
+        Node::ThematicBreak(_) => {}
+        Node::TableRow(x) => {
+            for child in &x.children {
+                md_lint_rec(child, md_path);
+            }
+        }
+        Node::TableCell(x) => {
+            for child in &x.children {
+                md_lint_rec(child, md_path);
+            }
+        }
+        Node::ListItem(x) => {
+            for child in &x.children {
+                md_lint_rec(child, md_path);
+            }
+        }
+        Node::Definition(_) => {}
+        Node::Paragraph(x) => {
+            for child in &x.children {
+                md_lint_rec(child, md_path);
+            }
+        }
     }
 }
 
@@ -728,6 +824,8 @@ fn md_render_article(
     let html_path = md_path.with_extension("html");
     search_index.ingest_md_ast(&md_ast, &html_path);
 
+    md_lint_rec(&md_ast, &md_path);
+
     let mut html_content: Vec<u8> = Vec::with_capacity(md_content_bytes_len * 8);
     let html_root_title = text_sanitize_for_html(md_root_title, true);
     writeln!(
@@ -1129,7 +1227,7 @@ fn websocket_handling_thread(
     println!("🚀 new websocket");
     let (etx, erx) = std::sync::mpsc::channel();
 
-    let mut debouncer = new_debouncer(Duration::from_millis(200), etx).unwrap();
+    let mut debouncer = new_debouncer(Duration::from_millis(100), etx).unwrap();
 
     debouncer
         .watcher()
