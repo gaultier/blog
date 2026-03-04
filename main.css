@@ -405,7 +405,7 @@ summary {
 /* Red: faded_red / bright_red */
 .hljs-keyword,
 .hljs-selector-tag,
-.hljs-addition {
+.hljs-deletion {
   color: light-dark(#9d0006, #fb4934) !important;
   font-weight: initial !important;
 }
@@ -466,9 +466,9 @@ summary {
   font-weight: initial !important;
 }
 
-/* Orange: faded_orange / bright_orange */
-.hljs-deletion {
-  color: light-dark(#af3a03, #fe8019) !important;
+/* Green.  */
+.hljs-addition {
+  color: light-dark(#98971a, #98971a) !important;
   font-weight: initial !important;
 }
 
