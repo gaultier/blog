@@ -99,6 +99,7 @@ async function getExcerpt(url, needle) {
   const sizeAround = 150;
   const response = await fetch(url);
   const html = await response.text();
+  console.time('excerpt');
 
   // Create a temporary DOM element to strip HTML tags
   const doc = new DOMParser().parseFromString(html, 'text/html');
@@ -107,7 +108,7 @@ async function getExcerpt(url, needle) {
   ignore.forEach(selector => {
     root.querySelectorAll(selector).forEach(el => el.remove());
   });
-  const text = root.textContent.replace(/\s+/g, ' ').trim();
+  const text = root.textContent.trim();
   const lowerText = text.toLowerCase();
   const lowerNeedle = needle.toLowerCase();
   const index = lowerText.indexOf(lowerNeedle);
@@ -122,6 +123,7 @@ async function getExcerpt(url, needle) {
   let snippet = text.slice(start, end);
   const regex = new RegExp(`(${needle})`, 'gi');
   snippet = snippet.replace(regex, '<strong>$1</strong>');
+  console.timeEnd('excerpt');
 
   return `...${snippet}...`; 
 }
