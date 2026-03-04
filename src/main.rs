@@ -1219,7 +1219,8 @@ fn main() {
     if let Some(arg) = &arg1
         && arg == "postcard_deserialize"
     {
-        let search_index_data = std::fs::read("search_index.postcard").unwrap();
+        let arg2 = args.next().unwrap();
+        let search_index_data = std::fs::read(&arg2).unwrap();
         let search_index: SearchIndex = postcard::from_bytes(&search_index_data).unwrap();
         println!("{:#?}", search_index);
         return;
