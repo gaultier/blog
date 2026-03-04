@@ -43,7 +43,6 @@
 ## Blog implementation
 
 - [ ] gen: background job for `git gc --aggressive --prune=now`
-- [ ] gen: lints on markdown AST
 - [ ] gen: link checker
 - [ ] browser: search with `/` shortcut and appears on the side
 - [ ] browser: search shows the full title path to the match e.g. 'my_article: foo/bar/baz'
