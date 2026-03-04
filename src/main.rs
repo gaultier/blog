@@ -55,14 +55,14 @@ type FileIdx = usize;
 
 #[derive(Serialize)]
 struct SearchIndex {
-    trigram_to_file_idx: HashMap<Trigram, HashMap<FileIdx, usize>>,
+    trigram_to_file_idx: HashMap<Trigram, Vec<(FileIdx, usize)>>,
     file_to_idx: Vec<String>,
 }
 
 impl SearchIndex {
     fn new() -> Self {
         Self {
-            trigram_to_file_idx: HashMap::new(),
+            trigram_to_file_idx: HashMap::with_capacity(32000),
             file_to_idx: Vec::with_capacity(128),
         }
     }
@@ -171,11 +171,11 @@ impl SearchIndex {
             self.trigram_to_file_idx
                 .entry(trigram)
                 .and_modify(|e| {
-                    e.entry(file_idx)
-                        .and_modify(|e| {
-                            *e += 1;
-                        })
-                        .or_default();
+                    if let Some(elem) = e.iter_mut().find(|(fi, _)| *fi == file_idx) {
+                        elem.1 += 1;
+                    } else {
+                        e.push((file_idx, 1));
+                    }
                 })
                 .or_default();
         });
@@ -1072,7 +1072,8 @@ fn generate_all(cache: &mut HashMap<String, Article>) {
         let search_index_file = File::create("search_index.postcard").unwrap();
         postcard::to_io(&search_index, search_index_file).unwrap();
         println!(
-            "🔍 marshalled search index in {} ms",
+            "🔍 marshalled search index (count:{}) in {} ms",
+            search_index.trigram_to_file_idx.len(),
             Instant::now().duration_since(start).as_millis()
         );
     }
