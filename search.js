@@ -98,7 +98,7 @@ async function search_and_display_results(_event) {
 
   const scores = search_text(needle);
   // Sort by score DESC.
-  const search_results = [...scores.entries()].sort((a, b) => b[1] - a[1]);
+  const search_results = [...scores.entries()].filter(([_, score]) => score !== 0).sort((a, b) => b[1] - a[1]);
 
   dom_pseudo_body.innerHTML = '<h3>Search results</h3><ul id="results-list"></ul>';
   const list = document.getElementById('results-list');
@@ -109,16 +109,20 @@ async function search_and_display_results(_event) {
     
     // We create a placeholder 'li' immediately so the order stays correct.
     const li = document.createElement('li');
-    li.innerHTML = `<a href="${file}">${file}</a> (Loading excerpt...)`;
+    li.innerHTML = `<a href="${file}">${file}</a> Loading excerpt... (Score: ${score.toFixed(2)})`;
     list.appendChild(li);
 
     // 3. Fetch the excerpt and update this specific 'li'.
     getExcerpt(file, needle).then(excerpt => {
-        li.innerHTML = `
-            <a href="${file}">${file}</a> 
-            (Score: ${score.toFixed(2)})
-            <p><small>${excerpt}</small></p>
-        `;
+        if (excerpt === ''){
+          li.hidden = true;
+        } else {
+          li.innerHTML = `
+              <a href="${file}">${file}</a> 
+              (Score: ${score.toFixed(2)})
+              <p><small>${excerpt}</small></p>
+          `;
+        }
     }).catch(() => {
         li.innerHTML = `<a href="${file}">${file}</a> (Score: ${score.toFixed(2)})`;
     });
