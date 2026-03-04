@@ -2,7 +2,7 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
 <title>Philippe Gaultier's blog</title>
 <link href="https://gaultier.github.io/blog"/>
-<updated>2026-03-04T17:53:43+01:00</updated>
+<updated>2026-03-04T18:03:03+01:00</updated>
 <author>
   <name>Philippe Gaultier</name>
 </author>
@@ -373,7 +373,7 @@
 <title>A silly shell pitfall</title>
 <link href="https://gaultier.github.io/blog/shell_pitfall.html"/>
 <id>urn:uuid:26cefafe-8cec-5ea6-99ce-8a57b82a6754</id>
-<updated>2026-03-04T17:53:43+01:00</updated>
+<updated>2026-03-04T18:03:03+01:00</updated>
 <published>2026-03-04T17:53:43+01:00</published>
 </entry>
     </feed>
