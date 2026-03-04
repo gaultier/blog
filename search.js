@@ -2,6 +2,7 @@ let search_index_loading = false;
 let search_index = undefined;
 const dom_input = document.getElementById('search');
 const dom_pseudo_body = document.getElementById('pseudo-body');
+const dom_search_matches = document.getElementById('search-matches');
 const excerpt_len_around = 100;
 
 async function getExcerpt(url, needle) {
@@ -90,17 +91,22 @@ dom_input.addEventListener('click', loadSearchIndex);
 
 async function search_and_display_results(_event) {
   const needle = dom_input.value;
+  dom_search_matches.innerHTML = '';
   
   if (needle.length < 3) {
     dom_pseudo_body.hidden = false;
+    dom_search_matches.hidden = true;
     return;
+  } else {
+    dom_pseudo_body.hidden = true;
+    dom_search_matches.hidden = false;
   }
 
   const scores = search_text(needle);
   // Sort by score DESC.
   const search_results = [...scores.entries()].filter(([_, score]) => score !== 0).sort((a, b) => b[1] - a[1]);
 
-  dom_pseudo_body.innerHTML = '<h3>Search results</h3><ul id="results-list"></ul>';
+  dom_search_matches.innerHTML = '<h3>Search results</h3><ul id="results-list"></ul>';
   const list = document.getElementById('results-list');
 
 
