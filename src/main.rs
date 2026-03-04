@@ -56,25 +56,21 @@ type FileIdx = u16;
 #[derive(Serialize)]
 struct SearchIndex {
     trigram_to_file_idx: HashMap<Trigram, Vec<(FileIdx, u32)>>,
-    file_to_idx: Vec<String>,
+    files: Vec<String>,
 }
 
 impl SearchIndex {
     fn new() -> Self {
         Self {
             trigram_to_file_idx: HashMap::with_capacity(32000),
-            file_to_idx: Vec::with_capacity(128),
+            files: Vec::with_capacity(128),
         }
     }
 
     #[inline(never)]
     fn ingest_md_ast(&mut self, md_ast: &Node, html_path: &Path) {
-        self.file_to_idx
-            .push(html_path.to_str().unwrap().to_string());
-        self.ingest_md_ast_rec(
-            md_ast,
-            FileIdx::try_from(self.file_to_idx.len() - 1).unwrap(),
-        );
+        self.files.push(html_path.to_str().unwrap().to_string());
+        self.ingest_md_ast_rec(md_ast, FileIdx::try_from(self.files.len() - 1).unwrap());
     }
 
     fn ingest_md_ast_rec(&mut self, node: &Node, file_idx: FileIdx) {
