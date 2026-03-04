@@ -11,9 +11,9 @@ Do not edit it by hand.
 <link type="application/atom+xml" href="/blog/feed.xml" rel="self">
 <link rel="shortcut icon" type="image/ico" href="/blog/favicon.ico">
 <link rel="stylesheet" type="text/css" href="main.css">
-<link rel="stylesheet" href="https://unpkg.com/@highlightjs/cdn-assets@11.8.0/styles/default.min.css">
-<script src="highlight.min.js" defer></script>
-<script src="x86asm.min.js" defer></script>
+<!-- <link rel="stylesheet" href="https://unpkg.com/@highlightjs/cdn-assets@11.8.0/styles/default.min.css"> -->
+<!-- <script src="highlight.min.js" defer></script> -->
+<!-- <script src="x86asm.min.js" defer></script> -->
 <script src="main.js" defer></script>
 <script type="module" src="search.js" async></script>
 </head>
@@ -260,50 +260,85 @@ Do not edit it by hand.
 <p>Using <code>cargo-fuzz</code> and various LLVM tools, I wrote a small shell script to visualize exactly which branches are taken during fuzzing as well as the code coverage in percents for each file and for the project as a whole (right now it's at around 90%).</p>
 <p>To get to a high coverage, the quality of the corpus data is paramount, since fuzzing works by doing small mutations of this corpus and observing which branches are taken as a result.</p>
 <p>I realized that the existing tests in C++ had lots of useful data in them, e.g.:</p>
-<pre><code class="language-c++">const std::vector&lt;char&gt; input = {0x32, 0x01, 0x49, ...}; // &lt;= This is the interesting data.
-assert(foo(input) == ...);
+<pre>
+  <div class="code-header">
+    <span>C++</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-c++"><span class="line-number">0</span>const std::vector&lt;char&gt; input = {0x32, 0x01, 0x49, ...}; // &lt;= This is the interesting data.
+<span class="line-number">1</span>assert(foo(input) == ...);
 </code></pre>
 <p>So I had the idea of extracting all the <code>input = ...</code> data from the tests to build a good fuzzing corpus. My first go at it was a hand-written quick and dirty C++ lexer in Rust. It worked but it was clunky. Right after I finished it, I thought: why don't I use <code>tree-sitter</code> to properly parse C++ in Rust?</p>
 <p>And so I did, and it turned out great, just 300 lines of Rust walking through each <code>TestXXX.cpp</code> file in the repository and using tree-sitter to extract each pattern. I used the query language of tree-sitter to do so:</p>
-<pre><code class="language-rust">let query = tree_sitter::Query::new(
-    tree_sitter_cpp::language(),
-    &quot;(initializer_list (number_literal)+) @capture&quot;,
-)
+<pre>
+  <div class="code-header">
+    <span>Rust</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-rust"><span class="line-number">0</span>let query = tree_sitter::Query::new(
+<span class="line-number">1</span>    tree_sitter_cpp::language(),
+<span class="line-number">2</span>    &quot;(initializer_list (number_literal)+) @capture&quot;,
+<span class="line-number">3</span>)
 </code></pre>
 <p>The tree-sitter website thankfully has a playground where I could experiment and tweak the query and see the results live.</p>
 <p>As time went on and more and more C++ tests were migrated to Rust tests, it was very easy to extend this small Rust program that builds the corpus data, to also scan the Rust tests!</p>
 <p>A typical Rust test would look like this:</p>
-<pre><code class="language-rust">const INPUT: [u8; 4] = [0x01, 0x02, 0x03, 0x04]; // &lt;= This is the interesting data.
-assert_eq!(foo(&amp;INPUT), ...);
+<pre>
+  <div class="code-header">
+    <span>Rust</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-rust"><span class="line-number">0</span>const INPUT: [u8; 4] = [0x01, 0x02, 0x03, 0x04]; // &lt;= This is the interesting data.
+<span class="line-number">1</span>assert_eq!(foo(&amp;INPUT), ...);
 </code></pre>
 <p>And the query to extract the interesting data would be:</p>
-<pre><code class="language-rust">let query = tree_sitter::Query::new(
-    tree_sitter_rust::language(),
-    // TODO: Maybe make this query more specific with:
-    // `(let_declaration value: (array_expression (integer_literal)+)) @capture`.
-    // But in a few cases, the byte array is defined with `const`, not `let`.
-    &quot;(array_expression (integer_literal)+) @capture&quot;,
-)
+<pre>
+  <div class="code-header">
+    <span>Rust</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-rust"><span class="line-number">0</span>let query = tree_sitter::Query::new(
+<span class="line-number">1</span>    tree_sitter_rust::language(),
+<span class="line-number">2</span>    // TODO: Maybe make this query more specific with:
+<span class="line-number">3</span>    // `(let_declaration value: (array_expression (integer_literal)+)) @capture`.
+<span class="line-number">4</span>    // But in a few cases, the byte array is defined with `const`, not `let`.
+<span class="line-number">5</span>    &quot;(array_expression (integer_literal)+) @capture&quot;,
+<span class="line-number">6</span>)
 </code></pre>
 <p>However I discovered that not all data was successfully extracted. What about this code:</p>
-<pre><code class="language-rust">const BAR : u8 = 0x42;
-const INPUT: [u8; 4] = [BAR, 0x02, 0x03, 0x04]; // &lt;= This is the interesting data.
-assert_eq!(foo(&amp;INPUT), ...);
+<pre>
+  <div class="code-header">
+    <span>Rust</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-rust"><span class="line-number">0</span>const BAR : u8 = 0x42;
+<span class="line-number">1</span>const INPUT: [u8; 4] = [BAR, 0x02, 0x03, 0x04]; // &lt;= This is the interesting data.
+<span class="line-number">2</span>assert_eq!(foo(&amp;INPUT), ...);
 </code></pre>
 <p>We have a constant <code>BAR</code> which trips up tree-sitter, because it only sees a literal (i.e. 3 letters: 'B', 'A' and 'R') and does not know its value.</p>
 <p>The way I solved this issue was to do two passes: once to collect all constants along with their values in a map, and then a second pass to find all arrays in tests:</p>
-<pre><code class="language-rust">let query = tree_sitter::Query::new(
-    tree_sitter_rust::language(),
-    &quot;(const_item value: (integer_literal)) @capture &quot;,
-)
+<pre>
+  <div class="code-header">
+    <span>Rust</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-rust"><span class="line-number">0</span>let query = tree_sitter::Query::new(
+<span class="line-number">1</span>    tree_sitter_rust::language(),
+<span class="line-number">2</span>    &quot;(const_item value: (integer_literal)) @capture &quot;,
+<span class="line-number">3</span>)
 </code></pre>
 <p>So that we can then resolve the literals to their numeric value.</p>
 <p>That's how I implemented a compiler for the Kotlin programming language in the past and it worked great. Maybe there are more advanced approaches but this one is dead-simple and fast so it's good enough for us.</p>
 <p>I am pretty happy with how this turned out, scanning all C++ and Rust files to find interesting test data in them to build the corpus. I think this was key to move from the initial 20% code coverage with fuzzing (using a few hard-coded corpus files) to 90%. It's fast too.</p>
 <p>Also, it means the corpus gets better each time we had a test (be it in C++ or Rust), for free.</p>
 <p>Does it mean that the corpus will grow to an extreme size? Well, worry not, because LLVM comes with a fuzzing corpus minimizer:</p>
-<pre><code class="language-shell"># Minimize the fuzzing corpus (in place).
-$ cargo +nightly fuzz cmin [...]
+<pre>
+  <div class="code-header">
+    <span>Shell</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-shell"><span class="line-number">0</span># Minimize the fuzzing corpus (in place).
+<span class="line-number">1</span>$ cargo +nightly fuzz cmin [...]
 </code></pre>
 <p>For each file in the corpus, it feeds it as input to our code, observes which branches are taken, and if a new set of branches is taken, this file remains (or perhaps gets minimized even more, not sure how smart this tool is). Otherwise it is deemed a duplicate and is trimmed.</p>
 <p>So:</p>
@@ -329,74 +364,99 @@ $ cargo +nightly fuzz cmin [...]
   <a class="hash-anchor" href="#c-ffi-in-rust-is-cumbersome-and-error-prone" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h3>
 <p>The root cause for all these issues is that the C API that C++ and Rust use to call each other is very limited in its expressiveness w.r.t ownership, as well as many Rust types not being marked <code>#[repr(C)]</code>, even types you would expect to, such as <code>Option</code>, <code>Vec</code> or <code>&amp;[u8]</code>. That means that you have to define your own equivalent types:</p>
-<pre><code class="language-rust">#[repr(C)]
-// An option type that can be used from C
-pub struct OptionC&lt;T&gt; {
-    pub has_value: bool,
-    pub value: T,
-}
-
-
-#[repr(C)]
-// Akin to `&amp;[u8]`, for C.
-pub struct ByteSliceView {
-    pub ptr: *const u8,
-    pub len: usize,
-}
-
-/// Owning Array i.e. `Vec&lt;T&gt;` in Rust or `std::vector&lt;T&gt;` in C++.
-#[repr(C)]
-pub struct OwningArrayC&lt;T&gt; {
-    pub data: *mut T,
-    pub len: usize,
-    pub cap: usize,
-}
-
-/// # Safety
-/// Only call from C.
-#[no_mangle]
-pub extern &quot;C&quot; fn make_owning_array_u8(len: usize) -&gt; OwningArrayC&lt;u8&gt; {
-    vec![0; len].into()
-}
+<pre>
+  <div class="code-header">
+    <span>Rust</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-rust"><span class="line-number">0</span>#[repr(C)]
+<span class="line-number">1</span>// An option type that can be used from C
+<span class="line-number">2</span>pub struct OptionC&lt;T&gt; {
+<span class="line-number">3</span>    pub has_value: bool,
+<span class="line-number">4</span>    pub value: T,
+<span class="line-number">5</span>}
+<span class="line-number">6</span>
+<span class="line-number">7</span>
+<span class="line-number">8</span>#[repr(C)]
+<span class="line-number">9</span>// Akin to `&amp;[u8]`, for C.
+<span class="line-number">10</span>pub struct ByteSliceView {
+<span class="line-number">11</span>    pub ptr: *const u8,
+<span class="line-number">12</span>    pub len: usize,
+<span class="line-number">13</span>}
+<span class="line-number">14</span>
+<span class="line-number">15</span>/// Owning Array i.e. `Vec&lt;T&gt;` in Rust or `std::vector&lt;T&gt;` in C++.
+<span class="line-number">16</span>#[repr(C)]
+<span class="line-number">17</span>pub struct OwningArrayC&lt;T&gt; {
+<span class="line-number">18</span>    pub data: *mut T,
+<span class="line-number">19</span>    pub len: usize,
+<span class="line-number">20</span>    pub cap: usize,
+<span class="line-number">21</span>}
+<span class="line-number">22</span>
+<span class="line-number">23</span>/// # Safety
+<span class="line-number">24</span>/// Only call from C.
+<span class="line-number">25</span>#[no_mangle]
+<span class="line-number">26</span>pub extern &quot;C&quot; fn make_owning_array_u8(len: usize) -&gt; OwningArrayC&lt;u8&gt; {
+<span class="line-number">27</span>    vec![0; len].into()
+<span class="line-number">28</span>}
 </code></pre>
 <p>Apparently, Rust developers do not want to commit to a particular ABI for these types, to avoid missing out on some future optimizations. So it means that every Rust struct now needs the equivalent &quot;FFI friendly&quot; struct along with conversion functions (usually implemented as <code>.into()</code> for convenience):</p>
-<pre><code class="language-rust">struct Foo&lt;'a&gt; {
-    x: Option&lt;usize&gt;,
-    y: &amp;'a [u8],
-    z: Vec&lt;u8&gt;,
-}
-
-
-#[repr(C)]
-struct FooC {
-    x: OptionC&lt;usize&gt;,
-    y: ByteSliceView,
-    z: OwningArrayC&lt;u8&gt;,
-}
+<pre>
+  <div class="code-header">
+    <span>Rust</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-rust"><span class="line-number">0</span>struct Foo&lt;'a&gt; {
+<span class="line-number">1</span>    x: Option&lt;usize&gt;,
+<span class="line-number">2</span>    y: &amp;'a [u8],
+<span class="line-number">3</span>    z: Vec&lt;u8&gt;,
+<span class="line-number">4</span>}
+<span class="line-number">5</span>
+<span class="line-number">6</span>
+<span class="line-number">7</span>#[repr(C)]
+<span class="line-number">8</span>struct FooC {
+<span class="line-number">9</span>    x: OptionC&lt;usize&gt;,
+<span class="line-number">10</span>    y: ByteSliceView,
+<span class="line-number">11</span>    z: OwningArrayC&lt;u8&gt;,
+<span class="line-number">12</span>}
 </code></pre>
 <p>Which is cumbersome but still fine, especially since Rust has powerful macros (which I investigated using but did not eventually). However, since Rust also does not have great idiomatic support for custom allocators, we stuck with the standard memory allocator, which meant that each struct with heap-allocated fields has to have a deallocation function:</p>
-<pre><code class="language-rust">#[no_mangle]
-pub extern &quot;C&quot; fn foo_free(foo: &amp;FooC) {
-    ...
-}
+<pre>
+  <div class="code-header">
+    <span>Rust</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-rust"><span class="line-number">0</span>#[no_mangle]
+<span class="line-number">1</span>pub extern &quot;C&quot; fn foo_free(foo: &amp;FooC) {
+<span class="line-number">2</span>    ...
+<span class="line-number">3</span>}
 </code></pre>
 <p>And the C or C++ calling code would have to do:</p>
-<pre><code class="language-c++">FooC foo{};
-if (foo_parse(&amp;foo, bytes) == SUCCESS) {
-    // do something with foo...
-    ...
-
-    foo_free(foo);
-}
+<pre>
+  <div class="code-header">
+    <span>C++</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-c++"><span class="line-number">0</span>FooC foo{};
+<span class="line-number">1</span>if (foo_parse(&amp;foo, bytes) == SUCCESS) {
+<span class="line-number">2</span>    // do something with foo...
+<span class="line-number">3</span>    ...
+<span class="line-number">4</span>
+<span class="line-number">5</span>    foo_free(foo);
+<span class="line-number">6</span>}
 </code></pre>
 <p>To simplify this, I introduced a <code>defer</code> <a href="https://www.gingerbill.org/article/2015/08/19/defer-in-cpp/">construct</a> to C++ (thanks Gingerbill!):</p>
-<pre><code class="language-c++">FooC foo{};
-defer({foo_free(foo);});
-
-if (foo_parse(&amp;foo, bytes) == SUCCESS) {
-    // do something with foo...
-    ...
-}
+<pre>
+  <div class="code-header">
+    <span>C++</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-c++"><span class="line-number">0</span>FooC foo{};
+<span class="line-number">1</span>defer({foo_free(foo);});
+<span class="line-number">2</span>
+<span class="line-number">3</span>if (foo_parse(&amp;foo, bytes) == SUCCESS) {
+<span class="line-number">4</span>    // do something with foo...
+<span class="line-number">5</span>    ...
+<span class="line-number">6</span>}
 </code></pre>
 <p>Which feels right at home for Go developers, and is an improvement over the style in use in the old C++ code where it was fully manual calls to new/delete.</p>
 <p>Still, it's more work than what you'd have to do in pure idiomatic Rust or C++ code (or even C code with arenas for that matter).</p>
@@ -406,85 +466,110 @@ if (foo_parse(&amp;foo, bytes) == SUCCESS) {
   <a class="hash-anchor" href="#an-example-of-a-real-bug-at-the-ffi-boundary" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h3>
 <p>More perniciously, it's easy to introduce memory unsafety at the FFI boundary. Here is a real bug I introduced, can you spot it? I elided all the error handling to make it easier to spot:</p>
-<pre><code class="language-rust">#[repr(C)]
-struct BarC {
-    x: ByteSliceView,
-}
-
-#[no_mangle]
-unsafe extern &quot;C&quot; fn bar_parse(input: *const u8, input_len: usize, bar_c: &amp;mut BarC) {
-    let input: &amp;[u8] = unsafe { std::slice::from_raw_parts(input, input_len) };
-
-    let bar: Bar = Bar {
-        x: [input[0], input[1]],
-    };
-
-    *bar_c = BarC {
-        x: ByteSliceView {
-            ptr: bar.x.as_ptr(),
-            len: bar.x.len(),
-        },
-    };
-}
+<pre>
+  <div class="code-header">
+    <span>Rust</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-rust"><span class="line-number">0</span>#[repr(C)]
+<span class="line-number">1</span>struct BarC {
+<span class="line-number">2</span>    x: ByteSliceView,
+<span class="line-number">3</span>}
+<span class="line-number">4</span>
+<span class="line-number">5</span>#[no_mangle]
+<span class="line-number">6</span>unsafe extern &quot;C&quot; fn bar_parse(input: *const u8, input_len: usize, bar_c: &amp;mut BarC) {
+<span class="line-number">7</span>    let input: &amp;[u8] = unsafe { std::slice::from_raw_parts(input, input_len) };
+<span class="line-number">8</span>
+<span class="line-number">9</span>    let bar: Bar = Bar {
+<span class="line-number">10</span>        x: [input[0], input[1]],
+<span class="line-number">11</span>    };
+<span class="line-number">12</span>
+<span class="line-number">13</span>    *bar_c = BarC {
+<span class="line-number">14</span>        x: ByteSliceView {
+<span class="line-number">15</span>            ptr: bar.x.as_ptr(),
+<span class="line-number">16</span>            len: bar.x.len(),
+<span class="line-number">17</span>        },
+<span class="line-number">18</span>    };
+<span class="line-number">19</span>}
 </code></pre>
 <p><code>clippy</code> did not notice anything. <code>address-sanitizer</code> did not notice anything. However, both <code>miri</code> and <code>valgrind</code> did, and fuzzing crashed (which was not easy to troubleshoot but at least pinpointed to a problem).</p>
 <p>So...found it? Still nothing? Well, let's be good developers and add a test for it:</p>
-<pre><code class="language-rust">#[test]
-fn bar() {
-    // This mimicks how C/C++ code would call our function.
-    let mut bar_c = MaybeUninit::&lt;BarC&gt;::uninit();
-    let input = [0, 1, 2];
-    unsafe {
-        bar_parse(
-            input.as_ptr(),
-            input.len(),
-            bar_c.as_mut_ptr().as_mut().unwrap(),
-        );
-    }
-
-    let bar_c = unsafe { bar_c.assume_init_ref() };
-    let x: &amp;[u8] = (&amp;bar_c.x).into();
-    assert_eq!(x, [0, 1].as_slice());
-}
+<pre>
+  <div class="code-header">
+    <span>Rust</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-rust"><span class="line-number">0</span>#[test]
+<span class="line-number">1</span>fn bar() {
+<span class="line-number">2</span>    // This mimicks how C/C++ code would call our function.
+<span class="line-number">3</span>    let mut bar_c = MaybeUninit::&lt;BarC&gt;::uninit();
+<span class="line-number">4</span>    let input = [0, 1, 2];
+<span class="line-number">5</span>    unsafe {
+<span class="line-number">6</span>        bar_parse(
+<span class="line-number">7</span>            input.as_ptr(),
+<span class="line-number">8</span>            input.len(),
+<span class="line-number">9</span>            bar_c.as_mut_ptr().as_mut().unwrap(),
+<span class="line-number">10</span>        );
+<span class="line-number">11</span>    }
+<span class="line-number">12</span>
+<span class="line-number">13</span>    let bar_c = unsafe { bar_c.assume_init_ref() };
+<span class="line-number">14</span>    let x: &amp;[u8] = (&amp;bar_c.x).into();
+<span class="line-number">15</span>    assert_eq!(x, [0, 1].as_slice());
+<span class="line-number">16</span>}
 </code></pre>
 <p>If you're lucky, <code>cargo test</code> would fail at the last assertion saying that the value is not what we expected, but in my case it passed every time, and so the bug stayed undetected for a while. That's because we unknowingly introduced undefined behavior, and as such, how or if it manifests is impossible to tell.</p>
 <p>Let's run the test with Miri:</p>
-<pre><code class="language-text">running 1 test
-test api::tests::bar ... error: Undefined Behavior: out-of-bounds pointer use: alloc195648 has been freed, so this pointer is dangling
-    --&gt; src/tlv.rs:321:18
-     |
-321  |         unsafe { &amp;*core::ptr::slice_from_raw_parts(item.ptr, item.len) }
-     |                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ out-of-bounds pointer use: alloc195648 has been freed, so this pointer is dangling
-     |
-     = help: this indicates a bug in the program: it performed an invalid operation, and caused Undefined Behavior
-     = help: see https://doc.rust-lang.org/nightly/reference/behavior-considered-undefined.html for further information
-help: alloc195648 was allocated here:
-    --&gt; src/api.rs:1396:9
-     |
-1396 |     let bar: Bar = Bar {
-     |         ^^^
-help: alloc195648 was deallocated here:
-    --&gt; src/api.rs:1406:1
-     |
-1406 | }
+<pre>
+  <div class="code-header">
+    <span>Text</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-text"><span class="line-number">0</span>running 1 test
+<span class="line-number">1</span>test api::tests::bar ... error: Undefined Behavior: out-of-bounds pointer use: alloc195648 has been freed, so this pointer is dangling
+<span class="line-number">2</span>    --&gt; src/tlv.rs:321:18
+<span class="line-number">3</span>     |
+<span class="line-number">4</span>321  |         unsafe { &amp;*core::ptr::slice_from_raw_parts(item.ptr, item.len) }
+<span class="line-number">5</span>     |                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ out-of-bounds pointer use: alloc195648 has been freed, so this pointer is dangling
+<span class="line-number">6</span>     |
+<span class="line-number">7</span>     = help: this indicates a bug in the program: it performed an invalid operation, and caused Undefined Behavior
+<span class="line-number">8</span>     = help: see https://doc.rust-lang.org/nightly/reference/behavior-considered-undefined.html for further information
+<span class="line-number">9</span>help: alloc195648 was allocated here:
+<span class="line-number">10</span>    --&gt; src/api.rs:1396:9
+<span class="line-number">11</span>     |
+<span class="line-number">12</span>1396 |     let bar: Bar = Bar {
+<span class="line-number">13</span>     |         ^^^
+<span class="line-number">14</span>help: alloc195648 was deallocated here:
+<span class="line-number">15</span>    --&gt; src/api.rs:1406:1
+<span class="line-number">16</span>     |
+<span class="line-number">17</span>1406 | }
 </code></pre>
 <p>Miri is great, I tell you.</p>
 <p>The issue here is that we essentially return a pointer to local variable (<code>x</code>) from inside the function, so the pointer is dangling.</p>
 <p>Alternatively we can call our function from C/C++ and run that under valgrind:</p>
-<pre><code class="language-c">int main() {
-  BarC bar{};
-  const uint8_t input[] = {0, 1, 2, 3};
-  bar_parse(input, sizeof(input), &amp;bar);
-  assert(bar.x.ptr[0] == 0);
-  assert(bar.x.ptr[1] == 1);
-}
+<pre>
+  <div class="code-header">
+    <span>C</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-c"><span class="line-number">0</span>int main() {
+<span class="line-number">1</span>  BarC bar{};
+<span class="line-number">2</span>  const uint8_t input[] = {0, 1, 2, 3};
+<span class="line-number">3</span>  bar_parse(input, sizeof(input), &amp;bar);
+<span class="line-number">4</span>  assert(bar.x.ptr[0] == 0);
+<span class="line-number">5</span>  assert(bar.x.ptr[1] == 1);
+<span class="line-number">6</span>}
 </code></pre>
 <p>And I get:</p>
-<pre><code class="language-text">==805913== Conditional jump or move depends on uninitialised value(s)
-==805913==    at 0x127C34: main (src/example.cpp:13)
-==805913== 
-==805913== Conditional jump or move depends on uninitialised value(s)
-==805913==    at 0x127C69: main (src/example.cpp:14)
+<pre>
+  <div class="code-header">
+    <span>Text</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-text"><span class="line-number">0</span>==805913== Conditional jump or move depends on uninitialised value(s)
+<span class="line-number">1</span>==805913==    at 0x127C34: main (src/example.cpp:13)
+<span class="line-number">2</span>==805913== 
+<span class="line-number">3</span>==805913== Conditional jump or move depends on uninitialised value(s)
+<span class="line-number">4</span>==805913==    at 0x127C69: main (src/example.cpp:14)
 </code></pre>
 <p>Which is not very informative, but better than nothing. <code>Miri</code>'s output is much more actionable.</p>
 <p>So in conclusion, Rust's FFI capabilities work but are tedious are error-prone in my opinion, and so require extra care and testing with Miri/fuzzing, with high code coverage of the FFI functions. It's not enough to only test the pure (non FFI) Rust code.</p>
@@ -499,51 +584,66 @@ Miri again is the MVP here since it detected the issue of mixing the C and Rust 
 <p>The consequence of this, is that allocating memory on the C/C++ side, and freeing it on the Rust side, is undefined behavior: it amounts to freeing a pointer that was never allocated by this allocator. And vice-versa, allocating a pointer from Rust and freeing it from C.</p>
 <p>That has dire consequences since most memory allocators do not detect this in release mode. You might free completely unrelated memory leading to use-after-free later, or corrupt the memory allocator structures. It's bad.</p>
 <p>Here's a simplified example of code that triggered this issue:</p>
-<pre><code class="language-rust">#[repr(C)]
-pub struct FooC {
-    foo: u8,
-    bar: *mut usize,
-}
-
-#[no_mangle]
-pub extern &quot;C&quot; fn parse_foo(in_bytes: *const u8, in_bytes_len: usize, foo: &amp;mut FooC) {
-    let in_bytes: &amp;[u8] = unsafe { &amp;*core::ptr::slice_from_raw_parts(in_bytes, in_bytes_len) };
-
-    // Parse `foo` from `in_bytes` but `bar` is sometimes not present in the payload.
-    // In that case it is set manually by the calling code.
-    *foo = FooC {
-        foo: in_bytes[0],
-        bar: if in_bytes_len == 1 {
-            core::ptr::null_mut()
-        } else {
-            let x = Box::new(in_bytes[1] as usize);
-            Box::into_raw(x)
-        },
-    }
-}
-
-#[no_mangle]
-pub extern &quot;C&quot; fn free_foo(foo: &amp;mut FooC) {
-    if !foo.bar.is_null() {
-        unsafe {
-            let _ = Box::from_raw(foo.bar);
-        }
-    }
-}
+<pre>
+  <div class="code-header">
+    <span>Rust</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-rust"><span class="line-number">0</span>#[repr(C)]
+<span class="line-number">1</span>pub struct FooC {
+<span class="line-number">2</span>    foo: u8,
+<span class="line-number">3</span>    bar: *mut usize,
+<span class="line-number">4</span>}
+<span class="line-number">5</span>
+<span class="line-number">6</span>#[no_mangle]
+<span class="line-number">7</span>pub extern &quot;C&quot; fn parse_foo(in_bytes: *const u8, in_bytes_len: usize, foo: &amp;mut FooC) {
+<span class="line-number">8</span>    let in_bytes: &amp;[u8] = unsafe { &amp;*core::ptr::slice_from_raw_parts(in_bytes, in_bytes_len) };
+<span class="line-number">9</span>
+<span class="line-number">10</span>    // Parse `foo` from `in_bytes` but `bar` is sometimes not present in the payload.
+<span class="line-number">11</span>    // In that case it is set manually by the calling code.
+<span class="line-number">12</span>    *foo = FooC {
+<span class="line-number">13</span>        foo: in_bytes[0],
+<span class="line-number">14</span>        bar: if in_bytes_len == 1 {
+<span class="line-number">15</span>            core::ptr::null_mut()
+<span class="line-number">16</span>        } else {
+<span class="line-number">17</span>            let x = Box::new(in_bytes[1] as usize);
+<span class="line-number">18</span>            Box::into_raw(x)
+<span class="line-number">19</span>        },
+<span class="line-number">20</span>    }
+<span class="line-number">21</span>}
+<span class="line-number">22</span>
+<span class="line-number">23</span>#[no_mangle]
+<span class="line-number">24</span>pub extern &quot;C&quot; fn free_foo(foo: &amp;mut FooC) {
+<span class="line-number">25</span>    if !foo.bar.is_null() {
+<span class="line-number">26</span>        unsafe {
+<span class="line-number">27</span>            let _ = Box::from_raw(foo.bar);
+<span class="line-number">28</span>        }
+<span class="line-number">29</span>    }
+<span class="line-number">30</span>}
 </code></pre>
 <p>And the calling code:</p>
-<pre><code class="language-c++">FooC foo{};
-
-const uint8_t data[] = { 1 };
-parse_foo(data, sizeof(data), &amp;foo);
-if (foo.bar == nullptr) {
-  foo.bar = new size_t{99999};
-}
-
-free_foo(&amp;foo);
+<pre>
+  <div class="code-header">
+    <span>C++</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-c++"><span class="line-number">0</span>FooC foo{};
+<span class="line-number">1</span>
+<span class="line-number">2</span>const uint8_t data[] = { 1 };
+<span class="line-number">3</span>parse_foo(data, sizeof(data), &amp;foo);
+<span class="line-number">4</span>if (foo.bar == nullptr) {
+<span class="line-number">5</span>  foo.bar = new size_t{99999};
+<span class="line-number">6</span>}
+<span class="line-number">7</span>
+<span class="line-number">8</span>free_foo(&amp;foo);
 </code></pre>
 <p>This is undefined behavior if the array is of size 1, since in that case the Rust allocator will free a pointer allocated by the C allocator, and address sanitizer catches it:</p>
-<pre><code class="language-text">SUMMARY: AddressSanitizer: alloc-dealloc-mismatch /home/runner/work/llvm-project/llvm-project/final/llvm-project/compiler-rt/lib/asan/asan_malloc_linux.cpp:52:3 in free
+<pre>
+  <div class="code-header">
+    <span>Text</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-text"><span class="line-number">0</span>SUMMARY: AddressSanitizer: alloc-dealloc-mismatch /home/runner/work/llvm-project/llvm-project/final/llvm-project/compiler-rt/lib/asan/asan_malloc_linux.cpp:52:3 in free
 </code></pre>
 <p>However, it is only detected with sanitizers on and if a test (or fuzzing) triggers this case. Or by Miri if a Rust test covers this function.</p>
 <hr />
@@ -561,162 +661,182 @@ free_foo(&amp;foo);
 <p>That way, I can even cross-compile tests and example programs in C or C++ using the library and run them inside <code>qemu</code> to make sure all platforms work as expected.</p>
 <p>I took inspiration from the CMake code in the Android project, which has to cross-compile for many architectures. Did you know that Android supports x86 (which is 32 bits), x86_64, arm (which is 32 bits), aarch64 (sometimes called arm64), and more?</p>
 <p>In short, you instruct CMake to cross-compile by supplying on the command-line the variables <code>CMAKE_SYSTEM_PROCESSOR</code> and <code>CMAKE_SYSTEM_NAME</code>, which are the equivalent of <code>GOARCH</code> and <code>GOOS</code> if you are familiar with Go. E.g.:</p>
-<pre><code class="language-shell">$ cmake -B .build -S src -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_SYSTEM_NAME=Linux -DCMAKE_SYSTEM_PROCESSOR=arm
+<pre>
+  <div class="code-header">
+    <span>Shell</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-shell"><span class="line-number">0</span>$ cmake -B .build -S src -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_SYSTEM_NAME=Linux -DCMAKE_SYSTEM_PROCESSOR=arm
 </code></pre>
 <p>On the Rust side, you tell <code>cargo</code> to cross-compile by supplying the <code>--target</code> command-line argument, e.g.: <code>--target=x86_64-unknown-linux-musl</code>. This works by virtue of installing the pre-compiled toolchain for this platform with <code>rustup</code> first:</p>
-<pre><code class="language-shell">$ rustup target add x86_64-unknown-linux-musl
+<pre>
+  <div class="code-header">
+    <span>Shell</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-shell"><span class="line-number">0</span>$ rustup target add x86_64-unknown-linux-musl
 </code></pre>
 <p>So now we have to convert in CMake <code>CMAKE_SYSTEM_ARCHITECTURE</code> and <code>CMAKE_SYSTEM_NAME</code> into a target triple that clang and cargo can understand. Of course you have to do all the hard work yourself. This is complicated by lots of factors like Apple using the architecture name <code>arm64</code> instead of <code>aarch64</code>, iOS peculiarities, soft vs hard float, arm having multiple variants (v6, v7, v8, etc), and so on. Your mileage may vary. We opt-in into using musl with a CMake command line option, on Linux.</p>
 <p>Here it is in all its glory:</p>
-<pre><code class="language-cmake"># We need to craft the target triple to make it work when cross-compiling.
-# NOTE: If an architecture supports both soft-float and hard-float, we pick hard-float (`hf`).
-# since we do not target any real hardware with soft-float.
-# Linux has two main libcs, glibc (the default) and musl (opt-in with `FMW_LIBC_MUSL=1`), useful for Alpine.
-if (CMAKE_SYSTEM_NAME STREQUAL &quot;Linux&quot; AND CMAKE_SYSTEM_PROCESSOR STREQUAL &quot;x86_64&quot; AND NOT DEFINED FMW_LIBC_MUSL)
-    set(TARGET_TRIPLE &quot;x86_64-unknown-linux-gnu&quot;)
-elseif (CMAKE_SYSTEM_NAME STREQUAL &quot;Linux&quot; AND CMAKE_SYSTEM_PROCESSOR STREQUAL &quot;x86_64&quot; AND &quot;${FMW_LIBC_MUSL}&quot; EQUAL 1)
-    set(TARGET_TRIPLE &quot;x86_64-unknown-linux-musl&quot;)
-elseif (CMAKE_SYSTEM_NAME STREQUAL &quot;Linux&quot; AND CMAKE_SYSTEM_PROCESSOR STREQUAL &quot;arm&quot; AND NOT DEFINED FMW_LIBC_MUSL)
-    set(TARGET_TRIPLE &quot;arm-unknown-linux-gnueabihf&quot;)
-elseif (CMAKE_SYSTEM_NAME STREQUAL &quot;Linux&quot; AND CMAKE_SYSTEM_PROCESSOR STREQUAL &quot;arm&quot; AND &quot;${FMW_LIBC_MUSL}&quot; EQUAL 1)
-    set(TARGET_TRIPLE &quot;arm-unknown-linux-musleabihf&quot;)
-elseif (CMAKE_SYSTEM_NAME STREQUAL &quot;Linux&quot; AND CMAKE_SYSTEM_PROCESSOR STREQUAL &quot;aarch64&quot; AND NOT DEFINED FMW_LIBC_MUSL)
-    set(TARGET_TRIPLE &quot;aarch64-unknown-linux-gnu&quot;)
-elseif (CMAKE_SYSTEM_NAME STREQUAL &quot;Linux&quot; AND CMAKE_SYSTEM_PROCESSOR STREQUAL &quot;aarch64&quot; AND &quot;${FMW_LIBC_MUSL}&quot; EQUAL 1)
-    set(TARGET_TRIPLE &quot;aarch64-unknown-linux-musl&quot;)
-elseif (CMAKE_SYSTEM_NAME STREQUAL &quot;Linux&quot; AND CMAKE_SYSTEM_PROCESSOR STREQUAL &quot;armv7&quot;)
-    set(TARGET_TRIPLE &quot;armv7-unknown-linux-gnueabihf&quot;)
-elseif (CMAKE_SYSTEM_NAME STREQUAL &quot;Darwin&quot; AND CMAKE_SYSTEM_PROCESSOR STREQUAL &quot;aarch64&quot;)
-    set(TARGET_TRIPLE &quot;aarch64-apple-darwin&quot;)
-elseif (CMAKE_SYSTEM_NAME STREQUAL &quot;Darwin&quot; AND CMAKE_SYSTEM_PROCESSOR STREQUAL &quot;arm64&quot;)
-    set(TARGET_TRIPLE &quot;aarch64-apple-darwin&quot;)
-elseif (CMAKE_SYSTEM_NAME STREQUAL &quot;Darwin&quot; AND CMAKE_SYSTEM_PROCESSOR STREQUAL &quot;x86_64&quot;)
-    set(TARGET_TRIPLE &quot;x86_64-apple-darwin&quot;)
-elseif (CMAKE_SYSTEM_NAME STREQUAL &quot;iOS&quot; AND CMAKE_SYSTEM_PROCESSOR STREQUAL &quot;x86_64&quot;)
-    set(TARGET_TRIPLE &quot;x86_64-apple-ios&quot;)
-    execute_process(COMMAND xcrun --sdk iphonesimulator --show-sdk-path OUTPUT_VARIABLE CMAKE_OSX_SYSROOT)
-    string(REPLACE &quot;\n&quot; &quot;&quot; CMAKE_OSX_SYSROOT ${CMAKE_OSX_SYSROOT})
-elseif (CMAKE_SYSTEM_NAME STREQUAL &quot;iOS&quot; AND CMAKE_SYSTEM_PROCESSOR STREQUAL &quot;aarch64&quot;)
-    set(TARGET_TRIPLE &quot;aarch64-apple-ios&quot;)
-    execute_process(COMMAND xcrun --sdk iphoneos --show-sdk-path OUTPUT_VARIABLE CMAKE_OSX_SYSROOT)
-    string(REPLACE &quot;\n&quot; &quot;&quot; CMAKE_OSX_SYSROOT ${CMAKE_OSX_SYSROOT})
-elseif (CMAKE_SYSTEM_NAME STREQUAL &quot;iOS&quot; AND CMAKE_SYSTEM_PROCESSOR STREQUAL &quot;arm64&quot;)
-    set(TARGET_TRIPLE &quot;aarch64-apple-ios&quot;)
-    execute_process(COMMAND xcrun --sdk iphoneos --show-sdk-path OUTPUT_VARIABLE CMAKE_OSX_SYSROOT)
-    string(REPLACE &quot;\n&quot; &quot;&quot; CMAKE_OSX_SYSROOT ${CMAKE_OSX_SYSROOT})
-elseif (CMAKE_SYSTEM_NAME STREQUAL &quot;Android&quot; AND CMAKE_SYSTEM_PROCESSOR STREQUAL &quot;arm&quot;)
-    set(TARGET_TRIPLE &quot;arm-linux-androideabi&quot;)
-elseif (CMAKE_SYSTEM_NAME STREQUAL &quot;Android&quot; AND CMAKE_SYSTEM_PROCESSOR STREQUAL &quot;armv7&quot;)
-    set(TARGET_TRIPLE &quot;armv7-linux-androideabi&quot;)
-elseif (CMAKE_SYSTEM_NAME STREQUAL &quot;Android&quot; AND CMAKE_SYSTEM_PROCESSOR STREQUAL &quot;armv7-a&quot;)
-    set(TARGET_TRIPLE &quot;armv7-linux-androideabi&quot;)
-elseif (CMAKE_SYSTEM_NAME STREQUAL &quot;Android&quot; AND CMAKE_SYSTEM_PROCESSOR STREQUAL &quot;aarch64&quot;)
-    set(TARGET_TRIPLE &quot;aarch64-linux-android&quot;)
-elseif (CMAKE_SYSTEM_NAME STREQUAL &quot;Android&quot; AND CMAKE_SYSTEM_PROCESSOR STREQUAL &quot;i686&quot;)
-    set(TARGET_TRIPLE &quot;i686-linux-android&quot;)
-elseif (CMAKE_SYSTEM_NAME STREQUAL &quot;Android&quot; AND CMAKE_SYSTEM_PROCESSOR STREQUAL &quot;x86_64&quot;)
-    set(TARGET_TRIPLE &quot;x86_64-linux-android&quot;)
-else()
-    message(FATAL_ERROR &quot;Invalid OS/Architecture, not supported: CMAKE_SYSTEM_NAME=${CMAKE_SYSTEM_NAME} CMAKE_SYSTEM_PROCESSOR=${CMAKE_SYSTEM_PROCESSOR}&quot;)
-endif()
-
-message(STATUS &quot;Target triple: ${TARGET_TRIPLE}&quot;)
-
-# If we are cross compiling manually (e.g to Linux arm), `CMAKE_C_COMPILER_TARGET` and `CMAKE_CXX_COMPILER_TARGET` are unset and we need to set them manually.
-# But if we are cross compiling through a separate build system e.g. to Android or iOS, they will set these variables and we should not override them.
-if ( NOT DEFINED CMAKE_C_COMPILER_TARGET )
-   set(CMAKE_C_COMPILER_TARGET ${TARGET_TRIPLE})
-endif()
-if ( NOT DEFINED CMAKE_CXX_COMPILER_TARGET )
-   set(CMAKE_CXX_COMPILER_TARGET ${TARGET_TRIPLE})
-endif()
+<pre>
+  <div class="code-header">
+    <span>Cmake</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-cmake"><span class="line-number">0</span># We need to craft the target triple to make it work when cross-compiling.
+<span class="line-number">1</span># NOTE: If an architecture supports both soft-float and hard-float, we pick hard-float (`hf`).
+<span class="line-number">2</span># since we do not target any real hardware with soft-float.
+<span class="line-number">3</span># Linux has two main libcs, glibc (the default) and musl (opt-in with `FMW_LIBC_MUSL=1`), useful for Alpine.
+<span class="line-number">4</span>if (CMAKE_SYSTEM_NAME STREQUAL &quot;Linux&quot; AND CMAKE_SYSTEM_PROCESSOR STREQUAL &quot;x86_64&quot; AND NOT DEFINED FMW_LIBC_MUSL)
+<span class="line-number">5</span>    set(TARGET_TRIPLE &quot;x86_64-unknown-linux-gnu&quot;)
+<span class="line-number">6</span>elseif (CMAKE_SYSTEM_NAME STREQUAL &quot;Linux&quot; AND CMAKE_SYSTEM_PROCESSOR STREQUAL &quot;x86_64&quot; AND &quot;${FMW_LIBC_MUSL}&quot; EQUAL 1)
+<span class="line-number">7</span>    set(TARGET_TRIPLE &quot;x86_64-unknown-linux-musl&quot;)
+<span class="line-number">8</span>elseif (CMAKE_SYSTEM_NAME STREQUAL &quot;Linux&quot; AND CMAKE_SYSTEM_PROCESSOR STREQUAL &quot;arm&quot; AND NOT DEFINED FMW_LIBC_MUSL)
+<span class="line-number">9</span>    set(TARGET_TRIPLE &quot;arm-unknown-linux-gnueabihf&quot;)
+<span class="line-number">10</span>elseif (CMAKE_SYSTEM_NAME STREQUAL &quot;Linux&quot; AND CMAKE_SYSTEM_PROCESSOR STREQUAL &quot;arm&quot; AND &quot;${FMW_LIBC_MUSL}&quot; EQUAL 1)
+<span class="line-number">11</span>    set(TARGET_TRIPLE &quot;arm-unknown-linux-musleabihf&quot;)
+<span class="line-number">12</span>elseif (CMAKE_SYSTEM_NAME STREQUAL &quot;Linux&quot; AND CMAKE_SYSTEM_PROCESSOR STREQUAL &quot;aarch64&quot; AND NOT DEFINED FMW_LIBC_MUSL)
+<span class="line-number">13</span>    set(TARGET_TRIPLE &quot;aarch64-unknown-linux-gnu&quot;)
+<span class="line-number">14</span>elseif (CMAKE_SYSTEM_NAME STREQUAL &quot;Linux&quot; AND CMAKE_SYSTEM_PROCESSOR STREQUAL &quot;aarch64&quot; AND &quot;${FMW_LIBC_MUSL}&quot; EQUAL 1)
+<span class="line-number">15</span>    set(TARGET_TRIPLE &quot;aarch64-unknown-linux-musl&quot;)
+<span class="line-number">16</span>elseif (CMAKE_SYSTEM_NAME STREQUAL &quot;Linux&quot; AND CMAKE_SYSTEM_PROCESSOR STREQUAL &quot;armv7&quot;)
+<span class="line-number">17</span>    set(TARGET_TRIPLE &quot;armv7-unknown-linux-gnueabihf&quot;)
+<span class="line-number">18</span>elseif (CMAKE_SYSTEM_NAME STREQUAL &quot;Darwin&quot; AND CMAKE_SYSTEM_PROCESSOR STREQUAL &quot;aarch64&quot;)
+<span class="line-number">19</span>    set(TARGET_TRIPLE &quot;aarch64-apple-darwin&quot;)
+<span class="line-number">20</span>elseif (CMAKE_SYSTEM_NAME STREQUAL &quot;Darwin&quot; AND CMAKE_SYSTEM_PROCESSOR STREQUAL &quot;arm64&quot;)
+<span class="line-number">21</span>    set(TARGET_TRIPLE &quot;aarch64-apple-darwin&quot;)
+<span class="line-number">22</span>elseif (CMAKE_SYSTEM_NAME STREQUAL &quot;Darwin&quot; AND CMAKE_SYSTEM_PROCESSOR STREQUAL &quot;x86_64&quot;)
+<span class="line-number">23</span>    set(TARGET_TRIPLE &quot;x86_64-apple-darwin&quot;)
+<span class="line-number">24</span>elseif (CMAKE_SYSTEM_NAME STREQUAL &quot;iOS&quot; AND CMAKE_SYSTEM_PROCESSOR STREQUAL &quot;x86_64&quot;)
+<span class="line-number">25</span>    set(TARGET_TRIPLE &quot;x86_64-apple-ios&quot;)
+<span class="line-number">26</span>    execute_process(COMMAND xcrun --sdk iphonesimulator --show-sdk-path OUTPUT_VARIABLE CMAKE_OSX_SYSROOT)
+<span class="line-number">27</span>    string(REPLACE &quot;\n&quot; &quot;&quot; CMAKE_OSX_SYSROOT ${CMAKE_OSX_SYSROOT})
+<span class="line-number">28</span>elseif (CMAKE_SYSTEM_NAME STREQUAL &quot;iOS&quot; AND CMAKE_SYSTEM_PROCESSOR STREQUAL &quot;aarch64&quot;)
+<span class="line-number">29</span>    set(TARGET_TRIPLE &quot;aarch64-apple-ios&quot;)
+<span class="line-number">30</span>    execute_process(COMMAND xcrun --sdk iphoneos --show-sdk-path OUTPUT_VARIABLE CMAKE_OSX_SYSROOT)
+<span class="line-number">31</span>    string(REPLACE &quot;\n&quot; &quot;&quot; CMAKE_OSX_SYSROOT ${CMAKE_OSX_SYSROOT})
+<span class="line-number">32</span>elseif (CMAKE_SYSTEM_NAME STREQUAL &quot;iOS&quot; AND CMAKE_SYSTEM_PROCESSOR STREQUAL &quot;arm64&quot;)
+<span class="line-number">33</span>    set(TARGET_TRIPLE &quot;aarch64-apple-ios&quot;)
+<span class="line-number">34</span>    execute_process(COMMAND xcrun --sdk iphoneos --show-sdk-path OUTPUT_VARIABLE CMAKE_OSX_SYSROOT)
+<span class="line-number">35</span>    string(REPLACE &quot;\n&quot; &quot;&quot; CMAKE_OSX_SYSROOT ${CMAKE_OSX_SYSROOT})
+<span class="line-number">36</span>elseif (CMAKE_SYSTEM_NAME STREQUAL &quot;Android&quot; AND CMAKE_SYSTEM_PROCESSOR STREQUAL &quot;arm&quot;)
+<span class="line-number">37</span>    set(TARGET_TRIPLE &quot;arm-linux-androideabi&quot;)
+<span class="line-number">38</span>elseif (CMAKE_SYSTEM_NAME STREQUAL &quot;Android&quot; AND CMAKE_SYSTEM_PROCESSOR STREQUAL &quot;armv7&quot;)
+<span class="line-number">39</span>    set(TARGET_TRIPLE &quot;armv7-linux-androideabi&quot;)
+<span class="line-number">40</span>elseif (CMAKE_SYSTEM_NAME STREQUAL &quot;Android&quot; AND CMAKE_SYSTEM_PROCESSOR STREQUAL &quot;armv7-a&quot;)
+<span class="line-number">41</span>    set(TARGET_TRIPLE &quot;armv7-linux-androideabi&quot;)
+<span class="line-number">42</span>elseif (CMAKE_SYSTEM_NAME STREQUAL &quot;Android&quot; AND CMAKE_SYSTEM_PROCESSOR STREQUAL &quot;aarch64&quot;)
+<span class="line-number">43</span>    set(TARGET_TRIPLE &quot;aarch64-linux-android&quot;)
+<span class="line-number">44</span>elseif (CMAKE_SYSTEM_NAME STREQUAL &quot;Android&quot; AND CMAKE_SYSTEM_PROCESSOR STREQUAL &quot;i686&quot;)
+<span class="line-number">45</span>    set(TARGET_TRIPLE &quot;i686-linux-android&quot;)
+<span class="line-number">46</span>elseif (CMAKE_SYSTEM_NAME STREQUAL &quot;Android&quot; AND CMAKE_SYSTEM_PROCESSOR STREQUAL &quot;x86_64&quot;)
+<span class="line-number">47</span>    set(TARGET_TRIPLE &quot;x86_64-linux-android&quot;)
+<span class="line-number">48</span>else()
+<span class="line-number">49</span>    message(FATAL_ERROR &quot;Invalid OS/Architecture, not supported: CMAKE_SYSTEM_NAME=${CMAKE_SYSTEM_NAME} CMAKE_SYSTEM_PROCESSOR=${CMAKE_SYSTEM_PROCESSOR}&quot;)
+<span class="line-number">50</span>endif()
+<span class="line-number">51</span>
+<span class="line-number">52</span>message(STATUS &quot;Target triple: ${TARGET_TRIPLE}&quot;)
+<span class="line-number">53</span>
+<span class="line-number">54</span># If we are cross compiling manually (e.g to Linux arm), `CMAKE_C_COMPILER_TARGET` and `CMAKE_CXX_COMPILER_TARGET` are unset and we need to set them manually.
+<span class="line-number">55</span># But if we are cross compiling through a separate build system e.g. to Android or iOS, they will set these variables and we should not override them.
+<span class="line-number">56</span>if ( NOT DEFINED CMAKE_C_COMPILER_TARGET )
+<span class="line-number">57</span>   set(CMAKE_C_COMPILER_TARGET ${TARGET_TRIPLE})
+<span class="line-number">58</span>endif()
+<span class="line-number">59</span>if ( NOT DEFINED CMAKE_CXX_COMPILER_TARGET )
+<span class="line-number">60</span>   set(CMAKE_CXX_COMPILER_TARGET ${TARGET_TRIPLE})
+<span class="line-number">61</span>endif()
 </code></pre>
 <p>There was a lot of trial and error as you can guess.</p>
 <p>Also, gcc is not directly supported for cross-compilation in this approach because gcc does not support a <code>--target</code> option like clang does, since it's not a cross-compiler. You have to download the variant you need e.g. <code>gcc-9-i686-linux-gnu</code> to compile for x86, and set <code>CMAKE_C_COMPILER</code> and <code>CMAKE_CXX_COMPILER</code> to <code>gcc-9-i686-linux-gnu</code>. However, in that case you are not setting <code>CMAKE_SYSTEM_NAME</code> and <code>CMAKE_SYSTEM_PROCESSOR</code> since it's in theory not cross-compiling, so <code>cargo</code> will not have its <code>--target</code> option filled, so it won't work for the Rust code. I advise sticking with clang in this setup. Still, when not cross-compiling, gcc works fine.</p>
 <p>Finally, I wrote a Lua script to cross-compile for every platform we support to make sure I did not break anything. I resorted to using the Zig toolchain (not the language) to be able to statically link with musl or cross-compile from Linux to iOS which I could not achieve with pure clang. However this is only my local setup, we do not use the Zig toolchain when building the production artifacts (e.g. the iOS build is done in a macOS virtual machine, not from a Linux machine).</p>
 <p>This is very useful also if you have several compile-time feature flags and want to build in different configurations for all platforms, e.g. enable/disable logs at compile time:</p>
-<pre><code class="language-lua">local android_sdk = arg[1]
-if android_sdk == nil or android_sdk == &quot;&quot; then
-  print(&quot;Missing Android SDK as argv[1] e.g. '~/Android/Sdk/ndk/21.4.7075529'.&quot;)
-  os.exit(1)
-end
-
-local build_root = arg[2]
-if build_root == nil then
-  build_root = &quot;/tmp/&quot;
-end
-
-local rustup_targets = {
-  &quot;aarch64-apple-darwin&quot;,
-  &quot;aarch64-linux-android&quot;,
-  &quot;aarch64-unknown-linux-gnu&quot;,
-  &quot;aarch64-unknown-linux-musl&quot;,
-  &quot;arm-linux-androideabi&quot;,
-  &quot;arm-unknown-linux-gnueabihf&quot;,
-  &quot;arm-unknown-linux-musleabihf&quot;,
-  &quot;armv7-linux-androideabi&quot;,
-  &quot;armv7-unknown-linux-gnueabi&quot;,
-  &quot;armv7-unknown-linux-gnueabihf&quot;,
-  &quot;armv7-unknown-linux-musleabi&quot;,
-  &quot;armv7-unknown-linux-musleabihf&quot;,
-  &quot;i686-linux-android&quot;,
-  &quot;x86_64-apple-darwin&quot;,
-  &quot;x86_64-linux-android&quot;,
-  &quot;x86_64-unknown-linux-gnu&quot;,
-  &quot;x86_64-unknown-linux-musl&quot;,
-}
-
-for i = 1,#rustup_targets do
-  local target = rustup_targets[i]
-  os.execute(&quot;rustup target install &quot; .. target)
-end
-
-
-local targets = {
-  {os=&quot;Linux&quot;, arch=&quot;x86_64&quot;, cc=&quot;clang&quot;, cxx=&quot;clang++&quot;, cmakeArgs=&quot;&quot;},
-  {os=&quot;Linux&quot;, arch=&quot;aarch64&quot;, cc=&quot;clang&quot;, cxx=&quot;clang++&quot;, cmakeArgs=&quot;&quot;},
-  {os=&quot;Linux&quot;, arch=&quot;arm&quot;, cc=&quot;clang&quot;, cxx=&quot;clang++&quot;, cmakeArgs=&quot;&quot;},
-  {os=&quot;Linux&quot;, arch=&quot;armv7&quot;, cc=&quot;clang&quot;, cxx=&quot;clang++&quot;, cmakeArgs=&quot;&quot;},
-  {os=&quot;Linux&quot;, arch=&quot;arm&quot;, cc=&quot;zig&quot;, cxx=&quot;zig&quot;, cmakeArgs=&quot;-DCMAKE_C_COMPILER_ARG1=cc -DCMAKE_CXX_COMPILER_ARG1=c++ -DFMW_LIBC_MUSL=1 -DCMAKE_C_COMPILER_TARGET=arm-linux-musleabihf -DCMAKE_CXX_COMPILER_TARGET=arm-linux-musleabihf&quot;},
-  {os=&quot;Linux&quot;, arch=&quot;aarch64&quot;, cc=&quot;zig&quot;, cxx=&quot;zig&quot;, cmakeArgs=&quot;-DCMAKE_C_COMPILER_ARG1=cc -DCMAKE_CXX_COMPILER_ARG1=c++ -DFMW_LIBC_MUSL=1 -DCMAKE_C_COMPILER_TARGET=aarch64-linux-musl -DCMAKE_CXX_COMPILER_TARGET=aarch64-linux-musl&quot;},
-  {os=&quot;Linux&quot;, arch=&quot;x86_64&quot;, cc=&quot;zig&quot;, cxx=&quot;zig&quot;, cmakeArgs=&quot;-DCMAKE_C_COMPILER_ARG1=cc -DCMAKE_CXX_COMPILER_ARG1=c++ -DFMW_LIBC_MUSL=1 -DCMAKE_C_COMPILER_TARGET=x86_64-linux-musl -DCMAKE_CXX_COMPILER_TARGET=x86_64-linux-musl&quot;},
-  {os=&quot;Darwin&quot;, arch=&quot;x86_64&quot;, cc=&quot;zig&quot;, cxx=&quot;zig&quot;, cmakeArgs=&quot;-DCMAKE_C_COMPILER_ARG1=cc -DCMAKE_CXX_COMPILER_ARG1=c++ -DFMW_LIBC_MUSL=1 -DCMAKE_C_COMPILER_TARGET=x86_64-macos-none -DCMAKE_CXX_COMPILER_TARGET=x86_64-macos-none&quot;},
-  {os=&quot;Darwin&quot;, arch=&quot;arm64&quot;, cc=&quot;zig&quot;, cxx=&quot;zig&quot;, cmakeArgs=&quot;-DCMAKE_C_COMPILER_ARG1=cc -DCMAKE_CXX_COMPILER_ARG1=c++ -DFMW_LIBC_MUSL=1 -DCMAKE_C_COMPILER_TARGET=aarch64-macos-none -DCMAKE_CXX_COMPILER_TARGET=aarch64-macos-none&quot;},
-  {os=&quot;Android&quot;, arch=&quot;armv7-a&quot;, cc=&quot;clang&quot;, cxx=&quot;clang++&quot;, cmakeArgs=&quot;-DCMAKE_ANDROID_NDK='&quot; .. android_sdk .. &quot;'&quot;},
-  {os=&quot;Android&quot;, arch=&quot;aarch64&quot;, cc=&quot;clang&quot;, cxx=&quot;clang++&quot;, cmakeArgs=&quot;-DCMAKE_ANDROID_NDK='&quot; .. android_sdk .. &quot;'&quot;},
-  {os=&quot;Android&quot;, arch=&quot;i686&quot;, cc=&quot;clang&quot;, cxx=&quot;clang++&quot;, cmakeArgs=&quot;-DCMAKE_ANDROID_NDK='&quot; .. android_sdk .. &quot;'&quot;},
-  {os=&quot;Android&quot;, arch=&quot;x86_64&quot;, cc=&quot;clang&quot;, cxx=&quot;clang++&quot;, cmakeArgs=&quot;-DCMAKE_ANDROID_NDK='&quot; .. android_sdk .. &quot;'&quot;},
-}
-
-for i = 1,#targets do
-  local target = targets[i]
-  local build_dir = &quot;.build-&quot; .. target.os .. &quot;-&quot; .. target.arch .. &quot;-&quot; .. target.cc .. &quot;-&quot; .. target.cxx .. &quot;-&quot; .. target.cmakeArgs
-  build_dir = string.gsub(build_dir, &quot;%s+&quot;, &quot;_&quot;)
-  build_dir = string.gsub(build_dir, &quot;^./+&quot;, &quot;_&quot;)
-  build_dir = build_root .. &quot;/&quot; .. build_dir
-  print(build_dir)
-
-  local cmd_handle = io.popen(&quot;command -v llvm-ar&quot;)
-  local llvm_ar = cmd_handle:read('*a')
-  cmd_handle:close()
-  llvm_ar = string.gsub(llvm_ar, &quot;%s+$&quot;, &quot;&quot;)
-
-  local cmd_handle = io.popen(&quot;command -v llvm-ranlib&quot;)
-  local llvm_ranlib = cmd_handle:read('*a')
-  cmd_handle:close()
-  llvm_ranlib = string.gsub(llvm_ranlib, &quot;%s+$&quot;, &quot;&quot;)
-
-  local build_cmd = &quot;cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo -B '&quot; .. build_dir .. &quot;' -DCMAKE_AR=&quot; .. llvm_ar .. &quot; -DCMAKE_RANLIB=&quot; .. llvm_ranlib .. &quot; -DCMAKE_SYSTEM_NAME=&quot; .. target.os .. &quot; -DCMAKE_SYSTEM_PROCESSOR=&quot; .. target.arch .. &quot; -DCMAKE_C_COMPILER=&quot; .. target.cc .. &quot; -DCMAKE_CXX_COMPILER=&quot; .. target.cxx .. &quot; &quot; ..  target.cmakeArgs .. &quot; -S src/. -G Ninja&quot;
-  print(build_cmd)
-  os.execute(build_cmd)
-
-  -- Work-around for getting rid of mbedtls linker flags specific to Apple's LLVM fork that are actually not needed.
-  if target.os == &quot;Darwin&quot; then
-    os.execute(&quot;sed -i '&quot; .. build_dir .. &quot;/CMakeFiles/rules.ninja' -e 's/ -no_warning_for_no_symbols -c//g'&quot;)
-  end
-
-  os.execute(&quot;ninja -C '&quot; .. build_dir .. &quot;'&quot;)
-end
+<pre>
+  <div class="code-header">
+    <span>Lua</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-lua"><span class="line-number">0</span>local android_sdk = arg[1]
+<span class="line-number">1</span>if android_sdk == nil or android_sdk == &quot;&quot; then
+<span class="line-number">2</span>  print(&quot;Missing Android SDK as argv[1] e.g. '~/Android/Sdk/ndk/21.4.7075529'.&quot;)
+<span class="line-number">3</span>  os.exit(1)
+<span class="line-number">4</span>end
+<span class="line-number">5</span>
+<span class="line-number">6</span>local build_root = arg[2]
+<span class="line-number">7</span>if build_root == nil then
+<span class="line-number">8</span>  build_root = &quot;/tmp/&quot;
+<span class="line-number">9</span>end
+<span class="line-number">10</span>
+<span class="line-number">11</span>local rustup_targets = {
+<span class="line-number">12</span>  &quot;aarch64-apple-darwin&quot;,
+<span class="line-number">13</span>  &quot;aarch64-linux-android&quot;,
+<span class="line-number">14</span>  &quot;aarch64-unknown-linux-gnu&quot;,
+<span class="line-number">15</span>  &quot;aarch64-unknown-linux-musl&quot;,
+<span class="line-number">16</span>  &quot;arm-linux-androideabi&quot;,
+<span class="line-number">17</span>  &quot;arm-unknown-linux-gnueabihf&quot;,
+<span class="line-number">18</span>  &quot;arm-unknown-linux-musleabihf&quot;,
+<span class="line-number">19</span>  &quot;armv7-linux-androideabi&quot;,
+<span class="line-number">20</span>  &quot;armv7-unknown-linux-gnueabi&quot;,
+<span class="line-number">21</span>  &quot;armv7-unknown-linux-gnueabihf&quot;,
+<span class="line-number">22</span>  &quot;armv7-unknown-linux-musleabi&quot;,
+<span class="line-number">23</span>  &quot;armv7-unknown-linux-musleabihf&quot;,
+<span class="line-number">24</span>  &quot;i686-linux-android&quot;,
+<span class="line-number">25</span>  &quot;x86_64-apple-darwin&quot;,
+<span class="line-number">26</span>  &quot;x86_64-linux-android&quot;,
+<span class="line-number">27</span>  &quot;x86_64-unknown-linux-gnu&quot;,
+<span class="line-number">28</span>  &quot;x86_64-unknown-linux-musl&quot;,
+<span class="line-number">29</span>}
+<span class="line-number">30</span>
+<span class="line-number">31</span>for i = 1,#rustup_targets do
+<span class="line-number">32</span>  local target = rustup_targets[i]
+<span class="line-number">33</span>  os.execute(&quot;rustup target install &quot; .. target)
+<span class="line-number">34</span>end
+<span class="line-number">35</span>
+<span class="line-number">36</span>
+<span class="line-number">37</span>local targets = {
+<span class="line-number">38</span>  {os=&quot;Linux&quot;, arch=&quot;x86_64&quot;, cc=&quot;clang&quot;, cxx=&quot;clang++&quot;, cmakeArgs=&quot;&quot;},
+<span class="line-number">39</span>  {os=&quot;Linux&quot;, arch=&quot;aarch64&quot;, cc=&quot;clang&quot;, cxx=&quot;clang++&quot;, cmakeArgs=&quot;&quot;},
+<span class="line-number">40</span>  {os=&quot;Linux&quot;, arch=&quot;arm&quot;, cc=&quot;clang&quot;, cxx=&quot;clang++&quot;, cmakeArgs=&quot;&quot;},
+<span class="line-number">41</span>  {os=&quot;Linux&quot;, arch=&quot;armv7&quot;, cc=&quot;clang&quot;, cxx=&quot;clang++&quot;, cmakeArgs=&quot;&quot;},
+<span class="line-number">42</span>  {os=&quot;Linux&quot;, arch=&quot;arm&quot;, cc=&quot;zig&quot;, cxx=&quot;zig&quot;, cmakeArgs=&quot;-DCMAKE_C_COMPILER_ARG1=cc -DCMAKE_CXX_COMPILER_ARG1=c++ -DFMW_LIBC_MUSL=1 -DCMAKE_C_COMPILER_TARGET=arm-linux-musleabihf -DCMAKE_CXX_COMPILER_TARGET=arm-linux-musleabihf&quot;},
+<span class="line-number">43</span>  {os=&quot;Linux&quot;, arch=&quot;aarch64&quot;, cc=&quot;zig&quot;, cxx=&quot;zig&quot;, cmakeArgs=&quot;-DCMAKE_C_COMPILER_ARG1=cc -DCMAKE_CXX_COMPILER_ARG1=c++ -DFMW_LIBC_MUSL=1 -DCMAKE_C_COMPILER_TARGET=aarch64-linux-musl -DCMAKE_CXX_COMPILER_TARGET=aarch64-linux-musl&quot;},
+<span class="line-number">44</span>  {os=&quot;Linux&quot;, arch=&quot;x86_64&quot;, cc=&quot;zig&quot;, cxx=&quot;zig&quot;, cmakeArgs=&quot;-DCMAKE_C_COMPILER_ARG1=cc -DCMAKE_CXX_COMPILER_ARG1=c++ -DFMW_LIBC_MUSL=1 -DCMAKE_C_COMPILER_TARGET=x86_64-linux-musl -DCMAKE_CXX_COMPILER_TARGET=x86_64-linux-musl&quot;},
+<span class="line-number">45</span>  {os=&quot;Darwin&quot;, arch=&quot;x86_64&quot;, cc=&quot;zig&quot;, cxx=&quot;zig&quot;, cmakeArgs=&quot;-DCMAKE_C_COMPILER_ARG1=cc -DCMAKE_CXX_COMPILER_ARG1=c++ -DFMW_LIBC_MUSL=1 -DCMAKE_C_COMPILER_TARGET=x86_64-macos-none -DCMAKE_CXX_COMPILER_TARGET=x86_64-macos-none&quot;},
+<span class="line-number">46</span>  {os=&quot;Darwin&quot;, arch=&quot;arm64&quot;, cc=&quot;zig&quot;, cxx=&quot;zig&quot;, cmakeArgs=&quot;-DCMAKE_C_COMPILER_ARG1=cc -DCMAKE_CXX_COMPILER_ARG1=c++ -DFMW_LIBC_MUSL=1 -DCMAKE_C_COMPILER_TARGET=aarch64-macos-none -DCMAKE_CXX_COMPILER_TARGET=aarch64-macos-none&quot;},
+<span class="line-number">47</span>  {os=&quot;Android&quot;, arch=&quot;armv7-a&quot;, cc=&quot;clang&quot;, cxx=&quot;clang++&quot;, cmakeArgs=&quot;-DCMAKE_ANDROID_NDK='&quot; .. android_sdk .. &quot;'&quot;},
+<span class="line-number">48</span>  {os=&quot;Android&quot;, arch=&quot;aarch64&quot;, cc=&quot;clang&quot;, cxx=&quot;clang++&quot;, cmakeArgs=&quot;-DCMAKE_ANDROID_NDK='&quot; .. android_sdk .. &quot;'&quot;},
+<span class="line-number">49</span>  {os=&quot;Android&quot;, arch=&quot;i686&quot;, cc=&quot;clang&quot;, cxx=&quot;clang++&quot;, cmakeArgs=&quot;-DCMAKE_ANDROID_NDK='&quot; .. android_sdk .. &quot;'&quot;},
+<span class="line-number">50</span>  {os=&quot;Android&quot;, arch=&quot;x86_64&quot;, cc=&quot;clang&quot;, cxx=&quot;clang++&quot;, cmakeArgs=&quot;-DCMAKE_ANDROID_NDK='&quot; .. android_sdk .. &quot;'&quot;},
+<span class="line-number">51</span>}
+<span class="line-number">52</span>
+<span class="line-number">53</span>for i = 1,#targets do
+<span class="line-number">54</span>  local target = targets[i]
+<span class="line-number">55</span>  local build_dir = &quot;.build-&quot; .. target.os .. &quot;-&quot; .. target.arch .. &quot;-&quot; .. target.cc .. &quot;-&quot; .. target.cxx .. &quot;-&quot; .. target.cmakeArgs
+<span class="line-number">56</span>  build_dir = string.gsub(build_dir, &quot;%s+&quot;, &quot;_&quot;)
+<span class="line-number">57</span>  build_dir = string.gsub(build_dir, &quot;^./+&quot;, &quot;_&quot;)
+<span class="line-number">58</span>  build_dir = build_root .. &quot;/&quot; .. build_dir
+<span class="line-number">59</span>  print(build_dir)
+<span class="line-number">60</span>
+<span class="line-number">61</span>  local cmd_handle = io.popen(&quot;command -v llvm-ar&quot;)
+<span class="line-number">62</span>  local llvm_ar = cmd_handle:read('*a')
+<span class="line-number">63</span>  cmd_handle:close()
+<span class="line-number">64</span>  llvm_ar = string.gsub(llvm_ar, &quot;%s+$&quot;, &quot;&quot;)
+<span class="line-number">65</span>
+<span class="line-number">66</span>  local cmd_handle = io.popen(&quot;command -v llvm-ranlib&quot;)
+<span class="line-number">67</span>  local llvm_ranlib = cmd_handle:read('*a')
+<span class="line-number">68</span>  cmd_handle:close()
+<span class="line-number">69</span>  llvm_ranlib = string.gsub(llvm_ranlib, &quot;%s+$&quot;, &quot;&quot;)
+<span class="line-number">70</span>
+<span class="line-number">71</span>  local build_cmd = &quot;cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo -B '&quot; .. build_dir .. &quot;' -DCMAKE_AR=&quot; .. llvm_ar .. &quot; -DCMAKE_RANLIB=&quot; .. llvm_ranlib .. &quot; -DCMAKE_SYSTEM_NAME=&quot; .. target.os .. &quot; -DCMAKE_SYSTEM_PROCESSOR=&quot; .. target.arch .. &quot; -DCMAKE_C_COMPILER=&quot; .. target.cc .. &quot; -DCMAKE_CXX_COMPILER=&quot; .. target.cxx .. &quot; &quot; ..  target.cmakeArgs .. &quot; -S src/. -G Ninja&quot;
+<span class="line-number">72</span>  print(build_cmd)
+<span class="line-number">73</span>  os.execute(build_cmd)
+<span class="line-number">74</span>
+<span class="line-number">75</span>  -- Work-around for getting rid of mbedtls linker flags specific to Apple's LLVM fork that are actually not needed.
+<span class="line-number">76</span>  if target.os == &quot;Darwin&quot; then
+<span class="line-number">77</span>    os.execute(&quot;sed -i '&quot; .. build_dir .. &quot;/CMakeFiles/rules.ninja' -e 's/ -no_warning_for_no_symbols -c//g'&quot;)
+<span class="line-number">78</span>  end
+<span class="line-number">79</span>
+<span class="line-number">80</span>  os.execute(&quot;ninja -C '&quot; .. build_dir .. &quot;'&quot;)
+<span class="line-number">81</span>end
 </code></pre>
 <p>I look forward to only having Rust code and deleting all of this convoluted stuff.</p>
 <p>That's something that people do not mention often when saying that modern C++ is good enough and secure enough. Well, first I disagree with this statement, but more broadly, the C++ toolchain to cross-compile sucks. You only have clang that can cross-compile in theory but in practice you have to resort to the Zig toolchain to automate cross-compiling the standard library etc.</p>

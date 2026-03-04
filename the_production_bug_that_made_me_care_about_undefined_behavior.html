@@ -11,9 +11,9 @@ Do not edit it by hand.
 <link type="application/atom+xml" href="/blog/feed.xml" rel="self">
 <link rel="shortcut icon" type="image/ico" href="/blog/favicon.ico">
 <link rel="stylesheet" type="text/css" href="main.css">
-<link rel="stylesheet" href="https://unpkg.com/@highlightjs/cdn-assets@11.8.0/styles/default.min.css">
-<script src="highlight.min.js" defer></script>
-<script src="x86asm.min.js" defer></script>
+<!-- <link rel="stylesheet" href="https://unpkg.com/@highlightjs/cdn-assets@11.8.0/styles/default.min.css"> -->
+<!-- <script src="highlight.min.js" defer></script> -->
+<!-- <script src="x86asm.min.js" defer></script> -->
 <script src="main.js" defer></script>
 <script type="module" src="search.js" async></script>
 </head>
@@ -140,25 +140,39 @@ Do not edit it by hand.
   <a class="hash-anchor" href="#the-bug-report" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>So, one day I receive a bug report. There is this HTTP endpoint that returns a simple response to  inform the client that the operation either succeeded or had an error:</p>
-<pre><code class="language-json">{
-  &quot;error&quot;: false,
-  &quot;succeeded&quot;: true,
-}
+<pre>
+  <div class="code-header">
+    <span>Json</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-json"><span class="line-number">0</span>{
+<span class="line-number">1</span>  &quot;error&quot;: false,
+<span class="line-number">2</span>  &quot;succeeded&quot;: true,
+<span class="line-number">3</span>}
 </code></pre>
 <p>or</p>
-<pre><code class="language-json">{
-  &quot;error&quot;: true,
-  &quot;succeeded&quot;: false,
-}
-
+<pre>
+  <div class="code-header">
+    <span>Json</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-json"><span class="line-number">0</span>{
+<span class="line-number">1</span>  &quot;error&quot;: true,
+<span class="line-number">2</span>  &quot;succeeded&quot;: false,
+<span class="line-number">3</span>}
 </code></pre>
 <p><em>The actual format was probably not JSON, it was probably form encoded, I cannot exactly remember, but that does not matter for this bug.</em></p>
 <p>This data model is not ideal but that's what the software did. Obviously, either <code>error</code> or <code>succeeded</code> is set but not both or neither (it's a XOR).</p>
 <p>Anyway, the bug report says that the client received this reply:</p>
-<pre><code class="language-json">{
-  &quot;error&quot;: true,
-  &quot;succeeded&quot;: true
-}
+<pre>
+  <div class="code-header">
+    <span>Json</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-json"><span class="line-number">0</span>{
+<span class="line-number">1</span>  &quot;error&quot;: true,
+<span class="line-number">2</span>  &quot;succeeded&quot;: true
+<span class="line-number">3</span>}
 </code></pre>
 <p>Hmm ok. That should not be possible, it's a bug indeed.</p>
 <h2 id="investigating">
@@ -166,25 +180,30 @@ Do not edit it by hand.
   <a class="hash-anchor" href="#investigating" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>I now look at the code. It's all in one big function, and it's doing lots of database operations, but the shape of the code is very simple:</p>
-<pre><code class="language-cpp">struct Response {
-  bool error;
-  bool succeeded;
-
-  std::string data;
-};
-
-void handle() {
-  Response response;
-  
-  try {
-    // [..] Lots of database operations *not* touching `response`.
-
-    response.succeeded = true;
-  } catch(...) {
-    response.error = true;
-  }
-  response.write();
-}
+<pre>
+  <div class="code-header">
+    <span>Cpp</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-cpp"><span class="line-number">0</span>struct Response {
+<span class="line-number">1</span>  bool error;
+<span class="line-number">2</span>  bool succeeded;
+<span class="line-number">3</span>
+<span class="line-number">4</span>  std::string data;
+<span class="line-number">5</span>};
+<span class="line-number">6</span>
+<span class="line-number">7</span>void handle() {
+<span class="line-number">8</span>  Response response;
+<span class="line-number">9</span>  
+<span class="line-number">10</span>  try {
+<span class="line-number">11</span>    // [..] Lots of database operations *not* touching `response`.
+<span class="line-number">12</span>
+<span class="line-number">13</span>    response.succeeded = true;
+<span class="line-number">14</span>  } catch(...) {
+<span class="line-number">15</span>    response.error = true;
+<span class="line-number">16</span>  }
+<span class="line-number">17</span>  response.write();
+<span class="line-number">18</span>}
 </code></pre>
 <p><em>Here is a <a href="https://godbolt.org/z/5Wbbq3P7a">godbolt</a> link with roughly this code.</em></p>
 <p>There's only one place that sets the <code>succeeded</code> field. And only one that sets the <code>error</code> field. No other place in the code touches these two fields.</p>
@@ -251,26 +270,36 @@ void handle() {
 
 
 <p>Thus, the only way to fix the struct without having to fix all call sites is to implement a default constructor that properly initializes every field:</p>
-<pre><code class="language-c++">struct Response {
-  bool error;
-  bool succeeded;
-
-  std::string data;
-
-  Response(): error{false}, succeeded{false}, data{} 
-  {
-  }
-};
+<pre>
+  <div class="code-header">
+    <span>C++</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-c++"><span class="line-number">0</span>struct Response {
+<span class="line-number">1</span>  bool error;
+<span class="line-number">2</span>  bool succeeded;
+<span class="line-number">3</span>
+<span class="line-number">4</span>  std::string data;
+<span class="line-number">5</span>
+<span class="line-number">6</span>  Response(): error{false}, succeeded{false}, data{} 
+<span class="line-number">7</span>  {
+<span class="line-number">8</span>  }
+<span class="line-number">9</span>};
 </code></pre>
 <p><em>Here is a <a href="https://godbolt.org/z/bveKbxGeM">godbolt</a> link with this code.</em></p>
 <p>Of course, due to the rule of 6 (when I started to learn C++ it was 3), we now have to implement the default destructor, the default move constructor etc etc etc.</p>
 <p>Alternatively, we can define default values for the fields in the struct definition and avoid defining a default constructor:</p>
-<pre><code class="language-c++">struct Response {
-  bool error = false;
-  bool succeeded = false;
-
-  std::string data;
-}
+<pre>
+  <div class="code-header">
+    <span>C++</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-c++"><span class="line-number">0</span>struct Response {
+<span class="line-number">1</span>  bool error = false;
+<span class="line-number">2</span>  bool succeeded = false;
+<span class="line-number">3</span>
+<span class="line-number">4</span>  std::string data;
+<span class="line-number">5</span>}
 </code></pre>
 <p>This way, the default constructor generated by the compiler will initialize all the fields.</p>
 <h2 id="aftermath">
@@ -278,7 +307,12 @@ void handle() {
   <a class="hash-anchor" href="#aftermath" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>My fix at the time was to simply change the call site to:</p>
-<pre><code class="language-c++">  Response response{};
+<pre>
+  <div class="code-header">
+    <span>C++</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-c++"><span class="line-number">0</span>  Response response{};
 </code></pre>
 <p><em>Here is a <a href="https://godbolt.org/z/rTqernMfq">godbolt</a> link with this code.</em></p>
 <p>That forces zero initialization of the <code>error</code> and <code>succeeded</code> fields as well as default initialization of the <code>data</code> field. And no need to change the struct definition.</p>
@@ -291,18 +325,23 @@ void handle() {
 </ul>
 <p>Then, the default constructor of the struct is invoked, which invokes the default constructor of each field.</p>
 <p>For example:</p>
-<pre><code class="language-c++">struct Bar {
-  std::string s;
-  std::vector&lt;std::string&gt; vec;
-};
-
-int main() {
-  Bar bar;
-
-  // Prints: s=`` v.len=0
-  // No undefined behavior.
-  printf(&quot;s=%s v.len=%zu\n&quot;, bar.s.c_str(), bar.vec.size());
-}
+<pre>
+  <div class="code-header">
+    <span>C++</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-c++"><span class="line-number">0</span>struct Bar {
+<span class="line-number">1</span>  std::string s;
+<span class="line-number">2</span>  std::vector&lt;std::string&gt; vec;
+<span class="line-number">3</span>};
+<span class="line-number">4</span>
+<span class="line-number">5</span>int main() {
+<span class="line-number">6</span>  Bar bar;
+<span class="line-number">7</span>
+<span class="line-number">8</span>  // Prints: s=`` v.len=0
+<span class="line-number">9</span>  // No undefined behavior.
+<span class="line-number">10</span>  printf(&quot;s=%s v.len=%zu\n&quot;, bar.s.c_str(), bar.vec.size());
+<span class="line-number">11</span>}
 </code></pre>
 <p>But to know that, you need to inspect each field (recursively) of the struct, or assume that every default constructor initializes each field.</p>
 <p>Finally, it's also worth noting that it is only undefined behavior to read an uninitialized value. Simply having uninitialized fields is not undefined behavior. If the fields are never read, or written to with a known value, before being read, there is no undefined behavior.</p>
@@ -323,12 +362,17 @@ int main() {
 </h2>
 <p>Most experienced C or C++ developers are probably screaming at their screen right now, thinking: just use Address Sanitizer (or ASan for short)!</p>
 <p>Let's try it on the problematic code:</p>
-<pre><code class="language-shell">$ clang++ main.cpp -Weverything -std=c++11 -g -fsanitize=address,undefined -Wno-padded
-$ ./a.out
-a.out(46953,0x1f7f4a0c0) malloc: nano zone abandoned due to inability to reserve vm space.
-main.cpp:21:41: runtime error: load of value 8, which is not a valid value for type 'bool'
-SUMMARY: UndefinedBehaviorSanitizer: undefined-behavior main.cpp:21:41 
-error=0 success=1
+<pre>
+  <div class="code-header">
+    <span>Shell</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-shell"><span class="line-number">0</span>$ clang++ main.cpp -Weverything -std=c++11 -g -fsanitize=address,undefined -Wno-padded
+<span class="line-number">1</span>$ ./a.out
+<span class="line-number">2</span>a.out(46953,0x1f7f4a0c0) malloc: nano zone abandoned due to inability to reserve vm space.
+<span class="line-number">3</span>main.cpp:21:41: runtime error: load of value 8, which is not a valid value for type 'bool'
+<span class="line-number">4</span>SUMMARY: UndefinedBehaviorSanitizer: undefined-behavior main.cpp:21:41 
+<span class="line-number">5</span>error=0 success=1
 </code></pre>
 <p>Great, the undefined behavior is spotted! Even if the error message is not super clear.  This is ASan's way of saying: &quot;I expected a 0 or 1 for this boolean, but I found a random 8 in that memory slot.&quot;</p>
 <p>We alternatively could also have used Valgrind to the same effect.</p>
@@ -348,9 +392,14 @@ error=0 success=1
 </h2>
 <p>I wrote a <code>libclang</code> plugin at the time to catch other instances of this problem in the codebase at build time: <a href="https://github.com/gaultier/c/tree/master/libclang-plugin">https://github.com/gaultier/c/tree/master/libclang-plugin</a> .</p>
 <p>Amazingly, there was only one other case in the whole codebase, and it was a false positive because by chance, the caller set the uninitialized fields right after, like this:</p>
-<pre><code class="language-c++">Response response;
-response.error = false;
-response.success = true;
+<pre>
+  <div class="code-header">
+    <span>C++</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-c++"><span class="line-number">0</span>Response response;
+<span class="line-number">1</span>response.error = false;
+<span class="line-number">2</span>response.success = true;
 </code></pre>
 <p>I have no idea if this <code>libclang</code> plugin still works today because I have heard that the <code>libclang</code> API often has breaking changes.</p>
 <h2 id="some-bonus-cplusplus-rules-for-you">
@@ -365,19 +414,29 @@ response.success = true;
 <li><code>char</code> if the underlying representation is <code>unsigned</code></li>
 </ul>
 <p>For example, this code is perfectly valid and free of undefined behavior:</p>
-<pre><code class="language-cpp">    unsigned char c;     // “c” has an indeterminate/erroneous value
- 
-    unsigned char d = c; // no undefined/erroneous behavior,
-                         // but “d” has an indeterminate/erroneous value
- 
-    assert(c == d);  // holds, but both integral promotions have
-                         // undefined/erroneous behavior
+<pre>
+  <div class="code-header">
+    <span>Cpp</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-cpp"><span class="line-number">0</span>    unsigned char c;     // “c” has an indeterminate/erroneous value
+<span class="line-number">1</span> 
+<span class="line-number">2</span>    unsigned char d = c; // no undefined/erroneous behavior,
+<span class="line-number">3</span>                         // but “d” has an indeterminate/erroneous value
+<span class="line-number">4</span> 
+<span class="line-number">5</span>    assert(c == d);  // holds, but both integral promotions have
+<span class="line-number">6</span>                         // undefined/erroneous behavior
 </code></pre>
 <p>And this runs perfectly fine under ASan. Clang throws some warnings but compiles fine, and this is valid (in terms of the C++ standard) code.</p>
 <p>Now, if we use <code>bool</code> (for example) instead:</p>
-<pre><code class="language-cpp">  bool c; 
-  bool d = c;
-  assert(c == d);
+<pre>
+  <div class="code-header">
+    <span>Cpp</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-cpp"><span class="line-number">0</span>  bool c; 
+<span class="line-number">1</span>  bool d = c;
+<span class="line-number">2</span>  assert(c == d);
 </code></pre>
 <p>This is undefined behavior and immediately triggers ASan errors! Even if the code is the same in terms of type sizes and stack layout!</p>
 <p>I do not know why the C++ standard felt the need to muddy the water even more, but they surely had a reason. Right?</p>

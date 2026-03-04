@@ -11,9 +11,9 @@ Do not edit it by hand.
 <link type="application/atom+xml" href="/blog/feed.xml" rel="self">
 <link rel="shortcut icon" type="image/ico" href="/blog/favicon.ico">
 <link rel="stylesheet" type="text/css" href="main.css">
-<link rel="stylesheet" href="https://unpkg.com/@highlightjs/cdn-assets@11.8.0/styles/default.min.css">
-<script src="highlight.min.js" defer></script>
-<script src="x86asm.min.js" defer></script>
+<!-- <link rel="stylesheet" href="https://unpkg.com/@highlightjs/cdn-assets@11.8.0/styles/default.min.css"> -->
+<!-- <script src="highlight.min.js" defer></script> -->
+<!-- <script src="x86asm.min.js" defer></script> -->
 <script src="main.js" defer></script>
 <script type="module" src="search.js" async></script>
 </head>
@@ -117,10 +117,15 @@ Do not edit it by hand.
 </details>
 
 <p>This blog is statically generated from Markdown files. It used to be fast, but nowadays it's not:</p>
-<pre><code class="language-shell"> $ hyperfine --warmup 2 ./master.bin 
-Benchmark 1: ./master.bin
-  Time (mean ± σ):      1.873 s ±  0.053 s    [User: 1.351 s, System: 0.486 s]
-  Range (min … max):    1.806 s …  1.983 s    10 runs
+<pre>
+  <div class="code-header">
+    <span>Shell</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-shell"><span class="line-number">0</span> $ hyperfine --warmup 2 ./master.bin 
+<span class="line-number">1</span>Benchmark 1: ./master.bin
+<span class="line-number">2</span>  Time (mean ± σ):      1.873 s ±  0.053 s    [User: 1.351 s, System: 0.486 s]
+<span class="line-number">3</span>  Range (min … max):    1.806 s …  1.983 s    10 runs
 </code></pre>
 <p>~ 2 seconds is not the end of the world, but it's just enough to be annoying when doing lots of edit-view cycles. Worse, it seemed to become slower and slower as I wrote more articles. So today I finally dedicated some time to tackle this problem.</p>
 <h2 id="the-investigation">
@@ -128,18 +133,28 @@ Benchmark 1: ./master.bin
   <a class="hash-anchor" href="#the-investigation" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>In the early days of this blog, there were only a few articles, and the build process was a simple Makefile, something like this (simplified):</p>
-<pre><code class="language-make">%.html: %.md header.html footer.html
-        cat header.html &gt;&gt; $@
-        pandoc --toc $&lt; &gt;&gt; $@
-        cat footer.html &gt;&gt; $@
+<pre>
+  <div class="code-header">
+    <span>Make</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-make"><span class="line-number">0</span>%.html: %.md header.html footer.html
+<span class="line-number">1</span>        cat header.html &gt;&gt; $@
+<span class="line-number">2</span>        pandoc --toc $&lt; &gt;&gt; $@
+<span class="line-number">3</span>        cat footer.html &gt;&gt; $@
 </code></pre>
 <p>For each markdown file, say <code>wayland_from_scratch.md</code>, we transform the markdown into HTML (at the time with <code>pandoc</code>, which proved to be super slow, now with <code>cmark</code> which is extremely fast) and save that in the file <code>wayland_from_scratch.html</code>, with a HTML header prepended and footer appended.</p>
 <p>Later on, I added the publication date:</p>
-<pre><code class="language-make">%.html: %.md header.html footer.html
-        cat header.html &gt;&gt; $@
-        printf '&lt;p id=&quot;publication_date&quot;&gt;Published on %s.&lt;/p&gt;\n' $$(git log --format='%as' --reverse -- $&lt; | head -n1)  &gt;&gt; $@; fi
-        pandoc --toc $&lt; &gt;&gt; $@
-        cat footer.html &gt;&gt; $@
+<pre>
+  <div class="code-header">
+    <span>Make</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-make"><span class="line-number">0</span>%.html: %.md header.html footer.html
+<span class="line-number">1</span>        cat header.html &gt;&gt; $@
+<span class="line-number">2</span>        printf '&lt;p id=&quot;publication_date&quot;&gt;Published on %s.&lt;/p&gt;\n' $$(git log --format='%as' --reverse -- $&lt; | head -n1)  &gt;&gt; $@; fi
+<span class="line-number">3</span>        pandoc --toc $&lt; &gt;&gt; $@
+<span class="line-number">4</span>        cat footer.html &gt;&gt; $@
 </code></pre>
 <p>The publication date is the creation date, that is: the date of the first Git commit for this file. So we ask Git for the list of commits for this file (they are provided by default from newest to oldest, so we <code>--reverse</code> the list), take the first one with <code>head</code>, done. It's simple.</p>
 <p><em>Note: My initial approach was to get the creation and modification date from the file system, but it's incorrect, as soon as you work on more than one machine. The way Git works is that when you pull commits that created a file, it creates the file on the file system and does not try to hack the creation date. Thus the file creation date is the time of the Git pull, not the date of the commit that first created it.</em></p>
@@ -160,11 +175,16 @@ Benchmark 1: ./master.bin
 </p>
 <p>Yeah...I think it might be [git] [git] [git] [git] [git] [git] [git] [git]...</p>
 <p>Another way to confirm this is with <code>strace</code>:</p>
-<pre><code class="language-shell">$ strace --summary-only ./src.bin
-% time     seconds  usecs/call     calls    errors syscall
------- ----------- ----------- --------- --------- ----------------
- 94.85    0.479290        3928       122           waitid
-[...]
+<pre>
+  <div class="code-header">
+    <span>Shell</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-shell"><span class="line-number">0</span>$ strace --summary-only ./src.bin
+<span class="line-number">1</span>% time     seconds  usecs/call     calls    errors syscall
+<span class="line-number">2</span>------ ----------- ----------- --------- --------- ----------------
+<span class="line-number">3</span> 94.85    0.479290        3928       122           waitid
+<span class="line-number">4</span>[...]
 </code></pre>
 <p>So ~ <strong>95 %</strong> of the running time is spent waiting on a subprocess. It's mainly git - we also run <code>cmark</code> as a subprocess but it's really really fast. We could further investigate with <code>strace</code> which process we are waiting on but the CPU profile already points the finger at Git and <code>cmark</code> is not even visible on it.</p>
 <p>At this point it's important to mention that this program is a very simplistic static site generator: it is stateless and processes every markdown file in the repository one by one. You could say that it's a regression compared to the Makefile because <code>make</code> has built-in parallelism with <code>-j</code> and change detection. But in reality, change detection in make is primitive and I often want to reprocess everything because of a change that applies to every file. For example, I reword the <code>Donate</code> section at the end of each article (wink wink), or the header, or the footer, etc.</p>
@@ -184,13 +204,18 @@ Benchmark 1: ./master.bin
 </h2>
 <p>My intuition was to do a deep dive in the <code>git log</code> options, to see if I could instruct it to do less work. But then something struck me: we invoke <code>git log</code> to get all commits for one markdown file (even though we only are interested in the first and last, but that's the only interface Git provides us as far as I know). What if we invoked it once <em>for all markdown files</em>? Yes, the output might be a bit big... How big? Is it really faster? Let's measure!</p>
 <p>Conceptually we can simply do <code>git log '*.md'</code> and parse the output. We can refine that approach later with more options, but that's the gist of it:</p>
-<pre><code class="language-shell"> $ time git log '*.md' | wc -c
-191196
-
-________________________________________________________
-Executed in   73.69 millis    fish           external
-   usr time   61.04 millis  738.00 micros   60.30 millis
-   sys time   15.95 millis  191.00 micros   15.76 millis
+<pre>
+  <div class="code-header">
+    <span>Shell</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-shell"><span class="line-number">0</span> $ time git log '*.md' | wc -c
+<span class="line-number">1</span>191196
+<span class="line-number">2</span>
+<span class="line-number">3</span>________________________________________________________
+<span class="line-number">4</span>Executed in   73.69 millis    fish           external
+<span class="line-number">5</span>   usr time   61.04 millis  738.00 micros   60.30 millis
+<span class="line-number">6</span>   sys time   15.95 millis  191.00 micros   15.76 millis
 </code></pre>
 <p>So it's much faster than doing it per file, and also it's entire output is ~ 186 KiB. And these numbers should grow very slowly because each new commit only adds 20-100 bytes to the output.</p>
 <p>Looks like we got our solution. There is one added benefit: we do not need to list all <code>.md</code> files in the directory at startup. Git gives us this information (in my case there are no markdown files <em>not</em> tracked by Git).</p>
@@ -217,25 +242,35 @@ Executed in   73.69 millis    fish           external
 <li><code>--diff-filter=AMRD</code> to only get commits that add/modify/delete/rename files. We are not interested in commits changing the permissions on a file, or modifying symbolic links, etc.</li>
 </ul>
 <p>With these options we get even better numbers:</p>
-<pre><code class="language-shell">$ time git log --format='%aI' --name-status --no-merges --diff-filter=AMDR  -- '*.md' | wc -c
-77832
-
-________________________________________________________
-Executed in  108.38 millis    fish           external
-   usr time   83.70 millis  231.00 micros   83.47 millis
-   sys time   27.99 millis  786.00 micros   27.20 millis
+<pre>
+  <div class="code-header">
+    <span>Shell</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-shell"><span class="line-number">0</span>$ time git log --format='%aI' --name-status --no-merges --diff-filter=AMDR  -- '*.md' | wc -c
+<span class="line-number">1</span>77832
+<span class="line-number">2</span>
+<span class="line-number">3</span>________________________________________________________
+<span class="line-number">4</span>Executed in  108.38 millis    fish           external
+<span class="line-number">5</span>   usr time   83.70 millis  231.00 micros   83.47 millis
+<span class="line-number">6</span>   sys time   27.99 millis  786.00 micros   27.20 millis
 </code></pre>
 <p>The output looks like this (I annotated each part along with the commit number):</p>
-<pre><code class="language-text">2024-11-05T15:43:44+01:00                                                            | [1] A commit starts with the date.
-                                                                                     | [1] Empty line
-M       how_to_rewrite_a_cpp_codebase_successfully.md                                | [1] A list of files affected by this commit.
-M       write_a_video_game_from_scratch_like_1987.md                                 | [1] Each starts with a letter describing the action.
-M       x11_x64.md                                                                   | [1] Here it's all modifications.
-M       you_inherited_a_legacy_cpp_codebase_now_what.md                              | [1]
-2025-02-02T22:54:23+01:00                                                            | [2] The second entry starts.
-                                                                                     | [2] 
-R100    cross-platform-timers.md        the_missing_cross_platform_api_for_timers.md | [2] Rename with the (unneeded) confidence score.
-[...]                                                                                | Etc.
+<pre>
+  <div class="code-header">
+    <span>Text</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-text"><span class="line-number">0</span>2024-11-05T15:43:44+01:00                                                            | [1] A commit starts with the date.
+<span class="line-number">1</span>                                                                                     | [1] Empty line
+<span class="line-number">2</span>M       how_to_rewrite_a_cpp_codebase_successfully.md                                | [1] A list of files affected by this commit.
+<span class="line-number">3</span>M       write_a_video_game_from_scratch_like_1987.md                                 | [1] Each starts with a letter describing the action.
+<span class="line-number">4</span>M       x11_x64.md                                                                   | [1] Here it's all modifications.
+<span class="line-number">5</span>M       you_inherited_a_legacy_cpp_codebase_now_what.md                              | [1]
+<span class="line-number">6</span>2025-02-02T22:54:23+01:00                                                            | [2] The second entry starts.
+<span class="line-number">7</span>                                                                                     | [2] 
+<span class="line-number">8</span>R100    cross-platform-timers.md        the_missing_cross_platform_api_for_timers.md | [2] Rename with the (unneeded) confidence score.
+<span class="line-number">9</span>[...]                                                                                | Etc.
 </code></pre>
 <p>Parsing this commit log is tedious but not extremely difficult.</p>
 <p>We maintain a map while inspecting each commit: <code>map&lt;Path, (creation_date, modification_date, tombstone)&gt;</code>.</p>
@@ -246,165 +281,170 @@ So first we'll encounter the delete/rename commit for this file, and then later 
   <a class="title" href="#the-new-implementation">The new implementation</a>
   <a class="hash-anchor" href="#the-new-implementation" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
-<pre><code class="language-odin">GitStat :: struct {
-	creation_date:     string,
-	modification_date: string,
-	path_rel:          string,
-}
-
-get_articles_creation_and_modification_date :: proc() -&gt; ([]GitStat, os2.Error) {
-	free_all(context.temp_allocator)
-	defer free_all(context.temp_allocator)
-
-	state, stdout_bin, stderr_bin, err := os2.process_exec(
-		{
-			command = []string {
-				&quot;git&quot;,
-				&quot;log&quot;,
-				// Print the date in ISO format.
-				&quot;--format='%aI'&quot;,
-				// Ignore merge commits since they do not carry useful information.
-				&quot;--no-merges&quot;,
-				// Only interested in creation, modification, renaming, deletion.
-				&quot;--diff-filter=AMRD&quot;,
-				// Show which modification took place:
-				// A: added, M: modified, RXXX: renamed (with percentage score), etc.
-				&quot;--name-status&quot;,
-				&quot;*.md&quot;,
-			},
-		},
-		context.temp_allocator,
-	)
-	if err != nil {
-		fmt.eprintf(&quot;git failed: %d %v %s&quot;, state, err, string(stderr_bin))
-		panic(&quot;git failed&quot;)
-	}
-
-	stdout := strings.trim_space(string(stdout_bin))
-	assert(stdout != &quot;&quot;)
-
-	GitStatInternal :: struct {
-		creation_date:     string,
-		modification_date: string,
-		tombstone:         bool,
-	}
-	stats_by_path := make(map[string]GitStatInternal, allocator = context.temp_allocator)
-
-	// Sample git output:
-	// 2024-10-31T16:09:02+01:00
-	// 
-	// M       lessons_learned_from_a_successful_rust_rewrite.md
-	// A       tip_of_day_3.md
-	// 2025-02-18T08:07:55+01:00
-	//
-	// R100    sha.md  making_my_debug_build_run_100_times_faster.md
-
-	// For each commit.
-	for {
-		// Date
-		date: string
-		{
-			line := strings.split_lines_iterator(&amp;stdout) or_break
-
-			assert(strings.starts_with(line, &quot;'20&quot;))
-			line_without_quotes := line[1:len(line) - 1]
-			date = strings.clone(strings.trim(line_without_quotes, &quot;' \n&quot;))
-		}
-
-		// Empty line
-		{
-			// Peek.
-			line, ok := strings.split_lines_iterator(&amp;stdout)
-			assert(ok)
-			assert(line == &quot;&quot;)
-		}
-
-		// Files.
-		for {
-			// Start of a new commit?
-			if strings.starts_with(stdout, &quot;'20&quot;) do break
-
-			line := strings.split_lines_iterator(&amp;stdout) or_break
-			assert(line != &quot;&quot;)
-
-			action := line[0]
-			assert(action == 'A' || action == 'M' || action == 'R' || action == 'D')
-
-			old_path: string
-			new_path: string
-			{
-				// Skip the 'action' part.
-				_, ok := strings.split_iterator(&amp;line, &quot;\t&quot;)
-				assert(ok)
-
-				old_path, ok = strings.split_iterator(&amp;line, &quot;\t&quot;)
-				assert(ok)
-				assert(old_path != &quot;&quot;)
-
-				if action == 'R' { 	// Rename has two operands.
-					new_path, ok = strings.split_iterator(&amp;line, &quot;\t&quot;)
-					assert(ok)
-					assert(new_path != &quot;&quot;)
-				} else { 	// The others have only one.
-					new_path = old_path
-				}
-			}
-
-			_, v, inserted, err := map_entry(&amp;stats_by_path, new_path)
-			assert(err == nil)
-
-			if inserted {
-				v.modification_date = date
-				v.creation_date = date
-			} else {
-				assert(v.modification_date != &quot;&quot;)
-				// Keep updating the creation date, when we reach the end of the commit log, it has the right value.
-				v.creation_date = date
-			}
-
-
-			// We handle the action separately from the fact that this is the first commit we see for the path.
-			// Because a file could have only one commit which is a rename.
-			// Or its first commit is a rename but then there additional commits to modify it. 
-			// Case being: these two things are orthogonal.
-
-			if action == 'R' {
-				// Mark the old path as 'deleted'.
-				stats_by_path[old_path] = GitStatInternal {
-					modification_date = date,
-					tombstone         = true,
-				}
-
-				// The creation date of the new path is the date of the rename operation.
-				v.creation_date = date
-			}
-			if action == 'D' {
-				// Mark as 'deleted'.
-				v.tombstone = true
-			}
-		}
-	}
-
-	git_stats := make([dynamic]GitStat)
-	for k, v in stats_by_path {
-		assert(k != &quot;&quot;)
-		assert(v.creation_date != &quot;&quot;)
-		assert(v.modification_date != &quot;&quot;)
-		assert(v.creation_date &lt;= v.modification_date)
-
-		if !v.tombstone {
-			git_stat := GitStat {
-				path_rel          = strings.clone(k),
-				creation_date     = strings.clone(v.creation_date),
-				modification_date = strings.clone(v.modification_date),
-			}
-			fmt.printf(&quot;%v\n&quot;, git_stat)
-			append(&amp;git_stats, git_stat)
-		}
-	}
-
-	return git_stats[:], nil
-}
+<pre>
+  <div class="code-header">
+    <span>Odin</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-odin"><span class="line-number">0</span>GitStat :: struct {
+<span class="line-number">1</span>	creation_date:     string,
+<span class="line-number">2</span>	modification_date: string,
+<span class="line-number">3</span>	path_rel:          string,
+<span class="line-number">4</span>}
+<span class="line-number">5</span>
+<span class="line-number">6</span>get_articles_creation_and_modification_date :: proc() -&gt; ([]GitStat, os2.Error) {
+<span class="line-number">7</span>	free_all(context.temp_allocator)
+<span class="line-number">8</span>	defer free_all(context.temp_allocator)
+<span class="line-number">9</span>
+<span class="line-number">10</span>	state, stdout_bin, stderr_bin, err := os2.process_exec(
+<span class="line-number">11</span>		{
+<span class="line-number">12</span>			command = []string {
+<span class="line-number">13</span>				&quot;git&quot;,
+<span class="line-number">14</span>				&quot;log&quot;,
+<span class="line-number">15</span>				// Print the date in ISO format.
+<span class="line-number">16</span>				&quot;--format='%aI'&quot;,
+<span class="line-number">17</span>				// Ignore merge commits since they do not carry useful information.
+<span class="line-number">18</span>				&quot;--no-merges&quot;,
+<span class="line-number">19</span>				// Only interested in creation, modification, renaming, deletion.
+<span class="line-number">20</span>				&quot;--diff-filter=AMRD&quot;,
+<span class="line-number">21</span>				// Show which modification took place:
+<span class="line-number">22</span>				// A: added, M: modified, RXXX: renamed (with percentage score), etc.
+<span class="line-number">23</span>				&quot;--name-status&quot;,
+<span class="line-number">24</span>				&quot;*.md&quot;,
+<span class="line-number">25</span>			},
+<span class="line-number">26</span>		},
+<span class="line-number">27</span>		context.temp_allocator,
+<span class="line-number">28</span>	)
+<span class="line-number">29</span>	if err != nil {
+<span class="line-number">30</span>		fmt.eprintf(&quot;git failed: %d %v %s&quot;, state, err, string(stderr_bin))
+<span class="line-number">31</span>		panic(&quot;git failed&quot;)
+<span class="line-number">32</span>	}
+<span class="line-number">33</span>
+<span class="line-number">34</span>	stdout := strings.trim_space(string(stdout_bin))
+<span class="line-number">35</span>	assert(stdout != &quot;&quot;)
+<span class="line-number">36</span>
+<span class="line-number">37</span>	GitStatInternal :: struct {
+<span class="line-number">38</span>		creation_date:     string,
+<span class="line-number">39</span>		modification_date: string,
+<span class="line-number">40</span>		tombstone:         bool,
+<span class="line-number">41</span>	}
+<span class="line-number">42</span>	stats_by_path := make(map[string]GitStatInternal, allocator = context.temp_allocator)
+<span class="line-number">43</span>
+<span class="line-number">44</span>	// Sample git output:
+<span class="line-number">45</span>	// 2024-10-31T16:09:02+01:00
+<span class="line-number">46</span>	// 
+<span class="line-number">47</span>	// M       lessons_learned_from_a_successful_rust_rewrite.md
+<span class="line-number">48</span>	// A       tip_of_day_3.md
+<span class="line-number">49</span>	// 2025-02-18T08:07:55+01:00
+<span class="line-number">50</span>	//
+<span class="line-number">51</span>	// R100    sha.md  making_my_debug_build_run_100_times_faster.md
+<span class="line-number">52</span>
+<span class="line-number">53</span>	// For each commit.
+<span class="line-number">54</span>	for {
+<span class="line-number">55</span>		// Date
+<span class="line-number">56</span>		date: string
+<span class="line-number">57</span>		{
+<span class="line-number">58</span>			line := strings.split_lines_iterator(&amp;stdout) or_break
+<span class="line-number">59</span>
+<span class="line-number">60</span>			assert(strings.starts_with(line, &quot;'20&quot;))
+<span class="line-number">61</span>			line_without_quotes := line[1:len(line) - 1]
+<span class="line-number">62</span>			date = strings.clone(strings.trim(line_without_quotes, &quot;' \n&quot;))
+<span class="line-number">63</span>		}
+<span class="line-number">64</span>
+<span class="line-number">65</span>		// Empty line
+<span class="line-number">66</span>		{
+<span class="line-number">67</span>			// Peek.
+<span class="line-number">68</span>			line, ok := strings.split_lines_iterator(&amp;stdout)
+<span class="line-number">69</span>			assert(ok)
+<span class="line-number">70</span>			assert(line == &quot;&quot;)
+<span class="line-number">71</span>		}
+<span class="line-number">72</span>
+<span class="line-number">73</span>		// Files.
+<span class="line-number">74</span>		for {
+<span class="line-number">75</span>			// Start of a new commit?
+<span class="line-number">76</span>			if strings.starts_with(stdout, &quot;'20&quot;) do break
+<span class="line-number">77</span>
+<span class="line-number">78</span>			line := strings.split_lines_iterator(&amp;stdout) or_break
+<span class="line-number">79</span>			assert(line != &quot;&quot;)
+<span class="line-number">80</span>
+<span class="line-number">81</span>			action := line[0]
+<span class="line-number">82</span>			assert(action == 'A' || action == 'M' || action == 'R' || action == 'D')
+<span class="line-number">83</span>
+<span class="line-number">84</span>			old_path: string
+<span class="line-number">85</span>			new_path: string
+<span class="line-number">86</span>			{
+<span class="line-number">87</span>				// Skip the 'action' part.
+<span class="line-number">88</span>				_, ok := strings.split_iterator(&amp;line, &quot;\t&quot;)
+<span class="line-number">89</span>				assert(ok)
+<span class="line-number">90</span>
+<span class="line-number">91</span>				old_path, ok = strings.split_iterator(&amp;line, &quot;\t&quot;)
+<span class="line-number">92</span>				assert(ok)
+<span class="line-number">93</span>				assert(old_path != &quot;&quot;)
+<span class="line-number">94</span>
+<span class="line-number">95</span>				if action == 'R' { 	// Rename has two operands.
+<span class="line-number">96</span>					new_path, ok = strings.split_iterator(&amp;line, &quot;\t&quot;)
+<span class="line-number">97</span>					assert(ok)
+<span class="line-number">98</span>					assert(new_path != &quot;&quot;)
+<span class="line-number">99</span>				} else { 	// The others have only one.
+<span class="line-number">100</span>					new_path = old_path
+<span class="line-number">101</span>				}
+<span class="line-number">102</span>			}
+<span class="line-number">103</span>
+<span class="line-number">104</span>			_, v, inserted, err := map_entry(&amp;stats_by_path, new_path)
+<span class="line-number">105</span>			assert(err == nil)
+<span class="line-number">106</span>
+<span class="line-number">107</span>			if inserted {
+<span class="line-number">108</span>				v.modification_date = date
+<span class="line-number">109</span>				v.creation_date = date
+<span class="line-number">110</span>			} else {
+<span class="line-number">111</span>				assert(v.modification_date != &quot;&quot;)
+<span class="line-number">112</span>				// Keep updating the creation date, when we reach the end of the commit log, it has the right value.
+<span class="line-number">113</span>				v.creation_date = date
+<span class="line-number">114</span>			}
+<span class="line-number">115</span>
+<span class="line-number">116</span>
+<span class="line-number">117</span>			// We handle the action separately from the fact that this is the first commit we see for the path.
+<span class="line-number">118</span>			// Because a file could have only one commit which is a rename.
+<span class="line-number">119</span>			// Or its first commit is a rename but then there additional commits to modify it. 
+<span class="line-number">120</span>			// Case being: these two things are orthogonal.
+<span class="line-number">121</span>
+<span class="line-number">122</span>			if action == 'R' {
+<span class="line-number">123</span>				// Mark the old path as 'deleted'.
+<span class="line-number">124</span>				stats_by_path[old_path] = GitStatInternal {
+<span class="line-number">125</span>					modification_date = date,
+<span class="line-number">126</span>					tombstone         = true,
+<span class="line-number">127</span>				}
+<span class="line-number">128</span>
+<span class="line-number">129</span>				// The creation date of the new path is the date of the rename operation.
+<span class="line-number">130</span>				v.creation_date = date
+<span class="line-number">131</span>			}
+<span class="line-number">132</span>			if action == 'D' {
+<span class="line-number">133</span>				// Mark as 'deleted'.
+<span class="line-number">134</span>				v.tombstone = true
+<span class="line-number">135</span>			}
+<span class="line-number">136</span>		}
+<span class="line-number">137</span>	}
+<span class="line-number">138</span>
+<span class="line-number">139</span>	git_stats := make([dynamic]GitStat)
+<span class="line-number">140</span>	for k, v in stats_by_path {
+<span class="line-number">141</span>		assert(k != &quot;&quot;)
+<span class="line-number">142</span>		assert(v.creation_date != &quot;&quot;)
+<span class="line-number">143</span>		assert(v.modification_date != &quot;&quot;)
+<span class="line-number">144</span>		assert(v.creation_date &lt;= v.modification_date)
+<span class="line-number">145</span>
+<span class="line-number">146</span>		if !v.tombstone {
+<span class="line-number">147</span>			git_stat := GitStat {
+<span class="line-number">148</span>				path_rel          = strings.clone(k),
+<span class="line-number">149</span>				creation_date     = strings.clone(v.creation_date),
+<span class="line-number">150</span>				modification_date = strings.clone(v.modification_date),
+<span class="line-number">151</span>			}
+<span class="line-number">152</span>			fmt.printf(&quot;%v\n&quot;, git_stat)
+<span class="line-number">153</span>			append(&amp;git_stats, git_stat)
+<span class="line-number">154</span>		}
+<span class="line-number">155</span>	}
+<span class="line-number">156</span>
+<span class="line-number">157</span>	return git_stats[:], nil
+<span class="line-number">158</span>}
 </code></pre>
 <p>A few things of interest:</p>
 <ul>
@@ -414,33 +454,48 @@ get_articles_creation_and_modification_date :: proc() -&gt; ([]GitStat, os2.Erro
 </ul>
 <hr />
 <p>We can log the final result:</p>
-<pre><code class="language-text">[...]
-GitStat{creation_date = &quot;2020-09-07T20:49:20+02:00&quot;, modification_date = &quot;2024-11-04T09:24:17+01:00&quot;, path_rel = &quot;compile_ziglang_from_source_on_alpine_2020_9.md&quot;}
-GitStat{creation_date = &quot;2024-09-10T12:59:04+02:00&quot;, modification_date = &quot;2024-09-12T12:14:42+02:00&quot;, path_rel = &quot;odin_and_musl.md&quot;}
-GitStat{creation_date = &quot;2023-11-23T11:26:11+01:00&quot;, modification_date = &quot;2025-02-06T20:55:27+01:00&quot;, path_rel = &quot;roll_your_own_memory_profiling.md&quot;}
-[...]
+<pre>
+  <div class="code-header">
+    <span>Text</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-text"><span class="line-number">0</span>[...]
+<span class="line-number">1</span>GitStat{creation_date = &quot;2020-09-07T20:49:20+02:00&quot;, modification_date = &quot;2024-11-04T09:24:17+01:00&quot;, path_rel = &quot;compile_ziglang_from_source_on_alpine_2020_9.md&quot;}
+<span class="line-number">2</span>GitStat{creation_date = &quot;2024-09-10T12:59:04+02:00&quot;, modification_date = &quot;2024-09-12T12:14:42+02:00&quot;, path_rel = &quot;odin_and_musl.md&quot;}
+<span class="line-number">3</span>GitStat{creation_date = &quot;2023-11-23T11:26:11+01:00&quot;, modification_date = &quot;2025-02-06T20:55:27+01:00&quot;, path_rel = &quot;roll_your_own_memory_profiling.md&quot;}
+<span class="line-number">4</span>[...]
 </code></pre>
 <p>Alright, so how does our new implementation fare compared to the old one?</p>
 <p>First, we can confirm with <code>strace</code> that the time spent on waiting for subprocesses (mainly Git) shrinked:</p>
-<pre><code class="language-shell">$ strace --summary-only ./src.bin
-% time     seconds  usecs/call     calls    errors syscall
------- ----------- ----------- --------- --------- ----------------
- 56.59    0.043176         674        64           waitid
- [...]
+<pre>
+  <div class="code-header">
+    <span>Shell</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-shell"><span class="line-number">0</span>$ strace --summary-only ./src.bin
+<span class="line-number">1</span>% time     seconds  usecs/call     calls    errors syscall
+<span class="line-number">2</span>------ ----------- ----------- --------- --------- ----------------
+<span class="line-number">3</span> 56.59    0.043176         674        64           waitid
+<span class="line-number">4</span> [...]
 </code></pre>
 <p>Then we benchmark:</p>
-<pre><code class="language-shell"> $ hyperfine --warmup 2 './src-main.bin' './src.bin'
-Benchmark 1: ./src-main.bin
-  Time (mean ± σ):      1.773 s ±  0.022 s    [User: 1.267 s, System: 0.472 s]
-  Range (min … max):    1.748 s …  1.816 s    10 runs
- 
-Benchmark 2: ./src.bin
-  Time (mean ± σ):     158.7 ms ±   6.6 ms    [User: 128.4 ms, System: 133.7 ms]
-  Range (min … max):   151.7 ms … 175.6 ms    18 runs
- 
-Summary
-  ./src.bin ran
-   11.17 ± 0.48 times faster than ./src-main.bin
+<pre>
+  <div class="code-header">
+    <span>Shell</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-shell"><span class="line-number">0</span> $ hyperfine --warmup 2 './src-main.bin' './src.bin'
+<span class="line-number">1</span>Benchmark 1: ./src-main.bin
+<span class="line-number">2</span>  Time (mean ± σ):      1.773 s ±  0.022 s    [User: 1.267 s, System: 0.472 s]
+<span class="line-number">3</span>  Range (min … max):    1.748 s …  1.816 s    10 runs
+<span class="line-number">4</span> 
+<span class="line-number">5</span>Benchmark 2: ./src.bin
+<span class="line-number">6</span>  Time (mean ± σ):     158.7 ms ±   6.6 ms    [User: 128.4 ms, System: 133.7 ms]
+<span class="line-number">7</span>  Range (min … max):   151.7 ms … 175.6 ms    18 runs
+<span class="line-number">8</span> 
+<span class="line-number">9</span>Summary
+<span class="line-number">10</span>  ./src.bin ran
+<span class="line-number">11</span>   11.17 ± 0.48 times faster than ./src-main.bin
 </code></pre>
 <p>Around 11 times faster, and well within our ideal target of 500 ms ! And all we had to do was convert many <code>git log</code> invocations (one per markdown file) to just one.</p>
 <p>Here's the CPU profile now:</p>
@@ -460,36 +515,56 @@ Summary
 </h2>
 <p><a href="https://fossil-scm.org">fossil</a> is an alternative version control system created by the same folks that created, and are still working on, SQLite. Naturally, a fossil repository is basically just one SQLite database file. That sounds very <em>queryable</em>!</p>
 <p>Let's import our git repository into a Fossil repository and enter the SQLite prompt:</p>
-<pre><code class="language-shell">$ git fast-export --all | fossil import --git new-repo.fossil
-$ file new-repo.fossil 
-new-repo.fossil: SQLite 3.x database (Fossil repository), [...]
-$ fossil sql -R new-repo.fossil
+<pre>
+  <div class="code-header">
+    <span>Shell</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-shell"><span class="line-number">0</span>$ git fast-export --all | fossil import --git new-repo.fossil
+<span class="line-number">1</span>$ file new-repo.fossil 
+<span class="line-number">2</span>new-repo.fossil: SQLite 3.x database (Fossil repository), [...]
+<span class="line-number">3</span>$ fossil sql -R new-repo.fossil
 </code></pre>
 <p>There are lots of tables in this database. We craft this query after a few trials and errors (don't know if it is optimal or not):</p>
-<pre><code class="language-sql">sqlite&gt; .mode json
-sqlite&gt; SELECT 
-            f.name as filename,
-            datetime(min(e.mtime)) as creation_date,
-            datetime(max(e.mtime)) as last_modified
-        FROM repository.filename f
-        JOIN repository.mlink m ON f.fnid = m.fnid
-        JOIN repository.event e ON m.mid = e.objid
-        WHERE filename LIKE '%.md'
-        GROUP BY f.name
-        ORDER BY f.name;
+<pre>
+  <div class="code-header">
+    <span>Sql</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-sql"><span class="line-number">0</span>sqlite&gt; .mode json
+<span class="line-number">1</span>sqlite&gt; SELECT 
+<span class="line-number">2</span>            f.name as filename,
+<span class="line-number">3</span>            datetime(min(e.mtime)) as creation_date,
+<span class="line-number">4</span>            datetime(max(e.mtime)) as last_modified
+<span class="line-number">5</span>        FROM repository.filename f
+<span class="line-number">6</span>        JOIN repository.mlink m ON f.fnid = m.fnid
+<span class="line-number">7</span>        JOIN repository.event e ON m.mid = e.objid
+<span class="line-number">8</span>        WHERE filename LIKE '%.md'
+<span class="line-number">9</span>        GROUP BY f.name
+<span class="line-number">10</span>        ORDER BY f.name;
 </code></pre>
 <p>Which outputs what we want:</p>
-<pre><code class="language-text">[...]
-{&quot;filename&quot;:&quot;body_of_work.md&quot;,&quot;creation_date&quot;:&quot;2023-12-19 13:27:40&quot;,&quot;last_modified&quot;:&quot;2024-11-05 15:11:55&quot;},
-{&quot;filename&quot;:&quot;communicate_by_sharing_code.md&quot;,&quot;creation_date&quot;:&quot;2024-03-07 09:48:39&quot;,&quot;last_modified&quot;:&quot;2024-03-07 10:14:09&quot;},
-{&quot;filename&quot;:&quot;compile_ziglang_from_source_on_alpine_2020_9.md&quot;,&quot;creation_date&quot;:&quot;2020-09-07 18:49:20&quot;,&quot;last_modified&quot;:&quot;2024-11-04 08:24:17&quot;},
-[...]
+<pre>
+  <div class="code-header">
+    <span>Text</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-text"><span class="line-number">0</span>[...]
+<span class="line-number">1</span>{&quot;filename&quot;:&quot;body_of_work.md&quot;,&quot;creation_date&quot;:&quot;2023-12-19 13:27:40&quot;,&quot;last_modified&quot;:&quot;2024-11-05 15:11:55&quot;},
+<span class="line-number">2</span>{&quot;filename&quot;:&quot;communicate_by_sharing_code.md&quot;,&quot;creation_date&quot;:&quot;2024-03-07 09:48:39&quot;,&quot;last_modified&quot;:&quot;2024-03-07 10:14:09&quot;},
+<span class="line-number">3</span>{&quot;filename&quot;:&quot;compile_ziglang_from_source_on_alpine_2020_9.md&quot;,&quot;creation_date&quot;:&quot;2020-09-07 18:49:20&quot;,&quot;last_modified&quot;:&quot;2024-11-04 08:24:17&quot;},
+<span class="line-number">4</span>[...]
 </code></pre>
 <p>Note that this does not filter out deleted/removed files yet. I'm sure that it can be done by tweaking the query a bit, but there's not time! We need to benchmark!</p>
-<pre><code class="language-shell">$ hyperfine --shell=none 'fossil sql -R new-repo.fossil &quot;SELECT [...]&quot;'
-Benchmark 1: fossil sql -R new-repo.fossil &quot;[...]&quot;
-  Time (mean ± σ):       3.0 ms ±   0.5 ms    [User: 1.5 ms, System: 1.4 ms]
-  Range (min … max):     2.2 ms …   5.6 ms    776 runs
+<pre>
+  <div class="code-header">
+    <span>Shell</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-shell"><span class="line-number">0</span>$ hyperfine --shell=none 'fossil sql -R new-repo.fossil &quot;SELECT [...]&quot;'
+<span class="line-number">1</span>Benchmark 1: fossil sql -R new-repo.fossil &quot;[...]&quot;
+<span class="line-number">2</span>  Time (mean ± σ):       3.0 ms ±   0.5 ms    [User: 1.5 ms, System: 1.4 ms]
+<span class="line-number">3</span>  Range (min … max):     2.2 ms …   5.6 ms    776 runs
 </code></pre>
 <p>Damn that's fast.</p>
 <p>I do not use Fossil, but I eye it from time to time - generally when I need to extract some piece of information from Git and I discover it does not let me, or when I see the Gitlab bill  my (ex-) company pays, or when the Jira page takes more than 10 seconds to load... yeah, Fossil is the complete package, with issues, forums, a web UI, a timeline, a wiki, a chat... it has it all!</p>
@@ -523,10 +598,15 @@ Benchmark 1: fossil sql -R new-repo.fossil &quot;[...]&quot;
 </h2>
 <p>Running <code>git gc</code> and <code>git prune</code> also helps because all unreachable objects are removed, so git has to do less work scanning and parsing them on disk.</p>
 <p>Having done that, we get almost twice as fast:</p>
-<pre><code class="language-shell">$ hyperfine --shell=none --warmup 2 './src.bin'
-Benchmark 1: ./src.bin
-  Time (mean ± σ):      89.7 ms ±   2.6 ms    [User: 63.6 ms, System: 59.5 ms]
-  Range (min … max):    85.0 ms …  94.3 ms    31 runs
+<pre>
+  <div class="code-header">
+    <span>Shell</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-shell"><span class="line-number">0</span>$ hyperfine --shell=none --warmup 2 './src.bin'
+<span class="line-number">1</span>Benchmark 1: ./src.bin
+<span class="line-number">2</span>  Time (mean ± σ):      89.7 ms ±   2.6 ms    [User: 63.6 ms, System: 59.5 ms]
+<span class="line-number">3</span>  Range (min … max):    85.0 ms …  94.3 ms    31 runs
 </code></pre>
 <p>But we have to remember to run it frequently or set up a periodic job that does it for us.</p>
 <p>That's a ~21x speed-up from the original time.</p>
@@ -535,10 +615,15 @@ Benchmark 1: ./src.bin
   <a class="hash-anchor" href="#addendum-2" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>Since spawning the <code>cmark</code> process, having <code>cmark</code> parsing the command line options, over and over, is still taking a good chunk of the time, we can switch to using <code>libcmark</code> directly. This is something I wanted to do anyway to extract a table of content, etc from the markdown. Since the running time is getting lower and lower, we add <code>--shell=none</code> and increase the warm-up to reduce statistical outliers:</p>
-<pre><code class="language-shell">$ hyperfine --shell=none --warmup 10 ./src.bin
-Benchmark 1: ./src.bin
-  Time (mean ± σ):      55.4 ms ±   1.5 ms    [User: 49.0 ms, System: 35.0 ms]
-  Range (min … max):    53.1 ms …  61.0 ms    55 runs
+<pre>
+  <div class="code-header">
+    <span>Shell</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-shell"><span class="line-number">0</span>$ hyperfine --shell=none --warmup 10 ./src.bin
+<span class="line-number">1</span>Benchmark 1: ./src.bin
+<span class="line-number">2</span>  Time (mean ± σ):      55.4 ms ±   1.5 ms    [User: 49.0 ms, System: 35.0 ms]
+<span class="line-number">3</span>  Range (min … max):    53.1 ms …  61.0 ms    55 runs
 </code></pre>
 <p><em>In fine</em>: a x33 speed-up from the original time.</p>
 <section class="footnotes" data-footnotes>

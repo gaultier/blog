@@ -11,9 +11,9 @@ Do not edit it by hand.
 <link type="application/atom+xml" href="/blog/feed.xml" rel="self">
 <link rel="shortcut icon" type="image/ico" href="/blog/favicon.ico">
 <link rel="stylesheet" type="text/css" href="main.css">
-<link rel="stylesheet" href="https://unpkg.com/@highlightjs/cdn-assets@11.8.0/styles/default.min.css">
-<script src="highlight.min.js" defer></script>
-<script src="x86asm.min.js" defer></script>
+<!-- <link rel="stylesheet" href="https://unpkg.com/@highlightjs/cdn-assets@11.8.0/styles/default.min.css"> -->
+<!-- <script src="highlight.min.js" defer></script> -->
+<!-- <script src="x86asm.min.js" defer></script> -->
 <script src="main.js" defer></script>
 <script type="module" src="search.js" async></script>
 </head>
@@ -133,18 +133,33 @@ main are ignored.</p>
 </blockquote>
 <p>Easy enough, right?</p>
 <p>Let's build a hello world program (<em>not</em> using CGO) with default options:</p>
-<pre><code class="language-shell">$ go build main.go
-$ file ./main
-./main: ELF 64-bit LSB executable [..] statically linked [..]
+<pre>
+  <div class="code-header">
+    <span>Shell</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-shell"><span class="line-number">0</span>$ go build main.go
+<span class="line-number">1</span>$ file ./main
+<span class="line-number">2</span>./main: ELF 64-bit LSB executable [..] statically linked [..]
 </code></pre>
 <p>Now, let's add the <code>-buildmode=pie</code> option:</p>
-<pre><code class="language-shell">$ go build -buildmode=pie ./main.go
-$ file ./main
-./main: ELF 64-bit LSB pie executable [..] dynamically linked, interpreter /lib64/ld-linux-x86-64.so.2 [..]
+<pre>
+  <div class="code-header">
+    <span>Shell</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-shell"><span class="line-number">0</span>$ go build -buildmode=pie ./main.go
+<span class="line-number">1</span>$ file ./main
+<span class="line-number">2</span>./main: ELF 64-bit LSB pie executable [..] dynamically linked, interpreter /lib64/ld-linux-x86-64.so.2 [..]
 </code></pre>
 <p>Ok, it worked, but also: why did we go from a statically linked to a dynamically linked executable? PIE should be orthogonal to static/dynamic linking! Or is it? We'll come back to that in a second.</p>
 <p>When we run our freshly built Go executable in a bare-bone Docker image (distroless), we get a nice cryptic error at runtime:</p>
-<pre><code class="language-text">exec /home/nonroot/my-service: no such file or directory
+<pre>
+  <div class="code-header">
+    <span>Text</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-text"><span class="line-number">0</span>exec /home/nonroot/my-service: no such file or directory
 </code></pre>
 <p>Oh oh. Let's investigate.</p>
 <h3 id="a-helpful-mental-model">
@@ -162,18 +177,23 @@ $ file ./main
 </ul>
 <p>The first dimension (static vs dynamic linking) is, from the point of view of the OS trying to launch our program, decided by the field 'Type' in the ELF header (bytes 16-20): if it's <code>EXEC</code>, it's a statically linked executable. If it's <code>DYN</code>, it's a shared object file or a statically linked PIE executable (note that the same file can be both a shared library and an executable. Pretty cool, no?).</p>
 <p>The second dimension (static vs dynamic loading) is decided by the ELF program headers: if there is one program header of type <code>INTERP</code> (which specifies the loader to use), our executable is using dynamic loading meaning it requires a loader (a.k.a. interpreter) at runtime. Otherwise it does not. This aspect can be observed with <code>readelf</code>:</p>
-<pre><code class="language-shell">$ readelf --program-headers ./main
-[..]
-Elf file type is DYN (Position-Independent Executable file)
-[..]
-Program Headers:
-  Type           Offset             VirtAddr           PhysAddr
-                 FileSiz            MemSiz              Flags  Align
-  [..]
-  INTERP         0x0000000000000fe4 0x0000000000400fe4 0x0000000000400fe4
-                 0x000000000000001c 0x000000000000001c  R      0x1
-      [Requesting program interpreter: /lib64/ld-linux-x86-64.so.2]
-  [..]
+<pre>
+  <div class="code-header">
+    <span>Shell</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-shell"><span class="line-number">0</span>$ readelf --program-headers ./main
+<span class="line-number">1</span>[..]
+<span class="line-number">2</span>Elf file type is DYN (Position-Independent Executable file)
+<span class="line-number">3</span>[..]
+<span class="line-number">4</span>Program Headers:
+<span class="line-number">5</span>  Type           Offset             VirtAddr           PhysAddr
+<span class="line-number">6</span>                 FileSiz            MemSiz              Flags  Align
+<span class="line-number">7</span>  [..]
+<span class="line-number">8</span>  INTERP         0x0000000000000fe4 0x0000000000400fe4 0x0000000000400fe4
+<span class="line-number">9</span>                 0x000000000000001c 0x000000000000001c  R      0x1
+<span class="line-number">10</span>      [Requesting program interpreter: /lib64/ld-linux-x86-64.so.2]
+<span class="line-number">11</span>  [..]
 </code></pre>
 <p>Our newly built Go executable is in the second category: static linking, dynamic loading.</p>
 <p>And that's an issue because we deploy it in a distroless Docker container where there is not even a libc available or the loader <code>ld.so</code>.</p>
@@ -189,21 +209,31 @@ Program Headers:
 <p>It turns out that PIE was historically designed for executables using dynamic loading.
 The loader loads at startup the sections of the executable at different places in memory, fills (eagerly or lazily) in a global table (the <a href="https://en.wikipedia.org/wiki/Global_Offset_Table">GOT</a>) the locations of symbols. And voila, functions are placed randomly in memory and function calls go through the GOT which is a level of indirection to know at runtime where the function they want to call is located. Blue team, rejoice! Red team, sad.</p>
 <p>So how does it work with a statically linked executable where a loader is not even <em>present</em> on the system? Here's a bare-bone C program that uses PIE <em>and</em> is statically linked:</p>
-<pre><code class="language-c">#include &lt;stdio.h&gt;
-
-int main() { printf(&quot;%p %p hello!\n&quot;, &amp;main, &amp;printf); }
+<pre>
+  <div class="code-header">
+    <span>C</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-c"><span class="line-number">0</span>#include &lt;stdio.h&gt;
+<span class="line-number">1</span>
+<span class="line-number">2</span>int main() { printf(&quot;%p %p hello!\n&quot;, &amp;main, &amp;printf); }
 </code></pre>
 <p>We compile it, create an empty <code>chroot</code> with only our executable in it, and run it multiple times, to observe that the functions <code>main</code> and <code>printf</code> are indeed loaded in different places of memory each time:</p>
-<pre><code class="language-shell">$ musl-gcc pie.c -fPIE -static-pie
-$ file ./a.out
-./a.out: ELF 64-bit LSB pie executable [..] static-pie linked [..]
-$ mkdir /tmp/scratch
-$ sudo chroot /tmp/scratch ./a.out
-0x7fcf33688419 0x7fcf336887e0 hello!
-$ sudo chroot /tmp/scratch ./a.out
-0x7f2b44f20419 0x7f2b44f207e0 hello!
-$ sudo chroot /tmp/scratch ./a.out
-0x7f891d95e419 0x7f891d95e7e0 hello!
+<pre>
+  <div class="code-header">
+    <span>Shell</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-shell"><span class="line-number">0</span>$ musl-gcc pie.c -fPIE -static-pie
+<span class="line-number">1</span>$ file ./a.out
+<span class="line-number">2</span>./a.out: ELF 64-bit LSB pie executable [..] static-pie linked [..]
+<span class="line-number">3</span>$ mkdir /tmp/scratch
+<span class="line-number">4</span>$ sudo chroot /tmp/scratch ./a.out
+<span class="line-number">5</span>0x7fcf33688419 0x7fcf336887e0 hello!
+<span class="line-number">6</span>$ sudo chroot /tmp/scratch ./a.out
+<span class="line-number">7</span>0x7f2b44f20419 0x7f2b44f207e0 hello!
+<span class="line-number">8</span>$ sudo chroot /tmp/scratch ./a.out
+<span class="line-number">9</span>0x7f891d95e419 0x7f891d95e7e0 hello!
 </code></pre>
 <p>So... how does it work when no loader is present in the environment? Well, what is the only thing that we link in our bare-bone program? Libc! And what does libc contain? You guessed it, a loader!</p>
 <p>For musl, it's the file <code>ldso/dlstart.c</code> and that's the code that runs before our <code>main</code>. Effectively libc doubles as a loader. And when statically linked, the loader gets embedded in our application and runs at startup before our code.</p>
@@ -214,45 +244,70 @@ $ sudo chroot /tmp/scratch ./a.out
   <a class="hash-anchor" href="#the-solution" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>The only way I have found is to ask Go to link with an external linker and pass it the flag <code>-static-pie</code>. Due to the explanation above that means that CGO gets enabled automatically and we need to link a libc statically:</p>
-<pre><code class="language-shell">$ CGO_ENABLED=0 go build -buildmode=pie -ldflags '-linkmode external -extldflags &quot;-static-pie&quot;' main.go
--linkmode requires external (cgo) linking, but cgo is not enabled
+<pre>
+  <div class="code-header">
+    <span>Shell</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-shell"><span class="line-number">0</span>$ CGO_ENABLED=0 go build -buildmode=pie -ldflags '-linkmode external -extldflags &quot;-static-pie&quot;' main.go
+<span class="line-number">1</span>-linkmode requires external (cgo) linking, but cgo is not enabled
 </code></pre>
 <p>We use <code>musl-gcc</code> again for simplicity but you can also use the Zig build system to automatically build musl from source, or provide your own build of musl, etc:</p>
-<pre><code class="language-shell">$ CC=musl-gcc go build -ldflags '-linkmode external -extldflags &quot;--static-pie&quot;' -buildmode=pie main.go
-$ file ./main
-./main: ELF 64-bit LSB pie executable [..] static-pie linked
+<pre>
+  <div class="code-header">
+    <span>Shell</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-shell"><span class="line-number">0</span>$ CC=musl-gcc go build -ldflags '-linkmode external -extldflags &quot;--static-pie&quot;' -buildmode=pie main.go
+<span class="line-number">1</span>$ file ./main
+<span class="line-number">2</span>./main: ELF 64-bit LSB pie executable [..] static-pie linked
 </code></pre>
 <p>Yeah!</p>
 <p>We can check that it works in our empty <code>chroot</code> again. Here's is our Go program:</p>
-<pre><code class="language-go">package main
-
-import (
-	&quot;fmt&quot;
-)
-
-func main() {
-	fmt.Println(main, fmt.Println, &quot;hello&quot;)
-}
+<pre>
+  <div class="code-header">
+    <span>Go</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-go"><span class="line-number">0</span>package main
+<span class="line-number">1</span>
+<span class="line-number">2</span>import (
+<span class="line-number">3</span>	&quot;fmt&quot;
+<span class="line-number">4</span>)
+<span class="line-number">5</span>
+<span class="line-number">6</span>func main() {
+<span class="line-number">7</span>	fmt.Println(main, fmt.Println, &quot;hello&quot;)
+<span class="line-number">8</span>}
 </code></pre>
 <p>And here's how we build and run it:</p>
-<pre><code class="language-shell">$ CC=musl-gcc go build -ldflags '-linkmode external -extldflags &quot;--static-pie&quot;' -buildmode=pie main.go
-$ cp ./main /tmp/scratch/
-$ sudo chroot /tmp/scratch ./main
-0x7f0701b17220 0x7f0701b122a0 hello
-$ sudo chroot /tmp/scratch ./main
-0x7f0f27f3b220 0x7f0f27f362a0 hello
-$ sudo chroot /tmp/scratch ./main
-0x7f61f8fd7220 0x7f61f8fd22a0 hello
+<pre>
+  <div class="code-header">
+    <span>Shell</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-shell"><span class="line-number">0</span>$ CC=musl-gcc go build -ldflags '-linkmode external -extldflags &quot;--static-pie&quot;' -buildmode=pie main.go
+<span class="line-number">1</span>$ cp ./main /tmp/scratch/
+<span class="line-number">2</span>$ sudo chroot /tmp/scratch ./main
+<span class="line-number">3</span>0x7f0701b17220 0x7f0701b122a0 hello
+<span class="line-number">4</span>$ sudo chroot /tmp/scratch ./main
+<span class="line-number">5</span>0x7f0f27f3b220 0x7f0f27f362a0 hello
+<span class="line-number">6</span>$ sudo chroot /tmp/scratch ./main
+<span class="line-number">7</span>0x7f61f8fd7220 0x7f61f8fd22a0 hello
 </code></pre>
 <p>Compare that with the non-PIE default build where the function addresses are fixed:</p>
-<pre><code class="language-shell">$ go build main.go
-$ cp ./main /tmp/scratch/
-$ sudo chroot /tmp/scratch ./main
-0x48f0e0 0x48a160 hello
-$ sudo chroot /tmp/scratch ./main
-0x48f0e0 0x48a160 hello
-$ sudo chroot /tmp/scratch ./main
-0x48f0e0 0x48a160 hello
+<pre>
+  <div class="code-header">
+    <span>Shell</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-shell"><span class="line-number">0</span>$ go build main.go
+<span class="line-number">1</span>$ cp ./main /tmp/scratch/
+<span class="line-number">2</span>$ sudo chroot /tmp/scratch ./main
+<span class="line-number">3</span>0x48f0e0 0x48a160 hello
+<span class="line-number">4</span>$ sudo chroot /tmp/scratch ./main
+<span class="line-number">5</span>0x48f0e0 0x48a160 hello
+<span class="line-number">6</span>$ sudo chroot /tmp/scratch ./main
+<span class="line-number">7</span>0x48f0e0 0x48a160 hello
 </code></pre>
 <h2 id="conclusion">
   <a class="title" href="#conclusion">Conclusion</a>

@@ -11,9 +11,9 @@ Do not edit it by hand.
 <link type="application/atom+xml" href="/blog/feed.xml" rel="self">
 <link rel="shortcut icon" type="image/ico" href="/blog/favicon.ico">
 <link rel="stylesheet" type="text/css" href="main.css">
-<link rel="stylesheet" href="https://unpkg.com/@highlightjs/cdn-assets@11.8.0/styles/default.min.css">
-<script src="highlight.min.js" defer></script>
-<script src="x86asm.min.js" defer></script>
+<!-- <link rel="stylesheet" href="https://unpkg.com/@highlightjs/cdn-assets@11.8.0/styles/default.min.css"> -->
+<!-- <script src="highlight.min.js" defer></script> -->
+<!-- <script src="x86asm.min.js" defer></script> -->
 <script src="main.js" defer></script>
 <script type="module" src="search.js" async></script>
 </head>
@@ -135,17 +135,22 @@ Do not edit it by hand.
 <p>Also, Cgo has many weird limitations and surprises. Fortunately, over the two years or so I have been working in this project, I have (re-)discovered solutions for most of these issues. Let's go through them, and hopefully the next time you use Cgo, you'll have a smooth experience.</p>
 <p><em>From Go's perspective, Rust is invisible, the C library looks like a pure C library (and indeed it used to be 100% C++ before it got incrementally rewritten to Rust). So I will use C snippets in this article, because that's what the public C header of the library looks like, and not everybody knows Rust, but most people know a C-like language. But worry not, I will still talk at lengths about Rust in the last section.</em></p>
 <p>Let's create a sample app:</p>
-<pre><code class="language-text">.
-├── app
-│   └── app.go
-├── c
-│   ├── api.c
-│   ├── api.h
-│   ├── api.o
-│   ├── libapi.a
-│   └── Makefile
-├── go.mod
-└── main.go
+<pre>
+  <div class="code-header">
+    <span>Text</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-text"><span class="line-number">0</span>.
+<span class="line-number">1</span>├── app
+<span class="line-number">2</span>│   └── app.go
+<span class="line-number">3</span>├── c
+<span class="line-number">4</span>│   ├── api.c
+<span class="line-number">5</span>│   ├── api.h
+<span class="line-number">6</span>│   ├── api.o
+<span class="line-number">7</span>│   ├── libapi.a
+<span class="line-number">8</span>│   └── Makefile
+<span class="line-number">9</span>├── go.mod
+<span class="line-number">10</span>└── main.go
 </code></pre>
 <p>The C code is in the <code>c</code> directory, we build a static library <code>libapi.a</code> from it. The public header file is <code>api.h</code>.</p>
 <p>The Go code then links this library.</p>
@@ -156,153 +161,203 @@ Do not edit it by hand.
 </h2>
 <p>This is known to Go developers: Go does not have tagged unions, also called sum types, algebraic data types, etc. But C, and Rust, do have them, and Go needs to generate Go types for each C type, so that we can use them! So what does it do? Let's have a look.</p>
 <p>So, here is a (very useful) C tagged union:</p>
-<pre><code class="language-c">// c/api.h
-
-#pragma once
-#include &lt;stdint.h&gt;
-
-typedef struct {
-  char *data;
-  uint64_t len;
-} String;
-
-typedef enum {
-  ANIMAL_KIND_DOG,
-  ANIMAL_KIND_CAT,
-} AnimalKind;
-
-typedef struct {
-  AnimalKind kind;
-  union {
-    String cat_name;   // Only for `ANIMAL_KIND_CAT`.
-    uint16_t dog_tail; // Only for `ANIMAL_KIND_DOG`.
-  };
-} Animal;
-
-Animal animal_make_dog();
-
-Animal animal_make_cat();
-
-void animal_print(Animal *animal);
+<pre>
+  <div class="code-header">
+    <span>C</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-c"><span class="line-number">0</span>// c/api.h
+<span class="line-number">1</span>
+<span class="line-number">2</span>#pragma once
+<span class="line-number">3</span>#include &lt;stdint.h&gt;
+<span class="line-number">4</span>
+<span class="line-number">5</span>typedef struct {
+<span class="line-number">6</span>  char *data;
+<span class="line-number">7</span>  uint64_t len;
+<span class="line-number">8</span>} String;
+<span class="line-number">9</span>
+<span class="line-number">10</span>typedef enum {
+<span class="line-number">11</span>  ANIMAL_KIND_DOG,
+<span class="line-number">12</span>  ANIMAL_KIND_CAT,
+<span class="line-number">13</span>} AnimalKind;
+<span class="line-number">14</span>
+<span class="line-number">15</span>typedef struct {
+<span class="line-number">16</span>  AnimalKind kind;
+<span class="line-number">17</span>  union {
+<span class="line-number">18</span>    String cat_name;   // Only for `ANIMAL_KIND_CAT`.
+<span class="line-number">19</span>    uint16_t dog_tail; // Only for `ANIMAL_KIND_DOG`.
+<span class="line-number">20</span>  };
+<span class="line-number">21</span>} Animal;
+<span class="line-number">22</span>
+<span class="line-number">23</span>Animal animal_make_dog();
+<span class="line-number">24</span>
+<span class="line-number">25</span>Animal animal_make_cat();
+<span class="line-number">26</span>
+<span class="line-number">27</span>void animal_print(Animal *animal);
 </code></pre>
 <p>The C implementation is straightforward:</p>
-<pre><code class="language-c">// c/api.c
-
-#include &quot;api.h&quot;
-#include &lt;assert.h&gt;
-#include &lt;inttypes.h&gt;
-#include &lt;stdio.h&gt;
-
-Animal animal_make_dog() {
-  return (Animal){
-      .kind = ANIMAL_KIND_DOG,
-      .dog_tail = 42,
-  };
-}
-
-Animal animal_make_cat() {
-  return (Animal){
-      .kind = ANIMAL_KIND_CAT,
-      .cat_name =
-          {
-              .data = &quot;kitty&quot;,
-              .len = 5,
-          },
-  };
-}
-
-void animal_print(Animal *animal) {
-  switch (animal-&gt;kind) {
-  case ANIMAL_KIND_DOG:
-    printf(&quot;Dog: %&quot; PRIu16 &quot;\n&quot;, animal-&gt;dog_tail);
-    break;
-  case ANIMAL_KIND_CAT:
-    printf(&quot;Cat: %.*s\n&quot;, (int)animal-&gt;cat_name.len, animal-&gt;cat_name.data);
-    break;
-  default:
-    assert(0 &amp;&amp; &quot;unreachable&quot;);
-  }
-}
+<pre>
+  <div class="code-header">
+    <span>C</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-c"><span class="line-number">0</span>// c/api.c
+<span class="line-number">1</span>
+<span class="line-number">2</span>#include &quot;api.h&quot;
+<span class="line-number">3</span>#include &lt;assert.h&gt;
+<span class="line-number">4</span>#include &lt;inttypes.h&gt;
+<span class="line-number">5</span>#include &lt;stdio.h&gt;
+<span class="line-number">6</span>
+<span class="line-number">7</span>Animal animal_make_dog() {
+<span class="line-number">8</span>  return (Animal){
+<span class="line-number">9</span>      .kind = ANIMAL_KIND_DOG,
+<span class="line-number">10</span>      .dog_tail = 42,
+<span class="line-number">11</span>  };
+<span class="line-number">12</span>}
+<span class="line-number">13</span>
+<span class="line-number">14</span>Animal animal_make_cat() {
+<span class="line-number">15</span>  return (Animal){
+<span class="line-number">16</span>      .kind = ANIMAL_KIND_CAT,
+<span class="line-number">17</span>      .cat_name =
+<span class="line-number">18</span>          {
+<span class="line-number">19</span>              .data = &quot;kitty&quot;,
+<span class="line-number">20</span>              .len = 5,
+<span class="line-number">21</span>          },
+<span class="line-number">22</span>  };
+<span class="line-number">23</span>}
+<span class="line-number">24</span>
+<span class="line-number">25</span>void animal_print(Animal *animal) {
+<span class="line-number">26</span>  switch (animal-&gt;kind) {
+<span class="line-number">27</span>  case ANIMAL_KIND_DOG:
+<span class="line-number">28</span>    printf(&quot;Dog: %&quot; PRIu16 &quot;\n&quot;, animal-&gt;dog_tail);
+<span class="line-number">29</span>    break;
+<span class="line-number">30</span>  case ANIMAL_KIND_CAT:
+<span class="line-number">31</span>    printf(&quot;Cat: %.*s\n&quot;, (int)animal-&gt;cat_name.len, animal-&gt;cat_name.data);
+<span class="line-number">32</span>    break;
+<span class="line-number">33</span>  default:
+<span class="line-number">34</span>    assert(0 &amp;&amp; &quot;unreachable&quot;);
+<span class="line-number">35</span>  }
+<span class="line-number">36</span>}
 </code></pre>
 <p>And here's how we use it in Go:</p>
-<pre><code class="language-go">// app/app.go
-
-package app
-
-// #cgo CFLAGS: -g -O2 -I${SRCDIR}/../c/
-// #cgo LDFLAGS: ${SRCDIR}/../c/libapi.a
-// #include &lt;api.h&gt;
-import &quot;C&quot;
-import &quot;fmt&quot;
-
-func DoStuff() {
-	dog := C.animal_make_dog()
-	C.animal_print(&amp;dog)
-
-	cat := C.animal_make_cat()
-	C.animal_print(&amp;cat)
-}
+<pre>
+  <div class="code-header">
+    <span>Go</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-go"><span class="line-number">0</span>// app/app.go
+<span class="line-number">1</span>
+<span class="line-number">2</span>package app
+<span class="line-number">3</span>
+<span class="line-number">4</span>// #cgo CFLAGS: -g -O2 -I${SRCDIR}/../c/
+<span class="line-number">5</span>// #cgo LDFLAGS: ${SRCDIR}/../c/libapi.a
+<span class="line-number">6</span>// #include &lt;api.h&gt;
+<span class="line-number">7</span>import &quot;C&quot;
+<span class="line-number">8</span>import &quot;fmt&quot;
+<span class="line-number">9</span>
+<span class="line-number">10</span>func DoStuff() {
+<span class="line-number">11</span>	dog := C.animal_make_dog()
+<span class="line-number">12</span>	C.animal_print(&amp;dog)
+<span class="line-number">13</span>
+<span class="line-number">14</span>	cat := C.animal_make_cat()
+<span class="line-number">15</span>	C.animal_print(&amp;cat)
+<span class="line-number">16</span>}
 </code></pre>
 <p>So far, so good. Let's run it (our <code>main.go</code> simply calls <code>app.DoStuff()</code>):</p>
-<pre><code class="language-shell">$ go run .
-Dog: 42
-Cat: kitty
+<pre>
+  <div class="code-header">
+    <span>Shell</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-shell"><span class="line-number">0</span>$ go run .
+<span class="line-number">1</span>Dog: 42
+<span class="line-number">2</span>Cat: kitty
 </code></pre>
 <p>Great!</p>
 <p>Now, let's say we want to access the fields of the C tagged union. We can to have some logic based on whether our cat's name is greater than a limit, say 255? What does the Go struct look like for <code>Animal</code>?</p>
-<pre><code class="language-go">type _Ctype_struct___0 struct {
-	kind	_Ctype_AnimalKind
-	_	[4]byte
-	anon0	[16]byte
-}
+<pre>
+  <div class="code-header">
+    <span>Go</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-go"><span class="line-number">0</span>type _Ctype_struct___0 struct {
+<span class="line-number">1</span>	kind	_Ctype_AnimalKind
+<span class="line-number">2</span>	_	[4]byte
+<span class="line-number">3</span>	anon0	[16]byte
+<span class="line-number">4</span>}
 </code></pre>
 <p>So it's a struct with a <code>kind</code> field, so far so good. Then comes 4 bytes of padding, as expected (the C struct also has them). But then, we only see 16 opaque bytes. The size is correct: the C union is the size of its largest member which is 16 bytes long (<code>String</code>). But then, how do we access <code>String.len</code>?</p>
 <p>Here's the very tedious way, by hand:</p>
-<pre><code class="language-go">// app/app.go
-func DoStuff() {
-    // [...]
-
-	cat_ptr := unsafe.Pointer(&amp;cat)
-	cat_name_ptr := unsafe.Add(cat_ptr, 8)
-	cat_name_len_ptr := unsafe.Add(cat_name_ptr, 8)
-	fmt.Println(*(*C.uint64_t)(cat_name_len_ptr))
-}
+<pre>
+  <div class="code-header">
+    <span>Go</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-go"><span class="line-number">0</span>// app/app.go
+<span class="line-number">1</span>func DoStuff() {
+<span class="line-number">2</span>    // [...]
+<span class="line-number">3</span>
+<span class="line-number">4</span>	cat_ptr := unsafe.Pointer(&amp;cat)
+<span class="line-number">5</span>	cat_name_ptr := unsafe.Add(cat_ptr, 8)
+<span class="line-number">6</span>	cat_name_len_ptr := unsafe.Add(cat_name_ptr, 8)
+<span class="line-number">7</span>	fmt.Println(*(*C.uint64_t)(cat_name_len_ptr))
+<span class="line-number">8</span>}
 </code></pre>
 <p>And we get:</p>
-<pre><code class="language-shell">$ go run .
-Dog: 42
-Cat: kitty
-5
+<pre>
+  <div class="code-header">
+    <span>Shell</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-shell"><span class="line-number">0</span>$ go run .
+<span class="line-number">1</span>Dog: 42
+<span class="line-number">2</span>Cat: kitty
+<span class="line-number">3</span>5
 </code></pre>
 <p>Ok, we are a C compiler now. Back to computing fields offsets by hand! I sure hope you do not forget about alignment! And keep the offsets in sync with the C struct when its layout changes!</p>
 <p>Well we all agree this sucks, but that's all what the <code>unsafe</code> package offers. Cherry on the cake, every pointer in this code has the same type: <code>unsafe.Pointer</code>, even though the first one really is a <code>Animal*</code>, the second one is a <code>String*</code>, and the third one is a <code>uint64_t*</code>. Not great.</p>
 <p>So the solution is: treat C unions as opaque values in Go, and only access them with C functions (essentially, getters and setters):</p>
-<pre><code class="language-c">// c/api.h
-
-uint16_t animal_dog_get_tail(Animal *animal);
-
-String animal_cat_get_name(Animal *animal);
+<pre>
+  <div class="code-header">
+    <span>C</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-c"><span class="line-number">0</span>// c/api.h
+<span class="line-number">1</span>
+<span class="line-number">2</span>uint16_t animal_dog_get_tail(Animal *animal);
+<span class="line-number">3</span>
+<span class="line-number">4</span>String animal_cat_get_name(Animal *animal);
 </code></pre>
-<pre><code class="language-c">// c/api.c
-
-uint16_t animal_dog_get_tail(Animal *animal) {
-  assert(ANIMAL_KIND_DOG == animal-&gt;kind);
-  return animal-&gt;dog_tail;
-}
-
-String animal_cat_get_name(Animal *animal) {
-  assert(ANIMAL_KIND_CAT == animal-&gt;kind);
-  return animal-&gt;cat_name;
-}
+<pre>
+  <div class="code-header">
+    <span>C</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-c"><span class="line-number">0</span>// c/api.c
+<span class="line-number">1</span>
+<span class="line-number">2</span>uint16_t animal_dog_get_tail(Animal *animal) {
+<span class="line-number">3</span>  assert(ANIMAL_KIND_DOG == animal-&gt;kind);
+<span class="line-number">4</span>  return animal-&gt;dog_tail;
+<span class="line-number">5</span>}
+<span class="line-number">6</span>
+<span class="line-number">7</span>String animal_cat_get_name(Animal *animal) {
+<span class="line-number">8</span>  assert(ANIMAL_KIND_CAT == animal-&gt;kind);
+<span class="line-number">9</span>  return animal-&gt;cat_name;
+<span class="line-number">10</span>}
 </code></pre>
 <p>And now we have a sane Go code:</p>
-<pre><code class="language-go">// app/app.go
-func DoStuff() {
-    // [...]
-
-	cat_name := C.animal_cat_get_name(&amp;cat)
-	fmt.Println(cat_name.len)
-}
+<pre>
+  <div class="code-header">
+    <span>Go</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-go"><span class="line-number">0</span>// app/app.go
+<span class="line-number">1</span>func DoStuff() {
+<span class="line-number">2</span>    // [...]
+<span class="line-number">3</span>
+<span class="line-number">4</span>	cat_name := C.animal_cat_get_name(&amp;cat)
+<span class="line-number">5</span>	fmt.Println(cat_name.len)
+<span class="line-number">6</span>}
 </code></pre>
 <p>And as a bonus, whenever the layout of <code>Animal</code> changes, for example the order of fields gets changed, or a new field gets added which changes the alignment and thus the padding (here it's not the case because the alignment is already 8 which is the maximum, but in other cases it could happen), the C code gets recompiled, it does the right thing automatically, and everything works as expected.</p>
 <p><strong>My recommendation:</strong> never role-play as a compiler, just use getters and setters for unions and let the C compiler do the dirty work.</p>
@@ -316,52 +371,77 @@ func DoStuff() {
 <p>The former is mutable while the latter is immutable.
 Yes, I might have learned that while writing this article.</p>
 <p>Anyways, converting C slices (pointer + length) to Go is straightforward using the <code>unsafe</code> package in modern Go (it used to be much hairier in older Go versions):</p>
-<pre><code class="language-go">// app/app.go
-func DoStuff() {
-    // [...]
-
-	cat_name := C.animal_cat_get_name(&amp;cat)
-	slice := unsafe.Slice(cat_name.data, cat_name.len)
-	str := unsafe.String((*byte)(unsafe.Pointer(cat_name.data)), cat_name.len)
-
-	fmt.Println(slice)
-	fmt.Println(str)
-}
+<pre>
+  <div class="code-header">
+    <span>Go</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-go"><span class="line-number">0</span>// app/app.go
+<span class="line-number">1</span>func DoStuff() {
+<span class="line-number">2</span>    // [...]
+<span class="line-number">3</span>
+<span class="line-number">4</span>	cat_name := C.animal_cat_get_name(&amp;cat)
+<span class="line-number">5</span>	slice := unsafe.Slice(cat_name.data, cat_name.len)
+<span class="line-number">6</span>	str := unsafe.String((*byte)(unsafe.Pointer(cat_name.data)), cat_name.len)
+<span class="line-number">7</span>
+<span class="line-number">8</span>	fmt.Println(slice)
+<span class="line-number">9</span>	fmt.Println(str)
+<span class="line-number">10</span>}
 </code></pre>
 <p>And it does what we expect:</p>
-<pre><code class="language-shell">$ go run .
-Dog: 42
-Cat: kitty
-[107 105 116 116 121]
-kitty
+<pre>
+  <div class="code-header">
+    <span>Shell</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-shell"><span class="line-number">0</span>$ go run .
+<span class="line-number">1</span>Dog: 42
+<span class="line-number">2</span>Cat: kitty
+<span class="line-number">3</span>[107 105 116 116 121]
+<span class="line-number">4</span>kitty
 </code></pre>
 <p>Ok, but just reading them is boring, let's try to mutate them. First, we need to allocate a fresh string in C, otherwise the string constant will be located in the read-only part of the executable, mapped to read-only page, and we will segfault when trying to mutate it. So we modify <code>animal_make_cat</code>:</p>
-<pre><code class="language-c">// c/api.c
-
-Animal animal_make_cat() {
-  return (Animal){
-      .kind = ANIMAL_KIND_CAT,
-      .cat_name =
-          {
-              .data = strdup(&quot;kitty&quot;), // &lt;= Heap allocation here.
-              .len = 5,
-          },
-  };
-}
+<pre>
+  <div class="code-header">
+    <span>C</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-c"><span class="line-number">0</span>// c/api.c
+<span class="line-number">1</span>
+<span class="line-number">2</span>Animal animal_make_cat() {
+<span class="line-number">3</span>  return (Animal){
+<span class="line-number">4</span>      .kind = ANIMAL_KIND_CAT,
+<span class="line-number">5</span>      .cat_name =
+<span class="line-number">6</span>          {
+<span class="line-number">7</span>              .data = strdup(&quot;kitty&quot;), // &lt;= Heap allocation here.
+<span class="line-number">8</span>              .len = 5,
+<span class="line-number">9</span>          },
+<span class="line-number">10</span>  };
+<span class="line-number">11</span>}
 </code></pre>
 <p>Let's mutate all the things!</p>
-<pre><code class="language-go">// app/app.go
-func DoStuff() {
-    // [...]
-
-	slice[0] -= 32 // Poor man's uppercase.
-	fmt.Println(slice)
-	fmt.Println(str)
-}
+<pre>
+  <div class="code-header">
+    <span>Go</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-go"><span class="line-number">0</span>// app/app.go
+<span class="line-number">1</span>func DoStuff() {
+<span class="line-number">2</span>    // [...]
+<span class="line-number">3</span>
+<span class="line-number">4</span>	slice[0] -= 32 // Poor man's uppercase.
+<span class="line-number">5</span>	fmt.Println(slice)
+<span class="line-number">6</span>	fmt.Println(str)
+<span class="line-number">7</span>}
 </code></pre>
 <p>And we get the additional output:</p>
-<pre><code class="language-text">[75 105 116 116 121]
-Kitty
+<pre>
+  <div class="code-header">
+    <span>Text</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-text"><span class="line-number">0</span>[75 105 116 116 121]
+<span class="line-number">1</span>Kitty
 </code></pre>
 <p>But wait, this is undefined behavior! The string <em>did</em> get mutated! The Go compiler generates code based on the assumption that strings are immutable, so our program <em>may</em> break in very unexpected ways.</p>
 <p>The docs for <code>unsafe.String</code> state:</p>
@@ -370,17 +450,22 @@ Kitty
 must not be modified as long as the returned string value exists.</p>
 </blockquote>
 <p>Maybe the runtime Cgo checks will detect it?</p>
-<pre><code class="language-shell">$ GODEBUG=cgocheck=1 go run .
-[...]
-[75 105 116 116 121]
-Kitty
-# Works fine!
-
-$ GOEXPERIMENT=cgocheck2 go run . 
-[...]
-[75 105 116 116 121]
-Kitty
-# Works fine!
+<pre>
+  <div class="code-header">
+    <span>Shell</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-shell"><span class="line-number">0</span>$ GODEBUG=cgocheck=1 go run .
+<span class="line-number">1</span>[...]
+<span class="line-number">2</span>[75 105 116 116 121]
+<span class="line-number">3</span>Kitty
+<span class="line-number">4</span># Works fine!
+<span class="line-number">5</span>
+<span class="line-number">6</span>$ GOEXPERIMENT=cgocheck2 go run . 
+<span class="line-number">7</span>[...]
+<span class="line-number">8</span>[75 105 116 116 121]
+<span class="line-number">9</span>Kitty
+<span class="line-number">10</span># Works fine!
 </code></pre>
 <p>Nope... so what can we do about it? In my real-life program I have almost no strings to deal with, but some programs will.</p>
 <p><strong>My recommendation:</strong></p>
@@ -400,53 +485,78 @@ Kitty
   <a class="hash-anchor" href="#test-a-c-function-in-go-tests" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>We are principled programmers who write tests. Let's write a test to ensure that <code>animal_make_dog()</code> does indeed create a dog, i.e. the kind is <code>ANIMAL_KIND_DOG</code>:</p>
-<pre><code class="language-go">// app/app_test.go
-
-package app
-
-import &quot;testing&quot;
-import &quot;C&quot;
-
-func TestAnimalMakeDog(t *testing.T) {
-	dog := C.animal_make_dog()
-	_ = dog
-}
+<pre>
+  <div class="code-header">
+    <span>Go</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-go"><span class="line-number">0</span>// app/app_test.go
+<span class="line-number">1</span>
+<span class="line-number">2</span>package app
+<span class="line-number">3</span>
+<span class="line-number">4</span>import &quot;testing&quot;
+<span class="line-number">5</span>import &quot;C&quot;
+<span class="line-number">6</span>
+<span class="line-number">7</span>func TestAnimalMakeDog(t *testing.T) {
+<span class="line-number">8</span>	dog := C.animal_make_dog()
+<span class="line-number">9</span>	_ = dog
+<span class="line-number">10</span>}
 </code></pre>
 <p>Let's run it:</p>
-<pre><code class="language-shell">$ go test ./app/
-use of cgo in test app_test.go not supported
+<pre>
+  <div class="code-header">
+    <span>Shell</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-shell"><span class="line-number">0</span>$ go test ./app/
+<span class="line-number">1</span>use of cgo in test app_test.go not supported
 </code></pre>
 <p>Ah... yeah this is a <a href="https://go.dev/wiki/cgo">known limitation</a>: <code>_test.go files can’t use cgo.</code>.</p>
 <p>Solution: wrap the C function in a Go one.</p>
-<pre><code class="language-go">// app/app.go
-
-func AnimalDogKind() int {
-	return C.ANIMAL_KIND_DOG
-}
-
-func AnimalMakeDog() C.Animal {
-	return C.animal_make_dog()
-}
+<pre>
+  <div class="code-header">
+    <span>Go</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-go"><span class="line-number">0</span>// app/app.go
+<span class="line-number">1</span>
+<span class="line-number">2</span>func AnimalDogKind() int {
+<span class="line-number">3</span>	return C.ANIMAL_KIND_DOG
+<span class="line-number">4</span>}
+<span class="line-number">5</span>
+<span class="line-number">6</span>func AnimalMakeDog() C.Animal {
+<span class="line-number">7</span>	return C.animal_make_dog()
+<span class="line-number">8</span>}
 </code></pre>
 <p>And we now have a passing Go test:</p>
-<pre><code class="language-go">// app/app_test.go
-
-package app
-
-import &quot;testing&quot;
-
-func TestAnimalMakeDog(t *testing.T) {
-	dog := AnimalMakeDog()
-	if int(dog.kind) != AnimalDogKind() {
-		panic(&quot;wrong kind&quot;)
-	}
-}
+<pre>
+  <div class="code-header">
+    <span>Go</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-go"><span class="line-number">0</span>// app/app_test.go
+<span class="line-number">1</span>
+<span class="line-number">2</span>package app
+<span class="line-number">3</span>
+<span class="line-number">4</span>import &quot;testing&quot;
+<span class="line-number">5</span>
+<span class="line-number">6</span>func TestAnimalMakeDog(t *testing.T) {
+<span class="line-number">7</span>	dog := AnimalMakeDog()
+<span class="line-number">8</span>	if int(dog.kind) != AnimalDogKind() {
+<span class="line-number">9</span>		panic(&quot;wrong kind&quot;)
+<span class="line-number">10</span>	}
+<span class="line-number">11</span>}
 </code></pre>
-<pre><code class="language-shell">$ go test ./app/ -count=1 -v
-=== RUN   TestAnimalMakeDog
---- PASS: TestAnimalMakeDog (0.00s)
-PASS
-ok  	cgo/app	0.003s
+<pre>
+  <div class="code-header">
+    <span>Shell</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-shell"><span class="line-number">0</span>$ go test ./app/ -count=1 -v
+<span class="line-number">1</span>=== RUN   TestAnimalMakeDog
+<span class="line-number">2</span>--- PASS: TestAnimalMakeDog (0.00s)
+<span class="line-number">3</span>PASS
+<span class="line-number">4</span>ok  	cgo/app	0.003s
 </code></pre>
 <p>So... that works, and also: that's annoying boilerplate that no one wants to have to write. And if you're feeling smug, thinking your favorite LLM will do the right thing for you, I can tell you I tried and the LLM generated the wrong thing, with the test trying to use Cgo directly.</p>
 <p><strong>My recommendation:</strong></p>
@@ -467,51 +577,76 @@ ok  	cgo/app	0.003s
   <a class="hash-anchor" href="#false-positive-warnings" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>Sometimes we need to run some C code once at startup, when the package gets initialized:</p>
-<pre><code class="language-Go">// app/app.go
-
-package app
-
-// #cgo CFLAGS: -g -O2 -I${SRCDIR}/../c/
-// #cgo LDFLAGS: ${SRCDIR}/../c/libapi.a
-// #include &lt;api.h&gt;
-// void initial_setup();
-import &quot;C&quot;
-
-func init() {
-	C.initial_setup()
-}
-
-
-[...]
+<pre>
+  <div class="code-header">
+    <span>Go</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-Go"><span class="line-number">0</span>// app/app.go
+<span class="line-number">1</span>
+<span class="line-number">2</span>package app
+<span class="line-number">3</span>
+<span class="line-number">4</span>// #cgo CFLAGS: -g -O2 -I${SRCDIR}/../c/
+<span class="line-number">5</span>// #cgo LDFLAGS: ${SRCDIR}/../c/libapi.a
+<span class="line-number">6</span>// #include &lt;api.h&gt;
+<span class="line-number">7</span>// void initial_setup();
+<span class="line-number">8</span>import &quot;C&quot;
+<span class="line-number">9</span>
+<span class="line-number">10</span>func init() {
+<span class="line-number">11</span>	C.initial_setup()
+<span class="line-number">12</span>}
+<span class="line-number">13</span>
+<span class="line-number">14</span>
+<span class="line-number">15</span>[...]
 </code></pre>
 <p>And the C function <code>initial_setup</code> is defined in a second file in the same Go package (this is not strictly necessary but it will turn out to be useful to showcase something later):</p>
-<pre><code class="language-go">// app/cfuncs.go
-
-package app
-
-/*
-void initial_setup(){
-    // Do some useful stuff.
-}
-*/
-import &quot;C&quot;
+<pre>
+  <div class="code-header">
+    <span>Go</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-go"><span class="line-number">0</span>// app/cfuncs.go
+<span class="line-number">1</span>
+<span class="line-number">2</span>package app
+<span class="line-number">3</span>
+<span class="line-number">4</span>/*
+<span class="line-number">5</span>void initial_setup(){
+<span class="line-number">6</span>    // Do some useful stuff.
+<span class="line-number">7</span>}
+<span class="line-number">8</span>*/
+<span class="line-number">9</span>import &quot;C&quot;
 </code></pre>
 <p>Yes, we can write C code directly in Go files. Inside comments. Not, it's not weird at all.</p>
 <p>We build, everything is fine:</p>
-<pre><code class="language-shell">$ go build .
+<pre>
+  <div class="code-header">
+    <span>Shell</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-shell"><span class="line-number">0</span>$ go build .
 </code></pre>
 <p>Since we are serious programmers, we want to enable C warnings, right? Let's add <code>-Wall</code> to the <code>CFLAGS</code>:</p>
-<pre><code class="language-go">// app/app.go
-
-[...]
-// #cgo CFLAGS: -Wall -g -O2 -I${SRCDIR}/../c/    &lt;= We add -Wall
-[...]
+<pre>
+  <div class="code-header">
+    <span>Go</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-go"><span class="line-number">0</span>// app/app.go
+<span class="line-number">1</span>
+<span class="line-number">2</span>[...]
+<span class="line-number">3</span>// #cgo CFLAGS: -Wall -g -O2 -I${SRCDIR}/../c/    &lt;= We add -Wall
+<span class="line-number">4</span>[...]
 </code></pre>
 <p>We re-build, and get this nice error:</p>
-<pre><code class="language-go">$ go build .
-# cgo/app
-cgo-gcc-prolog: In function ‘_cgo_13d20cc583d0_Cfunc_initial_setup’:
-cgo-gcc-prolog:78:49: warning: unused variable ‘_cgo_a’ [-Wunused-variable]
+<pre>
+  <div class="code-header">
+    <span>Go</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-go"><span class="line-number">0</span>$ go build .
+<span class="line-number">1</span># cgo/app
+<span class="line-number">2</span>cgo-gcc-prolog: In function ‘_cgo_13d20cc583d0_Cfunc_initial_setup’:
+<span class="line-number">3</span>cgo-gcc-prolog:78:49: warning: unused variable ‘_cgo_a’ [-Wunused-variable]
 </code></pre>
 <p>Wait, we do not have <em>any</em> variable in <code>initial_setup</code>, how come a variable is unused?</p>
 <p>Some searching around turns up this <a href="https://github.com/golang/go/issues/6883#issuecomment-383800123,">Github issue</a> where the official recommendation is: do not use <code>-Wall</code>, it creates false positives. Ok.</p>
@@ -522,68 +657,98 @@ cgo-gcc-prolog:78:49: warning: unused variable ‘_cgo_a’ [-Wunused-variable]
   <a class="hash-anchor" href="#white-space-is-significant" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>Let's go back to the <code>app/cfuncs.go</code> we just created that builds fine:</p>
-<pre><code class="language-go">package app
-
-/*
-void initial_setup(){}
-*/
-import &quot;C&quot;
+<pre>
+  <div class="code-header">
+    <span>Go</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-go"><span class="line-number">0</span>package app
+<span class="line-number">1</span>
+<span class="line-number">2</span>/*
+<span class="line-number">3</span>void initial_setup(){}
+<span class="line-number">4</span>*/
+<span class="line-number">5</span>import &quot;C&quot;
 </code></pre>
 <p>Let's add one empty line near the end:</p>
-<pre><code class="language-go">package app
-
-/*
-void initial_setup(){}
-*/
-
-import &quot;C&quot;
+<pre>
+  <div class="code-header">
+    <span>Go</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-go"><span class="line-number">0</span>package app
+<span class="line-number">1</span>
+<span class="line-number">2</span>/*
+<span class="line-number">3</span>void initial_setup(){}
+<span class="line-number">4</span>*/
+<span class="line-number">5</span>
+<span class="line-number">6</span>import &quot;C&quot;
 </code></pre>
 <p>Let's build:</p>
-<pre><code class="language-shell">$ go build .
-# cgo
-/home/pg/Downloads/go/pkg/tool/linux_amd64/link: running gcc failed: exit status 1
-/usr/bin/gcc -m64 -o $WORK/b001/exe/a.out -Wl,--export-dynamic-symbol=_cgo_panic -Wl,--export-dynamic-symbol=_cgo_topofstack -Wl,--export-dynamic-symbol=crosscall2 -Wl,--compress-debug-sections=zlib /tmp/go-link-2748897775/go.o /tmp/go-link-2748897775/000000.o /tmp/go-link-2748897775/000001.o /tmp/go-link-2748897775/000002.o /tmp/go-link-2748897775/000003.o /tmp/go-link-2748897775/000004.o /tmp/go-link-2748897775/000005.o /tmp/go-link-2748897775/000006.o /tmp/go-link-2748897775/000007.o /tmp/go-link-2748897775/000008.o /tmp/go-link-2748897775/000009.o /tmp/go-link-2748897775/000010.o /tmp/go-link-2748897775/000011.o /tmp/go-link-2748897775/000012.o /tmp/go-link-2748897775/000013.o /tmp/go-link-2748897775/000014.o /tmp/go-link-2748897775/000015.o /tmp/go-link-2748897775/000016.o -O2 -g /home/pg/scratch/cgo/app/../c/libapi.a -O2 -g -lpthread -no-pie
-/usr/bin/ld: /tmp/go-link-2748897775/000001.o: in function `_cgo_f1a74d84225f_Cfunc_initial_setup':
-/tmp/go-build/cgo-gcc-prolog:80:(.text+0x53): undefined reference to `initial_setup'
-collect2: error: ld returned 1 exit status
+<pre>
+  <div class="code-header">
+    <span>Shell</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-shell"><span class="line-number">0</span>$ go build .
+<span class="line-number">1</span># cgo
+<span class="line-number">2</span>/home/pg/Downloads/go/pkg/tool/linux_amd64/link: running gcc failed: exit status 1
+<span class="line-number">3</span>/usr/bin/gcc -m64 -o $WORK/b001/exe/a.out -Wl,--export-dynamic-symbol=_cgo_panic -Wl,--export-dynamic-symbol=_cgo_topofstack -Wl,--export-dynamic-symbol=crosscall2 -Wl,--compress-debug-sections=zlib /tmp/go-link-2748897775/go.o /tmp/go-link-2748897775/000000.o /tmp/go-link-2748897775/000001.o /tmp/go-link-2748897775/000002.o /tmp/go-link-2748897775/000003.o /tmp/go-link-2748897775/000004.o /tmp/go-link-2748897775/000005.o /tmp/go-link-2748897775/000006.o /tmp/go-link-2748897775/000007.o /tmp/go-link-2748897775/000008.o /tmp/go-link-2748897775/000009.o /tmp/go-link-2748897775/000010.o /tmp/go-link-2748897775/000011.o /tmp/go-link-2748897775/000012.o /tmp/go-link-2748897775/000013.o /tmp/go-link-2748897775/000014.o /tmp/go-link-2748897775/000015.o /tmp/go-link-2748897775/000016.o -O2 -g /home/pg/scratch/cgo/app/../c/libapi.a -O2 -g -lpthread -no-pie
+<span class="line-number">4</span>/usr/bin/ld: /tmp/go-link-2748897775/000001.o: in function `_cgo_f1a74d84225f_Cfunc_initial_setup':
+<span class="line-number">5</span>/tmp/go-build/cgo-gcc-prolog:80:(.text+0x53): undefined reference to `initial_setup'
+<span class="line-number">6</span>collect2: error: ld returned 1 exit status
 </code></pre>
 <p>Ok... not much to say here.</p>
 <p>Here's another example. We add a comment about not using <code>-Wall</code>:</p>
-<pre><code class="language-go">// app/app.go
-
-package app
-
-// NOTE: Do not use -Wall.
-// #cgo CFLAGS: -g -O2 -I${SRCDIR}/../c/
-// #cgo LDFLAGS: ${SRCDIR}/../c/libapi.a
-// #include &lt;api.h&gt;
-// void initial_setup();
-import &quot;C&quot;
-
-[...]
+<pre>
+  <div class="code-header">
+    <span>Go</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-go"><span class="line-number">0</span>// app/app.go
+<span class="line-number">1</span>
+<span class="line-number">2</span>package app
+<span class="line-number">3</span>
+<span class="line-number">4</span>// NOTE: Do not use -Wall.
+<span class="line-number">5</span>// #cgo CFLAGS: -g -O2 -I${SRCDIR}/../c/
+<span class="line-number">6</span>// #cgo LDFLAGS: ${SRCDIR}/../c/libapi.a
+<span class="line-number">7</span>// #include &lt;api.h&gt;
+<span class="line-number">8</span>// void initial_setup();
+<span class="line-number">9</span>import &quot;C&quot;
+<span class="line-number">10</span>
+<span class="line-number">11</span>[...]
 </code></pre>
 <p>We rebuild, and boom:</p>
-<pre><code class="language-shell">$ go build .
-# cgo/app
-app/app.go:3:6: error: expected '=', ',', ';', 'asm' or '__attribute__' before ':' token
-    3 | // NOTE: Do not use -Wall.
-      |      ^
+<pre>
+  <div class="code-header">
+    <span>Shell</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-shell"><span class="line-number">0</span>$ go build .
+<span class="line-number">1</span># cgo/app
+<span class="line-number">2</span>app/app.go:3:6: error: expected '=', ',', ';', 'asm' or '__attribute__' before ':' token
+<span class="line-number">3</span>    3 | // NOTE: Do not use -Wall.
+<span class="line-number">4</span>      |      ^
 </code></pre>
 <p>That's because when seeing a <code>#cgo</code> directive in the comments, the Go compiler parses what it recognizes, passes the rest to the C compiler, which chokes on it.</p>
 <p>Solution: insert a blank line between the comment and the <code>#cgo</code> directive to avoid that:</p>
-<pre><code class="language-go">// app/app.go
-
-package app
-
-// NOTE: Do not use -Wall.
-
-// #cgo CFLAGS: -g -O2 -I${SRCDIR}/../c/
-// #cgo LDFLAGS: ${SRCDIR}/../c/libapi.a
-// #include &lt;api.h&gt;
-// void initial_setup();
-import &quot;C&quot;
-
-[...]
+<pre>
+  <div class="code-header">
+    <span>Go</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-go"><span class="line-number">0</span>// app/app.go
+<span class="line-number">1</span>
+<span class="line-number">2</span>package app
+<span class="line-number">3</span>
+<span class="line-number">4</span>// NOTE: Do not use -Wall.
+<span class="line-number">5</span>
+<span class="line-number">6</span>// #cgo CFLAGS: -g -O2 -I${SRCDIR}/../c/
+<span class="line-number">7</span>// #cgo LDFLAGS: ${SRCDIR}/../c/libapi.a
+<span class="line-number">8</span>// #include &lt;api.h&gt;
+<span class="line-number">9</span>// void initial_setup();
+<span class="line-number">10</span>import &quot;C&quot;
+<span class="line-number">11</span>
+<span class="line-number">12</span>[...]
 </code></pre>
 <p><strong>My recommendation:</strong> If you get a hairy and weird error, compare the white space with official code examples.</p>
 <p><strong>My ask to the Go team:</strong> Can we please fix this? Or at least document it? There is zero mention of this pitfall anywhere, as far as I can see.</p>
@@ -597,121 +762,131 @@ import &quot;C&quot;
 <li>Use a Go debugger (e.g. delve) which does not (really) understand the C/Rust calling convention so you can see the Go stack, but it ends at the Cgo FFI boundary</li>
 </ul>
 <p>Let's see it for ourselves:</p>
-<pre><code class="language-shell">$ gdb ./cgo
-(gdb) break animal_print
-Breakpoint 1 at 0x469b6c
-(gdb) run
-[...]
-Thread 1 &quot;cgo&quot; hit Breakpoint 1, 0x0000000000469b6c in animal_print ()
-(gdb) backtrace
-#0  0x0000000000469b6c in animal_print ()
-#1  0x0000000000464644 in runtime.asmcgocall () at /home/pg/Downloads/go/src/runtime/asm_amd64.s:923
-#2  0x000000c0000061c0 in ?? ()
-#3  0x0000000000462a0a in runtime.systemstack () at /home/pg/Downloads/go/src/runtime/asm_amd64.s:514
-#4  0x00007fffffffe228 in ?? ()
-#5  0x0000000000466f3f in runtime.newproc (fn=0x46288f &lt;runtime.rt0_go+303&gt;) at &lt;autogenerated&gt;:1
-#6  0x0000000000462905 in runtime.mstart () at /home/pg/Downloads/go/src/runtime/asm_amd64.s:395
-#7  0x000000000046288f in runtime.rt0_go () at /home/pg/Downloads/go/src/runtime/asm_amd64.s:358
-#8  0x0000000000000001 in ?? ()
-#9  0x00007fffffffe388 in ?? ()
-#10 0x00007fffffffe340 in ?? ()
-#11 0x0000000000000001 in ?? ()
-#12 0x00007fffffffe388 in ?? ()
-#13 0x00007ffff7db1248 in __libc_start_call_main (main=0x300000002, argc=192, argv=0x43a3c5 &lt;runtime.reentersyscall+165&gt;) at ../sysdeps/nptl/libc_start_call_main.h:58
-Backtrace stopped: previous frame inner to this frame (corrupt stack?)
+<pre>
+  <div class="code-header">
+    <span>Shell</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-shell"><span class="line-number">0</span>$ gdb ./cgo
+<span class="line-number">1</span>(gdb) break animal_print
+<span class="line-number">2</span>Breakpoint 1 at 0x469b6c
+<span class="line-number">3</span>(gdb) run
+<span class="line-number">4</span>[...]
+<span class="line-number">5</span>Thread 1 &quot;cgo&quot; hit Breakpoint 1, 0x0000000000469b6c in animal_print ()
+<span class="line-number">6</span>(gdb) backtrace
+<span class="line-number">7</span>#0  0x0000000000469b6c in animal_print ()
+<span class="line-number">8</span>#1  0x0000000000464644 in runtime.asmcgocall () at /home/pg/Downloads/go/src/runtime/asm_amd64.s:923
+<span class="line-number">9</span>#2  0x000000c0000061c0 in ?? ()
+<span class="line-number">10</span>#3  0x0000000000462a0a in runtime.systemstack () at /home/pg/Downloads/go/src/runtime/asm_amd64.s:514
+<span class="line-number">11</span>#4  0x00007fffffffe228 in ?? ()
+<span class="line-number">12</span>#5  0x0000000000466f3f in runtime.newproc (fn=0x46288f &lt;runtime.rt0_go+303&gt;) at &lt;autogenerated&gt;:1
+<span class="line-number">13</span>#6  0x0000000000462905 in runtime.mstart () at /home/pg/Downloads/go/src/runtime/asm_amd64.s:395
+<span class="line-number">14</span>#7  0x000000000046288f in runtime.rt0_go () at /home/pg/Downloads/go/src/runtime/asm_amd64.s:358
+<span class="line-number">15</span>#8  0x0000000000000001 in ?? ()
+<span class="line-number">16</span>#9  0x00007fffffffe388 in ?? ()
+<span class="line-number">17</span>#10 0x00007fffffffe340 in ?? ()
+<span class="line-number">18</span>#11 0x0000000000000001 in ?? ()
+<span class="line-number">19</span>#12 0x00007fffffffe388 in ?? ()
+<span class="line-number">20</span>#13 0x00007ffff7db1248 in __libc_start_call_main (main=0x300000002, argc=192, argv=0x43a3c5 &lt;runtime.reentersyscall+165&gt;) at ../sysdeps/nptl/libc_start_call_main.h:58
+<span class="line-number">21</span>Backtrace stopped: previous frame inner to this frame (corrupt stack?)
 </code></pre>
 <p>Where is <code>app.DoStuff</code>? Where is <code>main</code>? Probably around frames 8-13 in the <code>corrupt stack</code>...</p>
 <p>Now with <code>delve</code>:</p>
-<pre><code class="language-shell">$ go build   -gcflags=all=&quot;-N -l&quot;
-$ dlv exec ./cgo
-(dlv) b animal_print
-Command failed: could not find function C.animal_print
-
-(dlv) b app.DoStuff
-Breakpoint 1 set at 0x471f2a for cgo/app.DoStuff() ./app/app.go:23
-(dlv) c
-&gt; [Breakpoint 1] cgo/app.DoStuff() ./app/app.go:23 (hits goroutine(1):1 total:1) (PC: 0x471f2a)
-    18:	
-    19:	func AnimalMakeDog() C.Animal {
-    20:		return C.animal_make_dog()
-    21:	}
-    22:	
-=&gt;  23:	func DoStuff() {
-    24:		dog := C.animal_make_dog()
-    25:		C.animal_print(&amp;dog)
-    26:	
-    27:	}
-(dlv) s
-&gt; cgo/app.DoStuff() ./app/app.go:24 (PC: 0x471f2e)
-    19:	func AnimalMakeDog() C.Animal {
-    20:		return C.animal_make_dog()
-    21:	}
-    22:	
-    23:	func DoStuff() {
-=&gt;  24:		dog := C.animal_make_dog()
-    25:		C.animal_print(&amp;dog)
-    26:	
-    27:	}
-(dlv) 
-&gt; cgo/app._Cfunc_animal_make_dog() _cgo_gotypes.go:79 (PC: 0x471d93)
-(dlv) 
-&gt; cgo/app._Cfunc_animal_make_dog() _cgo_gotypes.go:80 (PC: 0x471dab)
-(dlv) 
-&gt; cgo/app._Cfunc_animal_make_dog() _cgo_gotypes.go:81 (PC: 0x471dd3)
-(dlv) 
-&gt; cgo/app._Cfunc_animal_make_dog() _cgo_gotypes.go:83 (PC: 0x471de4)
-(dlv) 
-&gt; cgo/app.DoStuff() ./app/app.go:24 (PC: 0x471f45)
-Values returned:
-	r1: cgo/app._Ctype_struct___0 {
-		kind: 0,
-		_: [4]uint8 [0,0,0,0],
-		anon0: [16]uint8 [42,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],}
-
-    19:	func AnimalMakeDog() C.Animal {
-    20:		return C.animal_make_dog()
-    21:	}
-    22:	
-    23:	func DoStuff() {
-=&gt;  24:		dog := C.animal_make_dog()
-    25:		C.animal_print(&amp;dog)
-    26:	
-    27:	}
-(dlv) 
-&gt; cgo/app.DoStuff() ./app/app.go:25 (PC: 0x471f67)
-    20:		return C.animal_make_dog()
-    21:	}
-    22:	
-    23:	func DoStuff() {
-    24:		dog := C.animal_make_dog()
-=&gt;  25:		C.animal_print(&amp;dog)
-    26:	
-    27:	}
-(dlv) 
-&gt; cgo/app.DoStuff() ./app/app.go:25 (PC: 0x471f67)
-    20:		return C.animal_make_dog()
-    21:	}
-    22:	
-    23:	func DoStuff() {
-    24:		dog := C.animal_make_dog()
-=&gt;  25:		C.animal_print(&amp;dog)
-    26:	
-    27:	}
-(dlv) s
-&gt; cgo/app._Cfunc_animal_print() _cgo_gotypes.go:91 (PC: 0x471e13)
-(dlv) s
-&gt; cgo/app._Cfunc_animal_print() _cgo_gotypes.go:92 (PC: 0x471e17)
-(dlv) stack
-0  0x0000000000471e17 in cgo/app._Cfunc_animal_print
-   at _cgo_gotypes.go:92
-1  0x0000000000471f75 in cgo/app.DoStuff
-   at ./app/app.go:25
-2  0x000000000047228f in main.main
-   at ./main.go:6
-3  0x0000000000437a07 in runtime.main
-   at /home/pg/Downloads/go/src/runtime/proc.go:272
-4  0x000000000046c301 in runtime.goexit
-   at /home/pg/Downloads/go/src/runtime/asm_amd64.s:1700
+<pre>
+  <div class="code-header">
+    <span>Shell</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-shell"><span class="line-number">0</span>$ go build   -gcflags=all=&quot;-N -l&quot;
+<span class="line-number">1</span>$ dlv exec ./cgo
+<span class="line-number">2</span>(dlv) b animal_print
+<span class="line-number">3</span>Command failed: could not find function C.animal_print
+<span class="line-number">4</span>
+<span class="line-number">5</span>(dlv) b app.DoStuff
+<span class="line-number">6</span>Breakpoint 1 set at 0x471f2a for cgo/app.DoStuff() ./app/app.go:23
+<span class="line-number">7</span>(dlv) c
+<span class="line-number">8</span>&gt; [Breakpoint 1] cgo/app.DoStuff() ./app/app.go:23 (hits goroutine(1):1 total:1) (PC: 0x471f2a)
+<span class="line-number">9</span>    18:	
+<span class="line-number">10</span>    19:	func AnimalMakeDog() C.Animal {
+<span class="line-number">11</span>    20:		return C.animal_make_dog()
+<span class="line-number">12</span>    21:	}
+<span class="line-number">13</span>    22:	
+<span class="line-number">14</span>=&gt;  23:	func DoStuff() {
+<span class="line-number">15</span>    24:		dog := C.animal_make_dog()
+<span class="line-number">16</span>    25:		C.animal_print(&amp;dog)
+<span class="line-number">17</span>    26:	
+<span class="line-number">18</span>    27:	}
+<span class="line-number">19</span>(dlv) s
+<span class="line-number">20</span>&gt; cgo/app.DoStuff() ./app/app.go:24 (PC: 0x471f2e)
+<span class="line-number">21</span>    19:	func AnimalMakeDog() C.Animal {
+<span class="line-number">22</span>    20:		return C.animal_make_dog()
+<span class="line-number">23</span>    21:	}
+<span class="line-number">24</span>    22:	
+<span class="line-number">25</span>    23:	func DoStuff() {
+<span class="line-number">26</span>=&gt;  24:		dog := C.animal_make_dog()
+<span class="line-number">27</span>    25:		C.animal_print(&amp;dog)
+<span class="line-number">28</span>    26:	
+<span class="line-number">29</span>    27:	}
+<span class="line-number">30</span>(dlv) 
+<span class="line-number">31</span>&gt; cgo/app._Cfunc_animal_make_dog() _cgo_gotypes.go:79 (PC: 0x471d93)
+<span class="line-number">32</span>(dlv) 
+<span class="line-number">33</span>&gt; cgo/app._Cfunc_animal_make_dog() _cgo_gotypes.go:80 (PC: 0x471dab)
+<span class="line-number">34</span>(dlv) 
+<span class="line-number">35</span>&gt; cgo/app._Cfunc_animal_make_dog() _cgo_gotypes.go:81 (PC: 0x471dd3)
+<span class="line-number">36</span>(dlv) 
+<span class="line-number">37</span>&gt; cgo/app._Cfunc_animal_make_dog() _cgo_gotypes.go:83 (PC: 0x471de4)
+<span class="line-number">38</span>(dlv) 
+<span class="line-number">39</span>&gt; cgo/app.DoStuff() ./app/app.go:24 (PC: 0x471f45)
+<span class="line-number">40</span>Values returned:
+<span class="line-number">41</span>	r1: cgo/app._Ctype_struct___0 {
+<span class="line-number">42</span>		kind: 0,
+<span class="line-number">43</span>		_: [4]uint8 [0,0,0,0],
+<span class="line-number">44</span>		anon0: [16]uint8 [42,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],}
+<span class="line-number">45</span>
+<span class="line-number">46</span>    19:	func AnimalMakeDog() C.Animal {
+<span class="line-number">47</span>    20:		return C.animal_make_dog()
+<span class="line-number">48</span>    21:	}
+<span class="line-number">49</span>    22:	
+<span class="line-number">50</span>    23:	func DoStuff() {
+<span class="line-number">51</span>=&gt;  24:		dog := C.animal_make_dog()
+<span class="line-number">52</span>    25:		C.animal_print(&amp;dog)
+<span class="line-number">53</span>    26:	
+<span class="line-number">54</span>    27:	}
+<span class="line-number">55</span>(dlv) 
+<span class="line-number">56</span>&gt; cgo/app.DoStuff() ./app/app.go:25 (PC: 0x471f67)
+<span class="line-number">57</span>    20:		return C.animal_make_dog()
+<span class="line-number">58</span>    21:	}
+<span class="line-number">59</span>    22:	
+<span class="line-number">60</span>    23:	func DoStuff() {
+<span class="line-number">61</span>    24:		dog := C.animal_make_dog()
+<span class="line-number">62</span>=&gt;  25:		C.animal_print(&amp;dog)
+<span class="line-number">63</span>    26:	
+<span class="line-number">64</span>    27:	}
+<span class="line-number">65</span>(dlv) 
+<span class="line-number">66</span>&gt; cgo/app.DoStuff() ./app/app.go:25 (PC: 0x471f67)
+<span class="line-number">67</span>    20:		return C.animal_make_dog()
+<span class="line-number">68</span>    21:	}
+<span class="line-number">69</span>    22:	
+<span class="line-number">70</span>    23:	func DoStuff() {
+<span class="line-number">71</span>    24:		dog := C.animal_make_dog()
+<span class="line-number">72</span>=&gt;  25:		C.animal_print(&amp;dog)
+<span class="line-number">73</span>    26:	
+<span class="line-number">74</span>    27:	}
+<span class="line-number">75</span>(dlv) s
+<span class="line-number">76</span>&gt; cgo/app._Cfunc_animal_print() _cgo_gotypes.go:91 (PC: 0x471e13)
+<span class="line-number">77</span>(dlv) s
+<span class="line-number">78</span>&gt; cgo/app._Cfunc_animal_print() _cgo_gotypes.go:92 (PC: 0x471e17)
+<span class="line-number">79</span>(dlv) stack
+<span class="line-number">80</span>0  0x0000000000471e17 in cgo/app._Cfunc_animal_print
+<span class="line-number">81</span>   at _cgo_gotypes.go:92
+<span class="line-number">82</span>1  0x0000000000471f75 in cgo/app.DoStuff
+<span class="line-number">83</span>   at ./app/app.go:25
+<span class="line-number">84</span>2  0x000000000047228f in main.main
+<span class="line-number">85</span>   at ./main.go:6
+<span class="line-number">86</span>3  0x0000000000437a07 in runtime.main
+<span class="line-number">87</span>   at /home/pg/Downloads/go/src/runtime/proc.go:272
+<span class="line-number">88</span>4  0x000000000046c301 in runtime.goexit
+<span class="line-number">89</span>   at /home/pg/Downloads/go/src/runtime/asm_amd64.s:1700
 </code></pre>
 <p>So the Go debugger does not understand C/Rust debugging information, so as soon as we are inside a C/Rust function, it cannot show anything useful, but it can still kind of understand the call stack...Urgh.</p>
 <p>And the <a href="https://go.dev/doc/gdb">docs</a> acknowledge that:</p>
@@ -727,43 +902,53 @@ Values returned:
   <a class="hash-anchor" href="#strace-bpftrace" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h3>
 <p>It's the same issue manifesting in a different way: it's not just debuggers than do not understand the call stack, it's also <code>strace</code>:</p>
-<pre><code class="language-shell">$ strace -k -e write ./cgo
---- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=438876, si_uid=1000} ---
- &gt; /usr/lib64/libc.so.6(pthread_sigmask@GLIBC_2.2.5+0x48) [0x783b8]
- &gt; /home/pg/scratch/cgo/cgo(_cgo_sys_thread_start+0x7e) [0x4727ee]
- &gt; /home/pg/scratch/cgo/cgo(runtime.asmcgocall.abi0+0x9c) [0x46c01c]
-write(1, &quot;Dog: 42\n&quot;, 8Dog: 42
-)                = 8
- &gt; /usr/lib64/libc.so.6(__write+0x4d) [0xe853d]
- &gt; /usr/lib64/libc.so.6(_IO_file_write@@GLIBC_2.2.5+0x34) [0x68fa4]
- &gt; /usr/lib64/libc.so.6(new_do_write+0x5c) [0x6711c]
- &gt; /usr/lib64/libc.so.6(_IO_do_write@@GLIBC_2.2.5+0x20) [0x67fb0]
- &gt; /usr/lib64/libc.so.6(_IO_file_overflow@@GLIBC_2.2.5+0x11a) [0x6852a]
- &gt; /usr/lib64/libc.so.6(_IO_default_xsputn+0x74) [0x6a624]
- &gt; /usr/lib64/libc.so.6(_IO_file_xsputn@@GLIBC_2.2.5+0x117) [0x69127]
- &gt; /usr/lib64/libc.so.6(__printf_buffer_flush_to_file+0xc8) [0x36448]
- &gt; /usr/lib64/libc.so.6(__printf_buffer_to_file_done+0x1b) [0x3650b]
- &gt; /usr/lib64/libc.so.6(__vfprintf_internal+0xaa) [0x41bea]
- &gt; /usr/lib64/libc.so.6(printf+0xb2) [0x35bf2]
- &gt; /home/pg/scratch/cgo/cgo(animal_print+0x38) [0x472da0]
- &gt; /home/pg/scratch/cgo/cgo(runtime.asmcgocall.abi0+0x63) [0x46bfe3]
- &gt; No DWARF information found
-+++ exited with 0 +++
+<pre>
+  <div class="code-header">
+    <span>Shell</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-shell"><span class="line-number">0</span>$ strace -k -e write ./cgo
+<span class="line-number">1</span>--- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=438876, si_uid=1000} ---
+<span class="line-number">2</span> &gt; /usr/lib64/libc.so.6(pthread_sigmask@GLIBC_2.2.5+0x48) [0x783b8]
+<span class="line-number">3</span> &gt; /home/pg/scratch/cgo/cgo(_cgo_sys_thread_start+0x7e) [0x4727ee]
+<span class="line-number">4</span> &gt; /home/pg/scratch/cgo/cgo(runtime.asmcgocall.abi0+0x9c) [0x46c01c]
+<span class="line-number">5</span>write(1, &quot;Dog: 42\n&quot;, 8Dog: 42
+<span class="line-number">6</span>)                = 8
+<span class="line-number">7</span> &gt; /usr/lib64/libc.so.6(__write+0x4d) [0xe853d]
+<span class="line-number">8</span> &gt; /usr/lib64/libc.so.6(_IO_file_write@@GLIBC_2.2.5+0x34) [0x68fa4]
+<span class="line-number">9</span> &gt; /usr/lib64/libc.so.6(new_do_write+0x5c) [0x6711c]
+<span class="line-number">10</span> &gt; /usr/lib64/libc.so.6(_IO_do_write@@GLIBC_2.2.5+0x20) [0x67fb0]
+<span class="line-number">11</span> &gt; /usr/lib64/libc.so.6(_IO_file_overflow@@GLIBC_2.2.5+0x11a) [0x6852a]
+<span class="line-number">12</span> &gt; /usr/lib64/libc.so.6(_IO_default_xsputn+0x74) [0x6a624]
+<span class="line-number">13</span> &gt; /usr/lib64/libc.so.6(_IO_file_xsputn@@GLIBC_2.2.5+0x117) [0x69127]
+<span class="line-number">14</span> &gt; /usr/lib64/libc.so.6(__printf_buffer_flush_to_file+0xc8) [0x36448]
+<span class="line-number">15</span> &gt; /usr/lib64/libc.so.6(__printf_buffer_to_file_done+0x1b) [0x3650b]
+<span class="line-number">16</span> &gt; /usr/lib64/libc.so.6(__vfprintf_internal+0xaa) [0x41bea]
+<span class="line-number">17</span> &gt; /usr/lib64/libc.so.6(printf+0xb2) [0x35bf2]
+<span class="line-number">18</span> &gt; /home/pg/scratch/cgo/cgo(animal_print+0x38) [0x472da0]
+<span class="line-number">19</span> &gt; /home/pg/scratch/cgo/cgo(runtime.asmcgocall.abi0+0x63) [0x46bfe3]
+<span class="line-number">20</span> &gt; No DWARF information found
+<span class="line-number">21</span>+++ exited with 0 +++
 </code></pre>
 <p>Same as gdb, the call stack stops at the Cgo FFI boundary.</p>
 <p>But surprisingly, <code>bpftrace</code> seems to work:</p>
-<pre><code class="language-shell">$ sudo bpftrace -e 'uprobe:./cgo:animal_print {print(ustack(perf, 64))}' -c ./cgo
-Attaching 1 probe...
-Dog: 42
-
-	472d68 animal_print+0 (./cgo)
-	46bfe4 runtime.asmcgocall.abi0+100 (./cgo)
-	46361f runtime.cgocall+127 (./cgo)
-	471e3f cgo/app._Cfunc_animal_print.abi0+63 (./cgo)
-	471f75 cgo/app.DoStuff+85 (./cgo)
-	47228f main.main+15 (./cgo)
-	437a07 runtime.main+583 (./cgo)
-	46c301 runtime.goexit.abi0+1 (./cgo)
+<pre>
+  <div class="code-header">
+    <span>Shell</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-shell"><span class="line-number">0</span>$ sudo bpftrace -e 'uprobe:./cgo:animal_print {print(ustack(perf, 64))}' -c ./cgo
+<span class="line-number">1</span>Attaching 1 probe...
+<span class="line-number">2</span>Dog: 42
+<span class="line-number">3</span>
+<span class="line-number">4</span>	472d68 animal_print+0 (./cgo)
+<span class="line-number">5</span>	46bfe4 runtime.asmcgocall.abi0+100 (./cgo)
+<span class="line-number">6</span>	46361f runtime.cgocall+127 (./cgo)
+<span class="line-number">7</span>	471e3f cgo/app._Cfunc_animal_print.abi0+63 (./cgo)
+<span class="line-number">8</span>	471f75 cgo/app.DoStuff+85 (./cgo)
+<span class="line-number">9</span>	47228f main.main+15 (./cgo)
+<span class="line-number">10</span>	437a07 runtime.main+583 (./cgo)
+<span class="line-number">11</span>	46c301 runtime.goexit.abi0+1 (./cgo)
 </code></pre>
 <p>So, let's use <code>bpftrace</code>, I guess.</p>
 <h2 id="cross-compile">
@@ -772,27 +957,42 @@ Dog: 42
 </h2>
 <p>So picture me, building my Go program (a web service) using Cgo. Locally, it builds very quickly, due to Rust and Go caching.</p>
 <p>Now, time to build in Docker to be able to test my changes:</p>
-<pre><code class="language-shell">$ time docker build [...]
-[...]
-Total execution time 101.664413146
+<pre>
+  <div class="code-header">
+    <span>Shell</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-shell"><span class="line-number">0</span>$ time docker build [...]
+<span class="line-number">1</span>[...]
+<span class="line-number">2</span>Total execution time 101.664413146
 </code></pre>
 <p>That's in seconds. Every. Single. Time. Urgh.</p>
 <p>The issue is that little to no caching is being leveraged by either compiler. Dependencies are fetched from the internet, and essentially, a clean release build is performed. That takes a looong time. Past developers tried to fix this by volume mounting host directories inside Docker but apparently, they missed a few.</p>
 <p>That's why I am convinced that Docker is not meant to build stuff. Only to run stuff. I have seen the same problem with C++ codebases being built in Docker, with Rust codebases being built in Docker, etc. Even with JavaScript/Typescript codebases built in docker (these were for some reason often the slowest to build). In the worst cases it would take over an hour to build, and developers resorted to duplicate the deployment setup to be able to run (and thus test) the app locally, completely bypassing Docker.</p>
 <p>I think the original intent to do a clean build inside Docker was because developers feared that the local environment was somehow tainted and/or that the compiler would mess up with the caching and result in a borked build. And that was the case I believe, with most C/C++ codebase relying on globally installed libraries built how-knows-how. But modern compilers are, from my perspective, really good at identifying changes, correctly caching what did not change, and rebuilding with the correct build flags, what does need to be rebuilt. And developers have improved on the Bill Of Material side. Much work has been done on existing tools to get reproducible builds. New tools have emerged, like Nix, that focus on controlled reproducible builds.</p>
 <p>So in my opinion, the ideal Docker build process is: a single static executable is built locally, relying on caching of previous builds (or possibly in CI, remote intermediate artifacts). Then, it is copied inside the image which, again ideally, for security purposes, is very bare bone. The dockerfile can look like this:</p>
-<pre><code class="language-dockerfile">FROM gcr.io/distroless/static:nonroot
-USER nonroot
-WORKDIR /home/nonroot
-
-COPY --chown=nonroot:nonroot app.exe .
-
-CMD [&quot;/home/nonroot/app.exe&quot;]
+<pre>
+  <div class="code-header">
+    <span>Dockerfile</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-dockerfile"><span class="line-number">0</span>FROM gcr.io/distroless/static:nonroot
+<span class="line-number">1</span>USER nonroot
+<span class="line-number">2</span>WORKDIR /home/nonroot
+<span class="line-number">3</span>
+<span class="line-number">4</span>COPY --chown=nonroot:nonroot app.exe .
+<span class="line-number">5</span>
+<span class="line-number">6</span>CMD [&quot;/home/nonroot/app.exe&quot;]
 </code></pre>
 <p>It's fast, simple, secure. But, to make it work, regardless of the host, we need to cross-compile.</p>
 <p>Go is praised for its uncomplicated cross-compiling support. But this goes out of the window when Cgo is enabled. Let's try:</p>
-<pre><code class="language-sh">$ GOOS=linux GOARCH=arm go build  .
-cgo/app: build constraints exclude all Go files in /home/pg/scratch/cgo/app
+<pre>
+  <div class="code-header">
+    <span>Sh</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-sh"><span class="line-number">0</span>$ GOOS=linux GOARCH=arm go build  .
+<span class="line-number">1</span>cgo/app: build constraints exclude all Go files in /home/pg/scratch/cgo/app
 </code></pre>
 <p>It fails. But fortunately, Go still supports cross-compiling with Cgo as long as we provide it with a cross-compiler.</p>
 <p>After some experimentation, my favorite way is to use <a href="https://dev.to/kristoff/zig-makes-go-cross-compilation-just-work-29ho">Zig</a> for that. That way it works the same way for people using macOS, Linux, be it on ARM, on x86_64, etc. And it makes it trivial to build native Docker images for ARM without changing the whole build system or installing additional tools.</p>
@@ -800,38 +1000,68 @@ cgo/app: build constraints exclude all Go files in /home/pg/scratch/cgo/app
 <p>So, how does it look like? Let's assume we want to target <code>x86_64-linux-musl</code>, built statically, since we use a distroless image that does not come with a libc. The benefit is that our service looks like any other Go service without Cgo.</p>
 <p>We could also target a specific glibc version and deploy on a LTS version of Ubuntu, Debian, etc. Zig supports that.</p>
 <p>First, we cross-compile our C code:</p>
-<pre><code class="language-shell">$ CC=&quot;zig cc --target=x86_64-linux-musl&quot; make -C ./c
+<pre>
+  <div class="code-header">
+    <span>Shell</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-shell"><span class="line-number">0</span>$ CC=&quot;zig cc --target=x86_64-linux-musl&quot; make -C ./c
 </code></pre>
 <p>Or, bring your own cross-compiler, you don't have to use Zig:</p>
-<pre><code class="language-shell">$ CC=musl-gcc make -C ./c
+<pre>
+  <div class="code-header">
+    <span>Shell</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-shell"><span class="line-number">0</span>$ CC=musl-gcc make -C ./c
 </code></pre>
 <p>If we have Rust code, we do instead:</p>
-<pre><code class="language-shell">$ rustup target add x86_64-unknown-linux-musl
-$ cargo build --release --all-features --target=x86_64-unknown-linux-musl
+<pre>
+  <div class="code-header">
+    <span>Shell</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-shell"><span class="line-number">0</span>$ rustup target add x86_64-unknown-linux-musl
+<span class="line-number">1</span>$ cargo build --release --all-features --target=x86_64-unknown-linux-musl
 </code></pre>
 <p>Then we build our Go code using the Zig C compiler. I put the non cross-compiling build commands just before for comparison:</p>
-<pre><code class="language-shell">$ go build .
-$ file cgo
-cgo: ELF 64-bit LSB executable, x86-64, version 1 (SYSV), dynamically linked, interpreter /lib64/ld-linux-x86-64.so.2, BuildID[sha1]=9d5da9b6a211c5635a83e4a8a346ff605f7b6e3b, for GNU/Linux 3.2.0, with debug_info, not stripped
-
-$ CGO_ENABLED=1 CC='zig cc --target=x86_64-linux-musl -static' GOOS=linux GOARCH=amd64 go build .
-$ file cgo
-cgo: ELF 64-bit LSB executable, x86-64, version 1 (SYSV), statically linked, Go BuildID=gTeiH1YL9FSvJJ2euuGd/P0s07MkwoQlcaBA6EXDD/NOYPaeKuxUZ0cnLxfpC9/YeAu_C7s53nGjPEKZDYI, with debug_info, not stripped
+<pre>
+  <div class="code-header">
+    <span>Shell</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-shell"><span class="line-number">0</span>$ go build .
+<span class="line-number">1</span>$ file cgo
+<span class="line-number">2</span>cgo: ELF 64-bit LSB executable, x86-64, version 1 (SYSV), dynamically linked, interpreter /lib64/ld-linux-x86-64.so.2, BuildID[sha1]=9d5da9b6a211c5635a83e4a8a346ff605f7b6e3b, for GNU/Linux 3.2.0, with debug_info, not stripped
+<span class="line-number">3</span>
+<span class="line-number">4</span>$ CGO_ENABLED=1 CC='zig cc --target=x86_64-linux-musl -static' GOOS=linux GOARCH=amd64 go build .
+<span class="line-number">5</span>$ file cgo
+<span class="line-number">6</span>cgo: ELF 64-bit LSB executable, x86-64, version 1 (SYSV), statically linked, Go BuildID=gTeiH1YL9FSvJJ2euuGd/P0s07MkwoQlcaBA6EXDD/NOYPaeKuxUZ0cnLxfpC9/YeAu_C7s53nGjPEKZDYI, with debug_info, not stripped
 </code></pre>
 <p>Ta dam!</p>
 <p>Time to build a native ARM image? No problem:</p>
-<pre><code class="language-shell">$ CC=&quot;zig cc --target=aarch64-linux-musl&quot; make -C ./c
-$ CGO_ENABLED=1 CC='zig cc --target=aarch64-linux-musl -static' GOOS=linux GOARCH=arm64 go build .
-$ file ./cgo
-./cgo: ELF 64-bit LSB executable, ARM aarch64, version 1 (SYSV), statically linked, Go BuildID=QRDa72MrAj44K3mt54PK/_aJwgCwTO37mKpnfElWN/0TEmGFNLMEZCx3Zv_PKs/lgDlIHFQ6-LxhCOsdhQI, with debug_info, not stripped
+<pre>
+  <div class="code-header">
+    <span>Shell</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-shell"><span class="line-number">0</span>$ CC=&quot;zig cc --target=aarch64-linux-musl&quot; make -C ./c
+<span class="line-number">1</span>$ CGO_ENABLED=1 CC='zig cc --target=aarch64-linux-musl -static' GOOS=linux GOARCH=arm64 go build .
+<span class="line-number">2</span>$ file ./cgo
+<span class="line-number">3</span>./cgo: ELF 64-bit LSB executable, ARM aarch64, version 1 (SYSV), statically linked, Go BuildID=QRDa72MrAj44K3mt54PK/_aJwgCwTO37mKpnfElWN/0TEmGFNLMEZCx3Zv_PKs/lgDlIHFQ6-LxhCOsdhQI, with debug_info, not stripped
 </code></pre>
 <p>If you've done <em>any</em> work with cross-compilation, you know that this is magic. It's supposed to take weeks to make it work, dammit!</p>
 <blockquote>
 <p>Note: Rust code typically needs libunwind for printing a backtrace, so it needs to be cross-compiled and linked as well. But no worries, Zig has you covered, it ships with libunwind sources and will, just like with musl, build it for your target, and cache the results! Just add <code>-lunwind</code> to the <code>zig cc</code> invocation, and voila.</p>
 </blockquote>
 <p>Oh, and what about the speed now? Here is a full Docker build with my real-life program (Rust + Go):</p>
-<pre><code class="language-shell">$ make docker-build
-Executed in    1.47 secs
+<pre>
+  <div class="code-header">
+    <span>Shell</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-shell"><span class="line-number">0</span>$ make docker-build
+<span class="line-number">1</span>Executed in    1.47 secs
 </code></pre>
 <p>That time includes <code>cargo build --release</code>, <code>go build</code>, and <code>docker build</code>. Most of the time is spent copying the giant executable (around 72 MiB!) into the Docker image since neither Rust nor Go are particularly good at producing small executables.</p>
 <p>So, we went from ~100s to ~1s, roughly a 100x improvement. Pretty pretty good if you ask me.</p>
@@ -849,154 +1079,194 @@ Executed in    1.47 secs
 <details>
   <summary>The full code</summary>
 <p><code>c/Makefile:</code></p>
-<pre><code class="language-make">libapi.a: api.o
-	$(AR) -rcs libapi.a api.o
-
-api.o: api.c
-	$(CC) $(CFLAGS) api.c -c
+<pre>
+  <div class="code-header">
+    <span>Make</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-make"><span class="line-number">0</span>libapi.a: api.o
+<span class="line-number">1</span>	$(AR) -rcs libapi.a api.o
+<span class="line-number">2</span>
+<span class="line-number">3</span>api.o: api.c
+<span class="line-number">4</span>	$(CC) $(CFLAGS) api.c -c
 </code></pre>
 <p><code>c/api.c:</code></p>
-<pre><code class="language-c">#include &quot;api.h&quot;
-#include &lt;assert.h&gt;
-#include &lt;inttypes.h&gt;
-#include &lt;stdio.h&gt;
-#include &lt;string.h&gt;
-
-Animal animal_make_dog() {
-  return (Animal){
-      .kind = ANIMAL_KIND_DOG,
-      .dog_tail = 42,
-  };
-}
-
-Animal animal_make_cat() {
-  return (Animal){
-      .kind = ANIMAL_KIND_CAT,
-      .cat_name =
-          {
-              .data = strdup(&quot;kitty&quot;),
-              .len = 5,
-          },
-  };
-}
-
-void animal_print(Animal *animal) {
-  switch (animal-&gt;kind) {
-  case ANIMAL_KIND_DOG:
-    printf(&quot;Dog: %&quot; PRIu16 &quot;\n&quot;, animal-&gt;dog_tail);
-    break;
-  case ANIMAL_KIND_CAT:
-    printf(&quot;Cat: %.*s\n&quot;, (int)animal-&gt;cat_name.len, animal-&gt;cat_name.data);
-    break;
-  default:
-    assert(0 &amp;&amp; &quot;unreachable&quot;);
-  }
-}
-
-uint16_t animal_dog_get_tail(Animal *animal) {
-  assert(ANIMAL_KIND_DOG == animal-&gt;kind);
-  return animal-&gt;dog_tail;
-}
-
-String animal_cat_get_name(Animal *animal) {
-  assert(ANIMAL_KIND_CAT == animal-&gt;kind);
-  return animal-&gt;cat_name;
-}
+<pre>
+  <div class="code-header">
+    <span>C</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-c"><span class="line-number">0</span>#include &quot;api.h&quot;
+<span class="line-number">1</span>#include &lt;assert.h&gt;
+<span class="line-number">2</span>#include &lt;inttypes.h&gt;
+<span class="line-number">3</span>#include &lt;stdio.h&gt;
+<span class="line-number">4</span>#include &lt;string.h&gt;
+<span class="line-number">5</span>
+<span class="line-number">6</span>Animal animal_make_dog() {
+<span class="line-number">7</span>  return (Animal){
+<span class="line-number">8</span>      .kind = ANIMAL_KIND_DOG,
+<span class="line-number">9</span>      .dog_tail = 42,
+<span class="line-number">10</span>  };
+<span class="line-number">11</span>}
+<span class="line-number">12</span>
+<span class="line-number">13</span>Animal animal_make_cat() {
+<span class="line-number">14</span>  return (Animal){
+<span class="line-number">15</span>      .kind = ANIMAL_KIND_CAT,
+<span class="line-number">16</span>      .cat_name =
+<span class="line-number">17</span>          {
+<span class="line-number">18</span>              .data = strdup(&quot;kitty&quot;),
+<span class="line-number">19</span>              .len = 5,
+<span class="line-number">20</span>          },
+<span class="line-number">21</span>  };
+<span class="line-number">22</span>}
+<span class="line-number">23</span>
+<span class="line-number">24</span>void animal_print(Animal *animal) {
+<span class="line-number">25</span>  switch (animal-&gt;kind) {
+<span class="line-number">26</span>  case ANIMAL_KIND_DOG:
+<span class="line-number">27</span>    printf(&quot;Dog: %&quot; PRIu16 &quot;\n&quot;, animal-&gt;dog_tail);
+<span class="line-number">28</span>    break;
+<span class="line-number">29</span>  case ANIMAL_KIND_CAT:
+<span class="line-number">30</span>    printf(&quot;Cat: %.*s\n&quot;, (int)animal-&gt;cat_name.len, animal-&gt;cat_name.data);
+<span class="line-number">31</span>    break;
+<span class="line-number">32</span>  default:
+<span class="line-number">33</span>    assert(0 &amp;&amp; &quot;unreachable&quot;);
+<span class="line-number">34</span>  }
+<span class="line-number">35</span>}
+<span class="line-number">36</span>
+<span class="line-number">37</span>uint16_t animal_dog_get_tail(Animal *animal) {
+<span class="line-number">38</span>  assert(ANIMAL_KIND_DOG == animal-&gt;kind);
+<span class="line-number">39</span>  return animal-&gt;dog_tail;
+<span class="line-number">40</span>}
+<span class="line-number">41</span>
+<span class="line-number">42</span>String animal_cat_get_name(Animal *animal) {
+<span class="line-number">43</span>  assert(ANIMAL_KIND_CAT == animal-&gt;kind);
+<span class="line-number">44</span>  return animal-&gt;cat_name;
+<span class="line-number">45</span>}
 </code></pre>
 <p><code>c/api.h:</code></p>
-<pre><code class="language-c">#pragma once
-#include &lt;stdint.h&gt;
-
-typedef struct {
-  char *data;
-  uint64_t len;
-} String;
-
-typedef enum {
-  ANIMAL_KIND_DOG,
-  ANIMAL_KIND_CAT,
-} AnimalKind;
-
-typedef struct {
-  AnimalKind kind;
-  union {
-    String cat_name;   // Only for `ANIMAL_KIND_CAT`.
-    uint16_t dog_tail; // Only for `ANIMAL_KIND_DOG`.
-  };
-} Animal;
-
-Animal animal_make_dog();
-
-Animal animal_make_cat();
-
-void animal_print(Animal *animal);
-
-uint16_t animal_dog_get_tail(Animal *animal);
-
-String animal_cat_get_name(Animal *animal);
+<pre>
+  <div class="code-header">
+    <span>C</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-c"><span class="line-number">0</span>#pragma once
+<span class="line-number">1</span>#include &lt;stdint.h&gt;
+<span class="line-number">2</span>
+<span class="line-number">3</span>typedef struct {
+<span class="line-number">4</span>  char *data;
+<span class="line-number">5</span>  uint64_t len;
+<span class="line-number">6</span>} String;
+<span class="line-number">7</span>
+<span class="line-number">8</span>typedef enum {
+<span class="line-number">9</span>  ANIMAL_KIND_DOG,
+<span class="line-number">10</span>  ANIMAL_KIND_CAT,
+<span class="line-number">11</span>} AnimalKind;
+<span class="line-number">12</span>
+<span class="line-number">13</span>typedef struct {
+<span class="line-number">14</span>  AnimalKind kind;
+<span class="line-number">15</span>  union {
+<span class="line-number">16</span>    String cat_name;   // Only for `ANIMAL_KIND_CAT`.
+<span class="line-number">17</span>    uint16_t dog_tail; // Only for `ANIMAL_KIND_DOG`.
+<span class="line-number">18</span>  };
+<span class="line-number">19</span>} Animal;
+<span class="line-number">20</span>
+<span class="line-number">21</span>Animal animal_make_dog();
+<span class="line-number">22</span>
+<span class="line-number">23</span>Animal animal_make_cat();
+<span class="line-number">24</span>
+<span class="line-number">25</span>void animal_print(Animal *animal);
+<span class="line-number">26</span>
+<span class="line-number">27</span>uint16_t animal_dog_get_tail(Animal *animal);
+<span class="line-number">28</span>
+<span class="line-number">29</span>String animal_cat_get_name(Animal *animal);
 </code></pre>
 <p><code>app/app.go:</code></p>
-<pre><code class="language-go">package app
-
-// NOTE: Do not use -Wall.
-
-// #cgo CFLAGS: -g -O2 -I${SRCDIR}/../c/
-// #cgo LDFLAGS: ${SRCDIR}/../c/libapi.a
-// #include &lt;api.h&gt;
-// void initial_setup();
-import &quot;C&quot;
-
-func init() {
-	C.initial_setup()
-}
-
-func AnimalDogKind() int {
-	return C.ANIMAL_KIND_DOG
-}
-
-func AnimalMakeDog() C.Animal {
-	return C.animal_make_dog()
-}
-
-func DoStuff() {
-	dog := C.animal_make_dog()
-	C.animal_print(&amp;dog)
-
-}
+<pre>
+  <div class="code-header">
+    <span>Go</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-go"><span class="line-number">0</span>package app
+<span class="line-number">1</span>
+<span class="line-number">2</span>// NOTE: Do not use -Wall.
+<span class="line-number">3</span>
+<span class="line-number">4</span>// #cgo CFLAGS: -g -O2 -I${SRCDIR}/../c/
+<span class="line-number">5</span>// #cgo LDFLAGS: ${SRCDIR}/../c/libapi.a
+<span class="line-number">6</span>// #include &lt;api.h&gt;
+<span class="line-number">7</span>// void initial_setup();
+<span class="line-number">8</span>import &quot;C&quot;
+<span class="line-number">9</span>
+<span class="line-number">10</span>func init() {
+<span class="line-number">11</span>	C.initial_setup()
+<span class="line-number">12</span>}
+<span class="line-number">13</span>
+<span class="line-number">14</span>func AnimalDogKind() int {
+<span class="line-number">15</span>	return C.ANIMAL_KIND_DOG
+<span class="line-number">16</span>}
+<span class="line-number">17</span>
+<span class="line-number">18</span>func AnimalMakeDog() C.Animal {
+<span class="line-number">19</span>	return C.animal_make_dog()
+<span class="line-number">20</span>}
+<span class="line-number">21</span>
+<span class="line-number">22</span>func DoStuff() {
+<span class="line-number">23</span>	dog := C.animal_make_dog()
+<span class="line-number">24</span>	C.animal_print(&amp;dog)
+<span class="line-number">25</span>
+<span class="line-number">26</span>}
 </code></pre>
 <p><code>app/app_test.go:</code></p>
-<pre><code class="language-go">package app
-
-import &quot;testing&quot;
-
-func TestAnimalMakeDog(t *testing.T) {
-	dog := AnimalMakeDog()
-	if int(dog.kind) != AnimalDogKind() {
-		panic(&quot;wrong kind&quot;)
-	}
-}
+<pre>
+  <div class="code-header">
+    <span>Go</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-go"><span class="line-number">0</span>package app
+<span class="line-number">1</span>
+<span class="line-number">2</span>import &quot;testing&quot;
+<span class="line-number">3</span>
+<span class="line-number">4</span>func TestAnimalMakeDog(t *testing.T) {
+<span class="line-number">5</span>	dog := AnimalMakeDog()
+<span class="line-number">6</span>	if int(dog.kind) != AnimalDogKind() {
+<span class="line-number">7</span>		panic(&quot;wrong kind&quot;)
+<span class="line-number">8</span>	}
+<span class="line-number">9</span>}
 </code></pre>
 <p><code>app/cfuncs.go:</code></p>
-<pre><code class="language-go">package app
-
-/*
-void initial_setup(){}
-*/
-import &quot;C&quot;
+<pre>
+  <div class="code-header">
+    <span>Go</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-go"><span class="line-number">0</span>package app
+<span class="line-number">1</span>
+<span class="line-number">2</span>/*
+<span class="line-number">3</span>void initial_setup(){}
+<span class="line-number">4</span>*/
+<span class="line-number">5</span>import &quot;C&quot;
 </code></pre>
 <p><code>main.go:</code></p>
-<pre><code class="language-go">package main
-
-import &quot;cgo/app&quot;
-
-func main() {
-	app.DoStuff()
-}
+<pre>
+  <div class="code-header">
+    <span>Go</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-go"><span class="line-number">0</span>package main
+<span class="line-number">1</span>
+<span class="line-number">2</span>import &quot;cgo/app&quot;
+<span class="line-number">3</span>
+<span class="line-number">4</span>func main() {
+<span class="line-number">5</span>	app.DoStuff()
+<span class="line-number">6</span>}
 </code></pre>
 <p><code>go.mod:</code></p>
-<pre><code class="language-go">module cgo
-
-go 1.23.1
+<pre>
+  <div class="code-header">
+    <span>Go</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-go"><span class="line-number">0</span>module cgo
+<span class="line-number">1</span>
+<span class="line-number">2</span>go 1.23.1
 </code></pre>
 </details>
 <p><a href="/blog"> ⏴ Back to all articles</a></p>

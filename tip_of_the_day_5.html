@@ -11,9 +11,9 @@ Do not edit it by hand.
 <link type="application/atom+xml" href="/blog/feed.xml" rel="self">
 <link rel="shortcut icon" type="image/ico" href="/blog/favicon.ico">
 <link rel="stylesheet" type="text/css" href="main.css">
-<link rel="stylesheet" href="https://unpkg.com/@highlightjs/cdn-assets@11.8.0/styles/default.min.css">
-<script src="highlight.min.js" defer></script>
-<script src="x86asm.min.js" defer></script>
+<!-- <link rel="stylesheet" href="https://unpkg.com/@highlightjs/cdn-assets@11.8.0/styles/default.min.css"> -->
+<!-- <script src="highlight.min.js" defer></script> -->
+<!-- <script src="x86asm.min.js" defer></script> -->
 <script src="main.js" defer></script>
 <script type="module" src="search.js" async></script>
 </head>
@@ -80,28 +80,43 @@ Do not edit it by hand.
 <div class="tags"> <a href="/blog/articles-by-tag.html#go" class="tag">Go</a> <a href="/blog/articles-by-tag.html#tip-of-the-day" class="tag">Tip of the day</a> </div>
 </div>
 <p>I had an issue with Go tools around versioning, and here's how I solved it. It could be useful to others. This was the error:</p>
-<pre><code class="language-shell">$ staticcheck  ./...
--: module requires at least go1.23.6, but Staticcheck was built with go1.23.1 (compile)
-$ go version
-go version go1.23.6 linux/amd64
+<pre>
+  <div class="code-header">
+    <span>Shell</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-shell"><span class="line-number">0</span>$ staticcheck  ./...
+<span class="line-number">1</span>-: module requires at least go1.23.6, but Staticcheck was built with go1.23.1 (compile)
+<span class="line-number">2</span>$ go version
+<span class="line-number">3</span>go version go1.23.6 linux/amd64
 </code></pre>
 <p>Indeed the project was specifying <code>go 1.23.6</code> in <code>go.mod</code>.</p>
 <p>Even after removing the staticcheck binary and re-installing it I still had the same issue:</p>
-<pre><code class="language-shell">$ which staticcheck
-/home/pg/go/bin/staticcheck
-$ rm /home/pg/go/bin/staticcheck
-$ which staticcheck
-which: no staticcheck 
-$ go install honnef.co/go/tools/cmd/staticcheck@v0.5.1
-$ staticcheck  ./...
--: module requires at least go1.23.6, but Staticcheck was built with go1.23.1 (compile)
+<pre>
+  <div class="code-header">
+    <span>Shell</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-shell"><span class="line-number">0</span>$ which staticcheck
+<span class="line-number">1</span>/home/pg/go/bin/staticcheck
+<span class="line-number">2</span>$ rm /home/pg/go/bin/staticcheck
+<span class="line-number">3</span>$ which staticcheck
+<span class="line-number">4</span>which: no staticcheck 
+<span class="line-number">5</span>$ go install honnef.co/go/tools/cmd/staticcheck@v0.5.1
+<span class="line-number">6</span>$ staticcheck  ./...
+<span class="line-number">7</span>-: module requires at least go1.23.6, but Staticcheck was built with go1.23.1 (compile)
 </code></pre>
 <p>I even tried the <code>-a</code> flag for <code>go install</code> to force a clean build (since <code>go install</code> fetches the sources and builds them) to no avail.</p>
 <p><strong>Solution:</strong> following <a href="https://go.dev/doc/manage-install">https://go.dev/doc/manage-install</a>, I installed the specific version of Go I needed and used that to install the tool:</p>
-<pre><code class="language-shell">$ go install golang.org/dl/go1.23.6@latest
-$ go1.23.6 download
-$ go1.23.6 install honnef.co/go/tools/cmd/staticcheck@v0.5.1
-$ staticcheck  -tags=integration_tests ./... # Works!
+<pre>
+  <div class="code-header">
+    <span>Shell</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-shell"><span class="line-number">0</span>$ go install golang.org/dl/go1.23.6@latest
+<span class="line-number">1</span>$ go1.23.6 download
+<span class="line-number">2</span>$ go1.23.6 install honnef.co/go/tools/cmd/staticcheck@v0.5.1
+<span class="line-number">3</span>$ staticcheck  -tags=integration_tests ./... # Works!
 </code></pre>
 <p>That was a TIL for me.</p>
 <p>Note that Go 1.24 supports the project listing tools directly in <code>go.mod</code> which would probably solve this issue directly.</p>

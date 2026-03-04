@@ -11,9 +11,9 @@ Do not edit it by hand.
 <link type="application/atom+xml" href="/blog/feed.xml" rel="self">
 <link rel="shortcut icon" type="image/ico" href="/blog/favicon.ico">
 <link rel="stylesheet" type="text/css" href="main.css">
-<link rel="stylesheet" href="https://unpkg.com/@highlightjs/cdn-assets@11.8.0/styles/default.min.css">
-<script src="highlight.min.js" defer></script>
-<script src="x86asm.min.js" defer></script>
+<!-- <link rel="stylesheet" href="https://unpkg.com/@highlightjs/cdn-assets@11.8.0/styles/default.min.css"> -->
+<!-- <script src="highlight.min.js" defer></script> -->
+<!-- <script src="x86asm.min.js" defer></script> -->
 <script src="main.js" defer></script>
 <script type="module" src="search.js" async></script>
 </head>
@@ -170,11 +170,16 @@ Do not edit it by hand.
 <p>I will be using the <code>nasm</code> assembler which is simple, cross-platform, fast, and has quite a readable syntax.</p>
 <p>For the GUI, I will be using X11 since I am based on Linux and it has some interesting properties that make it easy to do without external libraries. If you are running Wayland, it should work with XWayland out of the box (<em>EDIT: After testing it, I can confirm it does work</em>), and perhaps also on macOS with XQuartz, but I have not tested those (for macOS, remember to tell <code>nasm</code> to use the <code>macho64</code> format, since macOS does not use the ELF format! Also, the stock linker on macOS does not support <code>-static</code>.).</p>
 <p>Note that the only difference between *nix operating systems in the context of this program is the system call values. Since I am based on Linux I will be using the Linux system call values, but 'porting' this program to, say, FreeBSD, would only require to change those values, possibly using the <code>nasm</code> macros:</p>
-<pre><code class="language-x86asm">%ifdef linux
-  %define SYSCALL_EXIT 60
-%elifdef freebsd
-  %define SYSCALL_EXIT 1
-%endif
+<pre>
+  <div class="code-header">
+    <span>X86asm</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-x86asm"><span class="line-number">0</span>%ifdef linux
+<span class="line-number">1</span>  %define SYSCALL_EXIT 60
+<span class="line-number">2</span>%elifdef freebsd
+<span class="line-number">3</span>  %define SYSCALL_EXIT 1
+<span class="line-number">4</span>%endif
 </code></pre>
 <blockquote>
 <p><code>%define</code> and its variants are part of the macro system in <code>nasm</code>, which is powerful but we will only use it here to define constants, just like in C: <code>#define FOO 3</code>.</p>
@@ -198,37 +203,57 @@ Do not edit it by hand.
 </h2>
 <p>Let's start slow with minimal program that simply exits with 0, and build from there.</p>
 <p>First, we tell nasm we are writing a 64 bit program and that we target x86_64. Then, we need a main function, which we call <code>_start</code> and needs to be visible since this is the entry point of our program (hence the <code>global</code> keyword):</p>
-<pre><code class="language-x86asm">; Comments start with a semicolon!
-BITS 64 ; 64 bits.
-CPU X64 ; Target the x86_64 family of CPUs.
-
-section .text
-global _start
-_start:
-  xor rax, rax ; Set rax to 0. Not actually needed, it's just to avoid having an empty body.
+<pre>
+  <div class="code-header">
+    <span>X86asm</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-x86asm"><span class="line-number">0</span>; Comments start with a semicolon!
+<span class="line-number">1</span>BITS 64 ; 64 bits.
+<span class="line-number">2</span>CPU X64 ; Target the x86_64 family of CPUs.
+<span class="line-number">3</span>
+<span class="line-number">4</span>section .text
+<span class="line-number">5</span>global _start
+<span class="line-number">6</span>_start:
+<span class="line-number">7</span>  xor rax, rax ; Set rax to 0. Not actually needed, it's just to avoid having an empty body.
 </code></pre>
 <p><code>section .text</code> is telling <code>nasm</code> and the linker, that what follows is code that should be placed in the text section of the executable.</p>
 <p>We will soon have a <code>section .data</code> for our global variables.</p>
 <p>Note that those section usually get mapped by the OS to different pages in memory with different permissions (visible with <code>readelf -l</code>) so that the text section is not writable and the data section is not executable, but that varies from OS to OS.</p>
 <p>The <code>_start</code> function has a body that does nothing for now, but not for long. The actual name of the main function is actually up to us, it's just that <code>start</code> or <code>_start</code> is usual.</p>
 <p>We build and run our little program like this:</p>
-<pre><code class="language-shell">$ nasm -f elf64 -g main.nasm &amp;&amp; ld main.o -static -o main
+<pre>
+  <div class="code-header">
+    <span>Shell</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-shell"><span class="line-number">0</span>$ nasm -f elf64 -g main.nasm &amp;&amp; ld main.o -static -o main
 </code></pre>
 <p><code>nasm</code> actually only produces an object file, so to get an executable out of it, we need to invoke the linker <code>ld</code>. The flag <code>-g</code> is telling <code>nasm</code> to produce debugging information which is immensely useful when writing raw assembly, since firing the debugger is often our only recourse in face of a bug.</p>
 <p><em>To remove the debugging information, we can pass <code>-s</code> to the linker, for example when we are about to ship our program and want to save a few KiB.</em></p>
 <p>We finally have an executable:</p>
-<pre><code class="language-shell">$ file ./main
-main: ELF 64-bit LSB executable, x86-64, version 1 (SYSV), statically linked, with debug_info, not stripped
+<pre>
+  <div class="code-header">
+    <span>Shell</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-shell"><span class="line-number">0</span>$ file ./main
+<span class="line-number">1</span>main: ELF 64-bit LSB executable, x86-64, version 1 (SYSV), statically linked, with debug_info, not stripped
 </code></pre>
 <p>We can see the different sections with <code>readelf -a ./main</code>, and it tells us that the <code>.text</code> section, which contains our code, is only 3 bytes long.</p>
 <p>Now, if we try to run our program, it will segfault. That's because we are expected by the operating system to exit (using the exit system call) ourselves (otherwise the CPU will keep executing whatever comes after our entry point until it hits an unmapped page, triggering a segfault). That's what libc does for us in C programs, so let's handle that:</p>
-<pre><code class="language-x86asm">%define SYSCALL_EXIT 60
-
-global _start:
-_start:
-  mov rax, SYSCALL_EXIT
-  mov rdi, 0
-  syscall
+<pre>
+  <div class="code-header">
+    <span>X86asm</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-x86asm"><span class="line-number">0</span>%define SYSCALL_EXIT 60
+<span class="line-number">1</span>
+<span class="line-number">2</span>global _start:
+<span class="line-number">3</span>_start:
+<span class="line-number">4</span>  mov rax, SYSCALL_EXIT
+<span class="line-number">5</span>  mov rdi, 0
+<span class="line-number">6</span>  syscall
 </code></pre>
 <blockquote>
 <p><code>nasm</code> uses the Intel syntax: <code>&lt;instruction&gt; &lt;destination&gt;, &lt;source&gt;</code>, so <code>mov rdi, 0</code> puts 0 into the register <code>rdi</code>. Other assemblers use the AT&amp;T syntax which swaps the source and destination. My advice: pick one syntax and one assembler and stick to it, both syntaxes are fine and most tools have some support for both.</p>
@@ -244,18 +269,33 @@ We then use the instruction <code>syscall</code> and check <code>rax</code> for 
 </blockquote>
 <p>Back to our program: when we run it, we see...nothing. That's because everything went well, true to the UNIX philosophy!</p>
 <p>We can check the exit code:</p>
-<pre><code class="language-shell">$ ./main; echo $?
-0
+<pre>
+  <div class="code-header">
+    <span>Shell</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-shell"><span class="line-number">0</span>$ ./main; echo $?
+<span class="line-number">1</span>0
 </code></pre>
 <p>Changing <code>mov rdi, 0</code> to <code>mov rdi, 8</code> will now result in:</p>
-<pre><code class="language-shell">$ ./main; echo $?
-8
+<pre>
+  <div class="code-header">
+    <span>Shell</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-shell"><span class="line-number">0</span>$ ./main; echo $?
+<span class="line-number">1</span>8
 </code></pre>
 <p>Another way to observe system calls made by a program is with <code>strace</code>, which will also prove very useful when troubleshooting. On some BSD, its equivalent is <code>truss</code> or <code>dtruss</code>.</p>
-<pre><code class="language-shell">$ strace ./main
-execve(&quot;./main&quot;, [&quot;./main&quot;], 0x7ffc60e6bf10 /* 60 vars */) = 0
-exit(8)                                 = ?
-+++ exited with 8 +++
+<pre>
+  <div class="code-header">
+    <span>Shell</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-shell"><span class="line-number">0</span>$ strace ./main
+<span class="line-number">1</span>execve(&quot;./main&quot;, [&quot;./main&quot;], 0x7ffc60e6bf10 /* 60 vars */) = 0
+<span class="line-number">2</span>exit(8)                                 = ?
+<span class="line-number">3</span>+++ exited with 8 +++
 </code></pre>
 <p>Let's change it back to 0 and continue.</p>
 <h2 id="a-stack-primer">
@@ -303,31 +343,36 @@ exit(8)                                 = ?
   </tbody>
 </table>
 <p>We then pass the address on the stack of the beginning of the string to the <code>write</code> syscall, as well as its length:</p>
-<pre><code class="language-x86asm">%define SYSCALL_WRITE 1
-%define STDOUT 1
-
-print_hello:
-  push rbp ; Save rbp on the stack to be able to restore it at the end of the function.
-  mov rbp, rsp ; Set rbp to rsp
-
-  sub rsp, 5 ; Reserve 5 bytes of space on the stack.
-  mov BYTE [rsp + 0], 'h' ; Set each byte on the stack to a string character.
-  mov BYTE [rsp + 1], 'e'
-  mov BYTE [rsp + 2], 'l'
-  mov BYTE [rsp + 3], 'l'
-  mov BYTE [rsp + 4], 'o'
-
-  ; Make the write syscall
-  mov rax, SYSCALL_WRITE
-  mov rdi, STDOUT ; Write to stdout.
-  lea rsi, [rsp] ; Address on the stack of the string.
-  mov rdx, 5 ; Pass the length of the string which is 5.
-  syscall
-
-  add rsp, 5 ; Restore the stack to its original value.
-
-  pop rbp ; Restore rbp
-  ret
+<pre>
+  <div class="code-header">
+    <span>X86asm</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-x86asm"><span class="line-number">0</span>%define SYSCALL_WRITE 1
+<span class="line-number">1</span>%define STDOUT 1
+<span class="line-number">2</span>
+<span class="line-number">3</span>print_hello:
+<span class="line-number">4</span>  push rbp ; Save rbp on the stack to be able to restore it at the end of the function.
+<span class="line-number">5</span>  mov rbp, rsp ; Set rbp to rsp
+<span class="line-number">6</span>
+<span class="line-number">7</span>  sub rsp, 5 ; Reserve 5 bytes of space on the stack.
+<span class="line-number">8</span>  mov BYTE [rsp + 0], 'h' ; Set each byte on the stack to a string character.
+<span class="line-number">9</span>  mov BYTE [rsp + 1], 'e'
+<span class="line-number">10</span>  mov BYTE [rsp + 2], 'l'
+<span class="line-number">11</span>  mov BYTE [rsp + 3], 'l'
+<span class="line-number">12</span>  mov BYTE [rsp + 4], 'o'
+<span class="line-number">13</span>
+<span class="line-number">14</span>  ; Make the write syscall
+<span class="line-number">15</span>  mov rax, SYSCALL_WRITE
+<span class="line-number">16</span>  mov rdi, STDOUT ; Write to stdout.
+<span class="line-number">17</span>  lea rsi, [rsp] ; Address on the stack of the string.
+<span class="line-number">18</span>  mov rdx, 5 ; Pass the length of the string which is 5.
+<span class="line-number">19</span>  syscall
+<span class="line-number">20</span>
+<span class="line-number">21</span>  add rsp, 5 ; Restore the stack to its original value.
+<span class="line-number">22</span>
+<span class="line-number">23</span>  pop rbp ; Restore rbp
+<span class="line-number">24</span>  ret
 </code></pre>
 <blockquote>
 <p><code>lea destination, source</code> loads the effective address of the source into the destination, which is how C pointers are implemented. To dereference a memory location we use square brackets. So, assuming we just have loaded an address into <code>rdi</code> with <code>lea</code>, e.g. <code>lea rdi, [hello_world]</code>, and we want to store the value at the address into <code>rax</code>, we do: <code>mov rax, [rdi]</code>. We usually have to tell <code>nasm</code> how many bytes to dereference with <code>BYTE</code>, <code>WORD</code>, <code>DWORD</code>, <code>QWORD</code> so: <code>mov rax, DWORD [rdi]</code>, because <code>nasm</code> does not keep track of the sizes of each variable. That's also what the C compiler does when we dereference a <code>int8_t</code>, <code>int16_t</code>, <code>int32_t</code>, and <code>int64_t</code> pointer, respectively.</p>
@@ -340,18 +385,23 @@ print_hello:
 <p>So if function A calls function B which in turn calls function C, and each function stores on the stack the address of the caller frame, we know where to find on the stack the address of each. Thus, we can print a stack trace in any location of our program simply by inspecting the stack. Pretty nifty. That's already very useful to profilers and other similar tools.</p>
 <p>We must not forget of course, just before we exit the function, to restore <code>rbp</code> to its original value (which is still on the stack at that point): that's <code>pop rbp</code>. This is also known as the function epilog. Another way to look at it is that we remove the last element of the linked list of call frames, since we are exiting the leaf function.</p>
 <p>Don't worry if you have not fully understood everything, just remember to always have the function epilogs and prologs and you'll be fine:</p>
-<pre><code class="language-x86asm">my_function:
-  push rbp
-  mov rbp, rsp
-
-  sub rsp, N
-
-  [...]
-
-
-  add rsp, N
-  pop rbp
-  ret
+<pre>
+  <div class="code-header">
+    <span>X86asm</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-x86asm"><span class="line-number">0</span>my_function:
+<span class="line-number">1</span>  push rbp
+<span class="line-number">2</span>  mov rbp, rsp
+<span class="line-number">3</span>
+<span class="line-number">4</span>  sub rsp, N
+<span class="line-number">5</span>
+<span class="line-number">6</span>  [...]
+<span class="line-number">7</span>
+<span class="line-number">8</span>
+<span class="line-number">9</span>  add rsp, N
+<span class="line-number">10</span>  pop rbp
+<span class="line-number">11</span>  ret
 </code></pre>
 <p><strong>Note</strong>: There is an optimization method that uses <code>rbp</code> as a standard register (with a C compiler, that's the flag <code>-fomit-frame-pointer</code>), which means we lose the information about the call stack. My advice is: never do this, it is no worth it.</p>
 <blockquote>
@@ -359,78 +409,88 @@ print_hello:
 </blockquote>
 <p>Good catch! The only reason why this program works, is that <code>print_hello</code> is a leaf function, meaning it does not call another function. Remember, the stack needs to be 16 bytes aligned when we do a <code>call</code>!</p>
 <p>So the correct way would be:</p>
-<pre><code class="language-x86asm">print_hello:
-  push rbp
-  mov rbp, rsp
-
-  sub rsp, 16
-  mov BYTE [rsp + 0], 'h'
-  mov BYTE [rsp + 1], 'e'
-  mov BYTE [rsp + 2], 'l'
-  mov BYTE [rsp + 3], 'l'
-  mov BYTE [rsp + 4], 'o'
-
-  mov rax, SYSCALL_WRITE
-  mov rdi, STDOUT
-  lea rsi, [rsp]
-  mov rdx, 5
-  syscall
-
-  call print_world
-
-  add rsp, 16
-
-  pop rbp
-  ret
+<pre>
+  <div class="code-header">
+    <span>X86asm</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-x86asm"><span class="line-number">0</span>print_hello:
+<span class="line-number">1</span>  push rbp
+<span class="line-number">2</span>  mov rbp, rsp
+<span class="line-number">3</span>
+<span class="line-number">4</span>  sub rsp, 16
+<span class="line-number">5</span>  mov BYTE [rsp + 0], 'h'
+<span class="line-number">6</span>  mov BYTE [rsp + 1], 'e'
+<span class="line-number">7</span>  mov BYTE [rsp + 2], 'l'
+<span class="line-number">8</span>  mov BYTE [rsp + 3], 'l'
+<span class="line-number">9</span>  mov BYTE [rsp + 4], 'o'
+<span class="line-number">10</span>
+<span class="line-number">11</span>  mov rax, SYSCALL_WRITE
+<span class="line-number">12</span>  mov rdi, STDOUT
+<span class="line-number">13</span>  lea rsi, [rsp]
+<span class="line-number">14</span>  mov rdx, 5
+<span class="line-number">15</span>  syscall
+<span class="line-number">16</span>
+<span class="line-number">17</span>  call print_world
+<span class="line-number">18</span>
+<span class="line-number">19</span>  add rsp, 16
+<span class="line-number">20</span>
+<span class="line-number">21</span>  pop rbp
+<span class="line-number">22</span>  ret
 </code></pre>
 <p>Since when we enter the function, the value of <code>rsp</code> is <code>16*N+8</code>, and pushing <code>rbp</code> increases it by 8, the stack pointer is 16 bytes aligned at the point of <code>sub rsp, 16</code>. Decrementing it by 16 (or a multiple of 16) keeps it 16 bytes aligned.</p>
 <p>We now can safely call another function from within <code>print_hello</code>:</p>
-<pre><code class="language-x86asm">print_world:
-  push rbp
-  mov rbp, rsp
-
-  sub rsp, 16
-  mov BYTE [rsp + 0], ' '
-  mov BYTE [rsp + 1], 'w'
-  mov BYTE [rsp + 2], 'o'
-  mov BYTE [rsp + 3], 'r'
-  mov BYTE [rsp + 4], 'l'
-  mov BYTE [rsp + 5], 'd'
-
-  mov rax, SYSCALL_WRITE
-  mov rdi, STDOUT
-  lea rsi, [rsp]
-  mov rdx, 6
-  syscall
-
-  add rsp, 16
-
-  pop rbp
-  ret
-
-print_hello:
-  push rbp
-  mov rbp, rsp
-
-  sub rsp, 16
-  mov BYTE [rsp + 0], 'h'
-  mov BYTE [rsp + 1], 'e'
-  mov BYTE [rsp + 2], 'l'
-  mov BYTE [rsp + 3], 'l'
-  mov BYTE [rsp + 4], 'o'
-
-  mov rax, SYSCALL_WRITE
-  mov rdi, STDOUT
-  lea rsi, [rsp]
-  mov rdx, 5
-  syscall
-
-  call print_world
-
-  add rsp, 16
-
-  pop rbp
-  ret
+<pre>
+  <div class="code-header">
+    <span>X86asm</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-x86asm"><span class="line-number">0</span>print_world:
+<span class="line-number">1</span>  push rbp
+<span class="line-number">2</span>  mov rbp, rsp
+<span class="line-number">3</span>
+<span class="line-number">4</span>  sub rsp, 16
+<span class="line-number">5</span>  mov BYTE [rsp + 0], ' '
+<span class="line-number">6</span>  mov BYTE [rsp + 1], 'w'
+<span class="line-number">7</span>  mov BYTE [rsp + 2], 'o'
+<span class="line-number">8</span>  mov BYTE [rsp + 3], 'r'
+<span class="line-number">9</span>  mov BYTE [rsp + 4], 'l'
+<span class="line-number">10</span>  mov BYTE [rsp + 5], 'd'
+<span class="line-number">11</span>
+<span class="line-number">12</span>  mov rax, SYSCALL_WRITE
+<span class="line-number">13</span>  mov rdi, STDOUT
+<span class="line-number">14</span>  lea rsi, [rsp]
+<span class="line-number">15</span>  mov rdx, 6
+<span class="line-number">16</span>  syscall
+<span class="line-number">17</span>
+<span class="line-number">18</span>  add rsp, 16
+<span class="line-number">19</span>
+<span class="line-number">20</span>  pop rbp
+<span class="line-number">21</span>  ret
+<span class="line-number">22</span>
+<span class="line-number">23</span>print_hello:
+<span class="line-number">24</span>  push rbp
+<span class="line-number">25</span>  mov rbp, rsp
+<span class="line-number">26</span>
+<span class="line-number">27</span>  sub rsp, 16
+<span class="line-number">28</span>  mov BYTE [rsp + 0], 'h'
+<span class="line-number">29</span>  mov BYTE [rsp + 1], 'e'
+<span class="line-number">30</span>  mov BYTE [rsp + 2], 'l'
+<span class="line-number">31</span>  mov BYTE [rsp + 3], 'l'
+<span class="line-number">32</span>  mov BYTE [rsp + 4], 'o'
+<span class="line-number">33</span>
+<span class="line-number">34</span>  mov rax, SYSCALL_WRITE
+<span class="line-number">35</span>  mov rdi, STDOUT
+<span class="line-number">36</span>  lea rsi, [rsp]
+<span class="line-number">37</span>  mov rdx, 5
+<span class="line-number">38</span>  syscall
+<span class="line-number">39</span>
+<span class="line-number">40</span>  call print_world
+<span class="line-number">41</span>
+<span class="line-number">42</span>  add rsp, 16
+<span class="line-number">43</span>
+<span class="line-number">44</span>  pop rbp
+<span class="line-number">45</span>  ret
 </code></pre>
 <p>And we get <code>hello world</code> as an output.</p>
 <p>Now, try to do <code>sub rsp, 5</code> in <code>print_hello</code>, and your program <em>may</em> crash. There is no guarantee, that's what makes it hard to track down.</p>
@@ -443,14 +503,24 @@ print_hello:
 </ul>
 <p>And you'll be safe.</p>
 <p>The last point is interesting, see for yourself:</p>
-<pre><code class="language-shell">(gdb) p -100 &amp; -16
-$1 = -112
-(gdb) p -112 &amp; -16
-$2 = -112
+<pre>
+  <div class="code-header">
+    <span>Shell</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-shell"><span class="line-number">0</span>(gdb) p -100 &amp; -16
+<span class="line-number">1</span>$1 = -112
+<span class="line-number">2</span>(gdb) p -112 &amp; -16
+<span class="line-number">3</span>$2 = -112
 </code></pre>
 <p>Which translates in assembly to:</p>
-<pre><code class="language-x86asm">sub rsp, 100
-and rsp, -16
+<pre>
+  <div class="code-header">
+    <span>X86asm</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-x86asm"><span class="line-number">0</span>sub rsp, 100
+<span class="line-number">1</span>and rsp, -16
 </code></pre>
 <p>Finally, following those conventions means that our assembly functions can be safely called from C or other languages following the <a href="https://wiki.osdev.org/System_V_ABI">System V ABI</a>, without any modification, which is great.</p>
 <p><em>I have not talked about the red zone which is a 128 byte region at the bottom of the stack which our program is free to use as it pleases without having to change the stack pointer. In my opinion, it is not helpful and creates hard to track bugs, so I do not recommend to use it. To disable it entirely, run: <code>nasm -f elf64 -g main.nasm &amp;&amp; cc main.o -static -o main -mno-red-zone -nostdlib</code></em>.</p>
@@ -459,54 +529,74 @@ and rsp, -16
   <a class="hash-anchor" href="#opening-a-socket" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>We now are ready to open a socket with the <code>socket(2)</code> syscall, so we add a few constants, taken from the libc headers (<em>note that those values might actually be different on a different Unix, I have not checked. Again, a few <code>%ifdef</code> can easily remedy this discrepancy</em>):</p>
-<pre><code class="language-x86asm">%define AF_UNIX 1
-%define SOCK_STREAM 1
-
-%define SYSCALL_SOCKET 41
+<pre>
+  <div class="code-header">
+    <span>X86asm</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-x86asm"><span class="line-number">0</span>%define AF_UNIX 1
+<span class="line-number">1</span>%define SOCK_STREAM 1
+<span class="line-number">2</span>
+<span class="line-number">3</span>%define SYSCALL_SOCKET 41
 </code></pre>
 <p>The <code>AF_UNIX</code> constant means we want a Unix domain socket, and <code>SOCK_STREAM</code> means <a href="https://en.wikipedia.org/wiki/Unix_domain_socket">stream-oriented</a>. We use a domain socket since we now that our server is running on the same machine and it should be faster, but we could change it to <code>AF_INET</code> to connect to a remote IPv4 address for example.</p>
 <p>We then fill the relevant registers with those values and invoke the system call:</p>
-<pre><code class="language-x86asm">  mov rax, SYSCALL_SOCKET
-  mov rdi, AF_UNIX ; Unix socket.
-  mov rsi, SOCK_STREAM ; Stream oriented.
-  mov rdx, 0 ; Automatic protocol.
-  syscall
+<pre>
+  <div class="code-header">
+    <span>X86asm</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-x86asm"><span class="line-number">0</span>  mov rax, SYSCALL_SOCKET
+<span class="line-number">1</span>  mov rdi, AF_UNIX ; Unix socket.
+<span class="line-number">2</span>  mov rsi, SOCK_STREAM ; Stream oriented.
+<span class="line-number">3</span>  mov rdx, 0 ; Automatic protocol.
+<span class="line-number">4</span>  syscall
 </code></pre>
 <p>The C equivalent would be: <code>socket(AF_UNIX, SOCK_STREAM, 0);</code>. So you see that if we fill the registers in the same order as the C function parameters, we stay close to what C code would do.</p>
 <p>The whole program now looks like this:</p>
-<pre><code class="language-x86asm">BITS 64 ; 64 bits.
-CPU X64 ; Target the x86_64 family of CPUs.
-
-section .text
-
-%define AF_UNIX 1
-%define SOCK_STREAM 1
-
-%define SYSCALL_SOCKET 41
-%define SYSCALL_EXIT 60
-
-global _start:
-_start:
-  ; open a unix socket.
-  mov rax, SYSCALL_SOCKET
-  mov rdi, AF_UNIX ; Unix socket.
-  mov rsi, SOCK_STREAM ; Stream oriented.
-  mov rdx, 0 ; automatic protocol.
-  syscall
-
-
-  ; The end.
-  mov rax, SYSCALL_EXIT
-  mov rdi, 0
-  syscall
+<pre>
+  <div class="code-header">
+    <span>X86asm</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-x86asm"><span class="line-number">0</span>BITS 64 ; 64 bits.
+<span class="line-number">1</span>CPU X64 ; Target the x86_64 family of CPUs.
+<span class="line-number">2</span>
+<span class="line-number">3</span>section .text
+<span class="line-number">4</span>
+<span class="line-number">5</span>%define AF_UNIX 1
+<span class="line-number">6</span>%define SOCK_STREAM 1
+<span class="line-number">7</span>
+<span class="line-number">8</span>%define SYSCALL_SOCKET 41
+<span class="line-number">9</span>%define SYSCALL_EXIT 60
+<span class="line-number">10</span>
+<span class="line-number">11</span>global _start:
+<span class="line-number">12</span>_start:
+<span class="line-number">13</span>  ; open a unix socket.
+<span class="line-number">14</span>  mov rax, SYSCALL_SOCKET
+<span class="line-number">15</span>  mov rdi, AF_UNIX ; Unix socket.
+<span class="line-number">16</span>  mov rsi, SOCK_STREAM ; Stream oriented.
+<span class="line-number">17</span>  mov rdx, 0 ; automatic protocol.
+<span class="line-number">18</span>  syscall
+<span class="line-number">19</span>
+<span class="line-number">20</span>
+<span class="line-number">21</span>  ; The end.
+<span class="line-number">22</span>  mov rax, SYSCALL_EXIT
+<span class="line-number">23</span>  mov rdi, 0
+<span class="line-number">24</span>  syscall
 </code></pre>
 <p>Building and running it under <code>strace</code> shows that it works and we get a socket with the file descriptor <code>3</code> (in this case, it might be different for you if you are following at home):</p>
-<pre><code class="language-shell">$ nasm -f elf64 -g main.nasm &amp;&amp; ld main.o -static -o main 
-$ strace ./main
-execve(&quot;./main&quot;, [&quot;./main&quot;], 0x7ffe54dfe550 /* 60 vars */) = 0
-socket(AF_UNIX, SOCK_STREAM, 0)         = 3
-exit(0)                                 = ?
-+++ exited with 0 +++
+<pre>
+  <div class="code-header">
+    <span>Shell</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-shell"><span class="line-number">0</span>$ nasm -f elf64 -g main.nasm &amp;&amp; ld main.o -static -o main 
+<span class="line-number">1</span>$ strace ./main
+<span class="line-number">2</span>execve(&quot;./main&quot;, [&quot;./main&quot;], 0x7ffe54dfe550 /* 60 vars */) = 0
+<span class="line-number">3</span>socket(AF_UNIX, SOCK_STREAM, 0)         = 3
+<span class="line-number">4</span>exit(0)                                 = ?
+<span class="line-number">5</span>+++ exited with 0 +++
 </code></pre>
 <h2 id="connecting-to-the-server">
   <a class="title" href="#connecting-to-the-server">Connecting to the server</a>
@@ -514,66 +604,86 @@ exit(0)                                 = ?
 </h2>
 <p>Now that we have created a socket, we can connect to the server with the <code>connect(2)</code> system call.</p>
 <p>It's a good time to extract that logic in its own little function, just like in any other high-level language.</p>
-<pre><code class="language-x86asm">x11_connect_to_server:
-  ; TODO
+<pre>
+  <div class="code-header">
+    <span>X86asm</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-x86asm"><span class="line-number">0</span>x11_connect_to_server:
+<span class="line-number">1</span>  ; TODO
 </code></pre>
 <p>In assembly, a function is simply a label we can jump to. But for clarity, both for readers of the code and tools, we can add a hint that this is a real function we can call, like this: <code>call x11_connect_to_server</code>. This will improve the call stack for example when using <code>strace -k</code>. This hint has the form (in <code>nasm</code>): <code>static &lt;name of the function&gt;:function</code>.</p>
 <p>Of course, we also need to add our standard function prolog and epilog:</p>
-<pre><code class="language-x86asm">x11_connect_to_server:
-static x11_connect_to_server:function
-  push rbp
-  mov rbp, rsp
-  
-  pop rbp
-  ret
+<pre>
+  <div class="code-header">
+    <span>X86asm</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-x86asm"><span class="line-number">0</span>x11_connect_to_server:
+<span class="line-number">1</span>static x11_connect_to_server:function
+<span class="line-number">2</span>  push rbp
+<span class="line-number">3</span>  mov rbp, rsp
+<span class="line-number">4</span>  
+<span class="line-number">5</span>  pop rbp
+<span class="line-number">6</span>  ret
 </code></pre>
 <p>An additional help when reading functions in assembly code is adding comments describing what parameters they accept and what is the return value, if any. Since there is no language level feature for this, we resort to comments:</p>
-<pre><code class="language-x86asm">; Create a UNIX domain socket and connect to the X11 server.
-; @returns The socket file descriptor.
-x11_connect_to_server:
-static x11_connect_to_server:function
-  push rbp
-  mov rbp, rsp
-  
-  pop rbp
-  ret
+<pre>
+  <div class="code-header">
+    <span>X86asm</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-x86asm"><span class="line-number">0</span>; Create a UNIX domain socket and connect to the X11 server.
+<span class="line-number">1</span>; @returns The socket file descriptor.
+<span class="line-number">2</span>x11_connect_to_server:
+<span class="line-number">3</span>static x11_connect_to_server:function
+<span class="line-number">4</span>  push rbp
+<span class="line-number">5</span>  mov rbp, rsp
+<span class="line-number">6</span>  
+<span class="line-number">7</span>  pop rbp
+<span class="line-number">8</span>  ret
 </code></pre>
 <p>First, let's move the socket creation logic to our function and call it in the program:</p>
-<pre><code class="language-x86asm">; Create a UNIX domain socket and connect to the X11 server.
-; @returns The socket file descriptor.
-x11_connect_to_server:
-static x11_connect_to_server:function
-  push rbp
-  mov rbp, rsp
-  
-  ; Open a Unix socket: socket(2).
-  mov rax, SYSCALL_SOCKET
-  mov rdi, AF_UNIX ; Unix socket.
-  mov rsi, SOCK_STREAM ; Stream oriented.
-  mov rdx, 0 ; Automatic protocol.
-  syscall
-
-  cmp rax, 0
-  js die
-
-  mov rdi, rax ; Store socket fd in `rdi` for the remainder of the function.
-
-  pop rbp
-  ret
-
-die:
-  mov rax, SYSCALL_EXIT
-  mov rdi, 1
-  syscall
-
-_start:
-global _start:function
-  call x11_connect_to_server
-  
-  ; The end.
-  mov rax, SYSCALL_EXIT
-  mov rdi, 0
-  syscall
+<pre>
+  <div class="code-header">
+    <span>X86asm</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-x86asm"><span class="line-number">0</span>; Create a UNIX domain socket and connect to the X11 server.
+<span class="line-number">1</span>; @returns The socket file descriptor.
+<span class="line-number">2</span>x11_connect_to_server:
+<span class="line-number">3</span>static x11_connect_to_server:function
+<span class="line-number">4</span>  push rbp
+<span class="line-number">5</span>  mov rbp, rsp
+<span class="line-number">6</span>  
+<span class="line-number">7</span>  ; Open a Unix socket: socket(2).
+<span class="line-number">8</span>  mov rax, SYSCALL_SOCKET
+<span class="line-number">9</span>  mov rdi, AF_UNIX ; Unix socket.
+<span class="line-number">10</span>  mov rsi, SOCK_STREAM ; Stream oriented.
+<span class="line-number">11</span>  mov rdx, 0 ; Automatic protocol.
+<span class="line-number">12</span>  syscall
+<span class="line-number">13</span>
+<span class="line-number">14</span>  cmp rax, 0
+<span class="line-number">15</span>  js die
+<span class="line-number">16</span>
+<span class="line-number">17</span>  mov rdi, rax ; Store socket fd in `rdi` for the remainder of the function.
+<span class="line-number">18</span>
+<span class="line-number">19</span>  pop rbp
+<span class="line-number">20</span>  ret
+<span class="line-number">21</span>
+<span class="line-number">22</span>die:
+<span class="line-number">23</span>  mov rax, SYSCALL_EXIT
+<span class="line-number">24</span>  mov rdi, 1
+<span class="line-number">25</span>  syscall
+<span class="line-number">26</span>
+<span class="line-number">27</span>_start:
+<span class="line-number">28</span>global _start:function
+<span class="line-number">29</span>  call x11_connect_to_server
+<span class="line-number">30</span>  
+<span class="line-number">31</span>  ; The end.
+<span class="line-number">32</span>  mov rax, SYSCALL_EXIT
+<span class="line-number">33</span>  mov rdi, 0
+<span class="line-number">34</span>  syscall
 </code></pre>
 <p>The error checking is very simplistic: we only check that the return value of the system call (in <code>rax</code>) is what we expect, otherwise we exit the program with a non-zero code by jumping to the <code>die</code> section.</p>
 <blockquote>
@@ -589,10 +699,15 @@ global _start:function
 </blockquote>
 <p>We set the first 2 bytes of this structure to <code>AF_UNIX</code> since this is a domain socket. Then comes the path of the Unix domain socket which X11 expects to be in a certain format. We want to display our window on the first monitor starting at 0, so the string is: <code>/tmp/.X11-unix/X0</code>.</p>
 <p>In C, we would do:</p>
-<pre><code class="language-c">  const sockaddr_un addr = {.sun_family = AF_UNIX,
-                            .sun_path = &quot;/tmp/.X11-unix/X0&quot;};
-  const int res =
-      connect(x11_socket_fd, (const struct sockaddr *)&amp;addr, sizeof(addr));
+<pre>
+  <div class="code-header">
+    <span>C</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-c"><span class="line-number">0</span>  const sockaddr_un addr = {.sun_family = AF_UNIX,
+<span class="line-number">1</span>                            .sun_path = &quot;/tmp/.X11-unix/X0&quot;};
+<span class="line-number">2</span>  const int res =
+<span class="line-number">3</span>      connect(x11_socket_fd, (const struct sockaddr *)&amp;addr, sizeof(addr));
 </code></pre>
 <p>How do we translate that to assembly, especially the string part?</p>
 <p>We could set each byte to each character of the string in the structure, on the stack, manually, one by one. Another <a href="https://en.wikibooks.org/wiki/X86_Assembly/Data_Transfer#Move_String">way</a> to do it is to use the <code>rep movsb</code> idiom, which instructs the CPU to copy a character from a string A to another string B, N times. This is exactly what we need!</p>
@@ -610,72 +725,87 @@ global _start:function
 <p>This is an interesting case: we can see that some instructions expect some of their operands to be in certain registers and there is no way around it.  So, we have to plan ahead and expect those registers to be overwritten. If we need to keep their original values around, we have to store those values elsewhere, for example on the stack (that's called spilling) or in other registers. This is a broader topic of register allocation which is NP-hard! In small functions, it's manageable though.</p>
 </blockquote>
 <p>First, the <code>.rodata</code> section:</p>
-<pre><code class="language-x86asm">section .rodata
-
-sun_path: db &quot;/tmp/.X11-unix/X0&quot;, 0
-static sun_path:data
+<pre>
+  <div class="code-header">
+    <span>X86asm</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-x86asm"><span class="line-number">0</span>section .rodata
+<span class="line-number">1</span>
+<span class="line-number">2</span>sun_path: db &quot;/tmp/.X11-unix/X0&quot;, 0
+<span class="line-number">3</span>static sun_path:data
 </code></pre>
 <p>Then we copy the string:</p>
-<pre><code class="language-x86asm">  mov WORD [rsp], AF_UNIX ; Set sockaddr_un.sun_family to AF_UNIX
-  ; Fill sockaddr_un.sun_path with: &quot;/tmp/.X11-unix/X0&quot;.
-  lea rsi, sun_path
-  mov r12, rdi ; Save the socket file descriptor in `rdi` in `r12`.
-  lea rdi, [rsp + 2]
-  cld ; Move forward
-  mov ecx, 19 ; Length is 19 with the null terminator.
-  rep movsb ; Copy.
+<pre>
+  <div class="code-header">
+    <span>X86asm</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-x86asm"><span class="line-number">0</span>  mov WORD [rsp], AF_UNIX ; Set sockaddr_un.sun_family to AF_UNIX
+<span class="line-number">1</span>  ; Fill sockaddr_un.sun_path with: &quot;/tmp/.X11-unix/X0&quot;.
+<span class="line-number">2</span>  lea rsi, sun_path
+<span class="line-number">3</span>  mov r12, rdi ; Save the socket file descriptor in `rdi` in `r12`.
+<span class="line-number">4</span>  lea rdi, [rsp + 2]
+<span class="line-number">5</span>  cld ; Move forward
+<span class="line-number">6</span>  mov ecx, 19 ; Length is 19 with the null terminator.
+<span class="line-number">7</span>  rep movsb ; Copy.
 </code></pre>
 <blockquote>
 <p><code>ecx</code> is the 32 bit form of the register <code>rcx</code>, meaning we only set here the lower 32 bits of the 64 bit register. <a href="https://wiki.osdev.org/CPU_Registers_x86-64">This handy table</a> lists all of the forms for all of the registers. But be cautious of the pitfall case of only setting a value in part of a register, and then using the whole register later. The rest of the bits that have not been set will contain some past value, which is hard to troubleshoot. The solution is to use <code>movzx</code> to zero extend, meaning setting the rest of the bits to 0. A good way to visualize this is to use <code>info registers</code> within gdb, and that will display for each register the value for each of its forms, e.g. for <code>rcx</code>, it will display the value for <code>rcx</code>, <code>ecx</code>, <code>cx</code>, <code>ch</code>, <code>cl</code>.</p>
 </blockquote>
 <p>Then, we do the syscall, check the returned value, exit the program if the value is not 0, and finally return the socket file descriptor, which will be used every time in the rest of the program when talking to the X11 server.</p>
 <p>Everything together, it looks like:</p>
-<pre><code class="language-x86asm">; Create a UNIX domain socket and connect to the X11 server.
-; @returns The socket file descriptor.
-x11_connect_to_server:
-static x11_connect_to_server:function
-  push rbp
-  mov rbp, rsp 
-
-  ; Open a Unix socket: socket(2).
-  mov rax, SYSCALL_SOCKET
-  mov rdi, AF_UNIX ; Unix socket.
-  mov rsi, SOCK_STREAM ; Stream oriented.
-  mov rdx, 0 ; Automatic protocol.
-  syscall
-
-  cmp rax, 0
-  js die
-
-  mov rdi, rax ; Store socket fd in `rdi` for the remainder of the function.
-
-  sub rsp, 112 ; Store struct sockaddr_un on the stack.
-
-  mov WORD [rsp], AF_UNIX ; Set sockaddr_un.sun_family to AF_UNIX
-  ; Fill sockaddr_un.sun_path with: &quot;/tmp/.X11-unix/X0&quot;.
-  lea rsi, sun_path
-  mov r12, rdi ; Save the socket file descriptor in `rdi` in `r12`.
-  lea rdi, [rsp + 2]
-  cld ; Move forward
-  mov ecx, 19 ; Length is 19 with the null terminator.
-  rep movsb ; Copy.
-
-  ; Connect to the server: connect(2).
-  mov rax, SYSCALL_CONNECT
-  mov rdi, r12
-  lea rsi, [rsp]
-  %define SIZEOF_SOCKADDR_UN 2+108
-  mov rdx, SIZEOF_SOCKADDR_UN
-  syscall
-
-  cmp rax, 0
-  jne die
-
-  mov rax, rdi ; Return the socket fd.
-
-  add rsp, 112
-  pop rbp
-  ret
+<pre>
+  <div class="code-header">
+    <span>X86asm</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-x86asm"><span class="line-number">0</span>; Create a UNIX domain socket and connect to the X11 server.
+<span class="line-number">1</span>; @returns The socket file descriptor.
+<span class="line-number">2</span>x11_connect_to_server:
+<span class="line-number">3</span>static x11_connect_to_server:function
+<span class="line-number">4</span>  push rbp
+<span class="line-number">5</span>  mov rbp, rsp 
+<span class="line-number">6</span>
+<span class="line-number">7</span>  ; Open a Unix socket: socket(2).
+<span class="line-number">8</span>  mov rax, SYSCALL_SOCKET
+<span class="line-number">9</span>  mov rdi, AF_UNIX ; Unix socket.
+<span class="line-number">10</span>  mov rsi, SOCK_STREAM ; Stream oriented.
+<span class="line-number">11</span>  mov rdx, 0 ; Automatic protocol.
+<span class="line-number">12</span>  syscall
+<span class="line-number">13</span>
+<span class="line-number">14</span>  cmp rax, 0
+<span class="line-number">15</span>  js die
+<span class="line-number">16</span>
+<span class="line-number">17</span>  mov rdi, rax ; Store socket fd in `rdi` for the remainder of the function.
+<span class="line-number">18</span>
+<span class="line-number">19</span>  sub rsp, 112 ; Store struct sockaddr_un on the stack.
+<span class="line-number">20</span>
+<span class="line-number">21</span>  mov WORD [rsp], AF_UNIX ; Set sockaddr_un.sun_family to AF_UNIX
+<span class="line-number">22</span>  ; Fill sockaddr_un.sun_path with: &quot;/tmp/.X11-unix/X0&quot;.
+<span class="line-number">23</span>  lea rsi, sun_path
+<span class="line-number">24</span>  mov r12, rdi ; Save the socket file descriptor in `rdi` in `r12`.
+<span class="line-number">25</span>  lea rdi, [rsp + 2]
+<span class="line-number">26</span>  cld ; Move forward
+<span class="line-number">27</span>  mov ecx, 19 ; Length is 19 with the null terminator.
+<span class="line-number">28</span>  rep movsb ; Copy.
+<span class="line-number">29</span>
+<span class="line-number">30</span>  ; Connect to the server: connect(2).
+<span class="line-number">31</span>  mov rax, SYSCALL_CONNECT
+<span class="line-number">32</span>  mov rdi, r12
+<span class="line-number">33</span>  lea rsi, [rsp]
+<span class="line-number">34</span>  %define SIZEOF_SOCKADDR_UN 2+108
+<span class="line-number">35</span>  mov rdx, SIZEOF_SOCKADDR_UN
+<span class="line-number">36</span>  syscall
+<span class="line-number">37</span>
+<span class="line-number">38</span>  cmp rax, 0
+<span class="line-number">39</span>  jne die
+<span class="line-number">40</span>
+<span class="line-number">41</span>  mov rax, rdi ; Return the socket fd.
+<span class="line-number">42</span>
+<span class="line-number">43</span>  add rsp, 112
+<span class="line-number">44</span>  pop rbp
+<span class="line-number">45</span>  ret
 </code></pre>
 <p>We are ready to talk to the X11 server!</p>
 <h2 id="sending-data-over-the-socket">
@@ -683,127 +813,167 @@ static x11_connect_to_server:function
   <a class="hash-anchor" href="#sending-data-over-the-socket" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>There is the <code>send(2)</code> syscall to do this, but we can keep it simple and use the generic <code>write(2)</code> syscall instead. Either way works.</p>
-<pre><code class="language-x86asm">%define SYSCALL_WRITE 1
+<pre>
+  <div class="code-header">
+    <span>X86asm</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-x86asm"><span class="line-number">0</span>%define SYSCALL_WRITE 1
 </code></pre>
 <p>The C structure for the handshake in the case of success looks like this:</p>
-<pre><code class="language-c">typedef struct {
-  u8 order;
-  u8 pad1;
-  u16 major, minor;
-  u16 auth_proto_len, auth_data_len;
-  u16 pad2;
-  // Optionally, authorization information follows, if `auth_proto_len` and `auth_data_len` are  not 0.
-} x11_connection_req_t;
+<pre>
+  <div class="code-header">
+    <span>C</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-c"><span class="line-number">0</span>typedef struct {
+<span class="line-number">1</span>  u8 order;
+<span class="line-number">2</span>  u8 pad1;
+<span class="line-number">3</span>  u16 major, minor;
+<span class="line-number">4</span>  u16 auth_proto_len, auth_data_len;
+<span class="line-number">5</span>  u16 pad2;
+<span class="line-number">6</span>  // Optionally, authorization information follows, if `auth_proto_len` and `auth_data_len` are  not 0.
+<span class="line-number">7</span>} x11_connection_req_t;
 </code></pre>
 <p><code>pad*</code> fields can be ignored since they are padding and their value is not read by the server.</p>
 <p>For our handshake, we need to set the <code>order</code> to be <code>l</code>, that is, little-endian, since X11 can be told to interpret message as big or little endian. Since x64 is little-endian, we do not want to have an endianness translation layer and so we stick to little-endian.</p>
 <p>We also need to set the <code>major</code> field, which is the version, to <code>11</code>. I'll leave it to the reader to guess why.</p>
 <p>In C, we would do:</p>
-<pre><code class="language-c">  x11_connection_req_t req = {.order = 'l', .major = 11};
+<pre>
+  <div class="code-header">
+    <span>C</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-c"><span class="line-number">0</span>  x11_connection_req_t req = {.order = 'l', .major = 11};
 </code></pre>
 <p>This structure is only 12 bytes long, since we do not use authorization (we set all subsequent fields after the <code>minor_version</code> to 0).</p>
 <p>But since we will have to read the response from the server which is quite big (around 14 KiB during my testing), we will right away reserve a lot of space on the stack, 32 KiB, to be safe:</p>
-<pre><code class="language-x86asm">  sub rsp, 1&lt;&lt;15
-  mov BYTE [rsp + 0], 'l' ; Set order to 'l'.
-  mov BYTE [rsp + 1], 0
-  mov WORD [rsp + 2], 11
-  mov BYTE [rsp + 4], 0
-  mov BYTE [rsp + 5], 0
-  mov BYTE [rsp + 6], 0
-  mov BYTE [rsp + 7], 0
-  mov BYTE [rsp + 8], 0
-  mov BYTE [rsp + 9], 0
-  mov BYTE [rsp + 10], 0
-  mov BYTE [rsp + 11], 0
+<pre>
+  <div class="code-header">
+    <span>X86asm</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-x86asm"><span class="line-number">0</span>  sub rsp, 1&lt;&lt;15
+<span class="line-number">1</span>  mov BYTE [rsp + 0], 'l' ; Set order to 'l'.
+<span class="line-number">2</span>  mov BYTE [rsp + 1], 0
+<span class="line-number">3</span>  mov WORD [rsp + 2], 11
+<span class="line-number">4</span>  mov BYTE [rsp + 4], 0
+<span class="line-number">5</span>  mov BYTE [rsp + 5], 0
+<span class="line-number">6</span>  mov BYTE [rsp + 6], 0
+<span class="line-number">7</span>  mov BYTE [rsp + 7], 0
+<span class="line-number">8</span>  mov BYTE [rsp + 8], 0
+<span class="line-number">9</span>  mov BYTE [rsp + 9], 0
+<span class="line-number">10</span>  mov BYTE [rsp + 10], 0
+<span class="line-number">11</span>  mov BYTE [rsp + 11], 0
 </code></pre>
 <p>Then we send it to the server:</p>
-<pre><code class="language-x86asm">  ; Send the handshake to the server: write(2).
-  mov rax, SYSCALL_WRITE
-  mov rdi, rdi
-  lea rsi, [rsp]
-  mov rdx, 12
-  syscall
-
-  cmp rax, 12 ; Check that all bytes were written.
-  jnz die
+<pre>
+  <div class="code-header">
+    <span>X86asm</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-x86asm"><span class="line-number">0</span>  ; Send the handshake to the server: write(2).
+<span class="line-number">1</span>  mov rax, SYSCALL_WRITE
+<span class="line-number">2</span>  mov rdi, rdi
+<span class="line-number">3</span>  lea rsi, [rsp]
+<span class="line-number">4</span>  mov rdx, 12
+<span class="line-number">5</span>  syscall
+<span class="line-number">6</span>
+<span class="line-number">7</span>  cmp rax, 12 ; Check that all bytes were written.
+<span class="line-number">8</span>  jnz die
 </code></pre>
 <p>After that, we read the server response, which should be at first 8 bytes:</p>
-<pre><code class="language-x86asm">  ; Read the server response: read(2).
-  ; Use the stack for the read buffer.
-  ; The X11 server first replies with 8 bytes. Once these are read, it replies with a much bigger message.
-  mov rax, SYSCALL_READ
-  mov rdi, rdi
-  lea rsi, [rsp]
-  mov rdx, 8
-  syscall
-
-  cmp rax, 8 ; Check that the server replied with 8 bytes.
-  jnz die
-
-  cmp BYTE [rsp], 1 ; Check that the server sent 'success' (first byte is 1).
-  jnz die
+<pre>
+  <div class="code-header">
+    <span>X86asm</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-x86asm"><span class="line-number">0</span>  ; Read the server response: read(2).
+<span class="line-number">1</span>  ; Use the stack for the read buffer.
+<span class="line-number">2</span>  ; The X11 server first replies with 8 bytes. Once these are read, it replies with a much bigger message.
+<span class="line-number">3</span>  mov rax, SYSCALL_READ
+<span class="line-number">4</span>  mov rdi, rdi
+<span class="line-number">5</span>  lea rsi, [rsp]
+<span class="line-number">6</span>  mov rdx, 8
+<span class="line-number">7</span>  syscall
+<span class="line-number">8</span>
+<span class="line-number">9</span>  cmp rax, 8 ; Check that the server replied with 8 bytes.
+<span class="line-number">10</span>  jnz die
+<span class="line-number">11</span>
+<span class="line-number">12</span>  cmp BYTE [rsp], 1 ; Check that the server sent 'success' (first byte is 1).
+<span class="line-number">13</span>  jnz die
 </code></pre>
 <p>The first byte in the server response is <code>0</code> for failure and <code>1</code> for success (and <code>2</code> for authentication but we will not need it here).</p>
 <p>The server sends a big message with a lot of general information, which we will need for later, so we store certain fields in global variables located in the data section.</p>
 <p>First we add those variables, each 4 bytes big:</p>
-<pre><code class="language-x86asm">section .data
-
-id: dd 0
-static id:data
-
-id_base: dd 0
-static id_base:data
-
-id_mask: dd 0
-static id_mask:data
-
-root_visual_id: dd 0
-static root_visual_id:data
+<pre>
+  <div class="code-header">
+    <span>X86asm</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-x86asm"><span class="line-number">0</span>section .data
+<span class="line-number">1</span>
+<span class="line-number">2</span>id: dd 0
+<span class="line-number">3</span>static id:data
+<span class="line-number">4</span>
+<span class="line-number">5</span>id_base: dd 0
+<span class="line-number">6</span>static id_base:data
+<span class="line-number">7</span>
+<span class="line-number">8</span>id_mask: dd 0
+<span class="line-number">9</span>static id_mask:data
+<span class="line-number">10</span>
+<span class="line-number">11</span>root_visual_id: dd 0
+<span class="line-number">12</span>static root_visual_id:data
 </code></pre>
 <p>Then we read the server response, and skip over the parts we are not interested in. This boils down to incrementing a pointer by a dynamic value, a few times. Note that since we do not do any checks here, that would be a great attack vector to trigger a stack overflow or such in our program.</p>
-<pre><code class="language-x86asm">  ; Read the rest of the server response: read(2).
-  ; Use the stack for the read buffer.
-  mov rax, SYSCALL_READ
-  mov rdi, rdi
-  lea rsi, [rsp]
-  mov rdx, 1&lt;&lt;15
-  syscall
-
-  cmp rax, 0 ; Check that the server replied with something.
-  jle die
-
-  ; Set id_base globally.
-  mov edx, DWORD [rsp + 4]
-  mov DWORD [id_base], edx
-
-  ; Set id_mask globally.
-  mov edx, DWORD [rsp + 8]
-  mov DWORD [id_mask], edx
-
-  ; Read the information we need, skip over the rest.
-  lea rdi, [rsp] ; Pointer that will skip over some data.
-  
-  mov cx, WORD [rsp + 16] ; Vendor length (v).
-  movzx rcx, cx
-
-  mov al, BYTE [rsp + 21]; Number of formats (n).
-  movzx rax, al ; Fill the rest of the register with zeroes to avoid garbage values.
-  imul rax, 8 ; sizeof(format) == 8
-
-  add rdi, 32 ; Skip the connection setup
-  add rdi, rcx ; Skip over the vendor information (v).
-
-  ; Skip over padding.
-  add rdi, 3
-  and rdi, -4
-
-  add rdi, rax ; Skip over the format information (n*8).
-
-  mov eax, DWORD [rdi] ; Store (and return) the window root id.
-
-  ; Set the root_visual_id globally.
-  mov edx, DWORD [rdi + 32]
-  mov DWORD [root_visual_id], edx
+<pre>
+  <div class="code-header">
+    <span>X86asm</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-x86asm"><span class="line-number">0</span>  ; Read the rest of the server response: read(2).
+<span class="line-number">1</span>  ; Use the stack for the read buffer.
+<span class="line-number">2</span>  mov rax, SYSCALL_READ
+<span class="line-number">3</span>  mov rdi, rdi
+<span class="line-number">4</span>  lea rsi, [rsp]
+<span class="line-number">5</span>  mov rdx, 1&lt;&lt;15
+<span class="line-number">6</span>  syscall
+<span class="line-number">7</span>
+<span class="line-number">8</span>  cmp rax, 0 ; Check that the server replied with something.
+<span class="line-number">9</span>  jle die
+<span class="line-number">10</span>
+<span class="line-number">11</span>  ; Set id_base globally.
+<span class="line-number">12</span>  mov edx, DWORD [rsp + 4]
+<span class="line-number">13</span>  mov DWORD [id_base], edx
+<span class="line-number">14</span>
+<span class="line-number">15</span>  ; Set id_mask globally.
+<span class="line-number">16</span>  mov edx, DWORD [rsp + 8]
+<span class="line-number">17</span>  mov DWORD [id_mask], edx
+<span class="line-number">18</span>
+<span class="line-number">19</span>  ; Read the information we need, skip over the rest.
+<span class="line-number">20</span>  lea rdi, [rsp] ; Pointer that will skip over some data.
+<span class="line-number">21</span>  
+<span class="line-number">22</span>  mov cx, WORD [rsp + 16] ; Vendor length (v).
+<span class="line-number">23</span>  movzx rcx, cx
+<span class="line-number">24</span>
+<span class="line-number">25</span>  mov al, BYTE [rsp + 21]; Number of formats (n).
+<span class="line-number">26</span>  movzx rax, al ; Fill the rest of the register with zeroes to avoid garbage values.
+<span class="line-number">27</span>  imul rax, 8 ; sizeof(format) == 8
+<span class="line-number">28</span>
+<span class="line-number">29</span>  add rdi, 32 ; Skip the connection setup
+<span class="line-number">30</span>  add rdi, rcx ; Skip over the vendor information (v).
+<span class="line-number">31</span>
+<span class="line-number">32</span>  ; Skip over padding.
+<span class="line-number">33</span>  add rdi, 3
+<span class="line-number">34</span>  and rdi, -4
+<span class="line-number">35</span>
+<span class="line-number">36</span>  add rdi, rax ; Skip over the format information (n*8).
+<span class="line-number">37</span>
+<span class="line-number">38</span>  mov eax, DWORD [rdi] ; Store (and return) the window root id.
+<span class="line-number">39</span>
+<span class="line-number">40</span>  ; Set the root_visual_id globally.
+<span class="line-number">41</span>  mov edx, DWORD [rdi + 32]
+<span class="line-number">42</span>  mov DWORD [root_visual_id], edx
 </code></pre>
 <hr />
 <p>A small aside about padding, <a href="https://github.com/gaultier/blog/issues/6">thanks to a perspicacious reader</a>:</p>
@@ -811,117 +981,137 @@ static root_visual_id:data
 <p>Meaning, if a field is only 5 bytes long, per the protocol, there will be 3 bytes of padding (which should be skipped over by the application), so that the field occupies 2 units of 4 bytes (it is 4 bytes-aligned).</p>
 <p>How do we do that then? The specification uses some division and modulo operations, but those are annoying to do in assembly. We can do better.</p>
 <p><code>libX11</code> uses this macro:</p>
-<pre><code class="language-c">#define ROUNDUP(nbytes, pad) (((nbytes) + ((pad)-1)) &amp; ~(long)((pad)-1))
+<pre>
+  <div class="code-header">
+    <span>C</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-c"><span class="line-number">0</span>#define ROUNDUP(nbytes, pad) (((nbytes) + ((pad)-1)) &amp; ~(long)((pad)-1))
 </code></pre>
 <p>And it should be used so:</p>
-<pre><code class="language-c">assert(ROUNDUP(0, 4) == 0);
-assert(ROUNDUP(1, 4) == 4);
-assert(ROUNDUP(2, 4) == 4);
-assert(ROUNDUP(3, 4) == 4);
-assert(ROUNDUP(4, 4) == 4);
-assert(ROUNDUP(5, 4) == 8);
-// etc
+<pre>
+  <div class="code-header">
+    <span>C</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-c"><span class="line-number">0</span>assert(ROUNDUP(0, 4) == 0);
+<span class="line-number">1</span>assert(ROUNDUP(1, 4) == 4);
+<span class="line-number">2</span>assert(ROUNDUP(2, 4) == 4);
+<span class="line-number">3</span>assert(ROUNDUP(3, 4) == 4);
+<span class="line-number">4</span>assert(ROUNDUP(4, 4) == 4);
+<span class="line-number">5</span>assert(ROUNDUP(5, 4) == 8);
+<span class="line-number">6</span>// etc
 </code></pre>
 <p>This works, but is kind of complex. If we look at this output when compiling this code, we see that <code>gcc</code> smartly optimizes this macro down to:</p>
-<pre><code class="language-x86asm">  add     eax, 3
-  and     eax, -4
+<pre>
+  <div class="code-header">
+    <span>X86asm</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-x86asm"><span class="line-number">0</span>  add     eax, 3
+<span class="line-number">1</span>  and     eax, -4
 </code></pre>
 <p>So we use this form.</p>
 <hr />
 <p>All together:</p>
-<pre><code class="language-x86asm">; Send the handshake to the X11 server and read the returned system information.
-; @param rdi The socket file descriptor
-; @returns The window root id (uint32_t) in rax.
-x11_send_handshake:
-static x11_send_handshake:function
-  push rbp
-  mov rbp, rsp
-
-  sub rsp, 1&lt;&lt;15
-  mov BYTE [rsp + 0], 'l' ; Set order to 'l'.
-  mov BYTE [rsp + 1], 0
-  mov WORD [rsp + 2], 11
-  mov BYTE [rsp + 4], 0
-  mov BYTE [rsp + 5], 0
-  mov BYTE [rsp + 6], 0
-  mov BYTE [rsp + 7], 0
-  mov BYTE [rsp + 8], 0
-  mov BYTE [rsp + 9], 0
-  mov BYTE [rsp + 10], 0
-  mov BYTE [rsp + 11], 0
-
-  ; Send the handshake to the server: write(2).
-  mov rax, SYSCALL_WRITE
-  mov rdi, rdi
-  lea rsi, [rsp]
-  mov rdx, 12
-  syscall
-
-  cmp rax, 12 ; Check that all bytes were written.
-  jnz die
-
-  ; Read the server response: read(2).
-  ; Use the stack for the read buffer.
-  ; The X11 server first replies with 8 bytes. Once these are read, it replies with a much bigger message.
-  mov rax, SYSCALL_READ
-  mov rdi, rdi
-  lea rsi, [rsp]
-  mov rdx, 8
-  syscall
-
-  cmp rax, 8 ; Check that the server replied with 8 bytes.
-  jnz die
-
-  cmp BYTE [rsp], 1 ; Check that the server sent 'success' (first byte is 1).
-  jnz die
-
-  ; Read the rest of the server response: read(2).
-  ; Use the stack for the read buffer.
-  mov rax, SYSCALL_READ
-  mov rdi, rdi
-  lea rsi, [rsp]
-  mov rdx, 1&lt;&lt;15
-  syscall
-
-  cmp rax, 0 ; Check that the server replied with something.
-  jle die
-
-  ; Set id_base globally.
-  mov edx, DWORD [rsp + 4]
-  mov DWORD [id_base], edx
-
-  ; Set id_mask globally.
-  mov edx, DWORD [rsp + 8]
-  mov DWORD [id_mask], edx
-
-  ; Read the information we need, skip over the rest.
-  lea rdi, [rsp] ; Pointer that will skip over some data.
-  
-  mov cx, WORD [rsp + 16] ; Vendor length (v).
-  movzx rcx, cx
-
-  mov al, BYTE [rsp + 21]; Number of formats (n).
-  movzx rax, al ; Fill the rest of the register with zeroes to avoid garbage values.
-  imul rax, 8 ; sizeof(format) == 8
-
-  add rdi, 32 ; Skip the connection setup
-  add rdi, rcx ; Skip over the vendor information (v).
-
-  ; Skip over padding.
-  add rdi, 3
-  and rdi, -4
-
-  add rdi, rax ; Skip over the format information (n*8).
-
-  mov eax, DWORD [rdi] ; Store (and return) the window root id.
-
-  ; Set the root_visual_id globally.
-  mov edx, DWORD [rdi + 32]
-  mov DWORD [root_visual_id], edx
-
-  add rsp, 1&lt;&lt;15
-  pop rbp
-  ret
+<pre>
+  <div class="code-header">
+    <span>X86asm</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-x86asm"><span class="line-number">0</span>; Send the handshake to the X11 server and read the returned system information.
+<span class="line-number">1</span>; @param rdi The socket file descriptor
+<span class="line-number">2</span>; @returns The window root id (uint32_t) in rax.
+<span class="line-number">3</span>x11_send_handshake:
+<span class="line-number">4</span>static x11_send_handshake:function
+<span class="line-number">5</span>  push rbp
+<span class="line-number">6</span>  mov rbp, rsp
+<span class="line-number">7</span>
+<span class="line-number">8</span>  sub rsp, 1&lt;&lt;15
+<span class="line-number">9</span>  mov BYTE [rsp + 0], 'l' ; Set order to 'l'.
+<span class="line-number">10</span>  mov BYTE [rsp + 1], 0
+<span class="line-number">11</span>  mov WORD [rsp + 2], 11
+<span class="line-number">12</span>  mov BYTE [rsp + 4], 0
+<span class="line-number">13</span>  mov BYTE [rsp + 5], 0
+<span class="line-number">14</span>  mov BYTE [rsp + 6], 0
+<span class="line-number">15</span>  mov BYTE [rsp + 7], 0
+<span class="line-number">16</span>  mov BYTE [rsp + 8], 0
+<span class="line-number">17</span>  mov BYTE [rsp + 9], 0
+<span class="line-number">18</span>  mov BYTE [rsp + 10], 0
+<span class="line-number">19</span>  mov BYTE [rsp + 11], 0
+<span class="line-number">20</span>
+<span class="line-number">21</span>  ; Send the handshake to the server: write(2).
+<span class="line-number">22</span>  mov rax, SYSCALL_WRITE
+<span class="line-number">23</span>  mov rdi, rdi
+<span class="line-number">24</span>  lea rsi, [rsp]
+<span class="line-number">25</span>  mov rdx, 12
+<span class="line-number">26</span>  syscall
+<span class="line-number">27</span>
+<span class="line-number">28</span>  cmp rax, 12 ; Check that all bytes were written.
+<span class="line-number">29</span>  jnz die
+<span class="line-number">30</span>
+<span class="line-number">31</span>  ; Read the server response: read(2).
+<span class="line-number">32</span>  ; Use the stack for the read buffer.
+<span class="line-number">33</span>  ; The X11 server first replies with 8 bytes. Once these are read, it replies with a much bigger message.
+<span class="line-number">34</span>  mov rax, SYSCALL_READ
+<span class="line-number">35</span>  mov rdi, rdi
+<span class="line-number">36</span>  lea rsi, [rsp]
+<span class="line-number">37</span>  mov rdx, 8
+<span class="line-number">38</span>  syscall
+<span class="line-number">39</span>
+<span class="line-number">40</span>  cmp rax, 8 ; Check that the server replied with 8 bytes.
+<span class="line-number">41</span>  jnz die
+<span class="line-number">42</span>
+<span class="line-number">43</span>  cmp BYTE [rsp], 1 ; Check that the server sent 'success' (first byte is 1).
+<span class="line-number">44</span>  jnz die
+<span class="line-number">45</span>
+<span class="line-number">46</span>  ; Read the rest of the server response: read(2).
+<span class="line-number">47</span>  ; Use the stack for the read buffer.
+<span class="line-number">48</span>  mov rax, SYSCALL_READ
+<span class="line-number">49</span>  mov rdi, rdi
+<span class="line-number">50</span>  lea rsi, [rsp]
+<span class="line-number">51</span>  mov rdx, 1&lt;&lt;15
+<span class="line-number">52</span>  syscall
+<span class="line-number">53</span>
+<span class="line-number">54</span>  cmp rax, 0 ; Check that the server replied with something.
+<span class="line-number">55</span>  jle die
+<span class="line-number">56</span>
+<span class="line-number">57</span>  ; Set id_base globally.
+<span class="line-number">58</span>  mov edx, DWORD [rsp + 4]
+<span class="line-number">59</span>  mov DWORD [id_base], edx
+<span class="line-number">60</span>
+<span class="line-number">61</span>  ; Set id_mask globally.
+<span class="line-number">62</span>  mov edx, DWORD [rsp + 8]
+<span class="line-number">63</span>  mov DWORD [id_mask], edx
+<span class="line-number">64</span>
+<span class="line-number">65</span>  ; Read the information we need, skip over the rest.
+<span class="line-number">66</span>  lea rdi, [rsp] ; Pointer that will skip over some data.
+<span class="line-number">67</span>  
+<span class="line-number">68</span>  mov cx, WORD [rsp + 16] ; Vendor length (v).
+<span class="line-number">69</span>  movzx rcx, cx
+<span class="line-number">70</span>
+<span class="line-number">71</span>  mov al, BYTE [rsp + 21]; Number of formats (n).
+<span class="line-number">72</span>  movzx rax, al ; Fill the rest of the register with zeroes to avoid garbage values.
+<span class="line-number">73</span>  imul rax, 8 ; sizeof(format) == 8
+<span class="line-number">74</span>
+<span class="line-number">75</span>  add rdi, 32 ; Skip the connection setup
+<span class="line-number">76</span>  add rdi, rcx ; Skip over the vendor information (v).
+<span class="line-number">77</span>
+<span class="line-number">78</span>  ; Skip over padding.
+<span class="line-number">79</span>  add rdi, 3
+<span class="line-number">80</span>  and rdi, -4
+<span class="line-number">81</span>
+<span class="line-number">82</span>  add rdi, rax ; Skip over the format information (n*8).
+<span class="line-number">83</span>
+<span class="line-number">84</span>  mov eax, DWORD [rdi] ; Store (and return) the window root id.
+<span class="line-number">85</span>
+<span class="line-number">86</span>  ; Set the root_visual_id globally.
+<span class="line-number">87</span>  mov edx, DWORD [rdi + 32]
+<span class="line-number">88</span>  mov DWORD [root_visual_id], edx
+<span class="line-number">89</span>
+<span class="line-number">90</span>  add rsp, 1&lt;&lt;15
+<span class="line-number">91</span>  pop rbp
+<span class="line-number">92</span>  ret
 </code></pre>
 <blockquote>
 <p>From this point on, I will assume you are familiar with the basics of assembly and X11 and will not go as much into details.</p>
@@ -933,26 +1123,31 @@ static x11_send_handshake:function
 <p>When creating resources on the server-side, we usually first generate an id on the client side, and send that id to the server when creating the resource.</p>
 <p>We store the current id in a global variable and increment it each time a new id is generated.</p>
 <p>This is how we do it:</p>
-<pre><code class="language-x86asm">; Increment the global id.
-; @return The new id.
-x11_next_id:
-static x11_next_id:function
-  push rbp
-  mov rbp, rsp
-
-  mov eax, DWORD [id] ; Load global id.
-
-  mov edi, DWORD [id_base] ; Load global id_base.
-  mov edx, DWORD [id_mask] ; Load global id_mask.
-
-  ; Return: id_mask &amp; (id) | id_base
-  and eax, edx
-  or eax, edi
-
-  add DWORD [id], 1 ; Increment id.
-
-  pop rbp
-  ret
+<pre>
+  <div class="code-header">
+    <span>X86asm</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-x86asm"><span class="line-number">0</span>; Increment the global id.
+<span class="line-number">1</span>; @return The new id.
+<span class="line-number">2</span>x11_next_id:
+<span class="line-number">3</span>static x11_next_id:function
+<span class="line-number">4</span>  push rbp
+<span class="line-number">5</span>  mov rbp, rsp
+<span class="line-number">6</span>
+<span class="line-number">7</span>  mov eax, DWORD [id] ; Load global id.
+<span class="line-number">8</span>
+<span class="line-number">9</span>  mov edi, DWORD [id_base] ; Load global id_base.
+<span class="line-number">10</span>  mov edx, DWORD [id_mask] ; Load global id_mask.
+<span class="line-number">11</span>
+<span class="line-number">12</span>  ; Return: id_mask &amp; (id) | id_base
+<span class="line-number">13</span>  and eax, edx
+<span class="line-number">14</span>  or eax, edi
+<span class="line-number">15</span>
+<span class="line-number">16</span>  add DWORD [id], 1 ; Increment id.
+<span class="line-number">17</span>
+<span class="line-number">18</span>  pop rbp
+<span class="line-number">19</span>  ret
 </code></pre>
 <h2 id="opening-a-font">
   <a class="title" href="#opening-a-font">Opening a font</a>
@@ -961,43 +1156,48 @@ static x11_next_id:function
 <p>To open a font, which is a prerequisite to draw text, we send a message to the server specifying (part of) the name of the font we want, and the server will select a matching font.</p>
 <p>To play with another font, you can use <code>xfontsel</code> which displays all the font names that the X11 server knows about.</p>
 <p>First, we generate an id for the font locally, and then we send it alongside the font name.</p>
-<pre><code class="language-x86asm">; Open the font on the server side.
-; @param rdi The socket file descriptor.
-; @param esi The font id.
-x11_open_font:
-static x11_open_font:function
-  push rbp
-  mov rbp, rsp
-
-  %define OPEN_FONT_NAME_BYTE_COUNT 5
-  %define OPEN_FONT_PADDING ((4 - (OPEN_FONT_NAME_BYTE_COUNT % 4)) % 4)
-  %define OPEN_FONT_PACKET_U32_COUNT (3 + (OPEN_FONT_NAME_BYTE_COUNT + OPEN_FONT_PADDING) / 4)
-  %define X11_OP_REQ_OPEN_FONT 0x2d
-
-  sub rsp, 6*8
-  mov DWORD [rsp + 0*4], X11_OP_REQ_OPEN_FONT | (OPEN_FONT_NAME_BYTE_COUNT &lt;&lt; 16)
-  mov DWORD [rsp + 1*4], esi
-  mov DWORD [rsp + 2*4], OPEN_FONT_NAME_BYTE_COUNT
-  mov BYTE [rsp + 3*4 + 0], 'f'
-  mov BYTE [rsp + 3*4 + 1], 'i'
-  mov BYTE [rsp + 3*4 + 2], 'x'
-  mov BYTE [rsp + 3*4 + 3], 'e'
-  mov BYTE [rsp + 3*4 + 4], 'd'
-
-
-  mov rax, SYSCALL_WRITE
-  mov rdi, rdi
-  lea rsi, [rsp]
-  mov rdx, OPEN_FONT_PACKET_U32_COUNT*4
-  syscall
-
-  cmp rax, OPEN_FONT_PACKET_U32_COUNT*4
-  jnz die
-
-  add rsp, 6*8
-
-  pop rbp
-  ret
+<pre>
+  <div class="code-header">
+    <span>X86asm</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-x86asm"><span class="line-number">0</span>; Open the font on the server side.
+<span class="line-number">1</span>; @param rdi The socket file descriptor.
+<span class="line-number">2</span>; @param esi The font id.
+<span class="line-number">3</span>x11_open_font:
+<span class="line-number">4</span>static x11_open_font:function
+<span class="line-number">5</span>  push rbp
+<span class="line-number">6</span>  mov rbp, rsp
+<span class="line-number">7</span>
+<span class="line-number">8</span>  %define OPEN_FONT_NAME_BYTE_COUNT 5
+<span class="line-number">9</span>  %define OPEN_FONT_PADDING ((4 - (OPEN_FONT_NAME_BYTE_COUNT % 4)) % 4)
+<span class="line-number">10</span>  %define OPEN_FONT_PACKET_U32_COUNT (3 + (OPEN_FONT_NAME_BYTE_COUNT + OPEN_FONT_PADDING) / 4)
+<span class="line-number">11</span>  %define X11_OP_REQ_OPEN_FONT 0x2d
+<span class="line-number">12</span>
+<span class="line-number">13</span>  sub rsp, 6*8
+<span class="line-number">14</span>  mov DWORD [rsp + 0*4], X11_OP_REQ_OPEN_FONT | (OPEN_FONT_NAME_BYTE_COUNT &lt;&lt; 16)
+<span class="line-number">15</span>  mov DWORD [rsp + 1*4], esi
+<span class="line-number">16</span>  mov DWORD [rsp + 2*4], OPEN_FONT_NAME_BYTE_COUNT
+<span class="line-number">17</span>  mov BYTE [rsp + 3*4 + 0], 'f'
+<span class="line-number">18</span>  mov BYTE [rsp + 3*4 + 1], 'i'
+<span class="line-number">19</span>  mov BYTE [rsp + 3*4 + 2], 'x'
+<span class="line-number">20</span>  mov BYTE [rsp + 3*4 + 3], 'e'
+<span class="line-number">21</span>  mov BYTE [rsp + 3*4 + 4], 'd'
+<span class="line-number">22</span>
+<span class="line-number">23</span>
+<span class="line-number">24</span>  mov rax, SYSCALL_WRITE
+<span class="line-number">25</span>  mov rdi, rdi
+<span class="line-number">26</span>  lea rsi, [rsp]
+<span class="line-number">27</span>  mov rdx, OPEN_FONT_PACKET_U32_COUNT*4
+<span class="line-number">28</span>  syscall
+<span class="line-number">29</span>
+<span class="line-number">30</span>  cmp rax, OPEN_FONT_PACKET_U32_COUNT*4
+<span class="line-number">31</span>  jnz die
+<span class="line-number">32</span>
+<span class="line-number">33</span>  add rsp, 6*8
+<span class="line-number">34</span>
+<span class="line-number">35</span>  pop rbp
+<span class="line-number">36</span>  ret
 </code></pre>
 <h2 id="creating-a-graphical-context">
   <a class="title" href="#creating-a-graphical-context">Creating a graphical context</a>
@@ -1006,50 +1206,55 @@ static x11_open_font:function
 <p>Since an application in X11 can have multiple windows, we first need to create a graphical context containing the general information. When we create a window, we refer to this graphical context by id.</p>
 <p>Again, we need to generate an id for the graphical context to be.</p>
 <p>X11 stores a hierarchy of windows, so when creating the graphical context, we also need to give it the root window id (i.e. the parent id).</p>
-<pre><code class="language-x86asm">; Create a X11 graphical context.
-; @param rdi The socket file descriptor.
-; @param esi The graphical context id.
-; @param edx The window root id.
-; @param ecx The font id.
-x11_create_gc:
-static x11_create_gc:function
-  push rbp
-  mov rbp, rsp
-
-  sub rsp, 8*8
-
-%define X11_OP_REQ_CREATE_GC 0x37
-%define X11_FLAG_GC_BG 0x00000004
-%define X11_FLAG_GC_FG 0x00000008
-%define X11_FLAG_GC_FONT 0x00004000
-%define X11_FLAG_GC_EXPOSE 0x00010000
-
-%define CREATE_GC_FLAGS X11_FLAG_GC_BG | X11_FLAG_GC_FG | X11_FLAG_GC_FONT
-%define CREATE_GC_PACKET_FLAG_COUNT 3
-%define CREATE_GC_PACKET_U32_COUNT (4 + CREATE_GC_PACKET_FLAG_COUNT)
-%define MY_COLOR_RGB 0x0000ffff
-
-  mov DWORD [rsp + 0*4], X11_OP_REQ_CREATE_GC | (CREATE_GC_PACKET_U32_COUNT&lt;&lt;16)
-  mov DWORD [rsp + 1*4], esi
-  mov DWORD [rsp + 2*4], edx
-  mov DWORD [rsp + 3*4], CREATE_GC_FLAGS
-  mov DWORD [rsp + 4*4], MY_COLOR_RGB
-  mov DWORD [rsp + 5*4], 0
-  mov DWORD [rsp + 6*4], ecx
-
-  mov rax, SYSCALL_WRITE
-  mov rdi, rdi
-  lea rsi, [rsp]
-  mov rdx, CREATE_GC_PACKET_U32_COUNT*4
-  syscall
-
-  cmp rax, CREATE_GC_PACKET_U32_COUNT*4
-  jnz die
-  
-  add rsp, 8*8
-
-  pop rbp
-  ret
+<pre>
+  <div class="code-header">
+    <span>X86asm</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-x86asm"><span class="line-number">0</span>; Create a X11 graphical context.
+<span class="line-number">1</span>; @param rdi The socket file descriptor.
+<span class="line-number">2</span>; @param esi The graphical context id.
+<span class="line-number">3</span>; @param edx The window root id.
+<span class="line-number">4</span>; @param ecx The font id.
+<span class="line-number">5</span>x11_create_gc:
+<span class="line-number">6</span>static x11_create_gc:function
+<span class="line-number">7</span>  push rbp
+<span class="line-number">8</span>  mov rbp, rsp
+<span class="line-number">9</span>
+<span class="line-number">10</span>  sub rsp, 8*8
+<span class="line-number">11</span>
+<span class="line-number">12</span>%define X11_OP_REQ_CREATE_GC 0x37
+<span class="line-number">13</span>%define X11_FLAG_GC_BG 0x00000004
+<span class="line-number">14</span>%define X11_FLAG_GC_FG 0x00000008
+<span class="line-number">15</span>%define X11_FLAG_GC_FONT 0x00004000
+<span class="line-number">16</span>%define X11_FLAG_GC_EXPOSE 0x00010000
+<span class="line-number">17</span>
+<span class="line-number">18</span>%define CREATE_GC_FLAGS X11_FLAG_GC_BG | X11_FLAG_GC_FG | X11_FLAG_GC_FONT
+<span class="line-number">19</span>%define CREATE_GC_PACKET_FLAG_COUNT 3
+<span class="line-number">20</span>%define CREATE_GC_PACKET_U32_COUNT (4 + CREATE_GC_PACKET_FLAG_COUNT)
+<span class="line-number">21</span>%define MY_COLOR_RGB 0x0000ffff
+<span class="line-number">22</span>
+<span class="line-number">23</span>  mov DWORD [rsp + 0*4], X11_OP_REQ_CREATE_GC | (CREATE_GC_PACKET_U32_COUNT&lt;&lt;16)
+<span class="line-number">24</span>  mov DWORD [rsp + 1*4], esi
+<span class="line-number">25</span>  mov DWORD [rsp + 2*4], edx
+<span class="line-number">26</span>  mov DWORD [rsp + 3*4], CREATE_GC_FLAGS
+<span class="line-number">27</span>  mov DWORD [rsp + 4*4], MY_COLOR_RGB
+<span class="line-number">28</span>  mov DWORD [rsp + 5*4], 0
+<span class="line-number">29</span>  mov DWORD [rsp + 6*4], ecx
+<span class="line-number">30</span>
+<span class="line-number">31</span>  mov rax, SYSCALL_WRITE
+<span class="line-number">32</span>  mov rdi, rdi
+<span class="line-number">33</span>  lea rsi, [rsp]
+<span class="line-number">34</span>  mov rdx, CREATE_GC_PACKET_U32_COUNT*4
+<span class="line-number">35</span>  syscall
+<span class="line-number">36</span>
+<span class="line-number">37</span>  cmp rax, CREATE_GC_PACKET_U32_COUNT*4
+<span class="line-number">38</span>  jnz die
+<span class="line-number">39</span>  
+<span class="line-number">40</span>  add rsp, 8*8
+<span class="line-number">41</span>
+<span class="line-number">42</span>  pop rbp
+<span class="line-number">43</span>  ret
 </code></pre>
 <h2 id="creating-the-window">
   <a class="title" href="#creating-the-window">Creating the window</a>
@@ -1058,56 +1263,61 @@ static x11_create_gc:function
 <p>We can now create the window, which refers to the freshly created graphical context.
 We also provide the desired x and y coordinates of the window, as well as the desired dimensions (width and height).</p>
 <p>Note that those are simply hints and the resulting window may well have different coordinates and dimensions, for example when using a tiling window manager, or when resizing the window.</p>
-<pre><code class="language-x86asm">; Create the X11 window.
-; @param rdi The socket file descriptor.
-; @param esi The new window id.
-; @param edx The window root id.
-; @param ecx The root visual id.
-; @param r8d Packed x and y.
-; @param r9d Packed w and h.
-x11_create_window:
-static x11_create_window:function
-  push rbp
-  mov rbp, rsp
-
-  %define X11_OP_REQ_CREATE_WINDOW 0x01
-  %define X11_FLAG_WIN_BG_COLOR 0x00000002
-  %define X11_EVENT_FLAG_KEY_RELEASE 0x0002
-  %define X11_EVENT_FLAG_EXPOSURE 0x8000
-  %define X11_FLAG_WIN_EVENT 0x00000800
-  
-  %define CREATE_WINDOW_FLAG_COUNT 2
-  %define CREATE_WINDOW_PACKET_U32_COUNT (8 + CREATE_WINDOW_FLAG_COUNT)
-  %define CREATE_WINDOW_BORDER 1
-  %define CREATE_WINDOW_GROUP 1
-
-  sub rsp, 12*8
-
-  mov DWORD [rsp + 0*4], X11_OP_REQ_CREATE_WINDOW | (CREATE_WINDOW_PACKET_U32_COUNT &lt;&lt; 16)
-  mov DWORD [rsp + 1*4], esi
-  mov DWORD [rsp + 2*4], edx
-  mov DWORD [rsp + 3*4], r8d
-  mov DWORD [rsp + 4*4], r9d
-  mov DWORD [rsp + 5*4], CREATE_WINDOW_GROUP | (CREATE_WINDOW_BORDER &lt;&lt; 16)
-  mov DWORD [rsp + 6*4], ecx
-  mov DWORD [rsp + 7*4], X11_FLAG_WIN_BG_COLOR | X11_FLAG_WIN_EVENT
-  mov DWORD [rsp + 8*4], 0
-  mov DWORD [rsp + 9*4], X11_EVENT_FLAG_KEY_RELEASE | X11_EVENT_FLAG_EXPOSURE
-
-
-  mov rax, SYSCALL_WRITE
-  mov rdi, rdi
-  lea rsi, [rsp]
-  mov rdx, CREATE_WINDOW_PACKET_U32_COUNT*4
-  syscall
-
-  cmp rax, CREATE_WINDOW_PACKET_U32_COUNT*4
-  jnz die
-
-  add rsp, 12*8
-
-  pop rbp
-  ret
+<pre>
+  <div class="code-header">
+    <span>X86asm</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-x86asm"><span class="line-number">0</span>; Create the X11 window.
+<span class="line-number">1</span>; @param rdi The socket file descriptor.
+<span class="line-number">2</span>; @param esi The new window id.
+<span class="line-number">3</span>; @param edx The window root id.
+<span class="line-number">4</span>; @param ecx The root visual id.
+<span class="line-number">5</span>; @param r8d Packed x and y.
+<span class="line-number">6</span>; @param r9d Packed w and h.
+<span class="line-number">7</span>x11_create_window:
+<span class="line-number">8</span>static x11_create_window:function
+<span class="line-number">9</span>  push rbp
+<span class="line-number">10</span>  mov rbp, rsp
+<span class="line-number">11</span>
+<span class="line-number">12</span>  %define X11_OP_REQ_CREATE_WINDOW 0x01
+<span class="line-number">13</span>  %define X11_FLAG_WIN_BG_COLOR 0x00000002
+<span class="line-number">14</span>  %define X11_EVENT_FLAG_KEY_RELEASE 0x0002
+<span class="line-number">15</span>  %define X11_EVENT_FLAG_EXPOSURE 0x8000
+<span class="line-number">16</span>  %define X11_FLAG_WIN_EVENT 0x00000800
+<span class="line-number">17</span>  
+<span class="line-number">18</span>  %define CREATE_WINDOW_FLAG_COUNT 2
+<span class="line-number">19</span>  %define CREATE_WINDOW_PACKET_U32_COUNT (8 + CREATE_WINDOW_FLAG_COUNT)
+<span class="line-number">20</span>  %define CREATE_WINDOW_BORDER 1
+<span class="line-number">21</span>  %define CREATE_WINDOW_GROUP 1
+<span class="line-number">22</span>
+<span class="line-number">23</span>  sub rsp, 12*8
+<span class="line-number">24</span>
+<span class="line-number">25</span>  mov DWORD [rsp + 0*4], X11_OP_REQ_CREATE_WINDOW | (CREATE_WINDOW_PACKET_U32_COUNT &lt;&lt; 16)
+<span class="line-number">26</span>  mov DWORD [rsp + 1*4], esi
+<span class="line-number">27</span>  mov DWORD [rsp + 2*4], edx
+<span class="line-number">28</span>  mov DWORD [rsp + 3*4], r8d
+<span class="line-number">29</span>  mov DWORD [rsp + 4*4], r9d
+<span class="line-number">30</span>  mov DWORD [rsp + 5*4], CREATE_WINDOW_GROUP | (CREATE_WINDOW_BORDER &lt;&lt; 16)
+<span class="line-number">31</span>  mov DWORD [rsp + 6*4], ecx
+<span class="line-number">32</span>  mov DWORD [rsp + 7*4], X11_FLAG_WIN_BG_COLOR | X11_FLAG_WIN_EVENT
+<span class="line-number">33</span>  mov DWORD [rsp + 8*4], 0
+<span class="line-number">34</span>  mov DWORD [rsp + 9*4], X11_EVENT_FLAG_KEY_RELEASE | X11_EVENT_FLAG_EXPOSURE
+<span class="line-number">35</span>
+<span class="line-number">36</span>
+<span class="line-number">37</span>  mov rax, SYSCALL_WRITE
+<span class="line-number">38</span>  mov rdi, rdi
+<span class="line-number">39</span>  lea rsi, [rsp]
+<span class="line-number">40</span>  mov rdx, CREATE_WINDOW_PACKET_U32_COUNT*4
+<span class="line-number">41</span>  syscall
+<span class="line-number">42</span>
+<span class="line-number">43</span>  cmp rax, CREATE_WINDOW_PACKET_U32_COUNT*4
+<span class="line-number">44</span>  jnz die
+<span class="line-number">45</span>
+<span class="line-number">46</span>  add rsp, 12*8
+<span class="line-number">47</span>
+<span class="line-number">48</span>  pop rbp
+<span class="line-number">49</span>  ret
 </code></pre>
 <h2 id="mapping-the-window">
   <a class="title" href="#mapping-the-window">Mapping the window</a>
@@ -1115,33 +1325,38 @@ static x11_create_window:function
 </h2>
 <p>If you are following along at home, and just ran the program, you have realized nothing is displayed.</p>
 <p>That is because X11 does not show the window until we have mapped it. This is a simple message to send:</p>
-<pre><code class="language-x86asm">; Map a X11 window.
-; @param rdi The socket file descriptor.
-; @param esi The window id.
-x11_map_window:
-static x11_map_window:function
-  push rbp
-  mov rbp, rsp
-
-  sub rsp, 16
-
-  %define X11_OP_REQ_MAP_WINDOW 0x08
-  mov DWORD [rsp + 0*4], X11_OP_REQ_MAP_WINDOW | (2&lt;&lt;16)
-  mov DWORD [rsp + 1*4], esi
-
-  mov rax, SYSCALL_WRITE
-  mov rdi, rdi
-  lea rsi, [rsp]
-  mov rdx, 2*4
-  syscall
-
-  cmp rax, 2*4
-  jnz die
-
-  add rsp, 16
-
-  pop rbp
-  ret
+<pre>
+  <div class="code-header">
+    <span>X86asm</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-x86asm"><span class="line-number">0</span>; Map a X11 window.
+<span class="line-number">1</span>; @param rdi The socket file descriptor.
+<span class="line-number">2</span>; @param esi The window id.
+<span class="line-number">3</span>x11_map_window:
+<span class="line-number">4</span>static x11_map_window:function
+<span class="line-number">5</span>  push rbp
+<span class="line-number">6</span>  mov rbp, rsp
+<span class="line-number">7</span>
+<span class="line-number">8</span>  sub rsp, 16
+<span class="line-number">9</span>
+<span class="line-number">10</span>  %define X11_OP_REQ_MAP_WINDOW 0x08
+<span class="line-number">11</span>  mov DWORD [rsp + 0*4], X11_OP_REQ_MAP_WINDOW | (2&lt;&lt;16)
+<span class="line-number">12</span>  mov DWORD [rsp + 1*4], esi
+<span class="line-number">13</span>
+<span class="line-number">14</span>  mov rax, SYSCALL_WRITE
+<span class="line-number">15</span>  mov rdi, rdi
+<span class="line-number">16</span>  lea rsi, [rsp]
+<span class="line-number">17</span>  mov rdx, 2*4
+<span class="line-number">18</span>  syscall
+<span class="line-number">19</span>
+<span class="line-number">20</span>  cmp rax, 2*4
+<span class="line-number">21</span>  jnz die
+<span class="line-number">22</span>
+<span class="line-number">23</span>  add rsp, 16
+<span class="line-number">24</span>
+<span class="line-number">25</span>  pop rbp
+<span class="line-number">26</span>  ret
 </code></pre>
 <p>We now have a black window:</p>
 <p><img src="x11_x64_black_window.png" alt="Black window" /></p>
@@ -1158,113 +1373,128 @@ The solution is to use the <code>poll(2)</code> system call to be awoken by the 
 <p>A shrewd reader has pointed out that we could simply <code>read</code> from the socket in a loop, since we only have one, possibly with a timeout. Linux, and perhaps others, support setting a read timeout on a socket with <code>setsockopt(2)</code>. But I will keep this version in this article since this is the original one. Feel free to experiment with the alternative at home!</p>
 </blockquote>
 <p>First, we need to mark the socket as 'non-blocking' since it is by default in blocking mode:</p>
-<pre><code class="language-x86asm">; Set a file descriptor in non-blocking mode.
-; @param rdi The file descriptor.
-set_fd_non_blocking:
-static set_fd_non_blocking:function
-  push rbp
-  mov rbp, rsp
-
-  mov rax, SYSCALL_FCNTL
-  mov rdi, rdi 
-  mov rsi, F_GETFL
-  mov rdx, 0
-  syscall
-
-  cmp rax, 0
-  jl die
-
-  ; `or` the current file status flag with O_NONBLOCK.
-  mov rdx, rax
-  or rdx, O_NONBLOCK
-
-  mov rax, SYSCALL_FCNTL
-  mov rdi, rdi 
-  mov rsi, F_SETFL
-  mov rdx, rdx
-  syscall
-
-  cmp rax, 0
-  jl die
-
-  pop rbp
-  ret
+<pre>
+  <div class="code-header">
+    <span>X86asm</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-x86asm"><span class="line-number">0</span>; Set a file descriptor in non-blocking mode.
+<span class="line-number">1</span>; @param rdi The file descriptor.
+<span class="line-number">2</span>set_fd_non_blocking:
+<span class="line-number">3</span>static set_fd_non_blocking:function
+<span class="line-number">4</span>  push rbp
+<span class="line-number">5</span>  mov rbp, rsp
+<span class="line-number">6</span>
+<span class="line-number">7</span>  mov rax, SYSCALL_FCNTL
+<span class="line-number">8</span>  mov rdi, rdi 
+<span class="line-number">9</span>  mov rsi, F_GETFL
+<span class="line-number">10</span>  mov rdx, 0
+<span class="line-number">11</span>  syscall
+<span class="line-number">12</span>
+<span class="line-number">13</span>  cmp rax, 0
+<span class="line-number">14</span>  jl die
+<span class="line-number">15</span>
+<span class="line-number">16</span>  ; `or` the current file status flag with O_NONBLOCK.
+<span class="line-number">17</span>  mov rdx, rax
+<span class="line-number">18</span>  or rdx, O_NONBLOCK
+<span class="line-number">19</span>
+<span class="line-number">20</span>  mov rax, SYSCALL_FCNTL
+<span class="line-number">21</span>  mov rdi, rdi 
+<span class="line-number">22</span>  mov rsi, F_SETFL
+<span class="line-number">23</span>  mov rdx, rdx
+<span class="line-number">24</span>  syscall
+<span class="line-number">25</span>
+<span class="line-number">26</span>  cmp rax, 0
+<span class="line-number">27</span>  jl die
+<span class="line-number">28</span>
+<span class="line-number">29</span>  pop rbp
+<span class="line-number">30</span>  ret
 </code></pre>
 <p>Then, we write a small function to read data on the socket. For simplicity, we only read 32 bytes of data, because most messages from X11 are of this size. We also return the first byte which contains the event type.</p>
-<pre><code class="language-x86asm">; Read the X11 server reply.
-; @return The message code in al.
-x11_read_reply:
-static x11_read_reply:function
-  push rbp
-  mov rbp, rsp
-
-  sub rsp, 32
-  
-  mov rax, SYSCALL_READ
-  mov rdi, rdi
-  lea rsi, [rsp]
-  mov rdx, 32
-  syscall
-
-  cmp rax, 1
-  jle die
-
-  mov al, BYTE [rsp]
-
-  add rsp, 32
-
-  pop rbp
-  ret
+<pre>
+  <div class="code-header">
+    <span>X86asm</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-x86asm"><span class="line-number">0</span>; Read the X11 server reply.
+<span class="line-number">1</span>; @return The message code in al.
+<span class="line-number">2</span>x11_read_reply:
+<span class="line-number">3</span>static x11_read_reply:function
+<span class="line-number">4</span>  push rbp
+<span class="line-number">5</span>  mov rbp, rsp
+<span class="line-number">6</span>
+<span class="line-number">7</span>  sub rsp, 32
+<span class="line-number">8</span>  
+<span class="line-number">9</span>  mov rax, SYSCALL_READ
+<span class="line-number">10</span>  mov rdi, rdi
+<span class="line-number">11</span>  lea rsi, [rsp]
+<span class="line-number">12</span>  mov rdx, 32
+<span class="line-number">13</span>  syscall
+<span class="line-number">14</span>
+<span class="line-number">15</span>  cmp rax, 1
+<span class="line-number">16</span>  jle die
+<span class="line-number">17</span>
+<span class="line-number">18</span>  mov al, BYTE [rsp]
+<span class="line-number">19</span>
+<span class="line-number">20</span>  add rsp, 32
+<span class="line-number">21</span>
+<span class="line-number">22</span>  pop rbp
+<span class="line-number">23</span>  ret
 </code></pre>
 <p>We now can poll. If an error occurs or the other side has closed their end of the socket, we exit the program.</p>
-<pre><code class="language-x86asm">; Poll indefinitely messages from the X11 server with poll(2).
-; @param rdi The socket file descriptor.
-; @param esi The window id.
-; @param edx The gc id.
-poll_messages:
-static poll_messages:function
-  push rbp
-  mov rbp, rsp
-
-  sub rsp, 32
-
-  %define POLLIN 0x001
-  %define POLLPRI 0x002
-  %define POLLOUT 0x004
-  %define POLLERR  0x008
-  %define POLLHUP  0x010
-  %define POLLNVAL 0x020
-
-  mov DWORD [rsp + 0*4], edi
-  mov DWORD [rsp + 1*4], POLLIN
-
-  mov DWORD [rsp + 16], esi ; window id
-  mov DWORD [rsp + 20], edx ; gc id
-
-  .loop:
-    mov rax, SYSCALL_POLL
-    lea rdi, [rsp]
-    mov rsi, 1
-    mov rdx, -1
-    syscall
-
-    cmp rax, 0
-    jle die
-
-    cmp DWORD [rsp + 2*4], POLLERR  
-    je die
-
-    cmp DWORD [rsp + 2*4], POLLHUP  
-    je die
-
-    mov rdi, [rsp + 0*4]
-    call x11_read_reply
-
-    jmp .loop
-
-  add rsp, 32
-  pop rbp
-  ret
+<pre>
+  <div class="code-header">
+    <span>X86asm</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-x86asm"><span class="line-number">0</span>; Poll indefinitely messages from the X11 server with poll(2).
+<span class="line-number">1</span>; @param rdi The socket file descriptor.
+<span class="line-number">2</span>; @param esi The window id.
+<span class="line-number">3</span>; @param edx The gc id.
+<span class="line-number">4</span>poll_messages:
+<span class="line-number">5</span>static poll_messages:function
+<span class="line-number">6</span>  push rbp
+<span class="line-number">7</span>  mov rbp, rsp
+<span class="line-number">8</span>
+<span class="line-number">9</span>  sub rsp, 32
+<span class="line-number">10</span>
+<span class="line-number">11</span>  %define POLLIN 0x001
+<span class="line-number">12</span>  %define POLLPRI 0x002
+<span class="line-number">13</span>  %define POLLOUT 0x004
+<span class="line-number">14</span>  %define POLLERR  0x008
+<span class="line-number">15</span>  %define POLLHUP  0x010
+<span class="line-number">16</span>  %define POLLNVAL 0x020
+<span class="line-number">17</span>
+<span class="line-number">18</span>  mov DWORD [rsp + 0*4], edi
+<span class="line-number">19</span>  mov DWORD [rsp + 1*4], POLLIN
+<span class="line-number">20</span>
+<span class="line-number">21</span>  mov DWORD [rsp + 16], esi ; window id
+<span class="line-number">22</span>  mov DWORD [rsp + 20], edx ; gc id
+<span class="line-number">23</span>
+<span class="line-number">24</span>  .loop:
+<span class="line-number">25</span>    mov rax, SYSCALL_POLL
+<span class="line-number">26</span>    lea rdi, [rsp]
+<span class="line-number">27</span>    mov rsi, 1
+<span class="line-number">28</span>    mov rdx, -1
+<span class="line-number">29</span>    syscall
+<span class="line-number">30</span>
+<span class="line-number">31</span>    cmp rax, 0
+<span class="line-number">32</span>    jle die
+<span class="line-number">33</span>
+<span class="line-number">34</span>    cmp DWORD [rsp + 2*4], POLLERR  
+<span class="line-number">35</span>    je die
+<span class="line-number">36</span>
+<span class="line-number">37</span>    cmp DWORD [rsp + 2*4], POLLHUP  
+<span class="line-number">38</span>    je die
+<span class="line-number">39</span>
+<span class="line-number">40</span>    mov rdi, [rsp + 0*4]
+<span class="line-number">41</span>    call x11_read_reply
+<span class="line-number">42</span>
+<span class="line-number">43</span>    jmp .loop
+<span class="line-number">44</span>
+<span class="line-number">45</span>  add rsp, 32
+<span class="line-number">46</span>  pop rbp
+<span class="line-number">47</span>  ret
 </code></pre>
 <h2 id="drawing-text">
   <a class="title" href="#drawing-text">Drawing text</a>
@@ -1272,96 +1502,106 @@ static poll_messages:function
 </h2>
 <p>At last, we can draw text. The small difficulty here is that the text is of unknown length in the general case, so we have to compute the size of the X11 message, including the padding at the end. So far, we only had messages of fixed size.</p>
 <p>The official documentation has formulas to compute those values.</p>
-<pre><code class="language-x86asm">; Draw text in a X11 window with server-side text rendering.
-; @param rdi The socket file descriptor.
-; @param rsi The text string.
-; @param edx The text string length in bytes.
-; @param ecx The window id.
-; @param r8d The gc id.
-; @param r9d Packed x and y.
-x11_draw_text:
-static x11_draw_text:function
-  push rbp
-  mov rbp, rsp
-
-  sub rsp, 1024
-
-  mov DWORD [rsp + 1*4], ecx ; Store the window id directly in the packet data on the stack.
-  mov DWORD [rsp + 2*4], r8d ; Store the gc id directly in the packet data on the stack.
-  mov DWORD [rsp + 3*4], r9d ; Store x, y directly in the packet data on the stack.
-
-  mov r8d, edx ; Store the string length in r8 since edx will be overwritten next.
-  mov QWORD [rsp + 1024 - 8], rdi ; Store the socket file descriptor on the stack to free the register.
-
-  ; Compute padding and packet u32 count with division and modulo 4.
-  mov eax, edx ; Put dividend in eax.
-  mov ecx, 4 ; Put divisor in ecx.
-  cdq ; Sign extend.
-  idiv ecx ; Compute eax / ecx, and put the remainder (i.e. modulo) in edx.
-  ; LLVM optimizer magic: `(4-x)%4 == -x &amp; 3`, for some reason.
-  neg edx
-  and edx, 3
-  mov r9d, edx ; Store padding in r9.
-
-  mov eax, r8d 
-  add eax, r9d
-  shr eax, 2 ; Compute: eax /= 4
-  add eax, 4 ; eax now contains the packet u32 count.
-
-
-  %define X11_OP_REQ_IMAGE_TEXT8 0x4c
-  mov DWORD [rsp + 0*4], r8d
-  shl DWORD [rsp + 0*4], 8
-  or DWORD [rsp + 0*4], X11_OP_REQ_IMAGE_TEXT8
-  mov ecx, eax
-  shl ecx, 16
-  or [rsp + 0*4], ecx
-
-  ; Copy the text string into the packet data on the stack.
-  mov rsi, rsi ; Source string in rsi.
-  lea rdi, [rsp + 4*4] ; Destination
-  cld ; Move forward
-  mov ecx, r8d ; String length.
-  rep movsb ; Copy.
-
-  mov rdx, rax ; packet u32 count
-  imul rdx, 4
-  mov rax, SYSCALL_WRITE
-  mov rdi, QWORD [rsp + 1024 - 8] ; fd
-  lea rsi, [rsp]
-  syscall
-
-  cmp rax, rdx
-  jnz die
-
-  add rsp, 1024
-
-  pop rbp
-  ret
+<pre>
+  <div class="code-header">
+    <span>X86asm</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-x86asm"><span class="line-number">0</span>; Draw text in a X11 window with server-side text rendering.
+<span class="line-number">1</span>; @param rdi The socket file descriptor.
+<span class="line-number">2</span>; @param rsi The text string.
+<span class="line-number">3</span>; @param edx The text string length in bytes.
+<span class="line-number">4</span>; @param ecx The window id.
+<span class="line-number">5</span>; @param r8d The gc id.
+<span class="line-number">6</span>; @param r9d Packed x and y.
+<span class="line-number">7</span>x11_draw_text:
+<span class="line-number">8</span>static x11_draw_text:function
+<span class="line-number">9</span>  push rbp
+<span class="line-number">10</span>  mov rbp, rsp
+<span class="line-number">11</span>
+<span class="line-number">12</span>  sub rsp, 1024
+<span class="line-number">13</span>
+<span class="line-number">14</span>  mov DWORD [rsp + 1*4], ecx ; Store the window id directly in the packet data on the stack.
+<span class="line-number">15</span>  mov DWORD [rsp + 2*4], r8d ; Store the gc id directly in the packet data on the stack.
+<span class="line-number">16</span>  mov DWORD [rsp + 3*4], r9d ; Store x, y directly in the packet data on the stack.
+<span class="line-number">17</span>
+<span class="line-number">18</span>  mov r8d, edx ; Store the string length in r8 since edx will be overwritten next.
+<span class="line-number">19</span>  mov QWORD [rsp + 1024 - 8], rdi ; Store the socket file descriptor on the stack to free the register.
+<span class="line-number">20</span>
+<span class="line-number">21</span>  ; Compute padding and packet u32 count with division and modulo 4.
+<span class="line-number">22</span>  mov eax, edx ; Put dividend in eax.
+<span class="line-number">23</span>  mov ecx, 4 ; Put divisor in ecx.
+<span class="line-number">24</span>  cdq ; Sign extend.
+<span class="line-number">25</span>  idiv ecx ; Compute eax / ecx, and put the remainder (i.e. modulo) in edx.
+<span class="line-number">26</span>  ; LLVM optimizer magic: `(4-x)%4 == -x &amp; 3`, for some reason.
+<span class="line-number">27</span>  neg edx
+<span class="line-number">28</span>  and edx, 3
+<span class="line-number">29</span>  mov r9d, edx ; Store padding in r9.
+<span class="line-number">30</span>
+<span class="line-number">31</span>  mov eax, r8d 
+<span class="line-number">32</span>  add eax, r9d
+<span class="line-number">33</span>  shr eax, 2 ; Compute: eax /= 4
+<span class="line-number">34</span>  add eax, 4 ; eax now contains the packet u32 count.
+<span class="line-number">35</span>
+<span class="line-number">36</span>
+<span class="line-number">37</span>  %define X11_OP_REQ_IMAGE_TEXT8 0x4c
+<span class="line-number">38</span>  mov DWORD [rsp + 0*4], r8d
+<span class="line-number">39</span>  shl DWORD [rsp + 0*4], 8
+<span class="line-number">40</span>  or DWORD [rsp + 0*4], X11_OP_REQ_IMAGE_TEXT8
+<span class="line-number">41</span>  mov ecx, eax
+<span class="line-number">42</span>  shl ecx, 16
+<span class="line-number">43</span>  or [rsp + 0*4], ecx
+<span class="line-number">44</span>
+<span class="line-number">45</span>  ; Copy the text string into the packet data on the stack.
+<span class="line-number">46</span>  mov rsi, rsi ; Source string in rsi.
+<span class="line-number">47</span>  lea rdi, [rsp + 4*4] ; Destination
+<span class="line-number">48</span>  cld ; Move forward
+<span class="line-number">49</span>  mov ecx, r8d ; String length.
+<span class="line-number">50</span>  rep movsb ; Copy.
+<span class="line-number">51</span>
+<span class="line-number">52</span>  mov rdx, rax ; packet u32 count
+<span class="line-number">53</span>  imul rdx, 4
+<span class="line-number">54</span>  mov rax, SYSCALL_WRITE
+<span class="line-number">55</span>  mov rdi, QWORD [rsp + 1024 - 8] ; fd
+<span class="line-number">56</span>  lea rsi, [rsp]
+<span class="line-number">57</span>  syscall
+<span class="line-number">58</span>
+<span class="line-number">59</span>  cmp rax, rdx
+<span class="line-number">60</span>  jnz die
+<span class="line-number">61</span>
+<span class="line-number">62</span>  add rsp, 1024
+<span class="line-number">63</span>
+<span class="line-number">64</span>  pop rbp
+<span class="line-number">65</span>  ret
 </code></pre>
 <p>We then call this function inside the polling loop, and we store the 'exposed' state in a boolean on the stack to know whether we should render the text or not:</p>
-<pre><code class="language-x86asm">    %define X11_EVENT_EXPOSURE 0xc
-    cmp eax, X11_EVENT_EXPOSURE
-    jnz .received_other_event
-
-    .received_exposed_event:
-    mov BYTE [rsp + 24], 1 ; Mark as exposed.
-
-    .received_other_event:
-
-    cmp BYTE [rsp + 24], 1 ; exposed?
-    jnz .loop
-
-    .draw_text:
-      mov rdi, [rsp + 0*4] ; socket fd
-      lea rsi, [hello_world] ; string
-      mov edx, 13 ; length
-      mov ecx, [rsp + 16] ; window id
-      mov r8d, [rsp + 20] ; gc id
-      mov r9d, 100 ; x
-      shl r9d, 16
-      or r9d, 100 ; y
-      call x11_draw_text
+<pre>
+  <div class="code-header">
+    <span>X86asm</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-x86asm"><span class="line-number">0</span>    %define X11_EVENT_EXPOSURE 0xc
+<span class="line-number">1</span>    cmp eax, X11_EVENT_EXPOSURE
+<span class="line-number">2</span>    jnz .received_other_event
+<span class="line-number">3</span>
+<span class="line-number">4</span>    .received_exposed_event:
+<span class="line-number">5</span>    mov BYTE [rsp + 24], 1 ; Mark as exposed.
+<span class="line-number">6</span>
+<span class="line-number">7</span>    .received_other_event:
+<span class="line-number">8</span>
+<span class="line-number">9</span>    cmp BYTE [rsp + 24], 1 ; exposed?
+<span class="line-number">10</span>    jnz .loop
+<span class="line-number">11</span>
+<span class="line-number">12</span>    .draw_text:
+<span class="line-number">13</span>      mov rdi, [rsp + 0*4] ; socket fd
+<span class="line-number">14</span>      lea rsi, [hello_world] ; string
+<span class="line-number">15</span>      mov edx, 13 ; length
+<span class="line-number">16</span>      mov ecx, [rsp + 16] ; window id
+<span class="line-number">17</span>      mov r8d, [rsp + 20] ; gc id
+<span class="line-number">18</span>      mov r9d, 100 ; x
+<span class="line-number">19</span>      shl r9d, 16
+<span class="line-number">20</span>      or r9d, 100 ; y
+<span class="line-number">21</span>      call x11_draw_text
 </code></pre>
 <p>Finally, we see our <code>Hello, world!</code> text displayed inside the window:</p>
 <p><img src="x11_x64_final.png" alt="Result" /></p>
@@ -1390,638 +1630,643 @@ static x11_draw_text:function
 </h2>
 <details>
   <summary>The full code</summary>
-<pre><code class="language-x86asm">; Build with: nasm -f elf64 -g main.nasm &amp;&amp; ld main.o -static -o main 
-
-BITS 64 ; 64 bits.
-CPU X64 ; Target the x86_64 family of CPUs.
-
-section .rodata
-
-sun_path: db &quot;/tmp/.X11-unix/X0&quot;, 0
-static sun_path:data
-
-hello_world: db &quot;Hello, world!&quot;
-static hello_world:data
-
-section .data
-
-id: dd 0
-static id:data
-
-id_base: dd 0
-static id_base:data
-
-id_mask: dd 0
-static id_mask:data
-
-root_visual_id: dd 0
-static root_visual_id:data
-
-
-section .text
-
-%define AF_UNIX 1
-%define SOCK_STREAM 1
-
-%define SYSCALL_READ 0
-%define SYSCALL_WRITE 1
-%define SYSCALL_POLL 7
-%define SYSCALL_SOCKET 41
-%define SYSCALL_CONNECT 42
-%define SYSCALL_EXIT 60
-%define SYSCALL_FCNTL 72
-
-; Create a UNIX domain socket and connect to the X11 server.
-; @returns The socket file descriptor.
-x11_connect_to_server:
-static x11_connect_to_server:function
-  push rbp
-  mov rbp, rsp 
-
-  ; Open a Unix socket: socket(2).
-  mov rax, SYSCALL_SOCKET
-  mov rdi, AF_UNIX ; Unix socket.
-  mov rsi, SOCK_STREAM ; Stream oriented.
-  mov rdx, 0 ; Automatic protocol.
-  syscall
-
-  cmp rax, 0
-  js die
-
-  mov rdi, rax ; Store socket fd in `rdi` for the remainder of the function.
-
-  sub rsp, 112 ; Store struct sockaddr_un on the stack.
-
-  mov WORD [rsp], AF_UNIX ; Set sockaddr_un.sun_family to AF_UNIX
-  ; Fill sockaddr_un.sun_path with: &quot;/tmp/.X11-unix/X0&quot;.
-  lea rsi, sun_path
-  mov r12, rdi ; Save the socket file descriptor in `rdi` in `r12`.
-  lea rdi, [rsp + 2]
-  cld ; Move forward
-  mov ecx, 19 ; Length is 19 with the null terminator.
-  rep movsb ; Copy.
-
-  ; Connect to the server: connect(2).
-  mov rax, SYSCALL_CONNECT
-  mov rdi, r12
-  lea rsi, [rsp]
-  %define SIZEOF_SOCKADDR_UN 2+108
-  mov rdx, SIZEOF_SOCKADDR_UN
-  syscall
-
-  cmp rax, 0
-  jne die
-
-  mov rax, rdi ; Return the socket fd.
-
-  add rsp, 112
-  pop rbp
-  ret
-
-; Send the handshake to the X11 server and read the returned system information.
-; @param rdi The socket file descriptor
-; @returns The window root id (uint32_t) in rax.
-x11_send_handshake:
-static x11_send_handshake:function
-  push rbp
-  mov rbp, rsp
-
-  sub rsp, 1&lt;&lt;15
-  mov BYTE [rsp + 0], 'l' ; Set order to 'l'.
-  mov BYTE [rsp + 1], 0
-  mov WORD [rsp + 2], 11
-  mov BYTE [rsp + 4], 0
-  mov BYTE [rsp + 5], 0
-  mov BYTE [rsp + 6], 0
-  mov BYTE [rsp + 7], 0
-  mov BYTE [rsp + 8], 0
-  mov BYTE [rsp + 9], 0
-  mov BYTE [rsp + 10], 0
-  mov BYTE [rsp + 11], 0
-
-  ; Send the handshake to the server: write(2).
-  mov rax, SYSCALL_WRITE
-  mov rdi, rdi
-  lea rsi, [rsp]
-  mov rdx, 12
-  syscall
-
-  cmp rax, 12 ; Check that all bytes were written.
-  jnz die
-
-  ; Read the server response: read(2).
-  ; Use the stack for the read buffer.
-  ; The X11 server first replies with 8 bytes. Once these are read, it replies with a much bigger message.
-  mov rax, SYSCALL_READ
-  mov rdi, rdi
-  lea rsi, [rsp]
-  mov rdx, 8
-  syscall
-
-  cmp rax, 8 ; Check that the server replied with 8 bytes.
-  jnz die
-
-  cmp BYTE [rsp], 1 ; Check that the server sent 'success' (first byte is 1).
-  jnz die
-
-  ; Read the rest of the server response: read(2).
-  ; Use the stack for the read buffer.
-  mov rax, SYSCALL_READ
-  mov rdi, rdi
-  lea rsi, [rsp]
-  mov rdx, 1&lt;&lt;15
-  syscall
-
-  cmp rax, 0 ; Check that the server replied with something.
-  jle die
-
-  ; Set id_base globally.
-  mov edx, DWORD [rsp + 4]
-  mov DWORD [id_base], edx
-
-  ; Set id_mask globally.
-  mov edx, DWORD [rsp + 8]
-  mov DWORD [id_mask], edx
-
-  ; Read the information we need, skip over the rest.
-  lea rdi, [rsp] ; Pointer that will skip over some data.
-  
-  mov cx, WORD [rsp + 16] ; Vendor length (v).
-  movzx rcx, cx
-
-  mov al, BYTE [rsp + 21]; Number of formats (n).
-  movzx rax, al ; Fill the rest of the register with zeroes to avoid garbage values.
-  imul rax, 8 ; sizeof(format) == 8
-
-  add rdi, 32 ; Skip the connection setup
-
-  ; Skip over padding.
-  add rdi, 3
-  and rdi, -4
-
-  add rdi, rcx ; Skip over the vendor information (v).
-  add rdi, rax ; Skip over the format information (n*8).
-
-  mov eax, DWORD [rdi] ; Store (and return) the window root id.
-
-  ; Set the root_visual_id globally.
-  mov edx, DWORD [rdi + 32]
-  mov DWORD [root_visual_id], edx
-
-  add rsp, 1&lt;&lt;15
-  pop rbp
-  ret
-
-; Increment the global id.
-; @return The new id.
-x11_next_id:
-static x11_next_id:function
-  push rbp
-  mov rbp, rsp
-
-  mov eax, DWORD [id] ; Load global id.
-
-  mov edi, DWORD [id_base] ; Load global id_base.
-  mov edx, DWORD [id_mask] ; Load global id_mask.
-
-  ; Return: id_mask &amp; (id) | id_base
-  and eax, edx
-  or eax, edi
-
-  add DWORD [id], 1 ; Increment id.
-
-  pop rbp
-  ret
-
-; Open the font on the server side.
-; @param rdi The socket file descriptor.
-; @param esi The font id.
-x11_open_font:
-static x11_open_font:function
-  push rbp
-  mov rbp, rsp
-
-  %define OPEN_FONT_NAME_BYTE_COUNT 5
-  %define OPEN_FONT_PADDING ((4 - (OPEN_FONT_NAME_BYTE_COUNT % 4)) % 4)
-  %define OPEN_FONT_PACKET_U32_COUNT (3 + (OPEN_FONT_NAME_BYTE_COUNT + OPEN_FONT_PADDING) / 4)
-  %define X11_OP_REQ_OPEN_FONT 0x2d
-
-  sub rsp, 6*8
-  mov DWORD [rsp + 0*4], X11_OP_REQ_OPEN_FONT | (OPEN_FONT_NAME_BYTE_COUNT &lt;&lt; 16)
-  mov DWORD [rsp + 1*4], esi
-  mov DWORD [rsp + 2*4], OPEN_FONT_NAME_BYTE_COUNT
-  mov BYTE [rsp + 3*4 + 0], 'f'
-  mov BYTE [rsp + 3*4 + 1], 'i'
-  mov BYTE [rsp + 3*4 + 2], 'x'
-  mov BYTE [rsp + 3*4 + 3], 'e'
-  mov BYTE [rsp + 3*4 + 4], 'd'
-
-
-  mov rax, SYSCALL_WRITE
-  mov rdi, rdi
-  lea rsi, [rsp]
-  mov rdx, OPEN_FONT_PACKET_U32_COUNT*4
-  syscall
-
-  cmp rax, OPEN_FONT_PACKET_U32_COUNT*4
-  jnz die
-
-  add rsp, 6*8
-
-  pop rbp
-  ret
-
-; Create a X11 graphical context.
-; @param rdi The socket file descriptor.
-; @param esi The graphical context id.
-; @param edx The window root id.
-; @param ecx The font id.
-x11_create_gc:
-static x11_create_gc:function
-  push rbp
-  mov rbp, rsp
-
-  sub rsp, 8*8
-
-%define X11_OP_REQ_CREATE_GC 0x37
-%define X11_FLAG_GC_BG 0x00000004
-%define X11_FLAG_GC_FG 0x00000008
-%define X11_FLAG_GC_FONT 0x00004000
-%define X11_FLAG_GC_EXPOSE 0x00010000
-
-%define CREATE_GC_FLAGS X11_FLAG_GC_BG | X11_FLAG_GC_FG | X11_FLAG_GC_FONT
-%define CREATE_GC_PACKET_FLAG_COUNT 3
-%define CREATE_GC_PACKET_U32_COUNT (4 + CREATE_GC_PACKET_FLAG_COUNT)
-%define MY_COLOR_RGB 0x0000ffff
-
-  mov DWORD [rsp + 0*4], X11_OP_REQ_CREATE_GC | (CREATE_GC_PACKET_U32_COUNT&lt;&lt;16)
-  mov DWORD [rsp + 1*4], esi
-  mov DWORD [rsp + 2*4], edx
-  mov DWORD [rsp + 3*4], CREATE_GC_FLAGS
-  mov DWORD [rsp + 4*4], MY_COLOR_RGB
-  mov DWORD [rsp + 5*4], 0
-  mov DWORD [rsp + 6*4], ecx
-
-  mov rax, SYSCALL_WRITE
-  mov rdi, rdi
-  lea rsi, [rsp]
-  mov rdx, CREATE_GC_PACKET_U32_COUNT*4
-  syscall
-
-  cmp rax, CREATE_GC_PACKET_U32_COUNT*4
-  jnz die
-  
-  add rsp, 8*8
-
-  pop rbp
-  ret
-
-; Create the X11 window.
-; @param rdi The socket file descriptor.
-; @param esi The new window id.
-; @param edx The window root id.
-; @param ecx The root visual id.
-; @param r8d Packed x and y.
-; @param r9d Packed w and h.
-x11_create_window:
-static x11_create_window:function
-  push rbp
-  mov rbp, rsp
-
-  %define X11_OP_REQ_CREATE_WINDOW 0x01
-  %define X11_FLAG_WIN_BG_COLOR 0x00000002
-  %define X11_EVENT_FLAG_KEY_RELEASE 0x0002
-  %define X11_EVENT_FLAG_EXPOSURE 0x8000
-  %define X11_FLAG_WIN_EVENT 0x00000800
-  
-  %define CREATE_WINDOW_FLAG_COUNT 2
-  %define CREATE_WINDOW_PACKET_U32_COUNT (8 + CREATE_WINDOW_FLAG_COUNT)
-  %define CREATE_WINDOW_BORDER 1
-  %define CREATE_WINDOW_GROUP 1
-
-  sub rsp, 12*8
-
-  mov DWORD [rsp + 0*4], X11_OP_REQ_CREATE_WINDOW | (CREATE_WINDOW_PACKET_U32_COUNT &lt;&lt; 16)
-  mov DWORD [rsp + 1*4], esi
-  mov DWORD [rsp + 2*4], edx
-  mov DWORD [rsp + 3*4], r8d
-  mov DWORD [rsp + 4*4], r9d
-  mov DWORD [rsp + 5*4], CREATE_WINDOW_GROUP | (CREATE_WINDOW_BORDER &lt;&lt; 16)
-  mov DWORD [rsp + 6*4], ecx
-  mov DWORD [rsp + 7*4], X11_FLAG_WIN_BG_COLOR | X11_FLAG_WIN_EVENT
-  mov DWORD [rsp + 8*4], 0
-  mov DWORD [rsp + 9*4], X11_EVENT_FLAG_KEY_RELEASE | X11_EVENT_FLAG_EXPOSURE
-
-
-  mov rax, SYSCALL_WRITE
-  mov rdi, rdi
-  lea rsi, [rsp]
-  mov rdx, CREATE_WINDOW_PACKET_U32_COUNT*4
-  syscall
-
-  cmp rax, CREATE_WINDOW_PACKET_U32_COUNT*4
-  jnz die
-
-  add rsp, 12*8
-
-  pop rbp
-  ret
-
-; Map a X11 window.
-; @param rdi The socket file descriptor.
-; @param esi The window id.
-x11_map_window:
-static x11_map_window:function
-  push rbp
-  mov rbp, rsp
-
-  sub rsp, 16
-
-  %define X11_OP_REQ_MAP_WINDOW 0x08
-  mov DWORD [rsp + 0*4], X11_OP_REQ_MAP_WINDOW | (2&lt;&lt;16)
-  mov DWORD [rsp + 1*4], esi
-
-  mov rax, SYSCALL_WRITE
-  mov rdi, rdi
-  lea rsi, [rsp]
-  mov rdx, 2*4
-  syscall
-
-  cmp rax, 2*4
-  jnz die
-
-  add rsp, 16
-
-  pop rbp
-  ret
-
-; Read the X11 server reply.
-; @return The message code in al.
-x11_read_reply:
-static x11_read_reply:function
-  push rbp
-  mov rbp, rsp
-
-  sub rsp, 32
-
-  mov rax, SYSCALL_READ
-  mov rdi, rdi
-  lea rsi, [rsp]
-  mov rdx, 32
-  syscall
-
-  cmp rax, 1
-  jle die
-
-  mov al, BYTE [rsp]
-
-  add rsp, 32
-
-  pop rbp
-  ret
-
-die:
-  mov rax, SYSCALL_EXIT
-  mov rdi, 1
-  syscall
-
-
-; Set a file descriptor in non-blocking mode.
-; @param rdi The file descriptor.
-set_fd_non_blocking:
-static set_fd_non_blocking:function
-  push rbp
-  mov rbp, rsp
-
-  %define F_GETFL 3
-  %define F_SETFL 4
-
-  %define O_NONBLOCK 2048
-
-  mov rax, SYSCALL_FCNTL
-  mov rdi, rdi 
-  mov rsi, F_GETFL
-  mov rdx, 0
-  syscall
-
-  cmp rax, 0
-  jl die
-
-  ; `or` the current file status flag with O_NONBLOCK.
-  mov rdx, rax
-  or rdx, O_NONBLOCK
-
-  mov rax, SYSCALL_FCNTL
-  mov rdi, rdi 
-  mov rsi, F_SETFL
-  mov rdx, rdx
-  syscall
-
-  cmp rax, 0
-  jl die
-
-  pop rbp
-  ret
-
-; Poll indefinitely messages from the X11 server with poll(2).
-; @param rdi The socket file descriptor.
-; @param esi The window id.
-; @param edx The gc id.
-poll_messages:
-static poll_messages:function
-  push rbp
-  mov rbp, rsp
-
-  sub rsp, 32
-
-  %define POLLIN 0x001
-  %define POLLPRI 0x002
-  %define POLLOUT 0x004
-  %define POLLERR  0x008
-  %define POLLHUP  0x010
-  %define POLLNVAL 0x020
-
-  mov DWORD [rsp + 0*4], edi
-  mov DWORD [rsp + 1*4], POLLIN
-
-  mov DWORD [rsp + 16], esi ; window id
-  mov DWORD [rsp + 20], edx ; gc id
-  mov BYTE [rsp + 24], 0 ; exposed? (boolean)
-
-  .loop:
-    mov rax, SYSCALL_POLL
-    lea rdi, [rsp]
-    mov rsi, 1
-    mov rdx, -1
-    syscall
-
-    cmp rax, 0
-    jle die
-
-    cmp DWORD [rsp + 2*4], POLLERR  
-    je die
-
-    cmp DWORD [rsp + 2*4], POLLHUP  
-    je die
-
-    mov rdi, [rsp + 0*4]
-    call x11_read_reply
-
-    %define X11_EVENT_EXPOSURE 0xc
-    cmp eax, X11_EVENT_EXPOSURE
-    jnz .received_other_event
-
-    .received_exposed_event:
-    mov BYTE [rsp + 24], 1 ; Mark as exposed.
-
-    .received_other_event:
-
-    cmp BYTE [rsp + 24], 1 ; exposed?
-    jnz .loop
-
-    .draw_text:
-      mov rdi, [rsp + 0*4] ; socket fd
-      lea rsi, [hello_world] ; string
-      mov edx, 13 ; length
-      mov ecx, [rsp + 16] ; window id
-      mov r8d, [rsp + 20] ; gc id
-      mov r9d, 100 ; x
-      shl r9d, 16
-      or r9d, 100 ; y
-      call x11_draw_text
-
-
-    jmp .loop
-
-
-  add rsp, 32
-  pop rbp
-  ret
-
-; Draw text in a X11 window with server-side text rendering.
-; @param rdi The socket file descriptor.
-; @param rsi The text string.
-; @param edx The text string length in bytes.
-; @param ecx The window id.
-; @param r8d The gc id.
-; @param r9d Packed x and y.
-x11_draw_text:
-static x11_draw_text:function
-  push rbp
-  mov rbp, rsp
-
-  sub rsp, 1024
-
-  mov DWORD [rsp + 1*4], ecx ; Store the window id directly in the packet data on the stack.
-  mov DWORD [rsp + 2*4], r8d ; Store the gc id directly in the packet data on the stack.
-  mov DWORD [rsp + 3*4], r9d ; Store x, y directly in the packet data on the stack.
-
-  mov r8d, edx ; Store the string length in r8 since edx will be overwritten next.
-  mov QWORD [rsp + 1024 - 8], rdi ; Store the socket file descriptor on the stack to free the register.
-
-  ; Compute padding and packet u32 count with division and modulo 4.
-  mov eax, edx ; Put dividend in eax.
-  mov ecx, 4 ; Put divisor in ecx.
-  cdq ; Sign extend.
-  idiv ecx ; Compute eax / ecx, and put the remainder (i.e. modulo) in edx.
-  ; LLVM optimizer magic: `(4-x)%4 == -x &amp; 3`, for some reason.
-  neg edx
-  and edx, 3
-  mov r9d, edx ; Store padding in r9.
-
-  mov eax, r8d 
-  add eax, r9d
-  shr eax, 2 ; Compute: eax /= 4
-  add eax, 4 ; eax now contains the packet u32 count.
-
-
-  %define X11_OP_REQ_IMAGE_TEXT8 0x4c
-  mov DWORD [rsp + 0*4], r8d
-  shl DWORD [rsp + 0*4], 8
-  or DWORD [rsp + 0*4], X11_OP_REQ_IMAGE_TEXT8
-  mov ecx, eax
-  shl ecx, 16
-  or [rsp + 0*4], ecx
-
-  ; Copy the text string into the packet data on the stack.
-  mov rsi, rsi ; Source string in rsi.
-  lea rdi, [rsp + 4*4] ; Destination
-  cld ; Move forward
-  mov ecx, r8d ; String length.
-  rep movsb ; Copy.
-
-  mov rdx, rax ; packet u32 count
-  imul rdx, 4
-  mov rax, SYSCALL_WRITE
-  mov rdi, QWORD [rsp + 1024 - 8] ; fd
-  lea rsi, [rsp]
-  syscall
-
-  cmp rax, rdx
-  jnz die
-
-  add rsp, 1024
-
-  pop rbp
-  ret
-
-_start:
-global _start:function
-  call x11_connect_to_server
-  mov r15, rax ; Store the socket file descriptor in r15.
-
-  mov rdi, rax
-  call x11_send_handshake
-
-  mov r12d, eax ; Store the window root id in r12.
-
-  call x11_next_id
-  mov r13d, eax ; Store the gc_id in r13.
-
-  call x11_next_id
-  mov r14d, eax ; Store the font_id in r14.
-
-  mov rdi, r15
-  mov esi, r14d
-  call x11_open_font
-
-
-  mov rdi, r15
-  mov esi, r13d
-  mov edx, r12d
-  mov ecx, r14d
-  call x11_create_gc
-
-  call x11_next_id
-  
-  mov ebx, eax ; Store the window id in ebx.
-
-  mov rdi, r15 ; socket fd
-  mov esi, eax
-  mov edx, r12d
-  mov ecx, [root_visual_id]
-  mov r8d, 200 | (200 &lt;&lt; 16) ; x and y are 200
-  %define WINDOW_W 800
-  %define WINDOW_H 600
-  mov r9d, WINDOW_W | (WINDOW_H &lt;&lt; 16)
-  call x11_create_window
-
-  mov rdi, r15 ; socket fd
-  mov esi, ebx
-  call x11_map_window
-
-  mov rdi, r15 ; socket fd
-  call set_fd_non_blocking
-
-  mov rdi, r15 ; socket fd
-  mov esi, ebx ; window id
-  mov edx, r13d ; gc id
-  call poll_messages
-
-  ; The end.
-  mov rax, SYSCALL_EXIT
-  mov rdi, 0
-  syscall
+<pre>
+  <div class="code-header">
+    <span>X86asm</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-x86asm"><span class="line-number">0</span>; Build with: nasm -f elf64 -g main.nasm &amp;&amp; ld main.o -static -o main 
+<span class="line-number">1</span>
+<span class="line-number">2</span>BITS 64 ; 64 bits.
+<span class="line-number">3</span>CPU X64 ; Target the x86_64 family of CPUs.
+<span class="line-number">4</span>
+<span class="line-number">5</span>section .rodata
+<span class="line-number">6</span>
+<span class="line-number">7</span>sun_path: db &quot;/tmp/.X11-unix/X0&quot;, 0
+<span class="line-number">8</span>static sun_path:data
+<span class="line-number">9</span>
+<span class="line-number">10</span>hello_world: db &quot;Hello, world!&quot;
+<span class="line-number">11</span>static hello_world:data
+<span class="line-number">12</span>
+<span class="line-number">13</span>section .data
+<span class="line-number">14</span>
+<span class="line-number">15</span>id: dd 0
+<span class="line-number">16</span>static id:data
+<span class="line-number">17</span>
+<span class="line-number">18</span>id_base: dd 0
+<span class="line-number">19</span>static id_base:data
+<span class="line-number">20</span>
+<span class="line-number">21</span>id_mask: dd 0
+<span class="line-number">22</span>static id_mask:data
+<span class="line-number">23</span>
+<span class="line-number">24</span>root_visual_id: dd 0
+<span class="line-number">25</span>static root_visual_id:data
+<span class="line-number">26</span>
+<span class="line-number">27</span>
+<span class="line-number">28</span>section .text
+<span class="line-number">29</span>
+<span class="line-number">30</span>%define AF_UNIX 1
+<span class="line-number">31</span>%define SOCK_STREAM 1
+<span class="line-number">32</span>
+<span class="line-number">33</span>%define SYSCALL_READ 0
+<span class="line-number">34</span>%define SYSCALL_WRITE 1
+<span class="line-number">35</span>%define SYSCALL_POLL 7
+<span class="line-number">36</span>%define SYSCALL_SOCKET 41
+<span class="line-number">37</span>%define SYSCALL_CONNECT 42
+<span class="line-number">38</span>%define SYSCALL_EXIT 60
+<span class="line-number">39</span>%define SYSCALL_FCNTL 72
+<span class="line-number">40</span>
+<span class="line-number">41</span>; Create a UNIX domain socket and connect to the X11 server.
+<span class="line-number">42</span>; @returns The socket file descriptor.
+<span class="line-number">43</span>x11_connect_to_server:
+<span class="line-number">44</span>static x11_connect_to_server:function
+<span class="line-number">45</span>  push rbp
+<span class="line-number">46</span>  mov rbp, rsp 
+<span class="line-number">47</span>
+<span class="line-number">48</span>  ; Open a Unix socket: socket(2).
+<span class="line-number">49</span>  mov rax, SYSCALL_SOCKET
+<span class="line-number">50</span>  mov rdi, AF_UNIX ; Unix socket.
+<span class="line-number">51</span>  mov rsi, SOCK_STREAM ; Stream oriented.
+<span class="line-number">52</span>  mov rdx, 0 ; Automatic protocol.
+<span class="line-number">53</span>  syscall
+<span class="line-number">54</span>
+<span class="line-number">55</span>  cmp rax, 0
+<span class="line-number">56</span>  js die
+<span class="line-number">57</span>
+<span class="line-number">58</span>  mov rdi, rax ; Store socket fd in `rdi` for the remainder of the function.
+<span class="line-number">59</span>
+<span class="line-number">60</span>  sub rsp, 112 ; Store struct sockaddr_un on the stack.
+<span class="line-number">61</span>
+<span class="line-number">62</span>  mov WORD [rsp], AF_UNIX ; Set sockaddr_un.sun_family to AF_UNIX
+<span class="line-number">63</span>  ; Fill sockaddr_un.sun_path with: &quot;/tmp/.X11-unix/X0&quot;.
+<span class="line-number">64</span>  lea rsi, sun_path
+<span class="line-number">65</span>  mov r12, rdi ; Save the socket file descriptor in `rdi` in `r12`.
+<span class="line-number">66</span>  lea rdi, [rsp + 2]
+<span class="line-number">67</span>  cld ; Move forward
+<span class="line-number">68</span>  mov ecx, 19 ; Length is 19 with the null terminator.
+<span class="line-number">69</span>  rep movsb ; Copy.
+<span class="line-number">70</span>
+<span class="line-number">71</span>  ; Connect to the server: connect(2).
+<span class="line-number">72</span>  mov rax, SYSCALL_CONNECT
+<span class="line-number">73</span>  mov rdi, r12
+<span class="line-number">74</span>  lea rsi, [rsp]
+<span class="line-number">75</span>  %define SIZEOF_SOCKADDR_UN 2+108
+<span class="line-number">76</span>  mov rdx, SIZEOF_SOCKADDR_UN
+<span class="line-number">77</span>  syscall
+<span class="line-number">78</span>
+<span class="line-number">79</span>  cmp rax, 0
+<span class="line-number">80</span>  jne die
+<span class="line-number">81</span>
+<span class="line-number">82</span>  mov rax, rdi ; Return the socket fd.
+<span class="line-number">83</span>
+<span class="line-number">84</span>  add rsp, 112
+<span class="line-number">85</span>  pop rbp
+<span class="line-number">86</span>  ret
+<span class="line-number">87</span>
+<span class="line-number">88</span>; Send the handshake to the X11 server and read the returned system information.
+<span class="line-number">89</span>; @param rdi The socket file descriptor
+<span class="line-number">90</span>; @returns The window root id (uint32_t) in rax.
+<span class="line-number">91</span>x11_send_handshake:
+<span class="line-number">92</span>static x11_send_handshake:function
+<span class="line-number">93</span>  push rbp
+<span class="line-number">94</span>  mov rbp, rsp
+<span class="line-number">95</span>
+<span class="line-number">96</span>  sub rsp, 1&lt;&lt;15
+<span class="line-number">97</span>  mov BYTE [rsp + 0], 'l' ; Set order to 'l'.
+<span class="line-number">98</span>  mov BYTE [rsp + 1], 0
+<span class="line-number">99</span>  mov WORD [rsp + 2], 11
+<span class="line-number">100</span>  mov BYTE [rsp + 4], 0
+<span class="line-number">101</span>  mov BYTE [rsp + 5], 0
+<span class="line-number">102</span>  mov BYTE [rsp + 6], 0
+<span class="line-number">103</span>  mov BYTE [rsp + 7], 0
+<span class="line-number">104</span>  mov BYTE [rsp + 8], 0
+<span class="line-number">105</span>  mov BYTE [rsp + 9], 0
+<span class="line-number">106</span>  mov BYTE [rsp + 10], 0
+<span class="line-number">107</span>  mov BYTE [rsp + 11], 0
+<span class="line-number">108</span>
+<span class="line-number">109</span>  ; Send the handshake to the server: write(2).
+<span class="line-number">110</span>  mov rax, SYSCALL_WRITE
+<span class="line-number">111</span>  mov rdi, rdi
+<span class="line-number">112</span>  lea rsi, [rsp]
+<span class="line-number">113</span>  mov rdx, 12
+<span class="line-number">114</span>  syscall
+<span class="line-number">115</span>
+<span class="line-number">116</span>  cmp rax, 12 ; Check that all bytes were written.
+<span class="line-number">117</span>  jnz die
+<span class="line-number">118</span>
+<span class="line-number">119</span>  ; Read the server response: read(2).
+<span class="line-number">120</span>  ; Use the stack for the read buffer.
+<span class="line-number">121</span>  ; The X11 server first replies with 8 bytes. Once these are read, it replies with a much bigger message.
+<span class="line-number">122</span>  mov rax, SYSCALL_READ
+<span class="line-number">123</span>  mov rdi, rdi
+<span class="line-number">124</span>  lea rsi, [rsp]
+<span class="line-number">125</span>  mov rdx, 8
+<span class="line-number">126</span>  syscall
+<span class="line-number">127</span>
+<span class="line-number">128</span>  cmp rax, 8 ; Check that the server replied with 8 bytes.
+<span class="line-number">129</span>  jnz die
+<span class="line-number">130</span>
+<span class="line-number">131</span>  cmp BYTE [rsp], 1 ; Check that the server sent 'success' (first byte is 1).
+<span class="line-number">132</span>  jnz die
+<span class="line-number">133</span>
+<span class="line-number">134</span>  ; Read the rest of the server response: read(2).
+<span class="line-number">135</span>  ; Use the stack for the read buffer.
+<span class="line-number">136</span>  mov rax, SYSCALL_READ
+<span class="line-number">137</span>  mov rdi, rdi
+<span class="line-number">138</span>  lea rsi, [rsp]
+<span class="line-number">139</span>  mov rdx, 1&lt;&lt;15
+<span class="line-number">140</span>  syscall
+<span class="line-number">141</span>
+<span class="line-number">142</span>  cmp rax, 0 ; Check that the server replied with something.
+<span class="line-number">143</span>  jle die
+<span class="line-number">144</span>
+<span class="line-number">145</span>  ; Set id_base globally.
+<span class="line-number">146</span>  mov edx, DWORD [rsp + 4]
+<span class="line-number">147</span>  mov DWORD [id_base], edx
+<span class="line-number">148</span>
+<span class="line-number">149</span>  ; Set id_mask globally.
+<span class="line-number">150</span>  mov edx, DWORD [rsp + 8]
+<span class="line-number">151</span>  mov DWORD [id_mask], edx
+<span class="line-number">152</span>
+<span class="line-number">153</span>  ; Read the information we need, skip over the rest.
+<span class="line-number">154</span>  lea rdi, [rsp] ; Pointer that will skip over some data.
+<span class="line-number">155</span>  
+<span class="line-number">156</span>  mov cx, WORD [rsp + 16] ; Vendor length (v).
+<span class="line-number">157</span>  movzx rcx, cx
+<span class="line-number">158</span>
+<span class="line-number">159</span>  mov al, BYTE [rsp + 21]; Number of formats (n).
+<span class="line-number">160</span>  movzx rax, al ; Fill the rest of the register with zeroes to avoid garbage values.
+<span class="line-number">161</span>  imul rax, 8 ; sizeof(format) == 8
+<span class="line-number">162</span>
+<span class="line-number">163</span>  add rdi, 32 ; Skip the connection setup
+<span class="line-number">164</span>
+<span class="line-number">165</span>  ; Skip over padding.
+<span class="line-number">166</span>  add rdi, 3
+<span class="line-number">167</span>  and rdi, -4
+<span class="line-number">168</span>
+<span class="line-number">169</span>  add rdi, rcx ; Skip over the vendor information (v).
+<span class="line-number">170</span>  add rdi, rax ; Skip over the format information (n*8).
+<span class="line-number">171</span>
+<span class="line-number">172</span>  mov eax, DWORD [rdi] ; Store (and return) the window root id.
+<span class="line-number">173</span>
+<span class="line-number">174</span>  ; Set the root_visual_id globally.
+<span class="line-number">175</span>  mov edx, DWORD [rdi + 32]
+<span class="line-number">176</span>  mov DWORD [root_visual_id], edx
+<span class="line-number">177</span>
+<span class="line-number">178</span>  add rsp, 1&lt;&lt;15
+<span class="line-number">179</span>  pop rbp
+<span class="line-number">180</span>  ret
+<span class="line-number">181</span>
+<span class="line-number">182</span>; Increment the global id.
+<span class="line-number">183</span>; @return The new id.
+<span class="line-number">184</span>x11_next_id:
+<span class="line-number">185</span>static x11_next_id:function
+<span class="line-number">186</span>  push rbp
+<span class="line-number">187</span>  mov rbp, rsp
+<span class="line-number">188</span>
+<span class="line-number">189</span>  mov eax, DWORD [id] ; Load global id.
+<span class="line-number">190</span>
+<span class="line-number">191</span>  mov edi, DWORD [id_base] ; Load global id_base.
+<span class="line-number">192</span>  mov edx, DWORD [id_mask] ; Load global id_mask.
+<span class="line-number">193</span>
+<span class="line-number">194</span>  ; Return: id_mask &amp; (id) | id_base
+<span class="line-number">195</span>  and eax, edx
+<span class="line-number">196</span>  or eax, edi
+<span class="line-number">197</span>
+<span class="line-number">198</span>  add DWORD [id], 1 ; Increment id.
+<span class="line-number">199</span>
+<span class="line-number">200</span>  pop rbp
+<span class="line-number">201</span>  ret
+<span class="line-number">202</span>
+<span class="line-number">203</span>; Open the font on the server side.
+<span class="line-number">204</span>; @param rdi The socket file descriptor.
+<span class="line-number">205</span>; @param esi The font id.
+<span class="line-number">206</span>x11_open_font:
+<span class="line-number">207</span>static x11_open_font:function
+<span class="line-number">208</span>  push rbp
+<span class="line-number">209</span>  mov rbp, rsp
+<span class="line-number">210</span>
+<span class="line-number">211</span>  %define OPEN_FONT_NAME_BYTE_COUNT 5
+<span class="line-number">212</span>  %define OPEN_FONT_PADDING ((4 - (OPEN_FONT_NAME_BYTE_COUNT % 4)) % 4)
+<span class="line-number">213</span>  %define OPEN_FONT_PACKET_U32_COUNT (3 + (OPEN_FONT_NAME_BYTE_COUNT + OPEN_FONT_PADDING) / 4)
+<span class="line-number">214</span>  %define X11_OP_REQ_OPEN_FONT 0x2d
+<span class="line-number">215</span>
+<span class="line-number">216</span>  sub rsp, 6*8
+<span class="line-number">217</span>  mov DWORD [rsp + 0*4], X11_OP_REQ_OPEN_FONT | (OPEN_FONT_NAME_BYTE_COUNT &lt;&lt; 16)
+<span class="line-number">218</span>  mov DWORD [rsp + 1*4], esi
+<span class="line-number">219</span>  mov DWORD [rsp + 2*4], OPEN_FONT_NAME_BYTE_COUNT
+<span class="line-number">220</span>  mov BYTE [rsp + 3*4 + 0], 'f'
+<span class="line-number">221</span>  mov BYTE [rsp + 3*4 + 1], 'i'
+<span class="line-number">222</span>  mov BYTE [rsp + 3*4 + 2], 'x'
+<span class="line-number">223</span>  mov BYTE [rsp + 3*4 + 3], 'e'
+<span class="line-number">224</span>  mov BYTE [rsp + 3*4 + 4], 'd'
+<span class="line-number">225</span>
+<span class="line-number">226</span>
+<span class="line-number">227</span>  mov rax, SYSCALL_WRITE
+<span class="line-number">228</span>  mov rdi, rdi
+<span class="line-number">229</span>  lea rsi, [rsp]
+<span class="line-number">230</span>  mov rdx, OPEN_FONT_PACKET_U32_COUNT*4
+<span class="line-number">231</span>  syscall
+<span class="line-number">232</span>
+<span class="line-number">233</span>  cmp rax, OPEN_FONT_PACKET_U32_COUNT*4
+<span class="line-number">234</span>  jnz die
+<span class="line-number">235</span>
+<span class="line-number">236</span>  add rsp, 6*8
+<span class="line-number">237</span>
+<span class="line-number">238</span>  pop rbp
+<span class="line-number">239</span>  ret
+<span class="line-number">240</span>
+<span class="line-number">241</span>; Create a X11 graphical context.
+<span class="line-number">242</span>; @param rdi The socket file descriptor.
+<span class="line-number">243</span>; @param esi The graphical context id.
+<span class="line-number">244</span>; @param edx The window root id.
+<span class="line-number">245</span>; @param ecx The font id.
+<span class="line-number">246</span>x11_create_gc:
+<span class="line-number">247</span>static x11_create_gc:function
+<span class="line-number">248</span>  push rbp
+<span class="line-number">249</span>  mov rbp, rsp
+<span class="line-number">250</span>
+<span class="line-number">251</span>  sub rsp, 8*8
+<span class="line-number">252</span>
+<span class="line-number">253</span>%define X11_OP_REQ_CREATE_GC 0x37
+<span class="line-number">254</span>%define X11_FLAG_GC_BG 0x00000004
+<span class="line-number">255</span>%define X11_FLAG_GC_FG 0x00000008
+<span class="line-number">256</span>%define X11_FLAG_GC_FONT 0x00004000
+<span class="line-number">257</span>%define X11_FLAG_GC_EXPOSE 0x00010000
+<span class="line-number">258</span>
+<span class="line-number">259</span>%define CREATE_GC_FLAGS X11_FLAG_GC_BG | X11_FLAG_GC_FG | X11_FLAG_GC_FONT
+<span class="line-number">260</span>%define CREATE_GC_PACKET_FLAG_COUNT 3
+<span class="line-number">261</span>%define CREATE_GC_PACKET_U32_COUNT (4 + CREATE_GC_PACKET_FLAG_COUNT)
+<span class="line-number">262</span>%define MY_COLOR_RGB 0x0000ffff
+<span class="line-number">263</span>
+<span class="line-number">264</span>  mov DWORD [rsp + 0*4], X11_OP_REQ_CREATE_GC | (CREATE_GC_PACKET_U32_COUNT&lt;&lt;16)
+<span class="line-number">265</span>  mov DWORD [rsp + 1*4], esi
+<span class="line-number">266</span>  mov DWORD [rsp + 2*4], edx
+<span class="line-number">267</span>  mov DWORD [rsp + 3*4], CREATE_GC_FLAGS
+<span class="line-number">268</span>  mov DWORD [rsp + 4*4], MY_COLOR_RGB
+<span class="line-number">269</span>  mov DWORD [rsp + 5*4], 0
+<span class="line-number">270</span>  mov DWORD [rsp + 6*4], ecx
+<span class="line-number">271</span>
+<span class="line-number">272</span>  mov rax, SYSCALL_WRITE
+<span class="line-number">273</span>  mov rdi, rdi
+<span class="line-number">274</span>  lea rsi, [rsp]
+<span class="line-number">275</span>  mov rdx, CREATE_GC_PACKET_U32_COUNT*4
+<span class="line-number">276</span>  syscall
+<span class="line-number">277</span>
+<span class="line-number">278</span>  cmp rax, CREATE_GC_PACKET_U32_COUNT*4
+<span class="line-number">279</span>  jnz die
+<span class="line-number">280</span>  
+<span class="line-number">281</span>  add rsp, 8*8
+<span class="line-number">282</span>
+<span class="line-number">283</span>  pop rbp
+<span class="line-number">284</span>  ret
+<span class="line-number">285</span>
+<span class="line-number">286</span>; Create the X11 window.
+<span class="line-number">287</span>; @param rdi The socket file descriptor.
+<span class="line-number">288</span>; @param esi The new window id.
+<span class="line-number">289</span>; @param edx The window root id.
+<span class="line-number">290</span>; @param ecx The root visual id.
+<span class="line-number">291</span>; @param r8d Packed x and y.
+<span class="line-number">292</span>; @param r9d Packed w and h.
+<span class="line-number">293</span>x11_create_window:
+<span class="line-number">294</span>static x11_create_window:function
+<span class="line-number">295</span>  push rbp
+<span class="line-number">296</span>  mov rbp, rsp
+<span class="line-number">297</span>
+<span class="line-number">298</span>  %define X11_OP_REQ_CREATE_WINDOW 0x01
+<span class="line-number">299</span>  %define X11_FLAG_WIN_BG_COLOR 0x00000002
+<span class="line-number">300</span>  %define X11_EVENT_FLAG_KEY_RELEASE 0x0002
+<span class="line-number">301</span>  %define X11_EVENT_FLAG_EXPOSURE 0x8000
+<span class="line-number">302</span>  %define X11_FLAG_WIN_EVENT 0x00000800
+<span class="line-number">303</span>  
+<span class="line-number">304</span>  %define CREATE_WINDOW_FLAG_COUNT 2
+<span class="line-number">305</span>  %define CREATE_WINDOW_PACKET_U32_COUNT (8 + CREATE_WINDOW_FLAG_COUNT)
+<span class="line-number">306</span>  %define CREATE_WINDOW_BORDER 1
+<span class="line-number">307</span>  %define CREATE_WINDOW_GROUP 1
+<span class="line-number">308</span>
+<span class="line-number">309</span>  sub rsp, 12*8
+<span class="line-number">310</span>
+<span class="line-number">311</span>  mov DWORD [rsp + 0*4], X11_OP_REQ_CREATE_WINDOW | (CREATE_WINDOW_PACKET_U32_COUNT &lt;&lt; 16)
+<span class="line-number">312</span>  mov DWORD [rsp + 1*4], esi
+<span class="line-number">313</span>  mov DWORD [rsp + 2*4], edx
+<span class="line-number">314</span>  mov DWORD [rsp + 3*4], r8d
+<span class="line-number">315</span>  mov DWORD [rsp + 4*4], r9d
+<span class="line-number">316</span>  mov DWORD [rsp + 5*4], CREATE_WINDOW_GROUP | (CREATE_WINDOW_BORDER &lt;&lt; 16)
+<span class="line-number">317</span>  mov DWORD [rsp + 6*4], ecx
+<span class="line-number">318</span>  mov DWORD [rsp + 7*4], X11_FLAG_WIN_BG_COLOR | X11_FLAG_WIN_EVENT
+<span class="line-number">319</span>  mov DWORD [rsp + 8*4], 0
+<span class="line-number">320</span>  mov DWORD [rsp + 9*4], X11_EVENT_FLAG_KEY_RELEASE | X11_EVENT_FLAG_EXPOSURE
+<span class="line-number">321</span>
+<span class="line-number">322</span>
+<span class="line-number">323</span>  mov rax, SYSCALL_WRITE
+<span class="line-number">324</span>  mov rdi, rdi
+<span class="line-number">325</span>  lea rsi, [rsp]
+<span class="line-number">326</span>  mov rdx, CREATE_WINDOW_PACKET_U32_COUNT*4
+<span class="line-number">327</span>  syscall
+<span class="line-number">328</span>
+<span class="line-number">329</span>  cmp rax, CREATE_WINDOW_PACKET_U32_COUNT*4
+<span class="line-number">330</span>  jnz die
+<span class="line-number">331</span>
+<span class="line-number">332</span>  add rsp, 12*8
+<span class="line-number">333</span>
+<span class="line-number">334</span>  pop rbp
+<span class="line-number">335</span>  ret
+<span class="line-number">336</span>
+<span class="line-number">337</span>; Map a X11 window.
+<span class="line-number">338</span>; @param rdi The socket file descriptor.
+<span class="line-number">339</span>; @param esi The window id.
+<span class="line-number">340</span>x11_map_window:
+<span class="line-number">341</span>static x11_map_window:function
+<span class="line-number">342</span>  push rbp
+<span class="line-number">343</span>  mov rbp, rsp
+<span class="line-number">344</span>
+<span class="line-number">345</span>  sub rsp, 16
+<span class="line-number">346</span>
+<span class="line-number">347</span>  %define X11_OP_REQ_MAP_WINDOW 0x08
+<span class="line-number">348</span>  mov DWORD [rsp + 0*4], X11_OP_REQ_MAP_WINDOW | (2&lt;&lt;16)
+<span class="line-number">349</span>  mov DWORD [rsp + 1*4], esi
+<span class="line-number">350</span>
+<span class="line-number">351</span>  mov rax, SYSCALL_WRITE
+<span class="line-number">352</span>  mov rdi, rdi
+<span class="line-number">353</span>  lea rsi, [rsp]
+<span class="line-number">354</span>  mov rdx, 2*4
+<span class="line-number">355</span>  syscall
+<span class="line-number">356</span>
+<span class="line-number">357</span>  cmp rax, 2*4
+<span class="line-number">358</span>  jnz die
+<span class="line-number">359</span>
+<span class="line-number">360</span>  add rsp, 16
+<span class="line-number">361</span>
+<span class="line-number">362</span>  pop rbp
+<span class="line-number">363</span>  ret
+<span class="line-number">364</span>
+<span class="line-number">365</span>; Read the X11 server reply.
+<span class="line-number">366</span>; @return The message code in al.
+<span class="line-number">367</span>x11_read_reply:
+<span class="line-number">368</span>static x11_read_reply:function
+<span class="line-number">369</span>  push rbp
+<span class="line-number">370</span>  mov rbp, rsp
+<span class="line-number">371</span>
+<span class="line-number">372</span>  sub rsp, 32
+<span class="line-number">373</span>
+<span class="line-number">374</span>  mov rax, SYSCALL_READ
+<span class="line-number">375</span>  mov rdi, rdi
+<span class="line-number">376</span>  lea rsi, [rsp]
+<span class="line-number">377</span>  mov rdx, 32
+<span class="line-number">378</span>  syscall
+<span class="line-number">379</span>
+<span class="line-number">380</span>  cmp rax, 1
+<span class="line-number">381</span>  jle die
+<span class="line-number">382</span>
+<span class="line-number">383</span>  mov al, BYTE [rsp]
+<span class="line-number">384</span>
+<span class="line-number">385</span>  add rsp, 32
+<span class="line-number">386</span>
+<span class="line-number">387</span>  pop rbp
+<span class="line-number">388</span>  ret
+<span class="line-number">389</span>
+<span class="line-number">390</span>die:
+<span class="line-number">391</span>  mov rax, SYSCALL_EXIT
+<span class="line-number">392</span>  mov rdi, 1
+<span class="line-number">393</span>  syscall
+<span class="line-number">394</span>
+<span class="line-number">395</span>
+<span class="line-number">396</span>; Set a file descriptor in non-blocking mode.
+<span class="line-number">397</span>; @param rdi The file descriptor.
+<span class="line-number">398</span>set_fd_non_blocking:
+<span class="line-number">399</span>static set_fd_non_blocking:function
+<span class="line-number">400</span>  push rbp
+<span class="line-number">401</span>  mov rbp, rsp
+<span class="line-number">402</span>
+<span class="line-number">403</span>  %define F_GETFL 3
+<span class="line-number">404</span>  %define F_SETFL 4
+<span class="line-number">405</span>
+<span class="line-number">406</span>  %define O_NONBLOCK 2048
+<span class="line-number">407</span>
+<span class="line-number">408</span>  mov rax, SYSCALL_FCNTL
+<span class="line-number">409</span>  mov rdi, rdi 
+<span class="line-number">410</span>  mov rsi, F_GETFL
+<span class="line-number">411</span>  mov rdx, 0
+<span class="line-number">412</span>  syscall
+<span class="line-number">413</span>
+<span class="line-number">414</span>  cmp rax, 0
+<span class="line-number">415</span>  jl die
+<span class="line-number">416</span>
+<span class="line-number">417</span>  ; `or` the current file status flag with O_NONBLOCK.
+<span class="line-number">418</span>  mov rdx, rax
+<span class="line-number">419</span>  or rdx, O_NONBLOCK
+<span class="line-number">420</span>
+<span class="line-number">421</span>  mov rax, SYSCALL_FCNTL
+<span class="line-number">422</span>  mov rdi, rdi 
+<span class="line-number">423</span>  mov rsi, F_SETFL
+<span class="line-number">424</span>  mov rdx, rdx
+<span class="line-number">425</span>  syscall
+<span class="line-number">426</span>
+<span class="line-number">427</span>  cmp rax, 0
+<span class="line-number">428</span>  jl die
+<span class="line-number">429</span>
+<span class="line-number">430</span>  pop rbp
+<span class="line-number">431</span>  ret
+<span class="line-number">432</span>
+<span class="line-number">433</span>; Poll indefinitely messages from the X11 server with poll(2).
+<span class="line-number">434</span>; @param rdi The socket file descriptor.
+<span class="line-number">435</span>; @param esi The window id.
+<span class="line-number">436</span>; @param edx The gc id.
+<span class="line-number">437</span>poll_messages:
+<span class="line-number">438</span>static poll_messages:function
+<span class="line-number">439</span>  push rbp
+<span class="line-number">440</span>  mov rbp, rsp
+<span class="line-number">441</span>
+<span class="line-number">442</span>  sub rsp, 32
+<span class="line-number">443</span>
+<span class="line-number">444</span>  %define POLLIN 0x001
+<span class="line-number">445</span>  %define POLLPRI 0x002
+<span class="line-number">446</span>  %define POLLOUT 0x004
+<span class="line-number">447</span>  %define POLLERR  0x008
+<span class="line-number">448</span>  %define POLLHUP  0x010
+<span class="line-number">449</span>  %define POLLNVAL 0x020
+<span class="line-number">450</span>
+<span class="line-number">451</span>  mov DWORD [rsp + 0*4], edi
+<span class="line-number">452</span>  mov DWORD [rsp + 1*4], POLLIN
+<span class="line-number">453</span>
+<span class="line-number">454</span>  mov DWORD [rsp + 16], esi ; window id
+<span class="line-number">455</span>  mov DWORD [rsp + 20], edx ; gc id
+<span class="line-number">456</span>  mov BYTE [rsp + 24], 0 ; exposed? (boolean)
+<span class="line-number">457</span>
+<span class="line-number">458</span>  .loop:
+<span class="line-number">459</span>    mov rax, SYSCALL_POLL
+<span class="line-number">460</span>    lea rdi, [rsp]
+<span class="line-number">461</span>    mov rsi, 1
+<span class="line-number">462</span>    mov rdx, -1
+<span class="line-number">463</span>    syscall
+<span class="line-number">464</span>
+<span class="line-number">465</span>    cmp rax, 0
+<span class="line-number">466</span>    jle die
+<span class="line-number">467</span>
+<span class="line-number">468</span>    cmp DWORD [rsp + 2*4], POLLERR  
+<span class="line-number">469</span>    je die
+<span class="line-number">470</span>
+<span class="line-number">471</span>    cmp DWORD [rsp + 2*4], POLLHUP  
+<span class="line-number">472</span>    je die
+<span class="line-number">473</span>
+<span class="line-number">474</span>    mov rdi, [rsp + 0*4]
+<span class="line-number">475</span>    call x11_read_reply
+<span class="line-number">476</span>
+<span class="line-number">477</span>    %define X11_EVENT_EXPOSURE 0xc
+<span class="line-number">478</span>    cmp eax, X11_EVENT_EXPOSURE
+<span class="line-number">479</span>    jnz .received_other_event
+<span class="line-number">480</span>
+<span class="line-number">481</span>    .received_exposed_event:
+<span class="line-number">482</span>    mov BYTE [rsp + 24], 1 ; Mark as exposed.
+<span class="line-number">483</span>
+<span class="line-number">484</span>    .received_other_event:
+<span class="line-number">485</span>
+<span class="line-number">486</span>    cmp BYTE [rsp + 24], 1 ; exposed?
+<span class="line-number">487</span>    jnz .loop
+<span class="line-number">488</span>
+<span class="line-number">489</span>    .draw_text:
+<span class="line-number">490</span>      mov rdi, [rsp + 0*4] ; socket fd
+<span class="line-number">491</span>      lea rsi, [hello_world] ; string
+<span class="line-number">492</span>      mov edx, 13 ; length
+<span class="line-number">493</span>      mov ecx, [rsp + 16] ; window id
+<span class="line-number">494</span>      mov r8d, [rsp + 20] ; gc id
+<span class="line-number">495</span>      mov r9d, 100 ; x
+<span class="line-number">496</span>      shl r9d, 16
+<span class="line-number">497</span>      or r9d, 100 ; y
+<span class="line-number">498</span>      call x11_draw_text
+<span class="line-number">499</span>
+<span class="line-number">500</span>
+<span class="line-number">501</span>    jmp .loop
+<span class="line-number">502</span>
+<span class="line-number">503</span>
+<span class="line-number">504</span>  add rsp, 32
+<span class="line-number">505</span>  pop rbp
+<span class="line-number">506</span>  ret
+<span class="line-number">507</span>
+<span class="line-number">508</span>; Draw text in a X11 window with server-side text rendering.
+<span class="line-number">509</span>; @param rdi The socket file descriptor.
+<span class="line-number">510</span>; @param rsi The text string.
+<span class="line-number">511</span>; @param edx The text string length in bytes.
+<span class="line-number">512</span>; @param ecx The window id.
+<span class="line-number">513</span>; @param r8d The gc id.
+<span class="line-number">514</span>; @param r9d Packed x and y.
+<span class="line-number">515</span>x11_draw_text:
+<span class="line-number">516</span>static x11_draw_text:function
+<span class="line-number">517</span>  push rbp
+<span class="line-number">518</span>  mov rbp, rsp
+<span class="line-number">519</span>
+<span class="line-number">520</span>  sub rsp, 1024
+<span class="line-number">521</span>
+<span class="line-number">522</span>  mov DWORD [rsp + 1*4], ecx ; Store the window id directly in the packet data on the stack.
+<span class="line-number">523</span>  mov DWORD [rsp + 2*4], r8d ; Store the gc id directly in the packet data on the stack.
+<span class="line-number">524</span>  mov DWORD [rsp + 3*4], r9d ; Store x, y directly in the packet data on the stack.
+<span class="line-number">525</span>
+<span class="line-number">526</span>  mov r8d, edx ; Store the string length in r8 since edx will be overwritten next.
+<span class="line-number">527</span>  mov QWORD [rsp + 1024 - 8], rdi ; Store the socket file descriptor on the stack to free the register.
+<span class="line-number">528</span>
+<span class="line-number">529</span>  ; Compute padding and packet u32 count with division and modulo 4.
+<span class="line-number">530</span>  mov eax, edx ; Put dividend in eax.
+<span class="line-number">531</span>  mov ecx, 4 ; Put divisor in ecx.
+<span class="line-number">532</span>  cdq ; Sign extend.
+<span class="line-number">533</span>  idiv ecx ; Compute eax / ecx, and put the remainder (i.e. modulo) in edx.
+<span class="line-number">534</span>  ; LLVM optimizer magic: `(4-x)%4 == -x &amp; 3`, for some reason.
+<span class="line-number">535</span>  neg edx
+<span class="line-number">536</span>  and edx, 3
+<span class="line-number">537</span>  mov r9d, edx ; Store padding in r9.
+<span class="line-number">538</span>
+<span class="line-number">539</span>  mov eax, r8d 
+<span class="line-number">540</span>  add eax, r9d
+<span class="line-number">541</span>  shr eax, 2 ; Compute: eax /= 4
+<span class="line-number">542</span>  add eax, 4 ; eax now contains the packet u32 count.
+<span class="line-number">543</span>
+<span class="line-number">544</span>
+<span class="line-number">545</span>  %define X11_OP_REQ_IMAGE_TEXT8 0x4c
+<span class="line-number">546</span>  mov DWORD [rsp + 0*4], r8d
+<span class="line-number">547</span>  shl DWORD [rsp + 0*4], 8
+<span class="line-number">548</span>  or DWORD [rsp + 0*4], X11_OP_REQ_IMAGE_TEXT8
+<span class="line-number">549</span>  mov ecx, eax
+<span class="line-number">550</span>  shl ecx, 16
+<span class="line-number">551</span>  or [rsp + 0*4], ecx
+<span class="line-number">552</span>
+<span class="line-number">553</span>  ; Copy the text string into the packet data on the stack.
+<span class="line-number">554</span>  mov rsi, rsi ; Source string in rsi.
+<span class="line-number">555</span>  lea rdi, [rsp + 4*4] ; Destination
+<span class="line-number">556</span>  cld ; Move forward
+<span class="line-number">557</span>  mov ecx, r8d ; String length.
+<span class="line-number">558</span>  rep movsb ; Copy.
+<span class="line-number">559</span>
+<span class="line-number">560</span>  mov rdx, rax ; packet u32 count
+<span class="line-number">561</span>  imul rdx, 4
+<span class="line-number">562</span>  mov rax, SYSCALL_WRITE
+<span class="line-number">563</span>  mov rdi, QWORD [rsp + 1024 - 8] ; fd
+<span class="line-number">564</span>  lea rsi, [rsp]
+<span class="line-number">565</span>  syscall
+<span class="line-number">566</span>
+<span class="line-number">567</span>  cmp rax, rdx
+<span class="line-number">568</span>  jnz die
+<span class="line-number">569</span>
+<span class="line-number">570</span>  add rsp, 1024
+<span class="line-number">571</span>
+<span class="line-number">572</span>  pop rbp
+<span class="line-number">573</span>  ret
+<span class="line-number">574</span>
+<span class="line-number">575</span>_start:
+<span class="line-number">576</span>global _start:function
+<span class="line-number">577</span>  call x11_connect_to_server
+<span class="line-number">578</span>  mov r15, rax ; Store the socket file descriptor in r15.
+<span class="line-number">579</span>
+<span class="line-number">580</span>  mov rdi, rax
+<span class="line-number">581</span>  call x11_send_handshake
+<span class="line-number">582</span>
+<span class="line-number">583</span>  mov r12d, eax ; Store the window root id in r12.
+<span class="line-number">584</span>
+<span class="line-number">585</span>  call x11_next_id
+<span class="line-number">586</span>  mov r13d, eax ; Store the gc_id in r13.
+<span class="line-number">587</span>
+<span class="line-number">588</span>  call x11_next_id
+<span class="line-number">589</span>  mov r14d, eax ; Store the font_id in r14.
+<span class="line-number">590</span>
+<span class="line-number">591</span>  mov rdi, r15
+<span class="line-number">592</span>  mov esi, r14d
+<span class="line-number">593</span>  call x11_open_font
+<span class="line-number">594</span>
+<span class="line-number">595</span>
+<span class="line-number">596</span>  mov rdi, r15
+<span class="line-number">597</span>  mov esi, r13d
+<span class="line-number">598</span>  mov edx, r12d
+<span class="line-number">599</span>  mov ecx, r14d
+<span class="line-number">600</span>  call x11_create_gc
+<span class="line-number">601</span>
+<span class="line-number">602</span>  call x11_next_id
+<span class="line-number">603</span>  
+<span class="line-number">604</span>  mov ebx, eax ; Store the window id in ebx.
+<span class="line-number">605</span>
+<span class="line-number">606</span>  mov rdi, r15 ; socket fd
+<span class="line-number">607</span>  mov esi, eax
+<span class="line-number">608</span>  mov edx, r12d
+<span class="line-number">609</span>  mov ecx, [root_visual_id]
+<span class="line-number">610</span>  mov r8d, 200 | (200 &lt;&lt; 16) ; x and y are 200
+<span class="line-number">611</span>  %define WINDOW_W 800
+<span class="line-number">612</span>  %define WINDOW_H 600
+<span class="line-number">613</span>  mov r9d, WINDOW_W | (WINDOW_H &lt;&lt; 16)
+<span class="line-number">614</span>  call x11_create_window
+<span class="line-number">615</span>
+<span class="line-number">616</span>  mov rdi, r15 ; socket fd
+<span class="line-number">617</span>  mov esi, ebx
+<span class="line-number">618</span>  call x11_map_window
+<span class="line-number">619</span>
+<span class="line-number">620</span>  mov rdi, r15 ; socket fd
+<span class="line-number">621</span>  call set_fd_non_blocking
+<span class="line-number">622</span>
+<span class="line-number">623</span>  mov rdi, r15 ; socket fd
+<span class="line-number">624</span>  mov esi, ebx ; window id
+<span class="line-number">625</span>  mov edx, r13d ; gc id
+<span class="line-number">626</span>  call poll_messages
+<span class="line-number">627</span>
+<span class="line-number">628</span>  ; The end.
+<span class="line-number">629</span>  mov rax, SYSCALL_EXIT
+<span class="line-number">630</span>  mov rdi, 0
+<span class="line-number">631</span>  syscall
 </code></pre>
 </details>
 <p><a href="/blog"> ⏴ Back to all articles</a></p>

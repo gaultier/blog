@@ -11,9 +11,9 @@ Do not edit it by hand.
 <link type="application/atom+xml" href="/blog/feed.xml" rel="self">
 <link rel="shortcut icon" type="image/ico" href="/blog/favicon.ico">
 <link rel="stylesheet" type="text/css" href="main.css">
-<link rel="stylesheet" href="https://unpkg.com/@highlightjs/cdn-assets@11.8.0/styles/default.min.css">
-<script src="highlight.min.js" defer></script>
-<script src="x86asm.min.js" defer></script>
+<!-- <link rel="stylesheet" href="https://unpkg.com/@highlightjs/cdn-assets@11.8.0/styles/default.min.css"> -->
+<!-- <script src="highlight.min.js" defer></script> -->
+<!-- <script src="x86asm.min.js" defer></script> -->
 <script src="main.js" defer></script>
 <script type="module" src="search.js" async></script>
 </head>
@@ -132,30 +132,35 @@ Do not edit it by hand.
 </h2>
 <p>This is the easiest and also what <code>iosnoop</code> or <code>dtruss</code> do.</p>
 <p>The simplest form is this:</p>
-<pre><code class="language-dtrace">#pragma D option strsize=16K
-
-syscall::write:entry
-/ pid == $target &amp;&amp; arg0 &gt; 0/
-{
-   printf(&quot;fd=%d len=%d data=%s\n&quot;, arg0, arg2, stringof(copyin(arg1, arg2)));
-}
-
-
-syscall::read:entry
-/ pid == $target /
-{
-  self-&gt;read_ptr = arg1;
-  self-&gt;read_fd = arg0;
-}
-
-syscall::read:return
-/ pid == $target &amp;&amp; self-&gt;read_ptr!=0 &amp;&amp; arg0 &gt; 0 /
-{
-  printf(&quot;fd=%d len=%d data=%s\n&quot;, self-&gt;read_fd, arg0, stringof(copyin(self-&gt;read_ptr, arg0)));
-
-  self-&gt;read_ptr = 0;
-  self-&gt;read_fd = 0;
-}
+<pre>
+  <div class="code-header">
+    <span>Dtrace</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-dtrace"><span class="line-number">0</span>#pragma D option strsize=16K
+<span class="line-number">1</span>
+<span class="line-number">2</span>syscall::write:entry
+<span class="line-number">3</span>/ pid == $target &amp;&amp; arg0 &gt; 0/
+<span class="line-number">4</span>{
+<span class="line-number">5</span>   printf(&quot;fd=%d len=%d data=%s\n&quot;, arg0, arg2, stringof(copyin(arg1, arg2)));
+<span class="line-number">6</span>}
+<span class="line-number">7</span>
+<span class="line-number">8</span>
+<span class="line-number">9</span>syscall::read:entry
+<span class="line-number">10</span>/ pid == $target /
+<span class="line-number">11</span>{
+<span class="line-number">12</span>  self-&gt;read_ptr = arg1;
+<span class="line-number">13</span>  self-&gt;read_fd = arg0;
+<span class="line-number">14</span>}
+<span class="line-number">15</span>
+<span class="line-number">16</span>syscall::read:return
+<span class="line-number">17</span>/ pid == $target &amp;&amp; self-&gt;read_ptr!=0 &amp;&amp; arg0 &gt; 0 /
+<span class="line-number">18</span>{
+<span class="line-number">19</span>  printf(&quot;fd=%d len=%d data=%s\n&quot;, self-&gt;read_fd, arg0, stringof(copyin(self-&gt;read_ptr, arg0)));
+<span class="line-number">20</span>
+<span class="line-number">21</span>  self-&gt;read_ptr = 0;
+<span class="line-number">22</span>  self-&gt;read_fd = 0;
+<span class="line-number">23</span>}
 </code></pre>
 <p>We run it like this: <code>sudo dtrace -s myscript.d -p &lt;pid&gt;</code> or <code>sudo dtrace -s myscript.d -c ./myprogram</code>.</p>
 <p><code>write(2)</code> is the easiest since it is enough to instrument the entry point of the system call. <code>read(2)</code> must be done in two steps, at the entry point we record what is the pointer to the source data, and in the return probe we know how much data was actually read and we can print it.</p>
@@ -166,11 +171,16 @@ syscall::read:return
   <a class="hash-anchor" href="#trace-multiple-processes" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h3>
 <p>Observing system calls system-wide also has the advantage that we can trace multiple processes (by PID or name) in the same script, which is quite nice:</p>
-<pre><code class="language-dtrace">syscall::write:entry
-/ pid == 123 || pid == 456 || execname == &quot;curl&quot; /
-{
-   printf(&quot;fd=%d len=%d data=%s\n&quot;, arg0, arg2, stringof(copyin(arg1, arg2)));
-}
+<pre>
+  <div class="code-header">
+    <span>Dtrace</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-dtrace"><span class="line-number">0</span>syscall::write:entry
+<span class="line-number">1</span>/ pid == 123 || pid == 456 || execname == &quot;curl&quot; /
+<span class="line-number">2</span>{
+<span class="line-number">3</span>   printf(&quot;fd=%d len=%d data=%s\n&quot;, arg0, arg2, stringof(copyin(arg1, arg2)));
+<span class="line-number">4</span>}
 </code></pre>
 <p>Then, no need to provide a PID in the DTrace invocation: <code>sudo dtrace -s myscript.d</code>.</p>
 <h3 id="trace-all-system-calls-for-networking">
@@ -178,28 +188,33 @@ syscall::read:return
   <a class="hash-anchor" href="#trace-all-system-calls-for-networking" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h3>
 <p>Multiple probes can be grouped with commas when they share the same action, so we can instrument <em>all</em> system calls that do networking in a compact manner. Fortunately, they share the same first few arguments in the same order. I did not list every single one here, this just for illustrative purposes:</p>
-<pre><code class="language-dtrace">syscall::write:entry, syscall::sendto_nocancel:entry, syscall::sendto:entry 
-/ pid == $target &amp;&amp; arg0&gt;2 &amp;&amp; arg0 &gt; 0/
-{
-   printf(&quot;fd=%d len=%d data=%s\n&quot;, arg0, arg2, stringof(copyin(arg1, arg2)));
-}
-
-
-syscall::read:entry, syscall::recvfrom_nocancel:entry, syscall::recvfrom:entry 
-/ pid == $target /
-{
-  self-&gt;read_ptr = arg1;
-  self-&gt;read_fd = arg0;
-}
-
-syscall::read:return, syscall::recvfrom_nocancel:return, syscall::recvfrom:return 
-/ pid == $target &amp;&amp; arg0 &gt; 0 &amp;&amp; self-&gt;read_ptr!=0 /
-{
-  printf(&quot;fd=%d len=%d data=%s\n&quot;, self-&gt;read_fd, arg0, stringof(copyin(self-&gt;read_ptr, arg0)));
-
-  self-&gt;read_ptr = 0;
-  self-&gt;read_fd = 0;
-}
+<pre>
+  <div class="code-header">
+    <span>Dtrace</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-dtrace"><span class="line-number">0</span>syscall::write:entry, syscall::sendto_nocancel:entry, syscall::sendto:entry 
+<span class="line-number">1</span>/ pid == $target &amp;&amp; arg0&gt;2 &amp;&amp; arg0 &gt; 0/
+<span class="line-number">2</span>{
+<span class="line-number">3</span>   printf(&quot;fd=%d len=%d data=%s\n&quot;, arg0, arg2, stringof(copyin(arg1, arg2)));
+<span class="line-number">4</span>}
+<span class="line-number">5</span>
+<span class="line-number">6</span>
+<span class="line-number">7</span>syscall::read:entry, syscall::recvfrom_nocancel:entry, syscall::recvfrom:entry 
+<span class="line-number">8</span>/ pid == $target /
+<span class="line-number">9</span>{
+<span class="line-number">10</span>  self-&gt;read_ptr = arg1;
+<span class="line-number">11</span>  self-&gt;read_fd = arg0;
+<span class="line-number">12</span>}
+<span class="line-number">13</span>
+<span class="line-number">14</span>syscall::read:return, syscall::recvfrom_nocancel:return, syscall::recvfrom:return 
+<span class="line-number">15</span>/ pid == $target &amp;&amp; arg0 &gt; 0 &amp;&amp; self-&gt;read_ptr!=0 /
+<span class="line-number">16</span>{
+<span class="line-number">17</span>  printf(&quot;fd=%d len=%d data=%s\n&quot;, self-&gt;read_fd, arg0, stringof(copyin(self-&gt;read_ptr, arg0)));
+<span class="line-number">18</span>
+<span class="line-number">19</span>  self-&gt;read_ptr = 0;
+<span class="line-number">20</span>  self-&gt;read_fd = 0;
+<span class="line-number">21</span>}
 </code></pre>
 <h2 id="level-2-only-observe-network-data">
   <a class="title" href="#level-2-only-observe-network-data">Level 2: Only observe network data</a>
@@ -207,31 +222,36 @@ syscall::read:return, syscall::recvfrom_nocancel:return, syscall::recvfrom:retur
 </h2>
 <p>A typical program will print things on stderr and stdout, load files from disk, and generally do I/O that's not related to networking, and this will show up in our script.</p>
 <p>The approach I have used is to record which file descriptors are real sockets. We can do this by  tracing the <code>socket(2)</code> or <code>listen(2)</code> system calls and recording the file descriptor in a global map. Then, we only trace I/O system calls that operate on these file descriptors:</p>
-<pre><code class="language-diff">+ syscall::socket:return, syscall::listen:return
-+ / pid == $target &amp;&amp; arg0 != -1 /
-+ {
-+   socket_fds[arg0] = 1;
-+ }
-+ 
-+ syscall::close:entry
-+ / pid == $target &amp;&amp; socket_fds[arg0] != 0 /
-+ {
-+   socket_fds[arg0] = 0;
-+ }
-
-syscall::write:entry, syscall::sendto_nocancel:entry, syscall::sendto:entry 
-- / pid == $target &amp;&amp; arg1 != 0 /
-+ / pid == $target &amp;&amp; arg1 != 0 &amp;&amp; socket_fds[arg0] != 0 /
-{ 
-  // [...]
-}
-
-syscall::read:entry, syscall::recvfrom_nocancel:entry, syscall::recvfrom:entry 
-- / pid == $target /
-+ / pid == $target &amp;&amp; socket_fds[arg0] != 0 /
-{ 
-  // [...]
-}
+<pre>
+  <div class="code-header">
+    <span>Diff</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-diff"><span class="line-number">0</span>+ syscall::socket:return, syscall::listen:return
+<span class="line-number">1</span>+ / pid == $target &amp;&amp; arg0 != -1 /
+<span class="line-number">2</span>+ {
+<span class="line-number">3</span>+   socket_fds[arg0] = 1;
+<span class="line-number">4</span>+ }
+<span class="line-number">5</span>+ 
+<span class="line-number">6</span>+ syscall::close:entry
+<span class="line-number">7</span>+ / pid == $target &amp;&amp; socket_fds[arg0] != 0 /
+<span class="line-number">8</span>+ {
+<span class="line-number">9</span>+   socket_fds[arg0] = 0;
+<span class="line-number">10</span>+ }
+<span class="line-number">11</span>
+<span class="line-number">12</span>syscall::write:entry, syscall::sendto_nocancel:entry, syscall::sendto:entry 
+<span class="line-number">13</span>- / pid == $target &amp;&amp; arg1 != 0 /
+<span class="line-number">14</span>+ / pid == $target &amp;&amp; arg1 != 0 &amp;&amp; socket_fds[arg0] != 0 /
+<span class="line-number">15</span>{ 
+<span class="line-number">16</span>  // [...]
+<span class="line-number">17</span>}
+<span class="line-number">18</span>
+<span class="line-number">19</span>syscall::read:entry, syscall::recvfrom_nocancel:entry, syscall::recvfrom:entry 
+<span class="line-number">20</span>- / pid == $target /
+<span class="line-number">21</span>+ / pid == $target &amp;&amp; socket_fds[arg0] != 0 /
+<span class="line-number">22</span>{ 
+<span class="line-number">23</span>  // [...]
+<span class="line-number">24</span>}
 </code></pre>
 <p>When a socket is closed, we need to remove it from our set, since this file descriptor could be used later for a file, etc.</p>
 <p>This trick is occasionally useful, but this script has one big requirement: it must start before a socket of interest is opened by the program, otherwise this socket will not be traced. For a web server, if we intend to only trace new connections, that's completely fine, but for a program with long-lived connections that we cannot restart, that approach will not work as is.</p>
@@ -242,36 +262,46 @@ syscall::read:entry, syscall::recvfrom_nocancel:entry, syscall::recvfrom:entry
 </h3>
 <p>The <a href="https://docs.oracle.com/en/operating-systems/solaris/oracle-solaris/11.4/dtrace-guide/tcp-probes.html">tcp</a> provider offers two probes of interest for us: <code>send</code> and <code>receive</code>. With these, we can see what data gets sent over tcp, to/from which address and port, etc. This is quite low-level and seems more designed to help debug the TCP stack, but it can be used.</p>
 <p>Let's see an example:</p>
-<pre><code class="language-dtrace">tcp:::send, tcp:::receive
-/pid==$target/ 
-{
-  tracemem(args[0]-&gt;pkt_addr-&gt;M_dat.MH_databuf, 288);
-}
+<pre>
+  <div class="code-header">
+    <span>Dtrace</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-dtrace"><span class="line-number">0</span>tcp:::send, tcp:::receive
+<span class="line-number">1</span>/pid==$target/ 
+<span class="line-number">2</span>{
+<span class="line-number">3</span>  tracemem(args[0]-&gt;pkt_addr-&gt;M_dat.MH_databuf, 288);
+<span class="line-number">4</span>}
 </code></pre>
 <p>We see:</p>
-<pre><code class="language-text">[...]
-  9 511191                           .:send 
-             0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f  0123456789abcdef
-         0: 00 00 00 00 00 00 00 00 11 27 00 00 02 00 00 00  .........'......
-        10: 60 0c 05 00 00 14 06 ff 20 03 00 e8 77 32 44 00  `....... ...w2D.
-        20: b1 fa c3 e4 9c bd 36 62 2a 00 14 50 40 01 08 27  ......6b*..P@..'
-        30: 00 00 00 00 00 00 20 04 f4 68 00 50 41 29 e5 72  ...... ..h.PA).r
-        40: d9 5e 76 73 80 18 08 10 cc 3a 00 00 01 01 08 0a  .^vs.....:......
-        50: e8 0c ec 49 e5 ac 84 15 47 45 54 20 2f 20 48 54  ...I....GET / HT
-        60: 54 50 2f 31 2e 31 0d 0a 48 6f 73 74 3a 20 77 77  TP/1.1..Host: ww
-        70: 77 2e 67 6f 6f 67 6c 65 2e 63 6f 6d 0d 0a 55 73  w.google.com..Us
-        80: 65 72 2d 41 67 65 6e 74 3a 20 47 6f 2d 68 74 74  er-Agent: Go-htt
-        90: 70 2d 63 6c 69 65 6e 74 2f 31 2e 31 0d 0a 52 65  p-client/1.1..Re
-        a0: 66 65 72 65 72 3a 20 68 74 74 70 3a 2f 2f 67 6f  ferer: http://go
-        b0: 6f 67 6c 65 2e 63 6f 6d 0d 0a 41 63 63 65 70 74  ogle.com..Accept
-        c0: 2d 45 6e 63 6f 64 69 6e 67 3a 20 67 7a 69 70 0d  -Encoding: gzip.
-        d0: 0a 0d 0a 0a 0c 1a 07 03 8b 89 b2 8a 89 00 22 01  ..............&quot;.
-        e0: 04 1a 00 b0 01 00 00 65 00 00 00 00 00 00 00 00  .......e........
-        f0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
-       100: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
-       110: 00 00 00 00 00 00 00 00 00 9b 10 01 00 00 00 00  ................
-
-[...]
+<pre>
+  <div class="code-header">
+    <span>Text</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-text"><span class="line-number">0</span>[...]
+<span class="line-number">1</span>  9 511191                           .:send 
+<span class="line-number">2</span>             0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f  0123456789abcdef
+<span class="line-number">3</span>         0: 00 00 00 00 00 00 00 00 11 27 00 00 02 00 00 00  .........'......
+<span class="line-number">4</span>        10: 60 0c 05 00 00 14 06 ff 20 03 00 e8 77 32 44 00  `....... ...w2D.
+<span class="line-number">5</span>        20: b1 fa c3 e4 9c bd 36 62 2a 00 14 50 40 01 08 27  ......6b*..P@..'
+<span class="line-number">6</span>        30: 00 00 00 00 00 00 20 04 f4 68 00 50 41 29 e5 72  ...... ..h.PA).r
+<span class="line-number">7</span>        40: d9 5e 76 73 80 18 08 10 cc 3a 00 00 01 01 08 0a  .^vs.....:......
+<span class="line-number">8</span>        50: e8 0c ec 49 e5 ac 84 15 47 45 54 20 2f 20 48 54  ...I....GET / HT
+<span class="line-number">9</span>        60: 54 50 2f 31 2e 31 0d 0a 48 6f 73 74 3a 20 77 77  TP/1.1..Host: ww
+<span class="line-number">10</span>        70: 77 2e 67 6f 6f 67 6c 65 2e 63 6f 6d 0d 0a 55 73  w.google.com..Us
+<span class="line-number">11</span>        80: 65 72 2d 41 67 65 6e 74 3a 20 47 6f 2d 68 74 74  er-Agent: Go-htt
+<span class="line-number">12</span>        90: 70 2d 63 6c 69 65 6e 74 2f 31 2e 31 0d 0a 52 65  p-client/1.1..Re
+<span class="line-number">13</span>        a0: 66 65 72 65 72 3a 20 68 74 74 70 3a 2f 2f 67 6f  ferer: http://go
+<span class="line-number">14</span>        b0: 6f 67 6c 65 2e 63 6f 6d 0d 0a 41 63 63 65 70 74  ogle.com..Accept
+<span class="line-number">15</span>        c0: 2d 45 6e 63 6f 64 69 6e 67 3a 20 67 7a 69 70 0d  -Encoding: gzip.
+<span class="line-number">16</span>        d0: 0a 0d 0a 0a 0c 1a 07 03 8b 89 b2 8a 89 00 22 01  ..............&quot;.
+<span class="line-number">17</span>        e0: 04 1a 00 b0 01 00 00 65 00 00 00 00 00 00 00 00  .......e........
+<span class="line-number">18</span>        f0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+<span class="line-number">19</span>       100: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+<span class="line-number">20</span>       110: 00 00 00 00 00 00 00 00 00 9b 10 01 00 00 00 00  ................
+<span class="line-number">21</span>
+<span class="line-number">22</span>[...]
 </code></pre>
 <p>The only advantage I can see is that we will only see network data (and not disk I/O, stdout logs, etc). Otherwise, the data is hard to read because the probe fires for each TCP frame and the hexdump contains the TCP header. On top, since this is a kernel probe, wean only see the kernel call stack, not the application call stack.</p>
 <p>So this approach is mentioned for completeness, but unless you are a kernel developer working on the TCP stack... This is not so useful.</p>
@@ -280,25 +310,35 @@ syscall::read:entry, syscall::recvfrom_nocancel:entry, syscall::recvfrom:entry
   <a class="hash-anchor" href="#level-3-see-encrypted-data-in-clear" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>Most websites use TLS nowadays (<code>https://</code>) and will encrypt their data before sending it over the wire. Let's take a simple Go program that makes an HTTP GET request over TLS to demonstrate:</p>
-<pre><code class="language-go">package main
-
-import (
-	&quot;crypto/tls&quot;
-	&quot;net/http&quot;
-)
-
-func main() {
-	// Force HTTP 1.
-	http.DefaultClient.Transport = &amp;http.Transport{TLSNextProto: make(map[string]func(authority string, c *tls.Conn) http.RoundTripper)}
-
-	http.Get(&quot;https://google.com&quot;)
-}
+<pre>
+  <div class="code-header">
+    <span>Go</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-go"><span class="line-number">0</span>package main
+<span class="line-number">1</span>
+<span class="line-number">2</span>import (
+<span class="line-number">3</span>	&quot;crypto/tls&quot;
+<span class="line-number">4</span>	&quot;net/http&quot;
+<span class="line-number">5</span>)
+<span class="line-number">6</span>
+<span class="line-number">7</span>func main() {
+<span class="line-number">8</span>	// Force HTTP 1.
+<span class="line-number">9</span>	http.DefaultClient.Transport = &amp;http.Transport{TLSNextProto: make(map[string]func(authority string, c *tls.Conn) http.RoundTripper)}
+<span class="line-number">10</span>
+<span class="line-number">11</span>	http.Get(&quot;https://google.com&quot;)
+<span class="line-number">12</span>}
 </code></pre>
 <p><em>I force HTTP 1 because most people are familiar with it, and the data is text, contrary to HTTP 2 or 3 which use binary. But this is just for readability, the DTrace script works either way. For binary data, <code>tracemem</code> should be used to print a hexdump.</em></p>
 <p>When using our previous approach, we only see gibberish, as expected:</p>
-<pre><code class="language-text">9    176                      write:entry size=1502 fd=8: �
-10    175                      read:return size=1216 fd=8: ��O��b�%�e�ڡXw2d�q�$���NX�d�P�|�`HY-To�dpK	�x�8to�DO���_ibc��y��]�ވe��
-                                                 �c��ҿ��^�L#��Ue	
+<pre>
+  <div class="code-header">
+    <span>Text</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-text"><span class="line-number">0</span>9    176                      write:entry size=1502 fd=8: �
+<span class="line-number">1</span>10    175                      read:return size=1216 fd=8: ��O��b�%�e�ڡXw2d�q�$���NX�d�P�|�`HY-To�dpK	�x�8to�DO���_ibc��y��]�ވe��
+<span class="line-number">2</span>                                                 �c��ҿ��^�L#��Ue	
 </code></pre>
 <p>How can we see the data in clear? Well, we need to find where the data gets encrypted/decrypted in our program and observe the input/output, respectively.</p>
 <p>In a typical Go program, the functions of interest are <code>crypto/tls.(*halfConn).decrypt</code> and <code>crypto/tls.(*halfConn).encrypt</code>. Since they are private functions, there is a risk that the Go compiler would inline them which would make them invisible to DTrace. But since they have relatively long and complex bodies, this is unlikely.</p>
@@ -308,38 +348,48 @@ func main() {
 <li><code>func (hc *halfConn) encrypt(record, payload []byte, rand io.Reader) ([]byte, error)</code></li>
 </ul>
 <p>By trial and error, we instrument these functions so:</p>
-<pre><code class="language-dtrace">pid$target::crypto?tls.(?halfConn).decrypt:return
-{
-  printf(&quot;%s\n&quot;, stringof(copyin(arg1, arg0)));
-}
-
-pid$target::crypto?tls.(?halfConn).encrypt:entry
-{
-  printf(&quot;%s\n&quot;, stringof(copyin(arg4, arg3)));
-}
+<pre>
+  <div class="code-header">
+    <span>Dtrace</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-dtrace"><span class="line-number">0</span>pid$target::crypto?tls.(?halfConn).decrypt:return
+<span class="line-number">1</span>{
+<span class="line-number">2</span>  printf(&quot;%s\n&quot;, stringof(copyin(arg1, arg0)));
+<span class="line-number">3</span>}
+<span class="line-number">4</span>
+<span class="line-number">5</span>pid$target::crypto?tls.(?halfConn).encrypt:entry
+<span class="line-number">6</span>{
+<span class="line-number">7</span>  printf(&quot;%s\n&quot;, stringof(copyin(arg4, arg3)));
+<span class="line-number">8</span>}
 </code></pre>
 <p>We need to replace the <code>*</code> character by <code>?</code> since <code>*</code> is interpreted by DTrace as a wildcard (any character, any number of times) in the probe name. <code>?</code> is interpreted as: any character, once.</p>
 <p>And boom, we can now see the data in clear:</p>
-<pre><code class="language-text"> 12 273146 crypto/tls.(*halfConn).encrypt:entry GET / HTTP/1.1
-Host: google.com
-User-Agent: Go-http-client/1.1
-Accept-Encoding: gzip
-
-
-  1 273145 crypto/tls.(*halfConn).decrypt:return HTTP/1.1 200 OK
-Date: Thu, 25 Sep 2025 15:39:00 GMT
-Expires: -1
-Cache-Control: private, max-age=0
-Content-Type: text/html; charset=ISO-8859-1
-Content-Security-Policy-Report-Only: object-src 'none';base-uri 'self';script-src 'nonce-NNo3yQEGH1Cydlkm4FuhSg' 'strict-dynamic' 'report-sample' 'unsafe-eval' 'unsafe-inline' https: http:;report-uri https://csp.withgoogle.com/csp/gws/other-hp
-Accept-CH: Sec-CH-Prefers-Color-Scheme
-P3P: CP=&quot;This is not a P3P policy! See g.co/p3phelp for more info.&quot;
-Content-Encoding: gzip
-Server: gws
-X-XSS-Protection: 0
-X-Frame-Options: SAMEORIGIN
-Set-Cookie: AEC=AaJma5t2IauygzCrcZIEVudn3SEoGHoVuevRl4vUfxpCR5b6Hnusm3RgLIU; expires=Tue, 24-Mar-2026 15:39:00 GMT; path=/; domain=.google.com; Secure; HttpOnly; SameSite=lax
-Set-Cookie: __Se
+<pre>
+  <div class="code-header">
+    <span>Text</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-text"><span class="line-number">0</span> 12 273146 crypto/tls.(*halfConn).encrypt:entry GET / HTTP/1.1
+<span class="line-number">1</span>Host: google.com
+<span class="line-number">2</span>User-Agent: Go-http-client/1.1
+<span class="line-number">3</span>Accept-Encoding: gzip
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+<span class="line-number">6</span>  1 273145 crypto/tls.(*halfConn).decrypt:return HTTP/1.1 200 OK
+<span class="line-number">7</span>Date: Thu, 25 Sep 2025 15:39:00 GMT
+<span class="line-number">8</span>Expires: -1
+<span class="line-number">9</span>Cache-Control: private, max-age=0
+<span class="line-number">10</span>Content-Type: text/html; charset=ISO-8859-1
+<span class="line-number">11</span>Content-Security-Policy-Report-Only: object-src 'none';base-uri 'self';script-src 'nonce-NNo3yQEGH1Cydlkm4FuhSg' 'strict-dynamic' 'report-sample' 'unsafe-eval' 'unsafe-inline' https: http:;report-uri https://csp.withgoogle.com/csp/gws/other-hp
+<span class="line-number">12</span>Accept-CH: Sec-CH-Prefers-Color-Scheme
+<span class="line-number">13</span>P3P: CP=&quot;This is not a P3P policy! See g.co/p3phelp for more info.&quot;
+<span class="line-number">14</span>Content-Encoding: gzip
+<span class="line-number">15</span>Server: gws
+<span class="line-number">16</span>X-XSS-Protection: 0
+<span class="line-number">17</span>X-Frame-Options: SAMEORIGIN
+<span class="line-number">18</span>Set-Cookie: AEC=AaJma5t2IauygzCrcZIEVudn3SEoGHoVuevRl4vUfxpCR5b6Hnusm3RgLIU; expires=Tue, 24-Mar-2026 15:39:00 GMT; path=/; domain=.google.com; Secure; HttpOnly; SameSite=lax
+<span class="line-number">19</span>Set-Cookie: __Se
 </code></pre>
 <h2 id="level-4-see-compressed-data-in-clear">
   <a class="title" href="#level-4-see-compressed-data-in-clear">Level 4: See compressed data in clear</a>
@@ -347,47 +397,67 @@ Set-Cookie: __Se
 </h2>
 <p>For compressed data, the same trick as for encrypted data can be used: find the encode/decode functions and print the input/output, respectively.</p>
 <p>Let's take a contrived example where our program sends a random, gzipped string over the network:</p>
-<pre><code class="language-go">package main
-
-import (
-	&quot;compress/gzip&quot;
-	&quot;crypto/rand&quot;
-	&quot;crypto/tls&quot;
-	&quot;net/http&quot;
-	&quot;strings&quot;
-)
-
-func main() {
-	// Force HTTP 1.
-	http.DefaultClient.Transport = &amp;http.Transport{TLSNextProto: make(map[string]func(authority string, c *tls.Conn) http.RoundTripper)}
-
-	w := strings.Builder{}
-	gzipWriter := gzip.NewWriter(&amp;w)
-	msg := &quot;hello &quot; + rand.Text()
-	gzipWriter.Write([]byte(msg))
-	gzipWriter.Close()
-
-	http.Post(&quot;http://google.com&quot;, &quot;application/octet-stream&quot;, strings.NewReader(w.String()))
-}
+<pre>
+  <div class="code-header">
+    <span>Go</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-go"><span class="line-number">0</span>package main
+<span class="line-number">1</span>
+<span class="line-number">2</span>import (
+<span class="line-number">3</span>	&quot;compress/gzip&quot;
+<span class="line-number">4</span>	&quot;crypto/rand&quot;
+<span class="line-number">5</span>	&quot;crypto/tls&quot;
+<span class="line-number">6</span>	&quot;net/http&quot;
+<span class="line-number">7</span>	&quot;strings&quot;
+<span class="line-number">8</span>)
+<span class="line-number">9</span>
+<span class="line-number">10</span>func main() {
+<span class="line-number">11</span>	// Force HTTP 1.
+<span class="line-number">12</span>	http.DefaultClient.Transport = &amp;http.Transport{TLSNextProto: make(map[string]func(authority string, c *tls.Conn) http.RoundTripper)}
+<span class="line-number">13</span>
+<span class="line-number">14</span>	w := strings.Builder{}
+<span class="line-number">15</span>	gzipWriter := gzip.NewWriter(&amp;w)
+<span class="line-number">16</span>	msg := &quot;hello &quot; + rand.Text()
+<span class="line-number">17</span>	gzipWriter.Write([]byte(msg))
+<span class="line-number">18</span>	gzipWriter.Close()
+<span class="line-number">19</span>
+<span class="line-number">20</span>	http.Post(&quot;http://google.com&quot;, &quot;application/octet-stream&quot;, strings.NewReader(w.String()))
+<span class="line-number">21</span>}
 </code></pre>
 <p>If we run our previous D script, we can see the HTTP headers just fine, but the body is gibberish (as expected):</p>
-<pre><code class="language-text">  9    176                      write:entry action=write pid=46367 execname=go-get size=208 fd=6: POST / HTTP/1.1
-Host: google.com
-User-Agent: Go-http-client/1.1
-Content-Length: 56
-Content-Type: application/octet-stream
-Accept-Encoding: gzip
-
-�
+<pre>
+  <div class="code-header">
+    <span>Text</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-text"><span class="line-number">0</span>  9    176                      write:entry action=write pid=46367 execname=go-get size=208 fd=6: POST / HTTP/1.1
+<span class="line-number">1</span>Host: google.com
+<span class="line-number">2</span>User-Agent: Go-http-client/1.1
+<span class="line-number">3</span>Content-Length: 56
+<span class="line-number">4</span>Content-Type: application/octet-stream
+<span class="line-number">5</span>Accept-Encoding: gzip
+<span class="line-number">6</span>
+<span class="line-number">7</span>�
 </code></pre>
 <p>We can trace the method <code>compress/gzip.(*Writer).Write</code> to print its input:</p>
-<pre><code class="language-dtrace">pid$target::compress?gzip.(?Writer).Write:entry 
-{
-  printf(&quot;%s\n&quot;, stringof(copyin(arg1, arg2)));
-}
+<pre>
+  <div class="code-header">
+    <span>Dtrace</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-dtrace"><span class="line-number">0</span>pid$target::compress?gzip.(?Writer).Write:entry 
+<span class="line-number">1</span>{
+<span class="line-number">2</span>  printf(&quot;%s\n&quot;, stringof(copyin(arg1, arg2)));
+<span class="line-number">3</span>}
 </code></pre>
 <p>And we see:</p>
-<pre><code class="language-text"> 10 530790 compress/gzip.(*Writer).Write:entry hello ZYDEDSRZBY7D65DQHWWVSUOVJ5
+<pre>
+  <div class="code-header">
+    <span>Text</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-text"><span class="line-number">0</span> 10 530790 compress/gzip.(*Writer).Write:entry hello ZYDEDSRZBY7D65DQHWWVSUOVJ5
 </code></pre>
 <h2 id="conclusion">
   <a class="title" href="#conclusion">Conclusion</a>

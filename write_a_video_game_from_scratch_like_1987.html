@@ -11,9 +11,9 @@ Do not edit it by hand.
 <link type="application/atom+xml" href="/blog/feed.xml" rel="self">
 <link rel="shortcut icon" type="image/ico" href="/blog/favicon.ico">
 <link rel="stylesheet" type="text/css" href="main.css">
-<link rel="stylesheet" href="https://unpkg.com/@highlightjs/cdn-assets@11.8.0/styles/default.min.css">
-<script src="highlight.min.js" defer></script>
-<script src="x86asm.min.js" defer></script>
+<!-- <link rel="stylesheet" href="https://unpkg.com/@highlightjs/cdn-assets@11.8.0/styles/default.min.css"> -->
+<!-- <script src="highlight.min.js" defer></script> -->
+<!-- <script src="x86asm.min.js" defer></script> -->
 <script src="main.js" defer></script>
 <script type="module" src="search.js" async></script>
 </head>
@@ -179,153 +179,178 @@ Do not edit it by hand.
 <p>This mechanism is called <code>MIT-MAGIC-COOKIE-1</code>.</p>
 <p>The catch is that this file contains multiple tokens for various authentication mechanisms, and network hosts. Remember, X11 is designed to work over the network. However we only care here about the entry for localhost.</p>
 <p>So we need to parse a little bit. It's basically what <code>libXau</code> does. From its docs:</p>
-<pre><code class="language-text">The .Xauthority file is a binary file consisting of a sequence of entries
-in the following format:
-	2 bytes		Family value (second byte is as in protocol HOST)
-	2 bytes		address length (always MSB first)
-	A bytes		host address (as in protocol HOST)
-	2 bytes		display &quot;number&quot; length (always MSB first)
-	S bytes		display &quot;number&quot; string
-	2 bytes		name length (always MSB first)
-	N bytes		authorization name string
-	2 bytes		data length (always MSB first)
-	D bytes		authorization data string
+<pre>
+  <div class="code-header">
+    <span>Text</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-text"><span class="line-number">0</span>The .Xauthority file is a binary file consisting of a sequence of entries
+<span class="line-number">1</span>in the following format:
+<span class="line-number">2</span>	2 bytes		Family value (second byte is as in protocol HOST)
+<span class="line-number">3</span>	2 bytes		address length (always MSB first)
+<span class="line-number">4</span>	A bytes		host address (as in protocol HOST)
+<span class="line-number">5</span>	2 bytes		display &quot;number&quot; length (always MSB first)
+<span class="line-number">6</span>	S bytes		display &quot;number&quot; string
+<span class="line-number">7</span>	2 bytes		name length (always MSB first)
+<span class="line-number">8</span>	N bytes		authorization name string
+<span class="line-number">9</span>	2 bytes		data length (always MSB first)
+<span class="line-number">10</span>	D bytes		authorization data string
 </code></pre>
 <p>First let's define some types and constants:</p>
-<pre><code class="language-odin">AUTH_ENTRY_FAMILY_LOCAL: u16 : 1
-AUTH_ENTRY_MAGIC_COOKIE: string : &quot;MIT-MAGIC-COOKIE-1&quot;
-
-AuthToken :: [16]u8
-
-AuthEntry :: struct {
-	family:    u16,
-	auth_name: []u8,
-	auth_data: []u8,
-}
+<pre>
+  <div class="code-header">
+    <span>Odin</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-odin"><span class="line-number">0</span>AUTH_ENTRY_FAMILY_LOCAL: u16 : 1
+<span class="line-number">1</span>AUTH_ENTRY_MAGIC_COOKIE: string : &quot;MIT-MAGIC-COOKIE-1&quot;
+<span class="line-number">2</span>
+<span class="line-number">3</span>AuthToken :: [16]u8
+<span class="line-number">4</span>
+<span class="line-number">5</span>AuthEntry :: struct {
+<span class="line-number">6</span>	family:    u16,
+<span class="line-number">7</span>	auth_name: []u8,
+<span class="line-number">8</span>	auth_data: []u8,
+<span class="line-number">9</span>}
 </code></pre>
 <p>We only define fields we are interested in.</p>
 <p>Let's now parse each entry accordingly:</p>
-<pre><code class="language-odin">read_x11_auth_entry :: proc(buffer: ^bytes.Buffer) -&gt; (AuthEntry, bool) {
-	entry := AuthEntry{}
-
-	{
-		n_read, err := bytes.buffer_read(buffer, mem.ptr_to_bytes(&amp;entry.family))
-		if err == .EOF {return {}, false}
-
-		assert(err == .None)
-		assert(n_read == size_of(entry.family))
-	}
-
-	address_len: u16 = 0
-	{
-		n_read, err := bytes.buffer_read(buffer, mem.ptr_to_bytes(&amp;address_len))
-		assert(err == .None)
-
-		address_len = bits.byte_swap(address_len)
-		assert(n_read == size_of(address_len))
-	}
-
-	address := make([]u8, address_len)
-	{
-		n_read, err := bytes.buffer_read(buffer, address)
-		assert(err == .None)
-		assert(n_read == cast(int)address_len)
-	}
-
-	display_number_len: u16 = 0
-	{
-		n_read, err := bytes.buffer_read(buffer, mem.ptr_to_bytes(&amp;display_number_len))
-		assert(err == .None)
-
-		display_number_len = bits.byte_swap(display_number_len)
-		assert(n_read == size_of(display_number_len))
-	}
-
-	display_number := make([]u8, display_number_len)
-	{
-		n_read, err := bytes.buffer_read(buffer, display_number)
-		assert(err == .None)
-		assert(n_read == cast(int)display_number_len)
-	}
-
-	auth_name_len: u16 = 0
-	{
-		n_read, err := bytes.buffer_read(buffer, mem.ptr_to_bytes(&amp;auth_name_len))
-		assert(err == .None)
-
-		auth_name_len = bits.byte_swap(auth_name_len)
-		assert(n_read == size_of(auth_name_len))
-	}
-
-	entry.auth_name = make([]u8, auth_name_len)
-	{
-		n_read, err := bytes.buffer_read(buffer, entry.auth_name)
-		assert(err == .None)
-		assert(n_read == cast(int)auth_name_len)
-	}
-
-	auth_data_len: u16 = 0
-	{
-		n_read, err := bytes.buffer_read(buffer, mem.ptr_to_bytes(&amp;auth_data_len))
-		assert(err == .None)
-
-		auth_data_len = bits.byte_swap(auth_data_len)
-		assert(n_read == size_of(auth_data_len))
-	}
-
-	entry.auth_data = make([]u8, auth_data_len)
-	{
-		n_read, err := bytes.buffer_read(buffer, entry.auth_data)
-		assert(err == .None)
-		assert(n_read == cast(int)auth_data_len)
-	}
-
-	return entry, true
-}
+<pre>
+  <div class="code-header">
+    <span>Odin</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-odin"><span class="line-number">0</span>read_x11_auth_entry :: proc(buffer: ^bytes.Buffer) -&gt; (AuthEntry, bool) {
+<span class="line-number">1</span>	entry := AuthEntry{}
+<span class="line-number">2</span>
+<span class="line-number">3</span>	{
+<span class="line-number">4</span>		n_read, err := bytes.buffer_read(buffer, mem.ptr_to_bytes(&amp;entry.family))
+<span class="line-number">5</span>		if err == .EOF {return {}, false}
+<span class="line-number">6</span>
+<span class="line-number">7</span>		assert(err == .None)
+<span class="line-number">8</span>		assert(n_read == size_of(entry.family))
+<span class="line-number">9</span>	}
+<span class="line-number">10</span>
+<span class="line-number">11</span>	address_len: u16 = 0
+<span class="line-number">12</span>	{
+<span class="line-number">13</span>		n_read, err := bytes.buffer_read(buffer, mem.ptr_to_bytes(&amp;address_len))
+<span class="line-number">14</span>		assert(err == .None)
+<span class="line-number">15</span>
+<span class="line-number">16</span>		address_len = bits.byte_swap(address_len)
+<span class="line-number">17</span>		assert(n_read == size_of(address_len))
+<span class="line-number">18</span>	}
+<span class="line-number">19</span>
+<span class="line-number">20</span>	address := make([]u8, address_len)
+<span class="line-number">21</span>	{
+<span class="line-number">22</span>		n_read, err := bytes.buffer_read(buffer, address)
+<span class="line-number">23</span>		assert(err == .None)
+<span class="line-number">24</span>		assert(n_read == cast(int)address_len)
+<span class="line-number">25</span>	}
+<span class="line-number">26</span>
+<span class="line-number">27</span>	display_number_len: u16 = 0
+<span class="line-number">28</span>	{
+<span class="line-number">29</span>		n_read, err := bytes.buffer_read(buffer, mem.ptr_to_bytes(&amp;display_number_len))
+<span class="line-number">30</span>		assert(err == .None)
+<span class="line-number">31</span>
+<span class="line-number">32</span>		display_number_len = bits.byte_swap(display_number_len)
+<span class="line-number">33</span>		assert(n_read == size_of(display_number_len))
+<span class="line-number">34</span>	}
+<span class="line-number">35</span>
+<span class="line-number">36</span>	display_number := make([]u8, display_number_len)
+<span class="line-number">37</span>	{
+<span class="line-number">38</span>		n_read, err := bytes.buffer_read(buffer, display_number)
+<span class="line-number">39</span>		assert(err == .None)
+<span class="line-number">40</span>		assert(n_read == cast(int)display_number_len)
+<span class="line-number">41</span>	}
+<span class="line-number">42</span>
+<span class="line-number">43</span>	auth_name_len: u16 = 0
+<span class="line-number">44</span>	{
+<span class="line-number">45</span>		n_read, err := bytes.buffer_read(buffer, mem.ptr_to_bytes(&amp;auth_name_len))
+<span class="line-number">46</span>		assert(err == .None)
+<span class="line-number">47</span>
+<span class="line-number">48</span>		auth_name_len = bits.byte_swap(auth_name_len)
+<span class="line-number">49</span>		assert(n_read == size_of(auth_name_len))
+<span class="line-number">50</span>	}
+<span class="line-number">51</span>
+<span class="line-number">52</span>	entry.auth_name = make([]u8, auth_name_len)
+<span class="line-number">53</span>	{
+<span class="line-number">54</span>		n_read, err := bytes.buffer_read(buffer, entry.auth_name)
+<span class="line-number">55</span>		assert(err == .None)
+<span class="line-number">56</span>		assert(n_read == cast(int)auth_name_len)
+<span class="line-number">57</span>	}
+<span class="line-number">58</span>
+<span class="line-number">59</span>	auth_data_len: u16 = 0
+<span class="line-number">60</span>	{
+<span class="line-number">61</span>		n_read, err := bytes.buffer_read(buffer, mem.ptr_to_bytes(&amp;auth_data_len))
+<span class="line-number">62</span>		assert(err == .None)
+<span class="line-number">63</span>
+<span class="line-number">64</span>		auth_data_len = bits.byte_swap(auth_data_len)
+<span class="line-number">65</span>		assert(n_read == size_of(auth_data_len))
+<span class="line-number">66</span>	}
+<span class="line-number">67</span>
+<span class="line-number">68</span>	entry.auth_data = make([]u8, auth_data_len)
+<span class="line-number">69</span>	{
+<span class="line-number">70</span>		n_read, err := bytes.buffer_read(buffer, entry.auth_data)
+<span class="line-number">71</span>		assert(err == .None)
+<span class="line-number">72</span>		assert(n_read == cast(int)auth_data_len)
+<span class="line-number">73</span>	}
+<span class="line-number">74</span>
+<span class="line-number">75</span>	return entry, true
+<span class="line-number">76</span>}
 </code></pre>
 <p>Now we can sift through the different entries in the file to find the one we are after:</p>
-<pre><code class="language-odin">load_x11_auth_token :: proc(allocator := context.allocator) -&gt; (token: AuthToken, ok: bool) {
-	context.allocator = allocator
-	defer free_all(allocator)
-
-	filename_env := os.get_env(&quot;XAUTHORITY&quot;)
-
-	filename :=
-		len(filename_env) != 0 \
-		? filename_env \
-		: filepath.join([]string{os.get_env(&quot;HOME&quot;), &quot;.Xauthority&quot;})
-
-	data := os.read_entire_file_from_filename(filename) or_return
-
-	buffer := bytes.Buffer{}
-	bytes.buffer_init(&amp;buffer, data[:])
-
-
-	for {
-		auth_entry := read_x11_auth_entry(&amp;buffer) or_break
-
-		if auth_entry.family == AUTH_ENTRY_FAMILY_LOCAL &amp;&amp;
-		   slice.equal(auth_entry.auth_name, transmute([]u8)AUTH_ENTRY_MAGIC_COOKIE) &amp;&amp;
-		   len(auth_entry.auth_data) == size_of(AuthToken) {
-
-			mem.copy_non_overlapping(
-				raw_data(&amp;token),
-				raw_data(auth_entry.auth_data),
-				size_of(AuthToken),
-			)
-			return token, true
-		}
-	}
-
-    // Did not find a fitting token.
-	return {}, false
-}
+<pre>
+  <div class="code-header">
+    <span>Odin</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-odin"><span class="line-number">0</span>load_x11_auth_token :: proc(allocator := context.allocator) -&gt; (token: AuthToken, ok: bool) {
+<span class="line-number">1</span>	context.allocator = allocator
+<span class="line-number">2</span>	defer free_all(allocator)
+<span class="line-number">3</span>
+<span class="line-number">4</span>	filename_env := os.get_env(&quot;XAUTHORITY&quot;)
+<span class="line-number">5</span>
+<span class="line-number">6</span>	filename :=
+<span class="line-number">7</span>		len(filename_env) != 0 \
+<span class="line-number">8</span>		? filename_env \
+<span class="line-number">9</span>		: filepath.join([]string{os.get_env(&quot;HOME&quot;), &quot;.Xauthority&quot;})
+<span class="line-number">10</span>
+<span class="line-number">11</span>	data := os.read_entire_file_from_filename(filename) or_return
+<span class="line-number">12</span>
+<span class="line-number">13</span>	buffer := bytes.Buffer{}
+<span class="line-number">14</span>	bytes.buffer_init(&amp;buffer, data[:])
+<span class="line-number">15</span>
+<span class="line-number">16</span>
+<span class="line-number">17</span>	for {
+<span class="line-number">18</span>		auth_entry := read_x11_auth_entry(&amp;buffer) or_break
+<span class="line-number">19</span>
+<span class="line-number">20</span>		if auth_entry.family == AUTH_ENTRY_FAMILY_LOCAL &amp;&amp;
+<span class="line-number">21</span>		   slice.equal(auth_entry.auth_name, transmute([]u8)AUTH_ENTRY_MAGIC_COOKIE) &amp;&amp;
+<span class="line-number">22</span>		   len(auth_entry.auth_data) == size_of(AuthToken) {
+<span class="line-number">23</span>
+<span class="line-number">24</span>			mem.copy_non_overlapping(
+<span class="line-number">25</span>				raw_data(&amp;token),
+<span class="line-number">26</span>				raw_data(auth_entry.auth_data),
+<span class="line-number">27</span>				size_of(AuthToken),
+<span class="line-number">28</span>			)
+<span class="line-number">29</span>			return token, true
+<span class="line-number">30</span>		}
+<span class="line-number">31</span>	}
+<span class="line-number">32</span>
+<span class="line-number">33</span>    // Did not find a fitting token.
+<span class="line-number">34</span>	return {}, false
+<span class="line-number">35</span>}
 </code></pre>
 <p>Odin has a nice shorthand to return early on errors: <code>or_return</code>, which is the equivalent of <code>?</code> in Rust or <code>try</code> in Zig. Same thing with <code>or_break</code>.</p>
 <p>And we use it in this manner in <code>main</code>:</p>
-<pre><code class="language-odin">main :: proc() {
-	auth_token, _ := load_x11_auth_token(context.temp_allocator)
-}
+<pre>
+  <div class="code-header">
+    <span>Odin</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-odin"><span class="line-number">0</span>main :: proc() {
+<span class="line-number">1</span>	auth_token, _ := load_x11_auth_token(context.temp_allocator)
+<span class="line-number">2</span>}
 </code></pre>
 <p>If we did not find a fitting token, no matter, we will simply carry on with an empty one.</p>
 <p>One interesting thing: in Odin, similarly to Zig, allocators are passed to functions wishing to allocate memory. Contrary to Zig though, Odin has a mechanism to make that less tedious (and more implicit as a result) by essentially passing the allocator as the last function argument which is optional.</p>
@@ -341,235 +366,270 @@ AuthEntry :: struct {
 </h2>
 <p>This part is almost exactly the same as the first linked article so I'll speed run this.</p>
 <p>First we open a UNIX domain socket:</p>
-<pre><code class="language-odin">connect_x11_socket :: proc() -&gt; os.Socket {
-	SockaddrUn :: struct #packed {
-		sa_family: os.ADDRESS_FAMILY,
-		sa_data:   [108]u8,
-	}
-
-	socket, err := os.socket(os.AF_UNIX, os.SOCK_STREAM, 0)
-	assert(err == os.ERROR_NONE)
-
-	possible_socket_paths := [2]string{&quot;/tmp/.X11-unix/X0&quot;, &quot;/tmp/.X11-unix/X1&quot;}
-	for &amp;socket_path in possible_socket_paths {
-		addr := SockaddrUn {
-			sa_family = cast(u16)os.AF_UNIX,
-		}
-		mem.copy_non_overlapping(&amp;addr.sa_data, raw_data(socket_path), len(socket_path))
-
-		err = os.connect(socket, cast(^os.SOCKADDR)&amp;addr, size_of(addr))
-		if (err == os.ERROR_NONE) {return socket}
-	}
-
-	os.exit(1)
-}
+<pre>
+  <div class="code-header">
+    <span>Odin</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-odin"><span class="line-number">0</span>connect_x11_socket :: proc() -&gt; os.Socket {
+<span class="line-number">1</span>	SockaddrUn :: struct #packed {
+<span class="line-number">2</span>		sa_family: os.ADDRESS_FAMILY,
+<span class="line-number">3</span>		sa_data:   [108]u8,
+<span class="line-number">4</span>	}
+<span class="line-number">5</span>
+<span class="line-number">6</span>	socket, err := os.socket(os.AF_UNIX, os.SOCK_STREAM, 0)
+<span class="line-number">7</span>	assert(err == os.ERROR_NONE)
+<span class="line-number">8</span>
+<span class="line-number">9</span>	possible_socket_paths := [2]string{&quot;/tmp/.X11-unix/X0&quot;, &quot;/tmp/.X11-unix/X1&quot;}
+<span class="line-number">10</span>	for &amp;socket_path in possible_socket_paths {
+<span class="line-number">11</span>		addr := SockaddrUn {
+<span class="line-number">12</span>			sa_family = cast(u16)os.AF_UNIX,
+<span class="line-number">13</span>		}
+<span class="line-number">14</span>		mem.copy_non_overlapping(&amp;addr.sa_data, raw_data(socket_path), len(socket_path))
+<span class="line-number">15</span>
+<span class="line-number">16</span>		err = os.connect(socket, cast(^os.SOCKADDR)&amp;addr, size_of(addr))
+<span class="line-number">17</span>		if (err == os.ERROR_NONE) {return socket}
+<span class="line-number">18</span>	}
+<span class="line-number">19</span>
+<span class="line-number">20</span>	os.exit(1)
+<span class="line-number">21</span>}
 </code></pre>
 <p>We try a few possible paths for the socket, that can vary a bit from distribution to distribution.</p>
 <p>We now can send the handshake, and receive general information from the server. Let's define some structs for that per the X11 protocol:</p>
-<pre><code class="language-odin">Screen :: struct #packed {
-	id:             u32,
-	colormap:       u32,
-	white:          u32,
-	black:          u32,
-	input_mask:     u32,
-	width:          u16,
-	height:         u16,
-	width_mm:       u16,
-	height_mm:      u16,
-	maps_min:       u16,
-	maps_max:       u16,
-	root_visual_id: u32,
-	backing_store:  u8,
-	save_unders:    u8,
-	root_depth:     u8,
-	depths_count:   u8,
-}
-
-ConnectionInformation :: struct {
-	root_screen:      Screen,
-	resource_id_base: u32,
-	resource_id_mask: u32,
-}
+<pre>
+  <div class="code-header">
+    <span>Odin</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-odin"><span class="line-number">0</span>Screen :: struct #packed {
+<span class="line-number">1</span>	id:             u32,
+<span class="line-number">2</span>	colormap:       u32,
+<span class="line-number">3</span>	white:          u32,
+<span class="line-number">4</span>	black:          u32,
+<span class="line-number">5</span>	input_mask:     u32,
+<span class="line-number">6</span>	width:          u16,
+<span class="line-number">7</span>	height:         u16,
+<span class="line-number">8</span>	width_mm:       u16,
+<span class="line-number">9</span>	height_mm:      u16,
+<span class="line-number">10</span>	maps_min:       u16,
+<span class="line-number">11</span>	maps_max:       u16,
+<span class="line-number">12</span>	root_visual_id: u32,
+<span class="line-number">13</span>	backing_store:  u8,
+<span class="line-number">14</span>	save_unders:    u8,
+<span class="line-number">15</span>	root_depth:     u8,
+<span class="line-number">16</span>	depths_count:   u8,
+<span class="line-number">17</span>}
+<span class="line-number">18</span>
+<span class="line-number">19</span>ConnectionInformation :: struct {
+<span class="line-number">20</span>	root_screen:      Screen,
+<span class="line-number">21</span>	resource_id_base: u32,
+<span class="line-number">22</span>	resource_id_mask: u32,
+<span class="line-number">23</span>}
 </code></pre>
 <p>The structs are <code>#packed</code> to match the network protocol format, otherwise the compiler may insert padding between fields.</p>
 <p>One thing to know about X11: Everything we send has to be padded to a multiple of 4 bytes. We define a helper to do that by using the formula <code>((i32)x + 3) &amp; -4</code> along with a unit test for good measure:</p>
-<pre><code class="language-odin">round_up_4 :: #force_inline proc(x: u32) -&gt; u32 {
-	mask: i32 = -4
-	return transmute(u32)((transmute(i32)x + 3) &amp; mask)
-}
-
-@(test)
-test_round_up_4 :: proc(_: ^testing.T) {
-	assert(round_up_4(0) == 0)
-	assert(round_up_4(1) == 4)
-	assert(round_up_4(2) == 4)
-	assert(round_up_4(3) == 4)
-	assert(round_up_4(4) == 4)
-	assert(round_up_4(5) == 8)
-	assert(round_up_4(6) == 8)
-	assert(round_up_4(7) == 8)
-	assert(round_up_4(8) == 8)
-}
+<pre>
+  <div class="code-header">
+    <span>Odin</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-odin"><span class="line-number">0</span>round_up_4 :: #force_inline proc(x: u32) -&gt; u32 {
+<span class="line-number">1</span>	mask: i32 = -4
+<span class="line-number">2</span>	return transmute(u32)((transmute(i32)x + 3) &amp; mask)
+<span class="line-number">3</span>}
+<span class="line-number">4</span>
+<span class="line-number">5</span>@(test)
+<span class="line-number">6</span>test_round_up_4 :: proc(_: ^testing.T) {
+<span class="line-number">7</span>	assert(round_up_4(0) == 0)
+<span class="line-number">8</span>	assert(round_up_4(1) == 4)
+<span class="line-number">9</span>	assert(round_up_4(2) == 4)
+<span class="line-number">10</span>	assert(round_up_4(3) == 4)
+<span class="line-number">11</span>	assert(round_up_4(4) == 4)
+<span class="line-number">12</span>	assert(round_up_4(5) == 8)
+<span class="line-number">13</span>	assert(round_up_4(6) == 8)
+<span class="line-number">14</span>	assert(round_up_4(7) == 8)
+<span class="line-number">15</span>	assert(round_up_4(8) == 8)
+<span class="line-number">16</span>}
 </code></pre>
 <p>We can now send the handshake with the authentication token inside. We leverage the <code>writev</code> system call to send multiple separate buffers of different lengths in one call.</p>
 <p>We skip over most of the information the server sends us, since we only are after a few fields:</p>
-<pre><code class="language-odin">x11_handshake :: proc(socket: os.Socket, auth_token: ^AuthToken) -&gt; ConnectionInformation {
-	Request :: struct #packed {
-		endianness:             u8,
-		pad1:                   u8,
-		major_version:          u16,
-		minor_version:          u16,
-		authorization_len:      u16,
-		authorization_data_len: u16,
-		pad2:                   u16,
-	}
-
-	request := Request {
-		endianness             = 'l',
-		major_version          = 11,
-		authorization_len      = len(AUTH_ENTRY_MAGIC_COOKIE),
-		authorization_data_len = size_of(AuthToken),
-	}
-
-
-	{
-		padding := [2]u8{0, 0}
-		n_sent, err := linux.writev(
-			cast(linux.Fd)socket,
-			[]linux.IO_Vec {
-				{base = &amp;request, len = size_of(Request)},
-				{base = raw_data(AUTH_ENTRY_MAGIC_COOKIE), len = len(AUTH_ENTRY_MAGIC_COOKIE)},
-				{base = raw_data(padding[:]), len = len(padding)},
-				{base = raw_data(auth_token[:]), len = len(auth_token)},
-			},
-		)
-		assert(err == .NONE)
-		assert(
-			n_sent ==
-			size_of(Request) + len(AUTH_ENTRY_MAGIC_COOKIE) + len(padding) + len(auth_token),
-		)
-	}
-
-	StaticResponse :: struct #packed {
-		success:       u8,
-		pad1:          u8,
-		major_version: u16,
-		minor_version: u16,
-		length:        u16,
-	}
-
-	static_response := StaticResponse{}
-	{
-		n_recv, err := os.recv(socket, mem.ptr_to_bytes(&amp;static_response), 0)
-		assert(err == os.ERROR_NONE)
-		assert(n_recv == size_of(StaticResponse))
-		assert(static_response.success == 1)
-	}
-
-
-	recv_buf: [1 &lt;&lt; 15]u8 = {}
-	{
-		assert(len(recv_buf) &gt;= cast(u32)static_response.length * 4)
-
-		n_recv, err := os.recv(socket, recv_buf[:], 0)
-		assert(err == os.ERROR_NONE)
-		assert(n_recv == cast(u32)static_response.length * 4)
-	}
-
-
-	DynamicResponse :: struct #packed {
-		release_number:              u32,
-		resource_id_base:            u32,
-		resource_id_mask:            u32,
-		motion_buffer_size:          u32,
-		vendor_length:               u16,
-		maximum_request_length:      u16,
-		screens_in_root_count:       u8,
-		formats_count:               u8,
-		image_byte_order:            u8,
-		bitmap_format_bit_order:     u8,
-		bitmap_format_scanline_unit: u8,
-		bitmap_format_scanline_pad:  u8,
-		min_keycode:                 u8,
-		max_keycode:                 u8,
-		pad2:                        u32,
-	}
-
-	read_buffer := bytes.Buffer{}
-	bytes.buffer_init(&amp;read_buffer, recv_buf[:])
-
-	dynamic_response := DynamicResponse{}
-	{
-		n_read, err := bytes.buffer_read(&amp;read_buffer, mem.ptr_to_bytes(&amp;dynamic_response))
-		assert(err == .None)
-		assert(n_read == size_of(DynamicResponse))
-	}
-
-
-	// Skip over the vendor information.
-	bytes.buffer_next(&amp;read_buffer, cast(int)round_up_4(cast(u32)dynamic_response.vendor_length))
-	// Skip over the format information (each 8 bytes long).
-	bytes.buffer_next(&amp;read_buffer, 8 * cast(int)dynamic_response.formats_count)
-
-	screen := Screen{}
-	{
-		n_read, err := bytes.buffer_read(&amp;read_buffer, mem.ptr_to_bytes(&amp;screen))
-		assert(err == .None)
-		assert(n_read == size_of(screen))
-	}
-
-	return(
-		ConnectionInformation {
-			resource_id_base = dynamic_response.resource_id_base,
-			resource_id_mask = dynamic_response.resource_id_mask,
-			root_screen = screen,
-		} \
-	)
-}
+<pre>
+  <div class="code-header">
+    <span>Odin</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-odin"><span class="line-number">0</span>x11_handshake :: proc(socket: os.Socket, auth_token: ^AuthToken) -&gt; ConnectionInformation {
+<span class="line-number">1</span>	Request :: struct #packed {
+<span class="line-number">2</span>		endianness:             u8,
+<span class="line-number">3</span>		pad1:                   u8,
+<span class="line-number">4</span>		major_version:          u16,
+<span class="line-number">5</span>		minor_version:          u16,
+<span class="line-number">6</span>		authorization_len:      u16,
+<span class="line-number">7</span>		authorization_data_len: u16,
+<span class="line-number">8</span>		pad2:                   u16,
+<span class="line-number">9</span>	}
+<span class="line-number">10</span>
+<span class="line-number">11</span>	request := Request {
+<span class="line-number">12</span>		endianness             = 'l',
+<span class="line-number">13</span>		major_version          = 11,
+<span class="line-number">14</span>		authorization_len      = len(AUTH_ENTRY_MAGIC_COOKIE),
+<span class="line-number">15</span>		authorization_data_len = size_of(AuthToken),
+<span class="line-number">16</span>	}
+<span class="line-number">17</span>
+<span class="line-number">18</span>
+<span class="line-number">19</span>	{
+<span class="line-number">20</span>		padding := [2]u8{0, 0}
+<span class="line-number">21</span>		n_sent, err := linux.writev(
+<span class="line-number">22</span>			cast(linux.Fd)socket,
+<span class="line-number">23</span>			[]linux.IO_Vec {
+<span class="line-number">24</span>				{base = &amp;request, len = size_of(Request)},
+<span class="line-number">25</span>				{base = raw_data(AUTH_ENTRY_MAGIC_COOKIE), len = len(AUTH_ENTRY_MAGIC_COOKIE)},
+<span class="line-number">26</span>				{base = raw_data(padding[:]), len = len(padding)},
+<span class="line-number">27</span>				{base = raw_data(auth_token[:]), len = len(auth_token)},
+<span class="line-number">28</span>			},
+<span class="line-number">29</span>		)
+<span class="line-number">30</span>		assert(err == .NONE)
+<span class="line-number">31</span>		assert(
+<span class="line-number">32</span>			n_sent ==
+<span class="line-number">33</span>			size_of(Request) + len(AUTH_ENTRY_MAGIC_COOKIE) + len(padding) + len(auth_token),
+<span class="line-number">34</span>		)
+<span class="line-number">35</span>	}
+<span class="line-number">36</span>
+<span class="line-number">37</span>	StaticResponse :: struct #packed {
+<span class="line-number">38</span>		success:       u8,
+<span class="line-number">39</span>		pad1:          u8,
+<span class="line-number">40</span>		major_version: u16,
+<span class="line-number">41</span>		minor_version: u16,
+<span class="line-number">42</span>		length:        u16,
+<span class="line-number">43</span>	}
+<span class="line-number">44</span>
+<span class="line-number">45</span>	static_response := StaticResponse{}
+<span class="line-number">46</span>	{
+<span class="line-number">47</span>		n_recv, err := os.recv(socket, mem.ptr_to_bytes(&amp;static_response), 0)
+<span class="line-number">48</span>		assert(err == os.ERROR_NONE)
+<span class="line-number">49</span>		assert(n_recv == size_of(StaticResponse))
+<span class="line-number">50</span>		assert(static_response.success == 1)
+<span class="line-number">51</span>	}
+<span class="line-number">52</span>
+<span class="line-number">53</span>
+<span class="line-number">54</span>	recv_buf: [1 &lt;&lt; 15]u8 = {}
+<span class="line-number">55</span>	{
+<span class="line-number">56</span>		assert(len(recv_buf) &gt;= cast(u32)static_response.length * 4)
+<span class="line-number">57</span>
+<span class="line-number">58</span>		n_recv, err := os.recv(socket, recv_buf[:], 0)
+<span class="line-number">59</span>		assert(err == os.ERROR_NONE)
+<span class="line-number">60</span>		assert(n_recv == cast(u32)static_response.length * 4)
+<span class="line-number">61</span>	}
+<span class="line-number">62</span>
+<span class="line-number">63</span>
+<span class="line-number">64</span>	DynamicResponse :: struct #packed {
+<span class="line-number">65</span>		release_number:              u32,
+<span class="line-number">66</span>		resource_id_base:            u32,
+<span class="line-number">67</span>		resource_id_mask:            u32,
+<span class="line-number">68</span>		motion_buffer_size:          u32,
+<span class="line-number">69</span>		vendor_length:               u16,
+<span class="line-number">70</span>		maximum_request_length:      u16,
+<span class="line-number">71</span>		screens_in_root_count:       u8,
+<span class="line-number">72</span>		formats_count:               u8,
+<span class="line-number">73</span>		image_byte_order:            u8,
+<span class="line-number">74</span>		bitmap_format_bit_order:     u8,
+<span class="line-number">75</span>		bitmap_format_scanline_unit: u8,
+<span class="line-number">76</span>		bitmap_format_scanline_pad:  u8,
+<span class="line-number">77</span>		min_keycode:                 u8,
+<span class="line-number">78</span>		max_keycode:                 u8,
+<span class="line-number">79</span>		pad2:                        u32,
+<span class="line-number">80</span>	}
+<span class="line-number">81</span>
+<span class="line-number">82</span>	read_buffer := bytes.Buffer{}
+<span class="line-number">83</span>	bytes.buffer_init(&amp;read_buffer, recv_buf[:])
+<span class="line-number">84</span>
+<span class="line-number">85</span>	dynamic_response := DynamicResponse{}
+<span class="line-number">86</span>	{
+<span class="line-number">87</span>		n_read, err := bytes.buffer_read(&amp;read_buffer, mem.ptr_to_bytes(&amp;dynamic_response))
+<span class="line-number">88</span>		assert(err == .None)
+<span class="line-number">89</span>		assert(n_read == size_of(DynamicResponse))
+<span class="line-number">90</span>	}
+<span class="line-number">91</span>
+<span class="line-number">92</span>
+<span class="line-number">93</span>	// Skip over the vendor information.
+<span class="line-number">94</span>	bytes.buffer_next(&amp;read_buffer, cast(int)round_up_4(cast(u32)dynamic_response.vendor_length))
+<span class="line-number">95</span>	// Skip over the format information (each 8 bytes long).
+<span class="line-number">96</span>	bytes.buffer_next(&amp;read_buffer, 8 * cast(int)dynamic_response.formats_count)
+<span class="line-number">97</span>
+<span class="line-number">98</span>	screen := Screen{}
+<span class="line-number">99</span>	{
+<span class="line-number">100</span>		n_read, err := bytes.buffer_read(&amp;read_buffer, mem.ptr_to_bytes(&amp;screen))
+<span class="line-number">101</span>		assert(err == .None)
+<span class="line-number">102</span>		assert(n_read == size_of(screen))
+<span class="line-number">103</span>	}
+<span class="line-number">104</span>
+<span class="line-number">105</span>	return(
+<span class="line-number">106</span>		ConnectionInformation {
+<span class="line-number">107</span>			resource_id_base = dynamic_response.resource_id_base,
+<span class="line-number">108</span>			resource_id_mask = dynamic_response.resource_id_mask,
+<span class="line-number">109</span>			root_screen = screen,
+<span class="line-number">110</span>		} \
+<span class="line-number">111</span>	)
+<span class="line-number">112</span>}
 </code></pre>
 <p>Our <code>main</code> now becomes:</p>
-<pre><code class="language-odin">main :: proc() {
-	auth_token, _ := load_x11_auth_token(context.temp_allocator)
-	socket := connect_x11_socket()
-	connection_information := x11_handshake(socket, &amp;auth_token)
-}
+<pre>
+  <div class="code-header">
+    <span>Odin</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-odin"><span class="line-number">0</span>main :: proc() {
+<span class="line-number">1</span>	auth_token, _ := load_x11_auth_token(context.temp_allocator)
+<span class="line-number">2</span>	socket := connect_x11_socket()
+<span class="line-number">3</span>	connection_information := x11_handshake(socket, &amp;auth_token)
+<span class="line-number">4</span>}
 </code></pre>
 <p>The next step is to create a graphical context. When creating a new entity, we generate an id for it, and send that in the create request. Afterwards, we can refer to the entity by this id:</p>
-<pre><code class="language-odin">next_x11_id :: proc(current_id: u32, info: ConnectionInformation) -&gt; u32 {
-	return 1 + ((info.resource_id_mask &amp; (current_id)) | info.resource_id_base)
-}
+<pre>
+  <div class="code-header">
+    <span>Odin</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-odin"><span class="line-number">0</span>next_x11_id :: proc(current_id: u32, info: ConnectionInformation) -&gt; u32 {
+<span class="line-number">1</span>	return 1 + ((info.resource_id_mask &amp; (current_id)) | info.resource_id_base)
+<span class="line-number">2</span>}
 </code></pre>
 <p>Time to create a graphical context:</p>
-<pre><code class="language-odin">x11_create_graphical_context :: proc(socket: os.Socket, gc_id: u32, root_id: u32) {
-	opcode: u8 : 55
-	FLAG_GC_BG: u32 : 8
-	BITMASK: u32 : FLAG_GC_BG
-	VALUE1: u32 : 0x00_00_ff_00
-
-	Request :: struct #packed {
-		opcode:   u8,
-		pad1:     u8,
-		length:   u16,
-		id:       u32,
-		drawable: u32,
-		bitmask:  u32,
-		value1:   u32,
-	}
-	request := Request {
-		opcode   = opcode,
-		length   = 5,
-		id       = gc_id,
-		drawable = root_id,
-		bitmask  = BITMASK,
-		value1   = VALUE1,
-	}
-
-	{
-		n_sent, err := os.send(socket, mem.ptr_to_bytes(&amp;request), 0)
-		assert(err == os.ERROR_NONE)
-		assert(n_sent == size_of(Request))
-	}
-}
+<pre>
+  <div class="code-header">
+    <span>Odin</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-odin"><span class="line-number">0</span>x11_create_graphical_context :: proc(socket: os.Socket, gc_id: u32, root_id: u32) {
+<span class="line-number">1</span>	opcode: u8 : 55
+<span class="line-number">2</span>	FLAG_GC_BG: u32 : 8
+<span class="line-number">3</span>	BITMASK: u32 : FLAG_GC_BG
+<span class="line-number">4</span>	VALUE1: u32 : 0x00_00_ff_00
+<span class="line-number">5</span>
+<span class="line-number">6</span>	Request :: struct #packed {
+<span class="line-number">7</span>		opcode:   u8,
+<span class="line-number">8</span>		pad1:     u8,
+<span class="line-number">9</span>		length:   u16,
+<span class="line-number">10</span>		id:       u32,
+<span class="line-number">11</span>		drawable: u32,
+<span class="line-number">12</span>		bitmask:  u32,
+<span class="line-number">13</span>		value1:   u32,
+<span class="line-number">14</span>	}
+<span class="line-number">15</span>	request := Request {
+<span class="line-number">16</span>		opcode   = opcode,
+<span class="line-number">17</span>		length   = 5,
+<span class="line-number">18</span>		id       = gc_id,
+<span class="line-number">19</span>		drawable = root_id,
+<span class="line-number">20</span>		bitmask  = BITMASK,
+<span class="line-number">21</span>		value1   = VALUE1,
+<span class="line-number">22</span>	}
+<span class="line-number">23</span>
+<span class="line-number">24</span>	{
+<span class="line-number">25</span>		n_sent, err := os.send(socket, mem.ptr_to_bytes(&amp;request), 0)
+<span class="line-number">26</span>		assert(err == os.ERROR_NONE)
+<span class="line-number">27</span>		assert(n_sent == size_of(Request))
+<span class="line-number">28</span>	}
+<span class="line-number">29</span>}
 </code></pre>
 <p>Finally we create a window. We subscribe to a few events as well:</p>
 <ul>
@@ -580,124 +640,139 @@ test_round_up_4 :: proc(_: ^testing.T) {
 <li><code>BUTTON_RELEASE</code>: when a mouse button is released</li>
 </ul>
 <p>We also pick an arbitrary background color, yellow. It does not matter because we will always cover every part of the window with our assets.</p>
-<pre><code class="language-odin">x11_create_window :: proc(
-	socket: os.Socket,
-	window_id: u32,
-	parent_id: u32,
-	x: u16,
-	y: u16,
-	width: u16,
-	height: u16,
-	root_visual_id: u32,
-) {
-	FLAG_WIN_BG_PIXEL: u32 : 2
-	FLAG_WIN_EVENT: u32 : 0x800
-	FLAG_COUNT: u16 : 2
-	EVENT_FLAG_EXPOSURE: u32 = 0x80_00
-	EVENT_FLAG_KEY_PRESS: u32 = 0x1
-	EVENT_FLAG_KEY_RELEASE: u32 = 0x2
-	EVENT_FLAG_BUTTON_PRESS: u32 = 0x4
-	EVENT_FLAG_BUTTON_RELEASE: u32 = 0x8
-	flags: u32 : FLAG_WIN_BG_PIXEL | FLAG_WIN_EVENT
-	depth: u8 : 24
-	border_width: u16 : 0
-	CLASS_INPUT_OUTPUT: u16 : 1
-	opcode: u8 : 1
-	BACKGROUND_PIXEL_COLOR: u32 : 0x00_ff_ff_00
-
-	Request :: struct #packed {
-		opcode:         u8,
-		depth:          u8,
-		request_length: u16,
-		window_id:      u32,
-		parent_id:      u32,
-		x:              u16,
-		y:              u16,
-		width:          u16,
-		height:         u16,
-		border_width:   u16,
-		class:          u16,
-		root_visual_id: u32,
-		bitmask:        u32,
-		value1:         u32,
-		value2:         u32,
-	}
-	request := Request {
-		opcode         = opcode,
-		depth          = depth,
-		request_length = 8 + FLAG_COUNT,
-		window_id      = window_id,
-		parent_id      = parent_id,
-		x              = x,
-		y              = y,
-		width          = width,
-		height         = height,
-		border_width   = border_width,
-		class          = CLASS_INPUT_OUTPUT,
-		root_visual_id = root_visual_id,
-		bitmask        = flags,
-		value1         = BACKGROUND_PIXEL_COLOR,
-		value2         = EVENT_FLAG_EXPOSURE | EVENT_FLAG_BUTTON_RELEASE | EVENT_FLAG_BUTTON_PRESS | EVENT_FLAG_KEY_PRESS | EVENT_FLAG_KEY_RELEASE,
-	}
-
-	{
-		n_sent, err := os.send(socket, mem.ptr_to_bytes(&amp;request), 0)
-		assert(err == os.ERROR_NONE)
-		assert(n_sent == size_of(Request))
-	}
-}
+<pre>
+  <div class="code-header">
+    <span>Odin</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-odin"><span class="line-number">0</span>x11_create_window :: proc(
+<span class="line-number">1</span>	socket: os.Socket,
+<span class="line-number">2</span>	window_id: u32,
+<span class="line-number">3</span>	parent_id: u32,
+<span class="line-number">4</span>	x: u16,
+<span class="line-number">5</span>	y: u16,
+<span class="line-number">6</span>	width: u16,
+<span class="line-number">7</span>	height: u16,
+<span class="line-number">8</span>	root_visual_id: u32,
+<span class="line-number">9</span>) {
+<span class="line-number">10</span>	FLAG_WIN_BG_PIXEL: u32 : 2
+<span class="line-number">11</span>	FLAG_WIN_EVENT: u32 : 0x800
+<span class="line-number">12</span>	FLAG_COUNT: u16 : 2
+<span class="line-number">13</span>	EVENT_FLAG_EXPOSURE: u32 = 0x80_00
+<span class="line-number">14</span>	EVENT_FLAG_KEY_PRESS: u32 = 0x1
+<span class="line-number">15</span>	EVENT_FLAG_KEY_RELEASE: u32 = 0x2
+<span class="line-number">16</span>	EVENT_FLAG_BUTTON_PRESS: u32 = 0x4
+<span class="line-number">17</span>	EVENT_FLAG_BUTTON_RELEASE: u32 = 0x8
+<span class="line-number">18</span>	flags: u32 : FLAG_WIN_BG_PIXEL | FLAG_WIN_EVENT
+<span class="line-number">19</span>	depth: u8 : 24
+<span class="line-number">20</span>	border_width: u16 : 0
+<span class="line-number">21</span>	CLASS_INPUT_OUTPUT: u16 : 1
+<span class="line-number">22</span>	opcode: u8 : 1
+<span class="line-number">23</span>	BACKGROUND_PIXEL_COLOR: u32 : 0x00_ff_ff_00
+<span class="line-number">24</span>
+<span class="line-number">25</span>	Request :: struct #packed {
+<span class="line-number">26</span>		opcode:         u8,
+<span class="line-number">27</span>		depth:          u8,
+<span class="line-number">28</span>		request_length: u16,
+<span class="line-number">29</span>		window_id:      u32,
+<span class="line-number">30</span>		parent_id:      u32,
+<span class="line-number">31</span>		x:              u16,
+<span class="line-number">32</span>		y:              u16,
+<span class="line-number">33</span>		width:          u16,
+<span class="line-number">34</span>		height:         u16,
+<span class="line-number">35</span>		border_width:   u16,
+<span class="line-number">36</span>		class:          u16,
+<span class="line-number">37</span>		root_visual_id: u32,
+<span class="line-number">38</span>		bitmask:        u32,
+<span class="line-number">39</span>		value1:         u32,
+<span class="line-number">40</span>		value2:         u32,
+<span class="line-number">41</span>	}
+<span class="line-number">42</span>	request := Request {
+<span class="line-number">43</span>		opcode         = opcode,
+<span class="line-number">44</span>		depth          = depth,
+<span class="line-number">45</span>		request_length = 8 + FLAG_COUNT,
+<span class="line-number">46</span>		window_id      = window_id,
+<span class="line-number">47</span>		parent_id      = parent_id,
+<span class="line-number">48</span>		x              = x,
+<span class="line-number">49</span>		y              = y,
+<span class="line-number">50</span>		width          = width,
+<span class="line-number">51</span>		height         = height,
+<span class="line-number">52</span>		border_width   = border_width,
+<span class="line-number">53</span>		class          = CLASS_INPUT_OUTPUT,
+<span class="line-number">54</span>		root_visual_id = root_visual_id,
+<span class="line-number">55</span>		bitmask        = flags,
+<span class="line-number">56</span>		value1         = BACKGROUND_PIXEL_COLOR,
+<span class="line-number">57</span>		value2         = EVENT_FLAG_EXPOSURE | EVENT_FLAG_BUTTON_RELEASE | EVENT_FLAG_BUTTON_PRESS | EVENT_FLAG_KEY_PRESS | EVENT_FLAG_KEY_RELEASE,
+<span class="line-number">58</span>	}
+<span class="line-number">59</span>
+<span class="line-number">60</span>	{
+<span class="line-number">61</span>		n_sent, err := os.send(socket, mem.ptr_to_bytes(&amp;request), 0)
+<span class="line-number">62</span>		assert(err == os.ERROR_NONE)
+<span class="line-number">63</span>		assert(n_sent == size_of(Request))
+<span class="line-number">64</span>	}
+<span class="line-number">65</span>}
 </code></pre>
 <p>We decide that our game will have 16 rows and 16 columns, and each asset is 16x16 pixels.</p>
 <p><code>main</code> is now:</p>
-<pre><code class="language-odin">ENTITIES_ROW_COUNT :: 16
-ENTITIES_COLUMN_COUNT :: 16
-ENTITIES_WIDTH :: 16
-ENTITIES_HEIGHT :: 16
-
-main :: proc() {
-	auth_token, _ := load_x11_auth_token(context.temp_allocator)
-	socket := connect_x11_socket()
-	connection_information := x11_handshake(socket, &amp;auth_token)
-
-	gc_id := next_x11_id(0, connection_information)
-	x11_create_graphical_context(socket, gc_id, connection_information.root_screen.id)
-
-	window_id := next_x11_id(gc_id, connection_information)
-	x11_create_window(
-		socket,
-		window_id,
-		connection_information.root_screen.id,
-		200,
-		200,
-		ENTITIES_COLUMN_COUNT * ENTITIES_WIDTH,
-		ENTITIES_ROW_COUNT * ENTITIES_HEIGHT,
-		connection_information.root_screen.root_visual_id,
-	)
-}
+<pre>
+  <div class="code-header">
+    <span>Odin</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-odin"><span class="line-number">0</span>ENTITIES_ROW_COUNT :: 16
+<span class="line-number">1</span>ENTITIES_COLUMN_COUNT :: 16
+<span class="line-number">2</span>ENTITIES_WIDTH :: 16
+<span class="line-number">3</span>ENTITIES_HEIGHT :: 16
+<span class="line-number">4</span>
+<span class="line-number">5</span>main :: proc() {
+<span class="line-number">6</span>	auth_token, _ := load_x11_auth_token(context.temp_allocator)
+<span class="line-number">7</span>	socket := connect_x11_socket()
+<span class="line-number">8</span>	connection_information := x11_handshake(socket, &amp;auth_token)
+<span class="line-number">9</span>
+<span class="line-number">10</span>	gc_id := next_x11_id(0, connection_information)
+<span class="line-number">11</span>	x11_create_graphical_context(socket, gc_id, connection_information.root_screen.id)
+<span class="line-number">12</span>
+<span class="line-number">13</span>	window_id := next_x11_id(gc_id, connection_information)
+<span class="line-number">14</span>	x11_create_window(
+<span class="line-number">15</span>		socket,
+<span class="line-number">16</span>		window_id,
+<span class="line-number">17</span>		connection_information.root_screen.id,
+<span class="line-number">18</span>		200,
+<span class="line-number">19</span>		200,
+<span class="line-number">20</span>		ENTITIES_COLUMN_COUNT * ENTITIES_WIDTH,
+<span class="line-number">21</span>		ENTITIES_ROW_COUNT * ENTITIES_HEIGHT,
+<span class="line-number">22</span>		connection_information.root_screen.root_visual_id,
+<span class="line-number">23</span>	)
+<span class="line-number">24</span>}
 </code></pre>
 <p>Note that the window dimensions are a hint, they might now be respected, for example in a tiling window manager. We do not handle this case here since the assets are fixed size.</p>
 <p>If you have followed along, you will now see... nothing. That's because we need to tell X11 to show our window with the <code>map_window</code> call:</p>
-<pre><code class="language-odin">x11_map_window :: proc(socket: os.Socket, window_id: u32) {
-	opcode: u8 : 8
-
-	Request :: struct #packed {
-		opcode:         u8,
-		pad1:           u8,
-		request_length: u16,
-		window_id:      u32,
-	}
-	request := Request {
-		opcode         = opcode,
-		request_length = 2,
-		window_id      = window_id,
-	}
-	{
-		n_sent, err := os.send(socket, mem.ptr_to_bytes(&amp;request), 0)
-		assert(err == os.ERROR_NONE)
-		assert(n_sent == size_of(Request))
-	}
-
-}
+<pre>
+  <div class="code-header">
+    <span>Odin</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-odin"><span class="line-number">0</span>x11_map_window :: proc(socket: os.Socket, window_id: u32) {
+<span class="line-number">1</span>	opcode: u8 : 8
+<span class="line-number">2</span>
+<span class="line-number">3</span>	Request :: struct #packed {
+<span class="line-number">4</span>		opcode:         u8,
+<span class="line-number">5</span>		pad1:           u8,
+<span class="line-number">6</span>		request_length: u16,
+<span class="line-number">7</span>		window_id:      u32,
+<span class="line-number">8</span>	}
+<span class="line-number">9</span>	request := Request {
+<span class="line-number">10</span>		opcode         = opcode,
+<span class="line-number">11</span>		request_length = 2,
+<span class="line-number">12</span>		window_id      = window_id,
+<span class="line-number">13</span>	}
+<span class="line-number">14</span>	{
+<span class="line-number">15</span>		n_sent, err := os.send(socket, mem.ptr_to_bytes(&amp;request), 0)
+<span class="line-number">16</span>		assert(err == os.ERROR_NONE)
+<span class="line-number">17</span>		assert(n_sent == size_of(Request))
+<span class="line-number">18</span>	}
+<span class="line-number">19</span>
+<span class="line-number">20</span>}
 </code></pre>
 <p>We now see:</p>
 <p><img src="game-x11-empty-background.png" alt="Empty yellow window" /></p>
@@ -710,20 +785,30 @@ main :: proc() {
 <p>Here is our sprite, the one image containing all our assets:</p>
 <p><img src="game-x11-sprite.png" alt="Our sprite" /></p>
 <p>Odin has a nice feature to embed the image file in our executable which makes redistribution a breeze and startup a bit faster, so we'll do that:</p>
-<pre><code class="language-odin">	png_data := #load(&quot;sprite.png&quot;)
-	sprite, err := png.load_from_bytes(png_data, {})
-	assert(err == nil)
+<pre>
+  <div class="code-header">
+    <span>Odin</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-odin"><span class="line-number">0</span>	png_data := #load(&quot;sprite.png&quot;)
+<span class="line-number">1</span>	sprite, err := png.load_from_bytes(png_data, {})
+<span class="line-number">2</span>	assert(err == nil)
 </code></pre>
 <p>Now here is the catch: The X11 image format is different from the one in the sprite so we have to swap the bytes around:</p>
-<pre><code class="language-odin">	sprite_data := make([]u8, sprite.height * sprite.width * 4)
-
-	// Convert the image format from the sprite (RGB) into the X11 image format (BGRX).
-	for i := 0; i &lt; sprite.height * sprite.width - 3; i += 1 {
-		sprite_data[i * 4 + 0] = sprite.pixels.buf[i * 3 + 2] // R -&gt; B
-		sprite_data[i * 4 + 1] = sprite.pixels.buf[i * 3 + 1] // G -&gt; G
-		sprite_data[i * 4 + 2] = sprite.pixels.buf[i * 3 + 0] // B -&gt; R
-		sprite_data[i * 4 + 3] = 0 // pad
-	}
+<pre>
+  <div class="code-header">
+    <span>Odin</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-odin"><span class="line-number">0</span>	sprite_data := make([]u8, sprite.height * sprite.width * 4)
+<span class="line-number">1</span>
+<span class="line-number">2</span>	// Convert the image format from the sprite (RGB) into the X11 image format (BGRX).
+<span class="line-number">3</span>	for i := 0; i &lt; sprite.height * sprite.width - 3; i += 1 {
+<span class="line-number">4</span>		sprite_data[i * 4 + 0] = sprite.pixels.buf[i * 3 + 2] // R -&gt; B
+<span class="line-number">5</span>		sprite_data[i * 4 + 1] = sprite.pixels.buf[i * 3 + 1] // G -&gt; G
+<span class="line-number">6</span>		sprite_data[i * 4 + 2] = sprite.pixels.buf[i * 3 + 0] // B -&gt; R
+<span class="line-number">7</span>		sprite_data[i * 4 + 3] = 0 // pad
+<span class="line-number">8</span>	}
 </code></pre>
 <p>The <code>A</code> component is actually unused since we do not have transparency.</p>
 <p>Now that our image is in (client) memory, how to make it available to the server? Which, again, in the X11 model, might be running on a totally different machine across the world!</p>
@@ -740,198 +825,208 @@ main :: proc() {
 <p>Unfortunately, the X standard does not enforce that (it says: &quot;may or may not [...]&quot;), but that's a useful model to have in mind.</p>
 <p>Another useful model is to think of what happens when the X server is running across the network: We only want to send the image data once because that's time-consuming, and afterwards issue cheap <code>CopyArea</code> commands that are only a few bytes each.</p>
 <p>Ok, let's implement that then:</p>
-<pre><code class="language-odin">x11_create_pixmap :: proc(
-	socket: os.Socket,
-	window_id: u32,
-	pixmap_id: u32,
-	width: u16,
-	height: u16,
-	depth: u8,
-) {
-	opcode: u8 : 53
-
-	Request :: struct #packed {
-		opcode:         u8,
-		depth:          u8,
-		request_length: u16,
-		pixmap_id:      u32,
-		drawable_id:    u32,
-		width:          u16,
-		height:         u16,
-	}
-
-	request := Request {
-		opcode         = opcode,
-		depth          = depth,
-		request_length = 4,
-		pixmap_id      = pixmap_id,
-		drawable_id    = window_id,
-		width          = width,
-		height         = height,
-	}
-
-	{
-		n_sent, err := os.send(socket, mem.ptr_to_bytes(&amp;request), 0)
-		assert(err == os.ERROR_NONE)
-		assert(n_sent == size_of(Request))
-	}
-}
-
-x11_put_image :: proc(
-	socket: os.Socket,
-	drawable_id: u32,
-	gc_id: u32,
-	width: u16,
-	height: u16,
-	dst_x: u16,
-	dst_y: u16,
-	depth: u8,
-	data: []u8,
-) {
-	opcode: u8 : 72
-
-	Request :: struct #packed {
-		opcode:         u8,
-		format:         u8,
-		request_length: u16,
-		drawable_id:    u32,
-		gc_id:          u32,
-		width:          u16,
-		height:         u16,
-		dst_x:          u16,
-		dst_y:          u16,
-		left_pad:       u8,
-		depth:          u8,
-		pad1:           u16,
-	}
-
-	data_length_padded := round_up_4(cast(u32)len(data))
-
-	request := Request {
-		opcode         = opcode,
-		format         = 2, // ZPixmap
-		request_length = cast(u16)(6 + data_length_padded / 4),
-		drawable_id    = drawable_id,
-		gc_id          = gc_id,
-		width          = width,
-		height         = height,
-		dst_x          = dst_x,
-		dst_y          = dst_y,
-		depth          = depth,
-	}
-	{
-		padding_len := data_length_padded - cast(u32)len(data)
-
-		n_sent, err := linux.writev(
-			cast(linux.Fd)socket,
-			[]linux.IO_Vec {
-				{base = &amp;request, len = size_of(Request)},
-				{base = raw_data(data), len = len(data)},
-				{base = raw_data(data), len = cast(uint)padding_len},
-			},
-		)
-		assert(err == .NONE)
-		assert(n_sent == size_of(Request) + len(data) + cast(int)padding_len)
-	}
-}
-
-x11_copy_area :: proc(
-	socket: os.Socket,
-	src_id: u32,
-	dst_id: u32,
-	gc_id: u32,
-	src_x: u16,
-	src_y: u16,
-	dst_x: u16,
-	dst_y: u16,
-	width: u16,
-	height: u16,
-) {
-	opcode: u8 : 62
-	Request :: struct #packed {
-		opcode:         u8,
-		pad1:           u8,
-		request_length: u16,
-		src_id:         u32,
-		dst_id:         u32,
-		gc_id:          u32,
-		src_x:          u16,
-		src_y:          u16,
-		dst_x:          u16,
-		dst_y:          u16,
-		width:          u16,
-		height:         u16,
-	}
-
-	request := Request {
-		opcode         = opcode,
-		request_length = 7,
-		src_id         = src_id,
-		dst_id         = dst_id,
-		gc_id          = gc_id,
-		src_x          = src_x,
-		src_y          = src_y,
-		dst_x          = dst_x,
-		dst_y          = dst_y,
-		width          = width,
-		height         = height,
-	}
-	{
-		n_sent, err := os.send(socket, mem.ptr_to_bytes(&amp;request), 0)
-		assert(err == os.ERROR_NONE)
-		assert(n_sent == size_of(Request))
-	}
-}
+<pre>
+  <div class="code-header">
+    <span>Odin</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-odin"><span class="line-number">0</span>x11_create_pixmap :: proc(
+<span class="line-number">1</span>	socket: os.Socket,
+<span class="line-number">2</span>	window_id: u32,
+<span class="line-number">3</span>	pixmap_id: u32,
+<span class="line-number">4</span>	width: u16,
+<span class="line-number">5</span>	height: u16,
+<span class="line-number">6</span>	depth: u8,
+<span class="line-number">7</span>) {
+<span class="line-number">8</span>	opcode: u8 : 53
+<span class="line-number">9</span>
+<span class="line-number">10</span>	Request :: struct #packed {
+<span class="line-number">11</span>		opcode:         u8,
+<span class="line-number">12</span>		depth:          u8,
+<span class="line-number">13</span>		request_length: u16,
+<span class="line-number">14</span>		pixmap_id:      u32,
+<span class="line-number">15</span>		drawable_id:    u32,
+<span class="line-number">16</span>		width:          u16,
+<span class="line-number">17</span>		height:         u16,
+<span class="line-number">18</span>	}
+<span class="line-number">19</span>
+<span class="line-number">20</span>	request := Request {
+<span class="line-number">21</span>		opcode         = opcode,
+<span class="line-number">22</span>		depth          = depth,
+<span class="line-number">23</span>		request_length = 4,
+<span class="line-number">24</span>		pixmap_id      = pixmap_id,
+<span class="line-number">25</span>		drawable_id    = window_id,
+<span class="line-number">26</span>		width          = width,
+<span class="line-number">27</span>		height         = height,
+<span class="line-number">28</span>	}
+<span class="line-number">29</span>
+<span class="line-number">30</span>	{
+<span class="line-number">31</span>		n_sent, err := os.send(socket, mem.ptr_to_bytes(&amp;request), 0)
+<span class="line-number">32</span>		assert(err == os.ERROR_NONE)
+<span class="line-number">33</span>		assert(n_sent == size_of(Request))
+<span class="line-number">34</span>	}
+<span class="line-number">35</span>}
+<span class="line-number">36</span>
+<span class="line-number">37</span>x11_put_image :: proc(
+<span class="line-number">38</span>	socket: os.Socket,
+<span class="line-number">39</span>	drawable_id: u32,
+<span class="line-number">40</span>	gc_id: u32,
+<span class="line-number">41</span>	width: u16,
+<span class="line-number">42</span>	height: u16,
+<span class="line-number">43</span>	dst_x: u16,
+<span class="line-number">44</span>	dst_y: u16,
+<span class="line-number">45</span>	depth: u8,
+<span class="line-number">46</span>	data: []u8,
+<span class="line-number">47</span>) {
+<span class="line-number">48</span>	opcode: u8 : 72
+<span class="line-number">49</span>
+<span class="line-number">50</span>	Request :: struct #packed {
+<span class="line-number">51</span>		opcode:         u8,
+<span class="line-number">52</span>		format:         u8,
+<span class="line-number">53</span>		request_length: u16,
+<span class="line-number">54</span>		drawable_id:    u32,
+<span class="line-number">55</span>		gc_id:          u32,
+<span class="line-number">56</span>		width:          u16,
+<span class="line-number">57</span>		height:         u16,
+<span class="line-number">58</span>		dst_x:          u16,
+<span class="line-number">59</span>		dst_y:          u16,
+<span class="line-number">60</span>		left_pad:       u8,
+<span class="line-number">61</span>		depth:          u8,
+<span class="line-number">62</span>		pad1:           u16,
+<span class="line-number">63</span>	}
+<span class="line-number">64</span>
+<span class="line-number">65</span>	data_length_padded := round_up_4(cast(u32)len(data))
+<span class="line-number">66</span>
+<span class="line-number">67</span>	request := Request {
+<span class="line-number">68</span>		opcode         = opcode,
+<span class="line-number">69</span>		format         = 2, // ZPixmap
+<span class="line-number">70</span>		request_length = cast(u16)(6 + data_length_padded / 4),
+<span class="line-number">71</span>		drawable_id    = drawable_id,
+<span class="line-number">72</span>		gc_id          = gc_id,
+<span class="line-number">73</span>		width          = width,
+<span class="line-number">74</span>		height         = height,
+<span class="line-number">75</span>		dst_x          = dst_x,
+<span class="line-number">76</span>		dst_y          = dst_y,
+<span class="line-number">77</span>		depth          = depth,
+<span class="line-number">78</span>	}
+<span class="line-number">79</span>	{
+<span class="line-number">80</span>		padding_len := data_length_padded - cast(u32)len(data)
+<span class="line-number">81</span>
+<span class="line-number">82</span>		n_sent, err := linux.writev(
+<span class="line-number">83</span>			cast(linux.Fd)socket,
+<span class="line-number">84</span>			[]linux.IO_Vec {
+<span class="line-number">85</span>				{base = &amp;request, len = size_of(Request)},
+<span class="line-number">86</span>				{base = raw_data(data), len = len(data)},
+<span class="line-number">87</span>				{base = raw_data(data), len = cast(uint)padding_len},
+<span class="line-number">88</span>			},
+<span class="line-number">89</span>		)
+<span class="line-number">90</span>		assert(err == .NONE)
+<span class="line-number">91</span>		assert(n_sent == size_of(Request) + len(data) + cast(int)padding_len)
+<span class="line-number">92</span>	}
+<span class="line-number">93</span>}
+<span class="line-number">94</span>
+<span class="line-number">95</span>x11_copy_area :: proc(
+<span class="line-number">96</span>	socket: os.Socket,
+<span class="line-number">97</span>	src_id: u32,
+<span class="line-number">98</span>	dst_id: u32,
+<span class="line-number">99</span>	gc_id: u32,
+<span class="line-number">100</span>	src_x: u16,
+<span class="line-number">101</span>	src_y: u16,
+<span class="line-number">102</span>	dst_x: u16,
+<span class="line-number">103</span>	dst_y: u16,
+<span class="line-number">104</span>	width: u16,
+<span class="line-number">105</span>	height: u16,
+<span class="line-number">106</span>) {
+<span class="line-number">107</span>	opcode: u8 : 62
+<span class="line-number">108</span>	Request :: struct #packed {
+<span class="line-number">109</span>		opcode:         u8,
+<span class="line-number">110</span>		pad1:           u8,
+<span class="line-number">111</span>		request_length: u16,
+<span class="line-number">112</span>		src_id:         u32,
+<span class="line-number">113</span>		dst_id:         u32,
+<span class="line-number">114</span>		gc_id:          u32,
+<span class="line-number">115</span>		src_x:          u16,
+<span class="line-number">116</span>		src_y:          u16,
+<span class="line-number">117</span>		dst_x:          u16,
+<span class="line-number">118</span>		dst_y:          u16,
+<span class="line-number">119</span>		width:          u16,
+<span class="line-number">120</span>		height:         u16,
+<span class="line-number">121</span>	}
+<span class="line-number">122</span>
+<span class="line-number">123</span>	request := Request {
+<span class="line-number">124</span>		opcode         = opcode,
+<span class="line-number">125</span>		request_length = 7,
+<span class="line-number">126</span>		src_id         = src_id,
+<span class="line-number">127</span>		dst_id         = dst_id,
+<span class="line-number">128</span>		gc_id          = gc_id,
+<span class="line-number">129</span>		src_x          = src_x,
+<span class="line-number">130</span>		src_y          = src_y,
+<span class="line-number">131</span>		dst_x          = dst_x,
+<span class="line-number">132</span>		dst_y          = dst_y,
+<span class="line-number">133</span>		width          = width,
+<span class="line-number">134</span>		height         = height,
+<span class="line-number">135</span>	}
+<span class="line-number">136</span>	{
+<span class="line-number">137</span>		n_sent, err := os.send(socket, mem.ptr_to_bytes(&amp;request), 0)
+<span class="line-number">138</span>		assert(err == os.ERROR_NONE)
+<span class="line-number">139</span>		assert(n_sent == size_of(Request))
+<span class="line-number">140</span>	}
+<span class="line-number">141</span>}
 </code></pre>
 <p>Let's try in <code>main</code>:</p>
-<pre><code class="language-odin">	img_depth: u8 = 24
-	pixmap_id := next_x11_id(window_id, connection_information)
-	x11_create_pixmap(
-		socket,
-		window_id,
-		pixmap_id,
-		cast(u16)sprite.width,
-		cast(u16)sprite.height,
-		img_depth,
-	)
-
-	x11_put_image(
-		socket,
-		pixmap_id,
-		gc_id,
-		sprite_width,
-		sprite_height,
-		0,
-		0,
-		img_depth,
-		sprite_data,
-	)
-
-    // Let's render two different assets: an exploded mine and an idle mine.
-	x11_copy_area(
-		socket,
-		pixmap_id,
-		window_id,
-		gc_id,
-		32, // X coordinate on the sprite sheet.
-		40, // Y coordinate on the sprite sheet.
-		0, // X coordinate on the window.
-		0, // Y coordinate on the window.
-		16, // Width.
-		16, // Height.
-	)
-	x11_copy_area(
-		socket,
-		pixmap_id,
-		window_id,
-		gc_id,
-		64,
-		40,
-		16,
-		0,
-		16,
-		16,
-	)
+<pre>
+  <div class="code-header">
+    <span>Odin</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-odin"><span class="line-number">0</span>	img_depth: u8 = 24
+<span class="line-number">1</span>	pixmap_id := next_x11_id(window_id, connection_information)
+<span class="line-number">2</span>	x11_create_pixmap(
+<span class="line-number">3</span>		socket,
+<span class="line-number">4</span>		window_id,
+<span class="line-number">5</span>		pixmap_id,
+<span class="line-number">6</span>		cast(u16)sprite.width,
+<span class="line-number">7</span>		cast(u16)sprite.height,
+<span class="line-number">8</span>		img_depth,
+<span class="line-number">9</span>	)
+<span class="line-number">10</span>
+<span class="line-number">11</span>	x11_put_image(
+<span class="line-number">12</span>		socket,
+<span class="line-number">13</span>		pixmap_id,
+<span class="line-number">14</span>		gc_id,
+<span class="line-number">15</span>		sprite_width,
+<span class="line-number">16</span>		sprite_height,
+<span class="line-number">17</span>		0,
+<span class="line-number">18</span>		0,
+<span class="line-number">19</span>		img_depth,
+<span class="line-number">20</span>		sprite_data,
+<span class="line-number">21</span>	)
+<span class="line-number">22</span>
+<span class="line-number">23</span>    // Let's render two different assets: an exploded mine and an idle mine.
+<span class="line-number">24</span>	x11_copy_area(
+<span class="line-number">25</span>		socket,
+<span class="line-number">26</span>		pixmap_id,
+<span class="line-number">27</span>		window_id,
+<span class="line-number">28</span>		gc_id,
+<span class="line-number">29</span>		32, // X coordinate on the sprite sheet.
+<span class="line-number">30</span>		40, // Y coordinate on the sprite sheet.
+<span class="line-number">31</span>		0, // X coordinate on the window.
+<span class="line-number">32</span>		0, // Y coordinate on the window.
+<span class="line-number">33</span>		16, // Width.
+<span class="line-number">34</span>		16, // Height.
+<span class="line-number">35</span>	)
+<span class="line-number">36</span>	x11_copy_area(
+<span class="line-number">37</span>		socket,
+<span class="line-number">38</span>		pixmap_id,
+<span class="line-number">39</span>		window_id,
+<span class="line-number">40</span>		gc_id,
+<span class="line-number">41</span>		64,
+<span class="line-number">42</span>		40,
+<span class="line-number">43</span>		16,
+<span class="line-number">44</span>		0,
+<span class="line-number">45</span>		16,
+<span class="line-number">46</span>		16,
+<span class="line-number">47</span>	)
 </code></pre>
 <p>Result:</p>
 <p><img src="game-x11-first-image.png" alt="First images on the screen" /></p>
@@ -941,92 +1036,117 @@ x11_copy_area :: proc(
   <a class="hash-anchor" href="#the-game-entities" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>We have a few different entities we want to show, each is a 16x16 section of the sprite sheet. Let's define their coordinates to be readable:</p>
-<pre><code class="language-odin">Position :: struct {
-	x: u16,
-	y: u16,
-}
-
-Entity_kind :: enum {
-	Covered,
-	Uncovered_0,
-	Uncovered_1,
-	Uncovered_2,
-	Uncovered_3,
-	Uncovered_4,
-	Uncovered_5,
-	Uncovered_6,
-	Uncovered_7,
-	Uncovered_8,
-	Mine_exploded,
-	Mine_idle,
-}
-
-ASSET_COORDINATES: [Entity_kind]Position = {
-	.Uncovered_0 = {x = 0 * 16, y = 22},
-	.Uncovered_1 = {x = 1 * 16, y = 22},
-	.Uncovered_2 = {x = 2 * 16, y = 22},
-	.Uncovered_3 = {x = 3 * 16, y = 22},
-	.Uncovered_4 = {x = 4 * 16, y = 22},
-	.Uncovered_5 = {x = 5 * 16, y = 22},
-	.Uncovered_6 = {x = 6 * 16, y = 22},
-	.Uncovered_7 = {x = 7 * 16, y = 22},
-	.Uncovered_8 = {x = 8 * 16, y = 22},
-	.Covered = {x = 0, y = 38},
-	.Mine_exploded = {x = 32, y = 40},
-	.Mine_idle = {x = 64, y = 40},
-}
+<pre>
+  <div class="code-header">
+    <span>Odin</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-odin"><span class="line-number">0</span>Position :: struct {
+<span class="line-number">1</span>	x: u16,
+<span class="line-number">2</span>	y: u16,
+<span class="line-number">3</span>}
+<span class="line-number">4</span>
+<span class="line-number">5</span>Entity_kind :: enum {
+<span class="line-number">6</span>	Covered,
+<span class="line-number">7</span>	Uncovered_0,
+<span class="line-number">8</span>	Uncovered_1,
+<span class="line-number">9</span>	Uncovered_2,
+<span class="line-number">10</span>	Uncovered_3,
+<span class="line-number">11</span>	Uncovered_4,
+<span class="line-number">12</span>	Uncovered_5,
+<span class="line-number">13</span>	Uncovered_6,
+<span class="line-number">14</span>	Uncovered_7,
+<span class="line-number">15</span>	Uncovered_8,
+<span class="line-number">16</span>	Mine_exploded,
+<span class="line-number">17</span>	Mine_idle,
+<span class="line-number">18</span>}
+<span class="line-number">19</span>
+<span class="line-number">20</span>ASSET_COORDINATES: [Entity_kind]Position = {
+<span class="line-number">21</span>	.Uncovered_0 = {x = 0 * 16, y = 22},
+<span class="line-number">22</span>	.Uncovered_1 = {x = 1 * 16, y = 22},
+<span class="line-number">23</span>	.Uncovered_2 = {x = 2 * 16, y = 22},
+<span class="line-number">24</span>	.Uncovered_3 = {x = 3 * 16, y = 22},
+<span class="line-number">25</span>	.Uncovered_4 = {x = 4 * 16, y = 22},
+<span class="line-number">26</span>	.Uncovered_5 = {x = 5 * 16, y = 22},
+<span class="line-number">27</span>	.Uncovered_6 = {x = 6 * 16, y = 22},
+<span class="line-number">28</span>	.Uncovered_7 = {x = 7 * 16, y = 22},
+<span class="line-number">29</span>	.Uncovered_8 = {x = 8 * 16, y = 22},
+<span class="line-number">30</span>	.Covered = {x = 0, y = 38},
+<span class="line-number">31</span>	.Mine_exploded = {x = 32, y = 40},
+<span class="line-number">32</span>	.Mine_idle = {x = 64, y = 40},
+<span class="line-number">33</span>}
 </code></pre>
 <p>And we'll group everything we need in one struct called <code>Scene</code>:</p>
-<pre><code class="language-odin">Scene :: struct {
-	window_id:              u32,
-	gc_id:                  u32,
-	sprite_pixmap_id:       u32,
-	displayed_entities:     [ENTITIES_ROW_COUNT * ENTITIES_COLUMN_COUNT]Entity_kind,
-	mines:                  [ENTITIES_ROW_COUNT * ENTITIES_COLUMN_COUNT]bool,
-}
+<pre>
+  <div class="code-header">
+    <span>Odin</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-odin"><span class="line-number">0</span>Scene :: struct {
+<span class="line-number">1</span>	window_id:              u32,
+<span class="line-number">2</span>	gc_id:                  u32,
+<span class="line-number">3</span>	sprite_pixmap_id:       u32,
+<span class="line-number">4</span>	displayed_entities:     [ENTITIES_ROW_COUNT * ENTITIES_COLUMN_COUNT]Entity_kind,
+<span class="line-number">5</span>	mines:                  [ENTITIES_ROW_COUNT * ENTITIES_COLUMN_COUNT]bool,
+<span class="line-number">6</span>}
 </code></pre>
 <p>The first interesting field is <code>displayed_entities</code> which keeps track of which assets are shown. For example, a mine is either covered, uncovered and exploded if the player clicked on it, or uncovered and idle if the player won).</p>
 <p>The second one is <code>mines</code> which simply keeps track of where mines are. It could be a bitfield to optimize space but I did not bother.</p>
 <p>In <code>main</code> we create a new scene and plant mines randomly.</p>
-<pre><code class="language-odin">	scene := Scene {
-		window_id              = window_id,
-		gc_id                  = gc_id,
-		sprite_pixmap_id       = pixmap_id,
-	}
-	reset(&amp;scene)
+<pre>
+  <div class="code-header">
+    <span>Odin</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-odin"><span class="line-number">0</span>	scene := Scene {
+<span class="line-number">1</span>		window_id              = window_id,
+<span class="line-number">2</span>		gc_id                  = gc_id,
+<span class="line-number">3</span>		sprite_pixmap_id       = pixmap_id,
+<span class="line-number">4</span>	}
+<span class="line-number">5</span>	reset(&amp;scene)
 </code></pre>
 <p>We put this logic in the <code>reset</code> helper so that the player can easily restart the game with one keystroke:</p>
-<pre><code class="language-odin">reset :: proc(scene: ^Scene) {
-	for &amp;entity in scene.displayed_entities {
-		entity = .Covered
-	}
-
-	for &amp;mine in scene.mines {
-		mine = rand.choice([]bool{true, false, false, false})
-	}
-}
+<pre>
+  <div class="code-header">
+    <span>Odin</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-odin"><span class="line-number">0</span>reset :: proc(scene: ^Scene) {
+<span class="line-number">1</span>	for &amp;entity in scene.displayed_entities {
+<span class="line-number">2</span>		entity = .Covered
+<span class="line-number">3</span>	}
+<span class="line-number">4</span>
+<span class="line-number">5</span>	for &amp;mine in scene.mines {
+<span class="line-number">6</span>		mine = rand.choice([]bool{true, false, false, false})
+<span class="line-number">7</span>	}
+<span class="line-number">8</span>}
 </code></pre>
 <p>Here I used a 1/4 chance that a cell has a mine.</p>
 <p>We are now ready to render our (static for now) scene:</p>
-<pre><code class="language-odin">render :: proc(socket: os.Socket, scene: ^Scene) {
-	for entity, i in scene.displayed_entities {
-		rect := ASSET_COORDINATES[entity]
-		row, column := idx_to_row_column(i)
-
-		x11_copy_area(
-			socket,
-			scene.sprite_pixmap_id,
-			scene.window_id,
-			scene.gc_id,
-			rect.x,
-			rect.y,
-			cast(u16)column * ENTITIES_WIDTH,
-			cast(u16)row * ENTITIES_HEIGHT,
-			ENTITIES_WIDTH,
-			ENTITIES_HEIGHT,
-		)
-	}
-}
+<pre>
+  <div class="code-header">
+    <span>Odin</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-odin"><span class="line-number">0</span>render :: proc(socket: os.Socket, scene: ^Scene) {
+<span class="line-number">1</span>	for entity, i in scene.displayed_entities {
+<span class="line-number">2</span>		rect := ASSET_COORDINATES[entity]
+<span class="line-number">3</span>		row, column := idx_to_row_column(i)
+<span class="line-number">4</span>
+<span class="line-number">5</span>		x11_copy_area(
+<span class="line-number">6</span>			socket,
+<span class="line-number">7</span>			scene.sprite_pixmap_id,
+<span class="line-number">8</span>			scene.window_id,
+<span class="line-number">9</span>			scene.gc_id,
+<span class="line-number">10</span>			rect.x,
+<span class="line-number">11</span>			rect.y,
+<span class="line-number">12</span>			cast(u16)column * ENTITIES_WIDTH,
+<span class="line-number">13</span>			cast(u16)row * ENTITIES_HEIGHT,
+<span class="line-number">14</span>			ENTITIES_WIDTH,
+<span class="line-number">15</span>			ENTITIES_HEIGHT,
+<span class="line-number">16</span>		)
+<span class="line-number">17</span>	}
+<span class="line-number">18</span>}
 </code></pre>
 <p>And here is what we get:</p>
 <p><img src="game-x11-first-scene.png" alt="First scene" /></p>
@@ -1036,83 +1156,88 @@ ASSET_COORDINATES: [Entity_kind]Position = {
   <a class="hash-anchor" href="#reacting-to-keyboard-and-mouse-events" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>This is very straightforward. Since the only messages we expect are for keyboard and mouse events, with a fixed size of 32 bytes, we simply read 32 bytes exactly in a blocking fashion. The first byte indicates which kind of event it is:</p>
-<pre><code class="language-odin">wait_for_x11_events :: proc(socket: os.Socket, scene: ^Scene) {
-	GenericEvent :: struct #packed {
-		code: u8,
-		pad:  [31]u8,
-	}
-	assert(size_of(GenericEvent) == 32)
-
-	KeyReleaseEvent :: struct #packed {
-		code:            u8,
-		detail:          u8,
-		sequence_number: u16,
-		time:            u32,
-		root_id:         u32,
-		event:           u32,
-		child_id:        u32,
-		root_x:          u16,
-		root_y:          u16,
-		event_x:         u16,
-		event_y:         u16,
-		state:           u16,
-		same_screen:     bool,
-		pad1:            u8,
-	}
-	assert(size_of(KeyReleaseEvent) == 32)
-
-	ButtonReleaseEvent :: struct #packed {
-		code:        u8,
-		detail:      u8,
-		seq_number:  u16,
-		timestamp:   u32,
-		root:        u32,
-		event:       u32,
-		child:       u32,
-		root_x:      u16,
-		root_y:      u16,
-		event_x:     u16,
-		event_y:     u16,
-		state:       u16,
-		same_screen: bool,
-		pad1:        u8,
-	}
-	assert(size_of(ButtonReleaseEvent) == 32)
-
-	EVENT_EXPOSURE: u8 : 0xc
-	EVENT_KEY_RELEASE: u8 : 0x3
-	EVENT_BUTTON_RELEASE: u8 : 0x5
-
-	KEYCODE_ENTER: u8 : 36
-
-	for {
-		generic_event := GenericEvent{}
-		n_recv, err := os.recv(socket, mem.ptr_to_bytes(&amp;generic_event), 0)
-		if err == os.EPIPE || n_recv == 0 {
-			os.exit(0) // The end.
-		}
-
-		assert(err == os.ERROR_NONE)
-		assert(n_recv == size_of(GenericEvent))
-
-		switch generic_event.code {
-		case EVENT_EXPOSURE:
-			render(socket, scene)
-
-		case EVENT_KEY_RELEASE:
-			event := transmute(KeyReleaseEvent)generic_event
-			if event.detail == KEYCODE_ENTER {
-				reset(scene)
-				render(socket, scene)
-			}
-
-		case EVENT_BUTTON_RELEASE:
-			event := transmute(ButtonReleaseEvent)generic_event
-			on_cell_clicked(event.event_x, event.event_y, scene)
-			render(socket, scene)
-		}
-	}
-}
+<pre>
+  <div class="code-header">
+    <span>Odin</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-odin"><span class="line-number">0</span>wait_for_x11_events :: proc(socket: os.Socket, scene: ^Scene) {
+<span class="line-number">1</span>	GenericEvent :: struct #packed {
+<span class="line-number">2</span>		code: u8,
+<span class="line-number">3</span>		pad:  [31]u8,
+<span class="line-number">4</span>	}
+<span class="line-number">5</span>	assert(size_of(GenericEvent) == 32)
+<span class="line-number">6</span>
+<span class="line-number">7</span>	KeyReleaseEvent :: struct #packed {
+<span class="line-number">8</span>		code:            u8,
+<span class="line-number">9</span>		detail:          u8,
+<span class="line-number">10</span>		sequence_number: u16,
+<span class="line-number">11</span>		time:            u32,
+<span class="line-number">12</span>		root_id:         u32,
+<span class="line-number">13</span>		event:           u32,
+<span class="line-number">14</span>		child_id:        u32,
+<span class="line-number">15</span>		root_x:          u16,
+<span class="line-number">16</span>		root_y:          u16,
+<span class="line-number">17</span>		event_x:         u16,
+<span class="line-number">18</span>		event_y:         u16,
+<span class="line-number">19</span>		state:           u16,
+<span class="line-number">20</span>		same_screen:     bool,
+<span class="line-number">21</span>		pad1:            u8,
+<span class="line-number">22</span>	}
+<span class="line-number">23</span>	assert(size_of(KeyReleaseEvent) == 32)
+<span class="line-number">24</span>
+<span class="line-number">25</span>	ButtonReleaseEvent :: struct #packed {
+<span class="line-number">26</span>		code:        u8,
+<span class="line-number">27</span>		detail:      u8,
+<span class="line-number">28</span>		seq_number:  u16,
+<span class="line-number">29</span>		timestamp:   u32,
+<span class="line-number">30</span>		root:        u32,
+<span class="line-number">31</span>		event:       u32,
+<span class="line-number">32</span>		child:       u32,
+<span class="line-number">33</span>		root_x:      u16,
+<span class="line-number">34</span>		root_y:      u16,
+<span class="line-number">35</span>		event_x:     u16,
+<span class="line-number">36</span>		event_y:     u16,
+<span class="line-number">37</span>		state:       u16,
+<span class="line-number">38</span>		same_screen: bool,
+<span class="line-number">39</span>		pad1:        u8,
+<span class="line-number">40</span>	}
+<span class="line-number">41</span>	assert(size_of(ButtonReleaseEvent) == 32)
+<span class="line-number">42</span>
+<span class="line-number">43</span>	EVENT_EXPOSURE: u8 : 0xc
+<span class="line-number">44</span>	EVENT_KEY_RELEASE: u8 : 0x3
+<span class="line-number">45</span>	EVENT_BUTTON_RELEASE: u8 : 0x5
+<span class="line-number">46</span>
+<span class="line-number">47</span>	KEYCODE_ENTER: u8 : 36
+<span class="line-number">48</span>
+<span class="line-number">49</span>	for {
+<span class="line-number">50</span>		generic_event := GenericEvent{}
+<span class="line-number">51</span>		n_recv, err := os.recv(socket, mem.ptr_to_bytes(&amp;generic_event), 0)
+<span class="line-number">52</span>		if err == os.EPIPE || n_recv == 0 {
+<span class="line-number">53</span>			os.exit(0) // The end.
+<span class="line-number">54</span>		}
+<span class="line-number">55</span>
+<span class="line-number">56</span>		assert(err == os.ERROR_NONE)
+<span class="line-number">57</span>		assert(n_recv == size_of(GenericEvent))
+<span class="line-number">58</span>
+<span class="line-number">59</span>		switch generic_event.code {
+<span class="line-number">60</span>		case EVENT_EXPOSURE:
+<span class="line-number">61</span>			render(socket, scene)
+<span class="line-number">62</span>
+<span class="line-number">63</span>		case EVENT_KEY_RELEASE:
+<span class="line-number">64</span>			event := transmute(KeyReleaseEvent)generic_event
+<span class="line-number">65</span>			if event.detail == KEYCODE_ENTER {
+<span class="line-number">66</span>				reset(scene)
+<span class="line-number">67</span>				render(socket, scene)
+<span class="line-number">68</span>			}
+<span class="line-number">69</span>
+<span class="line-number">70</span>		case EVENT_BUTTON_RELEASE:
+<span class="line-number">71</span>			event := transmute(ButtonReleaseEvent)generic_event
+<span class="line-number">72</span>			on_cell_clicked(event.event_x, event.event_y, scene)
+<span class="line-number">73</span>			render(socket, scene)
+<span class="line-number">74</span>		}
+<span class="line-number">75</span>	}
+<span class="line-number">76</span>}
 </code></pre>
 <p>If the event is <code>Exposed</code>, we simply render (that's our first render when the window becomes visible - or if the window was minimized and then made visible again).</p>
 <p>If the event is the <code>Enter</code> key, we reset the state of the game and render. X11 differentiates between physical and logical keys on the keyboard but that does not matter here (or I would argue in most games: we are interested in the physical location of the key, not what the user mapped it to).</p>
@@ -1130,90 +1255,105 @@ ASSET_COORDINATES: [Entity_kind]Position = {
 </ul>
 <p>The one thing that tripped me is that we inspect all 8 neighboring cells to count mines, but when doing the flood fill, we only visit the 4 neighboring cells: up, right, down, left - not the diagonal neighbors. Otherwise the flood fill ends up uncovering all cells in the game at once.</p>
 <p>First, we need to translate the mouse position in the window to a cell index/row/column in our grid:</p>
-<pre><code class="language-odin">row_column_to_idx :: #force_inline proc(row: int, column: int) -&gt; int {
-	return cast(int)row * ENTITIES_COLUMN_COUNT + cast(int)column
-}
-
-locate_entity_by_coordinate :: proc(win_x: u16, win_y: u16) -&gt; (idx: int, row: int, column: int) {
-	column = cast(int)win_x / ENTITIES_WIDTH
-	row = cast(int)win_y / ENTITIES_HEIGHT
-
-	idx = row_column_to_idx(row, column)
-
-	return idx, row, column
-}
+<pre>
+  <div class="code-header">
+    <span>Odin</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-odin"><span class="line-number">0</span>row_column_to_idx :: #force_inline proc(row: int, column: int) -&gt; int {
+<span class="line-number">1</span>	return cast(int)row * ENTITIES_COLUMN_COUNT + cast(int)column
+<span class="line-number">2</span>}
+<span class="line-number">3</span>
+<span class="line-number">4</span>locate_entity_by_coordinate :: proc(win_x: u16, win_y: u16) -&gt; (idx: int, row: int, column: int) {
+<span class="line-number">5</span>	column = cast(int)win_x / ENTITIES_WIDTH
+<span class="line-number">6</span>	row = cast(int)win_y / ENTITIES_HEIGHT
+<span class="line-number">7</span>
+<span class="line-number">8</span>	idx = row_column_to_idx(row, column)
+<span class="line-number">9</span>
+<span class="line-number">10</span>	return idx, row, column
+<span class="line-number">11</span>}
 </code></pre>
 <p>Then the game logic:</p>
-<pre><code class="language-odin">on_cell_clicked :: proc(x: u16, y: u16, scene: ^Scene) {
-	idx, row, column := locate_entity_by_coordinate(x, y)
-
-	mined := scene.mines[idx]
-
-	if mined {
-		scene.displayed_entities[idx] = .Mine_exploded
-		// Lose.
-		uncover_all_cells(&amp;scene.displayed_entities, &amp;scene.mines, .Mine_exploded)
-	} else {
-		visited := [ENTITIES_COLUMN_COUNT * ENTITIES_ROW_COUNT]bool{}
-		uncover_cells_flood_fill(row, column, &amp;scene.displayed_entities, &amp;scene.mines, &amp;visited)
-
-		// Win.
-		if count_remaining_goals(scene.displayed_entities, scene.mines) == 0 {
-			uncover_all_cells(&amp;scene.displayed_entities, &amp;scene.mines, .Mine_idle)
-		}
-	}
-}
+<pre>
+  <div class="code-header">
+    <span>Odin</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-odin"><span class="line-number">0</span>on_cell_clicked :: proc(x: u16, y: u16, scene: ^Scene) {
+<span class="line-number">1</span>	idx, row, column := locate_entity_by_coordinate(x, y)
+<span class="line-number">2</span>
+<span class="line-number">3</span>	mined := scene.mines[idx]
+<span class="line-number">4</span>
+<span class="line-number">5</span>	if mined {
+<span class="line-number">6</span>		scene.displayed_entities[idx] = .Mine_exploded
+<span class="line-number">7</span>		// Lose.
+<span class="line-number">8</span>		uncover_all_cells(&amp;scene.displayed_entities, &amp;scene.mines, .Mine_exploded)
+<span class="line-number">9</span>	} else {
+<span class="line-number">10</span>		visited := [ENTITIES_COLUMN_COUNT * ENTITIES_ROW_COUNT]bool{}
+<span class="line-number">11</span>		uncover_cells_flood_fill(row, column, &amp;scene.displayed_entities, &amp;scene.mines, &amp;visited)
+<span class="line-number">12</span>
+<span class="line-number">13</span>		// Win.
+<span class="line-number">14</span>		if count_remaining_goals(scene.displayed_entities, scene.mines) == 0 {
+<span class="line-number">15</span>			uncover_all_cells(&amp;scene.displayed_entities, &amp;scene.mines, .Mine_idle)
+<span class="line-number">16</span>		}
+<span class="line-number">17</span>	}
+<span class="line-number">18</span>}
 </code></pre>
 <p>The objective is to uncover all cells without mines. We could keep a counter around and decrement it each time, but I wanted to make it idiot-proof, so I simply scan the grid to count how many uncovered cells without a mine underneath remain (in <code>count_remaining_goals</code>). No risk that way to have a desync between the game state and what is shown on the screen, because we did not decrement the counter in one edge case.</p>
 <p><code>uncover_all_cells</code> unconditionally reveals the whole grid when the player won or lost. We just need to show the mines exploded when they lost, and idle when they won.</p>
 <p><code>uncover_cells_flood_fill</code> is the interesting one. We use recursion, and to avoid visiting the same cells multiple times and potentially getting into infinite recursion, we track which cells were visited:</p>
-<pre><code class="language-odin">uncover_cells_flood_fill :: proc(
-	row: int,
-	column: int,
-	displayed_entities: ^[ENTITIES_COLUMN_COUNT * ENTITIES_ROW_COUNT]Entity_kind,
-	mines: ^[ENTITIES_ROW_COUNT * ENTITIES_COLUMN_COUNT]bool,
-	visited: ^[ENTITIES_COLUMN_COUNT * ENTITIES_ROW_COUNT]bool,
-) {
-	i := row_column_to_idx(row, column)
-	if visited[i] {return}
-
-	visited[i] = true
-
-	// Do not uncover covered mines.
-	if mines[i] {return}
-
-	if displayed_entities[i] != .Covered {return}
-
-	// Uncover cell.
-
-	mines_around_count := count_mines_around_cell(row, column, mines[:])
-	assert(mines_around_count &lt;= 8)
-
-	displayed_entities[i] =
-	cast(Entity_kind)(cast(int)Entity_kind.Uncovered_0 + mines_around_count)
-
-	// Uncover neighbors.
-
-	// Up.
-	if !(row == 0) {
-		uncover_cells_flood_fill(row - 1, column, displayed_entities, mines, visited)
-	}
-
-	// Right
-	if !(column == (ENTITIES_COLUMN_COUNT - 1)) {
-		uncover_cells_flood_fill(row, column + 1, displayed_entities, mines, visited)
-	}
-
-	// Bottom.
-	if !(row == (ENTITIES_ROW_COUNT - 1)) {
-		uncover_cells_flood_fill(row + 1, column, displayed_entities, mines, visited)
-	}
-
-	// Left.
-	if !(column == 0) {
-		uncover_cells_flood_fill(row, column - 1, displayed_entities, mines, visited)
-	}
-}
+<pre>
+  <div class="code-header">
+    <span>Odin</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-odin"><span class="line-number">0</span>uncover_cells_flood_fill :: proc(
+<span class="line-number">1</span>	row: int,
+<span class="line-number">2</span>	column: int,
+<span class="line-number">3</span>	displayed_entities: ^[ENTITIES_COLUMN_COUNT * ENTITIES_ROW_COUNT]Entity_kind,
+<span class="line-number">4</span>	mines: ^[ENTITIES_ROW_COUNT * ENTITIES_COLUMN_COUNT]bool,
+<span class="line-number">5</span>	visited: ^[ENTITIES_COLUMN_COUNT * ENTITIES_ROW_COUNT]bool,
+<span class="line-number">6</span>) {
+<span class="line-number">7</span>	i := row_column_to_idx(row, column)
+<span class="line-number">8</span>	if visited[i] {return}
+<span class="line-number">9</span>
+<span class="line-number">10</span>	visited[i] = true
+<span class="line-number">11</span>
+<span class="line-number">12</span>	// Do not uncover covered mines.
+<span class="line-number">13</span>	if mines[i] {return}
+<span class="line-number">14</span>
+<span class="line-number">15</span>	if displayed_entities[i] != .Covered {return}
+<span class="line-number">16</span>
+<span class="line-number">17</span>	// Uncover cell.
+<span class="line-number">18</span>
+<span class="line-number">19</span>	mines_around_count := count_mines_around_cell(row, column, mines[:])
+<span class="line-number">20</span>	assert(mines_around_count &lt;= 8)
+<span class="line-number">21</span>
+<span class="line-number">22</span>	displayed_entities[i] =
+<span class="line-number">23</span>	cast(Entity_kind)(cast(int)Entity_kind.Uncovered_0 + mines_around_count)
+<span class="line-number">24</span>
+<span class="line-number">25</span>	// Uncover neighbors.
+<span class="line-number">26</span>
+<span class="line-number">27</span>	// Up.
+<span class="line-number">28</span>	if !(row == 0) {
+<span class="line-number">29</span>		uncover_cells_flood_fill(row - 1, column, displayed_entities, mines, visited)
+<span class="line-number">30</span>	}
+<span class="line-number">31</span>
+<span class="line-number">32</span>	// Right
+<span class="line-number">33</span>	if !(column == (ENTITIES_COLUMN_COUNT - 1)) {
+<span class="line-number">34</span>		uncover_cells_flood_fill(row, column + 1, displayed_entities, mines, visited)
+<span class="line-number">35</span>	}
+<span class="line-number">36</span>
+<span class="line-number">37</span>	// Bottom.
+<span class="line-number">38</span>	if !(row == (ENTITIES_ROW_COUNT - 1)) {
+<span class="line-number">39</span>		uncover_cells_flood_fill(row + 1, column, displayed_entities, mines, visited)
+<span class="line-number">40</span>	}
+<span class="line-number">41</span>
+<span class="line-number">42</span>	// Left.
+<span class="line-number">43</span>	if !(column == 0) {
+<span class="line-number">44</span>		uncover_cells_flood_fill(row, column - 1, displayed_entities, mines, visited)
+<span class="line-number">45</span>	}
+<span class="line-number">46</span>}
 </code></pre>
 <p>There are a few helpers here and there that are simple, but otherwise... that's it, that's the end. We're done! All under 1000 lines of code without any tricks or clever things.</p>
 <p><img src="https://github.com/gaultier/minesweeper-from-scratch/raw/master/screenshot.png" alt="Screenshot" /></p>
@@ -1232,1009 +1372,1014 @@ locate_entity_by_coordinate :: proc(win_x: u16, win_y: u16) -&gt; (idx: int, row
 </h2>
 <details>
   <summary>The full code</summary>
-<pre><code class="language-odin">package main
-
-import &quot;core:bytes&quot;
-import &quot;core:image/png&quot;
-import &quot;core:math/bits&quot;
-import &quot;core:math/rand&quot;
-import &quot;core:mem&quot;
-import &quot;core:os&quot;
-import &quot;core:path/filepath&quot;
-import &quot;core:slice&quot;
-import &quot;core:sys/linux&quot;
-import &quot;core:testing&quot;
-
-TILE_WIDTH :: 16
-TILE_HEIGHT :: 16
-
-Position :: struct {
-	x: u16,
-	y: u16,
-}
-
-Entity_kind :: enum {
-	Covered,
-	Uncovered_0,
-	Uncovered_1,
-	Uncovered_2,
-	Uncovered_3,
-	Uncovered_4,
-	Uncovered_5,
-	Uncovered_6,
-	Uncovered_7,
-	Uncovered_8,
-	Mine_exploded,
-	Mine_idle,
-}
-
-ASSET_COORDINATES: [Entity_kind]Position = {
-	.Uncovered_0 = {x = 0 * 16, y = 22},
-	.Uncovered_1 = {x = 1 * 16, y = 22},
-	.Uncovered_2 = {x = 2 * 16, y = 22},
-	.Uncovered_3 = {x = 3 * 16, y = 22},
-	.Uncovered_4 = {x = 4 * 16, y = 22},
-	.Uncovered_5 = {x = 5 * 16, y = 22},
-	.Uncovered_6 = {x = 6 * 16, y = 22},
-	.Uncovered_7 = {x = 7 * 16, y = 22},
-	.Uncovered_8 = {x = 8 * 16, y = 22},
-	.Covered = {x = 0, y = 38},
-	.Mine_exploded = {x = 32, y = 40},
-	.Mine_idle = {x = 64, y = 40},
-}
-
-AuthToken :: [16]u8
-
-AuthEntry :: struct {
-	family:    u16,
-	auth_name: []u8,
-	auth_data: []u8,
-}
-
-Screen :: struct #packed {
-	id:             u32,
-	colormap:       u32,
-	white:          u32,
-	black:          u32,
-	input_mask:     u32,
-	width:          u16,
-	height:         u16,
-	width_mm:       u16,
-	height_mm:      u16,
-	maps_min:       u16,
-	maps_max:       u16,
-	root_visual_id: u32,
-	backing_store:  u8,
-	save_unders:    u8,
-	root_depth:     u8,
-	depths_count:   u8,
-}
-
-ConnectionInformation :: struct {
-	root_screen:      Screen,
-	resource_id_base: u32,
-	resource_id_mask: u32,
-}
-
-
-AUTH_ENTRY_FAMILY_LOCAL: u16 : 1
-AUTH_ENTRY_MAGIC_COOKIE: string : &quot;MIT-MAGIC-COOKIE-1&quot;
-
-round_up_4 :: #force_inline proc(x: u32) -&gt; u32 {
-	mask: i32 = -4
-	return transmute(u32)((transmute(i32)x + 3) &amp; mask)
-}
-
-read_x11_auth_entry :: proc(buffer: ^bytes.Buffer) -&gt; (AuthEntry, bool) {
-	entry := AuthEntry{}
-
-	{
-		n_read, err := bytes.buffer_read(buffer, mem.ptr_to_bytes(&amp;entry.family))
-		if err == .EOF {return {}, false}
-
-		assert(err == .None)
-		assert(n_read == size_of(entry.family))
-	}
-
-	address_len: u16 = 0
-	{
-		n_read, err := bytes.buffer_read(buffer, mem.ptr_to_bytes(&amp;address_len))
-		assert(err == .None)
-
-		address_len = bits.byte_swap(address_len)
-		assert(n_read == size_of(address_len))
-	}
-
-	address := make([]u8, address_len)
-	{
-		n_read, err := bytes.buffer_read(buffer, address)
-		assert(err == .None)
-		assert(n_read == cast(int)address_len)
-	}
-
-	display_number_len: u16 = 0
-	{
-		n_read, err := bytes.buffer_read(buffer, mem.ptr_to_bytes(&amp;display_number_len))
-		assert(err == .None)
-
-		display_number_len = bits.byte_swap(display_number_len)
-		assert(n_read == size_of(display_number_len))
-	}
-
-	display_number := make([]u8, display_number_len)
-	{
-		n_read, err := bytes.buffer_read(buffer, display_number)
-		assert(err == .None)
-		assert(n_read == cast(int)display_number_len)
-	}
-
-	auth_name_len: u16 = 0
-	{
-		n_read, err := bytes.buffer_read(buffer, mem.ptr_to_bytes(&amp;auth_name_len))
-		assert(err == .None)
-
-		auth_name_len = bits.byte_swap(auth_name_len)
-		assert(n_read == size_of(auth_name_len))
-	}
-
-	entry.auth_name = make([]u8, auth_name_len)
-	{
-		n_read, err := bytes.buffer_read(buffer, entry.auth_name)
-		assert(err == .None)
-		assert(n_read == cast(int)auth_name_len)
-	}
-
-	auth_data_len: u16 = 0
-	{
-		n_read, err := bytes.buffer_read(buffer, mem.ptr_to_bytes(&amp;auth_data_len))
-		assert(err == .None)
-
-		auth_data_len = bits.byte_swap(auth_data_len)
-		assert(n_read == size_of(auth_data_len))
-	}
-
-	entry.auth_data = make([]u8, auth_data_len)
-	{
-		n_read, err := bytes.buffer_read(buffer, entry.auth_data)
-		assert(err == .None)
-		assert(n_read == cast(int)auth_data_len)
-	}
-
-
-	return entry, true
-}
-
-load_x11_auth_token :: proc(allocator := context.allocator) -&gt; (token: AuthToken, ok: bool) {
-	context.allocator = allocator
-	defer free_all(allocator)
-
-	filename_env := os.get_env(&quot;XAUTHORITY&quot;)
-
-	filename :=
-		len(filename_env) != 0 \
-		? filename_env \
-		: filepath.join([]string{os.get_env(&quot;HOME&quot;), &quot;.Xauthority&quot;})
-
-	data := os.read_entire_file_from_filename(filename) or_return
-
-	buffer := bytes.Buffer{}
-	bytes.buffer_init(&amp;buffer, data[:])
-
-
-	for {
-		auth_entry := read_x11_auth_entry(&amp;buffer) or_break
-
-		if auth_entry.family == AUTH_ENTRY_FAMILY_LOCAL &amp;&amp;
-		   slice.equal(auth_entry.auth_name, transmute([]u8)AUTH_ENTRY_MAGIC_COOKIE) &amp;&amp;
-		   len(auth_entry.auth_data) == size_of(AuthToken) {
-
-			mem.copy_non_overlapping(
-				raw_data(&amp;token),
-				raw_data(auth_entry.auth_data),
-				size_of(AuthToken),
-			)
-			return token, true
-		}
-	}
-
-	// Did not find a fitting token.
-	return {}, false
-}
-
-connect_x11_socket :: proc() -&gt; os.Socket {
-	SockaddrUn :: struct #packed {
-		sa_family: os.ADDRESS_FAMILY,
-		sa_data:   [108]u8,
-	}
-
-	socket, err := os.socket(os.AF_UNIX, os.SOCK_STREAM, 0)
-	assert(err == os.ERROR_NONE)
-
-	possible_socket_paths := [2]string{&quot;/tmp/.X11-unix/X0&quot;, &quot;/tmp/.X11-unix/X1&quot;}
-	for &amp;socket_path in possible_socket_paths {
-		addr := SockaddrUn {
-			sa_family = cast(u16)os.AF_UNIX,
-		}
-		mem.copy_non_overlapping(&amp;addr.sa_data, raw_data(socket_path), len(socket_path))
-
-		err = os.connect(socket, cast(^os.SOCKADDR)&amp;addr, size_of(addr))
-		if (err == os.ERROR_NONE) {return socket}
-	}
-
-	os.exit(1)
-}
-
-
-x11_handshake :: proc(socket: os.Socket, auth_token: ^AuthToken) -&gt; ConnectionInformation {
-
-	Request :: struct #packed {
-		endianness:             u8,
-		pad1:                   u8,
-		major_version:          u16,
-		minor_version:          u16,
-		authorization_len:      u16,
-		authorization_data_len: u16,
-		pad2:                   u16,
-	}
-
-	request := Request {
-		endianness             = 'l',
-		major_version          = 11,
-		authorization_len      = len(AUTH_ENTRY_MAGIC_COOKIE),
-		authorization_data_len = size_of(AuthToken),
-	}
-
-
-	{
-		padding := [2]u8{0, 0}
-		n_sent, err := linux.writev(
-			cast(linux.Fd)socket,
-			[]linux.IO_Vec {
-				{base = &amp;request, len = size_of(Request)},
-				{base = raw_data(AUTH_ENTRY_MAGIC_COOKIE), len = len(AUTH_ENTRY_MAGIC_COOKIE)},
-				{base = raw_data(padding[:]), len = len(padding)},
-				{base = raw_data(auth_token[:]), len = len(auth_token)},
-			},
-		)
-		assert(err == .NONE)
-		assert(
-			n_sent ==
-			size_of(Request) + len(AUTH_ENTRY_MAGIC_COOKIE) + len(padding) + len(auth_token),
-		)
-	}
-
-	StaticResponse :: struct #packed {
-		success:       u8,
-		pad1:          u8,
-		major_version: u16,
-		minor_version: u16,
-		length:        u16,
-	}
-
-	static_response := StaticResponse{}
-	{
-		n_recv, err := os.recv(socket, mem.ptr_to_bytes(&amp;static_response), 0)
-		assert(err == os.ERROR_NONE)
-		assert(n_recv == size_of(StaticResponse))
-		assert(static_response.success == 1)
-	}
-
-
-	recv_buf: [1 &lt;&lt; 15]u8 = {}
-	{
-		assert(len(recv_buf) &gt;= cast(u32)static_response.length * 4)
-
-		n_recv, err := os.recv(socket, recv_buf[:], 0)
-		assert(err == os.ERROR_NONE)
-		assert(n_recv == cast(u32)static_response.length * 4)
-	}
-
-
-	DynamicResponse :: struct #packed {
-		release_number:              u32,
-		resource_id_base:            u32,
-		resource_id_mask:            u32,
-		motion_buffer_size:          u32,
-		vendor_length:               u16,
-		maximum_request_length:      u16,
-		screens_in_root_count:       u8,
-		formats_count:               u8,
-		image_byte_order:            u8,
-		bitmap_format_bit_order:     u8,
-		bitmap_format_scanline_unit: u8,
-		bitmap_format_scanline_pad:  u8,
-		min_keycode:                 u8,
-		max_keycode:                 u8,
-		pad2:                        u32,
-	}
-
-	read_buffer := bytes.Buffer{}
-	bytes.buffer_init(&amp;read_buffer, recv_buf[:])
-
-	dynamic_response := DynamicResponse{}
-	{
-		n_read, err := bytes.buffer_read(&amp;read_buffer, mem.ptr_to_bytes(&amp;dynamic_response))
-		assert(err == .None)
-		assert(n_read == size_of(DynamicResponse))
-	}
-
-
-	// Skip over the vendor information.
-	bytes.buffer_next(&amp;read_buffer, cast(int)round_up_4(cast(u32)dynamic_response.vendor_length))
-	// Skip over the format information (each 8 bytes long).
-	bytes.buffer_next(&amp;read_buffer, 8 * cast(int)dynamic_response.formats_count)
-
-	screen := Screen{}
-	{
-		n_read, err := bytes.buffer_read(&amp;read_buffer, mem.ptr_to_bytes(&amp;screen))
-		assert(err == .None)
-		assert(n_read == size_of(screen))
-	}
-
-	return (ConnectionInformation {
-				resource_id_base = dynamic_response.resource_id_base,
-				resource_id_mask = dynamic_response.resource_id_mask,
-				root_screen = screen,
-			})
-}
-
-next_x11_id :: proc(current_id: u32, info: ConnectionInformation) -&gt; u32 {
-	return 1 + ((info.resource_id_mask &amp; (current_id)) | info.resource_id_base)
-}
-
-x11_create_graphical_context :: proc(socket: os.Socket, gc_id: u32, root_id: u32) {
-	opcode: u8 : 55
-	FLAG_GC_BG: u32 : 8
-	BITMASK: u32 : FLAG_GC_BG
-	VALUE1: u32 : 0x00_00_ff_00
-
-	Request :: struct #packed {
-		opcode:   u8,
-		pad1:     u8,
-		length:   u16,
-		id:       u32,
-		drawable: u32,
-		bitmask:  u32,
-		value1:   u32,
-	}
-	request := Request {
-		opcode   = opcode,
-		length   = 5,
-		id       = gc_id,
-		drawable = root_id,
-		bitmask  = BITMASK,
-		value1   = VALUE1,
-	}
-
-	{
-		n_sent, err := os.send(socket, mem.ptr_to_bytes(&amp;request), 0)
-		assert(err == os.ERROR_NONE)
-		assert(n_sent == size_of(Request))
-	}
-}
-
-x11_create_window :: proc(
-	socket: os.Socket,
-	window_id: u32,
-	parent_id: u32,
-	x: u16,
-	y: u16,
-	width: u16,
-	height: u16,
-	root_visual_id: u32,
-) {
-	FLAG_WIN_BG_PIXEL: u32 : 2
-	FLAG_WIN_EVENT: u32 : 0x800
-	FLAG_COUNT: u16 : 2
-	EVENT_FLAG_EXPOSURE: u32 = 0x80_00
-	EVENT_FLAG_KEY_PRESS: u32 = 0x1
-	EVENT_FLAG_KEY_RELEASE: u32 = 0x2
-	EVENT_FLAG_BUTTON_PRESS: u32 = 0x4
-	EVENT_FLAG_BUTTON_RELEASE: u32 = 0x8
-	flags: u32 : FLAG_WIN_BG_PIXEL | FLAG_WIN_EVENT
-	depth: u8 : 24
-	border_width: u16 : 0
-	CLASS_INPUT_OUTPUT: u16 : 1
-	opcode: u8 : 1
-	BACKGROUND_PIXEL_COLOR: u32 : 0x00_ff_ff_00
-
-	Request :: struct #packed {
-		opcode:         u8,
-		depth:          u8,
-		request_length: u16,
-		window_id:      u32,
-		parent_id:      u32,
-		x:              u16,
-		y:              u16,
-		width:          u16,
-		height:         u16,
-		border_width:   u16,
-		class:          u16,
-		root_visual_id: u32,
-		bitmask:        u32,
-		value1:         u32,
-		value2:         u32,
-	}
-	request := Request {
-		opcode         = opcode,
-		depth          = depth,
-		request_length = 8 + FLAG_COUNT,
-		window_id      = window_id,
-		parent_id      = parent_id,
-		x              = x,
-		y              = y,
-		width          = width,
-		height         = height,
-		border_width   = border_width,
-		class          = CLASS_INPUT_OUTPUT,
-		root_visual_id = root_visual_id,
-		bitmask        = flags,
-		value1         = BACKGROUND_PIXEL_COLOR,
-		value2         = EVENT_FLAG_EXPOSURE | EVENT_FLAG_BUTTON_RELEASE | EVENT_FLAG_BUTTON_PRESS 
-            | EVENT_FLAG_KEY_PRESS | EVENT_FLAG_KEY_RELEASE,
-	}
-
-	{
-		n_sent, err := os.send(socket, mem.ptr_to_bytes(&amp;request), 0)
-		assert(err == os.ERROR_NONE)
-		assert(n_sent == size_of(Request))
-	}
-}
-
-x11_map_window :: proc(socket: os.Socket, window_id: u32) {
-	opcode: u8 : 8
-
-	Request :: struct #packed {
-		opcode:         u8,
-		pad1:           u8,
-		request_length: u16,
-		window_id:      u32,
-	}
-	request := Request {
-		opcode         = opcode,
-		request_length = 2,
-		window_id      = window_id,
-	}
-	{
-		n_sent, err := os.send(socket, mem.ptr_to_bytes(&amp;request), 0)
-		assert(err == os.ERROR_NONE)
-		assert(n_sent == size_of(Request))
-	}
-
-}
-
-x11_put_image :: proc(
-	socket: os.Socket,
-	drawable_id: u32,
-	gc_id: u32,
-	width: u16,
-	height: u16,
-	dst_x: u16,
-	dst_y: u16,
-	depth: u8,
-	data: []u8,
-) {
-	opcode: u8 : 72
-
-	Request :: struct #packed {
-		opcode:         u8,
-		format:         u8,
-		request_length: u16,
-		drawable_id:    u32,
-		gc_id:          u32,
-		width:          u16,
-		height:         u16,
-		dst_x:          u16,
-		dst_y:          u16,
-		left_pad:       u8,
-		depth:          u8,
-		pad1:           u16,
-	}
-
-	data_length_padded := round_up_4(cast(u32)len(data))
-
-	request := Request {
-		opcode         = opcode,
-		format         = 2, // ZPixmap
-		request_length = cast(u16)(6 + data_length_padded / 4),
-		drawable_id    = drawable_id,
-		gc_id          = gc_id,
-		width          = width,
-		height         = height,
-		dst_x          = dst_x,
-		dst_y          = dst_y,
-		depth          = depth,
-	}
-	{
-		padding_len := data_length_padded - cast(u32)len(data)
-
-		n_sent, err := linux.writev(
-			cast(linux.Fd)socket,
-			[]linux.IO_Vec {
-				{base = &amp;request, len = size_of(Request)},
-				{base = raw_data(data), len = len(data)},
-				{base = raw_data(data), len = cast(uint)padding_len},
-			},
-		)
-		assert(err == .NONE)
-		assert(n_sent == size_of(Request) + len(data) + cast(int)padding_len)
-	}
-}
-
-render :: proc(socket: os.Socket, scene: ^Scene) {
-	for entity, i in scene.displayed_entities {
-		rect := ASSET_COORDINATES[entity]
-		row, column := idx_to_row_column(i)
-
-		x11_copy_area(
-			socket,
-			scene.sprite_pixmap_id,
-			scene.window_id,
-			scene.gc_id,
-			rect.x,
-			rect.y,
-			cast(u16)column * ENTITIES_WIDTH,
-			cast(u16)row * ENTITIES_HEIGHT,
-			ENTITIES_WIDTH,
-			ENTITIES_HEIGHT,
-		)
-	}
-}
-
-ENTITIES_ROW_COUNT :: 16
-ENTITIES_COLUMN_COUNT :: 16
-ENTITIES_WIDTH :: 16
-ENTITIES_HEIGHT :: 16
-
-Scene :: struct {
-	window_id:          u32,
-	gc_id:              u32,
-	sprite_pixmap_id:   u32,
-	displayed_entities: [ENTITIES_ROW_COUNT * ENTITIES_COLUMN_COUNT]Entity_kind,
-	// TODO: Bitfield?
-	mines:              [ENTITIES_ROW_COUNT * ENTITIES_COLUMN_COUNT]bool,
-}
-
-wait_for_x11_events :: proc(socket: os.Socket, scene: ^Scene) {
-	GenericEvent :: struct #packed {
-		code: u8,
-		pad:  [31]u8,
-	}
-	assert(size_of(GenericEvent) == 32)
-
-	KeyReleaseEvent :: struct #packed {
-		code:            u8,
-		detail:          u8,
-		sequence_number: u16,
-		time:            u32,
-		root_id:         u32,
-		event:           u32,
-		child_id:        u32,
-		root_x:          u16,
-		root_y:          u16,
-		event_x:         u16,
-		event_y:         u16,
-		state:           u16,
-		same_screen:     bool,
-		pad1:            u8,
-	}
-	assert(size_of(KeyReleaseEvent) == 32)
-
-	ButtonReleaseEvent :: struct #packed {
-		code:        u8,
-		detail:      u8,
-		seq_number:  u16,
-		timestamp:   u32,
-		root:        u32,
-		event:       u32,
-		child:       u32,
-		root_x:      u16,
-		root_y:      u16,
-		event_x:     u16,
-		event_y:     u16,
-		state:       u16,
-		same_screen: bool,
-		pad1:        u8,
-	}
-	assert(size_of(ButtonReleaseEvent) == 32)
-
-	EVENT_EXPOSURE: u8 : 0xc
-	EVENT_KEY_RELEASE: u8 : 0x3
-	EVENT_BUTTON_RELEASE: u8 : 0x5
-
-	KEYCODE_ENTER: u8 : 36
-
-	for {
-		generic_event := GenericEvent{}
-		n_recv, err := os.recv(socket, mem.ptr_to_bytes(&amp;generic_event), 0)
-		if err == os.EPIPE || n_recv == 0 {
-			os.exit(0) // The end.
-		}
-
-		assert(err == os.ERROR_NONE)
-		assert(n_recv == size_of(GenericEvent))
-
-		switch generic_event.code {
-		case EVENT_EXPOSURE:
-			render(socket, scene)
-
-		case EVENT_KEY_RELEASE:
-			event := transmute(KeyReleaseEvent)generic_event
-			if event.detail == KEYCODE_ENTER {
-				reset(scene)
-				render(socket, scene)
-			}
-
-		case EVENT_BUTTON_RELEASE:
-			event := transmute(ButtonReleaseEvent)generic_event
-			on_cell_clicked(event.event_x, event.event_y, scene)
-			render(socket, scene)
-		}
-	}
-}
-
-reset :: proc(scene: ^Scene) {
-	for &amp;entity in scene.displayed_entities {
-		entity = .Covered
-	}
-
-	for &amp;mine in scene.mines {
-		mine = rand.choice([]bool{true, false, false, false})
-	}
-}
-
-x11_copy_area :: proc(
-	socket: os.Socket,
-	src_id: u32,
-	dst_id: u32,
-	gc_id: u32,
-	src_x: u16,
-	src_y: u16,
-	dst_x: u16,
-	dst_y: u16,
-	width: u16,
-	height: u16,
-) {
-	opcode: u8 : 62
-	Request :: struct #packed {
-		opcode:         u8,
-		pad1:           u8,
-		request_length: u16,
-		src_id:         u32,
-		dst_id:         u32,
-		gc_id:          u32,
-		src_x:          u16,
-		src_y:          u16,
-		dst_x:          u16,
-		dst_y:          u16,
-		width:          u16,
-		height:         u16,
-	}
-
-	request := Request {
-		opcode         = opcode,
-		request_length = 7,
-		src_id         = src_id,
-		dst_id         = dst_id,
-		gc_id          = gc_id,
-		src_x          = src_x,
-		src_y          = src_y,
-		dst_x          = dst_x,
-		dst_y          = dst_y,
-		width          = width,
-		height         = height,
-	}
-	{
-		n_sent, err := os.send(socket, mem.ptr_to_bytes(&amp;request), 0)
-		assert(err == os.ERROR_NONE)
-		assert(n_sent == size_of(Request))
-	}
-}
-
-on_cell_clicked :: proc(x: u16, y: u16, scene: ^Scene) {
-	idx, row, column := locate_entity_by_coordinate(x, y)
-
-	mined := scene.mines[idx]
-
-	if mined {
-		scene.displayed_entities[idx] = .Mine_exploded
-		// Lose.
-		uncover_all_cells(&amp;scene.displayed_entities, &amp;scene.mines, .Mine_exploded)
-	} else {
-		visited := [ENTITIES_COLUMN_COUNT * ENTITIES_ROW_COUNT]bool{}
-		uncover_cells_flood_fill(row, column, &amp;scene.displayed_entities, &amp;scene.mines, &amp;visited)
-
-		// Win.
-		if count_remaining_goals(scene.displayed_entities, scene.mines) == 0 {
-			uncover_all_cells(&amp;scene.displayed_entities, &amp;scene.mines, .Mine_idle)
-		}
-	}
-}
-
-count_remaining_goals :: proc(
-	displayed_entities: [ENTITIES_COLUMN_COUNT * ENTITIES_ROW_COUNT]Entity_kind,
-	mines: [ENTITIES_COLUMN_COUNT * ENTITIES_ROW_COUNT]bool,
-) -&gt; int {
-
-	covered := 0
-
-	for entity in displayed_entities {
-		covered += cast(int)(entity == .Covered)
-	}
-
-	mines_count := 0
-
-	for mine in mines {
-		mines_count += cast(int)mine
-	}
-
-	return covered - mines_count
-}
-
-uncover_all_cells :: proc(
-	displayed_entities: ^[ENTITIES_COLUMN_COUNT * ENTITIES_ROW_COUNT]Entity_kind,
-	mines: ^[ENTITIES_ROW_COUNT * ENTITIES_COLUMN_COUNT]bool,
-	shown_mine: Entity_kind,
-) {
-	for &amp;entity, i in displayed_entities {
-		if mines[i] {
-			entity = shown_mine
-		} else {
-			row, column := idx_to_row_column(i)
-			mines_around_count := count_mines_around_cell(row, column, mines[:])
-			assert(mines_around_count &lt;= 8)
-
-			entity = cast(Entity_kind)(cast(int)Entity_kind.Uncovered_0 + mines_around_count)
-		}
-	}
-}
-
-uncover_cells_flood_fill :: proc(
-	row: int,
-	column: int,
-	displayed_entities: ^[ENTITIES_COLUMN_COUNT * ENTITIES_ROW_COUNT]Entity_kind,
-	mines: ^[ENTITIES_ROW_COUNT * ENTITIES_COLUMN_COUNT]bool,
-	visited: ^[ENTITIES_COLUMN_COUNT * ENTITIES_ROW_COUNT]bool,
-) {
-	i := row_column_to_idx(row, column)
-	if visited[i] {return}
-
-	visited[i] = true
-
-	// Do not uncover covered mines.
-	if mines[i] {return}
-
-	if displayed_entities[i] != .Covered {return}
-
-	// Uncover cell.
-
-	mines_around_count := count_mines_around_cell(row, column, mines[:])
-	assert(mines_around_count &lt;= 8)
-
-	displayed_entities[i] =
-	cast(Entity_kind)(cast(int)Entity_kind.Uncovered_0 + mines_around_count)
-
-	// Uncover neighbors.
-
-	// Up.
-	if !(row == 0) {
-		uncover_cells_flood_fill(row - 1, column, displayed_entities, mines, visited)
-	}
-
-	// Right
-	if !(column == (ENTITIES_COLUMN_COUNT - 1)) {
-		uncover_cells_flood_fill(row, column + 1, displayed_entities, mines, visited)
-	}
-
-	// Bottom.
-	if !(row == (ENTITIES_ROW_COUNT - 1)) {
-		uncover_cells_flood_fill(row + 1, column, displayed_entities, mines, visited)
-	}
-
-	// Left.
-	if !(column == 0) {
-		uncover_cells_flood_fill(row, column - 1, displayed_entities, mines, visited)
-	}
-}
-
-idx_to_row_column :: #force_inline proc(i: int) -&gt; (int, int) {
-	column := i % ENTITIES_COLUMN_COUNT
-	row := i / ENTITIES_ROW_COUNT
-
-	return row, column
-}
-
-row_column_to_idx :: #force_inline proc(row: int, column: int) -&gt; int {
-	return cast(int)row * ENTITIES_COLUMN_COUNT + cast(int)column
-}
-
-count_mines_around_cell :: proc(row: int, column: int, displayed_entities: []bool) -&gt; int {
-	// TODO: Pad the border to elide all bound checks?
-
-	up_left :=
-		row == 0 || column == 0 \
-		? false \
-		: displayed_entities[row_column_to_idx(row - 1, column - 1)]
-	up := row == 0 ? false : displayed_entities[row_column_to_idx(row - 1, column)]
-	up_right :=
-		row == 0 || column == (ENTITIES_COLUMN_COUNT - 1) \
-		? false \
-		: displayed_entities[row_column_to_idx(row - 1, column + 1)]
-	right :=
-		column == (ENTITIES_COLUMN_COUNT - 1) \
-		? false \
-		: displayed_entities[row_column_to_idx(row, column + 1)]
-	bottom_right :=
-		row == (ENTITIES_ROW_COUNT - 1) || column == (ENTITIES_COLUMN_COUNT - 1) \
-		? false \
-		: displayed_entities[row_column_to_idx(row + 1, column + 1)]
-	bottom :=
-		row == (ENTITIES_ROW_COUNT - 1) \
-		? false \
-		: displayed_entities[row_column_to_idx(row + 1, column)]
-	bottom_left :=
-		column == 0 || row == (ENTITIES_COLUMN_COUNT - 1) \
-		? false \
-		: displayed_entities[row_column_to_idx(row + 1, column - 1)]
-	left := column == 0 ? false : displayed_entities[row_column_to_idx(row, column - 1)]
-
-
-	return(
-		cast(int)up_left +
-		cast(int)up +
-		cast(int)up_right +
-		cast(int)right +
-		cast(int)bottom_right +
-		cast(int)bottom +
-		cast(int)bottom_left +
-		cast(int)left \
-	)
-}
-
-locate_entity_by_coordinate :: proc(win_x: u16, win_y: u16) -&gt; (idx: int, row: int, column: int) {
-	column = cast(int)win_x / ENTITIES_WIDTH
-	row = cast(int)win_y / ENTITIES_HEIGHT
-
-	idx = row_column_to_idx(row, column)
-
-	return idx, row, column
-}
-
-x11_create_pixmap :: proc(
-	socket: os.Socket,
-	window_id: u32,
-	pixmap_id: u32,
-	width: u16,
-	height: u16,
-	depth: u8,
-) {
-	opcode: u8 : 53
-
-	Request :: struct #packed {
-		opcode:         u8,
-		depth:          u8,
-		request_length: u16,
-		pixmap_id:      u32,
-		drawable_id:    u32,
-		width:          u16,
-		height:         u16,
-	}
-
-	request := Request {
-		opcode         = opcode,
-		depth          = depth,
-		request_length = 4,
-		pixmap_id      = pixmap_id,
-		drawable_id    = window_id,
-		width          = width,
-		height         = height,
-	}
-
-	{
-		n_sent, err := os.send(socket, mem.ptr_to_bytes(&amp;request), 0)
-		assert(err == os.ERROR_NONE)
-		assert(n_sent == size_of(Request))
-	}
-}
-
-main :: proc() {
-	png_data := #load(&quot;sprite.png&quot;)
-	sprite, err := png.load_from_bytes(png_data, {})
-	assert(err == nil)
-	sprite_data := make([]u8, sprite.height * sprite.width * 4)
-
-	// Convert the image format from the sprite (RGB) into the X11 image format (BGRX).
-	for i := 0; i &lt; sprite.height * sprite.width - 3; i += 1 {
-		sprite_data[i * 4 + 0] = sprite.pixels.buf[i * 3 + 2] // R -&gt; B
-		sprite_data[i * 4 + 1] = sprite.pixels.buf[i * 3 + 1] // G -&gt; G
-		sprite_data[i * 4 + 2] = sprite.pixels.buf[i * 3 + 0] // B -&gt; R
-		sprite_data[i * 4 + 3] = 0 // pad
-	}
-
-	auth_token, _ := load_x11_auth_token(context.temp_allocator)
-
-	socket := connect_x11_socket()
-	connection_information := x11_handshake(socket, &amp;auth_token)
-
-	gc_id := next_x11_id(0, connection_information)
-	x11_create_graphical_context(socket, gc_id, connection_information.root_screen.id)
-
-	window_id := next_x11_id(gc_id, connection_information)
-	x11_create_window(
-		socket,
-		window_id,
-		connection_information.root_screen.id,
-		200,
-		200,
-		ENTITIES_COLUMN_COUNT * ENTITIES_WIDTH,
-		ENTITIES_ROW_COUNT * ENTITIES_HEIGHT,
-		connection_information.root_screen.root_visual_id,
-	)
-
-	img_depth: u8 = 24
-	pixmap_id := next_x11_id(window_id, connection_information)
-	x11_create_pixmap(
-		socket,
-		window_id,
-		pixmap_id,
-		cast(u16)sprite.width,
-		cast(u16)sprite.height,
-		img_depth,
-	)
-	scene := Scene {
-		window_id        = window_id,
-		gc_id            = gc_id,
-		sprite_pixmap_id = pixmap_id,
-	}
-	reset(&amp;scene)
-
-	x11_put_image(
-		socket,
-		scene.sprite_pixmap_id,
-		scene.gc_id,
-		cast(u16)sprite.width,
-		cast(u16)sprite.height,
-		0,
-		0,
-		img_depth,
-		sprite_data,
-	)
-
-	x11_map_window(socket, window_id)
-
-	wait_for_x11_events(socket, &amp;scene)
-}
-
-
-@(test)
-test_round_up_4 :: proc(_: ^testing.T) {
-	assert(round_up_4(0) == 0)
-	assert(round_up_4(1) == 4)
-	assert(round_up_4(2) == 4)
-	assert(round_up_4(3) == 4)
-	assert(round_up_4(4) == 4)
-	assert(round_up_4(5) == 8)
-	assert(round_up_4(6) == 8)
-	assert(round_up_4(7) == 8)
-	assert(round_up_4(8) == 8)
-}
-
-@(test)
-test_count_mines_around_cell :: proc(_: ^testing.T) {
-	{
-		mines := [ENTITIES_ROW_COUNT * ENTITIES_COLUMN_COUNT]bool{}
-		mines[row_column_to_idx(0, 0)] = true
-		mines[row_column_to_idx(0, 1)] = true
-		mines[row_column_to_idx(0, 2)] = true
-		mines[row_column_to_idx(1, 2)] = true
-		mines[row_column_to_idx(2, 2)] = true
-		mines[row_column_to_idx(2, 1)] = true
-		mines[row_column_to_idx(2, 0)] = true
-		mines[row_column_to_idx(1, 0)] = true
-
-		assert(count_mines_around_cell(1, 1, mines[:]) == 8)
-	}
-}
+<pre>
+  <div class="code-header">
+    <span>Odin</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-odin"><span class="line-number">0</span>package main
+<span class="line-number">1</span>
+<span class="line-number">2</span>import &quot;core:bytes&quot;
+<span class="line-number">3</span>import &quot;core:image/png&quot;
+<span class="line-number">4</span>import &quot;core:math/bits&quot;
+<span class="line-number">5</span>import &quot;core:math/rand&quot;
+<span class="line-number">6</span>import &quot;core:mem&quot;
+<span class="line-number">7</span>import &quot;core:os&quot;
+<span class="line-number">8</span>import &quot;core:path/filepath&quot;
+<span class="line-number">9</span>import &quot;core:slice&quot;
+<span class="line-number">10</span>import &quot;core:sys/linux&quot;
+<span class="line-number">11</span>import &quot;core:testing&quot;
+<span class="line-number">12</span>
+<span class="line-number">13</span>TILE_WIDTH :: 16
+<span class="line-number">14</span>TILE_HEIGHT :: 16
+<span class="line-number">15</span>
+<span class="line-number">16</span>Position :: struct {
+<span class="line-number">17</span>	x: u16,
+<span class="line-number">18</span>	y: u16,
+<span class="line-number">19</span>}
+<span class="line-number">20</span>
+<span class="line-number">21</span>Entity_kind :: enum {
+<span class="line-number">22</span>	Covered,
+<span class="line-number">23</span>	Uncovered_0,
+<span class="line-number">24</span>	Uncovered_1,
+<span class="line-number">25</span>	Uncovered_2,
+<span class="line-number">26</span>	Uncovered_3,
+<span class="line-number">27</span>	Uncovered_4,
+<span class="line-number">28</span>	Uncovered_5,
+<span class="line-number">29</span>	Uncovered_6,
+<span class="line-number">30</span>	Uncovered_7,
+<span class="line-number">31</span>	Uncovered_8,
+<span class="line-number">32</span>	Mine_exploded,
+<span class="line-number">33</span>	Mine_idle,
+<span class="line-number">34</span>}
+<span class="line-number">35</span>
+<span class="line-number">36</span>ASSET_COORDINATES: [Entity_kind]Position = {
+<span class="line-number">37</span>	.Uncovered_0 = {x = 0 * 16, y = 22},
+<span class="line-number">38</span>	.Uncovered_1 = {x = 1 * 16, y = 22},
+<span class="line-number">39</span>	.Uncovered_2 = {x = 2 * 16, y = 22},
+<span class="line-number">40</span>	.Uncovered_3 = {x = 3 * 16, y = 22},
+<span class="line-number">41</span>	.Uncovered_4 = {x = 4 * 16, y = 22},
+<span class="line-number">42</span>	.Uncovered_5 = {x = 5 * 16, y = 22},
+<span class="line-number">43</span>	.Uncovered_6 = {x = 6 * 16, y = 22},
+<span class="line-number">44</span>	.Uncovered_7 = {x = 7 * 16, y = 22},
+<span class="line-number">45</span>	.Uncovered_8 = {x = 8 * 16, y = 22},
+<span class="line-number">46</span>	.Covered = {x = 0, y = 38},
+<span class="line-number">47</span>	.Mine_exploded = {x = 32, y = 40},
+<span class="line-number">48</span>	.Mine_idle = {x = 64, y = 40},
+<span class="line-number">49</span>}
+<span class="line-number">50</span>
+<span class="line-number">51</span>AuthToken :: [16]u8
+<span class="line-number">52</span>
+<span class="line-number">53</span>AuthEntry :: struct {
+<span class="line-number">54</span>	family:    u16,
+<span class="line-number">55</span>	auth_name: []u8,
+<span class="line-number">56</span>	auth_data: []u8,
+<span class="line-number">57</span>}
+<span class="line-number">58</span>
+<span class="line-number">59</span>Screen :: struct #packed {
+<span class="line-number">60</span>	id:             u32,
+<span class="line-number">61</span>	colormap:       u32,
+<span class="line-number">62</span>	white:          u32,
+<span class="line-number">63</span>	black:          u32,
+<span class="line-number">64</span>	input_mask:     u32,
+<span class="line-number">65</span>	width:          u16,
+<span class="line-number">66</span>	height:         u16,
+<span class="line-number">67</span>	width_mm:       u16,
+<span class="line-number">68</span>	height_mm:      u16,
+<span class="line-number">69</span>	maps_min:       u16,
+<span class="line-number">70</span>	maps_max:       u16,
+<span class="line-number">71</span>	root_visual_id: u32,
+<span class="line-number">72</span>	backing_store:  u8,
+<span class="line-number">73</span>	save_unders:    u8,
+<span class="line-number">74</span>	root_depth:     u8,
+<span class="line-number">75</span>	depths_count:   u8,
+<span class="line-number">76</span>}
+<span class="line-number">77</span>
+<span class="line-number">78</span>ConnectionInformation :: struct {
+<span class="line-number">79</span>	root_screen:      Screen,
+<span class="line-number">80</span>	resource_id_base: u32,
+<span class="line-number">81</span>	resource_id_mask: u32,
+<span class="line-number">82</span>}
+<span class="line-number">83</span>
+<span class="line-number">84</span>
+<span class="line-number">85</span>AUTH_ENTRY_FAMILY_LOCAL: u16 : 1
+<span class="line-number">86</span>AUTH_ENTRY_MAGIC_COOKIE: string : &quot;MIT-MAGIC-COOKIE-1&quot;
+<span class="line-number">87</span>
+<span class="line-number">88</span>round_up_4 :: #force_inline proc(x: u32) -&gt; u32 {
+<span class="line-number">89</span>	mask: i32 = -4
+<span class="line-number">90</span>	return transmute(u32)((transmute(i32)x + 3) &amp; mask)
+<span class="line-number">91</span>}
+<span class="line-number">92</span>
+<span class="line-number">93</span>read_x11_auth_entry :: proc(buffer: ^bytes.Buffer) -&gt; (AuthEntry, bool) {
+<span class="line-number">94</span>	entry := AuthEntry{}
+<span class="line-number">95</span>
+<span class="line-number">96</span>	{
+<span class="line-number">97</span>		n_read, err := bytes.buffer_read(buffer, mem.ptr_to_bytes(&amp;entry.family))
+<span class="line-number">98</span>		if err == .EOF {return {}, false}
+<span class="line-number">99</span>
+<span class="line-number">100</span>		assert(err == .None)
+<span class="line-number">101</span>		assert(n_read == size_of(entry.family))
+<span class="line-number">102</span>	}
+<span class="line-number">103</span>
+<span class="line-number">104</span>	address_len: u16 = 0
+<span class="line-number">105</span>	{
+<span class="line-number">106</span>		n_read, err := bytes.buffer_read(buffer, mem.ptr_to_bytes(&amp;address_len))
+<span class="line-number">107</span>		assert(err == .None)
+<span class="line-number">108</span>
+<span class="line-number">109</span>		address_len = bits.byte_swap(address_len)
+<span class="line-number">110</span>		assert(n_read == size_of(address_len))
+<span class="line-number">111</span>	}
+<span class="line-number">112</span>
+<span class="line-number">113</span>	address := make([]u8, address_len)
+<span class="line-number">114</span>	{
+<span class="line-number">115</span>		n_read, err := bytes.buffer_read(buffer, address)
+<span class="line-number">116</span>		assert(err == .None)
+<span class="line-number">117</span>		assert(n_read == cast(int)address_len)
+<span class="line-number">118</span>	}
+<span class="line-number">119</span>
+<span class="line-number">120</span>	display_number_len: u16 = 0
+<span class="line-number">121</span>	{
+<span class="line-number">122</span>		n_read, err := bytes.buffer_read(buffer, mem.ptr_to_bytes(&amp;display_number_len))
+<span class="line-number">123</span>		assert(err == .None)
+<span class="line-number">124</span>
+<span class="line-number">125</span>		display_number_len = bits.byte_swap(display_number_len)
+<span class="line-number">126</span>		assert(n_read == size_of(display_number_len))
+<span class="line-number">127</span>	}
+<span class="line-number">128</span>
+<span class="line-number">129</span>	display_number := make([]u8, display_number_len)
+<span class="line-number">130</span>	{
+<span class="line-number">131</span>		n_read, err := bytes.buffer_read(buffer, display_number)
+<span class="line-number">132</span>		assert(err == .None)
+<span class="line-number">133</span>		assert(n_read == cast(int)display_number_len)
+<span class="line-number">134</span>	}
+<span class="line-number">135</span>
+<span class="line-number">136</span>	auth_name_len: u16 = 0
+<span class="line-number">137</span>	{
+<span class="line-number">138</span>		n_read, err := bytes.buffer_read(buffer, mem.ptr_to_bytes(&amp;auth_name_len))
+<span class="line-number">139</span>		assert(err == .None)
+<span class="line-number">140</span>
+<span class="line-number">141</span>		auth_name_len = bits.byte_swap(auth_name_len)
+<span class="line-number">142</span>		assert(n_read == size_of(auth_name_len))
+<span class="line-number">143</span>	}
+<span class="line-number">144</span>
+<span class="line-number">145</span>	entry.auth_name = make([]u8, auth_name_len)
+<span class="line-number">146</span>	{
+<span class="line-number">147</span>		n_read, err := bytes.buffer_read(buffer, entry.auth_name)
+<span class="line-number">148</span>		assert(err == .None)
+<span class="line-number">149</span>		assert(n_read == cast(int)auth_name_len)
+<span class="line-number">150</span>	}
+<span class="line-number">151</span>
+<span class="line-number">152</span>	auth_data_len: u16 = 0
+<span class="line-number">153</span>	{
+<span class="line-number">154</span>		n_read, err := bytes.buffer_read(buffer, mem.ptr_to_bytes(&amp;auth_data_len))
+<span class="line-number">155</span>		assert(err == .None)
+<span class="line-number">156</span>
+<span class="line-number">157</span>		auth_data_len = bits.byte_swap(auth_data_len)
+<span class="line-number">158</span>		assert(n_read == size_of(auth_data_len))
+<span class="line-number">159</span>	}
+<span class="line-number">160</span>
+<span class="line-number">161</span>	entry.auth_data = make([]u8, auth_data_len)
+<span class="line-number">162</span>	{
+<span class="line-number">163</span>		n_read, err := bytes.buffer_read(buffer, entry.auth_data)
+<span class="line-number">164</span>		assert(err == .None)
+<span class="line-number">165</span>		assert(n_read == cast(int)auth_data_len)
+<span class="line-number">166</span>	}
+<span class="line-number">167</span>
+<span class="line-number">168</span>
+<span class="line-number">169</span>	return entry, true
+<span class="line-number">170</span>}
+<span class="line-number">171</span>
+<span class="line-number">172</span>load_x11_auth_token :: proc(allocator := context.allocator) -&gt; (token: AuthToken, ok: bool) {
+<span class="line-number">173</span>	context.allocator = allocator
+<span class="line-number">174</span>	defer free_all(allocator)
+<span class="line-number">175</span>
+<span class="line-number">176</span>	filename_env := os.get_env(&quot;XAUTHORITY&quot;)
+<span class="line-number">177</span>
+<span class="line-number">178</span>	filename :=
+<span class="line-number">179</span>		len(filename_env) != 0 \
+<span class="line-number">180</span>		? filename_env \
+<span class="line-number">181</span>		: filepath.join([]string{os.get_env(&quot;HOME&quot;), &quot;.Xauthority&quot;})
+<span class="line-number">182</span>
+<span class="line-number">183</span>	data := os.read_entire_file_from_filename(filename) or_return
+<span class="line-number">184</span>
+<span class="line-number">185</span>	buffer := bytes.Buffer{}
+<span class="line-number">186</span>	bytes.buffer_init(&amp;buffer, data[:])
+<span class="line-number">187</span>
+<span class="line-number">188</span>
+<span class="line-number">189</span>	for {
+<span class="line-number">190</span>		auth_entry := read_x11_auth_entry(&amp;buffer) or_break
+<span class="line-number">191</span>
+<span class="line-number">192</span>		if auth_entry.family == AUTH_ENTRY_FAMILY_LOCAL &amp;&amp;
+<span class="line-number">193</span>		   slice.equal(auth_entry.auth_name, transmute([]u8)AUTH_ENTRY_MAGIC_COOKIE) &amp;&amp;
+<span class="line-number">194</span>		   len(auth_entry.auth_data) == size_of(AuthToken) {
+<span class="line-number">195</span>
+<span class="line-number">196</span>			mem.copy_non_overlapping(
+<span class="line-number">197</span>				raw_data(&amp;token),
+<span class="line-number">198</span>				raw_data(auth_entry.auth_data),
+<span class="line-number">199</span>				size_of(AuthToken),
+<span class="line-number">200</span>			)
+<span class="line-number">201</span>			return token, true
+<span class="line-number">202</span>		}
+<span class="line-number">203</span>	}
+<span class="line-number">204</span>
+<span class="line-number">205</span>	// Did not find a fitting token.
+<span class="line-number">206</span>	return {}, false
+<span class="line-number">207</span>}
+<span class="line-number">208</span>
+<span class="line-number">209</span>connect_x11_socket :: proc() -&gt; os.Socket {
+<span class="line-number">210</span>	SockaddrUn :: struct #packed {
+<span class="line-number">211</span>		sa_family: os.ADDRESS_FAMILY,
+<span class="line-number">212</span>		sa_data:   [108]u8,
+<span class="line-number">213</span>	}
+<span class="line-number">214</span>
+<span class="line-number">215</span>	socket, err := os.socket(os.AF_UNIX, os.SOCK_STREAM, 0)
+<span class="line-number">216</span>	assert(err == os.ERROR_NONE)
+<span class="line-number">217</span>
+<span class="line-number">218</span>	possible_socket_paths := [2]string{&quot;/tmp/.X11-unix/X0&quot;, &quot;/tmp/.X11-unix/X1&quot;}
+<span class="line-number">219</span>	for &amp;socket_path in possible_socket_paths {
+<span class="line-number">220</span>		addr := SockaddrUn {
+<span class="line-number">221</span>			sa_family = cast(u16)os.AF_UNIX,
+<span class="line-number">222</span>		}
+<span class="line-number">223</span>		mem.copy_non_overlapping(&amp;addr.sa_data, raw_data(socket_path), len(socket_path))
+<span class="line-number">224</span>
+<span class="line-number">225</span>		err = os.connect(socket, cast(^os.SOCKADDR)&amp;addr, size_of(addr))
+<span class="line-number">226</span>		if (err == os.ERROR_NONE) {return socket}
+<span class="line-number">227</span>	}
+<span class="line-number">228</span>
+<span class="line-number">229</span>	os.exit(1)
+<span class="line-number">230</span>}
+<span class="line-number">231</span>
+<span class="line-number">232</span>
+<span class="line-number">233</span>x11_handshake :: proc(socket: os.Socket, auth_token: ^AuthToken) -&gt; ConnectionInformation {
+<span class="line-number">234</span>
+<span class="line-number">235</span>	Request :: struct #packed {
+<span class="line-number">236</span>		endianness:             u8,
+<span class="line-number">237</span>		pad1:                   u8,
+<span class="line-number">238</span>		major_version:          u16,
+<span class="line-number">239</span>		minor_version:          u16,
+<span class="line-number">240</span>		authorization_len:      u16,
+<span class="line-number">241</span>		authorization_data_len: u16,
+<span class="line-number">242</span>		pad2:                   u16,
+<span class="line-number">243</span>	}
+<span class="line-number">244</span>
+<span class="line-number">245</span>	request := Request {
+<span class="line-number">246</span>		endianness             = 'l',
+<span class="line-number">247</span>		major_version          = 11,
+<span class="line-number">248</span>		authorization_len      = len(AUTH_ENTRY_MAGIC_COOKIE),
+<span class="line-number">249</span>		authorization_data_len = size_of(AuthToken),
+<span class="line-number">250</span>	}
+<span class="line-number">251</span>
+<span class="line-number">252</span>
+<span class="line-number">253</span>	{
+<span class="line-number">254</span>		padding := [2]u8{0, 0}
+<span class="line-number">255</span>		n_sent, err := linux.writev(
+<span class="line-number">256</span>			cast(linux.Fd)socket,
+<span class="line-number">257</span>			[]linux.IO_Vec {
+<span class="line-number">258</span>				{base = &amp;request, len = size_of(Request)},
+<span class="line-number">259</span>				{base = raw_data(AUTH_ENTRY_MAGIC_COOKIE), len = len(AUTH_ENTRY_MAGIC_COOKIE)},
+<span class="line-number">260</span>				{base = raw_data(padding[:]), len = len(padding)},
+<span class="line-number">261</span>				{base = raw_data(auth_token[:]), len = len(auth_token)},
+<span class="line-number">262</span>			},
+<span class="line-number">263</span>		)
+<span class="line-number">264</span>		assert(err == .NONE)
+<span class="line-number">265</span>		assert(
+<span class="line-number">266</span>			n_sent ==
+<span class="line-number">267</span>			size_of(Request) + len(AUTH_ENTRY_MAGIC_COOKIE) + len(padding) + len(auth_token),
+<span class="line-number">268</span>		)
+<span class="line-number">269</span>	}
+<span class="line-number">270</span>
+<span class="line-number">271</span>	StaticResponse :: struct #packed {
+<span class="line-number">272</span>		success:       u8,
+<span class="line-number">273</span>		pad1:          u8,
+<span class="line-number">274</span>		major_version: u16,
+<span class="line-number">275</span>		minor_version: u16,
+<span class="line-number">276</span>		length:        u16,
+<span class="line-number">277</span>	}
+<span class="line-number">278</span>
+<span class="line-number">279</span>	static_response := StaticResponse{}
+<span class="line-number">280</span>	{
+<span class="line-number">281</span>		n_recv, err := os.recv(socket, mem.ptr_to_bytes(&amp;static_response), 0)
+<span class="line-number">282</span>		assert(err == os.ERROR_NONE)
+<span class="line-number">283</span>		assert(n_recv == size_of(StaticResponse))
+<span class="line-number">284</span>		assert(static_response.success == 1)
+<span class="line-number">285</span>	}
+<span class="line-number">286</span>
+<span class="line-number">287</span>
+<span class="line-number">288</span>	recv_buf: [1 &lt;&lt; 15]u8 = {}
+<span class="line-number">289</span>	{
+<span class="line-number">290</span>		assert(len(recv_buf) &gt;= cast(u32)static_response.length * 4)
+<span class="line-number">291</span>
+<span class="line-number">292</span>		n_recv, err := os.recv(socket, recv_buf[:], 0)
+<span class="line-number">293</span>		assert(err == os.ERROR_NONE)
+<span class="line-number">294</span>		assert(n_recv == cast(u32)static_response.length * 4)
+<span class="line-number">295</span>	}
+<span class="line-number">296</span>
+<span class="line-number">297</span>
+<span class="line-number">298</span>	DynamicResponse :: struct #packed {
+<span class="line-number">299</span>		release_number:              u32,
+<span class="line-number">300</span>		resource_id_base:            u32,
+<span class="line-number">301</span>		resource_id_mask:            u32,
+<span class="line-number">302</span>		motion_buffer_size:          u32,
+<span class="line-number">303</span>		vendor_length:               u16,
+<span class="line-number">304</span>		maximum_request_length:      u16,
+<span class="line-number">305</span>		screens_in_root_count:       u8,
+<span class="line-number">306</span>		formats_count:               u8,
+<span class="line-number">307</span>		image_byte_order:            u8,
+<span class="line-number">308</span>		bitmap_format_bit_order:     u8,
+<span class="line-number">309</span>		bitmap_format_scanline_unit: u8,
+<span class="line-number">310</span>		bitmap_format_scanline_pad:  u8,
+<span class="line-number">311</span>		min_keycode:                 u8,
+<span class="line-number">312</span>		max_keycode:                 u8,
+<span class="line-number">313</span>		pad2:                        u32,
+<span class="line-number">314</span>	}
+<span class="line-number">315</span>
+<span class="line-number">316</span>	read_buffer := bytes.Buffer{}
+<span class="line-number">317</span>	bytes.buffer_init(&amp;read_buffer, recv_buf[:])
+<span class="line-number">318</span>
+<span class="line-number">319</span>	dynamic_response := DynamicResponse{}
+<span class="line-number">320</span>	{
+<span class="line-number">321</span>		n_read, err := bytes.buffer_read(&amp;read_buffer, mem.ptr_to_bytes(&amp;dynamic_response))
+<span class="line-number">322</span>		assert(err == .None)
+<span class="line-number">323</span>		assert(n_read == size_of(DynamicResponse))
+<span class="line-number">324</span>	}
+<span class="line-number">325</span>
+<span class="line-number">326</span>
+<span class="line-number">327</span>	// Skip over the vendor information.
+<span class="line-number">328</span>	bytes.buffer_next(&amp;read_buffer, cast(int)round_up_4(cast(u32)dynamic_response.vendor_length))
+<span class="line-number">329</span>	// Skip over the format information (each 8 bytes long).
+<span class="line-number">330</span>	bytes.buffer_next(&amp;read_buffer, 8 * cast(int)dynamic_response.formats_count)
+<span class="line-number">331</span>
+<span class="line-number">332</span>	screen := Screen{}
+<span class="line-number">333</span>	{
+<span class="line-number">334</span>		n_read, err := bytes.buffer_read(&amp;read_buffer, mem.ptr_to_bytes(&amp;screen))
+<span class="line-number">335</span>		assert(err == .None)
+<span class="line-number">336</span>		assert(n_read == size_of(screen))
+<span class="line-number">337</span>	}
+<span class="line-number">338</span>
+<span class="line-number">339</span>	return (ConnectionInformation {
+<span class="line-number">340</span>				resource_id_base = dynamic_response.resource_id_base,
+<span class="line-number">341</span>				resource_id_mask = dynamic_response.resource_id_mask,
+<span class="line-number">342</span>				root_screen = screen,
+<span class="line-number">343</span>			})
+<span class="line-number">344</span>}
+<span class="line-number">345</span>
+<span class="line-number">346</span>next_x11_id :: proc(current_id: u32, info: ConnectionInformation) -&gt; u32 {
+<span class="line-number">347</span>	return 1 + ((info.resource_id_mask &amp; (current_id)) | info.resource_id_base)
+<span class="line-number">348</span>}
+<span class="line-number">349</span>
+<span class="line-number">350</span>x11_create_graphical_context :: proc(socket: os.Socket, gc_id: u32, root_id: u32) {
+<span class="line-number">351</span>	opcode: u8 : 55
+<span class="line-number">352</span>	FLAG_GC_BG: u32 : 8
+<span class="line-number">353</span>	BITMASK: u32 : FLAG_GC_BG
+<span class="line-number">354</span>	VALUE1: u32 : 0x00_00_ff_00
+<span class="line-number">355</span>
+<span class="line-number">356</span>	Request :: struct #packed {
+<span class="line-number">357</span>		opcode:   u8,
+<span class="line-number">358</span>		pad1:     u8,
+<span class="line-number">359</span>		length:   u16,
+<span class="line-number">360</span>		id:       u32,
+<span class="line-number">361</span>		drawable: u32,
+<span class="line-number">362</span>		bitmask:  u32,
+<span class="line-number">363</span>		value1:   u32,
+<span class="line-number">364</span>	}
+<span class="line-number">365</span>	request := Request {
+<span class="line-number">366</span>		opcode   = opcode,
+<span class="line-number">367</span>		length   = 5,
+<span class="line-number">368</span>		id       = gc_id,
+<span class="line-number">369</span>		drawable = root_id,
+<span class="line-number">370</span>		bitmask  = BITMASK,
+<span class="line-number">371</span>		value1   = VALUE1,
+<span class="line-number">372</span>	}
+<span class="line-number">373</span>
+<span class="line-number">374</span>	{
+<span class="line-number">375</span>		n_sent, err := os.send(socket, mem.ptr_to_bytes(&amp;request), 0)
+<span class="line-number">376</span>		assert(err == os.ERROR_NONE)
+<span class="line-number">377</span>		assert(n_sent == size_of(Request))
+<span class="line-number">378</span>	}
+<span class="line-number">379</span>}
+<span class="line-number">380</span>
+<span class="line-number">381</span>x11_create_window :: proc(
+<span class="line-number">382</span>	socket: os.Socket,
+<span class="line-number">383</span>	window_id: u32,
+<span class="line-number">384</span>	parent_id: u32,
+<span class="line-number">385</span>	x: u16,
+<span class="line-number">386</span>	y: u16,
+<span class="line-number">387</span>	width: u16,
+<span class="line-number">388</span>	height: u16,
+<span class="line-number">389</span>	root_visual_id: u32,
+<span class="line-number">390</span>) {
+<span class="line-number">391</span>	FLAG_WIN_BG_PIXEL: u32 : 2
+<span class="line-number">392</span>	FLAG_WIN_EVENT: u32 : 0x800
+<span class="line-number">393</span>	FLAG_COUNT: u16 : 2
+<span class="line-number">394</span>	EVENT_FLAG_EXPOSURE: u32 = 0x80_00
+<span class="line-number">395</span>	EVENT_FLAG_KEY_PRESS: u32 = 0x1
+<span class="line-number">396</span>	EVENT_FLAG_KEY_RELEASE: u32 = 0x2
+<span class="line-number">397</span>	EVENT_FLAG_BUTTON_PRESS: u32 = 0x4
+<span class="line-number">398</span>	EVENT_FLAG_BUTTON_RELEASE: u32 = 0x8
+<span class="line-number">399</span>	flags: u32 : FLAG_WIN_BG_PIXEL | FLAG_WIN_EVENT
+<span class="line-number">400</span>	depth: u8 : 24
+<span class="line-number">401</span>	border_width: u16 : 0
+<span class="line-number">402</span>	CLASS_INPUT_OUTPUT: u16 : 1
+<span class="line-number">403</span>	opcode: u8 : 1
+<span class="line-number">404</span>	BACKGROUND_PIXEL_COLOR: u32 : 0x00_ff_ff_00
+<span class="line-number">405</span>
+<span class="line-number">406</span>	Request :: struct #packed {
+<span class="line-number">407</span>		opcode:         u8,
+<span class="line-number">408</span>		depth:          u8,
+<span class="line-number">409</span>		request_length: u16,
+<span class="line-number">410</span>		window_id:      u32,
+<span class="line-number">411</span>		parent_id:      u32,
+<span class="line-number">412</span>		x:              u16,
+<span class="line-number">413</span>		y:              u16,
+<span class="line-number">414</span>		width:          u16,
+<span class="line-number">415</span>		height:         u16,
+<span class="line-number">416</span>		border_width:   u16,
+<span class="line-number">417</span>		class:          u16,
+<span class="line-number">418</span>		root_visual_id: u32,
+<span class="line-number">419</span>		bitmask:        u32,
+<span class="line-number">420</span>		value1:         u32,
+<span class="line-number">421</span>		value2:         u32,
+<span class="line-number">422</span>	}
+<span class="line-number">423</span>	request := Request {
+<span class="line-number">424</span>		opcode         = opcode,
+<span class="line-number">425</span>		depth          = depth,
+<span class="line-number">426</span>		request_length = 8 + FLAG_COUNT,
+<span class="line-number">427</span>		window_id      = window_id,
+<span class="line-number">428</span>		parent_id      = parent_id,
+<span class="line-number">429</span>		x              = x,
+<span class="line-number">430</span>		y              = y,
+<span class="line-number">431</span>		width          = width,
+<span class="line-number">432</span>		height         = height,
+<span class="line-number">433</span>		border_width   = border_width,
+<span class="line-number">434</span>		class          = CLASS_INPUT_OUTPUT,
+<span class="line-number">435</span>		root_visual_id = root_visual_id,
+<span class="line-number">436</span>		bitmask        = flags,
+<span class="line-number">437</span>		value1         = BACKGROUND_PIXEL_COLOR,
+<span class="line-number">438</span>		value2         = EVENT_FLAG_EXPOSURE | EVENT_FLAG_BUTTON_RELEASE | EVENT_FLAG_BUTTON_PRESS 
+<span class="line-number">439</span>            | EVENT_FLAG_KEY_PRESS | EVENT_FLAG_KEY_RELEASE,
+<span class="line-number">440</span>	}
+<span class="line-number">441</span>
+<span class="line-number">442</span>	{
+<span class="line-number">443</span>		n_sent, err := os.send(socket, mem.ptr_to_bytes(&amp;request), 0)
+<span class="line-number">444</span>		assert(err == os.ERROR_NONE)
+<span class="line-number">445</span>		assert(n_sent == size_of(Request))
+<span class="line-number">446</span>	}
+<span class="line-number">447</span>}
+<span class="line-number">448</span>
+<span class="line-number">449</span>x11_map_window :: proc(socket: os.Socket, window_id: u32) {
+<span class="line-number">450</span>	opcode: u8 : 8
+<span class="line-number">451</span>
+<span class="line-number">452</span>	Request :: struct #packed {
+<span class="line-number">453</span>		opcode:         u8,
+<span class="line-number">454</span>		pad1:           u8,
+<span class="line-number">455</span>		request_length: u16,
+<span class="line-number">456</span>		window_id:      u32,
+<span class="line-number">457</span>	}
+<span class="line-number">458</span>	request := Request {
+<span class="line-number">459</span>		opcode         = opcode,
+<span class="line-number">460</span>		request_length = 2,
+<span class="line-number">461</span>		window_id      = window_id,
+<span class="line-number">462</span>	}
+<span class="line-number">463</span>	{
+<span class="line-number">464</span>		n_sent, err := os.send(socket, mem.ptr_to_bytes(&amp;request), 0)
+<span class="line-number">465</span>		assert(err == os.ERROR_NONE)
+<span class="line-number">466</span>		assert(n_sent == size_of(Request))
+<span class="line-number">467</span>	}
+<span class="line-number">468</span>
+<span class="line-number">469</span>}
+<span class="line-number">470</span>
+<span class="line-number">471</span>x11_put_image :: proc(
+<span class="line-number">472</span>	socket: os.Socket,
+<span class="line-number">473</span>	drawable_id: u32,
+<span class="line-number">474</span>	gc_id: u32,
+<span class="line-number">475</span>	width: u16,
+<span class="line-number">476</span>	height: u16,
+<span class="line-number">477</span>	dst_x: u16,
+<span class="line-number">478</span>	dst_y: u16,
+<span class="line-number">479</span>	depth: u8,
+<span class="line-number">480</span>	data: []u8,
+<span class="line-number">481</span>) {
+<span class="line-number">482</span>	opcode: u8 : 72
+<span class="line-number">483</span>
+<span class="line-number">484</span>	Request :: struct #packed {
+<span class="line-number">485</span>		opcode:         u8,
+<span class="line-number">486</span>		format:         u8,
+<span class="line-number">487</span>		request_length: u16,
+<span class="line-number">488</span>		drawable_id:    u32,
+<span class="line-number">489</span>		gc_id:          u32,
+<span class="line-number">490</span>		width:          u16,
+<span class="line-number">491</span>		height:         u16,
+<span class="line-number">492</span>		dst_x:          u16,
+<span class="line-number">493</span>		dst_y:          u16,
+<span class="line-number">494</span>		left_pad:       u8,
+<span class="line-number">495</span>		depth:          u8,
+<span class="line-number">496</span>		pad1:           u16,
+<span class="line-number">497</span>	}
+<span class="line-number">498</span>
+<span class="line-number">499</span>	data_length_padded := round_up_4(cast(u32)len(data))
+<span class="line-number">500</span>
+<span class="line-number">501</span>	request := Request {
+<span class="line-number">502</span>		opcode         = opcode,
+<span class="line-number">503</span>		format         = 2, // ZPixmap
+<span class="line-number">504</span>		request_length = cast(u16)(6 + data_length_padded / 4),
+<span class="line-number">505</span>		drawable_id    = drawable_id,
+<span class="line-number">506</span>		gc_id          = gc_id,
+<span class="line-number">507</span>		width          = width,
+<span class="line-number">508</span>		height         = height,
+<span class="line-number">509</span>		dst_x          = dst_x,
+<span class="line-number">510</span>		dst_y          = dst_y,
+<span class="line-number">511</span>		depth          = depth,
+<span class="line-number">512</span>	}
+<span class="line-number">513</span>	{
+<span class="line-number">514</span>		padding_len := data_length_padded - cast(u32)len(data)
+<span class="line-number">515</span>
+<span class="line-number">516</span>		n_sent, err := linux.writev(
+<span class="line-number">517</span>			cast(linux.Fd)socket,
+<span class="line-number">518</span>			[]linux.IO_Vec {
+<span class="line-number">519</span>				{base = &amp;request, len = size_of(Request)},
+<span class="line-number">520</span>				{base = raw_data(data), len = len(data)},
+<span class="line-number">521</span>				{base = raw_data(data), len = cast(uint)padding_len},
+<span class="line-number">522</span>			},
+<span class="line-number">523</span>		)
+<span class="line-number">524</span>		assert(err == .NONE)
+<span class="line-number">525</span>		assert(n_sent == size_of(Request) + len(data) + cast(int)padding_len)
+<span class="line-number">526</span>	}
+<span class="line-number">527</span>}
+<span class="line-number">528</span>
+<span class="line-number">529</span>render :: proc(socket: os.Socket, scene: ^Scene) {
+<span class="line-number">530</span>	for entity, i in scene.displayed_entities {
+<span class="line-number">531</span>		rect := ASSET_COORDINATES[entity]
+<span class="line-number">532</span>		row, column := idx_to_row_column(i)
+<span class="line-number">533</span>
+<span class="line-number">534</span>		x11_copy_area(
+<span class="line-number">535</span>			socket,
+<span class="line-number">536</span>			scene.sprite_pixmap_id,
+<span class="line-number">537</span>			scene.window_id,
+<span class="line-number">538</span>			scene.gc_id,
+<span class="line-number">539</span>			rect.x,
+<span class="line-number">540</span>			rect.y,
+<span class="line-number">541</span>			cast(u16)column * ENTITIES_WIDTH,
+<span class="line-number">542</span>			cast(u16)row * ENTITIES_HEIGHT,
+<span class="line-number">543</span>			ENTITIES_WIDTH,
+<span class="line-number">544</span>			ENTITIES_HEIGHT,
+<span class="line-number">545</span>		)
+<span class="line-number">546</span>	}
+<span class="line-number">547</span>}
+<span class="line-number">548</span>
+<span class="line-number">549</span>ENTITIES_ROW_COUNT :: 16
+<span class="line-number">550</span>ENTITIES_COLUMN_COUNT :: 16
+<span class="line-number">551</span>ENTITIES_WIDTH :: 16
+<span class="line-number">552</span>ENTITIES_HEIGHT :: 16
+<span class="line-number">553</span>
+<span class="line-number">554</span>Scene :: struct {
+<span class="line-number">555</span>	window_id:          u32,
+<span class="line-number">556</span>	gc_id:              u32,
+<span class="line-number">557</span>	sprite_pixmap_id:   u32,
+<span class="line-number">558</span>	displayed_entities: [ENTITIES_ROW_COUNT * ENTITIES_COLUMN_COUNT]Entity_kind,
+<span class="line-number">559</span>	// TODO: Bitfield?
+<span class="line-number">560</span>	mines:              [ENTITIES_ROW_COUNT * ENTITIES_COLUMN_COUNT]bool,
+<span class="line-number">561</span>}
+<span class="line-number">562</span>
+<span class="line-number">563</span>wait_for_x11_events :: proc(socket: os.Socket, scene: ^Scene) {
+<span class="line-number">564</span>	GenericEvent :: struct #packed {
+<span class="line-number">565</span>		code: u8,
+<span class="line-number">566</span>		pad:  [31]u8,
+<span class="line-number">567</span>	}
+<span class="line-number">568</span>	assert(size_of(GenericEvent) == 32)
+<span class="line-number">569</span>
+<span class="line-number">570</span>	KeyReleaseEvent :: struct #packed {
+<span class="line-number">571</span>		code:            u8,
+<span class="line-number">572</span>		detail:          u8,
+<span class="line-number">573</span>		sequence_number: u16,
+<span class="line-number">574</span>		time:            u32,
+<span class="line-number">575</span>		root_id:         u32,
+<span class="line-number">576</span>		event:           u32,
+<span class="line-number">577</span>		child_id:        u32,
+<span class="line-number">578</span>		root_x:          u16,
+<span class="line-number">579</span>		root_y:          u16,
+<span class="line-number">580</span>		event_x:         u16,
+<span class="line-number">581</span>		event_y:         u16,
+<span class="line-number">582</span>		state:           u16,
+<span class="line-number">583</span>		same_screen:     bool,
+<span class="line-number">584</span>		pad1:            u8,
+<span class="line-number">585</span>	}
+<span class="line-number">586</span>	assert(size_of(KeyReleaseEvent) == 32)
+<span class="line-number">587</span>
+<span class="line-number">588</span>	ButtonReleaseEvent :: struct #packed {
+<span class="line-number">589</span>		code:        u8,
+<span class="line-number">590</span>		detail:      u8,
+<span class="line-number">591</span>		seq_number:  u16,
+<span class="line-number">592</span>		timestamp:   u32,
+<span class="line-number">593</span>		root:        u32,
+<span class="line-number">594</span>		event:       u32,
+<span class="line-number">595</span>		child:       u32,
+<span class="line-number">596</span>		root_x:      u16,
+<span class="line-number">597</span>		root_y:      u16,
+<span class="line-number">598</span>		event_x:     u16,
+<span class="line-number">599</span>		event_y:     u16,
+<span class="line-number">600</span>		state:       u16,
+<span class="line-number">601</span>		same_screen: bool,
+<span class="line-number">602</span>		pad1:        u8,
+<span class="line-number">603</span>	}
+<span class="line-number">604</span>	assert(size_of(ButtonReleaseEvent) == 32)
+<span class="line-number">605</span>
+<span class="line-number">606</span>	EVENT_EXPOSURE: u8 : 0xc
+<span class="line-number">607</span>	EVENT_KEY_RELEASE: u8 : 0x3
+<span class="line-number">608</span>	EVENT_BUTTON_RELEASE: u8 : 0x5
+<span class="line-number">609</span>
+<span class="line-number">610</span>	KEYCODE_ENTER: u8 : 36
+<span class="line-number">611</span>
+<span class="line-number">612</span>	for {
+<span class="line-number">613</span>		generic_event := GenericEvent{}
+<span class="line-number">614</span>		n_recv, err := os.recv(socket, mem.ptr_to_bytes(&amp;generic_event), 0)
+<span class="line-number">615</span>		if err == os.EPIPE || n_recv == 0 {
+<span class="line-number">616</span>			os.exit(0) // The end.
+<span class="line-number">617</span>		}
+<span class="line-number">618</span>
+<span class="line-number">619</span>		assert(err == os.ERROR_NONE)
+<span class="line-number">620</span>		assert(n_recv == size_of(GenericEvent))
+<span class="line-number">621</span>
+<span class="line-number">622</span>		switch generic_event.code {
+<span class="line-number">623</span>		case EVENT_EXPOSURE:
+<span class="line-number">624</span>			render(socket, scene)
+<span class="line-number">625</span>
+<span class="line-number">626</span>		case EVENT_KEY_RELEASE:
+<span class="line-number">627</span>			event := transmute(KeyReleaseEvent)generic_event
+<span class="line-number">628</span>			if event.detail == KEYCODE_ENTER {
+<span class="line-number">629</span>				reset(scene)
+<span class="line-number">630</span>				render(socket, scene)
+<span class="line-number">631</span>			}
+<span class="line-number">632</span>
+<span class="line-number">633</span>		case EVENT_BUTTON_RELEASE:
+<span class="line-number">634</span>			event := transmute(ButtonReleaseEvent)generic_event
+<span class="line-number">635</span>			on_cell_clicked(event.event_x, event.event_y, scene)
+<span class="line-number">636</span>			render(socket, scene)
+<span class="line-number">637</span>		}
+<span class="line-number">638</span>	}
+<span class="line-number">639</span>}
+<span class="line-number">640</span>
+<span class="line-number">641</span>reset :: proc(scene: ^Scene) {
+<span class="line-number">642</span>	for &amp;entity in scene.displayed_entities {
+<span class="line-number">643</span>		entity = .Covered
+<span class="line-number">644</span>	}
+<span class="line-number">645</span>
+<span class="line-number">646</span>	for &amp;mine in scene.mines {
+<span class="line-number">647</span>		mine = rand.choice([]bool{true, false, false, false})
+<span class="line-number">648</span>	}
+<span class="line-number">649</span>}
+<span class="line-number">650</span>
+<span class="line-number">651</span>x11_copy_area :: proc(
+<span class="line-number">652</span>	socket: os.Socket,
+<span class="line-number">653</span>	src_id: u32,
+<span class="line-number">654</span>	dst_id: u32,
+<span class="line-number">655</span>	gc_id: u32,
+<span class="line-number">656</span>	src_x: u16,
+<span class="line-number">657</span>	src_y: u16,
+<span class="line-number">658</span>	dst_x: u16,
+<span class="line-number">659</span>	dst_y: u16,
+<span class="line-number">660</span>	width: u16,
+<span class="line-number">661</span>	height: u16,
+<span class="line-number">662</span>) {
+<span class="line-number">663</span>	opcode: u8 : 62
+<span class="line-number">664</span>	Request :: struct #packed {
+<span class="line-number">665</span>		opcode:         u8,
+<span class="line-number">666</span>		pad1:           u8,
+<span class="line-number">667</span>		request_length: u16,
+<span class="line-number">668</span>		src_id:         u32,
+<span class="line-number">669</span>		dst_id:         u32,
+<span class="line-number">670</span>		gc_id:          u32,
+<span class="line-number">671</span>		src_x:          u16,
+<span class="line-number">672</span>		src_y:          u16,
+<span class="line-number">673</span>		dst_x:          u16,
+<span class="line-number">674</span>		dst_y:          u16,
+<span class="line-number">675</span>		width:          u16,
+<span class="line-number">676</span>		height:         u16,
+<span class="line-number">677</span>	}
+<span class="line-number">678</span>
+<span class="line-number">679</span>	request := Request {
+<span class="line-number">680</span>		opcode         = opcode,
+<span class="line-number">681</span>		request_length = 7,
+<span class="line-number">682</span>		src_id         = src_id,
+<span class="line-number">683</span>		dst_id         = dst_id,
+<span class="line-number">684</span>		gc_id          = gc_id,
+<span class="line-number">685</span>		src_x          = src_x,
+<span class="line-number">686</span>		src_y          = src_y,
+<span class="line-number">687</span>		dst_x          = dst_x,
+<span class="line-number">688</span>		dst_y          = dst_y,
+<span class="line-number">689</span>		width          = width,
+<span class="line-number">690</span>		height         = height,
+<span class="line-number">691</span>	}
+<span class="line-number">692</span>	{
+<span class="line-number">693</span>		n_sent, err := os.send(socket, mem.ptr_to_bytes(&amp;request), 0)
+<span class="line-number">694</span>		assert(err == os.ERROR_NONE)
+<span class="line-number">695</span>		assert(n_sent == size_of(Request))
+<span class="line-number">696</span>	}
+<span class="line-number">697</span>}
+<span class="line-number">698</span>
+<span class="line-number">699</span>on_cell_clicked :: proc(x: u16, y: u16, scene: ^Scene) {
+<span class="line-number">700</span>	idx, row, column := locate_entity_by_coordinate(x, y)
+<span class="line-number">701</span>
+<span class="line-number">702</span>	mined := scene.mines[idx]
+<span class="line-number">703</span>
+<span class="line-number">704</span>	if mined {
+<span class="line-number">705</span>		scene.displayed_entities[idx] = .Mine_exploded
+<span class="line-number">706</span>		// Lose.
+<span class="line-number">707</span>		uncover_all_cells(&amp;scene.displayed_entities, &amp;scene.mines, .Mine_exploded)
+<span class="line-number">708</span>	} else {
+<span class="line-number">709</span>		visited := [ENTITIES_COLUMN_COUNT * ENTITIES_ROW_COUNT]bool{}
+<span class="line-number">710</span>		uncover_cells_flood_fill(row, column, &amp;scene.displayed_entities, &amp;scene.mines, &amp;visited)
+<span class="line-number">711</span>
+<span class="line-number">712</span>		// Win.
+<span class="line-number">713</span>		if count_remaining_goals(scene.displayed_entities, scene.mines) == 0 {
+<span class="line-number">714</span>			uncover_all_cells(&amp;scene.displayed_entities, &amp;scene.mines, .Mine_idle)
+<span class="line-number">715</span>		}
+<span class="line-number">716</span>	}
+<span class="line-number">717</span>}
+<span class="line-number">718</span>
+<span class="line-number">719</span>count_remaining_goals :: proc(
+<span class="line-number">720</span>	displayed_entities: [ENTITIES_COLUMN_COUNT * ENTITIES_ROW_COUNT]Entity_kind,
+<span class="line-number">721</span>	mines: [ENTITIES_COLUMN_COUNT * ENTITIES_ROW_COUNT]bool,
+<span class="line-number">722</span>) -&gt; int {
+<span class="line-number">723</span>
+<span class="line-number">724</span>	covered := 0
+<span class="line-number">725</span>
+<span class="line-number">726</span>	for entity in displayed_entities {
+<span class="line-number">727</span>		covered += cast(int)(entity == .Covered)
+<span class="line-number">728</span>	}
+<span class="line-number">729</span>
+<span class="line-number">730</span>	mines_count := 0
+<span class="line-number">731</span>
+<span class="line-number">732</span>	for mine in mines {
+<span class="line-number">733</span>		mines_count += cast(int)mine
+<span class="line-number">734</span>	}
+<span class="line-number">735</span>
+<span class="line-number">736</span>	return covered - mines_count
+<span class="line-number">737</span>}
+<span class="line-number">738</span>
+<span class="line-number">739</span>uncover_all_cells :: proc(
+<span class="line-number">740</span>	displayed_entities: ^[ENTITIES_COLUMN_COUNT * ENTITIES_ROW_COUNT]Entity_kind,
+<span class="line-number">741</span>	mines: ^[ENTITIES_ROW_COUNT * ENTITIES_COLUMN_COUNT]bool,
+<span class="line-number">742</span>	shown_mine: Entity_kind,
+<span class="line-number">743</span>) {
+<span class="line-number">744</span>	for &amp;entity, i in displayed_entities {
+<span class="line-number">745</span>		if mines[i] {
+<span class="line-number">746</span>			entity = shown_mine
+<span class="line-number">747</span>		} else {
+<span class="line-number">748</span>			row, column := idx_to_row_column(i)
+<span class="line-number">749</span>			mines_around_count := count_mines_around_cell(row, column, mines[:])
+<span class="line-number">750</span>			assert(mines_around_count &lt;= 8)
+<span class="line-number">751</span>
+<span class="line-number">752</span>			entity = cast(Entity_kind)(cast(int)Entity_kind.Uncovered_0 + mines_around_count)
+<span class="line-number">753</span>		}
+<span class="line-number">754</span>	}
+<span class="line-number">755</span>}
+<span class="line-number">756</span>
+<span class="line-number">757</span>uncover_cells_flood_fill :: proc(
+<span class="line-number">758</span>	row: int,
+<span class="line-number">759</span>	column: int,
+<span class="line-number">760</span>	displayed_entities: ^[ENTITIES_COLUMN_COUNT * ENTITIES_ROW_COUNT]Entity_kind,
+<span class="line-number">761</span>	mines: ^[ENTITIES_ROW_COUNT * ENTITIES_COLUMN_COUNT]bool,
+<span class="line-number">762</span>	visited: ^[ENTITIES_COLUMN_COUNT * ENTITIES_ROW_COUNT]bool,
+<span class="line-number">763</span>) {
+<span class="line-number">764</span>	i := row_column_to_idx(row, column)
+<span class="line-number">765</span>	if visited[i] {return}
+<span class="line-number">766</span>
+<span class="line-number">767</span>	visited[i] = true
+<span class="line-number">768</span>
+<span class="line-number">769</span>	// Do not uncover covered mines.
+<span class="line-number">770</span>	if mines[i] {return}
+<span class="line-number">771</span>
+<span class="line-number">772</span>	if displayed_entities[i] != .Covered {return}
+<span class="line-number">773</span>
+<span class="line-number">774</span>	// Uncover cell.
+<span class="line-number">775</span>
+<span class="line-number">776</span>	mines_around_count := count_mines_around_cell(row, column, mines[:])
+<span class="line-number">777</span>	assert(mines_around_count &lt;= 8)
+<span class="line-number">778</span>
+<span class="line-number">779</span>	displayed_entities[i] =
+<span class="line-number">780</span>	cast(Entity_kind)(cast(int)Entity_kind.Uncovered_0 + mines_around_count)
+<span class="line-number">781</span>
+<span class="line-number">782</span>	// Uncover neighbors.
+<span class="line-number">783</span>
+<span class="line-number">784</span>	// Up.
+<span class="line-number">785</span>	if !(row == 0) {
+<span class="line-number">786</span>		uncover_cells_flood_fill(row - 1, column, displayed_entities, mines, visited)
+<span class="line-number">787</span>	}
+<span class="line-number">788</span>
+<span class="line-number">789</span>	// Right
+<span class="line-number">790</span>	if !(column == (ENTITIES_COLUMN_COUNT - 1)) {
+<span class="line-number">791</span>		uncover_cells_flood_fill(row, column + 1, displayed_entities, mines, visited)
+<span class="line-number">792</span>	}
+<span class="line-number">793</span>
+<span class="line-number">794</span>	// Bottom.
+<span class="line-number">795</span>	if !(row == (ENTITIES_ROW_COUNT - 1)) {
+<span class="line-number">796</span>		uncover_cells_flood_fill(row + 1, column, displayed_entities, mines, visited)
+<span class="line-number">797</span>	}
+<span class="line-number">798</span>
+<span class="line-number">799</span>	// Left.
+<span class="line-number">800</span>	if !(column == 0) {
+<span class="line-number">801</span>		uncover_cells_flood_fill(row, column - 1, displayed_entities, mines, visited)
+<span class="line-number">802</span>	}
+<span class="line-number">803</span>}
+<span class="line-number">804</span>
+<span class="line-number">805</span>idx_to_row_column :: #force_inline proc(i: int) -&gt; (int, int) {
+<span class="line-number">806</span>	column := i % ENTITIES_COLUMN_COUNT
+<span class="line-number">807</span>	row := i / ENTITIES_ROW_COUNT
+<span class="line-number">808</span>
+<span class="line-number">809</span>	return row, column
+<span class="line-number">810</span>}
+<span class="line-number">811</span>
+<span class="line-number">812</span>row_column_to_idx :: #force_inline proc(row: int, column: int) -&gt; int {
+<span class="line-number">813</span>	return cast(int)row * ENTITIES_COLUMN_COUNT + cast(int)column
+<span class="line-number">814</span>}
+<span class="line-number">815</span>
+<span class="line-number">816</span>count_mines_around_cell :: proc(row: int, column: int, displayed_entities: []bool) -&gt; int {
+<span class="line-number">817</span>	// TODO: Pad the border to elide all bound checks?
+<span class="line-number">818</span>
+<span class="line-number">819</span>	up_left :=
+<span class="line-number">820</span>		row == 0 || column == 0 \
+<span class="line-number">821</span>		? false \
+<span class="line-number">822</span>		: displayed_entities[row_column_to_idx(row - 1, column - 1)]
+<span class="line-number">823</span>	up := row == 0 ? false : displayed_entities[row_column_to_idx(row - 1, column)]
+<span class="line-number">824</span>	up_right :=
+<span class="line-number">825</span>		row == 0 || column == (ENTITIES_COLUMN_COUNT - 1) \
+<span class="line-number">826</span>		? false \
+<span class="line-number">827</span>		: displayed_entities[row_column_to_idx(row - 1, column + 1)]
+<span class="line-number">828</span>	right :=
+<span class="line-number">829</span>		column == (ENTITIES_COLUMN_COUNT - 1) \
+<span class="line-number">830</span>		? false \
+<span class="line-number">831</span>		: displayed_entities[row_column_to_idx(row, column + 1)]
+<span class="line-number">832</span>	bottom_right :=
+<span class="line-number">833</span>		row == (ENTITIES_ROW_COUNT - 1) || column == (ENTITIES_COLUMN_COUNT - 1) \
+<span class="line-number">834</span>		? false \
+<span class="line-number">835</span>		: displayed_entities[row_column_to_idx(row + 1, column + 1)]
+<span class="line-number">836</span>	bottom :=
+<span class="line-number">837</span>		row == (ENTITIES_ROW_COUNT - 1) \
+<span class="line-number">838</span>		? false \
+<span class="line-number">839</span>		: displayed_entities[row_column_to_idx(row + 1, column)]
+<span class="line-number">840</span>	bottom_left :=
+<span class="line-number">841</span>		column == 0 || row == (ENTITIES_COLUMN_COUNT - 1) \
+<span class="line-number">842</span>		? false \
+<span class="line-number">843</span>		: displayed_entities[row_column_to_idx(row + 1, column - 1)]
+<span class="line-number">844</span>	left := column == 0 ? false : displayed_entities[row_column_to_idx(row, column - 1)]
+<span class="line-number">845</span>
+<span class="line-number">846</span>
+<span class="line-number">847</span>	return(
+<span class="line-number">848</span>		cast(int)up_left +
+<span class="line-number">849</span>		cast(int)up +
+<span class="line-number">850</span>		cast(int)up_right +
+<span class="line-number">851</span>		cast(int)right +
+<span class="line-number">852</span>		cast(int)bottom_right +
+<span class="line-number">853</span>		cast(int)bottom +
+<span class="line-number">854</span>		cast(int)bottom_left +
+<span class="line-number">855</span>		cast(int)left \
+<span class="line-number">856</span>	)
+<span class="line-number">857</span>}
+<span class="line-number">858</span>
+<span class="line-number">859</span>locate_entity_by_coordinate :: proc(win_x: u16, win_y: u16) -&gt; (idx: int, row: int, column: int) {
+<span class="line-number">860</span>	column = cast(int)win_x / ENTITIES_WIDTH
+<span class="line-number">861</span>	row = cast(int)win_y / ENTITIES_HEIGHT
+<span class="line-number">862</span>
+<span class="line-number">863</span>	idx = row_column_to_idx(row, column)
+<span class="line-number">864</span>
+<span class="line-number">865</span>	return idx, row, column
+<span class="line-number">866</span>}
+<span class="line-number">867</span>
+<span class="line-number">868</span>x11_create_pixmap :: proc(
+<span class="line-number">869</span>	socket: os.Socket,
+<span class="line-number">870</span>	window_id: u32,
+<span class="line-number">871</span>	pixmap_id: u32,
+<span class="line-number">872</span>	width: u16,
+<span class="line-number">873</span>	height: u16,
+<span class="line-number">874</span>	depth: u8,
+<span class="line-number">875</span>) {
+<span class="line-number">876</span>	opcode: u8 : 53
+<span class="line-number">877</span>
+<span class="line-number">878</span>	Request :: struct #packed {
+<span class="line-number">879</span>		opcode:         u8,
+<span class="line-number">880</span>		depth:          u8,
+<span class="line-number">881</span>		request_length: u16,
+<span class="line-number">882</span>		pixmap_id:      u32,
+<span class="line-number">883</span>		drawable_id:    u32,
+<span class="line-number">884</span>		width:          u16,
+<span class="line-number">885</span>		height:         u16,
+<span class="line-number">886</span>	}
+<span class="line-number">887</span>
+<span class="line-number">888</span>	request := Request {
+<span class="line-number">889</span>		opcode         = opcode,
+<span class="line-number">890</span>		depth          = depth,
+<span class="line-number">891</span>		request_length = 4,
+<span class="line-number">892</span>		pixmap_id      = pixmap_id,
+<span class="line-number">893</span>		drawable_id    = window_id,
+<span class="line-number">894</span>		width          = width,
+<span class="line-number">895</span>		height         = height,
+<span class="line-number">896</span>	}
+<span class="line-number">897</span>
+<span class="line-number">898</span>	{
+<span class="line-number">899</span>		n_sent, err := os.send(socket, mem.ptr_to_bytes(&amp;request), 0)
+<span class="line-number">900</span>		assert(err == os.ERROR_NONE)
+<span class="line-number">901</span>		assert(n_sent == size_of(Request))
+<span class="line-number">902</span>	}
+<span class="line-number">903</span>}
+<span class="line-number">904</span>
+<span class="line-number">905</span>main :: proc() {
+<span class="line-number">906</span>	png_data := #load(&quot;sprite.png&quot;)
+<span class="line-number">907</span>	sprite, err := png.load_from_bytes(png_data, {})
+<span class="line-number">908</span>	assert(err == nil)
+<span class="line-number">909</span>	sprite_data := make([]u8, sprite.height * sprite.width * 4)
+<span class="line-number">910</span>
+<span class="line-number">911</span>	// Convert the image format from the sprite (RGB) into the X11 image format (BGRX).
+<span class="line-number">912</span>	for i := 0; i &lt; sprite.height * sprite.width - 3; i += 1 {
+<span class="line-number">913</span>		sprite_data[i * 4 + 0] = sprite.pixels.buf[i * 3 + 2] // R -&gt; B
+<span class="line-number">914</span>		sprite_data[i * 4 + 1] = sprite.pixels.buf[i * 3 + 1] // G -&gt; G
+<span class="line-number">915</span>		sprite_data[i * 4 + 2] = sprite.pixels.buf[i * 3 + 0] // B -&gt; R
+<span class="line-number">916</span>		sprite_data[i * 4 + 3] = 0 // pad
+<span class="line-number">917</span>	}
+<span class="line-number">918</span>
+<span class="line-number">919</span>	auth_token, _ := load_x11_auth_token(context.temp_allocator)
+<span class="line-number">920</span>
+<span class="line-number">921</span>	socket := connect_x11_socket()
+<span class="line-number">922</span>	connection_information := x11_handshake(socket, &amp;auth_token)
+<span class="line-number">923</span>
+<span class="line-number">924</span>	gc_id := next_x11_id(0, connection_information)
+<span class="line-number">925</span>	x11_create_graphical_context(socket, gc_id, connection_information.root_screen.id)
+<span class="line-number">926</span>
+<span class="line-number">927</span>	window_id := next_x11_id(gc_id, connection_information)
+<span class="line-number">928</span>	x11_create_window(
+<span class="line-number">929</span>		socket,
+<span class="line-number">930</span>		window_id,
+<span class="line-number">931</span>		connection_information.root_screen.id,
+<span class="line-number">932</span>		200,
+<span class="line-number">933</span>		200,
+<span class="line-number">934</span>		ENTITIES_COLUMN_COUNT * ENTITIES_WIDTH,
+<span class="line-number">935</span>		ENTITIES_ROW_COUNT * ENTITIES_HEIGHT,
+<span class="line-number">936</span>		connection_information.root_screen.root_visual_id,
+<span class="line-number">937</span>	)
+<span class="line-number">938</span>
+<span class="line-number">939</span>	img_depth: u8 = 24
+<span class="line-number">940</span>	pixmap_id := next_x11_id(window_id, connection_information)
+<span class="line-number">941</span>	x11_create_pixmap(
+<span class="line-number">942</span>		socket,
+<span class="line-number">943</span>		window_id,
+<span class="line-number">944</span>		pixmap_id,
+<span class="line-number">945</span>		cast(u16)sprite.width,
+<span class="line-number">946</span>		cast(u16)sprite.height,
+<span class="line-number">947</span>		img_depth,
+<span class="line-number">948</span>	)
+<span class="line-number">949</span>	scene := Scene {
+<span class="line-number">950</span>		window_id        = window_id,
+<span class="line-number">951</span>		gc_id            = gc_id,
+<span class="line-number">952</span>		sprite_pixmap_id = pixmap_id,
+<span class="line-number">953</span>	}
+<span class="line-number">954</span>	reset(&amp;scene)
+<span class="line-number">955</span>
+<span class="line-number">956</span>	x11_put_image(
+<span class="line-number">957</span>		socket,
+<span class="line-number">958</span>		scene.sprite_pixmap_id,
+<span class="line-number">959</span>		scene.gc_id,
+<span class="line-number">960</span>		cast(u16)sprite.width,
+<span class="line-number">961</span>		cast(u16)sprite.height,
+<span class="line-number">962</span>		0,
+<span class="line-number">963</span>		0,
+<span class="line-number">964</span>		img_depth,
+<span class="line-number">965</span>		sprite_data,
+<span class="line-number">966</span>	)
+<span class="line-number">967</span>
+<span class="line-number">968</span>	x11_map_window(socket, window_id)
+<span class="line-number">969</span>
+<span class="line-number">970</span>	wait_for_x11_events(socket, &amp;scene)
+<span class="line-number">971</span>}
+<span class="line-number">972</span>
+<span class="line-number">973</span>
+<span class="line-number">974</span>@(test)
+<span class="line-number">975</span>test_round_up_4 :: proc(_: ^testing.T) {
+<span class="line-number">976</span>	assert(round_up_4(0) == 0)
+<span class="line-number">977</span>	assert(round_up_4(1) == 4)
+<span class="line-number">978</span>	assert(round_up_4(2) == 4)
+<span class="line-number">979</span>	assert(round_up_4(3) == 4)
+<span class="line-number">980</span>	assert(round_up_4(4) == 4)
+<span class="line-number">981</span>	assert(round_up_4(5) == 8)
+<span class="line-number">982</span>	assert(round_up_4(6) == 8)
+<span class="line-number">983</span>	assert(round_up_4(7) == 8)
+<span class="line-number">984</span>	assert(round_up_4(8) == 8)
+<span class="line-number">985</span>}
+<span class="line-number">986</span>
+<span class="line-number">987</span>@(test)
+<span class="line-number">988</span>test_count_mines_around_cell :: proc(_: ^testing.T) {
+<span class="line-number">989</span>	{
+<span class="line-number">990</span>		mines := [ENTITIES_ROW_COUNT * ENTITIES_COLUMN_COUNT]bool{}
+<span class="line-number">991</span>		mines[row_column_to_idx(0, 0)] = true
+<span class="line-number">992</span>		mines[row_column_to_idx(0, 1)] = true
+<span class="line-number">993</span>		mines[row_column_to_idx(0, 2)] = true
+<span class="line-number">994</span>		mines[row_column_to_idx(1, 2)] = true
+<span class="line-number">995</span>		mines[row_column_to_idx(2, 2)] = true
+<span class="line-number">996</span>		mines[row_column_to_idx(2, 1)] = true
+<span class="line-number">997</span>		mines[row_column_to_idx(2, 0)] = true
+<span class="line-number">998</span>		mines[row_column_to_idx(1, 0)] = true
+<span class="line-number">999</span>
+<span class="line-number">1000</span>		assert(count_mines_around_cell(1, 1, mines[:]) == 8)
+<span class="line-number">1001</span>	}
+<span class="line-number">1002</span>}
 </code></pre>
 </details>
 <p><a href="/blog"> ⏴ Back to all articles</a></p>

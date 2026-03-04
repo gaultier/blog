@@ -11,9 +11,9 @@ Do not edit it by hand.
 <link type="application/atom+xml" href="/blog/feed.xml" rel="self">
 <link rel="shortcut icon" type="image/ico" href="/blog/favicon.ico">
 <link rel="stylesheet" type="text/css" href="main.css">
-<link rel="stylesheet" href="https://unpkg.com/@highlightjs/cdn-assets@11.8.0/styles/default.min.css">
-<script src="highlight.min.js" defer></script>
-<script src="x86asm.min.js" defer></script>
+<!-- <link rel="stylesheet" href="https://unpkg.com/@highlightjs/cdn-assets@11.8.0/styles/default.min.css"> -->
+<!-- <script src="highlight.min.js" defer></script> -->
+<!-- <script src="x86asm.min.js" defer></script> -->
 <script src="main.js" defer></script>
 <script type="module" src="search.js" async></script>
 </head>
@@ -179,29 +179,34 @@ The same goes for extension protocols: they simply are one XML file that is turn
 <li>The protocols we will use are stable so the numeric values on the wire should not change underneath us, but in the unlikely event they do, we simply have to fix them in our code and compile again.</li>
 </ul>
 <p>So at this point you might be thinking: this is going to be so much work! Well, not really. Here are <strong>all</strong> of the Wayland protocol numeric values we will need, including the extension protocols:</p>
-<pre><code class="language-c">static const uint32_t wayland_display_object_id = 1;
-static const uint16_t wayland_wl_registry_event_global = 0;
-static const uint16_t wayland_shm_pool_event_format = 0;
-static const uint16_t wayland_wl_buffer_event_release = 0;
-static const uint16_t wayland_xdg_wm_base_event_ping = 0;
-static const uint16_t wayland_xdg_toplevel_event_configure = 0;
-static const uint16_t wayland_xdg_toplevel_event_close = 1;
-static const uint16_t wayland_xdg_surface_event_configure = 0;
-static const uint16_t wayland_wl_display_get_registry_opcode = 1;
-static const uint16_t wayland_wl_registry_bind_opcode = 0;
-static const uint16_t wayland_wl_compositor_create_surface_opcode = 0;
-static const uint16_t wayland_xdg_wm_base_pong_opcode = 3;
-static const uint16_t wayland_xdg_surface_ack_configure_opcode = 4;
-static const uint16_t wayland_wl_shm_create_pool_opcode = 0;
-static const uint16_t wayland_xdg_wm_base_get_xdg_surface_opcode = 2;
-static const uint16_t wayland_wl_shm_pool_create_buffer_opcode = 0;
-static const uint16_t wayland_wl_surface_attach_opcode = 1;
-static const uint16_t wayland_xdg_surface_get_toplevel_opcode = 1;
-static const uint16_t wayland_wl_surface_commit_opcode = 6;
-static const uint16_t wayland_wl_display_error_event = 0;
-static const uint32_t wayland_format_xrgb8888 = 1;
-static const uint32_t wayland_header_size = 8;
-static const uint32_t color_channels = 4;
+<pre>
+  <div class="code-header">
+    <span>C</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-c"><span class="line-number">0</span>static const uint32_t wayland_display_object_id = 1;
+<span class="line-number">1</span>static const uint16_t wayland_wl_registry_event_global = 0;
+<span class="line-number">2</span>static const uint16_t wayland_shm_pool_event_format = 0;
+<span class="line-number">3</span>static const uint16_t wayland_wl_buffer_event_release = 0;
+<span class="line-number">4</span>static const uint16_t wayland_xdg_wm_base_event_ping = 0;
+<span class="line-number">5</span>static const uint16_t wayland_xdg_toplevel_event_configure = 0;
+<span class="line-number">6</span>static const uint16_t wayland_xdg_toplevel_event_close = 1;
+<span class="line-number">7</span>static const uint16_t wayland_xdg_surface_event_configure = 0;
+<span class="line-number">8</span>static const uint16_t wayland_wl_display_get_registry_opcode = 1;
+<span class="line-number">9</span>static const uint16_t wayland_wl_registry_bind_opcode = 0;
+<span class="line-number">10</span>static const uint16_t wayland_wl_compositor_create_surface_opcode = 0;
+<span class="line-number">11</span>static const uint16_t wayland_xdg_wm_base_pong_opcode = 3;
+<span class="line-number">12</span>static const uint16_t wayland_xdg_surface_ack_configure_opcode = 4;
+<span class="line-number">13</span>static const uint16_t wayland_wl_shm_create_pool_opcode = 0;
+<span class="line-number">14</span>static const uint16_t wayland_xdg_wm_base_get_xdg_surface_opcode = 2;
+<span class="line-number">15</span>static const uint16_t wayland_wl_shm_pool_create_buffer_opcode = 0;
+<span class="line-number">16</span>static const uint16_t wayland_wl_surface_attach_opcode = 1;
+<span class="line-number">17</span>static const uint16_t wayland_xdg_surface_get_toplevel_opcode = 1;
+<span class="line-number">18</span>static const uint16_t wayland_wl_surface_commit_opcode = 6;
+<span class="line-number">19</span>static const uint16_t wayland_wl_display_error_event = 0;
+<span class="line-number">20</span>static const uint32_t wayland_format_xrgb8888 = 1;
+<span class="line-number">21</span>static const uint32_t wayland_header_size = 8;
+<span class="line-number">22</span>static const uint32_t color_channels = 4;
 </code></pre>
 <p>So, not that much!</p>
 <h2 id="opening-a-socket">
@@ -216,50 +221,55 @@ static const uint32_t color_channels = 4;
 <li>Otherwise, fail</li>
 </ul>
 <p>Here goes, along with two utility macros we'll use everywhere:</p>
-<pre><code class="language-c">#define cstring_len(s) (sizeof(s) - 1)
-
-#define roundup_4(n) (((n) + 3) &amp; -4)
-
-static int wayland_display_connect() {
-  char *xdg_runtime_dir = getenv(&quot;XDG_RUNTIME_DIR&quot;);
-  if (xdg_runtime_dir == NULL)
-    return EINVAL;
-
-  uint64_t xdg_runtime_dir_len = strlen(xdg_runtime_dir);
-
-  struct sockaddr_un addr = {.sun_family = AF_UNIX};
-  assert(xdg_runtime_dir_len &lt;= cstring_len(addr.sun_path));
-  uint64_t socket_path_len = 0;
-
-  memcpy(addr.sun_path, xdg_runtime_dir, xdg_runtime_dir_len);
-  socket_path_len += xdg_runtime_dir_len;
-
-  addr.sun_path[socket_path_len++] = '/';
-
-  char *wayland_display = getenv(&quot;WAYLAND_DISPLAY&quot;);
-  if (wayland_display == NULL) {
-    char wayland_display_default[] = &quot;wayland-0&quot;;
-    uint64_t wayland_display_default_len = cstring_len(wayland_display_default);
-
-    memcpy(addr.sun_path + socket_path_len, wayland_display_default,
-           wayland_display_default_len);
-    socket_path_len += wayland_display_default_len;
-  } else {
-    uint64_t wayland_display_len = strlen(wayland_display);
-    memcpy(addr.sun_path + socket_path_len, wayland_display,
-           wayland_display_len);
-    socket_path_len += wayland_display_len;
-  }
-
-  int fd = socket(AF_UNIX, SOCK_STREAM, 0);
-  if (fd == -1)
-    exit(errno);
-
-  if (connect(fd, (struct sockaddr *)&amp;addr, sizeof(addr)) == -1)
-    exit(errno);
-
-  return fd;
-}
+<pre>
+  <div class="code-header">
+    <span>C</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-c"><span class="line-number">0</span>#define cstring_len(s) (sizeof(s) - 1)
+<span class="line-number">1</span>
+<span class="line-number">2</span>#define roundup_4(n) (((n) + 3) &amp; -4)
+<span class="line-number">3</span>
+<span class="line-number">4</span>static int wayland_display_connect() {
+<span class="line-number">5</span>  char *xdg_runtime_dir = getenv(&quot;XDG_RUNTIME_DIR&quot;);
+<span class="line-number">6</span>  if (xdg_runtime_dir == NULL)
+<span class="line-number">7</span>    return EINVAL;
+<span class="line-number">8</span>
+<span class="line-number">9</span>  uint64_t xdg_runtime_dir_len = strlen(xdg_runtime_dir);
+<span class="line-number">10</span>
+<span class="line-number">11</span>  struct sockaddr_un addr = {.sun_family = AF_UNIX};
+<span class="line-number">12</span>  assert(xdg_runtime_dir_len &lt;= cstring_len(addr.sun_path));
+<span class="line-number">13</span>  uint64_t socket_path_len = 0;
+<span class="line-number">14</span>
+<span class="line-number">15</span>  memcpy(addr.sun_path, xdg_runtime_dir, xdg_runtime_dir_len);
+<span class="line-number">16</span>  socket_path_len += xdg_runtime_dir_len;
+<span class="line-number">17</span>
+<span class="line-number">18</span>  addr.sun_path[socket_path_len++] = '/';
+<span class="line-number">19</span>
+<span class="line-number">20</span>  char *wayland_display = getenv(&quot;WAYLAND_DISPLAY&quot;);
+<span class="line-number">21</span>  if (wayland_display == NULL) {
+<span class="line-number">22</span>    char wayland_display_default[] = &quot;wayland-0&quot;;
+<span class="line-number">23</span>    uint64_t wayland_display_default_len = cstring_len(wayland_display_default);
+<span class="line-number">24</span>
+<span class="line-number">25</span>    memcpy(addr.sun_path + socket_path_len, wayland_display_default,
+<span class="line-number">26</span>           wayland_display_default_len);
+<span class="line-number">27</span>    socket_path_len += wayland_display_default_len;
+<span class="line-number">28</span>  } else {
+<span class="line-number">29</span>    uint64_t wayland_display_len = strlen(wayland_display);
+<span class="line-number">30</span>    memcpy(addr.sun_path + socket_path_len, wayland_display,
+<span class="line-number">31</span>           wayland_display_len);
+<span class="line-number">32</span>    socket_path_len += wayland_display_len;
+<span class="line-number">33</span>  }
+<span class="line-number">34</span>
+<span class="line-number">35</span>  int fd = socket(AF_UNIX, SOCK_STREAM, 0);
+<span class="line-number">36</span>  if (fd == -1)
+<span class="line-number">37</span>    exit(errno);
+<span class="line-number">38</span>
+<span class="line-number">39</span>  if (connect(fd, (struct sockaddr *)&amp;addr, sizeof(addr)) == -1)
+<span class="line-number">40</span>    exit(errno);
+<span class="line-number">41</span>
+<span class="line-number">42</span>  return fd;
+<span class="line-number">43</span>}
 </code></pre>
 <p>In Wayland, there is no connection setup to do, such as sending some special messages, so there is nothing more to do.</p>
 <h2 id="creating-a-registry">
@@ -281,89 +291,99 @@ The sole argument takes 4 bytes and is this incremental number we keep track of 
 It does not necessarily have to be incremental, but that's what <code>libwayland</code> does and also it's the easiest.</p>
 <p>For convenience and efficiency, we always craft the message on the stack and do not allocate dynamic memory.</p>
 <p>We first introduce a few utility functions to read and write parts of messages:</p>
-<pre><code class="language-c">static void buf_write_u32(char *buf, uint64_t *buf_size, uint64_t buf_cap,
-                          uint32_t x) {
-  assert(*buf_size + sizeof(x) &lt;= buf_cap);
-  assert(((size_t)buf + *buf_size) % sizeof(x) == 0);
-
-  *(uint32_t *)(buf + *buf_size) = x;
-  *buf_size += sizeof(x);
-}
-
-static void buf_write_u16(char *buf, uint64_t *buf_size, uint64_t buf_cap,
-                          uint16_t x) {
-  assert(*buf_size + sizeof(x) &lt;= buf_cap);
-  assert(((size_t)buf + *buf_size) % sizeof(x) == 0);
-
-  *(uint16_t *)(buf + *buf_size) = x;
-  *buf_size += sizeof(x);
-}
-
-static void buf_write_string(char *buf, uint64_t *buf_size, uint64_t buf_cap,
-                             char *src, uint32_t src_len) {
-  assert(*buf_size + src_len &lt;= buf_cap);
-
-  buf_write_u32(buf, buf_size, buf_cap, src_len);
-  memcpy(buf + *buf_size, src, roundup_4(src_len));
-  *buf_size += roundup_4(src_len);
-}
-
-static uint32_t buf_read_u32(char **buf, uint64_t *buf_size) {
-  assert(*buf_size &gt;= sizeof(uint32_t));
-  assert((size_t)*buf % sizeof(uint32_t) == 0);
-
-  uint32_t res = *(uint32_t *)(*buf);
-  *buf += sizeof(res);
-  *buf_size -= sizeof(res);
-
-  return res;
-}
-
-static uint16_t buf_read_u16(char **buf, uint64_t *buf_size) {
-  assert(*buf_size &gt;= sizeof(uint16_t));
-  assert((size_t)*buf % sizeof(uint16_t) == 0);
-
-  uint16_t res = *(uint16_t *)(*buf);
-  *buf += sizeof(res);
-  *buf_size -= sizeof(res);
-
-  return res;
-}
-
-static void buf_read_n(char **buf, uint64_t *buf_size, char *dst, uint64_t n) {
-  assert(*buf_size &gt;= n);
-
-  memcpy(dst, *buf, n);
-
-  *buf += n;
-  *buf_size -= n;
-}
+<pre>
+  <div class="code-header">
+    <span>C</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-c"><span class="line-number">0</span>static void buf_write_u32(char *buf, uint64_t *buf_size, uint64_t buf_cap,
+<span class="line-number">1</span>                          uint32_t x) {
+<span class="line-number">2</span>  assert(*buf_size + sizeof(x) &lt;= buf_cap);
+<span class="line-number">3</span>  assert(((size_t)buf + *buf_size) % sizeof(x) == 0);
+<span class="line-number">4</span>
+<span class="line-number">5</span>  *(uint32_t *)(buf + *buf_size) = x;
+<span class="line-number">6</span>  *buf_size += sizeof(x);
+<span class="line-number">7</span>}
+<span class="line-number">8</span>
+<span class="line-number">9</span>static void buf_write_u16(char *buf, uint64_t *buf_size, uint64_t buf_cap,
+<span class="line-number">10</span>                          uint16_t x) {
+<span class="line-number">11</span>  assert(*buf_size + sizeof(x) &lt;= buf_cap);
+<span class="line-number">12</span>  assert(((size_t)buf + *buf_size) % sizeof(x) == 0);
+<span class="line-number">13</span>
+<span class="line-number">14</span>  *(uint16_t *)(buf + *buf_size) = x;
+<span class="line-number">15</span>  *buf_size += sizeof(x);
+<span class="line-number">16</span>}
+<span class="line-number">17</span>
+<span class="line-number">18</span>static void buf_write_string(char *buf, uint64_t *buf_size, uint64_t buf_cap,
+<span class="line-number">19</span>                             char *src, uint32_t src_len) {
+<span class="line-number">20</span>  assert(*buf_size + src_len &lt;= buf_cap);
+<span class="line-number">21</span>
+<span class="line-number">22</span>  buf_write_u32(buf, buf_size, buf_cap, src_len);
+<span class="line-number">23</span>  memcpy(buf + *buf_size, src, roundup_4(src_len));
+<span class="line-number">24</span>  *buf_size += roundup_4(src_len);
+<span class="line-number">25</span>}
+<span class="line-number">26</span>
+<span class="line-number">27</span>static uint32_t buf_read_u32(char **buf, uint64_t *buf_size) {
+<span class="line-number">28</span>  assert(*buf_size &gt;= sizeof(uint32_t));
+<span class="line-number">29</span>  assert((size_t)*buf % sizeof(uint32_t) == 0);
+<span class="line-number">30</span>
+<span class="line-number">31</span>  uint32_t res = *(uint32_t *)(*buf);
+<span class="line-number">32</span>  *buf += sizeof(res);
+<span class="line-number">33</span>  *buf_size -= sizeof(res);
+<span class="line-number">34</span>
+<span class="line-number">35</span>  return res;
+<span class="line-number">36</span>}
+<span class="line-number">37</span>
+<span class="line-number">38</span>static uint16_t buf_read_u16(char **buf, uint64_t *buf_size) {
+<span class="line-number">39</span>  assert(*buf_size &gt;= sizeof(uint16_t));
+<span class="line-number">40</span>  assert((size_t)*buf % sizeof(uint16_t) == 0);
+<span class="line-number">41</span>
+<span class="line-number">42</span>  uint16_t res = *(uint16_t *)(*buf);
+<span class="line-number">43</span>  *buf += sizeof(res);
+<span class="line-number">44</span>  *buf_size -= sizeof(res);
+<span class="line-number">45</span>
+<span class="line-number">46</span>  return res;
+<span class="line-number">47</span>}
+<span class="line-number">48</span>
+<span class="line-number">49</span>static void buf_read_n(char **buf, uint64_t *buf_size, char *dst, uint64_t n) {
+<span class="line-number">50</span>  assert(*buf_size &gt;= n);
+<span class="line-number">51</span>
+<span class="line-number">52</span>  memcpy(dst, *buf, n);
+<span class="line-number">53</span>
+<span class="line-number">54</span>  *buf += n;
+<span class="line-number">55</span>  *buf_size -= n;
+<span class="line-number">56</span>}
 </code></pre>
 <p>And we finally can send our first message:</p>
-<pre><code class="language-c">static uint32_t wayland_wl_display_get_registry(int fd) {
-  uint64_t msg_size = 0;
-  char msg[128] = &quot;&quot;;
-  buf_write_u32(msg, &amp;msg_size, sizeof(msg), wayland_display_object_id);
-
-  buf_write_u16(msg, &amp;msg_size, sizeof(msg),
-                wayland_wl_display_get_registry_opcode);
-
-  uint16_t msg_announced_size =
-      wayland_header_size + sizeof(wayland_current_id);
-  assert(roundup_4(msg_announced_size) == msg_announced_size);
-  buf_write_u16(msg, &amp;msg_size, sizeof(msg), msg_announced_size);
-
-  wayland_current_id++;
-  buf_write_u32(msg, &amp;msg_size, sizeof(msg), wayland_current_id);
-
-  if ((int64_t)msg_size != send(fd, msg, msg_size, MSG_DONTWAIT))
-    exit(errno);
-
-  printf(&quot;-&gt; wl_display@%u.get_registry: wl_registry=%u\n&quot;,
-         wayland_display_object_id, wayland_current_id);
-
-  return wayland_current_id;
-}
+<pre>
+  <div class="code-header">
+    <span>C</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-c"><span class="line-number">0</span>static uint32_t wayland_wl_display_get_registry(int fd) {
+<span class="line-number">1</span>  uint64_t msg_size = 0;
+<span class="line-number">2</span>  char msg[128] = &quot;&quot;;
+<span class="line-number">3</span>  buf_write_u32(msg, &amp;msg_size, sizeof(msg), wayland_display_object_id);
+<span class="line-number">4</span>
+<span class="line-number">5</span>  buf_write_u16(msg, &amp;msg_size, sizeof(msg),
+<span class="line-number">6</span>                wayland_wl_display_get_registry_opcode);
+<span class="line-number">7</span>
+<span class="line-number">8</span>  uint16_t msg_announced_size =
+<span class="line-number">9</span>      wayland_header_size + sizeof(wayland_current_id);
+<span class="line-number">10</span>  assert(roundup_4(msg_announced_size) == msg_announced_size);
+<span class="line-number">11</span>  buf_write_u16(msg, &amp;msg_size, sizeof(msg), msg_announced_size);
+<span class="line-number">12</span>
+<span class="line-number">13</span>  wayland_current_id++;
+<span class="line-number">14</span>  buf_write_u32(msg, &amp;msg_size, sizeof(msg), wayland_current_id);
+<span class="line-number">15</span>
+<span class="line-number">16</span>  if ((int64_t)msg_size != send(fd, msg, msg_size, MSG_DONTWAIT))
+<span class="line-number">17</span>    exit(errno);
+<span class="line-number">18</span>
+<span class="line-number">19</span>  printf(&quot;-&gt; wl_display@%u.get_registry: wl_registry=%u\n&quot;,
+<span class="line-number">20</span>         wayland_display_object_id, wayland_current_id);
+<span class="line-number">21</span>
+<span class="line-number">22</span>  return wayland_current_id;
+<span class="line-number">23</span>}
 </code></pre>
 <p>And by calling it, we have created our very first Wayland resource!</p>
 <p><em>From this point on, the utility functions to send Wayland messages (<code>wayland_*</code>) will not be included in the code snippets for brevity (but you will find all of the code at the end!), just because they all are similar to the one above.</em></p>
@@ -375,71 +395,86 @@ static void buf_read_n(char **buf, uint64_t *buf_size, char *dst, uint64_t n) {
 <p>We need to synchronize the access between the two so that presenting the frame does not happen while we are still drawing it, and Wayland has us covered here.</p>
 <p>First, we need to create this buffer. We are going to make it easier for us by using a fixed size. Wayland is going to send us 'resize' events, whenever the window size changes, which we will acknowledge and ignore. This is done here just to simplify a bit the article, obviously in a real application, you would resize the buffer.</p>
 <p>First, we introduce a struct that will hold all of the client-side state so that we remember which resources we have created so far. We also need a super simple state machine for later to track whether the surface (i.e. the 'frame' data) should be drawn to, as mentioned:</p>
-<pre><code class="language-c">typedef enum state_state_t state_state_t;
-enum state_state_t {
-  STATE_NONE,
-  STATE_SURFACE_ACKED_CONFIGURE,
-  STATE_SURFACE_ATTACHED,
-};
-
-typedef struct state_t state_t;
-struct state_t {
-  uint32_t wl_registry;
-  uint32_t wl_shm;
-  uint32_t wl_shm_pool;
-  uint32_t wl_buffer;
-  uint32_t xdg_wm_base;
-  uint32_t xdg_surface;
-  uint32_t wl_compositor;
-  uint32_t wl_surface;
-  uint32_t xdg_toplevel;
-  uint32_t stride;
-  uint32_t w;
-  uint32_t h;
-  uint32_t shm_pool_size;
-  int shm_fd;
-  uint8_t *shm_pool_data;
-
-  state_state_t state;
-};
+<pre>
+  <div class="code-header">
+    <span>C</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-c"><span class="line-number">0</span>typedef enum state_state_t state_state_t;
+<span class="line-number">1</span>enum state_state_t {
+<span class="line-number">2</span>  STATE_NONE,
+<span class="line-number">3</span>  STATE_SURFACE_ACKED_CONFIGURE,
+<span class="line-number">4</span>  STATE_SURFACE_ATTACHED,
+<span class="line-number">5</span>};
+<span class="line-number">6</span>
+<span class="line-number">7</span>typedef struct state_t state_t;
+<span class="line-number">8</span>struct state_t {
+<span class="line-number">9</span>  uint32_t wl_registry;
+<span class="line-number">10</span>  uint32_t wl_shm;
+<span class="line-number">11</span>  uint32_t wl_shm_pool;
+<span class="line-number">12</span>  uint32_t wl_buffer;
+<span class="line-number">13</span>  uint32_t xdg_wm_base;
+<span class="line-number">14</span>  uint32_t xdg_surface;
+<span class="line-number">15</span>  uint32_t wl_compositor;
+<span class="line-number">16</span>  uint32_t wl_surface;
+<span class="line-number">17</span>  uint32_t xdg_toplevel;
+<span class="line-number">18</span>  uint32_t stride;
+<span class="line-number">19</span>  uint32_t w;
+<span class="line-number">20</span>  uint32_t h;
+<span class="line-number">21</span>  uint32_t shm_pool_size;
+<span class="line-number">22</span>  int shm_fd;
+<span class="line-number">23</span>  uint8_t *shm_pool_data;
+<span class="line-number">24</span>
+<span class="line-number">25</span>  state_state_t state;
+<span class="line-number">26</span>};
 </code></pre>
 <p>We use it so in <code>main()</code>:</p>
-<pre><code class="language-c">  state_t state = {
-      .wl_registry = wayland_wl_display_get_registry(fd),
-      .w = 117,
-      .h = 150,
-      .stride = 117 * color_channels,
-  };
-
-  // Single buffering.
-  state.shm_pool_size = state.h * state.stride;
+<pre>
+  <div class="code-header">
+    <span>C</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-c"><span class="line-number">0</span>  state_t state = {
+<span class="line-number">1</span>      .wl_registry = wayland_wl_display_get_registry(fd),
+<span class="line-number">2</span>      .w = 117,
+<span class="line-number">3</span>      .h = 150,
+<span class="line-number">4</span>      .stride = 117 * color_channels,
+<span class="line-number">5</span>  };
+<span class="line-number">6</span>
+<span class="line-number">7</span>  // Single buffering.
+<span class="line-number">8</span>  state.shm_pool_size = state.h * state.stride;
 </code></pre>
 <p>The window is a rectangle, of width <code>w</code> and height <code>h</code>. We will use the color format <code>xrgb8888</code> which is 4 color channels, each taking one bytes, so 4 bytes per pixel. This is one of the two formats that is guaranteed to be supported by the compositor per the specification. The stride counts how many bytes a horizontal row takes: <code>w * 4</code>.</p>
 <p>And so, our buffer size for the frame is : <code>w * h * 4</code>. We use single buffering again for simplicity and also because we want to display a static image.</p>
 <p>We could choose to use double or even triple buffering, thus respectively doubling or tripling the buffer size. The compositor is none the wiser - we would simply keep a counter client-side that increments each time we render a frame (and wraps around back to 0 when reaching the number of buffers), we would draw in the right location of this big buffer (i.e. at an offset), and attach the right part of the buffer to the surface.
 All the Wayland calls would remain the same.</p>
 <p>Alright, time to really create this buffer, and not only keep track of its size:</p>
-<pre><code class="language-c">static void create_shared_memory_file(uint64_t size, state_t *state) {
-  char name[255] = &quot;/&quot;;
-  for (uint64_t i = 1; i &lt; cstring_len(name); i++) {
-    name[i] = ((double)rand()) / (double)RAND_MAX * 26 + 'a';
-  }
-
-  int fd = shm_open(name, O_RDWR | O_EXCL | O_CREAT, 0600);
-  if (fd == -1)
-    exit(errno);
-
-  assert(shm_unlink(name) != -1);
-
-  if (ftruncate(fd, size) == -1)
-    exit(errno);
-
-  state-&gt;shm_pool_data =
-      mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
-  assert((void*)-1 != state-&gt;shm_pool_data);
-  assert(state-&gt;shm_pool_data != NULL);
-  state-&gt;shm_fd = fd;
-}
+<pre>
+  <div class="code-header">
+    <span>C</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-c"><span class="line-number">0</span>static void create_shared_memory_file(uint64_t size, state_t *state) {
+<span class="line-number">1</span>  char name[255] = &quot;/&quot;;
+<span class="line-number">2</span>  for (uint64_t i = 1; i &lt; cstring_len(name); i++) {
+<span class="line-number">3</span>    name[i] = ((double)rand()) / (double)RAND_MAX * 26 + 'a';
+<span class="line-number">4</span>  }
+<span class="line-number">5</span>
+<span class="line-number">6</span>  int fd = shm_open(name, O_RDWR | O_EXCL | O_CREAT, 0600);
+<span class="line-number">7</span>  if (fd == -1)
+<span class="line-number">8</span>    exit(errno);
+<span class="line-number">9</span>
+<span class="line-number">10</span>  assert(shm_unlink(name) != -1);
+<span class="line-number">11</span>
+<span class="line-number">12</span>  if (ftruncate(fd, size) == -1)
+<span class="line-number">13</span>    exit(errno);
+<span class="line-number">14</span>
+<span class="line-number">15</span>  state-&gt;shm_pool_data =
+<span class="line-number">16</span>      mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+<span class="line-number">17</span>  assert((void*)-1 != state-&gt;shm_pool_data);
+<span class="line-number">18</span>  assert(state-&gt;shm_pool_data != NULL);
+<span class="line-number">19</span>  state-&gt;shm_fd = fd;
+<span class="line-number">20</span>}
 </code></pre>
 <p>We use <code>shm_open(3)</code> to create a POSIX shared memory object, so that we later can send the corresponding file descriptor to the compositor so that the latter also has access to it. The flags mean:</p>
 <ul>
@@ -458,46 +493,56 @@ All the Wayland calls would remain the same.</p>
   <a class="hash-anchor" href="#chatting-with-the-compositor" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>We are going to exchange messages back and forth over the socket with the compositor. Let's use plain old blocking calls in <code>main</code> like it's the 70's. We read as much as we can from the socket:</p>
-<pre><code class="language-c">  while (1) {
-    char read_buf[4096] = &quot;&quot;;
-    int64_t read_bytes = recv(fd, read_buf, sizeof(read_buf), 0);
-    if (read_bytes == -1)
-      exit(errno);
-
-    char *msg = read_buf;
-    uint64_t msg_len = (uint64_t)read_bytes;
-
-    while (msg_len &gt; 0)
-      wayland_handle_message(fd, &amp;state, &amp;msg, &amp;msg_len);
-    }
-  }
+<pre>
+  <div class="code-header">
+    <span>C</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-c"><span class="line-number">0</span>  while (1) {
+<span class="line-number">1</span>    char read_buf[4096] = &quot;&quot;;
+<span class="line-number">2</span>    int64_t read_bytes = recv(fd, read_buf, sizeof(read_buf), 0);
+<span class="line-number">3</span>    if (read_bytes == -1)
+<span class="line-number">4</span>      exit(errno);
+<span class="line-number">5</span>
+<span class="line-number">6</span>    char *msg = read_buf;
+<span class="line-number">7</span>    uint64_t msg_len = (uint64_t)read_bytes;
+<span class="line-number">8</span>
+<span class="line-number">9</span>    while (msg_len &gt; 0)
+<span class="line-number">10</span>      wayland_handle_message(fd, &amp;state, &amp;msg, &amp;msg_len);
+<span class="line-number">11</span>    }
+<span class="line-number">12</span>  }
 </code></pre>
 <p>The read buffer very likely now contains a sequence of various messages, which we parse and handle with
 <code>wayland_handle_message</code> eagerly until the end of the buffer.
 This might break if a message is spanning two different read buffers - a ring buffer would be more appropriate to handle this case gracefully, but again, for this article this is fine.</p>
 <p><code>wayland_handle_message</code> reads the header part of every message as described in the beginning, and reacts to known opcodes and objects:</p>
-<pre><code class="language-c">static void wayland_handle_message(int fd, state_t *state, char **msg,
-                                   uint64_t *msg_len) {
-  assert(*msg_len &gt;= 8);
-
-  uint32_t object_id = buf_read_u32(msg, msg_len);
-  assert(object_id &lt;= wayland_current_id);
-
-  uint16_t opcode = buf_read_u16(msg, msg_len);
-
-  uint16_t announced_size = buf_read_u16(msg, msg_len);
-  assert(roundup_4(announced_size) &lt;= announced_size);
-
-  uint32_t header_size =
-      sizeof(object_id) + sizeof(opcode) + sizeof(announced_size);
-  assert(announced_size &lt;= header_size + *msg_len);
-
-  if (object_id == state-&gt;wl_registry &amp;&amp;
-      opcode == wayland_wl_registry_event_global) {
-      // TODO
-  }
-  // Following: Lots of `if (opcode == ...) {... } else if (opcode = ...) { ... } [...]`
-}
+<pre>
+  <div class="code-header">
+    <span>C</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-c"><span class="line-number">0</span>static void wayland_handle_message(int fd, state_t *state, char **msg,
+<span class="line-number">1</span>                                   uint64_t *msg_len) {
+<span class="line-number">2</span>  assert(*msg_len &gt;= 8);
+<span class="line-number">3</span>
+<span class="line-number">4</span>  uint32_t object_id = buf_read_u32(msg, msg_len);
+<span class="line-number">5</span>  assert(object_id &lt;= wayland_current_id);
+<span class="line-number">6</span>
+<span class="line-number">7</span>  uint16_t opcode = buf_read_u16(msg, msg_len);
+<span class="line-number">8</span>
+<span class="line-number">9</span>  uint16_t announced_size = buf_read_u16(msg, msg_len);
+<span class="line-number">10</span>  assert(roundup_4(announced_size) &lt;= announced_size);
+<span class="line-number">11</span>
+<span class="line-number">12</span>  uint32_t header_size =
+<span class="line-number">13</span>      sizeof(object_id) + sizeof(opcode) + sizeof(announced_size);
+<span class="line-number">14</span>  assert(announced_size &lt;= header_size + *msg_len);
+<span class="line-number">15</span>
+<span class="line-number">16</span>  if (object_id == state-&gt;wl_registry &amp;&amp;
+<span class="line-number">17</span>      opcode == wayland_wl_registry_event_global) {
+<span class="line-number">18</span>      // TODO
+<span class="line-number">19</span>  }
+<span class="line-number">20</span>  // Following: Lots of `if (opcode == ...) {... } else if (opcode = ...) { ... } [...]`
+<span class="line-number">21</span>}
 </code></pre>
 <h3 id="reacting-to-events-binding-interfaces">
   <a class="title" href="#reacting-to-events-binding-interfaces">Reacting to events: binding interfaces</a>
@@ -507,60 +552,65 @@ This might break if a message is spanning two different read buffers - a ring bu
 The compositor responds with a series of events, listing the available global objects, such as shared memory support, extension protocols, etc.</p>
 <p>Each event contains the interface name, which is a string. Now, in the Wayland protocol, the string length gets padded to a multiple of four, so we have read those padding bytes as well.</p>
 <p>If we see a global object that we are interested in, we create one of this type, and record the new id in our <code>state</code> structure for later use. While we're at it, we also handle error events. If the compositor does not like our messages, it will complain with some useful error messages in there:</p>
-<pre><code class="language-c">  if (object_id == state-&gt;wl_registry &amp;&amp;
-      opcode == wayland_wl_registry_event_global) {
-    uint32_t name = buf_read_u32(msg, msg_len);
-
-    uint32_t interface_len = buf_read_u32(msg, msg_len);
-    uint32_t padded_interface_len = roundup_4(interface_len);
-
-    char interface[512] = &quot;&quot;;
-    assert(padded_interface_len &lt;= cstring_len(interface));
-
-    buf_read_n(msg, msg_len, interface, padded_interface_len);
-    // The length includes the NULL terminator.
-    assert(interface[interface_len - 1] == 0);
-
-    uint32_t version = buf_read_u32(msg, msg_len);
-
-    printf(&quot;&lt;- wl_registry@%u.global: name=%u interface=%.*s version=%u\n&quot;,
-           state-&gt;wl_registry, name, interface_len, interface, version);
-
-    assert(announced_size == sizeof(object_id) + sizeof(announced_size) +
-                                 sizeof(opcode) + sizeof(name) +
-                                 sizeof(interface_len) + padded_interface_len +
-                                 sizeof(version));
-
-    char wl_shm_interface[] = &quot;wl_shm&quot;;
-    if (strcmp(wl_shm_interface, interface) == 0) {
-      state-&gt;wl_shm = wayland_wl_registry_bind(
-          fd, state-&gt;wl_registry, name, interface, interface_len, version);
-    }
-
-    char xdg_wm_base_interface[] = &quot;xdg_wm_base&quot;;
-    if (strcmp(xdg_wm_base_interface, interface) == 0) {
-      state-&gt;xdg_wm_base = wayland_wl_registry_bind(
-          fd, state-&gt;wl_registry, name, interface, interface_len, version);
-    }
-
-    char wl_compositor_interface[] = &quot;wl_compositor&quot;;
-    if (strcmp(wl_compositor_interface, interface) == 0) {
-      state-&gt;wl_compositor = wayland_wl_registry_bind(
-          fd, state-&gt;wl_registry, name, interface, interface_len, version);
-    }
-
-    return;
-  } else if (object_id == wayland_display_object_id &amp;&amp; opcode == wayland_wl_display_error_event) {
-    uint32_t target_object_id = buf_read_u32(msg, msg_len);
-    uint32_t code = buf_read_u32(msg, msg_len);
-    char error[512] = &quot;&quot;;
-    uint32_t error_len = buf_read_u32(msg, msg_len);
-    buf_read_n(msg, msg_len, error, roundup_4(error_len));
-
-    fprintf(stderr, &quot;fatal error: target_object_id=%u code=%u error=%s\n&quot;,
-            target_object_id, code, error);
-    exit(EINVAL);
-  }
+<pre>
+  <div class="code-header">
+    <span>C</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-c"><span class="line-number">0</span>  if (object_id == state-&gt;wl_registry &amp;&amp;
+<span class="line-number">1</span>      opcode == wayland_wl_registry_event_global) {
+<span class="line-number">2</span>    uint32_t name = buf_read_u32(msg, msg_len);
+<span class="line-number">3</span>
+<span class="line-number">4</span>    uint32_t interface_len = buf_read_u32(msg, msg_len);
+<span class="line-number">5</span>    uint32_t padded_interface_len = roundup_4(interface_len);
+<span class="line-number">6</span>
+<span class="line-number">7</span>    char interface[512] = &quot;&quot;;
+<span class="line-number">8</span>    assert(padded_interface_len &lt;= cstring_len(interface));
+<span class="line-number">9</span>
+<span class="line-number">10</span>    buf_read_n(msg, msg_len, interface, padded_interface_len);
+<span class="line-number">11</span>    // The length includes the NULL terminator.
+<span class="line-number">12</span>    assert(interface[interface_len - 1] == 0);
+<span class="line-number">13</span>
+<span class="line-number">14</span>    uint32_t version = buf_read_u32(msg, msg_len);
+<span class="line-number">15</span>
+<span class="line-number">16</span>    printf(&quot;&lt;- wl_registry@%u.global: name=%u interface=%.*s version=%u\n&quot;,
+<span class="line-number">17</span>           state-&gt;wl_registry, name, interface_len, interface, version);
+<span class="line-number">18</span>
+<span class="line-number">19</span>    assert(announced_size == sizeof(object_id) + sizeof(announced_size) +
+<span class="line-number">20</span>                                 sizeof(opcode) + sizeof(name) +
+<span class="line-number">21</span>                                 sizeof(interface_len) + padded_interface_len +
+<span class="line-number">22</span>                                 sizeof(version));
+<span class="line-number">23</span>
+<span class="line-number">24</span>    char wl_shm_interface[] = &quot;wl_shm&quot;;
+<span class="line-number">25</span>    if (strcmp(wl_shm_interface, interface) == 0) {
+<span class="line-number">26</span>      state-&gt;wl_shm = wayland_wl_registry_bind(
+<span class="line-number">27</span>          fd, state-&gt;wl_registry, name, interface, interface_len, version);
+<span class="line-number">28</span>    }
+<span class="line-number">29</span>
+<span class="line-number">30</span>    char xdg_wm_base_interface[] = &quot;xdg_wm_base&quot;;
+<span class="line-number">31</span>    if (strcmp(xdg_wm_base_interface, interface) == 0) {
+<span class="line-number">32</span>      state-&gt;xdg_wm_base = wayland_wl_registry_bind(
+<span class="line-number">33</span>          fd, state-&gt;wl_registry, name, interface, interface_len, version);
+<span class="line-number">34</span>    }
+<span class="line-number">35</span>
+<span class="line-number">36</span>    char wl_compositor_interface[] = &quot;wl_compositor&quot;;
+<span class="line-number">37</span>    if (strcmp(wl_compositor_interface, interface) == 0) {
+<span class="line-number">38</span>      state-&gt;wl_compositor = wayland_wl_registry_bind(
+<span class="line-number">39</span>          fd, state-&gt;wl_registry, name, interface, interface_len, version);
+<span class="line-number">40</span>    }
+<span class="line-number">41</span>
+<span class="line-number">42</span>    return;
+<span class="line-number">43</span>  } else if (object_id == wayland_display_object_id &amp;&amp; opcode == wayland_wl_display_error_event) {
+<span class="line-number">44</span>    uint32_t target_object_id = buf_read_u32(msg, msg_len);
+<span class="line-number">45</span>    uint32_t code = buf_read_u32(msg, msg_len);
+<span class="line-number">46</span>    char error[512] = &quot;&quot;;
+<span class="line-number">47</span>    uint32_t error_len = buf_read_u32(msg, msg_len);
+<span class="line-number">48</span>    buf_read_n(msg, msg_len, error, roundup_4(error_len));
+<span class="line-number">49</span>
+<span class="line-number">50</span>    fprintf(stderr, &quot;fatal error: target_object_id=%u code=%u error=%s\n&quot;,
+<span class="line-number">51</span>            target_object_id, code, error);
+<span class="line-number">52</span>    exit(EINVAL);
+<span class="line-number">53</span>  }
 </code></pre>
 <p>Remember: Since the Wayland protocol is a kind of RPC, we need to create the objects first before calling remote methods on them.</p>
 <p>In terms of robustness, we do not have guarantees that every feature (i.e.: interface) we need in our application will be supported by the compositor. It could be a good idea to bail if the interfaces we require are not present.</p>
@@ -576,20 +626,25 @@ The compositor responds with a series of events, listing the available global ob
 </ul>
 <p>The last two being entities from extension protocols, which is inconsequential in our implementation since we do not link against any libraries. This is just the same logic as the other messages and events from the core protocol.</p>
 <p>Once we have done that, the surface is setup, and we commit it, to signal to the compositor to atomically apply the changes to the surface.</p>
-<pre><code class="language-c">    while (msg_len &gt; 0)
-      wayland_handle_message(fd, &amp;state, &amp;msg, &amp;msg_len);
-
-    if (state.wl_compositor != 0 &amp;&amp; state.wl_shm != 0 &amp;&amp;
-        state.xdg_wm_base != 0 &amp;&amp;
-        state.wl_surface == 0) { // Bind phase complete, need to create surface.
-      assert(state.state == STATE_NONE);
-
-      state.wl_surface = wayland_wl_compositor_create_surface(fd, &amp;state);
-      state.xdg_surface = wayland_xdg_wm_base_get_xdg_surface(fd, &amp;state);
-      state.xdg_toplevel = wayland_xdg_surface_get_toplevel(fd, &amp;state);
-      wayland_wl_surface_commit(fd, &amp;state);
-    }
-  }
+<pre>
+  <div class="code-header">
+    <span>C</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-c"><span class="line-number">0</span>    while (msg_len &gt; 0)
+<span class="line-number">1</span>      wayland_handle_message(fd, &amp;state, &amp;msg, &amp;msg_len);
+<span class="line-number">2</span>
+<span class="line-number">3</span>    if (state.wl_compositor != 0 &amp;&amp; state.wl_shm != 0 &amp;&amp;
+<span class="line-number">4</span>        state.xdg_wm_base != 0 &amp;&amp;
+<span class="line-number">5</span>        state.wl_surface == 0) { // Bind phase complete, need to create surface.
+<span class="line-number">6</span>      assert(state.state == STATE_NONE);
+<span class="line-number">7</span>
+<span class="line-number">8</span>      state.wl_surface = wayland_wl_compositor_create_surface(fd, &amp;state);
+<span class="line-number">9</span>      state.xdg_surface = wayland_xdg_wm_base_get_xdg_surface(fd, &amp;state);
+<span class="line-number">10</span>      state.xdg_toplevel = wayland_xdg_surface_get_toplevel(fd, &amp;state);
+<span class="line-number">11</span>      wayland_wl_surface_commit(fd, &amp;state);
+<span class="line-number">12</span>    }
+<span class="line-number">13</span>  }
 </code></pre>
 <h3 id="reacting-to-events-ping-pong">
   <a class="title" href="#reacting-to-events-ping-pong">Reacting to events: ping/pong</a>
@@ -597,14 +652,19 @@ The compositor responds with a series of events, listing the available global ob
 </h3>
 <p>For some entities, the Wayland compositor will send us a ping message and expect a pong back to ensure our application is responsive and not deadlocked or frozen.</p>
 <p>We just have to add one more <code>if</code> to the long list of <code>if</code>s to handle each event from the compositor:</p>
-<pre><code class="language-c">if (object_id == state-&gt;xdg_wm_base &amp;&amp;
-             opcode == wayland_xdg_wm_base_event_ping) {
-    uint32_t ping = buf_read_u32(msg, msg_len);
-    printf(&quot;&lt;- xdg_wm_base@%u.ping: ping=%u\n&quot;, state-&gt;xdg_wm_base, ping);
-    wayland_xdg_wm_base_pong(fd, state, ping);
-
-    return;
-  }
+<pre>
+  <div class="code-header">
+    <span>C</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-c"><span class="line-number">0</span>if (object_id == state-&gt;xdg_wm_base &amp;&amp;
+<span class="line-number">1</span>             opcode == wayland_xdg_wm_base_event_ping) {
+<span class="line-number">2</span>    uint32_t ping = buf_read_u32(msg, msg_len);
+<span class="line-number">3</span>    printf(&quot;&lt;- xdg_wm_base@%u.ping: ping=%u\n&quot;, state-&gt;xdg_wm_base, ping);
+<span class="line-number">4</span>    wayland_xdg_wm_base_pong(fd, state, ping);
+<span class="line-number">5</span>
+<span class="line-number">6</span>    return;
+<span class="line-number">7</span>  }
 </code></pre>
 <h3 id="reacting-to-events-configure-ack-configure">
   <a class="title" href="#reacting-to-events-configure-ack-configure">Reacting to events: configure/ACK configure</a>
@@ -612,16 +672,21 @@ The compositor responds with a series of events, listing the available global ob
 </h3>
 <p>Akin to the previous ping/pong mechanism, we receive a <code>configure</code> event for the <code>xdg_surface</code> and we reply with a <code>ack_configure</code> message.</p>
 <p>This is an important milestone since from that point on, we can start rendering our frame! We thus advance our little state machine:</p>
-<pre><code class="language-c">if (object_id == state-&gt;xdg_surface &amp;&amp;
-             opcode == wayland_xdg_surface_event_configure) {
-    uint32_t configure = buf_read_u32(msg, msg_len);
-    printf(&quot;&lt;- xdg_surface@%u.configure: configure=%u\n&quot;, state-&gt;xdg_surface,
-           configure);
-    wayland_xdg_surface_ack_configure(fd, state, configure);
-    state-&gt;state = STATE_SURFACE_ACKED_CONFIGURE;
-
-    return;
-  } 
+<pre>
+  <div class="code-header">
+    <span>C</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-c"><span class="line-number">0</span>if (object_id == state-&gt;xdg_surface &amp;&amp;
+<span class="line-number">1</span>             opcode == wayland_xdg_surface_event_configure) {
+<span class="line-number">2</span>    uint32_t configure = buf_read_u32(msg, msg_len);
+<span class="line-number">3</span>    printf(&quot;&lt;- xdg_surface@%u.configure: configure=%u\n&quot;, state-&gt;xdg_surface,
+<span class="line-number">4</span>           configure);
+<span class="line-number">5</span>    wayland_xdg_surface_ack_configure(fd, state, configure);
+<span class="line-number">6</span>    state-&gt;state = STATE_SURFACE_ACKED_CONFIGURE;
+<span class="line-number">7</span>
+<span class="line-number">8</span>    return;
+<span class="line-number">9</span>  } 
 </code></pre>
 <h3 id="rendering-a-frame-the-red-rectangle">
   <a class="title" href="#rendering-a-frame-the-red-rectangle">Rendering a frame: the red rectangle</a>
@@ -638,32 +703,37 @@ The compositor responds with a series of events, listing the available global ob
 <li>We advance our state machine to avoid writing to the frame data while the compositor is presenting it</li>
 </ol>
 <p>So let's show a red rectangle as a warm-up. The alpha component is completely ignored as far as I can tell in this color format:</p>
-<pre><code class="language-c">    if (state.state == STATE_SURFACE_ACKED_CONFIGURE) {
-      // Render a frame.
-      assert(state.wl_surface != 0);
-      assert(state.xdg_surface != 0);
-      assert(state.xdg_toplevel != 0);
-
-      if (state.wl_shm_pool == 0)
-        state.wl_shm_pool = wayland_wl_shm_create_pool(fd, &amp;state);
-      if (state.wl_buffer == 0)
-        state.wl_buffer = wayland_wl_shm_pool_create_buffer(fd, &amp;state);
-
-      assert(state.shm_pool_data != 0);
-      assert(state.shm_pool_size != 0);
-
-      uint32_t *pixels = (uint32_t *)state.shm_pool_data;
-      for (uint32_t i = 0; i &lt; state.w * state.h; i++) {
-        uint8_t r = 0xff;
-        uint8_t g = 0;
-        uint8_t b = 0;
-        pixels[i] = (r &lt;&lt; 16) | (g &lt;&lt; 8) | b;
-      }
-      wayland_wl_surface_attach(fd, &amp;state);
-      wayland_wl_surface_commit(fd, &amp;state);
-
-      state.state = STATE_SURFACE_ATTACHED;
-    }
+<pre>
+  <div class="code-header">
+    <span>C</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-c"><span class="line-number">0</span>    if (state.state == STATE_SURFACE_ACKED_CONFIGURE) {
+<span class="line-number">1</span>      // Render a frame.
+<span class="line-number">2</span>      assert(state.wl_surface != 0);
+<span class="line-number">3</span>      assert(state.xdg_surface != 0);
+<span class="line-number">4</span>      assert(state.xdg_toplevel != 0);
+<span class="line-number">5</span>
+<span class="line-number">6</span>      if (state.wl_shm_pool == 0)
+<span class="line-number">7</span>        state.wl_shm_pool = wayland_wl_shm_create_pool(fd, &amp;state);
+<span class="line-number">8</span>      if (state.wl_buffer == 0)
+<span class="line-number">9</span>        state.wl_buffer = wayland_wl_shm_pool_create_buffer(fd, &amp;state);
+<span class="line-number">10</span>
+<span class="line-number">11</span>      assert(state.shm_pool_data != 0);
+<span class="line-number">12</span>      assert(state.shm_pool_size != 0);
+<span class="line-number">13</span>
+<span class="line-number">14</span>      uint32_t *pixels = (uint32_t *)state.shm_pool_data;
+<span class="line-number">15</span>      for (uint32_t i = 0; i &lt; state.w * state.h; i++) {
+<span class="line-number">16</span>        uint8_t r = 0xff;
+<span class="line-number">17</span>        uint8_t g = 0;
+<span class="line-number">18</span>        uint8_t b = 0;
+<span class="line-number">19</span>        pixels[i] = (r &lt;&lt; 16) | (g &lt;&lt; 8) | b;
+<span class="line-number">20</span>      }
+<span class="line-number">21</span>      wayland_wl_surface_attach(fd, &amp;state);
+<span class="line-number">22</span>      wayland_wl_surface_commit(fd, &amp;state);
+<span class="line-number">23</span>
+<span class="line-number">24</span>      state.state = STATE_SURFACE_ATTACHED;
+<span class="line-number">25</span>    }
 </code></pre>
 <p>Result:</p>
 <p><img src="wayland-screenshot-red.png" alt="Result, red" /></p>
@@ -673,26 +743,36 @@ The compositor responds with a series of events, listing the available global ob
 </h3>
 <p>Let's render something more interesting. We download the <a href="https://wayland.freedesktop.org/wayland.png">Wayland logo</a>, but we do not want to have to deal with a complicated format like PNG (because we then have to uncompress the image data with <code>zlib</code> or similar).</p>
 <p>We thus convert it offline to a simpler image format, PPM6, and then embed the raw pixel data in our code as a byte array, skipping over the first 15 bytes which are metadata:</p>
-<pre><code class="language-shell">$ file wayland.png
-wayland.png: PNG image data, 117 x 150, 8-bit/color RGBA, non-interlaced
-$ convert wayland.png wayland.ppm
-$ file wayland.ppm
-wayland.ppm: Netpbm image data, size = 117 x 150, rawbits, pixmap
-$ xxd -s +15 -i wayland.ppm  &gt; wayland-logo.h
-$ sed -i 's/wayland_ppm/wayland_logo/g' wayland-logo.h
+<pre>
+  <div class="code-header">
+    <span>Shell</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-shell"><span class="line-number">0</span>$ file wayland.png
+<span class="line-number">1</span>wayland.png: PNG image data, 117 x 150, 8-bit/color RGBA, non-interlaced
+<span class="line-number">2</span>$ convert wayland.png wayland.ppm
+<span class="line-number">3</span>$ file wayland.ppm
+<span class="line-number">4</span>wayland.ppm: Netpbm image data, size = 117 x 150, rawbits, pixmap
+<span class="line-number">5</span>$ xxd -s +15 -i wayland.ppm  &gt; wayland-logo.h
+<span class="line-number">6</span>$ sed -i 's/wayland_ppm/wayland_logo/g' wayland-logo.h
 </code></pre>
 <p><em>The resulting C array created by <code>xxd</code> will be named after the input file i.e. <code>wayland_ppm</code>. We rename it with the last command to something more human-readable.</em></p>
 <p>The image is now in the <code>RGB</code> format (3 bytes per pixel), which we have to convert to the <code>XRGB</code> format (4 bytes per pixel). Our frame rendering loop becomes:</p>
-<pre><code class="language-c">#include &quot;wayland-logo.h&quot;
-
-[...]
-
-      for (uint32_t i = 0; i &lt; state.w * state.h; i++) {
-        uint8_t r = wayland_logo[i * 3 + 0];
-        uint8_t g = wayland_logo[i * 3 + 1];
-        uint8_t b = wayland_logo[i * 3 + 2];
-        pixels[i] = (r &lt;&lt; 16) | (g &lt;&lt; 8) | b;
-      }
+<pre>
+  <div class="code-header">
+    <span>C</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-c"><span class="line-number">0</span>#include &quot;wayland-logo.h&quot;
+<span class="line-number">1</span>
+<span class="line-number">2</span>[...]
+<span class="line-number">3</span>
+<span class="line-number">4</span>      for (uint32_t i = 0; i &lt; state.w * state.h; i++) {
+<span class="line-number">5</span>        uint8_t r = wayland_logo[i * 3 + 0];
+<span class="line-number">6</span>        uint8_t g = wayland_logo[i * 3 + 1];
+<span class="line-number">7</span>        uint8_t b = wayland_logo[i * 3 + 2];
+<span class="line-number">8</span>        pixels[i] = (r &lt;&lt; 16) | (g &lt;&lt; 8) | b;
+<span class="line-number">9</span>      }
 </code></pre>
 <p>And finally we see the result.</p>
 <p>Tiled: <img src="wayland-screenshot-tiled1.png" alt="Result, tiled" /></p>
@@ -715,722 +795,727 @@ $ sed -i 's/wayland_ppm/wayland_logo/g' wayland-logo.h
 <p>Compile with: <code>cc -std=c99 wayland.c -Ofast</code>.</p>
 <details>
   <summary>The full code</summary>
-<pre><code class="language-c">#define _POSIX_C_SOURCE 200112L
-#include &lt;assert.h&gt;
-#include &lt;errno.h&gt;
-#include &lt;fcntl.h&gt;
-#include &lt;inttypes.h&gt;
-#include &lt;stddef.h&gt;
-#include &lt;stdint.h&gt;
-#include &lt;stdio.h&gt;
-#include &lt;stdlib.h&gt;
-#include &lt;string.h&gt;
-#include &lt;sys/mman.h&gt;
-#include &lt;sys/socket.h&gt;
-#include &lt;sys/time.h&gt;
-#include &lt;sys/un.h&gt;
-#include &lt;unistd.h&gt;
-
-#include &quot;wayland-logo.h&quot;
-
-#define cstring_len(s) (sizeof(s) - 1)
-
-#define roundup_4(n) (((n) + 3) &amp; -4)
-
-static uint32_t wayland_current_id = 1;
-
-static const uint32_t wayland_display_object_id = 1;
-static const uint16_t wayland_wl_registry_event_global = 0;
-static const uint16_t wayland_shm_pool_event_format = 0;
-static const uint16_t wayland_wl_buffer_event_release = 0;
-static const uint16_t wayland_xdg_wm_base_event_ping = 0;
-static const uint16_t wayland_xdg_toplevel_event_configure = 0;
-static const uint16_t wayland_xdg_toplevel_event_close = 1;
-static const uint16_t wayland_xdg_surface_event_configure = 0;
-static const uint16_t wayland_wl_display_get_registry_opcode = 1;
-static const uint16_t wayland_wl_registry_bind_opcode = 0;
-static const uint16_t wayland_wl_compositor_create_surface_opcode = 0;
-static const uint16_t wayland_xdg_wm_base_pong_opcode = 3;
-static const uint16_t wayland_xdg_surface_ack_configure_opcode = 4;
-static const uint16_t wayland_wl_shm_create_pool_opcode = 0;
-static const uint16_t wayland_xdg_wm_base_get_xdg_surface_opcode = 2;
-static const uint16_t wayland_wl_shm_pool_create_buffer_opcode = 0;
-static const uint16_t wayland_wl_surface_attach_opcode = 1;
-static const uint16_t wayland_xdg_surface_get_toplevel_opcode = 1;
-static const uint16_t wayland_wl_surface_commit_opcode = 6;
-static const uint16_t wayland_wl_display_error_event = 0;
-static const uint32_t wayland_format_xrgb8888 = 1;
-static const uint32_t wayland_header_size = 8;
-static const uint32_t color_channels = 4;
-
-typedef enum state_state_t state_state_t;
-enum state_state_t {
-  STATE_NONE,
-  STATE_SURFACE_ACKED_CONFIGURE,
-  STATE_SURFACE_ATTACHED,
-};
-
-typedef struct state_t state_t;
-struct state_t {
-  uint32_t wl_registry;
-  uint32_t wl_shm;
-  uint32_t wl_shm_pool;
-  uint32_t wl_buffer;
-  uint32_t xdg_wm_base;
-  uint32_t xdg_surface;
-  uint32_t wl_compositor;
-  uint32_t wl_surface;
-  uint32_t xdg_toplevel;
-  uint32_t stride;
-  uint32_t w;
-  uint32_t h;
-  uint32_t shm_pool_size;
-  int shm_fd;
-  uint8_t *shm_pool_data;
-
-  state_state_t state;
-};
-
-static int wayland_display_connect() {
-  char *xdg_runtime_dir = getenv(&quot;XDG_RUNTIME_DIR&quot;);
-  if (xdg_runtime_dir == NULL)
-    return EINVAL;
-
-  uint64_t xdg_runtime_dir_len = strlen(xdg_runtime_dir);
-
-  struct sockaddr_un addr = {.sun_family = AF_UNIX};
-  assert(xdg_runtime_dir_len &lt;= cstring_len(addr.sun_path));
-  uint64_t socket_path_len = 0;
-
-  memcpy(addr.sun_path, xdg_runtime_dir, xdg_runtime_dir_len);
-  socket_path_len += xdg_runtime_dir_len;
-
-  addr.sun_path[socket_path_len++] = '/';
-
-  char *wayland_display = getenv(&quot;WAYLAND_DISPLAY&quot;);
-  if (wayland_display == NULL) {
-    char wayland_display_default[] = &quot;wayland-0&quot;;
-    uint64_t wayland_display_default_len = cstring_len(wayland_display_default);
-
-    memcpy(addr.sun_path + socket_path_len, wayland_display_default,
-           wayland_display_default_len);
-    socket_path_len += wayland_display_default_len;
-  } else {
-    uint64_t wayland_display_len = strlen(wayland_display);
-    memcpy(addr.sun_path + socket_path_len, wayland_display,
-           wayland_display_len);
-    socket_path_len += wayland_display_len;
-  }
-
-  int fd = socket(AF_UNIX, SOCK_STREAM, 0);
-  if (fd == -1)
-    exit(errno);
-
-  if (connect(fd, (struct sockaddr *)&amp;addr, sizeof(addr)) == -1)
-    exit(errno);
-
-  return fd;
-}
-
-static void buf_write_u32(char *buf, uint64_t *buf_size, uint64_t buf_cap,
-                          uint32_t x) {
-  assert(*buf_size + sizeof(x) &lt;= buf_cap);
-  assert(((size_t)buf + *buf_size) % sizeof(x) == 0);
-
-  *(uint32_t *)(buf + *buf_size) = x;
-  *buf_size += sizeof(x);
-}
-
-static void buf_write_u16(char *buf, uint64_t *buf_size, uint64_t buf_cap,
-                          uint16_t x) {
-  assert(*buf_size + sizeof(x) &lt;= buf_cap);
-  assert(((size_t)buf + *buf_size) % sizeof(x) == 0);
-
-  *(uint16_t *)(buf + *buf_size) = x;
-  *buf_size += sizeof(x);
-}
-
-static void buf_write_string(char *buf, uint64_t *buf_size, uint64_t buf_cap,
-                             char *src, uint32_t src_len) {
-  assert(*buf_size + src_len &lt;= buf_cap);
-
-  buf_write_u32(buf, buf_size, buf_cap, src_len);
-  memcpy(buf + *buf_size, src, roundup_4(src_len));
-  *buf_size += roundup_4(src_len);
-}
-
-static uint32_t buf_read_u32(char **buf, uint64_t *buf_size) {
-  assert(*buf_size &gt;= sizeof(uint32_t));
-  assert((size_t)*buf % sizeof(uint32_t) == 0);
-
-  uint32_t res = *(uint32_t *)(*buf);
-  *buf += sizeof(res);
-  *buf_size -= sizeof(res);
-
-  return res;
-}
-
-static uint16_t buf_read_u16(char **buf, uint64_t *buf_size) {
-  assert(*buf_size &gt;= sizeof(uint16_t));
-  assert((size_t)*buf % sizeof(uint16_t) == 0);
-
-  uint16_t res = *(uint16_t *)(*buf);
-  *buf += sizeof(res);
-  *buf_size -= sizeof(res);
-
-  return res;
-}
-
-static void buf_read_n(char **buf, uint64_t *buf_size, char *dst, uint64_t n) {
-  assert(*buf_size &gt;= n);
-
-  memcpy(dst, *buf, n);
-
-  *buf += n;
-  *buf_size -= n;
-}
-
-static uint32_t wayland_wl_display_get_registry(int fd) {
-  uint64_t msg_size = 0;
-  char msg[128] = &quot;&quot;;
-  buf_write_u32(msg, &amp;msg_size, sizeof(msg), wayland_display_object_id);
-
-  buf_write_u16(msg, &amp;msg_size, sizeof(msg),
-                wayland_wl_display_get_registry_opcode);
-
-  uint16_t msg_announced_size =
-      wayland_header_size + sizeof(wayland_current_id);
-  assert(roundup_4(msg_announced_size) == msg_announced_size);
-  buf_write_u16(msg, &amp;msg_size, sizeof(msg), msg_announced_size);
-
-  wayland_current_id++;
-  buf_write_u32(msg, &amp;msg_size, sizeof(msg), wayland_current_id);
-
-  if ((int64_t)msg_size != send(fd, msg, msg_size, 0))
-    exit(errno);
-
-  printf(&quot;-&gt; wl_display@%u.get_registry: wl_registry=%u\n&quot;,
-         wayland_display_object_id, wayland_current_id);
-
-  return wayland_current_id;
-}
-
-static uint32_t wayland_wl_registry_bind(int fd, uint32_t registry,
-                                         uint32_t name, char *interface,
-                                         uint32_t interface_len,
-                                         uint32_t version) {
-  uint64_t msg_size = 0;
-  char msg[512] = &quot;&quot;;
-  buf_write_u32(msg, &amp;msg_size, sizeof(msg), registry);
-
-  buf_write_u16(msg, &amp;msg_size, sizeof(msg), wayland_wl_registry_bind_opcode);
-
-  uint16_t msg_announced_size =
-      wayland_header_size + sizeof(name) + sizeof(interface_len) +
-      roundup_4(interface_len) + sizeof(version) + sizeof(wayland_current_id);
-  assert(roundup_4(msg_announced_size) == msg_announced_size);
-  buf_write_u16(msg, &amp;msg_size, sizeof(msg), msg_announced_size);
-
-  buf_write_u32(msg, &amp;msg_size, sizeof(msg), name);
-  buf_write_string(msg, &amp;msg_size, sizeof(msg), interface, interface_len);
-  buf_write_u32(msg, &amp;msg_size, sizeof(msg), version);
-
-  wayland_current_id++;
-  buf_write_u32(msg, &amp;msg_size, sizeof(msg), wayland_current_id);
-
-  assert(msg_size == roundup_4(msg_size));
-
-  if ((int64_t)msg_size != send(fd, msg, msg_size, 0))
-    exit(errno);
-
-  printf(&quot;-&gt; wl_registry@%u.bind: name=%u interface=%.*s version=%u\n&quot;,
-         registry, name, interface_len, interface, version);
-
-  return wayland_current_id;
-}
-
-static uint32_t wayland_wl_compositor_create_surface(int fd, state_t *state) {
-  assert(state-&gt;wl_compositor &gt; 0);
-
-  uint64_t msg_size = 0;
-  char msg[128] = &quot;&quot;;
-  buf_write_u32(msg, &amp;msg_size, sizeof(msg), state-&gt;wl_compositor);
-
-  buf_write_u16(msg, &amp;msg_size, sizeof(msg),
-                wayland_wl_compositor_create_surface_opcode);
-
-  uint16_t msg_announced_size =
-      wayland_header_size + sizeof(wayland_current_id);
-  assert(roundup_4(msg_announced_size) == msg_announced_size);
-  buf_write_u16(msg, &amp;msg_size, sizeof(msg), msg_announced_size);
-
-  wayland_current_id++;
-  buf_write_u32(msg, &amp;msg_size, sizeof(msg), wayland_current_id);
-
-  if ((int64_t)msg_size != send(fd, msg, msg_size, 0))
-    exit(errno);
-
-  printf(&quot;-&gt; wl_compositor@%u.create_surface: wl_surface=%u\n&quot;,
-         state-&gt;wl_compositor, wayland_current_id);
-
-  return wayland_current_id;
-}
-
-static void create_shared_memory_file(uint64_t size, state_t *state) {
-  char name[255] = &quot;/&quot;;
-  for (uint64_t i = 1; i &lt; cstring_len(name); i++) {
-    name[i] = ((double)rand()) / (double)RAND_MAX * 26 + 'a';
-  }
-
-  int fd = shm_open(name, O_RDWR | O_EXCL | O_CREAT, 0600);
-  if (fd == -1)
-    exit(errno);
-
-  assert(shm_unlink(name) != -1);
-
-  if (ftruncate(fd, size) == -1)
-    exit(errno);
-
-  state-&gt;shm_pool_data =
-      mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
-  assert((void*)-1 != state-&gt;shm_pool_data);
-  assert(state-&gt;shm_pool_data != NULL);
-  state-&gt;shm_fd = fd;
-}
-
-static void wayland_xdg_wm_base_pong(int fd, state_t *state, uint32_t ping) {
-  assert(state-&gt;xdg_wm_base &gt; 0);
-  assert(state-&gt;wl_surface &gt; 0);
-
-  uint64_t msg_size = 0;
-  char msg[128] = &quot;&quot;;
-  buf_write_u32(msg, &amp;msg_size, sizeof(msg), state-&gt;xdg_wm_base);
-
-  buf_write_u16(msg, &amp;msg_size, sizeof(msg), wayland_xdg_wm_base_pong_opcode);
-
-  uint16_t msg_announced_size = wayland_header_size + sizeof(ping);
-  assert(roundup_4(msg_announced_size) == msg_announced_size);
-  buf_write_u16(msg, &amp;msg_size, sizeof(msg), msg_announced_size);
-
-  buf_write_u32(msg, &amp;msg_size, sizeof(msg), ping);
-
-  if ((int64_t)msg_size != send(fd, msg, msg_size, 0))
-    exit(errno);
-
-  printf(&quot;-&gt; xdg_wm_base@%u.pong: ping=%u\n&quot;, state-&gt;xdg_wm_base, ping);
-}
-
-static void wayland_xdg_surface_ack_configure(int fd, state_t *state,
-                                              uint32_t configure) {
-  assert(state-&gt;xdg_surface &gt; 0);
-
-  uint64_t msg_size = 0;
-  char msg[128] = &quot;&quot;;
-  buf_write_u32(msg, &amp;msg_size, sizeof(msg), state-&gt;xdg_surface);
-
-  buf_write_u16(msg, &amp;msg_size, sizeof(msg),
-                wayland_xdg_surface_ack_configure_opcode);
-
-  uint16_t msg_announced_size = wayland_header_size + sizeof(configure);
-  assert(roundup_4(msg_announced_size) == msg_announced_size);
-  buf_write_u16(msg, &amp;msg_size, sizeof(msg), msg_announced_size);
-
-  buf_write_u32(msg, &amp;msg_size, sizeof(msg), configure);
-
-  if ((int64_t)msg_size != send(fd, msg, msg_size, 0))
-    exit(errno);
-
-  printf(&quot;-&gt; xdg_surface@%u.ack_configure: configure=%u\n&quot;, state-&gt;xdg_surface,
-         configure);
-}
-
-static uint32_t wayland_wl_shm_create_pool(int fd, state_t *state) {
-  assert(state-&gt;shm_pool_size &gt; 0);
-
-  uint64_t msg_size = 0;
-  char msg[128] = &quot;&quot;;
-  buf_write_u32(msg, &amp;msg_size, sizeof(msg), state-&gt;wl_shm);
-
-  buf_write_u16(msg, &amp;msg_size, sizeof(msg), wayland_wl_shm_create_pool_opcode);
-
-  uint16_t msg_announced_size = wayland_header_size +
-                                sizeof(wayland_current_id) +
-                                sizeof(state-&gt;shm_pool_size);
-
-  assert(roundup_4(msg_announced_size) == msg_announced_size);
-  buf_write_u16(msg, &amp;msg_size, sizeof(msg), msg_announced_size);
-
-  wayland_current_id++;
-  buf_write_u32(msg, &amp;msg_size, sizeof(msg), wayland_current_id);
-
-  buf_write_u32(msg, &amp;msg_size, sizeof(msg), state-&gt;shm_pool_size);
-
-  assert(roundup_4(msg_size) == msg_size);
-
-  // Send the file descriptor as ancillary data.
-  // UNIX/Macros monstrosities ahead.
-  char buf[CMSG_SPACE(sizeof(state-&gt;shm_fd))] = &quot;&quot;;
-
-  struct iovec io = {.iov_base = msg, .iov_len = msg_size};
-  struct msghdr socket_msg = {
-      .msg_iov = &amp;io,
-      .msg_iovlen = 1,
-      .msg_control = buf,
-      .msg_controllen = sizeof(buf),
-  };
-
-  struct cmsghdr *cmsg = CMSG_FIRSTHDR(&amp;socket_msg);
-  cmsg-&gt;cmsg_level = SOL_SOCKET;
-  cmsg-&gt;cmsg_type = SCM_RIGHTS;
-  cmsg-&gt;cmsg_len = CMSG_LEN(sizeof(state-&gt;shm_fd));
-
-  *((int *)CMSG_DATA(cmsg)) = state-&gt;shm_fd;
-  socket_msg.msg_controllen = CMSG_SPACE(sizeof(state-&gt;shm_fd));
-
-  if (sendmsg(fd, &amp;socket_msg, 0) == -1)
-    exit(errno);
-
-  printf(&quot;-&gt; wl_shm@%u.create_pool: wl_shm_pool=%u\n&quot;, state-&gt;wl_shm,
-         wayland_current_id);
-
-  return wayland_current_id;
-}
-
-static uint32_t wayland_xdg_wm_base_get_xdg_surface(int fd, state_t *state) {
-  assert(state-&gt;xdg_wm_base &gt; 0);
-  assert(state-&gt;wl_surface &gt; 0);
-
-  uint64_t msg_size = 0;
-  char msg[128] = &quot;&quot;;
-  buf_write_u32(msg, &amp;msg_size, sizeof(msg), state-&gt;xdg_wm_base);
-
-  buf_write_u16(msg, &amp;msg_size, sizeof(msg),
-                wayland_xdg_wm_base_get_xdg_surface_opcode);
-
-  uint16_t msg_announced_size = wayland_header_size +
-                                sizeof(wayland_current_id) +
-                                sizeof(state-&gt;wl_surface);
-  assert(roundup_4(msg_announced_size) == msg_announced_size);
-  buf_write_u16(msg, &amp;msg_size, sizeof(msg), msg_announced_size);
-
-  wayland_current_id++;
-  buf_write_u32(msg, &amp;msg_size, sizeof(msg), wayland_current_id);
-
-  buf_write_u32(msg, &amp;msg_size, sizeof(msg), state-&gt;wl_surface);
-
-  if ((int64_t)msg_size != send(fd, msg, msg_size, 0))
-    exit(errno);
-
-  printf(&quot;-&gt; xdg_wm_base@%u.get_xdg_surface: xdg_surface=%u wl_surface=%u\n&quot;,
-         state-&gt;xdg_wm_base, wayland_current_id, state-&gt;wl_surface);
-
-  return wayland_current_id;
-}
-
-static uint32_t wayland_wl_shm_pool_create_buffer(int fd, state_t *state) {
-  assert(state-&gt;wl_shm_pool &gt; 0);
-
-  uint64_t msg_size = 0;
-  char msg[128] = &quot;&quot;;
-  buf_write_u32(msg, &amp;msg_size, sizeof(msg), state-&gt;wl_shm_pool);
-
-  buf_write_u16(msg, &amp;msg_size, sizeof(msg),
-                wayland_wl_shm_pool_create_buffer_opcode);
-
-  uint16_t msg_announced_size =
-      wayland_header_size + sizeof(wayland_current_id) + sizeof(uint32_t) * 5;
-  assert(roundup_4(msg_announced_size) == msg_announced_size);
-  buf_write_u16(msg, &amp;msg_size, sizeof(msg), msg_announced_size);
-
-  wayland_current_id++;
-  buf_write_u32(msg, &amp;msg_size, sizeof(msg), wayland_current_id);
-
-  uint32_t offset = 0;
-  buf_write_u32(msg, &amp;msg_size, sizeof(msg), offset);
-
-  buf_write_u32(msg, &amp;msg_size, sizeof(msg), state-&gt;w);
-
-  buf_write_u32(msg, &amp;msg_size, sizeof(msg), state-&gt;h);
-
-  buf_write_u32(msg, &amp;msg_size, sizeof(msg), state-&gt;stride);
-
-  uint32_t format = wayland_format_xrgb8888;
-  buf_write_u32(msg, &amp;msg_size, sizeof(msg), format);
-
-  if ((int64_t)msg_size != send(fd, msg, msg_size, 0))
-    exit(errno);
-
-  printf(&quot;-&gt; wl_shm_pool@%u.create_buffer: wl_buffer=%u\n&quot;, state-&gt;wl_shm_pool,
-         wayland_current_id);
-
-  return wayland_current_id;
-}
-
-static void wayland_wl_surface_attach(int fd, state_t *state) {
-  assert(state-&gt;wl_surface &gt; 0);
-  assert(state-&gt;wl_buffer &gt; 0);
-
-  uint64_t msg_size = 0;
-  char msg[128] = &quot;&quot;;
-  buf_write_u32(msg, &amp;msg_size, sizeof(msg), state-&gt;wl_surface);
-
-  buf_write_u16(msg, &amp;msg_size, sizeof(msg), wayland_wl_surface_attach_opcode);
-
-  uint16_t msg_announced_size =
-      wayland_header_size + sizeof(state-&gt;wl_buffer) + sizeof(uint32_t) * 2;
-  assert(roundup_4(msg_announced_size) == msg_announced_size);
-  buf_write_u16(msg, &amp;msg_size, sizeof(msg), msg_announced_size);
-
-  buf_write_u32(msg, &amp;msg_size, sizeof(msg), state-&gt;wl_buffer);
-
-  uint32_t x = 0, y = 0;
-  buf_write_u32(msg, &amp;msg_size, sizeof(msg), x);
-  buf_write_u32(msg, &amp;msg_size, sizeof(msg), y);
-
-  if ((int64_t)msg_size != send(fd, msg, msg_size, 0))
-    exit(errno);
-
-  printf(&quot;-&gt; wl_surface@%u.attach: wl_buffer=%u\n&quot;, state-&gt;wl_surface,
-         state-&gt;wl_buffer);
-}
-
-static uint32_t wayland_xdg_surface_get_toplevel(int fd, state_t *state) {
-  assert(state-&gt;xdg_surface &gt; 0);
-
-  uint64_t msg_size = 0;
-  char msg[128] = &quot;&quot;;
-  buf_write_u32(msg, &amp;msg_size, sizeof(msg), state-&gt;xdg_surface);
-
-  buf_write_u16(msg, &amp;msg_size, sizeof(msg),
-                wayland_xdg_surface_get_toplevel_opcode);
-
-  uint16_t msg_announced_size =
-      wayland_header_size + sizeof(wayland_current_id);
-  assert(roundup_4(msg_announced_size) == msg_announced_size);
-  buf_write_u16(msg, &amp;msg_size, sizeof(msg), msg_announced_size);
-
-  wayland_current_id++;
-  buf_write_u32(msg, &amp;msg_size, sizeof(msg), wayland_current_id);
-
-  if ((int64_t)msg_size != send(fd, msg, msg_size, 0))
-    exit(errno);
-
-  printf(&quot;-&gt; xdg_surface@%u.get_toplevel: xdg_toplevel=%u\n&quot;,
-         state-&gt;xdg_surface, wayland_current_id);
-
-  return wayland_current_id;
-}
-
-static void wayland_wl_surface_commit(int fd, state_t *state) {
-  assert(state-&gt;wl_surface &gt; 0);
-
-  uint64_t msg_size = 0;
-  char msg[128] = &quot;&quot;;
-  buf_write_u32(msg, &amp;msg_size, sizeof(msg), state-&gt;wl_surface);
-
-  buf_write_u16(msg, &amp;msg_size, sizeof(msg), wayland_wl_surface_commit_opcode);
-
-  uint16_t msg_announced_size = wayland_header_size;
-  assert(roundup_4(msg_announced_size) == msg_announced_size);
-  buf_write_u16(msg, &amp;msg_size, sizeof(msg), msg_announced_size);
-
-  if ((int64_t)msg_size != send(fd, msg, msg_size, 0))
-    exit(errno);
-
-  printf(&quot;-&gt; wl_surface@%u.commit: \n&quot;, state-&gt;wl_surface);
-}
-
-static void wayland_handle_message(int fd, state_t *state, char **msg,
-                                   uint64_t *msg_len) {
-  assert(*msg_len &gt;= 8);
-
-  uint32_t object_id = buf_read_u32(msg, msg_len);
-  assert(object_id &lt;= wayland_current_id);
-
-  uint16_t opcode = buf_read_u16(msg, msg_len);
-
-  uint16_t announced_size = buf_read_u16(msg, msg_len);
-  assert(roundup_4(announced_size) &lt;= announced_size);
-
-  uint32_t header_size =
-      sizeof(object_id) + sizeof(opcode) + sizeof(announced_size);
-  assert(announced_size &lt;= header_size + *msg_len);
-
-  if (object_id == state-&gt;wl_registry &amp;&amp;
-      opcode == wayland_wl_registry_event_global) {
-    uint32_t name = buf_read_u32(msg, msg_len);
-
-    uint32_t interface_len = buf_read_u32(msg, msg_len);
-    uint32_t padded_interface_len = roundup_4(interface_len);
-
-    char interface[512] = &quot;&quot;;
-    assert(padded_interface_len &lt;= cstring_len(interface));
-
-    buf_read_n(msg, msg_len, interface, padded_interface_len);
-    // The length includes the NULL terminator.
-    assert(interface[interface_len - 1] == 0);
-
-    uint32_t version = buf_read_u32(msg, msg_len);
-
-    printf(&quot;&lt;- wl_registry@%u.global: name=%u interface=%.*s version=%u\n&quot;,
-           state-&gt;wl_registry, name, interface_len, interface, version);
-
-    assert(announced_size == sizeof(object_id) + sizeof(announced_size) +
-                                 sizeof(opcode) + sizeof(name) +
-                                 sizeof(interface_len) + padded_interface_len +
-                                 sizeof(version));
-
-    char wl_shm_interface[] = &quot;wl_shm&quot;;
-    if (strcmp(wl_shm_interface, interface) == 0) {
-      state-&gt;wl_shm = wayland_wl_registry_bind(
-          fd, state-&gt;wl_registry, name, interface, interface_len, version);
-    }
-
-    char xdg_wm_base_interface[] = &quot;xdg_wm_base&quot;;
-    if (strcmp(xdg_wm_base_interface, interface) == 0) {
-      state-&gt;xdg_wm_base = wayland_wl_registry_bind(
-          fd, state-&gt;wl_registry, name, interface, interface_len, version);
-    }
-
-    char wl_compositor_interface[] = &quot;wl_compositor&quot;;
-    if (strcmp(wl_compositor_interface, interface) == 0) {
-      state-&gt;wl_compositor = wayland_wl_registry_bind(
-          fd, state-&gt;wl_registry, name, interface, interface_len, version);
-    }
-
-    return;
-  } else if (object_id == wayland_display_object_id &amp;&amp;
-             opcode == wayland_wl_display_error_event) {
-    uint32_t target_object_id = buf_read_u32(msg, msg_len);
-    uint32_t code = buf_read_u32(msg, msg_len);
-    char error[512] = &quot;&quot;;
-    uint32_t error_len = buf_read_u32(msg, msg_len);
-    buf_read_n(msg, msg_len, error, roundup_4(error_len));
-
-    fprintf(stderr, &quot;fatal error: target_object_id=%u code=%u error=%s\n&quot;,
-            target_object_id, code, error);
-    exit(EINVAL);
-  } else if (object_id == state-&gt;wl_shm &amp;&amp;
-             opcode == wayland_shm_pool_event_format) {
-
-    uint32_t format = buf_read_u32(msg, msg_len);
-    printf(&quot;&lt;- wl_shm: format=%#x\n&quot;, format);
-    return;
-  } else if (object_id == state-&gt;wl_buffer &amp;&amp;
-             opcode == wayland_wl_buffer_event_release) {
-    // No-op, for now.
-
-    printf(&quot;&lt;- xdg_wl_buffer@%u.release\n&quot;, state-&gt;wl_buffer);
-    return;
-  } else if (object_id == state-&gt;xdg_wm_base &amp;&amp;
-             opcode == wayland_xdg_wm_base_event_ping) {
-    uint32_t ping = buf_read_u32(msg, msg_len);
-    printf(&quot;&lt;- xdg_wm_base@%u.ping: ping=%u\n&quot;, state-&gt;xdg_wm_base, ping);
-    wayland_xdg_wm_base_pong(fd, state, ping);
-
-    return;
-  } else if (object_id == state-&gt;xdg_toplevel &amp;&amp;
-             opcode == wayland_xdg_toplevel_event_configure) {
-    uint32_t w = buf_read_u32(msg, msg_len);
-    uint32_t h = buf_read_u32(msg, msg_len);
-    uint32_t len = buf_read_u32(msg, msg_len);
-    char buf[256] = &quot;&quot;;
-    assert(len &lt;= sizeof(buf));
-    buf_read_n(msg, msg_len, buf, len);
-
-    printf(&quot;&lt;- xdg_toplevel@%u.configure: w=%u h=%u states[%u]\n&quot;,
-           state-&gt;xdg_toplevel, w, h, len);
-
-    return;
-  } else if (object_id == state-&gt;xdg_surface &amp;&amp;
-             opcode == wayland_xdg_surface_event_configure) {
-    uint32_t configure = buf_read_u32(msg, msg_len);
-    printf(&quot;&lt;- xdg_surface@%u.configure: configure=%u\n&quot;, state-&gt;xdg_surface,
-           configure);
-    wayland_xdg_surface_ack_configure(fd, state, configure);
-    state-&gt;state = STATE_SURFACE_ACKED_CONFIGURE;
-
-    return;
-  } else if (object_id == state-&gt;xdg_toplevel &amp;&amp;
-             opcode == wayland_xdg_toplevel_event_close) {
-    printf(&quot;&lt;- xdg_toplevel@%u.close\n&quot;, state-&gt;xdg_toplevel);
-    exit(0);
-  }
-
-  fprintf(stderr, &quot;object_id=%u opcode=%u msg_len=%lu\n&quot;, object_id, opcode,
-          *msg_len);
-  assert(0 &amp;&amp; &quot;todo&quot;);
-}
-
-int main() {
-  struct timeval tv = {0};
-  assert(gettimeofday(&amp;tv, NULL) != -1);
-  srand(tv.tv_sec * 1000 * 1000 + tv.tv_usec);
-
-  int fd = wayland_display_connect();
-
-  state_t state = {
-      .wl_registry = wayland_wl_display_get_registry(fd),
-      .w = 117,
-      .h = 150,
-      .stride = 117 * color_channels,
-  };
-
-  // Single buffering.
-  state.shm_pool_size = state.h * state.stride;
-  create_shared_memory_file(state.shm_pool_size, &amp;state);
-
-  while (1) {
-    char read_buf[4096] = &quot;&quot;;
-    int64_t read_bytes = recv(fd, read_buf, sizeof(read_buf), 0);
-    if (read_bytes == -1)
-      exit(errno);
-
-    char *msg = read_buf;
-    uint64_t msg_len = (uint64_t)read_bytes;
-
-    while (msg_len &gt; 0)
-      wayland_handle_message(fd, &amp;state, &amp;msg, &amp;msg_len);
-
-    if (state.wl_compositor != 0 &amp;&amp; state.wl_shm != 0 &amp;&amp;
-        state.xdg_wm_base != 0 &amp;&amp;
-        state.wl_surface == 0) { // Bind phase complete, need to create surface.
-      assert(state.state == STATE_NONE);
-
-      state.wl_surface = wayland_wl_compositor_create_surface(fd, &amp;state);
-      state.xdg_surface = wayland_xdg_wm_base_get_xdg_surface(fd, &amp;state);
-      state.xdg_toplevel = wayland_xdg_surface_get_toplevel(fd, &amp;state);
-      wayland_wl_surface_commit(fd, &amp;state);
-    }
-
-    if (state.state == STATE_SURFACE_ACKED_CONFIGURE) {
-      // Render a frame.
-      assert(state.wl_surface != 0);
-      assert(state.xdg_surface != 0);
-      assert(state.xdg_toplevel != 0);
-
-      if (state.wl_shm_pool == 0)
-        state.wl_shm_pool = wayland_wl_shm_create_pool(fd, &amp;state);
-      if (state.wl_buffer == 0)
-        state.wl_buffer = wayland_wl_shm_pool_create_buffer(fd, &amp;state);
-
-      assert(state.shm_pool_data != 0);
-      assert(state.shm_pool_size != 0);
-
-      uint32_t *pixels = (uint32_t *)state.shm_pool_data;
-      for (uint32_t i = 0; i &lt; state.w * state.h; i++) {
-        uint8_t r = wayland_logo[i * 3 + 0];
-        uint8_t g = wayland_logo[i * 3 + 1];
-        uint8_t b = wayland_logo[i * 3 + 2];
-        pixels[i] = (r &lt;&lt; 16) | (g &lt;&lt; 8) | b;
-      }
-      wayland_wl_surface_attach(fd, &amp;state);
-      wayland_wl_surface_commit(fd, &amp;state);
-
-      state.state = STATE_SURFACE_ATTACHED;
-    }
-  }
-}
+<pre>
+  <div class="code-header">
+    <span>C</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-c"><span class="line-number">0</span>#define _POSIX_C_SOURCE 200112L
+<span class="line-number">1</span>#include &lt;assert.h&gt;
+<span class="line-number">2</span>#include &lt;errno.h&gt;
+<span class="line-number">3</span>#include &lt;fcntl.h&gt;
+<span class="line-number">4</span>#include &lt;inttypes.h&gt;
+<span class="line-number">5</span>#include &lt;stddef.h&gt;
+<span class="line-number">6</span>#include &lt;stdint.h&gt;
+<span class="line-number">7</span>#include &lt;stdio.h&gt;
+<span class="line-number">8</span>#include &lt;stdlib.h&gt;
+<span class="line-number">9</span>#include &lt;string.h&gt;
+<span class="line-number">10</span>#include &lt;sys/mman.h&gt;
+<span class="line-number">11</span>#include &lt;sys/socket.h&gt;
+<span class="line-number">12</span>#include &lt;sys/time.h&gt;
+<span class="line-number">13</span>#include &lt;sys/un.h&gt;
+<span class="line-number">14</span>#include &lt;unistd.h&gt;
+<span class="line-number">15</span>
+<span class="line-number">16</span>#include &quot;wayland-logo.h&quot;
+<span class="line-number">17</span>
+<span class="line-number">18</span>#define cstring_len(s) (sizeof(s) - 1)
+<span class="line-number">19</span>
+<span class="line-number">20</span>#define roundup_4(n) (((n) + 3) &amp; -4)
+<span class="line-number">21</span>
+<span class="line-number">22</span>static uint32_t wayland_current_id = 1;
+<span class="line-number">23</span>
+<span class="line-number">24</span>static const uint32_t wayland_display_object_id = 1;
+<span class="line-number">25</span>static const uint16_t wayland_wl_registry_event_global = 0;
+<span class="line-number">26</span>static const uint16_t wayland_shm_pool_event_format = 0;
+<span class="line-number">27</span>static const uint16_t wayland_wl_buffer_event_release = 0;
+<span class="line-number">28</span>static const uint16_t wayland_xdg_wm_base_event_ping = 0;
+<span class="line-number">29</span>static const uint16_t wayland_xdg_toplevel_event_configure = 0;
+<span class="line-number">30</span>static const uint16_t wayland_xdg_toplevel_event_close = 1;
+<span class="line-number">31</span>static const uint16_t wayland_xdg_surface_event_configure = 0;
+<span class="line-number">32</span>static const uint16_t wayland_wl_display_get_registry_opcode = 1;
+<span class="line-number">33</span>static const uint16_t wayland_wl_registry_bind_opcode = 0;
+<span class="line-number">34</span>static const uint16_t wayland_wl_compositor_create_surface_opcode = 0;
+<span class="line-number">35</span>static const uint16_t wayland_xdg_wm_base_pong_opcode = 3;
+<span class="line-number">36</span>static const uint16_t wayland_xdg_surface_ack_configure_opcode = 4;
+<span class="line-number">37</span>static const uint16_t wayland_wl_shm_create_pool_opcode = 0;
+<span class="line-number">38</span>static const uint16_t wayland_xdg_wm_base_get_xdg_surface_opcode = 2;
+<span class="line-number">39</span>static const uint16_t wayland_wl_shm_pool_create_buffer_opcode = 0;
+<span class="line-number">40</span>static const uint16_t wayland_wl_surface_attach_opcode = 1;
+<span class="line-number">41</span>static const uint16_t wayland_xdg_surface_get_toplevel_opcode = 1;
+<span class="line-number">42</span>static const uint16_t wayland_wl_surface_commit_opcode = 6;
+<span class="line-number">43</span>static const uint16_t wayland_wl_display_error_event = 0;
+<span class="line-number">44</span>static const uint32_t wayland_format_xrgb8888 = 1;
+<span class="line-number">45</span>static const uint32_t wayland_header_size = 8;
+<span class="line-number">46</span>static const uint32_t color_channels = 4;
+<span class="line-number">47</span>
+<span class="line-number">48</span>typedef enum state_state_t state_state_t;
+<span class="line-number">49</span>enum state_state_t {
+<span class="line-number">50</span>  STATE_NONE,
+<span class="line-number">51</span>  STATE_SURFACE_ACKED_CONFIGURE,
+<span class="line-number">52</span>  STATE_SURFACE_ATTACHED,
+<span class="line-number">53</span>};
+<span class="line-number">54</span>
+<span class="line-number">55</span>typedef struct state_t state_t;
+<span class="line-number">56</span>struct state_t {
+<span class="line-number">57</span>  uint32_t wl_registry;
+<span class="line-number">58</span>  uint32_t wl_shm;
+<span class="line-number">59</span>  uint32_t wl_shm_pool;
+<span class="line-number">60</span>  uint32_t wl_buffer;
+<span class="line-number">61</span>  uint32_t xdg_wm_base;
+<span class="line-number">62</span>  uint32_t xdg_surface;
+<span class="line-number">63</span>  uint32_t wl_compositor;
+<span class="line-number">64</span>  uint32_t wl_surface;
+<span class="line-number">65</span>  uint32_t xdg_toplevel;
+<span class="line-number">66</span>  uint32_t stride;
+<span class="line-number">67</span>  uint32_t w;
+<span class="line-number">68</span>  uint32_t h;
+<span class="line-number">69</span>  uint32_t shm_pool_size;
+<span class="line-number">70</span>  int shm_fd;
+<span class="line-number">71</span>  uint8_t *shm_pool_data;
+<span class="line-number">72</span>
+<span class="line-number">73</span>  state_state_t state;
+<span class="line-number">74</span>};
+<span class="line-number">75</span>
+<span class="line-number">76</span>static int wayland_display_connect() {
+<span class="line-number">77</span>  char *xdg_runtime_dir = getenv(&quot;XDG_RUNTIME_DIR&quot;);
+<span class="line-number">78</span>  if (xdg_runtime_dir == NULL)
+<span class="line-number">79</span>    return EINVAL;
+<span class="line-number">80</span>
+<span class="line-number">81</span>  uint64_t xdg_runtime_dir_len = strlen(xdg_runtime_dir);
+<span class="line-number">82</span>
+<span class="line-number">83</span>  struct sockaddr_un addr = {.sun_family = AF_UNIX};
+<span class="line-number">84</span>  assert(xdg_runtime_dir_len &lt;= cstring_len(addr.sun_path));
+<span class="line-number">85</span>  uint64_t socket_path_len = 0;
+<span class="line-number">86</span>
+<span class="line-number">87</span>  memcpy(addr.sun_path, xdg_runtime_dir, xdg_runtime_dir_len);
+<span class="line-number">88</span>  socket_path_len += xdg_runtime_dir_len;
+<span class="line-number">89</span>
+<span class="line-number">90</span>  addr.sun_path[socket_path_len++] = '/';
+<span class="line-number">91</span>
+<span class="line-number">92</span>  char *wayland_display = getenv(&quot;WAYLAND_DISPLAY&quot;);
+<span class="line-number">93</span>  if (wayland_display == NULL) {
+<span class="line-number">94</span>    char wayland_display_default[] = &quot;wayland-0&quot;;
+<span class="line-number">95</span>    uint64_t wayland_display_default_len = cstring_len(wayland_display_default);
+<span class="line-number">96</span>
+<span class="line-number">97</span>    memcpy(addr.sun_path + socket_path_len, wayland_display_default,
+<span class="line-number">98</span>           wayland_display_default_len);
+<span class="line-number">99</span>    socket_path_len += wayland_display_default_len;
+<span class="line-number">100</span>  } else {
+<span class="line-number">101</span>    uint64_t wayland_display_len = strlen(wayland_display);
+<span class="line-number">102</span>    memcpy(addr.sun_path + socket_path_len, wayland_display,
+<span class="line-number">103</span>           wayland_display_len);
+<span class="line-number">104</span>    socket_path_len += wayland_display_len;
+<span class="line-number">105</span>  }
+<span class="line-number">106</span>
+<span class="line-number">107</span>  int fd = socket(AF_UNIX, SOCK_STREAM, 0);
+<span class="line-number">108</span>  if (fd == -1)
+<span class="line-number">109</span>    exit(errno);
+<span class="line-number">110</span>
+<span class="line-number">111</span>  if (connect(fd, (struct sockaddr *)&amp;addr, sizeof(addr)) == -1)
+<span class="line-number">112</span>    exit(errno);
+<span class="line-number">113</span>
+<span class="line-number">114</span>  return fd;
+<span class="line-number">115</span>}
+<span class="line-number">116</span>
+<span class="line-number">117</span>static void buf_write_u32(char *buf, uint64_t *buf_size, uint64_t buf_cap,
+<span class="line-number">118</span>                          uint32_t x) {
+<span class="line-number">119</span>  assert(*buf_size + sizeof(x) &lt;= buf_cap);
+<span class="line-number">120</span>  assert(((size_t)buf + *buf_size) % sizeof(x) == 0);
+<span class="line-number">121</span>
+<span class="line-number">122</span>  *(uint32_t *)(buf + *buf_size) = x;
+<span class="line-number">123</span>  *buf_size += sizeof(x);
+<span class="line-number">124</span>}
+<span class="line-number">125</span>
+<span class="line-number">126</span>static void buf_write_u16(char *buf, uint64_t *buf_size, uint64_t buf_cap,
+<span class="line-number">127</span>                          uint16_t x) {
+<span class="line-number">128</span>  assert(*buf_size + sizeof(x) &lt;= buf_cap);
+<span class="line-number">129</span>  assert(((size_t)buf + *buf_size) % sizeof(x) == 0);
+<span class="line-number">130</span>
+<span class="line-number">131</span>  *(uint16_t *)(buf + *buf_size) = x;
+<span class="line-number">132</span>  *buf_size += sizeof(x);
+<span class="line-number">133</span>}
+<span class="line-number">134</span>
+<span class="line-number">135</span>static void buf_write_string(char *buf, uint64_t *buf_size, uint64_t buf_cap,
+<span class="line-number">136</span>                             char *src, uint32_t src_len) {
+<span class="line-number">137</span>  assert(*buf_size + src_len &lt;= buf_cap);
+<span class="line-number">138</span>
+<span class="line-number">139</span>  buf_write_u32(buf, buf_size, buf_cap, src_len);
+<span class="line-number">140</span>  memcpy(buf + *buf_size, src, roundup_4(src_len));
+<span class="line-number">141</span>  *buf_size += roundup_4(src_len);
+<span class="line-number">142</span>}
+<span class="line-number">143</span>
+<span class="line-number">144</span>static uint32_t buf_read_u32(char **buf, uint64_t *buf_size) {
+<span class="line-number">145</span>  assert(*buf_size &gt;= sizeof(uint32_t));
+<span class="line-number">146</span>  assert((size_t)*buf % sizeof(uint32_t) == 0);
+<span class="line-number">147</span>
+<span class="line-number">148</span>  uint32_t res = *(uint32_t *)(*buf);
+<span class="line-number">149</span>  *buf += sizeof(res);
+<span class="line-number">150</span>  *buf_size -= sizeof(res);
+<span class="line-number">151</span>
+<span class="line-number">152</span>  return res;
+<span class="line-number">153</span>}
+<span class="line-number">154</span>
+<span class="line-number">155</span>static uint16_t buf_read_u16(char **buf, uint64_t *buf_size) {
+<span class="line-number">156</span>  assert(*buf_size &gt;= sizeof(uint16_t));
+<span class="line-number">157</span>  assert((size_t)*buf % sizeof(uint16_t) == 0);
+<span class="line-number">158</span>
+<span class="line-number">159</span>  uint16_t res = *(uint16_t *)(*buf);
+<span class="line-number">160</span>  *buf += sizeof(res);
+<span class="line-number">161</span>  *buf_size -= sizeof(res);
+<span class="line-number">162</span>
+<span class="line-number">163</span>  return res;
+<span class="line-number">164</span>}
+<span class="line-number">165</span>
+<span class="line-number">166</span>static void buf_read_n(char **buf, uint64_t *buf_size, char *dst, uint64_t n) {
+<span class="line-number">167</span>  assert(*buf_size &gt;= n);
+<span class="line-number">168</span>
+<span class="line-number">169</span>  memcpy(dst, *buf, n);
+<span class="line-number">170</span>
+<span class="line-number">171</span>  *buf += n;
+<span class="line-number">172</span>  *buf_size -= n;
+<span class="line-number">173</span>}
+<span class="line-number">174</span>
+<span class="line-number">175</span>static uint32_t wayland_wl_display_get_registry(int fd) {
+<span class="line-number">176</span>  uint64_t msg_size = 0;
+<span class="line-number">177</span>  char msg[128] = &quot;&quot;;
+<span class="line-number">178</span>  buf_write_u32(msg, &amp;msg_size, sizeof(msg), wayland_display_object_id);
+<span class="line-number">179</span>
+<span class="line-number">180</span>  buf_write_u16(msg, &amp;msg_size, sizeof(msg),
+<span class="line-number">181</span>                wayland_wl_display_get_registry_opcode);
+<span class="line-number">182</span>
+<span class="line-number">183</span>  uint16_t msg_announced_size =
+<span class="line-number">184</span>      wayland_header_size + sizeof(wayland_current_id);
+<span class="line-number">185</span>  assert(roundup_4(msg_announced_size) == msg_announced_size);
+<span class="line-number">186</span>  buf_write_u16(msg, &amp;msg_size, sizeof(msg), msg_announced_size);
+<span class="line-number">187</span>
+<span class="line-number">188</span>  wayland_current_id++;
+<span class="line-number">189</span>  buf_write_u32(msg, &amp;msg_size, sizeof(msg), wayland_current_id);
+<span class="line-number">190</span>
+<span class="line-number">191</span>  if ((int64_t)msg_size != send(fd, msg, msg_size, 0))
+<span class="line-number">192</span>    exit(errno);
+<span class="line-number">193</span>
+<span class="line-number">194</span>  printf(&quot;-&gt; wl_display@%u.get_registry: wl_registry=%u\n&quot;,
+<span class="line-number">195</span>         wayland_display_object_id, wayland_current_id);
+<span class="line-number">196</span>
+<span class="line-number">197</span>  return wayland_current_id;
+<span class="line-number">198</span>}
+<span class="line-number">199</span>
+<span class="line-number">200</span>static uint32_t wayland_wl_registry_bind(int fd, uint32_t registry,
+<span class="line-number">201</span>                                         uint32_t name, char *interface,
+<span class="line-number">202</span>                                         uint32_t interface_len,
+<span class="line-number">203</span>                                         uint32_t version) {
+<span class="line-number">204</span>  uint64_t msg_size = 0;
+<span class="line-number">205</span>  char msg[512] = &quot;&quot;;
+<span class="line-number">206</span>  buf_write_u32(msg, &amp;msg_size, sizeof(msg), registry);
+<span class="line-number">207</span>
+<span class="line-number">208</span>  buf_write_u16(msg, &amp;msg_size, sizeof(msg), wayland_wl_registry_bind_opcode);
+<span class="line-number">209</span>
+<span class="line-number">210</span>  uint16_t msg_announced_size =
+<span class="line-number">211</span>      wayland_header_size + sizeof(name) + sizeof(interface_len) +
+<span class="line-number">212</span>      roundup_4(interface_len) + sizeof(version) + sizeof(wayland_current_id);
+<span class="line-number">213</span>  assert(roundup_4(msg_announced_size) == msg_announced_size);
+<span class="line-number">214</span>  buf_write_u16(msg, &amp;msg_size, sizeof(msg), msg_announced_size);
+<span class="line-number">215</span>
+<span class="line-number">216</span>  buf_write_u32(msg, &amp;msg_size, sizeof(msg), name);
+<span class="line-number">217</span>  buf_write_string(msg, &amp;msg_size, sizeof(msg), interface, interface_len);
+<span class="line-number">218</span>  buf_write_u32(msg, &amp;msg_size, sizeof(msg), version);
+<span class="line-number">219</span>
+<span class="line-number">220</span>  wayland_current_id++;
+<span class="line-number">221</span>  buf_write_u32(msg, &amp;msg_size, sizeof(msg), wayland_current_id);
+<span class="line-number">222</span>
+<span class="line-number">223</span>  assert(msg_size == roundup_4(msg_size));
+<span class="line-number">224</span>
+<span class="line-number">225</span>  if ((int64_t)msg_size != send(fd, msg, msg_size, 0))
+<span class="line-number">226</span>    exit(errno);
+<span class="line-number">227</span>
+<span class="line-number">228</span>  printf(&quot;-&gt; wl_registry@%u.bind: name=%u interface=%.*s version=%u\n&quot;,
+<span class="line-number">229</span>         registry, name, interface_len, interface, version);
+<span class="line-number">230</span>
+<span class="line-number">231</span>  return wayland_current_id;
+<span class="line-number">232</span>}
+<span class="line-number">233</span>
+<span class="line-number">234</span>static uint32_t wayland_wl_compositor_create_surface(int fd, state_t *state) {
+<span class="line-number">235</span>  assert(state-&gt;wl_compositor &gt; 0);
+<span class="line-number">236</span>
+<span class="line-number">237</span>  uint64_t msg_size = 0;
+<span class="line-number">238</span>  char msg[128] = &quot;&quot;;
+<span class="line-number">239</span>  buf_write_u32(msg, &amp;msg_size, sizeof(msg), state-&gt;wl_compositor);
+<span class="line-number">240</span>
+<span class="line-number">241</span>  buf_write_u16(msg, &amp;msg_size, sizeof(msg),
+<span class="line-number">242</span>                wayland_wl_compositor_create_surface_opcode);
+<span class="line-number">243</span>
+<span class="line-number">244</span>  uint16_t msg_announced_size =
+<span class="line-number">245</span>      wayland_header_size + sizeof(wayland_current_id);
+<span class="line-number">246</span>  assert(roundup_4(msg_announced_size) == msg_announced_size);
+<span class="line-number">247</span>  buf_write_u16(msg, &amp;msg_size, sizeof(msg), msg_announced_size);
+<span class="line-number">248</span>
+<span class="line-number">249</span>  wayland_current_id++;
+<span class="line-number">250</span>  buf_write_u32(msg, &amp;msg_size, sizeof(msg), wayland_current_id);
+<span class="line-number">251</span>
+<span class="line-number">252</span>  if ((int64_t)msg_size != send(fd, msg, msg_size, 0))
+<span class="line-number">253</span>    exit(errno);
+<span class="line-number">254</span>
+<span class="line-number">255</span>  printf(&quot;-&gt; wl_compositor@%u.create_surface: wl_surface=%u\n&quot;,
+<span class="line-number">256</span>         state-&gt;wl_compositor, wayland_current_id);
+<span class="line-number">257</span>
+<span class="line-number">258</span>  return wayland_current_id;
+<span class="line-number">259</span>}
+<span class="line-number">260</span>
+<span class="line-number">261</span>static void create_shared_memory_file(uint64_t size, state_t *state) {
+<span class="line-number">262</span>  char name[255] = &quot;/&quot;;
+<span class="line-number">263</span>  for (uint64_t i = 1; i &lt; cstring_len(name); i++) {
+<span class="line-number">264</span>    name[i] = ((double)rand()) / (double)RAND_MAX * 26 + 'a';
+<span class="line-number">265</span>  }
+<span class="line-number">266</span>
+<span class="line-number">267</span>  int fd = shm_open(name, O_RDWR | O_EXCL | O_CREAT, 0600);
+<span class="line-number">268</span>  if (fd == -1)
+<span class="line-number">269</span>    exit(errno);
+<span class="line-number">270</span>
+<span class="line-number">271</span>  assert(shm_unlink(name) != -1);
+<span class="line-number">272</span>
+<span class="line-number">273</span>  if (ftruncate(fd, size) == -1)
+<span class="line-number">274</span>    exit(errno);
+<span class="line-number">275</span>
+<span class="line-number">276</span>  state-&gt;shm_pool_data =
+<span class="line-number">277</span>      mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+<span class="line-number">278</span>  assert((void*)-1 != state-&gt;shm_pool_data);
+<span class="line-number">279</span>  assert(state-&gt;shm_pool_data != NULL);
+<span class="line-number">280</span>  state-&gt;shm_fd = fd;
+<span class="line-number">281</span>}
+<span class="line-number">282</span>
+<span class="line-number">283</span>static void wayland_xdg_wm_base_pong(int fd, state_t *state, uint32_t ping) {
+<span class="line-number">284</span>  assert(state-&gt;xdg_wm_base &gt; 0);
+<span class="line-number">285</span>  assert(state-&gt;wl_surface &gt; 0);
+<span class="line-number">286</span>
+<span class="line-number">287</span>  uint64_t msg_size = 0;
+<span class="line-number">288</span>  char msg[128] = &quot;&quot;;
+<span class="line-number">289</span>  buf_write_u32(msg, &amp;msg_size, sizeof(msg), state-&gt;xdg_wm_base);
+<span class="line-number">290</span>
+<span class="line-number">291</span>  buf_write_u16(msg, &amp;msg_size, sizeof(msg), wayland_xdg_wm_base_pong_opcode);
+<span class="line-number">292</span>
+<span class="line-number">293</span>  uint16_t msg_announced_size = wayland_header_size + sizeof(ping);
+<span class="line-number">294</span>  assert(roundup_4(msg_announced_size) == msg_announced_size);
+<span class="line-number">295</span>  buf_write_u16(msg, &amp;msg_size, sizeof(msg), msg_announced_size);
+<span class="line-number">296</span>
+<span class="line-number">297</span>  buf_write_u32(msg, &amp;msg_size, sizeof(msg), ping);
+<span class="line-number">298</span>
+<span class="line-number">299</span>  if ((int64_t)msg_size != send(fd, msg, msg_size, 0))
+<span class="line-number">300</span>    exit(errno);
+<span class="line-number">301</span>
+<span class="line-number">302</span>  printf(&quot;-&gt; xdg_wm_base@%u.pong: ping=%u\n&quot;, state-&gt;xdg_wm_base, ping);
+<span class="line-number">303</span>}
+<span class="line-number">304</span>
+<span class="line-number">305</span>static void wayland_xdg_surface_ack_configure(int fd, state_t *state,
+<span class="line-number">306</span>                                              uint32_t configure) {
+<span class="line-number">307</span>  assert(state-&gt;xdg_surface &gt; 0);
+<span class="line-number">308</span>
+<span class="line-number">309</span>  uint64_t msg_size = 0;
+<span class="line-number">310</span>  char msg[128] = &quot;&quot;;
+<span class="line-number">311</span>  buf_write_u32(msg, &amp;msg_size, sizeof(msg), state-&gt;xdg_surface);
+<span class="line-number">312</span>
+<span class="line-number">313</span>  buf_write_u16(msg, &amp;msg_size, sizeof(msg),
+<span class="line-number">314</span>                wayland_xdg_surface_ack_configure_opcode);
+<span class="line-number">315</span>
+<span class="line-number">316</span>  uint16_t msg_announced_size = wayland_header_size + sizeof(configure);
+<span class="line-number">317</span>  assert(roundup_4(msg_announced_size) == msg_announced_size);
+<span class="line-number">318</span>  buf_write_u16(msg, &amp;msg_size, sizeof(msg), msg_announced_size);
+<span class="line-number">319</span>
+<span class="line-number">320</span>  buf_write_u32(msg, &amp;msg_size, sizeof(msg), configure);
+<span class="line-number">321</span>
+<span class="line-number">322</span>  if ((int64_t)msg_size != send(fd, msg, msg_size, 0))
+<span class="line-number">323</span>    exit(errno);
+<span class="line-number">324</span>
+<span class="line-number">325</span>  printf(&quot;-&gt; xdg_surface@%u.ack_configure: configure=%u\n&quot;, state-&gt;xdg_surface,
+<span class="line-number">326</span>         configure);
+<span class="line-number">327</span>}
+<span class="line-number">328</span>
+<span class="line-number">329</span>static uint32_t wayland_wl_shm_create_pool(int fd, state_t *state) {
+<span class="line-number">330</span>  assert(state-&gt;shm_pool_size &gt; 0);
+<span class="line-number">331</span>
+<span class="line-number">332</span>  uint64_t msg_size = 0;
+<span class="line-number">333</span>  char msg[128] = &quot;&quot;;
+<span class="line-number">334</span>  buf_write_u32(msg, &amp;msg_size, sizeof(msg), state-&gt;wl_shm);
+<span class="line-number">335</span>
+<span class="line-number">336</span>  buf_write_u16(msg, &amp;msg_size, sizeof(msg), wayland_wl_shm_create_pool_opcode);
+<span class="line-number">337</span>
+<span class="line-number">338</span>  uint16_t msg_announced_size = wayland_header_size +
+<span class="line-number">339</span>                                sizeof(wayland_current_id) +
+<span class="line-number">340</span>                                sizeof(state-&gt;shm_pool_size);
+<span class="line-number">341</span>
+<span class="line-number">342</span>  assert(roundup_4(msg_announced_size) == msg_announced_size);
+<span class="line-number">343</span>  buf_write_u16(msg, &amp;msg_size, sizeof(msg), msg_announced_size);
+<span class="line-number">344</span>
+<span class="line-number">345</span>  wayland_current_id++;
+<span class="line-number">346</span>  buf_write_u32(msg, &amp;msg_size, sizeof(msg), wayland_current_id);
+<span class="line-number">347</span>
+<span class="line-number">348</span>  buf_write_u32(msg, &amp;msg_size, sizeof(msg), state-&gt;shm_pool_size);
+<span class="line-number">349</span>
+<span class="line-number">350</span>  assert(roundup_4(msg_size) == msg_size);
+<span class="line-number">351</span>
+<span class="line-number">352</span>  // Send the file descriptor as ancillary data.
+<span class="line-number">353</span>  // UNIX/Macros monstrosities ahead.
+<span class="line-number">354</span>  char buf[CMSG_SPACE(sizeof(state-&gt;shm_fd))] = &quot;&quot;;
+<span class="line-number">355</span>
+<span class="line-number">356</span>  struct iovec io = {.iov_base = msg, .iov_len = msg_size};
+<span class="line-number">357</span>  struct msghdr socket_msg = {
+<span class="line-number">358</span>      .msg_iov = &amp;io,
+<span class="line-number">359</span>      .msg_iovlen = 1,
+<span class="line-number">360</span>      .msg_control = buf,
+<span class="line-number">361</span>      .msg_controllen = sizeof(buf),
+<span class="line-number">362</span>  };
+<span class="line-number">363</span>
+<span class="line-number">364</span>  struct cmsghdr *cmsg = CMSG_FIRSTHDR(&amp;socket_msg);
+<span class="line-number">365</span>  cmsg-&gt;cmsg_level = SOL_SOCKET;
+<span class="line-number">366</span>  cmsg-&gt;cmsg_type = SCM_RIGHTS;
+<span class="line-number">367</span>  cmsg-&gt;cmsg_len = CMSG_LEN(sizeof(state-&gt;shm_fd));
+<span class="line-number">368</span>
+<span class="line-number">369</span>  *((int *)CMSG_DATA(cmsg)) = state-&gt;shm_fd;
+<span class="line-number">370</span>  socket_msg.msg_controllen = CMSG_SPACE(sizeof(state-&gt;shm_fd));
+<span class="line-number">371</span>
+<span class="line-number">372</span>  if (sendmsg(fd, &amp;socket_msg, 0) == -1)
+<span class="line-number">373</span>    exit(errno);
+<span class="line-number">374</span>
+<span class="line-number">375</span>  printf(&quot;-&gt; wl_shm@%u.create_pool: wl_shm_pool=%u\n&quot;, state-&gt;wl_shm,
+<span class="line-number">376</span>         wayland_current_id);
+<span class="line-number">377</span>
+<span class="line-number">378</span>  return wayland_current_id;
+<span class="line-number">379</span>}
+<span class="line-number">380</span>
+<span class="line-number">381</span>static uint32_t wayland_xdg_wm_base_get_xdg_surface(int fd, state_t *state) {
+<span class="line-number">382</span>  assert(state-&gt;xdg_wm_base &gt; 0);
+<span class="line-number">383</span>  assert(state-&gt;wl_surface &gt; 0);
+<span class="line-number">384</span>
+<span class="line-number">385</span>  uint64_t msg_size = 0;
+<span class="line-number">386</span>  char msg[128] = &quot;&quot;;
+<span class="line-number">387</span>  buf_write_u32(msg, &amp;msg_size, sizeof(msg), state-&gt;xdg_wm_base);
+<span class="line-number">388</span>
+<span class="line-number">389</span>  buf_write_u16(msg, &amp;msg_size, sizeof(msg),
+<span class="line-number">390</span>                wayland_xdg_wm_base_get_xdg_surface_opcode);
+<span class="line-number">391</span>
+<span class="line-number">392</span>  uint16_t msg_announced_size = wayland_header_size +
+<span class="line-number">393</span>                                sizeof(wayland_current_id) +
+<span class="line-number">394</span>                                sizeof(state-&gt;wl_surface);
+<span class="line-number">395</span>  assert(roundup_4(msg_announced_size) == msg_announced_size);
+<span class="line-number">396</span>  buf_write_u16(msg, &amp;msg_size, sizeof(msg), msg_announced_size);
+<span class="line-number">397</span>
+<span class="line-number">398</span>  wayland_current_id++;
+<span class="line-number">399</span>  buf_write_u32(msg, &amp;msg_size, sizeof(msg), wayland_current_id);
+<span class="line-number">400</span>
+<span class="line-number">401</span>  buf_write_u32(msg, &amp;msg_size, sizeof(msg), state-&gt;wl_surface);
+<span class="line-number">402</span>
+<span class="line-number">403</span>  if ((int64_t)msg_size != send(fd, msg, msg_size, 0))
+<span class="line-number">404</span>    exit(errno);
+<span class="line-number">405</span>
+<span class="line-number">406</span>  printf(&quot;-&gt; xdg_wm_base@%u.get_xdg_surface: xdg_surface=%u wl_surface=%u\n&quot;,
+<span class="line-number">407</span>         state-&gt;xdg_wm_base, wayland_current_id, state-&gt;wl_surface);
+<span class="line-number">408</span>
+<span class="line-number">409</span>  return wayland_current_id;
+<span class="line-number">410</span>}
+<span class="line-number">411</span>
+<span class="line-number">412</span>static uint32_t wayland_wl_shm_pool_create_buffer(int fd, state_t *state) {
+<span class="line-number">413</span>  assert(state-&gt;wl_shm_pool &gt; 0);
+<span class="line-number">414</span>
+<span class="line-number">415</span>  uint64_t msg_size = 0;
+<span class="line-number">416</span>  char msg[128] = &quot;&quot;;
+<span class="line-number">417</span>  buf_write_u32(msg, &amp;msg_size, sizeof(msg), state-&gt;wl_shm_pool);
+<span class="line-number">418</span>
+<span class="line-number">419</span>  buf_write_u16(msg, &amp;msg_size, sizeof(msg),
+<span class="line-number">420</span>                wayland_wl_shm_pool_create_buffer_opcode);
+<span class="line-number">421</span>
+<span class="line-number">422</span>  uint16_t msg_announced_size =
+<span class="line-number">423</span>      wayland_header_size + sizeof(wayland_current_id) + sizeof(uint32_t) * 5;
+<span class="line-number">424</span>  assert(roundup_4(msg_announced_size) == msg_announced_size);
+<span class="line-number">425</span>  buf_write_u16(msg, &amp;msg_size, sizeof(msg), msg_announced_size);
+<span class="line-number">426</span>
+<span class="line-number">427</span>  wayland_current_id++;
+<span class="line-number">428</span>  buf_write_u32(msg, &amp;msg_size, sizeof(msg), wayland_current_id);
+<span class="line-number">429</span>
+<span class="line-number">430</span>  uint32_t offset = 0;
+<span class="line-number">431</span>  buf_write_u32(msg, &amp;msg_size, sizeof(msg), offset);
+<span class="line-number">432</span>
+<span class="line-number">433</span>  buf_write_u32(msg, &amp;msg_size, sizeof(msg), state-&gt;w);
+<span class="line-number">434</span>
+<span class="line-number">435</span>  buf_write_u32(msg, &amp;msg_size, sizeof(msg), state-&gt;h);
+<span class="line-number">436</span>
+<span class="line-number">437</span>  buf_write_u32(msg, &amp;msg_size, sizeof(msg), state-&gt;stride);
+<span class="line-number">438</span>
+<span class="line-number">439</span>  uint32_t format = wayland_format_xrgb8888;
+<span class="line-number">440</span>  buf_write_u32(msg, &amp;msg_size, sizeof(msg), format);
+<span class="line-number">441</span>
+<span class="line-number">442</span>  if ((int64_t)msg_size != send(fd, msg, msg_size, 0))
+<span class="line-number">443</span>    exit(errno);
+<span class="line-number">444</span>
+<span class="line-number">445</span>  printf(&quot;-&gt; wl_shm_pool@%u.create_buffer: wl_buffer=%u\n&quot;, state-&gt;wl_shm_pool,
+<span class="line-number">446</span>         wayland_current_id);
+<span class="line-number">447</span>
+<span class="line-number">448</span>  return wayland_current_id;
+<span class="line-number">449</span>}
+<span class="line-number">450</span>
+<span class="line-number">451</span>static void wayland_wl_surface_attach(int fd, state_t *state) {
+<span class="line-number">452</span>  assert(state-&gt;wl_surface &gt; 0);
+<span class="line-number">453</span>  assert(state-&gt;wl_buffer &gt; 0);
+<span class="line-number">454</span>
+<span class="line-number">455</span>  uint64_t msg_size = 0;
+<span class="line-number">456</span>  char msg[128] = &quot;&quot;;
+<span class="line-number">457</span>  buf_write_u32(msg, &amp;msg_size, sizeof(msg), state-&gt;wl_surface);
+<span class="line-number">458</span>
+<span class="line-number">459</span>  buf_write_u16(msg, &amp;msg_size, sizeof(msg), wayland_wl_surface_attach_opcode);
+<span class="line-number">460</span>
+<span class="line-number">461</span>  uint16_t msg_announced_size =
+<span class="line-number">462</span>      wayland_header_size + sizeof(state-&gt;wl_buffer) + sizeof(uint32_t) * 2;
+<span class="line-number">463</span>  assert(roundup_4(msg_announced_size) == msg_announced_size);
+<span class="line-number">464</span>  buf_write_u16(msg, &amp;msg_size, sizeof(msg), msg_announced_size);
+<span class="line-number">465</span>
+<span class="line-number">466</span>  buf_write_u32(msg, &amp;msg_size, sizeof(msg), state-&gt;wl_buffer);
+<span class="line-number">467</span>
+<span class="line-number">468</span>  uint32_t x = 0, y = 0;
+<span class="line-number">469</span>  buf_write_u32(msg, &amp;msg_size, sizeof(msg), x);
+<span class="line-number">470</span>  buf_write_u32(msg, &amp;msg_size, sizeof(msg), y);
+<span class="line-number">471</span>
+<span class="line-number">472</span>  if ((int64_t)msg_size != send(fd, msg, msg_size, 0))
+<span class="line-number">473</span>    exit(errno);
+<span class="line-number">474</span>
+<span class="line-number">475</span>  printf(&quot;-&gt; wl_surface@%u.attach: wl_buffer=%u\n&quot;, state-&gt;wl_surface,
+<span class="line-number">476</span>         state-&gt;wl_buffer);
+<span class="line-number">477</span>}
+<span class="line-number">478</span>
+<span class="line-number">479</span>static uint32_t wayland_xdg_surface_get_toplevel(int fd, state_t *state) {
+<span class="line-number">480</span>  assert(state-&gt;xdg_surface &gt; 0);
+<span class="line-number">481</span>
+<span class="line-number">482</span>  uint64_t msg_size = 0;
+<span class="line-number">483</span>  char msg[128] = &quot;&quot;;
+<span class="line-number">484</span>  buf_write_u32(msg, &amp;msg_size, sizeof(msg), state-&gt;xdg_surface);
+<span class="line-number">485</span>
+<span class="line-number">486</span>  buf_write_u16(msg, &amp;msg_size, sizeof(msg),
+<span class="line-number">487</span>                wayland_xdg_surface_get_toplevel_opcode);
+<span class="line-number">488</span>
+<span class="line-number">489</span>  uint16_t msg_announced_size =
+<span class="line-number">490</span>      wayland_header_size + sizeof(wayland_current_id);
+<span class="line-number">491</span>  assert(roundup_4(msg_announced_size) == msg_announced_size);
+<span class="line-number">492</span>  buf_write_u16(msg, &amp;msg_size, sizeof(msg), msg_announced_size);
+<span class="line-number">493</span>
+<span class="line-number">494</span>  wayland_current_id++;
+<span class="line-number">495</span>  buf_write_u32(msg, &amp;msg_size, sizeof(msg), wayland_current_id);
+<span class="line-number">496</span>
+<span class="line-number">497</span>  if ((int64_t)msg_size != send(fd, msg, msg_size, 0))
+<span class="line-number">498</span>    exit(errno);
+<span class="line-number">499</span>
+<span class="line-number">500</span>  printf(&quot;-&gt; xdg_surface@%u.get_toplevel: xdg_toplevel=%u\n&quot;,
+<span class="line-number">501</span>         state-&gt;xdg_surface, wayland_current_id);
+<span class="line-number">502</span>
+<span class="line-number">503</span>  return wayland_current_id;
+<span class="line-number">504</span>}
+<span class="line-number">505</span>
+<span class="line-number">506</span>static void wayland_wl_surface_commit(int fd, state_t *state) {
+<span class="line-number">507</span>  assert(state-&gt;wl_surface &gt; 0);
+<span class="line-number">508</span>
+<span class="line-number">509</span>  uint64_t msg_size = 0;
+<span class="line-number">510</span>  char msg[128] = &quot;&quot;;
+<span class="line-number">511</span>  buf_write_u32(msg, &amp;msg_size, sizeof(msg), state-&gt;wl_surface);
+<span class="line-number">512</span>
+<span class="line-number">513</span>  buf_write_u16(msg, &amp;msg_size, sizeof(msg), wayland_wl_surface_commit_opcode);
+<span class="line-number">514</span>
+<span class="line-number">515</span>  uint16_t msg_announced_size = wayland_header_size;
+<span class="line-number">516</span>  assert(roundup_4(msg_announced_size) == msg_announced_size);
+<span class="line-number">517</span>  buf_write_u16(msg, &amp;msg_size, sizeof(msg), msg_announced_size);
+<span class="line-number">518</span>
+<span class="line-number">519</span>  if ((int64_t)msg_size != send(fd, msg, msg_size, 0))
+<span class="line-number">520</span>    exit(errno);
+<span class="line-number">521</span>
+<span class="line-number">522</span>  printf(&quot;-&gt; wl_surface@%u.commit: \n&quot;, state-&gt;wl_surface);
+<span class="line-number">523</span>}
+<span class="line-number">524</span>
+<span class="line-number">525</span>static void wayland_handle_message(int fd, state_t *state, char **msg,
+<span class="line-number">526</span>                                   uint64_t *msg_len) {
+<span class="line-number">527</span>  assert(*msg_len &gt;= 8);
+<span class="line-number">528</span>
+<span class="line-number">529</span>  uint32_t object_id = buf_read_u32(msg, msg_len);
+<span class="line-number">530</span>  assert(object_id &lt;= wayland_current_id);
+<span class="line-number">531</span>
+<span class="line-number">532</span>  uint16_t opcode = buf_read_u16(msg, msg_len);
+<span class="line-number">533</span>
+<span class="line-number">534</span>  uint16_t announced_size = buf_read_u16(msg, msg_len);
+<span class="line-number">535</span>  assert(roundup_4(announced_size) &lt;= announced_size);
+<span class="line-number">536</span>
+<span class="line-number">537</span>  uint32_t header_size =
+<span class="line-number">538</span>      sizeof(object_id) + sizeof(opcode) + sizeof(announced_size);
+<span class="line-number">539</span>  assert(announced_size &lt;= header_size + *msg_len);
+<span class="line-number">540</span>
+<span class="line-number">541</span>  if (object_id == state-&gt;wl_registry &amp;&amp;
+<span class="line-number">542</span>      opcode == wayland_wl_registry_event_global) {
+<span class="line-number">543</span>    uint32_t name = buf_read_u32(msg, msg_len);
+<span class="line-number">544</span>
+<span class="line-number">545</span>    uint32_t interface_len = buf_read_u32(msg, msg_len);
+<span class="line-number">546</span>    uint32_t padded_interface_len = roundup_4(interface_len);
+<span class="line-number">547</span>
+<span class="line-number">548</span>    char interface[512] = &quot;&quot;;
+<span class="line-number">549</span>    assert(padded_interface_len &lt;= cstring_len(interface));
+<span class="line-number">550</span>
+<span class="line-number">551</span>    buf_read_n(msg, msg_len, interface, padded_interface_len);
+<span class="line-number">552</span>    // The length includes the NULL terminator.
+<span class="line-number">553</span>    assert(interface[interface_len - 1] == 0);
+<span class="line-number">554</span>
+<span class="line-number">555</span>    uint32_t version = buf_read_u32(msg, msg_len);
+<span class="line-number">556</span>
+<span class="line-number">557</span>    printf(&quot;&lt;- wl_registry@%u.global: name=%u interface=%.*s version=%u\n&quot;,
+<span class="line-number">558</span>           state-&gt;wl_registry, name, interface_len, interface, version);
+<span class="line-number">559</span>
+<span class="line-number">560</span>    assert(announced_size == sizeof(object_id) + sizeof(announced_size) +
+<span class="line-number">561</span>                                 sizeof(opcode) + sizeof(name) +
+<span class="line-number">562</span>                                 sizeof(interface_len) + padded_interface_len +
+<span class="line-number">563</span>                                 sizeof(version));
+<span class="line-number">564</span>
+<span class="line-number">565</span>    char wl_shm_interface[] = &quot;wl_shm&quot;;
+<span class="line-number">566</span>    if (strcmp(wl_shm_interface, interface) == 0) {
+<span class="line-number">567</span>      state-&gt;wl_shm = wayland_wl_registry_bind(
+<span class="line-number">568</span>          fd, state-&gt;wl_registry, name, interface, interface_len, version);
+<span class="line-number">569</span>    }
+<span class="line-number">570</span>
+<span class="line-number">571</span>    char xdg_wm_base_interface[] = &quot;xdg_wm_base&quot;;
+<span class="line-number">572</span>    if (strcmp(xdg_wm_base_interface, interface) == 0) {
+<span class="line-number">573</span>      state-&gt;xdg_wm_base = wayland_wl_registry_bind(
+<span class="line-number">574</span>          fd, state-&gt;wl_registry, name, interface, interface_len, version);
+<span class="line-number">575</span>    }
+<span class="line-number">576</span>
+<span class="line-number">577</span>    char wl_compositor_interface[] = &quot;wl_compositor&quot;;
+<span class="line-number">578</span>    if (strcmp(wl_compositor_interface, interface) == 0) {
+<span class="line-number">579</span>      state-&gt;wl_compositor = wayland_wl_registry_bind(
+<span class="line-number">580</span>          fd, state-&gt;wl_registry, name, interface, interface_len, version);
+<span class="line-number">581</span>    }
+<span class="line-number">582</span>
+<span class="line-number">583</span>    return;
+<span class="line-number">584</span>  } else if (object_id == wayland_display_object_id &amp;&amp;
+<span class="line-number">585</span>             opcode == wayland_wl_display_error_event) {
+<span class="line-number">586</span>    uint32_t target_object_id = buf_read_u32(msg, msg_len);
+<span class="line-number">587</span>    uint32_t code = buf_read_u32(msg, msg_len);
+<span class="line-number">588</span>    char error[512] = &quot;&quot;;
+<span class="line-number">589</span>    uint32_t error_len = buf_read_u32(msg, msg_len);
+<span class="line-number">590</span>    buf_read_n(msg, msg_len, error, roundup_4(error_len));
+<span class="line-number">591</span>
+<span class="line-number">592</span>    fprintf(stderr, &quot;fatal error: target_object_id=%u code=%u error=%s\n&quot;,
+<span class="line-number">593</span>            target_object_id, code, error);
+<span class="line-number">594</span>    exit(EINVAL);
+<span class="line-number">595</span>  } else if (object_id == state-&gt;wl_shm &amp;&amp;
+<span class="line-number">596</span>             opcode == wayland_shm_pool_event_format) {
+<span class="line-number">597</span>
+<span class="line-number">598</span>    uint32_t format = buf_read_u32(msg, msg_len);
+<span class="line-number">599</span>    printf(&quot;&lt;- wl_shm: format=%#x\n&quot;, format);
+<span class="line-number">600</span>    return;
+<span class="line-number">601</span>  } else if (object_id == state-&gt;wl_buffer &amp;&amp;
+<span class="line-number">602</span>             opcode == wayland_wl_buffer_event_release) {
+<span class="line-number">603</span>    // No-op, for now.
+<span class="line-number">604</span>
+<span class="line-number">605</span>    printf(&quot;&lt;- xdg_wl_buffer@%u.release\n&quot;, state-&gt;wl_buffer);
+<span class="line-number">606</span>    return;
+<span class="line-number">607</span>  } else if (object_id == state-&gt;xdg_wm_base &amp;&amp;
+<span class="line-number">608</span>             opcode == wayland_xdg_wm_base_event_ping) {
+<span class="line-number">609</span>    uint32_t ping = buf_read_u32(msg, msg_len);
+<span class="line-number">610</span>    printf(&quot;&lt;- xdg_wm_base@%u.ping: ping=%u\n&quot;, state-&gt;xdg_wm_base, ping);
+<span class="line-number">611</span>    wayland_xdg_wm_base_pong(fd, state, ping);
+<span class="line-number">612</span>
+<span class="line-number">613</span>    return;
+<span class="line-number">614</span>  } else if (object_id == state-&gt;xdg_toplevel &amp;&amp;
+<span class="line-number">615</span>             opcode == wayland_xdg_toplevel_event_configure) {
+<span class="line-number">616</span>    uint32_t w = buf_read_u32(msg, msg_len);
+<span class="line-number">617</span>    uint32_t h = buf_read_u32(msg, msg_len);
+<span class="line-number">618</span>    uint32_t len = buf_read_u32(msg, msg_len);
+<span class="line-number">619</span>    char buf[256] = &quot;&quot;;
+<span class="line-number">620</span>    assert(len &lt;= sizeof(buf));
+<span class="line-number">621</span>    buf_read_n(msg, msg_len, buf, len);
+<span class="line-number">622</span>
+<span class="line-number">623</span>    printf(&quot;&lt;- xdg_toplevel@%u.configure: w=%u h=%u states[%u]\n&quot;,
+<span class="line-number">624</span>           state-&gt;xdg_toplevel, w, h, len);
+<span class="line-number">625</span>
+<span class="line-number">626</span>    return;
+<span class="line-number">627</span>  } else if (object_id == state-&gt;xdg_surface &amp;&amp;
+<span class="line-number">628</span>             opcode == wayland_xdg_surface_event_configure) {
+<span class="line-number">629</span>    uint32_t configure = buf_read_u32(msg, msg_len);
+<span class="line-number">630</span>    printf(&quot;&lt;- xdg_surface@%u.configure: configure=%u\n&quot;, state-&gt;xdg_surface,
+<span class="line-number">631</span>           configure);
+<span class="line-number">632</span>    wayland_xdg_surface_ack_configure(fd, state, configure);
+<span class="line-number">633</span>    state-&gt;state = STATE_SURFACE_ACKED_CONFIGURE;
+<span class="line-number">634</span>
+<span class="line-number">635</span>    return;
+<span class="line-number">636</span>  } else if (object_id == state-&gt;xdg_toplevel &amp;&amp;
+<span class="line-number">637</span>             opcode == wayland_xdg_toplevel_event_close) {
+<span class="line-number">638</span>    printf(&quot;&lt;- xdg_toplevel@%u.close\n&quot;, state-&gt;xdg_toplevel);
+<span class="line-number">639</span>    exit(0);
+<span class="line-number">640</span>  }
+<span class="line-number">641</span>
+<span class="line-number">642</span>  fprintf(stderr, &quot;object_id=%u opcode=%u msg_len=%lu\n&quot;, object_id, opcode,
+<span class="line-number">643</span>          *msg_len);
+<span class="line-number">644</span>  assert(0 &amp;&amp; &quot;todo&quot;);
+<span class="line-number">645</span>}
+<span class="line-number">646</span>
+<span class="line-number">647</span>int main() {
+<span class="line-number">648</span>  struct timeval tv = {0};
+<span class="line-number">649</span>  assert(gettimeofday(&amp;tv, NULL) != -1);
+<span class="line-number">650</span>  srand(tv.tv_sec * 1000 * 1000 + tv.tv_usec);
+<span class="line-number">651</span>
+<span class="line-number">652</span>  int fd = wayland_display_connect();
+<span class="line-number">653</span>
+<span class="line-number">654</span>  state_t state = {
+<span class="line-number">655</span>      .wl_registry = wayland_wl_display_get_registry(fd),
+<span class="line-number">656</span>      .w = 117,
+<span class="line-number">657</span>      .h = 150,
+<span class="line-number">658</span>      .stride = 117 * color_channels,
+<span class="line-number">659</span>  };
+<span class="line-number">660</span>
+<span class="line-number">661</span>  // Single buffering.
+<span class="line-number">662</span>  state.shm_pool_size = state.h * state.stride;
+<span class="line-number">663</span>  create_shared_memory_file(state.shm_pool_size, &amp;state);
+<span class="line-number">664</span>
+<span class="line-number">665</span>  while (1) {
+<span class="line-number">666</span>    char read_buf[4096] = &quot;&quot;;
+<span class="line-number">667</span>    int64_t read_bytes = recv(fd, read_buf, sizeof(read_buf), 0);
+<span class="line-number">668</span>    if (read_bytes == -1)
+<span class="line-number">669</span>      exit(errno);
+<span class="line-number">670</span>
+<span class="line-number">671</span>    char *msg = read_buf;
+<span class="line-number">672</span>    uint64_t msg_len = (uint64_t)read_bytes;
+<span class="line-number">673</span>
+<span class="line-number">674</span>    while (msg_len &gt; 0)
+<span class="line-number">675</span>      wayland_handle_message(fd, &amp;state, &amp;msg, &amp;msg_len);
+<span class="line-number">676</span>
+<span class="line-number">677</span>    if (state.wl_compositor != 0 &amp;&amp; state.wl_shm != 0 &amp;&amp;
+<span class="line-number">678</span>        state.xdg_wm_base != 0 &amp;&amp;
+<span class="line-number">679</span>        state.wl_surface == 0) { // Bind phase complete, need to create surface.
+<span class="line-number">680</span>      assert(state.state == STATE_NONE);
+<span class="line-number">681</span>
+<span class="line-number">682</span>      state.wl_surface = wayland_wl_compositor_create_surface(fd, &amp;state);
+<span class="line-number">683</span>      state.xdg_surface = wayland_xdg_wm_base_get_xdg_surface(fd, &amp;state);
+<span class="line-number">684</span>      state.xdg_toplevel = wayland_xdg_surface_get_toplevel(fd, &amp;state);
+<span class="line-number">685</span>      wayland_wl_surface_commit(fd, &amp;state);
+<span class="line-number">686</span>    }
+<span class="line-number">687</span>
+<span class="line-number">688</span>    if (state.state == STATE_SURFACE_ACKED_CONFIGURE) {
+<span class="line-number">689</span>      // Render a frame.
+<span class="line-number">690</span>      assert(state.wl_surface != 0);
+<span class="line-number">691</span>      assert(state.xdg_surface != 0);
+<span class="line-number">692</span>      assert(state.xdg_toplevel != 0);
+<span class="line-number">693</span>
+<span class="line-number">694</span>      if (state.wl_shm_pool == 0)
+<span class="line-number">695</span>        state.wl_shm_pool = wayland_wl_shm_create_pool(fd, &amp;state);
+<span class="line-number">696</span>      if (state.wl_buffer == 0)
+<span class="line-number">697</span>        state.wl_buffer = wayland_wl_shm_pool_create_buffer(fd, &amp;state);
+<span class="line-number">698</span>
+<span class="line-number">699</span>      assert(state.shm_pool_data != 0);
+<span class="line-number">700</span>      assert(state.shm_pool_size != 0);
+<span class="line-number">701</span>
+<span class="line-number">702</span>      uint32_t *pixels = (uint32_t *)state.shm_pool_data;
+<span class="line-number">703</span>      for (uint32_t i = 0; i &lt; state.w * state.h; i++) {
+<span class="line-number">704</span>        uint8_t r = wayland_logo[i * 3 + 0];
+<span class="line-number">705</span>        uint8_t g = wayland_logo[i * 3 + 1];
+<span class="line-number">706</span>        uint8_t b = wayland_logo[i * 3 + 2];
+<span class="line-number">707</span>        pixels[i] = (r &lt;&lt; 16) | (g &lt;&lt; 8) | b;
+<span class="line-number">708</span>      }
+<span class="line-number">709</span>      wayland_wl_surface_attach(fd, &amp;state);
+<span class="line-number">710</span>      wayland_wl_surface_commit(fd, &amp;state);
+<span class="line-number">711</span>
+<span class="line-number">712</span>      state.state = STATE_SURFACE_ATTACHED;
+<span class="line-number">713</span>    }
+<span class="line-number">714</span>  }
+<span class="line-number">715</span>}
 </code></pre>
 </details>
 <p><a href="/blog"> ⏴ Back to all articles</a></p>

@@ -11,9 +11,9 @@ Do not edit it by hand.
 <link type="application/atom+xml" href="/blog/feed.xml" rel="self">
 <link rel="shortcut icon" type="image/ico" href="/blog/favicon.ico">
 <link rel="stylesheet" type="text/css" href="main.css">
-<link rel="stylesheet" href="https://unpkg.com/@highlightjs/cdn-assets@11.8.0/styles/default.min.css">
-<script src="highlight.min.js" defer></script>
-<script src="x86asm.min.js" defer></script>
+<!-- <link rel="stylesheet" href="https://unpkg.com/@highlightjs/cdn-assets@11.8.0/styles/default.min.css"> -->
+<!-- <script src="highlight.min.js" defer></script> -->
+<!-- <script src="x86asm.min.js" defer></script> -->
 <script src="main.js" defer></script>
 <script type="module" src="search.js" async></script>
 </head>
@@ -86,34 +86,44 @@ Do not edit it by hand.
 <p>I find it more reliable to compile LLVM, Clang, LLD, and Zig from source and that is what we will do here. I have found that the official LLVM and Zig instructions differed somewhat, were presenting too many options, and I wanted to have one place to centralize them for my future self.</p>
 <p>Incidentally, if you are a lost C++ developer trying to compile LLVM from source, without having ever heard of Zig, well you have stumbled on the right page, you can simply skip the final block about Zig.</p>
 <p>Note that those instructions should work just the same on any Unix system. Feel free to pick the directories you want when cloning the git repositories.</p>
-<pre><code class="language-shell"># The only Alpine specific bit. build-base mainly installs make and a C++ compiler. Python 3 is required by LLVM for some reason.
-$ apk add build-base cmake git python3
-
-$ git clone https://github.com/llvm/llvm-project.git --branch llvmorg-10.0.0  --depth 1
-$ cd llvm-project/
-$ mkdir build
-$ cd build/
-# The flag LLVM_ENABLE_PROJECTS is crucial, otherwise only llvm will be built, without clang or lld,
-# and we need all three with the exact same version since C++ does not have a stable ABI.
-$ cmake -DCMAKE_BUILD_TYPE=Release -DLLVM_EXPERIMENTAL_TARGETS_TO_BUILD=&quot;AVR&quot; -DLLVM_ENABLE_LIBXML2=OFF -DLLVM_ENABLE_TERMINFO=OFF -DLLVM_ENABLE_PROJECTS=&quot;clang;lld&quot; ../llvm
-
-# nproc is Linux only but you can set the number of threads manually
-$ make -j$(nproc)
-$ sudo make install
-
-$ cd ~
-$ git clone https://github.com/ziglang/zig.git --depth 1
-$ cd zig
-$ mkdir build
-$ cd build
-$ cmake .. -DCMAKE_BUILD_TYPE=Release -DZIG_STATIC=ON
-# nproc is Linux only but you can set the number of threads manually
-$ make -j$(nproc)
-$ sudo make install
+<pre>
+  <div class="code-header">
+    <span>Shell</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-shell"><span class="line-number">0</span># The only Alpine specific bit. build-base mainly installs make and a C++ compiler. Python 3 is required by LLVM for some reason.
+<span class="line-number">1</span>$ apk add build-base cmake git python3
+<span class="line-number">2</span>
+<span class="line-number">3</span>$ git clone https://github.com/llvm/llvm-project.git --branch llvmorg-10.0.0  --depth 1
+<span class="line-number">4</span>$ cd llvm-project/
+<span class="line-number">5</span>$ mkdir build
+<span class="line-number">6</span>$ cd build/
+<span class="line-number">7</span># The flag LLVM_ENABLE_PROJECTS is crucial, otherwise only llvm will be built, without clang or lld,
+<span class="line-number">8</span># and we need all three with the exact same version since C++ does not have a stable ABI.
+<span class="line-number">9</span>$ cmake -DCMAKE_BUILD_TYPE=Release -DLLVM_EXPERIMENTAL_TARGETS_TO_BUILD=&quot;AVR&quot; -DLLVM_ENABLE_LIBXML2=OFF -DLLVM_ENABLE_TERMINFO=OFF -DLLVM_ENABLE_PROJECTS=&quot;clang;lld&quot; ../llvm
+<span class="line-number">10</span>
+<span class="line-number">11</span># nproc is Linux only but you can set the number of threads manually
+<span class="line-number">12</span>$ make -j$(nproc)
+<span class="line-number">13</span>$ sudo make install
+<span class="line-number">14</span>
+<span class="line-number">15</span>$ cd ~
+<span class="line-number">16</span>$ git clone https://github.com/ziglang/zig.git --depth 1
+<span class="line-number">17</span>$ cd zig
+<span class="line-number">18</span>$ mkdir build
+<span class="line-number">19</span>$ cd build
+<span class="line-number">20</span>$ cmake .. -DCMAKE_BUILD_TYPE=Release -DZIG_STATIC=ON
+<span class="line-number">21</span># nproc is Linux only but you can set the number of threads manually
+<span class="line-number">22</span>$ make -j$(nproc)
+<span class="line-number">23</span>$ sudo make install
 </code></pre>
 <p>You will now have a <code>zig</code> executable in the PATH as well as the zig standard library. You can verify you have now the latest version by doing:</p>
-<pre><code class="language-shell">$ zig version
-0.6.0+749417a
+<pre>
+  <div class="code-header">
+    <span>Shell</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-shell"><span class="line-number">0</span>$ zig version
+<span class="line-number">1</span>0.6.0+749417a
 </code></pre>
 <p><a href="/blog"> ⏴ Back to all articles</a></p>
 

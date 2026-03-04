@@ -11,9 +11,9 @@ Do not edit it by hand.
 <link type="application/atom+xml" href="/blog/feed.xml" rel="self">
 <link rel="shortcut icon" type="image/ico" href="/blog/favicon.ico">
 <link rel="stylesheet" type="text/css" href="main.css">
-<link rel="stylesheet" href="https://unpkg.com/@highlightjs/cdn-assets@11.8.0/styles/default.min.css">
-<script src="highlight.min.js" defer></script>
-<script src="x86asm.min.js" defer></script>
+<!-- <link rel="stylesheet" href="https://unpkg.com/@highlightjs/cdn-assets@11.8.0/styles/default.min.css"> -->
+<!-- <script src="highlight.min.js" defer></script> -->
+<!-- <script src="x86asm.min.js" defer></script> -->
 <script src="main.js" defer></script>
 <script type="module" src="search.js" async></script>
 </head>
@@ -140,19 +140,24 @@ doing garbage collection, scheduling, collecting statistics, etc, in the Go runt
   <a class="hash-anchor" href="#watch-goroutines-be-created-and-destroyed-with-dtrace" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>Alright, let's start slow first with the simplest Go program using goroutines we can think of:</p>
-<pre><code class="language-go">package main
-
-import (
-	&quot;time&quot;
-)
-
-func Foo() {
-	go func() int { return 1 }()
-}
-
-func main() {
-	Foo()
-}
+<pre>
+  <div class="code-header">
+    <span>Go</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-go"><span class="line-number">0</span>package main
+<span class="line-number">1</span>
+<span class="line-number">2</span>import (
+<span class="line-number">3</span>	&quot;time&quot;
+<span class="line-number">4</span>)
+<span class="line-number">5</span>
+<span class="line-number">6</span>func Foo() {
+<span class="line-number">7</span>	go func() int { return 1 }()
+<span class="line-number">8</span>}
+<span class="line-number">9</span>
+<span class="line-number">10</span>func main() {
+<span class="line-number">11</span>	Foo()
+<span class="line-number">12</span>}
 </code></pre>
 <p>Let's trace all goroutine creations and deletions, as well as the functions entry and return in this program.</p>
 <p>Peeking at the Go runtime <a href="https://github.com/golang/go/blob/master/src/runtime/proc.go">code</a>, we identify two functions of interest:</p>
@@ -160,35 +165,45 @@ func main() {
 <li><code>runtime.newproc1</code> creates a new goroutine object and returns it. When we use the <code>go</code> keyword in our Go code, the compiler generates a call to <code>runtime.newproc</code> which in turn calls <code>runtime.newproc1</code>.</li>
 <li><code>runtime.gdestroy</code> takes a goroutine object as an argument and destroys it. It is called from inside the Go runtime.</li>
 </ul>
-<pre><code class="language-dtrace">// Creates a new goroutine.
-pid$target::runtime.newproc1:
-
-// Destroys a goroutine.
-pid$target::runtime.gdestroy:
-
-pid$target::main.*: 
+<pre>
+  <div class="code-header">
+    <span>Dtrace</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-dtrace"><span class="line-number">0</span>// Creates a new goroutine.
+<span class="line-number">1</span>pid$target::runtime.newproc1:
+<span class="line-number">2</span>
+<span class="line-number">3</span>// Destroys a goroutine.
+<span class="line-number">4</span>pid$target::runtime.gdestroy:
+<span class="line-number">5</span>
+<span class="line-number">6</span>pid$target::main.*: 
 </code></pre>
 <p><em>Functions starting with <code>runtime.</code> are from the Go runtime.</em></p>
 <p>We can use the <code>-F</code> DTrace command line option to see the function call tree and see:</p>
-<pre><code class="language-text">CPU FUNCTION                                 
-
-[...] // Some Go runtime goroutines elided, spawned before `main`.
-
- 12  -&gt; main.main                             
- 12    -&gt; main.main                           
- 12      -&gt; main.Foo                          
- 12        -&gt; runtime.newproc1                
- 12        &lt;- runtime.newproc1                
- 12      &lt;- main.Foo                          
- 12      -&gt; main.Foo.gowrap1                  
- 12        -&gt; main.Foo.func1                  
- 12        &lt;- main.Foo.func1                  
- 12      &lt;- main.Foo.gowrap1                  
- 12      -&gt; runtime.gdestroy                  
- 12      &lt;- runtime.gdestroy  
-dtrace: pid 28627 has exited
-  0 | main.main:return                        
-  0  &lt;- main.main 
+<pre>
+  <div class="code-header">
+    <span>Text</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-text"><span class="line-number">0</span>CPU FUNCTION                                 
+<span class="line-number">1</span>
+<span class="line-number">2</span>[...] // Some Go runtime goroutines elided, spawned before `main`.
+<span class="line-number">3</span>
+<span class="line-number">4</span> 12  -&gt; main.main                             
+<span class="line-number">5</span> 12    -&gt; main.main                           
+<span class="line-number">6</span> 12      -&gt; main.Foo                          
+<span class="line-number">7</span> 12        -&gt; runtime.newproc1                
+<span class="line-number">8</span> 12        &lt;- runtime.newproc1                
+<span class="line-number">9</span> 12      &lt;- main.Foo                          
+<span class="line-number">10</span> 12      -&gt; main.Foo.gowrap1                  
+<span class="line-number">11</span> 12        -&gt; main.Foo.func1                  
+<span class="line-number">12</span> 12        &lt;- main.Foo.func1                  
+<span class="line-number">13</span> 12      &lt;- main.Foo.gowrap1                  
+<span class="line-number">14</span> 12      -&gt; runtime.gdestroy                  
+<span class="line-number">15</span> 12      &lt;- runtime.gdestroy  
+<span class="line-number">16</span>dtrace: pid 28627 has exited
+<span class="line-number">17</span>  0 | main.main:return                        
+<span class="line-number">18</span>  0  &lt;- main.main 
 </code></pre>
 <p>We notice a few interesting things:</p>
 <ul>
@@ -204,30 +219,35 @@ dtrace: pid 28627 has exited
   <a class="title" href="#a-naive-approach-count-goroutines-creations-and-deletions">A naive approach: count goroutines creations and deletions</a>
   <a class="hash-anchor" href="#a-naive-approach-count-goroutines-creations-and-deletions" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
-<pre><code class="language-dtrace">int goroutines_count;
-
-pid$target::main.main:entry 
-{
-    t=1;  // Only track goroutines spawned from inside `main` (and its callees).
-}
-
-pid$target::runtime.newproc1:return 
-/t!=0/ 
-{
-    this-&gt;g = arg1;
-    goroutines[this-&gt;g] = 1; // Add the new goroutine to the tracking set of active goroutines we have spawned.
-    goroutines_count += 1; // Increment the counter of active goroutines.
-    printf(&quot;goroutine %p created: count=%d\n&quot;, this-&gt;g, goroutines_count);
-} 
-
-pid$target::runtime.gdestroy:entry 
-/goroutines[arg0] != 0/ 
-{
-    this-&gt;g = arg0;
-    goroutines_count -= 1; // Decrement the counter of active goroutines.
-    printf(&quot;goroutine %p destroyed: count=%d\n&quot;, this-&gt;g, goroutines_count);
-    goroutines[this-&gt;g] = 0; // Remove the goroutine from the tracking set of active goroutines we have spawned.
-}
+<pre>
+  <div class="code-header">
+    <span>Dtrace</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-dtrace"><span class="line-number">0</span>int goroutines_count;
+<span class="line-number">1</span>
+<span class="line-number">2</span>pid$target::main.main:entry 
+<span class="line-number">3</span>{
+<span class="line-number">4</span>    t=1;  // Only track goroutines spawned from inside `main` (and its callees).
+<span class="line-number">5</span>}
+<span class="line-number">6</span>
+<span class="line-number">7</span>pid$target::runtime.newproc1:return 
+<span class="line-number">8</span>/t!=0/ 
+<span class="line-number">9</span>{
+<span class="line-number">10</span>    this-&gt;g = arg1;
+<span class="line-number">11</span>    goroutines[this-&gt;g] = 1; // Add the new goroutine to the tracking set of active goroutines we have spawned.
+<span class="line-number">12</span>    goroutines_count += 1; // Increment the counter of active goroutines.
+<span class="line-number">13</span>    printf(&quot;goroutine %p created: count=%d\n&quot;, this-&gt;g, goroutines_count);
+<span class="line-number">14</span>} 
+<span class="line-number">15</span>
+<span class="line-number">16</span>pid$target::runtime.gdestroy:entry 
+<span class="line-number">17</span>/goroutines[arg0] != 0/ 
+<span class="line-number">18</span>{
+<span class="line-number">19</span>    this-&gt;g = arg0;
+<span class="line-number">20</span>    goroutines_count -= 1; // Decrement the counter of active goroutines.
+<span class="line-number">21</span>    printf(&quot;goroutine %p destroyed: count=%d\n&quot;, this-&gt;g, goroutines_count);
+<span class="line-number">22</span>    goroutines[this-&gt;g] = 0; // Remove the goroutine from the tracking set of active goroutines we have spawned.
+<span class="line-number">23</span>}
 </code></pre>
 <p>A few notes:</p>
 <ul>
@@ -239,78 +259,98 @@ pid$target::runtime.gdestroy:entry
   <a class="hash-anchor" href="#a-leaky-program" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>Let's take the same leaky Go program as the original <a href="https://antonz.org/detecting-goroutine-leaks/">article</a>:</p>
-<pre><code class="language-go">package main
-
-import (
-	&quot;fmt&quot;
-	&quot;runtime&quot;
-	&quot;time&quot;
-)
-
-// Gather runs the given functions concurrently
-// and collects the results.
-func Gather(funcs ...func() int) &lt;-chan int {
-	out := make(chan int)
-	for _, f := range funcs {
-		go func() {
-			out &lt;- f()
-		}()
-	}
-	return out
-}
-
-func main() {
-	Gather(
-		func() int { return 11 },
-		func() int { return 22 },
-		func() int { return 33 },
-	)
-
-	time.Sleep(50 * time.Millisecond)
-	nGoro := runtime.NumGoroutine() - 1 // minus the main goroutine
-	fmt.Println(&quot;nGoro =&quot;, nGoro)
-}
+<pre>
+  <div class="code-header">
+    <span>Go</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-go"><span class="line-number">0</span>package main
+<span class="line-number">1</span>
+<span class="line-number">2</span>import (
+<span class="line-number">3</span>	&quot;fmt&quot;
+<span class="line-number">4</span>	&quot;runtime&quot;
+<span class="line-number">5</span>	&quot;time&quot;
+<span class="line-number">6</span>)
+<span class="line-number">7</span>
+<span class="line-number">8</span>// Gather runs the given functions concurrently
+<span class="line-number">9</span>// and collects the results.
+<span class="line-number">10</span>func Gather(funcs ...func() int) &lt;-chan int {
+<span class="line-number">11</span>	out := make(chan int)
+<span class="line-number">12</span>	for _, f := range funcs {
+<span class="line-number">13</span>		go func() {
+<span class="line-number">14</span>			out &lt;- f()
+<span class="line-number">15</span>		}()
+<span class="line-number">16</span>	}
+<span class="line-number">17</span>	return out
+<span class="line-number">18</span>}
+<span class="line-number">19</span>
+<span class="line-number">20</span>func main() {
+<span class="line-number">21</span>	Gather(
+<span class="line-number">22</span>		func() int { return 11 },
+<span class="line-number">23</span>		func() int { return 22 },
+<span class="line-number">24</span>		func() int { return 33 },
+<span class="line-number">25</span>	)
+<span class="line-number">26</span>
+<span class="line-number">27</span>	time.Sleep(50 * time.Millisecond)
+<span class="line-number">28</span>	nGoro := runtime.NumGoroutine() - 1 // minus the main goroutine
+<span class="line-number">29</span>	fmt.Println(&quot;nGoro =&quot;, nGoro)
+<span class="line-number">30</span>}
 </code></pre>
 <p>This prints <code>3</code> since our code spawns a goroutine for each argument, and there are 3 arguments. Because the channel is unbuffered and never read from, the 3 goroutines run forever and leak. Oops.</p>
 <p>Note that our D script is already more powerful than the naive Go way of using <code>runtime.NumGoroutine()</code> which returns <em>all</em> goroutines active in the program, even goroutines that our function did not spawn itself (hence the <code>-1</code> in the Go code in this simplistic example).</p>
 <p>Let's use our brand new D script on this program:</p>
-<pre><code class="language-text">goroutine 14000102fc0 created: count=1
-goroutine 14000103180 created: count=2
-goroutine 14000103340 created: count=3
+<pre>
+  <div class="code-header">
+    <span>Text</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-text"><span class="line-number">0</span>goroutine 14000102fc0 created: count=1
+<span class="line-number">1</span>goroutine 14000103180 created: count=2
+<span class="line-number">2</span>goroutine 14000103340 created: count=3
 </code></pre>
 <p>We see indeed that there are 3 leaky goroutines (created and never destroyed) by the end of the program.</p>
 <p>Let's now fix the Go program by reading from the returned channel:</p>
-<pre><code class="language-diff">diff --git a/main.go b/main.go
-index 01659c2..bfd7ee4 100644
---- a/main.go
-+++ b/main.go
-@@ -19,12 +19,17 @@ func Gather(funcs ...func() int) &lt;-chan int {
- }
- 
- func main() {
--	Gather(
-+	out := Gather(
- 		func() int { return 11 },
- 		func() int { return 22 },
- 		func() int { return 33 },
- 	)
- 
-+	total := 0
-+	for range 3 {
-+		total += &lt;-out
-+	}
-+
- 	time.Sleep(50 * time.Millisecond)
- 	nGoro := runtime.NumGoroutine() - 1 // minus the main goroutine
- 	fmt.Println(&quot;nGoro =&quot;, nGoro)
+<pre>
+  <div class="code-header">
+    <span>Diff</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-diff"><span class="line-number">0</span>diff --git a/main.go b/main.go
+<span class="line-number">1</span>index 01659c2..bfd7ee4 100644
+<span class="line-number">2</span>--- a/main.go
+<span class="line-number">3</span>+++ b/main.go
+<span class="line-number">4</span>@@ -19,12 +19,17 @@ func Gather(funcs ...func() int) &lt;-chan int {
+<span class="line-number">5</span> }
+<span class="line-number">6</span> 
+<span class="line-number">7</span> func main() {
+<span class="line-number">8</span>-	Gather(
+<span class="line-number">9</span>+	out := Gather(
+<span class="line-number">10</span> 		func() int { return 11 },
+<span class="line-number">11</span> 		func() int { return 22 },
+<span class="line-number">12</span> 		func() int { return 33 },
+<span class="line-number">13</span> 	)
+<span class="line-number">14</span> 
+<span class="line-number">15</span>+	total := 0
+<span class="line-number">16</span>+	for range 3 {
+<span class="line-number">17</span>+		total += &lt;-out
+<span class="line-number">18</span>+	}
+<span class="line-number">19</span>+
+<span class="line-number">20</span> 	time.Sleep(50 * time.Millisecond)
+<span class="line-number">21</span> 	nGoro := runtime.NumGoroutine() - 1 // minus the main goroutine
+<span class="line-number">22</span> 	fmt.Println(&quot;nGoro =&quot;, nGoro)
 </code></pre>
 <p>And the fixed program now shows all of our goroutines being deleted, no more leaks:</p>
-<pre><code class="language-text">goroutine 140000036c0 created: count=1
-goroutine 14000003880 created: count=2
-goroutine 14000003a40 created: count=3
-goroutine 14000003a40 destroyed: count=2
-goroutine 14000003880 destroyed: count=1
-goroutine 140000036c0 destroyed: count=0
+<pre>
+  <div class="code-header">
+    <span>Text</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-text"><span class="line-number">0</span>goroutine 140000036c0 created: count=1
+<span class="line-number">1</span>goroutine 14000003880 created: count=2
+<span class="line-number">2</span>goroutine 14000003a40 created: count=3
+<span class="line-number">3</span>goroutine 14000003a40 destroyed: count=2
+<span class="line-number">4</span>goroutine 14000003880 destroyed: count=1
+<span class="line-number">5</span>goroutine 140000036c0 destroyed: count=0
 </code></pre>
 <h2 id="a-better-approach-track-blocked-goroutines">
   <a class="title" href="#a-better-approach-track-blocked-goroutines">A better approach: Track blocked goroutines</a>
@@ -325,184 +365,219 @@ goroutine 140000036c0 destroyed: count=0
 <p>The Go runtime has a key function to watch, that does this state transition: <code>runtime.gopark</code>.</p>
 <p>A goroutine is typically 'parked', meaning taken off CPU, when it is waiting on something such as a synchronization object, the network, a system call, etc, to make room for other goroutines to run. Doing so changes the goroutine status from 'running' to something else.</p>
 <p>The fourth argument of <code>runtime.gopark</code> is a 'block reason' which explains why (if at all) the goroutine is blocked. This way, the Go scheduler knows not to try to run the blocked goroutines since they have no chance to do anything, until the object they are blocked on is unblocked (for example a mutex). This field is <a href="https://github.com/golang/go/blob/master/src/runtime/traceruntime.go#L91">defined</a> like this in the Go runtime:</p>
-<pre><code class="language-go">// traceBlockReason is an enumeration of reasons a goroutine might block.
-[...]
-type traceBlockReason uint8
-
-const (
-	traceBlockGeneric traceBlockReason = iota
-	traceBlockForever
-	traceBlockNet
-	traceBlockSelect
-	traceBlockCondWait
-	traceBlockSync
-	traceBlockChanSend
-	traceBlockChanRecv
-	traceBlockGCMarkAssist
-	traceBlockGCSweep
-	traceBlockSystemGoroutine
-	traceBlockPreempted
-	traceBlockDebugCall
-	traceBlockUntilGCEnds
-	traceBlockSleep
-	traceBlockGCWeakToStrongWait
-	traceBlockSynctest
-)
+<pre>
+  <div class="code-header">
+    <span>Go</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-go"><span class="line-number">0</span>// traceBlockReason is an enumeration of reasons a goroutine might block.
+<span class="line-number">1</span>[...]
+<span class="line-number">2</span>type traceBlockReason uint8
+<span class="line-number">3</span>
+<span class="line-number">4</span>const (
+<span class="line-number">5</span>	traceBlockGeneric traceBlockReason = iota
+<span class="line-number">6</span>	traceBlockForever
+<span class="line-number">7</span>	traceBlockNet
+<span class="line-number">8</span>	traceBlockSelect
+<span class="line-number">9</span>	traceBlockCondWait
+<span class="line-number">10</span>	traceBlockSync
+<span class="line-number">11</span>	traceBlockChanSend
+<span class="line-number">12</span>	traceBlockChanRecv
+<span class="line-number">13</span>	traceBlockGCMarkAssist
+<span class="line-number">14</span>	traceBlockGCSweep
+<span class="line-number">15</span>	traceBlockSystemGoroutine
+<span class="line-number">16</span>	traceBlockPreempted
+<span class="line-number">17</span>	traceBlockDebugCall
+<span class="line-number">18</span>	traceBlockUntilGCEnds
+<span class="line-number">19</span>	traceBlockSleep
+<span class="line-number">20</span>	traceBlockGCWeakToStrongWait
+<span class="line-number">21</span>	traceBlockSynctest
+<span class="line-number">22</span>)
 </code></pre>
 <p>Let's track that then. We maintain a set of blocked goroutines. If a goroutine goes from unblocked to blocked, it gets added to this set. If it goes from blocked to unblocked, it gets removed from the set.</p>
 <p><em>Note: according to the <a href="https://github.com/golang/go/blob/master/src/cmd/compile/abi-internal.md">Go ABI</a>, a register is reserved to store the current goroutine. On my system (ARM64), it is the <code>R28</code> register, <a href="/blog/an_optimization_and_debugging_story_go_dtrace.html#addendum-a-goroutine-aware-d-script">accessible</a> in DTrace with <code>uregs[R_X28]</code>. On x86_64, it is the <code>r14</code> register. This is handy when a Go runtime function does not take the goroutine to act on, as an argument.</em></p>
-<pre><code class="language-dtrace">pid$target::runtime.gopark:entry 
-// arg3 = traceBlockReason.
-/t!=0 &amp;&amp; goroutines[uregs[R_X28]] != 0/
-{
-  this-&gt;g = uregs[R_X28]; 
-  this-&gt;waitreason = arg3;
-  
-  this-&gt;blocked = 
-    this-&gt;waitreason == 1 || // traceBlockForever
-    this-&gt;waitreason == 3 || // traceBlockSelect
-    this-&gt;waitreason == 4 || // traceBlockCondWait
-    this-&gt;waitreason == 5 || // traceBlockSync
-    this-&gt;waitreason == 6 || // traceBlockChanSend
-    this-&gt;waitreason == 7;   // traceBlockChanRecv
-  if (goroutines_blocked[this-&gt;g] == 0 &amp;&amp; this-&gt;blocked) {
-    goroutines_blocked_count += 1;
-  } else if (goroutines_blocked[this-&gt;g] == 1 &amp;&amp; this-&gt;blocked == 0) {
-    goroutines_blocked_count -= 1;
-  }
-  goroutines_blocked[this-&gt;g] = this-&gt;blocked;
-
-  printf(&quot;gopark: goroutine=%p blocked=%d reason=%d blocked_count=%d\n&quot;, this-&gt;g, this-&gt;blocked, this-&gt;waitreason, goroutines_blocked_count);
-}
+<pre>
+  <div class="code-header">
+    <span>Dtrace</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-dtrace"><span class="line-number">0</span>pid$target::runtime.gopark:entry 
+<span class="line-number">1</span>// arg3 = traceBlockReason.
+<span class="line-number">2</span>/t!=0 &amp;&amp; goroutines[uregs[R_X28]] != 0/
+<span class="line-number">3</span>{
+<span class="line-number">4</span>  this-&gt;g = uregs[R_X28]; 
+<span class="line-number">5</span>  this-&gt;waitreason = arg3;
+<span class="line-number">6</span>  
+<span class="line-number">7</span>  this-&gt;blocked = 
+<span class="line-number">8</span>    this-&gt;waitreason == 1 || // traceBlockForever
+<span class="line-number">9</span>    this-&gt;waitreason == 3 || // traceBlockSelect
+<span class="line-number">10</span>    this-&gt;waitreason == 4 || // traceBlockCondWait
+<span class="line-number">11</span>    this-&gt;waitreason == 5 || // traceBlockSync
+<span class="line-number">12</span>    this-&gt;waitreason == 6 || // traceBlockChanSend
+<span class="line-number">13</span>    this-&gt;waitreason == 7;   // traceBlockChanRecv
+<span class="line-number">14</span>  if (goroutines_blocked[this-&gt;g] == 0 &amp;&amp; this-&gt;blocked) {
+<span class="line-number">15</span>    goroutines_blocked_count += 1;
+<span class="line-number">16</span>  } else if (goroutines_blocked[this-&gt;g] == 1 &amp;&amp; this-&gt;blocked == 0) {
+<span class="line-number">17</span>    goroutines_blocked_count -= 1;
+<span class="line-number">18</span>  }
+<span class="line-number">19</span>  goroutines_blocked[this-&gt;g] = this-&gt;blocked;
+<span class="line-number">20</span>
+<span class="line-number">21</span>  printf(&quot;gopark: goroutine=%p blocked=%d reason=%d blocked_count=%d\n&quot;, this-&gt;g, this-&gt;blocked, this-&gt;waitreason, goroutines_blocked_count);
+<span class="line-number">22</span>}
 </code></pre>
 <p>The counterpart of <code>runtime.gopark</code> is <code>runtime.goready</code> (typically inlined and calls <code>runtime.ready</code> which we can watch), that marks a goroutine as runnable again (unblocked). So, we remove the goroutine from the 'blocked' set:</p>
-<pre><code class="language-dtrace">pid$target::runtime.ready:entry 
-/goroutines[arg0] != 0/ 
-{
-    goroutines_blocked[this-&gt;g] = 0;
-    goroutines_blocked_count -= 1;
-}
+<pre>
+  <div class="code-header">
+    <span>Dtrace</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-dtrace"><span class="line-number">0</span>pid$target::runtime.ready:entry 
+<span class="line-number">1</span>/goroutines[arg0] != 0/ 
+<span class="line-number">2</span>{
+<span class="line-number">3</span>    goroutines_blocked[this-&gt;g] = 0;
+<span class="line-number">4</span>    goroutines_blocked_count -= 1;
+<span class="line-number">5</span>}
 </code></pre>
 <p>And of course, if the goroutine gets destroyed, we also remove it from the 'blocked' set (if it was inside it):</p>
-<pre><code class="language-diff">pid$target::runtime.gdestroy:entry 
-/goroutines[arg0] != 0/
-{
-  this-&gt;g = arg0; // goroutine id.
-
-  goroutines[this-&gt;g] = 0; 
-  goroutines_count -= 1;
-
-+ if (goroutines_blocked[this-&gt;g] != 0) {
-+   goroutines_blocked[this-&gt;g] = 0;
-+   goroutines_blocked_count -= 1;
-+ }
-
-  printf(&quot;godestroy: goroutine=%p count=%d blocked_count=%d\n&quot;, this-&gt;g, goroutines_count, goroutines_blocked_count);
-}
+<pre>
+  <div class="code-header">
+    <span>Diff</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-diff"><span class="line-number">0</span>pid$target::runtime.gdestroy:entry 
+<span class="line-number">1</span>/goroutines[arg0] != 0/
+<span class="line-number">2</span>{
+<span class="line-number">3</span>  this-&gt;g = arg0; // goroutine id.
+<span class="line-number">4</span>
+<span class="line-number">5</span>  goroutines[this-&gt;g] = 0; 
+<span class="line-number">6</span>  goroutines_count -= 1;
+<span class="line-number">7</span>
+<span class="line-number">8</span>+ if (goroutines_blocked[this-&gt;g] != 0) {
+<span class="line-number">9</span>+   goroutines_blocked[this-&gt;g] = 0;
+<span class="line-number">10</span>+   goroutines_blocked_count -= 1;
+<span class="line-number">11</span>+ }
+<span class="line-number">12</span>
+<span class="line-number">13</span>  printf(&quot;godestroy: goroutine=%p count=%d blocked_count=%d\n&quot;, this-&gt;g, goroutines_count, goroutines_blocked_count);
+<span class="line-number">14</span>}
 </code></pre>
 <p>Here is the whole script (click to expand):</p>
 <details>
   <summary>The full script</summary>
-<pre><code class="language-dtrace">int goroutines_count;
-int goroutines_blocked_count;
-int goroutines[int]; 
-int goroutines_blocked[int]; 
-
-pid$target::main.main:entry { 
-  t=1;
-}
-
-pid$target::runtime.newproc1:entry {
-  self-&gt;gparent = arg1;
-} 
-
-pid$target::runtime.newproc1:return 
-/t!=0/
-{
-  this-&gt;g = arg1; // goroutine id.
-
-  goroutines[this-&gt;g] = 1;
-  goroutines_count += 1;
-
-  printf(&quot;newproc1: goroutine=%p parent=%d count=%d blocked_count=%d\n&quot;, this-&gt;g, self-&gt;gparent, goroutines_count, goroutines_blocked_count);
-
-  self-&gt;gparent = 0;
-}
-
-pid$target::runtime.gdestroy:entry 
-/goroutines[arg0] != 0/
-{
-  this-&gt;g = arg0; // goroutine id.
-
-  goroutines[this-&gt;g] = 0; 
-  goroutines_count -= 1;
-
-  if (goroutines_blocked[this-&gt;g] != 0) {
-    goroutines_blocked[this-&gt;g] = 0;
-    goroutines_blocked_count -= 1;
-  }
-
-  printf(&quot;godestroy: goroutine=%p count=%d blocked_count=%d\n&quot;, this-&gt;g, goroutines_count, goroutines_blocked_count);
-}
-
-pid$target::runtime.ready:entry 
-/goroutines[arg0] != 0/ 
-{
-    goroutines_blocked[this-&gt;g] = 0;
-    goroutines_blocked_count -= 1;
-}
-
-pid$target::runtime.gopark:entry 
-// arg3 = traceBlockReason.
-/t!=0 &amp;&amp; goroutines[uregs[R_X28]] != 0/
-{
-  this-&gt;g = uregs[R_X28]; 
-  this-&gt;waitreason = arg3;
-  
-  this-&gt;blocked = 
-    this-&gt;waitreason == 1 || // traceBlockForever
-    this-&gt;waitreason == 3 || // traceBlockSelect
-    this-&gt;waitreason == 4 || // traceBlockCondWait
-    this-&gt;waitreason == 5 || // traceBlockSync
-    this-&gt;waitreason == 6 || // traceBlockChanSend
-    this-&gt;waitreason == 7;   // traceBlockChanRecv
-  if (goroutines_blocked[this-&gt;g] == 0 &amp;&amp; this-&gt;blocked) {
-    goroutines_blocked_count += 1;
-  } else if (goroutines_blocked[this-&gt;g] == 1 &amp;&amp; this-&gt;blocked == 0) {
-    goroutines_blocked_count -= 1;
-  }
-  goroutines_blocked[this-&gt;g] = this-&gt;blocked;
-
-  printf(&quot;gopark: goroutine=%p blocked=%d reason=%d blocked_count=%d\n&quot;, this-&gt;g, this-&gt;blocked, this-&gt;waitreason, goroutines_blocked_count);
-}
-
-profile-1s, END {
-  printf(&quot;%s: count=%d blocked_count=%d\n&quot;, probename, goroutines_count, goroutines_blocked_count);
-}
+<pre>
+  <div class="code-header">
+    <span>Dtrace</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-dtrace"><span class="line-number">0</span>int goroutines_count;
+<span class="line-number">1</span>int goroutines_blocked_count;
+<span class="line-number">2</span>int goroutines[int]; 
+<span class="line-number">3</span>int goroutines_blocked[int]; 
+<span class="line-number">4</span>
+<span class="line-number">5</span>pid$target::main.main:entry { 
+<span class="line-number">6</span>  t=1;
+<span class="line-number">7</span>}
+<span class="line-number">8</span>
+<span class="line-number">9</span>pid$target::runtime.newproc1:entry {
+<span class="line-number">10</span>  self-&gt;gparent = arg1;
+<span class="line-number">11</span>} 
+<span class="line-number">12</span>
+<span class="line-number">13</span>pid$target::runtime.newproc1:return 
+<span class="line-number">14</span>/t!=0/
+<span class="line-number">15</span>{
+<span class="line-number">16</span>  this-&gt;g = arg1; // goroutine id.
+<span class="line-number">17</span>
+<span class="line-number">18</span>  goroutines[this-&gt;g] = 1;
+<span class="line-number">19</span>  goroutines_count += 1;
+<span class="line-number">20</span>
+<span class="line-number">21</span>  printf(&quot;newproc1: goroutine=%p parent=%d count=%d blocked_count=%d\n&quot;, this-&gt;g, self-&gt;gparent, goroutines_count, goroutines_blocked_count);
+<span class="line-number">22</span>
+<span class="line-number">23</span>  self-&gt;gparent = 0;
+<span class="line-number">24</span>}
+<span class="line-number">25</span>
+<span class="line-number">26</span>pid$target::runtime.gdestroy:entry 
+<span class="line-number">27</span>/goroutines[arg0] != 0/
+<span class="line-number">28</span>{
+<span class="line-number">29</span>  this-&gt;g = arg0; // goroutine id.
+<span class="line-number">30</span>
+<span class="line-number">31</span>  goroutines[this-&gt;g] = 0; 
+<span class="line-number">32</span>  goroutines_count -= 1;
+<span class="line-number">33</span>
+<span class="line-number">34</span>  if (goroutines_blocked[this-&gt;g] != 0) {
+<span class="line-number">35</span>    goroutines_blocked[this-&gt;g] = 0;
+<span class="line-number">36</span>    goroutines_blocked_count -= 1;
+<span class="line-number">37</span>  }
+<span class="line-number">38</span>
+<span class="line-number">39</span>  printf(&quot;godestroy: goroutine=%p count=%d blocked_count=%d\n&quot;, this-&gt;g, goroutines_count, goroutines_blocked_count);
+<span class="line-number">40</span>}
+<span class="line-number">41</span>
+<span class="line-number">42</span>pid$target::runtime.ready:entry 
+<span class="line-number">43</span>/goroutines[arg0] != 0/ 
+<span class="line-number">44</span>{
+<span class="line-number">45</span>    goroutines_blocked[this-&gt;g] = 0;
+<span class="line-number">46</span>    goroutines_blocked_count -= 1;
+<span class="line-number">47</span>}
+<span class="line-number">48</span>
+<span class="line-number">49</span>pid$target::runtime.gopark:entry 
+<span class="line-number">50</span>// arg3 = traceBlockReason.
+<span class="line-number">51</span>/t!=0 &amp;&amp; goroutines[uregs[R_X28]] != 0/
+<span class="line-number">52</span>{
+<span class="line-number">53</span>  this-&gt;g = uregs[R_X28]; 
+<span class="line-number">54</span>  this-&gt;waitreason = arg3;
+<span class="line-number">55</span>  
+<span class="line-number">56</span>  this-&gt;blocked = 
+<span class="line-number">57</span>    this-&gt;waitreason == 1 || // traceBlockForever
+<span class="line-number">58</span>    this-&gt;waitreason == 3 || // traceBlockSelect
+<span class="line-number">59</span>    this-&gt;waitreason == 4 || // traceBlockCondWait
+<span class="line-number">60</span>    this-&gt;waitreason == 5 || // traceBlockSync
+<span class="line-number">61</span>    this-&gt;waitreason == 6 || // traceBlockChanSend
+<span class="line-number">62</span>    this-&gt;waitreason == 7;   // traceBlockChanRecv
+<span class="line-number">63</span>  if (goroutines_blocked[this-&gt;g] == 0 &amp;&amp; this-&gt;blocked) {
+<span class="line-number">64</span>    goroutines_blocked_count += 1;
+<span class="line-number">65</span>  } else if (goroutines_blocked[this-&gt;g] == 1 &amp;&amp; this-&gt;blocked == 0) {
+<span class="line-number">66</span>    goroutines_blocked_count -= 1;
+<span class="line-number">67</span>  }
+<span class="line-number">68</span>  goroutines_blocked[this-&gt;g] = this-&gt;blocked;
+<span class="line-number">69</span>
+<span class="line-number">70</span>  printf(&quot;gopark: goroutine=%p blocked=%d reason=%d blocked_count=%d\n&quot;, this-&gt;g, this-&gt;blocked, this-&gt;waitreason, goroutines_blocked_count);
+<span class="line-number">71</span>}
+<span class="line-number">72</span>
+<span class="line-number">73</span>profile-1s, END {
+<span class="line-number">74</span>  printf(&quot;%s: count=%d blocked_count=%d\n&quot;, probename, goroutines_count, goroutines_blocked_count);
+<span class="line-number">75</span>}
 </code></pre>
 </details>
 <p>Let's try it on the leaky program:</p>
-<pre><code class="language-shell">$ sudo dtrace -s /Users/philippe.gaultier/my-code/dtrace-tools/goroutines.d -c ./leaky.exe -q
-nGoro = 3
-newproc1: goroutine=140000036c0 parent=1374389543360 count=1 blocked_count=0
-newproc1: goroutine=14000003880 parent=1374389543360 count=2 blocked_count=0
-newproc1: goroutine=14000003a40 parent=1374389543360 count=3 blocked_count=0
-gopark: goroutine=140000036c0 blocked=1 reason=6 blocked_count=1
-gopark: goroutine=14000003a40 blocked=1 reason=6 blocked_count=2
-gopark: goroutine=14000003880 blocked=1 reason=6 blocked_count=3
-END: count=3 blocked_count=3
+<pre>
+  <div class="code-header">
+    <span>Shell</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-shell"><span class="line-number">0</span>$ sudo dtrace -s /Users/philippe.gaultier/my-code/dtrace-tools/goroutines.d -c ./leaky.exe -q
+<span class="line-number">1</span>nGoro = 3
+<span class="line-number">2</span>newproc1: goroutine=140000036c0 parent=1374389543360 count=1 blocked_count=0
+<span class="line-number">3</span>newproc1: goroutine=14000003880 parent=1374389543360 count=2 blocked_count=0
+<span class="line-number">4</span>newproc1: goroutine=14000003a40 parent=1374389543360 count=3 blocked_count=0
+<span class="line-number">5</span>gopark: goroutine=140000036c0 blocked=1 reason=6 blocked_count=1
+<span class="line-number">6</span>gopark: goroutine=14000003a40 blocked=1 reason=6 blocked_count=2
+<span class="line-number">7</span>gopark: goroutine=14000003880 blocked=1 reason=6 blocked_count=3
+<span class="line-number">8</span>END: count=3 blocked_count=3
 </code></pre>
 <p>And on the non-leaky program:</p>
-<pre><code class="language-shell">$ sudo dtrace -s /Users/philippe.gaultier/my-code/dtrace-tools/goroutines.d -c ./not_leaky.exe -q
-nGoro = 0
-newproc1: goroutine=140000036c0 parent=1374389543360 count=1 blocked_count=0
-newproc1: goroutine=14000003880 parent=1374389543360 count=2 blocked_count=0
-newproc1: goroutine=14000003a40 parent=1374389543360 count=3 blocked_count=0
-godestroy: goroutine=140000036c0 count=2 blocked_count=1
-gopark: goroutine=14000003a40 blocked=1 reason=6 blocked_count=1
-godestroy: goroutine=14000003a40 count=1 blocked_count=0
-godestroy: goroutine=14000003880 count=0 blocked_count=0
-END: count=0 blocked_count=0
+<pre>
+  <div class="code-header">
+    <span>Shell</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-shell"><span class="line-number">0</span>$ sudo dtrace -s /Users/philippe.gaultier/my-code/dtrace-tools/goroutines.d -c ./not_leaky.exe -q
+<span class="line-number">1</span>nGoro = 0
+<span class="line-number">2</span>newproc1: goroutine=140000036c0 parent=1374389543360 count=1 blocked_count=0
+<span class="line-number">3</span>newproc1: goroutine=14000003880 parent=1374389543360 count=2 blocked_count=0
+<span class="line-number">4</span>newproc1: goroutine=14000003a40 parent=1374389543360 count=3 blocked_count=0
+<span class="line-number">5</span>godestroy: goroutine=140000036c0 count=2 blocked_count=1
+<span class="line-number">6</span>gopark: goroutine=14000003a40 blocked=1 reason=6 blocked_count=1
+<span class="line-number">7</span>godestroy: goroutine=14000003a40 count=1 blocked_count=0
+<span class="line-number">8</span>godestroy: goroutine=14000003880 count=0 blocked_count=0
+<span class="line-number">9</span>END: count=0 blocked_count=0
 </code></pre>
 <h2 id="discussion">
   <a class="title" href="#discussion">Discussion</a>
@@ -546,192 +621,207 @@ use <code>getg() == getg().m.curg</code>.</p>
 <li>We use <code>copyin()</code> to copy the data in these structs</li>
 <li>We use <code>*</code> and <code>-&gt;</code> to dereference and follow the pointers like <code>getg().m</code> and then <code>m.curg</code></li>
 </ul>
-<pre><code class="language-dtrace">struct g {
-  uint8_t pad[48];
-  struct m* m;
-};
-
-struct m {
-  uint8_t pad[184];
-  struct g* curg;
-};
-
-
-pid$target::runtime.gopark:entry 
-// arg3 = traceBlockReason.
-/goroutines[uregs[R_X28]] != 0/
-{
-  this-&gt;g_addr = uregs[R_X28]; 
-  this-&gt;go = (struct g*)copyin(this-&gt;g_addr, sizeof(struct g));
-  this-&gt;m = (struct m*)copyin((user_addr_t)this-&gt;go-&gt;m, sizeof(struct m));
-  this-&gt;curg_addr = (uintptr_t)this-&gt;m-&gt;curg;
-  this-&gt;curg = (struct g*)copyin((user_addr_t)this-&gt;curg_addr, sizeof(struct g));
-  print(*this-&gt;curg);
-
-  [..]
-}
+<pre>
+  <div class="code-header">
+    <span>Dtrace</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-dtrace"><span class="line-number">0</span>struct g {
+<span class="line-number">1</span>  uint8_t pad[48];
+<span class="line-number">2</span>  struct m* m;
+<span class="line-number">3</span>};
+<span class="line-number">4</span>
+<span class="line-number">5</span>struct m {
+<span class="line-number">6</span>  uint8_t pad[184];
+<span class="line-number">7</span>  struct g* curg;
+<span class="line-number">8</span>};
+<span class="line-number">9</span>
+<span class="line-number">10</span>
+<span class="line-number">11</span>pid$target::runtime.gopark:entry 
+<span class="line-number">12</span>// arg3 = traceBlockReason.
+<span class="line-number">13</span>/goroutines[uregs[R_X28]] != 0/
+<span class="line-number">14</span>{
+<span class="line-number">15</span>  this-&gt;g_addr = uregs[R_X28]; 
+<span class="line-number">16</span>  this-&gt;go = (struct g*)copyin(this-&gt;g_addr, sizeof(struct g));
+<span class="line-number">17</span>  this-&gt;m = (struct m*)copyin((user_addr_t)this-&gt;go-&gt;m, sizeof(struct m));
+<span class="line-number">18</span>  this-&gt;curg_addr = (uintptr_t)this-&gt;m-&gt;curg;
+<span class="line-number">19</span>  this-&gt;curg = (struct g*)copyin((user_addr_t)this-&gt;curg_addr, sizeof(struct g));
+<span class="line-number">20</span>  print(*this-&gt;curg);
+<span class="line-number">21</span>
+<span class="line-number">22</span>  [..]
+<span class="line-number">23</span>}
 </code></pre>
 <p>And voila!</p>
 <p>Of course, if we want to see all the data about the goroutine, we can define the <code>g</code> struct faithfully and get even more insights:</p>
 <details>
   <summary>The full <code>g</code> struct</summary>
-<pre><code class="language-dtrace">struct g {
-  uintptr_t stack[2];
-  uintptr_t stackguard0;
-  uintptr_t stackguard1;
-  uintptr_t _panic;
-  uintptr_t _defer;
-  struct m* m;
-  uintptr_t sched[6];
-  uintptr_t syscallsp;
-  uintptr_t syscallpc;
-  uintptr_t syscallbp;
-  uintptr_t stktopsp;
-  uintptr_t param;
-
-  uint32_t status;
-  uint32_t stackLock;
-    
-  uint64_t goid;
-  uintptr_t schedlink;
-  int64_t waitsince;
-
-  uint8_t waitreason;
-  uint8_t preempt;
-  uint8_t preemptStop;
-  uint8_t preemptShrink;
-  uint8_t asyncSafePoint;
-  uint8_t paniconfault;
-  uint8_t gcscandone;
-  uint8_t throwsplit;
-
-  uint8_t activeStackChans;
-  uint8_t pad1[3];
-  uint32_t parkingOnChan;
-
-  uint8_t inMarkAssist;
-  uint8_t coroexit;
-  int8_t raceignore;
-  uint8_t nocgocallback;
-  uint8_t tracking;
-  uint8_t trackingSeq;
-  uint8_t pad2[2];
-
-  int64_t trackingStamp;
-  int64_t runnableTime;
-  uintptr_t lockedm;
-
-  uint8_t fipsIndicator;
-  uint8_t syncSafePoint;
-  uint8_t pad3[2];
-  uint32_t runningCleanups;
-
-  uint32_t sig;
-  uint8_t pad4[4];
-
-  uintptr_t writebuf_ptr;
-  uint64_t writebuf_len;
-  uint64_t writebuf_cap;
-  uintptr_t sigcode0;
-  uintptr_t sigcode1;
-  uintptr_t sigpc;
-  uint64_t parentGoid;
-  uintptr_t gopc;
-  uintptr_t ancestors;
-  uintptr_t startpc;
-  uintptr_t racectx;
-  uintptr_t waiting;
-  uintptr_t cgoCtxt_ptr;
-  uint64_t cgoCtxt_len;
-  uint64_t cgoCtxt_cap;
-  uintptr_t labels;
-  uintptr_t timer;
-  int64_t sleepWhen;
-
-  uint32_t selectDone;
-  uint32_t goroutineProfiled;
-  
-  uintptr_t coro;
-  uintptr_t bubble;
-
-  uint64_t trace[4];
-  int64_t gcAssistBytes;
-
-  uintptr_t valgrindStackID;
-}; 
+<pre>
+  <div class="code-header">
+    <span>Dtrace</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-dtrace"><span class="line-number">0</span>struct g {
+<span class="line-number">1</span>  uintptr_t stack[2];
+<span class="line-number">2</span>  uintptr_t stackguard0;
+<span class="line-number">3</span>  uintptr_t stackguard1;
+<span class="line-number">4</span>  uintptr_t _panic;
+<span class="line-number">5</span>  uintptr_t _defer;
+<span class="line-number">6</span>  struct m* m;
+<span class="line-number">7</span>  uintptr_t sched[6];
+<span class="line-number">8</span>  uintptr_t syscallsp;
+<span class="line-number">9</span>  uintptr_t syscallpc;
+<span class="line-number">10</span>  uintptr_t syscallbp;
+<span class="line-number">11</span>  uintptr_t stktopsp;
+<span class="line-number">12</span>  uintptr_t param;
+<span class="line-number">13</span>
+<span class="line-number">14</span>  uint32_t status;
+<span class="line-number">15</span>  uint32_t stackLock;
+<span class="line-number">16</span>    
+<span class="line-number">17</span>  uint64_t goid;
+<span class="line-number">18</span>  uintptr_t schedlink;
+<span class="line-number">19</span>  int64_t waitsince;
+<span class="line-number">20</span>
+<span class="line-number">21</span>  uint8_t waitreason;
+<span class="line-number">22</span>  uint8_t preempt;
+<span class="line-number">23</span>  uint8_t preemptStop;
+<span class="line-number">24</span>  uint8_t preemptShrink;
+<span class="line-number">25</span>  uint8_t asyncSafePoint;
+<span class="line-number">26</span>  uint8_t paniconfault;
+<span class="line-number">27</span>  uint8_t gcscandone;
+<span class="line-number">28</span>  uint8_t throwsplit;
+<span class="line-number">29</span>
+<span class="line-number">30</span>  uint8_t activeStackChans;
+<span class="line-number">31</span>  uint8_t pad1[3];
+<span class="line-number">32</span>  uint32_t parkingOnChan;
+<span class="line-number">33</span>
+<span class="line-number">34</span>  uint8_t inMarkAssist;
+<span class="line-number">35</span>  uint8_t coroexit;
+<span class="line-number">36</span>  int8_t raceignore;
+<span class="line-number">37</span>  uint8_t nocgocallback;
+<span class="line-number">38</span>  uint8_t tracking;
+<span class="line-number">39</span>  uint8_t trackingSeq;
+<span class="line-number">40</span>  uint8_t pad2[2];
+<span class="line-number">41</span>
+<span class="line-number">42</span>  int64_t trackingStamp;
+<span class="line-number">43</span>  int64_t runnableTime;
+<span class="line-number">44</span>  uintptr_t lockedm;
+<span class="line-number">45</span>
+<span class="line-number">46</span>  uint8_t fipsIndicator;
+<span class="line-number">47</span>  uint8_t syncSafePoint;
+<span class="line-number">48</span>  uint8_t pad3[2];
+<span class="line-number">49</span>  uint32_t runningCleanups;
+<span class="line-number">50</span>
+<span class="line-number">51</span>  uint32_t sig;
+<span class="line-number">52</span>  uint8_t pad4[4];
+<span class="line-number">53</span>
+<span class="line-number">54</span>  uintptr_t writebuf_ptr;
+<span class="line-number">55</span>  uint64_t writebuf_len;
+<span class="line-number">56</span>  uint64_t writebuf_cap;
+<span class="line-number">57</span>  uintptr_t sigcode0;
+<span class="line-number">58</span>  uintptr_t sigcode1;
+<span class="line-number">59</span>  uintptr_t sigpc;
+<span class="line-number">60</span>  uint64_t parentGoid;
+<span class="line-number">61</span>  uintptr_t gopc;
+<span class="line-number">62</span>  uintptr_t ancestors;
+<span class="line-number">63</span>  uintptr_t startpc;
+<span class="line-number">64</span>  uintptr_t racectx;
+<span class="line-number">65</span>  uintptr_t waiting;
+<span class="line-number">66</span>  uintptr_t cgoCtxt_ptr;
+<span class="line-number">67</span>  uint64_t cgoCtxt_len;
+<span class="line-number">68</span>  uint64_t cgoCtxt_cap;
+<span class="line-number">69</span>  uintptr_t labels;
+<span class="line-number">70</span>  uintptr_t timer;
+<span class="line-number">71</span>  int64_t sleepWhen;
+<span class="line-number">72</span>
+<span class="line-number">73</span>  uint32_t selectDone;
+<span class="line-number">74</span>  uint32_t goroutineProfiled;
+<span class="line-number">75</span>  
+<span class="line-number">76</span>  uintptr_t coro;
+<span class="line-number">77</span>  uintptr_t bubble;
+<span class="line-number">78</span>
+<span class="line-number">79</span>  uint64_t trace[4];
+<span class="line-number">80</span>  int64_t gcAssistBytes;
+<span class="line-number">81</span>
+<span class="line-number">82</span>  uintptr_t valgrindStackID;
+<span class="line-number">83</span>}; 
 </code></pre>
 <p>and when we print the goroutine data from inside DTrace we see:</p>
-<pre><code class="language-text">struct g {
-    uintptr_t [2] stack = [ 0x14000052000, 0x14000052800 ]
-    uintptr_t stackguard0 = 0x140000523a0
-    uintptr_t stackguard1 = 0xffffffffffffffff
-    uintptr_t _panic = 0
-    uintptr_t _defer = 0
-    struct m *m = 0x14000080008
-    uintptr_t [6] sched = [ 0, 0x100a6d448, 0x14000102540, 0, 0, 0 ]
-    uintptr_t syscallsp = 0
-    uintptr_t syscallpc = 0
-    uintptr_t syscallbp = 0
-    uintptr_t stktopsp = 0x140000527d0
-    uintptr_t param = 0
-    uint32_t status = 0x2
-    uint32_t stackLock = 0
-    uint64_t goid = 0x12
-    uintptr_t schedlink = 0
-    int64_t waitsince = 0
-    uint8_t waitreason = 0
-    uint8_t preempt = 0
-    uint8_t preemptStop = 0
-    uint8_t preemptShrink = 0
-    uint8_t asyncSafePoint = 0
-    uint8_t paniconfault = 0
-    uint8_t gcscandone = 0
-    uint8_t throwsplit = 0
-    uint8_t activeStackChans = 0
-    uint8_t [3] pad1 = [ 0, 0, 0 ]
-    uint32_t parkingOnChan = 0x1c000000
-    uint8_t inMarkAssist = 0
-    uint8_t coroexit = 0
-    int8_t raceignore = '\0'
-    uint8_t nocgocallback = 0
-    uint8_t tracking = 0
-    uint8_t trackingSeq = 0
-    uint8_t [2] pad2 = [ 0, 0 ]
-    int64_t trackingStamp = 0
-    int64_t runnableTime = 0
-    uintptr_t lockedm = 0
-    uint8_t fipsIndicator = 0
-    uint8_t syncSafePoint = 0
-    uint8_t [2] pad3 = [ 0, 0 ]
-    uint32_t runningCleanups = 0
-    uint32_t sig = 0
-    uint8_t [4] pad4 = [ 0, 0, 0, 0 ]
-    uintptr_t writebuf_ptr = 0
-    uint64_t writebuf_len = 0
-    uint64_t writebuf_cap = 0
-    uintptr_t sigcode0 = 0
-    uintptr_t sigcode1 = 0x1
-    uintptr_t sigpc = 0x100a7818c
-    uint64_t parentGoid = 0
-    uintptr_t gopc = 0x100a781b0
-    uintptr_t ancestors = 0
-    uintptr_t startpc = 0
-    uintptr_t racectx = 0
-    uintptr_t waiting = 0
-    uintptr_t cgoCtxt_ptr = 0
-    uint64_t cgoCtxt_len = 0
-    uint64_t cgoCtxt_cap = 0
-    uintptr_t labels = 0
-    uintptr_t timer = 0
-    int64_t sleepWhen = 0
-    uint32_t selectDone = 0
-    uint32_t goroutineProfiled = 0
-    uintptr_t coro = 0
-    uintptr_t bubble = 0
-    uint64_t [4] trace = [ 0, 0, 0, 0 ]
-    int64_t gcAssistBytes = 0
-    uintptr_t valgrindStackID = 0
-}
+<pre>
+  <div class="code-header">
+    <span>Text</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-text"><span class="line-number">0</span>struct g {
+<span class="line-number">1</span>    uintptr_t [2] stack = [ 0x14000052000, 0x14000052800 ]
+<span class="line-number">2</span>    uintptr_t stackguard0 = 0x140000523a0
+<span class="line-number">3</span>    uintptr_t stackguard1 = 0xffffffffffffffff
+<span class="line-number">4</span>    uintptr_t _panic = 0
+<span class="line-number">5</span>    uintptr_t _defer = 0
+<span class="line-number">6</span>    struct m *m = 0x14000080008
+<span class="line-number">7</span>    uintptr_t [6] sched = [ 0, 0x100a6d448, 0x14000102540, 0, 0, 0 ]
+<span class="line-number">8</span>    uintptr_t syscallsp = 0
+<span class="line-number">9</span>    uintptr_t syscallpc = 0
+<span class="line-number">10</span>    uintptr_t syscallbp = 0
+<span class="line-number">11</span>    uintptr_t stktopsp = 0x140000527d0
+<span class="line-number">12</span>    uintptr_t param = 0
+<span class="line-number">13</span>    uint32_t status = 0x2
+<span class="line-number">14</span>    uint32_t stackLock = 0
+<span class="line-number">15</span>    uint64_t goid = 0x12
+<span class="line-number">16</span>    uintptr_t schedlink = 0
+<span class="line-number">17</span>    int64_t waitsince = 0
+<span class="line-number">18</span>    uint8_t waitreason = 0
+<span class="line-number">19</span>    uint8_t preempt = 0
+<span class="line-number">20</span>    uint8_t preemptStop = 0
+<span class="line-number">21</span>    uint8_t preemptShrink = 0
+<span class="line-number">22</span>    uint8_t asyncSafePoint = 0
+<span class="line-number">23</span>    uint8_t paniconfault = 0
+<span class="line-number">24</span>    uint8_t gcscandone = 0
+<span class="line-number">25</span>    uint8_t throwsplit = 0
+<span class="line-number">26</span>    uint8_t activeStackChans = 0
+<span class="line-number">27</span>    uint8_t [3] pad1 = [ 0, 0, 0 ]
+<span class="line-number">28</span>    uint32_t parkingOnChan = 0x1c000000
+<span class="line-number">29</span>    uint8_t inMarkAssist = 0
+<span class="line-number">30</span>    uint8_t coroexit = 0
+<span class="line-number">31</span>    int8_t raceignore = '\0'
+<span class="line-number">32</span>    uint8_t nocgocallback = 0
+<span class="line-number">33</span>    uint8_t tracking = 0
+<span class="line-number">34</span>    uint8_t trackingSeq = 0
+<span class="line-number">35</span>    uint8_t [2] pad2 = [ 0, 0 ]
+<span class="line-number">36</span>    int64_t trackingStamp = 0
+<span class="line-number">37</span>    int64_t runnableTime = 0
+<span class="line-number">38</span>    uintptr_t lockedm = 0
+<span class="line-number">39</span>    uint8_t fipsIndicator = 0
+<span class="line-number">40</span>    uint8_t syncSafePoint = 0
+<span class="line-number">41</span>    uint8_t [2] pad3 = [ 0, 0 ]
+<span class="line-number">42</span>    uint32_t runningCleanups = 0
+<span class="line-number">43</span>    uint32_t sig = 0
+<span class="line-number">44</span>    uint8_t [4] pad4 = [ 0, 0, 0, 0 ]
+<span class="line-number">45</span>    uintptr_t writebuf_ptr = 0
+<span class="line-number">46</span>    uint64_t writebuf_len = 0
+<span class="line-number">47</span>    uint64_t writebuf_cap = 0
+<span class="line-number">48</span>    uintptr_t sigcode0 = 0
+<span class="line-number">49</span>    uintptr_t sigcode1 = 0x1
+<span class="line-number">50</span>    uintptr_t sigpc = 0x100a7818c
+<span class="line-number">51</span>    uint64_t parentGoid = 0
+<span class="line-number">52</span>    uintptr_t gopc = 0x100a781b0
+<span class="line-number">53</span>    uintptr_t ancestors = 0
+<span class="line-number">54</span>    uintptr_t startpc = 0
+<span class="line-number">55</span>    uintptr_t racectx = 0
+<span class="line-number">56</span>    uintptr_t waiting = 0
+<span class="line-number">57</span>    uintptr_t cgoCtxt_ptr = 0
+<span class="line-number">58</span>    uint64_t cgoCtxt_len = 0
+<span class="line-number">59</span>    uint64_t cgoCtxt_cap = 0
+<span class="line-number">60</span>    uintptr_t labels = 0
+<span class="line-number">61</span>    uintptr_t timer = 0
+<span class="line-number">62</span>    int64_t sleepWhen = 0
+<span class="line-number">63</span>    uint32_t selectDone = 0
+<span class="line-number">64</span>    uint32_t goroutineProfiled = 0
+<span class="line-number">65</span>    uintptr_t coro = 0
+<span class="line-number">66</span>    uintptr_t bubble = 0
+<span class="line-number">67</span>    uint64_t [4] trace = [ 0, 0, 0, 0 ]
+<span class="line-number">68</span>    int64_t gcAssistBytes = 0
+<span class="line-number">69</span>    uintptr_t valgrindStackID = 0
+<span class="line-number">70</span>}
 </code></pre>
 </details>
 <h2 id="conclusion">
@@ -780,83 +870,87 @@ pid$target::runtime.gopark:entry
 </h2>
 <details>
   <summary>The full script</summary>
-<pre><code class="language-dtrace">int goroutines_count;
-int goroutines_blocked_count;
-int goroutines[int]; 
-int goroutines_blocked[int]; 
-
-pid$target::main.main:entry { 
-  t=1;
-}
-
-pid$target::runtime.newproc1:entry {
-  self-&gt;gparent = arg1;
-} 
-
-pid$target::runtime.newproc1:return 
-/t!=0/
-{
-  this-&gt;g = arg1; // goroutine id.
-
-  goroutines[this-&gt;g] = 1;
-  goroutines_count += 1;
-
-  printf(&quot;newproc1: goroutine=%p parent=%d count=%d blocked_count=%d\n&quot;, this-&gt;g, self-&gt;gparent, goroutines_count, goroutines_blocked_count);
-
-  self-&gt;gparent = 0;
-}
-
-pid$target::runtime.gdestroy:entry 
-/goroutines[arg0] != 0/
-{
-  this-&gt;g = arg0; // goroutine id.
-
-  goroutines[this-&gt;g] = 0; 
-  goroutines_count -= 1;
-
-  if (goroutines_blocked[this-&gt;g] != 0) {
-    goroutines_blocked[this-&gt;g] = 0;
-    goroutines_blocked_count -= 1;
-  }
-
-  printf(&quot;godestroy: goroutine=%p count=%d blocked_count=%d\n&quot;, this-&gt;g, goroutines_count, goroutines_blocked_count);
-}
-
-pid$target::runtime.ready:entry 
-/goroutines[arg0] != 0/ 
-{
-    goroutines_blocked[this-&gt;g] = 0;
-    goroutines_blocked_count -= 1;
-}
-
-pid$target::runtime.gopark:entry 
-// arg3 = traceBlockReason.
-/t!=0 &amp;&amp; goroutines[uregs[R_X28]] != 0/
-{
-  this-&gt;g = uregs[R_X28]; 
-  this-&gt;waitreason = arg3;
-  
-  this-&gt;blocked = 
-    this-&gt;waitreason == 1 || // traceBlockForever
-    this-&gt;waitreason == 3 || // traceBlockSelect
-    this-&gt;waitreason == 4 || // traceBlockCondWait
-    this-&gt;waitreason == 5 || // traceBlockSync
-    this-&gt;waitreason == 6 || // traceBlockChanSend
-    this-&gt;waitreason == 7;   // traceBlockChanRecv
-  if (goroutines_blocked[this-&gt;g] == 0 &amp;&amp; this-&gt;blocked) {
-    goroutines_blocked_count += 1;
-  } else if (goroutines_blocked[this-&gt;g] == 1 &amp;&amp; this-&gt;blocked == 0) {
-    goroutines_blocked_count -= 1;
-  }
-  goroutines_blocked[this-&gt;g] = this-&gt;blocked;
-
-  printf(&quot;gopark: goroutine=%p blocked=%d reason=%d blocked_count=%d\n&quot;, this-&gt;g, this-&gt;blocked, this-&gt;waitreason, goroutines_blocked_count);
-}
-
-profile-1s, END {
-  printf(&quot;%s: count=%d blocked_count=%d\n&quot;, probename, goroutines_count, goroutines_blocked_count);
-}
-
+<pre>
+  <div class="code-header">
+    <span>Dtrace</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-dtrace"><span class="line-number">0</span>int goroutines_count;
+<span class="line-number">1</span>int goroutines_blocked_count;
+<span class="line-number">2</span>int goroutines[int]; 
+<span class="line-number">3</span>int goroutines_blocked[int]; 
+<span class="line-number">4</span>
+<span class="line-number">5</span>pid$target::main.main:entry { 
+<span class="line-number">6</span>  t=1;
+<span class="line-number">7</span>}
+<span class="line-number">8</span>
+<span class="line-number">9</span>pid$target::runtime.newproc1:entry {
+<span class="line-number">10</span>  self-&gt;gparent = arg1;
+<span class="line-number">11</span>} 
+<span class="line-number">12</span>
+<span class="line-number">13</span>pid$target::runtime.newproc1:return 
+<span class="line-number">14</span>/t!=0/
+<span class="line-number">15</span>{
+<span class="line-number">16</span>  this-&gt;g = arg1; // goroutine id.
+<span class="line-number">17</span>
+<span class="line-number">18</span>  goroutines[this-&gt;g] = 1;
+<span class="line-number">19</span>  goroutines_count += 1;
+<span class="line-number">20</span>
+<span class="line-number">21</span>  printf(&quot;newproc1: goroutine=%p parent=%d count=%d blocked_count=%d\n&quot;, this-&gt;g, self-&gt;gparent, goroutines_count, goroutines_blocked_count);
+<span class="line-number">22</span>
+<span class="line-number">23</span>  self-&gt;gparent = 0;
+<span class="line-number">24</span>}
+<span class="line-number">25</span>
+<span class="line-number">26</span>pid$target::runtime.gdestroy:entry 
+<span class="line-number">27</span>/goroutines[arg0] != 0/
+<span class="line-number">28</span>{
+<span class="line-number">29</span>  this-&gt;g = arg0; // goroutine id.
+<span class="line-number">30</span>
+<span class="line-number">31</span>  goroutines[this-&gt;g] = 0; 
+<span class="line-number">32</span>  goroutines_count -= 1;
+<span class="line-number">33</span>
+<span class="line-number">34</span>  if (goroutines_blocked[this-&gt;g] != 0) {
+<span class="line-number">35</span>    goroutines_blocked[this-&gt;g] = 0;
+<span class="line-number">36</span>    goroutines_blocked_count -= 1;
+<span class="line-number">37</span>  }
+<span class="line-number">38</span>
+<span class="line-number">39</span>  printf(&quot;godestroy: goroutine=%p count=%d blocked_count=%d\n&quot;, this-&gt;g, goroutines_count, goroutines_blocked_count);
+<span class="line-number">40</span>}
+<span class="line-number">41</span>
+<span class="line-number">42</span>pid$target::runtime.ready:entry 
+<span class="line-number">43</span>/goroutines[arg0] != 0/ 
+<span class="line-number">44</span>{
+<span class="line-number">45</span>    goroutines_blocked[this-&gt;g] = 0;
+<span class="line-number">46</span>    goroutines_blocked_count -= 1;
+<span class="line-number">47</span>}
+<span class="line-number">48</span>
+<span class="line-number">49</span>pid$target::runtime.gopark:entry 
+<span class="line-number">50</span>// arg3 = traceBlockReason.
+<span class="line-number">51</span>/t!=0 &amp;&amp; goroutines[uregs[R_X28]] != 0/
+<span class="line-number">52</span>{
+<span class="line-number">53</span>  this-&gt;g = uregs[R_X28]; 
+<span class="line-number">54</span>  this-&gt;waitreason = arg3;
+<span class="line-number">55</span>  
+<span class="line-number">56</span>  this-&gt;blocked = 
+<span class="line-number">57</span>    this-&gt;waitreason == 1 || // traceBlockForever
+<span class="line-number">58</span>    this-&gt;waitreason == 3 || // traceBlockSelect
+<span class="line-number">59</span>    this-&gt;waitreason == 4 || // traceBlockCondWait
+<span class="line-number">60</span>    this-&gt;waitreason == 5 || // traceBlockSync
+<span class="line-number">61</span>    this-&gt;waitreason == 6 || // traceBlockChanSend
+<span class="line-number">62</span>    this-&gt;waitreason == 7;   // traceBlockChanRecv
+<span class="line-number">63</span>  if (goroutines_blocked[this-&gt;g] == 0 &amp;&amp; this-&gt;blocked) {
+<span class="line-number">64</span>    goroutines_blocked_count += 1;
+<span class="line-number">65</span>  } else if (goroutines_blocked[this-&gt;g] == 1 &amp;&amp; this-&gt;blocked == 0) {
+<span class="line-number">66</span>    goroutines_blocked_count -= 1;
+<span class="line-number">67</span>  }
+<span class="line-number">68</span>  goroutines_blocked[this-&gt;g] = this-&gt;blocked;
+<span class="line-number">69</span>
+<span class="line-number">70</span>  printf(&quot;gopark: goroutine=%p blocked=%d reason=%d blocked_count=%d\n&quot;, this-&gt;g, this-&gt;blocked, this-&gt;waitreason, goroutines_blocked_count);
+<span class="line-number">71</span>}
+<span class="line-number">72</span>
+<span class="line-number">73</span>profile-1s, END {
+<span class="line-number">74</span>  printf(&quot;%s: count=%d blocked_count=%d\n&quot;, probename, goroutines_count, goroutines_blocked_count);
+<span class="line-number">75</span>}
 </code></pre>
 </details>
 <p><a href="/blog"> ⏴ Back to all articles</a></p>

@@ -11,9 +11,9 @@ Do not edit it by hand.
 <link type="application/atom+xml" href="/blog/feed.xml" rel="self">
 <link rel="shortcut icon" type="image/ico" href="/blog/favicon.ico">
 <link rel="stylesheet" type="text/css" href="main.css">
-<link rel="stylesheet" href="https://unpkg.com/@highlightjs/cdn-assets@11.8.0/styles/default.min.css">
-<script src="highlight.min.js" defer></script>
-<script src="x86asm.min.js" defer></script>
+<!-- <link rel="stylesheet" href="https://unpkg.com/@highlightjs/cdn-assets@11.8.0/styles/default.min.css"> -->
+<!-- <script src="highlight.min.js" defer></script> -->
+<!-- <script src="x86asm.min.js" defer></script> -->
 <script src="main.js" defer></script>
 <script type="module" src="search.js" async></script>
 </head>
@@ -121,42 +121,47 @@ Do not edit it by hand.
   <a class="hash-anchor" href="#the-original-code" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>I have managed to reproduce the race in a self-contained Go program resembling the real production code, and the diff for the fix is basically the same as the real one. It's a web server with a middleware to do rate limiting. The actual rate limiting code is omitted because it does not matter:</p>
-<pre><code class="language-go">package main
-
-import (
-	&quot;fmt&quot;
-	&quot;net/http&quot;
-	&quot;strings&quot;
-)
-
-func NewMiddleware(handler http.Handler, rateLimitEnabled bool) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if strings.HasPrefix(r.URL.Path, &quot;/admin&quot;) {
-			rateLimitEnabled = false
-		}
-
-		if rateLimitEnabled {
-			fmt.Printf(&quot;path=%s rate_limit_enabled=yes\n&quot;, r.URL.Path)
-			// Rate limiting logic here ...
-		} else {
-			fmt.Printf(&quot;path=%s rate_limit_enabled=no\n&quot;, r.URL.Path)
-		}
-
-		handler.ServeHTTP(w, r)
-	})
-}
-
-func handle(w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte(&quot;hello!\n&quot;))
-}
-
-func main() {
-	handler := http.HandlerFunc(handle)
-	middleware := NewMiddleware(handler, true)
-	http.Handle(&quot;/&quot;, middleware)
-
-	http.ListenAndServe(&quot;:3001&quot;, nil)
-}
+<pre>
+  <div class="code-header">
+    <span>Go</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-go"><span class="line-number">0</span>package main
+<span class="line-number">1</span>
+<span class="line-number">2</span>import (
+<span class="line-number">3</span>	&quot;fmt&quot;
+<span class="line-number">4</span>	&quot;net/http&quot;
+<span class="line-number">5</span>	&quot;strings&quot;
+<span class="line-number">6</span>)
+<span class="line-number">7</span>
+<span class="line-number">8</span>func NewMiddleware(handler http.Handler, rateLimitEnabled bool) http.Handler {
+<span class="line-number">9</span>	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+<span class="line-number">10</span>		if strings.HasPrefix(r.URL.Path, &quot;/admin&quot;) {
+<span class="line-number">11</span>			rateLimitEnabled = false
+<span class="line-number">12</span>		}
+<span class="line-number">13</span>
+<span class="line-number">14</span>		if rateLimitEnabled {
+<span class="line-number">15</span>			fmt.Printf(&quot;path=%s rate_limit_enabled=yes\n&quot;, r.URL.Path)
+<span class="line-number">16</span>			// Rate limiting logic here ...
+<span class="line-number">17</span>		} else {
+<span class="line-number">18</span>			fmt.Printf(&quot;path=%s rate_limit_enabled=no\n&quot;, r.URL.Path)
+<span class="line-number">19</span>		}
+<span class="line-number">20</span>
+<span class="line-number">21</span>		handler.ServeHTTP(w, r)
+<span class="line-number">22</span>	})
+<span class="line-number">23</span>}
+<span class="line-number">24</span>
+<span class="line-number">25</span>func handle(w http.ResponseWriter, r *http.Request) {
+<span class="line-number">26</span>	w.Write([]byte(&quot;hello!\n&quot;))
+<span class="line-number">27</span>}
+<span class="line-number">28</span>
+<span class="line-number">29</span>func main() {
+<span class="line-number">30</span>	handler := http.HandlerFunc(handle)
+<span class="line-number">31</span>	middleware := NewMiddleware(handler, true)
+<span class="line-number">32</span>	http.Handle(&quot;/&quot;, middleware)
+<span class="line-number">33</span>
+<span class="line-number">34</span>	http.ListenAndServe(&quot;:3001&quot;, nil)
+<span class="line-number">35</span>}
 </code></pre>
 <p>It's very typical Go code I would say. The only interesting thing going on here, is that we never do rate-limiting for the admin section of the site. That's handy if a user is abusing the site, and the admin has to go disable their account as fast as possible in the admin section.</p>
 <p>The intent behind the <code>rateLimitEnabled</code> parameter was likely to have it 'off' in development mode, and 'on' in production, based on some environment variable read in <code>main</code> (also omitted here).</p>
@@ -166,23 +171,38 @@ func main() {
   <a class="hash-anchor" href="#symptoms-of-the-bug" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>Let's observe the behavior with a few HTTP requests:</p>
-<pre><code class="language-shell">$ curl http://localhost:3001/
-$ curl http://localhost:3001/admin
-$ curl http://localhost:3001/
-$ curl http://localhost:3001/
+<pre>
+  <div class="code-header">
+    <span>Shell</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-shell"><span class="line-number">0</span>$ curl http://localhost:3001/
+<span class="line-number">1</span>$ curl http://localhost:3001/admin
+<span class="line-number">2</span>$ curl http://localhost:3001/
+<span class="line-number">3</span>$ curl http://localhost:3001/
 </code></pre>
 <p>We see these server logs:</p>
-<pre><code class="language-text">path=/ rate_limit_enabled=yes
-path=/admin rate_limit_enabled=no
-path=/ rate_limit_enabled=no
-path=/ rate_limit_enabled=no
+<pre>
+  <div class="code-header">
+    <span>Text</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-text"><span class="line-number">0</span>path=/ rate_limit_enabled=yes
+<span class="line-number">1</span>path=/admin rate_limit_enabled=no
+<span class="line-number">2</span>path=/ rate_limit_enabled=no
+<span class="line-number">3</span>path=/ rate_limit_enabled=no
 </code></pre>
 <p><em>The actual output could vary from machine to machine due to the data race. This is what I have observed on my machine. Reading the Go memory model, another legal behavior in this case could be to immediately abort the program. No symptoms at all is not possible. The only question is when the race will manifest. When receiving lots of HTTP requests, it might not happen right after the first request. See the 'Conclusion and recommendations' section for more information.</em></p>
 <p>The third and fourth log are definitely wrong. We would have expected:</p>
-<pre><code class="language-text">path=/ rate_limit_enabled=yes
-path=/admin rate_limit_enabled=no
-path=/ rate_limit_enabled=yes
-path=/ rate_limit_enabled=yes
+<pre>
+  <div class="code-header">
+    <span>Text</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-text"><span class="line-number">0</span>path=/ rate_limit_enabled=yes
+<span class="line-number">1</span>path=/admin rate_limit_enabled=no
+<span class="line-number">2</span>path=/ rate_limit_enabled=yes
+<span class="line-number">3</span>path=/ rate_limit_enabled=yes
 </code></pre>
 <p>The non-admin section of the site should be rate limited, always. But it's apparently not, starting from the second request. Trying to access the admin section disables rate limiting for everyone, until the next server restart! So this data race just became a security vulnerability as well!</p>
 <p>In the real code at work it was actually not a security issue, since the parameter in question governed something related to metrics about rate limiting, not rate limiting itself, so the consequence was only that some metrics were wrong. Which is how the bug was initially spotted.</p>
@@ -191,45 +211,59 @@ path=/ rate_limit_enabled=yes
   <a class="hash-anchor" href="#the-fix" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>The diff for the fix looks like this:</p>
-<pre><code class="language-diff">diff --git a/http-race.go b/http-race.go
-index deff273..6c73b7e 100644
---- a/http-race.go
-+++ b/http-race.go
-@@ -6,8 +6,10 @@ import (
- 	&quot;strings&quot;
- )
- 
--func NewMiddleware(handler http.Handler, rateLimitEnabled bool) http.Handler {
-+func NewMiddleware(handler http.Handler) http.Handler {
- 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-+		rateLimitEnabled := true
-+
- 		if strings.HasPrefix(r.URL.Path, &quot;/admin&quot;) {
- 			rateLimitEnabled = false
- 		}
-@@ -29,7 +31,7 @@ func handle(w http.ResponseWriter, r *http.Request) {
- 
- func main() {
- 	handler := http.HandlerFunc(handle)
--	middleware := NewMiddleware(handler, true)
-+	middleware := NewMiddleware(handler)
- 	http.Handle(&quot;/&quot;, middleware)
- 
- 	http.ListenAndServe(&quot;:3001&quot;, nil)
-
+<pre>
+  <div class="code-header">
+    <span>Diff</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-diff"><span class="line-number">0</span>diff --git a/http-race.go b/http-race.go
+<span class="line-number">1</span>index deff273..6c73b7e 100644
+<span class="line-number">2</span>--- a/http-race.go
+<span class="line-number">3</span>+++ b/http-race.go
+<span class="line-number">4</span>@@ -6,8 +6,10 @@ import (
+<span class="line-number">5</span> 	&quot;strings&quot;
+<span class="line-number">6</span> )
+<span class="line-number">7</span> 
+<span class="line-number">8</span>-func NewMiddleware(handler http.Handler, rateLimitEnabled bool) http.Handler {
+<span class="line-number">9</span>+func NewMiddleware(handler http.Handler) http.Handler {
+<span class="line-number">10</span> 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+<span class="line-number">11</span>+		rateLimitEnabled := true
+<span class="line-number">12</span>+
+<span class="line-number">13</span> 		if strings.HasPrefix(r.URL.Path, &quot;/admin&quot;) {
+<span class="line-number">14</span> 			rateLimitEnabled = false
+<span class="line-number">15</span> 		}
+<span class="line-number">16</span>@@ -29,7 +31,7 @@ func handle(w http.ResponseWriter, r *http.Request) {
+<span class="line-number">17</span> 
+<span class="line-number">18</span> func main() {
+<span class="line-number">19</span> 	handler := http.HandlerFunc(handle)
+<span class="line-number">20</span>-	middleware := NewMiddleware(handler, true)
+<span class="line-number">21</span>+	middleware := NewMiddleware(handler)
+<span class="line-number">22</span> 	http.Handle(&quot;/&quot;, middleware)
+<span class="line-number">23</span> 
+<span class="line-number">24</span> 	http.ListenAndServe(&quot;:3001&quot;, nil)
 </code></pre>
 <p>Just transforming a function argument to a local variable. No other change. How can it be?</p>
 <p>We can confirm that the behavior is now correct:</p>
-<pre><code class="language-shell">$ curl http://localhost:3001/
-$ curl http://localhost:3001/admin
-$ curl http://localhost:3001/
-$ curl http://localhost:3001/
+<pre>
+  <div class="code-header">
+    <span>Shell</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-shell"><span class="line-number">0</span>$ curl http://localhost:3001/
+<span class="line-number">1</span>$ curl http://localhost:3001/admin
+<span class="line-number">2</span>$ curl http://localhost:3001/
+<span class="line-number">3</span>$ curl http://localhost:3001/
 </code></pre>
 <p>Server logs:</p>
-<pre><code class="language-text">path=/ rate_limit_enabled=yes
-path=/admin rate_limit_enabled=no
-path=/ rate_limit_enabled=yes
-path=/ rate_limit_enabled=yes
+<pre>
+  <div class="code-header">
+    <span>Text</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-text"><span class="line-number">0</span>path=/ rate_limit_enabled=yes
+<span class="line-number">1</span>path=/admin rate_limit_enabled=no
+<span class="line-number">2</span>path=/ rate_limit_enabled=yes
+<span class="line-number">3</span>path=/ rate_limit_enabled=yes
 </code></pre>
 <p>As expected.</p>
 <h2 id="explanation">
@@ -239,31 +273,41 @@ path=/ rate_limit_enabled=yes
 <p>Go, like many languages, has closures: functions that implicitly capture their environment as needed so that surrounding variables can be accessed within the function scope.</p>
 <p>The <code>NewMiddleware</code> function returns a closure (the middleware) that implicitly captures the <code>rateLimitEnabled</code> variable. The intent in the original code was to treat the function argument, which is passed by value (as most programming languages do), as essentially an automatic local variable. When mutated, nothing is visible outside of the scope of the function, as if we just used a local variable.</p>
 <p>But...it's neither a plain local variable nor a plain function argument: it's a variable existing outside of the closure, captured by it. So when the closure mutates it, this mutation <em>is</em> visible to the outside. We can confirm our hypothesis by toggling a knob to ask the compiler to log this:</p>
-<pre><code class="language-shell">$ go build -gcflags='-d closure=1' http-race.go
-./http-race.go:9:26: heap closure, captured vars = [rateLimitEnabled handler]
-[...]
+<pre>
+  <div class="code-header">
+    <span>Shell</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-shell"><span class="line-number">0</span>$ go build -gcflags='-d closure=1' http-race.go
+<span class="line-number">1</span>./http-race.go:9:26: heap closure, captured vars = [rateLimitEnabled handler]
+<span class="line-number">2</span>[...]
 </code></pre>
 <p>We can plainly see that <code>rateLimitEnabled</code> is being captured.</p>
 <p>The Go compiler conceptually transforms the closure into code like this:</p>
-<pre><code class="language-go">type ClosureEnv struct {
-	rateLimitEnabled *bool
-	handler          *http.Handler
-}
-
-func rateLimitMiddleware(w http.ResponseWriter, r *http.Request, env *ClosureEnv) {
-	if strings.HasPrefix(r.URL.Path, &quot;/admin&quot;) {
-		env.rateLimitEnabled = false
-	}
-
-	if env.rateLimitEnabled {
-		fmt.Printf(&quot;path=%s rate_limit_enabled=yes\n&quot;, r.URL.Path)
-		// Rate limiting logic here ...
-	} else {
-		fmt.Printf(&quot;path=%s rate_limit_enabled=no\n&quot;, r.URL.Path)
-	}
-
-	env.handler.ServeHTTP(w, r)
-}
+<pre>
+  <div class="code-header">
+    <span>Go</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-go"><span class="line-number">0</span>type ClosureEnv struct {
+<span class="line-number">1</span>	rateLimitEnabled *bool
+<span class="line-number">2</span>	handler          *http.Handler
+<span class="line-number">3</span>}
+<span class="line-number">4</span>
+<span class="line-number">5</span>func rateLimitMiddleware(w http.ResponseWriter, r *http.Request, env *ClosureEnv) {
+<span class="line-number">6</span>	if strings.HasPrefix(r.URL.Path, &quot;/admin&quot;) {
+<span class="line-number">7</span>		env.rateLimitEnabled = false
+<span class="line-number">8</span>	}
+<span class="line-number">9</span>
+<span class="line-number">10</span>	if env.rateLimitEnabled {
+<span class="line-number">11</span>		fmt.Printf(&quot;path=%s rate_limit_enabled=yes\n&quot;, r.URL.Path)
+<span class="line-number">12</span>		// Rate limiting logic here ...
+<span class="line-number">13</span>	} else {
+<span class="line-number">14</span>		fmt.Printf(&quot;path=%s rate_limit_enabled=no\n&quot;, r.URL.Path)
+<span class="line-number">15</span>	}
+<span class="line-number">16</span>
+<span class="line-number">17</span>	env.handler.ServeHTTP(w, r)
+<span class="line-number">18</span>}
 </code></pre>
 <p>Note that <code>ClosureEnv</code> holds a pointer to <code>rateLimitEnabled</code>. If it was not a pointer, the closure could not modify the outer values. That's why closures capturing their environment lead in the general case to heap allocations so that environment variables live long enough.</p>
 <hr />
@@ -271,8 +315,13 @@ func rateLimitMiddleware(w http.ResponseWriter, r *http.Request, env *ClosureEnv
 <p>Well, when is this closure called? When handling <strong>every single incoming HTTP request, concurrently.</strong></p>
 <p>It's as if we spawned many goroutines which all called this function concurrently, and said function reads and writes an outer variable without any synchronization. So it is indeed a data race.</p>
 <p>We can confirm with the compiler that no variable is captured by accident now that the patch is applied:</p>
-<pre><code class="language-shell">$ go build -gcflags='-d closure=1' http-race.go
-./http-race.go:9:26: heap closure, captured vars = [handler]
+<pre>
+  <div class="code-header">
+    <span>Shell</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-shell"><span class="line-number">0</span>$ go build -gcflags='-d closure=1' http-race.go
+<span class="line-number">1</span>./http-race.go:9:26: heap closure, captured vars = [handler]
 </code></pre>
 <h2 id="conclusion-and-recommendations">
   <a class="title" href="#conclusion-and-recommendations">Conclusion and recommendations</a>
@@ -289,9 +338,14 @@ func rateLimitMiddleware(w http.ResponseWriter, r *http.Request, env *ClosureEnv
 </blockquote>
 <p>So how can we avoid this kind of data race from occurring? How can we adapt our code style, if tools do not spot it? Well, you may have been bitten in the past by logic bugs using Go closures, when the wrong variable is captured by accident. The recommendation in these cases is typically: do not capture, pass variables you need inside the closure as function arguments to the closure (i.e., pass explicitly by value instead of implicitly by reference). That's probably a good idea but also: it's so easy to forget to do it.</p>
 <p>The root cause is that the environment is captured implicitly. When I was writing C++ I actually liked the lambda <a href="https://en.cppreference.com/w/cpp/language/lambda.html">syntax</a> because it started with a capture list. Every capture was explicit! It was slightly verbose but as we have seen: it serves to avoid real production bugs! For example:</p>
-<pre><code class="language-c++">int a = 1, b = 2, c = 3;
-auto fn =  [a, b, c]() { return a + b + c; };
-int res = fn();
+<pre>
+  <div class="code-header">
+    <span>C++</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-c++"><span class="line-number">0</span>int a = 1, b = 2, c = 3;
+<span class="line-number">1</span>auto fn =  [a, b, c]() { return a + b + c; };
+<span class="line-number">2</span>int res = fn();
 </code></pre>
 <p>After writing quite a lot of code in C, Zig and Odin, which all do <em>not</em> have support for closures, I actually do not miss them. I even think it might have been a mistake to have them in most languages. Every single time I have to deal with code with closures, it is always harder to understand and debug than code without them. It can even lead to performance issues due to hidden memory allocations, and makes the compiler quite a bit more complex. The code that gives me the most headaches is functions returning functions returning functions... And some of these functions in the chain capture their environment implicitly... Urgh.</p>
 <hr />
@@ -324,114 +378,129 @@ int res = fn();
   <a class="hash-anchor" href="#addendum-a-reproducer-program-for-the-go-race-detector" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>Here is a reproducer program with the same issue but this time the Go race detector finds the data race:</p>
-<pre><code class="language-go">package main
-
-import (
-	&quot;fmt&quot;
-	&quot;sync&quot;
-	&quot;time&quot;
-)
-
-func NewMiddleware(rateLimitEnabled bool) func() {
-	return func() {
-		if time.Now().Nanosecond()%2 == 0 {
-			rateLimitEnabled = false
-		}
-
-		if rateLimitEnabled {
-			fmt.Printf(&quot;rate_limit_enabled=yes\n&quot;)
-			// Rate limiting logic here ...
-		} else {
-			fmt.Printf(&quot;rate_limit_enabled=no\n&quot;)
-		}
-	}
-}
-
-func main() {
-	middleware := NewMiddleware(true)
-	count := 100
-	wg := sync.WaitGroup{}
-	wg.Add(count)
-
-	for range count {
-		go func() {
-			middleware()
-			wg.Done()
-		}()
-	}
-
-	wg.Wait()
-}
+<pre>
+  <div class="code-header">
+    <span>Go</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-go"><span class="line-number">0</span>package main
+<span class="line-number">1</span>
+<span class="line-number">2</span>import (
+<span class="line-number">3</span>	&quot;fmt&quot;
+<span class="line-number">4</span>	&quot;sync&quot;
+<span class="line-number">5</span>	&quot;time&quot;
+<span class="line-number">6</span>)
+<span class="line-number">7</span>
+<span class="line-number">8</span>func NewMiddleware(rateLimitEnabled bool) func() {
+<span class="line-number">9</span>	return func() {
+<span class="line-number">10</span>		if time.Now().Nanosecond()%2 == 0 {
+<span class="line-number">11</span>			rateLimitEnabled = false
+<span class="line-number">12</span>		}
+<span class="line-number">13</span>
+<span class="line-number">14</span>		if rateLimitEnabled {
+<span class="line-number">15</span>			fmt.Printf(&quot;rate_limit_enabled=yes\n&quot;)
+<span class="line-number">16</span>			// Rate limiting logic here ...
+<span class="line-number">17</span>		} else {
+<span class="line-number">18</span>			fmt.Printf(&quot;rate_limit_enabled=no\n&quot;)
+<span class="line-number">19</span>		}
+<span class="line-number">20</span>	}
+<span class="line-number">21</span>}
+<span class="line-number">22</span>
+<span class="line-number">23</span>func main() {
+<span class="line-number">24</span>	middleware := NewMiddleware(true)
+<span class="line-number">25</span>	count := 100
+<span class="line-number">26</span>	wg := sync.WaitGroup{}
+<span class="line-number">27</span>	wg.Add(count)
+<span class="line-number">28</span>
+<span class="line-number">29</span>	for range count {
+<span class="line-number">30</span>		go func() {
+<span class="line-number">31</span>			middleware()
+<span class="line-number">32</span>			wg.Done()
+<span class="line-number">33</span>		}()
+<span class="line-number">34</span>	}
+<span class="line-number">35</span>
+<span class="line-number">36</span>	wg.Wait()
+<span class="line-number">37</span>}
 </code></pre>
 <p>Here's the output:</p>
-<pre><code class="language-shell">$ go run -race race_reproducer.go
-rate_limit_enabled=no
-==================
-WARNING: DATA RACE
-Read at 0x00c00001216f by goroutine 8:
-  main.main.NewMiddleware.func2()
-      /home/pg/scratch/http-race/reproducer/race_reproducer.go:15 +0x52
-  main.main.func1()
-      /home/pg/scratch/http-race/reproducer/race_reproducer.go:32 +0x33
-
-Previous write at 0x00c00001216f by goroutine 7:
-  main.main.NewMiddleware.func2()
-      /home/pg/scratch/http-race/reproducer/race_reproducer.go:12 +0x45
-  main.main.func1()
-      /home/pg/scratch/http-race/reproducer/race_reproducer.go:32 +0x33
-
-Goroutine 8 (running) created at:
-  main.main()
-      /home/pg/scratch/http-race/reproducer/race_reproducer.go:31 +0xe4
-
-Goroutine 7 (running) created at:
-  main.main()
-      /home/pg/scratch/http-race/reproducer/race_reproducer.go:31 +0xe4
-==================
+<pre>
+  <div class="code-header">
+    <span>Shell</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-shell"><span class="line-number">0</span>$ go run -race race_reproducer.go
+<span class="line-number">1</span>rate_limit_enabled=no
+<span class="line-number">2</span>==================
+<span class="line-number">3</span>WARNING: DATA RACE
+<span class="line-number">4</span>Read at 0x00c00001216f by goroutine 8:
+<span class="line-number">5</span>  main.main.NewMiddleware.func2()
+<span class="line-number">6</span>      /home/pg/scratch/http-race/reproducer/race_reproducer.go:15 +0x52
+<span class="line-number">7</span>  main.main.func1()
+<span class="line-number">8</span>      /home/pg/scratch/http-race/reproducer/race_reproducer.go:32 +0x33
+<span class="line-number">9</span>
+<span class="line-number">10</span>Previous write at 0x00c00001216f by goroutine 7:
+<span class="line-number">11</span>  main.main.NewMiddleware.func2()
+<span class="line-number">12</span>      /home/pg/scratch/http-race/reproducer/race_reproducer.go:12 +0x45
+<span class="line-number">13</span>  main.main.func1()
+<span class="line-number">14</span>      /home/pg/scratch/http-race/reproducer/race_reproducer.go:32 +0x33
+<span class="line-number">15</span>
+<span class="line-number">16</span>Goroutine 8 (running) created at:
+<span class="line-number">17</span>  main.main()
+<span class="line-number">18</span>      /home/pg/scratch/http-race/reproducer/race_reproducer.go:31 +0xe4
+<span class="line-number">19</span>
+<span class="line-number">20</span>Goroutine 7 (running) created at:
+<span class="line-number">21</span>  main.main()
+<span class="line-number">22</span>      /home/pg/scratch/http-race/reproducer/race_reproducer.go:31 +0xe4
+<span class="line-number">23</span>==================
 </code></pre>
 <p>It's not completely clear to me why the Go race detector finds the race in this program but not in the original program since each HTTP request is handled in its own goroutine, both programs should be analogous. Maybe not enough concurrent HTTP traffic?</p>
 <h2 id="addendum-the-fixed-code-in-full">
   <a class="title" href="#addendum-the-fixed-code-in-full">Addendum: The fixed code in full</a>
   <a class="hash-anchor" href="#addendum-the-fixed-code-in-full" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
-<pre><code class="language-go">package main
-
-import (
-	&quot;fmt&quot;
-	&quot;net/http&quot;
-	&quot;strings&quot;
-)
-
-func NewMiddleware(handler http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		rateLimitEnabled := true
-
-		if strings.HasPrefix(r.URL.Path, &quot;/admin&quot;) {
-			rateLimitEnabled = false
-		}
-
-		if rateLimitEnabled {
-			fmt.Printf(&quot;path=%s rate_limit_enabled=yes\n&quot;, r.URL.Path)
-			// Rate limiting logic here ...
-		} else {
-			fmt.Printf(&quot;path=%s rate_limit_enabled=no\n&quot;, r.URL.Path)
-		}
-
-		handler.ServeHTTP(w, r)
-	})
-}
-
-func handle(w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte(&quot;hello!\n&quot;))
-}
-
-func main() {
-	handler := http.HandlerFunc(handle)
-	middleware := NewMiddleware(handler)
-	http.Handle(&quot;/&quot;, middleware)
-
-	http.ListenAndServe(&quot;:3001&quot;, nil)
-}
+<pre>
+  <div class="code-header">
+    <span>Go</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-go"><span class="line-number">0</span>package main
+<span class="line-number">1</span>
+<span class="line-number">2</span>import (
+<span class="line-number">3</span>	&quot;fmt&quot;
+<span class="line-number">4</span>	&quot;net/http&quot;
+<span class="line-number">5</span>	&quot;strings&quot;
+<span class="line-number">6</span>)
+<span class="line-number">7</span>
+<span class="line-number">8</span>func NewMiddleware(handler http.Handler) http.Handler {
+<span class="line-number">9</span>	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+<span class="line-number">10</span>		rateLimitEnabled := true
+<span class="line-number">11</span>
+<span class="line-number">12</span>		if strings.HasPrefix(r.URL.Path, &quot;/admin&quot;) {
+<span class="line-number">13</span>			rateLimitEnabled = false
+<span class="line-number">14</span>		}
+<span class="line-number">15</span>
+<span class="line-number">16</span>		if rateLimitEnabled {
+<span class="line-number">17</span>			fmt.Printf(&quot;path=%s rate_limit_enabled=yes\n&quot;, r.URL.Path)
+<span class="line-number">18</span>			// Rate limiting logic here ...
+<span class="line-number">19</span>		} else {
+<span class="line-number">20</span>			fmt.Printf(&quot;path=%s rate_limit_enabled=no\n&quot;, r.URL.Path)
+<span class="line-number">21</span>		}
+<span class="line-number">22</span>
+<span class="line-number">23</span>		handler.ServeHTTP(w, r)
+<span class="line-number">24</span>	})
+<span class="line-number">25</span>}
+<span class="line-number">26</span>
+<span class="line-number">27</span>func handle(w http.ResponseWriter, r *http.Request) {
+<span class="line-number">28</span>	w.Write([]byte(&quot;hello!\n&quot;))
+<span class="line-number">29</span>}
+<span class="line-number">30</span>
+<span class="line-number">31</span>func main() {
+<span class="line-number">32</span>	handler := http.HandlerFunc(handle)
+<span class="line-number">33</span>	middleware := NewMiddleware(handler)
+<span class="line-number">34</span>	http.Handle(&quot;/&quot;, middleware)
+<span class="line-number">35</span>
+<span class="line-number">36</span>	http.ListenAndServe(&quot;:3001&quot;, nil)
+<span class="line-number">37</span>}
 </code></pre>
 <p><a href="/blog"> ⏴ Back to all articles</a></p>
 

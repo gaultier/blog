@@ -11,9 +11,9 @@ Do not edit it by hand.
 <link type="application/atom+xml" href="/blog/feed.xml" rel="self">
 <link rel="shortcut icon" type="image/ico" href="/blog/favicon.ico">
 <link rel="stylesheet" type="text/css" href="main.css">
-<link rel="stylesheet" href="https://unpkg.com/@highlightjs/cdn-assets@11.8.0/styles/default.min.css">
-<script src="highlight.min.js" defer></script>
-<script src="x86asm.min.js" defer></script>
+<!-- <link rel="stylesheet" href="https://unpkg.com/@highlightjs/cdn-assets@11.8.0/styles/default.min.css"> -->
+<!-- <script src="highlight.min.js" defer></script> -->
+<!-- <script src="x86asm.min.js" defer></script> -->
 <script src="main.js" defer></script>
 <script type="module" src="search.js" async></script>
 </head>
@@ -180,67 +180,82 @@ Do not edit it by hand.
   <a class="hash-anchor" href="#what-are-we-building" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>I call the tool we are building <code>ueb</code> for: micro exponential backoff. It does up to 10 retries, with a waiting period in between that starts at an arbitrary 128 ms and doubles every retry. The timeout for the subprocess is the same as the sleep time, so that it's adaptive and we give the subprocess a longer and longer time to finish successfully. These numbers would probably be exposed as command line options in a real polished program, but there's no time, we have to demo it:</p>
-<pre><code class="language-shell"># This returns immediately since it succeeds on the first try.
-$ ueb true
-
-# This retries 10 times since the command always fails, waiting more and more time between each try, and finally returns the last exit code of the command (1).
-$ ueb false
-
-# This retries a few times (~ 4 times), until the waiting time exceeds the duration of the sub-program. It exits with `0` since from the POV of our program, the sub-program finally finished in its alloted time.
-$ ueb sleep 1
-
-
-# Run a program that prints the date and time, and exits with a random status code, to see how it works.
-$ ueb sh -c 'date --iso-8601=ns; export R=$(($RANDOM % 5)); echo $R; exit $R'
-2024-11-10T15:48:49,499172093+01:00
-4
-2024-11-10T15:48:49,628818472+01:00
-3
-2024-11-10T15:48:49,886557676+01:00
-4
-2024-11-10T15:48:50,400199626+01:00
-3
-2024-11-10T15:48:51,425937132+01:00
-2
-2024-11-10T15:48:53,475565645+01:00
-2
-2024-11-10T15:48:57,573278508+01:00
-1
-2024-11-10T15:49:05,767338611+01:00
-0
-
-# Some more practical examples.
-$ ueb ssh &lt;some_ip&gt;
-$ ueb createdb my_great_database -h 0.0.0.0 -U postgres
+<pre>
+  <div class="code-header">
+    <span>Shell</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-shell"><span class="line-number">0</span># This returns immediately since it succeeds on the first try.
+<span class="line-number">1</span>$ ueb true
+<span class="line-number">2</span>
+<span class="line-number">3</span># This retries 10 times since the command always fails, waiting more and more time between each try, and finally returns the last exit code of the command (1).
+<span class="line-number">4</span>$ ueb false
+<span class="line-number">5</span>
+<span class="line-number">6</span># This retries a few times (~ 4 times), until the waiting time exceeds the duration of the sub-program. It exits with `0` since from the POV of our program, the sub-program finally finished in its alloted time.
+<span class="line-number">7</span>$ ueb sleep 1
+<span class="line-number">8</span>
+<span class="line-number">9</span>
+<span class="line-number">10</span># Run a program that prints the date and time, and exits with a random status code, to see how it works.
+<span class="line-number">11</span>$ ueb sh -c 'date --iso-8601=ns; export R=$(($RANDOM % 5)); echo $R; exit $R'
+<span class="line-number">12</span>2024-11-10T15:48:49,499172093+01:00
+<span class="line-number">13</span>4
+<span class="line-number">14</span>2024-11-10T15:48:49,628818472+01:00
+<span class="line-number">15</span>3
+<span class="line-number">16</span>2024-11-10T15:48:49,886557676+01:00
+<span class="line-number">17</span>4
+<span class="line-number">18</span>2024-11-10T15:48:50,400199626+01:00
+<span class="line-number">19</span>3
+<span class="line-number">20</span>2024-11-10T15:48:51,425937132+01:00
+<span class="line-number">21</span>2
+<span class="line-number">22</span>2024-11-10T15:48:53,475565645+01:00
+<span class="line-number">23</span>2
+<span class="line-number">24</span>2024-11-10T15:48:57,573278508+01:00
+<span class="line-number">25</span>1
+<span class="line-number">26</span>2024-11-10T15:49:05,767338611+01:00
+<span class="line-number">27</span>0
+<span class="line-number">28</span>
+<span class="line-number">29</span># Some more practical examples.
+<span class="line-number">30</span>$ ueb ssh &lt;some_ip&gt;
+<span class="line-number">31</span>$ ueb createdb my_great_database -h 0.0.0.0 -U postgres
 </code></pre>
 <p>If you want to monitor the retries and the sleeps, you can use <code>strace</code> or <code>dtrace</code>:</p>
-<pre><code class="language-shell">$ strace ueb sleep 1
+<pre>
+  <div class="code-header">
+    <span>Shell</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-shell"><span class="line-number">0</span>$ strace ueb sleep 1
 </code></pre>
 <p>Note that the sub-command should be idempotent, otherwise we might create a given resource twice, or the command might have succeeded right after our timeout triggered but also right before we killed it, so our program thinks it timed out and thus needs to be retried. There is this small data race window, which is completely fine if the command is idempotent but will erroneously retry the command to the bitter end otherwise. There is also the case where the sub-command does stuff over the network for example creating a resource, it succeeds, but the ACK is never received due to network issues. The sub-command will think it failed and retry. Again, fairly standard stuff in distributed systems but I thought it was worth mentioning.</p>
 <p>So how do we implement it?</p>
 <p>Immediately, we notice something: even though there are a bazillion ways to wait on a child process to finish (<code>wait</code>, <code>wait3</code>, <code>wait4</code>, <code>waitid</code>, <code>waitpid</code>), none of them take a timeout as an argument. This has sparked numerous questions online (<a href="https://stackoverflow.com/questions/18542089/how-to-wait-on-child-process-to-finish-with-time-limit">1</a>, <a href="https://stackoverflow.com/questions/18476138/is-there-a-version-of-the-wait-system-call-that-sets-a-timeout">2</a>), with in my opinion unsatisfactory answers. So let's explore this rabbit hole.</p>
 <p>We'd like the pseudo-code to be something like:</p>
-<pre><code class="language-pseudocode">wait_ms := 128
-
-for retry in 0..&lt;10:
-    child_pid := run_command_in_subprocess(cmd)
-
-    ret := wait_for_process_to_finish_with_timeout_ms(child_pid, wait_ms)
-    if (did_process_finish_successfully(ret)):
-        exit(0)
-        
-    // In case of a timeout, we need to kill the child process and retry.
-    kill(child_pid, SIGKILL)
-
-    // Reap zombie process to avoid a resource leak.
-    waitpid(child_pid)
-
-    sleep_ms(wait_ms);
-
-    wait_ms *= 2;
-
-// All retries exhausted, exit with an error code.
-exit(1)
+<pre>
+  <div class="code-header">
+    <span>Pseudocode</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-pseudocode"><span class="line-number">0</span>wait_ms := 128
+<span class="line-number">1</span>
+<span class="line-number">2</span>for retry in 0..&lt;10:
+<span class="line-number">3</span>    child_pid := run_command_in_subprocess(cmd)
+<span class="line-number">4</span>
+<span class="line-number">5</span>    ret := wait_for_process_to_finish_with_timeout_ms(child_pid, wait_ms)
+<span class="line-number">6</span>    if (did_process_finish_successfully(ret)):
+<span class="line-number">7</span>        exit(0)
+<span class="line-number">8</span>        
+<span class="line-number">9</span>    // In case of a timeout, we need to kill the child process and retry.
+<span class="line-number">10</span>    kill(child_pid, SIGKILL)
+<span class="line-number">11</span>
+<span class="line-number">12</span>    // Reap zombie process to avoid a resource leak.
+<span class="line-number">13</span>    waitpid(child_pid)
+<span class="line-number">14</span>
+<span class="line-number">15</span>    sleep_ms(wait_ms);
+<span class="line-number">16</span>
+<span class="line-number">17</span>    wait_ms *= 2;
+<span class="line-number">18</span>
+<span class="line-number">19</span>// All retries exhausted, exit with an error code.
+<span class="line-number">20</span>exit(1)
 </code></pre>
 <p><em>There is a degenerate case where the give command to run is wrong (e.g. typo in the parameters) or the executable does not exist, and our program will happily retry it to the bitter end. But there is solace: this is bounded by the number of retries (10). That's why we do not retry forever.</em></p>
 <h2 id="first-approach-old-school-sigsuspend">
@@ -281,69 +296,74 @@ exit(1)
 <p>Wouldn't it be great if we could wait on a signal, say, <code>SIGCHLD</code>, with a timeout? Oh look, a system call that does exactly that <em>and</em> is standardized by POSIX 2001. Cool! I am not quite sure why the <code>timeout</code> program does not use it, but we sure as hell can. My only guess would be that they want to support old Unices pre 2001, or non POSIX systems.</p>
 <p><em>A knowledgeable reader has <a href="https://github.com/gaultier/blog/issues/22">pointed out</a> that <code>sigtimedwait</code> was optional in POSIX 2001 and as such not implemented in some operating systems. It was made mandatory in POSIX 2008 but the adoption was slow.</em></p>
 <p>Anyways, here's a very straightforward implementation:</p>
-<pre><code class="language-c">#define _GNU_SOURCE
-#include &lt;errno.h&gt;
-#include &lt;signal.h&gt;
-#include &lt;stdint.h&gt;
-#include &lt;sys/wait.h&gt;
-#include &lt;unistd.h&gt;
-
-void on_sigchld(int sig) { (void)sig; }
-
-int main(int argc, char *argv[]) {
-  (void)argc;
-  signal(SIGCHLD, on_sigchld);
-
-  uint32_t wait_ms = 128;
-
-  for (int retry = 0; retry &lt; 10; retry += 1) {
-    int child_pid = fork();
-    if (-1 == child_pid) {
-      return errno;
-    }
-
-    if (0 == child_pid) { // Child
-      argv += 1;
-      if (-1 == execvp(argv[0], argv)) {
-        return errno;
-      }
-      __builtin_unreachable();
-    }
-
-    sigset_t sigset = {0};
-    sigemptyset(&amp;sigset);
-    sigaddset(&amp;sigset, SIGCHLD);
-
-    siginfo_t siginfo = {0};
-
-    struct timespec timeout = {
-        .tv_sec = wait_ms / 1000,
-        .tv_nsec = (wait_ms % 1000) * 1000 * 1000,
-    };
-
-    int sig = sigtimedwait(&amp;sigset, &amp;siginfo, &amp;timeout);
-    if (-1 == sig &amp;&amp; EAGAIN != errno) { // Error
-      return errno;
-    }
-    if (-1 != sig) { // Child finished.
-      if (WIFEXITED(siginfo.si_status) &amp;&amp; 0 == WEXITSTATUS(siginfo.si_status)) {
-        return 0;
-      }
-    }
-
-    if (-1 == kill(child_pid, SIGKILL)) {
-      return errno;
-    }
-
-    if (-1 == wait(NULL)) {
-      return errno;
-    }
-
-    usleep(wait_ms * 1000);
-    wait_ms *= 2;
-  }
-  return 1;
-}
+<pre>
+  <div class="code-header">
+    <span>C</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-c"><span class="line-number">0</span>#define _GNU_SOURCE
+<span class="line-number">1</span>#include &lt;errno.h&gt;
+<span class="line-number">2</span>#include &lt;signal.h&gt;
+<span class="line-number">3</span>#include &lt;stdint.h&gt;
+<span class="line-number">4</span>#include &lt;sys/wait.h&gt;
+<span class="line-number">5</span>#include &lt;unistd.h&gt;
+<span class="line-number">6</span>
+<span class="line-number">7</span>void on_sigchld(int sig) { (void)sig; }
+<span class="line-number">8</span>
+<span class="line-number">9</span>int main(int argc, char *argv[]) {
+<span class="line-number">10</span>  (void)argc;
+<span class="line-number">11</span>  signal(SIGCHLD, on_sigchld);
+<span class="line-number">12</span>
+<span class="line-number">13</span>  uint32_t wait_ms = 128;
+<span class="line-number">14</span>
+<span class="line-number">15</span>  for (int retry = 0; retry &lt; 10; retry += 1) {
+<span class="line-number">16</span>    int child_pid = fork();
+<span class="line-number">17</span>    if (-1 == child_pid) {
+<span class="line-number">18</span>      return errno;
+<span class="line-number">19</span>    }
+<span class="line-number">20</span>
+<span class="line-number">21</span>    if (0 == child_pid) { // Child
+<span class="line-number">22</span>      argv += 1;
+<span class="line-number">23</span>      if (-1 == execvp(argv[0], argv)) {
+<span class="line-number">24</span>        return errno;
+<span class="line-number">25</span>      }
+<span class="line-number">26</span>      __builtin_unreachable();
+<span class="line-number">27</span>    }
+<span class="line-number">28</span>
+<span class="line-number">29</span>    sigset_t sigset = {0};
+<span class="line-number">30</span>    sigemptyset(&amp;sigset);
+<span class="line-number">31</span>    sigaddset(&amp;sigset, SIGCHLD);
+<span class="line-number">32</span>
+<span class="line-number">33</span>    siginfo_t siginfo = {0};
+<span class="line-number">34</span>
+<span class="line-number">35</span>    struct timespec timeout = {
+<span class="line-number">36</span>        .tv_sec = wait_ms / 1000,
+<span class="line-number">37</span>        .tv_nsec = (wait_ms % 1000) * 1000 * 1000,
+<span class="line-number">38</span>    };
+<span class="line-number">39</span>
+<span class="line-number">40</span>    int sig = sigtimedwait(&amp;sigset, &amp;siginfo, &amp;timeout);
+<span class="line-number">41</span>    if (-1 == sig &amp;&amp; EAGAIN != errno) { // Error
+<span class="line-number">42</span>      return errno;
+<span class="line-number">43</span>    }
+<span class="line-number">44</span>    if (-1 != sig) { // Child finished.
+<span class="line-number">45</span>      if (WIFEXITED(siginfo.si_status) &amp;&amp; 0 == WEXITSTATUS(siginfo.si_status)) {
+<span class="line-number">46</span>        return 0;
+<span class="line-number">47</span>      }
+<span class="line-number">48</span>    }
+<span class="line-number">49</span>
+<span class="line-number">50</span>    if (-1 == kill(child_pid, SIGKILL)) {
+<span class="line-number">51</span>      return errno;
+<span class="line-number">52</span>    }
+<span class="line-number">53</span>
+<span class="line-number">54</span>    if (-1 == wait(NULL)) {
+<span class="line-number">55</span>      return errno;
+<span class="line-number">56</span>    }
+<span class="line-number">57</span>
+<span class="line-number">58</span>    usleep(wait_ms * 1000);
+<span class="line-number">59</span>    wait_ms *= 2;
+<span class="line-number">60</span>  }
+<span class="line-number">61</span>  return 1;
+<span class="line-number">62</span>}
 </code></pre>
 <p>I like this implementation. It's pretty easy to convince ourselves looking at the code that it is obviously correct, and that's a very important factor for me.</p>
 <p>We still have to deal with signals though. Could we reduce their imprint on our code?</p>
@@ -354,69 +374,74 @@ int main(int argc, char *argv[]) {
 <p>This is a really nifty, quite well known <a href="https://cr.yp.to/docs/selfpipe.html">trick</a> at this point, where we bridge the world of signals with the world of file descriptors with the <code>pipe(2)</code> system call.</p>
 <p>Usually, pipes are a form of inter-process communication, and here we do not want to communicate with the child process (since it could be any program, and most programs do not get chatty with their parent process). What we do is: in the signal handler for <code>SIGCHLD</code>, we simply write (anything) to our own pipe. We know this is signal-safe so it's good.</p>
 <p>And you know what's cool with pipes? They are simply a file descriptor which we can <code>poll</code>. With a timeout. Nice! Here goes:</p>
-<pre><code class="language-c">#define _GNU_SOURCE
-#include &lt;errno.h&gt;
-#include &lt;poll.h&gt;
-#include &lt;signal.h&gt;
-#include &lt;stdint.h&gt;
-#include &lt;sys/wait.h&gt;
-#include &lt;unistd.h&gt;
-
-static int pipe_fd[2] = {0};
-void on_sigchld(int sig) {
-  (void)sig;
-  char dummy = 0;
-  write(pipe_fd[1], &amp;dummy, 1);
-}
-
-int main(int argc, char *argv[]) {
-  (void)argc;
-
-  if (-1 == pipe(pipe_fd)) {
-    return errno;
-  }
-
-  signal(SIGCHLD, on_sigchld);
-
-  uint32_t wait_ms = 128;
-
-  for (int retry = 0; retry &lt; 10; retry += 1) {
-    int child_pid = fork();
-    if (-1 == child_pid) {
-      return errno;
-    }
-
-    if (0 == child_pid) { // Child
-      argv += 1;
-      if (-1 == execvp(argv[0], argv)) {
-        return errno;
-      }
-      __builtin_unreachable();
-    }
-
-    struct pollfd poll_fd = {
-        .fd = pipe_fd[0],
-        .events = POLLIN,
-    };
-
-    // Wait for the child to finish with a timeout.
-    poll(&amp;poll_fd, 1, (int)wait_ms);
-
-    kill(child_pid, SIGKILL);
-    int status = 0;
-    wait(&amp;status);
-    if (WIFEXITED(status) &amp;&amp; 0 == WEXITSTATUS(status)) {
-      return 0;
-    }
-
-    char dummy = 0;
-    read(pipe_fd[0], &amp;dummy, 1);
-
-    usleep(wait_ms * 1000);
-    wait_ms *= 2;
-  }
-  return 1;
-}
+<pre>
+  <div class="code-header">
+    <span>C</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-c"><span class="line-number">0</span>#define _GNU_SOURCE
+<span class="line-number">1</span>#include &lt;errno.h&gt;
+<span class="line-number">2</span>#include &lt;poll.h&gt;
+<span class="line-number">3</span>#include &lt;signal.h&gt;
+<span class="line-number">4</span>#include &lt;stdint.h&gt;
+<span class="line-number">5</span>#include &lt;sys/wait.h&gt;
+<span class="line-number">6</span>#include &lt;unistd.h&gt;
+<span class="line-number">7</span>
+<span class="line-number">8</span>static int pipe_fd[2] = {0};
+<span class="line-number">9</span>void on_sigchld(int sig) {
+<span class="line-number">10</span>  (void)sig;
+<span class="line-number">11</span>  char dummy = 0;
+<span class="line-number">12</span>  write(pipe_fd[1], &amp;dummy, 1);
+<span class="line-number">13</span>}
+<span class="line-number">14</span>
+<span class="line-number">15</span>int main(int argc, char *argv[]) {
+<span class="line-number">16</span>  (void)argc;
+<span class="line-number">17</span>
+<span class="line-number">18</span>  if (-1 == pipe(pipe_fd)) {
+<span class="line-number">19</span>    return errno;
+<span class="line-number">20</span>  }
+<span class="line-number">21</span>
+<span class="line-number">22</span>  signal(SIGCHLD, on_sigchld);
+<span class="line-number">23</span>
+<span class="line-number">24</span>  uint32_t wait_ms = 128;
+<span class="line-number">25</span>
+<span class="line-number">26</span>  for (int retry = 0; retry &lt; 10; retry += 1) {
+<span class="line-number">27</span>    int child_pid = fork();
+<span class="line-number">28</span>    if (-1 == child_pid) {
+<span class="line-number">29</span>      return errno;
+<span class="line-number">30</span>    }
+<span class="line-number">31</span>
+<span class="line-number">32</span>    if (0 == child_pid) { // Child
+<span class="line-number">33</span>      argv += 1;
+<span class="line-number">34</span>      if (-1 == execvp(argv[0], argv)) {
+<span class="line-number">35</span>        return errno;
+<span class="line-number">36</span>      }
+<span class="line-number">37</span>      __builtin_unreachable();
+<span class="line-number">38</span>    }
+<span class="line-number">39</span>
+<span class="line-number">40</span>    struct pollfd poll_fd = {
+<span class="line-number">41</span>        .fd = pipe_fd[0],
+<span class="line-number">42</span>        .events = POLLIN,
+<span class="line-number">43</span>    };
+<span class="line-number">44</span>
+<span class="line-number">45</span>    // Wait for the child to finish with a timeout.
+<span class="line-number">46</span>    poll(&amp;poll_fd, 1, (int)wait_ms);
+<span class="line-number">47</span>
+<span class="line-number">48</span>    kill(child_pid, SIGKILL);
+<span class="line-number">49</span>    int status = 0;
+<span class="line-number">50</span>    wait(&amp;status);
+<span class="line-number">51</span>    if (WIFEXITED(status) &amp;&amp; 0 == WEXITSTATUS(status)) {
+<span class="line-number">52</span>      return 0;
+<span class="line-number">53</span>    }
+<span class="line-number">54</span>
+<span class="line-number">55</span>    char dummy = 0;
+<span class="line-number">56</span>    read(pipe_fd[0], &amp;dummy, 1);
+<span class="line-number">57</span>
+<span class="line-number">58</span>    usleep(wait_ms * 1000);
+<span class="line-number">59</span>    wait_ms *= 2;
+<span class="line-number">60</span>  }
+<span class="line-number">61</span>  return 1;
+<span class="line-number">62</span>}
 </code></pre>
 <p>So we still have one signal handler but the rest of our program does not deal with signals in any way (well, except to kill the child when the timeout triggers, but that's invisible).</p>
 <p>There are a few catches with this implementation:</p>
@@ -457,65 +482,70 @@ with the desired sigmask, avoiding the race.)</p>
 </ol>
 <p>So in a way, it's not really a <em>self</em>-pipe, it's more precisely a pipe between the parent and the child, and nothing gets written or read, it's just used by the child to signal it's done when it closes its end. Which is a useful approach for many cases outside of our little program.</p>
 <p>Here is the code:</p>
-<pre><code class="language-c">#define _GNU_SOURCE
-#include &lt;errno.h&gt;
-#include &lt;poll.h&gt;
-#include &lt;stdint.h&gt;
-#include &lt;sys/wait.h&gt;
-#include &lt;unistd.h&gt;
-
-int main(int argc, char *argv[]) {
-  (void)argc;
-
-  uint32_t wait_ms = 128;
-
-  for (int retry = 0; retry &lt; 10; retry += 1) {
-    int pipe_fd[2] = {0};
-    if (-1 == pipe(pipe_fd)) {
-      return errno;
-    }
-
-    int child_pid = fork();
-    if (-1 == child_pid) {
-      return errno;
-    }
-
-    if (0 == child_pid) { // Child
-      // Close the read end of the pipe.
-      close(pipe_fd[0]);
-
-      argv += 1;
-      if (-1 == execvp(argv[0], argv)) {
-        return errno;
-      }
-      __builtin_unreachable();
-    }
-
-    // Close the write end of the pipe.
-    close(pipe_fd[1]);
-
-    struct pollfd poll_fd = {
-        .fd = pipe_fd[0],
-        .events = POLLHUP | POLLIN,
-    };
-
-    // Wait for the child to finish with a timeout.
-    poll(&amp;poll_fd, 1, (int)wait_ms);
-
-    kill(child_pid, SIGKILL);
-    int status = 0;
-    wait(&amp;status);
-    if (WIFEXITED(status) &amp;&amp; 0 == WEXITSTATUS(status)) {
-      return 0;
-    }
-
-    close(pipe_fd[0]);
-
-    usleep(wait_ms * 1000);
-    wait_ms *= 2;
-  }
-  return 1;
-}
+<pre>
+  <div class="code-header">
+    <span>C</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-c"><span class="line-number">0</span>#define _GNU_SOURCE
+<span class="line-number">1</span>#include &lt;errno.h&gt;
+<span class="line-number">2</span>#include &lt;poll.h&gt;
+<span class="line-number">3</span>#include &lt;stdint.h&gt;
+<span class="line-number">4</span>#include &lt;sys/wait.h&gt;
+<span class="line-number">5</span>#include &lt;unistd.h&gt;
+<span class="line-number">6</span>
+<span class="line-number">7</span>int main(int argc, char *argv[]) {
+<span class="line-number">8</span>  (void)argc;
+<span class="line-number">9</span>
+<span class="line-number">10</span>  uint32_t wait_ms = 128;
+<span class="line-number">11</span>
+<span class="line-number">12</span>  for (int retry = 0; retry &lt; 10; retry += 1) {
+<span class="line-number">13</span>    int pipe_fd[2] = {0};
+<span class="line-number">14</span>    if (-1 == pipe(pipe_fd)) {
+<span class="line-number">15</span>      return errno;
+<span class="line-number">16</span>    }
+<span class="line-number">17</span>
+<span class="line-number">18</span>    int child_pid = fork();
+<span class="line-number">19</span>    if (-1 == child_pid) {
+<span class="line-number">20</span>      return errno;
+<span class="line-number">21</span>    }
+<span class="line-number">22</span>
+<span class="line-number">23</span>    if (0 == child_pid) { // Child
+<span class="line-number">24</span>      // Close the read end of the pipe.
+<span class="line-number">25</span>      close(pipe_fd[0]);
+<span class="line-number">26</span>
+<span class="line-number">27</span>      argv += 1;
+<span class="line-number">28</span>      if (-1 == execvp(argv[0], argv)) {
+<span class="line-number">29</span>        return errno;
+<span class="line-number">30</span>      }
+<span class="line-number">31</span>      __builtin_unreachable();
+<span class="line-number">32</span>    }
+<span class="line-number">33</span>
+<span class="line-number">34</span>    // Close the write end of the pipe.
+<span class="line-number">35</span>    close(pipe_fd[1]);
+<span class="line-number">36</span>
+<span class="line-number">37</span>    struct pollfd poll_fd = {
+<span class="line-number">38</span>        .fd = pipe_fd[0],
+<span class="line-number">39</span>        .events = POLLHUP | POLLIN,
+<span class="line-number">40</span>    };
+<span class="line-number">41</span>
+<span class="line-number">42</span>    // Wait for the child to finish with a timeout.
+<span class="line-number">43</span>    poll(&amp;poll_fd, 1, (int)wait_ms);
+<span class="line-number">44</span>
+<span class="line-number">45</span>    kill(child_pid, SIGKILL);
+<span class="line-number">46</span>    int status = 0;
+<span class="line-number">47</span>    wait(&amp;status);
+<span class="line-number">48</span>    if (WIFEXITED(status) &amp;&amp; 0 == WEXITSTATUS(status)) {
+<span class="line-number">49</span>      return 0;
+<span class="line-number">50</span>    }
+<span class="line-number">51</span>
+<span class="line-number">52</span>    close(pipe_fd[0]);
+<span class="line-number">53</span>
+<span class="line-number">54</span>    usleep(wait_ms * 1000);
+<span class="line-number">55</span>    wait_ms *= 2;
+<span class="line-number">56</span>  }
+<span class="line-number">57</span>  return 1;
+<span class="line-number">58</span>}
 </code></pre>
 <p>Voila, no signals and no global state!</p>
 <h2 id="fourth-approach-linux-s-signalfd">
@@ -536,9 +566,14 @@ int main(int argc, char *argv[]) {
 <li>PIDs are recycled and the space is small, so collisions will happen. Typically, a process spawns a child process, some work happens, and then the parent decides to send a signal to the PID of the child. But it turns out that the child already terminated (unbeknownst to the parent) and another process took its place with the same PID. So now the parent is sending signals, or communicating with, a process that it thinks is its original child but is in fact something completely different. Chaos and security issues ensue. Now, in our very simple case, that would not really happen, but perhaps the root user is running our program, or, imagine that you are implementing the init process with PID 1, e.g. systemd: you can kill any process on the machine! Or think of the case of re-parenting a process. Or sending a certain PID to another process and they send a signal to it at some point in the future. It becomes hairy and it's a very real problem.</li>
 <li>Data races are hard to escape (see the previous point).</li>
 <li><p>It's easy to accidentally send a signal to all processes with <code>kill(0, SIGKILL)</code> or <code>kill(-1, SIGKILL)</code> if the developer has not checked that all previous operations succeeded. This is a classic mistake:</p>
-<pre><code class="language-c">int child_pid = fork();  // This fork fails and returns -1.
-... // (do not check that fork succeeded);
-kill(child_pid, SIGKILL); // Effectively: kill(-1, SIGKILL)
+<pre>
+  <div class="code-header">
+    <span>C</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-c"><span class="line-number">0</span>int child_pid = fork();  // This fork fails and returns -1.
+<span class="line-number">1</span>... // (do not check that fork succeeded);
+<span class="line-number">2</span>kill(child_pid, SIGKILL); // Effectively: kill(-1, SIGKILL)
 </code></pre>
 </li>
 </ul>
@@ -552,69 +587,74 @@ kill(child_pid, SIGKILL); // Effectively: kill(-1, SIGKILL)
 </ul>
 <p>And voila, no signals! Isolation! Composability! (Almost) No PIDs in our program! Life can be nice sometimes. It's just unfortunate that there isn't a cross-platform API for that.</p>
 <p>Here's the Linux implementation:</p>
-<pre><code class="language-c">#define _GNU_SOURCE
-#include &lt;errno.h&gt;
-#include &lt;poll.h&gt;
-#include &lt;stdint.h&gt;
-#include &lt;sys/syscall.h&gt;
-#include &lt;sys/wait.h&gt;
-#include &lt;unistd.h&gt;
-
-int main(int argc, char *argv[]) {
-  (void)argc;
-
-  uint32_t wait_ms = 128;
-
-  for (int retry = 0; retry &lt; 10; retry += 1) {
-    int child_pid = fork();
-    if (-1 == child_pid) {
-      return errno;
-    }
-
-    if (0 == child_pid) { // Child
-      argv += 1;
-      if (-1 == execvp(argv[0], argv)) {
-        return errno;
-      }
-      __builtin_unreachable();
-    }
-
-    // Parent.
-
-    int child_fd = (int)syscall(SYS_pidfd_open, child_pid, 0);
-    if (-1 == child_fd) {
-      return errno;
-    }
-
-    struct pollfd poll_fd = {
-        .fd = child_fd,
-        .events = POLLHUP | POLLIN,
-    };
-    // Wait for the child to finish with a timeout.
-    if (-1 == poll(&amp;poll_fd, 1, (int)wait_ms)) {
-      return errno;
-    }
-
-    if (-1 == syscall(SYS_pidfd_send_signal, child_fd, SIGKILL, NULL, 0)) {
-      return errno;
-    }
-
-    siginfo_t siginfo = {0};
-    // Get exit status of child &amp; reap zombie.
-    if (-1 == waitid(P_PIDFD, (id_t)child_fd, &amp;siginfo, WEXITED)) {
-      return errno;
-    }
-
-    if (WIFEXITED(siginfo.si_status) &amp;&amp; 0 == WEXITSTATUS(siginfo.si_status)) {
-      return 0;
-    }
-
-    wait_ms *= 2;
-    usleep(wait_ms * 1000);
-
-    close(child_fd);
-  }
-}
+<pre>
+  <div class="code-header">
+    <span>C</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-c"><span class="line-number">0</span>#define _GNU_SOURCE
+<span class="line-number">1</span>#include &lt;errno.h&gt;
+<span class="line-number">2</span>#include &lt;poll.h&gt;
+<span class="line-number">3</span>#include &lt;stdint.h&gt;
+<span class="line-number">4</span>#include &lt;sys/syscall.h&gt;
+<span class="line-number">5</span>#include &lt;sys/wait.h&gt;
+<span class="line-number">6</span>#include &lt;unistd.h&gt;
+<span class="line-number">7</span>
+<span class="line-number">8</span>int main(int argc, char *argv[]) {
+<span class="line-number">9</span>  (void)argc;
+<span class="line-number">10</span>
+<span class="line-number">11</span>  uint32_t wait_ms = 128;
+<span class="line-number">12</span>
+<span class="line-number">13</span>  for (int retry = 0; retry &lt; 10; retry += 1) {
+<span class="line-number">14</span>    int child_pid = fork();
+<span class="line-number">15</span>    if (-1 == child_pid) {
+<span class="line-number">16</span>      return errno;
+<span class="line-number">17</span>    }
+<span class="line-number">18</span>
+<span class="line-number">19</span>    if (0 == child_pid) { // Child
+<span class="line-number">20</span>      argv += 1;
+<span class="line-number">21</span>      if (-1 == execvp(argv[0], argv)) {
+<span class="line-number">22</span>        return errno;
+<span class="line-number">23</span>      }
+<span class="line-number">24</span>      __builtin_unreachable();
+<span class="line-number">25</span>    }
+<span class="line-number">26</span>
+<span class="line-number">27</span>    // Parent.
+<span class="line-number">28</span>
+<span class="line-number">29</span>    int child_fd = (int)syscall(SYS_pidfd_open, child_pid, 0);
+<span class="line-number">30</span>    if (-1 == child_fd) {
+<span class="line-number">31</span>      return errno;
+<span class="line-number">32</span>    }
+<span class="line-number">33</span>
+<span class="line-number">34</span>    struct pollfd poll_fd = {
+<span class="line-number">35</span>        .fd = child_fd,
+<span class="line-number">36</span>        .events = POLLHUP | POLLIN,
+<span class="line-number">37</span>    };
+<span class="line-number">38</span>    // Wait for the child to finish with a timeout.
+<span class="line-number">39</span>    if (-1 == poll(&amp;poll_fd, 1, (int)wait_ms)) {
+<span class="line-number">40</span>      return errno;
+<span class="line-number">41</span>    }
+<span class="line-number">42</span>
+<span class="line-number">43</span>    if (-1 == syscall(SYS_pidfd_send_signal, child_fd, SIGKILL, NULL, 0)) {
+<span class="line-number">44</span>      return errno;
+<span class="line-number">45</span>    }
+<span class="line-number">46</span>
+<span class="line-number">47</span>    siginfo_t siginfo = {0};
+<span class="line-number">48</span>    // Get exit status of child &amp; reap zombie.
+<span class="line-number">49</span>    if (-1 == waitid(P_PIDFD, (id_t)child_fd, &amp;siginfo, WEXITED)) {
+<span class="line-number">50</span>      return errno;
+<span class="line-number">51</span>    }
+<span class="line-number">52</span>
+<span class="line-number">53</span>    if (WIFEXITED(siginfo.si_status) &amp;&amp; 0 == WEXITSTATUS(siginfo.si_status)) {
+<span class="line-number">54</span>      return 0;
+<span class="line-number">55</span>    }
+<span class="line-number">56</span>
+<span class="line-number">57</span>    wait_ms *= 2;
+<span class="line-number">58</span>    usleep(wait_ms * 1000);
+<span class="line-number">59</span>
+<span class="line-number">60</span>    close(child_fd);
+<span class="line-number">61</span>  }
+<span class="line-number">62</span>}
 </code></pre>
 <p>A small note: To <code>poll</code> a process descriptor, Linux wants us to use <code>POLLIN</code> whereas FreeBSD wants us to use <code>POLLHUP</code>. So we use <code>POLLHUP | POLLIN</code> since there are no side-effects to use both.</p>
 <p>Another small note: a process descriptor, just like a file descriptor, takes up resources on the kernel side and we can reach some system limits (or even the memory limit), so it's good practice to <code>close</code> it as soon as possible to free up resources. For us, that's right before retrying. On FreeBSD, closing the process descriptor also kills the process, so it's very short, just one system call. On Linux, we need to do both.</p>
@@ -623,77 +663,82 @@ int main(int argc, char *argv[]) {
   <a class="hash-anchor" href="#sixth-approach-macos-s-and-bsd-s-kqueue" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>It feels like cheating, but MacOS and the BSDs have had <code>kqueue</code> for decades which works out of the box with PIDs. It's a bit similar to <code>poll</code> or <code>epoll</code> on Linux:</p>
-<pre><code class="language-c">#include &lt;errno.h&gt;
-#include &lt;signal.h&gt;
-#include &lt;stdint.h&gt;
-#include &lt;sys/event.h&gt;
-#include &lt;sys/wait.h&gt;
-#include &lt;unistd.h&gt;
-
-int main(int argc, char *argv[]) {
-  (void)argc;
-
-  uint32_t wait_ms = 128;
-  int queue = kqueuex(KQUEUE_CLOEXEC);
-
-  for (int retry = 0; retry &lt; 10; retry += 1) {
-    int child_pid = fork();
-    if (-1 == child_pid) {
-      return errno;
-    }
-
-    if (0 == child_pid) { // Child
-      argv += 1;
-      if (-1 == execvp(argv[0], argv)) {
-        return errno;
-      }
-      __builtin_unreachable();
-    }
-
-    struct kevent change_list = {
-        .ident = child_pid,
-        .filter = EVFILT_PROC,
-        .fflags = NOTE_EXIT,
-        .flags = EV_ADD | EV_CLEAR,
-    };
-
-    struct kevent event_list = {0};
-
-    struct timespec timeout = {
-        .tv_sec = wait_ms / 1000,
-        .tv_nsec = (wait_ms % 1000) * 1000 * 1000,
-    };
-
-    int ret = kevent(queue, &amp;change_list, 1, &amp;event_list, 1, &amp;timeout);
-    if (-1 == ret) { // Error
-      return errno;
-    }
-    if (1 == ret) { // Child finished.
-      int status = 0;
-      if (-1 == wait(&amp;status)) {
-        return errno;
-      }
-      if (WIFEXITED(status) &amp;&amp; 0 == WEXITSTATUS(status)) {
-        return 0;
-      }
-    }
-
-    kill(child_pid, SIGKILL);
-    wait(NULL);
-
-    change_list = (struct kevent){
-        .ident = child_pid,
-        .filter = EVFILT_PROC,
-        .fflags = NOTE_EXIT,
-        .flags = EV_DELETE,
-    };
-    kevent(queue, &amp;change_list, 1, NULL, 0, NULL);
-
-    usleep(wait_ms * 1000);
-    wait_ms *= 2;
-  }
-  return 1;
-}
+<pre>
+  <div class="code-header">
+    <span>C</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-c"><span class="line-number">0</span>#include &lt;errno.h&gt;
+<span class="line-number">1</span>#include &lt;signal.h&gt;
+<span class="line-number">2</span>#include &lt;stdint.h&gt;
+<span class="line-number">3</span>#include &lt;sys/event.h&gt;
+<span class="line-number">4</span>#include &lt;sys/wait.h&gt;
+<span class="line-number">5</span>#include &lt;unistd.h&gt;
+<span class="line-number">6</span>
+<span class="line-number">7</span>int main(int argc, char *argv[]) {
+<span class="line-number">8</span>  (void)argc;
+<span class="line-number">9</span>
+<span class="line-number">10</span>  uint32_t wait_ms = 128;
+<span class="line-number">11</span>  int queue = kqueuex(KQUEUE_CLOEXEC);
+<span class="line-number">12</span>
+<span class="line-number">13</span>  for (int retry = 0; retry &lt; 10; retry += 1) {
+<span class="line-number">14</span>    int child_pid = fork();
+<span class="line-number">15</span>    if (-1 == child_pid) {
+<span class="line-number">16</span>      return errno;
+<span class="line-number">17</span>    }
+<span class="line-number">18</span>
+<span class="line-number">19</span>    if (0 == child_pid) { // Child
+<span class="line-number">20</span>      argv += 1;
+<span class="line-number">21</span>      if (-1 == execvp(argv[0], argv)) {
+<span class="line-number">22</span>        return errno;
+<span class="line-number">23</span>      }
+<span class="line-number">24</span>      __builtin_unreachable();
+<span class="line-number">25</span>    }
+<span class="line-number">26</span>
+<span class="line-number">27</span>    struct kevent change_list = {
+<span class="line-number">28</span>        .ident = child_pid,
+<span class="line-number">29</span>        .filter = EVFILT_PROC,
+<span class="line-number">30</span>        .fflags = NOTE_EXIT,
+<span class="line-number">31</span>        .flags = EV_ADD | EV_CLEAR,
+<span class="line-number">32</span>    };
+<span class="line-number">33</span>
+<span class="line-number">34</span>    struct kevent event_list = {0};
+<span class="line-number">35</span>
+<span class="line-number">36</span>    struct timespec timeout = {
+<span class="line-number">37</span>        .tv_sec = wait_ms / 1000,
+<span class="line-number">38</span>        .tv_nsec = (wait_ms % 1000) * 1000 * 1000,
+<span class="line-number">39</span>    };
+<span class="line-number">40</span>
+<span class="line-number">41</span>    int ret = kevent(queue, &amp;change_list, 1, &amp;event_list, 1, &amp;timeout);
+<span class="line-number">42</span>    if (-1 == ret) { // Error
+<span class="line-number">43</span>      return errno;
+<span class="line-number">44</span>    }
+<span class="line-number">45</span>    if (1 == ret) { // Child finished.
+<span class="line-number">46</span>      int status = 0;
+<span class="line-number">47</span>      if (-1 == wait(&amp;status)) {
+<span class="line-number">48</span>        return errno;
+<span class="line-number">49</span>      }
+<span class="line-number">50</span>      if (WIFEXITED(status) &amp;&amp; 0 == WEXITSTATUS(status)) {
+<span class="line-number">51</span>        return 0;
+<span class="line-number">52</span>      }
+<span class="line-number">53</span>    }
+<span class="line-number">54</span>
+<span class="line-number">55</span>    kill(child_pid, SIGKILL);
+<span class="line-number">56</span>    wait(NULL);
+<span class="line-number">57</span>
+<span class="line-number">58</span>    change_list = (struct kevent){
+<span class="line-number">59</span>        .ident = child_pid,
+<span class="line-number">60</span>        .filter = EVFILT_PROC,
+<span class="line-number">61</span>        .fflags = NOTE_EXIT,
+<span class="line-number">62</span>        .flags = EV_DELETE,
+<span class="line-number">63</span>    };
+<span class="line-number">64</span>    kevent(queue, &amp;change_list, 1, NULL, 0, NULL);
+<span class="line-number">65</span>
+<span class="line-number">66</span>    usleep(wait_ms * 1000);
+<span class="line-number">67</span>    wait_ms *= 2;
+<span class="line-number">68</span>  }
+<span class="line-number">69</span>  return 1;
+<span class="line-number">70</span>}
 </code></pre>
 <p>The only surprising thing, perhaps, is that a <code>kqueue</code> is stateful, so once the child process exited by itself or was killed, we have to remove the watcher on its PID, since the next time we spawn a child process, the PID will very likely be different. <code>kqueue</code> offers the flag <code>EV_ONESHOT</code>, which automatically deletes the event from the queue once it has been consumed by us. However, it would not help in all cases: if the timeout triggers, no event was consumed, and we have to kill the child process, which creates an event in the queue! So we have to always consume/delete the event from the queue right before we retry, with a second <code>kevent</code> call. That's the same situation as with the self-pipe approach where we unconditionally <code>read</code> from the pipe to 'clear' it before retrying.</p>
 <p>I love that <code>kqueue</code> works with every kind of Unix entity: file descriptor, pipes, PIDs, Vnodes, sockets, etc. Even signals! However, I am not sure that I love its statefulness. I find the <code>poll</code> API simpler, since it's stateless. But perhaps this behavior is necessary for some corner cases or for performance to avoid the linear scanning that <code>poll</code> entails? It's interesting to observe that Linux's <code>epoll</code> went the same route as <code>kqueue</code> with a similar API, however, <code>epoll</code> can only watch plain file descriptors.</p>
@@ -726,76 +771,81 @@ int main(int argc, char *argv[]) {
 <p><code>io_uring</code> is the last candidate to enter the already packed ring (eh) of different-yet-similar ways to do 'I/O multiplexing', meaning to wait with a timeout on various kinds of entities to do interesting 'stuff'. We queue a system call e.g. <code>wait</code>, as well as a timeout, and we wait for either to complete. If <code>wait</code> completed first and the exit status is a success, we exit. Otherwise, we retry. Familiar stuff at this point. <code>io_uring</code> essentially makes every system call asynchronous with a uniform API. That's exactly what we want! <code>io_uring</code> only exposes <code>waitid</code> and only in very recent versions, which is completely fine.</p>
 <p>Incidentally, this approach is exactly what <code>liburing</code> does in a <a href="https://github.com/axboe/liburing/blob/fd3e498/test/waitid.c#L58">unit test</a>.</p>
 <p>Alternatively, we can only queue the <code>waitid</code> and use <code>io_uring_wait_cqe_timeout</code> to mimick <code>poll(..., timeout)</code>:</p>
-<pre><code class="language-c">#define _DEFAULT_SOURCE
-#include &lt;liburing.h&gt;
-#include &lt;sys/wait.h&gt;
-#include &lt;unistd.h&gt;
-
-int main(int argc, char *argv[]) {
-  (void)argc;
-
-  struct io_uring ring = {0};
-  if (io_uring_queue_init(2, &amp;ring,
-                          IORING_SETUP_SINGLE_ISSUER |
-                              IORING_SETUP_DEFER_TASKRUN) &lt; 0) {
-    return 1;
-  }
-
-  uint32_t wait_ms = 128;
-
-  for (int retry = 0; retry &lt; 10; retry += 1) {
-    int child_pid = fork();
-    if (-1 == child_pid) {
-      return errno;
-    }
-
-    if (0 == child_pid) { // Child
-      argv += 1;
-      if (-1 == execvp(argv[0], argv)) {
-        return errno;
-      }
-      __builtin_unreachable();
-    }
-
-    struct io_uring_sqe *sqe = NULL;
-
-    // Queue `waitid`.
-    sqe = io_uring_get_sqe(&amp;ring);
-    siginfo_t si = {0};
-    io_uring_prep_waitid(sqe, P_PID, (id_t)child_pid, &amp;si, WEXITED, 0);
-    sqe-&gt;user_data = 1;
-
-    io_uring_submit(&amp;ring);
-
-    struct __kernel_timespec ts = {
-        .tv_sec = wait_ms / 1000,
-        .tv_nsec = (wait_ms % 1000) * 1000 * 1000,
-    };
-    struct io_uring_cqe *cqe = NULL;
-
-    int ret = io_uring_wait_cqe_timeout(&amp;ring, &amp;cqe, &amp;ts);
-
-    // If child exited successfully: the end.
-    if (ret == 0 &amp;&amp; cqe-&gt;res &gt;= 0 &amp;&amp; cqe-&gt;user_data == 1 &amp;&amp;
-        WIFEXITED(si.si_status) &amp;&amp; 0 == WEXITSTATUS(si.si_status)) {
-      return 0;
-    }
-    if (ret == 0) {
-      io_uring_cqe_seen(&amp;ring, cqe);
-    } else {
-      kill(child_pid, SIGKILL);
-      // Drain the CQE.
-      ret = io_uring_wait_cqe(&amp;ring, &amp;cqe);
-      io_uring_cqe_seen(&amp;ring, cqe);
-    }
-
-    wait(NULL);
-
-    wait_ms *= 2;
-    usleep(wait_ms * 1000);
-  }
-  return 1;
-}
+<pre>
+  <div class="code-header">
+    <span>C</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-c"><span class="line-number">0</span>#define _DEFAULT_SOURCE
+<span class="line-number">1</span>#include &lt;liburing.h&gt;
+<span class="line-number">2</span>#include &lt;sys/wait.h&gt;
+<span class="line-number">3</span>#include &lt;unistd.h&gt;
+<span class="line-number">4</span>
+<span class="line-number">5</span>int main(int argc, char *argv[]) {
+<span class="line-number">6</span>  (void)argc;
+<span class="line-number">7</span>
+<span class="line-number">8</span>  struct io_uring ring = {0};
+<span class="line-number">9</span>  if (io_uring_queue_init(2, &amp;ring,
+<span class="line-number">10</span>                          IORING_SETUP_SINGLE_ISSUER |
+<span class="line-number">11</span>                              IORING_SETUP_DEFER_TASKRUN) &lt; 0) {
+<span class="line-number">12</span>    return 1;
+<span class="line-number">13</span>  }
+<span class="line-number">14</span>
+<span class="line-number">15</span>  uint32_t wait_ms = 128;
+<span class="line-number">16</span>
+<span class="line-number">17</span>  for (int retry = 0; retry &lt; 10; retry += 1) {
+<span class="line-number">18</span>    int child_pid = fork();
+<span class="line-number">19</span>    if (-1 == child_pid) {
+<span class="line-number">20</span>      return errno;
+<span class="line-number">21</span>    }
+<span class="line-number">22</span>
+<span class="line-number">23</span>    if (0 == child_pid) { // Child
+<span class="line-number">24</span>      argv += 1;
+<span class="line-number">25</span>      if (-1 == execvp(argv[0], argv)) {
+<span class="line-number">26</span>        return errno;
+<span class="line-number">27</span>      }
+<span class="line-number">28</span>      __builtin_unreachable();
+<span class="line-number">29</span>    }
+<span class="line-number">30</span>
+<span class="line-number">31</span>    struct io_uring_sqe *sqe = NULL;
+<span class="line-number">32</span>
+<span class="line-number">33</span>    // Queue `waitid`.
+<span class="line-number">34</span>    sqe = io_uring_get_sqe(&amp;ring);
+<span class="line-number">35</span>    siginfo_t si = {0};
+<span class="line-number">36</span>    io_uring_prep_waitid(sqe, P_PID, (id_t)child_pid, &amp;si, WEXITED, 0);
+<span class="line-number">37</span>    sqe-&gt;user_data = 1;
+<span class="line-number">38</span>
+<span class="line-number">39</span>    io_uring_submit(&amp;ring);
+<span class="line-number">40</span>
+<span class="line-number">41</span>    struct __kernel_timespec ts = {
+<span class="line-number">42</span>        .tv_sec = wait_ms / 1000,
+<span class="line-number">43</span>        .tv_nsec = (wait_ms % 1000) * 1000 * 1000,
+<span class="line-number">44</span>    };
+<span class="line-number">45</span>    struct io_uring_cqe *cqe = NULL;
+<span class="line-number">46</span>
+<span class="line-number">47</span>    int ret = io_uring_wait_cqe_timeout(&amp;ring, &amp;cqe, &amp;ts);
+<span class="line-number">48</span>
+<span class="line-number">49</span>    // If child exited successfully: the end.
+<span class="line-number">50</span>    if (ret == 0 &amp;&amp; cqe-&gt;res &gt;= 0 &amp;&amp; cqe-&gt;user_data == 1 &amp;&amp;
+<span class="line-number">51</span>        WIFEXITED(si.si_status) &amp;&amp; 0 == WEXITSTATUS(si.si_status)) {
+<span class="line-number">52</span>      return 0;
+<span class="line-number">53</span>    }
+<span class="line-number">54</span>    if (ret == 0) {
+<span class="line-number">55</span>      io_uring_cqe_seen(&amp;ring, cqe);
+<span class="line-number">56</span>    } else {
+<span class="line-number">57</span>      kill(child_pid, SIGKILL);
+<span class="line-number">58</span>      // Drain the CQE.
+<span class="line-number">59</span>      ret = io_uring_wait_cqe(&amp;ring, &amp;cqe);
+<span class="line-number">60</span>      io_uring_cqe_seen(&amp;ring, cqe);
+<span class="line-number">61</span>    }
+<span class="line-number">62</span>
+<span class="line-number">63</span>    wait(NULL);
+<span class="line-number">64</span>
+<span class="line-number">65</span>    wait_ms *= 2;
+<span class="line-number">66</span>    usleep(wait_ms * 1000);
+<span class="line-number">67</span>  }
+<span class="line-number">68</span>  return 1;
+<span class="line-number">69</span>}
 </code></pre>
 <p>The only difficulty here is in case of timeout: we kill the child directly, and we need to consume and discard the <code>waitid</code> entry in the completion queue. Just like <code>kqueue</code>.</p>
 <p>One caveat for io_uring: it's only supported on modern kernels (5.1+).</p>

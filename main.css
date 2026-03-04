@@ -12,6 +12,8 @@ button {
 .copy-code {
   align-self: flex-end;
   background-color: initial;
+  border-radius: 0;
+  margin: .2rem;
 }
 
 input {
@@ -57,6 +59,7 @@ p {
   background-color: var(--color-banner-bg);
   align-self: stretch;
   color: var(--color-main);
+  padding: 0 .2rem;
 }
 
 #banner > ul {
@@ -233,13 +236,13 @@ code {
   color: var(--color-main) !important;
   word-wrap: break-word;
   white-space: pre-wrap;
+  padding: .1rem;
 }
 
-pre > code {
+pre code {
   border: 1px solid var(--color-less-important);
   align-self: stretch;
   width: 100%;
-  padding: 1em;
 }
 
 object {

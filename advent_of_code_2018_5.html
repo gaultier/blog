@@ -11,9 +11,9 @@ Do not edit it by hand.
 <link type="application/atom+xml" href="/blog/feed.xml" rel="self">
 <link rel="shortcut icon" type="image/ico" href="/blog/favicon.ico">
 <link rel="stylesheet" type="text/css" href="main.css">
-<link rel="stylesheet" href="https://unpkg.com/@highlightjs/cdn-assets@11.8.0/styles/default.min.css">
-<script src="highlight.min.js" defer></script>
-<script src="x86asm.min.js" defer></script>
+<!-- <link rel="stylesheet" href="https://unpkg.com/@highlightjs/cdn-assets@11.8.0/styles/default.min.css"> -->
+<!-- <script src="highlight.min.js" defer></script> -->
+<!-- <script src="x86asm.min.js" defer></script> -->
 <script src="main.js" defer></script>
 <script type="module" src="search.js" async></script>
 </head>
@@ -137,7 +137,12 @@ It means we want to remove adjacent characters which are the same letter and hav
   <a class="hash-anchor" href="#working-with-the-repl-to-iteratively-close-in-on-a-solution" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>First, let's define our input, which is a string:</p>
-<pre><code class="language-scheme">(define input &quot;aAbxXBctTCz&quot;)
+<pre>
+  <div class="code-header">
+    <span>Scheme</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-scheme"><span class="line-number">0</span>(define input &quot;aAbxXBctTCz&quot;)
 </code></pre>
 <p>Later, we will read our input string from a file, but for now it is simpler to
 just hard-code it.</p>
@@ -148,7 +153,12 @@ instead in our case. We do not want to keep track of indices, risking doing off-
 Also, LISPs are good at handling lists (LISP stands for LISt Processor), and
 we'll that we can use pattern matching to make the code very concise. I am not
 aware of pattern matching capabilities on string, so let's use lists:</p>
-<pre><code class="language-scheme">(string-&gt;list input)
+<pre>
+  <div class="code-header">
+    <span>Scheme</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-scheme"><span class="line-number">0</span>(string-&gt;list input)
 </code></pre>
 <p>Here, the
 <code>string-&gt;list</code> function just returns a list of characters for a string (in other
@@ -157,33 +167,68 @@ languages it is usually named <code>split</code>).</p>
 Let's write a <code>char-opposite-casing?</code> function to do just that. It will take 2
 arguments, the letters we are inspecting, and will return a boolean.
 For now, let's just make it always return true:</p>
-<pre><code class="language-scheme">(define (char-opposite-casing? a b) #\t)
+<pre>
+  <div class="code-header">
+    <span>Scheme</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-scheme"><span class="line-number">0</span>(define (char-opposite-casing? a b) #\t)
 </code></pre>
 <p>We only deal with ASCII, so it is safe to compare ASCII codes to detect casing.</p>
 <p>What is the ASCII code of <code>A</code>? Let's try it by using the function <code>char-&gt;integer</code>:</p>
-<pre><code class="language-scheme">(char-&gt;integer #\A) 
+<pre>
+  <div class="code-header">
+    <span>Scheme</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-scheme"><span class="line-number">0</span>(char-&gt;integer #\A) 
 </code></pre>
 <p>What about <code>a</code>?</p>
-<pre><code class="language-scheme">(char-&gt;integer #\a)
+<pre>
+  <div class="code-header">
+    <span>Scheme</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-scheme"><span class="line-number">0</span>(char-&gt;integer #\a)
 </code></pre>
 <p>So there is a difference of <code>32</code> between the same ASCII letter in lowercase and
 uppercase. Peeking at <code>man ascii</code> in the terminal confirms this hunch for all
 letters of the alphabet.</p>
 <p>So, time to implement <code>char-opposite-casing?</code>:</p>
-<pre><code class="language-scheme">(define (char-case-opposite-casing? a b)
-  (let* ((a-code (char-&gt;integer a))
-         (b-code (char-&gt;integer b))
-         (diff (- a-code b-code)))
-    (= (* 32 32) (* diff diff))))
+<pre>
+  <div class="code-header">
+    <span>Scheme</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-scheme"><span class="line-number">0</span>(define (char-case-opposite-casing? a b)
+<span class="line-number">1</span>  (let* ((a-code (char-&gt;integer a))
+<span class="line-number">2</span>         (b-code (char-&gt;integer b))
+<span class="line-number">3</span>         (diff (- a-code b-code)))
+<span class="line-number">4</span>    (= (* 32 32) (* diff diff))))
 </code></pre>
 <p>Let's try it with <code>a</code> and <code>A</code>:</p>
-<pre><code class="language-scheme">(char-case-opposite-casing? #\a #\A) 
+<pre>
+  <div class="code-header">
+    <span>Scheme</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-scheme"><span class="line-number">0</span>(char-case-opposite-casing? #\a #\A) 
 </code></pre>
 <p>And flipped:</p>
-<pre><code class="language-scheme">(char-case-opposite-casing? #\A #\a)
+<pre>
+  <div class="code-header">
+    <span>Scheme</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-scheme"><span class="line-number">0</span>(char-case-opposite-casing? #\A #\a)
 </code></pre>
 <p>And <code>A</code> and <code>b</code>:</p>
-<pre><code class="language-scheme">(char-case-opposite-casing? #\A #\b)
+<pre>
+  <div class="code-header">
+    <span>Scheme</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-scheme"><span class="line-number">0</span>(char-case-opposite-casing? #\A #\b)
 </code></pre>
 <p><code>let*</code> is used to define local bindings which are only visible in this function.
 It evaluates each binding in order which means we can define <code>diff</code> in terms of
@@ -202,24 +247,44 @@ which will be eventually the end result, and the input list (<code>input</code>)
 gradually remove items until it is empty. We can view the first list as the work
 we have done, and the second list as the work to do.</p>
 <p>Let's first define the function. For now, it just returns the empty list:</p>
-<pre><code class="language-scheme">(define (chem-react acc input)
-  '())
+<pre>
+  <div class="code-header">
+    <span>Scheme</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-scheme"><span class="line-number">0</span>(define (chem-react acc input)
+<span class="line-number">1</span>  '())
 </code></pre>
 <p>At first, the accumulator is the empty list, so we will always call our function like
 this:</p>
-<pre><code class="language-scheme">(chem-react '() (string-&gt;list input))
+<pre>
+  <div class="code-header">
+    <span>Scheme</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-scheme"><span class="line-number">0</span>(chem-react '() (string-&gt;list input))
 </code></pre>
 <p>It is import to know that most list functions do not work on the empty list in
 Chicken Scheme. For example, to get the first element of a list, we use the <code>car</code> function:</p>
-<pre><code class="language-scheme">(define my-list (list 1 2 3))
-
-;; Note that this doest **not** mutate `my-list`
-(car my-list)
+<pre>
+  <div class="code-header">
+    <span>Scheme</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-scheme"><span class="line-number">0</span>(define my-list (list 1 2 3))
+<span class="line-number">1</span>
+<span class="line-number">2</span>;; Note that this doest **not** mutate `my-list`
+<span class="line-number">3</span>(car my-list)
 </code></pre>
 <p>But it won't work on the empty list:</p>
-<pre><code class="language-scheme">(define my-list '())
-
-(car my-list)
+<pre>
+  <div class="code-header">
+    <span>Scheme</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-scheme"><span class="line-number">0</span>(define my-list '())
+<span class="line-number">1</span>
+<span class="line-number">2</span>(car my-list)
 </code></pre>
 <p>So we need to treat the case of the empty list (both for the first and the
 second argument) explicitly. We could do that by using lots of <code>if</code>, but it is
@@ -231,25 +296,40 @@ more readable and concise to use pattern matching.</p>
 <p>Scheme has a minimalist core, so we do not get pattern matching out of
 the box, but we can easily add it with the package <code>matchable</code>. Let's install
 it in the terminal:</p>
-<pre><code class="language-shell">$ chicken-install matchable
+<pre>
+  <div class="code-header">
+    <span>Shell</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-shell"><span class="line-number">0</span>$ chicken-install matchable
 </code></pre>
 <p>Now we can import it at the top of our code:</p>
-<pre><code class="language-scheme">(import matchable)
-
-;; At this point we can refer to any function in this module `matchable`.
-;; No need to prefix them either with `matchable`.
+<pre>
+  <div class="code-header">
+    <span>Scheme</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-scheme"><span class="line-number">0</span>(import matchable)
+<span class="line-number">1</span>
+<span class="line-number">2</span>;; At this point we can refer to any function in this module `matchable`.
+<span class="line-number">3</span>;; No need to prefix them either with `matchable`.
 </code></pre>
 <p>Let's try to match the empty list in our function, and return (as an example) a
 number, e.g <code>42</code>. We also want to match the case of both lists containing one
 element, and returning the sum of those 2 elements:</p>
-<pre><code class="language-scheme">(define (chem-react acc input)
-  (match (list acc input)
-    [(_ ()) 42]
-    [((a) (b)) (+ a b)]))
-
-(chem-react '() '()) ;; =&gt; 42
-
-(chem-react (list 2) (list 3)) ;; =&gt; 5
+<pre>
+  <div class="code-header">
+    <span>Scheme</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-scheme"><span class="line-number">0</span>(define (chem-react acc input)
+<span class="line-number">1</span>  (match (list acc input)
+<span class="line-number">2</span>    [(_ ()) 42]
+<span class="line-number">3</span>    [((a) (b)) (+ a b)]))
+<span class="line-number">4</span>
+<span class="line-number">5</span>(chem-react '() '()) ;; =&gt; 42
+<span class="line-number">6</span>
+<span class="line-number">7</span>(chem-react (list 2) (list 3)) ;; =&gt; 5
 </code></pre>
 <p>A few interesting things here: <code>_</code> allows us to match anything, so the first
 case is equivalent to checking if the second list is
@@ -258,16 +338,26 @@ second case, binding the first element of the first list to <code>a</code>, and 
 element of the second list to <code>b</code>, and summing the two.</p>
 <p>Note that not all possible cases are covered here, and we will get a (runtime)
 error if we trigger one of them, for example with a list containing several numbers:</p>
-<pre><code class="language-scheme">(chem-react (list 1 2) (list 3)) ;; =&gt; Error: (match) &quot;no matching pattern&quot;: ()
+<pre>
+  <div class="code-header">
+    <span>Scheme</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-scheme"><span class="line-number">0</span>(chem-react (list 1 2) (list 3)) ;; =&gt; Error: (match) &quot;no matching pattern&quot;: ()
 </code></pre>
 <p>Let's go ahead and match the case of a list of one or more elements (<code>(a . arest)</code>) to avoid that:</p>
-<pre><code class="language-scheme">(define (chem-react acc input)
-  (match (list acc input)
-    [(_ ()) 42]
-    [((a) (b)) (+ a b)]
-    [((a . arest) (b . brest)) (* a b)]))
-
-(chem-react (list 2 3) (list 4)) ;; =&gt; 8
+<pre>
+  <div class="code-header">
+    <span>Scheme</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-scheme"><span class="line-number">0</span>(define (chem-react acc input)
+<span class="line-number">1</span>  (match (list acc input)
+<span class="line-number">2</span>    [(_ ()) 42]
+<span class="line-number">3</span>    [((a) (b)) (+ a b)]
+<span class="line-number">4</span>    [((a . arest) (b . brest)) (* a b)]))
+<span class="line-number">5</span>
+<span class="line-number">6</span>(chem-react (list 2 3) (list 4)) ;; =&gt; 8
 </code></pre>
 <p>Here we choose to (arbitrarily) return the product of the first elements of both
 list, to show that pattern matching is also a way to do destructuring.</p>
@@ -277,9 +367,14 @@ list, to show that pattern matching is also a way to do destructuring.</p>
 </h3>
 <p>If the second list (the input) is empty, it means we are
 finished, so we return the first list (<code>acc</code>):</p>
-<pre><code class="language-scheme">(define (chem-react acc input)
-  (match (list acc input)
-    [(_ ()) acc]))
+<pre>
+  <div class="code-header">
+    <span>Scheme</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-scheme"><span class="line-number">0</span>(define (chem-react acc input)
+<span class="line-number">1</span>  (match (list acc input)
+<span class="line-number">2</span>    [(_ ()) acc]))
 </code></pre>
 <p>Our recursion will work as follows: we look at the first element of the second
 list (<code>input</code>, which is the work to do), let's call it <code>b</code>, and the first element of the first
@@ -294,19 +389,29 @@ with the remainder of <code>input</code>. Indeed, we can only work with two char
 if we only have one, we cannot do much.</p>
 <p>It's time to learn about a new function: <code>cons</code>. <code>cons</code> just adds an item to a list, and
 returns the new list with the added item:</p>
-<pre><code class="language-scheme">(define my-list (list 2 3))
-
-;; Note: `my-list` is **not** modified
-(cons 1 my-list) 
+<pre>
+  <div class="code-header">
+    <span>Scheme</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-scheme"><span class="line-number">0</span>(define my-list (list 2 3))
+<span class="line-number">1</span>
+<span class="line-number">2</span>;; Note: `my-list` is **not** modified
+<span class="line-number">3</span>(cons 1 my-list) 
 </code></pre>
 <p>We can now use <code>cons</code> to implement the new case:</p>
-<pre><code class="language-scheme">(define (chem-react acc input)
-  (match (list acc input)
-    [(_ ()) acc]
-    [(() (b . brest)) (chem-react (cons b acc) brest)]))
-
-
-(chem-react '() '(#\A)) ;; =&gt; (#\A)
+<pre>
+  <div class="code-header">
+    <span>Scheme</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-scheme"><span class="line-number">0</span>(define (chem-react acc input)
+<span class="line-number">1</span>  (match (list acc input)
+<span class="line-number">2</span>    [(_ ()) acc]
+<span class="line-number">3</span>    [(() (b . brest)) (chem-react (cons b acc) brest)]))
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+<span class="line-number">6</span>(chem-react '() '(#\A)) ;; =&gt; (#\A)
 </code></pre>
 <p>This new pattern is required for the recursion to
 work, but it also covers the trivial case of an input string of only one character.</p>
@@ -315,32 +420,42 @@ least an element <code>b</code> in <code>input</code>. If they are the same lett
 call ourselves with the remainder of <code>acc</code> and the remainder of <code>input</code>, which
 is equivalent to 'drop' <code>a</code> and <code>b</code>. Otherwise, we add <code>b</code> to <code>acc</code>, and we call
 ourselves with the remainder of <code>input</code>, which is the equivalent of 'continuing':</p>
-<pre><code class="language-scheme">(define (chem-react acc input)
-  (match (list acc input)
-    [(_ ()) acc]
-    [(() (b . brest)) (chem-react (cons b acc) brest)]
-    [((a . arest) (b . brest)) (if (char-case-opposite-casing? a b)
-                                   (chem-react arest brest)
-                                   (chem-react (cons b acc) brest))]))
-
-
-(chem-react '() (list #\A #\a #\b)) ;; =&gt; (#\b)
-(chem-react '() (string-&gt;list &quot;aAbxXBctTCz&quot;)) ;; =&gt; (#\z)
+<pre>
+  <div class="code-header">
+    <span>Scheme</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-scheme"><span class="line-number">0</span>(define (chem-react acc input)
+<span class="line-number">1</span>  (match (list acc input)
+<span class="line-number">2</span>    [(_ ()) acc]
+<span class="line-number">3</span>    [(() (b . brest)) (chem-react (cons b acc) brest)]
+<span class="line-number">4</span>    [((a . arest) (b . brest)) (if (char-case-opposite-casing? a b)
+<span class="line-number">5</span>                                   (chem-react arest brest)
+<span class="line-number">6</span>                                   (chem-react (cons b acc) brest))]))
+<span class="line-number">7</span>
+<span class="line-number">8</span>
+<span class="line-number">9</span>(chem-react '() (list #\A #\a #\b)) ;; =&gt; (#\b)
+<span class="line-number">10</span>(chem-react '() (string-&gt;list &quot;aAbxXBctTCz&quot;)) ;; =&gt; (#\z)
 </code></pre>
 <p>But wait a minute...Doesn't it look familiar? Yes, what we are doing here is a
 fold (sometimes called reduce)!</p>
 <p>Let's replace our custom recursion by <code>fold</code>. <code>chem-react</code> becomes the reduction
 function. It becomes simpler because <code>fold</code> will not call it on the empty list,
 so we only need to patter match <code>acc</code> (which is the empty list at the beginning):</p>
-<pre><code class="language-scheme">(define (chem-react acc x)
-  (match acc
-    [() (cons x acc)]
-    [(a . arest) (if (char-case-opposite-casing? a x)
-                     arest
-                     (cons x acc))]))
-
-
-(foldl chem-react '() input) ;; =&gt; (#\z)
+<pre>
+  <div class="code-header">
+    <span>Scheme</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-scheme"><span class="line-number">0</span>(define (chem-react acc x)
+<span class="line-number">1</span>  (match acc
+<span class="line-number">2</span>    [() (cons x acc)]
+<span class="line-number">3</span>    [(a . arest) (if (char-case-opposite-casing? a x)
+<span class="line-number">4</span>                     arest
+<span class="line-number">5</span>                     (cons x acc))]))
+<span class="line-number">6</span>
+<span class="line-number">7</span>
+<span class="line-number">8</span>(foldl chem-react '() input) ;; =&gt; (#\z)
 </code></pre>
 <p>My experience writing code in a LISP is that I usually find a solution that is
 relatively big, and I start replacing parts of it with standard functions such
@@ -349,10 +464,15 @@ as <code>fold</code> and it ends up very small.</p>
 <p>How do I read the input from a file?</p>
 </blockquote>
 <p>It's quite simple: we use the modules <code>chicken.file.posix</code> and <code>chicken.io</code>:</p>
-<pre><code class="language-scheme">(import chicken.file.posix
-        chicken.io)
-
-(read-line (open-input-file &quot;/Users/pgaultier/Downloads/aoc5.txt&quot;)) ;; =&gt; &quot;a big string...&quot;
+<pre>
+  <div class="code-header">
+    <span>Scheme</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-scheme"><span class="line-number">0</span>(import chicken.file.posix
+<span class="line-number">1</span>        chicken.io)
+<span class="line-number">2</span>
+<span class="line-number">3</span>(read-line (open-input-file &quot;/Users/pgaultier/Downloads/aoc5.txt&quot;)) ;; =&gt; &quot;a big string...&quot;
 </code></pre>
 <h2 id="the-final-solution">
   <a class="title" href="#the-final-solution">The final solution</a>
@@ -361,41 +481,56 @@ as <code>fold</code> and it ends up very small.</p>
 <p>Here I use the package <code>clojurian</code> (<code>chicken-install clojurian</code>) to have access
 to the <code>-&gt;&gt;</code> macro which makes code more readable. It works like the pipe in the
 shell. Instead of writing:</p>
-<pre><code class="language-scheme">(foo (bar &quot;foo&quot; (baz 1 2)))
+<pre>
+  <div class="code-header">
+    <span>Scheme</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-scheme"><span class="line-number">0</span>(foo (bar &quot;foo&quot; (baz 1 2)))
 </code></pre>
 <p>We write:</p>
-<pre><code class="language-scheme">(-&gt;&gt; (baz 1 2)
-     (bar &quot;foo&quot;)
-     (foo))
+<pre>
+  <div class="code-header">
+    <span>Scheme</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-scheme"><span class="line-number">0</span>(-&gt;&gt; (baz 1 2)
+<span class="line-number">1</span>     (bar &quot;foo&quot;)
+<span class="line-number">2</span>     (foo))
 </code></pre>
 <p>The macro reorders the functions calls to make it flat and avoid nesting.
 It is not strictly required, but I like that my code looks like a
 pipeline of data transformations.</p>
 <p>The final code:</p>
-<pre><code class="language-scheme">(import matchable
-        clojurian.syntax
-        chicken.file.posix
-        chicken.io)
-
-(define (char-case-opposite-casing? a b)
-  (let* ((a-code (char-&gt;integer a))
-         (b-code (char-&gt;integer b))
-         (diff (- a-code b-code)))
-    (= (* 32 32) (* diff diff))))
-
-(define (chem-react acc x)
-  (match acc
-    [() (cons x acc)]
-    [(a . arest) (if (char-case-opposite-casing? a x)
-                     arest
-                     (cons x acc))]))
-
-(-&gt;&gt; (open-input-file &quot;/Users/pgaultier/Downloads/aoc5.txt&quot;)
-     (read-line)
-     (string-&gt;list)
-     (foldl chem-react '())
-     (length)
-     (print))
+<pre>
+  <div class="code-header">
+    <span>Scheme</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-scheme"><span class="line-number">0</span>(import matchable
+<span class="line-number">1</span>        clojurian.syntax
+<span class="line-number">2</span>        chicken.file.posix
+<span class="line-number">3</span>        chicken.io)
+<span class="line-number">4</span>
+<span class="line-number">5</span>(define (char-case-opposite-casing? a b)
+<span class="line-number">6</span>  (let* ((a-code (char-&gt;integer a))
+<span class="line-number">7</span>         (b-code (char-&gt;integer b))
+<span class="line-number">8</span>         (diff (- a-code b-code)))
+<span class="line-number">9</span>    (= (* 32 32) (* diff diff))))
+<span class="line-number">10</span>
+<span class="line-number">11</span>(define (chem-react acc x)
+<span class="line-number">12</span>  (match acc
+<span class="line-number">13</span>    [() (cons x acc)]
+<span class="line-number">14</span>    [(a . arest) (if (char-case-opposite-casing? a x)
+<span class="line-number">15</span>                     arest
+<span class="line-number">16</span>                     (cons x acc))]))
+<span class="line-number">17</span>
+<span class="line-number">18</span>(-&gt;&gt; (open-input-file &quot;/Users/pgaultier/Downloads/aoc5.txt&quot;)
+<span class="line-number">19</span>     (read-line)
+<span class="line-number">20</span>     (string-&gt;list)
+<span class="line-number">21</span>     (foldl chem-react '())
+<span class="line-number">22</span>     (length)
+<span class="line-number">23</span>     (print))
 </code></pre>
 <blockquote>
 <p>But we will get a stack overflow on a big input!</p>
@@ -412,56 +547,71 @@ efficient in terms of memory and time.</p>
 <p><em>Note 2: This is a simplistic way to do benchmarking. A more correct way would
 be: warming up the file cache, making many runs, averaging the results, etc.
 I did exactly that and it did not change the results in a significant manner.</em></p>
-<pre><code class="language-shell">$ csc aoc5.scm -o aoc5 -O3 &amp;&amp; time ./aoc5
-./aoc5  0.01s user 0.00s system 82% cpu 0.021 total
+<pre>
+  <div class="code-header">
+    <span>Shell</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-shell"><span class="line-number">0</span>$ csc aoc5.scm -o aoc5 -O3 &amp;&amp; time ./aoc5
+<span class="line-number">1</span>./aoc5  0.01s user 0.00s system 82% cpu 0.021 total
 </code></pre>
 <p>It takes 21 milliseconds. Not too bad for a garbage collected, functional,
 immutable program.</p>
 <p>Here is a hand-written C version which only does one allocation and removes
 letters in place:</p>
-<pre><code class="language-c">#include &lt;errno.h&gt;
-#include &lt;fcntl.h&gt;
-#include &lt;stdint.h&gt;
-#include &lt;stdio.h&gt;
-#include &lt;stdlib.h&gt;
-#include &lt;string.h&gt;
-#include &lt;sys/stat.h&gt;
-#include &lt;unistd.h&gt;
-
-int main() {
-  int fd = open(&quot;/home/pg/Downloads/aoc2020_5.txt&quot;, O_RDONLY);
-  if (fd == -1)
-    return errno;
-
-  struct stat st = {0};
-  if (stat(&quot;/home/pg/Downloads/aoc2020_5.txt&quot;, &amp;st) == -1)
-    return errno;
-
-  int64_t input_len = st.st_size;
-  char *const input = calloc(input_len, 1);
-
-  if (read(fd, input, input_len) != input_len)
-    return errno;
-
-  while (input[input_len - 1] == '\n' || input[input_len - 1] == ' ')
-    input_len--;
-
-  int64_t i = 0;
-  while (i &lt; input_len) {
-    if (abs(input[i] - input[i + 1]) == 32) {
-      memmove(input + i, input + i + 2, input_len - i - 2);
-      input_len -= 2;
-      i = i &gt; 0 ? i - 1 : 0;
-    } else
-      i++;
-  }
-
-  printf(&quot;`%zu`\n&quot;, input_len);
-}
+<pre>
+  <div class="code-header">
+    <span>C</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-c"><span class="line-number">0</span>#include &lt;errno.h&gt;
+<span class="line-number">1</span>#include &lt;fcntl.h&gt;
+<span class="line-number">2</span>#include &lt;stdint.h&gt;
+<span class="line-number">3</span>#include &lt;stdio.h&gt;
+<span class="line-number">4</span>#include &lt;stdlib.h&gt;
+<span class="line-number">5</span>#include &lt;string.h&gt;
+<span class="line-number">6</span>#include &lt;sys/stat.h&gt;
+<span class="line-number">7</span>#include &lt;unistd.h&gt;
+<span class="line-number">8</span>
+<span class="line-number">9</span>int main() {
+<span class="line-number">10</span>  int fd = open(&quot;/home/pg/Downloads/aoc2020_5.txt&quot;, O_RDONLY);
+<span class="line-number">11</span>  if (fd == -1)
+<span class="line-number">12</span>    return errno;
+<span class="line-number">13</span>
+<span class="line-number">14</span>  struct stat st = {0};
+<span class="line-number">15</span>  if (stat(&quot;/home/pg/Downloads/aoc2020_5.txt&quot;, &amp;st) == -1)
+<span class="line-number">16</span>    return errno;
+<span class="line-number">17</span>
+<span class="line-number">18</span>  int64_t input_len = st.st_size;
+<span class="line-number">19</span>  char *const input = calloc(input_len, 1);
+<span class="line-number">20</span>
+<span class="line-number">21</span>  if (read(fd, input, input_len) != input_len)
+<span class="line-number">22</span>    return errno;
+<span class="line-number">23</span>
+<span class="line-number">24</span>  while (input[input_len - 1] == '\n' || input[input_len - 1] == ' ')
+<span class="line-number">25</span>    input_len--;
+<span class="line-number">26</span>
+<span class="line-number">27</span>  int64_t i = 0;
+<span class="line-number">28</span>  while (i &lt; input_len) {
+<span class="line-number">29</span>    if (abs(input[i] - input[i + 1]) == 32) {
+<span class="line-number">30</span>      memmove(input + i, input + i + 2, input_len - i - 2);
+<span class="line-number">31</span>      input_len -= 2;
+<span class="line-number">32</span>      i = i &gt; 0 ? i - 1 : 0;
+<span class="line-number">33</span>    } else
+<span class="line-number">34</span>      i++;
+<span class="line-number">35</span>  }
+<span class="line-number">36</span>
+<span class="line-number">37</span>  printf(&quot;`%zu`\n&quot;, input_len);
+<span class="line-number">38</span>}
 </code></pre>
 <p>Let's benchmark it on the same input:</p>
-<pre><code class="language-shell">$ cc -std=c99 -O3 -Weverything aoc5.c -march=native &amp;&amp; time ./a.out
-./a.out  0.01s user 0.00s system 86% cpu 0.012 total
+<pre>
+  <div class="code-header">
+    <span>Shell</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-shell"><span class="line-number">0</span>$ cc -std=c99 -O3 -Weverything aoc5.c -march=native &amp;&amp; time ./a.out
+<span class="line-number">1</span>./a.out  0.01s user 0.00s system 86% cpu 0.012 total
 </code></pre>
 <p>It took 12 milliseconds. So the scheme version is very close, and takes an
 acceptable amount of time.</p>

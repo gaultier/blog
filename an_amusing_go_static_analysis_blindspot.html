@@ -11,9 +11,9 @@ Do not edit it by hand.
 <link type="application/atom+xml" href="/blog/feed.xml" rel="self">
 <link rel="shortcut icon" type="image/ico" href="/blog/favicon.ico">
 <link rel="stylesheet" type="text/css" href="main.css">
-<link rel="stylesheet" href="https://unpkg.com/@highlightjs/cdn-assets@11.8.0/styles/default.min.css">
-<script src="highlight.min.js" defer></script>
-<script src="x86asm.min.js" defer></script>
+<!-- <link rel="stylesheet" href="https://unpkg.com/@highlightjs/cdn-assets@11.8.0/styles/default.min.css"> -->
+<!-- <script src="highlight.min.js" defer></script> -->
+<!-- <script src="x86asm.min.js" defer></script> -->
 <script src="main.js" defer></script>
 <script type="module" src="search.js" async></script>
 </head>
@@ -81,59 +81,73 @@ Do not edit it by hand.
 </div>
 <p><em>Discussions: <a href="https://old.reddit.com/r/golang/comments/1mx1sep/an_amusing_blind_spot_in_gos_static_analysis/?">/r/golang</a></em>.</p>
 <p>A short one today. I stumbled upon this Go test at work:</p>
-<pre><code class="language-go">func TestCacheHandling(t *testing.T) {
-	router := NewRouterPublic()
-	ts := httptest.NewServer(router)
-	t.Cleanup(ts.Close)
-
-	router.GET(&quot;/foo&quot;, func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-		w.WriteHeader(http.StatusNoContent)
-	})
-	router.DELETE(&quot;/foo&quot;, func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-		w.WriteHeader(http.StatusNoContent)
-	})
-	router.POST(&quot;/foo&quot;, func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-		w.WriteHeader(http.StatusNoContent)
-	})
-	router.PUT(&quot;/foo&quot;, func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-		w.WriteHeader(http.StatusNoContent)
-	})
-	router.PATCH(&quot;/foo&quot;, func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-		w.WriteHeader(http.StatusNoContent)
-	})
-
-	for _, method := range []string{} {
-		req, _ := http.NewRequest(method, ts.URL+&quot;/foo&quot;, nil)
-		res, err := ts.Client().Do(req)
-		require.NoError(t, err)
-		assert.EqualValues(t, &quot;0&quot;, res.Header.Get(&quot;Cache-Control&quot;))
-	}
-}
+<pre>
+  <div class="code-header">
+    <span>Go</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-go"><span class="line-number">0</span>func TestCacheHandling(t *testing.T) {
+<span class="line-number">1</span>	router := NewRouterPublic()
+<span class="line-number">2</span>	ts := httptest.NewServer(router)
+<span class="line-number">3</span>	t.Cleanup(ts.Close)
+<span class="line-number">4</span>
+<span class="line-number">5</span>	router.GET(&quot;/foo&quot;, func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+<span class="line-number">6</span>		w.WriteHeader(http.StatusNoContent)
+<span class="line-number">7</span>	})
+<span class="line-number">8</span>	router.DELETE(&quot;/foo&quot;, func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+<span class="line-number">9</span>		w.WriteHeader(http.StatusNoContent)
+<span class="line-number">10</span>	})
+<span class="line-number">11</span>	router.POST(&quot;/foo&quot;, func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+<span class="line-number">12</span>		w.WriteHeader(http.StatusNoContent)
+<span class="line-number">13</span>	})
+<span class="line-number">14</span>	router.PUT(&quot;/foo&quot;, func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+<span class="line-number">15</span>		w.WriteHeader(http.StatusNoContent)
+<span class="line-number">16</span>	})
+<span class="line-number">17</span>	router.PATCH(&quot;/foo&quot;, func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+<span class="line-number">18</span>		w.WriteHeader(http.StatusNoContent)
+<span class="line-number">19</span>	})
+<span class="line-number">20</span>
+<span class="line-number">21</span>	for _, method := range []string{} {
+<span class="line-number">22</span>		req, _ := http.NewRequest(method, ts.URL+&quot;/foo&quot;, nil)
+<span class="line-number">23</span>		res, err := ts.Client().Do(req)
+<span class="line-number">24</span>		require.NoError(t, err)
+<span class="line-number">25</span>		assert.EqualValues(t, &quot;0&quot;, res.Header.Get(&quot;Cache-Control&quot;))
+<span class="line-number">26</span>	}
+<span class="line-number">27</span>}
 </code></pre>
 <p>This test checks that a middleware adds the HTTP header <code>Cache-Control</code> for all routes. This should happen when registering a HTTP handler with <code>router.GET</code>, <code>router.DELETE</code>, etc. Why and how, that does not matter.</p>
 <p>So, did you notice the issue with this test? I initially did not. I tweaked the testing assert near the end to a different value but this test still passed. Uh, what?</p>
 <p>What if I told you this test does nothing?</p>
 <p>Because the <code>for</code> loop iterates on an empty array, so there are zero loop iterations.</p>
 <p>What the developer intended was:</p>
-<pre><code class="language-diff">diff --git a/x/httprouterx/router_test.go b/x/httprouterx/router_test.go
-index 0f9dba5515..48d2873157 100644
---- a/x/httprouterx/router_test.go
-+++ b/x/httprouterx/router_test.go
-@@ -72,7 +72,7 @@ func TestAdminPrefix(t *testing.T) {
- 		w.WriteHeader(http.StatusNoContent)
- 	})
- 
--	for _, method := range []string{} {
-+	for _, method := range []string{&quot;GET&quot;, &quot;DELETE&quot;, &quot;POST&quot;, &quot;PUT&quot;, &quot;PATCH&quot;} {
- 		req, _ := http.NewRequest(method, ts.URL+&quot;/admin/foo&quot;, nil)
- 		res, err := ts.Client().Do(req)
- 		require.NoError(t, err)
-
+<pre>
+  <div class="code-header">
+    <span>Diff</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-diff"><span class="line-number">0</span>diff --git a/x/httprouterx/router_test.go b/x/httprouterx/router_test.go
+<span class="line-number">1</span>index 0f9dba5515..48d2873157 100644
+<span class="line-number">2</span>--- a/x/httprouterx/router_test.go
+<span class="line-number">3</span>+++ b/x/httprouterx/router_test.go
+<span class="line-number">4</span>@@ -72,7 +72,7 @@ func TestAdminPrefix(t *testing.T) {
+<span class="line-number">5</span> 		w.WriteHeader(http.StatusNoContent)
+<span class="line-number">6</span> 	})
+<span class="line-number">7</span> 
+<span class="line-number">8</span>-	for _, method := range []string{} {
+<span class="line-number">9</span>+	for _, method := range []string{&quot;GET&quot;, &quot;DELETE&quot;, &quot;POST&quot;, &quot;PUT&quot;, &quot;PATCH&quot;} {
+<span class="line-number">10</span> 		req, _ := http.NewRequest(method, ts.URL+&quot;/admin/foo&quot;, nil)
+<span class="line-number">11</span> 		res, err := ts.Client().Do(req)
+<span class="line-number">12</span> 		require.NoError(t, err)
 </code></pre>
 <p>It's a trivial <a href="https://github.com/ory/kratos/commit/48f5adb9ce720f6906283372515b85f365a7f0b5#diff-083558e2f6efe440baaea9a5f2a1344a88f165216c261057e37249c89c276902L71">fix</a>.</p>
 <p>I think that is visually easy to miss because in Go, an array literal is defined with curly braces, often on multiple lines, so the beginning of the <code>for</code> loop body looks very similar.</p>
 <p>Interestingly no linter catches this issue. In the meantime you can use this regexp to catch instances of this issue, which is what I did and I discovered a few more cases in the codebase:</p>
-<pre><code class="language-sh">$ rg -t go 'for .* range \[\].+\{\} \{'
+<pre>
+  <div class="code-header">
+    <span>Sh</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-sh"><span class="line-number">0</span>$ rg -t go 'for .* range \[\].+\{\} \{'
 </code></pre>
 <p>It's vexing because the Go compiler detects that this <code>for</code> loop is a no-op and optimizes it away, if you look at the generated assembly. But it generates no warning.</p>
 <p>Does your programming language prevent this issue?</p>

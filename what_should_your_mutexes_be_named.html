@@ -11,9 +11,9 @@ Do not edit it by hand.
 <link type="application/atom+xml" href="/blog/feed.xml" rel="self">
 <link rel="shortcut icon" type="image/ico" href="/blog/favicon.ico">
 <link rel="stylesheet" type="text/css" href="main.css">
-<link rel="stylesheet" href="https://unpkg.com/@highlightjs/cdn-assets@11.8.0/styles/default.min.css">
-<script src="highlight.min.js" defer></script>
-<script src="x86asm.min.js" defer></script>
+<!-- <link rel="stylesheet" href="https://unpkg.com/@highlightjs/cdn-assets@11.8.0/styles/default.min.css"> -->
+<!-- <script src="highlight.min.js" defer></script> -->
+<!-- <script src="x86asm.min.js" defer></script> -->
 <script src="main.js" defer></script>
 <script type="module" src="search.js" async></script>
 </head>
@@ -113,15 +113,25 @@ Do not edit it by hand.
 <p>This article explores ways to make this phase go smoother.</p>
 <hr />
 <p>The other day a Pull Request popped up at work, which made me think for a bit. It looked like this (Go, simplified):</p>
-<pre><code class="language-go">type Foo struct {
-    bar int
-    barMux sync.Mutex
-}
+<pre>
+  <div class="code-header">
+    <span>Go</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-go"><span class="line-number">0</span>type Foo struct {
+<span class="line-number">1</span>    bar int
+<span class="line-number">2</span>    barMux sync.Mutex
+<span class="line-number">3</span>}
 </code></pre>
 <p>It's a typical approach with concurrent code: a mutex protects the variable it is named after. So using the variable <code>bar</code> looks like this:</p>
-<pre><code class="language-go">barMux.Lock()
-bar += 1
-barMux.Unlock()
+<pre>
+  <div class="code-header">
+    <span>Go</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-go"><span class="line-number">0</span>barMux.Lock()
+<span class="line-number">1</span>bar += 1
+<span class="line-number">2</span>barMux.Unlock()
 </code></pre>
 <p><em>Yes, in this simplistic case an atomic would likely be used instead of a mutex but that's just to illustrate.</em></p>
 <p>But I paused for a second: What should the mutex be named? I usually use the <code>xxxMtx</code> convention, so I'd have named it <code>barMtx</code>.</p>
@@ -135,46 +145,56 @@ barMux.Unlock()
 <p>What I often actually need to do is <em>search the code structurally</em>, meaning search the Abstract Syntax Tree (AST). And the good news is, there are tools nowadays than can do that! I never took the time to learn one, even though this came up a few times, so I felt this is finally the occasion.</p>
 <p>Enter <a href="https://github.com/ast-grep/ast-grep">ast-grep</a>. Surprisingly, the main way to search with it is to write a rule file in YAML. A command line search also exists but seems much more limited.</p>
 <p>Let's thus search for 'structure fields' whose type is a 'mutex':</p>
-<pre><code class="language-yaml">id: find-mtx-fields
-message: Mutex fields found
-severity: info
-language: go
-rule:
-  kind: field_declaration
-  all:
-    - has: 
-        field: name
-        # Ignore nameless fields.
-        regex: &quot;.+&quot;
-    - has:
-        field: type
-        regex: &quot;Mutex&quot;
+<pre>
+  <div class="code-header">
+    <span>Yaml</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-yaml"><span class="line-number">0</span>id: find-mtx-fields
+<span class="line-number">1</span>message: Mutex fields found
+<span class="line-number">2</span>severity: info
+<span class="line-number">3</span>language: go
+<span class="line-number">4</span>rule:
+<span class="line-number">5</span>  kind: field_declaration
+<span class="line-number">6</span>  all:
+<span class="line-number">7</span>    - has: 
+<span class="line-number">8</span>        field: name
+<span class="line-number">9</span>        # Ignore nameless fields.
+<span class="line-number">10</span>        regex: &quot;.+&quot;
+<span class="line-number">11</span>    - has:
+<span class="line-number">12</span>        field: type
+<span class="line-number">13</span>        regex: &quot;Mutex&quot;
 </code></pre>
 <p>A potential match must pass all conditions under the <code>all</code> section to be a result. There are other ways to write this rule, but this works. Note that the regexp is loose enough to match different kinds of mutex types such as <code>sync.Mutex</code> and <code>sync.RWMutex</code>.</p>
 <p>When we run the tool on the Go standard library, we get something like this (excerpt):</p>
-<pre><code class="language-shell">$ ast-grep scan --rule ~/scratch/mtx.yaml
-[...]
-
-note[find-mtx-fields]: Mutex fields found
-   ┌─ net/textproto/pipeline.go:29:2
-   │
-29 │     mu       sync.Mutex
-   │     ^^^^^^^^^^^^^^^^^^^
-
-
-note[find-mtx-fields]: Mutex fields found
-    ┌─ net/rpc/server.go:191:2
-    │
-191 │     reqLock    sync.Mutex // protects freeReq
-    │     ^^^^^^^^^^^^^^^^^^^^^
-
-note[find-mtx-fields]: Mutex fields found
-   ┌─ net/rpc/jsonrpc/server.go:31:2
-   │
-31 │     mutex   sync.Mutex // protects seq, pending
-   │     ^^^^^^^^^^^^^^^^^^
-
-[...]
+<pre>
+  <div class="code-header">
+    <span>Shell</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-shell"><span class="line-number">0</span>$ ast-grep scan --rule ~/scratch/mtx.yaml
+<span class="line-number">1</span>[...]
+<span class="line-number">2</span>
+<span class="line-number">3</span>note[find-mtx-fields]: Mutex fields found
+<span class="line-number">4</span>   ┌─ net/textproto/pipeline.go:29:2
+<span class="line-number">5</span>   │
+<span class="line-number">6</span>29 │     mu       sync.Mutex
+<span class="line-number">7</span>   │     ^^^^^^^^^^^^^^^^^^^
+<span class="line-number">8</span>
+<span class="line-number">9</span>
+<span class="line-number">10</span>note[find-mtx-fields]: Mutex fields found
+<span class="line-number">11</span>    ┌─ net/rpc/server.go:191:2
+<span class="line-number">12</span>    │
+<span class="line-number">13</span>191 │     reqLock    sync.Mutex // protects freeReq
+<span class="line-number">14</span>    │     ^^^^^^^^^^^^^^^^^^^^^
+<span class="line-number">15</span>
+<span class="line-number">16</span>note[find-mtx-fields]: Mutex fields found
+<span class="line-number">17</span>   ┌─ net/rpc/jsonrpc/server.go:31:2
+<span class="line-number">18</span>   │
+<span class="line-number">19</span>31 │     mutex   sync.Mutex // protects seq, pending
+<span class="line-number">20</span>   │     ^^^^^^^^^^^^^^^^^^
+<span class="line-number">21</span>
+<span class="line-number">22</span>[...]
 </code></pre>
 <p>Very useful. The tool can do much more, but that's enough for us to discover that there isn't <em>one</em> naming convention in use. Also, the mutex is not always named after the variable it protects (e.g.: <code>mutex</code> protects <code>seq</code>).</p>
 <p>So, is there at least a convention used in the majority of cases? How can we aggregate the results?</p>
@@ -183,37 +203,47 @@ note[find-mtx-fields]: Mutex fields found
   <a class="hash-anchor" href="#a-naming-convention-to-rule-them-all" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>Unfortunately I did not find a built-in way to post-process the results from <code>ast-grep</code>, so I resorted to outputting the matches as JSON, extracting the matched text with <code>jq</code>, and finally aggregating the results with good old AWK:</p>
-<pre><code class="language-shell">$ ast-grep scan --rule ~/scratch/mtx.yaml --json | jq '.[].text' -r | awk -f ~/scratch/ast-grep-post.awk 
+<pre>
+  <div class="code-header">
+    <span>Shell</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-shell"><span class="line-number">0</span>$ ast-grep scan --rule ~/scratch/mtx.yaml --json | jq '.[].text' -r | awk -f ~/scratch/ast-grep-post.awk 
 </code></pre>
 <p>And this is the ad-hoc AWK script:</p>
-<pre><code class="language-awk"># ~/scratch/ast-grep-post.awk
-
-# `$1` is the variable name.
-{
-  if ($1 ~ /(m|M)u$/) { 
-    stats[&quot;mu&quot;] += 1
-  }
-  else if ($1 ~ /(m|M)ux$/) { 
-    stats[&quot;mux&quot;] += 1
-  }
-  else if ($1 ~ /(m|M)tx$/) { 
-    stats[&quot;mtx&quot;] += 1
-  }
-  else if ($1 ~ /(m|M)utex$/) { 
-    stats[&quot;mutex&quot;] += 1
-  }
-  else if ($1 ~ /(l|L)ock$/) { 
-    stats[&quot;lock&quot;] += 1
-  } else {
-    stats[&quot;other&quot;] += 1
-  }
-}
-
-END {
-  for (k in stats) {
-    print k, stats[k]
-  }
-}
+<pre>
+  <div class="code-header">
+    <span>Awk</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-awk"><span class="line-number">0</span># ~/scratch/ast-grep-post.awk
+<span class="line-number">1</span>
+<span class="line-number">2</span># `$1` is the variable name.
+<span class="line-number">3</span>{
+<span class="line-number">4</span>  if ($1 ~ /(m|M)u$/) { 
+<span class="line-number">5</span>    stats[&quot;mu&quot;] += 1
+<span class="line-number">6</span>  }
+<span class="line-number">7</span>  else if ($1 ~ /(m|M)ux$/) { 
+<span class="line-number">8</span>    stats[&quot;mux&quot;] += 1
+<span class="line-number">9</span>  }
+<span class="line-number">10</span>  else if ($1 ~ /(m|M)tx$/) { 
+<span class="line-number">11</span>    stats[&quot;mtx&quot;] += 1
+<span class="line-number">12</span>  }
+<span class="line-number">13</span>  else if ($1 ~ /(m|M)utex$/) { 
+<span class="line-number">14</span>    stats[&quot;mutex&quot;] += 1
+<span class="line-number">15</span>  }
+<span class="line-number">16</span>  else if ($1 ~ /(l|L)ock$/) { 
+<span class="line-number">17</span>    stats[&quot;lock&quot;] += 1
+<span class="line-number">18</span>  } else {
+<span class="line-number">19</span>    stats[&quot;other&quot;] += 1
+<span class="line-number">20</span>  }
+<span class="line-number">21</span>}
+<span class="line-number">22</span>
+<span class="line-number">23</span>END {
+<span class="line-number">24</span>  for (k in stats) {
+<span class="line-number">25</span>    print k, stats[k]
+<span class="line-number">26</span>  }
+<span class="line-number">27</span>}
 </code></pre>
 <p>And here are the statistics (commit <code>7800f4f</code>, 2025-06-08):</p>
 <table>
@@ -251,37 +281,57 @@ END {
 <p>So according to these statistics: if you want to follow the same naming convention as the Go project, use <code>xxxMu</code> as a name for your mutexes.</p>
 <p>More importantly, I would add, and this is subjective: <strong>name the mutex after the variable it protects for clarity, e.g.: <code>bar</code> and <code>barMu</code></strong>. In nearly every case in the Go project where this rule of thumb was not followed, a code comment was present to explain which variable the mutex protects. We might as well have this information in the mutex variable name.</p>
 <p>Even for cases where the mutex protects multiple variables, the Go developers often picked one of the variables and named the mutex after it:</p>
-<pre><code class="language-go">type Link struct {
-	hashmu             sync.Mutex       // protects hash, funchash
-	hash               map[string]*LSym 
-	funchash           map[string]*LSym
-
-        [...]
-}
+<pre>
+  <div class="code-header">
+    <span>Go</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-go"><span class="line-number">0</span>type Link struct {
+<span class="line-number">1</span>	hashmu             sync.Mutex       // protects hash, funchash
+<span class="line-number">2</span>	hash               map[string]*LSym 
+<span class="line-number">3</span>	funchash           map[string]*LSym
+<span class="line-number">4</span>
+<span class="line-number">5</span>        [...]
+<span class="line-number">6</span>}
 </code></pre>
 <h2 id="low-tech-alternatives">
   <a class="title" href="#low-tech-alternatives">Low-tech alternatives</a>
   <a class="hash-anchor" href="#low-tech-alternatives" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>A quick and dirty way to achieve the same with a regexp is:</p>
-<pre><code class="language-shell">$ rg -t go '^\s+\w+\s+sync\.Mutex$'
+<pre>
+  <div class="code-header">
+    <span>Shell</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-shell"><span class="line-number">0</span>$ rg -t go '^\s+\w+\s+sync\.Mutex$'
 </code></pre>
 <p>This works since Go is a language with only one way to define a <code>struct</code> field, but some languages would be more difficult.</p>
 <p>A slightly smarter way, to only find field declarations, would be to use AWK to remember whether or not we are inside a <code>struct</code> definition:</p>
-<pre><code class="language-awk">/\s+struct\s+/ { in_struct = 1 }
-
-in_struct &amp;&amp; /\s+\w+\s+sync\.Mutex/ { print }
-
-in_struct &amp;&amp; /^}$/ { in_struct = 0 }
+<pre>
+  <div class="code-header">
+    <span>Awk</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-awk"><span class="line-number">0</span>/\s+struct\s+/ { in_struct = 1 }
+<span class="line-number">1</span>
+<span class="line-number">2</span>in_struct &amp;&amp; /\s+\w+\s+sync\.Mutex/ { print }
+<span class="line-number">3</span>
+<span class="line-number">4</span>in_struct &amp;&amp; /^}$/ { in_struct = 0 }
 </code></pre>
 <p>But this might not work, or at least need to be adapted, to cover complex constructs such as defining a <code>struct</code> within a <code>struct</code>:</p>
-<pre><code class="language-go">type Foo struct {
-	bar struct {
-		x int
-		y int
-	}
-	barMtx sync.Mutex
-}
+<pre>
+  <div class="code-header">
+    <span>Go</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-go"><span class="line-number">0</span>type Foo struct {
+<span class="line-number">1</span>	bar struct {
+<span class="line-number">2</span>		x int
+<span class="line-number">3</span>		y int
+<span class="line-number">4</span>	}
+<span class="line-number">5</span>	barMtx sync.Mutex
+<span class="line-number">6</span>}
 </code></pre>
 <p>These approaches are not bullet-proof, but they will find most relevant code locations, which is enough.</p>
 <h2 id="limitations-of-structural-search-tools">
@@ -313,75 +363,100 @@ in_struct &amp;&amp; /^}$/ { in_struct = 0 }
 <p>I wondered if the way mutexes are named in the Go project actually comes from the time were the Go compiler and much of the runtime were implemented in C.
 We can easily check this out with the same approach. This illustrates that <code>ast-grep</code> works for different languages, and also the slight differences.</p>
 <p><code>1.4</code> was the last major version to use the C compiler and runtime apparently, so we checkout this commit:</p>
-<pre><code class="language-shell">$ git checkout go1.4beta1
+<pre>
+  <div class="code-header">
+    <span>Shell</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-shell"><span class="line-number">0</span>$ git checkout go1.4beta1
 </code></pre>
 <p>I initially simply changed the <code>language: go</code> field in the rule to <code>language: c</code> but was surprised nothing turned up. After toying with the <a href="https://tree-sitter.github.io/tree-sitter/7-playground.html">treesitter playground</a> (<code>treesitter</code> is used under the covers), I realized that for C, the AST is structured differently and the nodes have different names. Here is the rule working for <code>struct</code> fields:</p>
-<pre><code class="language-yaml">id: find-mtx-fields-struct-fields
-message: Mutex fields found
-severity: info
-language: c
-rule:
-  kind: field_declaration
-  all:
-    - has: 
-        field: declarator
-        regex: &quot;.+&quot;
-    - has:
-        field: type
-        regex: &quot;(M|m)utex&quot;
+<pre>
+  <div class="code-header">
+    <span>Yaml</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-yaml"><span class="line-number">0</span>id: find-mtx-fields-struct-fields
+<span class="line-number">1</span>message: Mutex fields found
+<span class="line-number">2</span>severity: info
+<span class="line-number">3</span>language: c
+<span class="line-number">4</span>rule:
+<span class="line-number">5</span>  kind: field_declaration
+<span class="line-number">6</span>  all:
+<span class="line-number">7</span>    - has: 
+<span class="line-number">8</span>        field: declarator
+<span class="line-number">9</span>        regex: &quot;.+&quot;
+<span class="line-number">10</span>    - has:
+<span class="line-number">11</span>        field: type
+<span class="line-number">12</span>        regex: &quot;(M|m)utex&quot;
 </code></pre>
 <p>Here are the results of this rule (excerpt):</p>
-<pre><code class="language-text">note[find-mtx-fields]: Mutex fields found
-    ┌─ runtime/malloc.h:430:2
-    │
-430 │     Mutex   specialLock;    // guards specials list
-    │     ^^^^^^^^^^^^^^^^^^^^
-
-note[find-mtx-fields]: Mutex fields found
-    ┌─ runtime/malloc.h:451:2
-    │
-451 │     Mutex  lock;
-    │     ^^^^^^^^^^^^
+<pre>
+  <div class="code-header">
+    <span>Text</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-text"><span class="line-number">0</span>note[find-mtx-fields]: Mutex fields found
+<span class="line-number">1</span>    ┌─ runtime/malloc.h:430:2
+<span class="line-number">2</span>    │
+<span class="line-number">3</span>430 │     Mutex   specialLock;    // guards specials list
+<span class="line-number">4</span>    │     ^^^^^^^^^^^^^^^^^^^^
+<span class="line-number">5</span>
+<span class="line-number">6</span>note[find-mtx-fields]: Mutex fields found
+<span class="line-number">7</span>    ┌─ runtime/malloc.h:451:2
+<span class="line-number">8</span>    │
+<span class="line-number">9</span>451 │     Mutex  lock;
+<span class="line-number">10</span>    │     ^^^^^^^^^^^^
 </code></pre>
 <hr />
 <p>Right after, I realized that some mutexes are defined as global variables, so here is an additional rule file for that:</p>
-<pre><code class="language-yaml">id: find-mtx-fields-vars
-message: Mutex variables found
-severity: info
-language: c
-rule:
-  kind: declaration
-  all:
-    - has: 
-        field: declarator
-        regex: &quot;.+&quot;
-    - has:
-        field: type
-        regex: &quot;(M|m)utex&quot;
+<pre>
+  <div class="code-header">
+    <span>Yaml</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-yaml"><span class="line-number">0</span>id: find-mtx-fields-vars
+<span class="line-number">1</span>message: Mutex variables found
+<span class="line-number">2</span>severity: info
+<span class="line-number">3</span>language: c
+<span class="line-number">4</span>rule:
+<span class="line-number">5</span>  kind: declaration
+<span class="line-number">6</span>  all:
+<span class="line-number">7</span>    - has: 
+<span class="line-number">8</span>        field: declarator
+<span class="line-number">9</span>        regex: &quot;.+&quot;
+<span class="line-number">10</span>    - has:
+<span class="line-number">11</span>        field: type
+<span class="line-number">12</span>        regex: &quot;(M|m)utex&quot;
 </code></pre>
 <p>And here are the results (excerpt):</p>
-<pre><code class="language-text">note[find-mtx-fields-vars]: Mutex variables found
-   ┌─ runtime/panic.c:18:1
-   │
-18 │ static Mutex paniclk;
-   │ ^^^^^^^^^^^^^^^^^^^^^
-
-note[find-mtx-fields-vars]: Mutex variables found
-    ┌─ runtime/panic.c:162:3
-    │
-162 │         static Mutex deadlock;
-    │         ^^^^^^^^^^^^^^^^^^^^^^
-
-note[find-mtx-fields-vars]: Mutex variables found
-   ┌─ runtime/mem_plan9.c:15:1
-   │
-15 │ static Mutex memlock;
-   │ ^^^^^^^^^^^^^^^^^^^^^
-
-note[find-mtx-fields-vars]: Mutex variables found
-    ┌─ runtime/os_windows.c:586:2
-    │
-586 │     static Mutex lock;
+<pre>
+  <div class="code-header">
+    <span>Text</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-text"><span class="line-number">0</span>note[find-mtx-fields-vars]: Mutex variables found
+<span class="line-number">1</span>   ┌─ runtime/panic.c:18:1
+<span class="line-number">2</span>   │
+<span class="line-number">3</span>18 │ static Mutex paniclk;
+<span class="line-number">4</span>   │ ^^^^^^^^^^^^^^^^^^^^^
+<span class="line-number">5</span>
+<span class="line-number">6</span>note[find-mtx-fields-vars]: Mutex variables found
+<span class="line-number">7</span>    ┌─ runtime/panic.c:162:3
+<span class="line-number">8</span>    │
+<span class="line-number">9</span>162 │         static Mutex deadlock;
+<span class="line-number">10</span>    │         ^^^^^^^^^^^^^^^^^^^^^^
+<span class="line-number">11</span>
+<span class="line-number">12</span>note[find-mtx-fields-vars]: Mutex variables found
+<span class="line-number">13</span>   ┌─ runtime/mem_plan9.c:15:1
+<span class="line-number">14</span>   │
+<span class="line-number">15</span>15 │ static Mutex memlock;
+<span class="line-number">16</span>   │ ^^^^^^^^^^^^^^^^^^^^^
+<span class="line-number">17</span>
+<span class="line-number">18</span>note[find-mtx-fields-vars]: Mutex variables found
+<span class="line-number">19</span>    ┌─ runtime/os_windows.c:586:2
+<span class="line-number">20</span>    │
+<span class="line-number">21</span>586 │     static Mutex lock;
 </code></pre>
 <hr />
 <p>Funnily, it seems that: 1) the C code has much less variability in naming than the Go code: it's mostly <code>xxxlock</code>, and 2) The naming in the Go code does not stem from the C code since it's completely different.</p>

@@ -11,9 +11,9 @@ Do not edit it by hand.
 <link type="application/atom+xml" href="/blog/feed.xml" rel="self">
 <link rel="shortcut icon" type="image/ico" href="/blog/favicon.ico">
 <link rel="stylesheet" type="text/css" href="main.css">
-<link rel="stylesheet" href="https://unpkg.com/@highlightjs/cdn-assets@11.8.0/styles/default.min.css">
-<script src="highlight.min.js" defer></script>
-<script src="x86asm.min.js" defer></script>
+<!-- <link rel="stylesheet" href="https://unpkg.com/@highlightjs/cdn-assets@11.8.0/styles/default.min.css"> -->
+<!-- <script src="highlight.min.js" defer></script> -->
+<!-- <script src="x86asm.min.js" defer></script> -->
 <script src="main.js" defer></script>
 <script type="module" src="search.js" async></script>
 </head>
@@ -153,12 +153,17 @@ Do not edit it by hand.
 <p>Here's the tree of employees in an organization. An employee reports to a manager, and this forms a tree. The root is the CEO since they report to no one and so they have no outgoing edge.</p>
 <p>An arrow (or 'edge') between two nodes means <code>&lt;source&gt; reports to &lt;destination&gt;</code>, for example: <code>Jane the CFO reports to Ellen the CEO</code>.</p>
 <p>But here is the twist: our API receives a list of <code>employee -&gt; manager</code> links, in any order:</p>
-<pre><code class="language-text">Jane -&gt; Ellen
-Angela -&gt; Ellen
-Zoe -&gt; Jane
-Zoe -&gt; Angela
-Bella -&gt; Angela
-Miranda -&gt; Angela
+<pre>
+  <div class="code-header">
+    <span>Text</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-text"><span class="line-number">0</span>Jane -&gt; Ellen
+<span class="line-number">1</span>Angela -&gt; Ellen
+<span class="line-number">2</span>Zoe -&gt; Jane
+<span class="line-number">3</span>Zoe -&gt; Angela
+<span class="line-number">4</span>Bella -&gt; Angela
+<span class="line-number">5</span>Miranda -&gt; Angela
 </code></pre>
 <p>It opens the door to various invalid inputs: links that form a graph (an employee has multiple managers), multiple roots (e.g. multiple CEOs) or cycles.</p>
 <p>We have to detect those and reject them, such as this one:</p>
@@ -168,17 +173,32 @@ Miranda -&gt; Angela
   <a class="hash-anchor" href="#the-database" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>So how do we store all of those people in the database?</p>
-<pre><code class="language-sql">CREATE TABLE IF NOT EXISTS people(name TEXT NOT NULL UNIQUE, manager BIGINT REFERENCES people)
+<pre>
+  <div class="code-header">
+    <span>Sql</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-sql"><span class="line-number">0</span>CREATE TABLE IF NOT EXISTS people(name TEXT NOT NULL UNIQUE, manager BIGINT REFERENCES people)
 </code></pre>
 <p>Each employee has an optional reference to a manager.</p>
 <blockquote>
 <p>This is not a novel idea, actually this is one of the examples in the official <a href="https://www.sqlite.org/lang_with.html">SQLite documentation</a>.</p>
 </blockquote>
 <p>For example, to save <code>Ellen, CEO</code> inside the database, we do:</p>
-<pre><code class="language-sql">INSERT INTO people VALUES('Ellen, CEO', NULL)
+<pre>
+  <div class="code-header">
+    <span>Sql</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-sql"><span class="line-number">0</span>INSERT INTO people VALUES('Ellen, CEO', NULL)
 </code></pre>
 <p>And to save <code>Jane, CFO</code> in the database:</p>
-<pre><code class="language-sql">INSERT INTO people VALUES('Jane, CFO', 1)
+<pre>
+  <div class="code-header">
+    <span>Sql</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-sql"><span class="line-number">0</span>INSERT INTO people VALUES('Jane, CFO', 1)
 </code></pre>
 <p>Where <code>Ellen, CEO</code>, Jane's boss, which we just inserted before, has the id <code>1</code>.</p>
 <p>Immediately, we notice that to insert an employee, their manager needs to already by in the database, by virtue of the self-referential foreign key <code>manager BIGINT REFERENCES people</code>.</p>
@@ -201,43 +221,58 @@ Miranda -&gt; Angela
 </blockquote>
 <p>That's a mouthful but it's not too hard.</p>
 <p>A useful command line utility that's already on your (Unix) machine is <code>tsort</code>, which takes a list of edges as input, and outputs a topological sort. Here is the input in a text file (<code>people.txt</code>):</p>
-<pre><code class="language-text">Jane Ellen
-Angela Ellen
-Zoe Jane
-Zoe Angela
-Bella Angela
-Miranda Angela
+<pre>
+  <div class="code-header">
+    <span>Text</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-text"><span class="line-number">0</span>Jane Ellen
+<span class="line-number">1</span>Angela Ellen
+<span class="line-number">2</span>Zoe Jane
+<span class="line-number">3</span>Zoe Angela
+<span class="line-number">4</span>Bella Angela
+<span class="line-number">5</span>Miranda Angela
 </code></pre>
 <blockquote>
 <p><code>tsort</code> uses a simple way of defining each edge <code>A -&gt; B</code> on its own line with the syntax: <code>A B</code>. The order of the lines does not matter.</p>
 </blockquote>
 <p>And here's the <code>tsort</code> output:</p>
-<pre><code class="language-shell">$ tsort &lt; people.txt
-Bella
-Miranda
-Zoe
-Angela
-Jane
-Ellen
+<pre>
+  <div class="code-header">
+    <span>Shell</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-shell"><span class="line-number">0</span>$ tsort &lt; people.txt
+<span class="line-number">1</span>Bella
+<span class="line-number">2</span>Miranda
+<span class="line-number">3</span>Zoe
+<span class="line-number">4</span>Angela
+<span class="line-number">5</span>Jane
+<span class="line-number">6</span>Ellen
 </code></pre>
 <p>The first 3 elements are the ones with no incoming edge, the Software Engineers, since no one reports to them. Then come their respective managers, Angela and Jane. Finally comes their manager, <code>Ellen</code>.</p>
 <p>So to insert all those people in our <code>people</code> SQL table, we go through that list in reverse order: We can first insert <code>Ellen</code>, then <code>Jane</code>, etc, until we finally insert <code>Bella</code>.</p>
 <p>Also, <code>tsort</code> detects cycles, for example if we add the line: <code>Ellen Zoe</code> at the end of <code>people.txt</code>, we get:</p>
-<pre><code class="language-shell">$ tsort &lt; people.txt
-Bella
-Miranda
-tsort: -: input contains a loop:
-tsort: Jane
-tsort: Ellen
-tsort: Zoe
-Jane
-tsort: -: input contains a loop:
-tsort: Angela
-tsort: Ellen
-tsort: Zoe
-Angela
-Ellen
-Zoe
+<pre>
+  <div class="code-header">
+    <span>Shell</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-shell"><span class="line-number">0</span>$ tsort &lt; people.txt
+<span class="line-number">1</span>Bella
+<span class="line-number">2</span>Miranda
+<span class="line-number">3</span>tsort: -: input contains a loop:
+<span class="line-number">4</span>tsort: Jane
+<span class="line-number">5</span>tsort: Ellen
+<span class="line-number">6</span>tsort: Zoe
+<span class="line-number">7</span>Jane
+<span class="line-number">8</span>tsort: -: input contains a loop:
+<span class="line-number">9</span>tsort: Angela
+<span class="line-number">10</span>tsort: Ellen
+<span class="line-number">11</span>tsort: Zoe
+<span class="line-number">12</span>Angela
+<span class="line-number">13</span>Ellen
+<span class="line-number">14</span>Zoe
 </code></pre>
 <p>So, how can we implement something like <code>tsort</code> for our problem at hand? That's where <a href="https://en.wikipedia.org/wiki/Topological_sorting#Kahn's_algorithm">Kahn's algorithm</a> comes in to do exactly that: find cycles in the graph and output a topological sort.</p>
 <p><em>Note that that's not the only solution and there are ways to detect cycles without creating a topological sort, but this algorithm seems relatively unknown and does not come up often on the Internet, so let's discover how it works and implement it. I promise, it's not complex.</em></p>
@@ -249,12 +284,17 @@ Zoe
 <p>We'll use an <a href="https://en.wikipedia.org/wiki/Adjacency_matrix">adjacency matrix</a>, because it's simple conceptually, maps well to Kahn's algorithm, and can be optimized if needed.</p>
 <p>It's just a 2D square table of size <code>n x n</code> (where <code>n</code> is the number of nodes), where the cell at row <code>i</code> and column <code>j</code> is 1 if there is an edge from the node <code>i</code> to the node <code>j</code>, and otherwise, <code>0</code>.</p>
 <p>The order of the nodes is arbitrary, I'll use the alphabetical order because again, it's simple to do:</p>
-<pre><code class="language-text">Angela
-Bella
-Ellen
-Jane
-Miranda
-Zoe
+<pre>
+  <div class="code-header">
+    <span>Text</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-text"><span class="line-number">0</span>Angela
+<span class="line-number">1</span>Bella
+<span class="line-number">2</span>Ellen
+<span class="line-number">3</span>Jane
+<span class="line-number">4</span>Miranda
+<span class="line-number">5</span>Zoe
 </code></pre>
 <p>Here, <code>Angela</code> is the node <code>0</code> and <code>Zoe</code> is the node <code>5</code>.</p>
 <p>Since there is an edge from <code>Zoe</code> to <code>Angela</code>, i.e. from the node <code>5</code> to the node <code>0</code>, the cell at the position <code>(5, 0)</code> is set to <code>1</code>.</p>
@@ -291,21 +331,26 @@ But note that this adjacency matrix is a concept, it shows what information is p
 </h2>
 <p><a href="https://en.wikipedia.org/wiki/Topological_sorting#Kahn's_algorithm">Kahn's algorithm</a> keeps track of nodes with no incoming edge, and mutates the graph (in our case the adjacency matrix), by removing one edge at a time, until there are no more edges, and builds a list of nodes in the right order, which is the output.</p>
 <p>Here's the pseudo-code:</p>
-<pre><code class="language-text">L ← Empty list that will contain the sorted elements
-S ← Set of all nodes with no incoming edge
-
-while S is not empty do
-    remove a node n from S
-    add n to L
-    for each node m with an edge e from n to m do
-        remove edge e from the graph
-        if m has no other incoming edges then
-            insert m into S
-
-if graph has edges then
-    return error   (graph has at least one cycle)
-else 
-    return L   (a topologically sorted order)
+<pre>
+  <div class="code-header">
+    <span>Text</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-text"><span class="line-number">0</span>L ← Empty list that will contain the sorted elements
+<span class="line-number">1</span>S ← Set of all nodes with no incoming edge
+<span class="line-number">2</span>
+<span class="line-number">3</span>while S is not empty do
+<span class="line-number">4</span>    remove a node n from S
+<span class="line-number">5</span>    add n to L
+<span class="line-number">6</span>    for each node m with an edge e from n to m do
+<span class="line-number">7</span>        remove edge e from the graph
+<span class="line-number">8</span>        if m has no other incoming edges then
+<span class="line-number">9</span>            insert m into S
+<span class="line-number">10</span>
+<span class="line-number">11</span>if graph has edges then
+<span class="line-number">12</span>    return error   (graph has at least one cycle)
+<span class="line-number">13</span>else 
+<span class="line-number">14</span>    return L   (a topologically sorted order)
 </code></pre>
 <p>And in plain English:</p>
 <ul>
@@ -344,96 +389,141 @@ Note that this algorithm is not capable by itself to point out which cycle there
 <p>I implemented this at the time in Go, but I will use for this article the lingua franca of the 2010s, JavaScript.</p>
 <p><em>I don't write JavaScript these days, I stopped many years ago, so apologies in advance if I am not using all the bells and whistles of 'Modern JavaScript', or if the code is not quite idiomatic.</em></p>
 <p>First, we define our adjacency matrix and the list of nodes. This is the naive format. We would get the nodes and edges in some format, for example JSON, in the API, and build the adjacency matrix, which is trivial. Let's take the very first example, the (valid) tree  of employees:</p>
-<pre><code class="language-js">const adjacencyMatrix = [
-  [0, 0, 1, 0, 0, 0],
-  [1, 0, 0, 0, 0, 0],
-  [0, 0, 0, 0, 0, 0],
-  [0, 0, 1, 0, 0, 0],
-  [1, 0, 0, 0, 0, 0],
-  [0, 0, 0, 1, 0, 0],
-];
-
-const nodes = [&quot;Angela&quot;, &quot;Bella&quot;, &quot;Ellen&quot;, &quot;Jane&quot;, &quot;Miranda&quot;, &quot;Zoe&quot;];
+<pre>
+  <div class="code-header">
+    <span>Js</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-js"><span class="line-number">0</span>const adjacencyMatrix = [
+<span class="line-number">1</span>  [0, 0, 1, 0, 0, 0],
+<span class="line-number">2</span>  [1, 0, 0, 0, 0, 0],
+<span class="line-number">3</span>  [0, 0, 0, 0, 0, 0],
+<span class="line-number">4</span>  [0, 0, 1, 0, 0, 0],
+<span class="line-number">5</span>  [1, 0, 0, 0, 0, 0],
+<span class="line-number">6</span>  [0, 0, 0, 1, 0, 0],
+<span class="line-number">7</span>];
+<span class="line-number">8</span>
+<span class="line-number">9</span>const nodes = [&quot;Angela&quot;, &quot;Bella&quot;, &quot;Ellen&quot;, &quot;Jane&quot;, &quot;Miranda&quot;, &quot;Zoe&quot;];
 </code></pre>
 <h3 id="helpers">
   <a class="title" href="#helpers">Helpers</a>
   <a class="hash-anchor" href="#helpers" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h3>
 <p>We need a helper function to check if a node has no incoming edge (line 9 in the algorithm):</p>
-<pre><code class="language-js">function hasNodeNoIncomingEdge(adjacencyMatrix, nodeIndex) {
-  const column = nodeIndex;
-
-  for (let row = 0; row &lt; adjacencyMatrix.length; row += 1) {
-    const cell = adjacencyMatrix[row][column];
-    if (cell != 0) {
-      return false;
-    }
-  }
-
-  return true;
-}
+<pre>
+  <div class="code-header">
+    <span>Js</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-js"><span class="line-number">0</span>function hasNodeNoIncomingEdge(adjacencyMatrix, nodeIndex) {
+<span class="line-number">1</span>  const column = nodeIndex;
+<span class="line-number">2</span>
+<span class="line-number">3</span>  for (let row = 0; row &lt; adjacencyMatrix.length; row += 1) {
+<span class="line-number">4</span>    const cell = adjacencyMatrix[row][column];
+<span class="line-number">5</span>    if (cell != 0) {
+<span class="line-number">6</span>      return false;
+<span class="line-number">7</span>    }
+<span class="line-number">8</span>  }
+<span class="line-number">9</span>
+<span class="line-number">10</span>  return true;
+<span class="line-number">11</span>}
 </code></pre>
 <p>Then, using this helper, we can define a second helper to initially collect all the nodes with no incoming edge (line 2 in the algorithm):</p>
-<pre><code class="language-js">function getNodesWithNoIncomingEdge(adjacencyMatrix, nodes) {
-  return nodes.filter((_, i) =&gt; hasNodeNoIncomingEdge(adjacencyMatrix, i));
-}
+<pre>
+  <div class="code-header">
+    <span>Js</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-js"><span class="line-number">0</span>function getNodesWithNoIncomingEdge(adjacencyMatrix, nodes) {
+<span class="line-number">1</span>  return nodes.filter((_, i) =&gt; hasNodeNoIncomingEdge(adjacencyMatrix, i));
+<span class="line-number">2</span>}
 </code></pre>
 <p>We can try it:</p>
-<pre><code class="language-js">console.log(getNodesWithNoIncomingEdge(adjacencyMatrix, nodes));
+<pre>
+  <div class="code-header">
+    <span>Js</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-js"><span class="line-number">0</span>console.log(getNodesWithNoIncomingEdge(adjacencyMatrix, nodes));
 </code></pre>
 <p>And it outputs:</p>
-<pre><code class="language-js">[ 'Bella', 'Miranda', 'Zoe' ]
+<pre>
+  <div class="code-header">
+    <span>Js</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-js"><span class="line-number">0</span>[ 'Bella', 'Miranda', 'Zoe' ]
 </code></pre>
 <p>We need one final helper, to determine if the graph has edges (line 12), which is straightforward:</p>
-<pre><code class="language-js">function graphHasEdges(adjacencyMatrix) {
-  for (let row = 0; row &lt; adjacencyMatrix.length; row += 1) {
-    for (let column = 0; column &lt; adjacencyMatrix.length; column += 1) {
-      if (adjacencyMatrix[row][column] == 1) return true;
-    }
-  }
-
-  return false;
-}
+<pre>
+  <div class="code-header">
+    <span>Js</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-js"><span class="line-number">0</span>function graphHasEdges(adjacencyMatrix) {
+<span class="line-number">1</span>  for (let row = 0; row &lt; adjacencyMatrix.length; row += 1) {
+<span class="line-number">2</span>    for (let column = 0; column &lt; adjacencyMatrix.length; column += 1) {
+<span class="line-number">3</span>      if (adjacencyMatrix[row][column] == 1) return true;
+<span class="line-number">4</span>    }
+<span class="line-number">5</span>  }
+<span class="line-number">6</span>
+<span class="line-number">7</span>  return false;
+<span class="line-number">8</span>}
 </code></pre>
 <h3 id="the-algorithm">
   <a class="title" href="#the-algorithm">The algorithm</a>
   <a class="hash-anchor" href="#the-algorithm" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h3>
 <p>We are finally ready to implement the algorithm. It's a straightforward, line by line, translation of the pseudo-code:</p>
-<pre><code class="language-js">function topologicalSort(adjacencyMatrix) {
-  const L = [];
-  const S = getNodesWithNoIncomingEdge(adjacencyMatrix, nodes);
-
-  while (S.length &gt; 0) {
-    const node = S.pop();
-    L.push(node);
-    const nodeIndex = nodes.indexOf(node);
-
-    for (let mIndex = 0; mIndex &lt; nodes.length; mIndex += 1) {
-      const hasEdgeFromNtoM = adjacencyMatrix[nodeIndex][mIndex];
-      if (!hasEdgeFromNtoM) continue;
-
-      adjacencyMatrix[nodeIndex][mIndex] = 0;
-
-      if (hasNodeNoIncomingEdge(adjacencyMatrix, mIndex)) {
-        const m = nodes[mIndex];
-        S.push(m);
-      }
-    }
-  }
-
-  if (graphHasEdges(adjacencyMatrix)) {
-    throw new Error(&quot;Graph has at least one cycle&quot;);
-  }
-
-  return L;
-}
+<pre>
+  <div class="code-header">
+    <span>Js</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-js"><span class="line-number">0</span>function topologicalSort(adjacencyMatrix) {
+<span class="line-number">1</span>  const L = [];
+<span class="line-number">2</span>  const S = getNodesWithNoIncomingEdge(adjacencyMatrix, nodes);
+<span class="line-number">3</span>
+<span class="line-number">4</span>  while (S.length &gt; 0) {
+<span class="line-number">5</span>    const node = S.pop();
+<span class="line-number">6</span>    L.push(node);
+<span class="line-number">7</span>    const nodeIndex = nodes.indexOf(node);
+<span class="line-number">8</span>
+<span class="line-number">9</span>    for (let mIndex = 0; mIndex &lt; nodes.length; mIndex += 1) {
+<span class="line-number">10</span>      const hasEdgeFromNtoM = adjacencyMatrix[nodeIndex][mIndex];
+<span class="line-number">11</span>      if (!hasEdgeFromNtoM) continue;
+<span class="line-number">12</span>
+<span class="line-number">13</span>      adjacencyMatrix[nodeIndex][mIndex] = 0;
+<span class="line-number">14</span>
+<span class="line-number">15</span>      if (hasNodeNoIncomingEdge(adjacencyMatrix, mIndex)) {
+<span class="line-number">16</span>        const m = nodes[mIndex];
+<span class="line-number">17</span>        S.push(m);
+<span class="line-number">18</span>      }
+<span class="line-number">19</span>    }
+<span class="line-number">20</span>  }
+<span class="line-number">21</span>
+<span class="line-number">22</span>  if (graphHasEdges(adjacencyMatrix)) {
+<span class="line-number">23</span>    throw new Error(&quot;Graph has at least one cycle&quot;);
+<span class="line-number">24</span>  }
+<span class="line-number">25</span>
+<span class="line-number">26</span>  return L;
+<span class="line-number">27</span>}
 </code></pre>
 <p>Let's try it:</p>
-<pre><code class="language-js">console.log(topologicalSort(adjacencyMatrix, nodes));
+<pre>
+  <div class="code-header">
+    <span>Js</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-js"><span class="line-number">0</span>console.log(topologicalSort(adjacencyMatrix, nodes));
 </code></pre>
 <p>We get:</p>
-<pre><code class="language-js">[ 'Zoe', 'Jane', 'Miranda', 'Bella', 'Angela', 'Ellen' ]
+<pre>
+  <div class="code-header">
+    <span>Js</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-js"><span class="line-number">0</span>[ 'Zoe', 'Jane', 'Miranda', 'Bella', 'Angela', 'Ellen' ]
 </code></pre>
 <p>Interestingly, it is not the same order as <code>tsort</code>, but it is indeed a valid topological ordering. That's because there are ties between some nodes and we do not resolve those ties the exact same way <code>tsort</code> does.</p>
 <p>But in our specific case, we just want a valid insertion order in the database, and so this is enough.</p>
@@ -443,29 +533,39 @@ const nodes = [&quot;Angela&quot;, &quot;Bella&quot;, &quot;Ellen&quot;, &quot;J
 </h3>
 <p>Now, we can produce the SQL code to insert our entries. We operate on a clone of the adjacency matrix for convenience because we later need to know what is the outgoing edge for a given node.</p>
 <p>We handle the special case of the root first, which is the last element, and then we go through the topologically sorted list of employees in reverse order, and insert each one. We use a one liner to get the manager id by name when inserting to avoid many round trips to the database:</p>
-<pre><code class="language-js">const employeesTopologicallySorted = topologicalSort(structuredClone(adjacencyMatrix), nodes)
-
-const root = employeesTopologicallySorted[employeesTopologicallySorted.length - 1];
-console.log(`INSERT INTO people VALUES(&quot;${root}&quot;, NULL)`);
-
-for (let i = employeesTopologicallySorted.length - 2; i &gt;= 0; i -= 1) {
-  const employee = employeesTopologicallySorted[i];
-  const employeeIndex = nodes.indexOf(employee);
-
-  const managerIndex = adjacencyMatrix[employeeIndex].indexOf(1);
-  const manager = nodes[managerIndex];
-  console.log(
-    `INSERT INTO people SELECT &quot;${employee}&quot;, rowid FROM people WHERE name = &quot;${manager}&quot; LIMIT 1;`,
-  );
-}
+<pre>
+  <div class="code-header">
+    <span>Js</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-js"><span class="line-number">0</span>const employeesTopologicallySorted = topologicalSort(structuredClone(adjacencyMatrix), nodes)
+<span class="line-number">1</span>
+<span class="line-number">2</span>const root = employeesTopologicallySorted[employeesTopologicallySorted.length - 1];
+<span class="line-number">3</span>console.log(`INSERT INTO people VALUES(&quot;${root}&quot;, NULL)`);
+<span class="line-number">4</span>
+<span class="line-number">5</span>for (let i = employeesTopologicallySorted.length - 2; i &gt;= 0; i -= 1) {
+<span class="line-number">6</span>  const employee = employeesTopologicallySorted[i];
+<span class="line-number">7</span>  const employeeIndex = nodes.indexOf(employee);
+<span class="line-number">8</span>
+<span class="line-number">9</span>  const managerIndex = adjacencyMatrix[employeeIndex].indexOf(1);
+<span class="line-number">10</span>  const manager = nodes[managerIndex];
+<span class="line-number">11</span>  console.log(
+<span class="line-number">12</span>    `INSERT INTO people SELECT &quot;${employee}&quot;, rowid FROM people WHERE name = &quot;${manager}&quot; LIMIT 1;`,
+<span class="line-number">13</span>  );
+<span class="line-number">14</span>}
 </code></pre>
 <p>Which outputs:</p>
-<pre><code class="language-sql">INSERT INTO people VALUES(&quot;Ellen&quot;, NULL);
-INSERT INTO people SELECT &quot;Angela&quot;, rowid FROM people WHERE name = &quot;Ellen&quot; LIMIT 1;
-INSERT INTO people SELECT &quot;Bella&quot;, rowid FROM people WHERE name = &quot;Angela&quot; LIMIT 1;
-INSERT INTO people SELECT &quot;Miranda&quot;, rowid FROM people WHERE name = &quot;Angela&quot; LIMIT 1;
-INSERT INTO people SELECT &quot;Jane&quot;, rowid FROM people WHERE name = &quot;Ellen&quot; LIMIT 1;
-INSERT INTO people SELECT &quot;Zoe&quot;, rowid FROM people WHERE name = &quot;Jane&quot; LIMIT 1;
+<pre>
+  <div class="code-header">
+    <span>Sql</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-sql"><span class="line-number">0</span>INSERT INTO people VALUES(&quot;Ellen&quot;, NULL);
+<span class="line-number">1</span>INSERT INTO people SELECT &quot;Angela&quot;, rowid FROM people WHERE name = &quot;Ellen&quot; LIMIT 1;
+<span class="line-number">2</span>INSERT INTO people SELECT &quot;Bella&quot;, rowid FROM people WHERE name = &quot;Angela&quot; LIMIT 1;
+<span class="line-number">3</span>INSERT INTO people SELECT &quot;Miranda&quot;, rowid FROM people WHERE name = &quot;Angela&quot; LIMIT 1;
+<span class="line-number">4</span>INSERT INTO people SELECT &quot;Jane&quot;, rowid FROM people WHERE name = &quot;Ellen&quot; LIMIT 1;
+<span class="line-number">5</span>INSERT INTO people SELECT &quot;Zoe&quot;, rowid FROM people WHERE name = &quot;Jane&quot; LIMIT 1;
 </code></pre>
 <h3 id="detecting-cycles">
   <a class="title" href="#detecting-cycles">Detecting cycles</a>
@@ -474,25 +574,35 @@ INSERT INTO people SELECT &quot;Zoe&quot;, rowid FROM people WHERE name = &quot;
 <p>As we said earlier, we get that for free, so let's check our implementation against this invalid example:</p>
 <p><img src="kahns_algorithm_4.svg" alt="Employee hierarchy with cycle" /></p>
 <p>We add the edge <code>Ellen -&gt; Zoe</code> to create a cycle:</p>
-<pre><code class="language-js">const adjacencyMatrix = [
-  [0, 0, 1, 0, 0, 0],
-  [1, 0, 0, 0, 0, 0],
-  [0, 0, 0, 0, 0, 1], // =&gt; We change the last element of this row (Ellen's row, Zoe's column) from 0 to 1.
-  [0, 0, 1, 0, 0, 0],
-  [1, 0, 0, 0, 0, 0],
-  [0, 0, 0, 1, 0, 0],
-];
-
-const nodes = [&quot;Angela&quot;, &quot;Bella&quot;, &quot;Ellen&quot;, &quot;Jane&quot;, &quot;Miranda&quot;, &quot;Zoe&quot;];
-
-const employeesTopologicallySorted = topologicalSort(structuredClone(adjacencyMatrix), nodes);
+<pre>
+  <div class="code-header">
+    <span>Js</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-js"><span class="line-number">0</span>const adjacencyMatrix = [
+<span class="line-number">1</span>  [0, 0, 1, 0, 0, 0],
+<span class="line-number">2</span>  [1, 0, 0, 0, 0, 0],
+<span class="line-number">3</span>  [0, 0, 0, 0, 0, 1], // =&gt; We change the last element of this row (Ellen's row, Zoe's column) from 0 to 1.
+<span class="line-number">4</span>  [0, 0, 1, 0, 0, 0],
+<span class="line-number">5</span>  [1, 0, 0, 0, 0, 0],
+<span class="line-number">6</span>  [0, 0, 0, 1, 0, 0],
+<span class="line-number">7</span>];
+<span class="line-number">8</span>
+<span class="line-number">9</span>const nodes = [&quot;Angela&quot;, &quot;Bella&quot;, &quot;Ellen&quot;, &quot;Jane&quot;, &quot;Miranda&quot;, &quot;Zoe&quot;];
+<span class="line-number">10</span>
+<span class="line-number">11</span>const employeesTopologicallySorted = topologicalSort(structuredClone(adjacencyMatrix), nodes);
 </code></pre>
 <p>And we get an error as expected:</p>
-<pre><code class="language-shell">/home/pg/my-code/blog/kahns_algorithm.js:63
-    throw new Error(&quot;Graph has at least one cycle&quot;);
-    ^
-
-Error: Graph has at least one cycle
+<pre>
+  <div class="code-header">
+    <span>Shell</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-shell"><span class="line-number">0</span>/home/pg/my-code/blog/kahns_algorithm.js:63
+<span class="line-number">1</span>    throw new Error(&quot;Graph has at least one cycle&quot;);
+<span class="line-number">2</span>    ^
+<span class="line-number">3</span>
+<span class="line-number">4</span>Error: Graph has at least one cycle
 </code></pre>
 <h3 id="detecting-multiple-roots">
   <a class="title" href="#detecting-multiple-roots">Detecting multiple roots</a>
@@ -501,38 +611,48 @@ Error: Graph has at least one cycle
 <p>One thing that topological sorting does not do for us is to detect the case of multiple roots in the graph, for example:</p>
 <p><img src="kahns_algorithm_3.svg" alt="Employee hierarchy with multiple roots" /></p>
 <p>To do this, we simply scan the adjacency matrix and verify that there is only one row with only zeroes, that is, only one node that has no outgoing edges:</p>
-<pre><code class="language-js">function hasMultipleRoots(adjacencyMatrix) {
-  let countOfRowsWithOnlyZeroes = 0;
-
-  for (let row = 0; row &lt; adjacencyMatrix.length; row += 1) {
-    let rowHasOnlyZeroes = true;
-    for (let column = 0; column &lt; adjacencyMatrix.length; column += 1) {
-      if (adjacencyMatrix[row][column] != 0) {
-        rowHasOnlyZeroes = false;
-        break;
-      }
-    }
-    if (rowHasOnlyZeroes) countOfRowsWithOnlyZeroes += 1;
-  }
-
-  return countOfRowsWithOnlyZeroes &gt; 1;
-}
+<pre>
+  <div class="code-header">
+    <span>Js</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-js"><span class="line-number">0</span>function hasMultipleRoots(adjacencyMatrix) {
+<span class="line-number">1</span>  let countOfRowsWithOnlyZeroes = 0;
+<span class="line-number">2</span>
+<span class="line-number">3</span>  for (let row = 0; row &lt; adjacencyMatrix.length; row += 1) {
+<span class="line-number">4</span>    let rowHasOnlyZeroes = true;
+<span class="line-number">5</span>    for (let column = 0; column &lt; adjacencyMatrix.length; column += 1) {
+<span class="line-number">6</span>      if (adjacencyMatrix[row][column] != 0) {
+<span class="line-number">7</span>        rowHasOnlyZeroes = false;
+<span class="line-number">8</span>        break;
+<span class="line-number">9</span>      }
+<span class="line-number">10</span>    }
+<span class="line-number">11</span>    if (rowHasOnlyZeroes) countOfRowsWithOnlyZeroes += 1;
+<span class="line-number">12</span>  }
+<span class="line-number">13</span>
+<span class="line-number">14</span>  return countOfRowsWithOnlyZeroes &gt; 1;
+<span class="line-number">15</span>}
 </code></pre>
 <p>Let's try it with our invalid example from above:</p>
-<pre><code class="language-js">const adjacencyMatrix = [
-  [0, 0, 1, 0, 0, 0, 0],
-  [1, 0, 0, 0, 0, 0, 0],
-  [0, 0, 0, 0, 0, 0, 0],
-  [0, 0, 1, 0, 0, 0, 0],
-  [1, 0, 0, 0, 0, 0, 0],
-  [0, 0, 0, 1, 0, 0, 0],
-  [0, 0, 0, 0, 0, 0, 0],
-];
-
-const nodes = [&quot;Angela&quot;, &quot;Bella&quot;, &quot;Ellen&quot;, &quot;Jane&quot;, &quot;Miranda&quot;, &quot;Zoe&quot;, &quot;Kelly&quot;];
-
-
-console.log(hasMultipleRoots(adjacencyMatrix));
+<pre>
+  <div class="code-header">
+    <span>Js</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-js"><span class="line-number">0</span>const adjacencyMatrix = [
+<span class="line-number">1</span>  [0, 0, 1, 0, 0, 0, 0],
+<span class="line-number">2</span>  [1, 0, 0, 0, 0, 0, 0],
+<span class="line-number">3</span>  [0, 0, 0, 0, 0, 0, 0],
+<span class="line-number">4</span>  [0, 0, 1, 0, 0, 0, 0],
+<span class="line-number">5</span>  [1, 0, 0, 0, 0, 0, 0],
+<span class="line-number">6</span>  [0, 0, 0, 1, 0, 0, 0],
+<span class="line-number">7</span>  [0, 0, 0, 0, 0, 0, 0],
+<span class="line-number">8</span>];
+<span class="line-number">9</span>
+<span class="line-number">10</span>const nodes = [&quot;Angela&quot;, &quot;Bella&quot;, &quot;Ellen&quot;, &quot;Jane&quot;, &quot;Miranda&quot;, &quot;Zoe&quot;, &quot;Kelly&quot;];
+<span class="line-number">11</span>
+<span class="line-number">12</span>
+<span class="line-number">13</span>console.log(hasMultipleRoots(adjacencyMatrix));
 </code></pre>
 <p>And we get: <code>true</code>. With our previous (valid) example, we get: <code>false</code>.</p>
 <h2 id="playing-with-the-database">
@@ -540,14 +660,24 @@ console.log(hasMultipleRoots(adjacencyMatrix));
   <a class="hash-anchor" href="#playing-with-the-database" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>We can query each employee along with their manager name so:</p>
-<pre><code class="language-sql">SELECT a.name as employee_name, COALESCE(b.name, '') as manager_name FROM people a LEFT JOIN people b ON a.manager = b.rowid;
+<pre>
+  <div class="code-header">
+    <span>Sql</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-sql"><span class="line-number">0</span>SELECT a.name as employee_name, COALESCE(b.name, '') as manager_name FROM people a LEFT JOIN people b ON a.manager = b.rowid;
 </code></pre>
 <p>To query the manager (N+1) and the manager's manager (N+2) of an employee:</p>
-<pre><code class="language-sql">SELECT COALESCE(n_plus_1.name, ''), COALESCE(n_plus_2.name, '')
-FROM people employee
-LEFT JOIN people n_plus_1 ON employee.manager = n_plus_1.rowid
-LEFT JOIN people n_plus_2 ON n_plus_1.manager = n_plus_2.rowid
-WHERE employee.name = ?
+<pre>
+  <div class="code-header">
+    <span>Sql</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-sql"><span class="line-number">0</span>SELECT COALESCE(n_plus_1.name, ''), COALESCE(n_plus_2.name, '')
+<span class="line-number">1</span>FROM people employee
+<span class="line-number">2</span>LEFT JOIN people n_plus_1 ON employee.manager = n_plus_1.rowid
+<span class="line-number">3</span>LEFT JOIN people n_plus_2 ON n_plus_1.manager = n_plus_2.rowid
+<span class="line-number">4</span>WHERE employee.name = ?
 </code></pre>
 <p>We can also do this with hairy recursive Common Table Expression (CTE) but I'll leave that to the reader.</p>
 <h2 id="closing-thoughts">
@@ -563,108 +693,113 @@ WHERE employee.name = ?
 </h2>
 <details>
   <summary>The full code</summary>
-<pre><code class="language-js">const adjacencyMatrix = [
-  [0, 0, 1, 0, 0, 0],
-  [1, 0, 0, 0, 0, 0],
-  [0, 0, 0, 0, 0, 0],
-  [0, 0, 1, 0, 0, 0],
-  [1, 0, 0, 0, 0, 0],
-  [0, 0, 0, 1, 0, 0],
-];
-
-const nodes = [&quot;Angela&quot;, &quot;Bella&quot;, &quot;Ellen&quot;, &quot;Jane&quot;, &quot;Miranda&quot;, &quot;Zoe&quot;];
-
-function hasNodeNoIncomingEdge(adjacencyMatrix, nodeIndex) {
-  const column = nodeIndex;
-
-  for (let row = 0; row &lt; adjacencyMatrix.length; row += 1) {
-    const cell = adjacencyMatrix[row][column];
-
-    if (cell != 0) {
-      return false;
-    }
-  }
-
-  return true;
-}
-
-function getNodesWithNoIncomingEdge(adjacencyMatrix, nodes) {
-  return nodes.filter((_, i) =&gt; hasNodeNoIncomingEdge(adjacencyMatrix, i));
-}
-
-function graphHasEdges(adjacencyMatrix) {
-  for (let row = 0; row &lt; adjacencyMatrix.length; row += 1) {
-    for (let column = 0; column &lt; adjacencyMatrix.length; column += 1) {
-      if (adjacencyMatrix[row][column] == 1) return true;
-    }
-  }
-
-  return false;
-}
-
-function topologicalSort(adjacencyMatrix) {
-  const L = [];
-  const S = getNodesWithNoIncomingEdge(adjacencyMatrix, nodes);
-
-  while (S.length &gt; 0) {
-    const node = S.pop();
-    L.push(node);
-    const nodeIndex = nodes.indexOf(node);
-
-    for (let mIndex = 0; mIndex &lt; nodes.length; mIndex += 1) {
-      const hasEdgeFromNtoM = adjacencyMatrix[nodeIndex][mIndex];
-      if (!hasEdgeFromNtoM) continue;
-
-      adjacencyMatrix[nodeIndex][mIndex] = 0;
-
-      if (hasNodeNoIncomingEdge(adjacencyMatrix, mIndex)) {
-        const m = nodes[mIndex];
-        S.push(m);
-      }
-    }
-  }
-
-  if (graphHasEdges(adjacencyMatrix)) {
-    throw new Error(&quot;Graph has at least one cycle&quot;);
-  }
-
-  return L;
-}
-
-function hasMultipleRoots(adjacencyMatrix) {
-  let countOfRowsWithOnlyZeroes = 0;
-
-  for (let row = 0; row &lt; adjacencyMatrix.length; row += 1) {
-    let rowHasOnlyZeroes = true;
-    for (let column = 0; column &lt; adjacencyMatrix.length; column += 1) {
-      if (adjacencyMatrix[row][column] != 0) {
-        rowHasOnlyZeroes = false;
-        break;
-      }
-    }
-    if (rowHasOnlyZeroes) countOfRowsWithOnlyZeroes += 1;
-  }
-
-  return countOfRowsWithOnlyZeroes &gt; 1;
-}
-
-console.log(hasMultipleRoots(adjacencyMatrix));
-const employeesTopologicallySorted = topologicalSort(structuredClone(adjacencyMatrix), nodes);
-console.log(employeesTopologicallySorted);
-
-const root = employeesTopologicallySorted[employeesTopologicallySorted.length - 1];
-console.log(`INSERT INTO people VALUES(&quot;${root}&quot;, NULL)`);
-
-for (let i = employeesTopologicallySorted.length - 2; i &gt;= 0; i -= 1) {
-  const employee = employeesTopologicallySorted[i];
-  const employeeIndex = nodes.indexOf(employee);
-
-  const managerIndex = adjacencyMatrix[employeeIndex].indexOf(1);
-  const manager = nodes[managerIndex];
-  console.log(
-    `INSERT INTO people SELECT &quot;${employee}&quot;, rowid FROM people WHERE name = &quot;${manager}&quot; LIMIT 1;`,
-  );
-}
+<pre>
+  <div class="code-header">
+    <span>Js</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-js"><span class="line-number">0</span>const adjacencyMatrix = [
+<span class="line-number">1</span>  [0, 0, 1, 0, 0, 0],
+<span class="line-number">2</span>  [1, 0, 0, 0, 0, 0],
+<span class="line-number">3</span>  [0, 0, 0, 0, 0, 0],
+<span class="line-number">4</span>  [0, 0, 1, 0, 0, 0],
+<span class="line-number">5</span>  [1, 0, 0, 0, 0, 0],
+<span class="line-number">6</span>  [0, 0, 0, 1, 0, 0],
+<span class="line-number">7</span>];
+<span class="line-number">8</span>
+<span class="line-number">9</span>const nodes = [&quot;Angela&quot;, &quot;Bella&quot;, &quot;Ellen&quot;, &quot;Jane&quot;, &quot;Miranda&quot;, &quot;Zoe&quot;];
+<span class="line-number">10</span>
+<span class="line-number">11</span>function hasNodeNoIncomingEdge(adjacencyMatrix, nodeIndex) {
+<span class="line-number">12</span>  const column = nodeIndex;
+<span class="line-number">13</span>
+<span class="line-number">14</span>  for (let row = 0; row &lt; adjacencyMatrix.length; row += 1) {
+<span class="line-number">15</span>    const cell = adjacencyMatrix[row][column];
+<span class="line-number">16</span>
+<span class="line-number">17</span>    if (cell != 0) {
+<span class="line-number">18</span>      return false;
+<span class="line-number">19</span>    }
+<span class="line-number">20</span>  }
+<span class="line-number">21</span>
+<span class="line-number">22</span>  return true;
+<span class="line-number">23</span>}
+<span class="line-number">24</span>
+<span class="line-number">25</span>function getNodesWithNoIncomingEdge(adjacencyMatrix, nodes) {
+<span class="line-number">26</span>  return nodes.filter((_, i) =&gt; hasNodeNoIncomingEdge(adjacencyMatrix, i));
+<span class="line-number">27</span>}
+<span class="line-number">28</span>
+<span class="line-number">29</span>function graphHasEdges(adjacencyMatrix) {
+<span class="line-number">30</span>  for (let row = 0; row &lt; adjacencyMatrix.length; row += 1) {
+<span class="line-number">31</span>    for (let column = 0; column &lt; adjacencyMatrix.length; column += 1) {
+<span class="line-number">32</span>      if (adjacencyMatrix[row][column] == 1) return true;
+<span class="line-number">33</span>    }
+<span class="line-number">34</span>  }
+<span class="line-number">35</span>
+<span class="line-number">36</span>  return false;
+<span class="line-number">37</span>}
+<span class="line-number">38</span>
+<span class="line-number">39</span>function topologicalSort(adjacencyMatrix) {
+<span class="line-number">40</span>  const L = [];
+<span class="line-number">41</span>  const S = getNodesWithNoIncomingEdge(adjacencyMatrix, nodes);
+<span class="line-number">42</span>
+<span class="line-number">43</span>  while (S.length &gt; 0) {
+<span class="line-number">44</span>    const node = S.pop();
+<span class="line-number">45</span>    L.push(node);
+<span class="line-number">46</span>    const nodeIndex = nodes.indexOf(node);
+<span class="line-number">47</span>
+<span class="line-number">48</span>    for (let mIndex = 0; mIndex &lt; nodes.length; mIndex += 1) {
+<span class="line-number">49</span>      const hasEdgeFromNtoM = adjacencyMatrix[nodeIndex][mIndex];
+<span class="line-number">50</span>      if (!hasEdgeFromNtoM) continue;
+<span class="line-number">51</span>
+<span class="line-number">52</span>      adjacencyMatrix[nodeIndex][mIndex] = 0;
+<span class="line-number">53</span>
+<span class="line-number">54</span>      if (hasNodeNoIncomingEdge(adjacencyMatrix, mIndex)) {
+<span class="line-number">55</span>        const m = nodes[mIndex];
+<span class="line-number">56</span>        S.push(m);
+<span class="line-number">57</span>      }
+<span class="line-number">58</span>    }
+<span class="line-number">59</span>  }
+<span class="line-number">60</span>
+<span class="line-number">61</span>  if (graphHasEdges(adjacencyMatrix)) {
+<span class="line-number">62</span>    throw new Error(&quot;Graph has at least one cycle&quot;);
+<span class="line-number">63</span>  }
+<span class="line-number">64</span>
+<span class="line-number">65</span>  return L;
+<span class="line-number">66</span>}
+<span class="line-number">67</span>
+<span class="line-number">68</span>function hasMultipleRoots(adjacencyMatrix) {
+<span class="line-number">69</span>  let countOfRowsWithOnlyZeroes = 0;
+<span class="line-number">70</span>
+<span class="line-number">71</span>  for (let row = 0; row &lt; adjacencyMatrix.length; row += 1) {
+<span class="line-number">72</span>    let rowHasOnlyZeroes = true;
+<span class="line-number">73</span>    for (let column = 0; column &lt; adjacencyMatrix.length; column += 1) {
+<span class="line-number">74</span>      if (adjacencyMatrix[row][column] != 0) {
+<span class="line-number">75</span>        rowHasOnlyZeroes = false;
+<span class="line-number">76</span>        break;
+<span class="line-number">77</span>      }
+<span class="line-number">78</span>    }
+<span class="line-number">79</span>    if (rowHasOnlyZeroes) countOfRowsWithOnlyZeroes += 1;
+<span class="line-number">80</span>  }
+<span class="line-number">81</span>
+<span class="line-number">82</span>  return countOfRowsWithOnlyZeroes &gt; 1;
+<span class="line-number">83</span>}
+<span class="line-number">84</span>
+<span class="line-number">85</span>console.log(hasMultipleRoots(adjacencyMatrix));
+<span class="line-number">86</span>const employeesTopologicallySorted = topologicalSort(structuredClone(adjacencyMatrix), nodes);
+<span class="line-number">87</span>console.log(employeesTopologicallySorted);
+<span class="line-number">88</span>
+<span class="line-number">89</span>const root = employeesTopologicallySorted[employeesTopologicallySorted.length - 1];
+<span class="line-number">90</span>console.log(`INSERT INTO people VALUES(&quot;${root}&quot;, NULL)`);
+<span class="line-number">91</span>
+<span class="line-number">92</span>for (let i = employeesTopologicallySorted.length - 2; i &gt;= 0; i -= 1) {
+<span class="line-number">93</span>  const employee = employeesTopologicallySorted[i];
+<span class="line-number">94</span>  const employeeIndex = nodes.indexOf(employee);
+<span class="line-number">95</span>
+<span class="line-number">96</span>  const managerIndex = adjacencyMatrix[employeeIndex].indexOf(1);
+<span class="line-number">97</span>  const manager = nodes[managerIndex];
+<span class="line-number">98</span>  console.log(
+<span class="line-number">99</span>    `INSERT INTO people SELECT &quot;${employee}&quot;, rowid FROM people WHERE name = &quot;${manager}&quot; LIMIT 1;`,
+<span class="line-number">100</span>  );
+<span class="line-number">101</span>}
 </code></pre>
 </details>
 <p><a href="/blog"> ⏴ Back to all articles</a></p>
