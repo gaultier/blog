@@ -228,9 +228,36 @@ fn md_lint_rec(node: &Node, md_path: &Path) {
                 md_lint_rec(child, md_path);
             }
         }
-        Node::Text(_text) => {
-            // TODO
-            //md_lint_rec(&text.value);
+        Node::Text(text) => {
+            // Check that `DTrace` has the correct case.
+            assert!(
+                !(text.value.contains(" dtrace")
+                    || text.value.contains(" dTrace")
+                    || text.value.contains(" Dtrace")),
+                "incorrect casing for DTrace: file={} position={:?}",
+                md_path.to_str().unwrap(),
+                text.position
+            );
+
+            // Prevent `Kib` and `Kb`.
+            assert!(
+                !text.value.contains("Kib"),
+                "incorrect use of Kib: file={} position={:?}",
+                md_path.to_str().unwrap(),
+                text.position
+            );
+            assert!(
+                !text.value.contains("Kb"),
+                "incorrect use of Kb: file={} position={:?}",
+                md_path.to_str().unwrap(),
+                text.position
+            );
+            assert!(
+                !text.value.contains("KB"),
+                "incorrect use of KB: file={} position={:?}",
+                md_path.to_str().unwrap(),
+                text.position
+            );
         }
         Node::Code(code) => {
             assert!(
