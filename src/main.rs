@@ -1344,7 +1344,7 @@ fn websocket_handling_thread(
 
     debouncer
         .watcher()
-        .watch(Path::new("."), RecursiveMode::Recursive)
+        .watch(Path::new("."), RecursiveMode::NonRecursive)
         .unwrap();
 
     // Block forever, printing out events as they come in
@@ -1355,6 +1355,7 @@ fn websocket_handling_thread(
                     let file_path_str =
                         event.path.file_stem().unwrap_or_default().to_string_lossy();
                     let path_str = event.path.to_str().unwrap();
+                    dbg!(path_str);
                     match path_str {
                         _ if path_str.ends_with("header.html")
                             || path_str.ends_with("footer.html") =>
