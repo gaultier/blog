@@ -17,18 +17,18 @@ class PostcardDecoder {
   /**
    * Decodes a Varint (used for all unsigned integers and lengths)
    * Postcard uses a LEB128-like encoding.
+   * Dangerously assume, for speed, that no BigInt is needed.
    */
   uInt() {
-    let value = 0n;
-    let shift = 0n;
+    let value = 0;
+    let shift = 0;
     while (true) {
       const byte = this.view[this.pos++];
-      value |= BigInt(byte & 0x7f) << shift;
+      value |= (byte & 0x7f) << shift;
       if ((byte & 0x80) === 0) break;
-      shift += 7n;
+      shift += 7;
     }
-    // Return as Number if it fits, otherwise BigInt
-    return value <= BigInt(Number.MAX_SAFE_INTEGER) ? Number(value) : value;
+    return value;
   }
 
   // Individual unsigned types all use the same varint encoding in Postcard
