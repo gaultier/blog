@@ -1,5 +1,38 @@
-
+let search_index_loading = false;
+let search_index = undefined;
+const dom_input = document.getElementById('search');
+const dom_pseudo_body = document.getElementById('pseudo-body');
 const excerpt_len_around = 100;
+
+async function getExcerpt(url, needle) {
+  const response = await fetch(url);
+  const html = await response.text();
+
+  // Create a temporary DOM element to strip HTML tags
+  const doc = new DOMParser().parseFromString(html, 'text/html');
+  const root = doc.getElementById('pseudo-body');
+  const ignore = ['.article-prelude', '.article-title', '.toc', 'script', 'style'];
+  ignore.forEach(selector => {
+    root.querySelectorAll(selector).forEach(el => el.remove());
+  });
+  const text = root.textContent.replace(/\s+/g, ' ').trim();
+  const lowerText = text.toLowerCase();
+  const lowerNeedle = needle.toLowerCase();
+  const index = lowerText.indexOf(lowerNeedle);
+  if (index === -1) {
+     return '';
+   }
+
+  const start = Math.max(0, index - 60);
+  const end = Math.min(text.length, index + 100);
+    
+  // Simple bolding of the match
+  let snippet = text.slice(start, end);
+  const regex = new RegExp(`(${needle})`, 'gi');
+  snippet = snippet.replace(regex, '<strong>$1</strong>');
+
+  return `...${snippet}...`; 
+}
 
 function search_text(needle) {
   needle = needle.toLowerCase();
@@ -10,7 +43,7 @@ function search_text(needle) {
   for (let i = 0; i <= needle.length - 3; i++) {
     const trigram = needle[i] + needle[i+1] + needle[i+2];
 
-    const match = window.search_index.trigram_to_file_idx[trigram];
+    const match = search_index.trigram_to_file_idx[trigram];
     if (match === undefined) {
       continue;
     }
@@ -27,48 +60,69 @@ function search_text(needle) {
   return file_scores;
 }
 
-window.onload = function() {
-  fetch('/blog/search_index.json')
-    .then(r => r.json())
-    .then(j => {
-      j.idx_to_file = new Map();
+async function loadSearchIndex() {
+  if (search_index !== undefined || search_index_loading) {return;}
 
-      for (const [file, idx] of Object.entries(j.file_to_idx)) {
-        j.idx_to_file.set(idx, file);
-      }
-    window.search_index = j;
-  });
+  dom_input.placeholder = 'Loading search index...';
 
-  const dom_search_matches = window.document.getElementById('search-matches');
-  const dom_input = window.document.getElementById('search');
-  const dom_pseudo_body = window.document.getElementById('pseudo-body');
-
-  function search_and_display_results(_event) {
-    const needle = dom_input.value;
-    if (needle.length < 3) {
-      dom_pseudo_body.hidden = false;
-      dom_search_matches.hidden = true;
-      return;
+  try {
+    search_index_loading = true;
+    const response = await fetch('/blog/search_index.json');
+    const j = await response.json();
+    
+    // Build file_idx => file mapping.
+    j.idx_to_file = new Map();
+    for (const [file, idx] of Object.entries(j.file_to_idx)) {
+      j.idx_to_file.set(idx, file);
     }
+    search_index = j;
+    search_index_loading = false;
 
+    dom_input.placeholder = 'Search index loaded!';
+  } catch(e) {
+    dom_input.placeholder = 'Search index failed to load!';
+    console.error(e);
+  }
+}
+
+dom_input.addEventListener('focus', loadSearchIndex);
+dom_input.addEventListener('click', loadSearchIndex);
+
+async function search_and_display_results(_event) {
+  const needle = dom_input.value;
+  
+  if (needle.length < 3) {
     dom_pseudo_body.hidden = false;
-    dom_search_matches.hidden = false;
-    dom_search_matches.innerHTML = '';
+    return;
+  }
 
-    const scores = search_text(dom_input.value);
+  const scores = search_text(needle);
+  // Sort by score DESC.
+  const search_results = [...scores.entries()].sort((a, b) => b[1] - a[1]);
 
-    dom_pseudo_body.innerHTML = '<h3>Search results</h3><ul>' ;
+  dom_pseudo_body.innerHTML = '<h3>Search results</h3><ul id="results-list"></ul>';
+  const list = document.getElementById('results-list');
 
-    let search_results = [...scores.entries()];
-    search_results.sort((a,b) => b[1] - a[1]);
-    for (const [file_idx, score] of search_results) {
-      const file = search_index.idx_to_file.get(Number(file_idx));
 
-      dom_pseudo_body.innerHTML += `<li> <a href="${file}">${file}: ${score}</a></li>`
-    }
-    dom_pseudo_body.innerHTML += '</ul>' ;
+  for (const [file_idx, score] of search_results) {
+    const file = search_index.idx_to_file.get(Number(file_idx));
+    
+    // We create a placeholder 'li' immediately so the order stays correct.
+    const li = document.createElement('li');
+    li.innerHTML = `<a href="${file}">${file}</a> (Loading excerpt...)`;
+    list.appendChild(li);
 
-  };
-  dom_input.oninput = search_and_display_results;
-  dom_input.onfocus = search_and_display_results;
+    // 3. Fetch the excerpt and update this specific 'li'.
+    getExcerpt(file, needle).then(excerpt => {
+        li.innerHTML = `
+            <a href="${file}">${file}</a> 
+            (Score: ${score.toFixed(2)})
+            <p><small>${excerpt}</small></p>
+        `;
+    }).catch(() => {
+        li.innerHTML = `<a href="${file}">${file}</a> (Score: ${score.toFixed(2)})`;
+    });
+  }
 };
+
+dom_input.oninput = search_and_display_results;

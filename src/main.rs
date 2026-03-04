@@ -1074,7 +1074,6 @@ fn generate_all(cache: &mut HashMap<String, Article>) {
         .map(|gs| md_render_article(gs, &html_header, &html_footer, cache, &mut search_index))
         .collect();
 
-    dbg!(search_index.trigram_to_file_idx.get("x11"));
     let search_index_file = File::create("search_index.json").unwrap();
     serde_json::to_writer(search_index_file, &search_index).unwrap();
     generate_home_page(&mut articles, &html_header, &html_footer);
