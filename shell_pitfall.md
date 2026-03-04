@@ -5,7 +5,7 @@ Tags: Shell, Go, Rust
 Super short article today.
 
 At [work](https://github.com/ory/sdk) we maintain an OpenAPI (formerly known as Swagger) specification of our APIs. 
-Then we use generators we produce client code in various languages. 
+Then we use generators to produce client code in various languages. 
 
 I noticed that Swift was missing from the list so I wanted to add it.
 
