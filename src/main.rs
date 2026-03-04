@@ -189,7 +189,7 @@ impl SearchIndex {
         let chars: Vec<char> = text.to_lowercase().chars().collect();
 
         chars.windows(3).for_each(|w| {
-            let trigram = w.iter().collect();
+            let trigram: String = w.iter().collect::<String>().trim_ascii().to_string();
             self.trigram_to_file_idx
                 .entry(trigram)
                 .and_modify(|e| {
