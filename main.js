@@ -93,8 +93,10 @@ dark_light_mode_button.addEventListener('click', function(e) {
   localStorage.setItem('colorScheme', document.body.style.colorScheme);
 });
 
-document.querySelectorAll('code').forEach((el, _i) => {
-    copy_btn.addEventListener('click', function(e){
-      navigator.clipboard.writeText(content);
+document.querySelectorAll('.copy-code').forEach((el, _i) => {
+    el.addEventListener('click', function(e){
+      const pre = el.parentElement.parentElement;
+      const codeBlock = pre.querySelector('code');
+      navigator.clipboard.writeText(codeBlock.innerText);
     });
 });
