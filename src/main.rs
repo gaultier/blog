@@ -1252,6 +1252,7 @@ fn generate_all(cache: &mut HashMap<String, Article>) {
         let start = std::time::Instant::now();
         let search_index_file = File::create("search_index.postcard").unwrap();
         // Sort to avoid spurious diffs (and cache busting in the browser).
+        // FIXME: This does not work yet.
         search_index
             .trigram_to_file_idx
             .values_mut()
