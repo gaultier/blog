@@ -20,9 +20,9 @@ socket.onerror = function(ev) {
   console.log('error', ev);
 }
 
-hljs.configure({
-  ignoreUnescapedHTML: true,
-});
+// hljs.configure({
+  // ignoreUnescapedHTML: true,
+// });
 hljs.registerLanguage("cmake", cmake.default);
 hljs.registerLanguage("scheme", scheme.default);
 hljs.registerLanguage("x86asm", x86asm.default);
@@ -81,7 +81,10 @@ return {
 }
 });
 
-hljs.highlightAll();
+document.querySelectorAll('.code-hl').forEach(el => {
+  // then highlight each
+  hljs.highlightElement(el);
+});
 
 document.body.style['color-scheme'] = 'light dark';
 let colorScheme = localStorage.getItem('colorScheme');

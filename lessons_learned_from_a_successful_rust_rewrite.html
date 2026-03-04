@@ -163,16 +163,16 @@ Do not edit it by hand.
     <span>Rust</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-rust"><span class="line-number"></span>fn main() {
-<span class="line-number"></span>    let mut x = 1;
-<span class="line-number"></span>    unsafe {
-<span class="line-number"></span>        let a: *mut usize = &amp;mut x;
-<span class="line-number"></span>        let b: *mut usize = &amp;mut x;
-<span class="line-number"></span>
-<span class="line-number"></span>        *a = 2;
-<span class="line-number"></span>        *b = 3;
-<span class="line-number"></span>    }
-<span class="line-number"></span>}
+  <code class="language-rust"><span class="line-number"></span><span class="code-hl">fn main() {</span>
+<span class="line-number"></span><span class="code-hl">    let mut x = 1;</span>
+<span class="line-number"></span><span class="code-hl">    unsafe {</span>
+<span class="line-number"></span><span class="code-hl">        let a: *mut usize = &amp;mut x;</span>
+<span class="line-number"></span><span class="code-hl">        let b: *mut usize = &amp;mut x;</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">        *a = 2;</span>
+<span class="line-number"></span><span class="code-hl">        *b = 3;</span>
+<span class="line-number"></span><span class="code-hl">    }</span>
+<span class="line-number"></span><span class="code-hl">}</span>
 </code></pre>
 <p>You might think that this code is dumb and obviously wrong, but in a big real codebase, this is not so easy to spot, especially when these operations are hidden inside helper functions or layers and layers of abstraction, as Rust loves to do.</p>
 <p><code>cargo run</code> is perfectly content with the code above. The Rust compiler can and will silently assume that there is only one mutable pointer to <code>x</code>, and make optimizations, and generate machine code, based on that assumption, which this code breaks.</p>
@@ -182,27 +182,27 @@ Do not edit it by hand.
     <span>Shell</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-shell"><span class="line-number"></span>$ cargo +nightly-2024-09-01 miri r
-<span class="line-number"></span>error: Undefined Behavior: attempting a write access using &lt;2883&gt; at alloc1335[0x0], but that tag does not exist in the borrow stack for this location
-<span class="line-number"></span> --&gt; src/main.rs:7:9
-<span class="line-number"></span>  |
-<span class="line-number"></span>7 |         *a = 2;
-<span class="line-number"></span>  |         ^^^^^^
-<span class="line-number"></span>  |         |
-<span class="line-number"></span>  |         attempting a write access using &lt;2883&gt; at alloc1335[0x0], but that tag does not exist in the borrow stack for this location
-<span class="line-number"></span>  |         this error occurs as part of an access at alloc1335[0x0..0x8]
-<span class="line-number"></span>  |
-<span class="line-number"></span>  [...]
-<span class="line-number"></span> --&gt; src/main.rs:4:29
-<span class="line-number"></span>  |
-<span class="line-number"></span>4 |         let a: *mut usize = &amp;mut x;
-<span class="line-number"></span>  |                             ^^^^^^
-<span class="line-number"></span>help: &lt;2883&gt; was later invalidated at offsets [0x0..0x8] by a Unique retag
-<span class="line-number"></span> --&gt; src/main.rs:5:29
-<span class="line-number"></span>  |
-<span class="line-number"></span>5 |         let b: *mut usize = &amp;mut x;
-<span class="line-number"></span>  |                             ^^^^^^
-<span class="line-number"></span>  [...]
+  <code class="language-shell"><span class="line-number"></span><span class="code-hl">$ cargo +nightly-2024-09-01 miri r</span>
+<span class="line-number"></span><span class="code-hl">error: Undefined Behavior: attempting a write access using &lt;2883&gt; at alloc1335[0x0], but that tag does not exist in the borrow stack for this location</span>
+<span class="line-number"></span><span class="code-hl"> --&gt; src/main.rs:7:9</span>
+<span class="line-number"></span><span class="code-hl">  |</span>
+<span class="line-number"></span><span class="code-hl">7 |         *a = 2;</span>
+<span class="line-number"></span><span class="code-hl">  |         ^^^^^^</span>
+<span class="line-number"></span><span class="code-hl">  |         |</span>
+<span class="line-number"></span><span class="code-hl">  |         attempting a write access using &lt;2883&gt; at alloc1335[0x0], but that tag does not exist in the borrow stack for this location</span>
+<span class="line-number"></span><span class="code-hl">  |         this error occurs as part of an access at alloc1335[0x0..0x8]</span>
+<span class="line-number"></span><span class="code-hl">  |</span>
+<span class="line-number"></span><span class="code-hl">  [...]</span>
+<span class="line-number"></span><span class="code-hl"> --&gt; src/main.rs:4:29</span>
+<span class="line-number"></span><span class="code-hl">  |</span>
+<span class="line-number"></span><span class="code-hl">4 |         let a: *mut usize = &amp;mut x;</span>
+<span class="line-number"></span><span class="code-hl">  |                             ^^^^^^</span>
+<span class="line-number"></span><span class="code-hl">help: &lt;2883&gt; was later invalidated at offsets [0x0..0x8] by a Unique retag</span>
+<span class="line-number"></span><span class="code-hl"> --&gt; src/main.rs:5:29</span>
+<span class="line-number"></span><span class="code-hl">  |</span>
+<span class="line-number"></span><span class="code-hl">5 |         let b: *mut usize = &amp;mut x;</span>
+<span class="line-number"></span><span class="code-hl">  |                             ^^^^^^</span>
+<span class="line-number"></span><span class="code-hl">  [...]</span>
 </code></pre>
 <p>So, what could have been a compile time error, is now a runtime error. Great. I hope you have 100% test coverage! Thank god there's Miri.</p>
 <p>If you are writing <code>unsafe{}</code> code without Miri checking it, or if you do so without absolutely having to, I think this is foolish. It will blow up in your face.</p>
@@ -218,12 +218,12 @@ Do not edit it by hand.
     <span>Plaintext</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-plaintext"><span class="line-number"></span>    |
-<span class="line-number"></span>471 |     let pkey_ctx = LcPtr::new(unsafe { EVP_PKEY_CTX_new_id(EVP_PKEY_EC, null_mut()) })?;
-<span class="line-number"></span>    |                                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ can't call foreign function `␁aws_lc_0_16_0_EVP_PKEY_CTX_new_id` on OS `linux`
-<span class="line-number"></span>    |
-<span class="line-number"></span>    = help: if this is a basic API commonly used on this target, please report an issue with Miri
-<span class="line-number"></span>    = help: however, note that Miri does not aim to support every FFI function out there; for instance, we will not support APIs for things such as GUIs, scripting languages, or databases
+  <code class="language-plaintext"><span class="line-number"></span><span class="code-hl">    |</span>
+<span class="line-number"></span><span class="code-hl">471 |     let pkey_ctx = LcPtr::new(unsafe { EVP_PKEY_CTX_new_id(EVP_PKEY_EC, null_mut()) })?;</span>
+<span class="line-number"></span><span class="code-hl">    |                                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ can't call foreign function `␁aws_lc_0_16_0_EVP_PKEY_CTX_new_id` on OS `linux`</span>
+<span class="line-number"></span><span class="code-hl">    |</span>
+<span class="line-number"></span><span class="code-hl">    = help: if this is a basic API commonly used on this target, please report an issue with Miri</span>
+<span class="line-number"></span><span class="code-hl">    = help: however, note that Miri does not aim to support every FFI function out there; for instance, we will not support APIs for things such as GUIs, scripting languages, or databases</span>
 </code></pre>
 <p>If you are using a library that has parts written in C or assembly, which is usual for cryptography libraries, or video compression, etc, you are out of luck.</p>
 <p>So we resorted to add a feature flag to split the codebase between parts that use this problematic library and parts that don't. And Miri only runs tests with the feature disabled.</p>
@@ -240,11 +240,11 @@ Do not edit it by hand.
     <span>C</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-c"><span class="line-number"></span>void* handle = MYLIB_init();
-<span class="line-number"></span>
-<span class="line-number"></span>// Do some stuff with the handle...
-<span class="line-number"></span>
-<span class="line-number"></span>MYLIB_release(handle);
+  <code class="language-c"><span class="line-number"></span><span class="code-hl">void* handle = MYLIB_init();</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">// Do some stuff with the handle...</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">MYLIB_release(handle);</span>
 </code></pre>
 <p>Under the hood, <code>MYLIB_init</code> allocates some memory and <code>MYLIB_release()</code> frees it. This is a very usual pattern in C libraries, e.g. <code>curl_easy_init()/curl_easy_cleanup()</code>.</p>
 <p>So immediately, you are thinking: well, it's easy to forget to call <code>MYLIB_release</code> in some code paths, and thus leak memory. And you'd be right. So let's implement them to illustrate. We are good principled developers so we write a Rust test:</p>
@@ -253,36 +253,36 @@ Do not edit it by hand.
     <span>Rust</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-rust"><span class="line-number"></span>#[no_mangle]
-<span class="line-number"></span>pub extern &quot;C&quot; fn MYLIB_init() -&gt; *mut std::ffi::c_void {
-<span class="line-number"></span>    let alloc = Box::leak(Box::new(1usize));
-<span class="line-number"></span>
-<span class="line-number"></span>    alloc as *mut usize as *mut std::ffi::c_void
-<span class="line-number"></span>}
-<span class="line-number"></span>
-<span class="line-number"></span>#[no_mangle]
-<span class="line-number"></span>pub extern &quot;C&quot; fn MYLIB_do_stuff(_handle: *mut std::ffi::c_void) {
-<span class="line-number"></span>    // Do some stuff.
-<span class="line-number"></span>}
-<span class="line-number"></span>
-<span class="line-number"></span>#[no_mangle]
-<span class="line-number"></span>pub extern &quot;C&quot; fn MYLIB_release(handle: *mut std::ffi::c_void) {
-<span class="line-number"></span>    let _ = unsafe { Box::from_raw(handle as *mut usize) };
-<span class="line-number"></span>}
-<span class="line-number"></span>
-<span class="line-number"></span>fn main() {}
-<span class="line-number"></span>
-<span class="line-number"></span>#[cfg(test)]
-<span class="line-number"></span>mod test {
-<span class="line-number"></span>    #[test]
-<span class="line-number"></span>    fn test_init_release() {
-<span class="line-number"></span>        let x = super::MYLIB_init();
-<span class="line-number"></span>
-<span class="line-number"></span>        super::MYLIB_do_stuff(x);
-<span class="line-number"></span>
-<span class="line-number"></span>        super::MYLIB_release(x);
-<span class="line-number"></span>    }
-<span class="line-number"></span>}
+  <code class="language-rust"><span class="line-number"></span><span class="code-hl">#[no_mangle]</span>
+<span class="line-number"></span><span class="code-hl">pub extern &quot;C&quot; fn MYLIB_init() -&gt; *mut std::ffi::c_void {</span>
+<span class="line-number"></span><span class="code-hl">    let alloc = Box::leak(Box::new(1usize));</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">    alloc as *mut usize as *mut std::ffi::c_void</span>
+<span class="line-number"></span><span class="code-hl">}</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">#[no_mangle]</span>
+<span class="line-number"></span><span class="code-hl">pub extern &quot;C&quot; fn MYLIB_do_stuff(_handle: *mut std::ffi::c_void) {</span>
+<span class="line-number"></span><span class="code-hl">    // Do some stuff.</span>
+<span class="line-number"></span><span class="code-hl">}</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">#[no_mangle]</span>
+<span class="line-number"></span><span class="code-hl">pub extern &quot;C&quot; fn MYLIB_release(handle: *mut std::ffi::c_void) {</span>
+<span class="line-number"></span><span class="code-hl">    let _ = unsafe { Box::from_raw(handle as *mut usize) };</span>
+<span class="line-number"></span><span class="code-hl">}</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">fn main() {}</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">#[cfg(test)]</span>
+<span class="line-number"></span><span class="code-hl">mod test {</span>
+<span class="line-number"></span><span class="code-hl">    #[test]</span>
+<span class="line-number"></span><span class="code-hl">    fn test_init_release() {</span>
+<span class="line-number"></span><span class="code-hl">        let x = super::MYLIB_init();</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">        super::MYLIB_do_stuff(x);</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">        super::MYLIB_release(x);</span>
+<span class="line-number"></span><span class="code-hl">    }</span>
+<span class="line-number"></span><span class="code-hl">}</span>
 </code></pre>
 <p>A Rust developer first instinct would be to use RAII by creating a wrapper object which implements <code>Drop</code> and automatically calls the cleanup function.
 However, we wanted to write our tests using the public C API of the library like a normal C application would, and it would not have access to this Rust feature.

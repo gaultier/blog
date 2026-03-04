@@ -128,18 +128,18 @@ Do not edit it by hand.
     <span>Rust</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-rust"><span class="line-number"></span>#[repr(C)]
-<span class="line-number"></span>pub struct Foo {
-<span class="line-number"></span>    value: usize,
-<span class="line-number"></span>}
-<span class="line-number"></span>
-<span class="line-number"></span>#[no_mangle]
-<span class="line-number"></span>pub extern &quot;C&quot; fn MYLIB_get_foos(out_foos: *mut *mut Foo, out_foos_count: &amp;mut usize) -&gt; i32 {
-<span class="line-number"></span>    let res = vec![Foo { value: 42 }, Foo { value: 99 }];
-<span class="line-number"></span>    *out_foos_count = res.len();
-<span class="line-number"></span>    unsafe { *out_foos = res.leak().as_mut_ptr() };
-<span class="line-number"></span>    0
-<span class="line-number"></span>}
+  <code class="language-rust"><span class="line-number"></span><span class="code-hl">#[repr(C)]</span>
+<span class="line-number"></span><span class="code-hl">pub struct Foo {</span>
+<span class="line-number"></span><span class="code-hl">    value: usize,</span>
+<span class="line-number"></span><span class="code-hl">}</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">#[no_mangle]</span>
+<span class="line-number"></span><span class="code-hl">pub extern &quot;C&quot; fn MYLIB_get_foos(out_foos: *mut *mut Foo, out_foos_count: &amp;mut usize) -&gt; i32 {</span>
+<span class="line-number"></span><span class="code-hl">    let res = vec![Foo { value: 42 }, Foo { value: 99 }];</span>
+<span class="line-number"></span><span class="code-hl">    *out_foos_count = res.len();</span>
+<span class="line-number"></span><span class="code-hl">    unsafe { *out_foos = res.leak().as_mut_ptr() };</span>
+<span class="line-number"></span><span class="code-hl">    0</span>
+<span class="line-number"></span><span class="code-hl">}</span>
 </code></pre>
 <p>It allocates and returns a dynamically allocated array as a pointer and a length. Of course in reality, <code>Foo</code> has many fields and the values are not known in advance but what happens is that we send messages to a Smartcard to ask it to send us a piece of data residing on it, and it replies with some encoded messages that our library decodes and returns to the user.</p>
 <p>I tell Cargo this is a static library:</p>
@@ -148,10 +148,10 @@ Do not edit it by hand.
     <span>Toml</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-toml"><span class="line-number"></span># Cargo.toml
-<span class="line-number"></span>
-<span class="line-number"></span>[lib]
-<span class="line-number"></span>crate-type = [&quot;staticlib&quot;]
+  <code class="language-toml"><span class="line-number"></span><span class="code-hl"># Cargo.toml</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">[lib]</span>
+<span class="line-number"></span><span class="code-hl">crate-type = [&quot;staticlib&quot;]</span>
 </code></pre>
 <p>It's a straightforward API, so I generate the corresponding C header with cbindgen:</p>
 <pre>
@@ -159,7 +159,7 @@ Do not edit it by hand.
     <span>Shell</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-shell"><span class="line-number"></span>$ cbindgen -v src/lib.rs --lang=c -o mylib.h
+  <code class="language-shell"><span class="line-number"></span><span class="code-hl">$ cbindgen -v src/lib.rs --lang=c -o mylib.h</span>
 </code></pre>
 <p>And I get:</p>
 <pre>
@@ -167,16 +167,16 @@ Do not edit it by hand.
     <span>C</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-c"><span class="line-number"></span>#include &lt;stdarg.h&gt;
-<span class="line-number"></span>#include &lt;stdbool.h&gt;
-<span class="line-number"></span>#include &lt;stdint.h&gt;
-<span class="line-number"></span>#include &lt;stdlib.h&gt;
-<span class="line-number"></span>
-<span class="line-number"></span>typedef struct Foo {
-<span class="line-number"></span>  uintptr_t value;
-<span class="line-number"></span>} Foo;
-<span class="line-number"></span>
-<span class="line-number"></span>int32_t MYLIB_get_foos(struct Foo **out_foos, uintptr_t *out_foos_count);
+  <code class="language-c"><span class="line-number"></span><span class="code-hl">#include &lt;stdarg.h&gt;</span>
+<span class="line-number"></span><span class="code-hl">#include &lt;stdbool.h&gt;</span>
+<span class="line-number"></span><span class="code-hl">#include &lt;stdint.h&gt;</span>
+<span class="line-number"></span><span class="code-hl">#include &lt;stdlib.h&gt;</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">typedef struct Foo {</span>
+<span class="line-number"></span><span class="code-hl">  uintptr_t value;</span>
+<span class="line-number"></span><span class="code-hl">} Foo;</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">int32_t MYLIB_get_foos(struct Foo **out_foos, uintptr_t *out_foos_count);</span>
 </code></pre>
 <p>I can now use it from C so:</p>
 <pre>
@@ -184,24 +184,24 @@ Do not edit it by hand.
     <span>C</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-c"><span class="line-number"></span>#include &quot;mylib.h&quot;
-<span class="line-number"></span>#include &lt;assert.h&gt;
-<span class="line-number"></span>#include &lt;stdio.h&gt;
-<span class="line-number"></span>#include &lt;stdlib.h&gt;
-<span class="line-number"></span>
-<span class="line-number"></span>int main() {
-<span class="line-number"></span>  Foo *foos = NULL;
-<span class="line-number"></span>  size_t foos_count = 0;
-<span class="line-number"></span>  assert(0 == MYLIB_get_foos(&amp;foos, &amp;foos_count));
-<span class="line-number"></span>
-<span class="line-number"></span>  for (size_t i = 0; i &lt; foos_count; i++) {
-<span class="line-number"></span>    printf(&quot;%lu\n&quot;, foos[i].value);
-<span class="line-number"></span>  }
-<span class="line-number"></span>
-<span class="line-number"></span>  if (NULL != foos) {
-<span class="line-number"></span>    free(foos);
-<span class="line-number"></span>  }
-<span class="line-number"></span>}
+  <code class="language-c"><span class="line-number"></span><span class="code-hl">#include &quot;mylib.h&quot;</span>
+<span class="line-number"></span><span class="code-hl">#include &lt;assert.h&gt;</span>
+<span class="line-number"></span><span class="code-hl">#include &lt;stdio.h&gt;</span>
+<span class="line-number"></span><span class="code-hl">#include &lt;stdlib.h&gt;</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">int main() {</span>
+<span class="line-number"></span><span class="code-hl">  Foo *foos = NULL;</span>
+<span class="line-number"></span><span class="code-hl">  size_t foos_count = 0;</span>
+<span class="line-number"></span><span class="code-hl">  assert(0 == MYLIB_get_foos(&amp;foos, &amp;foos_count));</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  for (size_t i = 0; i &lt; foos_count; i++) {</span>
+<span class="line-number"></span><span class="code-hl">    printf(&quot;%lu\n&quot;, foos[i].value);</span>
+<span class="line-number"></span><span class="code-hl">  }</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  if (NULL != foos) {</span>
+<span class="line-number"></span><span class="code-hl">    free(foos);</span>
+<span class="line-number"></span><span class="code-hl">  }</span>
+<span class="line-number"></span><span class="code-hl">}</span>
 </code></pre>
 <p>I build it with all the warnings enabled, run it with sanitizers on, and/or in Valgrind, all good.</p>
 <p><em>This code has a subtle mistake (can you spot it?), so keep on reading.</em></p>
@@ -214,15 +214,15 @@ Do not edit it by hand.
     <span>Rust</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-rust"><span class="line-number"></span>#[cfg(test)]
-<span class="line-number"></span>mod tests {
-<span class="line-number"></span>    #[test]
-<span class="line-number"></span>    fn test_get_foos() {
-<span class="line-number"></span>        let mut foos = std::ptr::null_mut();
-<span class="line-number"></span>        let mut foos_count = 0;
-<span class="line-number"></span>        assert_eq!(0, super::MYLIB_get_foos(&amp;mut foos, &amp;mut foos_count));
-<span class="line-number"></span>    }
-<span class="line-number"></span>}
+  <code class="language-rust"><span class="line-number"></span><span class="code-hl">#[cfg(test)]</span>
+<span class="line-number"></span><span class="code-hl">mod tests {</span>
+<span class="line-number"></span><span class="code-hl">    #[test]</span>
+<span class="line-number"></span><span class="code-hl">    fn test_get_foos() {</span>
+<span class="line-number"></span><span class="code-hl">        let mut foos = std::ptr::null_mut();</span>
+<span class="line-number"></span><span class="code-hl">        let mut foos_count = 0;</span>
+<span class="line-number"></span><span class="code-hl">        assert_eq!(0, super::MYLIB_get_foos(&amp;mut foos, &amp;mut foos_count));</span>
+<span class="line-number"></span><span class="code-hl">    }</span>
+<span class="line-number"></span><span class="code-hl">}</span>
 </code></pre>
 <p>And it passes:</p>
 <pre>
@@ -230,11 +230,11 @@ Do not edit it by hand.
     <span>Shell</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-shell"><span class="line-number"></span>$ cargo test
-<span class="line-number"></span>...
-<span class="line-number"></span>running 1 test
-<span class="line-number"></span>test tests::test_get_foos ... ok
-<span class="line-number"></span>...
+  <code class="language-shell"><span class="line-number"></span><span class="code-hl">$ cargo test</span>
+<span class="line-number"></span><span class="code-hl">...</span>
+<span class="line-number"></span><span class="code-hl">running 1 test</span>
+<span class="line-number"></span><span class="code-hl">test tests::test_get_foos ... ok</span>
+<span class="line-number"></span><span class="code-hl">...</span>
 </code></pre>
 <p>Of course, we have not yet freed anything, so we expect Miri to complain, and it does:</p>
 <pre>
@@ -242,10 +242,10 @@ Do not edit it by hand.
     <span>Shell</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-shell"><span class="line-number"></span>$ cargo +nightly miri test
-<span class="line-number"></span>...
-<span class="line-number"></span>error: memory leaked: alloc59029 (Rust heap, size: 16, align: 8), allocated here:
-<span class="line-number"></span>...
+  <code class="language-shell"><span class="line-number"></span><span class="code-hl">$ cargo +nightly miri test</span>
+<span class="line-number"></span><span class="code-hl">...</span>
+<span class="line-number"></span><span class="code-hl">error: memory leaked: alloc59029 (Rust heap, size: 16, align: 8), allocated here:</span>
+<span class="line-number"></span><span class="code-hl">...</span>
 </code></pre>
 <p>Note that the standard test runner does not report memory leaks, unfortunately. If Miri does not work for a given use case, and we still want to check that there are no leaks, we have to reach for nightly sanitizers or Valgrind.</p>
 <h2 id="first-attempt-at-freeing-the-memory-properly">
@@ -258,12 +258,12 @@ Do not edit it by hand.
     <span>Rust</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-rust"><span class="line-number"></span>    #[test]
-<span class="line-number"></span>    fn test_get_foos() {
-<span class="line-number"></span>        ...
-<span class="line-number"></span>
-<span class="line-number"></span>        unsafe { libc::free(foos as *mut std::ffi::c_void) };
-<span class="line-number"></span>    }
+  <code class="language-rust"><span class="line-number"></span><span class="code-hl">    #[test]</span>
+<span class="line-number"></span><span class="code-hl">    fn test_get_foos() {</span>
+<span class="line-number"></span><span class="code-hl">        ...</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">        unsafe { libc::free(foos as *mut std::ffi::c_void) };</span>
+<span class="line-number"></span><span class="code-hl">    }</span>
 </code></pre>
 <p>The test passes, great. Let's try with Miri:</p>
 <pre>
@@ -271,10 +271,10 @@ Do not edit it by hand.
     <span>Shell</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-shell"><span class="line-number"></span>$ cargo +nightly miri test
-<span class="line-number"></span>...
-<span class="line-number"></span> error: Undefined Behavior: deallocating alloc59029, which is Rust heap memory, using C heap deallocation operation
-<span class="line-number"></span>...
+  <code class="language-shell"><span class="line-number"></span><span class="code-hl">$ cargo +nightly miri test</span>
+<span class="line-number"></span><span class="code-hl">...</span>
+<span class="line-number"></span><span class="code-hl"> error: Undefined Behavior: deallocating alloc59029, which is Rust heap memory, using C heap deallocation operation</span>
+<span class="line-number"></span><span class="code-hl">...</span>
 </code></pre>
 <p>Hmm...ok...Well that's a bit weird, because what Rust does, when the <code>Vec</code> is allocated, is to call out to <code>malloc</code> from libc, as we can see with <code>strace</code>:</p>
 <pre>
@@ -282,21 +282,21 @@ Do not edit it by hand.
     <span>Shell</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-shell"><span class="line-number"></span>$ strace -k -v -e brk ./a.out
-<span class="line-number"></span>...
-<span class="line-number"></span>brk(0x213c0000)                         = 0x213c0000
-<span class="line-number"></span> &gt; /usr/lib64/libc.so.6(brk+0xb) [0x10fa9b]
-<span class="line-number"></span> &gt; /usr/lib64/libc.so.6(__sbrk+0x6b) [0x118cab]
-<span class="line-number"></span> &gt; /usr/lib64/libc.so.6(__default_morecore@GLIBC_2.2.5+0x15) [0xa5325]
-<span class="line-number"></span> &gt; /usr/lib64/libc.so.6(sysmalloc+0x57b) [0xa637b]
-<span class="line-number"></span> &gt; /usr/lib64/libc.so.6(_int_malloc+0xd39) [0xa7399]
-<span class="line-number"></span> &gt; /usr/lib64/libc.so.6(tcache_init.part.0+0x36) [0xa7676]
-<span class="line-number"></span> &gt; /usr/lib64/libc.so.6(__libc_malloc+0x125) [0xa7ef5]
-<span class="line-number"></span> &gt; /home/pg/scratch/rust-blog2/a.out(alloc::alloc::alloc+0x6a) [0x4a145a]
-<span class="line-number"></span> &gt; /home/pg/scratch/rust-blog2/a.out(alloc::alloc::Global::alloc_impl+0x140) [0x4a15a0]
-<span class="line-number"></span> &gt; /home/pg/scratch/rust-blog2/a.out(alloc::alloc::exchange_malloc+0x3a) [0x4a139a]
-<span class="line-number"></span> &gt; /home/pg/scratch/rust-blog2/a.out(MYLIB_get_foos+0x26) [0x407cc6]
-<span class="line-number"></span> &gt; /home/pg/scratch/rust-blog2/a.out(main+0x2b) [0x407bfb]
+  <code class="language-shell"><span class="line-number"></span><span class="code-hl">$ strace -k -v -e brk ./a.out</span>
+<span class="line-number"></span><span class="code-hl">...</span>
+<span class="line-number"></span><span class="code-hl">brk(0x213c0000)                         = 0x213c0000</span>
+<span class="line-number"></span><span class="code-hl"> &gt; /usr/lib64/libc.so.6(brk+0xb) [0x10fa9b]</span>
+<span class="line-number"></span><span class="code-hl"> &gt; /usr/lib64/libc.so.6(__sbrk+0x6b) [0x118cab]</span>
+<span class="line-number"></span><span class="code-hl"> &gt; /usr/lib64/libc.so.6(__default_morecore@GLIBC_2.2.5+0x15) [0xa5325]</span>
+<span class="line-number"></span><span class="code-hl"> &gt; /usr/lib64/libc.so.6(sysmalloc+0x57b) [0xa637b]</span>
+<span class="line-number"></span><span class="code-hl"> &gt; /usr/lib64/libc.so.6(_int_malloc+0xd39) [0xa7399]</span>
+<span class="line-number"></span><span class="code-hl"> &gt; /usr/lib64/libc.so.6(tcache_init.part.0+0x36) [0xa7676]</span>
+<span class="line-number"></span><span class="code-hl"> &gt; /usr/lib64/libc.so.6(__libc_malloc+0x125) [0xa7ef5]</span>
+<span class="line-number"></span><span class="code-hl"> &gt; /home/pg/scratch/rust-blog2/a.out(alloc::alloc::alloc+0x6a) [0x4a145a]</span>
+<span class="line-number"></span><span class="code-hl"> &gt; /home/pg/scratch/rust-blog2/a.out(alloc::alloc::Global::alloc_impl+0x140) [0x4a15a0]</span>
+<span class="line-number"></span><span class="code-hl"> &gt; /home/pg/scratch/rust-blog2/a.out(alloc::alloc::exchange_malloc+0x3a) [0x4a139a]</span>
+<span class="line-number"></span><span class="code-hl"> &gt; /home/pg/scratch/rust-blog2/a.out(MYLIB_get_foos+0x26) [0x407cc6]</span>
+<span class="line-number"></span><span class="code-hl"> &gt; /home/pg/scratch/rust-blog2/a.out(main+0x2b) [0x407bfb]</span>
 </code></pre>
 <p><em>Depending on your system, the call stack and specific system call may vary. It depends on the libc implementation, but point being, <code>malloc</code> from libc gets called by Rust.</em></p>
 <p>Note the irony that we do not need to have a third-party dependency on the <code>libc</code> crate to allocate with <code>malloc</code> (being called under the hood), but we do need it, in order to deallocate the memory with <code>free</code>. Perhaps it's by design. Anyway. Where was I.</p>
@@ -319,9 +319,9 @@ Do not edit it by hand.
     <span>C</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-c"><span class="line-number"></span>  if (capacity &gt; 0) {
-<span class="line-number"></span>    free(foos);
-<span class="line-number"></span>  }
+  <code class="language-c"><span class="line-number"></span><span class="code-hl">  if (capacity &gt; 0) {</span>
+<span class="line-number"></span><span class="code-hl">    free(foos);</span>
+<span class="line-number"></span><span class="code-hl">  }</span>
 </code></pre>
 <p>Let's ignore for now that this will surprise every C developer out there that have been doing <code>if (NULL != ptr) free(ptr)</code> for 50 years now.</p>
 <p>I also tried to investigate how <code>drop</code> is implemented for <code>Vec</code> to understand what's going on and I stopped at this function in <code>core/src/alloc/mod.rs</code>:</p>
@@ -330,7 +330,7 @@ Do not edit it by hand.
     <span>Rust</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-rust"><span class="line-number"></span>    unsafe fn deallocate(&amp;self, ptr: NonNull&lt;u8&gt;, layout: Layout);
+  <code class="language-rust"><span class="line-number"></span><span class="code-hl">    unsafe fn deallocate(&amp;self, ptr: NonNull&lt;u8&gt;, layout: Layout);</span>
 </code></pre>
 <p>Not sure where the implementation is located... Ok, let's move on.</p>
 <p>Let's stay on the safe side and assume that we ought to use <code>Vec::from_raw_parts</code> and let the <code>Vec</code> free the memory when it gets dropped at the end of the scope. The only problem is: This function requires the pointer, the length, <em>and the capacity</em>. Wait, but we lost the capacity when we returned the pointer + length to the caller in <code>MYLIB_get_foos()</code>, and the caller <em>does not care one bit about the capacity</em>! It's irrelevant to them! At work, the mobile developers using our library rightfully asked: wait, what is this <code>cap</code> field? Why do I care? What do I do with it? If you are used to manually managing your own memory, this is a very old concept, but if you are used to a Garbage Collector, it's very much new.</p>
@@ -344,14 +344,14 @@ Do not edit it by hand.
     <span>Rust</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-rust"><span class="line-number"></span>    #[test]
-<span class="line-number"></span>    fn test_get_foos() {
-<span class="line-number"></span>        ...
-<span class="line-number"></span>
-<span class="line-number"></span>        unsafe {
-<span class="line-number"></span>            let _ = Box::from_raw(foos);
-<span class="line-number"></span>        }
-<span class="line-number"></span>    }
+  <code class="language-rust"><span class="line-number"></span><span class="code-hl">    #[test]</span>
+<span class="line-number"></span><span class="code-hl">    fn test_get_foos() {</span>
+<span class="line-number"></span><span class="code-hl">        ...</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">        unsafe {</span>
+<span class="line-number"></span><span class="code-hl">            let _ = Box::from_raw(foos);</span>
+<span class="line-number"></span><span class="code-hl">        }</span>
+<span class="line-number"></span><span class="code-hl">    }</span>
 </code></pre>
 <p>That's I think the first instinct for a C developer. Whatever way the memory was heap allocated, be it with <code>malloc</code>, <code>calloc</code>, <code>realloc</code>, be it for one struct or for a whole array, we want to free it with one call, passing it the base pointer. Let's ignore for a moment the docs that state that sometimes the pointer is heap-allocated and sometimes not.</p>
 <p>So this Rust code builds. The test passes. And Miri is unhappy. I guess you know the drill by now:</p>
@@ -360,10 +360,10 @@ Do not edit it by hand.
     <span>Shell</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-shell"><span class="line-number"></span>$ cargo +nightly miri test
-<span class="line-number"></span>...
-<span class="line-number"></span> incorrect layout on deallocation: alloc59029 has size 16 and alignment 8, but gave size 8 and alignment 8
-<span class="line-number"></span>...
+  <code class="language-shell"><span class="line-number"></span><span class="code-hl">$ cargo +nightly miri test</span>
+<span class="line-number"></span><span class="code-hl">...</span>
+<span class="line-number"></span><span class="code-hl"> incorrect layout on deallocation: alloc59029 has size 16 and alignment 8, but gave size 8 and alignment 8</span>
+<span class="line-number"></span><span class="code-hl">...</span>
 </code></pre>
 <p>Let's take a second to marvel at the fact that Rust, probably the programming language the most strict at compile time, the if-it-builds-it-runs-dude-I-swear language, seems to work at compile time and at run time, but only fails when run under an experimental analyzer that only works in nightly and does not support lots of FFI patterns, which is the place where you need Miri the most!</p>
 <p>That's the power of Undefined Behavior and <code>unsafe{}</code>. Again: audit all of your <code>unsafe</code> blocks, and be very suspicious of any third-party code that uses <code>unsafe</code>. I think Rust developers on average do not realize the harm that it is very easy to inflict to your program by using <code>unsafe</code> unwisely even if everything seems fine.</p>
@@ -378,13 +378,13 @@ Do not edit it by hand.
     <span>Rust</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-rust"><span class="line-number"></span>/// Owning Array i.e. `Vec&lt;T&gt;` in Rust or `std::vector&lt;T&gt;` in C++.
-<span class="line-number"></span>#[repr(C)]
-<span class="line-number"></span>pub struct OwningArrayC&lt;T&gt; {
-<span class="line-number"></span>    pub data: *mut T,
-<span class="line-number"></span>    pub len: usize,
-<span class="line-number"></span>    pub cap: usize,
-<span class="line-number"></span>}
+  <code class="language-rust"><span class="line-number"></span><span class="code-hl">/// Owning Array i.e. `Vec&lt;T&gt;` in Rust or `std::vector&lt;T&gt;` in C++.</span>
+<span class="line-number"></span><span class="code-hl">#[repr(C)]</span>
+<span class="line-number"></span><span class="code-hl">pub struct OwningArrayC&lt;T&gt; {</span>
+<span class="line-number"></span><span class="code-hl">    pub data: *mut T,</span>
+<span class="line-number"></span><span class="code-hl">    pub len: usize,</span>
+<span class="line-number"></span><span class="code-hl">    pub cap: usize,</span>
+<span class="line-number"></span><span class="code-hl">}</span>
 </code></pre>
 <p>It clearly signifies to the caller that they are in charge of freeing the memory, and also it carries the capacity of the <code>Vec</code> with it, so it's not lost.</p>
 <p>In our project, this struct is used a lot. We also define a struct for non owning arrays (slices), etc.</p>
@@ -394,28 +394,28 @@ Do not edit it by hand.
     <span>Rust</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-rust"><span class="line-number"></span>#[no_mangle]
-<span class="line-number"></span>pub extern &quot;C&quot; fn MYLIB_get_foos(out_foos: &amp;mut OwningArrayC&lt;Foo&gt;) -&gt; i32 {
-<span class="line-number"></span>    let res = vec![Foo { value: 42 }, Foo { value: 99 }];
-<span class="line-number"></span>    let len = res.len();
-<span class="line-number"></span>    let cap = res.capacity();
-<span class="line-number"></span>
-<span class="line-number"></span>    *out_foos = OwningArrayC {
-<span class="line-number"></span>        data: res.leak().as_mut_ptr(),
-<span class="line-number"></span>        len,
-<span class="line-number"></span>        cap,
-<span class="line-number"></span>    };
-<span class="line-number"></span>    0
-<span class="line-number"></span>}
-<span class="line-number"></span>
-<span class="line-number"></span>#[no_mangle]
-<span class="line-number"></span>pub extern &quot;C&quot; fn MYLIB_free_foos(foos: &amp;mut OwningArrayC&lt;Foo&gt;) {
-<span class="line-number"></span>    if foos.cap &gt; 0 {
-<span class="line-number"></span>        unsafe {
-<span class="line-number"></span>            let _ = Vec::from_raw_parts(foos.data, foos.len, foos.cap);
-<span class="line-number"></span>        }
-<span class="line-number"></span>    }
-<span class="line-number"></span>}
+  <code class="language-rust"><span class="line-number"></span><span class="code-hl">#[no_mangle]</span>
+<span class="line-number"></span><span class="code-hl">pub extern &quot;C&quot; fn MYLIB_get_foos(out_foos: &amp;mut OwningArrayC&lt;Foo&gt;) -&gt; i32 {</span>
+<span class="line-number"></span><span class="code-hl">    let res = vec![Foo { value: 42 }, Foo { value: 99 }];</span>
+<span class="line-number"></span><span class="code-hl">    let len = res.len();</span>
+<span class="line-number"></span><span class="code-hl">    let cap = res.capacity();</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">    *out_foos = OwningArrayC {</span>
+<span class="line-number"></span><span class="code-hl">        data: res.leak().as_mut_ptr(),</span>
+<span class="line-number"></span><span class="code-hl">        len,</span>
+<span class="line-number"></span><span class="code-hl">        cap,</span>
+<span class="line-number"></span><span class="code-hl">    };</span>
+<span class="line-number"></span><span class="code-hl">    0</span>
+<span class="line-number"></span><span class="code-hl">}</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">#[no_mangle]</span>
+<span class="line-number"></span><span class="code-hl">pub extern &quot;C&quot; fn MYLIB_free_foos(foos: &amp;mut OwningArrayC&lt;Foo&gt;) {</span>
+<span class="line-number"></span><span class="code-hl">    if foos.cap &gt; 0 {</span>
+<span class="line-number"></span><span class="code-hl">        unsafe {</span>
+<span class="line-number"></span><span class="code-hl">            let _ = Vec::from_raw_parts(foos.data, foos.len, foos.cap);</span>
+<span class="line-number"></span><span class="code-hl">        }</span>
+<span class="line-number"></span><span class="code-hl">    }</span>
+<span class="line-number"></span><span class="code-hl">}</span>
 </code></pre>
 <p>Let's also re-generate the C header, adapt the C code, rebuild it, communicate with the various projects that use our C API to make them adapt, etc...</p>
 <p>Back to the Rust test:</p>
@@ -424,20 +424,20 @@ Do not edit it by hand.
     <span>Rust</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-rust"><span class="line-number"></span>#[cfg(test)]
-<span class="line-number"></span>mod tests {
-<span class="line-number"></span>    #[test]
-<span class="line-number"></span>    fn test_get_foos() {
-<span class="line-number"></span>        let mut foos = crate::OwningArrayC {
-<span class="line-number"></span>            data: std::ptr::null_mut(),
-<span class="line-number"></span>            len: 0,
-<span class="line-number"></span>            cap: 0,
-<span class="line-number"></span>        };
-<span class="line-number"></span>        assert_eq!(0, super::MYLIB_get_foos(&amp;mut foos));
-<span class="line-number"></span>        println!(&quot;foos: {}&quot;, foos.len);
-<span class="line-number"></span>        super::MYLIB_free_foos(&amp;mut foos);
-<span class="line-number"></span>    }
-<span class="line-number"></span>}
+  <code class="language-rust"><span class="line-number"></span><span class="code-hl">#[cfg(test)]</span>
+<span class="line-number"></span><span class="code-hl">mod tests {</span>
+<span class="line-number"></span><span class="code-hl">    #[test]</span>
+<span class="line-number"></span><span class="code-hl">    fn test_get_foos() {</span>
+<span class="line-number"></span><span class="code-hl">        let mut foos = crate::OwningArrayC {</span>
+<span class="line-number"></span><span class="code-hl">            data: std::ptr::null_mut(),</span>
+<span class="line-number"></span><span class="code-hl">            len: 0,</span>
+<span class="line-number"></span><span class="code-hl">            cap: 0,</span>
+<span class="line-number"></span><span class="code-hl">        };</span>
+<span class="line-number"></span><span class="code-hl">        assert_eq!(0, super::MYLIB_get_foos(&amp;mut foos));</span>
+<span class="line-number"></span><span class="code-hl">        println!(&quot;foos: {}&quot;, foos.len);</span>
+<span class="line-number"></span><span class="code-hl">        super::MYLIB_free_foos(&amp;mut foos);</span>
+<span class="line-number"></span><span class="code-hl">    }</span>
+<span class="line-number"></span><span class="code-hl">}</span>
 </code></pre>
 <p>And now, Miri is happy. Urgh. So, back to what we set out to do originally, <code>defer</code>.</p>
 <h2 id="defer">
@@ -454,20 +454,20 @@ Do not edit it by hand.
     <span>Rust</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-rust"><span class="line-number"></span>    #[test]
-<span class="line-number"></span>    fn test_get_foos() {
-<span class="line-number"></span>        let mut foos = crate::OwningArrayC {
-<span class="line-number"></span>            data: std::ptr::null_mut(),
-<span class="line-number"></span>            len: 0,
-<span class="line-number"></span>            cap: 0,
-<span class="line-number"></span>        };
-<span class="line-number"></span>        assert_eq!(0, super::MYLIB_get_foos(&amp;mut foos));
-<span class="line-number"></span>        defer! {
-<span class="line-number"></span>            super::MYLIB_free_foos(&amp;mut foos);
-<span class="line-number"></span>        }
-<span class="line-number"></span>
-<span class="line-number"></span>        println!(&quot;foos: {}&quot;, foos.len);
-<span class="line-number"></span>    }
+  <code class="language-rust"><span class="line-number"></span><span class="code-hl">    #[test]</span>
+<span class="line-number"></span><span class="code-hl">    fn test_get_foos() {</span>
+<span class="line-number"></span><span class="code-hl">        let mut foos = crate::OwningArrayC {</span>
+<span class="line-number"></span><span class="code-hl">            data: std::ptr::null_mut(),</span>
+<span class="line-number"></span><span class="code-hl">            len: 0,</span>
+<span class="line-number"></span><span class="code-hl">            cap: 0,</span>
+<span class="line-number"></span><span class="code-hl">        };</span>
+<span class="line-number"></span><span class="code-hl">        assert_eq!(0, super::MYLIB_get_foos(&amp;mut foos));</span>
+<span class="line-number"></span><span class="code-hl">        defer! {</span>
+<span class="line-number"></span><span class="code-hl">            super::MYLIB_free_foos(&amp;mut foos);</span>
+<span class="line-number"></span><span class="code-hl">        }</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">        println!(&quot;foos: {}&quot;, foos.len);</span>
+<span class="line-number"></span><span class="code-hl">    }</span>
 </code></pre>
 <p>And we get a compile error:</p>
 <pre>
@@ -475,21 +475,21 @@ Do not edit it by hand.
     <span>Shell</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-shell"><span class="line-number"></span>$ cargo test
-<span class="line-number"></span>error[E0502]: cannot borrow `foos.len` as immutable because it is also borrowed as mutable
-<span class="line-number"></span>  --&gt; src/lib.rs:54:30
-<span class="line-number"></span>   |
-<span class="line-number"></span>50 | /         defer! {
-<span class="line-number"></span>51 | |             super::MYLIB_free_foos(&amp;mut foos);
-<span class="line-number"></span>   | |                                         ---- first borrow occurs due to use of `foos` in closure
-<span class="line-number"></span>52 | |         }
-<span class="line-number"></span>   | |_________- mutable borrow occurs here
-<span class="line-number"></span>53 |
-<span class="line-number"></span>54 |           println!(&quot;foos: {}&quot;, foos.len);
-<span class="line-number"></span>   |                                ^^^^^^^^ immutable borrow occurs here
-<span class="line-number"></span>55 |       }
-<span class="line-number"></span>   |       - mutable borrow might be used here, when `_guard` is dropped and runs the `Drop` code for type `ScopeGuard`
-<span class="line-number"></span>   |
+  <code class="language-shell"><span class="line-number"></span><span class="code-hl">$ cargo test</span>
+<span class="line-number"></span><span class="code-hl">error[E0502]: cannot borrow `foos.len` as immutable because it is also borrowed as mutable</span>
+<span class="line-number"></span><span class="code-hl">  --&gt; src/lib.rs:54:30</span>
+<span class="line-number"></span><span class="code-hl">   |</span>
+<span class="line-number"></span><span class="code-hl">50 | /         defer! {</span>
+<span class="line-number"></span><span class="code-hl">51 | |             super::MYLIB_free_foos(&amp;mut foos);</span>
+<span class="line-number"></span><span class="code-hl">   | |                                         ---- first borrow occurs due to use of `foos` in closure</span>
+<span class="line-number"></span><span class="code-hl">52 | |         }</span>
+<span class="line-number"></span><span class="code-hl">   | |_________- mutable borrow occurs here</span>
+<span class="line-number"></span><span class="code-hl">53 |</span>
+<span class="line-number"></span><span class="code-hl">54 |           println!(&quot;foos: {}&quot;, foos.len);</span>
+<span class="line-number"></span><span class="code-hl">   |                                ^^^^^^^^ immutable borrow occurs here</span>
+<span class="line-number"></span><span class="code-hl">55 |       }</span>
+<span class="line-number"></span><span class="code-hl">   |       - mutable borrow might be used here, when `_guard` is dropped and runs the `Drop` code for type `ScopeGuard`</span>
+<span class="line-number"></span><span class="code-hl">   |</span>
 </code></pre>
 <p>Dum dum duuuum....Yes, we cannot use the <code>defer</code> idiom here (or at least I did not find a way). In some cases it's possible, in lots of cases it's not. The borrow checker considers that the <code>defer</code> block holds an exclusive mutable reference and the rest of the code cannot use that reference in any way.</p>
 <p>Despite the fact, that the version without defer, and with defer, are semantically equivalent and the borrow checker is fine with the former and not with the latter.</p>
@@ -507,28 +507,28 @@ Do not edit it by hand.
     <span>Rust</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-rust"><span class="line-number"></span>fn foo_init() -&gt; *mut () { &amp;mut () }
-<span class="line-number"></span>fn foo_bar(_: *mut ()) -&gt; bool { false }
-<span class="line-number"></span>fn foo_baz(_: *mut ()) -&gt; bool { true }
-<span class="line-number"></span>fn foo_free(_: *mut ()) {}
-<span class="line-number"></span>
-<span class="line-number"></span>fn main() {
-<span class="line-number"></span>  let f = foo_init();
-<span class="line-number"></span>  
-<span class="line-number"></span>  'free: {
-<span class="line-number"></span>    if foo_bar(f) {
-<span class="line-number"></span>        break 'free;
-<span class="line-number"></span>    }
-<span class="line-number"></span>    
-<span class="line-number"></span>    if foo_baz(f) {
-<span class="line-number"></span>        break 'free;
-<span class="line-number"></span>    }
-<span class="line-number"></span>    
-<span class="line-number"></span>    // ...
-<span class="line-number"></span>  };
-<span class="line-number"></span>  
-<span class="line-number"></span>  foo_free(f);
-<span class="line-number"></span>}
+  <code class="language-rust"><span class="line-number"></span><span class="code-hl">fn foo_init() -&gt; *mut () { &amp;mut () }</span>
+<span class="line-number"></span><span class="code-hl">fn foo_bar(_: *mut ()) -&gt; bool { false }</span>
+<span class="line-number"></span><span class="code-hl">fn foo_baz(_: *mut ()) -&gt; bool { true }</span>
+<span class="line-number"></span><span class="code-hl">fn foo_free(_: *mut ()) {}</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">fn main() {</span>
+<span class="line-number"></span><span class="code-hl">  let f = foo_init();</span>
+<span class="line-number"></span><span class="code-hl">  </span>
+<span class="line-number"></span><span class="code-hl">  'free: {</span>
+<span class="line-number"></span><span class="code-hl">    if foo_bar(f) {</span>
+<span class="line-number"></span><span class="code-hl">        break 'free;</span>
+<span class="line-number"></span><span class="code-hl">    }</span>
+<span class="line-number"></span><span class="code-hl">    </span>
+<span class="line-number"></span><span class="code-hl">    if foo_baz(f) {</span>
+<span class="line-number"></span><span class="code-hl">        break 'free;</span>
+<span class="line-number"></span><span class="code-hl">    }</span>
+<span class="line-number"></span><span class="code-hl">    </span>
+<span class="line-number"></span><span class="code-hl">    // ...</span>
+<span class="line-number"></span><span class="code-hl">  };</span>
+<span class="line-number"></span><span class="code-hl">  </span>
+<span class="line-number"></span><span class="code-hl">  foo_free(f);</span>
+<span class="line-number"></span><span class="code-hl">}</span>
 </code></pre>
 <p>It's very nifty, but I am not sure I would enjoy reading and writing this kind of code, especially with multiple levels of nesting. Again, it does not scale very well. But it's something.</p>
 </li>
@@ -555,15 +555,15 @@ Do not edit it by hand.
     <span>C</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-c"><span class="line-number"></span>int main() {
-<span class="line-number"></span>    OwningArrayC_Foo foos = {0};
-<span class="line-number"></span>    if (some_condition) {
-<span class="line-number"></span>         MYLIB_get_foos(&amp;foos);
-<span class="line-number"></span>    }
-<span class="line-number"></span>
-<span class="line-number"></span>    // `foos.data` is null here in some code paths.
-<span class="line-number"></span>    MYLIB_free_foos(&amp;foos);
-<span class="line-number"></span>}
+  <code class="language-c"><span class="line-number"></span><span class="code-hl">int main() {</span>
+<span class="line-number"></span><span class="code-hl">    OwningArrayC_Foo foos = {0};</span>
+<span class="line-number"></span><span class="code-hl">    if (some_condition) {</span>
+<span class="line-number"></span><span class="code-hl">         MYLIB_get_foos(&amp;foos);</span>
+<span class="line-number"></span><span class="code-hl">    }</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">    // `foos.data` is null here in some code paths.</span>
+<span class="line-number"></span><span class="code-hl">    MYLIB_free_foos(&amp;foos);</span>
+<span class="line-number"></span><span class="code-hl">}</span>
 </code></pre>
 <p>In this case, <code>MYLIB_free_foos</code> actually can receive an argument with a null pointer (the <code>data</code> field), which would then trigger an assert inside <code>Vec::from_raw_parts</code>. So we should check that in <code>MY_LIB_free_foos</code>:</p>
 <pre>
@@ -571,14 +571,14 @@ Do not edit it by hand.
     <span>Rust</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-rust"><span class="line-number"></span>#[no_mangle]
-<span class="line-number"></span>pub extern &quot;C&quot; fn MYLIB_free_foos(foos: &amp;mut OwningArrayC&lt;Foo&gt;) {
-<span class="line-number"></span>    if !foos.data.is_null() {
-<span class="line-number"></span>        unsafe {
-<span class="line-number"></span>            let _ = Vec::from_raw_parts(foos.data, foos.len, foos.cap);
-<span class="line-number"></span>        }
-<span class="line-number"></span>    }
-<span class="line-number"></span>}
+  <code class="language-rust"><span class="line-number"></span><span class="code-hl">#[no_mangle]</span>
+<span class="line-number"></span><span class="code-hl">pub extern &quot;C&quot; fn MYLIB_free_foos(foos: &amp;mut OwningArrayC&lt;Foo&gt;) {</span>
+<span class="line-number"></span><span class="code-hl">    if !foos.data.is_null() {</span>
+<span class="line-number"></span><span class="code-hl">        unsafe {</span>
+<span class="line-number"></span><span class="code-hl">            let _ = Vec::from_raw_parts(foos.data, foos.len, foos.cap);</span>
+<span class="line-number"></span><span class="code-hl">        }</span>
+<span class="line-number"></span><span class="code-hl">    }</span>
+<span class="line-number"></span><span class="code-hl">}</span>
 </code></pre>
 <p>It might be a bit surprising to a pure Rust developer given the <code>Vec</code> guarantees, but since the C side could pass anything, we must be defensive.</p>
 <p><a href="/blog"> ⏴ Back to all articles</a></p>

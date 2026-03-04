@@ -174,8 +174,8 @@ Do not edit it by hand.
     <span>Shell</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-shell"><span class="line-number"></span>$ du -h ./NetBSD-9.4-amd64.iso 
-<span class="line-number"></span>485M	./NetBSD-9.4-amd64.iso
+  <code class="language-shell"><span class="line-number"></span><span class="code-hl">$ du -h ./NetBSD-9.4-amd64.iso </span>
+<span class="line-number"></span><span class="code-hl">485M	./NetBSD-9.4-amd64.iso</span>
 </code></pre>
 <p>But when I build my code in debug mode (no optimizations) with Address Sanitizer, to detect various issues early, startup takes <strong>20 to 30 seconds</strong> (hashing at roughly ~ <strong>18 KiB/s</strong>)! That's unbearable, especially when working in the debugger and inspecting some code that runs after the startup. We'd like to finish this verification under 1 second ideally. And making it fast is important, because until it finishes, we do not know which pieces we need to download so that blocks everything.</p>
 <p>Let's see how we can speed it up.</p>
@@ -192,10 +192,10 @@ Do not edit it by hand.
     <span>Shell</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-shell"><span class="line-number"></span>$ hyperfine --shell=none --warmup 3 'sha1sum ./NetBSD-9.4-amd64.iso'
-<span class="line-number"></span>Benchmark 1: sha1sum ./NetBSD-9.4-amd64.iso
-<span class="line-number"></span>  Time (mean ± σ):     297.7 ms ±   3.2 ms    [User: 235.8 ms, System: 60.9 ms]
-<span class="line-number"></span>  Range (min … max):   293.7 ms … 304.2 ms    10 runs
+  <code class="language-shell"><span class="line-number"></span><span class="code-hl">$ hyperfine --shell=none --warmup 3 'sha1sum ./NetBSD-9.4-amd64.iso'</span>
+<span class="line-number"></span><span class="code-hl">Benchmark 1: sha1sum ./NetBSD-9.4-amd64.iso</span>
+<span class="line-number"></span><span class="code-hl">  Time (mean ± σ):     297.7 ms ±   3.2 ms    [User: 235.8 ms, System: 60.9 ms]</span>
+<span class="line-number"></span><span class="code-hl">  Range (min … max):   293.7 ms … 304.2 ms    10 runs</span>
 </code></pre>
 <p>Granted, computing the hash for the whole file should be slightly faster than computing the hash for N pieces, because the final step for SHA1 is about padding the data to make it 64 bytes aligned and extracting the digest value from the state computed so far with some bit operations. But still, it's a marginal difference.</p>
 <p>Why is it so slow then? I can see on CPU profiles that the SHA1 function takes all of the startup time:</p>
@@ -214,88 +214,88 @@ Do not edit it by hand.
     <span>C</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-c"><span class="line-number"></span>#include &lt;fcntl.h&gt;
-<span class="line-number"></span>#include &lt;inttypes.h&gt;
-<span class="line-number"></span>#include &quot;sha1_sw.c&quot;
-<span class="line-number"></span>#include &lt;stdbool.h&gt;
-<span class="line-number"></span>#include &lt;string.h&gt;
-<span class="line-number"></span>#include &lt;sys/mman.h&gt;
-<span class="line-number"></span>#include &lt;sys/stat.h&gt;
-<span class="line-number"></span>#include &lt;unistd.h&gt;
-<span class="line-number"></span>
-<span class="line-number"></span>static bool is_piece_valid(uint8_t *piece, uint64_t piece_len,
-<span class="line-number"></span>                           uint8_t digest_expected[20]) {
-<span class="line-number"></span>  SHA_CTX ctx = {0};
-<span class="line-number"></span>  SHA1_Init(&amp;ctx);
-<span class="line-number"></span>
-<span class="line-number"></span>  SHA1_Update(&amp;ctx, piece, piece_len);
-<span class="line-number"></span>
-<span class="line-number"></span>  uint8_t digest_actual[20] = {0};
-<span class="line-number"></span>  SHA1_Final(digest_actual, &amp;ctx);
-<span class="line-number"></span>
-<span class="line-number"></span>  return !memcmp(digest_actual, digest_expected, 20);
-<span class="line-number"></span>}
-<span class="line-number"></span>
-<span class="line-number"></span>int main(int argc, char *argv[]) {
-<span class="line-number"></span>  if (3 != argc) {
-<span class="line-number"></span>    return 1;
-<span class="line-number"></span>  }
-<span class="line-number"></span>
-<span class="line-number"></span>  int file_download = open(argv[1], O_RDONLY, 0600);
-<span class="line-number"></span>  if (!file_download) {
-<span class="line-number"></span>    return 1;
-<span class="line-number"></span>  }
-<span class="line-number"></span>
-<span class="line-number"></span>  struct stat st_download = {0};
-<span class="line-number"></span>  if (-1 == fstat(file_download, &amp;st_download)) {
-<span class="line-number"></span>    return 1;
-<span class="line-number"></span>  }
-<span class="line-number"></span>  size_t file_download_size = (size_t)st_download.st_size;
-<span class="line-number"></span>
-<span class="line-number"></span>  uint8_t *file_download_data = mmap(NULL, file_download_size, PROT_READ,
-<span class="line-number"></span>                                     MAP_FILE | MAP_PRIVATE, file_download, 0);
-<span class="line-number"></span>  if ((void*)-1 == file_download_data) {
-<span class="line-number"></span>    return 1;
-<span class="line-number"></span>  }
-<span class="line-number"></span>
-<span class="line-number"></span>  int file_torrent = open(argv[2], O_RDONLY, 0600);
-<span class="line-number"></span>  if (!file_torrent) {
-<span class="line-number"></span>    return 1;
-<span class="line-number"></span>  }
-<span class="line-number"></span>
-<span class="line-number"></span>  struct stat st_torrent = {0};
-<span class="line-number"></span>  if (-1 == fstat(file_torrent, &amp;st_torrent)) {
-<span class="line-number"></span>    return 1;
-<span class="line-number"></span>  }
-<span class="line-number"></span>  size_t file_torrent_size = (size_t)st_torrent.st_size;
-<span class="line-number"></span>
-<span class="line-number"></span>  uint8_t *file_torrent_data = mmap(NULL, file_torrent_size, PROT_READ,
-<span class="line-number"></span>                                    MAP_FILE | MAP_PRIVATE, file_torrent, 0);
-<span class="line-number"></span>  if ((void*)-1 == file_torrent_data) {
-<span class="line-number"></span>    return 1;
-<span class="line-number"></span>  }
-<span class="line-number"></span>  // HACK
-<span class="line-number"></span>  // The piece hashes begin at offset 237 in the file.
-<span class="line-number"></span>  uint64_t file_torrent_data_offset = 237;
-<span class="line-number"></span>  file_torrent_data += file_torrent_data_offset;
-<span class="line-number"></span>  // The last character in the file must be ignored because it's the bencode dictionary closing character 'e'.
-<span class="line-number"></span>  file_torrent_size -= file_torrent_data_offset - 1;
-<span class="line-number"></span>
-<span class="line-number"></span>  uint64_t piece_length = 262144;
-<span class="line-number"></span>  uint64_t pieces_count = file_download_size / piece_length +
-<span class="line-number"></span>                          ((0 == file_download_size % piece_length) ? 0 : 1);
-<span class="line-number"></span>  for (uint64_t i = 0; i &lt; pieces_count; i++) {
-<span class="line-number"></span>    uint8_t *data = file_download_data + i * piece_length;
-<span class="line-number"></span>    uint64_t piece_length_real = ((i + 1) == pieces_count)
-<span class="line-number"></span>                                     ? (file_download_size - i * piece_length)
-<span class="line-number"></span>                                     : piece_length;
-<span class="line-number"></span>    uint8_t *digest_expected = file_torrent_data + i * 20;
-<span class="line-number"></span>
-<span class="line-number"></span>    if (!is_piece_valid(data, piece_length_real, digest_expected)) {
-<span class="line-number"></span>      return 1;
-<span class="line-number"></span>    }
-<span class="line-number"></span>  }
-<span class="line-number"></span>}
+  <code class="language-c"><span class="line-number"></span><span class="code-hl">#include &lt;fcntl.h&gt;</span>
+<span class="line-number"></span><span class="code-hl">#include &lt;inttypes.h&gt;</span>
+<span class="line-number"></span><span class="code-hl">#include &quot;sha1_sw.c&quot;</span>
+<span class="line-number"></span><span class="code-hl">#include &lt;stdbool.h&gt;</span>
+<span class="line-number"></span><span class="code-hl">#include &lt;string.h&gt;</span>
+<span class="line-number"></span><span class="code-hl">#include &lt;sys/mman.h&gt;</span>
+<span class="line-number"></span><span class="code-hl">#include &lt;sys/stat.h&gt;</span>
+<span class="line-number"></span><span class="code-hl">#include &lt;unistd.h&gt;</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">static bool is_piece_valid(uint8_t *piece, uint64_t piece_len,</span>
+<span class="line-number"></span><span class="code-hl">                           uint8_t digest_expected[20]) {</span>
+<span class="line-number"></span><span class="code-hl">  SHA_CTX ctx = {0};</span>
+<span class="line-number"></span><span class="code-hl">  SHA1_Init(&amp;ctx);</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  SHA1_Update(&amp;ctx, piece, piece_len);</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  uint8_t digest_actual[20] = {0};</span>
+<span class="line-number"></span><span class="code-hl">  SHA1_Final(digest_actual, &amp;ctx);</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  return !memcmp(digest_actual, digest_expected, 20);</span>
+<span class="line-number"></span><span class="code-hl">}</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">int main(int argc, char *argv[]) {</span>
+<span class="line-number"></span><span class="code-hl">  if (3 != argc) {</span>
+<span class="line-number"></span><span class="code-hl">    return 1;</span>
+<span class="line-number"></span><span class="code-hl">  }</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  int file_download = open(argv[1], O_RDONLY, 0600);</span>
+<span class="line-number"></span><span class="code-hl">  if (!file_download) {</span>
+<span class="line-number"></span><span class="code-hl">    return 1;</span>
+<span class="line-number"></span><span class="code-hl">  }</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  struct stat st_download = {0};</span>
+<span class="line-number"></span><span class="code-hl">  if (-1 == fstat(file_download, &amp;st_download)) {</span>
+<span class="line-number"></span><span class="code-hl">    return 1;</span>
+<span class="line-number"></span><span class="code-hl">  }</span>
+<span class="line-number"></span><span class="code-hl">  size_t file_download_size = (size_t)st_download.st_size;</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  uint8_t *file_download_data = mmap(NULL, file_download_size, PROT_READ,</span>
+<span class="line-number"></span><span class="code-hl">                                     MAP_FILE | MAP_PRIVATE, file_download, 0);</span>
+<span class="line-number"></span><span class="code-hl">  if ((void*)-1 == file_download_data) {</span>
+<span class="line-number"></span><span class="code-hl">    return 1;</span>
+<span class="line-number"></span><span class="code-hl">  }</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  int file_torrent = open(argv[2], O_RDONLY, 0600);</span>
+<span class="line-number"></span><span class="code-hl">  if (!file_torrent) {</span>
+<span class="line-number"></span><span class="code-hl">    return 1;</span>
+<span class="line-number"></span><span class="code-hl">  }</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  struct stat st_torrent = {0};</span>
+<span class="line-number"></span><span class="code-hl">  if (-1 == fstat(file_torrent, &amp;st_torrent)) {</span>
+<span class="line-number"></span><span class="code-hl">    return 1;</span>
+<span class="line-number"></span><span class="code-hl">  }</span>
+<span class="line-number"></span><span class="code-hl">  size_t file_torrent_size = (size_t)st_torrent.st_size;</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  uint8_t *file_torrent_data = mmap(NULL, file_torrent_size, PROT_READ,</span>
+<span class="line-number"></span><span class="code-hl">                                    MAP_FILE | MAP_PRIVATE, file_torrent, 0);</span>
+<span class="line-number"></span><span class="code-hl">  if ((void*)-1 == file_torrent_data) {</span>
+<span class="line-number"></span><span class="code-hl">    return 1;</span>
+<span class="line-number"></span><span class="code-hl">  }</span>
+<span class="line-number"></span><span class="code-hl">  // HACK</span>
+<span class="line-number"></span><span class="code-hl">  // The piece hashes begin at offset 237 in the file.</span>
+<span class="line-number"></span><span class="code-hl">  uint64_t file_torrent_data_offset = 237;</span>
+<span class="line-number"></span><span class="code-hl">  file_torrent_data += file_torrent_data_offset;</span>
+<span class="line-number"></span><span class="code-hl">  // The last character in the file must be ignored because it's the bencode dictionary closing character 'e'.</span>
+<span class="line-number"></span><span class="code-hl">  file_torrent_size -= file_torrent_data_offset - 1;</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  uint64_t piece_length = 262144;</span>
+<span class="line-number"></span><span class="code-hl">  uint64_t pieces_count = file_download_size / piece_length +</span>
+<span class="line-number"></span><span class="code-hl">                          ((0 == file_download_size % piece_length) ? 0 : 1);</span>
+<span class="line-number"></span><span class="code-hl">  for (uint64_t i = 0; i &lt; pieces_count; i++) {</span>
+<span class="line-number"></span><span class="code-hl">    uint8_t *data = file_download_data + i * piece_length;</span>
+<span class="line-number"></span><span class="code-hl">    uint64_t piece_length_real = ((i + 1) == pieces_count)</span>
+<span class="line-number"></span><span class="code-hl">                                     ? (file_download_size - i * piece_length)</span>
+<span class="line-number"></span><span class="code-hl">                                     : piece_length;</span>
+<span class="line-number"></span><span class="code-hl">    uint8_t *digest_expected = file_torrent_data + i * 20;</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">    if (!is_piece_valid(data, piece_length_real, digest_expected)) {</span>
+<span class="line-number"></span><span class="code-hl">      return 1;</span>
+<span class="line-number"></span><span class="code-hl">    }</span>
+<span class="line-number"></span><span class="code-hl">  }</span>
+<span class="line-number"></span><span class="code-hl">}</span>
 </code></pre>
 <h3 id="explanation">
   <a class="title" href="#explanation">Explanation</a>
@@ -321,15 +321,15 @@ Do not edit it by hand.
     <span>Plaintext</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-plaintext"><span class="line-number"></span>  for i from 0 to 79
-<span class="line-number"></span>          if 0 ≤ i ≤ 19 then
-<span class="line-number"></span>            [..]
-<span class="line-number"></span>          else if 20 ≤ i ≤ 39
-<span class="line-number"></span>            [..]
-<span class="line-number"></span>          else if 40 ≤ i ≤ 59
-<span class="line-number"></span>            [..]
-<span class="line-number"></span>          else if 60 ≤ i ≤ 79
-<span class="line-number"></span>            [..]
+  <code class="language-plaintext"><span class="line-number"></span><span class="code-hl">  for i from 0 to 79</span>
+<span class="line-number"></span><span class="code-hl">          if 0 ≤ i ≤ 19 then</span>
+<span class="line-number"></span><span class="code-hl">            [..]</span>
+<span class="line-number"></span><span class="code-hl">          else if 20 ≤ i ≤ 39</span>
+<span class="line-number"></span><span class="code-hl">            [..]</span>
+<span class="line-number"></span><span class="code-hl">          else if 40 ≤ i ≤ 59</span>
+<span class="line-number"></span><span class="code-hl">            [..]</span>
+<span class="line-number"></span><span class="code-hl">          else if 60 ≤ i ≤ 79</span>
+<span class="line-number"></span><span class="code-hl">            [..]</span>
 </code></pre>
 <p>So it's trivial to unroll each section. We'll see that every implementation does the unrolling.</p>
 </li>
@@ -345,245 +345,245 @@ Do not edit it by hand.
     <span>C</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-c"><span class="line-number"></span>// sha1_sw.c
-<span class="line-number"></span>
-<span class="line-number"></span>/*	$OpenBSD: sha1.c,v 1.27 2019/06/07 22:56:36 dtucker Exp $	*/
-<span class="line-number"></span>
-<span class="line-number"></span>/*
-<span class="line-number"></span> * SHA-1 in C
-<span class="line-number"></span> * By Steve Reid &lt;steve@edmweb.com&gt;
-<span class="line-number"></span> * 100% Public Domain
-<span class="line-number"></span> *
-<span class="line-number"></span> * Test Vectors (from FIPS PUB 180-1)
-<span class="line-number"></span> * &quot;abc&quot;
-<span class="line-number"></span> *   A9993E36 4706816A BA3E2571 7850C26C 9CD0D89D
-<span class="line-number"></span> * &quot;abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq&quot;
-<span class="line-number"></span> *   84983E44 1C3BD26E BAAE4AA1 F95129E5 E54670F1
-<span class="line-number"></span> * A million repetitions of &quot;a&quot;
-<span class="line-number"></span> *   34AA973C D4C4DAA4 F61EEB2B DBAD2731 6534016F
-<span class="line-number"></span> */
-<span class="line-number"></span>
-<span class="line-number"></span>#include &lt;inttypes.h&gt;
-<span class="line-number"></span>#include &lt;string.h&gt;
-<span class="line-number"></span>
-<span class="line-number"></span>#define SHA1_BLOCK_LENGTH 64
-<span class="line-number"></span>#define SHA1_DIGEST_LENGTH 20
-<span class="line-number"></span>#define SHA1_DIGEST_STRING_LENGTH (SHA1_DIGEST_LENGTH * 2 + 1)
-<span class="line-number"></span>
-<span class="line-number"></span>typedef struct {
-<span class="line-number"></span>  uint32_t state[5];
-<span class="line-number"></span>  uint64_t count;
-<span class="line-number"></span>  uint8_t buffer[SHA1_BLOCK_LENGTH];
-<span class="line-number"></span>} SHA1_CTX;
-<span class="line-number"></span>#define rol(value, bits) (((value) &lt;&lt; (bits)) | ((value) &gt;&gt; (32 - (bits))))
-<span class="line-number"></span>
-<span class="line-number"></span>/*
-<span class="line-number"></span> * blk0() and blk() perform the initial expand.
-<span class="line-number"></span> * I got the idea of expanding during the round function from SSLeay
-<span class="line-number"></span> */
-<span class="line-number"></span>#define blk0(i)                                                                \
-<span class="line-number"></span>  (block-&gt;l[i] = (rol(block-&gt;l[i], 24) &amp; 0xFF00FF00) |                         \
-<span class="line-number"></span>                 (rol(block-&gt;l[i], 8) &amp; 0x00FF00FF))
-<span class="line-number"></span>#define blk(i)                                                                 \
-<span class="line-number"></span>  (block-&gt;l[i &amp; 15] = rol(block-&gt;l[(i + 13) &amp; 15] ^ block-&gt;l[(i + 8) &amp; 15] ^   \
-<span class="line-number"></span>                              block-&gt;l[(i + 2) &amp; 15] ^ block-&gt;l[i &amp; 15],       \
-<span class="line-number"></span>                          1))
-<span class="line-number"></span>
-<span class="line-number"></span>/*
-<span class="line-number"></span> * (R0+R1), R2, R3, R4 are the different operations (rounds) used in SHA1
-<span class="line-number"></span> */
-<span class="line-number"></span>#define R0(v, w, x, y, z, i)                                                   \
-<span class="line-number"></span>  z += ((w &amp; (x ^ y)) ^ y) + blk0(i) + 0x5A827999 + rol(v, 5);                 \
-<span class="line-number"></span>  w = rol(w, 30);
-<span class="line-number"></span>#define R1(v, w, x, y, z, i)                                                   \
-<span class="line-number"></span>  z += ((w &amp; (x ^ y)) ^ y) + blk(i) + 0x5A827999 + rol(v, 5);                  \
-<span class="line-number"></span>  w = rol(w, 30);
-<span class="line-number"></span>#define R2(v, w, x, y, z, i)                                                   \
-<span class="line-number"></span>  z += (w ^ x ^ y) + blk(i) + 0x6ED9EBA1 + rol(v, 5);                          \
-<span class="line-number"></span>  w = rol(w, 30);
-<span class="line-number"></span>#define R3(v, w, x, y, z, i)                                                   \
-<span class="line-number"></span>  z += (((w | x) &amp; y) | (w &amp; x)) + blk(i) + 0x8F1BBCDC + rol(v, 5);            \
-<span class="line-number"></span>  w = rol(w, 30);
-<span class="line-number"></span>#define R4(v, w, x, y, z, i)                                                   \
-<span class="line-number"></span>  z += (w ^ x ^ y) + blk(i) + 0xCA62C1D6 + rol(v, 5);                          \
-<span class="line-number"></span>  w = rol(w, 30);
-<span class="line-number"></span>
-<span class="line-number"></span>typedef union {
-<span class="line-number"></span>  uint8_t c[64];
-<span class="line-number"></span>  uint32_t l[16];
-<span class="line-number"></span>} CHAR64LONG16;
-<span class="line-number"></span>
-<span class="line-number"></span>/*
-<span class="line-number"></span> * Hash a single 512-bit block. This is the core of the algorithm.
-<span class="line-number"></span> */
-<span class="line-number"></span>void SHA1Transform(uint32_t state[5], const uint8_t buffer[SHA1_BLOCK_LENGTH]) {
-<span class="line-number"></span>  uint32_t a, b, c, d, e;
-<span class="line-number"></span>  uint8_t workspace[SHA1_BLOCK_LENGTH];
-<span class="line-number"></span>  CHAR64LONG16 *block = (CHAR64LONG16 *)workspace;
-<span class="line-number"></span>
-<span class="line-number"></span>  (void)memcpy(block, buffer, SHA1_BLOCK_LENGTH);
-<span class="line-number"></span>
-<span class="line-number"></span>  /* Copy context-&gt;state[] to working vars */
-<span class="line-number"></span>  a = state[0];
-<span class="line-number"></span>  b = state[1];
-<span class="line-number"></span>  c = state[2];
-<span class="line-number"></span>  d = state[3];
-<span class="line-number"></span>  e = state[4];
-<span class="line-number"></span>
-<span class="line-number"></span>  /* 4 rounds of 20 operations each. Loop unrolled. */
-<span class="line-number"></span>  R0(a, b, c, d, e, 0);
-<span class="line-number"></span>  R0(e, a, b, c, d, 1);
-<span class="line-number"></span>  R0(d, e, a, b, c, 2);
-<span class="line-number"></span>  R0(c, d, e, a, b, 3);
-<span class="line-number"></span>  R0(b, c, d, e, a, 4);
-<span class="line-number"></span>  R0(a, b, c, d, e, 5);
-<span class="line-number"></span>  R0(e, a, b, c, d, 6);
-<span class="line-number"></span>  R0(d, e, a, b, c, 7);
-<span class="line-number"></span>  R0(c, d, e, a, b, 8);
-<span class="line-number"></span>  R0(b, c, d, e, a, 9);
-<span class="line-number"></span>  R0(a, b, c, d, e, 10);
-<span class="line-number"></span>  R0(e, a, b, c, d, 11);
-<span class="line-number"></span>  R0(d, e, a, b, c, 12);
-<span class="line-number"></span>  R0(c, d, e, a, b, 13);
-<span class="line-number"></span>  R0(b, c, d, e, a, 14);
-<span class="line-number"></span>  R0(a, b, c, d, e, 15);
-<span class="line-number"></span>  R1(e, a, b, c, d, 16);
-<span class="line-number"></span>  R1(d, e, a, b, c, 17);
-<span class="line-number"></span>  R1(c, d, e, a, b, 18);
-<span class="line-number"></span>  R1(b, c, d, e, a, 19);
-<span class="line-number"></span>  R2(a, b, c, d, e, 20);
-<span class="line-number"></span>  R2(e, a, b, c, d, 21);
-<span class="line-number"></span>  R2(d, e, a, b, c, 22);
-<span class="line-number"></span>  R2(c, d, e, a, b, 23);
-<span class="line-number"></span>  R2(b, c, d, e, a, 24);
-<span class="line-number"></span>  R2(a, b, c, d, e, 25);
-<span class="line-number"></span>  R2(e, a, b, c, d, 26);
-<span class="line-number"></span>  R2(d, e, a, b, c, 27);
-<span class="line-number"></span>  R2(c, d, e, a, b, 28);
-<span class="line-number"></span>  R2(b, c, d, e, a, 29);
-<span class="line-number"></span>  R2(a, b, c, d, e, 30);
-<span class="line-number"></span>  R2(e, a, b, c, d, 31);
-<span class="line-number"></span>  R2(d, e, a, b, c, 32);
-<span class="line-number"></span>  R2(c, d, e, a, b, 33);
-<span class="line-number"></span>  R2(b, c, d, e, a, 34);
-<span class="line-number"></span>  R2(a, b, c, d, e, 35);
-<span class="line-number"></span>  R2(e, a, b, c, d, 36);
-<span class="line-number"></span>  R2(d, e, a, b, c, 37);
-<span class="line-number"></span>  R2(c, d, e, a, b, 38);
-<span class="line-number"></span>  R2(b, c, d, e, a, 39);
-<span class="line-number"></span>  R3(a, b, c, d, e, 40);
-<span class="line-number"></span>  R3(e, a, b, c, d, 41);
-<span class="line-number"></span>  R3(d, e, a, b, c, 42);
-<span class="line-number"></span>  R3(c, d, e, a, b, 43);
-<span class="line-number"></span>  R3(b, c, d, e, a, 44);
-<span class="line-number"></span>  R3(a, b, c, d, e, 45);
-<span class="line-number"></span>  R3(e, a, b, c, d, 46);
-<span class="line-number"></span>  R3(d, e, a, b, c, 47);
-<span class="line-number"></span>  R3(c, d, e, a, b, 48);
-<span class="line-number"></span>  R3(b, c, d, e, a, 49);
-<span class="line-number"></span>  R3(a, b, c, d, e, 50);
-<span class="line-number"></span>  R3(e, a, b, c, d, 51);
-<span class="line-number"></span>  R3(d, e, a, b, c, 52);
-<span class="line-number"></span>  R3(c, d, e, a, b, 53);
-<span class="line-number"></span>  R3(b, c, d, e, a, 54);
-<span class="line-number"></span>  R3(a, b, c, d, e, 55);
-<span class="line-number"></span>  R3(e, a, b, c, d, 56);
-<span class="line-number"></span>  R3(d, e, a, b, c, 57);
-<span class="line-number"></span>  R3(c, d, e, a, b, 58);
-<span class="line-number"></span>  R3(b, c, d, e, a, 59);
-<span class="line-number"></span>  R4(a, b, c, d, e, 60);
-<span class="line-number"></span>  R4(e, a, b, c, d, 61);
-<span class="line-number"></span>  R4(d, e, a, b, c, 62);
-<span class="line-number"></span>  R4(c, d, e, a, b, 63);
-<span class="line-number"></span>  R4(b, c, d, e, a, 64);
-<span class="line-number"></span>  R4(a, b, c, d, e, 65);
-<span class="line-number"></span>  R4(e, a, b, c, d, 66);
-<span class="line-number"></span>  R4(d, e, a, b, c, 67);
-<span class="line-number"></span>  R4(c, d, e, a, b, 68);
-<span class="line-number"></span>  R4(b, c, d, e, a, 69);
-<span class="line-number"></span>  R4(a, b, c, d, e, 70);
-<span class="line-number"></span>  R4(e, a, b, c, d, 71);
-<span class="line-number"></span>  R4(d, e, a, b, c, 72);
-<span class="line-number"></span>  R4(c, d, e, a, b, 73);
-<span class="line-number"></span>  R4(b, c, d, e, a, 74);
-<span class="line-number"></span>  R4(a, b, c, d, e, 75);
-<span class="line-number"></span>  R4(e, a, b, c, d, 76);
-<span class="line-number"></span>  R4(d, e, a, b, c, 77);
-<span class="line-number"></span>  R4(c, d, e, a, b, 78);
-<span class="line-number"></span>  R4(b, c, d, e, a, 79);
-<span class="line-number"></span>
-<span class="line-number"></span>  /* Add the working vars back into context.state[] */
-<span class="line-number"></span>  state[0] += a;
-<span class="line-number"></span>  state[1] += b;
-<span class="line-number"></span>  state[2] += c;
-<span class="line-number"></span>  state[3] += d;
-<span class="line-number"></span>  state[4] += e;
-<span class="line-number"></span>
-<span class="line-number"></span>  /* Wipe variables */
-<span class="line-number"></span>  a = b = c = d = e = 0;
-<span class="line-number"></span>}
-<span class="line-number"></span>
-<span class="line-number"></span>/*
-<span class="line-number"></span> * SHA1Init - Initialize new context
-<span class="line-number"></span> */
-<span class="line-number"></span>void SHA1Init(SHA1_CTX *context) {
-<span class="line-number"></span>
-<span class="line-number"></span>  /* SHA1 initialization constants */
-<span class="line-number"></span>  context-&gt;count = 0;
-<span class="line-number"></span>  context-&gt;state[0] = 0x67452301;
-<span class="line-number"></span>  context-&gt;state[1] = 0xEFCDAB89;
-<span class="line-number"></span>  context-&gt;state[2] = 0x98BADCFE;
-<span class="line-number"></span>  context-&gt;state[3] = 0x10325476;
-<span class="line-number"></span>  context-&gt;state[4] = 0xC3D2E1F0;
-<span class="line-number"></span>}
-<span class="line-number"></span>
-<span class="line-number"></span>/*
-<span class="line-number"></span> * Run your data through this.
-<span class="line-number"></span> */
-<span class="line-number"></span>void SHA1Update(SHA1_CTX *context, const uint8_t *data, size_t len) {
-<span class="line-number"></span>  size_t i, j;
-<span class="line-number"></span>
-<span class="line-number"></span>  j = (size_t)((context-&gt;count &gt;&gt; 3) &amp; 63);
-<span class="line-number"></span>  context-&gt;count += ((uint64_t)len &lt;&lt; 3);
-<span class="line-number"></span>  if ((j + len) &gt; 63) {
-<span class="line-number"></span>    (void)memcpy(&amp;context-&gt;buffer[j], data, (i = 64 - j));
-<span class="line-number"></span>    SHA1Transform(context-&gt;state, context-&gt;buffer);
-<span class="line-number"></span>    for (; i + 63 &lt; len; i += 64)
-<span class="line-number"></span>      SHA1Transform(context-&gt;state, (uint8_t *)&amp;data[i]);
-<span class="line-number"></span>    j = 0;
-<span class="line-number"></span>  } else {
-<span class="line-number"></span>    i = 0;
-<span class="line-number"></span>  }
-<span class="line-number"></span>  (void)memcpy(&amp;context-&gt;buffer[j], &amp;data[i], len - i);
-<span class="line-number"></span>}
-<span class="line-number"></span>
-<span class="line-number"></span>/*
-<span class="line-number"></span> * Add padding and return the message digest.
-<span class="line-number"></span> */
-<span class="line-number"></span>void SHA1Pad(SHA1_CTX *context) {
-<span class="line-number"></span>  uint8_t finalcount[8];
-<span class="line-number"></span>  size_t i;
-<span class="line-number"></span>
-<span class="line-number"></span>  for (i = 0; i &lt; 8; i++) {
-<span class="line-number"></span>    finalcount[i] = (uint8_t)((context-&gt;count &gt;&gt; ((7 - (i &amp; 7)) * 8)) &amp;
-<span class="line-number"></span>                              255); /* Endian independent */
-<span class="line-number"></span>  }
-<span class="line-number"></span>  SHA1Update(context, (uint8_t *)&quot;\200&quot;, 1);
-<span class="line-number"></span>  while ((context-&gt;count &amp; 504) != 448)
-<span class="line-number"></span>    SHA1Update(context, (uint8_t *)&quot;\0&quot;, 1);
-<span class="line-number"></span>  SHA1Update(context, finalcount, 8); /* Should cause a SHA1Transform() */
-<span class="line-number"></span>}
-<span class="line-number"></span>
-<span class="line-number"></span>void SHA1Final(uint8_t digest[SHA1_DIGEST_LENGTH], SHA1_CTX *context) {
-<span class="line-number"></span>  size_t i;
-<span class="line-number"></span>
-<span class="line-number"></span>  SHA1Pad(context);
-<span class="line-number"></span>  for (i = 0; i &lt; SHA1_DIGEST_LENGTH; i++) {
-<span class="line-number"></span>    digest[i] =
-<span class="line-number"></span>        (uint8_t)((context-&gt;state[i &gt;&gt; 2] &gt;&gt; ((3 - (i &amp; 3)) * 8)) &amp; 255);
-<span class="line-number"></span>  }
-<span class="line-number"></span>  explicit_bzero(context, sizeof(*context));
-<span class="line-number"></span>}
+  <code class="language-c"><span class="line-number"></span><span class="code-hl">// sha1_sw.c</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">/*	$OpenBSD: sha1.c,v 1.27 2019/06/07 22:56:36 dtucker Exp $	*/</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">/*</span>
+<span class="line-number"></span><span class="code-hl"> * SHA-1 in C</span>
+<span class="line-number"></span><span class="code-hl"> * By Steve Reid &lt;steve@edmweb.com&gt;</span>
+<span class="line-number"></span><span class="code-hl"> * 100% Public Domain</span>
+<span class="line-number"></span><span class="code-hl"> *</span>
+<span class="line-number"></span><span class="code-hl"> * Test Vectors (from FIPS PUB 180-1)</span>
+<span class="line-number"></span><span class="code-hl"> * &quot;abc&quot;</span>
+<span class="line-number"></span><span class="code-hl"> *   A9993E36 4706816A BA3E2571 7850C26C 9CD0D89D</span>
+<span class="line-number"></span><span class="code-hl"> * &quot;abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq&quot;</span>
+<span class="line-number"></span><span class="code-hl"> *   84983E44 1C3BD26E BAAE4AA1 F95129E5 E54670F1</span>
+<span class="line-number"></span><span class="code-hl"> * A million repetitions of &quot;a&quot;</span>
+<span class="line-number"></span><span class="code-hl"> *   34AA973C D4C4DAA4 F61EEB2B DBAD2731 6534016F</span>
+<span class="line-number"></span><span class="code-hl"> */</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">#include &lt;inttypes.h&gt;</span>
+<span class="line-number"></span><span class="code-hl">#include &lt;string.h&gt;</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">#define SHA1_BLOCK_LENGTH 64</span>
+<span class="line-number"></span><span class="code-hl">#define SHA1_DIGEST_LENGTH 20</span>
+<span class="line-number"></span><span class="code-hl">#define SHA1_DIGEST_STRING_LENGTH (SHA1_DIGEST_LENGTH * 2 + 1)</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">typedef struct {</span>
+<span class="line-number"></span><span class="code-hl">  uint32_t state[5];</span>
+<span class="line-number"></span><span class="code-hl">  uint64_t count;</span>
+<span class="line-number"></span><span class="code-hl">  uint8_t buffer[SHA1_BLOCK_LENGTH];</span>
+<span class="line-number"></span><span class="code-hl">} SHA1_CTX;</span>
+<span class="line-number"></span><span class="code-hl">#define rol(value, bits) (((value) &lt;&lt; (bits)) | ((value) &gt;&gt; (32 - (bits))))</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">/*</span>
+<span class="line-number"></span><span class="code-hl"> * blk0() and blk() perform the initial expand.</span>
+<span class="line-number"></span><span class="code-hl"> * I got the idea of expanding during the round function from SSLeay</span>
+<span class="line-number"></span><span class="code-hl"> */</span>
+<span class="line-number"></span><span class="code-hl">#define blk0(i)                                                                \</span>
+<span class="line-number"></span><span class="code-hl">  (block-&gt;l[i] = (rol(block-&gt;l[i], 24) &amp; 0xFF00FF00) |                         \</span>
+<span class="line-number"></span><span class="code-hl">                 (rol(block-&gt;l[i], 8) &amp; 0x00FF00FF))</span>
+<span class="line-number"></span><span class="code-hl">#define blk(i)                                                                 \</span>
+<span class="line-number"></span><span class="code-hl">  (block-&gt;l[i &amp; 15] = rol(block-&gt;l[(i + 13) &amp; 15] ^ block-&gt;l[(i + 8) &amp; 15] ^   \</span>
+<span class="line-number"></span><span class="code-hl">                              block-&gt;l[(i + 2) &amp; 15] ^ block-&gt;l[i &amp; 15],       \</span>
+<span class="line-number"></span><span class="code-hl">                          1))</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">/*</span>
+<span class="line-number"></span><span class="code-hl"> * (R0+R1), R2, R3, R4 are the different operations (rounds) used in SHA1</span>
+<span class="line-number"></span><span class="code-hl"> */</span>
+<span class="line-number"></span><span class="code-hl">#define R0(v, w, x, y, z, i)                                                   \</span>
+<span class="line-number"></span><span class="code-hl">  z += ((w &amp; (x ^ y)) ^ y) + blk0(i) + 0x5A827999 + rol(v, 5);                 \</span>
+<span class="line-number"></span><span class="code-hl">  w = rol(w, 30);</span>
+<span class="line-number"></span><span class="code-hl">#define R1(v, w, x, y, z, i)                                                   \</span>
+<span class="line-number"></span><span class="code-hl">  z += ((w &amp; (x ^ y)) ^ y) + blk(i) + 0x5A827999 + rol(v, 5);                  \</span>
+<span class="line-number"></span><span class="code-hl">  w = rol(w, 30);</span>
+<span class="line-number"></span><span class="code-hl">#define R2(v, w, x, y, z, i)                                                   \</span>
+<span class="line-number"></span><span class="code-hl">  z += (w ^ x ^ y) + blk(i) + 0x6ED9EBA1 + rol(v, 5);                          \</span>
+<span class="line-number"></span><span class="code-hl">  w = rol(w, 30);</span>
+<span class="line-number"></span><span class="code-hl">#define R3(v, w, x, y, z, i)                                                   \</span>
+<span class="line-number"></span><span class="code-hl">  z += (((w | x) &amp; y) | (w &amp; x)) + blk(i) + 0x8F1BBCDC + rol(v, 5);            \</span>
+<span class="line-number"></span><span class="code-hl">  w = rol(w, 30);</span>
+<span class="line-number"></span><span class="code-hl">#define R4(v, w, x, y, z, i)                                                   \</span>
+<span class="line-number"></span><span class="code-hl">  z += (w ^ x ^ y) + blk(i) + 0xCA62C1D6 + rol(v, 5);                          \</span>
+<span class="line-number"></span><span class="code-hl">  w = rol(w, 30);</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">typedef union {</span>
+<span class="line-number"></span><span class="code-hl">  uint8_t c[64];</span>
+<span class="line-number"></span><span class="code-hl">  uint32_t l[16];</span>
+<span class="line-number"></span><span class="code-hl">} CHAR64LONG16;</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">/*</span>
+<span class="line-number"></span><span class="code-hl"> * Hash a single 512-bit block. This is the core of the algorithm.</span>
+<span class="line-number"></span><span class="code-hl"> */</span>
+<span class="line-number"></span><span class="code-hl">void SHA1Transform(uint32_t state[5], const uint8_t buffer[SHA1_BLOCK_LENGTH]) {</span>
+<span class="line-number"></span><span class="code-hl">  uint32_t a, b, c, d, e;</span>
+<span class="line-number"></span><span class="code-hl">  uint8_t workspace[SHA1_BLOCK_LENGTH];</span>
+<span class="line-number"></span><span class="code-hl">  CHAR64LONG16 *block = (CHAR64LONG16 *)workspace;</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  (void)memcpy(block, buffer, SHA1_BLOCK_LENGTH);</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  /* Copy context-&gt;state[] to working vars */</span>
+<span class="line-number"></span><span class="code-hl">  a = state[0];</span>
+<span class="line-number"></span><span class="code-hl">  b = state[1];</span>
+<span class="line-number"></span><span class="code-hl">  c = state[2];</span>
+<span class="line-number"></span><span class="code-hl">  d = state[3];</span>
+<span class="line-number"></span><span class="code-hl">  e = state[4];</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  /* 4 rounds of 20 operations each. Loop unrolled. */</span>
+<span class="line-number"></span><span class="code-hl">  R0(a, b, c, d, e, 0);</span>
+<span class="line-number"></span><span class="code-hl">  R0(e, a, b, c, d, 1);</span>
+<span class="line-number"></span><span class="code-hl">  R0(d, e, a, b, c, 2);</span>
+<span class="line-number"></span><span class="code-hl">  R0(c, d, e, a, b, 3);</span>
+<span class="line-number"></span><span class="code-hl">  R0(b, c, d, e, a, 4);</span>
+<span class="line-number"></span><span class="code-hl">  R0(a, b, c, d, e, 5);</span>
+<span class="line-number"></span><span class="code-hl">  R0(e, a, b, c, d, 6);</span>
+<span class="line-number"></span><span class="code-hl">  R0(d, e, a, b, c, 7);</span>
+<span class="line-number"></span><span class="code-hl">  R0(c, d, e, a, b, 8);</span>
+<span class="line-number"></span><span class="code-hl">  R0(b, c, d, e, a, 9);</span>
+<span class="line-number"></span><span class="code-hl">  R0(a, b, c, d, e, 10);</span>
+<span class="line-number"></span><span class="code-hl">  R0(e, a, b, c, d, 11);</span>
+<span class="line-number"></span><span class="code-hl">  R0(d, e, a, b, c, 12);</span>
+<span class="line-number"></span><span class="code-hl">  R0(c, d, e, a, b, 13);</span>
+<span class="line-number"></span><span class="code-hl">  R0(b, c, d, e, a, 14);</span>
+<span class="line-number"></span><span class="code-hl">  R0(a, b, c, d, e, 15);</span>
+<span class="line-number"></span><span class="code-hl">  R1(e, a, b, c, d, 16);</span>
+<span class="line-number"></span><span class="code-hl">  R1(d, e, a, b, c, 17);</span>
+<span class="line-number"></span><span class="code-hl">  R1(c, d, e, a, b, 18);</span>
+<span class="line-number"></span><span class="code-hl">  R1(b, c, d, e, a, 19);</span>
+<span class="line-number"></span><span class="code-hl">  R2(a, b, c, d, e, 20);</span>
+<span class="line-number"></span><span class="code-hl">  R2(e, a, b, c, d, 21);</span>
+<span class="line-number"></span><span class="code-hl">  R2(d, e, a, b, c, 22);</span>
+<span class="line-number"></span><span class="code-hl">  R2(c, d, e, a, b, 23);</span>
+<span class="line-number"></span><span class="code-hl">  R2(b, c, d, e, a, 24);</span>
+<span class="line-number"></span><span class="code-hl">  R2(a, b, c, d, e, 25);</span>
+<span class="line-number"></span><span class="code-hl">  R2(e, a, b, c, d, 26);</span>
+<span class="line-number"></span><span class="code-hl">  R2(d, e, a, b, c, 27);</span>
+<span class="line-number"></span><span class="code-hl">  R2(c, d, e, a, b, 28);</span>
+<span class="line-number"></span><span class="code-hl">  R2(b, c, d, e, a, 29);</span>
+<span class="line-number"></span><span class="code-hl">  R2(a, b, c, d, e, 30);</span>
+<span class="line-number"></span><span class="code-hl">  R2(e, a, b, c, d, 31);</span>
+<span class="line-number"></span><span class="code-hl">  R2(d, e, a, b, c, 32);</span>
+<span class="line-number"></span><span class="code-hl">  R2(c, d, e, a, b, 33);</span>
+<span class="line-number"></span><span class="code-hl">  R2(b, c, d, e, a, 34);</span>
+<span class="line-number"></span><span class="code-hl">  R2(a, b, c, d, e, 35);</span>
+<span class="line-number"></span><span class="code-hl">  R2(e, a, b, c, d, 36);</span>
+<span class="line-number"></span><span class="code-hl">  R2(d, e, a, b, c, 37);</span>
+<span class="line-number"></span><span class="code-hl">  R2(c, d, e, a, b, 38);</span>
+<span class="line-number"></span><span class="code-hl">  R2(b, c, d, e, a, 39);</span>
+<span class="line-number"></span><span class="code-hl">  R3(a, b, c, d, e, 40);</span>
+<span class="line-number"></span><span class="code-hl">  R3(e, a, b, c, d, 41);</span>
+<span class="line-number"></span><span class="code-hl">  R3(d, e, a, b, c, 42);</span>
+<span class="line-number"></span><span class="code-hl">  R3(c, d, e, a, b, 43);</span>
+<span class="line-number"></span><span class="code-hl">  R3(b, c, d, e, a, 44);</span>
+<span class="line-number"></span><span class="code-hl">  R3(a, b, c, d, e, 45);</span>
+<span class="line-number"></span><span class="code-hl">  R3(e, a, b, c, d, 46);</span>
+<span class="line-number"></span><span class="code-hl">  R3(d, e, a, b, c, 47);</span>
+<span class="line-number"></span><span class="code-hl">  R3(c, d, e, a, b, 48);</span>
+<span class="line-number"></span><span class="code-hl">  R3(b, c, d, e, a, 49);</span>
+<span class="line-number"></span><span class="code-hl">  R3(a, b, c, d, e, 50);</span>
+<span class="line-number"></span><span class="code-hl">  R3(e, a, b, c, d, 51);</span>
+<span class="line-number"></span><span class="code-hl">  R3(d, e, a, b, c, 52);</span>
+<span class="line-number"></span><span class="code-hl">  R3(c, d, e, a, b, 53);</span>
+<span class="line-number"></span><span class="code-hl">  R3(b, c, d, e, a, 54);</span>
+<span class="line-number"></span><span class="code-hl">  R3(a, b, c, d, e, 55);</span>
+<span class="line-number"></span><span class="code-hl">  R3(e, a, b, c, d, 56);</span>
+<span class="line-number"></span><span class="code-hl">  R3(d, e, a, b, c, 57);</span>
+<span class="line-number"></span><span class="code-hl">  R3(c, d, e, a, b, 58);</span>
+<span class="line-number"></span><span class="code-hl">  R3(b, c, d, e, a, 59);</span>
+<span class="line-number"></span><span class="code-hl">  R4(a, b, c, d, e, 60);</span>
+<span class="line-number"></span><span class="code-hl">  R4(e, a, b, c, d, 61);</span>
+<span class="line-number"></span><span class="code-hl">  R4(d, e, a, b, c, 62);</span>
+<span class="line-number"></span><span class="code-hl">  R4(c, d, e, a, b, 63);</span>
+<span class="line-number"></span><span class="code-hl">  R4(b, c, d, e, a, 64);</span>
+<span class="line-number"></span><span class="code-hl">  R4(a, b, c, d, e, 65);</span>
+<span class="line-number"></span><span class="code-hl">  R4(e, a, b, c, d, 66);</span>
+<span class="line-number"></span><span class="code-hl">  R4(d, e, a, b, c, 67);</span>
+<span class="line-number"></span><span class="code-hl">  R4(c, d, e, a, b, 68);</span>
+<span class="line-number"></span><span class="code-hl">  R4(b, c, d, e, a, 69);</span>
+<span class="line-number"></span><span class="code-hl">  R4(a, b, c, d, e, 70);</span>
+<span class="line-number"></span><span class="code-hl">  R4(e, a, b, c, d, 71);</span>
+<span class="line-number"></span><span class="code-hl">  R4(d, e, a, b, c, 72);</span>
+<span class="line-number"></span><span class="code-hl">  R4(c, d, e, a, b, 73);</span>
+<span class="line-number"></span><span class="code-hl">  R4(b, c, d, e, a, 74);</span>
+<span class="line-number"></span><span class="code-hl">  R4(a, b, c, d, e, 75);</span>
+<span class="line-number"></span><span class="code-hl">  R4(e, a, b, c, d, 76);</span>
+<span class="line-number"></span><span class="code-hl">  R4(d, e, a, b, c, 77);</span>
+<span class="line-number"></span><span class="code-hl">  R4(c, d, e, a, b, 78);</span>
+<span class="line-number"></span><span class="code-hl">  R4(b, c, d, e, a, 79);</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  /* Add the working vars back into context.state[] */</span>
+<span class="line-number"></span><span class="code-hl">  state[0] += a;</span>
+<span class="line-number"></span><span class="code-hl">  state[1] += b;</span>
+<span class="line-number"></span><span class="code-hl">  state[2] += c;</span>
+<span class="line-number"></span><span class="code-hl">  state[3] += d;</span>
+<span class="line-number"></span><span class="code-hl">  state[4] += e;</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  /* Wipe variables */</span>
+<span class="line-number"></span><span class="code-hl">  a = b = c = d = e = 0;</span>
+<span class="line-number"></span><span class="code-hl">}</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">/*</span>
+<span class="line-number"></span><span class="code-hl"> * SHA1Init - Initialize new context</span>
+<span class="line-number"></span><span class="code-hl"> */</span>
+<span class="line-number"></span><span class="code-hl">void SHA1Init(SHA1_CTX *context) {</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  /* SHA1 initialization constants */</span>
+<span class="line-number"></span><span class="code-hl">  context-&gt;count = 0;</span>
+<span class="line-number"></span><span class="code-hl">  context-&gt;state[0] = 0x67452301;</span>
+<span class="line-number"></span><span class="code-hl">  context-&gt;state[1] = 0xEFCDAB89;</span>
+<span class="line-number"></span><span class="code-hl">  context-&gt;state[2] = 0x98BADCFE;</span>
+<span class="line-number"></span><span class="code-hl">  context-&gt;state[3] = 0x10325476;</span>
+<span class="line-number"></span><span class="code-hl">  context-&gt;state[4] = 0xC3D2E1F0;</span>
+<span class="line-number"></span><span class="code-hl">}</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">/*</span>
+<span class="line-number"></span><span class="code-hl"> * Run your data through this.</span>
+<span class="line-number"></span><span class="code-hl"> */</span>
+<span class="line-number"></span><span class="code-hl">void SHA1Update(SHA1_CTX *context, const uint8_t *data, size_t len) {</span>
+<span class="line-number"></span><span class="code-hl">  size_t i, j;</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  j = (size_t)((context-&gt;count &gt;&gt; 3) &amp; 63);</span>
+<span class="line-number"></span><span class="code-hl">  context-&gt;count += ((uint64_t)len &lt;&lt; 3);</span>
+<span class="line-number"></span><span class="code-hl">  if ((j + len) &gt; 63) {</span>
+<span class="line-number"></span><span class="code-hl">    (void)memcpy(&amp;context-&gt;buffer[j], data, (i = 64 - j));</span>
+<span class="line-number"></span><span class="code-hl">    SHA1Transform(context-&gt;state, context-&gt;buffer);</span>
+<span class="line-number"></span><span class="code-hl">    for (; i + 63 &lt; len; i += 64)</span>
+<span class="line-number"></span><span class="code-hl">      SHA1Transform(context-&gt;state, (uint8_t *)&amp;data[i]);</span>
+<span class="line-number"></span><span class="code-hl">    j = 0;</span>
+<span class="line-number"></span><span class="code-hl">  } else {</span>
+<span class="line-number"></span><span class="code-hl">    i = 0;</span>
+<span class="line-number"></span><span class="code-hl">  }</span>
+<span class="line-number"></span><span class="code-hl">  (void)memcpy(&amp;context-&gt;buffer[j], &amp;data[i], len - i);</span>
+<span class="line-number"></span><span class="code-hl">}</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">/*</span>
+<span class="line-number"></span><span class="code-hl"> * Add padding and return the message digest.</span>
+<span class="line-number"></span><span class="code-hl"> */</span>
+<span class="line-number"></span><span class="code-hl">void SHA1Pad(SHA1_CTX *context) {</span>
+<span class="line-number"></span><span class="code-hl">  uint8_t finalcount[8];</span>
+<span class="line-number"></span><span class="code-hl">  size_t i;</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  for (i = 0; i &lt; 8; i++) {</span>
+<span class="line-number"></span><span class="code-hl">    finalcount[i] = (uint8_t)((context-&gt;count &gt;&gt; ((7 - (i &amp; 7)) * 8)) &amp;</span>
+<span class="line-number"></span><span class="code-hl">                              255); /* Endian independent */</span>
+<span class="line-number"></span><span class="code-hl">  }</span>
+<span class="line-number"></span><span class="code-hl">  SHA1Update(context, (uint8_t *)&quot;\200&quot;, 1);</span>
+<span class="line-number"></span><span class="code-hl">  while ((context-&gt;count &amp; 504) != 448)</span>
+<span class="line-number"></span><span class="code-hl">    SHA1Update(context, (uint8_t *)&quot;\0&quot;, 1);</span>
+<span class="line-number"></span><span class="code-hl">  SHA1Update(context, finalcount, 8); /* Should cause a SHA1Transform() */</span>
+<span class="line-number"></span><span class="code-hl">}</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">void SHA1Final(uint8_t digest[SHA1_DIGEST_LENGTH], SHA1_CTX *context) {</span>
+<span class="line-number"></span><span class="code-hl">  size_t i;</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  SHA1Pad(context);</span>
+<span class="line-number"></span><span class="code-hl">  for (i = 0; i &lt; SHA1_DIGEST_LENGTH; i++) {</span>
+<span class="line-number"></span><span class="code-hl">    digest[i] =</span>
+<span class="line-number"></span><span class="code-hl">        (uint8_t)((context-&gt;state[i &gt;&gt; 2] &gt;&gt; ((3 - (i &amp; 3)) * 8)) &amp; 255);</span>
+<span class="line-number"></span><span class="code-hl">  }</span>
+<span class="line-number"></span><span class="code-hl">  explicit_bzero(context, sizeof(*context));</span>
+<span class="line-number"></span><span class="code-hl">}</span>
 </code></pre>
 </details>
 <p>The <code>SHA1_xxx</code> functions are lifted from <a href="https://github.com/openssh/openssh-portable/blob/9e5bd74a85192c00a842f63d7ab788713b4284c3/openbsd-compat/sha1.c">OpenBSD</a> (there are similar variants, e.g. from <a href="https://sqlite.org/src/file/ext/misc/sha1.c">Sqlite</a>, etc - they are all nearly identical)</p>
@@ -597,10 +597,10 @@ Do not edit it by hand.
     <span>Shell</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-shell"><span class="line-number"></span>$ hyperfine --warmup 3 './a.out ./NetBSD-9.4-amd64.iso ~/Downloads/NetBSD-9.4-amd64.iso.torrent'
-<span class="line-number"></span>Benchmark 1: ./a.out ./NetBSD-9.4-amd64.iso ~/Downloads/NetBSD-9.4-amd64.iso.torrent
-<span class="line-number"></span>  Time (mean ± σ):     26.312 s ±  0.734 s    [User: 26.164 s, System: 0.066 s]
-<span class="line-number"></span>  Range (min … max):   25.366 s … 27.780 s    10 runs
+  <code class="language-shell"><span class="line-number"></span><span class="code-hl">$ hyperfine --warmup 3 './a.out ./NetBSD-9.4-amd64.iso ~/Downloads/NetBSD-9.4-amd64.iso.torrent'</span>
+<span class="line-number"></span><span class="code-hl">Benchmark 1: ./a.out ./NetBSD-9.4-amd64.iso ~/Downloads/NetBSD-9.4-amd64.iso.torrent</span>
+<span class="line-number"></span><span class="code-hl">  Time (mean ± σ):     26.312 s ±  0.734 s    [User: 26.164 s, System: 0.066 s]</span>
+<span class="line-number"></span><span class="code-hl">  Range (min … max):   25.366 s … 27.780 s    10 runs</span>
 </code></pre>
 <p>This is consistent with our real-life torrent program.</p>
 <p>I experimented with doing a <code>read</code> syscall for each piece (that's what <code>sha1sum</code> does) versus using <code>mmap</code>, and there was no difference; additionally the system time is nothing compared to user time, so I/O is not the limiting factor - SHA1 computation is, as confirmed by the CPU profile.</p>
@@ -643,14 +643,14 @@ Do not edit it by hand.
     <span>C</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-c"><span class="line-number"></span>  // `0x1b` == `0b0001_1011`.
-<span class="line-number"></span>  // Will result in:
-<span class="line-number"></span>  // [31:0] == [127:96] (due to bits [1:0] being `11`).
-<span class="line-number"></span>  // [63:32] == [95:64] (due to bits [3:2] being `10`).
-<span class="line-number"></span>  // [95:64] == [63:32] (due to bits [5:4] being `01`).
-<span class="line-number"></span>  // [127:96] == [31:0] (due to bits [7:6] being `00`).
-<span class="line-number"></span>  // I.e.: Transform state to big-endian.
-<span class="line-number"></span>  ABCD = _mm_shuffle_epi32(ABCD, 0x1B);
+  <code class="language-c"><span class="line-number"></span><span class="code-hl">  // `0x1b` == `0b0001_1011`.</span>
+<span class="line-number"></span><span class="code-hl">  // Will result in:</span>
+<span class="line-number"></span><span class="code-hl">  // [31:0] == [127:96] (due to bits [1:0] being `11`).</span>
+<span class="line-number"></span><span class="code-hl">  // [63:32] == [95:64] (due to bits [3:2] being `10`).</span>
+<span class="line-number"></span><span class="code-hl">  // [95:64] == [63:32] (due to bits [5:4] being `01`).</span>
+<span class="line-number"></span><span class="code-hl">  // [127:96] == [31:0] (due to bits [7:6] being `00`).</span>
+<span class="line-number"></span><span class="code-hl">  // I.e.: Transform state to big-endian.</span>
+<span class="line-number"></span><span class="code-hl">  ABCD = _mm_shuffle_epi32(ABCD, 0x1B);</span>
 </code></pre>
 <p>It's nifty because we can copy the data in and out of SIMD registers, while also doing the endianness conversion, in one operation that typically compiles down to one assembly instruction. And this approach also works from a SIMD register to another SIMD register or inside the same register.</p>
 </li>
@@ -667,328 +667,328 @@ Do not edit it by hand.
     <span>C</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-c"><span class="line-number"></span>typedef union {
-<span class="line-number"></span>  uint32_t u32[4];
-<span class="line-number"></span>  __m128i u128;
-<span class="line-number"></span>} v4si __attribute__((aligned(16)));
-<span class="line-number"></span>
-<span class="line-number"></span>static const v4si K00_19 = {
-<span class="line-number"></span>    .u32 = {0x5a827999, 0x5a827999, 0x5a827999, 0x5a827999}};
-<span class="line-number"></span>static const v4si K20_39 = {
-<span class="line-number"></span>    .u32 = {0x6ed9eba1, 0x6ed9eba1, 0x6ed9eba1, 0x6ed9eba1}};
-<span class="line-number"></span>static const v4si K40_59 = {
-<span class="line-number"></span>    .u32 = {0x8f1bbcdc, 0x8f1bbcdc, 0x8f1bbcdc, 0x8f1bbcdc}};
-<span class="line-number"></span>static const v4si K60_79 = {
-<span class="line-number"></span>    .u32 = {0xca62c1d6, 0xca62c1d6, 0xca62c1d6, 0xca62c1d6}};
-<span class="line-number"></span>
-<span class="line-number"></span>#define UNALIGNED 1
-<span class="line-number"></span>#if UNALIGNED
-<span class="line-number"></span>#define load(p) _mm_loadu_si128(p)
-<span class="line-number"></span>#else
-<span class="line-number"></span>#define load(p) (*p)
-<span class="line-number"></span>#endif
-<span class="line-number"></span>
-<span class="line-number"></span>/*
-<span class="line-number"></span>        the first 16 bytes only need byte swapping
-<span class="line-number"></span>
-<span class="line-number"></span>        prepared points to 4x uint32_t, 16-byte aligned
-<span class="line-number"></span>
-<span class="line-number"></span>        W points to the 4 dwords which need preparing --
-<span class="line-number"></span>        and is overwritten with the swapped bytes
-<span class="line-number"></span>*/
-<span class="line-number"></span>#define prep00_15(prep, W)                                                     \
-<span class="line-number"></span>  do {                                                                         \
-<span class="line-number"></span>    __m128i r1, r2;                                                            \
-<span class="line-number"></span>                                                                               \
-<span class="line-number"></span>    r1 = (W);                                                                  \
-<span class="line-number"></span>    if (1) {                                                                   \
-<span class="line-number"></span>      r1 = _mm_shufflehi_epi16(r1, _MM_SHUFFLE(2, 3, 0, 1));                   \
-<span class="line-number"></span>      r1 = _mm_shufflelo_epi16(r1, _MM_SHUFFLE(2, 3, 0, 1));                   \
-<span class="line-number"></span>      r2 = _mm_slli_epi16(r1, 8);                                              \
-<span class="line-number"></span>      r1 = _mm_srli_epi16(r1, 8);                                              \
-<span class="line-number"></span>      r1 = _mm_or_si128(r1, r2);                                               \
-<span class="line-number"></span>      (W) = r1;                                                                \
-<span class="line-number"></span>    }                                                                          \
-<span class="line-number"></span>    (prep).u128 = _mm_add_epi32(K00_19.u128, r1);                              \
-<span class="line-number"></span>  } while (0)
-<span class="line-number"></span>
-<span class="line-number"></span>/*
-<span class="line-number"></span>        for each multiple of 4, t, we want to calculate this:
-<span class="line-number"></span>
-<span class="line-number"></span>        W[t+0] = rol(W[t-3] ^ W[t-8] ^ W[t-14] ^ W[t-16], 1);
-<span class="line-number"></span>        W[t+1] = rol(W[t-2] ^ W[t-7] ^ W[t-13] ^ W[t-15], 1);
-<span class="line-number"></span>        W[t+2] = rol(W[t-1] ^ W[t-6] ^ W[t-12] ^ W[t-14], 1);
-<span class="line-number"></span>        W[t+3] = rol(W[t]   ^ W[t-5] ^ W[t-11] ^ W[t-13], 1);
-<span class="line-number"></span>
-<span class="line-number"></span>        we'll actually calculate this:
-<span class="line-number"></span>
-<span class="line-number"></span>        W[t+0] = rol(W[t-3] ^ W[t-8] ^ W[t-14] ^ W[t-16], 1);
-<span class="line-number"></span>        W[t+1] = rol(W[t-2] ^ W[t-7] ^ W[t-13] ^ W[t-15], 1);
-<span class="line-number"></span>        W[t+2] = rol(W[t-1] ^ W[t-6] ^ W[t-12] ^ W[t-14], 1);
-<span class="line-number"></span>        W[t+3] = rol(  0    ^ W[t-5] ^ W[t-11] ^ W[t-13], 1);
-<span class="line-number"></span>        W[t+3] ^= rol(W[t+0], 1);
-<span class="line-number"></span>
-<span class="line-number"></span>        the parameters are:
-<span class="line-number"></span>
-<span class="line-number"></span>        W0 = &amp;W[t-16];
-<span class="line-number"></span>        W1 = &amp;W[t-12];
-<span class="line-number"></span>        W2 = &amp;W[t- 8];
-<span class="line-number"></span>        W3 = &amp;W[t- 4];
-<span class="line-number"></span>
-<span class="line-number"></span>        and on output:
-<span class="line-number"></span>                prepared = W0 + K
-<span class="line-number"></span>                W0 = W[t]..W[t+3]
-<span class="line-number"></span>*/
-<span class="line-number"></span>
-<span class="line-number"></span>/* note that there is a step here where i want to do a rol by 1, which
-<span class="line-number"></span> * normally would look like this:
-<span class="line-number"></span> *
-<span class="line-number"></span> * r1 = psrld r0,$31
-<span class="line-number"></span> * r0 = pslld r0,$1
-<span class="line-number"></span> * r0 = por r0,r1
-<span class="line-number"></span> *
-<span class="line-number"></span> * but instead i do this:
-<span class="line-number"></span> *
-<span class="line-number"></span> * r1 = pcmpltd r0,zero
-<span class="line-number"></span> * r0 = paddd r0,r0
-<span class="line-number"></span> * r0 = psub r0,r1
-<span class="line-number"></span> *
-<span class="line-number"></span> * because pcmpltd and paddd are availabe in both MMX units on
-<span class="line-number"></span> * efficeon, pentium-m, and opteron but shifts are available in
-<span class="line-number"></span> * only one unit.
-<span class="line-number"></span> */
-<span class="line-number"></span>#define prep(prep, XW0, XW1, XW2, XW3, K)                                      \
-<span class="line-number"></span>  do {                                                                         \
-<span class="line-number"></span>    __m128i r0, r1, r2, r3;                                                    \
-<span class="line-number"></span>                                                                               \
-<span class="line-number"></span>    /* load W[t-4] 16-byte aligned, and shift */                               \
-<span class="line-number"></span>    r3 = _mm_srli_si128((XW3), 4);                                             \
-<span class="line-number"></span>    r0 = (XW0);                                                                \
-<span class="line-number"></span>    /* get high 64-bits of XW0 into low 64-bits */                             \
-<span class="line-number"></span>    r1 = _mm_shuffle_epi32((XW0), _MM_SHUFFLE(1, 0, 3, 2));                    \
-<span class="line-number"></span>    /* load high 64-bits of r1 */                                              \
-<span class="line-number"></span>    r1 = _mm_unpacklo_epi64(r1, (XW1));                                        \
-<span class="line-number"></span>    r2 = (XW2);                                                                \
-<span class="line-number"></span>                                                                               \
-<span class="line-number"></span>    r0 = _mm_xor_si128(r1, r0);                                                \
-<span class="line-number"></span>    r2 = _mm_xor_si128(r3, r2);                                                \
-<span class="line-number"></span>    r0 = _mm_xor_si128(r2, r0);                                                \
-<span class="line-number"></span>    /* unrotated W[t]..W[t+2] in r0 ... still need W[t+3] */                   \
-<span class="line-number"></span>                                                                               \
-<span class="line-number"></span>    r2 = _mm_slli_si128(r0, 12);                                               \
-<span class="line-number"></span>    r1 = _mm_cmplt_epi32(r0, _mm_setzero_si128());                             \
-<span class="line-number"></span>    r0 = _mm_add_epi32(r0, r0); /* shift left by 1 */                          \
-<span class="line-number"></span>    r0 = _mm_sub_epi32(r0, r1); /* r0 has W[t]..W[t+2] */                      \
-<span class="line-number"></span>                                                                               \
-<span class="line-number"></span>    r3 = _mm_srli_epi32(r2, 30);                                               \
-<span class="line-number"></span>    r2 = _mm_slli_epi32(r2, 2);                                                \
-<span class="line-number"></span>                                                                               \
-<span class="line-number"></span>    r0 = _mm_xor_si128(r0, r3);                                                \
-<span class="line-number"></span>    r0 = _mm_xor_si128(r0, r2); /* r0 now has W[t+3] */                        \
-<span class="line-number"></span>                                                                               \
-<span class="line-number"></span>    (XW0) = r0;                                                                \
-<span class="line-number"></span>    (prep).u128 = _mm_add_epi32(r0, (K).u128);                                 \
-<span class="line-number"></span>  } while (0)
-<span class="line-number"></span>
-<span class="line-number"></span>static inline uint32_t f00_19(uint32_t x, uint32_t y, uint32_t z) {
-<span class="line-number"></span>  /* FIPS 180-2 says this: (x &amp; y) ^ (~x &amp; z)
-<span class="line-number"></span>   * but we can calculate it in fewer steps.
-<span class="line-number"></span>   */
-<span class="line-number"></span>  return ((y ^ z) &amp; x) ^ z;
-<span class="line-number"></span>}
-<span class="line-number"></span>
-<span class="line-number"></span>static inline uint32_t f20_39(uint32_t x, uint32_t y, uint32_t z) {
-<span class="line-number"></span>  return (x ^ z) ^ y;
-<span class="line-number"></span>}
-<span class="line-number"></span>
-<span class="line-number"></span>static inline uint32_t f40_59(uint32_t x, uint32_t y, uint32_t z) {
-<span class="line-number"></span>  /* FIPS 180-2 says this: (x &amp; y) ^ (x &amp; z) ^ (y &amp; z)
-<span class="line-number"></span>   * but we can calculate it in fewer steps.
-<span class="line-number"></span>   */
-<span class="line-number"></span>  return (x &amp; z) | ((x | z) &amp; y);
-<span class="line-number"></span>}
-<span class="line-number"></span>
-<span class="line-number"></span>static inline uint32_t f60_79(uint32_t x, uint32_t y, uint32_t z) {
-<span class="line-number"></span>  return f20_39(x, y, z);
-<span class="line-number"></span>}
-<span class="line-number"></span>
-<span class="line-number"></span>#define step(nn_mm, xa, xb, xc, xd, xe, xt, input)                             \
-<span class="line-number"></span>  do {                                                                         \
-<span class="line-number"></span>    (xt) = (input) + f##nn_mm((xb), (xc), (xd));                               \
-<span class="line-number"></span>    (xb) = rol((xb), 30);                                                      \
-<span class="line-number"></span>    (xt) += ((xe) + rol((xa), 5));                                             \
-<span class="line-number"></span>  } while (0)
-<span class="line-number"></span>
-<span class="line-number"></span>[[maybe_unused]]
-<span class="line-number"></span>static void sha1_sse_step(uint32_t *restrict H, const uint32_t *restrict inputu,
-<span class="line-number"></span>                          size_t num_steps) {
-<span class="line-number"></span>  const __m128i *restrict input = (const __m128i *)inputu;
-<span class="line-number"></span>  __m128i W0, W1, W2, W3;
-<span class="line-number"></span>  v4si prep0, prep1, prep2;
-<span class="line-number"></span>  uint32_t a, b, c, d, e, t;
-<span class="line-number"></span>
-<span class="line-number"></span>  a = H[0];
-<span class="line-number"></span>  b = H[1];
-<span class="line-number"></span>  c = H[2];
-<span class="line-number"></span>  d = H[3];
-<span class="line-number"></span>  e = H[4];
-<span class="line-number"></span>
-<span class="line-number"></span>  /* i've tried arranging the SSE2 code to be 4, 8, 12, and 16
-<span class="line-number"></span>   * steps ahead of the integer code.  12 steps ahead seems
-<span class="line-number"></span>   * to produce the best performance. -dean
-<span class="line-number"></span>   */
-<span class="line-number"></span>  W0 = load(&amp;input[0]);
-<span class="line-number"></span>  prep00_15(prep0, W0); /* prepare for 00 through 03 */
-<span class="line-number"></span>  W1 = load(&amp;input[1]);
-<span class="line-number"></span>  prep00_15(prep1, W1); /* prepare for 04 through 07 */
-<span class="line-number"></span>  W2 = load(&amp;input[2]);
-<span class="line-number"></span>  prep00_15(prep2, W2); /* prepare for 08 through 11 */
-<span class="line-number"></span>  for (;;) {
-<span class="line-number"></span>    W3 = load(&amp;input[3]);
-<span class="line-number"></span>    step(00_19, a, b, c, d, e, t, prep0.u32[0]); /* 00 */
-<span class="line-number"></span>    step(00_19, t, a, b, c, d, e, prep0.u32[1]); /* 01 */
-<span class="line-number"></span>    step(00_19, e, t, a, b, c, d, prep0.u32[2]); /* 02 */
-<span class="line-number"></span>    step(00_19, d, e, t, a, b, c, prep0.u32[3]); /* 03 */
-<span class="line-number"></span>    prep00_15(prep0, W3);
-<span class="line-number"></span>    step(00_19, c, d, e, t, a, b, prep1.u32[0]); /* 04 */
-<span class="line-number"></span>    step(00_19, b, c, d, e, t, a, prep1.u32[1]); /* 05 */
-<span class="line-number"></span>    step(00_19, a, b, c, d, e, t, prep1.u32[2]); /* 06 */
-<span class="line-number"></span>    step(00_19, t, a, b, c, d, e, prep1.u32[3]); /* 07 */
-<span class="line-number"></span>    prep(prep1, W0, W1, W2, W3, K00_19);         /* prepare for 16 through 19 */
-<span class="line-number"></span>    step(00_19, e, t, a, b, c, d, prep2.u32[0]); /* 08 */
-<span class="line-number"></span>    step(00_19, d, e, t, a, b, c, prep2.u32[1]); /* 09 */
-<span class="line-number"></span>    step(00_19, c, d, e, t, a, b, prep2.u32[2]); /* 10 */
-<span class="line-number"></span>    step(00_19, b, c, d, e, t, a, prep2.u32[3]); /* 11 */
-<span class="line-number"></span>    prep(prep2, W1, W2, W3, W0, K20_39);         /* prepare for 20 through 23 */
-<span class="line-number"></span>    step(00_19, a, b, c, d, e, t, prep0.u32[0]); /* 12 */
-<span class="line-number"></span>    step(00_19, t, a, b, c, d, e, prep0.u32[1]); /* 13 */
-<span class="line-number"></span>    step(00_19, e, t, a, b, c, d, prep0.u32[2]); /* 14 */
-<span class="line-number"></span>    step(00_19, d, e, t, a, b, c, prep0.u32[3]); /* 15 */
-<span class="line-number"></span>    prep(prep0, W2, W3, W0, W1, K20_39);
-<span class="line-number"></span>    step(00_19, c, d, e, t, a, b, prep1.u32[0]); /* 16 */
-<span class="line-number"></span>    step(00_19, b, c, d, e, t, a, prep1.u32[1]); /* 17 */
-<span class="line-number"></span>    step(00_19, a, b, c, d, e, t, prep1.u32[2]); /* 18 */
-<span class="line-number"></span>    step(00_19, t, a, b, c, d, e, prep1.u32[3]); /* 19 */
-<span class="line-number"></span>
-<span class="line-number"></span>    prep(prep1, W3, W0, W1, W2, K20_39);
-<span class="line-number"></span>    step(20_39, e, t, a, b, c, d, prep2.u32[0]); /* 20 */
-<span class="line-number"></span>    step(20_39, d, e, t, a, b, c, prep2.u32[1]); /* 21 */
-<span class="line-number"></span>    step(20_39, c, d, e, t, a, b, prep2.u32[2]); /* 22 */
-<span class="line-number"></span>    step(20_39, b, c, d, e, t, a, prep2.u32[3]); /* 23 */
-<span class="line-number"></span>    prep(prep2, W0, W1, W2, W3, K20_39);
-<span class="line-number"></span>    step(20_39, a, b, c, d, e, t, prep0.u32[0]); /* 24 */
-<span class="line-number"></span>    step(20_39, t, a, b, c, d, e, prep0.u32[1]); /* 25 */
-<span class="line-number"></span>    step(20_39, e, t, a, b, c, d, prep0.u32[2]); /* 26 */
-<span class="line-number"></span>    step(20_39, d, e, t, a, b, c, prep0.u32[3]); /* 27 */
-<span class="line-number"></span>    prep(prep0, W1, W2, W3, W0, K20_39);
-<span class="line-number"></span>    step(20_39, c, d, e, t, a, b, prep1.u32[0]); /* 28 */
-<span class="line-number"></span>    step(20_39, b, c, d, e, t, a, prep1.u32[1]); /* 29 */
-<span class="line-number"></span>    step(20_39, a, b, c, d, e, t, prep1.u32[2]); /* 30 */
-<span class="line-number"></span>    step(20_39, t, a, b, c, d, e, prep1.u32[3]); /* 31 */
-<span class="line-number"></span>    prep(prep1, W2, W3, W0, W1, K40_59);
-<span class="line-number"></span>    step(20_39, e, t, a, b, c, d, prep2.u32[0]); /* 32 */
-<span class="line-number"></span>    step(20_39, d, e, t, a, b, c, prep2.u32[1]); /* 33 */
-<span class="line-number"></span>    step(20_39, c, d, e, t, a, b, prep2.u32[2]); /* 34 */
-<span class="line-number"></span>    step(20_39, b, c, d, e, t, a, prep2.u32[3]); /* 35 */
-<span class="line-number"></span>    prep(prep2, W3, W0, W1, W2, K40_59);
-<span class="line-number"></span>    step(20_39, a, b, c, d, e, t, prep0.u32[0]); /* 36 */
-<span class="line-number"></span>    step(20_39, t, a, b, c, d, e, prep0.u32[1]); /* 37 */
-<span class="line-number"></span>    step(20_39, e, t, a, b, c, d, prep0.u32[2]); /* 38 */
-<span class="line-number"></span>    step(20_39, d, e, t, a, b, c, prep0.u32[3]); /* 39 */
-<span class="line-number"></span>
-<span class="line-number"></span>    prep(prep0, W0, W1, W2, W3, K40_59);
-<span class="line-number"></span>    step(40_59, c, d, e, t, a, b, prep1.u32[0]); /* 40 */
-<span class="line-number"></span>    step(40_59, b, c, d, e, t, a, prep1.u32[1]); /* 41 */
-<span class="line-number"></span>    step(40_59, a, b, c, d, e, t, prep1.u32[2]); /* 42 */
-<span class="line-number"></span>    step(40_59, t, a, b, c, d, e, prep1.u32[3]); /* 43 */
-<span class="line-number"></span>    prep(prep1, W1, W2, W3, W0, K40_59);
-<span class="line-number"></span>    step(40_59, e, t, a, b, c, d, prep2.u32[0]); /* 44 */
-<span class="line-number"></span>    step(40_59, d, e, t, a, b, c, prep2.u32[1]); /* 45 */
-<span class="line-number"></span>    step(40_59, c, d, e, t, a, b, prep2.u32[2]); /* 46 */
-<span class="line-number"></span>    step(40_59, b, c, d, e, t, a, prep2.u32[3]); /* 47 */
-<span class="line-number"></span>    prep(prep2, W2, W3, W0, W1, K40_59);
-<span class="line-number"></span>    step(40_59, a, b, c, d, e, t, prep0.u32[0]); /* 48 */
-<span class="line-number"></span>    step(40_59, t, a, b, c, d, e, prep0.u32[1]); /* 49 */
-<span class="line-number"></span>    step(40_59, e, t, a, b, c, d, prep0.u32[2]); /* 50 */
-<span class="line-number"></span>    step(40_59, d, e, t, a, b, c, prep0.u32[3]); /* 51 */
-<span class="line-number"></span>    prep(prep0, W3, W0, W1, W2, K60_79);
-<span class="line-number"></span>    step(40_59, c, d, e, t, a, b, prep1.u32[0]); /* 52 */
-<span class="line-number"></span>    step(40_59, b, c, d, e, t, a, prep1.u32[1]); /* 53 */
-<span class="line-number"></span>    step(40_59, a, b, c, d, e, t, prep1.u32[2]); /* 54 */
-<span class="line-number"></span>    step(40_59, t, a, b, c, d, e, prep1.u32[3]); /* 55 */
-<span class="line-number"></span>    prep(prep1, W0, W1, W2, W3, K60_79);
-<span class="line-number"></span>    step(40_59, e, t, a, b, c, d, prep2.u32[0]); /* 56 */
-<span class="line-number"></span>    step(40_59, d, e, t, a, b, c, prep2.u32[1]); /* 57 */
-<span class="line-number"></span>    step(40_59, c, d, e, t, a, b, prep2.u32[2]); /* 58 */
-<span class="line-number"></span>    step(40_59, b, c, d, e, t, a, prep2.u32[3]); /* 59 */
-<span class="line-number"></span>
-<span class="line-number"></span>    prep(prep2, W1, W2, W3, W0, K60_79);
-<span class="line-number"></span>    step(60_79, a, b, c, d, e, t, prep0.u32[0]); /* 60 */
-<span class="line-number"></span>    step(60_79, t, a, b, c, d, e, prep0.u32[1]); /* 61 */
-<span class="line-number"></span>    step(60_79, e, t, a, b, c, d, prep0.u32[2]); /* 62 */
-<span class="line-number"></span>    step(60_79, d, e, t, a, b, c, prep0.u32[3]); /* 63 */
-<span class="line-number"></span>    prep(prep0, W2, W3, W0, W1, K60_79);
-<span class="line-number"></span>    step(60_79, c, d, e, t, a, b, prep1.u32[0]); /* 64 */
-<span class="line-number"></span>    step(60_79, b, c, d, e, t, a, prep1.u32[1]); /* 65 */
-<span class="line-number"></span>    step(60_79, a, b, c, d, e, t, prep1.u32[2]); /* 66 */
-<span class="line-number"></span>    step(60_79, t, a, b, c, d, e, prep1.u32[3]); /* 67 */
-<span class="line-number"></span>    prep(prep1, W3, W0, W1, W2, K60_79);
-<span class="line-number"></span>    step(60_79, e, t, a, b, c, d, prep2.u32[0]); /* 68 */
-<span class="line-number"></span>    step(60_79, d, e, t, a, b, c, prep2.u32[1]); /* 69 */
-<span class="line-number"></span>    step(60_79, c, d, e, t, a, b, prep2.u32[2]); /* 70 */
-<span class="line-number"></span>    step(60_79, b, c, d, e, t, a, prep2.u32[3]); /* 71 */
-<span class="line-number"></span>
-<span class="line-number"></span>    --num_steps;
-<span class="line-number"></span>    if (num_steps == 0)
-<span class="line-number"></span>      break;
-<span class="line-number"></span>
-<span class="line-number"></span>    input += 4;
-<span class="line-number"></span>    W0 = load(&amp;input[0]);
-<span class="line-number"></span>    prep00_15(prep2, W0); /* prepare for next 00 through 03 */
-<span class="line-number"></span>    W1 = load(&amp;input[1]);
-<span class="line-number"></span>    step(60_79, a, b, c, d, e, t, prep0.u32[0]); /* 72 */
-<span class="line-number"></span>    step(60_79, t, a, b, c, d, e, prep0.u32[1]); /* 73 */
-<span class="line-number"></span>    step(60_79, e, t, a, b, c, d, prep0.u32[2]); /* 74 */
-<span class="line-number"></span>    step(60_79, d, e, t, a, b, c, prep0.u32[3]); /* 75 */
-<span class="line-number"></span>    prep0 = prep2;        /* top of loop expects this in prep0 */
-<span class="line-number"></span>    prep00_15(prep2, W1); /* prepare for next 04 through 07 */
-<span class="line-number"></span>    W2 = load(&amp;input[2]);
-<span class="line-number"></span>    step(60_79, c, d, e, t, a, b, prep1.u32[0]); /* 76 */
-<span class="line-number"></span>    step(60_79, b, c, d, e, t, a, prep1.u32[1]); /* 77 */
-<span class="line-number"></span>    step(60_79, a, b, c, d, e, t, prep1.u32[2]); /* 78 */
-<span class="line-number"></span>    step(60_79, t, a, b, c, d, e, prep1.u32[3]); /* 79 */
-<span class="line-number"></span>    prep1 = prep2;        /* top of loop expects this in prep1 */
-<span class="line-number"></span>    prep00_15(prep2, W2); /* prepare for next 08 through 11 */
-<span class="line-number"></span>    /* e, t, a, b, c, d */
-<span class="line-number"></span>    H[0] += e;
-<span class="line-number"></span>    H[1] += t;
-<span class="line-number"></span>    H[2] += a;
-<span class="line-number"></span>    H[3] += b;
-<span class="line-number"></span>    H[4] += c;
-<span class="line-number"></span>
-<span class="line-number"></span>    a = H[0];
-<span class="line-number"></span>    b = H[1];
-<span class="line-number"></span>    c = H[2];
-<span class="line-number"></span>    d = H[3];
-<span class="line-number"></span>    e = H[4];
-<span class="line-number"></span>  }
-<span class="line-number"></span>  /* no more input to prepare */
-<span class="line-number"></span>  step(60_79, a, b, c, d, e, t, prep0.u32[0]); /* 72 */
-<span class="line-number"></span>  step(60_79, t, a, b, c, d, e, prep0.u32[1]); /* 73 */
-<span class="line-number"></span>  step(60_79, e, t, a, b, c, d, prep0.u32[2]); /* 74 */
-<span class="line-number"></span>  step(60_79, d, e, t, a, b, c, prep0.u32[3]); /* 75 */
-<span class="line-number"></span>  /* no more input to prepare */
-<span class="line-number"></span>  step(60_79, c, d, e, t, a, b, prep1.u32[0]); /* 76 */
-<span class="line-number"></span>  step(60_79, b, c, d, e, t, a, prep1.u32[1]); /* 77 */
-<span class="line-number"></span>  step(60_79, a, b, c, d, e, t, prep1.u32[2]); /* 78 */
-<span class="line-number"></span>  step(60_79, t, a, b, c, d, e, prep1.u32[3]); /* 79 */
-<span class="line-number"></span>  /* e, t, a, b, c, d */
-<span class="line-number"></span>  H[0] += e;
-<span class="line-number"></span>  H[1] += t;
-<span class="line-number"></span>  H[2] += a;
-<span class="line-number"></span>  H[3] += b;
-<span class="line-number"></span>  H[4] += c;
-<span class="line-number"></span>}
+  <code class="language-c"><span class="line-number"></span><span class="code-hl">typedef union {</span>
+<span class="line-number"></span><span class="code-hl">  uint32_t u32[4];</span>
+<span class="line-number"></span><span class="code-hl">  __m128i u128;</span>
+<span class="line-number"></span><span class="code-hl">} v4si __attribute__((aligned(16)));</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">static const v4si K00_19 = {</span>
+<span class="line-number"></span><span class="code-hl">    .u32 = {0x5a827999, 0x5a827999, 0x5a827999, 0x5a827999}};</span>
+<span class="line-number"></span><span class="code-hl">static const v4si K20_39 = {</span>
+<span class="line-number"></span><span class="code-hl">    .u32 = {0x6ed9eba1, 0x6ed9eba1, 0x6ed9eba1, 0x6ed9eba1}};</span>
+<span class="line-number"></span><span class="code-hl">static const v4si K40_59 = {</span>
+<span class="line-number"></span><span class="code-hl">    .u32 = {0x8f1bbcdc, 0x8f1bbcdc, 0x8f1bbcdc, 0x8f1bbcdc}};</span>
+<span class="line-number"></span><span class="code-hl">static const v4si K60_79 = {</span>
+<span class="line-number"></span><span class="code-hl">    .u32 = {0xca62c1d6, 0xca62c1d6, 0xca62c1d6, 0xca62c1d6}};</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">#define UNALIGNED 1</span>
+<span class="line-number"></span><span class="code-hl">#if UNALIGNED</span>
+<span class="line-number"></span><span class="code-hl">#define load(p) _mm_loadu_si128(p)</span>
+<span class="line-number"></span><span class="code-hl">#else</span>
+<span class="line-number"></span><span class="code-hl">#define load(p) (*p)</span>
+<span class="line-number"></span><span class="code-hl">#endif</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">/*</span>
+<span class="line-number"></span><span class="code-hl">        the first 16 bytes only need byte swapping</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">        prepared points to 4x uint32_t, 16-byte aligned</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">        W points to the 4 dwords which need preparing --</span>
+<span class="line-number"></span><span class="code-hl">        and is overwritten with the swapped bytes</span>
+<span class="line-number"></span><span class="code-hl">*/</span>
+<span class="line-number"></span><span class="code-hl">#define prep00_15(prep, W)                                                     \</span>
+<span class="line-number"></span><span class="code-hl">  do {                                                                         \</span>
+<span class="line-number"></span><span class="code-hl">    __m128i r1, r2;                                                            \</span>
+<span class="line-number"></span><span class="code-hl">                                                                               \</span>
+<span class="line-number"></span><span class="code-hl">    r1 = (W);                                                                  \</span>
+<span class="line-number"></span><span class="code-hl">    if (1) {                                                                   \</span>
+<span class="line-number"></span><span class="code-hl">      r1 = _mm_shufflehi_epi16(r1, _MM_SHUFFLE(2, 3, 0, 1));                   \</span>
+<span class="line-number"></span><span class="code-hl">      r1 = _mm_shufflelo_epi16(r1, _MM_SHUFFLE(2, 3, 0, 1));                   \</span>
+<span class="line-number"></span><span class="code-hl">      r2 = _mm_slli_epi16(r1, 8);                                              \</span>
+<span class="line-number"></span><span class="code-hl">      r1 = _mm_srli_epi16(r1, 8);                                              \</span>
+<span class="line-number"></span><span class="code-hl">      r1 = _mm_or_si128(r1, r2);                                               \</span>
+<span class="line-number"></span><span class="code-hl">      (W) = r1;                                                                \</span>
+<span class="line-number"></span><span class="code-hl">    }                                                                          \</span>
+<span class="line-number"></span><span class="code-hl">    (prep).u128 = _mm_add_epi32(K00_19.u128, r1);                              \</span>
+<span class="line-number"></span><span class="code-hl">  } while (0)</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">/*</span>
+<span class="line-number"></span><span class="code-hl">        for each multiple of 4, t, we want to calculate this:</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">        W[t+0] = rol(W[t-3] ^ W[t-8] ^ W[t-14] ^ W[t-16], 1);</span>
+<span class="line-number"></span><span class="code-hl">        W[t+1] = rol(W[t-2] ^ W[t-7] ^ W[t-13] ^ W[t-15], 1);</span>
+<span class="line-number"></span><span class="code-hl">        W[t+2] = rol(W[t-1] ^ W[t-6] ^ W[t-12] ^ W[t-14], 1);</span>
+<span class="line-number"></span><span class="code-hl">        W[t+3] = rol(W[t]   ^ W[t-5] ^ W[t-11] ^ W[t-13], 1);</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">        we'll actually calculate this:</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">        W[t+0] = rol(W[t-3] ^ W[t-8] ^ W[t-14] ^ W[t-16], 1);</span>
+<span class="line-number"></span><span class="code-hl">        W[t+1] = rol(W[t-2] ^ W[t-7] ^ W[t-13] ^ W[t-15], 1);</span>
+<span class="line-number"></span><span class="code-hl">        W[t+2] = rol(W[t-1] ^ W[t-6] ^ W[t-12] ^ W[t-14], 1);</span>
+<span class="line-number"></span><span class="code-hl">        W[t+3] = rol(  0    ^ W[t-5] ^ W[t-11] ^ W[t-13], 1);</span>
+<span class="line-number"></span><span class="code-hl">        W[t+3] ^= rol(W[t+0], 1);</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">        the parameters are:</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">        W0 = &amp;W[t-16];</span>
+<span class="line-number"></span><span class="code-hl">        W1 = &amp;W[t-12];</span>
+<span class="line-number"></span><span class="code-hl">        W2 = &amp;W[t- 8];</span>
+<span class="line-number"></span><span class="code-hl">        W3 = &amp;W[t- 4];</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">        and on output:</span>
+<span class="line-number"></span><span class="code-hl">                prepared = W0 + K</span>
+<span class="line-number"></span><span class="code-hl">                W0 = W[t]..W[t+3]</span>
+<span class="line-number"></span><span class="code-hl">*/</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">/* note that there is a step here where i want to do a rol by 1, which</span>
+<span class="line-number"></span><span class="code-hl"> * normally would look like this:</span>
+<span class="line-number"></span><span class="code-hl"> *</span>
+<span class="line-number"></span><span class="code-hl"> * r1 = psrld r0,$31</span>
+<span class="line-number"></span><span class="code-hl"> * r0 = pslld r0,$1</span>
+<span class="line-number"></span><span class="code-hl"> * r0 = por r0,r1</span>
+<span class="line-number"></span><span class="code-hl"> *</span>
+<span class="line-number"></span><span class="code-hl"> * but instead i do this:</span>
+<span class="line-number"></span><span class="code-hl"> *</span>
+<span class="line-number"></span><span class="code-hl"> * r1 = pcmpltd r0,zero</span>
+<span class="line-number"></span><span class="code-hl"> * r0 = paddd r0,r0</span>
+<span class="line-number"></span><span class="code-hl"> * r0 = psub r0,r1</span>
+<span class="line-number"></span><span class="code-hl"> *</span>
+<span class="line-number"></span><span class="code-hl"> * because pcmpltd and paddd are availabe in both MMX units on</span>
+<span class="line-number"></span><span class="code-hl"> * efficeon, pentium-m, and opteron but shifts are available in</span>
+<span class="line-number"></span><span class="code-hl"> * only one unit.</span>
+<span class="line-number"></span><span class="code-hl"> */</span>
+<span class="line-number"></span><span class="code-hl">#define prep(prep, XW0, XW1, XW2, XW3, K)                                      \</span>
+<span class="line-number"></span><span class="code-hl">  do {                                                                         \</span>
+<span class="line-number"></span><span class="code-hl">    __m128i r0, r1, r2, r3;                                                    \</span>
+<span class="line-number"></span><span class="code-hl">                                                                               \</span>
+<span class="line-number"></span><span class="code-hl">    /* load W[t-4] 16-byte aligned, and shift */                               \</span>
+<span class="line-number"></span><span class="code-hl">    r3 = _mm_srli_si128((XW3), 4);                                             \</span>
+<span class="line-number"></span><span class="code-hl">    r0 = (XW0);                                                                \</span>
+<span class="line-number"></span><span class="code-hl">    /* get high 64-bits of XW0 into low 64-bits */                             \</span>
+<span class="line-number"></span><span class="code-hl">    r1 = _mm_shuffle_epi32((XW0), _MM_SHUFFLE(1, 0, 3, 2));                    \</span>
+<span class="line-number"></span><span class="code-hl">    /* load high 64-bits of r1 */                                              \</span>
+<span class="line-number"></span><span class="code-hl">    r1 = _mm_unpacklo_epi64(r1, (XW1));                                        \</span>
+<span class="line-number"></span><span class="code-hl">    r2 = (XW2);                                                                \</span>
+<span class="line-number"></span><span class="code-hl">                                                                               \</span>
+<span class="line-number"></span><span class="code-hl">    r0 = _mm_xor_si128(r1, r0);                                                \</span>
+<span class="line-number"></span><span class="code-hl">    r2 = _mm_xor_si128(r3, r2);                                                \</span>
+<span class="line-number"></span><span class="code-hl">    r0 = _mm_xor_si128(r2, r0);                                                \</span>
+<span class="line-number"></span><span class="code-hl">    /* unrotated W[t]..W[t+2] in r0 ... still need W[t+3] */                   \</span>
+<span class="line-number"></span><span class="code-hl">                                                                               \</span>
+<span class="line-number"></span><span class="code-hl">    r2 = _mm_slli_si128(r0, 12);                                               \</span>
+<span class="line-number"></span><span class="code-hl">    r1 = _mm_cmplt_epi32(r0, _mm_setzero_si128());                             \</span>
+<span class="line-number"></span><span class="code-hl">    r0 = _mm_add_epi32(r0, r0); /* shift left by 1 */                          \</span>
+<span class="line-number"></span><span class="code-hl">    r0 = _mm_sub_epi32(r0, r1); /* r0 has W[t]..W[t+2] */                      \</span>
+<span class="line-number"></span><span class="code-hl">                                                                               \</span>
+<span class="line-number"></span><span class="code-hl">    r3 = _mm_srli_epi32(r2, 30);                                               \</span>
+<span class="line-number"></span><span class="code-hl">    r2 = _mm_slli_epi32(r2, 2);                                                \</span>
+<span class="line-number"></span><span class="code-hl">                                                                               \</span>
+<span class="line-number"></span><span class="code-hl">    r0 = _mm_xor_si128(r0, r3);                                                \</span>
+<span class="line-number"></span><span class="code-hl">    r0 = _mm_xor_si128(r0, r2); /* r0 now has W[t+3] */                        \</span>
+<span class="line-number"></span><span class="code-hl">                                                                               \</span>
+<span class="line-number"></span><span class="code-hl">    (XW0) = r0;                                                                \</span>
+<span class="line-number"></span><span class="code-hl">    (prep).u128 = _mm_add_epi32(r0, (K).u128);                                 \</span>
+<span class="line-number"></span><span class="code-hl">  } while (0)</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">static inline uint32_t f00_19(uint32_t x, uint32_t y, uint32_t z) {</span>
+<span class="line-number"></span><span class="code-hl">  /* FIPS 180-2 says this: (x &amp; y) ^ (~x &amp; z)</span>
+<span class="line-number"></span><span class="code-hl">   * but we can calculate it in fewer steps.</span>
+<span class="line-number"></span><span class="code-hl">   */</span>
+<span class="line-number"></span><span class="code-hl">  return ((y ^ z) &amp; x) ^ z;</span>
+<span class="line-number"></span><span class="code-hl">}</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">static inline uint32_t f20_39(uint32_t x, uint32_t y, uint32_t z) {</span>
+<span class="line-number"></span><span class="code-hl">  return (x ^ z) ^ y;</span>
+<span class="line-number"></span><span class="code-hl">}</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">static inline uint32_t f40_59(uint32_t x, uint32_t y, uint32_t z) {</span>
+<span class="line-number"></span><span class="code-hl">  /* FIPS 180-2 says this: (x &amp; y) ^ (x &amp; z) ^ (y &amp; z)</span>
+<span class="line-number"></span><span class="code-hl">   * but we can calculate it in fewer steps.</span>
+<span class="line-number"></span><span class="code-hl">   */</span>
+<span class="line-number"></span><span class="code-hl">  return (x &amp; z) | ((x | z) &amp; y);</span>
+<span class="line-number"></span><span class="code-hl">}</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">static inline uint32_t f60_79(uint32_t x, uint32_t y, uint32_t z) {</span>
+<span class="line-number"></span><span class="code-hl">  return f20_39(x, y, z);</span>
+<span class="line-number"></span><span class="code-hl">}</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">#define step(nn_mm, xa, xb, xc, xd, xe, xt, input)                             \</span>
+<span class="line-number"></span><span class="code-hl">  do {                                                                         \</span>
+<span class="line-number"></span><span class="code-hl">    (xt) = (input) + f##nn_mm((xb), (xc), (xd));                               \</span>
+<span class="line-number"></span><span class="code-hl">    (xb) = rol((xb), 30);                                                      \</span>
+<span class="line-number"></span><span class="code-hl">    (xt) += ((xe) + rol((xa), 5));                                             \</span>
+<span class="line-number"></span><span class="code-hl">  } while (0)</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">[[maybe_unused]]</span>
+<span class="line-number"></span><span class="code-hl">static void sha1_sse_step(uint32_t *restrict H, const uint32_t *restrict inputu,</span>
+<span class="line-number"></span><span class="code-hl">                          size_t num_steps) {</span>
+<span class="line-number"></span><span class="code-hl">  const __m128i *restrict input = (const __m128i *)inputu;</span>
+<span class="line-number"></span><span class="code-hl">  __m128i W0, W1, W2, W3;</span>
+<span class="line-number"></span><span class="code-hl">  v4si prep0, prep1, prep2;</span>
+<span class="line-number"></span><span class="code-hl">  uint32_t a, b, c, d, e, t;</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  a = H[0];</span>
+<span class="line-number"></span><span class="code-hl">  b = H[1];</span>
+<span class="line-number"></span><span class="code-hl">  c = H[2];</span>
+<span class="line-number"></span><span class="code-hl">  d = H[3];</span>
+<span class="line-number"></span><span class="code-hl">  e = H[4];</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  /* i've tried arranging the SSE2 code to be 4, 8, 12, and 16</span>
+<span class="line-number"></span><span class="code-hl">   * steps ahead of the integer code.  12 steps ahead seems</span>
+<span class="line-number"></span><span class="code-hl">   * to produce the best performance. -dean</span>
+<span class="line-number"></span><span class="code-hl">   */</span>
+<span class="line-number"></span><span class="code-hl">  W0 = load(&amp;input[0]);</span>
+<span class="line-number"></span><span class="code-hl">  prep00_15(prep0, W0); /* prepare for 00 through 03 */</span>
+<span class="line-number"></span><span class="code-hl">  W1 = load(&amp;input[1]);</span>
+<span class="line-number"></span><span class="code-hl">  prep00_15(prep1, W1); /* prepare for 04 through 07 */</span>
+<span class="line-number"></span><span class="code-hl">  W2 = load(&amp;input[2]);</span>
+<span class="line-number"></span><span class="code-hl">  prep00_15(prep2, W2); /* prepare for 08 through 11 */</span>
+<span class="line-number"></span><span class="code-hl">  for (;;) {</span>
+<span class="line-number"></span><span class="code-hl">    W3 = load(&amp;input[3]);</span>
+<span class="line-number"></span><span class="code-hl">    step(00_19, a, b, c, d, e, t, prep0.u32[0]); /* 00 */</span>
+<span class="line-number"></span><span class="code-hl">    step(00_19, t, a, b, c, d, e, prep0.u32[1]); /* 01 */</span>
+<span class="line-number"></span><span class="code-hl">    step(00_19, e, t, a, b, c, d, prep0.u32[2]); /* 02 */</span>
+<span class="line-number"></span><span class="code-hl">    step(00_19, d, e, t, a, b, c, prep0.u32[3]); /* 03 */</span>
+<span class="line-number"></span><span class="code-hl">    prep00_15(prep0, W3);</span>
+<span class="line-number"></span><span class="code-hl">    step(00_19, c, d, e, t, a, b, prep1.u32[0]); /* 04 */</span>
+<span class="line-number"></span><span class="code-hl">    step(00_19, b, c, d, e, t, a, prep1.u32[1]); /* 05 */</span>
+<span class="line-number"></span><span class="code-hl">    step(00_19, a, b, c, d, e, t, prep1.u32[2]); /* 06 */</span>
+<span class="line-number"></span><span class="code-hl">    step(00_19, t, a, b, c, d, e, prep1.u32[3]); /* 07 */</span>
+<span class="line-number"></span><span class="code-hl">    prep(prep1, W0, W1, W2, W3, K00_19);         /* prepare for 16 through 19 */</span>
+<span class="line-number"></span><span class="code-hl">    step(00_19, e, t, a, b, c, d, prep2.u32[0]); /* 08 */</span>
+<span class="line-number"></span><span class="code-hl">    step(00_19, d, e, t, a, b, c, prep2.u32[1]); /* 09 */</span>
+<span class="line-number"></span><span class="code-hl">    step(00_19, c, d, e, t, a, b, prep2.u32[2]); /* 10 */</span>
+<span class="line-number"></span><span class="code-hl">    step(00_19, b, c, d, e, t, a, prep2.u32[3]); /* 11 */</span>
+<span class="line-number"></span><span class="code-hl">    prep(prep2, W1, W2, W3, W0, K20_39);         /* prepare for 20 through 23 */</span>
+<span class="line-number"></span><span class="code-hl">    step(00_19, a, b, c, d, e, t, prep0.u32[0]); /* 12 */</span>
+<span class="line-number"></span><span class="code-hl">    step(00_19, t, a, b, c, d, e, prep0.u32[1]); /* 13 */</span>
+<span class="line-number"></span><span class="code-hl">    step(00_19, e, t, a, b, c, d, prep0.u32[2]); /* 14 */</span>
+<span class="line-number"></span><span class="code-hl">    step(00_19, d, e, t, a, b, c, prep0.u32[3]); /* 15 */</span>
+<span class="line-number"></span><span class="code-hl">    prep(prep0, W2, W3, W0, W1, K20_39);</span>
+<span class="line-number"></span><span class="code-hl">    step(00_19, c, d, e, t, a, b, prep1.u32[0]); /* 16 */</span>
+<span class="line-number"></span><span class="code-hl">    step(00_19, b, c, d, e, t, a, prep1.u32[1]); /* 17 */</span>
+<span class="line-number"></span><span class="code-hl">    step(00_19, a, b, c, d, e, t, prep1.u32[2]); /* 18 */</span>
+<span class="line-number"></span><span class="code-hl">    step(00_19, t, a, b, c, d, e, prep1.u32[3]); /* 19 */</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">    prep(prep1, W3, W0, W1, W2, K20_39);</span>
+<span class="line-number"></span><span class="code-hl">    step(20_39, e, t, a, b, c, d, prep2.u32[0]); /* 20 */</span>
+<span class="line-number"></span><span class="code-hl">    step(20_39, d, e, t, a, b, c, prep2.u32[1]); /* 21 */</span>
+<span class="line-number"></span><span class="code-hl">    step(20_39, c, d, e, t, a, b, prep2.u32[2]); /* 22 */</span>
+<span class="line-number"></span><span class="code-hl">    step(20_39, b, c, d, e, t, a, prep2.u32[3]); /* 23 */</span>
+<span class="line-number"></span><span class="code-hl">    prep(prep2, W0, W1, W2, W3, K20_39);</span>
+<span class="line-number"></span><span class="code-hl">    step(20_39, a, b, c, d, e, t, prep0.u32[0]); /* 24 */</span>
+<span class="line-number"></span><span class="code-hl">    step(20_39, t, a, b, c, d, e, prep0.u32[1]); /* 25 */</span>
+<span class="line-number"></span><span class="code-hl">    step(20_39, e, t, a, b, c, d, prep0.u32[2]); /* 26 */</span>
+<span class="line-number"></span><span class="code-hl">    step(20_39, d, e, t, a, b, c, prep0.u32[3]); /* 27 */</span>
+<span class="line-number"></span><span class="code-hl">    prep(prep0, W1, W2, W3, W0, K20_39);</span>
+<span class="line-number"></span><span class="code-hl">    step(20_39, c, d, e, t, a, b, prep1.u32[0]); /* 28 */</span>
+<span class="line-number"></span><span class="code-hl">    step(20_39, b, c, d, e, t, a, prep1.u32[1]); /* 29 */</span>
+<span class="line-number"></span><span class="code-hl">    step(20_39, a, b, c, d, e, t, prep1.u32[2]); /* 30 */</span>
+<span class="line-number"></span><span class="code-hl">    step(20_39, t, a, b, c, d, e, prep1.u32[3]); /* 31 */</span>
+<span class="line-number"></span><span class="code-hl">    prep(prep1, W2, W3, W0, W1, K40_59);</span>
+<span class="line-number"></span><span class="code-hl">    step(20_39, e, t, a, b, c, d, prep2.u32[0]); /* 32 */</span>
+<span class="line-number"></span><span class="code-hl">    step(20_39, d, e, t, a, b, c, prep2.u32[1]); /* 33 */</span>
+<span class="line-number"></span><span class="code-hl">    step(20_39, c, d, e, t, a, b, prep2.u32[2]); /* 34 */</span>
+<span class="line-number"></span><span class="code-hl">    step(20_39, b, c, d, e, t, a, prep2.u32[3]); /* 35 */</span>
+<span class="line-number"></span><span class="code-hl">    prep(prep2, W3, W0, W1, W2, K40_59);</span>
+<span class="line-number"></span><span class="code-hl">    step(20_39, a, b, c, d, e, t, prep0.u32[0]); /* 36 */</span>
+<span class="line-number"></span><span class="code-hl">    step(20_39, t, a, b, c, d, e, prep0.u32[1]); /* 37 */</span>
+<span class="line-number"></span><span class="code-hl">    step(20_39, e, t, a, b, c, d, prep0.u32[2]); /* 38 */</span>
+<span class="line-number"></span><span class="code-hl">    step(20_39, d, e, t, a, b, c, prep0.u32[3]); /* 39 */</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">    prep(prep0, W0, W1, W2, W3, K40_59);</span>
+<span class="line-number"></span><span class="code-hl">    step(40_59, c, d, e, t, a, b, prep1.u32[0]); /* 40 */</span>
+<span class="line-number"></span><span class="code-hl">    step(40_59, b, c, d, e, t, a, prep1.u32[1]); /* 41 */</span>
+<span class="line-number"></span><span class="code-hl">    step(40_59, a, b, c, d, e, t, prep1.u32[2]); /* 42 */</span>
+<span class="line-number"></span><span class="code-hl">    step(40_59, t, a, b, c, d, e, prep1.u32[3]); /* 43 */</span>
+<span class="line-number"></span><span class="code-hl">    prep(prep1, W1, W2, W3, W0, K40_59);</span>
+<span class="line-number"></span><span class="code-hl">    step(40_59, e, t, a, b, c, d, prep2.u32[0]); /* 44 */</span>
+<span class="line-number"></span><span class="code-hl">    step(40_59, d, e, t, a, b, c, prep2.u32[1]); /* 45 */</span>
+<span class="line-number"></span><span class="code-hl">    step(40_59, c, d, e, t, a, b, prep2.u32[2]); /* 46 */</span>
+<span class="line-number"></span><span class="code-hl">    step(40_59, b, c, d, e, t, a, prep2.u32[3]); /* 47 */</span>
+<span class="line-number"></span><span class="code-hl">    prep(prep2, W2, W3, W0, W1, K40_59);</span>
+<span class="line-number"></span><span class="code-hl">    step(40_59, a, b, c, d, e, t, prep0.u32[0]); /* 48 */</span>
+<span class="line-number"></span><span class="code-hl">    step(40_59, t, a, b, c, d, e, prep0.u32[1]); /* 49 */</span>
+<span class="line-number"></span><span class="code-hl">    step(40_59, e, t, a, b, c, d, prep0.u32[2]); /* 50 */</span>
+<span class="line-number"></span><span class="code-hl">    step(40_59, d, e, t, a, b, c, prep0.u32[3]); /* 51 */</span>
+<span class="line-number"></span><span class="code-hl">    prep(prep0, W3, W0, W1, W2, K60_79);</span>
+<span class="line-number"></span><span class="code-hl">    step(40_59, c, d, e, t, a, b, prep1.u32[0]); /* 52 */</span>
+<span class="line-number"></span><span class="code-hl">    step(40_59, b, c, d, e, t, a, prep1.u32[1]); /* 53 */</span>
+<span class="line-number"></span><span class="code-hl">    step(40_59, a, b, c, d, e, t, prep1.u32[2]); /* 54 */</span>
+<span class="line-number"></span><span class="code-hl">    step(40_59, t, a, b, c, d, e, prep1.u32[3]); /* 55 */</span>
+<span class="line-number"></span><span class="code-hl">    prep(prep1, W0, W1, W2, W3, K60_79);</span>
+<span class="line-number"></span><span class="code-hl">    step(40_59, e, t, a, b, c, d, prep2.u32[0]); /* 56 */</span>
+<span class="line-number"></span><span class="code-hl">    step(40_59, d, e, t, a, b, c, prep2.u32[1]); /* 57 */</span>
+<span class="line-number"></span><span class="code-hl">    step(40_59, c, d, e, t, a, b, prep2.u32[2]); /* 58 */</span>
+<span class="line-number"></span><span class="code-hl">    step(40_59, b, c, d, e, t, a, prep2.u32[3]); /* 59 */</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">    prep(prep2, W1, W2, W3, W0, K60_79);</span>
+<span class="line-number"></span><span class="code-hl">    step(60_79, a, b, c, d, e, t, prep0.u32[0]); /* 60 */</span>
+<span class="line-number"></span><span class="code-hl">    step(60_79, t, a, b, c, d, e, prep0.u32[1]); /* 61 */</span>
+<span class="line-number"></span><span class="code-hl">    step(60_79, e, t, a, b, c, d, prep0.u32[2]); /* 62 */</span>
+<span class="line-number"></span><span class="code-hl">    step(60_79, d, e, t, a, b, c, prep0.u32[3]); /* 63 */</span>
+<span class="line-number"></span><span class="code-hl">    prep(prep0, W2, W3, W0, W1, K60_79);</span>
+<span class="line-number"></span><span class="code-hl">    step(60_79, c, d, e, t, a, b, prep1.u32[0]); /* 64 */</span>
+<span class="line-number"></span><span class="code-hl">    step(60_79, b, c, d, e, t, a, prep1.u32[1]); /* 65 */</span>
+<span class="line-number"></span><span class="code-hl">    step(60_79, a, b, c, d, e, t, prep1.u32[2]); /* 66 */</span>
+<span class="line-number"></span><span class="code-hl">    step(60_79, t, a, b, c, d, e, prep1.u32[3]); /* 67 */</span>
+<span class="line-number"></span><span class="code-hl">    prep(prep1, W3, W0, W1, W2, K60_79);</span>
+<span class="line-number"></span><span class="code-hl">    step(60_79, e, t, a, b, c, d, prep2.u32[0]); /* 68 */</span>
+<span class="line-number"></span><span class="code-hl">    step(60_79, d, e, t, a, b, c, prep2.u32[1]); /* 69 */</span>
+<span class="line-number"></span><span class="code-hl">    step(60_79, c, d, e, t, a, b, prep2.u32[2]); /* 70 */</span>
+<span class="line-number"></span><span class="code-hl">    step(60_79, b, c, d, e, t, a, prep2.u32[3]); /* 71 */</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">    --num_steps;</span>
+<span class="line-number"></span><span class="code-hl">    if (num_steps == 0)</span>
+<span class="line-number"></span><span class="code-hl">      break;</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">    input += 4;</span>
+<span class="line-number"></span><span class="code-hl">    W0 = load(&amp;input[0]);</span>
+<span class="line-number"></span><span class="code-hl">    prep00_15(prep2, W0); /* prepare for next 00 through 03 */</span>
+<span class="line-number"></span><span class="code-hl">    W1 = load(&amp;input[1]);</span>
+<span class="line-number"></span><span class="code-hl">    step(60_79, a, b, c, d, e, t, prep0.u32[0]); /* 72 */</span>
+<span class="line-number"></span><span class="code-hl">    step(60_79, t, a, b, c, d, e, prep0.u32[1]); /* 73 */</span>
+<span class="line-number"></span><span class="code-hl">    step(60_79, e, t, a, b, c, d, prep0.u32[2]); /* 74 */</span>
+<span class="line-number"></span><span class="code-hl">    step(60_79, d, e, t, a, b, c, prep0.u32[3]); /* 75 */</span>
+<span class="line-number"></span><span class="code-hl">    prep0 = prep2;        /* top of loop expects this in prep0 */</span>
+<span class="line-number"></span><span class="code-hl">    prep00_15(prep2, W1); /* prepare for next 04 through 07 */</span>
+<span class="line-number"></span><span class="code-hl">    W2 = load(&amp;input[2]);</span>
+<span class="line-number"></span><span class="code-hl">    step(60_79, c, d, e, t, a, b, prep1.u32[0]); /* 76 */</span>
+<span class="line-number"></span><span class="code-hl">    step(60_79, b, c, d, e, t, a, prep1.u32[1]); /* 77 */</span>
+<span class="line-number"></span><span class="code-hl">    step(60_79, a, b, c, d, e, t, prep1.u32[2]); /* 78 */</span>
+<span class="line-number"></span><span class="code-hl">    step(60_79, t, a, b, c, d, e, prep1.u32[3]); /* 79 */</span>
+<span class="line-number"></span><span class="code-hl">    prep1 = prep2;        /* top of loop expects this in prep1 */</span>
+<span class="line-number"></span><span class="code-hl">    prep00_15(prep2, W2); /* prepare for next 08 through 11 */</span>
+<span class="line-number"></span><span class="code-hl">    /* e, t, a, b, c, d */</span>
+<span class="line-number"></span><span class="code-hl">    H[0] += e;</span>
+<span class="line-number"></span><span class="code-hl">    H[1] += t;</span>
+<span class="line-number"></span><span class="code-hl">    H[2] += a;</span>
+<span class="line-number"></span><span class="code-hl">    H[3] += b;</span>
+<span class="line-number"></span><span class="code-hl">    H[4] += c;</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">    a = H[0];</span>
+<span class="line-number"></span><span class="code-hl">    b = H[1];</span>
+<span class="line-number"></span><span class="code-hl">    c = H[2];</span>
+<span class="line-number"></span><span class="code-hl">    d = H[3];</span>
+<span class="line-number"></span><span class="code-hl">    e = H[4];</span>
+<span class="line-number"></span><span class="code-hl">  }</span>
+<span class="line-number"></span><span class="code-hl">  /* no more input to prepare */</span>
+<span class="line-number"></span><span class="code-hl">  step(60_79, a, b, c, d, e, t, prep0.u32[0]); /* 72 */</span>
+<span class="line-number"></span><span class="code-hl">  step(60_79, t, a, b, c, d, e, prep0.u32[1]); /* 73 */</span>
+<span class="line-number"></span><span class="code-hl">  step(60_79, e, t, a, b, c, d, prep0.u32[2]); /* 74 */</span>
+<span class="line-number"></span><span class="code-hl">  step(60_79, d, e, t, a, b, c, prep0.u32[3]); /* 75 */</span>
+<span class="line-number"></span><span class="code-hl">  /* no more input to prepare */</span>
+<span class="line-number"></span><span class="code-hl">  step(60_79, c, d, e, t, a, b, prep1.u32[0]); /* 76 */</span>
+<span class="line-number"></span><span class="code-hl">  step(60_79, b, c, d, e, t, a, prep1.u32[1]); /* 77 */</span>
+<span class="line-number"></span><span class="code-hl">  step(60_79, a, b, c, d, e, t, prep1.u32[2]); /* 78 */</span>
+<span class="line-number"></span><span class="code-hl">  step(60_79, t, a, b, c, d, e, prep1.u32[3]); /* 79 */</span>
+<span class="line-number"></span><span class="code-hl">  /* e, t, a, b, c, d */</span>
+<span class="line-number"></span><span class="code-hl">  H[0] += e;</span>
+<span class="line-number"></span><span class="code-hl">  H[1] += t;</span>
+<span class="line-number"></span><span class="code-hl">  H[2] += a;</span>
+<span class="line-number"></span><span class="code-hl">  H[3] += b;</span>
+<span class="line-number"></span><span class="code-hl">  H[4] += c;</span>
+<span class="line-number"></span><span class="code-hl">}</span>
 </code></pre>
 </details>
 <p>Our <code>is_piece_valid</code> function now becomes:</p>
@@ -997,28 +997,28 @@ Do not edit it by hand.
     <span>C</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-c"><span class="line-number"></span>static bool is_piece_valid(uint8_t *piece, uint64_t piece_len,
-<span class="line-number"></span>                           uint8_t digest_expected[20]) {
-<span class="line-number"></span>  SHA1_CTX ctx = {0};
-<span class="line-number"></span>  SHA1Init(&amp;ctx);
-<span class="line-number"></span>
-<span class="line-number"></span>  // Process as many SHA1 64 bytes chunks as possible.
-<span class="line-number"></span>  uint64_t len_rounded_down = (piece_len / 64) * 64;
-<span class="line-number"></span>  uint64_t rem = piece_len % 64;
-<span class="line-number"></span>  uint64_t steps = len_rounded_down / 64;
-<span class="line-number"></span>  sha1_sse_step(ctx.state, piece, steps);
-<span class="line-number"></span>
-<span class="line-number"></span>  // Process the excess.
-<span class="line-number"></span>  memcpy(ctx.buffer, piece + len_rounded_down, rem);
-<span class="line-number"></span>
-<span class="line-number"></span>  // `count` is in bits: multiple the number of bytes by 8.
-<span class="line-number"></span>  ctx.count = piece_len * 8;
-<span class="line-number"></span>
-<span class="line-number"></span>  uint8_t digest_actual[20] = {0};
-<span class="line-number"></span>  SHA1Final(digest_actual, &amp;ctx);
-<span class="line-number"></span>
-<span class="line-number"></span>  return !memcmp(digest_actual, digest_expected, 20);
-<span class="line-number"></span>}
+  <code class="language-c"><span class="line-number"></span><span class="code-hl">static bool is_piece_valid(uint8_t *piece, uint64_t piece_len,</span>
+<span class="line-number"></span><span class="code-hl">                           uint8_t digest_expected[20]) {</span>
+<span class="line-number"></span><span class="code-hl">  SHA1_CTX ctx = {0};</span>
+<span class="line-number"></span><span class="code-hl">  SHA1Init(&amp;ctx);</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  // Process as many SHA1 64 bytes chunks as possible.</span>
+<span class="line-number"></span><span class="code-hl">  uint64_t len_rounded_down = (piece_len / 64) * 64;</span>
+<span class="line-number"></span><span class="code-hl">  uint64_t rem = piece_len % 64;</span>
+<span class="line-number"></span><span class="code-hl">  uint64_t steps = len_rounded_down / 64;</span>
+<span class="line-number"></span><span class="code-hl">  sha1_sse_step(ctx.state, piece, steps);</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  // Process the excess.</span>
+<span class="line-number"></span><span class="code-hl">  memcpy(ctx.buffer, piece + len_rounded_down, rem);</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  // `count` is in bits: multiple the number of bytes by 8.</span>
+<span class="line-number"></span><span class="code-hl">  ctx.count = piece_len * 8;</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  uint8_t digest_actual[20] = {0};</span>
+<span class="line-number"></span><span class="code-hl">  SHA1Final(digest_actual, &amp;ctx);</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  return !memcmp(digest_actual, digest_expected, 20);</span>
+<span class="line-number"></span><span class="code-hl">}</span>
 </code></pre>
 <h3 id="results-1">
   <a class="title" href="#results-1">Results</a>
@@ -1030,10 +1030,10 @@ Do not edit it by hand.
     <span>Shell</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-shell"><span class="line-number"></span>$ hyperfine --warmup 3 './a.out ./NetBSD-9.4-amd64.iso ~/Downloads/NetBSD-9.4-amd64.iso.torrent'
-<span class="line-number"></span>Benchmark 1: ./a.out ./NetBSD-9.4-amd64.iso ~/Downloads/NetBSD-9.4-amd64.iso.torrent
-<span class="line-number"></span>  Time (mean ± σ):      8.093 s ±  0.272 s    [User: 8.010 s, System: 0.060 s]
-<span class="line-number"></span>  Range (min … max):    7.784 s …  8.684 s    10 runs
+  <code class="language-shell"><span class="line-number"></span><span class="code-hl">$ hyperfine --warmup 3 './a.out ./NetBSD-9.4-amd64.iso ~/Downloads/NetBSD-9.4-amd64.iso.torrent'</span>
+<span class="line-number"></span><span class="code-hl">Benchmark 1: ./a.out ./NetBSD-9.4-amd64.iso ~/Downloads/NetBSD-9.4-amd64.iso.torrent</span>
+<span class="line-number"></span><span class="code-hl">  Time (mean ± σ):      8.093 s ±  0.272 s    [User: 8.010 s, System: 0.060 s]</span>
+<span class="line-number"></span><span class="code-hl">  Range (min … max):    7.784 s …  8.684 s    10 runs</span>
 </code></pre>
 <p>That's better but still not great. We could apply the tweaks suggested by Intel, but that probably would not give us the order of magnitude improvement we need. They cite x1.2 to x1.5 improvements in their article. We need more.</p>
 <p>So... did you know that in all likelihood, your CPU has dedicated silicon to accelerate SHA1 computations? Let's use that! We paid for it, we get to use it!</p>
@@ -1066,16 +1066,16 @@ Do not edit it by hand.
     <span>Plaintext</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-plaintext"><span class="line-number"></span>  W0 &lt;- SRC1[127:96] ;
-<span class="line-number"></span>  W1 &lt;- SRC1[95:64] ;
-<span class="line-number"></span>  W2 &lt;- SRC1[63: 32] ;
-<span class="line-number"></span>  W3 &lt;- SRC1[31: 0] ;
-<span class="line-number"></span>  W4 &lt;- SRC2[127:96] ;
-<span class="line-number"></span>  W5 &lt;- SRC2[95:64] ;
-<span class="line-number"></span>  DEST[127:96] &lt;- W2 XOR W0;
-<span class="line-number"></span>  DEST[95:64] &lt;- W3 XOR W1;
-<span class="line-number"></span>  DEST[63:32] &lt;- W4 XOR W2;
-<span class="line-number"></span>  DEST[31:0] &lt;- W5 XOR W3;
+  <code class="language-plaintext"><span class="line-number"></span><span class="code-hl">  W0 &lt;- SRC1[127:96] ;</span>
+<span class="line-number"></span><span class="code-hl">  W1 &lt;- SRC1[95:64] ;</span>
+<span class="line-number"></span><span class="code-hl">  W2 &lt;- SRC1[63: 32] ;</span>
+<span class="line-number"></span><span class="code-hl">  W3 &lt;- SRC1[31: 0] ;</span>
+<span class="line-number"></span><span class="code-hl">  W4 &lt;- SRC2[127:96] ;</span>
+<span class="line-number"></span><span class="code-hl">  W5 &lt;- SRC2[95:64] ;</span>
+<span class="line-number"></span><span class="code-hl">  DEST[127:96] &lt;- W2 XOR W0;</span>
+<span class="line-number"></span><span class="code-hl">  DEST[95:64] &lt;- W3 XOR W1;</span>
+<span class="line-number"></span><span class="code-hl">  DEST[63:32] &lt;- W4 XOR W2;</span>
+<span class="line-number"></span><span class="code-hl">  DEST[31:0] &lt;- W5 XOR W3;</span>
 </code></pre>
 <p>The first 16 rounds, we do that on the input data (i.e. the download file). But for the remaining rounds (SHA1 does 80 rounds for a 64 byte chunk), the input is computations from previous rounds.
 <code>sha1msg2</code> does slightly different computations but still very similar.</p>
@@ -1092,219 +1092,219 @@ Do not edit it by hand.
     <span>C</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-c"><span class="line-number"></span>// Process as many 64 bytes chunks as possible.
-<span class="line-number"></span>[[maybe_unused]]
-<span class="line-number"></span>static void sha1_sha_ext(uint32_t state[5], const uint8_t data[],
-<span class="line-number"></span>                         uint32_t length) {
-<span class="line-number"></span>  __m128i ABCD, ABCD_SAVE, E0, E0_SAVE, E1;
-<span class="line-number"></span>  __m128i MSG0, MSG1, MSG2, MSG3;
-<span class="line-number"></span>  const __m128i MASK =
-<span class="line-number"></span>      // As 16 u8: `0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15`.
-<span class="line-number"></span>      _mm_set_epi64x(0x0001020304050607ULL, 0x08090a0b0c0d0e0fULL);
-<span class="line-number"></span>
-<span class="line-number"></span>  /* Load initial values */
-<span class="line-number"></span>  ABCD = _mm_loadu_si128((const __m128i *)(void *)state);
-<span class="line-number"></span>  E0 = _mm_set_epi32((int)state[4], 0, 0, 0);
-<span class="line-number"></span>
-<span class="line-number"></span>  // Transform state to big-endian.
-<span class="line-number"></span>  ABCD = _mm_shuffle_epi32(ABCD, 0x1B);
-<span class="line-number"></span>
-<span class="line-number"></span>  while (length &gt;= 64) {
-<span class="line-number"></span>    /* Save current state  */
-<span class="line-number"></span>    ABCD_SAVE = ABCD;
-<span class="line-number"></span>    E0_SAVE = E0;
-<span class="line-number"></span>
-<span class="line-number"></span>    /* Rounds 0-3 */
-<span class="line-number"></span>    // Load `data[0:16]`.
-<span class="line-number"></span>    MSG0 = _mm_loadu_si128((const __m128i *)(void *)(data + 0));
-<span class="line-number"></span>
-<span class="line-number"></span>    // Convert MSG0 to big-endian.
-<span class="line-number"></span>    MSG0 = _mm_shuffle_epi8(MSG0, MASK);
-<span class="line-number"></span>    // E0 += MSG0
-<span class="line-number"></span>    E0 = _mm_add_epi32(E0, MSG0);
-<span class="line-number"></span>    E1 = ABCD;
-<span class="line-number"></span>    //  Perform 4 rounds of SHA1 operation.
-<span class="line-number"></span>    ABCD = (__m128i)_mm_sha1rnds4_epu32(ABCD, E0, 0);
-<span class="line-number"></span>
-<span class="line-number"></span>    /* Rounds 4-7 */
-<span class="line-number"></span>    // Load `data[16:32]`.
-<span class="line-number"></span>    MSG1 = _mm_loadu_si128((const __m128i *)(void *)(data + 16));
-<span class="line-number"></span>    // Convert to big-endian.
-<span class="line-number"></span>    MSG1 = _mm_shuffle_epi8(MSG1, MASK);
-<span class="line-number"></span>    // Compute the SHA1 state variable E after 4 rounds.
-<span class="line-number"></span>    // It is added to the source operand (`E1`).
-<span class="line-number"></span>    E1 = _mm_sha1nexte_epu32(E1, MSG1);
-<span class="line-number"></span>    E0 = ABCD;
-<span class="line-number"></span>
-<span class="line-number"></span>    //  Perform 4 rounds of SHA1 operation.
-<span class="line-number"></span>    ABCD = (__m128i)_mm_sha1rnds4_epu32(ABCD, E1, 0);
-<span class="line-number"></span>    // Perform the intermediate calculation for the next four SHA1 message dwords (128 bits).
-<span class="line-number"></span>    MSG0 = _mm_sha1msg1_epu32(MSG0, MSG1);
-<span class="line-number"></span>
-<span class="line-number"></span>    /* Rounds 8-11 */
-<span class="line-number"></span>    // Load `data[32:48]`.
-<span class="line-number"></span>    MSG2 = _mm_loadu_si128((const __m128i *)(void *)(data + 32));
-<span class="line-number"></span>    // Convert to big-endian.
-<span class="line-number"></span>    MSG2 = _mm_shuffle_epi8(MSG2, MASK);
-<span class="line-number"></span>    // Compute the SHA1 state variable E after 4 rounds.
-<span class="line-number"></span>    E0 = _mm_sha1nexte_epu32(E0, MSG2);
-<span class="line-number"></span>    E1 = ABCD;
-<span class="line-number"></span>    ABCD = (__m128i)_mm_sha1rnds4_epu32(ABCD, E0, 0);
-<span class="line-number"></span>    MSG1 = _mm_sha1msg1_epu32(MSG1, MSG2);
-<span class="line-number"></span>    MSG0 = _mm_xor_si128(MSG0, MSG2);
-<span class="line-number"></span>
-<span class="line-number"></span>    /* Rounds 12-15 */
-<span class="line-number"></span>    // Load `data[48:64]`.
-<span class="line-number"></span>    MSG3 = _mm_loadu_si128((const __m128i *)(void *)(data + 48));
-<span class="line-number"></span>    // Convert to big-endian.
-<span class="line-number"></span>    MSG3 = _mm_shuffle_epi8(MSG3, MASK);
-<span class="line-number"></span>    // Compute the SHA1 state variable E after 4 rounds.
-<span class="line-number"></span>    E1 = _mm_sha1nexte_epu32(E1, MSG3);
-<span class="line-number"></span>    E0 = ABCD;
-<span class="line-number"></span>    // Perform a final calculation for the next four SHA1 message dwords.
-<span class="line-number"></span>    MSG0 = _mm_sha1msg2_epu32(MSG0, MSG3);
-<span class="line-number"></span>    ABCD = (__m128i)_mm_sha1rnds4_epu32(ABCD, E1, 0);
-<span class="line-number"></span>    MSG2 = _mm_sha1msg1_epu32(MSG2, MSG3);
-<span class="line-number"></span>    MSG1 = _mm_xor_si128(MSG1, MSG3);
-<span class="line-number"></span>
-<span class="line-number"></span>    /* Rounds 16-19 */
-<span class="line-number"></span>    E0 = _mm_sha1nexte_epu32(E0, MSG0);
-<span class="line-number"></span>    E1 = ABCD;
-<span class="line-number"></span>    MSG1 = _mm_sha1msg2_epu32(MSG1, MSG0);
-<span class="line-number"></span>    ABCD = (__m128i)_mm_sha1rnds4_epu32(ABCD, E0, 0);
-<span class="line-number"></span>    MSG3 = _mm_sha1msg1_epu32(MSG3, MSG0);
-<span class="line-number"></span>    MSG2 = _mm_xor_si128(MSG2, MSG0);
-<span class="line-number"></span>
-<span class="line-number"></span>    /* Rounds 20-23 */
-<span class="line-number"></span>    E1 = _mm_sha1nexte_epu32(E1, MSG1);
-<span class="line-number"></span>    E0 = ABCD;
-<span class="line-number"></span>    MSG2 = _mm_sha1msg2_epu32(MSG2, MSG1);
-<span class="line-number"></span>    ABCD = (__m128i)_mm_sha1rnds4_epu32(ABCD, E1, 1);
-<span class="line-number"></span>    MSG0 = _mm_sha1msg1_epu32(MSG0, MSG1);
-<span class="line-number"></span>    MSG3 = _mm_xor_si128(MSG3, MSG1);
-<span class="line-number"></span>
-<span class="line-number"></span>    /* Rounds 24-27 */
-<span class="line-number"></span>    E0 = _mm_sha1nexte_epu32(E0, MSG2);
-<span class="line-number"></span>    E1 = ABCD;
-<span class="line-number"></span>    MSG3 = _mm_sha1msg2_epu32(MSG3, MSG2);
-<span class="line-number"></span>    ABCD = (__m128i)_mm_sha1rnds4_epu32(ABCD, E0, 1);
-<span class="line-number"></span>    MSG1 = _mm_sha1msg1_epu32(MSG1, MSG2);
-<span class="line-number"></span>    MSG0 = _mm_xor_si128(MSG0, MSG2);
-<span class="line-number"></span>
-<span class="line-number"></span>    /* Rounds 28-31 */
-<span class="line-number"></span>    E1 = _mm_sha1nexte_epu32(E1, MSG3);
-<span class="line-number"></span>    E0 = ABCD;
-<span class="line-number"></span>    MSG0 = _mm_sha1msg2_epu32(MSG0, MSG3);
-<span class="line-number"></span>    ABCD = (__m128i)_mm_sha1rnds4_epu32(ABCD, E1, 1);
-<span class="line-number"></span>    MSG2 = _mm_sha1msg1_epu32(MSG2, MSG3);
-<span class="line-number"></span>    MSG1 = _mm_xor_si128(MSG1, MSG3);
-<span class="line-number"></span>
-<span class="line-number"></span>    /* Rounds 32-35 */
-<span class="line-number"></span>    E0 = _mm_sha1nexte_epu32(E0, MSG0);
-<span class="line-number"></span>    E1 = ABCD;
-<span class="line-number"></span>    MSG1 = _mm_sha1msg2_epu32(MSG1, MSG0);
-<span class="line-number"></span>    ABCD = (__m128i)_mm_sha1rnds4_epu32(ABCD, E0, 1);
-<span class="line-number"></span>    MSG3 = _mm_sha1msg1_epu32(MSG3, MSG0);
-<span class="line-number"></span>    MSG2 = _mm_xor_si128(MSG2, MSG0);
-<span class="line-number"></span>
-<span class="line-number"></span>    /* Rounds 36-39 */
-<span class="line-number"></span>    E1 = _mm_sha1nexte_epu32(E1, MSG1);
-<span class="line-number"></span>    E0 = ABCD;
-<span class="line-number"></span>    MSG2 = _mm_sha1msg2_epu32(MSG2, MSG1);
-<span class="line-number"></span>    ABCD = (__m128i)_mm_sha1rnds4_epu32(ABCD, E1, 1);
-<span class="line-number"></span>    MSG0 = _mm_sha1msg1_epu32(MSG0, MSG1);
-<span class="line-number"></span>    MSG3 = _mm_xor_si128(MSG3, MSG1);
-<span class="line-number"></span>
-<span class="line-number"></span>    /* Rounds 40-43 */
-<span class="line-number"></span>    E0 = _mm_sha1nexte_epu32(E0, MSG2);
-<span class="line-number"></span>    E1 = ABCD;
-<span class="line-number"></span>    MSG3 = _mm_sha1msg2_epu32(MSG3, MSG2);
-<span class="line-number"></span>    ABCD = (__m128i)_mm_sha1rnds4_epu32(ABCD, E0, 2);
-<span class="line-number"></span>    MSG1 = _mm_sha1msg1_epu32(MSG1, MSG2);
-<span class="line-number"></span>    MSG0 = _mm_xor_si128(MSG0, MSG2);
-<span class="line-number"></span>
-<span class="line-number"></span>    /* Rounds 44-47 */
-<span class="line-number"></span>    E1 = _mm_sha1nexte_epu32(E1, MSG3);
-<span class="line-number"></span>    E0 = ABCD;
-<span class="line-number"></span>    MSG0 = _mm_sha1msg2_epu32(MSG0, MSG3);
-<span class="line-number"></span>    ABCD = (__m128i)_mm_sha1rnds4_epu32(ABCD, E1, 2);
-<span class="line-number"></span>    MSG2 = _mm_sha1msg1_epu32(MSG2, MSG3);
-<span class="line-number"></span>    MSG1 = _mm_xor_si128(MSG1, MSG3);
-<span class="line-number"></span>
-<span class="line-number"></span>    /* Rounds 48-51 */
-<span class="line-number"></span>    E0 = _mm_sha1nexte_epu32(E0, MSG0);
-<span class="line-number"></span>    E1 = ABCD;
-<span class="line-number"></span>    MSG1 = _mm_sha1msg2_epu32(MSG1, MSG0);
-<span class="line-number"></span>    ABCD = (__m128i)_mm_sha1rnds4_epu32(ABCD, E0, 2);
-<span class="line-number"></span>    MSG3 = _mm_sha1msg1_epu32(MSG3, MSG0);
-<span class="line-number"></span>    MSG2 = _mm_xor_si128(MSG2, MSG0);
-<span class="line-number"></span>
-<span class="line-number"></span>    /* Rounds 52-55 */
-<span class="line-number"></span>    E1 = _mm_sha1nexte_epu32(E1, MSG1);
-<span class="line-number"></span>    E0 = ABCD;
-<span class="line-number"></span>    MSG2 = _mm_sha1msg2_epu32(MSG2, MSG1);
-<span class="line-number"></span>    ABCD = (__m128i)_mm_sha1rnds4_epu32(ABCD, E1, 2);
-<span class="line-number"></span>    MSG0 = _mm_sha1msg1_epu32(MSG0, MSG1);
-<span class="line-number"></span>    MSG3 = _mm_xor_si128(MSG3, MSG1);
-<span class="line-number"></span>
-<span class="line-number"></span>    /* Rounds 56-59 */
-<span class="line-number"></span>    E0 = _mm_sha1nexte_epu32(E0, MSG2);
-<span class="line-number"></span>    E1 = ABCD;
-<span class="line-number"></span>    MSG3 = _mm_sha1msg2_epu32(MSG3, MSG2);
-<span class="line-number"></span>    ABCD = (__m128i)_mm_sha1rnds4_epu32(ABCD, E0, 2);
-<span class="line-number"></span>    MSG1 = _mm_sha1msg1_epu32(MSG1, MSG2);
-<span class="line-number"></span>    MSG0 = _mm_xor_si128(MSG0, MSG2);
-<span class="line-number"></span>
-<span class="line-number"></span>    /* Rounds 60-63 */
-<span class="line-number"></span>    E1 = _mm_sha1nexte_epu32(E1, MSG3);
-<span class="line-number"></span>    E0 = ABCD;
-<span class="line-number"></span>    MSG0 = _mm_sha1msg2_epu32(MSG0, MSG3);
-<span class="line-number"></span>    ABCD = (__m128i)_mm_sha1rnds4_epu32(ABCD, E1, 3);
-<span class="line-number"></span>    MSG2 = _mm_sha1msg1_epu32(MSG2, MSG3);
-<span class="line-number"></span>    MSG1 = _mm_xor_si128(MSG1, MSG3);
-<span class="line-number"></span>
-<span class="line-number"></span>    /* Rounds 64-67 */
-<span class="line-number"></span>    E0 = _mm_sha1nexte_epu32(E0, MSG0);
-<span class="line-number"></span>    E1 = ABCD;
-<span class="line-number"></span>    MSG1 = _mm_sha1msg2_epu32(MSG1, MSG0);
-<span class="line-number"></span>    ABCD = (__m128i)_mm_sha1rnds4_epu32(ABCD, E0, 3);
-<span class="line-number"></span>    MSG3 = _mm_sha1msg1_epu32(MSG3, MSG0);
-<span class="line-number"></span>    MSG2 = _mm_xor_si128(MSG2, MSG0);
-<span class="line-number"></span>
-<span class="line-number"></span>    /* Rounds 68-71 */
-<span class="line-number"></span>    E1 = _mm_sha1nexte_epu32(E1, MSG1);
-<span class="line-number"></span>    E0 = ABCD;
-<span class="line-number"></span>    MSG2 = _mm_sha1msg2_epu32(MSG2, MSG1);
-<span class="line-number"></span>    ABCD = (__m128i)_mm_sha1rnds4_epu32(ABCD, E1, 3);
-<span class="line-number"></span>    MSG3 = _mm_xor_si128(MSG3, MSG1);
-<span class="line-number"></span>
-<span class="line-number"></span>    /* Rounds 72-75 */
-<span class="line-number"></span>    E0 = _mm_sha1nexte_epu32(E0, MSG2);
-<span class="line-number"></span>    E1 = ABCD;
-<span class="line-number"></span>    MSG3 = _mm_sha1msg2_epu32(MSG3, MSG2);
-<span class="line-number"></span>    ABCD = (__m128i)_mm_sha1rnds4_epu32(ABCD, E0, 3);
-<span class="line-number"></span>
-<span class="line-number"></span>    /* Rounds 76-79 */
-<span class="line-number"></span>    E1 = _mm_sha1nexte_epu32(E1, MSG3);
-<span class="line-number"></span>    E0 = ABCD;
-<span class="line-number"></span>    ABCD = (__m128i)_mm_sha1rnds4_epu32(ABCD, E1, 3);
-<span class="line-number"></span>
-<span class="line-number"></span>    /* Combine state */
-<span class="line-number"></span>    E0 = _mm_sha1nexte_epu32(E0, E0_SAVE);
-<span class="line-number"></span>    // ABCD += ABCD_SAVE
-<span class="line-number"></span>    ABCD = _mm_add_epi32(ABCD, ABCD_SAVE);
-<span class="line-number"></span>
-<span class="line-number"></span>    data += 64;
-<span class="line-number"></span>    length -= 64;
-<span class="line-number"></span>  }
-<span class="line-number"></span>
-<span class="line-number"></span>  /* Save state */
-<span class="line-number"></span>  // Convert back to little-endian.
-<span class="line-number"></span>  ABCD = _mm_shuffle_epi32(ABCD, 0x1B);
-<span class="line-number"></span>  _mm_storeu_si128((__m128i *)(void *)state, ABCD);
-<span class="line-number"></span>  // Convert back to little-endian.
-<span class="line-number"></span>  state[4] = (uint32_t)_mm_extract_epi32(E0, 3);
-<span class="line-number"></span>}
+  <code class="language-c"><span class="line-number"></span><span class="code-hl">// Process as many 64 bytes chunks as possible.</span>
+<span class="line-number"></span><span class="code-hl">[[maybe_unused]]</span>
+<span class="line-number"></span><span class="code-hl">static void sha1_sha_ext(uint32_t state[5], const uint8_t data[],</span>
+<span class="line-number"></span><span class="code-hl">                         uint32_t length) {</span>
+<span class="line-number"></span><span class="code-hl">  __m128i ABCD, ABCD_SAVE, E0, E0_SAVE, E1;</span>
+<span class="line-number"></span><span class="code-hl">  __m128i MSG0, MSG1, MSG2, MSG3;</span>
+<span class="line-number"></span><span class="code-hl">  const __m128i MASK =</span>
+<span class="line-number"></span><span class="code-hl">      // As 16 u8: `0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15`.</span>
+<span class="line-number"></span><span class="code-hl">      _mm_set_epi64x(0x0001020304050607ULL, 0x08090a0b0c0d0e0fULL);</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  /* Load initial values */</span>
+<span class="line-number"></span><span class="code-hl">  ABCD = _mm_loadu_si128((const __m128i *)(void *)state);</span>
+<span class="line-number"></span><span class="code-hl">  E0 = _mm_set_epi32((int)state[4], 0, 0, 0);</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  // Transform state to big-endian.</span>
+<span class="line-number"></span><span class="code-hl">  ABCD = _mm_shuffle_epi32(ABCD, 0x1B);</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  while (length &gt;= 64) {</span>
+<span class="line-number"></span><span class="code-hl">    /* Save current state  */</span>
+<span class="line-number"></span><span class="code-hl">    ABCD_SAVE = ABCD;</span>
+<span class="line-number"></span><span class="code-hl">    E0_SAVE = E0;</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">    /* Rounds 0-3 */</span>
+<span class="line-number"></span><span class="code-hl">    // Load `data[0:16]`.</span>
+<span class="line-number"></span><span class="code-hl">    MSG0 = _mm_loadu_si128((const __m128i *)(void *)(data + 0));</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">    // Convert MSG0 to big-endian.</span>
+<span class="line-number"></span><span class="code-hl">    MSG0 = _mm_shuffle_epi8(MSG0, MASK);</span>
+<span class="line-number"></span><span class="code-hl">    // E0 += MSG0</span>
+<span class="line-number"></span><span class="code-hl">    E0 = _mm_add_epi32(E0, MSG0);</span>
+<span class="line-number"></span><span class="code-hl">    E1 = ABCD;</span>
+<span class="line-number"></span><span class="code-hl">    //  Perform 4 rounds of SHA1 operation.</span>
+<span class="line-number"></span><span class="code-hl">    ABCD = (__m128i)_mm_sha1rnds4_epu32(ABCD, E0, 0);</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">    /* Rounds 4-7 */</span>
+<span class="line-number"></span><span class="code-hl">    // Load `data[16:32]`.</span>
+<span class="line-number"></span><span class="code-hl">    MSG1 = _mm_loadu_si128((const __m128i *)(void *)(data + 16));</span>
+<span class="line-number"></span><span class="code-hl">    // Convert to big-endian.</span>
+<span class="line-number"></span><span class="code-hl">    MSG1 = _mm_shuffle_epi8(MSG1, MASK);</span>
+<span class="line-number"></span><span class="code-hl">    // Compute the SHA1 state variable E after 4 rounds.</span>
+<span class="line-number"></span><span class="code-hl">    // It is added to the source operand (`E1`).</span>
+<span class="line-number"></span><span class="code-hl">    E1 = _mm_sha1nexte_epu32(E1, MSG1);</span>
+<span class="line-number"></span><span class="code-hl">    E0 = ABCD;</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">    //  Perform 4 rounds of SHA1 operation.</span>
+<span class="line-number"></span><span class="code-hl">    ABCD = (__m128i)_mm_sha1rnds4_epu32(ABCD, E1, 0);</span>
+<span class="line-number"></span><span class="code-hl">    // Perform the intermediate calculation for the next four SHA1 message dwords (128 bits).</span>
+<span class="line-number"></span><span class="code-hl">    MSG0 = _mm_sha1msg1_epu32(MSG0, MSG1);</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">    /* Rounds 8-11 */</span>
+<span class="line-number"></span><span class="code-hl">    // Load `data[32:48]`.</span>
+<span class="line-number"></span><span class="code-hl">    MSG2 = _mm_loadu_si128((const __m128i *)(void *)(data + 32));</span>
+<span class="line-number"></span><span class="code-hl">    // Convert to big-endian.</span>
+<span class="line-number"></span><span class="code-hl">    MSG2 = _mm_shuffle_epi8(MSG2, MASK);</span>
+<span class="line-number"></span><span class="code-hl">    // Compute the SHA1 state variable E after 4 rounds.</span>
+<span class="line-number"></span><span class="code-hl">    E0 = _mm_sha1nexte_epu32(E0, MSG2);</span>
+<span class="line-number"></span><span class="code-hl">    E1 = ABCD;</span>
+<span class="line-number"></span><span class="code-hl">    ABCD = (__m128i)_mm_sha1rnds4_epu32(ABCD, E0, 0);</span>
+<span class="line-number"></span><span class="code-hl">    MSG1 = _mm_sha1msg1_epu32(MSG1, MSG2);</span>
+<span class="line-number"></span><span class="code-hl">    MSG0 = _mm_xor_si128(MSG0, MSG2);</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">    /* Rounds 12-15 */</span>
+<span class="line-number"></span><span class="code-hl">    // Load `data[48:64]`.</span>
+<span class="line-number"></span><span class="code-hl">    MSG3 = _mm_loadu_si128((const __m128i *)(void *)(data + 48));</span>
+<span class="line-number"></span><span class="code-hl">    // Convert to big-endian.</span>
+<span class="line-number"></span><span class="code-hl">    MSG3 = _mm_shuffle_epi8(MSG3, MASK);</span>
+<span class="line-number"></span><span class="code-hl">    // Compute the SHA1 state variable E after 4 rounds.</span>
+<span class="line-number"></span><span class="code-hl">    E1 = _mm_sha1nexte_epu32(E1, MSG3);</span>
+<span class="line-number"></span><span class="code-hl">    E0 = ABCD;</span>
+<span class="line-number"></span><span class="code-hl">    // Perform a final calculation for the next four SHA1 message dwords.</span>
+<span class="line-number"></span><span class="code-hl">    MSG0 = _mm_sha1msg2_epu32(MSG0, MSG3);</span>
+<span class="line-number"></span><span class="code-hl">    ABCD = (__m128i)_mm_sha1rnds4_epu32(ABCD, E1, 0);</span>
+<span class="line-number"></span><span class="code-hl">    MSG2 = _mm_sha1msg1_epu32(MSG2, MSG3);</span>
+<span class="line-number"></span><span class="code-hl">    MSG1 = _mm_xor_si128(MSG1, MSG3);</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">    /* Rounds 16-19 */</span>
+<span class="line-number"></span><span class="code-hl">    E0 = _mm_sha1nexte_epu32(E0, MSG0);</span>
+<span class="line-number"></span><span class="code-hl">    E1 = ABCD;</span>
+<span class="line-number"></span><span class="code-hl">    MSG1 = _mm_sha1msg2_epu32(MSG1, MSG0);</span>
+<span class="line-number"></span><span class="code-hl">    ABCD = (__m128i)_mm_sha1rnds4_epu32(ABCD, E0, 0);</span>
+<span class="line-number"></span><span class="code-hl">    MSG3 = _mm_sha1msg1_epu32(MSG3, MSG0);</span>
+<span class="line-number"></span><span class="code-hl">    MSG2 = _mm_xor_si128(MSG2, MSG0);</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">    /* Rounds 20-23 */</span>
+<span class="line-number"></span><span class="code-hl">    E1 = _mm_sha1nexte_epu32(E1, MSG1);</span>
+<span class="line-number"></span><span class="code-hl">    E0 = ABCD;</span>
+<span class="line-number"></span><span class="code-hl">    MSG2 = _mm_sha1msg2_epu32(MSG2, MSG1);</span>
+<span class="line-number"></span><span class="code-hl">    ABCD = (__m128i)_mm_sha1rnds4_epu32(ABCD, E1, 1);</span>
+<span class="line-number"></span><span class="code-hl">    MSG0 = _mm_sha1msg1_epu32(MSG0, MSG1);</span>
+<span class="line-number"></span><span class="code-hl">    MSG3 = _mm_xor_si128(MSG3, MSG1);</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">    /* Rounds 24-27 */</span>
+<span class="line-number"></span><span class="code-hl">    E0 = _mm_sha1nexte_epu32(E0, MSG2);</span>
+<span class="line-number"></span><span class="code-hl">    E1 = ABCD;</span>
+<span class="line-number"></span><span class="code-hl">    MSG3 = _mm_sha1msg2_epu32(MSG3, MSG2);</span>
+<span class="line-number"></span><span class="code-hl">    ABCD = (__m128i)_mm_sha1rnds4_epu32(ABCD, E0, 1);</span>
+<span class="line-number"></span><span class="code-hl">    MSG1 = _mm_sha1msg1_epu32(MSG1, MSG2);</span>
+<span class="line-number"></span><span class="code-hl">    MSG0 = _mm_xor_si128(MSG0, MSG2);</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">    /* Rounds 28-31 */</span>
+<span class="line-number"></span><span class="code-hl">    E1 = _mm_sha1nexte_epu32(E1, MSG3);</span>
+<span class="line-number"></span><span class="code-hl">    E0 = ABCD;</span>
+<span class="line-number"></span><span class="code-hl">    MSG0 = _mm_sha1msg2_epu32(MSG0, MSG3);</span>
+<span class="line-number"></span><span class="code-hl">    ABCD = (__m128i)_mm_sha1rnds4_epu32(ABCD, E1, 1);</span>
+<span class="line-number"></span><span class="code-hl">    MSG2 = _mm_sha1msg1_epu32(MSG2, MSG3);</span>
+<span class="line-number"></span><span class="code-hl">    MSG1 = _mm_xor_si128(MSG1, MSG3);</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">    /* Rounds 32-35 */</span>
+<span class="line-number"></span><span class="code-hl">    E0 = _mm_sha1nexte_epu32(E0, MSG0);</span>
+<span class="line-number"></span><span class="code-hl">    E1 = ABCD;</span>
+<span class="line-number"></span><span class="code-hl">    MSG1 = _mm_sha1msg2_epu32(MSG1, MSG0);</span>
+<span class="line-number"></span><span class="code-hl">    ABCD = (__m128i)_mm_sha1rnds4_epu32(ABCD, E0, 1);</span>
+<span class="line-number"></span><span class="code-hl">    MSG3 = _mm_sha1msg1_epu32(MSG3, MSG0);</span>
+<span class="line-number"></span><span class="code-hl">    MSG2 = _mm_xor_si128(MSG2, MSG0);</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">    /* Rounds 36-39 */</span>
+<span class="line-number"></span><span class="code-hl">    E1 = _mm_sha1nexte_epu32(E1, MSG1);</span>
+<span class="line-number"></span><span class="code-hl">    E0 = ABCD;</span>
+<span class="line-number"></span><span class="code-hl">    MSG2 = _mm_sha1msg2_epu32(MSG2, MSG1);</span>
+<span class="line-number"></span><span class="code-hl">    ABCD = (__m128i)_mm_sha1rnds4_epu32(ABCD, E1, 1);</span>
+<span class="line-number"></span><span class="code-hl">    MSG0 = _mm_sha1msg1_epu32(MSG0, MSG1);</span>
+<span class="line-number"></span><span class="code-hl">    MSG3 = _mm_xor_si128(MSG3, MSG1);</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">    /* Rounds 40-43 */</span>
+<span class="line-number"></span><span class="code-hl">    E0 = _mm_sha1nexte_epu32(E0, MSG2);</span>
+<span class="line-number"></span><span class="code-hl">    E1 = ABCD;</span>
+<span class="line-number"></span><span class="code-hl">    MSG3 = _mm_sha1msg2_epu32(MSG3, MSG2);</span>
+<span class="line-number"></span><span class="code-hl">    ABCD = (__m128i)_mm_sha1rnds4_epu32(ABCD, E0, 2);</span>
+<span class="line-number"></span><span class="code-hl">    MSG1 = _mm_sha1msg1_epu32(MSG1, MSG2);</span>
+<span class="line-number"></span><span class="code-hl">    MSG0 = _mm_xor_si128(MSG0, MSG2);</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">    /* Rounds 44-47 */</span>
+<span class="line-number"></span><span class="code-hl">    E1 = _mm_sha1nexte_epu32(E1, MSG3);</span>
+<span class="line-number"></span><span class="code-hl">    E0 = ABCD;</span>
+<span class="line-number"></span><span class="code-hl">    MSG0 = _mm_sha1msg2_epu32(MSG0, MSG3);</span>
+<span class="line-number"></span><span class="code-hl">    ABCD = (__m128i)_mm_sha1rnds4_epu32(ABCD, E1, 2);</span>
+<span class="line-number"></span><span class="code-hl">    MSG2 = _mm_sha1msg1_epu32(MSG2, MSG3);</span>
+<span class="line-number"></span><span class="code-hl">    MSG1 = _mm_xor_si128(MSG1, MSG3);</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">    /* Rounds 48-51 */</span>
+<span class="line-number"></span><span class="code-hl">    E0 = _mm_sha1nexte_epu32(E0, MSG0);</span>
+<span class="line-number"></span><span class="code-hl">    E1 = ABCD;</span>
+<span class="line-number"></span><span class="code-hl">    MSG1 = _mm_sha1msg2_epu32(MSG1, MSG0);</span>
+<span class="line-number"></span><span class="code-hl">    ABCD = (__m128i)_mm_sha1rnds4_epu32(ABCD, E0, 2);</span>
+<span class="line-number"></span><span class="code-hl">    MSG3 = _mm_sha1msg1_epu32(MSG3, MSG0);</span>
+<span class="line-number"></span><span class="code-hl">    MSG2 = _mm_xor_si128(MSG2, MSG0);</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">    /* Rounds 52-55 */</span>
+<span class="line-number"></span><span class="code-hl">    E1 = _mm_sha1nexte_epu32(E1, MSG1);</span>
+<span class="line-number"></span><span class="code-hl">    E0 = ABCD;</span>
+<span class="line-number"></span><span class="code-hl">    MSG2 = _mm_sha1msg2_epu32(MSG2, MSG1);</span>
+<span class="line-number"></span><span class="code-hl">    ABCD = (__m128i)_mm_sha1rnds4_epu32(ABCD, E1, 2);</span>
+<span class="line-number"></span><span class="code-hl">    MSG0 = _mm_sha1msg1_epu32(MSG0, MSG1);</span>
+<span class="line-number"></span><span class="code-hl">    MSG3 = _mm_xor_si128(MSG3, MSG1);</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">    /* Rounds 56-59 */</span>
+<span class="line-number"></span><span class="code-hl">    E0 = _mm_sha1nexte_epu32(E0, MSG2);</span>
+<span class="line-number"></span><span class="code-hl">    E1 = ABCD;</span>
+<span class="line-number"></span><span class="code-hl">    MSG3 = _mm_sha1msg2_epu32(MSG3, MSG2);</span>
+<span class="line-number"></span><span class="code-hl">    ABCD = (__m128i)_mm_sha1rnds4_epu32(ABCD, E0, 2);</span>
+<span class="line-number"></span><span class="code-hl">    MSG1 = _mm_sha1msg1_epu32(MSG1, MSG2);</span>
+<span class="line-number"></span><span class="code-hl">    MSG0 = _mm_xor_si128(MSG0, MSG2);</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">    /* Rounds 60-63 */</span>
+<span class="line-number"></span><span class="code-hl">    E1 = _mm_sha1nexte_epu32(E1, MSG3);</span>
+<span class="line-number"></span><span class="code-hl">    E0 = ABCD;</span>
+<span class="line-number"></span><span class="code-hl">    MSG0 = _mm_sha1msg2_epu32(MSG0, MSG3);</span>
+<span class="line-number"></span><span class="code-hl">    ABCD = (__m128i)_mm_sha1rnds4_epu32(ABCD, E1, 3);</span>
+<span class="line-number"></span><span class="code-hl">    MSG2 = _mm_sha1msg1_epu32(MSG2, MSG3);</span>
+<span class="line-number"></span><span class="code-hl">    MSG1 = _mm_xor_si128(MSG1, MSG3);</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">    /* Rounds 64-67 */</span>
+<span class="line-number"></span><span class="code-hl">    E0 = _mm_sha1nexte_epu32(E0, MSG0);</span>
+<span class="line-number"></span><span class="code-hl">    E1 = ABCD;</span>
+<span class="line-number"></span><span class="code-hl">    MSG1 = _mm_sha1msg2_epu32(MSG1, MSG0);</span>
+<span class="line-number"></span><span class="code-hl">    ABCD = (__m128i)_mm_sha1rnds4_epu32(ABCD, E0, 3);</span>
+<span class="line-number"></span><span class="code-hl">    MSG3 = _mm_sha1msg1_epu32(MSG3, MSG0);</span>
+<span class="line-number"></span><span class="code-hl">    MSG2 = _mm_xor_si128(MSG2, MSG0);</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">    /* Rounds 68-71 */</span>
+<span class="line-number"></span><span class="code-hl">    E1 = _mm_sha1nexte_epu32(E1, MSG1);</span>
+<span class="line-number"></span><span class="code-hl">    E0 = ABCD;</span>
+<span class="line-number"></span><span class="code-hl">    MSG2 = _mm_sha1msg2_epu32(MSG2, MSG1);</span>
+<span class="line-number"></span><span class="code-hl">    ABCD = (__m128i)_mm_sha1rnds4_epu32(ABCD, E1, 3);</span>
+<span class="line-number"></span><span class="code-hl">    MSG3 = _mm_xor_si128(MSG3, MSG1);</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">    /* Rounds 72-75 */</span>
+<span class="line-number"></span><span class="code-hl">    E0 = _mm_sha1nexte_epu32(E0, MSG2);</span>
+<span class="line-number"></span><span class="code-hl">    E1 = ABCD;</span>
+<span class="line-number"></span><span class="code-hl">    MSG3 = _mm_sha1msg2_epu32(MSG3, MSG2);</span>
+<span class="line-number"></span><span class="code-hl">    ABCD = (__m128i)_mm_sha1rnds4_epu32(ABCD, E0, 3);</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">    /* Rounds 76-79 */</span>
+<span class="line-number"></span><span class="code-hl">    E1 = _mm_sha1nexte_epu32(E1, MSG3);</span>
+<span class="line-number"></span><span class="code-hl">    E0 = ABCD;</span>
+<span class="line-number"></span><span class="code-hl">    ABCD = (__m128i)_mm_sha1rnds4_epu32(ABCD, E1, 3);</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">    /* Combine state */</span>
+<span class="line-number"></span><span class="code-hl">    E0 = _mm_sha1nexte_epu32(E0, E0_SAVE);</span>
+<span class="line-number"></span><span class="code-hl">    // ABCD += ABCD_SAVE</span>
+<span class="line-number"></span><span class="code-hl">    ABCD = _mm_add_epi32(ABCD, ABCD_SAVE);</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">    data += 64;</span>
+<span class="line-number"></span><span class="code-hl">    length -= 64;</span>
+<span class="line-number"></span><span class="code-hl">  }</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  /* Save state */</span>
+<span class="line-number"></span><span class="code-hl">  // Convert back to little-endian.</span>
+<span class="line-number"></span><span class="code-hl">  ABCD = _mm_shuffle_epi32(ABCD, 0x1B);</span>
+<span class="line-number"></span><span class="code-hl">  _mm_storeu_si128((__m128i *)(void *)state, ABCD);</span>
+<span class="line-number"></span><span class="code-hl">  // Convert back to little-endian.</span>
+<span class="line-number"></span><span class="code-hl">  state[4] = (uint32_t)_mm_extract_epi32(E0, 3);</span>
+<span class="line-number"></span><span class="code-hl">}</span>
 </code></pre>
 </details>
 <p>Our <code>is_piece_valid</code> function is practically identical to the last section:</p>
@@ -1313,25 +1313,25 @@ Do not edit it by hand.
     <span>C</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-c"><span class="line-number"></span>static bool is_piece_valid(uint8_t *piece, uint64_t piece_len,
-<span class="line-number"></span>                           uint8_t digest_expected[20]) {
-<span class="line-number"></span>  SHA1_CTX ctx = {0};
-<span class="line-number"></span>  SHA1Init(&amp;ctx);
-<span class="line-number"></span>
-<span class="line-number"></span>  // Process as many SHA1 64 bytes chunks as possible.
-<span class="line-number"></span>  uint64_t len_rounded_down = (piece_len / 64) * 64;
-<span class="line-number"></span>  uint64_t rem = piece_len % 64;
-<span class="line-number"></span>  sha1_sha_ext(ctx.state, piece, (uint32_t)len_rounded_down);
-<span class="line-number"></span>
-<span class="line-number"></span>  memcpy(ctx.buffer, piece + len_rounded_down, rem);
-<span class="line-number"></span>
-<span class="line-number"></span>  ctx.count = piece_len * 8;
-<span class="line-number"></span>
-<span class="line-number"></span>  uint8_t digest_actual[20] = {0};
-<span class="line-number"></span>  SHA1Final(digest_actual, &amp;ctx);
-<span class="line-number"></span>
-<span class="line-number"></span>  return !memcmp(digest_actual, digest_expected, 20);
-<span class="line-number"></span>}
+  <code class="language-c"><span class="line-number"></span><span class="code-hl">static bool is_piece_valid(uint8_t *piece, uint64_t piece_len,</span>
+<span class="line-number"></span><span class="code-hl">                           uint8_t digest_expected[20]) {</span>
+<span class="line-number"></span><span class="code-hl">  SHA1_CTX ctx = {0};</span>
+<span class="line-number"></span><span class="code-hl">  SHA1Init(&amp;ctx);</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  // Process as many SHA1 64 bytes chunks as possible.</span>
+<span class="line-number"></span><span class="code-hl">  uint64_t len_rounded_down = (piece_len / 64) * 64;</span>
+<span class="line-number"></span><span class="code-hl">  uint64_t rem = piece_len % 64;</span>
+<span class="line-number"></span><span class="code-hl">  sha1_sha_ext(ctx.state, piece, (uint32_t)len_rounded_down);</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  memcpy(ctx.buffer, piece + len_rounded_down, rem);</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  ctx.count = piece_len * 8;</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  uint8_t digest_actual[20] = {0};</span>
+<span class="line-number"></span><span class="code-hl">  SHA1Final(digest_actual, &amp;ctx);</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  return !memcmp(digest_actual, digest_expected, 20);</span>
+<span class="line-number"></span><span class="code-hl">}</span>
 </code></pre>
 <h3 id="results-2">
   <a class="title" href="#results-2">Results</a>
@@ -1343,10 +1343,10 @@ Do not edit it by hand.
     <span>Shell</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-shell"><span class="line-number"></span> $ hyperfine --warmup 3 './a.out ./NetBSD-9.4-amd64.iso ~/Downloads/NetBSD-9.4-amd64.iso.torrent'
-<span class="line-number"></span>Benchmark 1: ./a.out ./NetBSD-9.4-amd64.iso ~/Downloads/NetBSD-9.4-amd64.iso.torrent
-<span class="line-number"></span>  Time (mean ± σ):     866.9 ms ±  17.4 ms    [User: 809.6 ms, System: 54.4 ms]
-<span class="line-number"></span>  Range (min … max):   839.7 ms … 901.4 ms    10 runs
+  <code class="language-shell"><span class="line-number"></span><span class="code-hl"> $ hyperfine --warmup 3 './a.out ./NetBSD-9.4-amd64.iso ~/Downloads/NetBSD-9.4-amd64.iso.torrent'</span>
+<span class="line-number"></span><span class="code-hl">Benchmark 1: ./a.out ./NetBSD-9.4-amd64.iso ~/Downloads/NetBSD-9.4-amd64.iso.torrent</span>
+<span class="line-number"></span><span class="code-hl">  Time (mean ± σ):     866.9 ms ±  17.4 ms    [User: 809.6 ms, System: 54.4 ms]</span>
+<span class="line-number"></span><span class="code-hl">  Range (min … max):   839.7 ms … 901.4 ms    10 runs</span>
 </code></pre>
 <p>Now that's what I'm talking about, ~ <strong>571 MiB/s</strong>. Around a 10x speed-up compared to the basic SSE implementation! And now we are running under a second. Also the variability is much reduced which is nice.</p>
 <p>What about a release build (without Address Sanitizer), for comparison?</p>
@@ -1356,10 +1356,10 @@ Do not edit it by hand.
     <span>Shell</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-shell"><span class="line-number"></span>$ hyperfine --warmup 3 './a.out ./NetBSD-9.4-amd64.iso ~/Downloads/NetBSD-9.4-amd64.iso.torrent'
-<span class="line-number"></span>Benchmark 1: ./a.out ./NetBSD-9.4-amd64.iso ~/Downloads/NetBSD-9.4-amd64.iso.torrent
-<span class="line-number"></span>  Time (mean ± σ):     617.8 ms ±  20.9 ms    [User: 573.6 ms, System: 42.2 ms]
-<span class="line-number"></span>  Range (min … max):   598.7 ms … 669.1 ms    10 runs
+  <code class="language-shell"><span class="line-number"></span><span class="code-hl">$ hyperfine --warmup 3 './a.out ./NetBSD-9.4-amd64.iso ~/Downloads/NetBSD-9.4-amd64.iso.torrent'</span>
+<span class="line-number"></span><span class="code-hl">Benchmark 1: ./a.out ./NetBSD-9.4-amd64.iso ~/Downloads/NetBSD-9.4-amd64.iso.torrent</span>
+<span class="line-number"></span><span class="code-hl">  Time (mean ± σ):     617.8 ms ±  20.9 ms    [User: 573.6 ms, System: 42.2 ms]</span>
+<span class="line-number"></span><span class="code-hl">  Range (min … max):   598.7 ms … 669.1 ms    10 runs</span>
 </code></pre>
 <p>That's ~ <strong>802 MiB/s</strong>.</p>
 <p>And this is the code using the SHA extension, again with <code>-O2 -march=native</code>:</p>
@@ -1368,10 +1368,10 @@ Do not edit it by hand.
     <span>Shell</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-shell"><span class="line-number"></span>$ hyperfine --warmup 3 './a.out ./NetBSD-9.4-amd64.iso ~/Downloads/NetBSD-9.4-amd64.iso.torrent'
-<span class="line-number"></span>Benchmark 1: ./a.out ./NetBSD-9.4-amd64.iso ~/Downloads/NetBSD-9.4-amd64.iso.torrent
-<span class="line-number"></span>  Time (mean ± σ):     281.2 ms ±   5.4 ms    [User: 240.6 ms, System: 39.6 ms]
-<span class="line-number"></span>  Range (min … max):   276.1 ms … 294.3 ms    10 runs
+  <code class="language-shell"><span class="line-number"></span><span class="code-hl">$ hyperfine --warmup 3 './a.out ./NetBSD-9.4-amd64.iso ~/Downloads/NetBSD-9.4-amd64.iso.torrent'</span>
+<span class="line-number"></span><span class="code-hl">Benchmark 1: ./a.out ./NetBSD-9.4-amd64.iso ~/Downloads/NetBSD-9.4-amd64.iso.torrent</span>
+<span class="line-number"></span><span class="code-hl">  Time (mean ± σ):     281.2 ms ±   5.4 ms    [User: 240.6 ms, System: 39.6 ms]</span>
+<span class="line-number"></span><span class="code-hl">  Range (min … max):   276.1 ms … 294.3 ms    10 runs</span>
 </code></pre>
 <p>That's ~ <strong>1.8 GiB/s</strong>.</p>
 <p>Unsurprisingly, when inspecting the generated assembly code for the SIMD-less version, the auto-vectorization is <em>very</em> limited and does not use the SHA extension (compilers are smart, but not <em>that</em> smart).</p>
@@ -1384,7 +1384,7 @@ Do not edit it by hand.
     <span>Plaintext</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-plaintext"><span class="line-number"></span> Timing buffered disk reads: 6518 MB in  3.00 seconds = 2171.34 MB/sec
+  <code class="language-plaintext"><span class="line-number"></span><span class="code-hl"> Timing buffered disk reads: 6518 MB in  3.00 seconds = 2171.34 MB/sec</span>
 </code></pre>
 <p>Since our benchmark first warms up a few times, we know that the file data is in the cache, so <code>buffered disk reads</code> seems like a good metric to go by. Thus, our program performance is near the disk I/O limit for cached reads. Sounds pretty good to me!</p>
 <p>I tried to give the OS some hints to improve a bit on that front with <code>madvise(file_download_data, file_download_size, MADV_SEQUENTIAL | MADV_WILLNEED)</code>, but it did not have any impact on the timings.</p>
@@ -1398,10 +1398,10 @@ Do not edit it by hand.
     <span>Shell</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-shell"><span class="line-number"></span> $ hyperfine --warmup 3 './a.out ./NetBSD-9.4-amd64.iso ~/Downloads/NetBSD-9.4-amd64.iso.torrent'
-<span class="line-number"></span>Benchmark 1: ./a.out ./NetBSD-9.4-amd64.iso ~/Downloads/NetBSD-9.4-amd64.iso.torrent
-<span class="line-number"></span>  Time (mean ± σ):     281.5 ms ±   3.9 ms    [User: 245.7 ms, System: 35.1 ms]
-<span class="line-number"></span>  Range (min … max):   276.3 ms … 288.9 ms    10 runs
+  <code class="language-shell"><span class="line-number"></span><span class="code-hl"> $ hyperfine --warmup 3 './a.out ./NetBSD-9.4-amd64.iso ~/Downloads/NetBSD-9.4-amd64.iso.torrent'</span>
+<span class="line-number"></span><span class="code-hl">Benchmark 1: ./a.out ./NetBSD-9.4-amd64.iso ~/Downloads/NetBSD-9.4-amd64.iso.torrent</span>
+<span class="line-number"></span><span class="code-hl">  Time (mean ± σ):     281.5 ms ±   3.9 ms    [User: 245.7 ms, System: 35.1 ms]</span>
+<span class="line-number"></span><span class="code-hl">  Range (min … max):   276.3 ms … 288.9 ms    10 runs</span>
 </code></pre>
 <p>So, the performance is essentially identical to our version. Pretty good.</p>
 <p>OpenSSL picks at runtime the best code path based on what features the CPU supports. Interestingly on my system, even when compiled with <code>-march=native</code>, it does not decide to use the SHA extension, and instead goes for hand-optimized SIMD. That's mind-blowing that this SIMD code performs as well that dedicated silicon, including the cycles spent on the runtime check. So props to the developers!</p>

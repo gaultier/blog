@@ -131,7 +131,7 @@ Do not edit it by hand.
     <span>Go</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-go"><span class="line-number"></span>func (db *DB) QueryContext(ctx context.Context, query string, args ...any) (*Rows, error)
+  <code class="language-go"><span class="line-number"></span><span class="code-hl">func (db *DB) QueryContext(ctx context.Context, query string, args ...any) (*Rows, error)</span>
 </code></pre>
 <p>As a first step, we'll only print the query string. In some cases, that's sufficient, for example if the query is <code>SELECT * from users</code>: there are no arguments.</p>
 <p>The only challenge here is to know which registers the string is passed in. One good resource is the <a href="https://github.com/golang/go/blob/master/src/cmd/compile/abi-internal.md">Go ABI documentation</a>.</p>
@@ -141,9 +141,9 @@ Do not edit it by hand.
     <span>Dtrace</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-dtrace"><span class="line-number"></span>pid$target::database?sql.*.QueryContext:entry {
-<span class="line-number"></span>  printf(&quot;%p %p %p %p %p %p %p %p %p\n&quot;, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9);
-<span class="line-number"></span>}
+  <code class="language-dtrace"><span class="line-number"></span><span class="code-hl">pid$target::database?sql.*.QueryContext:entry {</span>
+<span class="line-number"></span><span class="code-hl">  printf(&quot;%p %p %p %p %p %p %p %p %p\n&quot;, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9);</span>
+<span class="line-number"></span><span class="code-hl">}</span>
 </code></pre>
 <p>And we'll see something like this when the application being observed does a SQL query:</p>
 <pre>
@@ -151,9 +151,9 @@ Do not edit it by hand.
     <span>Plaintext</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-plaintext"><span class="line-number"></span>dtrace: description 'pid$target::database?sql.*.QueryContext:entry ' matched 4 probes
-<span class="line-number"></span>CPU     ID                    FUNCTION:NAME
-<span class="line-number"></span> 12 140734 database/sql.(*DB).QueryContext:entry 140023cea90 1024bce78 14002519b30 140017c5400 25b 14000e08b40 4 4 100bf02ac 2
+  <code class="language-plaintext"><span class="line-number"></span><span class="code-hl">dtrace: description 'pid$target::database?sql.*.QueryContext:entry ' matched 4 probes</span>
+<span class="line-number"></span><span class="code-hl">CPU     ID                    FUNCTION:NAME</span>
+<span class="line-number"></span><span class="code-hl"> 12 140734 database/sql.(*DB).QueryContext:entry 140023cea90 1024bce78 14002519b30 140017c5400 25b 14000e08b40 4 4 100bf02ac 2</span>
 </code></pre>
 <p>We can infer that:</p>
 <ul>
@@ -169,11 +169,11 @@ Do not edit it by hand.
     <span>Dtrace</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-dtrace"><span class="line-number"></span>pid$target::database?sql.*.QueryContext:entry {
-<span class="line-number"></span>  this-&gt;query = stringof(copyin(arg3, arg4)); 
-<span class="line-number"></span>
-<span class="line-number"></span>  printf(&quot;%s\n&quot;, this-&gt;query);
-<span class="line-number"></span>}
+  <code class="language-dtrace"><span class="line-number"></span><span class="code-hl">pid$target::database?sql.*.QueryContext:entry {</span>
+<span class="line-number"></span><span class="code-hl">  this-&gt;query = stringof(copyin(arg3, arg4)); </span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  printf(&quot;%s\n&quot;, this-&gt;query);</span>
+<span class="line-number"></span><span class="code-hl">}</span>
 </code></pre>
 <p>An important note: since the string is quite long, we should pass to the DTrace command <code>-x strsize=16K</code> or use the pragma <code>#pragma D option strsize=16K</code> to allocate more memory for temporary strings. Otherwise DTrace will truncate our string.</p>
 <p>We see something like this:</p>
@@ -182,7 +182,7 @@ Do not edit it by hand.
     <span>Sql</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-sql"><span class="line-number"></span>SELECT courier_messages.body, courier_messages.channel, courier_messages.created_at, courier_messages.id, courier_messages.nid, courier_messages.recipient, courier_messages.send_count, courier_messages.status, courier_messages.subject, courier_messages.template_data, courier_messages.template_type, courier_messages.type, courier_messages.updated_at FROM courier_messages AS courier_messages WHERE nid=? AND (&quot;courier_messages&quot;.&quot;created_at&quot; &lt; ? OR (&quot;courier_messages&quot;.&quot;created_at&quot; = ? AND &quot;courier_messages&quot;.&quot;id&quot; &gt; ?)) ORDER BY &quot;courier_messages&quot;.&quot;created_at&quot; DESC, &quot;courier_messages&quot;.&quot;id&quot; ASC LIMIT 11
+  <code class="language-sql"><span class="line-number"></span><span class="code-hl">SELECT courier_messages.body, courier_messages.channel, courier_messages.created_at, courier_messages.id, courier_messages.nid, courier_messages.recipient, courier_messages.send_count, courier_messages.status, courier_messages.subject, courier_messages.template_data, courier_messages.template_type, courier_messages.type, courier_messages.updated_at FROM courier_messages AS courier_messages WHERE nid=? AND (&quot;courier_messages&quot;.&quot;created_at&quot; &lt; ? OR (&quot;courier_messages&quot;.&quot;created_at&quot; = ? AND &quot;courier_messages&quot;.&quot;id&quot; &gt; ?)) ORDER BY &quot;courier_messages&quot;.&quot;created_at&quot; DESC, &quot;courier_messages&quot;.&quot;id&quot; ASC LIMIT 11</span>
 </code></pre>
 <p>Which is already very useful in my opinion. But wouldn't it be nice to also see which arguments were passed to the query?</p>
 <h2 id="level-2-see-string-query-arguments">
@@ -197,32 +197,32 @@ Do not edit it by hand.
     <span>Go</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-go"><span class="line-number"></span>type Type struct {
-<span class="line-number"></span>	Size_       uintptr
-<span class="line-number"></span>	PtrBytes    uintptr // number of (prefix) bytes in the type that can contain pointers
-<span class="line-number"></span>	Hash        uint32  // hash of type; avoids computation in hash tables
-<span class="line-number"></span>	TFlag       TFlag   // extra type information flags
-<span class="line-number"></span>	Align_      uint8   // alignment of variable with this type
-<span class="line-number"></span>	FieldAlign_ uint8   // alignment of struct field with this type
-<span class="line-number"></span>	Kind_       Kind    // enumeration for C
-<span class="line-number"></span>	// function for comparing objects of this type
-<span class="line-number"></span>	// (ptr to object A, ptr to object B) -&gt; ==?
-<span class="line-number"></span>	Equal func(unsafe.Pointer, unsafe.Pointer) bool
-<span class="line-number"></span>	// GCData stores the GC type data for the garbage collector.
-<span class="line-number"></span>	// Normally, GCData points to a bitmask that describes the
-<span class="line-number"></span>	// ptr/nonptr fields of the type. The bitmask will have at
-<span class="line-number"></span>	// least PtrBytes/ptrSize bits.
-<span class="line-number"></span>	// If the TFlagGCMaskOnDemand bit is set, GCData is instead a
-<span class="line-number"></span>	// **byte and the pointer to the bitmask is one dereference away.
-<span class="line-number"></span>	// The runtime will build the bitmask if needed.
-<span class="line-number"></span>	// (See runtime/type.go:getGCMask.)
-<span class="line-number"></span>	// Note: multiple types may have the same value of GCData,
-<span class="line-number"></span>	// including when TFlagGCMaskOnDemand is set. The types will, of course,
-<span class="line-number"></span>	// have the same pointer layout (but not necessarily the same size).
-<span class="line-number"></span>	GCData    *byte
-<span class="line-number"></span>	Str       NameOff // string form
-<span class="line-number"></span>	PtrToThis TypeOff // type for pointer to this type, may be zero
-<span class="line-number"></span>}
+  <code class="language-go"><span class="line-number"></span><span class="code-hl">type Type struct {</span>
+<span class="line-number"></span><span class="code-hl">	Size_       uintptr</span>
+<span class="line-number"></span><span class="code-hl">	PtrBytes    uintptr // number of (prefix) bytes in the type that can contain pointers</span>
+<span class="line-number"></span><span class="code-hl">	Hash        uint32  // hash of type; avoids computation in hash tables</span>
+<span class="line-number"></span><span class="code-hl">	TFlag       TFlag   // extra type information flags</span>
+<span class="line-number"></span><span class="code-hl">	Align_      uint8   // alignment of variable with this type</span>
+<span class="line-number"></span><span class="code-hl">	FieldAlign_ uint8   // alignment of struct field with this type</span>
+<span class="line-number"></span><span class="code-hl">	Kind_       Kind    // enumeration for C</span>
+<span class="line-number"></span><span class="code-hl">	// function for comparing objects of this type</span>
+<span class="line-number"></span><span class="code-hl">	// (ptr to object A, ptr to object B) -&gt; ==?</span>
+<span class="line-number"></span><span class="code-hl">	Equal func(unsafe.Pointer, unsafe.Pointer) bool</span>
+<span class="line-number"></span><span class="code-hl">	// GCData stores the GC type data for the garbage collector.</span>
+<span class="line-number"></span><span class="code-hl">	// Normally, GCData points to a bitmask that describes the</span>
+<span class="line-number"></span><span class="code-hl">	// ptr/nonptr fields of the type. The bitmask will have at</span>
+<span class="line-number"></span><span class="code-hl">	// least PtrBytes/ptrSize bits.</span>
+<span class="line-number"></span><span class="code-hl">	// If the TFlagGCMaskOnDemand bit is set, GCData is instead a</span>
+<span class="line-number"></span><span class="code-hl">	// **byte and the pointer to the bitmask is one dereference away.</span>
+<span class="line-number"></span><span class="code-hl">	// The runtime will build the bitmask if needed.</span>
+<span class="line-number"></span><span class="code-hl">	// (See runtime/type.go:getGCMask.)</span>
+<span class="line-number"></span><span class="code-hl">	// Note: multiple types may have the same value of GCData,</span>
+<span class="line-number"></span><span class="code-hl">	// including when TFlagGCMaskOnDemand is set. The types will, of course,</span>
+<span class="line-number"></span><span class="code-hl">	// have the same pointer layout (but not necessarily the same size).</span>
+<span class="line-number"></span><span class="code-hl">	GCData    *byte</span>
+<span class="line-number"></span><span class="code-hl">	Str       NameOff // string form</span>
+<span class="line-number"></span><span class="code-hl">	PtrToThis TypeOff // type for pointer to this type, may be zero</span>
+<span class="line-number"></span><span class="code-hl">}</span>
 </code></pre>
 <p>We thus define the corresponding DTrace types:</p>
 <pre>
@@ -230,24 +230,24 @@ Do not edit it by hand.
     <span>Dtrace</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-dtrace"><span class="line-number"></span>typedef struct {
-<span class="line-number"></span>  uintptr_t size;  
-<span class="line-number"></span>  uintptr_t ptr_bytes;  
-<span class="line-number"></span>  uint32_t hash;
-<span class="line-number"></span>  uint8_t tflag;
-<span class="line-number"></span>  uint8_t align;
-<span class="line-number"></span>  uint8_t field_align;
-<span class="line-number"></span>  uint8_t kind;
-<span class="line-number"></span>  void* equal_func;
-<span class="line-number"></span>  uint8_t* gc_data;
-<span class="line-number"></span>  int32_t name_offset;
-<span class="line-number"></span>  int32_t ptr_to_this;
-<span class="line-number"></span>} GoType;
-<span class="line-number"></span>
-<span class="line-number"></span>typedef struct {
-<span class="line-number"></span>  GoType* rtti;
-<span class="line-number"></span>  void* ptr;
-<span class="line-number"></span>} GoInterface;
+  <code class="language-dtrace"><span class="line-number"></span><span class="code-hl">typedef struct {</span>
+<span class="line-number"></span><span class="code-hl">  uintptr_t size;  </span>
+<span class="line-number"></span><span class="code-hl">  uintptr_t ptr_bytes;  </span>
+<span class="line-number"></span><span class="code-hl">  uint32_t hash;</span>
+<span class="line-number"></span><span class="code-hl">  uint8_t tflag;</span>
+<span class="line-number"></span><span class="code-hl">  uint8_t align;</span>
+<span class="line-number"></span><span class="code-hl">  uint8_t field_align;</span>
+<span class="line-number"></span><span class="code-hl">  uint8_t kind;</span>
+<span class="line-number"></span><span class="code-hl">  void* equal_func;</span>
+<span class="line-number"></span><span class="code-hl">  uint8_t* gc_data;</span>
+<span class="line-number"></span><span class="code-hl">  int32_t name_offset;</span>
+<span class="line-number"></span><span class="code-hl">  int32_t ptr_to_this;</span>
+<span class="line-number"></span><span class="code-hl">} GoType;</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">typedef struct {</span>
+<span class="line-number"></span><span class="code-hl">  GoType* rtti;</span>
+<span class="line-number"></span><span class="code-hl">  void* ptr;</span>
+<span class="line-number"></span><span class="code-hl">} GoInterface;</span>
 </code></pre>
 <p>We can then print the RTTI information of each of the four <code>any</code> arguments passed. Since DTrace intentionally does not have loops, we do that manually.
 The only challenge is to remember to use <code>copyin</code>, since our DTrace script executes in kernel space but we are inspecting user-space memory.</p>
@@ -256,32 +256,32 @@ The only challenge is to remember to use <code>copyin</code>, since our DTrace s
     <span>Dtrace</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-dtrace"><span class="line-number"></span>pid$target::database?sql.*.QueryContext:entry {
-<span class="line-number"></span>  this-&gt;query = stringof(copyin(arg3, arg4)); // Query string.
-<span class="line-number"></span>  printf(&quot;%s\n&quot;, this-&gt;query);
-<span class="line-number"></span>
-<span class="line-number"></span>  this-&gt;args_ptr = arg5;
-<span class="line-number"></span>
-<span class="line-number"></span>  this-&gt;iface0 = (GoInterface*) copyin(this-&gt;args_ptr, sizeof(GoInterface));
-<span class="line-number"></span>  this-&gt;rtti0 = (GoType*) copyin((user_addr_t)this-&gt;iface0-&gt;rtti, sizeof(GoType));
-<span class="line-number"></span>  print(*(this-&gt;rtti0));
-<span class="line-number"></span>  printf(&quot;\n&quot;);
-<span class="line-number"></span>
-<span class="line-number"></span>  this-&gt;iface1 = (GoInterface*) copyin(this-&gt;args_ptr + 1*sizeof(GoInterface), sizeof(GoInterface));
-<span class="line-number"></span>  this-&gt;rtti1 = (GoType*) copyin((user_addr_t)this-&gt;iface1-&gt;rtti, sizeof(GoType));
-<span class="line-number"></span>  print(*(this-&gt;rtti1));
-<span class="line-number"></span>  printf(&quot;\n&quot;);
-<span class="line-number"></span>
-<span class="line-number"></span>  this-&gt;iface2 = (GoInterface*) copyin(this-&gt;args_ptr + 2*sizeof(GoInterface), sizeof(GoInterface));
-<span class="line-number"></span>  this-&gt;rtti2 = (GoType*) copyin((user_addr_t)this-&gt;iface2-&gt;rtti, sizeof(GoType));
-<span class="line-number"></span>  print(*(this-&gt;rtti2));
-<span class="line-number"></span>  printf(&quot;\n&quot;);
-<span class="line-number"></span>
-<span class="line-number"></span>  this-&gt;iface3 = (GoInterface*) copyin(this-&gt;args_ptr + 3*sizeof(GoInterface), sizeof(GoInterface));
-<span class="line-number"></span>  this-&gt;rtti3 = (GoType*) copyin((user_addr_t)this-&gt;iface3-&gt;rtti, sizeof(GoType));
-<span class="line-number"></span>  print(*(this-&gt;rtti3));
-<span class="line-number"></span>  printf(&quot;\n&quot;);
-<span class="line-number"></span>}
+  <code class="language-dtrace"><span class="line-number"></span><span class="code-hl">pid$target::database?sql.*.QueryContext:entry {</span>
+<span class="line-number"></span><span class="code-hl">  this-&gt;query = stringof(copyin(arg3, arg4)); // Query string.</span>
+<span class="line-number"></span><span class="code-hl">  printf(&quot;%s\n&quot;, this-&gt;query);</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  this-&gt;args_ptr = arg5;</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  this-&gt;iface0 = (GoInterface*) copyin(this-&gt;args_ptr, sizeof(GoInterface));</span>
+<span class="line-number"></span><span class="code-hl">  this-&gt;rtti0 = (GoType*) copyin((user_addr_t)this-&gt;iface0-&gt;rtti, sizeof(GoType));</span>
+<span class="line-number"></span><span class="code-hl">  print(*(this-&gt;rtti0));</span>
+<span class="line-number"></span><span class="code-hl">  printf(&quot;\n&quot;);</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  this-&gt;iface1 = (GoInterface*) copyin(this-&gt;args_ptr + 1*sizeof(GoInterface), sizeof(GoInterface));</span>
+<span class="line-number"></span><span class="code-hl">  this-&gt;rtti1 = (GoType*) copyin((user_addr_t)this-&gt;iface1-&gt;rtti, sizeof(GoType));</span>
+<span class="line-number"></span><span class="code-hl">  print(*(this-&gt;rtti1));</span>
+<span class="line-number"></span><span class="code-hl">  printf(&quot;\n&quot;);</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  this-&gt;iface2 = (GoInterface*) copyin(this-&gt;args_ptr + 2*sizeof(GoInterface), sizeof(GoInterface));</span>
+<span class="line-number"></span><span class="code-hl">  this-&gt;rtti2 = (GoType*) copyin((user_addr_t)this-&gt;iface2-&gt;rtti, sizeof(GoType));</span>
+<span class="line-number"></span><span class="code-hl">  print(*(this-&gt;rtti2));</span>
+<span class="line-number"></span><span class="code-hl">  printf(&quot;\n&quot;);</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  this-&gt;iface3 = (GoInterface*) copyin(this-&gt;args_ptr + 3*sizeof(GoInterface), sizeof(GoInterface));</span>
+<span class="line-number"></span><span class="code-hl">  this-&gt;rtti3 = (GoType*) copyin((user_addr_t)this-&gt;iface3-&gt;rtti, sizeof(GoType));</span>
+<span class="line-number"></span><span class="code-hl">  print(*(this-&gt;rtti3));</span>
+<span class="line-number"></span><span class="code-hl">  printf(&quot;\n&quot;);</span>
+<span class="line-number"></span><span class="code-hl">}</span>
 </code></pre>
 <p>And we see:</p>
 <pre>
@@ -289,58 +289,58 @@ The only challenge is to remember to use <code>copyin</code>, since our DTrace s
     <span>Plaintext</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-plaintext"><span class="line-number"></span>GoType {
-<span class="line-number"></span>    uintptr_t size = 0x10
-<span class="line-number"></span>    uintptr_t ptr_bytes = 0
-<span class="line-number"></span>    uint32_t hash = 0xd84999d2
-<span class="line-number"></span>    uint8_t tflag = 0xf
-<span class="line-number"></span>    uint8_t align = 0x1
-<span class="line-number"></span>    uint8_t field_align = 0x1
-<span class="line-number"></span>    uint8_t kind = 0x11
-<span class="line-number"></span>    void *equal_func = 0x1024976c0
-<span class="line-number"></span>    uint8_t *gc_data = 0x101f57c38
-<span class="line-number"></span>    int32_t name_offset = 0x147f6
-<span class="line-number"></span>    int32_t ptr_to_this = 0x448a20
-<span class="line-number"></span>}
-<span class="line-number"></span>GoType {
-<span class="line-number"></span>    uintptr_t size = 0x10
-<span class="line-number"></span>    uintptr_t ptr_bytes = 0x8
-<span class="line-number"></span>    uint32_t hash = 0xf88732b8
-<span class="line-number"></span>    uint8_t tflag = 0x7
-<span class="line-number"></span>    uint8_t align = 0x8
-<span class="line-number"></span>    uint8_t field_align = 0x8
-<span class="line-number"></span>    uint8_t kind = 0x18
-<span class="line-number"></span>    void *equal_func = 0x1024976a0
-<span class="line-number"></span>    uint8_t *gc_data = 0x101f48910
-<span class="line-number"></span>    int32_t name_offset = 0x8c14
-<span class="line-number"></span>    int32_t ptr_to_this = 0xd0960
-<span class="line-number"></span>}
-<span class="line-number"></span>GoType {
-<span class="line-number"></span>    uintptr_t size = 0x10
-<span class="line-number"></span>    uintptr_t ptr_bytes = 0x8
-<span class="line-number"></span>    uint32_t hash = 0xf88732b8
-<span class="line-number"></span>    uint8_t tflag = 0x7
-<span class="line-number"></span>    uint8_t align = 0x8
-<span class="line-number"></span>    uint8_t field_align = 0x8
-<span class="line-number"></span>    uint8_t kind = 0x18
-<span class="line-number"></span>    void *equal_func = 0x1024976a0
-<span class="line-number"></span>    uint8_t *gc_data = 0x101f48910
-<span class="line-number"></span>    int32_t name_offset = 0x8c14
-<span class="line-number"></span>    int32_t ptr_to_this = 0xd0960
-<span class="line-number"></span>}
-<span class="line-number"></span>GoType {
-<span class="line-number"></span>    uintptr_t size = 0x10
-<span class="line-number"></span>    uintptr_t ptr_bytes = 0x8
-<span class="line-number"></span>    uint32_t hash = 0xf88732b8
-<span class="line-number"></span>    uint8_t tflag = 0x7
-<span class="line-number"></span>    uint8_t align = 0x8
-<span class="line-number"></span>    uint8_t field_align = 0x8
-<span class="line-number"></span>    uint8_t kind = 0x18
-<span class="line-number"></span>    void *equal_func = 0x1024976a0
-<span class="line-number"></span>    uint8_t *gc_data = 0x101f48910
-<span class="line-number"></span>    int32_t name_offset = 0x8c14
-<span class="line-number"></span>    int32_t ptr_to_this = 0xd0960
-<span class="line-number"></span>}
+  <code class="language-plaintext"><span class="line-number"></span><span class="code-hl">GoType {</span>
+<span class="line-number"></span><span class="code-hl">    uintptr_t size = 0x10</span>
+<span class="line-number"></span><span class="code-hl">    uintptr_t ptr_bytes = 0</span>
+<span class="line-number"></span><span class="code-hl">    uint32_t hash = 0xd84999d2</span>
+<span class="line-number"></span><span class="code-hl">    uint8_t tflag = 0xf</span>
+<span class="line-number"></span><span class="code-hl">    uint8_t align = 0x1</span>
+<span class="line-number"></span><span class="code-hl">    uint8_t field_align = 0x1</span>
+<span class="line-number"></span><span class="code-hl">    uint8_t kind = 0x11</span>
+<span class="line-number"></span><span class="code-hl">    void *equal_func = 0x1024976c0</span>
+<span class="line-number"></span><span class="code-hl">    uint8_t *gc_data = 0x101f57c38</span>
+<span class="line-number"></span><span class="code-hl">    int32_t name_offset = 0x147f6</span>
+<span class="line-number"></span><span class="code-hl">    int32_t ptr_to_this = 0x448a20</span>
+<span class="line-number"></span><span class="code-hl">}</span>
+<span class="line-number"></span><span class="code-hl">GoType {</span>
+<span class="line-number"></span><span class="code-hl">    uintptr_t size = 0x10</span>
+<span class="line-number"></span><span class="code-hl">    uintptr_t ptr_bytes = 0x8</span>
+<span class="line-number"></span><span class="code-hl">    uint32_t hash = 0xf88732b8</span>
+<span class="line-number"></span><span class="code-hl">    uint8_t tflag = 0x7</span>
+<span class="line-number"></span><span class="code-hl">    uint8_t align = 0x8</span>
+<span class="line-number"></span><span class="code-hl">    uint8_t field_align = 0x8</span>
+<span class="line-number"></span><span class="code-hl">    uint8_t kind = 0x18</span>
+<span class="line-number"></span><span class="code-hl">    void *equal_func = 0x1024976a0</span>
+<span class="line-number"></span><span class="code-hl">    uint8_t *gc_data = 0x101f48910</span>
+<span class="line-number"></span><span class="code-hl">    int32_t name_offset = 0x8c14</span>
+<span class="line-number"></span><span class="code-hl">    int32_t ptr_to_this = 0xd0960</span>
+<span class="line-number"></span><span class="code-hl">}</span>
+<span class="line-number"></span><span class="code-hl">GoType {</span>
+<span class="line-number"></span><span class="code-hl">    uintptr_t size = 0x10</span>
+<span class="line-number"></span><span class="code-hl">    uintptr_t ptr_bytes = 0x8</span>
+<span class="line-number"></span><span class="code-hl">    uint32_t hash = 0xf88732b8</span>
+<span class="line-number"></span><span class="code-hl">    uint8_t tflag = 0x7</span>
+<span class="line-number"></span><span class="code-hl">    uint8_t align = 0x8</span>
+<span class="line-number"></span><span class="code-hl">    uint8_t field_align = 0x8</span>
+<span class="line-number"></span><span class="code-hl">    uint8_t kind = 0x18</span>
+<span class="line-number"></span><span class="code-hl">    void *equal_func = 0x1024976a0</span>
+<span class="line-number"></span><span class="code-hl">    uint8_t *gc_data = 0x101f48910</span>
+<span class="line-number"></span><span class="code-hl">    int32_t name_offset = 0x8c14</span>
+<span class="line-number"></span><span class="code-hl">    int32_t ptr_to_this = 0xd0960</span>
+<span class="line-number"></span><span class="code-hl">}</span>
+<span class="line-number"></span><span class="code-hl">GoType {</span>
+<span class="line-number"></span><span class="code-hl">    uintptr_t size = 0x10</span>
+<span class="line-number"></span><span class="code-hl">    uintptr_t ptr_bytes = 0x8</span>
+<span class="line-number"></span><span class="code-hl">    uint32_t hash = 0xf88732b8</span>
+<span class="line-number"></span><span class="code-hl">    uint8_t tflag = 0x7</span>
+<span class="line-number"></span><span class="code-hl">    uint8_t align = 0x8</span>
+<span class="line-number"></span><span class="code-hl">    uint8_t field_align = 0x8</span>
+<span class="line-number"></span><span class="code-hl">    uint8_t kind = 0x18</span>
+<span class="line-number"></span><span class="code-hl">    void *equal_func = 0x1024976a0</span>
+<span class="line-number"></span><span class="code-hl">    uint8_t *gc_data = 0x101f48910</span>
+<span class="line-number"></span><span class="code-hl">    int32_t name_offset = 0x8c14</span>
+<span class="line-number"></span><span class="code-hl">    int32_t ptr_to_this = 0xd0960</span>
+<span class="line-number"></span><span class="code-hl">}</span>
 </code></pre>
 <p>You might be thinking... that's not very useful... We'll, most fields are indeed not relevant. The only ones to look at, really, are <code>kind</code>, which indicates the type, and <code>size</code>. This is an enum value defined <a href="https://github.com/golang/go/blob/release-branch.go1.25/src/internal/abi/type.go#L55">here</a>.</p>
 <p>The value <code>0x18</code> is <code>String</code>. So the last 3 variadic arguments are strings. Great, let's print them:</p>
@@ -349,21 +349,21 @@ The only challenge is to remember to use <code>copyin</code>, since our DTrace s
     <span>Dtrace</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-dtrace"><span class="line-number"></span>pid$target::database?sql.*.QueryContext:entry {
-<span class="line-number"></span>  // [...]
-<span class="line-number"></span>
-<span class="line-number"></span>  this-&gt;go_str1 = (GoString*)copyin((user_addr_t)this-&gt;iface1-&gt;ptr, sizeof(GoString));
-<span class="line-number"></span>  this-&gt;str1 = stringof(copyin((user_addr_t)this-&gt;go_str1-&gt;ptr, this-&gt;go_str1-&gt;len));
-<span class="line-number"></span>  printf(&quot;str1=%s\n&quot;, this-&gt;str1);
-<span class="line-number"></span>
-<span class="line-number"></span>  this-&gt;go_str2 = (GoString*)copyin((user_addr_t)this-&gt;iface2-&gt;ptr, sizeof(GoString));
-<span class="line-number"></span>  this-&gt;str2 = stringof(copyin((user_addr_t)this-&gt;go_str2-&gt;ptr, this-&gt;go_str2-&gt;len));
-<span class="line-number"></span>  printf(&quot;str2=%s\n&quot;, this-&gt;str2);
-<span class="line-number"></span>
-<span class="line-number"></span>  this-&gt;go_str3 = (GoString*)copyin((user_addr_t)this-&gt;iface3-&gt;ptr, sizeof(GoString));
-<span class="line-number"></span>  this-&gt;str3 = stringof(copyin((user_addr_t)this-&gt;go_str3-&gt;ptr, this-&gt;go_str3-&gt;len));
-<span class="line-number"></span>  printf(&quot;str3=%s\n&quot;, this-&gt;str3);
-<span class="line-number"></span>}
+  <code class="language-dtrace"><span class="line-number"></span><span class="code-hl">pid$target::database?sql.*.QueryContext:entry {</span>
+<span class="line-number"></span><span class="code-hl">  // [...]</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  this-&gt;go_str1 = (GoString*)copyin((user_addr_t)this-&gt;iface1-&gt;ptr, sizeof(GoString));</span>
+<span class="line-number"></span><span class="code-hl">  this-&gt;str1 = stringof(copyin((user_addr_t)this-&gt;go_str1-&gt;ptr, this-&gt;go_str1-&gt;len));</span>
+<span class="line-number"></span><span class="code-hl">  printf(&quot;str1=%s\n&quot;, this-&gt;str1);</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  this-&gt;go_str2 = (GoString*)copyin((user_addr_t)this-&gt;iface2-&gt;ptr, sizeof(GoString));</span>
+<span class="line-number"></span><span class="code-hl">  this-&gt;str2 = stringof(copyin((user_addr_t)this-&gt;go_str2-&gt;ptr, this-&gt;go_str2-&gt;len));</span>
+<span class="line-number"></span><span class="code-hl">  printf(&quot;str2=%s\n&quot;, this-&gt;str2);</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  this-&gt;go_str3 = (GoString*)copyin((user_addr_t)this-&gt;iface3-&gt;ptr, sizeof(GoString));</span>
+<span class="line-number"></span><span class="code-hl">  this-&gt;str3 = stringof(copyin((user_addr_t)this-&gt;go_str3-&gt;ptr, this-&gt;go_str3-&gt;len));</span>
+<span class="line-number"></span><span class="code-hl">  printf(&quot;str3=%s\n&quot;, this-&gt;str3);</span>
+<span class="line-number"></span><span class="code-hl">}</span>
 </code></pre>
 <p>And we see (for example):</p>
 <pre>
@@ -371,9 +371,9 @@ The only challenge is to remember to use <code>copyin</code>, since our DTrace s
     <span>Plaintext</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-plaintext"><span class="line-number"></span>str1=2200-12-31 23:59:59
-<span class="line-number"></span>str2=2200-12-31 23:59:59
-<span class="line-number"></span>str3=00000000-0000-0000-0000-000000000000
+  <code class="language-plaintext"><span class="line-number"></span><span class="code-hl">str1=2200-12-31 23:59:59</span>
+<span class="line-number"></span><span class="code-hl">str2=2200-12-31 23:59:59</span>
+<span class="line-number"></span><span class="code-hl">str3=00000000-0000-0000-0000-000000000000</span>
 </code></pre>
 <p>Alright, pretty nice already.</p>
 <h2 id="level-3-see-array-query-arguments">
@@ -388,12 +388,12 @@ The only challenge is to remember to use <code>copyin</code>, since our DTrace s
     <span>Go</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-go"><span class="line-number"></span>type ArrayType struct {
-<span class="line-number"></span>	Type
-<span class="line-number"></span>	Elem  *Type // array element type
-<span class="line-number"></span>	Slice *Type // slice type
-<span class="line-number"></span>	Len   uintptr
-<span class="line-number"></span>}
+  <code class="language-go"><span class="line-number"></span><span class="code-hl">type ArrayType struct {</span>
+<span class="line-number"></span><span class="code-hl">	Type</span>
+<span class="line-number"></span><span class="code-hl">	Elem  *Type // array element type</span>
+<span class="line-number"></span><span class="code-hl">	Slice *Type // slice type</span>
+<span class="line-number"></span><span class="code-hl">	Len   uintptr</span>
+<span class="line-number"></span><span class="code-hl">}</span>
 </code></pre>
 <p>This is pretty easy to map to DTrace:</p>
 <pre>
@@ -401,12 +401,12 @@ The only challenge is to remember to use <code>copyin</code>, since our DTrace s
     <span>Dtrace</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-dtrace"><span class="line-number"></span>typedef struct {
-<span class="line-number"></span>  GoType type;
-<span class="line-number"></span>  GoType* elem;
-<span class="line-number"></span>  GoType* slice;
-<span class="line-number"></span>  uintptr_t len;
-<span class="line-number"></span>} GoArrayType;
+  <code class="language-dtrace"><span class="line-number"></span><span class="code-hl">typedef struct {</span>
+<span class="line-number"></span><span class="code-hl">  GoType type;</span>
+<span class="line-number"></span><span class="code-hl">  GoType* elem;</span>
+<span class="line-number"></span><span class="code-hl">  GoType* slice;</span>
+<span class="line-number"></span><span class="code-hl">  uintptr_t len;</span>
+<span class="line-number"></span><span class="code-hl">} GoArrayType;</span>
 </code></pre>
 <p>We can now print the RTTI for the element type to finally learn its size. For good measure we can also print the RTTI for the slice type:</p>
 <pre>
@@ -414,67 +414,67 @@ The only challenge is to remember to use <code>copyin</code>, since our DTrace s
     <span>Dtrace</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-dtrace"><span class="line-number"></span>  this-&gt;go_arr0 = (GoArrayType*)copyin((user_addr_t)this-&gt;iface0-&gt;rtti, sizeof(GoArrayType));
-<span class="line-number"></span>  print(*(this-&gt;go_arr0));
-<span class="line-number"></span>  printf(&quot;\n&quot;);
-<span class="line-number"></span>
-<span class="line-number"></span>  this-&gt;go_arr0_elem = (GoType*)copyin((user_addr_t)this-&gt;go_arr0-&gt;elem, sizeof(GoType));
-<span class="line-number"></span>  print(*(this-&gt;go_arr0_elem));
-<span class="line-number"></span>  printf(&quot;\n&quot;);
-<span class="line-number"></span>
-<span class="line-number"></span>  this-&gt;go_arr0_slice = (GoType*)copyin((user_addr_t)this-&gt;go_arr0-&gt;slice, sizeof(GoType));
-<span class="line-number"></span>  print(*(this-&gt;go_arr0_slice));
-<span class="line-number"></span>  printf(&quot;\n&quot;);
+  <code class="language-dtrace"><span class="line-number"></span><span class="code-hl">  this-&gt;go_arr0 = (GoArrayType*)copyin((user_addr_t)this-&gt;iface0-&gt;rtti, sizeof(GoArrayType));</span>
+<span class="line-number"></span><span class="code-hl">  print(*(this-&gt;go_arr0));</span>
+<span class="line-number"></span><span class="code-hl">  printf(&quot;\n&quot;);</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  this-&gt;go_arr0_elem = (GoType*)copyin((user_addr_t)this-&gt;go_arr0-&gt;elem, sizeof(GoType));</span>
+<span class="line-number"></span><span class="code-hl">  print(*(this-&gt;go_arr0_elem));</span>
+<span class="line-number"></span><span class="code-hl">  printf(&quot;\n&quot;);</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  this-&gt;go_arr0_slice = (GoType*)copyin((user_addr_t)this-&gt;go_arr0-&gt;slice, sizeof(GoType));</span>
+<span class="line-number"></span><span class="code-hl">  print(*(this-&gt;go_arr0_slice));</span>
+<span class="line-number"></span><span class="code-hl">  printf(&quot;\n&quot;);</span>
 </code></pre>
 <pre>
   <div class="code-header">
     <span>Plaintext</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-plaintext"><span class="line-number"></span>GoArrayType {
-<span class="line-number"></span>    GoType type = {
-<span class="line-number"></span>        uintptr_t size = 0x10
-<span class="line-number"></span>        uintptr_t ptr_bytes = 0
-<span class="line-number"></span>        uint32_t hash = 0xd84999d2
-<span class="line-number"></span>        uint8_t tflag = 0xf
-<span class="line-number"></span>        uint8_t align = 0x1
-<span class="line-number"></span>        uint8_t field_align = 0x1
-<span class="line-number"></span>        uint8_t kind = 0x11
-<span class="line-number"></span>        void *equal_func = 0x103fdf6a0
-<span class="line-number"></span>        uint8_t *gc_data = 0x103a9ff40
-<span class="line-number"></span>        int32_t name_offset = 0x147f6
-<span class="line-number"></span>        int32_t ptr_to_this = 0x448a00
-<span class="line-number"></span>    }
-<span class="line-number"></span>    GoType *elem = 0x103c1b7a0
-<span class="line-number"></span>    GoType *slice = 0x103be1760
-<span class="line-number"></span>    uintptr_t len = 0x10
-<span class="line-number"></span>}
-<span class="line-number"></span>GoType {
-<span class="line-number"></span>    uintptr_t size = 0x1
-<span class="line-number"></span>    uintptr_t ptr_bytes = 0
-<span class="line-number"></span>    uint32_t hash = 0x6a8c7679
-<span class="line-number"></span>    uint8_t tflag = 0xf
-<span class="line-number"></span>    uint8_t align = 0x1
-<span class="line-number"></span>    uint8_t field_align = 0x1
-<span class="line-number"></span>    uint8_t kind = 0x8
-<span class="line-number"></span>    void *equal_func = 0x103fdf6e8
-<span class="line-number"></span>    uint8_t *gc_data = 0x103a9ff40
-<span class="line-number"></span>    int32_t name_offset = 0x2f98
-<span class="line-number"></span>    int32_t ptr_to_this = 0xd09e0
-<span class="line-number"></span>}
-<span class="line-number"></span>GoType {
-<span class="line-number"></span>    uintptr_t size = 0x18
-<span class="line-number"></span>    uintptr_t ptr_bytes = 0x8
-<span class="line-number"></span>    uint32_t hash = 0x7efbbf65
-<span class="line-number"></span>    uint8_t tflag = 0x2
-<span class="line-number"></span>    uint8_t align = 0x8
-<span class="line-number"></span>    uint8_t field_align = 0x8
-<span class="line-number"></span>    uint8_t kind = 0x17
-<span class="line-number"></span>    void *equal_func = 0
-<span class="line-number"></span>    uint8_t *gc_data = 0x103a90c18
-<span class="line-number"></span>    int32_t name_offset = 0xb4c4
-<span class="line-number"></span>    int32_t ptr_to_this = 0x1062e0
-<span class="line-number"></span>}
+  <code class="language-plaintext"><span class="line-number"></span><span class="code-hl">GoArrayType {</span>
+<span class="line-number"></span><span class="code-hl">    GoType type = {</span>
+<span class="line-number"></span><span class="code-hl">        uintptr_t size = 0x10</span>
+<span class="line-number"></span><span class="code-hl">        uintptr_t ptr_bytes = 0</span>
+<span class="line-number"></span><span class="code-hl">        uint32_t hash = 0xd84999d2</span>
+<span class="line-number"></span><span class="code-hl">        uint8_t tflag = 0xf</span>
+<span class="line-number"></span><span class="code-hl">        uint8_t align = 0x1</span>
+<span class="line-number"></span><span class="code-hl">        uint8_t field_align = 0x1</span>
+<span class="line-number"></span><span class="code-hl">        uint8_t kind = 0x11</span>
+<span class="line-number"></span><span class="code-hl">        void *equal_func = 0x103fdf6a0</span>
+<span class="line-number"></span><span class="code-hl">        uint8_t *gc_data = 0x103a9ff40</span>
+<span class="line-number"></span><span class="code-hl">        int32_t name_offset = 0x147f6</span>
+<span class="line-number"></span><span class="code-hl">        int32_t ptr_to_this = 0x448a00</span>
+<span class="line-number"></span><span class="code-hl">    }</span>
+<span class="line-number"></span><span class="code-hl">    GoType *elem = 0x103c1b7a0</span>
+<span class="line-number"></span><span class="code-hl">    GoType *slice = 0x103be1760</span>
+<span class="line-number"></span><span class="code-hl">    uintptr_t len = 0x10</span>
+<span class="line-number"></span><span class="code-hl">}</span>
+<span class="line-number"></span><span class="code-hl">GoType {</span>
+<span class="line-number"></span><span class="code-hl">    uintptr_t size = 0x1</span>
+<span class="line-number"></span><span class="code-hl">    uintptr_t ptr_bytes = 0</span>
+<span class="line-number"></span><span class="code-hl">    uint32_t hash = 0x6a8c7679</span>
+<span class="line-number"></span><span class="code-hl">    uint8_t tflag = 0xf</span>
+<span class="line-number"></span><span class="code-hl">    uint8_t align = 0x1</span>
+<span class="line-number"></span><span class="code-hl">    uint8_t field_align = 0x1</span>
+<span class="line-number"></span><span class="code-hl">    uint8_t kind = 0x8</span>
+<span class="line-number"></span><span class="code-hl">    void *equal_func = 0x103fdf6e8</span>
+<span class="line-number"></span><span class="code-hl">    uint8_t *gc_data = 0x103a9ff40</span>
+<span class="line-number"></span><span class="code-hl">    int32_t name_offset = 0x2f98</span>
+<span class="line-number"></span><span class="code-hl">    int32_t ptr_to_this = 0xd09e0</span>
+<span class="line-number"></span><span class="code-hl">}</span>
+<span class="line-number"></span><span class="code-hl">GoType {</span>
+<span class="line-number"></span><span class="code-hl">    uintptr_t size = 0x18</span>
+<span class="line-number"></span><span class="code-hl">    uintptr_t ptr_bytes = 0x8</span>
+<span class="line-number"></span><span class="code-hl">    uint32_t hash = 0x7efbbf65</span>
+<span class="line-number"></span><span class="code-hl">    uint8_t tflag = 0x2</span>
+<span class="line-number"></span><span class="code-hl">    uint8_t align = 0x8</span>
+<span class="line-number"></span><span class="code-hl">    uint8_t field_align = 0x8</span>
+<span class="line-number"></span><span class="code-hl">    uint8_t kind = 0x17</span>
+<span class="line-number"></span><span class="code-hl">    void *equal_func = 0</span>
+<span class="line-number"></span><span class="code-hl">    uint8_t *gc_data = 0x103a90c18</span>
+<span class="line-number"></span><span class="code-hl">    int32_t name_offset = 0xb4c4</span>
+<span class="line-number"></span><span class="code-hl">    int32_t ptr_to_this = 0x1062e0</span>
+<span class="line-number"></span><span class="code-hl">}</span>
 </code></pre>
 <p>We discover that the element size is just <code>0x1</code>, or 1. So this array is an array of 16 bytes. Time to finally print it with <code>tracemem</code> which shows a raw memory dump:</p>
 <pre>
@@ -482,8 +482,8 @@ The only challenge is to remember to use <code>copyin</code>, since our DTrace s
     <span>Dtrace</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-dtrace"><span class="line-number"></span>  this-&gt;go_str0 = (uint8_t*)copyin((user_addr_t)this-&gt;iface0-&gt;ptr, 16);
-<span class="line-number"></span>  tracemem(this-&gt;go_str0, 16);
+  <code class="language-dtrace"><span class="line-number"></span><span class="code-hl">  this-&gt;go_str0 = (uint8_t*)copyin((user_addr_t)this-&gt;iface0-&gt;ptr, 16);</span>
+<span class="line-number"></span><span class="code-hl">  tracemem(this-&gt;go_str0, 16);</span>
 </code></pre>
 <p>Which shows:</p>
 <pre>
@@ -491,8 +491,8 @@ The only challenge is to remember to use <code>copyin</code>, since our DTrace s
     <span>Plaintext</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-plaintext"><span class="line-number"></span>             0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f  0123456789abcdef
-<span class="line-number"></span>         0: 9c 62 c1 62 20 11 4d 3f 8f dd bc c6 25 73 5c b9  .b.b .M?....%s\.
+  <code class="language-plaintext"><span class="line-number"></span><span class="code-hl">             0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f  0123456789abcdef</span>
+<span class="line-number"></span><span class="code-hl">         0: 9c 62 c1 62 20 11 4d 3f 8f dd bc c6 25 73 5c b9  .b.b .M?....%s\.</span>
 </code></pre>
 <p>This is in fact a UUID v4 (16 bytes): <code>9c62c162-2011-4d3f-8fdd-bcc625735cb9</code>.</p>
 <h2 id="caveats">
@@ -507,28 +507,28 @@ The only challenge is to remember to use <code>copyin</code>, since our DTrace s
     <span>Go</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-go"><span class="line-number"></span>package main
-<span class="line-number"></span>
-<span class="line-number"></span>import (
-<span class="line-number"></span>    &quot;fmt&quot;
-<span class="line-number"></span>)
-<span class="line-number"></span>
-<span class="line-number"></span>type Bar struct {
-<span class="line-number"></span>    A int
-<span class="line-number"></span>    B string
-<span class="line-number"></span>}
-<span class="line-number"></span>
-<span class="line-number"></span>func Foo(s string, x uint, bar Bar) []any {
-<span class="line-number"></span>    res := make([]any, 3)
-<span class="line-number"></span>    res[0] = s
-<span class="line-number"></span>    res[1] = x
-<span class="line-number"></span>    res[2] = bar
-<span class="line-number"></span>    return res
-<span class="line-number"></span>}
-<span class="line-number"></span>
-<span class="line-number"></span>func main() {
-<span class="line-number"></span>    fmt.Println(Foo(&quot;foo&quot;, 123, Bar{A: 99, B: &quot;bar&quot;}))
-<span class="line-number"></span>}
+  <code class="language-go"><span class="line-number"></span><span class="code-hl">package main</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">import (</span>
+<span class="line-number"></span><span class="code-hl">    &quot;fmt&quot;</span>
+<span class="line-number"></span><span class="code-hl">)</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">type Bar struct {</span>
+<span class="line-number"></span><span class="code-hl">    A int</span>
+<span class="line-number"></span><span class="code-hl">    B string</span>
+<span class="line-number"></span><span class="code-hl">}</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">func Foo(s string, x uint, bar Bar) []any {</span>
+<span class="line-number"></span><span class="code-hl">    res := make([]any, 3)</span>
+<span class="line-number"></span><span class="code-hl">    res[0] = s</span>
+<span class="line-number"></span><span class="code-hl">    res[1] = x</span>
+<span class="line-number"></span><span class="code-hl">    res[2] = bar</span>
+<span class="line-number"></span><span class="code-hl">    return res</span>
+<span class="line-number"></span><span class="code-hl">}</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">func main() {</span>
+<span class="line-number"></span><span class="code-hl">    fmt.Println(Foo(&quot;foo&quot;, 123, Bar{A: 99, B: &quot;bar&quot;}))</span>
+<span class="line-number"></span><span class="code-hl">}</span>
 </code></pre>
 <p>Which is great for performance, but not so great for introspection using our approach. That means we often have to introspect a different Go function in the call stack.</p>
 </li>
@@ -566,13 +566,13 @@ The only challenge is to remember to use <code>copyin</code>, since our DTrace s
     <span>Plaintext</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-plaintext"><span class="line-number"></span>3 140734 database/sql.(*DB).QueryContext:entry SELECT courier_messages.body, courier_messages.channel, courier_messages.created_at, courier_messages.id, courier_messages.nid, courier_messages.recipient, courier_messages.send_count, courier_messages.status, courier_messages.subject, courier_messages.template_data, courier_messages.template_type, courier_messages.type, courier_messages.updated_at FROM courier_messages AS courier_messages WHERE nid=? AND (&quot;courier_messages&quot;.&quot;created_at&quot; &lt; ? OR (&quot;courier_messages&quot;.&quot;created_at&quot; = ? AND &quot;courier_messages&quot;.&quot;id&quot; &gt; ?)) ORDER BY &quot;courier_messages&quot;.&quot;created_at&quot; DESC, &quot;courier_messages&quot;.&quot;id&quot; ASC LIMIT 11
-<span class="line-number"></span>
-<span class="line-number"></span>             0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f  0123456789abcdef
-<span class="line-number"></span>         0: 9c 62 c1 62 20 11 4d 3f 8f dd bc c6 25 73 5c b9  .b.b .M?....%s\.
-<span class="line-number"></span>str1=2200-12-31 23:59:59
-<span class="line-number"></span>str2=2200-12-31 23:59:59
-<span class="line-number"></span>str3=00000000-0000-0000-0000-000000000000
+  <code class="language-plaintext"><span class="line-number"></span><span class="code-hl">3 140734 database/sql.(*DB).QueryContext:entry SELECT courier_messages.body, courier_messages.channel, courier_messages.created_at, courier_messages.id, courier_messages.nid, courier_messages.recipient, courier_messages.send_count, courier_messages.status, courier_messages.subject, courier_messages.template_data, courier_messages.template_type, courier_messages.type, courier_messages.updated_at FROM courier_messages AS courier_messages WHERE nid=? AND (&quot;courier_messages&quot;.&quot;created_at&quot; &lt; ? OR (&quot;courier_messages&quot;.&quot;created_at&quot; = ? AND &quot;courier_messages&quot;.&quot;id&quot; &gt; ?)) ORDER BY &quot;courier_messages&quot;.&quot;created_at&quot; DESC, &quot;courier_messages&quot;.&quot;id&quot; ASC LIMIT 11</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">             0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f  0123456789abcdef</span>
+<span class="line-number"></span><span class="code-hl">         0: 9c 62 c1 62 20 11 4d 3f 8f dd bc c6 25 73 5c b9  .b.b .M?....%s\.</span>
+<span class="line-number"></span><span class="code-hl">str1=2200-12-31 23:59:59</span>
+<span class="line-number"></span><span class="code-hl">str2=2200-12-31 23:59:59</span>
+<span class="line-number"></span><span class="code-hl">str3=00000000-0000-0000-0000-000000000000</span>
 </code></pre>
 <p>With relatively little work (under 90 lines of DTrace including defining all types), we can inspect live SQL queries in our Go programs.</p>
 <p>Furthermore, we have focused on the Go function <code>QueryContext</code> in this article, but the exact same can be done for <code>ExecContext</code>.</p>
@@ -593,96 +593,96 @@ The only challenge is to remember to use <code>copyin</code>, since our DTrace s
     <span>Dtrace</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-dtrace"><span class="line-number"></span>#!/usr/sbin/dtrace -s
-<span class="line-number"></span>
-<span class="line-number"></span>#pragma D option strsize=16K
-<span class="line-number"></span>
-<span class="line-number"></span>typedef struct {
-<span class="line-number"></span>  uint8_t* ptr;
-<span class="line-number"></span>  size_t len;
-<span class="line-number"></span>} GoString; 
-<span class="line-number"></span>
-<span class="line-number"></span>typedef struct {
-<span class="line-number"></span>  uintptr_t size;  
-<span class="line-number"></span>  uintptr_t ptr_bytes;  
-<span class="line-number"></span>  uint32_t hash;
-<span class="line-number"></span>  uint8_t tflag;
-<span class="line-number"></span>  uint8_t align;
-<span class="line-number"></span>  uint8_t field_align;
-<span class="line-number"></span>  uint8_t kind;
-<span class="line-number"></span>  void* equal_func;
-<span class="line-number"></span>  uint8_t* gc_data;
-<span class="line-number"></span>  int32_t name_offset;
-<span class="line-number"></span>  int32_t ptr_to_this;
-<span class="line-number"></span>} GoType;
-<span class="line-number"></span>
-<span class="line-number"></span>typedef struct {
-<span class="line-number"></span>  GoType* rtti;
-<span class="line-number"></span>  void* ptr;
-<span class="line-number"></span>} GoInterface;
-<span class="line-number"></span>
-<span class="line-number"></span>
-<span class="line-number"></span>typedef struct {
-<span class="line-number"></span>  GoType type;
-<span class="line-number"></span>  GoType* elem;
-<span class="line-number"></span>  GoType* slice;
-<span class="line-number"></span>  uintptr_t len;
-<span class="line-number"></span>} GoArrayType;
-<span class="line-number"></span>
-<span class="line-number"></span>pid$target::database?sql.*.QueryContext:entry {
-<span class="line-number"></span>  this-&gt;query = stringof(copyin(arg3, arg4)); // Query string.
-<span class="line-number"></span>  printf(&quot;%p %d\n&quot;, arg5, arg6);
-<span class="line-number"></span>
-<span class="line-number"></span>  this-&gt;args_ptr = arg5;
-<span class="line-number"></span>
-<span class="line-number"></span>  printf(&quot;%s\n&quot;, this-&gt;query);
-<span class="line-number"></span>  this-&gt;iface0 = (GoInterface*) copyin(this-&gt;args_ptr, sizeof(GoInterface));
-<span class="line-number"></span>  this-&gt;rtti0 = (GoType*) copyin((user_addr_t)this-&gt;iface0-&gt;rtti, sizeof(GoType));
-<span class="line-number"></span>  print(*(this-&gt;rtti0));
-<span class="line-number"></span>  printf(&quot;\n&quot;);
-<span class="line-number"></span>
-<span class="line-number"></span>  this-&gt;go_arr0 = (GoArrayType*)copyin((user_addr_t)this-&gt;iface0-&gt;rtti, sizeof(GoArrayType));
-<span class="line-number"></span>  print(*(this-&gt;go_arr0));
-<span class="line-number"></span>  printf(&quot;\n&quot;);
-<span class="line-number"></span>
-<span class="line-number"></span>  this-&gt;go_arr0_elem = (GoType*)copyin((user_addr_t)this-&gt;go_arr0-&gt;elem, sizeof(GoType));
-<span class="line-number"></span>  print(*(this-&gt;go_arr0_elem));
-<span class="line-number"></span>  printf(&quot;\n&quot;);
-<span class="line-number"></span>
-<span class="line-number"></span>  this-&gt;go_arr0_slice = (GoType*)copyin((user_addr_t)this-&gt;go_arr0-&gt;slice, sizeof(GoType));
-<span class="line-number"></span>  print(*(this-&gt;go_arr0_slice));
-<span class="line-number"></span>  printf(&quot;\n&quot;);
-<span class="line-number"></span>
-<span class="line-number"></span>  this-&gt;go_str0 = (uint8_t*)copyin((user_addr_t)this-&gt;iface0-&gt;ptr, 16);
-<span class="line-number"></span>  tracemem(this-&gt;go_str0, 16);
-<span class="line-number"></span>
-<span class="line-number"></span>  this-&gt;iface1 = (GoInterface*) copyin(this-&gt;args_ptr + 1*sizeof(GoInterface), sizeof(GoInterface));
-<span class="line-number"></span>  this-&gt;rtti1 = (GoType*) copyin((user_addr_t)this-&gt;iface1-&gt;rtti, sizeof(GoType));
-<span class="line-number"></span>  print(*(this-&gt;rtti1));
-<span class="line-number"></span>  printf(&quot;\n&quot;);
-<span class="line-number"></span>
-<span class="line-number"></span>  this-&gt;iface2 = (GoInterface*) copyin(this-&gt;args_ptr + 2*sizeof(GoInterface), sizeof(GoInterface));
-<span class="line-number"></span>  this-&gt;rtti2 = (GoType*) copyin((user_addr_t)this-&gt;iface2-&gt;rtti, sizeof(GoType));
-<span class="line-number"></span>  print(*(this-&gt;rtti2));
-<span class="line-number"></span>  printf(&quot;\n&quot;);
-<span class="line-number"></span>
-<span class="line-number"></span>  this-&gt;iface3 = (GoInterface*) copyin(this-&gt;args_ptr + 3*sizeof(GoInterface), sizeof(GoInterface));
-<span class="line-number"></span>  this-&gt;rtti3 = (GoType*) copyin((user_addr_t)this-&gt;iface3-&gt;rtti, sizeof(GoType));
-<span class="line-number"></span>  print(*(this-&gt;rtti3));
-<span class="line-number"></span>  printf(&quot;\n&quot;);
-<span class="line-number"></span>
-<span class="line-number"></span>  this-&gt;go_str1 = (GoString*)copyin((user_addr_t)this-&gt;iface1-&gt;ptr, sizeof(GoString));
-<span class="line-number"></span>  this-&gt;str1 = stringof(copyin((user_addr_t)this-&gt;go_str1-&gt;ptr, this-&gt;go_str1-&gt;len));
-<span class="line-number"></span>  printf(&quot;str1=%s\n&quot;, this-&gt;str1);
-<span class="line-number"></span>
-<span class="line-number"></span>  this-&gt;go_str2 = (GoString*)copyin((user_addr_t)this-&gt;iface2-&gt;ptr, sizeof(GoString));
-<span class="line-number"></span>  this-&gt;str2 = stringof(copyin((user_addr_t)this-&gt;go_str2-&gt;ptr, this-&gt;go_str2-&gt;len));
-<span class="line-number"></span>  printf(&quot;str2=%s\n&quot;, this-&gt;str2);
-<span class="line-number"></span>
-<span class="line-number"></span>  this-&gt;go_str3 = (GoString*)copyin((user_addr_t)this-&gt;iface3-&gt;ptr, sizeof(GoString));
-<span class="line-number"></span>  this-&gt;str3 = stringof(copyin((user_addr_t)this-&gt;go_str3-&gt;ptr, this-&gt;go_str3-&gt;len));
-<span class="line-number"></span>  printf(&quot;str3=%s\n&quot;, this-&gt;str3);
-<span class="line-number"></span>}
+  <code class="language-dtrace"><span class="line-number"></span><span class="code-hl">#!/usr/sbin/dtrace -s</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">#pragma D option strsize=16K</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">typedef struct {</span>
+<span class="line-number"></span><span class="code-hl">  uint8_t* ptr;</span>
+<span class="line-number"></span><span class="code-hl">  size_t len;</span>
+<span class="line-number"></span><span class="code-hl">} GoString; </span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">typedef struct {</span>
+<span class="line-number"></span><span class="code-hl">  uintptr_t size;  </span>
+<span class="line-number"></span><span class="code-hl">  uintptr_t ptr_bytes;  </span>
+<span class="line-number"></span><span class="code-hl">  uint32_t hash;</span>
+<span class="line-number"></span><span class="code-hl">  uint8_t tflag;</span>
+<span class="line-number"></span><span class="code-hl">  uint8_t align;</span>
+<span class="line-number"></span><span class="code-hl">  uint8_t field_align;</span>
+<span class="line-number"></span><span class="code-hl">  uint8_t kind;</span>
+<span class="line-number"></span><span class="code-hl">  void* equal_func;</span>
+<span class="line-number"></span><span class="code-hl">  uint8_t* gc_data;</span>
+<span class="line-number"></span><span class="code-hl">  int32_t name_offset;</span>
+<span class="line-number"></span><span class="code-hl">  int32_t ptr_to_this;</span>
+<span class="line-number"></span><span class="code-hl">} GoType;</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">typedef struct {</span>
+<span class="line-number"></span><span class="code-hl">  GoType* rtti;</span>
+<span class="line-number"></span><span class="code-hl">  void* ptr;</span>
+<span class="line-number"></span><span class="code-hl">} GoInterface;</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">typedef struct {</span>
+<span class="line-number"></span><span class="code-hl">  GoType type;</span>
+<span class="line-number"></span><span class="code-hl">  GoType* elem;</span>
+<span class="line-number"></span><span class="code-hl">  GoType* slice;</span>
+<span class="line-number"></span><span class="code-hl">  uintptr_t len;</span>
+<span class="line-number"></span><span class="code-hl">} GoArrayType;</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">pid$target::database?sql.*.QueryContext:entry {</span>
+<span class="line-number"></span><span class="code-hl">  this-&gt;query = stringof(copyin(arg3, arg4)); // Query string.</span>
+<span class="line-number"></span><span class="code-hl">  printf(&quot;%p %d\n&quot;, arg5, arg6);</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  this-&gt;args_ptr = arg5;</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  printf(&quot;%s\n&quot;, this-&gt;query);</span>
+<span class="line-number"></span><span class="code-hl">  this-&gt;iface0 = (GoInterface*) copyin(this-&gt;args_ptr, sizeof(GoInterface));</span>
+<span class="line-number"></span><span class="code-hl">  this-&gt;rtti0 = (GoType*) copyin((user_addr_t)this-&gt;iface0-&gt;rtti, sizeof(GoType));</span>
+<span class="line-number"></span><span class="code-hl">  print(*(this-&gt;rtti0));</span>
+<span class="line-number"></span><span class="code-hl">  printf(&quot;\n&quot;);</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  this-&gt;go_arr0 = (GoArrayType*)copyin((user_addr_t)this-&gt;iface0-&gt;rtti, sizeof(GoArrayType));</span>
+<span class="line-number"></span><span class="code-hl">  print(*(this-&gt;go_arr0));</span>
+<span class="line-number"></span><span class="code-hl">  printf(&quot;\n&quot;);</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  this-&gt;go_arr0_elem = (GoType*)copyin((user_addr_t)this-&gt;go_arr0-&gt;elem, sizeof(GoType));</span>
+<span class="line-number"></span><span class="code-hl">  print(*(this-&gt;go_arr0_elem));</span>
+<span class="line-number"></span><span class="code-hl">  printf(&quot;\n&quot;);</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  this-&gt;go_arr0_slice = (GoType*)copyin((user_addr_t)this-&gt;go_arr0-&gt;slice, sizeof(GoType));</span>
+<span class="line-number"></span><span class="code-hl">  print(*(this-&gt;go_arr0_slice));</span>
+<span class="line-number"></span><span class="code-hl">  printf(&quot;\n&quot;);</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  this-&gt;go_str0 = (uint8_t*)copyin((user_addr_t)this-&gt;iface0-&gt;ptr, 16);</span>
+<span class="line-number"></span><span class="code-hl">  tracemem(this-&gt;go_str0, 16);</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  this-&gt;iface1 = (GoInterface*) copyin(this-&gt;args_ptr + 1*sizeof(GoInterface), sizeof(GoInterface));</span>
+<span class="line-number"></span><span class="code-hl">  this-&gt;rtti1 = (GoType*) copyin((user_addr_t)this-&gt;iface1-&gt;rtti, sizeof(GoType));</span>
+<span class="line-number"></span><span class="code-hl">  print(*(this-&gt;rtti1));</span>
+<span class="line-number"></span><span class="code-hl">  printf(&quot;\n&quot;);</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  this-&gt;iface2 = (GoInterface*) copyin(this-&gt;args_ptr + 2*sizeof(GoInterface), sizeof(GoInterface));</span>
+<span class="line-number"></span><span class="code-hl">  this-&gt;rtti2 = (GoType*) copyin((user_addr_t)this-&gt;iface2-&gt;rtti, sizeof(GoType));</span>
+<span class="line-number"></span><span class="code-hl">  print(*(this-&gt;rtti2));</span>
+<span class="line-number"></span><span class="code-hl">  printf(&quot;\n&quot;);</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  this-&gt;iface3 = (GoInterface*) copyin(this-&gt;args_ptr + 3*sizeof(GoInterface), sizeof(GoInterface));</span>
+<span class="line-number"></span><span class="code-hl">  this-&gt;rtti3 = (GoType*) copyin((user_addr_t)this-&gt;iface3-&gt;rtti, sizeof(GoType));</span>
+<span class="line-number"></span><span class="code-hl">  print(*(this-&gt;rtti3));</span>
+<span class="line-number"></span><span class="code-hl">  printf(&quot;\n&quot;);</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  this-&gt;go_str1 = (GoString*)copyin((user_addr_t)this-&gt;iface1-&gt;ptr, sizeof(GoString));</span>
+<span class="line-number"></span><span class="code-hl">  this-&gt;str1 = stringof(copyin((user_addr_t)this-&gt;go_str1-&gt;ptr, this-&gt;go_str1-&gt;len));</span>
+<span class="line-number"></span><span class="code-hl">  printf(&quot;str1=%s\n&quot;, this-&gt;str1);</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  this-&gt;go_str2 = (GoString*)copyin((user_addr_t)this-&gt;iface2-&gt;ptr, sizeof(GoString));</span>
+<span class="line-number"></span><span class="code-hl">  this-&gt;str2 = stringof(copyin((user_addr_t)this-&gt;go_str2-&gt;ptr, this-&gt;go_str2-&gt;len));</span>
+<span class="line-number"></span><span class="code-hl">  printf(&quot;str2=%s\n&quot;, this-&gt;str2);</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  this-&gt;go_str3 = (GoString*)copyin((user_addr_t)this-&gt;iface3-&gt;ptr, sizeof(GoString));</span>
+<span class="line-number"></span><span class="code-hl">  this-&gt;str3 = stringof(copyin((user_addr_t)this-&gt;go_str3-&gt;ptr, this-&gt;go_str3-&gt;len));</span>
+<span class="line-number"></span><span class="code-hl">  printf(&quot;str3=%s\n&quot;, this-&gt;str3);</span>
+<span class="line-number"></span><span class="code-hl">}</span>
 </code></pre>
 </details>
 <p><a href="/blog"> ⏴ Back to all articles</a></p>

@@ -145,11 +145,11 @@ Do not edit it by hand.
     <span>Kotlin</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-kotlin"><span class="line-number"></span> tasks.withType&lt;Test&gt; {
-<span class="line-number"></span>     useJUnitPlatform()
-<span class="line-number"></span>     reports.html.isEnabled = false
-<span class="line-number"></span>     reports.junitXml.isEnabled = false
-<span class="line-number"></span> }
+  <code class="language-kotlin"><span class="line-number"></span><span class="code-hl"> tasks.withType&lt;Test&gt; {</span>
+<span class="line-number"></span><span class="code-hl">     useJUnitPlatform()</span>
+<span class="line-number"></span><span class="code-hl">     reports.html.isEnabled = false</span>
+<span class="line-number"></span><span class="code-hl">     reports.junitXml.isEnabled = false</span>
+<span class="line-number"></span><span class="code-hl"> }</span>
 </code></pre>
 </li>
 <li>Check alternative repositories for a dependency instead of building it from source. It can happen that a certain dependency you need is not in the main repositories of the package manager of your system. You can however inspect other repositories before falling back to building it yourself. On Alpine, you can simply add the URL of the repository to <code>/etc/apk/repositories</code>. For example, in the main Alpine Docker image, the repository <code>https://&lt;mirror-server&gt;/alpine/edge/testing</code> is not enabled. More information <a href="https://wiki.alpinelinux.org/wiki/Enable_Community_Repository">here</a>. Other example: on OpenBSD or FreeBSD, you can opt-in to use the <code>current</code> branch to get the newest and latest changes, and along them the newest dependencies.</li>
@@ -161,8 +161,8 @@ Do not edit it by hand.
     <span>Plaintext</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-plaintext"><span class="line-number"></span>**/*
-<span class="line-number"></span>!**/*.js
+  <code class="language-plaintext"><span class="line-number"></span><span class="code-hl">**/*</span>
+<span class="line-number"></span><span class="code-hl">!**/*.js</span>
 </code></pre>
 <p>This can have a huge impact on performance since Docker will copy all the files inside the Docker context directory inside the container (or virtual machine on macOS) and it can be a lot. You don't want to copy build artifacts, images, and so on each time which your image does not need.</p>
 </li>
@@ -181,7 +181,7 @@ Do not edit it by hand.
     <span>Shell</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-shell"><span class="line-number"></span>$ printf '/* eslint-disable */\n\n' | cat - foo.js &gt; foo_tmp &amp;&amp; mv foo_tmp foo.js
+  <code class="language-shell"><span class="line-number"></span><span class="code-hl">$ printf '/* eslint-disable */\n\n' | cat - foo.js &gt; foo_tmp &amp;&amp; mv foo_tmp foo.js</span>
 </code></pre>
 <p>which involves reading the whole file, copying it, and renaming it, we can do:</p>
 <pre>
@@ -189,7 +189,7 @@ Do not edit it by hand.
     <span>Shell</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-shell"><span class="line-number"></span>$ sed -i '1s#^#/* eslint-disable */ #' foo.js
+  <code class="language-shell"><span class="line-number"></span><span class="code-hl">$ sed -i '1s#^#/* eslint-disable */ #' foo.js</span>
 </code></pre>
 <p>which is simpler.</p>
 </li>

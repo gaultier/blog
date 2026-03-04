@@ -125,105 +125,105 @@ Do not edit it by hand.
     <span>Go</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-go"><span class="line-number"></span>package main
-<span class="line-number"></span>
-<span class="line-number"></span>import (
-<span class="line-number"></span>	&quot;context&quot;
-<span class="line-number"></span>	&quot;fmt&quot;
-<span class="line-number"></span>	&quot;io&quot;
-<span class="line-number"></span>	&quot;net/http&quot;
-<span class="line-number"></span>	&quot;os&quot;
-<span class="line-number"></span>	&quot;slices&quot;
-<span class="line-number"></span>	&quot;strings&quot;
-<span class="line-number"></span>
-<span class="line-number"></span>	&quot;golang.org/x/crypto/bcrypt&quot;
-<span class="line-number"></span>	&quot;golang.org/x/sync/errgroup&quot;
-<span class="line-number"></span>)
-<span class="line-number"></span>
-<span class="line-number"></span>// Best effort: if the external API is down, swallow the error: the user should be able to change their password nonetheless.
-<span class="line-number"></span>func checkHaveIBeenPawned(ctx context.Context, pw string) error {
-<span class="line-number"></span>	req, err := http.NewRequestWithContext(ctx, &quot;GET&quot;, &quot;http://localhost:8000/haveibeenpawned.txt&quot;, strings.NewReader(pw))
-<span class="line-number"></span>	if err != nil {
-<span class="line-number"></span>		return nil
-<span class="line-number"></span>	}
-<span class="line-number"></span>
-<span class="line-number"></span>	resp, err := http.DefaultClient.Do(req)
-<span class="line-number"></span>
-<span class="line-number"></span>	if err != nil {
-<span class="line-number"></span>		return nil
-<span class="line-number"></span>	}
-<span class="line-number"></span>	defer resp.Body.Close()
-<span class="line-number"></span>
-<span class="line-number"></span>	if resp.StatusCode != http.StatusOK {
-<span class="line-number"></span>		return nil
-<span class="line-number"></span>	}
-<span class="line-number"></span>
-<span class="line-number"></span>	respBody, err := io.ReadAll(resp.Body)
-<span class="line-number"></span>	if err != nil {
-<span class="line-number"></span>		return nil
-<span class="line-number"></span>	}
-<span class="line-number"></span>	lines := strings.Split(string(respBody), &quot;\n&quot;)
-<span class="line-number"></span>
-<span class="line-number"></span>	if slices.Contains(lines, pw) {
-<span class="line-number"></span>		return fmt.Errorf(&quot;the password appears in a leak&quot;)
-<span class="line-number"></span>	}
-<span class="line-number"></span>
-<span class="line-number"></span>	return nil
-<span class="line-number"></span>}
-<span class="line-number"></span>
-<span class="line-number"></span>func changePassword(ctx context.Context, oldHash []byte, newPassword string) ([]byte, error) {
-<span class="line-number"></span>	var newHash []byte
-<span class="line-number"></span>
-<span class="line-number"></span>	g, ctx := errgroup.WithContext(ctx)
-<span class="line-number"></span>	// Do in parallel:
-<span class="line-number"></span>	// - Compute the hash of the new password
-<span class="line-number"></span>	// - Check that the new password is not the same as the old password
-<span class="line-number"></span>	g.Go(func() error {
-<span class="line-number"></span>		var err error
-<span class="line-number"></span>		newHash, err = bcrypt.GenerateFromPassword([]byte(newPassword), 10)
-<span class="line-number"></span>		return err
-<span class="line-number"></span>	})
-<span class="line-number"></span>	g.Go(func() error {
-<span class="line-number"></span>		if err := bcrypt.CompareHashAndPassword(oldHash, []byte(newPassword)); err == nil {
-<span class="line-number"></span>			return fmt.Errorf(&quot;old and new password are the same&quot;)
-<span class="line-number"></span>		}
-<span class="line-number"></span>		return nil
-<span class="line-number"></span>	})
-<span class="line-number"></span>
-<span class="line-number"></span>	if err := g.Wait(); err != nil {
-<span class="line-number"></span>		return nil, err
-<span class="line-number"></span>	}
-<span class="line-number"></span>
-<span class="line-number"></span>	if err := checkHaveIBeenPawned(ctx, newPassword); err != nil {
-<span class="line-number"></span>		return nil, err
-<span class="line-number"></span>	}
-<span class="line-number"></span>
-<span class="line-number"></span>	// Reject passwords that are too short.
-<span class="line-number"></span>	// In real programs, this value should be much higher!
-<span class="line-number"></span>	if len(newPassword) &lt; 4 {
-<span class="line-number"></span>		return nil, fmt.Errorf(&quot;password is too short&quot;)
-<span class="line-number"></span>	}
-<span class="line-number"></span>
-<span class="line-number"></span>	return newHash, nil
-<span class="line-number"></span>}
-<span class="line-number"></span>
-<span class="line-number"></span>func main() {
-<span class="line-number"></span>	ctx := context.Background()
-<span class="line-number"></span>
-<span class="line-number"></span>	oldPassword := &quot;hello, world&quot;
-<span class="line-number"></span>	oldHash, err := bcrypt.GenerateFromPassword([]byte(oldPassword), 8)
-<span class="line-number"></span>	if err != nil {
-<span class="line-number"></span>		panic(err)
-<span class="line-number"></span>	}
-<span class="line-number"></span>
-<span class="line-number"></span>	newPassword := os.Args[1]
-<span class="line-number"></span>	newHash, err := changePassword(ctx, oldHash, newPassword)
-<span class="line-number"></span>	if err != nil {
-<span class="line-number"></span>		fmt.Printf(&quot;failed to change password: %v&quot;, err)
-<span class="line-number"></span>	} else {
-<span class="line-number"></span>		fmt.Printf(&quot;new password set: %s&quot;, string(newHash))
-<span class="line-number"></span>	}
-<span class="line-number"></span>}
+  <code class="language-go"><span class="line-number"></span><span class="code-hl">package main</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">import (</span>
+<span class="line-number"></span><span class="code-hl">	&quot;context&quot;</span>
+<span class="line-number"></span><span class="code-hl">	&quot;fmt&quot;</span>
+<span class="line-number"></span><span class="code-hl">	&quot;io&quot;</span>
+<span class="line-number"></span><span class="code-hl">	&quot;net/http&quot;</span>
+<span class="line-number"></span><span class="code-hl">	&quot;os&quot;</span>
+<span class="line-number"></span><span class="code-hl">	&quot;slices&quot;</span>
+<span class="line-number"></span><span class="code-hl">	&quot;strings&quot;</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">	&quot;golang.org/x/crypto/bcrypt&quot;</span>
+<span class="line-number"></span><span class="code-hl">	&quot;golang.org/x/sync/errgroup&quot;</span>
+<span class="line-number"></span><span class="code-hl">)</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">// Best effort: if the external API is down, swallow the error: the user should be able to change their password nonetheless.</span>
+<span class="line-number"></span><span class="code-hl">func checkHaveIBeenPawned(ctx context.Context, pw string) error {</span>
+<span class="line-number"></span><span class="code-hl">	req, err := http.NewRequestWithContext(ctx, &quot;GET&quot;, &quot;http://localhost:8000/haveibeenpawned.txt&quot;, strings.NewReader(pw))</span>
+<span class="line-number"></span><span class="code-hl">	if err != nil {</span>
+<span class="line-number"></span><span class="code-hl">		return nil</span>
+<span class="line-number"></span><span class="code-hl">	}</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">	resp, err := http.DefaultClient.Do(req)</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">	if err != nil {</span>
+<span class="line-number"></span><span class="code-hl">		return nil</span>
+<span class="line-number"></span><span class="code-hl">	}</span>
+<span class="line-number"></span><span class="code-hl">	defer resp.Body.Close()</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">	if resp.StatusCode != http.StatusOK {</span>
+<span class="line-number"></span><span class="code-hl">		return nil</span>
+<span class="line-number"></span><span class="code-hl">	}</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">	respBody, err := io.ReadAll(resp.Body)</span>
+<span class="line-number"></span><span class="code-hl">	if err != nil {</span>
+<span class="line-number"></span><span class="code-hl">		return nil</span>
+<span class="line-number"></span><span class="code-hl">	}</span>
+<span class="line-number"></span><span class="code-hl">	lines := strings.Split(string(respBody), &quot;\n&quot;)</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">	if slices.Contains(lines, pw) {</span>
+<span class="line-number"></span><span class="code-hl">		return fmt.Errorf(&quot;the password appears in a leak&quot;)</span>
+<span class="line-number"></span><span class="code-hl">	}</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">	return nil</span>
+<span class="line-number"></span><span class="code-hl">}</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">func changePassword(ctx context.Context, oldHash []byte, newPassword string) ([]byte, error) {</span>
+<span class="line-number"></span><span class="code-hl">	var newHash []byte</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">	g, ctx := errgroup.WithContext(ctx)</span>
+<span class="line-number"></span><span class="code-hl">	// Do in parallel:</span>
+<span class="line-number"></span><span class="code-hl">	// - Compute the hash of the new password</span>
+<span class="line-number"></span><span class="code-hl">	// - Check that the new password is not the same as the old password</span>
+<span class="line-number"></span><span class="code-hl">	g.Go(func() error {</span>
+<span class="line-number"></span><span class="code-hl">		var err error</span>
+<span class="line-number"></span><span class="code-hl">		newHash, err = bcrypt.GenerateFromPassword([]byte(newPassword), 10)</span>
+<span class="line-number"></span><span class="code-hl">		return err</span>
+<span class="line-number"></span><span class="code-hl">	})</span>
+<span class="line-number"></span><span class="code-hl">	g.Go(func() error {</span>
+<span class="line-number"></span><span class="code-hl">		if err := bcrypt.CompareHashAndPassword(oldHash, []byte(newPassword)); err == nil {</span>
+<span class="line-number"></span><span class="code-hl">			return fmt.Errorf(&quot;old and new password are the same&quot;)</span>
+<span class="line-number"></span><span class="code-hl">		}</span>
+<span class="line-number"></span><span class="code-hl">		return nil</span>
+<span class="line-number"></span><span class="code-hl">	})</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">	if err := g.Wait(); err != nil {</span>
+<span class="line-number"></span><span class="code-hl">		return nil, err</span>
+<span class="line-number"></span><span class="code-hl">	}</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">	if err := checkHaveIBeenPawned(ctx, newPassword); err != nil {</span>
+<span class="line-number"></span><span class="code-hl">		return nil, err</span>
+<span class="line-number"></span><span class="code-hl">	}</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">	// Reject passwords that are too short.</span>
+<span class="line-number"></span><span class="code-hl">	// In real programs, this value should be much higher!</span>
+<span class="line-number"></span><span class="code-hl">	if len(newPassword) &lt; 4 {</span>
+<span class="line-number"></span><span class="code-hl">		return nil, fmt.Errorf(&quot;password is too short&quot;)</span>
+<span class="line-number"></span><span class="code-hl">	}</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">	return newHash, nil</span>
+<span class="line-number"></span><span class="code-hl">}</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">func main() {</span>
+<span class="line-number"></span><span class="code-hl">	ctx := context.Background()</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">	oldPassword := &quot;hello, world&quot;</span>
+<span class="line-number"></span><span class="code-hl">	oldHash, err := bcrypt.GenerateFromPassword([]byte(oldPassword), 8)</span>
+<span class="line-number"></span><span class="code-hl">	if err != nil {</span>
+<span class="line-number"></span><span class="code-hl">		panic(err)</span>
+<span class="line-number"></span><span class="code-hl">	}</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">	newPassword := os.Args[1]</span>
+<span class="line-number"></span><span class="code-hl">	newHash, err := changePassword(ctx, oldHash, newPassword)</span>
+<span class="line-number"></span><span class="code-hl">	if err != nil {</span>
+<span class="line-number"></span><span class="code-hl">		fmt.Printf(&quot;failed to change password: %v&quot;, err)</span>
+<span class="line-number"></span><span class="code-hl">	} else {</span>
+<span class="line-number"></span><span class="code-hl">		fmt.Printf(&quot;new password set: %s&quot;, string(newHash))</span>
+<span class="line-number"></span><span class="code-hl">	}</span>
+<span class="line-number"></span><span class="code-hl">}</span>
 </code></pre>
 <p>I think it is pretty straightforward.</p>
 <p>We serve the static text file <code>haveibeenpawned.txt</code> using a HTTP server to act as the Have I Been Pawned API, it just contains one password per line e.g.:</p>
@@ -232,9 +232,9 @@ Do not edit it by hand.
     <span>Plaintext</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-plaintext"><span class="line-number"></span>hello
-<span class="line-number"></span>abc123
-<span class="line-number"></span>123456
+  <code class="language-plaintext"><span class="line-number"></span><span class="code-hl">hello</span>
+<span class="line-number"></span><span class="code-hl">abc123</span>
+<span class="line-number"></span><span class="code-hl">123456</span>
 </code></pre>
 <p>Let's try it then:</p>
 <pre>
@@ -242,20 +242,20 @@ Do not edit it by hand.
     <span>Shell</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-shell"><span class="line-number"></span># Serve the leaked password file
-<span class="line-number"></span>$ python3 -m http.server -d . &amp;
-<span class="line-number"></span>
-<span class="line-number"></span># Fine new password, succeeds
-<span class="line-number"></span>$ go run main.go 'correct horse battery staple'
-<span class="line-number"></span>new password set: $2a$10$6tIRwMIKaOZuzsT1dT3EVu5boCtautewpJYT6r5Fc6PV13i9ezcNS
-<span class="line-number"></span>
-<span class="line-number"></span># Password too short
-<span class="line-number"></span>$ go run main.go 'hi'
-<span class="line-number"></span>failed to change password: password is too short
-<span class="line-number"></span>
-<span class="line-number"></span># Leaked password
-<span class="line-number"></span>$ go run main.go 'hello'
-<span class="line-number"></span>new password set: $2a$10$pmOOg5VOFEIjFk47hstoQeFbgHFTzxChpsp77SuuE4yvlSK9Ds4SG⏎                         
+  <code class="language-shell"><span class="line-number"></span><span class="code-hl"># Serve the leaked password file</span>
+<span class="line-number"></span><span class="code-hl">$ python3 -m http.server -d . &amp;</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl"># Fine new password, succeeds</span>
+<span class="line-number"></span><span class="code-hl">$ go run main.go 'correct horse battery staple'</span>
+<span class="line-number"></span><span class="code-hl">new password set: $2a$10$6tIRwMIKaOZuzsT1dT3EVu5boCtautewpJYT6r5Fc6PV13i9ezcNS</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl"># Password too short</span>
+<span class="line-number"></span><span class="code-hl">$ go run main.go 'hi'</span>
+<span class="line-number"></span><span class="code-hl">failed to change password: password is too short</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl"># Leaked password</span>
+<span class="line-number"></span><span class="code-hl">$ go run main.go 'hello'</span>
+<span class="line-number"></span><span class="code-hl">new password set: $2a$10$pmOOg5VOFEIjFk47hstoQeFbgHFTzxChpsp77SuuE4yvlSK9Ds4SG⏎                         </span>
 </code></pre>
 <p>Wait, the last one should have been rejected, what's going on?</p>
 <h2 id="bug-investigation">
@@ -270,18 +270,18 @@ Do not edit it by hand.
     <span>Diff</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-diff"><span class="line-number"></span>diff --git a/main.go b/main.go
-<span class="line-number"></span>index ae602df..17d0228 100644
-<span class="line-number"></span>--- a/main.go
-<span class="line-number"></span>+++ b/main.go
-<span class="line-number"></span>@@ -23,6 +23,7 @@ func checkHaveIBeenPawned(ctx context.Context, pw string) error {
-<span class="line-number"></span>        resp, err := http.DefaultClient.Do(req)
-<span class="line-number"></span> 
-<span class="line-number"></span>        if err != nil {
-<span class="line-number"></span>+               fmt.Fprintf(os.Stderr, &quot;http request error: %v\n&quot;, err)
-<span class="line-number"></span>                return nil
-<span class="line-number"></span>        }
-<span class="line-number"></span>        defer resp.Body.Close()
+  <code class="language-diff"><span class="line-number"></span><span class="code-hl">diff --git a/main.go b/main.go</span>
+<span class="line-number"></span><span class="code-hl">index ae602df..17d0228 100644</span>
+<span class="line-number"></span><span class="code-hl">--- a/main.go</span>
+<span class="line-number"></span><span class="code-hl">+++ b/main.go</span>
+<span class="line-number"></span><span class="code-hl">@@ -23,6 +23,7 @@ func checkHaveIBeenPawned(ctx context.Context, pw string) error {</span>
+<span class="line-number"></span><span class="code-hl">        resp, err := http.DefaultClient.Do(req)</span>
+<span class="line-number"></span><span class="code-hl"> </span>
+<span class="line-number"></span><span class="code-hl">        if err != nil {</span>
+<span class="line-number"></span><span class="code-hl">+               fmt.Fprintf(os.Stderr, &quot;http request error: %v\n&quot;, err)</span>
+<span class="line-number"></span><span class="code-hl">                return nil</span>
+<span class="line-number"></span><span class="code-hl">        }</span>
+<span class="line-number"></span><span class="code-hl">        defer resp.Body.Close()</span>
 </code></pre>
 <p>And we see:</p>
 <pre>
@@ -289,7 +289,7 @@ Do not edit it by hand.
     <span>Plaintext</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-plaintext"><span class="line-number"></span>http request error: Get &quot;http://localhost:8000/haveibeenpawned.txt&quot;: context canceled
+  <code class="language-plaintext"><span class="line-number"></span><span class="code-hl">http request error: Get &quot;http://localhost:8000/haveibeenpawned.txt&quot;: context canceled</span>
 </code></pre>
 <p>Uh...what? We do not even have a timeout set! How can the context be canceled?</p>
 <p>At that point, a great collegue of mine helped me debug and found the issue. He sent me this one line from the <code>errgroup</code> <a href="https://pkg.go.dev/golang.org/x/sync/errgroup#Group.WithContext">documentation</a>:</p>
@@ -305,29 +305,29 @@ Do not edit it by hand.
     <span>Diff</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-diff"><span class="line-number"></span>diff --git a/main.go b/main.go
-<span class="line-number"></span>index ae602df..74371a5 100644
-<span class="line-number"></span>--- a/main.go
-<span class="line-number"></span>+++ b/main.go
-<span class="line-number"></span>@@ -62,15 +62,14 @@ func changePassword(ctx context.Context, oldHash []byte, newPassword string) ([]
-<span class="line-number"></span>                }
-<span class="line-number"></span>                return nil
-<span class="line-number"></span>        })
-<span class="line-number"></span>+       g.Go(func() error {
-<span class="line-number"></span>+               return checkHaveIBeenPawned(ctx, newPassword)
-<span class="line-number"></span>+       })
-<span class="line-number"></span> 
-<span class="line-number"></span>        if err := g.Wait(); err != nil {
-<span class="line-number"></span>                return nil, err
-<span class="line-number"></span>        }
-<span class="line-number"></span> 
-<span class="line-number"></span>-       if err := checkHaveIBeenPawned(ctx, newPassword); err != nil {
-<span class="line-number"></span>-               return nil, err
-<span class="line-number"></span>-       }
-<span class="line-number"></span>-
-<span class="line-number"></span>        // Reject passwords that are too short.
-<span class="line-number"></span>        // In real programs, this value should be much higher!
-<span class="line-number"></span>        if len(newPassword) &lt; 4 {
+  <code class="language-diff"><span class="line-number"></span><span class="code-hl">diff --git a/main.go b/main.go</span>
+<span class="line-number"></span><span class="code-hl">index ae602df..74371a5 100644</span>
+<span class="line-number"></span><span class="code-hl">--- a/main.go</span>
+<span class="line-number"></span><span class="code-hl">+++ b/main.go</span>
+<span class="line-number"></span><span class="code-hl">@@ -62,15 +62,14 @@ func changePassword(ctx context.Context, oldHash []byte, newPassword string) ([]</span>
+<span class="line-number"></span><span class="code-hl">                }</span>
+<span class="line-number"></span><span class="code-hl">                return nil</span>
+<span class="line-number"></span><span class="code-hl">        })</span>
+<span class="line-number"></span><span class="code-hl">+       g.Go(func() error {</span>
+<span class="line-number"></span><span class="code-hl">+               return checkHaveIBeenPawned(ctx, newPassword)</span>
+<span class="line-number"></span><span class="code-hl">+       })</span>
+<span class="line-number"></span><span class="code-hl"> </span>
+<span class="line-number"></span><span class="code-hl">        if err := g.Wait(); err != nil {</span>
+<span class="line-number"></span><span class="code-hl">                return nil, err</span>
+<span class="line-number"></span><span class="code-hl">        }</span>
+<span class="line-number"></span><span class="code-hl"> </span>
+<span class="line-number"></span><span class="code-hl">-       if err := checkHaveIBeenPawned(ctx, newPassword); err != nil {</span>
+<span class="line-number"></span><span class="code-hl">-               return nil, err</span>
+<span class="line-number"></span><span class="code-hl">-       }</span>
+<span class="line-number"></span><span class="code-hl">-</span>
+<span class="line-number"></span><span class="code-hl">        // Reject passwords that are too short.</span>
+<span class="line-number"></span><span class="code-hl">        // In real programs, this value should be much higher!</span>
+<span class="line-number"></span><span class="code-hl">        if len(newPassword) &lt; 4 {</span>
 </code></pre>
 <p>Let's test it then:</p>
 <pre>
@@ -335,14 +335,14 @@ Do not edit it by hand.
     <span>Shell</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-shell"><span class="line-number"></span> $ go run main.go 'hi'
-<span class="line-number"></span>failed to change password: password is too short
-<span class="line-number"></span>
-<span class="line-number"></span>$ go run main.go 'hello'
-<span class="line-number"></span>failed to change password: the password appears in a leak
-<span class="line-number"></span>
-<span class="line-number"></span>$ go run main.go 'correct horse battery staple'
-<span class="line-number"></span>new password set: $2a$10$.oyEO/cSmTWugfwdpoADYOB/AM.uHjz1HodOysS3ksIS.FS4RvTx.⏎                   
+  <code class="language-shell"><span class="line-number"></span><span class="code-hl"> $ go run main.go 'hi'</span>
+<span class="line-number"></span><span class="code-hl">failed to change password: password is too short</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">$ go run main.go 'hello'</span>
+<span class="line-number"></span><span class="code-hl">failed to change password: the password appears in a leak</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">$ go run main.go 'correct horse battery staple'</span>
+<span class="line-number"></span><span class="code-hl">new password set: $2a$10$.oyEO/cSmTWugfwdpoADYOB/AM.uHjz1HodOysS3ksIS.FS4RvTx.⏎                   </span>
 </code></pre>
 <p>It works correctly now!</p>
 <p>This is the fix I went for in the real production <a href="https://github.com/ory/kratos/commit/c7fedfe21f2e95f89b54ced34bf9b49bd5f64fb9">code</a>.</p>
@@ -356,19 +356,19 @@ Do not edit it by hand.
     <span>Diff</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-diff"><span class="line-number"></span>diff --git a/main.go b/main.go
-<span class="line-number"></span>index ae602df..6bcbfa3 100644
-<span class="line-number"></span>--- a/main.go
-<span class="line-number"></span>+++ b/main.go
-<span class="line-number"></span>@@ -47,7 +47,7 @@ func checkHaveIBeenPawned(ctx context.Context, pw string) error {
-<span class="line-number"></span> func changePassword(ctx context.Context, oldHash []byte, newPassword string) ([]byte, error) {
-<span class="line-number"></span>        var newHash []byte
-<span class="line-number"></span> 
-<span class="line-number"></span>-       g, ctx := errgroup.WithContext(ctx)
-<span class="line-number"></span>+       g, _ := errgroup.WithContext(ctx)
-<span class="line-number"></span>        // Do in parallel:
-<span class="line-number"></span>        // - Compute the hash of the new password
-<span class="line-number"></span>        // - Check that the new password is not the same as the old password
+  <code class="language-diff"><span class="line-number"></span><span class="code-hl">diff --git a/main.go b/main.go</span>
+<span class="line-number"></span><span class="code-hl">index ae602df..6bcbfa3 100644</span>
+<span class="line-number"></span><span class="code-hl">--- a/main.go</span>
+<span class="line-number"></span><span class="code-hl">+++ b/main.go</span>
+<span class="line-number"></span><span class="code-hl">@@ -47,7 +47,7 @@ func checkHaveIBeenPawned(ctx context.Context, pw string) error {</span>
+<span class="line-number"></span><span class="code-hl"> func changePassword(ctx context.Context, oldHash []byte, newPassword string) ([]byte, error) {</span>
+<span class="line-number"></span><span class="code-hl">        var newHash []byte</span>
+<span class="line-number"></span><span class="code-hl"> </span>
+<span class="line-number"></span><span class="code-hl">-       g, ctx := errgroup.WithContext(ctx)</span>
+<span class="line-number"></span><span class="code-hl">+       g, _ := errgroup.WithContext(ctx)</span>
+<span class="line-number"></span><span class="code-hl">        // Do in parallel:</span>
+<span class="line-number"></span><span class="code-hl">        // - Compute the hash of the new password</span>
+<span class="line-number"></span><span class="code-hl">        // - Check that the new password is not the same as the old password</span>
 </code></pre>
 <p><em>This whole section talks about 'shadowing' but commenters have pointed out that the <a href="https://go.dev/ref/spec#Short_variable_declarations">Golang specification</a> actually calls it 'redeclaration'. So I kept the original wording, but feel free to replace in your head 'shadowing' by 'redeclaration'.</em></p>
 <p>Why does it work? Well, the <code>ctx</code> we get from <code>errgroup.WithContext(ctx)</code> is a child of the <code>ctx</code> passed to our function, and also shadows it in the current scope. Then, when we call <code>checkHaveIBeenPawned(ctx, newPassword)</code>, we use this child context that just got canceled by <code>g.Wait()</code> the line before. By not shadowing the parent context, the same call <code>checkHaveIBeenPawned(ctx, newPassword)</code> now uses this parent context, which has <em>not</em> been canceled in any way. So it works as expected. We could also name the two contexts differently to avoid this pitfall.</p>

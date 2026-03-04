@@ -169,10 +169,10 @@ Do not edit it by hand.
     <span>Plaintext</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-plaintext"><span class="line-number"></span> /* Note: calling printf() from a signal handler is not safe
-<span class="line-number"></span>  (and should not be done in production programs), since
-<span class="line-number"></span>  printf() is not async-signal-safe; see signal-safety(7).
-<span class="line-number"></span>  Nevertheless, we use printf() here [...]. */
+  <code class="language-plaintext"><span class="line-number"></span><span class="code-hl"> /* Note: calling printf() from a signal handler is not safe</span>
+<span class="line-number"></span><span class="code-hl">  (and should not be done in production programs), since</span>
+<span class="line-number"></span><span class="code-hl">  printf() is not async-signal-safe; see signal-safety(7).</span>
+<span class="line-number"></span><span class="code-hl">  Nevertheless, we use printf() here [...]. */</span>
 </code></pre>
 <p>Enough said.</p>
 <p>And this is really tricky to get right. For example, <code>malloc</code> is not async-signal-safe. By the way, you have to go out of your way to find this out, because the man page (at least on my system) does not mention anything about signals or async safety.</p>
@@ -202,61 +202,61 @@ That's the whole idea behind <code>timerfd_create</code> and <code>timerfd_setti
     <span>C</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-c"><span class="line-number"></span>#include &lt;assert.h&gt;
-<span class="line-number"></span>#include &lt;inttypes.h&gt;
-<span class="line-number"></span>#include &lt;stdio.h&gt;
-<span class="line-number"></span>#include &lt;sys/epoll.h&gt;
-<span class="line-number"></span>#include &lt;sys/timerfd.h&gt;
-<span class="line-number"></span>#include &lt;unistd.h&gt;
-<span class="line-number"></span>
-<span class="line-number"></span>int main() {
-<span class="line-number"></span>  int queue = epoll_create(1 /* Ignored */);
-<span class="line-number"></span>  assert(-1 != queue);
-<span class="line-number"></span>
-<span class="line-number"></span>  int res = 0;
-<span class="line-number"></span>
-<span class="line-number"></span>  for (int i = 0; i &lt; 10; i++) {
-<span class="line-number"></span>    res = timerfd_create(CLOCK_MONOTONIC, TFD_NONBLOCK);
-<span class="line-number"></span>    assert(-1 != res);
-<span class="line-number"></span>
-<span class="line-number"></span>    int fd = res;
-<span class="line-number"></span>    struct itimerspec ts = {.it_value.tv_nsec = i * 50 * 1000 * 1000};
-<span class="line-number"></span>    res = timerfd_settime(fd, 0, &amp;ts, NULL);
-<span class="line-number"></span>    assert(-1 != res);
-<span class="line-number"></span>
-<span class="line-number"></span>    struct epoll_event ev = {
-<span class="line-number"></span>        .events = EPOLLIN,
-<span class="line-number"></span>        .data.fd = fd,
-<span class="line-number"></span>    };
-<span class="line-number"></span>    res = epoll_ctl(queue, EPOLL_CTL_ADD, fd, &amp;ev);
-<span class="line-number"></span>    assert(-1 != res);
-<span class="line-number"></span>  }
-<span class="line-number"></span>
-<span class="line-number"></span>  int timeout_ms = 1000;
-<span class="line-number"></span>
-<span class="line-number"></span>  struct epoll_event events[10] = {0};
-<span class="line-number"></span>  int events_len = 10;
-<span class="line-number"></span>
-<span class="line-number"></span>  for (;;) {
-<span class="line-number"></span>    res = epoll_wait(queue, events, events_len, timeout_ms);
-<span class="line-number"></span>    assert(-1 != res);
-<span class="line-number"></span>
-<span class="line-number"></span>    if (0 == res) { // The end.
-<span class="line-number"></span>      return 0;
-<span class="line-number"></span>    }
-<span class="line-number"></span>
-<span class="line-number"></span>    for (int i = 0; i &lt; res; i++) {
-<span class="line-number"></span>      struct epoll_event event = events[i];
-<span class="line-number"></span>      if (event.events &amp; EPOLLIN) {
-<span class="line-number"></span>        struct timespec now = {0};
-<span class="line-number"></span>        clock_gettime(CLOCK_REALTIME, &amp;now);
-<span class="line-number"></span>        printf(&quot;[%ld.%03ld] timer %d triggered\n&quot;, now.tv_sec,
-<span class="line-number"></span>               now.tv_nsec / 1000 / 1000, event.data.fd);
-<span class="line-number"></span>        close(event.data.fd);
-<span class="line-number"></span>      }
-<span class="line-number"></span>    }
-<span class="line-number"></span>  }
-<span class="line-number"></span>}
+  <code class="language-c"><span class="line-number"></span><span class="code-hl">#include &lt;assert.h&gt;</span>
+<span class="line-number"></span><span class="code-hl">#include &lt;inttypes.h&gt;</span>
+<span class="line-number"></span><span class="code-hl">#include &lt;stdio.h&gt;</span>
+<span class="line-number"></span><span class="code-hl">#include &lt;sys/epoll.h&gt;</span>
+<span class="line-number"></span><span class="code-hl">#include &lt;sys/timerfd.h&gt;</span>
+<span class="line-number"></span><span class="code-hl">#include &lt;unistd.h&gt;</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">int main() {</span>
+<span class="line-number"></span><span class="code-hl">  int queue = epoll_create(1 /* Ignored */);</span>
+<span class="line-number"></span><span class="code-hl">  assert(-1 != queue);</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  int res = 0;</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  for (int i = 0; i &lt; 10; i++) {</span>
+<span class="line-number"></span><span class="code-hl">    res = timerfd_create(CLOCK_MONOTONIC, TFD_NONBLOCK);</span>
+<span class="line-number"></span><span class="code-hl">    assert(-1 != res);</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">    int fd = res;</span>
+<span class="line-number"></span><span class="code-hl">    struct itimerspec ts = {.it_value.tv_nsec = i * 50 * 1000 * 1000};</span>
+<span class="line-number"></span><span class="code-hl">    res = timerfd_settime(fd, 0, &amp;ts, NULL);</span>
+<span class="line-number"></span><span class="code-hl">    assert(-1 != res);</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">    struct epoll_event ev = {</span>
+<span class="line-number"></span><span class="code-hl">        .events = EPOLLIN,</span>
+<span class="line-number"></span><span class="code-hl">        .data.fd = fd,</span>
+<span class="line-number"></span><span class="code-hl">    };</span>
+<span class="line-number"></span><span class="code-hl">    res = epoll_ctl(queue, EPOLL_CTL_ADD, fd, &amp;ev);</span>
+<span class="line-number"></span><span class="code-hl">    assert(-1 != res);</span>
+<span class="line-number"></span><span class="code-hl">  }</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  int timeout_ms = 1000;</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  struct epoll_event events[10] = {0};</span>
+<span class="line-number"></span><span class="code-hl">  int events_len = 10;</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  for (;;) {</span>
+<span class="line-number"></span><span class="code-hl">    res = epoll_wait(queue, events, events_len, timeout_ms);</span>
+<span class="line-number"></span><span class="code-hl">    assert(-1 != res);</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">    if (0 == res) { // The end.</span>
+<span class="line-number"></span><span class="code-hl">      return 0;</span>
+<span class="line-number"></span><span class="code-hl">    }</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">    for (int i = 0; i &lt; res; i++) {</span>
+<span class="line-number"></span><span class="code-hl">      struct epoll_event event = events[i];</span>
+<span class="line-number"></span><span class="code-hl">      if (event.events &amp; EPOLLIN) {</span>
+<span class="line-number"></span><span class="code-hl">        struct timespec now = {0};</span>
+<span class="line-number"></span><span class="code-hl">        clock_gettime(CLOCK_REALTIME, &amp;now);</span>
+<span class="line-number"></span><span class="code-hl">        printf(&quot;[%ld.%03ld] timer %d triggered\n&quot;, now.tv_sec,</span>
+<span class="line-number"></span><span class="code-hl">               now.tv_nsec / 1000 / 1000, event.data.fd);</span>
+<span class="line-number"></span><span class="code-hl">        close(event.data.fd);</span>
+<span class="line-number"></span><span class="code-hl">      }</span>
+<span class="line-number"></span><span class="code-hl">    }</span>
+<span class="line-number"></span><span class="code-hl">  }</span>
+<span class="line-number"></span><span class="code-hl">}</span>
 </code></pre>
 <p>And it prints:</p>
 <pre>
@@ -264,15 +264,15 @@ That's the whole idea behind <code>timerfd_create</code> and <code>timerfd_setti
     <span>Plaintext</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-plaintext"><span class="line-number"></span>[1738530944.233] timer 5 triggered
-<span class="line-number"></span>[1738530944.283] timer 6 triggered
-<span class="line-number"></span>[1738530944.333] timer 7 triggered
-<span class="line-number"></span>[1738530944.383] timer 8 triggered
-<span class="line-number"></span>[1738530944.433] timer 9 triggered
-<span class="line-number"></span>[1738530944.483] timer 10 triggered
-<span class="line-number"></span>[1738530944.533] timer 11 triggered
-<span class="line-number"></span>[1738530944.583] timer 12 triggered
-<span class="line-number"></span>[1738530944.633] timer 13 triggered
+  <code class="language-plaintext"><span class="line-number"></span><span class="code-hl">[1738530944.233] timer 5 triggered</span>
+<span class="line-number"></span><span class="code-hl">[1738530944.283] timer 6 triggered</span>
+<span class="line-number"></span><span class="code-hl">[1738530944.333] timer 7 triggered</span>
+<span class="line-number"></span><span class="code-hl">[1738530944.383] timer 8 triggered</span>
+<span class="line-number"></span><span class="code-hl">[1738530944.433] timer 9 triggered</span>
+<span class="line-number"></span><span class="code-hl">[1738530944.483] timer 10 triggered</span>
+<span class="line-number"></span><span class="code-hl">[1738530944.533] timer 11 triggered</span>
+<span class="line-number"></span><span class="code-hl">[1738530944.583] timer 12 triggered</span>
+<span class="line-number"></span><span class="code-hl">[1738530944.633] timer 13 triggered</span>
 </code></pre>
 <p>The only gotcha, which is mentioned by the man page, is that we need to remember to <code>read(2)</code> from the timer whenever it triggers. That only matters for repeating timers (also sometimes called interval timers).</p>
 <p>There's even an additional benefit with this API: thanks to <code>ProcFS</code>, timers appear on the file system under <code>/proc/&lt;pid&gt;/fd/</code>, so troubleshooting is a bit easier.</p>
@@ -310,52 +310,52 @@ the timerfd interface that appeared in Linux 2.6.25.</p>
     <span>C</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-c"><span class="line-number"></span>#include &lt;assert.h&gt;
-<span class="line-number"></span>#include &lt;stdio.h&gt;
-<span class="line-number"></span>#include &lt;sys/event.h&gt;
-<span class="line-number"></span>#include &lt;sys/time.h&gt;
-<span class="line-number"></span>
-<span class="line-number"></span>int main() {
-<span class="line-number"></span>  int queue = kqueue();
-<span class="line-number"></span>  assert(-1 != queue);
-<span class="line-number"></span>
-<span class="line-number"></span>  int res = 0;
-<span class="line-number"></span>
-<span class="line-number"></span>  struct kevent changelist[10] = {0};
-<span class="line-number"></span>  for (int i = 0; i &lt; 10; i++) {
-<span class="line-number"></span>    changelist[i] = (struct kevent){
-<span class="line-number"></span>        .ident = i + 1,
-<span class="line-number"></span>        .flags = EV_ADD | EV_ONESHOT,
-<span class="line-number"></span>        .data = i * 50,
-<span class="line-number"></span>        .filter = EVFILT_TIMER,
-<span class="line-number"></span>        .fflags = NOTE_MSECONDS,
-<span class="line-number"></span>    };
-<span class="line-number"></span>  }
-<span class="line-number"></span>
-<span class="line-number"></span>  res = kevent(queue, changelist, 10, NULL, 0, 0);
-<span class="line-number"></span>  assert(-1 != res);
-<span class="line-number"></span>
-<span class="line-number"></span>  struct kevent eventlist[10] = {0};
-<span class="line-number"></span>  struct timespec timeout = {.tv_sec = 1};
-<span class="line-number"></span>  for (;;) {
-<span class="line-number"></span>    res = kevent(queue, NULL, 0, eventlist, 10, &amp;timeout);
-<span class="line-number"></span>    assert(-1 != res);
-<span class="line-number"></span>
-<span class="line-number"></span>    if (0 == res) { // The end.
-<span class="line-number"></span>      return 0;
-<span class="line-number"></span>    }
-<span class="line-number"></span>
-<span class="line-number"></span>    for (int i = 0; i &lt; res; i++) {
-<span class="line-number"></span>      struct kevent event = eventlist[i];
-<span class="line-number"></span>      if (event.filter &amp; EVFILT_TIMER) {
-<span class="line-number"></span>        struct timespec now = {0};
-<span class="line-number"></span>        clock_gettime(CLOCK_REALTIME, &amp;now);
-<span class="line-number"></span>        printf(&quot;[%ld.%03ld] timer %ld triggered\n&quot;, now.tv_sec,
-<span class="line-number"></span>               now.tv_nsec / 1000 / 1000, event.ident);
-<span class="line-number"></span>      }
-<span class="line-number"></span>    }
-<span class="line-number"></span>  }
-<span class="line-number"></span>}
+  <code class="language-c"><span class="line-number"></span><span class="code-hl">#include &lt;assert.h&gt;</span>
+<span class="line-number"></span><span class="code-hl">#include &lt;stdio.h&gt;</span>
+<span class="line-number"></span><span class="code-hl">#include &lt;sys/event.h&gt;</span>
+<span class="line-number"></span><span class="code-hl">#include &lt;sys/time.h&gt;</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">int main() {</span>
+<span class="line-number"></span><span class="code-hl">  int queue = kqueue();</span>
+<span class="line-number"></span><span class="code-hl">  assert(-1 != queue);</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  int res = 0;</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  struct kevent changelist[10] = {0};</span>
+<span class="line-number"></span><span class="code-hl">  for (int i = 0; i &lt; 10; i++) {</span>
+<span class="line-number"></span><span class="code-hl">    changelist[i] = (struct kevent){</span>
+<span class="line-number"></span><span class="code-hl">        .ident = i + 1,</span>
+<span class="line-number"></span><span class="code-hl">        .flags = EV_ADD | EV_ONESHOT,</span>
+<span class="line-number"></span><span class="code-hl">        .data = i * 50,</span>
+<span class="line-number"></span><span class="code-hl">        .filter = EVFILT_TIMER,</span>
+<span class="line-number"></span><span class="code-hl">        .fflags = NOTE_MSECONDS,</span>
+<span class="line-number"></span><span class="code-hl">    };</span>
+<span class="line-number"></span><span class="code-hl">  }</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  res = kevent(queue, changelist, 10, NULL, 0, 0);</span>
+<span class="line-number"></span><span class="code-hl">  assert(-1 != res);</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  struct kevent eventlist[10] = {0};</span>
+<span class="line-number"></span><span class="code-hl">  struct timespec timeout = {.tv_sec = 1};</span>
+<span class="line-number"></span><span class="code-hl">  for (;;) {</span>
+<span class="line-number"></span><span class="code-hl">    res = kevent(queue, NULL, 0, eventlist, 10, &amp;timeout);</span>
+<span class="line-number"></span><span class="code-hl">    assert(-1 != res);</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">    if (0 == res) { // The end.</span>
+<span class="line-number"></span><span class="code-hl">      return 0;</span>
+<span class="line-number"></span><span class="code-hl">    }</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">    for (int i = 0; i &lt; res; i++) {</span>
+<span class="line-number"></span><span class="code-hl">      struct kevent event = eventlist[i];</span>
+<span class="line-number"></span><span class="code-hl">      if (event.filter &amp; EVFILT_TIMER) {</span>
+<span class="line-number"></span><span class="code-hl">        struct timespec now = {0};</span>
+<span class="line-number"></span><span class="code-hl">        clock_gettime(CLOCK_REALTIME, &amp;now);</span>
+<span class="line-number"></span><span class="code-hl">        printf(&quot;[%ld.%03ld] timer %ld triggered\n&quot;, now.tv_sec,</span>
+<span class="line-number"></span><span class="code-hl">               now.tv_nsec / 1000 / 1000, event.ident);</span>
+<span class="line-number"></span><span class="code-hl">      }</span>
+<span class="line-number"></span><span class="code-hl">    }</span>
+<span class="line-number"></span><span class="code-hl">  }</span>
+<span class="line-number"></span><span class="code-hl">}</span>
 </code></pre>
 <p>And it prints:</p>
 <pre>
@@ -363,16 +363,16 @@ the timerfd interface that appeared in Linux 2.6.25.</p>
     <span>Plaintext</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-plaintext"><span class="line-number"></span>[1738380963.984] timer 1 triggered
-<span class="line-number"></span>[1738380964.034] timer 2 triggered
-<span class="line-number"></span>[1738380964.084] timer 3 triggered
-<span class="line-number"></span>[1738380964.134] timer 4 triggered
-<span class="line-number"></span>[1738380964.184] timer 5 triggered
-<span class="line-number"></span>[1738380964.234] timer 6 triggered
-<span class="line-number"></span>[1738380964.284] timer 7 triggered
-<span class="line-number"></span>[1738380964.334] timer 8 triggered
-<span class="line-number"></span>[1738380964.384] timer 9 triggered
-<span class="line-number"></span>[1738380964.434] timer 10 triggered
+  <code class="language-plaintext"><span class="line-number"></span><span class="code-hl">[1738380963.984] timer 1 triggered</span>
+<span class="line-number"></span><span class="code-hl">[1738380964.034] timer 2 triggered</span>
+<span class="line-number"></span><span class="code-hl">[1738380964.084] timer 3 triggered</span>
+<span class="line-number"></span><span class="code-hl">[1738380964.134] timer 4 triggered</span>
+<span class="line-number"></span><span class="code-hl">[1738380964.184] timer 5 triggered</span>
+<span class="line-number"></span><span class="code-hl">[1738380964.234] timer 6 triggered</span>
+<span class="line-number"></span><span class="code-hl">[1738380964.284] timer 7 triggered</span>
+<span class="line-number"></span><span class="code-hl">[1738380964.334] timer 8 triggered</span>
+<span class="line-number"></span><span class="code-hl">[1738380964.384] timer 9 triggered</span>
+<span class="line-number"></span><span class="code-hl">[1738380964.434] timer 10 triggered</span>
 </code></pre>
 <p>What about the portability?</p>
 <ul>
@@ -416,41 +416,41 @@ as its notification mechanism.</p>
     <span>C</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-c"><span class="line-number"></span>#include &lt;assert.h&gt;
-<span class="line-number"></span>#include &lt;liburing.h&gt;
-<span class="line-number"></span>#include &lt;liburing/io_uring.h&gt;
-<span class="line-number"></span>#include &lt;stdio.h&gt;
-<span class="line-number"></span>
-<span class="line-number"></span>int main() {
-<span class="line-number"></span>  struct io_uring ring = {0};
-<span class="line-number"></span>  if (io_uring_queue_init(10, &amp;ring, IORING_SETUP_SINGLE_ISSUER) &lt; 0) {
-<span class="line-number"></span>    return 1;
-<span class="line-number"></span>  }
-<span class="line-number"></span>
-<span class="line-number"></span>  // Queue `sleep`.
-<span class="line-number"></span>  struct io_uring_sqe *sqe = NULL;
-<span class="line-number"></span>  for (int i = 1; i &lt;= 10; i++) {
-<span class="line-number"></span>    sqe = io_uring_get_sqe(&amp;ring);
-<span class="line-number"></span>    struct __kernel_timespec ts = {.tv_nsec = i * 50 * 1000 * 1000};
-<span class="line-number"></span>    io_uring_prep_timeout(sqe, &amp;ts, 1, IORING_TIMEOUT_ETIME_SUCCESS);
-<span class="line-number"></span>    sqe-&gt;user_data = i;
-<span class="line-number"></span>    assert(1 == io_uring_submit(&amp;ring));
-<span class="line-number"></span>  }
-<span class="line-number"></span>
-<span class="line-number"></span>  for (int i = 0; i &lt; 10; i++) {
-<span class="line-number"></span>    struct io_uring_cqe *cqe = NULL;
-<span class="line-number"></span>
-<span class="line-number"></span>    int ret = io_uring_wait_cqe(&amp;ring, &amp;cqe);
-<span class="line-number"></span>    assert(0 == ret);
-<span class="line-number"></span>    assert(-ETIME == cqe-&gt;res);
-<span class="line-number"></span>
-<span class="line-number"></span>    struct timespec now = {0};
-<span class="line-number"></span>    clock_gettime(CLOCK_REALTIME, &amp;now);
-<span class="line-number"></span>    printf(&quot;[%ld.%03ld] timer %lld triggered\n&quot;, now.tv_sec,
-<span class="line-number"></span>           now.tv_nsec / 1000 / 1000, cqe-&gt;user_data);
-<span class="line-number"></span>    io_uring_cqe_seen(&amp;ring, cqe);
-<span class="line-number"></span>  }
-<span class="line-number"></span>}
+  <code class="language-c"><span class="line-number"></span><span class="code-hl">#include &lt;assert.h&gt;</span>
+<span class="line-number"></span><span class="code-hl">#include &lt;liburing.h&gt;</span>
+<span class="line-number"></span><span class="code-hl">#include &lt;liburing/io_uring.h&gt;</span>
+<span class="line-number"></span><span class="code-hl">#include &lt;stdio.h&gt;</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">int main() {</span>
+<span class="line-number"></span><span class="code-hl">  struct io_uring ring = {0};</span>
+<span class="line-number"></span><span class="code-hl">  if (io_uring_queue_init(10, &amp;ring, IORING_SETUP_SINGLE_ISSUER) &lt; 0) {</span>
+<span class="line-number"></span><span class="code-hl">    return 1;</span>
+<span class="line-number"></span><span class="code-hl">  }</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  // Queue `sleep`.</span>
+<span class="line-number"></span><span class="code-hl">  struct io_uring_sqe *sqe = NULL;</span>
+<span class="line-number"></span><span class="code-hl">  for (int i = 1; i &lt;= 10; i++) {</span>
+<span class="line-number"></span><span class="code-hl">    sqe = io_uring_get_sqe(&amp;ring);</span>
+<span class="line-number"></span><span class="code-hl">    struct __kernel_timespec ts = {.tv_nsec = i * 50 * 1000 * 1000};</span>
+<span class="line-number"></span><span class="code-hl">    io_uring_prep_timeout(sqe, &amp;ts, 1, IORING_TIMEOUT_ETIME_SUCCESS);</span>
+<span class="line-number"></span><span class="code-hl">    sqe-&gt;user_data = i;</span>
+<span class="line-number"></span><span class="code-hl">    assert(1 == io_uring_submit(&amp;ring));</span>
+<span class="line-number"></span><span class="code-hl">  }</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  for (int i = 0; i &lt; 10; i++) {</span>
+<span class="line-number"></span><span class="code-hl">    struct io_uring_cqe *cqe = NULL;</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">    int ret = io_uring_wait_cqe(&amp;ring, &amp;cqe);</span>
+<span class="line-number"></span><span class="code-hl">    assert(0 == ret);</span>
+<span class="line-number"></span><span class="code-hl">    assert(-ETIME == cqe-&gt;res);</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">    struct timespec now = {0};</span>
+<span class="line-number"></span><span class="code-hl">    clock_gettime(CLOCK_REALTIME, &amp;now);</span>
+<span class="line-number"></span><span class="code-hl">    printf(&quot;[%ld.%03ld] timer %lld triggered\n&quot;, now.tv_sec,</span>
+<span class="line-number"></span><span class="code-hl">           now.tv_nsec / 1000 / 1000, cqe-&gt;user_data);</span>
+<span class="line-number"></span><span class="code-hl">    io_uring_cqe_seen(&amp;ring, cqe);</span>
+<span class="line-number"></span><span class="code-hl">  }</span>
+<span class="line-number"></span><span class="code-hl">}</span>
 </code></pre>
 <p>And it outputs:</p>
 <pre>
@@ -458,16 +458,16 @@ as its notification mechanism.</p>
     <span>Plaintext</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-plaintext"><span class="line-number"></span>[1738532785.771] timer 1 triggered
-<span class="line-number"></span>[1738532785.821] timer 2 triggered
-<span class="line-number"></span>[1738532785.871] timer 3 triggered
-<span class="line-number"></span>[1738532785.921] timer 4 triggered
-<span class="line-number"></span>[1738532785.971] timer 5 triggered
-<span class="line-number"></span>[1738532786.021] timer 6 triggered
-<span class="line-number"></span>[1738532786.071] timer 7 triggered
-<span class="line-number"></span>[1738532786.121] timer 8 triggered
-<span class="line-number"></span>[1738532786.171] timer 9 triggered
-<span class="line-number"></span>[1738532786.221] timer 10 triggered
+  <code class="language-plaintext"><span class="line-number"></span><span class="code-hl">[1738532785.771] timer 1 triggered</span>
+<span class="line-number"></span><span class="code-hl">[1738532785.821] timer 2 triggered</span>
+<span class="line-number"></span><span class="code-hl">[1738532785.871] timer 3 triggered</span>
+<span class="line-number"></span><span class="code-hl">[1738532785.921] timer 4 triggered</span>
+<span class="line-number"></span><span class="code-hl">[1738532785.971] timer 5 triggered</span>
+<span class="line-number"></span><span class="code-hl">[1738532786.021] timer 6 triggered</span>
+<span class="line-number"></span><span class="code-hl">[1738532786.071] timer 7 triggered</span>
+<span class="line-number"></span><span class="code-hl">[1738532786.121] timer 8 triggered</span>
+<span class="line-number"></span><span class="code-hl">[1738532786.171] timer 9 triggered</span>
+<span class="line-number"></span><span class="code-hl">[1738532786.221] timer 10 triggered</span>
 </code></pre>
 <h2 id="all-oses-timers-fully-implemented-in-userspace">
   <a class="title" href="#all-oses-timers-fully-implemented-in-userspace">All OSes: timers fully implemented in userspace</a>
@@ -480,27 +480,27 @@ as its notification mechanism.</p>
     <span>C</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-c"><span class="line-number"></span>#include &lt;assert.h&gt;
-<span class="line-number"></span>#include &lt;uv.h&gt;
-<span class="line-number"></span>
-<span class="line-number"></span>static void once_cb(uv_timer_t *handle) {
-<span class="line-number"></span>  printf(&quot;timer %#x triggered\n&quot;, handle);
-<span class="line-number"></span>}
-<span class="line-number"></span>
-<span class="line-number"></span>int main() {
-<span class="line-number"></span>  uv_timer_t once_timers[10] = {0};
-<span class="line-number"></span>  int r = 0;
-<span class="line-number"></span>
-<span class="line-number"></span>  /* Start 10 timers. */
-<span class="line-number"></span>  for (int i = 0; i &lt; 10; i++) {
-<span class="line-number"></span>    r = uv_timer_init(uv_default_loop(), &amp;once_timers[i]);
-<span class="line-number"></span>    assert(0 == r);
-<span class="line-number"></span>    r = uv_timer_start(&amp;once_timers[i], once_cb, i * i * 50, 0);
-<span class="line-number"></span>    assert(0 == r);
-<span class="line-number"></span>  }
-<span class="line-number"></span>
-<span class="line-number"></span>  uv_run(uv_default_loop(), UV_RUN_DEFAULT);
-<span class="line-number"></span>}
+  <code class="language-c"><span class="line-number"></span><span class="code-hl">#include &lt;assert.h&gt;</span>
+<span class="line-number"></span><span class="code-hl">#include &lt;uv.h&gt;</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">static void once_cb(uv_timer_t *handle) {</span>
+<span class="line-number"></span><span class="code-hl">  printf(&quot;timer %#x triggered\n&quot;, handle);</span>
+<span class="line-number"></span><span class="code-hl">}</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">int main() {</span>
+<span class="line-number"></span><span class="code-hl">  uv_timer_t once_timers[10] = {0};</span>
+<span class="line-number"></span><span class="code-hl">  int r = 0;</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  /* Start 10 timers. */</span>
+<span class="line-number"></span><span class="code-hl">  for (int i = 0; i &lt; 10; i++) {</span>
+<span class="line-number"></span><span class="code-hl">    r = uv_timer_init(uv_default_loop(), &amp;once_timers[i]);</span>
+<span class="line-number"></span><span class="code-hl">    assert(0 == r);</span>
+<span class="line-number"></span><span class="code-hl">    r = uv_timer_start(&amp;once_timers[i], once_cb, i * i * 50, 0);</span>
+<span class="line-number"></span><span class="code-hl">    assert(0 == r);</span>
+<span class="line-number"></span><span class="code-hl">  }</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  uv_run(uv_default_loop(), UV_RUN_DEFAULT);</span>
+<span class="line-number"></span><span class="code-hl">}</span>
 </code></pre>
 <p>We create 10 timers with increasing durations, and run the event loop. When a timer triggers, our callback is called by <code>libuv</code>.</p>
 <p>Of course, in a real program, we would also do real work while the timers run, e.g. network I/O.</p>
@@ -510,22 +510,22 @@ as its notification mechanism.</p>
     <span>Shell</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-shell"><span class="line-number"></span>$ cc uv-timers.c -luv
-<span class="line-number"></span>$ strace ./a.out
-<span class="line-number"></span>[...]
-<span class="line-number"></span>epoll_pwait(3, [], 1024, 49, NULL, 8)   = 0
-<span class="line-number"></span>write(1, &quot;timer 0x27432398 triggered\n&quot;, 27timer 0x27432398 triggered
-<span class="line-number"></span>) = 27
-<span class="line-number"></span>epoll_pwait(3, [], 1024, 149, NULL, 8)  = 0
-<span class="line-number"></span>write(1, &quot;timer 0x27432430 triggered\n&quot;, 27timer 0x27432430 triggered
-<span class="line-number"></span>) = 27
-<span class="line-number"></span>epoll_pwait(3, [], 1024, 249, NULL, 8)  = 0
-<span class="line-number"></span>write(1, &quot;timer 0x274324c8 triggered\n&quot;, 27timer 0x274324c8 triggered
-<span class="line-number"></span>) = 27
-<span class="line-number"></span>epoll_pwait(3, [], 1024, 349, NULL, 8)  = 0
-<span class="line-number"></span>write(1, &quot;timer 0x27432560 triggered\n&quot;, 27timer 0x27432560 triggered
-<span class="line-number"></span>) = 27
-<span class="line-number"></span>[...]
+  <code class="language-shell"><span class="line-number"></span><span class="code-hl">$ cc uv-timers.c -luv</span>
+<span class="line-number"></span><span class="code-hl">$ strace ./a.out</span>
+<span class="line-number"></span><span class="code-hl">[...]</span>
+<span class="line-number"></span><span class="code-hl">epoll_pwait(3, [], 1024, 49, NULL, 8)   = 0</span>
+<span class="line-number"></span><span class="code-hl">write(1, &quot;timer 0x27432398 triggered\n&quot;, 27timer 0x27432398 triggered</span>
+<span class="line-number"></span><span class="code-hl">) = 27</span>
+<span class="line-number"></span><span class="code-hl">epoll_pwait(3, [], 1024, 149, NULL, 8)  = 0</span>
+<span class="line-number"></span><span class="code-hl">write(1, &quot;timer 0x27432430 triggered\n&quot;, 27timer 0x27432430 triggered</span>
+<span class="line-number"></span><span class="code-hl">) = 27</span>
+<span class="line-number"></span><span class="code-hl">epoll_pwait(3, [], 1024, 249, NULL, 8)  = 0</span>
+<span class="line-number"></span><span class="code-hl">write(1, &quot;timer 0x274324c8 triggered\n&quot;, 27timer 0x274324c8 triggered</span>
+<span class="line-number"></span><span class="code-hl">) = 27</span>
+<span class="line-number"></span><span class="code-hl">epoll_pwait(3, [], 1024, 349, NULL, 8)  = 0</span>
+<span class="line-number"></span><span class="code-hl">write(1, &quot;timer 0x27432560 triggered\n&quot;, 27timer 0x27432560 triggered</span>
+<span class="line-number"></span><span class="code-hl">) = 27</span>
+<span class="line-number"></span><span class="code-hl">[...]</span>
 </code></pre>
 <p>Huh, no call to <code>timerfd_create</code> or something like this, just... <code>epoll_pwait</code> which is basically just <code>epoll_wait</code>, which is basically just a faster <code>poll</code>. And no events, just a timeout... So... are <code>libuv</code> timers fully implemented in userspace?</p>
 <p>I was at this moment reminded of a <a href="https://smartos.org/man/7/timerfd">sentence</a> I had read from an Illumos man page:</p>

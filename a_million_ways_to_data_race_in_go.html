@@ -174,48 +174,48 @@ Do not edit it by hand.
     <span>Go</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-go"><span class="line-number"></span>package main
-<span class="line-number"></span>
-<span class="line-number"></span>import (
-<span class="line-number"></span>	&quot;context&quot;
-<span class="line-number"></span>
-<span class="line-number"></span>	&quot;golang.org/x/sync/errgroup&quot;
-<span class="line-number"></span>)
-<span class="line-number"></span>
-<span class="line-number"></span>func Foo() error { return nil }
-<span class="line-number"></span>func Bar() error { return nil }
-<span class="line-number"></span>func Baz() error { return nil }
-<span class="line-number"></span>
-<span class="line-number"></span>func Run(ctx context.Context) error {
-<span class="line-number"></span>	err := Foo()
-<span class="line-number"></span>	if err != nil {
-<span class="line-number"></span>		return err
-<span class="line-number"></span>	}
-<span class="line-number"></span>
-<span class="line-number"></span>	wg, ctx := errgroup.WithContext(ctx)
-<span class="line-number"></span>	wg.Go(func() error {
-<span class="line-number"></span>		err = Baz()
-<span class="line-number"></span>		if err != nil {
-<span class="line-number"></span>			return err
-<span class="line-number"></span>		}
-<span class="line-number"></span>
-<span class="line-number"></span>		return nil
-<span class="line-number"></span>	})
-<span class="line-number"></span>	wg.Go(func() error {
-<span class="line-number"></span>		err = Bar()
-<span class="line-number"></span>		if err != nil {
-<span class="line-number"></span>			return err
-<span class="line-number"></span>		}
-<span class="line-number"></span>
-<span class="line-number"></span>		return nil
-<span class="line-number"></span>	})
-<span class="line-number"></span>
-<span class="line-number"></span>	return wg.Wait()
-<span class="line-number"></span>}
-<span class="line-number"></span>
-<span class="line-number"></span>func main() {
-<span class="line-number"></span>	println(Run(context.Background()))
-<span class="line-number"></span>}
+  <code class="language-go"><span class="line-number"></span><span class="code-hl">package main</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">import (</span>
+<span class="line-number"></span><span class="code-hl">	&quot;context&quot;</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">	&quot;golang.org/x/sync/errgroup&quot;</span>
+<span class="line-number"></span><span class="code-hl">)</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">func Foo() error { return nil }</span>
+<span class="line-number"></span><span class="code-hl">func Bar() error { return nil }</span>
+<span class="line-number"></span><span class="code-hl">func Baz() error { return nil }</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">func Run(ctx context.Context) error {</span>
+<span class="line-number"></span><span class="code-hl">	err := Foo()</span>
+<span class="line-number"></span><span class="code-hl">	if err != nil {</span>
+<span class="line-number"></span><span class="code-hl">		return err</span>
+<span class="line-number"></span><span class="code-hl">	}</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">	wg, ctx := errgroup.WithContext(ctx)</span>
+<span class="line-number"></span><span class="code-hl">	wg.Go(func() error {</span>
+<span class="line-number"></span><span class="code-hl">		err = Baz()</span>
+<span class="line-number"></span><span class="code-hl">		if err != nil {</span>
+<span class="line-number"></span><span class="code-hl">			return err</span>
+<span class="line-number"></span><span class="code-hl">		}</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">		return nil</span>
+<span class="line-number"></span><span class="code-hl">	})</span>
+<span class="line-number"></span><span class="code-hl">	wg.Go(func() error {</span>
+<span class="line-number"></span><span class="code-hl">		err = Bar()</span>
+<span class="line-number"></span><span class="code-hl">		if err != nil {</span>
+<span class="line-number"></span><span class="code-hl">			return err</span>
+<span class="line-number"></span><span class="code-hl">		}</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">		return nil</span>
+<span class="line-number"></span><span class="code-hl">	})</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">	return wg.Wait()</span>
+<span class="line-number"></span><span class="code-hl">}</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">func main() {</span>
+<span class="line-number"></span><span class="code-hl">	println(Run(context.Background()))</span>
+<span class="line-number"></span><span class="code-hl">}</span>
 </code></pre>
 <p>The issue might not be immediately visible.</p>
 <p>The problem is that the <code>err</code> outer variable is implicitly captured by the closures running each in a separate goroutine. They then mutate <code>err</code> concurrently. What they meant to do is instead use a variable local to the closure and return that instead. There is conceptually no need to share any data; this is purely accidental.</p>
@@ -229,27 +229,27 @@ Do not edit it by hand.
     <span>Diff</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-diff"><span class="line-number"></span>diff --git a/cmd-sg/main.go b/cmd-sg/main.go
-<span class="line-number"></span>index 7eabdbc..4349157 100644
-<span class="line-number"></span>--- a/cmd-sg/main.go
-<span class="line-number"></span>+++ b/cmd-sg/main.go
-<span class="line-number"></span>@@ -18,14 +18,14 @@ func Run(ctx context.Context) error {
-<span class="line-number"></span> 
-<span class="line-number"></span> 	wg, ctx := errgroup.WithContext(ctx)
-<span class="line-number"></span> 	wg.Go(func() error {
-<span class="line-number"></span>-		err = Baz()
-<span class="line-number"></span>+		err := Baz()
-<span class="line-number"></span> 		if err != nil {
-<span class="line-number"></span> 			return err
-<span class="line-number"></span> 		}
-<span class="line-number"></span> 
-<span class="line-number"></span> 		return nil
-<span class="line-number"></span> 	})
-<span class="line-number"></span>-	wg.Go(func() error {
-<span class="line-number"></span>+	wg.Go(func() (err error) {
-<span class="line-number"></span> 		err = Bar()
-<span class="line-number"></span> 		if err != nil {
-<span class="line-number"></span> 			return err
+  <code class="language-diff"><span class="line-number"></span><span class="code-hl">diff --git a/cmd-sg/main.go b/cmd-sg/main.go</span>
+<span class="line-number"></span><span class="code-hl">index 7eabdbc..4349157 100644</span>
+<span class="line-number"></span><span class="code-hl">--- a/cmd-sg/main.go</span>
+<span class="line-number"></span><span class="code-hl">+++ b/cmd-sg/main.go</span>
+<span class="line-number"></span><span class="code-hl">@@ -18,14 +18,14 @@ func Run(ctx context.Context) error {</span>
+<span class="line-number"></span><span class="code-hl"> </span>
+<span class="line-number"></span><span class="code-hl"> 	wg, ctx := errgroup.WithContext(ctx)</span>
+<span class="line-number"></span><span class="code-hl"> 	wg.Go(func() error {</span>
+<span class="line-number"></span><span class="code-hl">-		err = Baz()</span>
+<span class="line-number"></span><span class="code-hl">+		err := Baz()</span>
+<span class="line-number"></span><span class="code-hl"> 		if err != nil {</span>
+<span class="line-number"></span><span class="code-hl"> 			return err</span>
+<span class="line-number"></span><span class="code-hl"> 		}</span>
+<span class="line-number"></span><span class="code-hl"> </span>
+<span class="line-number"></span><span class="code-hl"> 		return nil</span>
+<span class="line-number"></span><span class="code-hl"> 	})</span>
+<span class="line-number"></span><span class="code-hl">-	wg.Go(func() error {</span>
+<span class="line-number"></span><span class="code-hl">+	wg.Go(func() (err error) {</span>
+<span class="line-number"></span><span class="code-hl"> 		err = Bar()</span>
+<span class="line-number"></span><span class="code-hl"> 		if err != nil {</span>
+<span class="line-number"></span><span class="code-hl"> 			return err</span>
 </code></pre>
 <h3 id="learnings">
   <a class="title" href="#learnings">Learnings</a>
@@ -261,9 +261,9 @@ Do not edit it by hand.
     <span>Shell</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-shell"><span class="line-number"></span>$ go build -gcflags='-d closure=1' 
-<span class="line-number"></span>./main.go:20:8: heap closure, captured vars = [err]
-<span class="line-number"></span>./main.go:28:8: heap closure, captured vars = [err]
+  <code class="language-shell"><span class="line-number"></span><span class="code-hl">$ go build -gcflags='-d closure=1' </span>
+<span class="line-number"></span><span class="code-hl">./main.go:20:8: heap closure, captured vars = [err]</span>
+<span class="line-number"></span><span class="code-hl">./main.go:28:8: heap closure, captured vars = [err]</span>
 </code></pre>
 <p>But this is not realistic to do that in a big codebase and inspect each closure. It's useful if you know that a given closure might suffer from this problem.</p>
 <h2 id="concurrent-use-of-http-client">
@@ -280,42 +280,42 @@ Do not edit it by hand.
     <span>Go</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-go"><span class="line-number"></span>package main
-<span class="line-number"></span>
-<span class="line-number"></span>import (
-<span class="line-number"></span>	&quot;context&quot;
-<span class="line-number"></span>	&quot;net/http&quot;
-<span class="line-number"></span>
-<span class="line-number"></span>	&quot;golang.org/x/sync/errgroup&quot;
-<span class="line-number"></span>)
-<span class="line-number"></span>
-<span class="line-number"></span>func Run(ctx context.Context) error {
-<span class="line-number"></span>	client := http.Client{}
-<span class="line-number"></span>
-<span class="line-number"></span>	wg, ctx := errgroup.WithContext(ctx)
-<span class="line-number"></span>	wg.Go(func() error {
-<span class="line-number"></span>		client.CheckRedirect = func(req *http.Request, via []*http.Request) error {
-<span class="line-number"></span>			if req.Host == &quot;google.com&quot; {
-<span class="line-number"></span>				return nil
-<span class="line-number"></span>			} else {
-<span class="line-number"></span>				return http.ErrUseLastResponse
-<span class="line-number"></span>			}
-<span class="line-number"></span>		}
-<span class="line-number"></span>		_, err := client.Get(&quot;http://google.com&quot;)
-<span class="line-number"></span>		return err
-<span class="line-number"></span>	})
-<span class="line-number"></span>	wg.Go(func() error {
-<span class="line-number"></span>		client.CheckRedirect = nil
-<span class="line-number"></span>		_, err := client.Get(&quot;http://amazon.com&quot;)
-<span class="line-number"></span>		return err
-<span class="line-number"></span>	})
-<span class="line-number"></span>
-<span class="line-number"></span>	return wg.Wait()
-<span class="line-number"></span>}
-<span class="line-number"></span>
-<span class="line-number"></span>func main() {
-<span class="line-number"></span>	println(Run(context.Background()))
-<span class="line-number"></span>}
+  <code class="language-go"><span class="line-number"></span><span class="code-hl">package main</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">import (</span>
+<span class="line-number"></span><span class="code-hl">	&quot;context&quot;</span>
+<span class="line-number"></span><span class="code-hl">	&quot;net/http&quot;</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">	&quot;golang.org/x/sync/errgroup&quot;</span>
+<span class="line-number"></span><span class="code-hl">)</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">func Run(ctx context.Context) error {</span>
+<span class="line-number"></span><span class="code-hl">	client := http.Client{}</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">	wg, ctx := errgroup.WithContext(ctx)</span>
+<span class="line-number"></span><span class="code-hl">	wg.Go(func() error {</span>
+<span class="line-number"></span><span class="code-hl">		client.CheckRedirect = func(req *http.Request, via []*http.Request) error {</span>
+<span class="line-number"></span><span class="code-hl">			if req.Host == &quot;google.com&quot; {</span>
+<span class="line-number"></span><span class="code-hl">				return nil</span>
+<span class="line-number"></span><span class="code-hl">			} else {</span>
+<span class="line-number"></span><span class="code-hl">				return http.ErrUseLastResponse</span>
+<span class="line-number"></span><span class="code-hl">			}</span>
+<span class="line-number"></span><span class="code-hl">		}</span>
+<span class="line-number"></span><span class="code-hl">		_, err := client.Get(&quot;http://google.com&quot;)</span>
+<span class="line-number"></span><span class="code-hl">		return err</span>
+<span class="line-number"></span><span class="code-hl">	})</span>
+<span class="line-number"></span><span class="code-hl">	wg.Go(func() error {</span>
+<span class="line-number"></span><span class="code-hl">		client.CheckRedirect = nil</span>
+<span class="line-number"></span><span class="code-hl">		_, err := client.Get(&quot;http://amazon.com&quot;)</span>
+<span class="line-number"></span><span class="code-hl">		return err</span>
+<span class="line-number"></span><span class="code-hl">	})</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">	return wg.Wait()</span>
+<span class="line-number"></span><span class="code-hl">}</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">func main() {</span>
+<span class="line-number"></span><span class="code-hl">	println(Run(context.Background()))</span>
+<span class="line-number"></span><span class="code-hl">}</span>
 </code></pre>
 <p>The program makes two concurrent HTTP requests to two different URLs. For the first one, the code restricts redirects (I invented the exact logic for that, no need to look too much into it, the real code has complex logic here). For the second one, no redirect checks are performed, by setting <code>CheckRedirect</code> to nil. This code is idiomatic and follows the recommendations from the documentation:</p>
 <blockquote>
@@ -335,30 +335,30 @@ If CheckRedirect is nil, the Client uses its default policy [...].</p>
     <span>Diff</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-diff"><span class="line-number"></span>diff --git a/cmd-sg/main.go b/cmd-sg/main.go
-<span class="line-number"></span>index 351ecc0..8abee1c 100644
-<span class="line-number"></span>--- a/cmd-sg/main.go
-<span class="line-number"></span>+++ b/cmd-sg/main.go
-<span class="line-number"></span>@@ -8,10 +8,10 @@ import (
-<span class="line-number"></span> )
-<span class="line-number"></span> 
-<span class="line-number"></span> func Run(ctx context.Context) error {
-<span class="line-number"></span>-	client := http.Client{}
-<span class="line-number"></span> 
-<span class="line-number"></span> 	wg, ctx := errgroup.WithContext(ctx)
-<span class="line-number"></span> 	wg.Go(func() error {
-<span class="line-number"></span>+		client := http.Client{}
-<span class="line-number"></span> 		client.CheckRedirect = func(req *http.Request, via []*http.Request) error {
-<span class="line-number"></span> 			if req.Host == &quot;google.com&quot; {
-<span class="line-number"></span> 				return nil
-<span class="line-number"></span>@@ -23,6 +23,7 @@ func Run(ctx context.Context) error {
-<span class="line-number"></span> 		return err
-<span class="line-number"></span> 	})
-<span class="line-number"></span> 	wg.Go(func() error {
-<span class="line-number"></span>+		client := http.Client{}
-<span class="line-number"></span> 		client.CheckRedirect = nil
-<span class="line-number"></span> 		_, err := client.Get(&quot;http://amazon.com&quot;)
-<span class="line-number"></span> 		return err
+  <code class="language-diff"><span class="line-number"></span><span class="code-hl">diff --git a/cmd-sg/main.go b/cmd-sg/main.go</span>
+<span class="line-number"></span><span class="code-hl">index 351ecc0..8abee1c 100644</span>
+<span class="line-number"></span><span class="code-hl">--- a/cmd-sg/main.go</span>
+<span class="line-number"></span><span class="code-hl">+++ b/cmd-sg/main.go</span>
+<span class="line-number"></span><span class="code-hl">@@ -8,10 +8,10 @@ import (</span>
+<span class="line-number"></span><span class="code-hl"> )</span>
+<span class="line-number"></span><span class="code-hl"> </span>
+<span class="line-number"></span><span class="code-hl"> func Run(ctx context.Context) error {</span>
+<span class="line-number"></span><span class="code-hl">-	client := http.Client{}</span>
+<span class="line-number"></span><span class="code-hl"> </span>
+<span class="line-number"></span><span class="code-hl"> 	wg, ctx := errgroup.WithContext(ctx)</span>
+<span class="line-number"></span><span class="code-hl"> 	wg.Go(func() error {</span>
+<span class="line-number"></span><span class="code-hl">+		client := http.Client{}</span>
+<span class="line-number"></span><span class="code-hl"> 		client.CheckRedirect = func(req *http.Request, via []*http.Request) error {</span>
+<span class="line-number"></span><span class="code-hl"> 			if req.Host == &quot;google.com&quot; {</span>
+<span class="line-number"></span><span class="code-hl"> 				return nil</span>
+<span class="line-number"></span><span class="code-hl">@@ -23,6 +23,7 @@ func Run(ctx context.Context) error {</span>
+<span class="line-number"></span><span class="code-hl"> 		return err</span>
+<span class="line-number"></span><span class="code-hl"> 	})</span>
+<span class="line-number"></span><span class="code-hl"> 	wg.Go(func() error {</span>
+<span class="line-number"></span><span class="code-hl">+		client := http.Client{}</span>
+<span class="line-number"></span><span class="code-hl"> 		client.CheckRedirect = nil</span>
+<span class="line-number"></span><span class="code-hl"> 		_, err := client.Get(&quot;http://amazon.com&quot;)</span>
+<span class="line-number"></span><span class="code-hl"> 		return err</span>
 </code></pre>
 <h3 id="learnings-1">
   <a class="title" href="#learnings-1">Learnings</a>
@@ -378,58 +378,58 @@ If CheckRedirect is nil, the Client uses its default policy [...].</p>
     <span>Go</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-go"><span class="line-number"></span>package main
-<span class="line-number"></span>
-<span class="line-number"></span>import (
-<span class="line-number"></span>	&quot;encoding/json&quot;
-<span class="line-number"></span>	&quot;net/http&quot;
-<span class="line-number"></span>	&quot;sync&quot;
-<span class="line-number"></span>)
-<span class="line-number"></span>
-<span class="line-number"></span>type Plans map[string]int
-<span class="line-number"></span>
-<span class="line-number"></span>type PricingInfo struct {
-<span class="line-number"></span>	plans Plans
-<span class="line-number"></span>}
-<span class="line-number"></span>
-<span class="line-number"></span>var pricingInfo = PricingInfo{plans: Plans{&quot;cheap plan&quot;: 1, &quot;expensive plan&quot;: 5}}
-<span class="line-number"></span>
-<span class="line-number"></span>type PricingService struct {
-<span class="line-number"></span>	info    PricingInfo
-<span class="line-number"></span>	infoMtx sync.Mutex
-<span class="line-number"></span>}
-<span class="line-number"></span>
-<span class="line-number"></span>func NewPricingService() *PricingService {
-<span class="line-number"></span>	return &amp;PricingService{info: pricingInfo, infoMtx: sync.Mutex{}}
-<span class="line-number"></span>}
-<span class="line-number"></span>
-<span class="line-number"></span>func AddPricing(w http.ResponseWriter, r *http.Request) {
-<span class="line-number"></span>	pricingService := NewPricingService()
-<span class="line-number"></span>
-<span class="line-number"></span>	pricingService.infoMtx.Lock()
-<span class="line-number"></span>	defer pricingService.infoMtx.Unlock()
-<span class="line-number"></span>
-<span class="line-number"></span>	pricingService.info.plans[&quot;middle plan&quot;] = 3
-<span class="line-number"></span>
-<span class="line-number"></span>	encoder := json.NewEncoder(w)
-<span class="line-number"></span>	encoder.Encode(pricingService.info)
-<span class="line-number"></span>}
-<span class="line-number"></span>
-<span class="line-number"></span>func GetPricing(w http.ResponseWriter, r *http.Request) {
-<span class="line-number"></span>	pricingService := NewPricingService()
-<span class="line-number"></span>
-<span class="line-number"></span>	pricingService.infoMtx.Lock()
-<span class="line-number"></span>	defer pricingService.infoMtx.Unlock()
-<span class="line-number"></span>
-<span class="line-number"></span>	encoder := json.NewEncoder(w)
-<span class="line-number"></span>	encoder.Encode(pricingService.info)
-<span class="line-number"></span>}
-<span class="line-number"></span>
-<span class="line-number"></span>func main() {
-<span class="line-number"></span>	http.HandleFunc(&quot;POST /add-pricing&quot;, AddPricing)
-<span class="line-number"></span>	http.HandleFunc(&quot;GET /pricing&quot;, GetPricing)
-<span class="line-number"></span>	http.ListenAndServe(&quot;:12345&quot;, nil)
-<span class="line-number"></span>}
+  <code class="language-go"><span class="line-number"></span><span class="code-hl">package main</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">import (</span>
+<span class="line-number"></span><span class="code-hl">	&quot;encoding/json&quot;</span>
+<span class="line-number"></span><span class="code-hl">	&quot;net/http&quot;</span>
+<span class="line-number"></span><span class="code-hl">	&quot;sync&quot;</span>
+<span class="line-number"></span><span class="code-hl">)</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">type Plans map[string]int</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">type PricingInfo struct {</span>
+<span class="line-number"></span><span class="code-hl">	plans Plans</span>
+<span class="line-number"></span><span class="code-hl">}</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">var pricingInfo = PricingInfo{plans: Plans{&quot;cheap plan&quot;: 1, &quot;expensive plan&quot;: 5}}</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">type PricingService struct {</span>
+<span class="line-number"></span><span class="code-hl">	info    PricingInfo</span>
+<span class="line-number"></span><span class="code-hl">	infoMtx sync.Mutex</span>
+<span class="line-number"></span><span class="code-hl">}</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">func NewPricingService() *PricingService {</span>
+<span class="line-number"></span><span class="code-hl">	return &amp;PricingService{info: pricingInfo, infoMtx: sync.Mutex{}}</span>
+<span class="line-number"></span><span class="code-hl">}</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">func AddPricing(w http.ResponseWriter, r *http.Request) {</span>
+<span class="line-number"></span><span class="code-hl">	pricingService := NewPricingService()</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">	pricingService.infoMtx.Lock()</span>
+<span class="line-number"></span><span class="code-hl">	defer pricingService.infoMtx.Unlock()</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">	pricingService.info.plans[&quot;middle plan&quot;] = 3</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">	encoder := json.NewEncoder(w)</span>
+<span class="line-number"></span><span class="code-hl">	encoder.Encode(pricingService.info)</span>
+<span class="line-number"></span><span class="code-hl">}</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">func GetPricing(w http.ResponseWriter, r *http.Request) {</span>
+<span class="line-number"></span><span class="code-hl">	pricingService := NewPricingService()</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">	pricingService.infoMtx.Lock()</span>
+<span class="line-number"></span><span class="code-hl">	defer pricingService.infoMtx.Unlock()</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">	encoder := json.NewEncoder(w)</span>
+<span class="line-number"></span><span class="code-hl">	encoder.Encode(pricingService.info)</span>
+<span class="line-number"></span><span class="code-hl">}</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">func main() {</span>
+<span class="line-number"></span><span class="code-hl">	http.HandleFunc(&quot;POST /add-pricing&quot;, AddPricing)</span>
+<span class="line-number"></span><span class="code-hl">	http.HandleFunc(&quot;GET /pricing&quot;, GetPricing)</span>
+<span class="line-number"></span><span class="code-hl">	http.ListenAndServe(&quot;:12345&quot;, nil)</span>
+<span class="line-number"></span><span class="code-hl">}</span>
 </code></pre>
 <p>A global mutable map of pricing information is guarded by a mutex. One HTTP endpoint reads the map, another adds an item to it. Pretty simple I would say. The locking is done correctly.</p>
 <p>Yet the map suffers from a data race. Here is a reproducer:</p>
@@ -438,42 +438,42 @@ If CheckRedirect is nil, the Client uses its default policy [...].</p>
     <span>Go</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-go"><span class="line-number"></span>package main
-<span class="line-number"></span>
-<span class="line-number"></span>import (
-<span class="line-number"></span>	&quot;net/http&quot;
-<span class="line-number"></span>	&quot;net/http/httptest&quot;
-<span class="line-number"></span>	&quot;testing&quot;
-<span class="line-number"></span>)
-<span class="line-number"></span>
-<span class="line-number"></span>func TestMain(t *testing.T) {
-<span class="line-number"></span>	mux := http.NewServeMux()
-<span class="line-number"></span>	mux.HandleFunc(&quot;POST /add-pricing&quot;, AddPricing)
-<span class="line-number"></span>	mux.HandleFunc(&quot;GET /pricing&quot;, GetPricing)
-<span class="line-number"></span>
-<span class="line-number"></span>	server := httptest.NewServer(mux)
-<span class="line-number"></span>	t.Cleanup(server.Close)
-<span class="line-number"></span>
-<span class="line-number"></span>	t.Run(&quot;get pricing&quot;, func(t *testing.T) {
-<span class="line-number"></span>		t.Parallel()
-<span class="line-number"></span>
-<span class="line-number"></span>		_, err := server.Client().Get(server.URL + &quot;/pricing&quot;)
-<span class="line-number"></span>		if err != nil {
-<span class="line-number"></span>			panic(err)
-<span class="line-number"></span>		}
-<span class="line-number"></span>	})
-<span class="line-number"></span>
-<span class="line-number"></span>	for range 5 {
-<span class="line-number"></span>		t.Run(&quot;add pricing&quot;, func(t *testing.T) {
-<span class="line-number"></span>			t.Parallel()
-<span class="line-number"></span>
-<span class="line-number"></span>			_, err := server.Client().Post(server.URL+&quot;/add-pricing&quot;, &quot;application/json&quot;, nil)
-<span class="line-number"></span>			if err != nil {
-<span class="line-number"></span>				panic(err)
-<span class="line-number"></span>			}
-<span class="line-number"></span>		})
-<span class="line-number"></span>	}
-<span class="line-number"></span>}
+  <code class="language-go"><span class="line-number"></span><span class="code-hl">package main</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">import (</span>
+<span class="line-number"></span><span class="code-hl">	&quot;net/http&quot;</span>
+<span class="line-number"></span><span class="code-hl">	&quot;net/http/httptest&quot;</span>
+<span class="line-number"></span><span class="code-hl">	&quot;testing&quot;</span>
+<span class="line-number"></span><span class="code-hl">)</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">func TestMain(t *testing.T) {</span>
+<span class="line-number"></span><span class="code-hl">	mux := http.NewServeMux()</span>
+<span class="line-number"></span><span class="code-hl">	mux.HandleFunc(&quot;POST /add-pricing&quot;, AddPricing)</span>
+<span class="line-number"></span><span class="code-hl">	mux.HandleFunc(&quot;GET /pricing&quot;, GetPricing)</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">	server := httptest.NewServer(mux)</span>
+<span class="line-number"></span><span class="code-hl">	t.Cleanup(server.Close)</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">	t.Run(&quot;get pricing&quot;, func(t *testing.T) {</span>
+<span class="line-number"></span><span class="code-hl">		t.Parallel()</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">		_, err := server.Client().Get(server.URL + &quot;/pricing&quot;)</span>
+<span class="line-number"></span><span class="code-hl">		if err != nil {</span>
+<span class="line-number"></span><span class="code-hl">			panic(err)</span>
+<span class="line-number"></span><span class="code-hl">		}</span>
+<span class="line-number"></span><span class="code-hl">	})</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">	for range 5 {</span>
+<span class="line-number"></span><span class="code-hl">		t.Run(&quot;add pricing&quot;, func(t *testing.T) {</span>
+<span class="line-number"></span><span class="code-hl">			t.Parallel()</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">			_, err := server.Client().Post(server.URL+&quot;/add-pricing&quot;, &quot;application/json&quot;, nil)</span>
+<span class="line-number"></span><span class="code-hl">			if err != nil {</span>
+<span class="line-number"></span><span class="code-hl">				panic(err)</span>
+<span class="line-number"></span><span class="code-hl">			}</span>
+<span class="line-number"></span><span class="code-hl">		})</span>
+<span class="line-number"></span><span class="code-hl">	}</span>
+<span class="line-number"></span><span class="code-hl">}</span>
 </code></pre>
 <p>The reason why is because the data, and the mutex guarding it, do not have the same 'lifetime'. The <code>pricingInfo</code> map is global and exists from the start of the program to the end. But the mutex <code>infoMtx</code> exists only for the duration of the HTTP handler (and thus HTTP request). We effectively have 1 map and N mutexes, none of them shared between HTTP handlers. So HTTP handlers cannot synchronize access to the map.</p>
 <p>The intent of the code was (I think) to do a deep clone of the pricing information at the beginning of the HTTP handler in <code>NewPricingService</code>. Unfortunately, Go does a shallow copy of structures and thus each <code>PricingService</code> instance ends up sharing the same underlying <code>plans</code> map, which is this global map. It could be that for a long time, it worked because the <code>PricingInfo</code> struct did not yet contain the map (in the real code it contains a lot of <code>int</code>s and <code>string</code>s which are value types and will be copied correctly by a shallow copy), and the map was only added later.</p>
@@ -493,35 +493,35 @@ If CheckRedirect is nil, the Client uses its default policy [...].</p>
     <span>Diff</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-diff"><span class="line-number"></span>diff --git a/cmd-sg/main.go b/cmd-sg/main.go
-<span class="line-number"></span>index fb59f5c..c7a7a94 100644
-<span class="line-number"></span>--- a/cmd-sg/main.go
-<span class="line-number"></span>+++ b/cmd-sg/main.go
-<span class="line-number"></span>@@ -2,6 +2,7 @@ package main
-<span class="line-number"></span> 
-<span class="line-number"></span> import (
-<span class="line-number"></span> 	&quot;encoding/json&quot;
-<span class="line-number"></span>+	&quot;maps&quot;
-<span class="line-number"></span> 	&quot;net/http&quot;
-<span class="line-number"></span> 	&quot;sync&quot;
-<span class="line-number"></span> )
-<span class="line-number"></span>@@ -19,8 +20,15 @@ type PricingService struct {
-<span class="line-number"></span> 	infoMtx sync.Mutex
-<span class="line-number"></span> }
-<span class="line-number"></span> 
-<span class="line-number"></span>+func ClonePricing(pricingInfo PricingInfo) PricingInfo {
-<span class="line-number"></span>+	cloned := PricingInfo{plans: make(Plans, len(pricingInfo.plans))}
-<span class="line-number"></span>+	maps.Copy(cloned.plans, pricingInfo.plans)
-<span class="line-number"></span>+
-<span class="line-number"></span>+	return cloned
-<span class="line-number"></span>+}
-<span class="line-number"></span>+
-<span class="line-number"></span> func NewPricingService() *PricingService {
-<span class="line-number"></span>-	return &amp;PricingService{info: pricingInfo, infoMtx: sync.Mutex{}}
-<span class="line-number"></span>+	return &amp;PricingService{info: ClonePricing(pricingInfo), infoMtx: sync.Mutex{}}
-<span class="line-number"></span> }
-<span class="line-number"></span> 
-<span class="line-number"></span> func AddPricing(w http.ResponseWriter, r *http.Request) {
+  <code class="language-diff"><span class="line-number"></span><span class="code-hl">diff --git a/cmd-sg/main.go b/cmd-sg/main.go</span>
+<span class="line-number"></span><span class="code-hl">index fb59f5c..c7a7a94 100644</span>
+<span class="line-number"></span><span class="code-hl">--- a/cmd-sg/main.go</span>
+<span class="line-number"></span><span class="code-hl">+++ b/cmd-sg/main.go</span>
+<span class="line-number"></span><span class="code-hl">@@ -2,6 +2,7 @@ package main</span>
+<span class="line-number"></span><span class="code-hl"> </span>
+<span class="line-number"></span><span class="code-hl"> import (</span>
+<span class="line-number"></span><span class="code-hl"> 	&quot;encoding/json&quot;</span>
+<span class="line-number"></span><span class="code-hl">+	&quot;maps&quot;</span>
+<span class="line-number"></span><span class="code-hl"> 	&quot;net/http&quot;</span>
+<span class="line-number"></span><span class="code-hl"> 	&quot;sync&quot;</span>
+<span class="line-number"></span><span class="code-hl"> )</span>
+<span class="line-number"></span><span class="code-hl">@@ -19,8 +20,15 @@ type PricingService struct {</span>
+<span class="line-number"></span><span class="code-hl"> 	infoMtx sync.Mutex</span>
+<span class="line-number"></span><span class="code-hl"> }</span>
+<span class="line-number"></span><span class="code-hl"> </span>
+<span class="line-number"></span><span class="code-hl">+func ClonePricing(pricingInfo PricingInfo) PricingInfo {</span>
+<span class="line-number"></span><span class="code-hl">+	cloned := PricingInfo{plans: make(Plans, len(pricingInfo.plans))}</span>
+<span class="line-number"></span><span class="code-hl">+	maps.Copy(cloned.plans, pricingInfo.plans)</span>
+<span class="line-number"></span><span class="code-hl">+</span>
+<span class="line-number"></span><span class="code-hl">+	return cloned</span>
+<span class="line-number"></span><span class="code-hl">+}</span>
+<span class="line-number"></span><span class="code-hl">+</span>
+<span class="line-number"></span><span class="code-hl"> func NewPricingService() *PricingService {</span>
+<span class="line-number"></span><span class="code-hl">-	return &amp;PricingService{info: pricingInfo, infoMtx: sync.Mutex{}}</span>
+<span class="line-number"></span><span class="code-hl">+	return &amp;PricingService{info: ClonePricing(pricingInfo), infoMtx: sync.Mutex{}}</span>
+<span class="line-number"></span><span class="code-hl"> }</span>
+<span class="line-number"></span><span class="code-hl"> </span>
+<span class="line-number"></span><span class="code-hl"> func AddPricing(w http.ResponseWriter, r *http.Request) {</span>
 </code></pre>
 <h3 id="learnings-2">
   <a class="title" href="#learnings-2">Learnings</a>
@@ -550,77 +550,77 @@ If CheckRedirect is nil, the Client uses its default policy [...].</p>
     <span>Go</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-go"><span class="line-number"></span>package main
-<span class="line-number"></span>
-<span class="line-number"></span>import (
-<span class="line-number"></span>	&quot;bytes&quot;
-<span class="line-number"></span>	&quot;context&quot;
-<span class="line-number"></span>	&quot;io&quot;
-<span class="line-number"></span>	&quot;strings&quot;
-<span class="line-number"></span>	&quot;time&quot;
-<span class="line-number"></span>
-<span class="line-number"></span>	&quot;github.com/ory/dockertest/v3&quot;
-<span class="line-number"></span>	&quot;github.com/ory/dockertest/v3/docker&quot;
-<span class="line-number"></span>	&quot;golang.org/x/sync/errgroup&quot;
-<span class="line-number"></span>)
-<span class="line-number"></span>func GetSigningSecretFromStripeContainer() string {
-<span class="line-number"></span>	dp, err := dockertest.NewPool(&quot;&quot;)
-<span class="line-number"></span>	if err != nil {
-<span class="line-number"></span>		panic(err)
-<span class="line-number"></span>	}
-<span class="line-number"></span>
-<span class="line-number"></span>	forwarder, err := dp.RunWithOptions(&amp;dockertest.RunOptions{
-<span class="line-number"></span>		Repository: &quot;stripe/stripe-cli&quot;,
-<span class="line-number"></span>		Tag:        &quot;v1.19.1&quot;,
-<span class="line-number"></span>	})
-<span class="line-number"></span>	if err != nil {
-<span class="line-number"></span>		panic(err)
-<span class="line-number"></span>	}
-<span class="line-number"></span>
-<span class="line-number"></span>	output := &amp;bytes.Buffer{}
-<span class="line-number"></span>
-<span class="line-number"></span>	ctx, cancel := context.WithCancel(context.Background())
-<span class="line-number"></span>	defer cancel()
-<span class="line-number"></span>
-<span class="line-number"></span>	var signingSecret string
-<span class="line-number"></span>	eg := errgroup.Group{}
-<span class="line-number"></span>	eg.Go(func() error {
-<span class="line-number"></span>		defer cancel()
-<span class="line-number"></span>
-<span class="line-number"></span>		for {
-<span class="line-number"></span>			ln, err := output.ReadString('\n')
-<span class="line-number"></span>			if err == io.EOF {
-<span class="line-number"></span>				&lt;-time.After(100 * time.Millisecond)
-<span class="line-number"></span>				continue
-<span class="line-number"></span>			}
-<span class="line-number"></span>			if err != nil {
-<span class="line-number"></span>				return err
-<span class="line-number"></span>			}
-<span class="line-number"></span>			if strings.Contains(ln, &quot;Ready!&quot;) {
-<span class="line-number"></span>				ln = ln[strings.Index(ln, &quot;whsec_&quot;):]
-<span class="line-number"></span>				signingSecret = ln[:strings.Index(ln, &quot; &quot;)]
-<span class="line-number"></span>				return nil
-<span class="line-number"></span>			}
-<span class="line-number"></span>		}
-<span class="line-number"></span>	})
-<span class="line-number"></span>
-<span class="line-number"></span>	dp.Client.Logs(docker.LogsOptions{
-<span class="line-number"></span>		Context:      ctx,
-<span class="line-number"></span>		Stderr:       true,
-<span class="line-number"></span>		Follow:       true,
-<span class="line-number"></span>		RawTerminal:  true,
-<span class="line-number"></span>		Container:    forwarder.Container.ID,
-<span class="line-number"></span>		OutputStream: output,
-<span class="line-number"></span>	})
-<span class="line-number"></span>
-<span class="line-number"></span>	eg.Wait()
-<span class="line-number"></span>
-<span class="line-number"></span>	return signingSecret
-<span class="line-number"></span>}
-<span class="line-number"></span>
-<span class="line-number"></span>func main() {
-<span class="line-number"></span>	println(GetSigningSecretFromStripeContainer())
-<span class="line-number"></span>}
+  <code class="language-go"><span class="line-number"></span><span class="code-hl">package main</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">import (</span>
+<span class="line-number"></span><span class="code-hl">	&quot;bytes&quot;</span>
+<span class="line-number"></span><span class="code-hl">	&quot;context&quot;</span>
+<span class="line-number"></span><span class="code-hl">	&quot;io&quot;</span>
+<span class="line-number"></span><span class="code-hl">	&quot;strings&quot;</span>
+<span class="line-number"></span><span class="code-hl">	&quot;time&quot;</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">	&quot;github.com/ory/dockertest/v3&quot;</span>
+<span class="line-number"></span><span class="code-hl">	&quot;github.com/ory/dockertest/v3/docker&quot;</span>
+<span class="line-number"></span><span class="code-hl">	&quot;golang.org/x/sync/errgroup&quot;</span>
+<span class="line-number"></span><span class="code-hl">)</span>
+<span class="line-number"></span><span class="code-hl">func GetSigningSecretFromStripeContainer() string {</span>
+<span class="line-number"></span><span class="code-hl">	dp, err := dockertest.NewPool(&quot;&quot;)</span>
+<span class="line-number"></span><span class="code-hl">	if err != nil {</span>
+<span class="line-number"></span><span class="code-hl">		panic(err)</span>
+<span class="line-number"></span><span class="code-hl">	}</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">	forwarder, err := dp.RunWithOptions(&amp;dockertest.RunOptions{</span>
+<span class="line-number"></span><span class="code-hl">		Repository: &quot;stripe/stripe-cli&quot;,</span>
+<span class="line-number"></span><span class="code-hl">		Tag:        &quot;v1.19.1&quot;,</span>
+<span class="line-number"></span><span class="code-hl">	})</span>
+<span class="line-number"></span><span class="code-hl">	if err != nil {</span>
+<span class="line-number"></span><span class="code-hl">		panic(err)</span>
+<span class="line-number"></span><span class="code-hl">	}</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">	output := &amp;bytes.Buffer{}</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">	ctx, cancel := context.WithCancel(context.Background())</span>
+<span class="line-number"></span><span class="code-hl">	defer cancel()</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">	var signingSecret string</span>
+<span class="line-number"></span><span class="code-hl">	eg := errgroup.Group{}</span>
+<span class="line-number"></span><span class="code-hl">	eg.Go(func() error {</span>
+<span class="line-number"></span><span class="code-hl">		defer cancel()</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">		for {</span>
+<span class="line-number"></span><span class="code-hl">			ln, err := output.ReadString('\n')</span>
+<span class="line-number"></span><span class="code-hl">			if err == io.EOF {</span>
+<span class="line-number"></span><span class="code-hl">				&lt;-time.After(100 * time.Millisecond)</span>
+<span class="line-number"></span><span class="code-hl">				continue</span>
+<span class="line-number"></span><span class="code-hl">			}</span>
+<span class="line-number"></span><span class="code-hl">			if err != nil {</span>
+<span class="line-number"></span><span class="code-hl">				return err</span>
+<span class="line-number"></span><span class="code-hl">			}</span>
+<span class="line-number"></span><span class="code-hl">			if strings.Contains(ln, &quot;Ready!&quot;) {</span>
+<span class="line-number"></span><span class="code-hl">				ln = ln[strings.Index(ln, &quot;whsec_&quot;):]</span>
+<span class="line-number"></span><span class="code-hl">				signingSecret = ln[:strings.Index(ln, &quot; &quot;)]</span>
+<span class="line-number"></span><span class="code-hl">				return nil</span>
+<span class="line-number"></span><span class="code-hl">			}</span>
+<span class="line-number"></span><span class="code-hl">		}</span>
+<span class="line-number"></span><span class="code-hl">	})</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">	dp.Client.Logs(docker.LogsOptions{</span>
+<span class="line-number"></span><span class="code-hl">		Context:      ctx,</span>
+<span class="line-number"></span><span class="code-hl">		Stderr:       true,</span>
+<span class="line-number"></span><span class="code-hl">		Follow:       true,</span>
+<span class="line-number"></span><span class="code-hl">		RawTerminal:  true,</span>
+<span class="line-number"></span><span class="code-hl">		Container:    forwarder.Container.ID,</span>
+<span class="line-number"></span><span class="code-hl">		OutputStream: output,</span>
+<span class="line-number"></span><span class="code-hl">	})</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">	eg.Wait()</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">	return signingSecret</span>
+<span class="line-number"></span><span class="code-hl">}</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">func main() {</span>
+<span class="line-number"></span><span class="code-hl">	println(GetSigningSecretFromStripeContainer())</span>
+<span class="line-number"></span><span class="code-hl">}</span>
 </code></pre>
 <p>So, the issue may be clear from the description but here it is spelled out: one goroutine writes to a (growing) byte buffer, another one reads from it, and there is no synchronization: that's a clear data race.</p>
 <p>What is interesting here is that we have to pass an <code>io.Writer</code> for the <code>OutputStream</code> to the library, and this library will write to the writer we passed. We cannot insert a mutex lock anywhere around the write site, since we do not control the library and there no hooks (e.g. pre/post write callbacks) to do so.</p>
@@ -634,23 +634,23 @@ If CheckRedirect is nil, the Client uses its default policy [...].</p>
     <span>Go</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-go"><span class="line-number"></span>type SyncWriter struct {
-<span class="line-number"></span>	Writer io.Writer
-<span class="line-number"></span>	Mtx    *sync.Mutex
-<span class="line-number"></span>}
-<span class="line-number"></span>
-<span class="line-number"></span>func NewSyncWriter(w io.Writer, mtx *sync.Mutex) io.Writer {
-<span class="line-number"></span>	return &amp;SyncWriter{Writer: w, Mtx: mtx}
-<span class="line-number"></span>}
-<span class="line-number"></span>
-<span class="line-number"></span>func (w *SyncWriter) Write(p []byte) (n int, err error) {
-<span class="line-number"></span>	w.Mtx.Lock()
-<span class="line-number"></span>	defer w.Mtx.Unlock()
-<span class="line-number"></span>
-<span class="line-number"></span>	written, err := w.Writer.Write(p)
-<span class="line-number"></span>
-<span class="line-number"></span>	return written, err
-<span class="line-number"></span>}
+  <code class="language-go"><span class="line-number"></span><span class="code-hl">type SyncWriter struct {</span>
+<span class="line-number"></span><span class="code-hl">	Writer io.Writer</span>
+<span class="line-number"></span><span class="code-hl">	Mtx    *sync.Mutex</span>
+<span class="line-number"></span><span class="code-hl">}</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">func NewSyncWriter(w io.Writer, mtx *sync.Mutex) io.Writer {</span>
+<span class="line-number"></span><span class="code-hl">	return &amp;SyncWriter{Writer: w, Mtx: mtx}</span>
+<span class="line-number"></span><span class="code-hl">}</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">func (w *SyncWriter) Write(p []byte) (n int, err error) {</span>
+<span class="line-number"></span><span class="code-hl">	w.Mtx.Lock()</span>
+<span class="line-number"></span><span class="code-hl">	defer w.Mtx.Unlock()</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">	written, err := w.Writer.Write(p)</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">	return written, err</span>
+<span class="line-number"></span><span class="code-hl">}</span>
 </code></pre>
 <p>We pass it as is to the third-party library, and when we want to read the byte buffer, we lock the mutex first:</p>
 <pre>
@@ -658,71 +658,71 @@ If CheckRedirect is nil, the Client uses its default policy [...].</p>
     <span>Diff</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-diff"><span class="line-number"></span>diff --git a/cmd-sg/main.go b/cmd-sg/main.go
-<span class="line-number"></span>index 5529d90..42571b9 100644
-<span class="line-number"></span>--- a/cmd-sg/main.go
-<span class="line-number"></span>+++ b/cmd-sg/main.go
-<span class="line-number"></span>@@ -5,6 +5,7 @@ import (
-<span class="line-number"></span> 	&quot;context&quot;
-<span class="line-number"></span> 	&quot;io&quot;
-<span class="line-number"></span> 	&quot;strings&quot;
-<span class="line-number"></span>+	&quot;sync&quot;
-<span class="line-number"></span> 	&quot;time&quot;
-<span class="line-number"></span> 
-<span class="line-number"></span> 	&quot;github.com/ory/dockertest/v3&quot;
-<span class="line-number"></span>@@ -12,6 +13,24 @@ import (
-<span class="line-number"></span> 	&quot;golang.org/x/sync/errgroup&quot;
-<span class="line-number"></span> )
-<span class="line-number"></span> 
-<span class="line-number"></span>+type SyncWriter struct {
-<span class="line-number"></span>+	Writer io.Writer
-<span class="line-number"></span>+	Mtx    *sync.Mutex
-<span class="line-number"></span>+}
-<span class="line-number"></span>+
-<span class="line-number"></span>+func NewSyncWriter(w io.Writer, mtx *sync.Mutex) io.Writer {
-<span class="line-number"></span>+	return &amp;SyncWriter{Writer: w, Mtx: mtx}
-<span class="line-number"></span>+}
-<span class="line-number"></span>+
-<span class="line-number"></span>+func (w *SyncWriter) Write(p []byte) (n int, err error) {
-<span class="line-number"></span>+	w.Mtx.Lock()
-<span class="line-number"></span>+	defer w.Mtx.Unlock()
-<span class="line-number"></span>+
-<span class="line-number"></span>+	written, err := w.Writer.Write(p)
-<span class="line-number"></span>+
-<span class="line-number"></span>+	return written, err
-<span class="line-number"></span>+}
-<span class="line-number"></span>+
-<span class="line-number"></span> func GetSigningSecretFromStripeContainer() string {
-<span class="line-number"></span> 	dp, err := dockertest.NewPool(&quot;&quot;)
-<span class="line-number"></span> 	if err != nil {
-<span class="line-number"></span>@@ -27,6 +46,8 @@ func GetSigningSecretFromStripeContainer() string {
-<span class="line-number"></span> 	}
-<span class="line-number"></span> 
-<span class="line-number"></span> 	output := &amp;bytes.Buffer{}
-<span class="line-number"></span>+	outputMtx := sync.Mutex{}
-<span class="line-number"></span>+	writer := NewSyncWriter(output, &amp;outputMtx)
-<span class="line-number"></span> 
-<span class="line-number"></span> 	ctx, cancel := context.WithCancel(context.Background())
-<span class="line-number"></span> 	defer cancel()
-<span class="line-number"></span>@@ -37,7 +58,9 @@ func GetSigningSecretFromStripeContainer() string {
-<span class="line-number"></span> 		defer cancel()
-<span class="line-number"></span> 
-<span class="line-number"></span> 		for {
-<span class="line-number"></span>+			outputMtx.Lock()
-<span class="line-number"></span> 			ln, err := output.ReadString('\n')
-<span class="line-number"></span>+			outputMtx.Unlock()
-<span class="line-number"></span> 			if err == io.EOF {
-<span class="line-number"></span> 				&lt;-time.After(100 * time.Millisecond)
-<span class="line-number"></span> 				continue
-<span class="line-number"></span>@@ -59,7 +82,7 @@ func GetSigningSecretFromStripeContainer() string {
-<span class="line-number"></span> 		Follow:       true,
-<span class="line-number"></span> 		RawTerminal:  true,
-<span class="line-number"></span> 		Container:    forwarder.Container.ID,
-<span class="line-number"></span>-		OutputStream: output,
-<span class="line-number"></span>+		OutputStream: writer,
-<span class="line-number"></span> 	})
-<span class="line-number"></span> 
-<span class="line-number"></span> 	eg.Wait()
+  <code class="language-diff"><span class="line-number"></span><span class="code-hl">diff --git a/cmd-sg/main.go b/cmd-sg/main.go</span>
+<span class="line-number"></span><span class="code-hl">index 5529d90..42571b9 100644</span>
+<span class="line-number"></span><span class="code-hl">--- a/cmd-sg/main.go</span>
+<span class="line-number"></span><span class="code-hl">+++ b/cmd-sg/main.go</span>
+<span class="line-number"></span><span class="code-hl">@@ -5,6 +5,7 @@ import (</span>
+<span class="line-number"></span><span class="code-hl"> 	&quot;context&quot;</span>
+<span class="line-number"></span><span class="code-hl"> 	&quot;io&quot;</span>
+<span class="line-number"></span><span class="code-hl"> 	&quot;strings&quot;</span>
+<span class="line-number"></span><span class="code-hl">+	&quot;sync&quot;</span>
+<span class="line-number"></span><span class="code-hl"> 	&quot;time&quot;</span>
+<span class="line-number"></span><span class="code-hl"> </span>
+<span class="line-number"></span><span class="code-hl"> 	&quot;github.com/ory/dockertest/v3&quot;</span>
+<span class="line-number"></span><span class="code-hl">@@ -12,6 +13,24 @@ import (</span>
+<span class="line-number"></span><span class="code-hl"> 	&quot;golang.org/x/sync/errgroup&quot;</span>
+<span class="line-number"></span><span class="code-hl"> )</span>
+<span class="line-number"></span><span class="code-hl"> </span>
+<span class="line-number"></span><span class="code-hl">+type SyncWriter struct {</span>
+<span class="line-number"></span><span class="code-hl">+	Writer io.Writer</span>
+<span class="line-number"></span><span class="code-hl">+	Mtx    *sync.Mutex</span>
+<span class="line-number"></span><span class="code-hl">+}</span>
+<span class="line-number"></span><span class="code-hl">+</span>
+<span class="line-number"></span><span class="code-hl">+func NewSyncWriter(w io.Writer, mtx *sync.Mutex) io.Writer {</span>
+<span class="line-number"></span><span class="code-hl">+	return &amp;SyncWriter{Writer: w, Mtx: mtx}</span>
+<span class="line-number"></span><span class="code-hl">+}</span>
+<span class="line-number"></span><span class="code-hl">+</span>
+<span class="line-number"></span><span class="code-hl">+func (w *SyncWriter) Write(p []byte) (n int, err error) {</span>
+<span class="line-number"></span><span class="code-hl">+	w.Mtx.Lock()</span>
+<span class="line-number"></span><span class="code-hl">+	defer w.Mtx.Unlock()</span>
+<span class="line-number"></span><span class="code-hl">+</span>
+<span class="line-number"></span><span class="code-hl">+	written, err := w.Writer.Write(p)</span>
+<span class="line-number"></span><span class="code-hl">+</span>
+<span class="line-number"></span><span class="code-hl">+	return written, err</span>
+<span class="line-number"></span><span class="code-hl">+}</span>
+<span class="line-number"></span><span class="code-hl">+</span>
+<span class="line-number"></span><span class="code-hl"> func GetSigningSecretFromStripeContainer() string {</span>
+<span class="line-number"></span><span class="code-hl"> 	dp, err := dockertest.NewPool(&quot;&quot;)</span>
+<span class="line-number"></span><span class="code-hl"> 	if err != nil {</span>
+<span class="line-number"></span><span class="code-hl">@@ -27,6 +46,8 @@ func GetSigningSecretFromStripeContainer() string {</span>
+<span class="line-number"></span><span class="code-hl"> 	}</span>
+<span class="line-number"></span><span class="code-hl"> </span>
+<span class="line-number"></span><span class="code-hl"> 	output := &amp;bytes.Buffer{}</span>
+<span class="line-number"></span><span class="code-hl">+	outputMtx := sync.Mutex{}</span>
+<span class="line-number"></span><span class="code-hl">+	writer := NewSyncWriter(output, &amp;outputMtx)</span>
+<span class="line-number"></span><span class="code-hl"> </span>
+<span class="line-number"></span><span class="code-hl"> 	ctx, cancel := context.WithCancel(context.Background())</span>
+<span class="line-number"></span><span class="code-hl"> 	defer cancel()</span>
+<span class="line-number"></span><span class="code-hl">@@ -37,7 +58,9 @@ func GetSigningSecretFromStripeContainer() string {</span>
+<span class="line-number"></span><span class="code-hl"> 		defer cancel()</span>
+<span class="line-number"></span><span class="code-hl"> </span>
+<span class="line-number"></span><span class="code-hl"> 		for {</span>
+<span class="line-number"></span><span class="code-hl">+			outputMtx.Lock()</span>
+<span class="line-number"></span><span class="code-hl"> 			ln, err := output.ReadString('\n')</span>
+<span class="line-number"></span><span class="code-hl">+			outputMtx.Unlock()</span>
+<span class="line-number"></span><span class="code-hl"> 			if err == io.EOF {</span>
+<span class="line-number"></span><span class="code-hl"> 				&lt;-time.After(100 * time.Millisecond)</span>
+<span class="line-number"></span><span class="code-hl"> 				continue</span>
+<span class="line-number"></span><span class="code-hl">@@ -59,7 +82,7 @@ func GetSigningSecretFromStripeContainer() string {</span>
+<span class="line-number"></span><span class="code-hl"> 		Follow:       true,</span>
+<span class="line-number"></span><span class="code-hl"> 		RawTerminal:  true,</span>
+<span class="line-number"></span><span class="code-hl"> 		Container:    forwarder.Container.ID,</span>
+<span class="line-number"></span><span class="code-hl">-		OutputStream: output,</span>
+<span class="line-number"></span><span class="code-hl">+		OutputStream: writer,</span>
+<span class="line-number"></span><span class="code-hl"> 	})</span>
+<span class="line-number"></span><span class="code-hl"> </span>
+<span class="line-number"></span><span class="code-hl"> 	eg.Wait()</span>
 </code></pre>
 <p>Note: A <a href="https://news.ycombinator.com/item?id=46050516">comment</a> pointed out that <code>reader, writer := io.Pipe()</code> is tailored exactly for this. Indeed, this is an elegant solution: we just have to also wrap the reader returned by <code>io.Pipe()</code> in a <code>bufio.NewReader()</code> which gives us the <code>ReadString('\n')</code> method. So, this is probably the preferrable solution. As it is often the case in Go, there are two ways to solve this concurrency problem: with a mutex (the custom <code>SyncWriter</code>) or with a channel (which <code>io.Pipe()</code> uses under the hood).</p>
 <h3 id="learnings-3">

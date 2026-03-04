@@ -101,8 +101,8 @@ Do not edit it by hand.
     <span>Gnuplot</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-gnuplot"><span class="line-number"></span>set output &quot;plot.png&quot;
-<span class="line-number"></span>plot &quot;out.dat&quot; with lines
+  <code class="language-gnuplot"><span class="line-number"></span><span class="code-hl">set output &quot;plot.png&quot;</span>
+<span class="line-number"></span><span class="code-hl">plot &quot;out.dat&quot; with lines</span>
 </code></pre>
 <p><img src="gnuplot.png" alt="gnuplot.png" /></p>
 <p>where <code>out.data</code> is a text file with a number on each line.</p>
@@ -120,7 +120,7 @@ Do not edit it by hand.
     <span>Gnuplot</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-gnuplot"><span class="line-number"></span>data = system(&quot;cat in.txt&quot;)
+  <code class="language-gnuplot"><span class="line-number"></span><span class="code-hl">data = system(&quot;cat in.txt&quot;)</span>
 </code></pre>
 <p>Gnuplot has the <code>plot</code> command to turn input data into a plot, but nothing built-in to read input data into a variable, it seems. No matter, <code>system</code> which spawns a command in a subshell does the trick.</p>
 <p>Since we need to check whether a character is a string, let's define our own little function for it. Yes, Gnuplot has user defined functions! The unfortunate limitation is that the body has to be an expression:</p>
@@ -129,7 +129,7 @@ Do not edit it by hand.
     <span>Gnuplot</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-gnuplot"><span class="line-number"></span>is_digit(c) = c eq &quot;0&quot; || c eq &quot;1&quot; || c eq &quot;2&quot; || c eq &quot;3&quot; || c eq &quot;4&quot; || c eq &quot;5&quot; || c eq &quot;6&quot; || c eq &quot;7&quot; || c eq &quot;8&quot; || c eq &quot;9&quot;
+  <code class="language-gnuplot"><span class="line-number"></span><span class="code-hl">is_digit(c) = c eq &quot;0&quot; || c eq &quot;1&quot; || c eq &quot;2&quot; || c eq &quot;3&quot; || c eq &quot;4&quot; || c eq &quot;5&quot; || c eq &quot;6&quot; || c eq &quot;7&quot; || c eq &quot;8&quot; || c eq &quot;9&quot;</span>
 </code></pre>
 <p>Characters are not a thing; instead we deal with a string of length 1. Comparing strings for equality is done with the operator <code>eq</code>.</p>
 <p>Then, we iterate over each line in the data. Gnuplot has a for-each construct we can use for that.</p>
@@ -139,15 +139,15 @@ Do not edit it by hand.
     <span>Gnuplot</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-gnuplot"><span class="line-number"></span>sum = 0
-<span class="line-number"></span>
-<span class="line-number"></span>do for [line in data] {
-<span class="line-number"></span>  len = strlen(line)
-<span class="line-number"></span>
-<span class="line-number"></span>  do for [i = 1:len] {
-<span class="line-number"></span>    c = line[i:i]
-<span class="line-number"></span>  }
-<span class="line-number"></span>}
+  <code class="language-gnuplot"><span class="line-number"></span><span class="code-hl">sum = 0</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">do for [line in data] {</span>
+<span class="line-number"></span><span class="code-hl">  len = strlen(line)</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  do for [i = 1:len] {</span>
+<span class="line-number"></span><span class="code-hl">    c = line[i:i]</span>
+<span class="line-number"></span><span class="code-hl">  }</span>
+<span class="line-number"></span><span class="code-hl">}</span>
 </code></pre>
 <p>One thing to note here is that strings are 1-indexed and the slicing syntax is: <code>foo[start_inclusive:end_inclusive]</code>.</p>
 <p>We then set <code>first</code> to the first digit character we find:</p>
@@ -156,21 +156,21 @@ Do not edit it by hand.
     <span>Gnuplot</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-gnuplot"><span class="line-number"></span>do for [line in data] {
-<span class="line-number"></span>  len = strlen(line)
-<span class="line-number"></span>
-<span class="line-number"></span>  first= &quot;&quot;
-<span class="line-number"></span>
-<span class="line-number"></span>  do for [i = 1:len] {
-<span class="line-number"></span>    c = line[i:i]
-<span class="line-number"></span>    if (is_digit(c)) {
-<span class="line-number"></span>      if (first eq &quot;&quot;) {
-<span class="line-number"></span>        first = c
-<span class="line-number"></span>        break
-<span class="line-number"></span>      }  
-<span class="line-number"></span>    }
-<span class="line-number"></span>  }
-<span class="line-number"></span>}
+  <code class="language-gnuplot"><span class="line-number"></span><span class="code-hl">do for [line in data] {</span>
+<span class="line-number"></span><span class="code-hl">  len = strlen(line)</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  first= &quot;&quot;</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  do for [i = 1:len] {</span>
+<span class="line-number"></span><span class="code-hl">    c = line[i:i]</span>
+<span class="line-number"></span><span class="code-hl">    if (is_digit(c)) {</span>
+<span class="line-number"></span><span class="code-hl">      if (first eq &quot;&quot;) {</span>
+<span class="line-number"></span><span class="code-hl">        first = c</span>
+<span class="line-number"></span><span class="code-hl">        break</span>
+<span class="line-number"></span><span class="code-hl">      }  </span>
+<span class="line-number"></span><span class="code-hl">    }</span>
+<span class="line-number"></span><span class="code-hl">  }</span>
+<span class="line-number"></span><span class="code-hl">}</span>
 </code></pre>
 <p>We do the same for the last character, iterating in reverse order:</p>
 <pre>
@@ -178,17 +178,17 @@ Do not edit it by hand.
     <span>Gnuplot</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-gnuplot"><span class="line-number"></span>  last = &quot;&quot;
-<span class="line-number"></span>
-<span class="line-number"></span>  do for [i = len:1:-1] {
-<span class="line-number"></span>    c = line[i:i]
-<span class="line-number"></span>    if (is_digit(c)) {
-<span class="line-number"></span>      if (last eq &quot;&quot;) {
-<span class="line-number"></span>        last = c
-<span class="line-number"></span>        break
-<span class="line-number"></span>      }  
-<span class="line-number"></span>    }
-<span class="line-number"></span>  }
+  <code class="language-gnuplot"><span class="line-number"></span><span class="code-hl">  last = &quot;&quot;</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  do for [i = len:1:-1] {</span>
+<span class="line-number"></span><span class="code-hl">    c = line[i:i]</span>
+<span class="line-number"></span><span class="code-hl">    if (is_digit(c)) {</span>
+<span class="line-number"></span><span class="code-hl">      if (last eq &quot;&quot;) {</span>
+<span class="line-number"></span><span class="code-hl">        last = c</span>
+<span class="line-number"></span><span class="code-hl">        break</span>
+<span class="line-number"></span><span class="code-hl">      }  </span>
+<span class="line-number"></span><span class="code-hl">    }</span>
+<span class="line-number"></span><span class="code-hl">  }</span>
 </code></pre>
 <p>Finally, we concatenate the two digits (which are still two strings of length 1 at that point) with the <code>.</code> operator, convert it to a number with the <code>+ 0</code> idiom, and increase our sum:</p>
 <pre>
@@ -196,8 +196,8 @@ Do not edit it by hand.
     <span>Gnuplot</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-gnuplot"><span class="line-number"></span>  num = first . last + 0
-<span class="line-number"></span>  sum = sum + num
+  <code class="language-gnuplot"><span class="line-number"></span><span class="code-hl">  num = first . last + 0</span>
+<span class="line-number"></span><span class="code-hl">  sum = sum + num</span>
 </code></pre>
 <p>We just have to print the sum at the end:</p>
 <pre>
@@ -205,7 +205,7 @@ Do not edit it by hand.
     <span>Gnuplot</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-gnuplot"><span class="line-number"></span>print(sum)
+  <code class="language-gnuplot"><span class="line-number"></span><span class="code-hl">print(sum)</span>
 </code></pre>
 <h2 id="closing-thoughts">
   <a class="title" href="#closing-thoughts">Closing thoughts</a>
@@ -227,44 +227,44 @@ There does not seem to be basic data structures such as arrays and maps. Every v
     <span>Gnuplot</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-gnuplot"><span class="line-number"></span>data = system(&quot;cat in.txt&quot;)
-<span class="line-number"></span>
-<span class="line-number"></span>is_digit(c) = c eq &quot;0&quot; || c eq &quot;1&quot; || c eq &quot;2&quot; || c eq &quot;3&quot; || c eq &quot;4&quot; || c eq &quot;5&quot; || c eq &quot;6&quot; || c eq &quot;7&quot; || c eq &quot;8&quot; || c eq &quot;9&quot;
-<span class="line-number"></span>
-<span class="line-number"></span>sum = 0
-<span class="line-number"></span>
-<span class="line-number"></span>do for [line in data] {
-<span class="line-number"></span>  len = strlen(line)
-<span class="line-number"></span>
-<span class="line-number"></span>  first= &quot;&quot;
-<span class="line-number"></span>
-<span class="line-number"></span>  do for [i = 1:len] {
-<span class="line-number"></span>    c = line[i:i]
-<span class="line-number"></span>    if (is_digit(c)) {
-<span class="line-number"></span>      if (first eq &quot;&quot;) {
-<span class="line-number"></span>        first = c
-<span class="line-number"></span>        break
-<span class="line-number"></span>      }  
-<span class="line-number"></span>    }
-<span class="line-number"></span>  }
-<span class="line-number"></span>
-<span class="line-number"></span>
-<span class="line-number"></span>  last = &quot;&quot;
-<span class="line-number"></span>
-<span class="line-number"></span>  do for [i = len:1:-1] {
-<span class="line-number"></span>    c = line[i:i]
-<span class="line-number"></span>    if (is_digit(c)) {
-<span class="line-number"></span>      if (last eq &quot;&quot;) {
-<span class="line-number"></span>        last = c
-<span class="line-number"></span>        break
-<span class="line-number"></span>      }  
-<span class="line-number"></span>    }
-<span class="line-number"></span>  }
-<span class="line-number"></span>  num = first . last + 0
-<span class="line-number"></span>  sum = sum + num
-<span class="line-number"></span>}
-<span class="line-number"></span>
-<span class="line-number"></span>print(sum)
+  <code class="language-gnuplot"><span class="line-number"></span><span class="code-hl">data = system(&quot;cat in.txt&quot;)</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">is_digit(c) = c eq &quot;0&quot; || c eq &quot;1&quot; || c eq &quot;2&quot; || c eq &quot;3&quot; || c eq &quot;4&quot; || c eq &quot;5&quot; || c eq &quot;6&quot; || c eq &quot;7&quot; || c eq &quot;8&quot; || c eq &quot;9&quot;</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">sum = 0</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">do for [line in data] {</span>
+<span class="line-number"></span><span class="code-hl">  len = strlen(line)</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  first= &quot;&quot;</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  do for [i = 1:len] {</span>
+<span class="line-number"></span><span class="code-hl">    c = line[i:i]</span>
+<span class="line-number"></span><span class="code-hl">    if (is_digit(c)) {</span>
+<span class="line-number"></span><span class="code-hl">      if (first eq &quot;&quot;) {</span>
+<span class="line-number"></span><span class="code-hl">        first = c</span>
+<span class="line-number"></span><span class="code-hl">        break</span>
+<span class="line-number"></span><span class="code-hl">      }  </span>
+<span class="line-number"></span><span class="code-hl">    }</span>
+<span class="line-number"></span><span class="code-hl">  }</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  last = &quot;&quot;</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  do for [i = len:1:-1] {</span>
+<span class="line-number"></span><span class="code-hl">    c = line[i:i]</span>
+<span class="line-number"></span><span class="code-hl">    if (is_digit(c)) {</span>
+<span class="line-number"></span><span class="code-hl">      if (last eq &quot;&quot;) {</span>
+<span class="line-number"></span><span class="code-hl">        last = c</span>
+<span class="line-number"></span><span class="code-hl">        break</span>
+<span class="line-number"></span><span class="code-hl">      }  </span>
+<span class="line-number"></span><span class="code-hl">    }</span>
+<span class="line-number"></span><span class="code-hl">  }</span>
+<span class="line-number"></span><span class="code-hl">  num = first . last + 0</span>
+<span class="line-number"></span><span class="code-hl">  sum = sum + num</span>
+<span class="line-number"></span><span class="code-hl">}</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">print(sum)</span>
 </code></pre>
 <p><a href="/blog"> ⏴ Back to all articles</a></p>
 

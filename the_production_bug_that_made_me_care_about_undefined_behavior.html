@@ -143,10 +143,10 @@ Do not edit it by hand.
     <span>Json</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-json"><span class="line-number"></span>{
-<span class="line-number"></span>  &quot;error&quot;: false,
-<span class="line-number"></span>  &quot;succeeded&quot;: true,
-<span class="line-number"></span>}
+  <code class="language-json"><span class="line-number"></span><span class="code-hl">{</span>
+<span class="line-number"></span><span class="code-hl">  &quot;error&quot;: false,</span>
+<span class="line-number"></span><span class="code-hl">  &quot;succeeded&quot;: true,</span>
+<span class="line-number"></span><span class="code-hl">}</span>
 </code></pre>
 <p>or</p>
 <pre>
@@ -154,10 +154,10 @@ Do not edit it by hand.
     <span>Json</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-json"><span class="line-number"></span>{
-<span class="line-number"></span>  &quot;error&quot;: true,
-<span class="line-number"></span>  &quot;succeeded&quot;: false,
-<span class="line-number"></span>}
+  <code class="language-json"><span class="line-number"></span><span class="code-hl">{</span>
+<span class="line-number"></span><span class="code-hl">  &quot;error&quot;: true,</span>
+<span class="line-number"></span><span class="code-hl">  &quot;succeeded&quot;: false,</span>
+<span class="line-number"></span><span class="code-hl">}</span>
 </code></pre>
 <p><em>The actual format was probably not JSON, it was probably form encoded, I cannot exactly remember, but that does not matter for this bug.</em></p>
 <p>This data model is not ideal but that's what the software did. Obviously, either <code>error</code> or <code>succeeded</code> is set but not both or neither (it's a XOR).</p>
@@ -167,10 +167,10 @@ Do not edit it by hand.
     <span>Json</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-json"><span class="line-number"></span>{
-<span class="line-number"></span>  &quot;error&quot;: true,
-<span class="line-number"></span>  &quot;succeeded&quot;: true
-<span class="line-number"></span>}
+  <code class="language-json"><span class="line-number"></span><span class="code-hl">{</span>
+<span class="line-number"></span><span class="code-hl">  &quot;error&quot;: true,</span>
+<span class="line-number"></span><span class="code-hl">  &quot;succeeded&quot;: true</span>
+<span class="line-number"></span><span class="code-hl">}</span>
 </code></pre>
 <p>Hmm ok. That should not be possible, it's a bug indeed.</p>
 <h2 id="investigating">
@@ -183,25 +183,25 @@ Do not edit it by hand.
     <span>Cpp</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-cpp"><span class="line-number"></span>struct Response {
-<span class="line-number"></span>  bool error;
-<span class="line-number"></span>  bool succeeded;
-<span class="line-number"></span>
-<span class="line-number"></span>  std::string data;
-<span class="line-number"></span>};
-<span class="line-number"></span>
-<span class="line-number"></span>void handle() {
-<span class="line-number"></span>  Response response;
-<span class="line-number"></span>  
-<span class="line-number"></span>  try {
-<span class="line-number"></span>    // [..] Lots of database operations *not* touching `response`.
-<span class="line-number"></span>
-<span class="line-number"></span>    response.succeeded = true;
-<span class="line-number"></span>  } catch(...) {
-<span class="line-number"></span>    response.error = true;
-<span class="line-number"></span>  }
-<span class="line-number"></span>  response.write();
-<span class="line-number"></span>}
+  <code class="language-cpp"><span class="line-number"></span><span class="code-hl">struct Response {</span>
+<span class="line-number"></span><span class="code-hl">  bool error;</span>
+<span class="line-number"></span><span class="code-hl">  bool succeeded;</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  std::string data;</span>
+<span class="line-number"></span><span class="code-hl">};</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">void handle() {</span>
+<span class="line-number"></span><span class="code-hl">  Response response;</span>
+<span class="line-number"></span><span class="code-hl">  </span>
+<span class="line-number"></span><span class="code-hl">  try {</span>
+<span class="line-number"></span><span class="code-hl">    // [..] Lots of database operations *not* touching `response`.</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">    response.succeeded = true;</span>
+<span class="line-number"></span><span class="code-hl">  } catch(...) {</span>
+<span class="line-number"></span><span class="code-hl">    response.error = true;</span>
+<span class="line-number"></span><span class="code-hl">  }</span>
+<span class="line-number"></span><span class="code-hl">  response.write();</span>
+<span class="line-number"></span><span class="code-hl">}</span>
 </code></pre>
 <p><em>Here is a <a href="https://godbolt.org/z/5Wbbq3P7a">godbolt</a> link with roughly this code.</em></p>
 <p>There's only one place that sets the <code>succeeded</code> field. And only one that sets the <code>error</code> field. No other place in the code touches these two fields.</p>
@@ -273,16 +273,16 @@ Do not edit it by hand.
     <span>Cpp</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-cpp"><span class="line-number"></span>struct Response {
-<span class="line-number"></span>  bool error;
-<span class="line-number"></span>  bool succeeded;
-<span class="line-number"></span>
-<span class="line-number"></span>  std::string data;
-<span class="line-number"></span>
-<span class="line-number"></span>  Response(): error{false}, succeeded{false}, data{} 
-<span class="line-number"></span>  {
-<span class="line-number"></span>  }
-<span class="line-number"></span>};
+  <code class="language-cpp"><span class="line-number"></span><span class="code-hl">struct Response {</span>
+<span class="line-number"></span><span class="code-hl">  bool error;</span>
+<span class="line-number"></span><span class="code-hl">  bool succeeded;</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  std::string data;</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  Response(): error{false}, succeeded{false}, data{} </span>
+<span class="line-number"></span><span class="code-hl">  {</span>
+<span class="line-number"></span><span class="code-hl">  }</span>
+<span class="line-number"></span><span class="code-hl">};</span>
 </code></pre>
 <p><em>Here is a <a href="https://godbolt.org/z/bveKbxGeM">godbolt</a> link with this code.</em></p>
 <p>Of course, due to the rule of 6 (when I started to learn C++ it was 3), we now have to implement the default destructor, the default move constructor etc etc etc.</p>
@@ -292,12 +292,12 @@ Do not edit it by hand.
     <span>Cpp</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-cpp"><span class="line-number"></span>struct Response {
-<span class="line-number"></span>  bool error = false;
-<span class="line-number"></span>  bool succeeded = false;
-<span class="line-number"></span>
-<span class="line-number"></span>  std::string data;
-<span class="line-number"></span>}
+  <code class="language-cpp"><span class="line-number"></span><span class="code-hl">struct Response {</span>
+<span class="line-number"></span><span class="code-hl">  bool error = false;</span>
+<span class="line-number"></span><span class="code-hl">  bool succeeded = false;</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  std::string data;</span>
+<span class="line-number"></span><span class="code-hl">}</span>
 </code></pre>
 <p>This way, the default constructor generated by the compiler will initialize all the fields.</p>
 <h2 id="aftermath">
@@ -310,7 +310,7 @@ Do not edit it by hand.
     <span>Cpp</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-cpp"><span class="line-number"></span>  Response response{};
+  <code class="language-cpp"><span class="line-number"></span><span class="code-hl">  Response response{};</span>
 </code></pre>
 <p><em>Here is a <a href="https://godbolt.org/z/rTqernMfq">godbolt</a> link with this code.</em></p>
 <p>That forces zero initialization of the <code>error</code> and <code>succeeded</code> fields as well as default initialization of the <code>data</code> field. And no need to change the struct definition.</p>
@@ -328,18 +328,18 @@ Do not edit it by hand.
     <span>Cpp</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-cpp"><span class="line-number"></span>struct Bar {
-<span class="line-number"></span>  std::string s;
-<span class="line-number"></span>  std::vector&lt;std::string&gt; vec;
-<span class="line-number"></span>};
-<span class="line-number"></span>
-<span class="line-number"></span>int main() {
-<span class="line-number"></span>  Bar bar;
-<span class="line-number"></span>
-<span class="line-number"></span>  // Prints: s=`` v.len=0
-<span class="line-number"></span>  // No undefined behavior.
-<span class="line-number"></span>  printf(&quot;s=%s v.len=%zu\n&quot;, bar.s.c_str(), bar.vec.size());
-<span class="line-number"></span>}
+  <code class="language-cpp"><span class="line-number"></span><span class="code-hl">struct Bar {</span>
+<span class="line-number"></span><span class="code-hl">  std::string s;</span>
+<span class="line-number"></span><span class="code-hl">  std::vector&lt;std::string&gt; vec;</span>
+<span class="line-number"></span><span class="code-hl">};</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">int main() {</span>
+<span class="line-number"></span><span class="code-hl">  Bar bar;</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  // Prints: s=`` v.len=0</span>
+<span class="line-number"></span><span class="code-hl">  // No undefined behavior.</span>
+<span class="line-number"></span><span class="code-hl">  printf(&quot;s=%s v.len=%zu\n&quot;, bar.s.c_str(), bar.vec.size());</span>
+<span class="line-number"></span><span class="code-hl">}</span>
 </code></pre>
 <p>But to know that, you need to inspect each field (recursively) of the struct, or assume that every default constructor initializes each field.</p>
 <p>Finally, it's also worth noting that it is only undefined behavior to read an uninitialized value. Simply having uninitialized fields is not undefined behavior. If the fields are never read, or written to with a known value, before being read, there is no undefined behavior.</p>
@@ -365,12 +365,12 @@ Do not edit it by hand.
     <span>Shell</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-shell"><span class="line-number"></span>$ clang++ main.cpp -Weverything -std=c++11 -g -fsanitize=address,undefined -Wno-padded
-<span class="line-number"></span>$ ./a.out
-<span class="line-number"></span>a.out(46953,0x1f7f4a0c0) malloc: nano zone abandoned due to inability to reserve vm space.
-<span class="line-number"></span>main.cpp:21:41: runtime error: load of value 8, which is not a valid value for type 'bool'
-<span class="line-number"></span>SUMMARY: UndefinedBehaviorSanitizer: undefined-behavior main.cpp:21:41 
-<span class="line-number"></span>error=0 success=1
+  <code class="language-shell"><span class="line-number"></span><span class="code-hl">$ clang++ main.cpp -Weverything -std=c++11 -g -fsanitize=address,undefined -Wno-padded</span>
+<span class="line-number"></span><span class="code-hl">$ ./a.out</span>
+<span class="line-number"></span><span class="code-hl">a.out(46953,0x1f7f4a0c0) malloc: nano zone abandoned due to inability to reserve vm space.</span>
+<span class="line-number"></span><span class="code-hl">main.cpp:21:41: runtime error: load of value 8, which is not a valid value for type 'bool'</span>
+<span class="line-number"></span><span class="code-hl">SUMMARY: UndefinedBehaviorSanitizer: undefined-behavior main.cpp:21:41 </span>
+<span class="line-number"></span><span class="code-hl">error=0 success=1</span>
 </code></pre>
 <p>Great, the undefined behavior is spotted! Even if the error message is not super clear.  This is ASan's way of saying: &quot;I expected a 0 or 1 for this boolean, but I found a random 8 in that memory slot.&quot;</p>
 <p>We alternatively could also have used Valgrind to the same effect.</p>
@@ -395,9 +395,9 @@ Do not edit it by hand.
     <span>Cpp</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-cpp"><span class="line-number"></span>Response response;
-<span class="line-number"></span>response.error = false;
-<span class="line-number"></span>response.success = true;
+  <code class="language-cpp"><span class="line-number"></span><span class="code-hl">Response response;</span>
+<span class="line-number"></span><span class="code-hl">response.error = false;</span>
+<span class="line-number"></span><span class="code-hl">response.success = true;</span>
 </code></pre>
 <p>I have no idea if this <code>libclang</code> plugin still works today because I have heard that the <code>libclang</code> API often has breaking changes.</p>
 <h2 id="some-bonus-cplusplus-rules-for-you">
@@ -417,13 +417,13 @@ Do not edit it by hand.
     <span>Cpp</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-cpp"><span class="line-number"></span>    unsigned char c;     // “c” has an indeterminate/erroneous value
-<span class="line-number"></span> 
-<span class="line-number"></span>    unsigned char d = c; // no undefined/erroneous behavior,
-<span class="line-number"></span>                         // but “d” has an indeterminate/erroneous value
-<span class="line-number"></span> 
-<span class="line-number"></span>    assert(c == d);  // holds, but both integral promotions have
-<span class="line-number"></span>                         // undefined/erroneous behavior
+  <code class="language-cpp"><span class="line-number"></span><span class="code-hl">    unsigned char c;     // “c” has an indeterminate/erroneous value</span>
+<span class="line-number"></span><span class="code-hl"> </span>
+<span class="line-number"></span><span class="code-hl">    unsigned char d = c; // no undefined/erroneous behavior,</span>
+<span class="line-number"></span><span class="code-hl">                         // but “d” has an indeterminate/erroneous value</span>
+<span class="line-number"></span><span class="code-hl"> </span>
+<span class="line-number"></span><span class="code-hl">    assert(c == d);  // holds, but both integral promotions have</span>
+<span class="line-number"></span><span class="code-hl">                         // undefined/erroneous behavior</span>
 </code></pre>
 <p>And this runs perfectly fine under ASan. Clang throws some warnings but compiles fine, and this is valid (in terms of the C++ standard) code.</p>
 <p>Now, if we use <code>bool</code> (for example) instead:</p>
@@ -432,9 +432,9 @@ Do not edit it by hand.
     <span>Cpp</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-cpp"><span class="line-number"></span>  bool c; 
-<span class="line-number"></span>  bool d = c;
-<span class="line-number"></span>  assert(c == d);
+  <code class="language-cpp"><span class="line-number"></span><span class="code-hl">  bool c; </span>
+<span class="line-number"></span><span class="code-hl">  bool d = c;</span>
+<span class="line-number"></span><span class="code-hl">  assert(c == d);</span>
 </code></pre>
 <p>This is undefined behavior and immediately triggers ASan errors! Even if the code is the same in terms of type sizes and stack layout!</p>
 <p>I do not know why the C++ standard felt the need to muddy the water even more, but they surely had a reason. Right?</p>

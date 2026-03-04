@@ -157,13 +157,13 @@ Do not edit it by hand.
     <span>Plaintext</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-plaintext"><span class="line-number"></span>heap profile:    &lt;in use objects sum&gt;:  &lt;in use bytes sum&gt; [   &lt;space objects sum&gt;:  &lt;space bytes sum&gt;] @ heapprofile
-<span class="line-number"></span>&lt;in use objects&gt;: &lt;in use bytes&gt; [&lt;space objects&gt;: &lt;space bytes&gt;] @ &lt;rip1&gt; &lt;rip2&gt; &lt;rip3&gt; [...]
-<span class="line-number"></span>&lt;in use objects&gt;: &lt;in use bytes&gt; [&lt;space objects&gt;: &lt;space bytes&gt;] @ &lt;rip1&gt; &lt;rip2&gt; &lt;rip3&gt; [...]
-<span class="line-number"></span>&lt;in use objects&gt;: &lt;in use bytes&gt; [&lt;space objects&gt;: &lt;space bytes&gt;] @ &lt;rip1&gt; &lt;rip2&gt; &lt;rip3&gt; [...]
-<span class="line-number"></span>                                                                             
-<span class="line-number"></span>MAPPED_LIBRARIES:
-<span class="line-number"></span>[...]
+  <code class="language-plaintext"><span class="line-number"></span><span class="code-hl">heap profile:    &lt;in use objects sum&gt;:  &lt;in use bytes sum&gt; [   &lt;space objects sum&gt;:  &lt;space bytes sum&gt;] @ heapprofile</span>
+<span class="line-number"></span><span class="code-hl">&lt;in use objects&gt;: &lt;in use bytes&gt; [&lt;space objects&gt;: &lt;space bytes&gt;] @ &lt;rip1&gt; &lt;rip2&gt; &lt;rip3&gt; [...]</span>
+<span class="line-number"></span><span class="code-hl">&lt;in use objects&gt;: &lt;in use bytes&gt; [&lt;space objects&gt;: &lt;space bytes&gt;] @ &lt;rip1&gt; &lt;rip2&gt; &lt;rip3&gt; [...]</span>
+<span class="line-number"></span><span class="code-hl">&lt;in use objects&gt;: &lt;in use bytes&gt; [&lt;space objects&gt;: &lt;space bytes&gt;] @ &lt;rip1&gt; &lt;rip2&gt; &lt;rip3&gt; [...]</span>
+<span class="line-number"></span><span class="code-hl">                                                                             </span>
+<span class="line-number"></span><span class="code-hl">MAPPED_LIBRARIES:</span>
+<span class="line-number"></span><span class="code-hl">[...]</span>
 </code></pre>
 <p>The first line is a header identifying that this is a heap profile (contrary to a CPU profile which <code>pprof</code> can also analyze, which uses a different, binary, format) and gives for each of the four fields we will record, their sum.</p>
 <p>Then comes one line per entry. Each entry has these four fields that the header just gave us a sum of:</p>
@@ -210,21 +210,21 @@ Do not edit it by hand.
     <span>C</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-c"><span class="line-number"></span>#include &lt;stdlib.h&gt;
-<span class="line-number"></span>
-<span class="line-number"></span>void b(int n) { malloc(n); }
-<span class="line-number"></span>
-<span class="line-number"></span>void a(int n) {
-<span class="line-number"></span>  malloc(n);
-<span class="line-number"></span>  b(n);
-<span class="line-number"></span>}
-<span class="line-number"></span>
-<span class="line-number"></span>int main() {
-<span class="line-number"></span>  for (int i = 0; i &lt; 2; i++)
-<span class="line-number"></span>    a(2);
-<span class="line-number"></span>
-<span class="line-number"></span>  b(3);
-<span class="line-number"></span>}
+  <code class="language-c"><span class="line-number"></span><span class="code-hl">#include &lt;stdlib.h&gt;</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">void b(int n) { malloc(n); }</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">void a(int n) {</span>
+<span class="line-number"></span><span class="code-hl">  malloc(n);</span>
+<span class="line-number"></span><span class="code-hl">  b(n);</span>
+<span class="line-number"></span><span class="code-hl">}</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">int main() {</span>
+<span class="line-number"></span><span class="code-hl">  for (int i = 0; i &lt; 2; i++)</span>
+<span class="line-number"></span><span class="code-hl">    a(2);</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  b(3);</span>
+<span class="line-number"></span><span class="code-hl">}</span>
 </code></pre>
 <p>Leveraging <code>tcmalloc</code>, this program will generate a heap profile:</p>
 <pre>
@@ -232,10 +232,10 @@ Do not edit it by hand.
     <span>Shell</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-shell"><span class="line-number"></span>$ cc /tmp/test_alloc.c -ltcmalloc  -g3
-<span class="line-number"></span>$ HEAPPROFILE=/tmp/heapprof ./a.out
-<span class="line-number"></span>Starting tracking the heap
-<span class="line-number"></span>Dumping heap profile to /tmp/heapprof.0001.heap (Exiting, 11 bytes in use)
+  <code class="language-shell"><span class="line-number"></span><span class="code-hl">$ cc /tmp/test_alloc.c -ltcmalloc  -g3</span>
+<span class="line-number"></span><span class="code-hl">$ HEAPPROFILE=/tmp/heapprof ./a.out</span>
+<span class="line-number"></span><span class="code-hl">Starting tracking the heap</span>
+<span class="line-number"></span><span class="code-hl">Dumping heap profile to /tmp/heapprof.0001.heap (Exiting, 11 bytes in use)</span>
 </code></pre>
 <p><em>This is just an example to showcase the format, we will from this point on use our own code to generate this text format.</em></p>
 <pre>
@@ -243,69 +243,69 @@ Do not edit it by hand.
     <span>Plaintext</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-plaintext"><span class="line-number"></span>heap profile:      5:       11 [     5:       11] @ heapprofile
-<span class="line-number"></span>     2:        4 [     2:        4] @ 0x558e804cc165 0x558e804cc18e 0x558e804cc1b0 0x7f452a4daa90 0x7f452a4dab49 0x558e804cc085
-<span class="line-number"></span>     2:        4 [     2:        4] @ 0x558e804cc184 0x558e804cc1b0 0x7f452a4daa90 0x7f452a4dab49 0x558e804cc085
-<span class="line-number"></span>     1:        3 [     1:        3] @ 0x558e804cc165 0x558e804cc1c4 0x7f452a4daa90 0x7f452a4dab49 0x558e804cc085
-<span class="line-number"></span>
-<span class="line-number"></span>MAPPED_LIBRARIES:
-<span class="line-number"></span>558e804cb000-558e804cc000 r--p 00000000 00:00 183128      /tmp/a.out
-<span class="line-number"></span>558e804cc000-558e804cd000 r-xp 00001000 00:00 183128      /tmp/a.out
-<span class="line-number"></span>558e804cd000-558e804ce000 r--p 00002000 00:00 183128      /tmp/a.out
-<span class="line-number"></span>558e804ce000-558e804cf000 r--p 00002000 00:00 183128      /tmp/a.out
-<span class="line-number"></span>558e804cf000-558e804d0000 rw-p 00003000 00:00 183128      /tmp/a.out
-<span class="line-number"></span>558e814b7000-558e81db8000 rw-p 00000000 00:00 0           [heap]
-<span class="line-number"></span>7f4529e7e000-7f452a112000 rw-p 00000000 00:00 0           
-<span class="line-number"></span>7f452a112000-7f452a115000 r--p 00000000 00:00 678524      /usr/lib/x86_64-linux-gnu/liblzma.so.5.4.1
-<span class="line-number"></span>7f452a115000-7f452a136000 r-xp 00003000 00:00 678524      /usr/lib/x86_64-linux-gnu/liblzma.so.5.4.1
-<span class="line-number"></span>7f452a136000-7f452a142000 r--p 00024000 00:00 678524      /usr/lib/x86_64-linux-gnu/liblzma.so.5.4.1
-<span class="line-number"></span>7f452a142000-7f452a143000 r--p 00030000 00:00 678524      /usr/lib/x86_64-linux-gnu/liblzma.so.5.4.1
-<span class="line-number"></span>7f452a143000-7f452a144000 rw-p 00031000 00:00 678524      /usr/lib/x86_64-linux-gnu/liblzma.so.5.4.1
-<span class="line-number"></span>7f452a144000-7f452a152000 r--p 00000000 00:00 668348      /usr/lib/x86_64-linux-gnu/libm.so.6
-<span class="line-number"></span>7f452a152000-7f452a1d0000 r-xp 0000e000 00:00 668348      /usr/lib/x86_64-linux-gnu/libm.so.6
-<span class="line-number"></span>7f452a1d0000-7f452a22b000 r--p 0008c000 00:00 668348      /usr/lib/x86_64-linux-gnu/libm.so.6
-<span class="line-number"></span>7f452a22b000-7f452a22c000 r--p 000e6000 00:00 668348      /usr/lib/x86_64-linux-gnu/libm.so.6
-<span class="line-number"></span>7f452a22c000-7f452a22d000 rw-p 000e7000 00:00 668348      /usr/lib/x86_64-linux-gnu/libm.so.6
-<span class="line-number"></span>7f452a22d000-7f452a22f000 rw-p 00000000 00:00 0           
-<span class="line-number"></span>7f452a22f000-7f452a2cb000 r--p 00000000 00:00 678806      /usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.32
-<span class="line-number"></span>7f452a2cb000-7f452a3fc000 r-xp 0009c000 00:00 678806      /usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.32
-<span class="line-number"></span>7f452a3fc000-7f452a489000 r--p 001cd000 00:00 678806      /usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.32
-<span class="line-number"></span>7f452a489000-7f452a494000 r--p 0025a000 00:00 678806      /usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.32
-<span class="line-number"></span>7f452a494000-7f452a497000 rw-p 00265000 00:00 678806      /usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.32
-<span class="line-number"></span>7f452a497000-7f452a49b000 rw-p 00000000 00:00 0           
-<span class="line-number"></span>7f452a49b000-7f452a49e000 r--p 00000000 00:00 702044      /usr/lib/x86_64-linux-gnu/libunwind.so.8.0.1
-<span class="line-number"></span>7f452a49e000-7f452a4a8000 r-xp 00003000 00:00 702044      /usr/lib/x86_64-linux-gnu/libunwind.so.8.0.1
-<span class="line-number"></span>7f452a4a8000-7f452a4ab000 r--p 0000d000 00:00 702044      /usr/lib/x86_64-linux-gnu/libunwind.so.8.0.1
-<span class="line-number"></span>7f452a4ab000-7f452a4ac000 r--p 0000f000 00:00 702044      /usr/lib/x86_64-linux-gnu/libunwind.so.8.0.1
-<span class="line-number"></span>7f452a4ac000-7f452a4ad000 rw-p 00010000 00:00 702044      /usr/lib/x86_64-linux-gnu/libunwind.so.8.0.1
-<span class="line-number"></span>7f452a4ad000-7f452a4b7000 rw-p 00000000 00:00 0           
-<span class="line-number"></span>7f452a4b7000-7f452a4d9000 r--p 00000000 00:00 668342      /usr/lib/x86_64-linux-gnu/libc.so.6
-<span class="line-number"></span>7f452a4d9000-7f452a651000 r-xp 00022000 00:00 668342      /usr/lib/x86_64-linux-gnu/libc.so.6
-<span class="line-number"></span>7f452a651000-7f452a6a9000 r--p 0019a000 00:00 668342      /usr/lib/x86_64-linux-gnu/libc.so.6
-<span class="line-number"></span>7f452a6a9000-7f452a6ad000 r--p 001f1000 00:00 668342      /usr/lib/x86_64-linux-gnu/libc.so.6
-<span class="line-number"></span>7f452a6ad000-7f452a6af000 rw-p 001f5000 00:00 668342      /usr/lib/x86_64-linux-gnu/libc.so.6
-<span class="line-number"></span>7f452a6af000-7f452a6bc000 rw-p 00000000 00:00 0           
-<span class="line-number"></span>7f452a6bc000-7f452a6bf000 r--p 00000000 00:00 677590      /usr/lib/x86_64-linux-gnu/libgcc_s.so.1
-<span class="line-number"></span>7f452a6bf000-7f452a6da000 r-xp 00003000 00:00 677590      /usr/lib/x86_64-linux-gnu/libgcc_s.so.1
-<span class="line-number"></span>7f452a6da000-7f452a6de000 r--p 0001e000 00:00 677590      /usr/lib/x86_64-linux-gnu/libgcc_s.so.1
-<span class="line-number"></span>7f452a6de000-7f452a6df000 r--p 00021000 00:00 677590      /usr/lib/x86_64-linux-gnu/libgcc_s.so.1
-<span class="line-number"></span>7f452a6df000-7f452a6e0000 rw-p 00022000 00:00 677590      /usr/lib/x86_64-linux-gnu/libgcc_s.so.1
-<span class="line-number"></span>7f452a6e0000-7f452a6f3000 r--p 00000000 00:00 182678      /usr/lib/x86_64-linux-gnu/libtcmalloc.so.4.5.9
-<span class="line-number"></span>7f452a6f3000-7f452a719000 r-xp 00013000 00:00 182678      /usr/lib/x86_64-linux-gnu/libtcmalloc.so.4.5.9
-<span class="line-number"></span>7f452a719000-7f452a729000 r--p 00039000 00:00 182678      /usr/lib/x86_64-linux-gnu/libtcmalloc.so.4.5.9
-<span class="line-number"></span>7f452a729000-7f452a72a000 r--p 00048000 00:00 182678      /usr/lib/x86_64-linux-gnu/libtcmalloc.so.4.5.9
-<span class="line-number"></span>7f452a72a000-7f452a72b000 rw-p 00049000 00:00 182678      /usr/lib/x86_64-linux-gnu/libtcmalloc.so.4.5.9
-<span class="line-number"></span>7f452a72b000-7f452a8e1000 rw-p 00000000 00:00 0           
-<span class="line-number"></span>7f452a8e4000-7f452a8f8000 rw-p 00000000 00:00 0           
-<span class="line-number"></span>7f452a8f8000-7f452a8f9000 r--p 00000000 00:00 668336      /usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2
-<span class="line-number"></span>7f452a8f9000-7f452a921000 r-xp 00001000 00:00 668336      /usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2
-<span class="line-number"></span>7f452a921000-7f452a92b000 r--p 00029000 00:00 668336      /usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2
-<span class="line-number"></span>7f452a92b000-7f452a92d000 r--p 00033000 00:00 668336      /usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2
-<span class="line-number"></span>7f452a92d000-7f452a92f000 rw-p 00035000 00:00 668336      /usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2
-<span class="line-number"></span>7fff91a4d000-7fff91a6e000 rw-p 00000000 00:00 0           [stack]
-<span class="line-number"></span>7fff91b3f000-7fff91b43000 r--p 00000000 00:00 0           [vvar]
-<span class="line-number"></span>7fff91b43000-7fff91b45000 r-xp 00000000 00:00 0           [vdso]
-<span class="line-number"></span>ffffffffff600000-ffffffffff601000 --xp 00000000 00:00 0           [vsyscall]
+  <code class="language-plaintext"><span class="line-number"></span><span class="code-hl">heap profile:      5:       11 [     5:       11] @ heapprofile</span>
+<span class="line-number"></span><span class="code-hl">     2:        4 [     2:        4] @ 0x558e804cc165 0x558e804cc18e 0x558e804cc1b0 0x7f452a4daa90 0x7f452a4dab49 0x558e804cc085</span>
+<span class="line-number"></span><span class="code-hl">     2:        4 [     2:        4] @ 0x558e804cc184 0x558e804cc1b0 0x7f452a4daa90 0x7f452a4dab49 0x558e804cc085</span>
+<span class="line-number"></span><span class="code-hl">     1:        3 [     1:        3] @ 0x558e804cc165 0x558e804cc1c4 0x7f452a4daa90 0x7f452a4dab49 0x558e804cc085</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">MAPPED_LIBRARIES:</span>
+<span class="line-number"></span><span class="code-hl">558e804cb000-558e804cc000 r--p 00000000 00:00 183128      /tmp/a.out</span>
+<span class="line-number"></span><span class="code-hl">558e804cc000-558e804cd000 r-xp 00001000 00:00 183128      /tmp/a.out</span>
+<span class="line-number"></span><span class="code-hl">558e804cd000-558e804ce000 r--p 00002000 00:00 183128      /tmp/a.out</span>
+<span class="line-number"></span><span class="code-hl">558e804ce000-558e804cf000 r--p 00002000 00:00 183128      /tmp/a.out</span>
+<span class="line-number"></span><span class="code-hl">558e804cf000-558e804d0000 rw-p 00003000 00:00 183128      /tmp/a.out</span>
+<span class="line-number"></span><span class="code-hl">558e814b7000-558e81db8000 rw-p 00000000 00:00 0           [heap]</span>
+<span class="line-number"></span><span class="code-hl">7f4529e7e000-7f452a112000 rw-p 00000000 00:00 0           </span>
+<span class="line-number"></span><span class="code-hl">7f452a112000-7f452a115000 r--p 00000000 00:00 678524      /usr/lib/x86_64-linux-gnu/liblzma.so.5.4.1</span>
+<span class="line-number"></span><span class="code-hl">7f452a115000-7f452a136000 r-xp 00003000 00:00 678524      /usr/lib/x86_64-linux-gnu/liblzma.so.5.4.1</span>
+<span class="line-number"></span><span class="code-hl">7f452a136000-7f452a142000 r--p 00024000 00:00 678524      /usr/lib/x86_64-linux-gnu/liblzma.so.5.4.1</span>
+<span class="line-number"></span><span class="code-hl">7f452a142000-7f452a143000 r--p 00030000 00:00 678524      /usr/lib/x86_64-linux-gnu/liblzma.so.5.4.1</span>
+<span class="line-number"></span><span class="code-hl">7f452a143000-7f452a144000 rw-p 00031000 00:00 678524      /usr/lib/x86_64-linux-gnu/liblzma.so.5.4.1</span>
+<span class="line-number"></span><span class="code-hl">7f452a144000-7f452a152000 r--p 00000000 00:00 668348      /usr/lib/x86_64-linux-gnu/libm.so.6</span>
+<span class="line-number"></span><span class="code-hl">7f452a152000-7f452a1d0000 r-xp 0000e000 00:00 668348      /usr/lib/x86_64-linux-gnu/libm.so.6</span>
+<span class="line-number"></span><span class="code-hl">7f452a1d0000-7f452a22b000 r--p 0008c000 00:00 668348      /usr/lib/x86_64-linux-gnu/libm.so.6</span>
+<span class="line-number"></span><span class="code-hl">7f452a22b000-7f452a22c000 r--p 000e6000 00:00 668348      /usr/lib/x86_64-linux-gnu/libm.so.6</span>
+<span class="line-number"></span><span class="code-hl">7f452a22c000-7f452a22d000 rw-p 000e7000 00:00 668348      /usr/lib/x86_64-linux-gnu/libm.so.6</span>
+<span class="line-number"></span><span class="code-hl">7f452a22d000-7f452a22f000 rw-p 00000000 00:00 0           </span>
+<span class="line-number"></span><span class="code-hl">7f452a22f000-7f452a2cb000 r--p 00000000 00:00 678806      /usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.32</span>
+<span class="line-number"></span><span class="code-hl">7f452a2cb000-7f452a3fc000 r-xp 0009c000 00:00 678806      /usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.32</span>
+<span class="line-number"></span><span class="code-hl">7f452a3fc000-7f452a489000 r--p 001cd000 00:00 678806      /usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.32</span>
+<span class="line-number"></span><span class="code-hl">7f452a489000-7f452a494000 r--p 0025a000 00:00 678806      /usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.32</span>
+<span class="line-number"></span><span class="code-hl">7f452a494000-7f452a497000 rw-p 00265000 00:00 678806      /usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.32</span>
+<span class="line-number"></span><span class="code-hl">7f452a497000-7f452a49b000 rw-p 00000000 00:00 0           </span>
+<span class="line-number"></span><span class="code-hl">7f452a49b000-7f452a49e000 r--p 00000000 00:00 702044      /usr/lib/x86_64-linux-gnu/libunwind.so.8.0.1</span>
+<span class="line-number"></span><span class="code-hl">7f452a49e000-7f452a4a8000 r-xp 00003000 00:00 702044      /usr/lib/x86_64-linux-gnu/libunwind.so.8.0.1</span>
+<span class="line-number"></span><span class="code-hl">7f452a4a8000-7f452a4ab000 r--p 0000d000 00:00 702044      /usr/lib/x86_64-linux-gnu/libunwind.so.8.0.1</span>
+<span class="line-number"></span><span class="code-hl">7f452a4ab000-7f452a4ac000 r--p 0000f000 00:00 702044      /usr/lib/x86_64-linux-gnu/libunwind.so.8.0.1</span>
+<span class="line-number"></span><span class="code-hl">7f452a4ac000-7f452a4ad000 rw-p 00010000 00:00 702044      /usr/lib/x86_64-linux-gnu/libunwind.so.8.0.1</span>
+<span class="line-number"></span><span class="code-hl">7f452a4ad000-7f452a4b7000 rw-p 00000000 00:00 0           </span>
+<span class="line-number"></span><span class="code-hl">7f452a4b7000-7f452a4d9000 r--p 00000000 00:00 668342      /usr/lib/x86_64-linux-gnu/libc.so.6</span>
+<span class="line-number"></span><span class="code-hl">7f452a4d9000-7f452a651000 r-xp 00022000 00:00 668342      /usr/lib/x86_64-linux-gnu/libc.so.6</span>
+<span class="line-number"></span><span class="code-hl">7f452a651000-7f452a6a9000 r--p 0019a000 00:00 668342      /usr/lib/x86_64-linux-gnu/libc.so.6</span>
+<span class="line-number"></span><span class="code-hl">7f452a6a9000-7f452a6ad000 r--p 001f1000 00:00 668342      /usr/lib/x86_64-linux-gnu/libc.so.6</span>
+<span class="line-number"></span><span class="code-hl">7f452a6ad000-7f452a6af000 rw-p 001f5000 00:00 668342      /usr/lib/x86_64-linux-gnu/libc.so.6</span>
+<span class="line-number"></span><span class="code-hl">7f452a6af000-7f452a6bc000 rw-p 00000000 00:00 0           </span>
+<span class="line-number"></span><span class="code-hl">7f452a6bc000-7f452a6bf000 r--p 00000000 00:00 677590      /usr/lib/x86_64-linux-gnu/libgcc_s.so.1</span>
+<span class="line-number"></span><span class="code-hl">7f452a6bf000-7f452a6da000 r-xp 00003000 00:00 677590      /usr/lib/x86_64-linux-gnu/libgcc_s.so.1</span>
+<span class="line-number"></span><span class="code-hl">7f452a6da000-7f452a6de000 r--p 0001e000 00:00 677590      /usr/lib/x86_64-linux-gnu/libgcc_s.so.1</span>
+<span class="line-number"></span><span class="code-hl">7f452a6de000-7f452a6df000 r--p 00021000 00:00 677590      /usr/lib/x86_64-linux-gnu/libgcc_s.so.1</span>
+<span class="line-number"></span><span class="code-hl">7f452a6df000-7f452a6e0000 rw-p 00022000 00:00 677590      /usr/lib/x86_64-linux-gnu/libgcc_s.so.1</span>
+<span class="line-number"></span><span class="code-hl">7f452a6e0000-7f452a6f3000 r--p 00000000 00:00 182678      /usr/lib/x86_64-linux-gnu/libtcmalloc.so.4.5.9</span>
+<span class="line-number"></span><span class="code-hl">7f452a6f3000-7f452a719000 r-xp 00013000 00:00 182678      /usr/lib/x86_64-linux-gnu/libtcmalloc.so.4.5.9</span>
+<span class="line-number"></span><span class="code-hl">7f452a719000-7f452a729000 r--p 00039000 00:00 182678      /usr/lib/x86_64-linux-gnu/libtcmalloc.so.4.5.9</span>
+<span class="line-number"></span><span class="code-hl">7f452a729000-7f452a72a000 r--p 00048000 00:00 182678      /usr/lib/x86_64-linux-gnu/libtcmalloc.so.4.5.9</span>
+<span class="line-number"></span><span class="code-hl">7f452a72a000-7f452a72b000 rw-p 00049000 00:00 182678      /usr/lib/x86_64-linux-gnu/libtcmalloc.so.4.5.9</span>
+<span class="line-number"></span><span class="code-hl">7f452a72b000-7f452a8e1000 rw-p 00000000 00:00 0           </span>
+<span class="line-number"></span><span class="code-hl">7f452a8e4000-7f452a8f8000 rw-p 00000000 00:00 0           </span>
+<span class="line-number"></span><span class="code-hl">7f452a8f8000-7f452a8f9000 r--p 00000000 00:00 668336      /usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2</span>
+<span class="line-number"></span><span class="code-hl">7f452a8f9000-7f452a921000 r-xp 00001000 00:00 668336      /usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2</span>
+<span class="line-number"></span><span class="code-hl">7f452a921000-7f452a92b000 r--p 00029000 00:00 668336      /usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2</span>
+<span class="line-number"></span><span class="code-hl">7f452a92b000-7f452a92d000 r--p 00033000 00:00 668336      /usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2</span>
+<span class="line-number"></span><span class="code-hl">7f452a92d000-7f452a92f000 rw-p 00035000 00:00 668336      /usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2</span>
+<span class="line-number"></span><span class="code-hl">7fff91a4d000-7fff91a6e000 rw-p 00000000 00:00 0           [stack]</span>
+<span class="line-number"></span><span class="code-hl">7fff91b3f000-7fff91b43000 r--p 00000000 00:00 0           [vvar]</span>
+<span class="line-number"></span><span class="code-hl">7fff91b43000-7fff91b45000 r-xp 00000000 00:00 0           [vdso]</span>
+<span class="line-number"></span><span class="code-hl">ffffffffff600000-ffffffffff601000 --xp 00000000 00:00 0           [vsyscall]</span>
 </code></pre>
 <p>We see that at the end of the program, we have (looking at the first line):</p>
 <ul>
@@ -329,16 +329,16 @@ Do not edit it by hand.
     <span>Shell</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-shell"><span class="line-number"></span>$ pprof --text ./a.out ./heapprof.0001.heap
-<span class="line-number"></span>Using local file ./a.out.
-<span class="line-number"></span>Using local file /tmp/heapprof.0001.heap.
-<span class="line-number"></span>Total: 0.0 MB
-<span class="line-number"></span>     0.0  63.6%  63.6%      0.0  63.6% b
-<span class="line-number"></span>     0.0  36.4% 100.0%      0.0  72.7% a
-<span class="line-number"></span>     0.0   0.0% 100.0%      0.0 100.0% __libc_start_call_main
-<span class="line-number"></span>     0.0   0.0% 100.0%      0.0 100.0% __libc_start_main_impl
-<span class="line-number"></span>     0.0   0.0% 100.0%      0.0 100.0% _start
-<span class="line-number"></span>     0.0   0.0% 100.0%      0.0 100.0% main
+  <code class="language-shell"><span class="line-number"></span><span class="code-hl">$ pprof --text ./a.out ./heapprof.0001.heap</span>
+<span class="line-number"></span><span class="code-hl">Using local file ./a.out.</span>
+<span class="line-number"></span><span class="code-hl">Using local file /tmp/heapprof.0001.heap.</span>
+<span class="line-number"></span><span class="code-hl">Total: 0.0 MB</span>
+<span class="line-number"></span><span class="code-hl">     0.0  63.6%  63.6%      0.0  63.6% b</span>
+<span class="line-number"></span><span class="code-hl">     0.0  36.4% 100.0%      0.0  72.7% a</span>
+<span class="line-number"></span><span class="code-hl">     0.0   0.0% 100.0%      0.0 100.0% __libc_start_call_main</span>
+<span class="line-number"></span><span class="code-hl">     0.0   0.0% 100.0%      0.0 100.0% __libc_start_main_impl</span>
+<span class="line-number"></span><span class="code-hl">     0.0   0.0% 100.0%      0.0 100.0% _start</span>
+<span class="line-number"></span><span class="code-hl">     0.0   0.0% 100.0%      0.0 100.0% main</span>
 </code></pre>
 <h2 id="generating-a-pprof-profile">
   <a class="title" href="#generating-a-pprof-profile">Generating a pprof profile</a>
@@ -350,43 +350,43 @@ Do not edit it by hand.
     <span>C</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-c"><span class="line-number"></span>#define _GNU_SOURCE
-<span class="line-number"></span>#include &lt;stdint.h&gt;
-<span class="line-number"></span>#include &lt;stdio.h&gt;
-<span class="line-number"></span>#include &lt;stdlib.h&gt;
-<span class="line-number"></span>#include &lt;string.h&gt;
-<span class="line-number"></span>#include &lt;sys/mman.h&gt;
-<span class="line-number"></span>#include &lt;fcntl.h&gt;
-<span class="line-number"></span>#include &lt;unistd.h&gt;
-<span class="line-number"></span>
-<span class="line-number"></span>
-<span class="line-number"></span>typedef struct {
-<span class="line-number"></span>  u8 *start;
-<span class="line-number"></span>  u8 *end;
-<span class="line-number"></span>} arena_t;
-<span class="line-number"></span>
-<span class="line-number"></span>static void * arena_alloc(arena_t *a, size_t size, size_t align, size_t count) {
-<span class="line-number"></span>  pg_assert(a-&gt;start &lt;= a-&gt;end);
-<span class="line-number"></span>  pg_assert(align == 1 || align == 2 || align == 4 || align == 8);
-<span class="line-number"></span>
-<span class="line-number"></span>  size_t available = a-&gt;end - a-&gt;start;
-<span class="line-number"></span>  size_t padding = -(size_t)a-&gt;start &amp; (align - 1);
-<span class="line-number"></span>
-<span class="line-number"></span>  size_t offset = padding + size * count;
-<span class="line-number"></span>  if (available &lt; offset) {
-<span class="line-number"></span>    fprintf(stderr,
-<span class="line-number"></span>            &quot;Out of memory: available=%lu &quot;
-<span class="line-number"></span>            &quot;allocation_size=%lu\n&quot;,
-<span class="line-number"></span>            available, offset);
-<span class="line-number"></span>    abort();
-<span class="line-number"></span>  }
-<span class="line-number"></span>
-<span class="line-number"></span>  uint8_t *res = a-&gt;start + padding;
-<span class="line-number"></span>
-<span class="line-number"></span>  a-&gt;start += offset;
-<span class="line-number"></span>
-<span class="line-number"></span>  return (void *)res;
-<span class="line-number"></span>}
+  <code class="language-c"><span class="line-number"></span><span class="code-hl">#define _GNU_SOURCE</span>
+<span class="line-number"></span><span class="code-hl">#include &lt;stdint.h&gt;</span>
+<span class="line-number"></span><span class="code-hl">#include &lt;stdio.h&gt;</span>
+<span class="line-number"></span><span class="code-hl">#include &lt;stdlib.h&gt;</span>
+<span class="line-number"></span><span class="code-hl">#include &lt;string.h&gt;</span>
+<span class="line-number"></span><span class="code-hl">#include &lt;sys/mman.h&gt;</span>
+<span class="line-number"></span><span class="code-hl">#include &lt;fcntl.h&gt;</span>
+<span class="line-number"></span><span class="code-hl">#include &lt;unistd.h&gt;</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">typedef struct {</span>
+<span class="line-number"></span><span class="code-hl">  u8 *start;</span>
+<span class="line-number"></span><span class="code-hl">  u8 *end;</span>
+<span class="line-number"></span><span class="code-hl">} arena_t;</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">static void * arena_alloc(arena_t *a, size_t size, size_t align, size_t count) {</span>
+<span class="line-number"></span><span class="code-hl">  pg_assert(a-&gt;start &lt;= a-&gt;end);</span>
+<span class="line-number"></span><span class="code-hl">  pg_assert(align == 1 || align == 2 || align == 4 || align == 8);</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  size_t available = a-&gt;end - a-&gt;start;</span>
+<span class="line-number"></span><span class="code-hl">  size_t padding = -(size_t)a-&gt;start &amp; (align - 1);</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  size_t offset = padding + size * count;</span>
+<span class="line-number"></span><span class="code-hl">  if (available &lt; offset) {</span>
+<span class="line-number"></span><span class="code-hl">    fprintf(stderr,</span>
+<span class="line-number"></span><span class="code-hl">            &quot;Out of memory: available=%lu &quot;</span>
+<span class="line-number"></span><span class="code-hl">            &quot;allocation_size=%lu\n&quot;,</span>
+<span class="line-number"></span><span class="code-hl">            available, offset);</span>
+<span class="line-number"></span><span class="code-hl">    abort();</span>
+<span class="line-number"></span><span class="code-hl">  }</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  uint8_t *res = a-&gt;start + padding;</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  a-&gt;start += offset;</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  return (void *)res;</span>
+<span class="line-number"></span><span class="code-hl">}</span>
 </code></pre>
 <p>Now, we are ready to add memory profiling to our simple allocator.</p>
 <p>First, we model a record with the 4 counters and the call stack:</p>
@@ -395,11 +395,11 @@ Do not edit it by hand.
     <span>C</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-c"><span class="line-number"></span>typedef struct {
-<span class="line-number"></span>  uint64_t in_use_space, in_use_objects, alloc_space, alloc_objects;
-<span class="line-number"></span>  uint64_t *call_stack;
-<span class="line-number"></span>  uint64_t call_stack_len;
-<span class="line-number"></span>} mem_record_t;
+  <code class="language-c"><span class="line-number"></span><span class="code-hl">typedef struct {</span>
+<span class="line-number"></span><span class="code-hl">  uint64_t in_use_space, in_use_objects, alloc_space, alloc_objects;</span>
+<span class="line-number"></span><span class="code-hl">  uint64_t *call_stack;</span>
+<span class="line-number"></span><span class="code-hl">  uint64_t call_stack_len;</span>
+<span class="line-number"></span><span class="code-hl">} mem_record_t;</span>
 </code></pre>
 <p>Then, the profile, which contains the 4 counters as a sum and an array of records.</p>
 <p>An arena now has an (optional) pointer to a memory profile:</p>
@@ -408,20 +408,20 @@ Do not edit it by hand.
     <span>C</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-c"><span class="line-number"></span>typedef struct mem_profile_t mem_profile_t;
-<span class="line-number"></span>typedef struct {
-<span class="line-number"></span>  uint8_t *start;
-<span class="line-number"></span>  uint8_t *end;
-<span class="line-number"></span>  mem_profile_t* profile;
-<span class="line-number"></span>} arena_t;
-<span class="line-number"></span>
-<span class="line-number"></span>struct mem_profile_t {
-<span class="line-number"></span>  mem_record_t *records;
-<span class="line-number"></span>  uint64_t records_len;
-<span class="line-number"></span>  uint64_t records_cap;
-<span class="line-number"></span>  uint64_t in_use_space, in_use_objects, alloc_space, alloc_objects;
-<span class="line-number"></span>  arena_t arena;
-<span class="line-number"></span>};
+  <code class="language-c"><span class="line-number"></span><span class="code-hl">typedef struct mem_profile_t mem_profile_t;</span>
+<span class="line-number"></span><span class="code-hl">typedef struct {</span>
+<span class="line-number"></span><span class="code-hl">  uint8_t *start;</span>
+<span class="line-number"></span><span class="code-hl">  uint8_t *end;</span>
+<span class="line-number"></span><span class="code-hl">  mem_profile_t* profile;</span>
+<span class="line-number"></span><span class="code-hl">} arena_t;</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">struct mem_profile_t {</span>
+<span class="line-number"></span><span class="code-hl">  mem_record_t *records;</span>
+<span class="line-number"></span><span class="code-hl">  uint64_t records_len;</span>
+<span class="line-number"></span><span class="code-hl">  uint64_t records_cap;</span>
+<span class="line-number"></span><span class="code-hl">  uint64_t in_use_space, in_use_objects, alloc_space, alloc_objects;</span>
+<span class="line-number"></span><span class="code-hl">  arena_t arena;</span>
+<span class="line-number"></span><span class="code-hl">};</span>
 </code></pre>
 <p>Note that the memory profile needs to allocate to store this metadata and as such needs an arena. Which makes these two structures cyclic!</p>
 <p>The way we solve it is:</p>
@@ -435,24 +435,24 @@ Do not edit it by hand.
     <span>C</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-c"><span class="line-number"></span>static arena_t arena_new(uint64_t cap, mem_profile_t *profile) {
-<span class="line-number"></span>  uint8_t *mem = mmap(NULL, cap, PROT_READ | PROT_WRITE,
-<span class="line-number"></span>                      MAP_ANONYMOUS | MAP_PRIVATE, -1, 0);
-<span class="line-number"></span>
-<span class="line-number"></span>  arena_t arena = {
-<span class="line-number"></span>      .profile = profile,
-<span class="line-number"></span>      .start = mem,
-<span class="line-number"></span>      .end = mem + cap,
-<span class="line-number"></span>  };
-<span class="line-number"></span>  return arena;
-<span class="line-number"></span>}
-<span class="line-number"></span>
-<span class="line-number"></span>int main(){
-<span class="line-number"></span>  arena_t mem_profile_arena = arena_new(1 &lt;&lt; 16, NULL);
-<span class="line-number"></span>  mem_profile_t mem_profile = {.arena = mem_profile_arena};
-<span class="line-number"></span>
-<span class="line-number"></span>  arena_t arena = arena_new(1 &lt;&lt; 22, &amp;mem_profile);
-<span class="line-number"></span>}
+  <code class="language-c"><span class="line-number"></span><span class="code-hl">static arena_t arena_new(uint64_t cap, mem_profile_t *profile) {</span>
+<span class="line-number"></span><span class="code-hl">  uint8_t *mem = mmap(NULL, cap, PROT_READ | PROT_WRITE,</span>
+<span class="line-number"></span><span class="code-hl">                      MAP_ANONYMOUS | MAP_PRIVATE, -1, 0);</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  arena_t arena = {</span>
+<span class="line-number"></span><span class="code-hl">      .profile = profile,</span>
+<span class="line-number"></span><span class="code-hl">      .start = mem,</span>
+<span class="line-number"></span><span class="code-hl">      .end = mem + cap,</span>
+<span class="line-number"></span><span class="code-hl">  };</span>
+<span class="line-number"></span><span class="code-hl">  return arena;</span>
+<span class="line-number"></span><span class="code-hl">}</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">int main(){</span>
+<span class="line-number"></span><span class="code-hl">  arena_t mem_profile_arena = arena_new(1 &lt;&lt; 16, NULL);</span>
+<span class="line-number"></span><span class="code-hl">  mem_profile_t mem_profile = {.arena = mem_profile_arena};</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  arena_t arena = arena_new(1 &lt;&lt; 22, &amp;mem_profile);</span>
+<span class="line-number"></span><span class="code-hl">}</span>
 </code></pre>
 <p>Now, in <code>arena_alloc</code>, if there is a non-NULL memory profile, we record the allocation just before returning the freshly allocated pointer:</p>
 <pre>
@@ -460,15 +460,15 @@ Do not edit it by hand.
     <span>C</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-c"><span class="line-number"></span>static void *arena_alloc(arena_t *a, size_t size, size_t align, size_t count) {
-<span class="line-number"></span>  [...]
-<span class="line-number"></span>
-<span class="line-number"></span>  if (a-&gt;profile) {
-<span class="line-number"></span>    mem_profile_record_alloc(a-&gt;profile, count, offset);
-<span class="line-number"></span>  }
-<span class="line-number"></span>
-<span class="line-number"></span>  return (void *)res;
-<span class="line-number"></span>}
+  <code class="language-c"><span class="line-number"></span><span class="code-hl">static void *arena_alloc(arena_t *a, size_t size, size_t align, size_t count) {</span>
+<span class="line-number"></span><span class="code-hl">  [...]</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  if (a-&gt;profile) {</span>
+<span class="line-number"></span><span class="code-hl">    mem_profile_record_alloc(a-&gt;profile, count, offset);</span>
+<span class="line-number"></span><span class="code-hl">  }</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  return (void *)res;</span>
+<span class="line-number"></span><span class="code-hl">}</span>
 </code></pre>
 <p>We now have to implement <code>mem_profile_record_alloc</code> and exporting the profile to the text format, and we are done.</p>
 <p>When recording an allocation, we need to capture the call stack, so we walk the stack upwards until we reach a frame address that is 0 or does not have the alignement of a pointer (8); at which point we know not to dereference it and go further.</p>
@@ -478,26 +478,26 @@ Do not edit it by hand.
     <span>C</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-c"><span class="line-number"></span>static uint8_t record_call_stack(uint64_t *dst, uint64_t cap) {
-<span class="line-number"></span>  uintptr_t *rbp = __builtin_frame_address(0);
-<span class="line-number"></span>
-<span class="line-number"></span>  uint64_t len = 0;
-<span class="line-number"></span>
-<span class="line-number"></span>  while (rbp != 0 &amp;&amp; ((uint64_t)rbp &amp; 7) == 0 &amp;&amp; *rbp != 0) {
-<span class="line-number"></span>    const uintptr_t rip = *(rbp + 1);
-<span class="line-number"></span>    rbp = (uintptr_t *)*rbp;
-<span class="line-number"></span>
-<span class="line-number"></span>    // `rip` points to the return instruction in the caller, once this call is
-<span class="line-number"></span>    // done. But: We want the location of the call i.e. the `call xxx`
-<span class="line-number"></span>    // instruction, so we subtract one byte to point inside it, which is not
-<span class="line-number"></span>    // quite 'at' it, but good enough.
-<span class="line-number"></span>    dst[len++] = rip - 1;
-<span class="line-number"></span>
-<span class="line-number"></span>    if (len &gt;= cap)
-<span class="line-number"></span>      return len;
-<span class="line-number"></span>  }
-<span class="line-number"></span>  return len;
-<span class="line-number"></span>}
+  <code class="language-c"><span class="line-number"></span><span class="code-hl">static uint8_t record_call_stack(uint64_t *dst, uint64_t cap) {</span>
+<span class="line-number"></span><span class="code-hl">  uintptr_t *rbp = __builtin_frame_address(0);</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  uint64_t len = 0;</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  while (rbp != 0 &amp;&amp; ((uint64_t)rbp &amp; 7) == 0 &amp;&amp; *rbp != 0) {</span>
+<span class="line-number"></span><span class="code-hl">    const uintptr_t rip = *(rbp + 1);</span>
+<span class="line-number"></span><span class="code-hl">    rbp = (uintptr_t *)*rbp;</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">    // `rip` points to the return instruction in the caller, once this call is</span>
+<span class="line-number"></span><span class="code-hl">    // done. But: We want the location of the call i.e. the `call xxx`</span>
+<span class="line-number"></span><span class="code-hl">    // instruction, so we subtract one byte to point inside it, which is not</span>
+<span class="line-number"></span><span class="code-hl">    // quite 'at' it, but good enough.</span>
+<span class="line-number"></span><span class="code-hl">    dst[len++] = rip - 1;</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">    if (len &gt;= cap)</span>
+<span class="line-number"></span><span class="code-hl">      return len;</span>
+<span class="line-number"></span><span class="code-hl">  }</span>
+<span class="line-number"></span><span class="code-hl">  return len;</span>
+<span class="line-number"></span><span class="code-hl">}</span>
 </code></pre>
 <p>Now we can record the allocation proper, upserting the new record into our existing list of records, trying to find an existing record with the same call stack.
 That part is important to avoid having a huge profile and that's why <code>pprof</code> made this design decision.</p>
@@ -507,60 +507,60 @@ That part is important to avoid having a huge profile and that's why <code>pprof
     <span>C</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-c"><span class="line-number"></span>static void mem_profile_record_alloc(mem_profile_t *profile,
-<span class="line-number"></span>                                     uint64_t objects_count,
-<span class="line-number"></span>                                     uint64_t bytes_count) {
-<span class="line-number"></span>  // Record the call stack by stack walking.
-<span class="line-number"></span>  uint64_t call_stack[64] = {0};
-<span class="line-number"></span>  uint64_t call_stack_len =
-<span class="line-number"></span>      record_call_stack(call_stack, sizeof(call_stack) / sizeof(call_stack[0]));
-<span class="line-number"></span>
-<span class="line-number"></span>  // Update the sums.
-<span class="line-number"></span>  profile-&gt;alloc_objects += objects_count;
-<span class="line-number"></span>  profile-&gt;alloc_space += bytes_count;
-<span class="line-number"></span>  profile-&gt;in_use_objects += objects_count;
-<span class="line-number"></span>  profile-&gt;in_use_space += bytes_count;
-<span class="line-number"></span>
-<span class="line-number"></span>  // Upsert the record.
-<span class="line-number"></span>  for (uint64_t i = 0; i &lt; profile-&gt;records_len; i++) {
-<span class="line-number"></span>    mem_record_t *r = &amp;profile-&gt;records[i];
-<span class="line-number"></span>
-<span class="line-number"></span>    if (r-&gt;call_stack_len == call_stack_len &amp;&amp;
-<span class="line-number"></span>        memcmp(r-&gt;call_stack, call_stack, call_stack_len * sizeof(uint64_t)) ==
-<span class="line-number"></span>            0) {
-<span class="line-number"></span>      // Found an existing record, update it.
-<span class="line-number"></span>      r-&gt;alloc_objects += objects_count;
-<span class="line-number"></span>      r-&gt;alloc_space += bytes_count;
-<span class="line-number"></span>      r-&gt;in_use_objects += objects_count;
-<span class="line-number"></span>      r-&gt;in_use_space += bytes_count;
-<span class="line-number"></span>      return;
-<span class="line-number"></span>    }
-<span class="line-number"></span>  }
-<span class="line-number"></span>
-<span class="line-number"></span>  // Not found, insert a new record
-<span class="line-number"></span>  mem_record_t record = {
-<span class="line-number"></span>      .alloc_objects = objects_count,
-<span class="line-number"></span>      .alloc_space = bytes_count,
-<span class="line-number"></span>      .in_use_objects = objects_count,
-<span class="line-number"></span>      .in_use_space = bytes_count,
-<span class="line-number"></span>  };
-<span class="line-number"></span>  record.call_stack = arena_alloc(&amp;profile-&gt;arena, sizeof(uint64_t),
-<span class="line-number"></span>                                  _Alignof(uint64_t), call_stack_len);
-<span class="line-number"></span>  memcpy(record.call_stack, call_stack, call_stack_len * sizeof(uint64_t));
-<span class="line-number"></span>  record.call_stack_len = call_stack_len;
-<span class="line-number"></span>
-<span class="line-number"></span>  if (profile-&gt;records_len &gt;= profile-&gt;records_cap) {
-<span class="line-number"></span>    uint64_t new_cap = profile-&gt;records_cap * 2;
-<span class="line-number"></span>    // Grow the array.
-<span class="line-number"></span>    mem_record_t *new_records = arena_alloc(
-<span class="line-number"></span>        &amp;profile-&gt;arena, sizeof(mem_record_t), _Alignof(mem_record_t), new_cap);
-<span class="line-number"></span>    memcpy(new_records, profile-&gt;records,
-<span class="line-number"></span>           profile-&gt;records_len * sizeof(mem_record_t));
-<span class="line-number"></span>    profile-&gt;records_cap = new_cap;
-<span class="line-number"></span>    profile-&gt;records = new_records;
-<span class="line-number"></span>  }
-<span class="line-number"></span>  profile-&gt;records[profile-&gt;records_len++] = record;
-<span class="line-number"></span>}
+  <code class="language-c"><span class="line-number"></span><span class="code-hl">static void mem_profile_record_alloc(mem_profile_t *profile,</span>
+<span class="line-number"></span><span class="code-hl">                                     uint64_t objects_count,</span>
+<span class="line-number"></span><span class="code-hl">                                     uint64_t bytes_count) {</span>
+<span class="line-number"></span><span class="code-hl">  // Record the call stack by stack walking.</span>
+<span class="line-number"></span><span class="code-hl">  uint64_t call_stack[64] = {0};</span>
+<span class="line-number"></span><span class="code-hl">  uint64_t call_stack_len =</span>
+<span class="line-number"></span><span class="code-hl">      record_call_stack(call_stack, sizeof(call_stack) / sizeof(call_stack[0]));</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  // Update the sums.</span>
+<span class="line-number"></span><span class="code-hl">  profile-&gt;alloc_objects += objects_count;</span>
+<span class="line-number"></span><span class="code-hl">  profile-&gt;alloc_space += bytes_count;</span>
+<span class="line-number"></span><span class="code-hl">  profile-&gt;in_use_objects += objects_count;</span>
+<span class="line-number"></span><span class="code-hl">  profile-&gt;in_use_space += bytes_count;</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  // Upsert the record.</span>
+<span class="line-number"></span><span class="code-hl">  for (uint64_t i = 0; i &lt; profile-&gt;records_len; i++) {</span>
+<span class="line-number"></span><span class="code-hl">    mem_record_t *r = &amp;profile-&gt;records[i];</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">    if (r-&gt;call_stack_len == call_stack_len &amp;&amp;</span>
+<span class="line-number"></span><span class="code-hl">        memcmp(r-&gt;call_stack, call_stack, call_stack_len * sizeof(uint64_t)) ==</span>
+<span class="line-number"></span><span class="code-hl">            0) {</span>
+<span class="line-number"></span><span class="code-hl">      // Found an existing record, update it.</span>
+<span class="line-number"></span><span class="code-hl">      r-&gt;alloc_objects += objects_count;</span>
+<span class="line-number"></span><span class="code-hl">      r-&gt;alloc_space += bytes_count;</span>
+<span class="line-number"></span><span class="code-hl">      r-&gt;in_use_objects += objects_count;</span>
+<span class="line-number"></span><span class="code-hl">      r-&gt;in_use_space += bytes_count;</span>
+<span class="line-number"></span><span class="code-hl">      return;</span>
+<span class="line-number"></span><span class="code-hl">    }</span>
+<span class="line-number"></span><span class="code-hl">  }</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  // Not found, insert a new record</span>
+<span class="line-number"></span><span class="code-hl">  mem_record_t record = {</span>
+<span class="line-number"></span><span class="code-hl">      .alloc_objects = objects_count,</span>
+<span class="line-number"></span><span class="code-hl">      .alloc_space = bytes_count,</span>
+<span class="line-number"></span><span class="code-hl">      .in_use_objects = objects_count,</span>
+<span class="line-number"></span><span class="code-hl">      .in_use_space = bytes_count,</span>
+<span class="line-number"></span><span class="code-hl">  };</span>
+<span class="line-number"></span><span class="code-hl">  record.call_stack = arena_alloc(&amp;profile-&gt;arena, sizeof(uint64_t),</span>
+<span class="line-number"></span><span class="code-hl">                                  _Alignof(uint64_t), call_stack_len);</span>
+<span class="line-number"></span><span class="code-hl">  memcpy(record.call_stack, call_stack, call_stack_len * sizeof(uint64_t));</span>
+<span class="line-number"></span><span class="code-hl">  record.call_stack_len = call_stack_len;</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  if (profile-&gt;records_len &gt;= profile-&gt;records_cap) {</span>
+<span class="line-number"></span><span class="code-hl">    uint64_t new_cap = profile-&gt;records_cap * 2;</span>
+<span class="line-number"></span><span class="code-hl">    // Grow the array.</span>
+<span class="line-number"></span><span class="code-hl">    mem_record_t *new_records = arena_alloc(</span>
+<span class="line-number"></span><span class="code-hl">        &amp;profile-&gt;arena, sizeof(mem_record_t), _Alignof(mem_record_t), new_cap);</span>
+<span class="line-number"></span><span class="code-hl">    memcpy(new_records, profile-&gt;records,</span>
+<span class="line-number"></span><span class="code-hl">           profile-&gt;records_len * sizeof(mem_record_t));</span>
+<span class="line-number"></span><span class="code-hl">    profile-&gt;records_cap = new_cap;</span>
+<span class="line-number"></span><span class="code-hl">    profile-&gt;records = new_records;</span>
+<span class="line-number"></span><span class="code-hl">  }</span>
+<span class="line-number"></span><span class="code-hl">  profile-&gt;records[profile-&gt;records_len++] = record;</span>
+<span class="line-number"></span><span class="code-hl">}</span>
 </code></pre>
 <p>Finally, we can dump this profile in the <code>pprof</code> textual representation:</p>
 <pre>
@@ -568,36 +568,36 @@ That part is important to avoid having a huge profile and that's why <code>pprof
     <span>C</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-c"><span class="line-number"></span>static void mem_profile_write(mem_profile_t *profile, FILE *out) {
-<span class="line-number"></span>  fprintf(out, &quot;heap profile: %lu: %lu [     %lu:    %lu] @ heapprofile\n&quot;,
-<span class="line-number"></span>          profile-&gt;in_use_objects, profile-&gt;in_use_space,
-<span class="line-number"></span>          profile-&gt;alloc_objects, profile-&gt;alloc_space);
-<span class="line-number"></span>
-<span class="line-number"></span>  for (uint64_t i = 0; i &lt; profile-&gt;records_len; i++) {
-<span class="line-number"></span>    mem_record_t r = profile-&gt;records[i];
-<span class="line-number"></span>
-<span class="line-number"></span>    fprintf(out, &quot;%lu: %lu [%lu: %lu] @ &quot;, r.in_use_objects, r.in_use_space,
-<span class="line-number"></span>            r.alloc_objects, r.alloc_space);
-<span class="line-number"></span>
-<span class="line-number"></span>    for (uint64_t j = 0; j &lt; r.call_stack_len; j++) {
-<span class="line-number"></span>      fprintf(out, &quot;%#lx &quot;, r.call_stack[j]);
-<span class="line-number"></span>    }
-<span class="line-number"></span>    fputc('\n', out);
-<span class="line-number"></span>  }
-<span class="line-number"></span>
-<span class="line-number"></span>  fputs(&quot;\nMAPPED_LIBRARIES:\n&quot;, out);
-<span class="line-number"></span>
-<span class="line-number"></span>  static uint8_t mem[4096] = {0};
-<span class="line-number"></span>  int fd = open(&quot;/proc/self/maps&quot;, O_RDONLY);
-<span class="line-number"></span>  assert(fd != -1);
-<span class="line-number"></span>  ssize_t read_bytes = read(fd, mem, sizeof(mem));
-<span class="line-number"></span>  assert(read_bytes != -1);
-<span class="line-number"></span>  close(fd);
-<span class="line-number"></span>
-<span class="line-number"></span>  fwrite(mem, 1, read_bytes, out);
-<span class="line-number"></span>
-<span class="line-number"></span>  fflush(out);
-<span class="line-number"></span>}
+  <code class="language-c"><span class="line-number"></span><span class="code-hl">static void mem_profile_write(mem_profile_t *profile, FILE *out) {</span>
+<span class="line-number"></span><span class="code-hl">  fprintf(out, &quot;heap profile: %lu: %lu [     %lu:    %lu] @ heapprofile\n&quot;,</span>
+<span class="line-number"></span><span class="code-hl">          profile-&gt;in_use_objects, profile-&gt;in_use_space,</span>
+<span class="line-number"></span><span class="code-hl">          profile-&gt;alloc_objects, profile-&gt;alloc_space);</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  for (uint64_t i = 0; i &lt; profile-&gt;records_len; i++) {</span>
+<span class="line-number"></span><span class="code-hl">    mem_record_t r = profile-&gt;records[i];</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">    fprintf(out, &quot;%lu: %lu [%lu: %lu] @ &quot;, r.in_use_objects, r.in_use_space,</span>
+<span class="line-number"></span><span class="code-hl">            r.alloc_objects, r.alloc_space);</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">    for (uint64_t j = 0; j &lt; r.call_stack_len; j++) {</span>
+<span class="line-number"></span><span class="code-hl">      fprintf(out, &quot;%#lx &quot;, r.call_stack[j]);</span>
+<span class="line-number"></span><span class="code-hl">    }</span>
+<span class="line-number"></span><span class="code-hl">    fputc('\n', out);</span>
+<span class="line-number"></span><span class="code-hl">  }</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  fputs(&quot;\nMAPPED_LIBRARIES:\n&quot;, out);</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  static uint8_t mem[4096] = {0};</span>
+<span class="line-number"></span><span class="code-hl">  int fd = open(&quot;/proc/self/maps&quot;, O_RDONLY);</span>
+<span class="line-number"></span><span class="code-hl">  assert(fd != -1);</span>
+<span class="line-number"></span><span class="code-hl">  ssize_t read_bytes = read(fd, mem, sizeof(mem));</span>
+<span class="line-number"></span><span class="code-hl">  assert(read_bytes != -1);</span>
+<span class="line-number"></span><span class="code-hl">  close(fd);</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  fwrite(mem, 1, read_bytes, out);</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  fflush(out);</span>
+<span class="line-number"></span><span class="code-hl">}</span>
 </code></pre>
 <p>And we're done! Let's try it with our initial example (bumping the size of the allocations a bit because <code>pprof</code> ignores tiny allocations for readability - although this is configurable):</p>
 <pre>
@@ -605,36 +605,36 @@ That part is important to avoid having a huge profile and that's why <code>pprof
     <span>C</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-c"><span class="line-number"></span>void b(int n, arena_t *arena) {
-<span class="line-number"></span>  arena_alloc(arena, sizeof(int), _Alignof(int), n);
-<span class="line-number"></span>}
-<span class="line-number"></span>
-<span class="line-number"></span>void a(int n, arena_t *arena) {
-<span class="line-number"></span>  arena_alloc(arena, sizeof(int), _Alignof(int), n);
-<span class="line-number"></span>  b(n, arena);
-<span class="line-number"></span>}
-<span class="line-number"></span>
-<span class="line-number"></span>int main() {
-<span class="line-number"></span>  [...]
-<span class="line-number"></span>
-<span class="line-number"></span>  arena_t arena = arena_new(1 &lt;&lt; 28, &amp;mem_profile);
-<span class="line-number"></span>
-<span class="line-number"></span>  for (int i = 0; i &lt; 2; i++)
-<span class="line-number"></span>    a(2 * 1024 * 1024, &amp;arena);
-<span class="line-number"></span>
-<span class="line-number"></span>  b(3 * 1024 * 1024, &amp;arena);
-<span class="line-number"></span>
-<span class="line-number"></span>  mem_profile_write(&amp;mem_profile, stderr);
-<span class="line-number"></span>}
+  <code class="language-c"><span class="line-number"></span><span class="code-hl">void b(int n, arena_t *arena) {</span>
+<span class="line-number"></span><span class="code-hl">  arena_alloc(arena, sizeof(int), _Alignof(int), n);</span>
+<span class="line-number"></span><span class="code-hl">}</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">void a(int n, arena_t *arena) {</span>
+<span class="line-number"></span><span class="code-hl">  arena_alloc(arena, sizeof(int), _Alignof(int), n);</span>
+<span class="line-number"></span><span class="code-hl">  b(n, arena);</span>
+<span class="line-number"></span><span class="code-hl">}</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">int main() {</span>
+<span class="line-number"></span><span class="code-hl">  [...]</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  arena_t arena = arena_new(1 &lt;&lt; 28, &amp;mem_profile);</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  for (int i = 0; i &lt; 2; i++)</span>
+<span class="line-number"></span><span class="code-hl">    a(2 * 1024 * 1024, &amp;arena);</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  b(3 * 1024 * 1024, &amp;arena);</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  mem_profile_write(&amp;mem_profile, stderr);</span>
+<span class="line-number"></span><span class="code-hl">}</span>
 </code></pre>
 <pre>
   <div class="code-header">
     <span>Shell</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-shell"><span class="line-number"></span>$ cc -g3 example.c
-<span class="line-number"></span>$ ./a.out 2&gt; heap.profile
-<span class="line-number"></span>$ pprof --web ./a.out heap.profile
+  <code class="language-shell"><span class="line-number"></span><span class="code-hl">$ cc -g3 example.c</span>
+<span class="line-number"></span><span class="code-hl">$ ./a.out 2&gt; heap.profile</span>
+<span class="line-number"></span><span class="code-hl">$ pprof --web ./a.out heap.profile</span>
 </code></pre>
 <p>And we see in our browser:</p>
 <p><img src="mem_prof4.png" alt="Initial profile" /></p>
@@ -644,7 +644,7 @@ That part is important to avoid having a huge profile and that's why <code>pprof
     <span>Shell</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-shell"><span class="line-number"></span>$ pprof --collapsed ./a.out heap.profile | flamegraph.pl &gt; out.svg
+  <code class="language-shell"><span class="line-number"></span><span class="code-hl">$ pprof --collapsed ./a.out heap.profile | flamegraph.pl &gt; out.svg</span>
 </code></pre>
 <p><object data="mem_prof_flamegraph.svg" type="image/svg+xml">
 </object>
@@ -700,208 +700,208 @@ That part is important to avoid having a huge profile and that's why <code>pprof
     <span>C</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-c"><span class="line-number"></span>#define _GNU_SOURCE
-<span class="line-number"></span>#include &lt;assert.h&gt;
-<span class="line-number"></span>#include &lt;fcntl.h&gt;
-<span class="line-number"></span>#include &lt;stdint.h&gt;
-<span class="line-number"></span>#include &lt;stdio.h&gt;
-<span class="line-number"></span>#include &lt;stdlib.h&gt;
-<span class="line-number"></span>#include &lt;string.h&gt;
-<span class="line-number"></span>#include &lt;sys/mman.h&gt;
-<span class="line-number"></span>#include &lt;unistd.h&gt;
-<span class="line-number"></span>
-<span class="line-number"></span>typedef struct {
-<span class="line-number"></span>  uint64_t in_use_space, in_use_objects, alloc_space, alloc_objects;
-<span class="line-number"></span>  uint64_t *call_stack;
-<span class="line-number"></span>  uint64_t call_stack_len;
-<span class="line-number"></span>} mem_record_t;
-<span class="line-number"></span>
-<span class="line-number"></span>typedef struct mem_profile mem_profile_t;
-<span class="line-number"></span>typedef struct {
-<span class="line-number"></span>  uint8_t *start;
-<span class="line-number"></span>  uint8_t *end;
-<span class="line-number"></span>  mem_profile_t *profile;
-<span class="line-number"></span>} arena_t;
-<span class="line-number"></span>
-<span class="line-number"></span>struct mem_profile {
-<span class="line-number"></span>  mem_record_t *records;
-<span class="line-number"></span>  uint64_t records_len;
-<span class="line-number"></span>  uint64_t records_cap;
-<span class="line-number"></span>  uint64_t in_use_space, in_use_objects, alloc_space, alloc_objects;
-<span class="line-number"></span>  arena_t arena;
-<span class="line-number"></span>};
-<span class="line-number"></span>
-<span class="line-number"></span>static void *arena_alloc(arena_t *a, size_t size, size_t align, size_t count);
-<span class="line-number"></span>
-<span class="line-number"></span>static uint8_t record_call_stack(uint64_t *dst, uint64_t cap) {
-<span class="line-number"></span>  uintptr_t *rbp = __builtin_frame_address(0);
-<span class="line-number"></span>
-<span class="line-number"></span>  uint64_t len = 0;
-<span class="line-number"></span>
-<span class="line-number"></span>  while (rbp != 0 &amp;&amp; ((uint64_t)rbp &amp; 7) == 0 &amp;&amp; *rbp != 0) {
-<span class="line-number"></span>    const uintptr_t rip = *(rbp + 1);
-<span class="line-number"></span>    rbp = (uintptr_t *)*rbp;
-<span class="line-number"></span>
-<span class="line-number"></span>    // `rip` points to the return instruction in the caller, once this call is
-<span class="line-number"></span>    // done. But: We want the location of the call i.e. the `call xxx`
-<span class="line-number"></span>    // instruction, so we subtract one byte to point inside it, which is not
-<span class="line-number"></span>    // quite 'at' it, but good enough.
-<span class="line-number"></span>    dst[len++] = rip - 1;
-<span class="line-number"></span>
-<span class="line-number"></span>    if (len &gt;= cap)
-<span class="line-number"></span>      return len;
-<span class="line-number"></span>  }
-<span class="line-number"></span>  return len;
-<span class="line-number"></span>}
-<span class="line-number"></span>static void mem_profile_record_alloc(mem_profile_t *profile,
-<span class="line-number"></span>                                     uint64_t objects_count,
-<span class="line-number"></span>                                     uint64_t bytes_count) {
-<span class="line-number"></span>  // Record the call stack by stack walking.
-<span class="line-number"></span>  uint64_t call_stack[64] = {0};
-<span class="line-number"></span>  uint64_t call_stack_len =
-<span class="line-number"></span>      record_call_stack(call_stack, sizeof(call_stack) / sizeof(call_stack[0]));
-<span class="line-number"></span>
-<span class="line-number"></span>  // Update the sums.
-<span class="line-number"></span>  profile-&gt;alloc_objects += objects_count;
-<span class="line-number"></span>  profile-&gt;alloc_space += bytes_count;
-<span class="line-number"></span>  profile-&gt;in_use_objects += objects_count;
-<span class="line-number"></span>  profile-&gt;in_use_space += bytes_count;
-<span class="line-number"></span>
-<span class="line-number"></span>  // Upsert the record.
-<span class="line-number"></span>  for (uint64_t i = 0; i &lt; profile-&gt;records_len; i++) {
-<span class="line-number"></span>    mem_record_t *r = &amp;profile-&gt;records[i];
-<span class="line-number"></span>
-<span class="line-number"></span>    if (r-&gt;call_stack_len == call_stack_len &amp;&amp;
-<span class="line-number"></span>        memcmp(r-&gt;call_stack, call_stack, call_stack_len * sizeof(uint64_t)) ==
-<span class="line-number"></span>            0) {
-<span class="line-number"></span>      // Found an existing record, update it.
-<span class="line-number"></span>      r-&gt;alloc_objects += objects_count;
-<span class="line-number"></span>      r-&gt;alloc_space += bytes_count;
-<span class="line-number"></span>      r-&gt;in_use_objects += objects_count;
-<span class="line-number"></span>      r-&gt;in_use_space += bytes_count;
-<span class="line-number"></span>      return;
-<span class="line-number"></span>    }
-<span class="line-number"></span>  }
-<span class="line-number"></span>
-<span class="line-number"></span>  // Not found, insert a new record.
-<span class="line-number"></span>  mem_record_t record = {
-<span class="line-number"></span>      .alloc_objects = objects_count,
-<span class="line-number"></span>      .alloc_space = bytes_count,
-<span class="line-number"></span>      .in_use_objects = objects_count,
-<span class="line-number"></span>      .in_use_space = bytes_count,
-<span class="line-number"></span>  };
-<span class="line-number"></span>  record.call_stack = arena_alloc(&amp;profile-&gt;arena, sizeof(uint64_t),
-<span class="line-number"></span>                                  _Alignof(uint64_t), call_stack_len);
-<span class="line-number"></span>  memcpy(record.call_stack, call_stack, call_stack_len * sizeof(uint64_t));
-<span class="line-number"></span>  record.call_stack_len = call_stack_len;
-<span class="line-number"></span>
-<span class="line-number"></span>  if (profile-&gt;records_len &gt;= profile-&gt;records_cap) {
-<span class="line-number"></span>    uint64_t new_cap = profile-&gt;records_cap * 2;
-<span class="line-number"></span>    // Grow the array.
-<span class="line-number"></span>    mem_record_t *new_records = arena_alloc(
-<span class="line-number"></span>        &amp;profile-&gt;arena, sizeof(mem_record_t), _Alignof(mem_record_t), new_cap);
-<span class="line-number"></span>    memcpy(new_records, profile-&gt;records,
-<span class="line-number"></span>           profile-&gt;records_len * sizeof(mem_record_t));
-<span class="line-number"></span>    profile-&gt;records_cap = new_cap;
-<span class="line-number"></span>    profile-&gt;records = new_records;
-<span class="line-number"></span>  }
-<span class="line-number"></span>  profile-&gt;records[profile-&gt;records_len++] = record;
-<span class="line-number"></span>}
-<span class="line-number"></span>
-<span class="line-number"></span>static void mem_profile_write(mem_profile_t *profile, FILE *out) {
-<span class="line-number"></span>  fprintf(out, &quot;heap profile: %lu: %lu [     %lu:    %lu] @ heapprofile\n&quot;,
-<span class="line-number"></span>          profile-&gt;in_use_objects, profile-&gt;in_use_space,
-<span class="line-number"></span>          profile-&gt;alloc_objects, profile-&gt;alloc_space);
-<span class="line-number"></span>
-<span class="line-number"></span>  for (uint64_t i = 0; i &lt; profile-&gt;records_len; i++) {
-<span class="line-number"></span>    mem_record_t r = profile-&gt;records[i];
-<span class="line-number"></span>
-<span class="line-number"></span>    fprintf(out, &quot;%lu: %lu [%lu: %lu] @ &quot;, r.in_use_objects, r.in_use_space,
-<span class="line-number"></span>            r.alloc_objects, r.alloc_space);
-<span class="line-number"></span>
-<span class="line-number"></span>    for (uint64_t j = 0; j &lt; r.call_stack_len; j++) {
-<span class="line-number"></span>      fprintf(out, &quot;%#lx &quot;, r.call_stack[j]);
-<span class="line-number"></span>    }
-<span class="line-number"></span>    fputc('\n', out);
-<span class="line-number"></span>  }
-<span class="line-number"></span>
-<span class="line-number"></span>  fputs(&quot;\nMAPPED_LIBRARIES:\n&quot;, out);
-<span class="line-number"></span>
-<span class="line-number"></span>  static uint8_t mem[4096] = {0};
-<span class="line-number"></span>  int fd = open(&quot;/proc/self/maps&quot;, O_RDONLY);
-<span class="line-number"></span>  assert(fd != -1);
-<span class="line-number"></span>  ssize_t read_bytes = read(fd, mem, sizeof(mem));
-<span class="line-number"></span>  assert(read_bytes != -1);
-<span class="line-number"></span>  close(fd);
-<span class="line-number"></span>
-<span class="line-number"></span>  fwrite(mem, 1, read_bytes, out);
-<span class="line-number"></span>
-<span class="line-number"></span>  fflush(out);
-<span class="line-number"></span>}
-<span class="line-number"></span>
-<span class="line-number"></span>static void *arena_alloc(arena_t *a, size_t size, size_t align, size_t count) {
-<span class="line-number"></span>  size_t available = a-&gt;end - a-&gt;start;
-<span class="line-number"></span>  size_t padding = -(size_t)a-&gt;start &amp; (align - 1);
-<span class="line-number"></span>
-<span class="line-number"></span>  size_t offset = padding + size * count;
-<span class="line-number"></span>  if (available &lt; offset) {
-<span class="line-number"></span>    fprintf(stderr,
-<span class="line-number"></span>            &quot;Out of memory: available=%lu &quot;
-<span class="line-number"></span>            &quot;allocation_size=%lu\n&quot;,
-<span class="line-number"></span>            available, offset);
-<span class="line-number"></span>    abort();
-<span class="line-number"></span>  }
-<span class="line-number"></span>
-<span class="line-number"></span>  uint8_t *res = a-&gt;start + padding;
-<span class="line-number"></span>
-<span class="line-number"></span>  a-&gt;start += offset;
-<span class="line-number"></span>
-<span class="line-number"></span>  if (a-&gt;profile) {
-<span class="line-number"></span>    mem_profile_record_alloc(a-&gt;profile, count, offset);
-<span class="line-number"></span>  }
-<span class="line-number"></span>
-<span class="line-number"></span>  return (void *)res;
-<span class="line-number"></span>}
-<span class="line-number"></span>
-<span class="line-number"></span>static arena_t arena_new(uint64_t cap, mem_profile_t *profile) {
-<span class="line-number"></span>  uint8_t *mem = mmap(NULL, cap, PROT_READ | PROT_WRITE,
-<span class="line-number"></span>                      MAP_ANONYMOUS | MAP_PRIVATE, -1, 0);
-<span class="line-number"></span>
-<span class="line-number"></span>  arena_t arena = {
-<span class="line-number"></span>      .profile = profile,
-<span class="line-number"></span>      .start = mem,
-<span class="line-number"></span>      .end = mem + cap,
-<span class="line-number"></span>  };
-<span class="line-number"></span>  return arena;
-<span class="line-number"></span>}
-<span class="line-number"></span>
-<span class="line-number"></span>void b(int n, arena_t *arena) {
-<span class="line-number"></span>  arena_alloc(arena, sizeof(int), _Alignof(int), n);
-<span class="line-number"></span>}
-<span class="line-number"></span>
-<span class="line-number"></span>void a(int n, arena_t *arena) {
-<span class="line-number"></span>  arena_alloc(arena, sizeof(int), _Alignof(int), n);
-<span class="line-number"></span>  b(n, arena);
-<span class="line-number"></span>}
-<span class="line-number"></span>
-<span class="line-number"></span>int main() {
-<span class="line-number"></span>  arena_t mem_profile_arena = arena_new(1 &lt;&lt; 16, NULL);
-<span class="line-number"></span>  mem_profile_t mem_profile = {
-<span class="line-number"></span>      .arena = mem_profile_arena,
-<span class="line-number"></span>      .records = arena_alloc(&amp;mem_profile_arena, sizeof(mem_record_t),
-<span class="line-number"></span>                             _Alignof(mem_record_t), 16),
-<span class="line-number"></span>      .records_cap = 16,
-<span class="line-number"></span>  };
-<span class="line-number"></span>
-<span class="line-number"></span>  arena_t arena = arena_new(1 &lt;&lt; 28, &amp;mem_profile);
-<span class="line-number"></span>
-<span class="line-number"></span>  for (int i = 0; i &lt; 2; i++)
-<span class="line-number"></span>    a(2 * 1024 * 1024, &amp;arena);
-<span class="line-number"></span>
-<span class="line-number"></span>  b(3 * 1024 * 1024, &amp;arena);
-<span class="line-number"></span>
-<span class="line-number"></span>  mem_profile_write(&amp;mem_profile, stderr);
-<span class="line-number"></span>}
+  <code class="language-c"><span class="line-number"></span><span class="code-hl">#define _GNU_SOURCE</span>
+<span class="line-number"></span><span class="code-hl">#include &lt;assert.h&gt;</span>
+<span class="line-number"></span><span class="code-hl">#include &lt;fcntl.h&gt;</span>
+<span class="line-number"></span><span class="code-hl">#include &lt;stdint.h&gt;</span>
+<span class="line-number"></span><span class="code-hl">#include &lt;stdio.h&gt;</span>
+<span class="line-number"></span><span class="code-hl">#include &lt;stdlib.h&gt;</span>
+<span class="line-number"></span><span class="code-hl">#include &lt;string.h&gt;</span>
+<span class="line-number"></span><span class="code-hl">#include &lt;sys/mman.h&gt;</span>
+<span class="line-number"></span><span class="code-hl">#include &lt;unistd.h&gt;</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">typedef struct {</span>
+<span class="line-number"></span><span class="code-hl">  uint64_t in_use_space, in_use_objects, alloc_space, alloc_objects;</span>
+<span class="line-number"></span><span class="code-hl">  uint64_t *call_stack;</span>
+<span class="line-number"></span><span class="code-hl">  uint64_t call_stack_len;</span>
+<span class="line-number"></span><span class="code-hl">} mem_record_t;</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">typedef struct mem_profile mem_profile_t;</span>
+<span class="line-number"></span><span class="code-hl">typedef struct {</span>
+<span class="line-number"></span><span class="code-hl">  uint8_t *start;</span>
+<span class="line-number"></span><span class="code-hl">  uint8_t *end;</span>
+<span class="line-number"></span><span class="code-hl">  mem_profile_t *profile;</span>
+<span class="line-number"></span><span class="code-hl">} arena_t;</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">struct mem_profile {</span>
+<span class="line-number"></span><span class="code-hl">  mem_record_t *records;</span>
+<span class="line-number"></span><span class="code-hl">  uint64_t records_len;</span>
+<span class="line-number"></span><span class="code-hl">  uint64_t records_cap;</span>
+<span class="line-number"></span><span class="code-hl">  uint64_t in_use_space, in_use_objects, alloc_space, alloc_objects;</span>
+<span class="line-number"></span><span class="code-hl">  arena_t arena;</span>
+<span class="line-number"></span><span class="code-hl">};</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">static void *arena_alloc(arena_t *a, size_t size, size_t align, size_t count);</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">static uint8_t record_call_stack(uint64_t *dst, uint64_t cap) {</span>
+<span class="line-number"></span><span class="code-hl">  uintptr_t *rbp = __builtin_frame_address(0);</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  uint64_t len = 0;</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  while (rbp != 0 &amp;&amp; ((uint64_t)rbp &amp; 7) == 0 &amp;&amp; *rbp != 0) {</span>
+<span class="line-number"></span><span class="code-hl">    const uintptr_t rip = *(rbp + 1);</span>
+<span class="line-number"></span><span class="code-hl">    rbp = (uintptr_t *)*rbp;</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">    // `rip` points to the return instruction in the caller, once this call is</span>
+<span class="line-number"></span><span class="code-hl">    // done. But: We want the location of the call i.e. the `call xxx`</span>
+<span class="line-number"></span><span class="code-hl">    // instruction, so we subtract one byte to point inside it, which is not</span>
+<span class="line-number"></span><span class="code-hl">    // quite 'at' it, but good enough.</span>
+<span class="line-number"></span><span class="code-hl">    dst[len++] = rip - 1;</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">    if (len &gt;= cap)</span>
+<span class="line-number"></span><span class="code-hl">      return len;</span>
+<span class="line-number"></span><span class="code-hl">  }</span>
+<span class="line-number"></span><span class="code-hl">  return len;</span>
+<span class="line-number"></span><span class="code-hl">}</span>
+<span class="line-number"></span><span class="code-hl">static void mem_profile_record_alloc(mem_profile_t *profile,</span>
+<span class="line-number"></span><span class="code-hl">                                     uint64_t objects_count,</span>
+<span class="line-number"></span><span class="code-hl">                                     uint64_t bytes_count) {</span>
+<span class="line-number"></span><span class="code-hl">  // Record the call stack by stack walking.</span>
+<span class="line-number"></span><span class="code-hl">  uint64_t call_stack[64] = {0};</span>
+<span class="line-number"></span><span class="code-hl">  uint64_t call_stack_len =</span>
+<span class="line-number"></span><span class="code-hl">      record_call_stack(call_stack, sizeof(call_stack) / sizeof(call_stack[0]));</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  // Update the sums.</span>
+<span class="line-number"></span><span class="code-hl">  profile-&gt;alloc_objects += objects_count;</span>
+<span class="line-number"></span><span class="code-hl">  profile-&gt;alloc_space += bytes_count;</span>
+<span class="line-number"></span><span class="code-hl">  profile-&gt;in_use_objects += objects_count;</span>
+<span class="line-number"></span><span class="code-hl">  profile-&gt;in_use_space += bytes_count;</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  // Upsert the record.</span>
+<span class="line-number"></span><span class="code-hl">  for (uint64_t i = 0; i &lt; profile-&gt;records_len; i++) {</span>
+<span class="line-number"></span><span class="code-hl">    mem_record_t *r = &amp;profile-&gt;records[i];</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">    if (r-&gt;call_stack_len == call_stack_len &amp;&amp;</span>
+<span class="line-number"></span><span class="code-hl">        memcmp(r-&gt;call_stack, call_stack, call_stack_len * sizeof(uint64_t)) ==</span>
+<span class="line-number"></span><span class="code-hl">            0) {</span>
+<span class="line-number"></span><span class="code-hl">      // Found an existing record, update it.</span>
+<span class="line-number"></span><span class="code-hl">      r-&gt;alloc_objects += objects_count;</span>
+<span class="line-number"></span><span class="code-hl">      r-&gt;alloc_space += bytes_count;</span>
+<span class="line-number"></span><span class="code-hl">      r-&gt;in_use_objects += objects_count;</span>
+<span class="line-number"></span><span class="code-hl">      r-&gt;in_use_space += bytes_count;</span>
+<span class="line-number"></span><span class="code-hl">      return;</span>
+<span class="line-number"></span><span class="code-hl">    }</span>
+<span class="line-number"></span><span class="code-hl">  }</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  // Not found, insert a new record.</span>
+<span class="line-number"></span><span class="code-hl">  mem_record_t record = {</span>
+<span class="line-number"></span><span class="code-hl">      .alloc_objects = objects_count,</span>
+<span class="line-number"></span><span class="code-hl">      .alloc_space = bytes_count,</span>
+<span class="line-number"></span><span class="code-hl">      .in_use_objects = objects_count,</span>
+<span class="line-number"></span><span class="code-hl">      .in_use_space = bytes_count,</span>
+<span class="line-number"></span><span class="code-hl">  };</span>
+<span class="line-number"></span><span class="code-hl">  record.call_stack = arena_alloc(&amp;profile-&gt;arena, sizeof(uint64_t),</span>
+<span class="line-number"></span><span class="code-hl">                                  _Alignof(uint64_t), call_stack_len);</span>
+<span class="line-number"></span><span class="code-hl">  memcpy(record.call_stack, call_stack, call_stack_len * sizeof(uint64_t));</span>
+<span class="line-number"></span><span class="code-hl">  record.call_stack_len = call_stack_len;</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  if (profile-&gt;records_len &gt;= profile-&gt;records_cap) {</span>
+<span class="line-number"></span><span class="code-hl">    uint64_t new_cap = profile-&gt;records_cap * 2;</span>
+<span class="line-number"></span><span class="code-hl">    // Grow the array.</span>
+<span class="line-number"></span><span class="code-hl">    mem_record_t *new_records = arena_alloc(</span>
+<span class="line-number"></span><span class="code-hl">        &amp;profile-&gt;arena, sizeof(mem_record_t), _Alignof(mem_record_t), new_cap);</span>
+<span class="line-number"></span><span class="code-hl">    memcpy(new_records, profile-&gt;records,</span>
+<span class="line-number"></span><span class="code-hl">           profile-&gt;records_len * sizeof(mem_record_t));</span>
+<span class="line-number"></span><span class="code-hl">    profile-&gt;records_cap = new_cap;</span>
+<span class="line-number"></span><span class="code-hl">    profile-&gt;records = new_records;</span>
+<span class="line-number"></span><span class="code-hl">  }</span>
+<span class="line-number"></span><span class="code-hl">  profile-&gt;records[profile-&gt;records_len++] = record;</span>
+<span class="line-number"></span><span class="code-hl">}</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">static void mem_profile_write(mem_profile_t *profile, FILE *out) {</span>
+<span class="line-number"></span><span class="code-hl">  fprintf(out, &quot;heap profile: %lu: %lu [     %lu:    %lu] @ heapprofile\n&quot;,</span>
+<span class="line-number"></span><span class="code-hl">          profile-&gt;in_use_objects, profile-&gt;in_use_space,</span>
+<span class="line-number"></span><span class="code-hl">          profile-&gt;alloc_objects, profile-&gt;alloc_space);</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  for (uint64_t i = 0; i &lt; profile-&gt;records_len; i++) {</span>
+<span class="line-number"></span><span class="code-hl">    mem_record_t r = profile-&gt;records[i];</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">    fprintf(out, &quot;%lu: %lu [%lu: %lu] @ &quot;, r.in_use_objects, r.in_use_space,</span>
+<span class="line-number"></span><span class="code-hl">            r.alloc_objects, r.alloc_space);</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">    for (uint64_t j = 0; j &lt; r.call_stack_len; j++) {</span>
+<span class="line-number"></span><span class="code-hl">      fprintf(out, &quot;%#lx &quot;, r.call_stack[j]);</span>
+<span class="line-number"></span><span class="code-hl">    }</span>
+<span class="line-number"></span><span class="code-hl">    fputc('\n', out);</span>
+<span class="line-number"></span><span class="code-hl">  }</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  fputs(&quot;\nMAPPED_LIBRARIES:\n&quot;, out);</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  static uint8_t mem[4096] = {0};</span>
+<span class="line-number"></span><span class="code-hl">  int fd = open(&quot;/proc/self/maps&quot;, O_RDONLY);</span>
+<span class="line-number"></span><span class="code-hl">  assert(fd != -1);</span>
+<span class="line-number"></span><span class="code-hl">  ssize_t read_bytes = read(fd, mem, sizeof(mem));</span>
+<span class="line-number"></span><span class="code-hl">  assert(read_bytes != -1);</span>
+<span class="line-number"></span><span class="code-hl">  close(fd);</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  fwrite(mem, 1, read_bytes, out);</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  fflush(out);</span>
+<span class="line-number"></span><span class="code-hl">}</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">static void *arena_alloc(arena_t *a, size_t size, size_t align, size_t count) {</span>
+<span class="line-number"></span><span class="code-hl">  size_t available = a-&gt;end - a-&gt;start;</span>
+<span class="line-number"></span><span class="code-hl">  size_t padding = -(size_t)a-&gt;start &amp; (align - 1);</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  size_t offset = padding + size * count;</span>
+<span class="line-number"></span><span class="code-hl">  if (available &lt; offset) {</span>
+<span class="line-number"></span><span class="code-hl">    fprintf(stderr,</span>
+<span class="line-number"></span><span class="code-hl">            &quot;Out of memory: available=%lu &quot;</span>
+<span class="line-number"></span><span class="code-hl">            &quot;allocation_size=%lu\n&quot;,</span>
+<span class="line-number"></span><span class="code-hl">            available, offset);</span>
+<span class="line-number"></span><span class="code-hl">    abort();</span>
+<span class="line-number"></span><span class="code-hl">  }</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  uint8_t *res = a-&gt;start + padding;</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  a-&gt;start += offset;</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  if (a-&gt;profile) {</span>
+<span class="line-number"></span><span class="code-hl">    mem_profile_record_alloc(a-&gt;profile, count, offset);</span>
+<span class="line-number"></span><span class="code-hl">  }</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  return (void *)res;</span>
+<span class="line-number"></span><span class="code-hl">}</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">static arena_t arena_new(uint64_t cap, mem_profile_t *profile) {</span>
+<span class="line-number"></span><span class="code-hl">  uint8_t *mem = mmap(NULL, cap, PROT_READ | PROT_WRITE,</span>
+<span class="line-number"></span><span class="code-hl">                      MAP_ANONYMOUS | MAP_PRIVATE, -1, 0);</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  arena_t arena = {</span>
+<span class="line-number"></span><span class="code-hl">      .profile = profile,</span>
+<span class="line-number"></span><span class="code-hl">      .start = mem,</span>
+<span class="line-number"></span><span class="code-hl">      .end = mem + cap,</span>
+<span class="line-number"></span><span class="code-hl">  };</span>
+<span class="line-number"></span><span class="code-hl">  return arena;</span>
+<span class="line-number"></span><span class="code-hl">}</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">void b(int n, arena_t *arena) {</span>
+<span class="line-number"></span><span class="code-hl">  arena_alloc(arena, sizeof(int), _Alignof(int), n);</span>
+<span class="line-number"></span><span class="code-hl">}</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">void a(int n, arena_t *arena) {</span>
+<span class="line-number"></span><span class="code-hl">  arena_alloc(arena, sizeof(int), _Alignof(int), n);</span>
+<span class="line-number"></span><span class="code-hl">  b(n, arena);</span>
+<span class="line-number"></span><span class="code-hl">}</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">int main() {</span>
+<span class="line-number"></span><span class="code-hl">  arena_t mem_profile_arena = arena_new(1 &lt;&lt; 16, NULL);</span>
+<span class="line-number"></span><span class="code-hl">  mem_profile_t mem_profile = {</span>
+<span class="line-number"></span><span class="code-hl">      .arena = mem_profile_arena,</span>
+<span class="line-number"></span><span class="code-hl">      .records = arena_alloc(&amp;mem_profile_arena, sizeof(mem_record_t),</span>
+<span class="line-number"></span><span class="code-hl">                             _Alignof(mem_record_t), 16),</span>
+<span class="line-number"></span><span class="code-hl">      .records_cap = 16,</span>
+<span class="line-number"></span><span class="code-hl">  };</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  arena_t arena = arena_new(1 &lt;&lt; 28, &amp;mem_profile);</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  for (int i = 0; i &lt; 2; i++)</span>
+<span class="line-number"></span><span class="code-hl">    a(2 * 1024 * 1024, &amp;arena);</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  b(3 * 1024 * 1024, &amp;arena);</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  mem_profile_write(&amp;mem_profile, stderr);</span>
+<span class="line-number"></span><span class="code-hl">}</span>
 </code></pre>
 </details>
 <p><a href="/blog"> ⏴ Back to all articles</a></p>

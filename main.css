@@ -391,7 +391,7 @@ summary {
 /* Gruvbox colors for code */
 
 .hljs {
-  background: light-dark(#fbf1c7, #282828);
+  background: light-dark(#fbf1c7, #282828) !important;
 }
 
 /* Gray: gray_245 / gray_245 */
