@@ -96,13 +96,14 @@ class PostcardDecoder {
 }
 
 async function getExcerpt(url, needle) {
+  const sizeAround = 150;
   const response = await fetch(url);
   const html = await response.text();
 
   // Create a temporary DOM element to strip HTML tags
   const doc = new DOMParser().parseFromString(html, 'text/html');
   const root = doc.getElementById('pseudo-body');
-  const ignore = ['.article-prelude', '.article-title', '.toc', 'script', 'style'];
+  const ignore = ['.article-prelude', '.article-title', '.toc', 'script', 'style', 'code'];
   ignore.forEach(selector => {
     root.querySelectorAll(selector).forEach(el => el.remove());
   });
@@ -114,8 +115,8 @@ async function getExcerpt(url, needle) {
      return '';
    }
 
-  const start = Math.max(0, index - 60);
-  const end = Math.min(text.length, index + 100);
+  const start = Math.max(0, index - sizeAround);
+  const end = Math.min(text.length, index + sizeAround);
     
   // Simple bolding of the match
   let snippet = text.slice(start, end);
