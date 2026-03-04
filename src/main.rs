@@ -51,11 +51,11 @@ struct Article {
 
 type Trigram = String;
 
-type FileIdx = usize;
+type FileIdx = u16;
 
 #[derive(Serialize)]
 struct SearchIndex {
-    trigram_to_file_idx: HashMap<Trigram, Vec<(FileIdx, usize)>>,
+    trigram_to_file_idx: HashMap<Trigram, Vec<(FileIdx, u32)>>,
     file_to_idx: Vec<String>,
 }
 
@@ -71,7 +71,10 @@ impl SearchIndex {
     fn ingest_md_ast(&mut self, md_ast: &Node, html_path: &Path) {
         self.file_to_idx
             .push(html_path.to_str().unwrap().to_string());
-        self.ingest_md_ast_rec(md_ast, self.file_to_idx.len() - 1);
+        self.ingest_md_ast_rec(
+            md_ast,
+            FileIdx::try_from(self.file_to_idx.len() - 1).unwrap(),
+        );
     }
 
     fn ingest_md_ast_rec(&mut self, node: &Node, file_idx: FileIdx) {
