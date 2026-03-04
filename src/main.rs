@@ -1277,6 +1277,10 @@ fn check_langs() {
 }
 
 fn main() {
+    println!("hello");
+
+    main();
+
     let mut args = std::env::args().skip(1);
     let arg1 = args.next();
 
