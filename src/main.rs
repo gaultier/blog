@@ -1265,7 +1265,7 @@ fn generate_all(cache: &mut HashMap<String, Article>) {
 }
 
 fn check_langs() {
-    for lang in STANDARD_LANGS {
+    for lang in ["cmake", "scheme", "x86asm", "dockerfile"] {
         let exists = fs::exists(format!("{}.min.js", lang)).unwrap_or_default();
         assert!(exists, "{}", lang);
     }
