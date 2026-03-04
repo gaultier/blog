@@ -128,37 +128,37 @@ Do not edit it by hand.
     <span>C</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-c"><span class="line-number">0</span>#include &lt;stdint.h&gt;
-<span class="line-number">1</span>#include &lt;stdio.h&gt;
-<span class="line-number">2</span>#include &lt;sys/mman.h&gt;
-<span class="line-number">3</span>#include &lt;unistd.h&gt;
-<span class="line-number">4</span>
-<span class="line-number">5</span>typedef struct {
-<span class="line-number">6</span>  uint8_t *start;
-<span class="line-number">7</span>  uint8_t *end;
-<span class="line-number">8</span>} Arena;
-<span class="line-number">9</span>
-<span class="line-number">10</span>static Arena arena_make_from_virtual_mem(uint64_t size) {
-<span class="line-number">11</span>  uint8_t *alloc = mmap(nullptr, size, PROT_READ | PROT_WRITE,
-<span class="line-number">12</span>                   MAP_ANON | MAP_PRIVATE, -1, 0);
-<span class="line-number">13</span>  return (Arena){.start = alloc, .end = alloc + size};
-<span class="line-number">14</span>}
-<span class="line-number">15</span>
-<span class="line-number">16</span>static void *
-<span class="line-number">17</span>arena_alloc(Arena *a, uint64_t size, uint64_t align, uint64_t count) {
-<span class="line-number">18</span>  const uint64_t padding = (-(uint64_t)a-&gt;start &amp; (align - 1));
-<span class="line-number">19</span>  const int64_t available = (int64_t)a-&gt;end - (int64_t)a-&gt;start - (int64_t)padding;
-<span class="line-number">20</span>
-<span class="line-number">21</span>  void *res = a-&gt;start + padding;
-<span class="line-number">22</span>
-<span class="line-number">23</span>  a-&gt;start += padding + count * size;
-<span class="line-number">24</span>
-<span class="line-number">25</span>  return memset(res, 0, count * size);
-<span class="line-number">26</span>}
-<span class="line-number">27</span>
-<span class="line-number">28</span>int main() {
-<span class="line-number">29</span>  Arena a = arena_make_from_virtual_mem(4096);
-<span class="line-number">30</span>}
+  <code class="language-c"><span class="line-number"></span>#include &lt;stdint.h&gt;
+<span class="line-number"></span>#include &lt;stdio.h&gt;
+<span class="line-number"></span>#include &lt;sys/mman.h&gt;
+<span class="line-number"></span>#include &lt;unistd.h&gt;
+<span class="line-number"></span>
+<span class="line-number"></span>typedef struct {
+<span class="line-number"></span>  uint8_t *start;
+<span class="line-number"></span>  uint8_t *end;
+<span class="line-number"></span>} Arena;
+<span class="line-number"></span>
+<span class="line-number"></span>static Arena arena_make_from_virtual_mem(uint64_t size) {
+<span class="line-number"></span>  uint8_t *alloc = mmap(nullptr, size, PROT_READ | PROT_WRITE,
+<span class="line-number"></span>                   MAP_ANON | MAP_PRIVATE, -1, 0);
+<span class="line-number"></span>  return (Arena){.start = alloc, .end = alloc + size};
+<span class="line-number"></span>}
+<span class="line-number"></span>
+<span class="line-number"></span>static void *
+<span class="line-number"></span>arena_alloc(Arena *a, uint64_t size, uint64_t align, uint64_t count) {
+<span class="line-number"></span>  const uint64_t padding = (-(uint64_t)a-&gt;start &amp; (align - 1));
+<span class="line-number"></span>  const int64_t available = (int64_t)a-&gt;end - (int64_t)a-&gt;start - (int64_t)padding;
+<span class="line-number"></span>
+<span class="line-number"></span>  void *res = a-&gt;start + padding;
+<span class="line-number"></span>
+<span class="line-number"></span>  a-&gt;start += padding + count * size;
+<span class="line-number"></span>
+<span class="line-number"></span>  return memset(res, 0, count * size);
+<span class="line-number"></span>}
+<span class="line-number"></span>
+<span class="line-number"></span>int main() {
+<span class="line-number"></span>  Arena a = arena_make_from_virtual_mem(4096);
+<span class="line-number"></span>}
 </code></pre>
 <p>Very simple, just ask the OS to give us a region of virtual memory and off we go (on Windows, the system call is named differently but is equivalent).</p>
 <h2 id="the-bug">
@@ -174,13 +174,13 @@ Do not edit it by hand.
     <span>C</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-c"><span class="line-number">0</span>int main() {
-<span class="line-number">1</span>  Arena a = arena_make_from_virtual_mem(4096);
-<span class="line-number">2</span>  Arena b = arena_make_from_virtual_mem(4096);
-<span class="line-number">3</span>
-<span class="line-number">4</span>  // Simulate writing past the arena:
-<span class="line-number">5</span>  a.start + 5000 = 42;
-<span class="line-number">6</span>}
+  <code class="language-c"><span class="line-number"></span>int main() {
+<span class="line-number"></span>  Arena a = arena_make_from_virtual_mem(4096);
+<span class="line-number"></span>  Arena b = arena_make_from_virtual_mem(4096);
+<span class="line-number"></span>
+<span class="line-number"></span>  // Simulate writing past the arena:
+<span class="line-number"></span>  a.start + 5000 = 42;
+<span class="line-number"></span>}
 </code></pre>
 <p>And...the program did not crash. The symptoms were very weird: data was subtly wrong in another place of the program, thus making it very difficult to troubleshoot. That's basically the nightmare scenario for any engineer. A crash would be so much easier.</p>
 <p>But why?</p>
@@ -213,26 +213,26 @@ Do not edit it by hand.
     <span>C</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-c"><span class="line-number">0</span>static Arena arena_make_from_virtual_mem(uint64_t size) {
-<span class="line-number">1</span>  uint64_t page_size = (uint64_t)sysconf(_SC_PAGE_SIZE);
-<span class="line-number">2</span>  uint64_t alloc_real_size = round_up_multiple_of(size, page_size);
-<span class="line-number">3</span>
-<span class="line-number">4</span>  // Page guard before + after.
-<span class="line-number">5</span>  uint64_t mmap_size = alloc_real_size + 2 * page_size;
-<span class="line-number">6</span>
-<span class="line-number">7</span>  uint8_t *alloc = mmap(nullptr, mmap_size, PROT_READ | PROT_WRITE,
-<span class="line-number">8</span>                   MAP_ANON | MAP_PRIVATE, -1, 0);
-<span class="line-number">9</span>
-<span class="line-number">10</span>  uint64_t page_guard_before = (uint64_t)alloc;
-<span class="line-number">11</span>
-<span class="line-number">12</span>  alloc += page_size;
-<span class="line-number">13</span>  uint64_t page_guard_after = (uint64_t)alloc + alloc_real_size;
-<span class="line-number">14</span>
-<span class="line-number">15</span>  mprotect((void *)page_guard_before, page_size, PROT_NONE);
-<span class="line-number">16</span>  mprotect((void *)page_guard_after, page_size, PROT_NONE);
-<span class="line-number">17</span>
-<span class="line-number">18</span>  return (Arena){.start = alloc, .end = alloc + size};
-<span class="line-number">19</span>}
+  <code class="language-c"><span class="line-number"></span>static Arena arena_make_from_virtual_mem(uint64_t size) {
+<span class="line-number"></span>  uint64_t page_size = (uint64_t)sysconf(_SC_PAGE_SIZE);
+<span class="line-number"></span>  uint64_t alloc_real_size = round_up_multiple_of(size, page_size);
+<span class="line-number"></span>
+<span class="line-number"></span>  // Page guard before + after.
+<span class="line-number"></span>  uint64_t mmap_size = alloc_real_size + 2 * page_size;
+<span class="line-number"></span>
+<span class="line-number"></span>  uint8_t *alloc = mmap(nullptr, mmap_size, PROT_READ | PROT_WRITE,
+<span class="line-number"></span>                   MAP_ANON | MAP_PRIVATE, -1, 0);
+<span class="line-number"></span>
+<span class="line-number"></span>  uint64_t page_guard_before = (uint64_t)alloc;
+<span class="line-number"></span>
+<span class="line-number"></span>  alloc += page_size;
+<span class="line-number"></span>  uint64_t page_guard_after = (uint64_t)alloc + alloc_real_size;
+<span class="line-number"></span>
+<span class="line-number"></span>  mprotect((void *)page_guard_before, page_size, PROT_NONE);
+<span class="line-number"></span>  mprotect((void *)page_guard_after, page_size, PROT_NONE);
+<span class="line-number"></span>
+<span class="line-number"></span>  return (Arena){.start = alloc, .end = alloc + size};
+<span class="line-number"></span>}
 </code></pre>
 <p>We get the page size with POSIX's <code>sysconf (3)</code>. Again, that's required because we will use the system call <code>mprotect</code> to change the permissions on parts of the memory, and <code>mprotect</code> expects a page-aligned memory range.</p>
 <p>Since an allocation is at least one page, even if the user asked for an arena of size <code>1</code>, we first round the user allocation size up, to the next page size. E.g. for a page size of <code>4096</code>: <code>1 -&gt; 4096</code>, <code>4095 -&gt; 4096</code>, <code>4096 -&gt; 4096</code>, <code>4097 -&gt; 8192</code>.</p>

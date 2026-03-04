@@ -86,9 +86,9 @@ Do not edit it by hand.
     <span>Go</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-go"><span class="line-number">0</span>func (mux *ServeMux) HandleFunc(pattern string, handler func(ResponseWriter, *Request))
-<span class="line-number">1</span>
-<span class="line-number">2</span>func HandleFunc(pattern string, handler func(ResponseWriter, *Request)) 
+  <code class="language-go"><span class="line-number"></span>func (mux *ServeMux) HandleFunc(pattern string, handler func(ResponseWriter, *Request))
+<span class="line-number"></span>
+<span class="line-number"></span>func HandleFunc(pattern string, handler func(ResponseWriter, *Request)) 
 </code></pre>
 <p>We are interested only in the first argument (<code>pattern</code>), which gets passed as a pointer in <code>arg1</code> and length in <code>arg2</code>.
 And so the DTrace invocation is:</p>
@@ -97,7 +97,7 @@ And so the DTrace invocation is:</p>
     <span>Sh</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-sh"><span class="line-number">0</span>$ sudo dtrace -n 'pid$target::net?http*HandleFunc:entry {printf(&quot;%s\n&quot;, stringof(copyin(arg1, arg2)));}' -c &quot;./kratos serve -c $HOME/.kratos.yml --dev&quot; -x strsize=16K -b 4G -q
+  <code class="language-sh"><span class="line-number"></span>$ sudo dtrace -n 'pid$target::net?http*HandleFunc:entry {printf(&quot;%s\n&quot;, stringof(copyin(arg1, arg2)));}' -c &quot;./kratos serve -c $HOME/.kratos.yml --dev&quot; -x strsize=16K -b 4G -q
 </code></pre>
 <p>And we see no less than 248 HTTP routes are registered, and we also see the HTTP method for each route (that's how the Go API works, the method is passed in the same string as the route):</p>
 <pre>
@@ -105,23 +105,23 @@ And so the DTrace invocation is:</p>
     <span>Text</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-text"><span class="line-number">0</span>GET /self-service/login/browser
-<span class="line-number">1</span>GET /self-service/login/browser/{$}
-<span class="line-number">2</span>GET /self-service/login/api
-<span class="line-number">3</span>GET /self-service/login/api/{$}
-<span class="line-number">4</span>GET /self-service/login/flows
-<span class="line-number">5</span>GET /self-service/login/flows/{$}
-<span class="line-number">6</span>POST /self-service/login
-<span class="line-number">7</span>POST /self-service/login/{$}
-<span class="line-number">8</span>[...]
-<span class="line-number">9</span>GET /admin/identities/{id}/sessions/{$}
-<span class="line-number">10</span>DELETE /admin/identities/{id}/sessions
-<span class="line-number">11</span>DELETE /admin/identities/{id}/sessions/{$}
-<span class="line-number">12</span>PATCH /admin/sessions/{id}/extend
-<span class="line-number">13</span>PATCH /admin/sessions/{id}/extend/{$}
-<span class="line-number">14</span>DELETE /admin/sessions
-<span class="line-number">15</span>DELETE /admin/sessions/{$}
-<span class="line-number">16</span>[...]
+  <code class="language-text"><span class="line-number"></span>GET /self-service/login/browser
+<span class="line-number"></span>GET /self-service/login/browser/{$}
+<span class="line-number"></span>GET /self-service/login/api
+<span class="line-number"></span>GET /self-service/login/api/{$}
+<span class="line-number"></span>GET /self-service/login/flows
+<span class="line-number"></span>GET /self-service/login/flows/{$}
+<span class="line-number"></span>POST /self-service/login
+<span class="line-number"></span>POST /self-service/login/{$}
+<span class="line-number"></span>[...]
+<span class="line-number"></span>GET /admin/identities/{id}/sessions/{$}
+<span class="line-number"></span>DELETE /admin/identities/{id}/sessions
+<span class="line-number"></span>DELETE /admin/identities/{id}/sessions/{$}
+<span class="line-number"></span>PATCH /admin/sessions/{id}/extend
+<span class="line-number"></span>PATCH /admin/sessions/{id}/extend/{$}
+<span class="line-number"></span>DELETE /admin/sessions
+<span class="line-number"></span>DELETE /admin/sessions/{$}
+<span class="line-number"></span>[...]
 </code></pre>
 <p><em>The <code>{$}</code> string is not erroneous data, it's part of the syntax this Go API uses, see the <a href="https://pkg.go.dev/net/http#ServeMux">docs</a>.</em></p>
 <p>This is very useful to know what features are enabled at runtime.</p>

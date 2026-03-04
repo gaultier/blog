@@ -117,10 +117,10 @@ Do not edit it by hand.
     <span>Shell</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-shell"><span class="line-number">0</span>$ odin build src -target=linux_arm64
-<span class="line-number">1</span>[...]
-<span class="line-number">2</span>/usr/bin/ld: /home/pg/my-code/odin-music-chords-placements/src.o: error adding symbols: file in wrong format
-<span class="line-number">3</span>clang: error: linker command failed with exit code 1 (use -v to see invocation)
+  <code class="language-shell"><span class="line-number"></span>$ odin build src -target=linux_arm64
+<span class="line-number"></span>[...]
+<span class="line-number"></span>/usr/bin/ld: /home/pg/my-code/odin-music-chords-placements/src.o: error adding symbols: file in wrong format
+<span class="line-number"></span>clang: error: linker command failed with exit code 1 (use -v to see invocation)
 </code></pre>
 <p>Oh no...The key part is: <code>file in wrong format</code>.</p>
 <p>That's because behind the scenes, the Odin compiler builds our code into an ARM64 object file, which is great. But then it tries to link this object file with libc, which on this computer is a x86_64 library, and that won't work.</p>
@@ -130,8 +130,8 @@ Do not edit it by hand.
     <span>Shell</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-shell"><span class="line-number">0</span>$ odin build src -target=linux_arm64 -print-linker-flags
-<span class="line-number">1</span>clang -Wno-unused-command-line-argument [...]  -lm -lc   -L/       -no-pie
+  <code class="language-shell"><span class="line-number"></span>$ odin build src -target=linux_arm64 -print-linker-flags
+<span class="line-number"></span>clang -Wno-unused-command-line-argument [...]  -lm -lc   -L/       -no-pie
 </code></pre>
 <p>And we see it links libc with <code>-lc</code>, meaning it links our program with the local libc it finds on my machine which is a different architecture than our target.</p>
 <h2 id="confrontation">
@@ -149,16 +149,16 @@ Do not edit it by hand.
     <span>Shell</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-shell"><span class="line-number">0</span>$ git clone --recurse --depth 1 https://git.musl-libc.org/git/musl
-<span class="line-number">1</span>$ cd musl
-<span class="line-number">2</span>
-<span class="line-number">3</span># With Clang:
-<span class="line-number">4</span>$ CFLAGS='--target=aarch64-unknown-linux-musl' RANLIB=llvm-ranlib AR=llvm-ar CC=clang ./configure --target=aarch64 --disable-shared
-<span class="line-number">5</span># Or with GCC:
-<span class="line-number">6</span>$ RANLIB=/usr/bin/aarch64-linux-gnu-gcc-ranlib AR=/usr/bin/aarch64-linux-gnu-gcc-ar CC=/usr/bin/aarch64-linux-gnu-gcc ./configure --target=aarch64 --disable-shared
-<span class="line-number">7</span>
-<span class="line-number">8</span># Either way (Clang/GCC), the build command itself is the same.
-<span class="line-number">9</span>$ make
+  <code class="language-shell"><span class="line-number"></span>$ git clone --recurse --depth 1 https://git.musl-libc.org/git/musl
+<span class="line-number"></span>$ cd musl
+<span class="line-number"></span>
+<span class="line-number"></span># With Clang:
+<span class="line-number"></span>$ CFLAGS='--target=aarch64-unknown-linux-musl' RANLIB=llvm-ranlib AR=llvm-ar CC=clang ./configure --target=aarch64 --disable-shared
+<span class="line-number"></span># Or with GCC:
+<span class="line-number"></span>$ RANLIB=/usr/bin/aarch64-linux-gnu-gcc-ranlib AR=/usr/bin/aarch64-linux-gnu-gcc-ar CC=/usr/bin/aarch64-linux-gnu-gcc ./configure --target=aarch64 --disable-shared
+<span class="line-number"></span>
+<span class="line-number"></span># Either way (Clang/GCC), the build command itself is the same.
+<span class="line-number"></span>$ make
 </code></pre>
 <p>We now have the two artifacts we want: <code>crt1.o</code> and <code>libc.a</code>. We can confirm that they have been correctly built for our target:</p>
 <pre>
@@ -166,13 +166,13 @@ Do not edit it by hand.
     <span>Shell</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-shell"><span class="line-number">0</span>$ file lib/crt1.o
-<span class="line-number">1</span>lib/crt1.o: ELF 64-bit LSB relocatable, ARM aarch64, version 1 (SYSV), not stripped
-<span class="line-number">2</span>$ readelf -h lib/libc.a | grep '^\s*Machine:'
-<span class="line-number">3</span>  Machine:                           AArch64
-<span class="line-number">4</span>  Machine:                           AArch64
-<span class="line-number">5</span>  Machine:                           AArch64
-<span class="line-number">6</span>  [...]
+  <code class="language-shell"><span class="line-number"></span>$ file lib/crt1.o
+<span class="line-number"></span>lib/crt1.o: ELF 64-bit LSB relocatable, ARM aarch64, version 1 (SYSV), not stripped
+<span class="line-number"></span>$ readelf -h lib/libc.a | grep '^\s*Machine:'
+<span class="line-number"></span>  Machine:                           AArch64
+<span class="line-number"></span>  Machine:                           AArch64
+<span class="line-number"></span>  Machine:                           AArch64
+<span class="line-number"></span>  [...]
 </code></pre>
 <h2 id="resolution">
   <a class="title" href="#resolution">Resolution</a>
@@ -184,12 +184,12 @@ Do not edit it by hand.
     <span>Shell</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-shell"><span class="line-number">0</span>$ odin build src  -target=linux_arm64 -build-mode=object
-<span class="line-number">1</span>$ file src.o
-<span class="line-number">2</span>src.o: ELF 64-bit LSB relocatable, ARM aarch64, version 1 (SYSV), not stripped
-<span class="line-number">3</span>$ ld.lld main.o ~/not-my-code/musl/lib/libc.a ~/not-my-code/musl/lib/crt1.o
-<span class="line-number">4</span>$ file a.out
-<span class="line-number">5</span>a.out: ELF 64-bit LSB executable, ARM aarch64, version 1 (SYSV), statically linked, not stripped
+  <code class="language-shell"><span class="line-number"></span>$ odin build src  -target=linux_arm64 -build-mode=object
+<span class="line-number"></span>$ file src.o
+<span class="line-number"></span>src.o: ELF 64-bit LSB relocatable, ARM aarch64, version 1 (SYSV), not stripped
+<span class="line-number"></span>$ ld.lld main.o ~/not-my-code/musl/lib/libc.a ~/not-my-code/musl/lib/crt1.o
+<span class="line-number"></span>$ file a.out
+<span class="line-number"></span>a.out: ELF 64-bit LSB executable, ARM aarch64, version 1 (SYSV), statically linked, not stripped
 </code></pre>
 <p>Alternatively, we can decide to stick with the Odin compiler through and through, and we pass it the (lengthy) required build options:</p>
 <pre>
@@ -197,7 +197,7 @@ Do not edit it by hand.
     <span>Shell</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-shell"><span class="line-number">0</span>$ odin build src -target=linux_arm64 -extra-linker-flags:'-L ~/not-my-code/musl/lib/ -nostdlib -fuse-ld=lld --target=linux-aarch64 ~/not-my-code/musl/lib/crt1.o -static'
+  <code class="language-shell"><span class="line-number"></span>$ odin build src -target=linux_arm64 -extra-linker-flags:'-L ~/not-my-code/musl/lib/ -nostdlib -fuse-ld=lld --target=linux-aarch64 ~/not-my-code/musl/lib/crt1.o -static'
 </code></pre>
 <p>We can even verify it works by running it inside an ARM64 Linux system using <code>qemu</code>:</p>
 <pre>
@@ -205,8 +205,8 @@ Do not edit it by hand.
     <span>Shell</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-shell"><span class="line-number">0</span>$ qemu-aarch64-static a.out
-<span class="line-number">1</span># It runs!
+  <code class="language-shell"><span class="line-number"></span>$ qemu-aarch64-static a.out
+<span class="line-number"></span># It runs!
 </code></pre>
 <p>Cherry on the cake, the resulting program is small:</p>
 <pre>
@@ -214,9 +214,9 @@ Do not edit it by hand.
     <span>Shell</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-shell"><span class="line-number">0</span>$ llvm-strip a.out
-<span class="line-number">1</span>$ du -h a.out 
-<span class="line-number">2</span>288K	a.out
+  <code class="language-shell"><span class="line-number"></span>$ llvm-strip a.out
+<span class="line-number"></span>$ du -h a.out 
+<span class="line-number"></span>288K	a.out
 </code></pre>
 <p>So it's a breeze to <code>scp</code> or <code>rsync</code> our small executable over to the Raspberry Pi Zero while hacking on it.</p>
 <p>Perhaps Odin will have built-in support for musl in the future like Zig does. In the meantime, this article shows it's absolutely possible to do that ourselves!</p>
@@ -231,14 +231,14 @@ Do not edit it by hand.
     <span>Shell</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-shell"><span class="line-number">0</span>$ nm -u src.o
-<span class="line-number">1</span>                 U calloc
-<span class="line-number">2</span>                 U free
-<span class="line-number">3</span>                 U malloc
-<span class="line-number">4</span>                 U memcpy
-<span class="line-number">5</span>                 U memmove
-<span class="line-number">6</span>                 U memset
-<span class="line-number">7</span>                 U realloc
+  <code class="language-shell"><span class="line-number"></span>$ nm -u src.o
+<span class="line-number"></span>                 U calloc
+<span class="line-number"></span>                 U free
+<span class="line-number"></span>                 U malloc
+<span class="line-number"></span>                 U memcpy
+<span class="line-number"></span>                 U memmove
+<span class="line-number"></span>                 U memset
+<span class="line-number"></span>                 U realloc
 </code></pre>
 <p>Ok, so basically: heap allocation and some functions to copy/set memory.</p>
 <p>Heap allocation functions are not actually required if our program does not do heap allocations (Odin provides the option <code>-default-to-nil-allocator</code> for this case), or if we implement these ourselves, for example with a naive <code>mmap</code> implementation, or by setting in our program the default allocator to be an arena. Odin has first class support for custom allocators!</p>
@@ -252,13 +252,13 @@ Do not edit it by hand.
     <span>Odin</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-odin"><span class="line-number">0</span>package main
-<span class="line-number">1</span>
-<span class="line-number">2</span>import &quot;core:fmt&quot;
-<span class="line-number">3</span>
-<span class="line-number">4</span>main :: proc() {
-<span class="line-number">5</span>	fmt.println(&quot;Hello&quot;)
-<span class="line-number">6</span>}
+  <code class="language-odin"><span class="line-number"></span>package main
+<span class="line-number"></span>
+<span class="line-number"></span>import &quot;core:fmt&quot;
+<span class="line-number"></span>
+<span class="line-number"></span>main :: proc() {
+<span class="line-number"></span>	fmt.println(&quot;Hello&quot;)
+<span class="line-number"></span>}
 </code></pre>
 <p>We can build it as outlined like this:</p>
 <pre>
@@ -266,9 +266,9 @@ Do not edit it by hand.
     <span>Shell</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-shell"><span class="line-number">0</span>$ odin build hello.odin -file -target=linux_amd64 -default-to-nil-allocator -no-crt
-<span class="line-number">1</span>$ file hello
-<span class="line-number">2</span>hello: ELF 64-bit LSB executable, x86-64, version 1 (SYSV), statically linked, BuildID[sha1]=ef8dfc9dc297295808f80ec66e92763358a598d1, not stripped
+  <code class="language-shell"><span class="line-number"></span>$ odin build hello.odin -file -target=linux_amd64 -default-to-nil-allocator -no-crt
+<span class="line-number"></span>$ file hello
+<span class="line-number"></span>hello: ELF 64-bit LSB executable, x86-64, version 1 (SYSV), statically linked, BuildID[sha1]=ef8dfc9dc297295808f80ec66e92763358a598d1, not stripped
 </code></pre>
 <p>And we can see the <code>malloc</code> symbol is not present since we opted out of it, and that Odin provided with these assembly files the correct implementation for <code>memset</code>:</p>
 <pre>
@@ -276,10 +276,10 @@ Do not edit it by hand.
     <span>Shell</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-shell"><span class="line-number">0</span>$ nm hello | grep malloc
-<span class="line-number">1</span># Nothing
-<span class="line-number">2</span>$ nm hello | grep memset
-<span class="line-number">3</span>00000000004042c0 T memset
+  <code class="language-shell"><span class="line-number"></span>$ nm hello | grep malloc
+<span class="line-number"></span># Nothing
+<span class="line-number"></span>$ nm hello | grep memset
+<span class="line-number"></span>00000000004042c0 T memset
 </code></pre>
 <p>I'll soon write about what programs I made for the Raspberry Pi Zero, so check back soon!</p>
 <p><a href="/blog"> ⏴ Back to all articles</a></p>

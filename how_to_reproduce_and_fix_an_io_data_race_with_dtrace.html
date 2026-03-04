@@ -118,61 +118,61 @@ Do not edit it by hand.
     <span>Go</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-go"><span class="line-number">0</span>package main
-<span class="line-number">1</span>
-<span class="line-number">2</span>import (
-<span class="line-number">3</span>	&quot;fmt&quot;
-<span class="line-number">4</span>	&quot;math/rand/v2&quot;
-<span class="line-number">5</span>	&quot;net&quot;
-<span class="line-number">6</span>	&quot;os&quot;
-<span class="line-number">7</span>	&quot;time&quot;
-<span class="line-number">8</span>)
-<span class="line-number">9</span>
-<span class="line-number">10</span>const fileName = &quot;test.addr&quot;
-<span class="line-number">11</span>
-<span class="line-number">12</span>func retryForever(fn func() error) {
-<span class="line-number">13</span>	for {
-<span class="line-number">14</span>		if err := fn(); err != nil {
-<span class="line-number">15</span>			time.Sleep(10 * time.Millisecond)
-<span class="line-number">16</span>		} else {
-<span class="line-number">17</span>			return
-<span class="line-number">18</span>		}
-<span class="line-number">19</span>	}
-<span class="line-number">20</span>}
-<span class="line-number">21</span>
-<span class="line-number">22</span>func writeHostAndPortToFile() {
-<span class="line-number">23</span>	addr := fmt.Sprintf(&quot;localhost:%d&quot;, rand.Uint32N(1&lt;&lt;16))
-<span class="line-number">24</span>	_ = os.WriteFile(fileName, []byte(addr), 0600)
-<span class="line-number">25</span>}
-<span class="line-number">26</span>
-<span class="line-number">27</span>func readHostAndPortFromFile() (string, string, error) {
-<span class="line-number">28</span>	retryForever(func() error {
-<span class="line-number">29</span>		_, err := os.Stat(fileName)
-<span class="line-number">30</span>		return err
-<span class="line-number">31</span>	})
-<span class="line-number">32</span>
-<span class="line-number">33</span>	content, err := os.ReadFile(fileName)
-<span class="line-number">34</span>	if err != nil {
-<span class="line-number">35</span>		return &quot;&quot;, &quot;&quot;, err
-<span class="line-number">36</span>	}
-<span class="line-number">37</span>
-<span class="line-number">38</span>	host, addr, err := net.SplitHostPort(string(content))
-<span class="line-number">39</span>	return host, addr, err
-<span class="line-number">40</span>}
-<span class="line-number">41</span>
-<span class="line-number">42</span>func main() {
-<span class="line-number">43</span>	os.Remove(fileName)
-<span class="line-number">44</span>
-<span class="line-number">45</span>	go writeHostAndPortToFile()
-<span class="line-number">46</span>
-<span class="line-number">47</span>	host, addr, err := readHostAndPortFromFile()
-<span class="line-number">48</span>	if err != nil {
-<span class="line-number">49</span>		fmt.Fprintf(os.Stderr, &quot;error reading: %v\n&quot;, err)
-<span class="line-number">50</span>		os.Exit(1)
-<span class="line-number">51</span>	}
-<span class="line-number">52</span>
-<span class="line-number">53</span>	fmt.Printf(&quot;host=%s addr=%s\n&quot;, host, addr)
-<span class="line-number">54</span>}
+  <code class="language-go"><span class="line-number"></span>package main
+<span class="line-number"></span>
+<span class="line-number"></span>import (
+<span class="line-number"></span>	&quot;fmt&quot;
+<span class="line-number"></span>	&quot;math/rand/v2&quot;
+<span class="line-number"></span>	&quot;net&quot;
+<span class="line-number"></span>	&quot;os&quot;
+<span class="line-number"></span>	&quot;time&quot;
+<span class="line-number"></span>)
+<span class="line-number"></span>
+<span class="line-number"></span>const fileName = &quot;test.addr&quot;
+<span class="line-number"></span>
+<span class="line-number"></span>func retryForever(fn func() error) {
+<span class="line-number"></span>	for {
+<span class="line-number"></span>		if err := fn(); err != nil {
+<span class="line-number"></span>			time.Sleep(10 * time.Millisecond)
+<span class="line-number"></span>		} else {
+<span class="line-number"></span>			return
+<span class="line-number"></span>		}
+<span class="line-number"></span>	}
+<span class="line-number"></span>}
+<span class="line-number"></span>
+<span class="line-number"></span>func writeHostAndPortToFile() {
+<span class="line-number"></span>	addr := fmt.Sprintf(&quot;localhost:%d&quot;, rand.Uint32N(1&lt;&lt;16))
+<span class="line-number"></span>	_ = os.WriteFile(fileName, []byte(addr), 0600)
+<span class="line-number"></span>}
+<span class="line-number"></span>
+<span class="line-number"></span>func readHostAndPortFromFile() (string, string, error) {
+<span class="line-number"></span>	retryForever(func() error {
+<span class="line-number"></span>		_, err := os.Stat(fileName)
+<span class="line-number"></span>		return err
+<span class="line-number"></span>	})
+<span class="line-number"></span>
+<span class="line-number"></span>	content, err := os.ReadFile(fileName)
+<span class="line-number"></span>	if err != nil {
+<span class="line-number"></span>		return &quot;&quot;, &quot;&quot;, err
+<span class="line-number"></span>	}
+<span class="line-number"></span>
+<span class="line-number"></span>	host, addr, err := net.SplitHostPort(string(content))
+<span class="line-number"></span>	return host, addr, err
+<span class="line-number"></span>}
+<span class="line-number"></span>
+<span class="line-number"></span>func main() {
+<span class="line-number"></span>	os.Remove(fileName)
+<span class="line-number"></span>
+<span class="line-number"></span>	go writeHostAndPortToFile()
+<span class="line-number"></span>
+<span class="line-number"></span>	host, addr, err := readHostAndPortFromFile()
+<span class="line-number"></span>	if err != nil {
+<span class="line-number"></span>		fmt.Fprintf(os.Stderr, &quot;error reading: %v\n&quot;, err)
+<span class="line-number"></span>		os.Exit(1)
+<span class="line-number"></span>	}
+<span class="line-number"></span>
+<span class="line-number"></span>	fmt.Printf(&quot;host=%s addr=%s\n&quot;, host, addr)
+<span class="line-number"></span>}
 </code></pre>
 <p>The code tries to (spoiler alert: not quite correctly) spin in a loop to wait for the file to appear, and then reads from it.</p>
 <p>When we run this, sometimes it works fine, and sometimes it fails. A clear data race on a shared resource!</p>
@@ -181,12 +181,12 @@ Do not edit it by hand.
     <span>Shell</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-shell"><span class="line-number">0</span>$ go run io_race.go
-<span class="line-number">1</span>host=localhost addr=28773
-<span class="line-number">2</span>
-<span class="line-number">3</span>$ go run io_race.go
-<span class="line-number">4</span>error reading: missing port in address
-<span class="line-number">5</span>exit status 1
+  <code class="language-shell"><span class="line-number"></span>$ go run io_race.go
+<span class="line-number"></span>host=localhost addr=28773
+<span class="line-number"></span>
+<span class="line-number"></span>$ go run io_race.go
+<span class="line-number"></span>error reading: missing port in address
+<span class="line-number"></span>exit status 1
 </code></pre>
 <p>The astute  reader may have already detected a classic <a href="https://en.wikipedia.org/wiki/Time-of-check_to_time-of-use">TOCTOU</a> issue.</p>
 <h2 id="observe-reads-and-writes">
@@ -199,55 +199,55 @@ Do not edit it by hand.
     <span>Dtrace</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-dtrace"><span class="line-number">0</span>pid$target::os.ReadFile:entry  {
-<span class="line-number">1</span>  this-&gt;name = stringof(copyin(arg0, arg1)); 
-<span class="line-number">2</span>  ustack();
-<span class="line-number">3</span>  printf(&quot;name=%s\n&quot;, this-&gt;name); 
-<span class="line-number">4</span>}
-<span class="line-number">5</span>
-<span class="line-number">6</span>pid$target::os.ReadFile:return  {}
-<span class="line-number">7</span>
-<span class="line-number">8</span>pid$target::os.WriteFile:entry  {
-<span class="line-number">9</span>  this-&gt;name = stringof(copyin(arg0, arg1)); 
-<span class="line-number">10</span>  ustack();
-<span class="line-number">11</span>  printf(&quot;name=%s\n&quot;, this-&gt;name); 
-<span class="line-number">12</span>}
-<span class="line-number">13</span>
-<span class="line-number">14</span>pid$target::os.WriteFile:return  {}
-<span class="line-number">15</span>
-<span class="line-number">16</span>pid$target::os.Stat:entry  {}
-<span class="line-number">17</span>
-<span class="line-number">18</span>pid$target::os.Stat:return  {
-<span class="line-number">19</span>  printf(&quot;err=%d\n&quot;, arg2); 
-<span class="line-number">20</span>}
-<span class="line-number">21</span>
-<span class="line-number">22</span>syscall::write:entry 
-<span class="line-number">23</span>/pid==$target &amp;&amp; arg0 &gt; 2/
-<span class="line-number">24</span>{
-<span class="line-number">25</span>  self-&gt;trace = 1;
-<span class="line-number">26</span>}
-<span class="line-number">27</span>
-<span class="line-number">28</span>syscall::write:return 
-<span class="line-number">29</span>/pid==$target &amp;&amp; self-&gt;trace != 0/
-<span class="line-number">30</span>{
-<span class="line-number">31</span>  printf(&quot;write return: res=%d\n&quot;, arg0);
-<span class="line-number">32</span>  self-&gt;trace = 0;
-<span class="line-number">33</span>}
-<span class="line-number">34</span>
-<span class="line-number">35</span>syscall::read:entry 
-<span class="line-number">36</span>/pid==$target &amp;&amp; arg0 &gt; 2/
-<span class="line-number">37</span>{
-<span class="line-number">38</span>  printf(&quot;fd=%d\n&quot;, arg0);
-<span class="line-number">39</span>  self-&gt;trace = 1;
-<span class="line-number">40</span>}
-<span class="line-number">41</span>
-<span class="line-number">42</span>
-<span class="line-number">43</span>syscall::read:return 
-<span class="line-number">44</span>/pid==$target &amp;&amp; self-&gt;trace != 0/
-<span class="line-number">45</span>{
-<span class="line-number">46</span>  printf(&quot;read return: res=%d\n&quot;, arg0);
-<span class="line-number">47</span>  self-&gt;trace = 0;
-<span class="line-number">48</span>}
+  <code class="language-dtrace"><span class="line-number"></span>pid$target::os.ReadFile:entry  {
+<span class="line-number"></span>  this-&gt;name = stringof(copyin(arg0, arg1)); 
+<span class="line-number"></span>  ustack();
+<span class="line-number"></span>  printf(&quot;name=%s\n&quot;, this-&gt;name); 
+<span class="line-number"></span>}
+<span class="line-number"></span>
+<span class="line-number"></span>pid$target::os.ReadFile:return  {}
+<span class="line-number"></span>
+<span class="line-number"></span>pid$target::os.WriteFile:entry  {
+<span class="line-number"></span>  this-&gt;name = stringof(copyin(arg0, arg1)); 
+<span class="line-number"></span>  ustack();
+<span class="line-number"></span>  printf(&quot;name=%s\n&quot;, this-&gt;name); 
+<span class="line-number"></span>}
+<span class="line-number"></span>
+<span class="line-number"></span>pid$target::os.WriteFile:return  {}
+<span class="line-number"></span>
+<span class="line-number"></span>pid$target::os.Stat:entry  {}
+<span class="line-number"></span>
+<span class="line-number"></span>pid$target::os.Stat:return  {
+<span class="line-number"></span>  printf(&quot;err=%d\n&quot;, arg2); 
+<span class="line-number"></span>}
+<span class="line-number"></span>
+<span class="line-number"></span>syscall::write:entry 
+<span class="line-number"></span>/pid==$target &amp;&amp; arg0 &gt; 2/
+<span class="line-number"></span>{
+<span class="line-number"></span>  self-&gt;trace = 1;
+<span class="line-number"></span>}
+<span class="line-number"></span>
+<span class="line-number"></span>syscall::write:return 
+<span class="line-number"></span>/pid==$target &amp;&amp; self-&gt;trace != 0/
+<span class="line-number"></span>{
+<span class="line-number"></span>  printf(&quot;write return: res=%d\n&quot;, arg0);
+<span class="line-number"></span>  self-&gt;trace = 0;
+<span class="line-number"></span>}
+<span class="line-number"></span>
+<span class="line-number"></span>syscall::read:entry 
+<span class="line-number"></span>/pid==$target &amp;&amp; arg0 &gt; 2/
+<span class="line-number"></span>{
+<span class="line-number"></span>  printf(&quot;fd=%d\n&quot;, arg0);
+<span class="line-number"></span>  self-&gt;trace = 1;
+<span class="line-number"></span>}
+<span class="line-number"></span>
+<span class="line-number"></span>
+<span class="line-number"></span>syscall::read:return 
+<span class="line-number"></span>/pid==$target &amp;&amp; self-&gt;trace != 0/
+<span class="line-number"></span>{
+<span class="line-number"></span>  printf(&quot;read return: res=%d\n&quot;, arg0);
+<span class="line-number"></span>  self-&gt;trace = 0;
+<span class="line-number"></span>}
 </code></pre>
 <p>Let's observe the happy case:</p>
 <pre>
@@ -255,42 +255,42 @@ Do not edit it by hand.
     <span>Text</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-text"><span class="line-number">0</span>dtrace: script '/Users/philippe.gaultier/scratch/data_race_rw.d' matched 10 probes
-<span class="line-number">1</span>host=localhost addr=45564
-<span class="line-number">2</span>CPU     ID                    FUNCTION:NAME
-<span class="line-number">3</span>  5  65087                    os.Stat:entry 
-<span class="line-number">4</span>  5  65162                   os.Stat:return err=0
-<span class="line-number">5</span>
-<span class="line-number">6</span>  7  65081               os.WriteFile:entry 
-<span class="line-number">7</span>              io_race`os.WriteFile
-<span class="line-number">8</span>              io_race`main.writeHostAndPortToFile+0x88
-<span class="line-number">9</span>              io_race`runtime.goexit.abi0+0x4
-<span class="line-number">10</span>name=test.addr
-<span class="line-number">11</span>
-<span class="line-number">12</span>  7    177                     write:return write return: res=15
-<span class="line-number">13</span>
-<span class="line-number">14</span>  7  65130              os.WriteFile:return 
-<span class="line-number">15</span>  7  65087                    os.Stat:entry 
-<span class="line-number">16</span>  7  65162                   os.Stat:return err=0
-<span class="line-number">17</span>
-<span class="line-number">18</span>  7  62760                os.ReadFile:entry 
-<span class="line-number">19</span>              io_race`os.ReadFile
-<span class="line-number">20</span>              io_race`main.readHostAndPortFromFile+0x34
-<span class="line-number">21</span>              io_race`main.main+0x3c
-<span class="line-number">22</span>              io_race`runtime.main+0x278
-<span class="line-number">23</span>              io_race`runtime.goexit.abi0+0x4
-<span class="line-number">24</span>name=test.addr
-<span class="line-number">25</span>
-<span class="line-number">26</span>  7    174                       read:entry fd=4
-<span class="line-number">27</span>
-<span class="line-number">28</span>  7    175                      read:return read return: res=15
-<span class="line-number">29</span>
-<span class="line-number">30</span>  7    174                       read:entry fd=4
-<span class="line-number">31</span>
-<span class="line-number">32</span>  7    175                      read:return read return: res=0
-<span class="line-number">33</span>
-<span class="line-number">34</span>  7  65044               os.ReadFile:return 
-<span class="line-number">35</span>dtrace: pid 99037 has exited
+  <code class="language-text"><span class="line-number"></span>dtrace: script '/Users/philippe.gaultier/scratch/data_race_rw.d' matched 10 probes
+<span class="line-number"></span>host=localhost addr=45564
+<span class="line-number"></span>CPU     ID                    FUNCTION:NAME
+<span class="line-number"></span>  5  65087                    os.Stat:entry 
+<span class="line-number"></span>  5  65162                   os.Stat:return err=0
+<span class="line-number"></span>
+<span class="line-number"></span>  7  65081               os.WriteFile:entry 
+<span class="line-number"></span>              io_race`os.WriteFile
+<span class="line-number"></span>              io_race`main.writeHostAndPortToFile+0x88
+<span class="line-number"></span>              io_race`runtime.goexit.abi0+0x4
+<span class="line-number"></span>name=test.addr
+<span class="line-number"></span>
+<span class="line-number"></span>  7    177                     write:return write return: res=15
+<span class="line-number"></span>
+<span class="line-number"></span>  7  65130              os.WriteFile:return 
+<span class="line-number"></span>  7  65087                    os.Stat:entry 
+<span class="line-number"></span>  7  65162                   os.Stat:return err=0
+<span class="line-number"></span>
+<span class="line-number"></span>  7  62760                os.ReadFile:entry 
+<span class="line-number"></span>              io_race`os.ReadFile
+<span class="line-number"></span>              io_race`main.readHostAndPortFromFile+0x34
+<span class="line-number"></span>              io_race`main.main+0x3c
+<span class="line-number"></span>              io_race`runtime.main+0x278
+<span class="line-number"></span>              io_race`runtime.goexit.abi0+0x4
+<span class="line-number"></span>name=test.addr
+<span class="line-number"></span>
+<span class="line-number"></span>  7    174                       read:entry fd=4
+<span class="line-number"></span>
+<span class="line-number"></span>  7    175                      read:return read return: res=15
+<span class="line-number"></span>
+<span class="line-number"></span>  7    174                       read:entry fd=4
+<span class="line-number"></span>
+<span class="line-number"></span>  7    175                      read:return read return: res=0
+<span class="line-number"></span>
+<span class="line-number"></span>  7  65044               os.ReadFile:return 
+<span class="line-number"></span>dtrace: pid 99037 has exited
 </code></pre>
 <p><em>The last read returning 0 is normal: this is how <code>os.ReadFile</code> detects the end of the file.</em></p>
 <p>We see that this case worked out well because the write fully finished before the read started.</p>
@@ -300,38 +300,38 @@ Do not edit it by hand.
     <span>Shell</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-shell"><span class="line-number">0</span>dtrace: script '/Users/philippe.gaultier/scratch/data_race_rw.d' matched 10 probes
-<span class="line-number">1</span>error reading: missing port in address
-<span class="line-number">2</span>CPU     ID                    FUNCTION:NAME
-<span class="line-number">3</span>  7 532133                    os.Stat:entry 
-<span class="line-number">4</span>  7 532134                   os.Stat:return err=0
-<span class="line-number">5</span>
-<span class="line-number">6</span>  6 532131               os.WriteFile:entry 
-<span class="line-number">7</span>              io_race`os.WriteFile
-<span class="line-number">8</span>              io_race`main.writeHostAndPortToFile+0x88
-<span class="line-number">9</span>              io_race`runtime.goexit.abi0+0x4
-<span class="line-number">10</span>name=test.addr
-<span class="line-number">11</span>
-<span class="line-number">12</span>  8 532133                    os.Stat:entry 
-<span class="line-number">13</span>  8 532134                   os.Stat:return err=0
-<span class="line-number">14</span>
-<span class="line-number">15</span>  8 532129                os.ReadFile:entry 
-<span class="line-number">16</span>              io_race`os.ReadFile
-<span class="line-number">17</span>              io_race`main.readHostAndPortFromFile+0x34
-<span class="line-number">18</span>              io_race`main.main+0x3c
-<span class="line-number">19</span>              io_race`runtime.main+0x278
-<span class="line-number">20</span>              io_race`runtime.goexit.abi0+0x4
-<span class="line-number">21</span>name=test.addr
-<span class="line-number">22</span>
-<span class="line-number">23</span>  8    174                       read:entry fd=5
-<span class="line-number">24</span>
-<span class="line-number">25</span>  8    175                      read:return read return: res=0
-<span class="line-number">26</span>
-<span class="line-number">27</span> 10 532130               os.ReadFile:return 
-<span class="line-number">28</span>  6    177                     write:return write return: res=15
-<span class="line-number">29</span>
-<span class="line-number">30</span>  6 532132              os.WriteFile:return 
-<span class="line-number">31</span>dtrace: pid 432 has exited
+  <code class="language-shell"><span class="line-number"></span>dtrace: script '/Users/philippe.gaultier/scratch/data_race_rw.d' matched 10 probes
+<span class="line-number"></span>error reading: missing port in address
+<span class="line-number"></span>CPU     ID                    FUNCTION:NAME
+<span class="line-number"></span>  7 532133                    os.Stat:entry 
+<span class="line-number"></span>  7 532134                   os.Stat:return err=0
+<span class="line-number"></span>
+<span class="line-number"></span>  6 532131               os.WriteFile:entry 
+<span class="line-number"></span>              io_race`os.WriteFile
+<span class="line-number"></span>              io_race`main.writeHostAndPortToFile+0x88
+<span class="line-number"></span>              io_race`runtime.goexit.abi0+0x4
+<span class="line-number"></span>name=test.addr
+<span class="line-number"></span>
+<span class="line-number"></span>  8 532133                    os.Stat:entry 
+<span class="line-number"></span>  8 532134                   os.Stat:return err=0
+<span class="line-number"></span>
+<span class="line-number"></span>  8 532129                os.ReadFile:entry 
+<span class="line-number"></span>              io_race`os.ReadFile
+<span class="line-number"></span>              io_race`main.readHostAndPortFromFile+0x34
+<span class="line-number"></span>              io_race`main.main+0x3c
+<span class="line-number"></span>              io_race`runtime.main+0x278
+<span class="line-number"></span>              io_race`runtime.goexit.abi0+0x4
+<span class="line-number"></span>name=test.addr
+<span class="line-number"></span>
+<span class="line-number"></span>  8    174                       read:entry fd=5
+<span class="line-number"></span>
+<span class="line-number"></span>  8    175                      read:return read return: res=0
+<span class="line-number"></span>
+<span class="line-number"></span> 10 532130               os.ReadFile:return 
+<span class="line-number"></span>  6    177                     write:return write return: res=15
+<span class="line-number"></span>
+<span class="line-number"></span>  6 532132              os.WriteFile:return 
+<span class="line-number"></span>dtrace: pid 432 has exited
 </code></pre>
 <p>Now, the bug triggered because the read operation finished before the write operation could. Thus, the read sees no data (<code>res=0</code>).</p>
 <p>Note the order of operations for this bug to occur:</p>
@@ -367,12 +367,12 @@ Do not edit it by hand.
     <span>Diff</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-diff"><span class="line-number">0</span>syscall::write:entry 
-<span class="line-number">1</span>/pid==$target/
-<span class="line-number">2</span>{
-<span class="line-number">3</span>+ chill(500000000);
-<span class="line-number">4</span>  self-&gt;trace = 1;
-<span class="line-number">5</span>}
+  <code class="language-diff"><span class="line-number"></span>syscall::write:entry 
+<span class="line-number"></span>/pid==$target/
+<span class="line-number"></span>{
+<span class="line-number"></span>+ chill(500000000);
+<span class="line-number"></span>  self-&gt;trace = 1;
+<span class="line-number"></span>}
 </code></pre>
 <p>To limit adverse effects on the system, DTrace limits the <code>chill</code> value to 500 ms:</p>
 <blockquote>
@@ -392,34 +392,34 @@ Do not edit it by hand.
     <span>Diff</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-diff"><span class="line-number">0</span>--- io_race.go	2025-10-01 18:01:47
-<span class="line-number">1</span>+++ io_race_fixed.go	2025-10-01 18:14:51
-<span class="line-number">2</span>@@ -25,18 +25,18 @@
-<span class="line-number">3</span> 	_ = os.WriteFile(fileName, []byte(addr), 0600)
-<span class="line-number">4</span> }
-<span class="line-number">5</span> 
-<span class="line-number">6</span>-func readHostAndPortFromFile() (string, string, error) {
-<span class="line-number">7</span>+func readHostAndPortFromFile() (host string, addr string, err error) {
-<span class="line-number">8</span> 	retryForever(func() error {
-<span class="line-number">9</span>-		_, err := os.Stat(fileName)
-<span class="line-number">10</span>+		var content []byte
-<span class="line-number">11</span>+		content, err = os.ReadFile(fileName)
-<span class="line-number">12</span>+		if err != nil {
-<span class="line-number">13</span>+			return err
-<span class="line-number">14</span>+		}
-<span class="line-number">15</span>+
-<span class="line-number">16</span>+		host, addr, err = net.SplitHostPort(string(content))
-<span class="line-number">17</span> 		return err
-<span class="line-number">18</span> 	})
-<span class="line-number">19</span> 
-<span class="line-number">20</span>-	content, err := os.ReadFile(fileName)
-<span class="line-number">21</span>-	if err != nil {
-<span class="line-number">22</span>-		return &quot;&quot;, &quot;&quot;, err
-<span class="line-number">23</span>-	}
-<span class="line-number">24</span>-
-<span class="line-number">25</span>-	host, addr, err := net.SplitHostPort(string(content))
-<span class="line-number">26</span> 	return host, addr, err
-<span class="line-number">27</span> }
+  <code class="language-diff"><span class="line-number"></span>--- io_race.go	2025-10-01 18:01:47
+<span class="line-number"></span>+++ io_race_fixed.go	2025-10-01 18:14:51
+<span class="line-number"></span>@@ -25,18 +25,18 @@
+<span class="line-number"></span> 	_ = os.WriteFile(fileName, []byte(addr), 0600)
+<span class="line-number"></span> }
+<span class="line-number"></span> 
+<span class="line-number"></span>-func readHostAndPortFromFile() (string, string, error) {
+<span class="line-number"></span>+func readHostAndPortFromFile() (host string, addr string, err error) {
+<span class="line-number"></span> 	retryForever(func() error {
+<span class="line-number"></span>-		_, err := os.Stat(fileName)
+<span class="line-number"></span>+		var content []byte
+<span class="line-number"></span>+		content, err = os.ReadFile(fileName)
+<span class="line-number"></span>+		if err != nil {
+<span class="line-number"></span>+			return err
+<span class="line-number"></span>+		}
+<span class="line-number"></span>+
+<span class="line-number"></span>+		host, addr, err = net.SplitHostPort(string(content))
+<span class="line-number"></span> 		return err
+<span class="line-number"></span> 	})
+<span class="line-number"></span> 
+<span class="line-number"></span>-	content, err := os.ReadFile(fileName)
+<span class="line-number"></span>-	if err != nil {
+<span class="line-number"></span>-		return &quot;&quot;, &quot;&quot;, err
+<span class="line-number"></span>-	}
+<span class="line-number"></span>-
+<span class="line-number"></span>-	host, addr, err := net.SplitHostPort(string(content))
+<span class="line-number"></span> 	return host, addr, err
+<span class="line-number"></span> }
 </code></pre>
 <p>With the patch applied, we see in the DTrace output, even with the write delay, that the bug is fixed. We sometimes do multiple reads until one succeeds with the right data.</p>
 <p>There are other possible ways to fix this problem such as using a lockfile, etc, but this is the simplest.</p>

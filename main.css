@@ -237,6 +237,8 @@ code {
   word-wrap: break-word;
   white-space: pre-wrap;
   padding: .1rem;
+
+  counter-reset: line-count;
 }
 
 pre code {
@@ -344,7 +346,15 @@ p:has(img):has(em) {
   padding-right: .5rem;
   color: var(--color-less-important);
   border-color: var(--color-less-important);
+
+
 }
+
+.line-number::before {
+  counter-increment: line-count;
+  content: counter(line-count);
+}
+
 
 @media only screen and (max-width: 650px) {
   .line-number { display: none; }

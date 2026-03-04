@@ -134,46 +134,46 @@ Do not edit it by hand.
     <span>Cpp</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-cpp"><span class="line-number">0</span>// Path: user.cpp
-<span class="line-number">1</span>
-<span class="line-number">2</span>#include &lt;cstdint&gt;
-<span class="line-number">3</span>#include &lt;cstdio&gt;
-<span class="line-number">4</span>#include &lt;cstring&gt;
-<span class="line-number">5</span>#include &lt;string&gt;
-<span class="line-number">6</span>
-<span class="line-number">7</span>class User {
-<span class="line-number">8</span>  std::string name;
-<span class="line-number">9</span>  uint64_t comments_count;
-<span class="line-number">10</span>  uint8_t uuid[16];
-<span class="line-number">11</span>
-<span class="line-number">12</span>public:
-<span class="line-number">13</span>  User(std::string name_) : name{name_}, comments_count{0} {
-<span class="line-number">14</span>    arc4random_buf(uuid, sizeof(uuid));
-<span class="line-number">15</span>  }
-<span class="line-number">16</span>
-<span class="line-number">17</span>  void write_comment(const char *comment, size_t comment_len) {
-<span class="line-number">18</span>    printf(&quot;%s (&quot;, name.c_str());
-<span class="line-number">19</span>    for (size_t i = 0; i &lt; sizeof(uuid); i += 1) {
-<span class="line-number">20</span>      printf(&quot;%x&quot;, uuid[i]);
-<span class="line-number">21</span>    }
-<span class="line-number">22</span>    printf(&quot;) says: %.*s\n&quot;, (int)comment_len, comment);
-<span class="line-number">23</span>    comments_count += 1;
-<span class="line-number">24</span>  }
-<span class="line-number">25</span>
-<span class="line-number">26</span>  uint64_t get_comment_count() { return comments_count; }
-<span class="line-number">27</span>};
-<span class="line-number">28</span>
-<span class="line-number">29</span>int main() {
-<span class="line-number">30</span>  User alice{&quot;alice&quot;};
-<span class="line-number">31</span>  const char msg[] = &quot;hello, world!&quot;;
-<span class="line-number">32</span>  alice.write_comment(msg, sizeof(msg) - 1);
-<span class="line-number">33</span>
-<span class="line-number">34</span>  printf(&quot;Comment count: %lu\n&quot;, alice.get_comment_count());
-<span class="line-number">35</span>
-<span class="line-number">36</span>  // This prints:
-<span class="line-number">37</span>  // alice (fe61252cf5b88432a7e8c8674d58d615) says: hello, world!
-<span class="line-number">38</span>  // Comment count: 1
-<span class="line-number">39</span>}
+  <code class="language-cpp"><span class="line-number"></span>// Path: user.cpp
+<span class="line-number"></span>
+<span class="line-number"></span>#include &lt;cstdint&gt;
+<span class="line-number"></span>#include &lt;cstdio&gt;
+<span class="line-number"></span>#include &lt;cstring&gt;
+<span class="line-number"></span>#include &lt;string&gt;
+<span class="line-number"></span>
+<span class="line-number"></span>class User {
+<span class="line-number"></span>  std::string name;
+<span class="line-number"></span>  uint64_t comments_count;
+<span class="line-number"></span>  uint8_t uuid[16];
+<span class="line-number"></span>
+<span class="line-number"></span>public:
+<span class="line-number"></span>  User(std::string name_) : name{name_}, comments_count{0} {
+<span class="line-number"></span>    arc4random_buf(uuid, sizeof(uuid));
+<span class="line-number"></span>  }
+<span class="line-number"></span>
+<span class="line-number"></span>  void write_comment(const char *comment, size_t comment_len) {
+<span class="line-number"></span>    printf(&quot;%s (&quot;, name.c_str());
+<span class="line-number"></span>    for (size_t i = 0; i &lt; sizeof(uuid); i += 1) {
+<span class="line-number"></span>      printf(&quot;%x&quot;, uuid[i]);
+<span class="line-number"></span>    }
+<span class="line-number"></span>    printf(&quot;) says: %.*s\n&quot;, (int)comment_len, comment);
+<span class="line-number"></span>    comments_count += 1;
+<span class="line-number"></span>  }
+<span class="line-number"></span>
+<span class="line-number"></span>  uint64_t get_comment_count() { return comments_count; }
+<span class="line-number"></span>};
+<span class="line-number"></span>
+<span class="line-number"></span>int main() {
+<span class="line-number"></span>  User alice{&quot;alice&quot;};
+<span class="line-number"></span>  const char msg[] = &quot;hello, world!&quot;;
+<span class="line-number"></span>  alice.write_comment(msg, sizeof(msg) - 1);
+<span class="line-number"></span>
+<span class="line-number"></span>  printf(&quot;Comment count: %lu\n&quot;, alice.get_comment_count());
+<span class="line-number"></span>
+<span class="line-number"></span>  // This prints:
+<span class="line-number"></span>  // alice (fe61252cf5b88432a7e8c8674d58d615) says: hello, world!
+<span class="line-number"></span>  // Comment count: 1
+<span class="line-number"></span>}
 </code></pre>
 <p>So let's first ensure it is a standard layout class. We add this compile-time assertion in the constructor (could be placed anywhere, but the constructor is as good a place as any):</p>
 <pre>
@@ -181,9 +181,9 @@ Do not edit it by hand.
     <span>C++</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-c++"><span class="line-number">0</span>// Path: user.cpp
-<span class="line-number">1</span>
-<span class="line-number">2</span>    static_assert(std::is_standard_layout_v&lt;User&gt;);
+  <code class="language-c++"><span class="line-number"></span>// Path: user.cpp
+<span class="line-number"></span>
+<span class="line-number"></span>    static_assert(std::is_standard_layout_v&lt;User&gt;);
 </code></pre>
 <p>And... it builds!</p>
 <p>Now onto the second step: let's define the equivalent class on the Rust side.</p>
@@ -193,7 +193,7 @@ Do not edit it by hand.
     <span>Shell</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-shell"><span class="line-number">0</span>$ cargo new --lib user-rs-lib
+  <code class="language-shell"><span class="line-number"></span>$ cargo new --lib user-rs-lib
 </code></pre>
 <p>And place our Rust struct in <code>src/lib.rs</code>.</p>
 <p>We just need to be careful about alignment (padding between fields) and the order the fields, so we mark the struct <code>repr(C)</code> to make the Rust compiler use the same layout as C does:</p>
@@ -202,14 +202,14 @@ Do not edit it by hand.
     <span>Rust</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-rust"><span class="line-number">0</span>// Path: ./user-rs/src/lib.rs
-<span class="line-number">1</span>
-<span class="line-number">2</span>#[repr(C)]
-<span class="line-number">3</span>pub struct UserC {
-<span class="line-number">4</span>    pub name: [u8; 32],
-<span class="line-number">5</span>    pub comments_count: u64,
-<span class="line-number">6</span>    pub uuid: [u8; 16],
-<span class="line-number">7</span>}
+  <code class="language-rust"><span class="line-number"></span>// Path: ./user-rs/src/lib.rs
+<span class="line-number"></span>
+<span class="line-number"></span>#[repr(C)]
+<span class="line-number"></span>pub struct UserC {
+<span class="line-number"></span>    pub name: [u8; 32],
+<span class="line-number"></span>    pub comments_count: u64,
+<span class="line-number"></span>    pub uuid: [u8; 16],
+<span class="line-number"></span>}
 </code></pre>
 <p>Note that the fields can be named differently from the C++ fields if you so choose.</p>
 <p>Also note that <code>std::string</code> is represented here by an opaque array of 32 bytes. That's because on my machine, with the standard library I have, <code>sizeof(std::string)</code> is 32. That is <em>not</em> guaranteed by the standard, so this makes it very much not portable. We'll go over some options to work-around this at the end. I wanted to include a standard library type to show that it does not prevent the class from being a 'standard layout class', but that is also creates challenges.</p>
@@ -220,12 +220,12 @@ Do not edit it by hand.
     <span>Rust</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-rust"><span class="line-number">0</span>// Path: ./user-rs-lib/src/lib.rs
-<span class="line-number">1</span>
-<span class="line-number">2</span>#[no_mangle]
-<span class="line-number">3</span>pub extern &quot;C&quot; fn RUST_write_comment(user: &amp;mut UserC, comment: *const u8, comment_len: usize) {
-<span class="line-number">4</span>    todo!()
-<span class="line-number">5</span>}
+  <code class="language-rust"><span class="line-number"></span>// Path: ./user-rs-lib/src/lib.rs
+<span class="line-number"></span>
+<span class="line-number"></span>#[no_mangle]
+<span class="line-number"></span>pub extern &quot;C&quot; fn RUST_write_comment(user: &amp;mut UserC, comment: *const u8, comment_len: usize) {
+<span class="line-number"></span>    todo!()
+<span class="line-number"></span>}
 </code></pre>
 <p>Now, let's use the tool <a href="https://github.com/mozilla/cbindgen">cbindgen</a> to generate the C header corresponding to this Rust code:</p>
 <pre>
@@ -233,8 +233,8 @@ Do not edit it by hand.
     <span>Shell</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-shell"><span class="line-number">0</span>$ cargo install cbindgen
-<span class="line-number">1</span>$ cbindgen -v src/lib.rs --lang=c++ -o ../user-rs-lib.h
+  <code class="language-shell"><span class="line-number"></span>$ cargo install cbindgen
+<span class="line-number"></span>$ cbindgen -v src/lib.rs --lang=c++ -o ../user-rs-lib.h
 </code></pre>
 <p>And we get this C header:</p>
 <pre>
@@ -242,25 +242,25 @@ Do not edit it by hand.
     <span>C</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-c"><span class="line-number">0</span>// Path: user-rs-lib.h
-<span class="line-number">1</span>
-<span class="line-number">2</span>#include &lt;cstdarg&gt;
-<span class="line-number">3</span>#include &lt;cstdint&gt;
-<span class="line-number">4</span>#include &lt;cstdlib&gt;
-<span class="line-number">5</span>#include &lt;ostream&gt;
-<span class="line-number">6</span>#include &lt;new&gt;
-<span class="line-number">7</span>
-<span class="line-number">8</span>struct UserC {
-<span class="line-number">9</span>  uint8_t name[32];
-<span class="line-number">10</span>  uint64_t comments_count;
-<span class="line-number">11</span>  uint8_t uuid[16];
-<span class="line-number">12</span>};
-<span class="line-number">13</span>
-<span class="line-number">14</span>extern &quot;C&quot; {
-<span class="line-number">15</span>
-<span class="line-number">16</span>void RUST_write_comment(UserC *user, const uint8_t *comment, uintptr_t comment_len);
-<span class="line-number">17</span>
-<span class="line-number">18</span>} // extern &quot;C&quot;
+  <code class="language-c"><span class="line-number"></span>// Path: user-rs-lib.h
+<span class="line-number"></span>
+<span class="line-number"></span>#include &lt;cstdarg&gt;
+<span class="line-number"></span>#include &lt;cstdint&gt;
+<span class="line-number"></span>#include &lt;cstdlib&gt;
+<span class="line-number"></span>#include &lt;ostream&gt;
+<span class="line-number"></span>#include &lt;new&gt;
+<span class="line-number"></span>
+<span class="line-number"></span>struct UserC {
+<span class="line-number"></span>  uint8_t name[32];
+<span class="line-number"></span>  uint64_t comments_count;
+<span class="line-number"></span>  uint8_t uuid[16];
+<span class="line-number"></span>};
+<span class="line-number"></span>
+<span class="line-number"></span>extern &quot;C&quot; {
+<span class="line-number"></span>
+<span class="line-number"></span>void RUST_write_comment(UserC *user, const uint8_t *comment, uintptr_t comment_len);
+<span class="line-number"></span>
+<span class="line-number"></span>} // extern &quot;C&quot;
 </code></pre>
 <p>Now, let's go back to C++, include this C header, and add lots of compile-time assertions to ensure that the layouts are indeed the same. Again, I place these asserts in the constructor:</p>
 <pre>
@@ -268,25 +268,25 @@ Do not edit it by hand.
     <span>C++</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-c++"><span class="line-number">0</span>#include &quot;user-rs-lib.h&quot;
-<span class="line-number">1</span>
-<span class="line-number">2</span>class User {
-<span class="line-number">3</span> // [..]
-<span class="line-number">4</span>
-<span class="line-number">5</span>  User(std::string name_) : name{name_}, comments_count{0} {
-<span class="line-number">6</span>    arc4random_buf(uuid, sizeof(uuid));
-<span class="line-number">7</span>
-<span class="line-number">8</span>    static_assert(std::is_standard_layout_v&lt;User&gt;);
-<span class="line-number">9</span>    static_assert(sizeof(std::string) == 32);
-<span class="line-number">10</span>    static_assert(sizeof(User) == sizeof(UserC));
-<span class="line-number">11</span>    static_assert(offsetof(User, name) == offsetof(UserC, name));
-<span class="line-number">12</span>    static_assert(offsetof(User, comments_count) ==
-<span class="line-number">13</span>                  offsetof(UserC, comments_count));
-<span class="line-number">14</span>    static_assert(offsetof(User, uuid) == offsetof(UserC, uuid));
-<span class="line-number">15</span>  }
-<span class="line-number">16</span>
-<span class="line-number">17</span>  // [..]
-<span class="line-number">18</span>}
+  <code class="language-c++"><span class="line-number"></span>#include &quot;user-rs-lib.h&quot;
+<span class="line-number"></span>
+<span class="line-number"></span>class User {
+<span class="line-number"></span> // [..]
+<span class="line-number"></span>
+<span class="line-number"></span>  User(std::string name_) : name{name_}, comments_count{0} {
+<span class="line-number"></span>    arc4random_buf(uuid, sizeof(uuid));
+<span class="line-number"></span>
+<span class="line-number"></span>    static_assert(std::is_standard_layout_v&lt;User&gt;);
+<span class="line-number"></span>    static_assert(sizeof(std::string) == 32);
+<span class="line-number"></span>    static_assert(sizeof(User) == sizeof(UserC));
+<span class="line-number"></span>    static_assert(offsetof(User, name) == offsetof(UserC, name));
+<span class="line-number"></span>    static_assert(offsetof(User, comments_count) ==
+<span class="line-number"></span>                  offsetof(UserC, comments_count));
+<span class="line-number"></span>    static_assert(offsetof(User, uuid) == offsetof(UserC, uuid));
+<span class="line-number"></span>  }
+<span class="line-number"></span>
+<span class="line-number"></span>  // [..]
+<span class="line-number"></span>}
 </code></pre>
 <p>With that, we are certain that the layout in memory of the C++ class and the Rust struct are the same. We could probably generate all of these asserts, with a macro or with a code generator, but for this article, it's fine to do manually.</p>
 <p>So let's rewrite the C++ method in Rust. We will for now leave out the <code>name</code> field since it is a bit problematic. Later we will see how we can still use it from Rust:</p>
@@ -295,16 +295,16 @@ Do not edit it by hand.
     <span>Rust</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-rust"><span class="line-number">0</span>// Path: ./user-rs-lib/src/lib.rs
-<span class="line-number">1</span>
-<span class="line-number">2</span>#[no_mangle]
-<span class="line-number">3</span>pub extern &quot;C&quot; fn RUST_write_comment(user: &amp;mut UserC, comment: *const u8, comment_len: usize) {
-<span class="line-number">4</span>    let comment = unsafe { std::slice::from_raw_parts(comment, comment_len) };
-<span class="line-number">5</span>    let comment_str = unsafe { std::str::from_utf8_unchecked(comment) };
-<span class="line-number">6</span>    println!(&quot;({:x?}) says: {}&quot;, user.uuid.as_slice(), comment_str);
-<span class="line-number">7</span>
-<span class="line-number">8</span>    user.comments_count += 1;
-<span class="line-number">9</span>}
+  <code class="language-rust"><span class="line-number"></span>// Path: ./user-rs-lib/src/lib.rs
+<span class="line-number"></span>
+<span class="line-number"></span>#[no_mangle]
+<span class="line-number"></span>pub extern &quot;C&quot; fn RUST_write_comment(user: &amp;mut UserC, comment: *const u8, comment_len: usize) {
+<span class="line-number"></span>    let comment = unsafe { std::slice::from_raw_parts(comment, comment_len) };
+<span class="line-number"></span>    let comment_str = unsafe { std::str::from_utf8_unchecked(comment) };
+<span class="line-number"></span>    println!(&quot;({:x?}) says: {}&quot;, user.uuid.as_slice(), comment_str);
+<span class="line-number"></span>
+<span class="line-number"></span>    user.comments_count += 1;
+<span class="line-number"></span>}
 </code></pre>
 <p>We want to build a static library so we instruct <code>cargo</code> to do so by sticking these lines in <code>Cargo.toml</code>:</p>
 <pre>
@@ -312,8 +312,8 @@ Do not edit it by hand.
     <span>Toml</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-toml"><span class="line-number">0</span>[lib]
-<span class="line-number">1</span>crate-type = [&quot;staticlib&quot;]
+  <code class="language-toml"><span class="line-number"></span>[lib]
+<span class="line-number"></span>crate-type = [&quot;staticlib&quot;]
 </code></pre>
 <p>We now build:</p>
 <pre>
@@ -321,9 +321,9 @@ Do not edit it by hand.
     <span>Shell</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-shell"><span class="line-number">0</span>$ cargo build
-<span class="line-number">1</span># This is our artifact:
-<span class="line-number">2</span>$ ls target/debug/libuser_rs_lib.a
+  <code class="language-shell"><span class="line-number"></span>$ cargo build
+<span class="line-number"></span># This is our artifact:
+<span class="line-number"></span>$ ls target/debug/libuser_rs_lib.a
 </code></pre>
 <p>We can use our Rust function from C++ in <code>main</code>, with some cumbersome casts:</p>
 <pre>
@@ -331,19 +331,19 @@ Do not edit it by hand.
     <span>C++</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-c++"><span class="line-number">0</span>// Path: user.cpp
-<span class="line-number">1</span>
-<span class="line-number">2</span>int main() {
-<span class="line-number">3</span>  User alice{&quot;alice&quot;};
-<span class="line-number">4</span>  const char msg[] = &quot;hello, world!&quot;;
-<span class="line-number">5</span>  alice.write_comment(msg, sizeof(msg) - 1);
-<span class="line-number">6</span>
-<span class="line-number">7</span>  printf(&quot;Comment count: %lu\n&quot;, alice.get_comment_count());
-<span class="line-number">8</span>
-<span class="line-number">9</span>  RUST_write_comment(reinterpret_cast&lt;UserC *&gt;(&amp;alice),
-<span class="line-number">10</span>                     reinterpret_cast&lt;const uint8_t *&gt;(msg), sizeof(msg) - 1);
-<span class="line-number">11</span>  printf(&quot;Comment count: %lu\n&quot;, alice.get_comment_count());
-<span class="line-number">12</span>}
+  <code class="language-c++"><span class="line-number"></span>// Path: user.cpp
+<span class="line-number"></span>
+<span class="line-number"></span>int main() {
+<span class="line-number"></span>  User alice{&quot;alice&quot;};
+<span class="line-number"></span>  const char msg[] = &quot;hello, world!&quot;;
+<span class="line-number"></span>  alice.write_comment(msg, sizeof(msg) - 1);
+<span class="line-number"></span>
+<span class="line-number"></span>  printf(&quot;Comment count: %lu\n&quot;, alice.get_comment_count());
+<span class="line-number"></span>
+<span class="line-number"></span>  RUST_write_comment(reinterpret_cast&lt;UserC *&gt;(&amp;alice),
+<span class="line-number"></span>                     reinterpret_cast&lt;const uint8_t *&gt;(msg), sizeof(msg) - 1);
+<span class="line-number"></span>  printf(&quot;Comment count: %lu\n&quot;, alice.get_comment_count());
+<span class="line-number"></span>}
 </code></pre>
 <p>And link (manually) our brand new Rust library to our C++ program:</p>
 <pre>
@@ -351,12 +351,12 @@ Do not edit it by hand.
     <span>Shell</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-shell"><span class="line-number">0</span>$ clang++ user.cpp ./user-rs-lib/target/debug/libuser_rs_lib.a
-<span class="line-number">1</span>$ ./a.out
-<span class="line-number">2</span>alice (336ff4cec0a2ccbfc0c4e4cb9ba7c152) says: hello, world!
-<span class="line-number">3</span>Comment count: 1
-<span class="line-number">4</span>([33, 6f, f4, ce, c0, a2, cc, bf, c0, c4, e4, cb, 9b, a7, c1, 52]) says: hello, world!
-<span class="line-number">5</span>Comment count: 2
+  <code class="language-shell"><span class="line-number"></span>$ clang++ user.cpp ./user-rs-lib/target/debug/libuser_rs_lib.a
+<span class="line-number"></span>$ ./a.out
+<span class="line-number"></span>alice (336ff4cec0a2ccbfc0c4e4cb9ba7c152) says: hello, world!
+<span class="line-number"></span>Comment count: 1
+<span class="line-number"></span>([33, 6f, f4, ce, c0, a2, cc, bf, c0, c4, e4, cb, 9b, a7, c1, 52]) says: hello, world!
+<span class="line-number"></span>Comment count: 2
 </code></pre>
 <p>The output is slightly different for the uuid, because we use in the Rust implementation the default <code>Debug</code> trait to print the slice, but the content is the same.</p>
 <p>A couple of thoughts:</p>
@@ -377,36 +377,36 @@ Do not edit it by hand.
     <span>Rust</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-rust"><span class="line-number">0</span>#[repr(C)]
-<span class="line-number">1</span>// Akin to `&amp;[u8]`, for C.
-<span class="line-number">2</span>pub struct ByteSliceView {
-<span class="line-number">3</span>    pub ptr: *const u8,
-<span class="line-number">4</span>    pub len: usize,
-<span class="line-number">5</span>}
-<span class="line-number">6</span>
-<span class="line-number">7</span>
-<span class="line-number">8</span>#[no_mangle]
-<span class="line-number">9</span>pub extern &quot;C&quot; fn RUST_write_comment(
-<span class="line-number">10</span>    user: &amp;mut UserC,
-<span class="line-number">11</span>    comment: *const u8,
-<span class="line-number">12</span>    comment_len: usize,
-<span class="line-number">13</span>    name: ByteSliceView, // &lt;-- Additional parameter
-<span class="line-number">14</span>) {
-<span class="line-number">15</span>    let comment = unsafe { std::slice::from_raw_parts(comment, comment_len) };
-<span class="line-number">16</span>    let comment_str = unsafe { std::str::from_utf8_unchecked(comment) };
-<span class="line-number">17</span>
-<span class="line-number">18</span>    let name_slice = unsafe { std::slice::from_raw_parts(name.ptr, name.len) };
-<span class="line-number">19</span>    let name_str = unsafe { std::str::from_utf8_unchecked(name_slice) };
-<span class="line-number">20</span>
-<span class="line-number">21</span>    println!(
-<span class="line-number">22</span>        &quot;{} ({:x?}) says: {}&quot;,
-<span class="line-number">23</span>        name_str,
-<span class="line-number">24</span>        user.uuid.as_slice(),
-<span class="line-number">25</span>        comment_str
-<span class="line-number">26</span>    );
-<span class="line-number">27</span>
-<span class="line-number">28</span>    user.comments_count += 1;
-<span class="line-number">29</span>}
+  <code class="language-rust"><span class="line-number"></span>#[repr(C)]
+<span class="line-number"></span>// Akin to `&amp;[u8]`, for C.
+<span class="line-number"></span>pub struct ByteSliceView {
+<span class="line-number"></span>    pub ptr: *const u8,
+<span class="line-number"></span>    pub len: usize,
+<span class="line-number"></span>}
+<span class="line-number"></span>
+<span class="line-number"></span>
+<span class="line-number"></span>#[no_mangle]
+<span class="line-number"></span>pub extern &quot;C&quot; fn RUST_write_comment(
+<span class="line-number"></span>    user: &amp;mut UserC,
+<span class="line-number"></span>    comment: *const u8,
+<span class="line-number"></span>    comment_len: usize,
+<span class="line-number"></span>    name: ByteSliceView, // &lt;-- Additional parameter
+<span class="line-number"></span>) {
+<span class="line-number"></span>    let comment = unsafe { std::slice::from_raw_parts(comment, comment_len) };
+<span class="line-number"></span>    let comment_str = unsafe { std::str::from_utf8_unchecked(comment) };
+<span class="line-number"></span>
+<span class="line-number"></span>    let name_slice = unsafe { std::slice::from_raw_parts(name.ptr, name.len) };
+<span class="line-number"></span>    let name_str = unsafe { std::str::from_utf8_unchecked(name_slice) };
+<span class="line-number"></span>
+<span class="line-number"></span>    println!(
+<span class="line-number"></span>        &quot;{} ({:x?}) says: {}&quot;,
+<span class="line-number"></span>        name_str,
+<span class="line-number"></span>        user.uuid.as_slice(),
+<span class="line-number"></span>        comment_str
+<span class="line-number"></span>    );
+<span class="line-number"></span>
+<span class="line-number"></span>    user.comments_count += 1;
+<span class="line-number"></span>}
 </code></pre>
 <p>We re-run cbindgen, and now C++ has access to the <code>ByteSliceView</code> type. We thus write a helper to convert a <code>std::string</code> to this type, and pass the additional parameter to the Rust function (we also define a trivial <code>get_name()</code> getter for <code>User</code> since <code>name</code> is still private):</p>
 <pre>
@@ -414,22 +414,22 @@ Do not edit it by hand.
     <span>C++</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-c++"><span class="line-number">0</span>// Path: user.cpp
-<span class="line-number">1</span>
-<span class="line-number">2</span>ByteSliceView get_std_string_pointer_and_length(const std::string &amp;str) {
-<span class="line-number">3</span>  return {
-<span class="line-number">4</span>      .ptr = reinterpret_cast&lt;const uint8_t *&gt;(str.data()),
-<span class="line-number">5</span>      .len = str.size(),
-<span class="line-number">6</span>  };
-<span class="line-number">7</span>}
-<span class="line-number">8</span>
-<span class="line-number">9</span>// In main:
-<span class="line-number">10</span>int main() {
-<span class="line-number">11</span>    // [..]
-<span class="line-number">12</span>  RUST_write_comment(reinterpret_cast&lt;UserC *&gt;(&amp;alice),
-<span class="line-number">13</span>                     reinterpret_cast&lt;const uint8_t *&gt;(msg), sizeof(msg) - 1,
-<span class="line-number">14</span>                     get_std_string_pointer_and_length(alice.get_name()));
-<span class="line-number">15</span>}
+  <code class="language-c++"><span class="line-number"></span>// Path: user.cpp
+<span class="line-number"></span>
+<span class="line-number"></span>ByteSliceView get_std_string_pointer_and_length(const std::string &amp;str) {
+<span class="line-number"></span>  return {
+<span class="line-number"></span>      .ptr = reinterpret_cast&lt;const uint8_t *&gt;(str.data()),
+<span class="line-number"></span>      .len = str.size(),
+<span class="line-number"></span>  };
+<span class="line-number"></span>}
+<span class="line-number"></span>
+<span class="line-number"></span>// In main:
+<span class="line-number"></span>int main() {
+<span class="line-number"></span>    // [..]
+<span class="line-number"></span>  RUST_write_comment(reinterpret_cast&lt;UserC *&gt;(&amp;alice),
+<span class="line-number"></span>                     reinterpret_cast&lt;const uint8_t *&gt;(msg), sizeof(msg) - 1,
+<span class="line-number"></span>                     get_std_string_pointer_and_length(alice.get_name()));
+<span class="line-number"></span>}
 </code></pre>
 <p>We re-build, re-run, and lo and behold, the Rust implementation now prints the name:</p>
 <pre>
@@ -437,10 +437,10 @@ Do not edit it by hand.
     <span>Text</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-text"><span class="line-number">0</span>alice (69b7c41491ccfbd28c269ea4091652d) says: hello, world!
-<span class="line-number">1</span>Comment count: 1
-<span class="line-number">2</span>alice ([69, b7, c4, 14, 9, 1c, cf, bd, 28, c2, 69, ea, 40, 91, 65, 2d]) says: hello, world!
-<span class="line-number">3</span>Comment count: 2
+  <code class="language-text"><span class="line-number"></span>alice (69b7c41491ccfbd28c269ea4091652d) says: hello, world!
+<span class="line-number"></span>Comment count: 1
+<span class="line-number"></span>alice ([69, b7, c4, 14, 9, 1c, cf, bd, 28, c2, 69, ea, 40, 91, 65, 2d]) says: hello, world!
+<span class="line-number"></span>Comment count: 2
 </code></pre>
 <p>Alternatively, if we cannot or do not want to change the Rust signature, we can make the C++ helper <code>get_std_string_pointer_and_length</code> have a C convention and take a void pointer, so that Rust will call the helper itself, at the cost of numerous casts in and out of <code>void*</code>.</p>
 <h2 id="improving-the-std-string-situation">
@@ -480,143 +480,143 @@ Do not edit it by hand.
     <span>Cpp</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-cpp"><span class="line-number">0</span>// Path: user.cpp
-<span class="line-number">1</span>
-<span class="line-number">2</span>#include &quot;user-rs-lib.h&quot;
-<span class="line-number">3</span>#include &lt;cstdint&gt;
-<span class="line-number">4</span>#include &lt;cstdio&gt;
-<span class="line-number">5</span>#include &lt;cstring&gt;
-<span class="line-number">6</span>#include &lt;string&gt;
-<span class="line-number">7</span>
-<span class="line-number">8</span>extern &quot;C&quot; ByteSliceView
-<span class="line-number">9</span>get_std_string_pointer_and_length(const std::string &amp;str) {
-<span class="line-number">10</span>  return {
-<span class="line-number">11</span>      .ptr = reinterpret_cast&lt;const uint8_t *&gt;(str.data()),
-<span class="line-number">12</span>      .len = str.size(),
-<span class="line-number">13</span>  };
-<span class="line-number">14</span>}
-<span class="line-number">15</span>
-<span class="line-number">16</span>class User {
-<span class="line-number">17</span>  std::string name;
-<span class="line-number">18</span>  uint64_t comments_count;
-<span class="line-number">19</span>  uint8_t uuid[16];
-<span class="line-number">20</span>
-<span class="line-number">21</span>public:
-<span class="line-number">22</span>  User(std::string name_) : name{name_}, comments_count{0} {
-<span class="line-number">23</span>    arc4random_buf(uuid, sizeof(uuid));
-<span class="line-number">24</span>
-<span class="line-number">25</span>    static_assert(std::is_standard_layout_v&lt;User&gt;);
-<span class="line-number">26</span>    static_assert(sizeof(std::string) == 32);
-<span class="line-number">27</span>    static_assert(sizeof(User) == sizeof(UserC));
-<span class="line-number">28</span>    static_assert(offsetof(User, name) == offsetof(UserC, name));
-<span class="line-number">29</span>    static_assert(offsetof(User, comments_count) ==
-<span class="line-number">30</span>                  offsetof(UserC, comments_count));
-<span class="line-number">31</span>    static_assert(offsetof(User, uuid) == offsetof(UserC, uuid));
-<span class="line-number">32</span>  }
-<span class="line-number">33</span>
-<span class="line-number">34</span>  void write_comment(const char *comment, size_t comment_len) {
-<span class="line-number">35</span>    printf(&quot;%s (&quot;, name.c_str());
-<span class="line-number">36</span>    for (size_t i = 0; i &lt; sizeof(uuid); i += 1) {
-<span class="line-number">37</span>      printf(&quot;%x&quot;, uuid[i]);
-<span class="line-number">38</span>    }
-<span class="line-number">39</span>    printf(&quot;) says: %.*s\n&quot;, (int)comment_len, comment);
-<span class="line-number">40</span>    comments_count += 1;
-<span class="line-number">41</span>  }
-<span class="line-number">42</span>
-<span class="line-number">43</span>  uint64_t get_comment_count() { return comments_count; }
-<span class="line-number">44</span>
-<span class="line-number">45</span>  const std::string &amp;get_name() { return name; }
-<span class="line-number">46</span>};
-<span class="line-number">47</span>
-<span class="line-number">48</span>int main() {
-<span class="line-number">49</span>  User alice{&quot;alice&quot;};
-<span class="line-number">50</span>  const char msg[] = &quot;hello, world!&quot;;
-<span class="line-number">51</span>  alice.write_comment(msg, sizeof(msg) - 1);
-<span class="line-number">52</span>
-<span class="line-number">53</span>  printf(&quot;Comment count: %lu\n&quot;, alice.get_comment_count());
-<span class="line-number">54</span>
-<span class="line-number">55</span>  RUST_write_comment(reinterpret_cast&lt;UserC *&gt;(&amp;alice),
-<span class="line-number">56</span>                     reinterpret_cast&lt;const uint8_t *&gt;(msg), sizeof(msg) - 1,
-<span class="line-number">57</span>                     get_std_string_pointer_and_length(alice.get_name()));
-<span class="line-number">58</span>  printf(&quot;Comment count: %lu\n&quot;, alice.get_comment_count());
-<span class="line-number">59</span>}
+  <code class="language-cpp"><span class="line-number"></span>// Path: user.cpp
+<span class="line-number"></span>
+<span class="line-number"></span>#include &quot;user-rs-lib.h&quot;
+<span class="line-number"></span>#include &lt;cstdint&gt;
+<span class="line-number"></span>#include &lt;cstdio&gt;
+<span class="line-number"></span>#include &lt;cstring&gt;
+<span class="line-number"></span>#include &lt;string&gt;
+<span class="line-number"></span>
+<span class="line-number"></span>extern &quot;C&quot; ByteSliceView
+<span class="line-number"></span>get_std_string_pointer_and_length(const std::string &amp;str) {
+<span class="line-number"></span>  return {
+<span class="line-number"></span>      .ptr = reinterpret_cast&lt;const uint8_t *&gt;(str.data()),
+<span class="line-number"></span>      .len = str.size(),
+<span class="line-number"></span>  };
+<span class="line-number"></span>}
+<span class="line-number"></span>
+<span class="line-number"></span>class User {
+<span class="line-number"></span>  std::string name;
+<span class="line-number"></span>  uint64_t comments_count;
+<span class="line-number"></span>  uint8_t uuid[16];
+<span class="line-number"></span>
+<span class="line-number"></span>public:
+<span class="line-number"></span>  User(std::string name_) : name{name_}, comments_count{0} {
+<span class="line-number"></span>    arc4random_buf(uuid, sizeof(uuid));
+<span class="line-number"></span>
+<span class="line-number"></span>    static_assert(std::is_standard_layout_v&lt;User&gt;);
+<span class="line-number"></span>    static_assert(sizeof(std::string) == 32);
+<span class="line-number"></span>    static_assert(sizeof(User) == sizeof(UserC));
+<span class="line-number"></span>    static_assert(offsetof(User, name) == offsetof(UserC, name));
+<span class="line-number"></span>    static_assert(offsetof(User, comments_count) ==
+<span class="line-number"></span>                  offsetof(UserC, comments_count));
+<span class="line-number"></span>    static_assert(offsetof(User, uuid) == offsetof(UserC, uuid));
+<span class="line-number"></span>  }
+<span class="line-number"></span>
+<span class="line-number"></span>  void write_comment(const char *comment, size_t comment_len) {
+<span class="line-number"></span>    printf(&quot;%s (&quot;, name.c_str());
+<span class="line-number"></span>    for (size_t i = 0; i &lt; sizeof(uuid); i += 1) {
+<span class="line-number"></span>      printf(&quot;%x&quot;, uuid[i]);
+<span class="line-number"></span>    }
+<span class="line-number"></span>    printf(&quot;) says: %.*s\n&quot;, (int)comment_len, comment);
+<span class="line-number"></span>    comments_count += 1;
+<span class="line-number"></span>  }
+<span class="line-number"></span>
+<span class="line-number"></span>  uint64_t get_comment_count() { return comments_count; }
+<span class="line-number"></span>
+<span class="line-number"></span>  const std::string &amp;get_name() { return name; }
+<span class="line-number"></span>};
+<span class="line-number"></span>
+<span class="line-number"></span>int main() {
+<span class="line-number"></span>  User alice{&quot;alice&quot;};
+<span class="line-number"></span>  const char msg[] = &quot;hello, world!&quot;;
+<span class="line-number"></span>  alice.write_comment(msg, sizeof(msg) - 1);
+<span class="line-number"></span>
+<span class="line-number"></span>  printf(&quot;Comment count: %lu\n&quot;, alice.get_comment_count());
+<span class="line-number"></span>
+<span class="line-number"></span>  RUST_write_comment(reinterpret_cast&lt;UserC *&gt;(&amp;alice),
+<span class="line-number"></span>                     reinterpret_cast&lt;const uint8_t *&gt;(msg), sizeof(msg) - 1,
+<span class="line-number"></span>                     get_std_string_pointer_and_length(alice.get_name()));
+<span class="line-number"></span>  printf(&quot;Comment count: %lu\n&quot;, alice.get_comment_count());
+<span class="line-number"></span>}
 </code></pre>
 <pre>
   <div class="code-header">
     <span>C</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-c"><span class="line-number">0</span>// Path: user-rs-lib.h
-<span class="line-number">1</span>
-<span class="line-number">2</span>#include &lt;cstdarg&gt;
-<span class="line-number">3</span>#include &lt;cstdint&gt;
-<span class="line-number">4</span>#include &lt;cstdlib&gt;
-<span class="line-number">5</span>#include &lt;ostream&gt;
-<span class="line-number">6</span>#include &lt;new&gt;
-<span class="line-number">7</span>
-<span class="line-number">8</span>struct UserC {
-<span class="line-number">9</span>  uint8_t name[32];
-<span class="line-number">10</span>  uint64_t comments_count;
-<span class="line-number">11</span>  uint8_t uuid[16];
-<span class="line-number">12</span>};
-<span class="line-number">13</span>
-<span class="line-number">14</span>struct ByteSliceView {
-<span class="line-number">15</span>  const uint8_t *ptr;
-<span class="line-number">16</span>  uintptr_t len;
-<span class="line-number">17</span>};
-<span class="line-number">18</span>
-<span class="line-number">19</span>extern &quot;C&quot; {
-<span class="line-number">20</span>
-<span class="line-number">21</span>void RUST_write_comment(UserC *user,
-<span class="line-number">22</span>                        const uint8_t *comment,
-<span class="line-number">23</span>                        uintptr_t comment_len,
-<span class="line-number">24</span>                        ByteSliceView name);
-<span class="line-number">25</span>
-<span class="line-number">26</span>} // extern &quot;C&quot;
+  <code class="language-c"><span class="line-number"></span>// Path: user-rs-lib.h
+<span class="line-number"></span>
+<span class="line-number"></span>#include &lt;cstdarg&gt;
+<span class="line-number"></span>#include &lt;cstdint&gt;
+<span class="line-number"></span>#include &lt;cstdlib&gt;
+<span class="line-number"></span>#include &lt;ostream&gt;
+<span class="line-number"></span>#include &lt;new&gt;
+<span class="line-number"></span>
+<span class="line-number"></span>struct UserC {
+<span class="line-number"></span>  uint8_t name[32];
+<span class="line-number"></span>  uint64_t comments_count;
+<span class="line-number"></span>  uint8_t uuid[16];
+<span class="line-number"></span>};
+<span class="line-number"></span>
+<span class="line-number"></span>struct ByteSliceView {
+<span class="line-number"></span>  const uint8_t *ptr;
+<span class="line-number"></span>  uintptr_t len;
+<span class="line-number"></span>};
+<span class="line-number"></span>
+<span class="line-number"></span>extern &quot;C&quot; {
+<span class="line-number"></span>
+<span class="line-number"></span>void RUST_write_comment(UserC *user,
+<span class="line-number"></span>                        const uint8_t *comment,
+<span class="line-number"></span>                        uintptr_t comment_len,
+<span class="line-number"></span>                        ByteSliceView name);
+<span class="line-number"></span>
+<span class="line-number"></span>} // extern &quot;C&quot;
 </code></pre>
 <pre>
   <div class="code-header">
     <span>Rust</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-rust"><span class="line-number">0</span>// Path: user-rs-lib/src/lib.rs
-<span class="line-number">1</span>
-<span class="line-number">2</span>#[repr(C)]
-<span class="line-number">3</span>pub struct UserC {
-<span class="line-number">4</span>    pub name: [u8; 32],
-<span class="line-number">5</span>    pub comments_count: u64,
-<span class="line-number">6</span>    pub uuid: [u8; 16],
-<span class="line-number">7</span>}
-<span class="line-number">8</span>
-<span class="line-number">9</span>#[repr(C)]
-<span class="line-number">10</span>// Akin to `&amp;[u8]`, for C.
-<span class="line-number">11</span>pub struct ByteSliceView {
-<span class="line-number">12</span>    pub ptr: *const u8,
-<span class="line-number">13</span>    pub len: usize,
-<span class="line-number">14</span>}
-<span class="line-number">15</span>
-<span class="line-number">16</span>#[no_mangle]
-<span class="line-number">17</span>pub extern &quot;C&quot; fn RUST_write_comment(
-<span class="line-number">18</span>    user: &amp;mut UserC,
-<span class="line-number">19</span>    comment: *const u8,
-<span class="line-number">20</span>    comment_len: usize,
-<span class="line-number">21</span>    name: ByteSliceView,
-<span class="line-number">22</span>) {
-<span class="line-number">23</span>    let comment = unsafe { std::slice::from_raw_parts(comment, comment_len) };
-<span class="line-number">24</span>    let comment_str = unsafe { std::str::from_utf8_unchecked(comment) };
-<span class="line-number">25</span>
-<span class="line-number">26</span>    let name_slice = unsafe { std::slice::from_raw_parts(name.ptr, name.len) };
-<span class="line-number">27</span>    let name_str = unsafe { std::str::from_utf8_unchecked(name_slice) };
-<span class="line-number">28</span>
-<span class="line-number">29</span>    println!(
-<span class="line-number">30</span>        &quot;{} ({:x?}) says: {}&quot;,
-<span class="line-number">31</span>        name_str,
-<span class="line-number">32</span>        user.uuid.as_slice(),
-<span class="line-number">33</span>        comment_str
-<span class="line-number">34</span>    );
-<span class="line-number">35</span>
-<span class="line-number">36</span>    user.comments_count += 1;
-<span class="line-number">37</span>}
+  <code class="language-rust"><span class="line-number"></span>// Path: user-rs-lib/src/lib.rs
+<span class="line-number"></span>
+<span class="line-number"></span>#[repr(C)]
+<span class="line-number"></span>pub struct UserC {
+<span class="line-number"></span>    pub name: [u8; 32],
+<span class="line-number"></span>    pub comments_count: u64,
+<span class="line-number"></span>    pub uuid: [u8; 16],
+<span class="line-number"></span>}
+<span class="line-number"></span>
+<span class="line-number"></span>#[repr(C)]
+<span class="line-number"></span>// Akin to `&amp;[u8]`, for C.
+<span class="line-number"></span>pub struct ByteSliceView {
+<span class="line-number"></span>    pub ptr: *const u8,
+<span class="line-number"></span>    pub len: usize,
+<span class="line-number"></span>}
+<span class="line-number"></span>
+<span class="line-number"></span>#[no_mangle]
+<span class="line-number"></span>pub extern &quot;C&quot; fn RUST_write_comment(
+<span class="line-number"></span>    user: &amp;mut UserC,
+<span class="line-number"></span>    comment: *const u8,
+<span class="line-number"></span>    comment_len: usize,
+<span class="line-number"></span>    name: ByteSliceView,
+<span class="line-number"></span>) {
+<span class="line-number"></span>    let comment = unsafe { std::slice::from_raw_parts(comment, comment_len) };
+<span class="line-number"></span>    let comment_str = unsafe { std::str::from_utf8_unchecked(comment) };
+<span class="line-number"></span>
+<span class="line-number"></span>    let name_slice = unsafe { std::slice::from_raw_parts(name.ptr, name.len) };
+<span class="line-number"></span>    let name_str = unsafe { std::str::from_utf8_unchecked(name_slice) };
+<span class="line-number"></span>
+<span class="line-number"></span>    println!(
+<span class="line-number"></span>        &quot;{} ({:x?}) says: {}&quot;,
+<span class="line-number"></span>        name_str,
+<span class="line-number"></span>        user.uuid.as_slice(),
+<span class="line-number"></span>        comment_str
+<span class="line-number"></span>    );
+<span class="line-number"></span>
+<span class="line-number"></span>    user.comments_count += 1;
+<span class="line-number"></span>}
 </code></pre>
 </details>
 <p><a href="/blog"> ⏴ Back to all articles</a></p>

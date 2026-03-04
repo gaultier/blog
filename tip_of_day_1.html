@@ -95,20 +95,20 @@ Do not edit it by hand.
     <span>Rust</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-rust"><span class="line-number">0</span>// src/foo.rs
-<span class="line-number">1</span>
-<span class="line-number">2</span>fn foo() { 
-<span class="line-number">3</span> ...
-<span class="line-number">4</span>}
-<span class="line-number">5</span>
-<span class="line-number">6</span>#[cfg(test)]
-<span class="line-number">7</span>mod tests {
-<span class="line-number">8</span>    fn test_foo(){
-<span class="line-number">9</span>      ...
-<span class="line-number">10</span>    }
-<span class="line-number">11</span>
-<span class="line-number">12</span>    ...
-<span class="line-number">13</span>}
+  <code class="language-rust"><span class="line-number"></span>// src/foo.rs
+<span class="line-number"></span>
+<span class="line-number"></span>fn foo() { 
+<span class="line-number"></span> ...
+<span class="line-number"></span>}
+<span class="line-number"></span>
+<span class="line-number"></span>#[cfg(test)]
+<span class="line-number"></span>mod tests {
+<span class="line-number"></span>    fn test_foo(){
+<span class="line-number"></span>      ...
+<span class="line-number"></span>    }
+<span class="line-number"></span>
+<span class="line-number"></span>    ...
+<span class="line-number"></span>}
 </code></pre>
 <p>But I only want to know how big is the implementation. I don't care about the tests. And <code>wc</code> or <code>tokei</code> will not show me that.</p>
 <p>So I resorted to my trusty <code>awk</code>. Let's first count all lines, like <code>wc</code> does:</p>
@@ -117,9 +117,9 @@ Do not edit it by hand.
     <span>Shell</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-shell"><span class="line-number">0</span>$ awk '{count += 1} END{print(count)}' src/***.rs
-<span class="line-number">1</span># Equivalent to:
-<span class="line-number">2</span>$ wc -l src/***/.rs
+  <code class="language-shell"><span class="line-number"></span>$ awk '{count += 1} END{print(count)}' src/***.rs
+<span class="line-number"></span># Equivalent to:
+<span class="line-number"></span>$ wc -l src/***/.rs
 </code></pre>
 <p>On my open-source Rust <a href="https://github.com/gaultier/kotlin-rs">project</a>, this prints <code>11485</code>.</p>
 <p>Alright, now let's exclude the tests. When we encounter the line <code>mod tests</code>, we stop counting. Note that this name is just a convention, but that's one that followed pretty much universally in Rust code, and there is usually no more code after this section. Tweak the name if needed:</p>
@@ -128,7 +128,7 @@ Do not edit it by hand.
     <span>Shell</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-shell"><span class="line-number">0</span>$ awk '/mod tests/{skip[FILENAME]=1}  !skip[FILENAME]{count += 1} END{print(count)}'  src/***.rs
+  <code class="language-shell"><span class="line-number"></span>$ awk '/mod tests/{skip[FILENAME]=1}  !skip[FILENAME]{count += 1} END{print(count)}'  src/***.rs
 </code></pre>
 <p>And this prints in the same project: <code>10057</code>.</p>
 <p>Let's unpack it:</p>
@@ -149,7 +149,7 @@ Do not edit it by hand.
     <span>Shell</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-shell"><span class="line-number">0</span>$ awk '/mod tests/{exit 0} {count += 1} END{print(count)}'  src/***.rs
+  <code class="language-shell"><span class="line-number"></span>$ awk '/mod tests/{exit 0} {count += 1} END{print(count)}'  src/***.rs
 </code></pre>
 <p>If we encounter tests, stop processing the file altogether, with the builtin statement <code>exit</code> (<a href="https://www.gnu.org/software/gawk/manual/html_node/Exit-Statement.html">docs</a>).</p>
 <p>Running this on the same Rust codebase prints: <code>1038</code> which is obviously wrong.</p>

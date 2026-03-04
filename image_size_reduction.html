@@ -95,7 +95,7 @@ What? Quant-what?</p>
     <span>Shell</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-shell"><span class="line-number">0</span>$ ls *.png | parallel 'pngquant {} -o {}.tmp &amp;&amp; mv {}.tmp {}'
+  <code class="language-shell"><span class="line-number"></span>$ ls *.png | parallel 'pngquant {} -o {}.tmp &amp;&amp; mv {}.tmp {}'
 </code></pre>
 <p>It finished instantly, and here is the result:</p>
 <pre>
@@ -103,24 +103,24 @@ What? Quant-what?</p>
     <span>Shell</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-shell"><span class="line-number">0</span>$ git show 2e126f55a77e75e182ea18b36fb535a0e37793e4 --compact-summary
-<span class="line-number">1</span>commit 2e126f55a77e75e182ea18b36fb535a0e37793e4 (HEAD -&gt; master, origin/master, origin/HEAD)
-<span class="line-number">2</span>
-<span class="line-number">3</span>    use pgnquant to shrink images
-<span class="line-number">4</span>
-<span class="line-number">5</span> feed.png                        | Bin 167641 -&gt; 63272 bytes
-<span class="line-number">6</span> gnuplot.png                     | Bin 4594 -&gt; 3316 bytes
-<span class="line-number">7</span> mem_prof1.png                   | Bin 157587 -&gt; 59201 bytes
-<span class="line-number">8</span> mem_prof2.png                   | Bin 209046 -&gt; 81028 bytes
-<span class="line-number">9</span> mem_prof3.png                   | Bin 75019 -&gt; 27259 bytes
-<span class="line-number">10</span> mem_prof4.png                   | Bin 50964 -&gt; 21345 bytes
-<span class="line-number">11</span> wayland-screenshot-floating.png | Bin 54620 -&gt; 19272 bytes
-<span class="line-number">12</span> wayland-screenshot-red.png      | Bin 101047 -&gt; 45230 bytes
-<span class="line-number">13</span> wayland-screenshot-tiled.png    | Bin 188549 -&gt; 107573 bytes
-<span class="line-number">14</span> wayland-screenshot-tiled1.png   | Bin 505994 -&gt; 170804 bytes
-<span class="line-number">15</span> x11_x64_black_window.png        | Bin 32977 -&gt; 16898 bytes
-<span class="line-number">16</span> x11_x64_final.png               | Bin 47985 -&gt; 16650 bytes
-<span class="line-number">17</span> 12 files changed, 0 insertions(+), 0 deletions(-)
+  <code class="language-shell"><span class="line-number"></span>$ git show 2e126f55a77e75e182ea18b36fb535a0e37793e4 --compact-summary
+<span class="line-number"></span>commit 2e126f55a77e75e182ea18b36fb535a0e37793e4 (HEAD -&gt; master, origin/master, origin/HEAD)
+<span class="line-number"></span>
+<span class="line-number"></span>    use pgnquant to shrink images
+<span class="line-number"></span>
+<span class="line-number"></span> feed.png                        | Bin 167641 -&gt; 63272 bytes
+<span class="line-number"></span> gnuplot.png                     | Bin 4594 -&gt; 3316 bytes
+<span class="line-number"></span> mem_prof1.png                   | Bin 157587 -&gt; 59201 bytes
+<span class="line-number"></span> mem_prof2.png                   | Bin 209046 -&gt; 81028 bytes
+<span class="line-number"></span> mem_prof3.png                   | Bin 75019 -&gt; 27259 bytes
+<span class="line-number"></span> mem_prof4.png                   | Bin 50964 -&gt; 21345 bytes
+<span class="line-number"></span> wayland-screenshot-floating.png | Bin 54620 -&gt; 19272 bytes
+<span class="line-number"></span> wayland-screenshot-red.png      | Bin 101047 -&gt; 45230 bytes
+<span class="line-number"></span> wayland-screenshot-tiled.png    | Bin 188549 -&gt; 107573 bytes
+<span class="line-number"></span> wayland-screenshot-tiled1.png   | Bin 505994 -&gt; 170804 bytes
+<span class="line-number"></span> x11_x64_black_window.png        | Bin 32977 -&gt; 16898 bytes
+<span class="line-number"></span> x11_x64_final.png               | Bin 47985 -&gt; 16650 bytes
+<span class="line-number"></span> 12 files changed, 0 insertions(+), 0 deletions(-)
 </code></pre>
 <p>Eye-balling it, every image was on average halved. Not bad, for no visible difference!</p>
 <p>Initially, I wanted to use the new hotness: AVIF. Here's an example using the <code>avifenc</code> tool on the original image:</p>
@@ -129,10 +129,10 @@ What? Quant-what?</p>
     <span>Shell</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-shell"><span class="line-number">0</span>$ avifenc feed.png feed.avif
-<span class="line-number">1</span>$ stat -c '%n %s' feed.{png,avif}
-<span class="line-number">2</span>feed.png 167641
-<span class="line-number">3</span>feed.avif 36034
+  <code class="language-shell"><span class="line-number"></span>$ avifenc feed.png feed.avif
+<span class="line-number"></span>$ stat -c '%n %s' feed.{png,avif}
+<span class="line-number"></span>feed.png 167641
+<span class="line-number"></span>feed.avif 36034
 </code></pre>
 <p>That's almost a x5 reduction in size! However this format is not yet well supported by all browsers. It's recommended to still serve a PNG as fallback, which is a bit too complex for this blog. Still, this format is very promising so I thought I should mention it.</p>
 <p>So as of now, all PNG images on this blog are much lighter! Not too bad for 10m of work.</p>

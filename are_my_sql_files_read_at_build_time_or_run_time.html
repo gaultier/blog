@@ -128,14 +128,14 @@ And files can also be read at runtime of course.</p>
     <span>Dtrace</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-dtrace"><span class="line-number">0</span>io:::start // Listen to I/O requests.
-<span class="line-number">1</span>/execname == &quot;go&quot; || execname == &quot;migratest.test&quot; / // Filter by executable name.
-<span class="line-number">2</span>{
-<span class="line-number">3</span>    this-&gt;p = args[2]-&gt;fi_pathname; // Get the file name.
-<span class="line-number">4</span>    if (rindex(this-&gt;p, &quot;.sql&quot;) == strlen(this-&gt;p)-4){ // Only consider files with a `.sql` extension.
-<span class="line-number">5</span>        printf(&quot;%s %s\n&quot;, execname, this-&gt;p);
-<span class="line-number">6</span>    }
-<span class="line-number">7</span>}
+  <code class="language-dtrace"><span class="line-number"></span>io:::start // Listen to I/O requests.
+<span class="line-number"></span>/execname == &quot;go&quot; || execname == &quot;migratest.test&quot; / // Filter by executable name.
+<span class="line-number"></span>{
+<span class="line-number"></span>    this-&gt;p = args[2]-&gt;fi_pathname; // Get the file name.
+<span class="line-number"></span>    if (rindex(this-&gt;p, &quot;.sql&quot;) == strlen(this-&gt;p)-4){ // Only consider files with a `.sql` extension.
+<span class="line-number"></span>        printf(&quot;%s %s\n&quot;, execname, this-&gt;p);
+<span class="line-number"></span>    }
+<span class="line-number"></span>}
 </code></pre>
 <p>We watch for executables named <code>go</code> (the Go compiler - build time) or <code>migratest.test</code> (the faulty test - run time) that open files ending with <code>.sql</code>, in which case we print the executable name and file name.</p>
 <p>The nice thing is that we can keep our D script running forever, if we feel like it, even on a busy system, and run the test suite many times, it will work just fine.</p>
@@ -147,22 +147,22 @@ And files can also be read at runtime of course.</p>
     <span>Shell</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-shell"><span class="line-number">0</span># In one terminal.
-<span class="line-number">1</span>$ go test .
-<span class="line-number">2</span>
-<span class="line-number">3</span># In another terminal.
-<span class="line-number">4</span>$ sudo dtrace -s ~/scratch/io.d -q
-<span class="line-number">5</span>
-<span class="line-number">6</span>go ??/sql/20250623113513000000_hydra_secret_pagination.down.sql
-<span class="line-number">7</span>go ??/sql/20250623113513000000_hydra_secret_pagination.up.sql
-<span class="line-number">8</span>go ??/sql/20250624111454000000_keto_secret_pagination.down.sql
-<span class="line-number">9</span>go ??/sql/20250624111454000000_keto_secret_pagination.up.sql
-<span class="line-number">10</span>
-<span class="line-number">11</span>[...]
-<span class="line-number">12</span>
-<span class="line-number">13</span>migratest.test ??/testdata/20231129123900_testdata.sql
-<span class="line-number">14</span>migratest.test ??/testdata/20240113512800_testdata.sql
-<span class="line-number">15</span>migratest.test ??/testdata/20240131100001_testdata.sql
+  <code class="language-shell"><span class="line-number"></span># In one terminal.
+<span class="line-number"></span>$ go test .
+<span class="line-number"></span>
+<span class="line-number"></span># In another terminal.
+<span class="line-number"></span>$ sudo dtrace -s ~/scratch/io.d -q
+<span class="line-number"></span>
+<span class="line-number"></span>go ??/sql/20250623113513000000_hydra_secret_pagination.down.sql
+<span class="line-number"></span>go ??/sql/20250623113513000000_hydra_secret_pagination.up.sql
+<span class="line-number"></span>go ??/sql/20250624111454000000_keto_secret_pagination.down.sql
+<span class="line-number"></span>go ??/sql/20250624111454000000_keto_secret_pagination.up.sql
+<span class="line-number"></span>
+<span class="line-number"></span>[...]
+<span class="line-number"></span>
+<span class="line-number"></span>migratest.test ??/testdata/20231129123900_testdata.sql
+<span class="line-number"></span>migratest.test ??/testdata/20240113512800_testdata.sql
+<span class="line-number"></span>migratest.test ??/testdata/20240131100001_testdata.sql
 </code></pre>
 <p>Looking at the first few lines of output: The executable name is <code>go</code> (the first field) so these particular SQL files are read at build time and baked into the test executable.</p>
 <p>Then, looking at the last few lines of output: The executable name is this time <code>migratest.test</code> so those other SQL files are read at run time.</p>

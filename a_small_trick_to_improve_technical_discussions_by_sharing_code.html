@@ -104,9 +104,9 @@ It works for any code, be it existing code on the main branch, or experimental c
     <span>Lua</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-lua"><span class="line-number">0</span>vim.api.nvim_create_user_command('GitWebUiUrlCopy', function(arg)
-<span class="line-number">1</span>end,
-<span class="line-number">2</span>{force=true, range=true, nargs=0, desc='Copy to clipboard a URL to a git webui for the current line'})
+  <code class="language-lua"><span class="line-number"></span>vim.api.nvim_create_user_command('GitWebUiUrlCopy', function(arg)
+<span class="line-number"></span>end,
+<span class="line-number"></span>{force=true, range=true, nargs=0, desc='Copy to clipboard a URL to a git webui for the current line'})
 </code></pre>
 <ul>
 <li><code>force=true</code> overrides any previous definition which is handy when iterating over the implementation</li>
@@ -120,8 +120,8 @@ It works for any code, be it existing code on the main branch, or experimental c
     <span>Lua</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-lua"><span class="line-number">0</span>  local line_start = arg.line1
-<span class="line-number">1</span>  local line_end = arg.line2
+  <code class="language-lua"><span class="line-number"></span>  local line_start = arg.line1
+<span class="line-number"></span>  local line_end = arg.line2
 </code></pre>
 <p>And we also need to get the absolute path to the current file:</p>
 <pre>
@@ -129,7 +129,7 @@ It works for any code, be it existing code on the main branch, or experimental c
     <span>Lua</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-lua"><span class="line-number">0</span>  local file_path_abs = vim.fn.expand('%:p')
+  <code class="language-lua"><span class="line-number"></span>  local file_path_abs = vim.fn.expand('%:p')
 </code></pre>
 <p><em>From this point on explanations are git specific, but I'm sure other VCSes have similar features.</em></p>
 <p>Note that since the current directory might be one or several directories deep relative to the root of the git repository, we need to fix this path, because the git web UI expects a path from the root of the git repository.</p>
@@ -140,10 +140,10 @@ It works for any code, be it existing code on the main branch, or experimental c
     <span>Lua</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-lua"><span class="line-number">0</span>  local file_path_abs = vim.fn.expand('%:p')
-<span class="line-number">1</span>  local file_path_rel_cmd = io.popen('git ls-files --full-name &quot;' .. file_path_abs .. '&quot;')
-<span class="line-number">2</span>  local file_path_relative_to_git_root = file_path_rel_cmd:read('*a')
-<span class="line-number">3</span>  file_path_rel_cmd.close()
+  <code class="language-lua"><span class="line-number"></span>  local file_path_abs = vim.fn.expand('%:p')
+<span class="line-number"></span>  local file_path_rel_cmd = io.popen('git ls-files --full-name &quot;' .. file_path_abs .. '&quot;')
+<span class="line-number"></span>  local file_path_relative_to_git_root = file_path_rel_cmd:read('*a')
+<span class="line-number"></span>  file_path_rel_cmd.close()
 </code></pre>
 <p>We also need to get the git URL of the remote (assuming there is only one, but it's easy to expand the logic to handle multiple):</p>
 <pre>
@@ -151,10 +151,10 @@ It works for any code, be it existing code on the main branch, or experimental c
     <span>Lua</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-lua"><span class="line-number">0</span>  local cmd_handle = io.popen('git remote get-url origin')
-<span class="line-number">1</span>  local git_origin = cmd_handle:read('*a')
-<span class="line-number">2</span>  cmd_handle.close()
-<span class="line-number">3</span>  git_origin = string.gsub(git_origin, &quot;%s+$&quot;, &quot;&quot;)
+  <code class="language-lua"><span class="line-number"></span>  local cmd_handle = io.popen('git remote get-url origin')
+<span class="line-number"></span>  local git_origin = cmd_handle:read('*a')
+<span class="line-number"></span>  cmd_handle.close()
+<span class="line-number"></span>  git_origin = string.gsub(git_origin, &quot;%s+$&quot;, &quot;&quot;)
 </code></pre>
 <p>And the last bit of information we need is to get the current commit.
 In the past, I just used the current branch name, however since this is a moving target, it meant that when opening the link, the code might be completely different than what it was when giving out the link. Using a fixed commit is thus better (assuming no one force pushes and messes with the history):</p>
@@ -163,10 +163,10 @@ In the past, I just used the current branch name, however since this is a moving
     <span>Lua</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-lua"><span class="line-number">0</span>  local cmd_handle = io.popen('git rev-parse HEAD')
-<span class="line-number">1</span>  local git_commit = cmd_handle:read('*a')
-<span class="line-number">2</span>  cmd_handle.close()
-<span class="line-number">3</span>  git_commit = string.gsub(git_commit, &quot;%s+$&quot;, &quot;&quot;)
+  <code class="language-lua"><span class="line-number"></span>  local cmd_handle = io.popen('git rev-parse HEAD')
+<span class="line-number"></span>  local git_commit = cmd_handle:read('*a')
+<span class="line-number"></span>  cmd_handle.close()
+<span class="line-number"></span>  git_commit = string.gsub(git_commit, &quot;%s+$&quot;, &quot;&quot;)
 </code></pre>
 <p>Now, we can craft the URL by first extracting the interesting parts of the git remote URL and then tacking on at the end all the URL parameters precising the location.
 I assume the git remote URL is a <code>ssh</code> URL here, again it's easy to tweak to also handle <code>https</code> URL. Also note that this is the part that's hosting provider specific.</p>
@@ -176,7 +176,7 @@ I assume the git remote URL is a <code>ssh</code> URL here, again it's easy to t
     <span>Text</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-text"><span class="line-number">0</span>git@ssh.&lt;hostname&gt;:v3/&lt;organization&gt;/&lt;directory&gt;/&lt;project&gt;
+  <code class="language-text"><span class="line-number"></span>git@ssh.&lt;hostname&gt;:v3/&lt;organization&gt;/&lt;directory&gt;/&lt;project&gt;
 </code></pre>
 <p>And the final URL looks like:</p>
 <pre>
@@ -184,7 +184,7 @@ I assume the git remote URL is a <code>ssh</code> URL here, again it's easy to t
     <span>Lua</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-lua"><span class="line-number">0</span>https://&lt;hostname&gt;/&lt;organization&gt;/&lt;directory&gt;/_git/&lt;project&gt;?&lt;params&gt;
+  <code class="language-lua"><span class="line-number"></span>https://&lt;hostname&gt;/&lt;organization&gt;/&lt;directory&gt;/_git/&lt;project&gt;?&lt;params&gt;
 </code></pre>
 <p>In Github, the git remote URL looks like this:</p>
 <pre>
@@ -192,7 +192,7 @@ I assume the git remote URL is a <code>ssh</code> URL here, again it's easy to t
     <span>Text</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-text"><span class="line-number">0</span>git@github.com:&lt;username&gt;/&lt;project&gt;.git
+  <code class="language-text"><span class="line-number"></span>git@github.com:&lt;username&gt;/&lt;project&gt;.git
 </code></pre>
 <p>And the final URL looks like this:</p>
 <pre>
@@ -200,7 +200,7 @@ I assume the git remote URL is a <code>ssh</code> URL here, again it's easy to t
     <span>Text</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-text"><span class="line-number">0</span>https://github.com/&lt;username&gt;/&lt;project&gt;/blob/&lt;commit_id&gt;/&lt;file_path&gt;?&lt;params&gt;
+  <code class="language-text"><span class="line-number"></span>https://github.com/&lt;username&gt;/&lt;project&gt;/blob/&lt;commit_id&gt;/&lt;file_path&gt;?&lt;params&gt;
 </code></pre>
 <p>We inspect the git remote url to know in which case we are:</p>
 <pre>
@@ -208,17 +208,17 @@ I assume the git remote URL is a <code>ssh</code> URL here, again it's easy to t
     <span>Lua</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-lua"><span class="line-number">0</span>  local url = ''
-<span class="line-number">1</span>  if string.match(git_origin, 'github') then
-<span class="line-number">2</span>    -- Handle Github
-<span class="line-number">3</span>  elseif string.match(git_origin, 'azure.com') then
-<span class="line-number">4</span>    -- End is exclusive in that case hence the `+ 1`.
-<span class="line-number">5</span>    line_end = line_end + 1
-<span class="line-number">6</span>
-<span class="line-number">7</span>    -- Handle ADO
-<span class="line-number">8</span>  else
-<span class="line-number">9</span>    print('hosting provider not supported')
-<span class="line-number">10</span>  end
+  <code class="language-lua"><span class="line-number"></span>  local url = ''
+<span class="line-number"></span>  if string.match(git_origin, 'github') then
+<span class="line-number"></span>    -- Handle Github
+<span class="line-number"></span>  elseif string.match(git_origin, 'azure.com') then
+<span class="line-number"></span>    -- End is exclusive in that case hence the `+ 1`.
+<span class="line-number"></span>    line_end = line_end + 1
+<span class="line-number"></span>
+<span class="line-number"></span>    -- Handle ADO
+<span class="line-number"></span>  else
+<span class="line-number"></span>    print('hosting provider not supported')
+<span class="line-number"></span>  end
 </code></pre>
 <p>We use a Lua pattern to extract the components from the git remote URL using <code>string.gmatch</code>. It weirdly returns an iterator yielding only one result containing our matches, we use a <code>for</code> loop to do so (perhaps there is an easier way in Lua?):</p>
 <p>Here's for Github:</p>
@@ -227,10 +227,10 @@ I assume the git remote URL is a <code>ssh</code> URL here, again it's easy to t
     <span>Lua</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-lua"><span class="line-number">0</span>    for host, user, project in string.gmatch(git_origin, 'git@([^:]+):([^/]+)/([^/]+)%.git') do
-<span class="line-number">1</span>      url = 'https://' .. host .. '/' .. user .. '/' .. project .. '/blob/' .. git_commit .. '/' .. file_path_relative_to_git_root .. '#l' .. line_start .. '-l' .. line_end
-<span class="line-number">2</span>      break
-<span class="line-number">3</span>    end
+  <code class="language-lua"><span class="line-number"></span>    for host, user, project in string.gmatch(git_origin, 'git@([^:]+):([^/]+)/([^/]+)%.git') do
+<span class="line-number"></span>      url = 'https://' .. host .. '/' .. user .. '/' .. project .. '/blob/' .. git_commit .. '/' .. file_path_relative_to_git_root .. '#l' .. line_start .. '-l' .. line_end
+<span class="line-number"></span>      break
+<span class="line-number"></span>    end
 </code></pre>
 <p>And here's for ADO:</p>
 <pre>
@@ -238,10 +238,10 @@ I assume the git remote URL is a <code>ssh</code> URL here, again it's easy to t
     <span>Lua</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-lua"><span class="line-number">0</span>  for host, org, dir, project in string.gmatch(git_origin, 'git@ssh%.([^:]+):v3/([^/]+)/([^/]+)/([^\n]+)') do
-<span class="line-number">1</span>    url = 'https://' .. host .. '/' .. org .. '/' .. dir .. '/_git/' .. project .. '?lineStartColumn=1&amp;lineStyle=plain&amp;_a=contents&amp;version=GC' .. git_commit .. '&amp;path=' .. file_path_relative_to_git_root .. '&amp;line=' .. line_start .. '&amp;lineEnd=' .. line_end
-<span class="line-number">2</span>    break
-<span class="line-number">3</span>  end
+  <code class="language-lua"><span class="line-number"></span>  for host, org, dir, project in string.gmatch(git_origin, 'git@ssh%.([^:]+):v3/([^/]+)/([^/]+)/([^\n]+)') do
+<span class="line-number"></span>    url = 'https://' .. host .. '/' .. org .. '/' .. dir .. '/_git/' .. project .. '?lineStartColumn=1&amp;lineStyle=plain&amp;_a=contents&amp;version=GC' .. git_commit .. '&amp;path=' .. file_path_relative_to_git_root .. '&amp;line=' .. line_start .. '&amp;lineEnd=' .. line_end
+<span class="line-number"></span>    break
+<span class="line-number"></span>  end
 </code></pre>
 <p>Finally we stick the result in the system clipboard, and we can even open the url in the default browser (I have only tested that logic on Linux but it <em>should</em> work on other OSes):</p>
 <pre>
@@ -249,20 +249,20 @@ I assume the git remote URL is a <code>ssh</code> URL here, again it's easy to t
     <span>Lua</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-lua"><span class="line-number">0</span>  -- Copy to clipboard.
-<span class="line-number">1</span>  vim.fn.setreg('+', url)
-<span class="line-number">2</span>
-<span class="line-number">3</span>  -- Open URL in the default browser.
-<span class="line-number">4</span>  local os_name = vim.loop.os_uname().sysname
-<span class="line-number">5</span>  if os_name == 'Linux' or os_name == 'FreeBSD' or os_name == 'OpenBSD' or os_name == 'NetBSD' then
-<span class="line-number">6</span>    os.execute('xdg-open &quot;' .. url .. '&quot;')
-<span class="line-number">7</span>  elseif os_name == 'Darwin' then
-<span class="line-number">8</span>    os.execute('open &quot;' .. url .. '&quot;')
-<span class="line-number">9</span>  elseif os_name == 'Windows' then
-<span class="line-number">10</span>    os.execute('start &quot;' .. url .. '&quot;')
-<span class="line-number">11</span>  else
-<span class="line-number">12</span>    print('Unknown os: ' .. os_name)
-<span class="line-number">13</span>  end
+  <code class="language-lua"><span class="line-number"></span>  -- Copy to clipboard.
+<span class="line-number"></span>  vim.fn.setreg('+', url)
+<span class="line-number"></span>
+<span class="line-number"></span>  -- Open URL in the default browser.
+<span class="line-number"></span>  local os_name = vim.loop.os_uname().sysname
+<span class="line-number"></span>  if os_name == 'Linux' or os_name == 'FreeBSD' or os_name == 'OpenBSD' or os_name == 'NetBSD' then
+<span class="line-number"></span>    os.execute('xdg-open &quot;' .. url .. '&quot;')
+<span class="line-number"></span>  elseif os_name == 'Darwin' then
+<span class="line-number"></span>    os.execute('open &quot;' .. url .. '&quot;')
+<span class="line-number"></span>  elseif os_name == 'Windows' then
+<span class="line-number"></span>    os.execute('start &quot;' .. url .. '&quot;')
+<span class="line-number"></span>  else
+<span class="line-number"></span>    print('Unknown os: ' .. os_name)
+<span class="line-number"></span>  end
 </code></pre>
 <p>We can now map the command to our favorite keystroke, for me space + x, for both normal mode (<code>n</code>) and visual mode (<code>v</code>):</p>
 <pre>
@@ -270,7 +270,7 @@ I assume the git remote URL is a <code>ssh</code> URL here, again it's easy to t
     <span>Lua</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-lua"><span class="line-number">0</span>vim.keymap.set({'v', 'n'}, '&lt;leader&gt;x', ':GitWebUiUrlCopy&lt;CR&gt;')
+  <code class="language-lua"><span class="line-number"></span>vim.keymap.set({'v', 'n'}, '&lt;leader&gt;x', ':GitWebUiUrlCopy&lt;CR&gt;')
 </code></pre>
 <p>And that's it, just 60 lines of Lua, and easy to extend to support even more hosting providers.</p>
 <h2 id="addendum-the-full-code">
@@ -284,60 +284,60 @@ I assume the git remote URL is a <code>ssh</code> URL here, again it's easy to t
     <span>Lua</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-lua"><span class="line-number">0</span>vim.keymap.set({'v', 'n'}, '&lt;leader&gt;x', ':GitWebUiUrlCopy&lt;CR&gt;')
-<span class="line-number">1</span>vim.api.nvim_create_user_command('GitWebUiUrlCopy', function(arg)
-<span class="line-number">2</span>  local file_path_abs = vim.fn.expand('%:p')
-<span class="line-number">3</span>  local file_path_rel_cmd = io.popen('git ls-files --full-name &quot;' .. file_path_abs .. '&quot;')
-<span class="line-number">4</span>  local file_path_relative_to_git_root = file_path_rel_cmd:read('*a')
-<span class="line-number">5</span>  file_path_rel_cmd.close()
-<span class="line-number">6</span>
-<span class="line-number">7</span>  local line_start = arg.line1
-<span class="line-number">8</span>  local line_end = arg.line2
-<span class="line-number">9</span>
-<span class="line-number">10</span>  local cmd_handle = io.popen('git remote get-url origin')
-<span class="line-number">11</span>  local git_origin = cmd_handle:read('*a')
-<span class="line-number">12</span>  cmd_handle.close()
-<span class="line-number">13</span>  git_origin = string.gsub(git_origin, &quot;%s+$&quot;, &quot;&quot;)
-<span class="line-number">14</span>
-<span class="line-number">15</span>  local cmd_handle = io.popen('git rev-parse HEAD')
-<span class="line-number">16</span>  local git_commit = cmd_handle:read('*a')
-<span class="line-number">17</span>  cmd_handle.close()
-<span class="line-number">18</span>  git_commit = string.gsub(git_commit, &quot;%s+$&quot;, &quot;&quot;)
-<span class="line-number">19</span>
-<span class="line-number">20</span>  local url = ''
-<span class="line-number">21</span>  if string.match(git_origin, 'github') then
-<span class="line-number">22</span>    for host, user, project in string.gmatch(git_origin, 'git@([^:]+):([^/]+)/([^/]+)%.git') do
-<span class="line-number">23</span>      url = 'https://' .. host .. '/' .. user .. '/' .. project .. '/blob/' .. git_commit .. '/' .. file_path_relative_to_git_root .. '#L' .. line_start .. '-L' .. line_end
-<span class="line-number">24</span>      break
-<span class="line-number">25</span>    end
-<span class="line-number">26</span>  elseif string.match(git_origin, 'azure.com') then
-<span class="line-number">27</span>    -- End is exclusive in that case hence the `+ 1`.
-<span class="line-number">28</span>    line_end = line_end + 1
-<span class="line-number">29</span>
-<span class="line-number">30</span>    for host, org, dir, project in string.gmatch(git_origin, 'git@ssh%.([^:]+):v3/([^/]+)/([^/]+)/([^\n]+)') do
-<span class="line-number">31</span>      url = 'https://' .. host .. '/' .. org .. '/' .. dir .. '/_git/' .. project .. '?lineStartColumn=1&amp;lineStyle=plain&amp;_a=contents&amp;version=GC' .. git_commit .. '&amp;path=' .. file_path_relative_to_git_root .. '&amp;line=' .. line_start .. '&amp;lineEnd=' .. line_end
-<span class="line-number">32</span>      break
-<span class="line-number">33</span>    end
-<span class="line-number">34</span>  else
-<span class="line-number">35</span>    print('Hosting provider not supported')
-<span class="line-number">36</span>  end
-<span class="line-number">37</span>
-<span class="line-number">38</span>  -- Copy to clipboard.
-<span class="line-number">39</span>  vim.fn.setreg('+', url)
-<span class="line-number">40</span>
-<span class="line-number">41</span>  -- Open URL in the default browser.
-<span class="line-number">42</span>  local os_name = vim.loop.os_uname().sysname
-<span class="line-number">43</span>  if os_name == 'Linux' or os_name == 'FreeBSD' or os_name == 'OpenBSD' or os_name == 'NetBSD' then
-<span class="line-number">44</span>    os.execute('xdg-open &quot;' .. url .. '&quot;')
-<span class="line-number">45</span>  elseif os_name == 'Darwin' then
-<span class="line-number">46</span>    os.execute('open &quot;' .. url .. '&quot;')
-<span class="line-number">47</span>  elseif os_name == 'Windows' then
-<span class="line-number">48</span>    os.execute('start &quot;' .. url .. '&quot;')
-<span class="line-number">49</span>  else
-<span class="line-number">50</span>    print('Unknown os: ' .. os_name)
-<span class="line-number">51</span>  end
-<span class="line-number">52</span>end,
-<span class="line-number">53</span>{force=true, range=true, nargs=0, desc='Copy to clipboard a URL to a git webui for the current line'})
+  <code class="language-lua"><span class="line-number"></span>vim.keymap.set({'v', 'n'}, '&lt;leader&gt;x', ':GitWebUiUrlCopy&lt;CR&gt;')
+<span class="line-number"></span>vim.api.nvim_create_user_command('GitWebUiUrlCopy', function(arg)
+<span class="line-number"></span>  local file_path_abs = vim.fn.expand('%:p')
+<span class="line-number"></span>  local file_path_rel_cmd = io.popen('git ls-files --full-name &quot;' .. file_path_abs .. '&quot;')
+<span class="line-number"></span>  local file_path_relative_to_git_root = file_path_rel_cmd:read('*a')
+<span class="line-number"></span>  file_path_rel_cmd.close()
+<span class="line-number"></span>
+<span class="line-number"></span>  local line_start = arg.line1
+<span class="line-number"></span>  local line_end = arg.line2
+<span class="line-number"></span>
+<span class="line-number"></span>  local cmd_handle = io.popen('git remote get-url origin')
+<span class="line-number"></span>  local git_origin = cmd_handle:read('*a')
+<span class="line-number"></span>  cmd_handle.close()
+<span class="line-number"></span>  git_origin = string.gsub(git_origin, &quot;%s+$&quot;, &quot;&quot;)
+<span class="line-number"></span>
+<span class="line-number"></span>  local cmd_handle = io.popen('git rev-parse HEAD')
+<span class="line-number"></span>  local git_commit = cmd_handle:read('*a')
+<span class="line-number"></span>  cmd_handle.close()
+<span class="line-number"></span>  git_commit = string.gsub(git_commit, &quot;%s+$&quot;, &quot;&quot;)
+<span class="line-number"></span>
+<span class="line-number"></span>  local url = ''
+<span class="line-number"></span>  if string.match(git_origin, 'github') then
+<span class="line-number"></span>    for host, user, project in string.gmatch(git_origin, 'git@([^:]+):([^/]+)/([^/]+)%.git') do
+<span class="line-number"></span>      url = 'https://' .. host .. '/' .. user .. '/' .. project .. '/blob/' .. git_commit .. '/' .. file_path_relative_to_git_root .. '#L' .. line_start .. '-L' .. line_end
+<span class="line-number"></span>      break
+<span class="line-number"></span>    end
+<span class="line-number"></span>  elseif string.match(git_origin, 'azure.com') then
+<span class="line-number"></span>    -- End is exclusive in that case hence the `+ 1`.
+<span class="line-number"></span>    line_end = line_end + 1
+<span class="line-number"></span>
+<span class="line-number"></span>    for host, org, dir, project in string.gmatch(git_origin, 'git@ssh%.([^:]+):v3/([^/]+)/([^/]+)/([^\n]+)') do
+<span class="line-number"></span>      url = 'https://' .. host .. '/' .. org .. '/' .. dir .. '/_git/' .. project .. '?lineStartColumn=1&amp;lineStyle=plain&amp;_a=contents&amp;version=GC' .. git_commit .. '&amp;path=' .. file_path_relative_to_git_root .. '&amp;line=' .. line_start .. '&amp;lineEnd=' .. line_end
+<span class="line-number"></span>      break
+<span class="line-number"></span>    end
+<span class="line-number"></span>  else
+<span class="line-number"></span>    print('Hosting provider not supported')
+<span class="line-number"></span>  end
+<span class="line-number"></span>
+<span class="line-number"></span>  -- Copy to clipboard.
+<span class="line-number"></span>  vim.fn.setreg('+', url)
+<span class="line-number"></span>
+<span class="line-number"></span>  -- Open URL in the default browser.
+<span class="line-number"></span>  local os_name = vim.loop.os_uname().sysname
+<span class="line-number"></span>  if os_name == 'Linux' or os_name == 'FreeBSD' or os_name == 'OpenBSD' or os_name == 'NetBSD' then
+<span class="line-number"></span>    os.execute('xdg-open &quot;' .. url .. '&quot;')
+<span class="line-number"></span>  elseif os_name == 'Darwin' then
+<span class="line-number"></span>    os.execute('open &quot;' .. url .. '&quot;')
+<span class="line-number"></span>  elseif os_name == 'Windows' then
+<span class="line-number"></span>    os.execute('start &quot;' .. url .. '&quot;')
+<span class="line-number"></span>  else
+<span class="line-number"></span>    print('Unknown os: ' .. os_name)
+<span class="line-number"></span>  end
+<span class="line-number"></span>end,
+<span class="line-number"></span>{force=true, range=true, nargs=0, desc='Copy to clipboard a URL to a git webui for the current line'})
 </code></pre>
 </details>
 <p><a href="/blog"> ⏴ Back to all articles</a></p>

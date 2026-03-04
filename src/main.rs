@@ -669,8 +669,8 @@ fn md_to_html_rec(
             )
             .unwrap();
 
-            for (i, line) in sanitized.lines().enumerate() {
-                writeln!(content, r#"<span class="line-number">{}</span>{}"#, i, line).unwrap();
+            for line in sanitized.lines() {
+                writeln!(content, r#"<span class="line-number"></span>{}"#, line).unwrap();
             }
             writeln!(content, "</code></pre>").unwrap();
         }

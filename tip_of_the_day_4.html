@@ -86,34 +86,34 @@ Do not edit it by hand.
     <span>Rust</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-rust"><span class="line-number">0</span>fn decode_foo(input: &amp;[u8]) -&gt; Result&lt;(&amp;[u8], [u8; 33]), Error&gt; {
-<span class="line-number">1</span>    if input.len() &lt; 33 {
-<span class="line-number">2</span>        return Err(Error::InvalidData);
-<span class="line-number">3</span>    }
-<span class="line-number">4</span>
-<span class="line-number">5</span>    let (left, right) = input.split_at(33);
-<span class="line-number">6</span>    let value = match left.try_into() {
-<span class="line-number">7</span>        Ok(v) =&gt; v,
-<span class="line-number">8</span>        Err(err) =&gt; {
-<span class="line-number">9</span>            let err_s = err.to_string(); // &lt;= Here is the compilation error.
-<span class="line-number">10</span>            eprintln!(&quot;failed to decode data, wrong length: {}&quot;, err_s);
-<span class="line-number">11</span>            return Err(Error::InvalidData);
-<span class="line-number">12</span>        }
-<span class="line-number">13</span>    };
-<span class="line-number">14</span>
-<span class="line-number">15</span>    Ok((right, value))
-<span class="line-number">16</span>}
+  <code class="language-rust"><span class="line-number"></span>fn decode_foo(input: &amp;[u8]) -&gt; Result&lt;(&amp;[u8], [u8; 33]), Error&gt; {
+<span class="line-number"></span>    if input.len() &lt; 33 {
+<span class="line-number"></span>        return Err(Error::InvalidData);
+<span class="line-number"></span>    }
+<span class="line-number"></span>
+<span class="line-number"></span>    let (left, right) = input.split_at(33);
+<span class="line-number"></span>    let value = match left.try_into() {
+<span class="line-number"></span>        Ok(v) =&gt; v,
+<span class="line-number"></span>        Err(err) =&gt; {
+<span class="line-number"></span>            let err_s = err.to_string(); // &lt;= Here is the compilation error.
+<span class="line-number"></span>            eprintln!(&quot;failed to decode data, wrong length: {}&quot;, err_s);
+<span class="line-number"></span>            return Err(Error::InvalidData);
+<span class="line-number"></span>        }
+<span class="line-number"></span>    };
+<span class="line-number"></span>
+<span class="line-number"></span>    Ok((right, value))
+<span class="line-number"></span>}
 </code></pre>
 <pre>
   <div class="code-header">
     <span>Text</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-text"><span class="line-number">0</span>error[E0282]: type annotations needed
-<span class="line-number">1</span>  --&gt; src/main.rs:14:25
-<span class="line-number">2</span>   |
-<span class="line-number">3</span>14 |             let err_s = err.to_string();
-<span class="line-number">4</span>   |                         ^^^ cannot infer type
+  <code class="language-text"><span class="line-number"></span>error[E0282]: type annotations needed
+<span class="line-number"></span>  --&gt; src/main.rs:14:25
+<span class="line-number"></span>   |
+<span class="line-number"></span>14 |             let err_s = err.to_string();
+<span class="line-number"></span>   |                         ^^^ cannot infer type
 </code></pre>
 <p>This function parses a slice of bytes, and on error, logs the error. The real code is of course more complex but I could reduce the error to this minimal code.</p>
 <hr />
@@ -123,12 +123,12 @@ Do not edit it by hand.
     <span>Rust</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-rust"><span class="line-number">0</span>    let value = match left.try_into() {
-<span class="line-number">1</span>        Ok(v) =&gt; v,
-<span class="line-number">2</span>        Err(err: TryFromSliceError) =&gt; {
-<span class="line-number">3</span>            // [...]
-<span class="line-number">4</span>        }
-<span class="line-number">5</span>    };
+  <code class="language-rust"><span class="line-number"></span>    let value = match left.try_into() {
+<span class="line-number"></span>        Ok(v) =&gt; v,
+<span class="line-number"></span>        Err(err: TryFromSliceError) =&gt; {
+<span class="line-number"></span>            // [...]
+<span class="line-number"></span>        }
+<span class="line-number"></span>    };
 </code></pre>
 <p>Which leads to this nice error:</p>
 <pre>
@@ -136,11 +136,11 @@ Do not edit it by hand.
     <span>Text</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-text"><span class="line-number">0</span>error: expected one of `)`, `,`, `@`, or `|`, found `:`
-<span class="line-number">1</span>  --&gt; src/main.rs:15:16
-<span class="line-number">2</span>   |
-<span class="line-number">3</span>15 |         Err(err: TryFromSliceError) =&gt; {
-<span class="line-number">4</span>   |                ^ expected one of `)`, `,`, `@`, or `|`
+  <code class="language-text"><span class="line-number"></span>error: expected one of `)`, `,`, `@`, or `|`, found `:`
+<span class="line-number"></span>  --&gt; src/main.rs:15:16
+<span class="line-number"></span>   |
+<span class="line-number"></span>15 |         Err(err: TryFromSliceError) =&gt; {
+<span class="line-number"></span>   |                ^ expected one of `)`, `,`, `@`, or `|`
 </code></pre>
 <p>If you're feeling smart, thinking, 'Well that's because you did not use <code>inspect_err</code> or <code>map_err</code>!'. Well they suffer from the exact same problem: a type annotation is needed. However, since they use a lambda, the intuitive type annotation, like the one I tried, works. But not for <code>match</code>.</p>
 <hr />
@@ -150,12 +150,12 @@ Do not edit it by hand.
     <span>Rust</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-rust"><span class="line-number">0</span>    let value = match left.try_into() {
-<span class="line-number">1</span>        Ok(v) =&gt; v,
-<span class="line-number">2</span>        Err::&lt;_, TryFromSliceError&gt;(err) =&gt; {
-<span class="line-number">3</span>            // [...]
-<span class="line-number">4</span>        }
-<span class="line-number">5</span>    };
+  <code class="language-rust"><span class="line-number"></span>    let value = match left.try_into() {
+<span class="line-number"></span>        Ok(v) =&gt; v,
+<span class="line-number"></span>        Err::&lt;_, TryFromSliceError&gt;(err) =&gt; {
+<span class="line-number"></span>            // [...]
+<span class="line-number"></span>        }
+<span class="line-number"></span>    };
 </code></pre>
 <p>Which works! And the same syntax can be applied to the <code>Ok</code> branch (per the link above) if needed. Note that this is a partial type annotation: we only care about the <code>Err</code> part of the <code>Result</code> type.</p>
 <p>That was a TIL for me. It's a bit of a weird syntax here. It's usually the syntax for type annotations on methods (more on that in a second).</p>
@@ -165,12 +165,12 @@ Do not edit it by hand.
     <span>Rust</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-rust"><span class="line-number">0</span>    let value = match left.try_into() {
-<span class="line-number">1</span>        Ok(v) =&gt; v,
-<span class="line-number">2</span>        Result::&lt;_, TryFromSliceError&gt;::Err(err) =&gt; {
-<span class="line-number">3</span>          // [...]
-<span class="line-number">4</span>        }
-<span class="line-number">5</span>     };
+  <code class="language-rust"><span class="line-number"></span>    let value = match left.try_into() {
+<span class="line-number"></span>        Ok(v) =&gt; v,
+<span class="line-number"></span>        Result::&lt;_, TryFromSliceError&gt;::Err(err) =&gt; {
+<span class="line-number"></span>          // [...]
+<span class="line-number"></span>        }
+<span class="line-number"></span>     };
 </code></pre>
 <hr />
 <p>Anyways, there's a much better way to solve this issue. We can simply  annotate the resulting variable outside of the whole match pattern, so that <code>rustc</code> knows which <code>try_into</code> method we are using:</p>
@@ -179,12 +179,12 @@ Do not edit it by hand.
     <span>Rust</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-rust"><span class="line-number">0</span>    let value: [u8; 33] = match left.try_into() {
-<span class="line-number">1</span>        Ok(v) =&gt; v,
-<span class="line-number">2</span>        Err(err) =&gt; {
-<span class="line-number">3</span>          // [...]
-<span class="line-number">4</span>        }
-<span class="line-number">5</span>    };
+  <code class="language-rust"><span class="line-number"></span>    let value: [u8; 33] = match left.try_into() {
+<span class="line-number"></span>        Ok(v) =&gt; v,
+<span class="line-number"></span>        Err(err) =&gt; {
+<span class="line-number"></span>          // [...]
+<span class="line-number"></span>        }
+<span class="line-number"></span>    };
 </code></pre>
 <hr />
 <p>Or alternatively, as pointed out by a perceptive reader, annotate the <code>err</code> variable inside the body for the <code>Err</code> branch:</p>
@@ -193,15 +193,15 @@ Do not edit it by hand.
     <span>Rust</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-rust"><span class="line-number">0</span>    let value = match left.try_into() {
-<span class="line-number">1</span>        Ok(v) =&gt; v,
-<span class="line-number">2</span>        Err(err) =&gt; {
-<span class="line-number">3</span>            let err: TryFromSliceError = err; // &lt;= Here.
-<span class="line-number">4</span>            let err_s = err.to_string();
-<span class="line-number">5</span>            eprintln!(&quot;failed to decode data, wrong length: {}&quot;, err_s);
-<span class="line-number">6</span>            return Err(Error::InvalidData);
-<span class="line-number">7</span>        }
-<span class="line-number">8</span>    };
+  <code class="language-rust"><span class="line-number"></span>    let value = match left.try_into() {
+<span class="line-number"></span>        Ok(v) =&gt; v,
+<span class="line-number"></span>        Err(err) =&gt; {
+<span class="line-number"></span>            let err: TryFromSliceError = err; // &lt;= Here.
+<span class="line-number"></span>            let err_s = err.to_string();
+<span class="line-number"></span>            eprintln!(&quot;failed to decode data, wrong length: {}&quot;, err_s);
+<span class="line-number"></span>            return Err(Error::InvalidData);
+<span class="line-number"></span>        }
+<span class="line-number"></span>    };
 </code></pre>
 <hr />
 <p>Another reader had a different idea: use a match binding, which mentions the error type explicitly (that only works if the error type is a struct):</p>
@@ -210,12 +210,12 @@ Do not edit it by hand.
     <span>Rust</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-rust"><span class="line-number">0</span>    let value = match left.try_into() {
-<span class="line-number">1</span>        Ok(v) =&gt; v,
-<span class="line-number">2</span>        Err(err @ TryFromSliceError { .. }) =&gt; {
-<span class="line-number">3</span>          // [...]
-<span class="line-number">4</span>        }
-<span class="line-number">5</span>     };
+  <code class="language-rust"><span class="line-number"></span>    let value = match left.try_into() {
+<span class="line-number"></span>        Ok(v) =&gt; v,
+<span class="line-number"></span>        Err(err @ TryFromSliceError { .. }) =&gt; {
+<span class="line-number"></span>          // [...]
+<span class="line-number"></span>        }
+<span class="line-number"></span>     };
 </code></pre>
 <p>Pretty succinct! This reader mentions this <a href="https://github.com/rust-lang/rfcs/pull/3753">PR</a> to expand this to all types, but that the general feedback is that the 'intuitive' syntax <code>Err(err: Bar) =&gt; {</code> should be possible instead.</p>
 <hr />
@@ -225,12 +225,12 @@ Do not edit it by hand.
     <span>Rust</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-rust"><span class="line-number">0</span>    let value = match TryInto::&lt;[u8; 33]&gt;::try_into(left) {
-<span class="line-number">1</span>        Ok(v) =&gt; v,
-<span class="line-number">2</span>        Err(err) =&gt; {
-<span class="line-number">3</span>          // [...]
-<span class="line-number">4</span>        }
-<span class="line-number">5</span>    };
+  <code class="language-rust"><span class="line-number"></span>    let value = match TryInto::&lt;[u8; 33]&gt;::try_into(left) {
+<span class="line-number"></span>        Ok(v) =&gt; v,
+<span class="line-number"></span>        Err(err) =&gt; {
+<span class="line-number"></span>          // [...]
+<span class="line-number"></span>        }
+<span class="line-number"></span>    };
 </code></pre>
 <hr />
 <p>Astute readers will think at this point that all of this is unnecessary: let's just have the <em>magic traits(tm)</em> do their wizardry. We do not convert the error to a string, we simply let <code>eprintln!</code> call <code>err.fmt()</code> under the hood, since <code>TryFromSliceError</code> implements the <code>Display</code> trait (which is why we could convert it to a <code>String</code> with <code>.to_string()</code>):</p>
@@ -239,13 +239,13 @@ Do not edit it by hand.
     <span>Rust</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-rust"><span class="line-number">0</span>    let value = match left.try_into() {
-<span class="line-number">1</span>        Ok(v) =&gt; v,
-<span class="line-number">2</span>        Err(err) =&gt; {
-<span class="line-number">3</span>            eprintln!(&quot;failed to decode data, wrong length: {}&quot;, err);
-<span class="line-number">4</span>            return Err(Error::InvalidData);
-<span class="line-number">5</span>        }
-<span class="line-number">6</span>    };
+  <code class="language-rust"><span class="line-number"></span>    let value = match left.try_into() {
+<span class="line-number"></span>        Ok(v) =&gt; v,
+<span class="line-number"></span>        Err(err) =&gt; {
+<span class="line-number"></span>            eprintln!(&quot;failed to decode data, wrong length: {}&quot;, err);
+<span class="line-number"></span>            return Err(Error::InvalidData);
+<span class="line-number"></span>        }
+<span class="line-number"></span>    };
 </code></pre>
 <p>That works but in my case I really needed to convert the error to a <code>String</code>, to be able to pass it to C, which does not know anything about fancy traits.</p>
 <p>I find this issue interesting because it encapsulates well the joy and pain of writing Rust: match patterns are really handy, but they sometimes lead to weird syntax not found elsewhere in the Rust language (maybe due to the OCaml heritage?). Type inference is nice but sometimes the compiler/language server fails at inferring things you'd think they should really be able to infer. Traits and <code>into/try_into</code> are found everywhere in Rust code, but it's hard to know what type is being converted to what, especially when these are chained several times without any type annotation whatsoever.</p>
@@ -256,12 +256,12 @@ Do not edit it by hand.
     <span>Rust</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-rust"><span class="line-number">0</span>    let value = match left.try_into() {
-<span class="line-number">1</span>        Ok(v) =&gt; v,
-<span class="line-number">2</span>        Err::&lt;_, bool&gt;(err) =&gt; {
-<span class="line-number">3</span>          // [...]
-<span class="line-number">4</span>        }
-<span class="line-number">5</span>    };
+  <code class="language-rust"><span class="line-number"></span>    let value = match left.try_into() {
+<span class="line-number"></span>        Ok(v) =&gt; v,
+<span class="line-number"></span>        Err::&lt;_, bool&gt;(err) =&gt; {
+<span class="line-number"></span>          // [...]
+<span class="line-number"></span>        }
+<span class="line-number"></span>    };
 </code></pre>
 <p>And the compiler helpfully gives us the type:</p>
 <pre>
@@ -269,11 +269,11 @@ Do not edit it by hand.
     <span>Text</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-text"><span class="line-number">0</span>error[E0271]: type mismatch resolving `&lt;[u8; 33] as TryFrom&lt;&amp;[u8]&gt;&gt;::Error == bool`
-<span class="line-number">1</span>  --&gt; src/main.rs:11:28
-<span class="line-number">2</span>   |
-<span class="line-number">3</span>11 |     let value = match left.try_into() {
-<span class="line-number">4</span>   |                            ^^^^^^^^ expected `bool`, found `TryFromSliceError`
+  <code class="language-text"><span class="line-number"></span>error[E0271]: type mismatch resolving `&lt;[u8; 33] as TryFrom&lt;&amp;[u8]&gt;&gt;::Error == bool`
+<span class="line-number"></span>  --&gt; src/main.rs:11:28
+<span class="line-number"></span>   |
+<span class="line-number"></span>11 |     let value = match left.try_into() {
+<span class="line-number"></span>   |                            ^^^^^^^^ expected `bool`, found `TryFromSliceError`
 </code></pre>
 <p>So...it <em>does</em> actually know the type of <code>err</code>... You naughty compiler, playing games with me! It reminds me of this picture:</p>
 <p><img style="max-width: 50%; margin: 0 auto; display: block" src="coffee_or_tea.png" alt="Coffee or tea?">

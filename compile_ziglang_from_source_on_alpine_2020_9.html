@@ -91,30 +91,30 @@ Do not edit it by hand.
     <span>Shell</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-shell"><span class="line-number">0</span># The only Alpine specific bit. build-base mainly installs make and a C++ compiler. Python 3 is required by LLVM for some reason.
-<span class="line-number">1</span>$ apk add build-base cmake git python3
-<span class="line-number">2</span>
-<span class="line-number">3</span>$ git clone https://github.com/llvm/llvm-project.git --branch llvmorg-10.0.0  --depth 1
-<span class="line-number">4</span>$ cd llvm-project/
-<span class="line-number">5</span>$ mkdir build
-<span class="line-number">6</span>$ cd build/
-<span class="line-number">7</span># The flag LLVM_ENABLE_PROJECTS is crucial, otherwise only llvm will be built, without clang or lld,
-<span class="line-number">8</span># and we need all three with the exact same version since C++ does not have a stable ABI.
-<span class="line-number">9</span>$ cmake -DCMAKE_BUILD_TYPE=Release -DLLVM_EXPERIMENTAL_TARGETS_TO_BUILD=&quot;AVR&quot; -DLLVM_ENABLE_LIBXML2=OFF -DLLVM_ENABLE_TERMINFO=OFF -DLLVM_ENABLE_PROJECTS=&quot;clang;lld&quot; ../llvm
-<span class="line-number">10</span>
-<span class="line-number">11</span># nproc is Linux only but you can set the number of threads manually
-<span class="line-number">12</span>$ make -j$(nproc)
-<span class="line-number">13</span>$ sudo make install
-<span class="line-number">14</span>
-<span class="line-number">15</span>$ cd ~
-<span class="line-number">16</span>$ git clone https://github.com/ziglang/zig.git --depth 1
-<span class="line-number">17</span>$ cd zig
-<span class="line-number">18</span>$ mkdir build
-<span class="line-number">19</span>$ cd build
-<span class="line-number">20</span>$ cmake .. -DCMAKE_BUILD_TYPE=Release -DZIG_STATIC=ON
-<span class="line-number">21</span># nproc is Linux only but you can set the number of threads manually
-<span class="line-number">22</span>$ make -j$(nproc)
-<span class="line-number">23</span>$ sudo make install
+  <code class="language-shell"><span class="line-number"></span># The only Alpine specific bit. build-base mainly installs make and a C++ compiler. Python 3 is required by LLVM for some reason.
+<span class="line-number"></span>$ apk add build-base cmake git python3
+<span class="line-number"></span>
+<span class="line-number"></span>$ git clone https://github.com/llvm/llvm-project.git --branch llvmorg-10.0.0  --depth 1
+<span class="line-number"></span>$ cd llvm-project/
+<span class="line-number"></span>$ mkdir build
+<span class="line-number"></span>$ cd build/
+<span class="line-number"></span># The flag LLVM_ENABLE_PROJECTS is crucial, otherwise only llvm will be built, without clang or lld,
+<span class="line-number"></span># and we need all three with the exact same version since C++ does not have a stable ABI.
+<span class="line-number"></span>$ cmake -DCMAKE_BUILD_TYPE=Release -DLLVM_EXPERIMENTAL_TARGETS_TO_BUILD=&quot;AVR&quot; -DLLVM_ENABLE_LIBXML2=OFF -DLLVM_ENABLE_TERMINFO=OFF -DLLVM_ENABLE_PROJECTS=&quot;clang;lld&quot; ../llvm
+<span class="line-number"></span>
+<span class="line-number"></span># nproc is Linux only but you can set the number of threads manually
+<span class="line-number"></span>$ make -j$(nproc)
+<span class="line-number"></span>$ sudo make install
+<span class="line-number"></span>
+<span class="line-number"></span>$ cd ~
+<span class="line-number"></span>$ git clone https://github.com/ziglang/zig.git --depth 1
+<span class="line-number"></span>$ cd zig
+<span class="line-number"></span>$ mkdir build
+<span class="line-number"></span>$ cd build
+<span class="line-number"></span>$ cmake .. -DCMAKE_BUILD_TYPE=Release -DZIG_STATIC=ON
+<span class="line-number"></span># nproc is Linux only but you can set the number of threads manually
+<span class="line-number"></span>$ make -j$(nproc)
+<span class="line-number"></span>$ sudo make install
 </code></pre>
 <p>You will now have a <code>zig</code> executable in the PATH as well as the zig standard library. You can verify you have now the latest version by doing:</p>
 <pre>
@@ -122,8 +122,8 @@ Do not edit it by hand.
     <span>Shell</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-shell"><span class="line-number">0</span>$ zig version
-<span class="line-number">1</span>0.6.0+749417a
+  <code class="language-shell"><span class="line-number"></span>$ zig version
+<span class="line-number"></span>0.6.0+749417a
 </code></pre>
 <p><a href="/blog"> ⏴ Back to all articles</a></p>
 

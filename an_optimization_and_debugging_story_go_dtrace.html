@@ -188,12 +188,12 @@ That's the core idea behind DTrace: it exists to answer questions <em>we did not
     <span>Shell</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-shell"><span class="line-number">0</span>$ sudo dtrace -n 'pid$target:code.test.before:*ory*: ' -c ./code.test.before -l | grep NewMigrationBox
-<span class="line-number">1</span>209591   pid47446  code.test.before github.com/ory/x/popx.NewMigrationBox return
-<span class="line-number">2</span>209592   pid47446  code.test.before github.com/ory/x/popx.NewMigrationBox entry
-<span class="line-number">3</span>209593   pid47446  code.test.before github.com/ory/x/popx.NewMigrationBox.(*MigrationBox).findMigrations.func4 return
-<span class="line-number">4</span>209594   pid47446  code.test.before github.com/ory/x/popx.NewMigrationBox.(*MigrationBox).findMigrations.func4 entry
-<span class="line-number">5</span>[...]
+  <code class="language-shell"><span class="line-number"></span>$ sudo dtrace -n 'pid$target:code.test.before:*ory*: ' -c ./code.test.before -l | grep NewMigrationBox
+<span class="line-number"></span>209591   pid47446  code.test.before github.com/ory/x/popx.NewMigrationBox return
+<span class="line-number"></span>209592   pid47446  code.test.before github.com/ory/x/popx.NewMigrationBox entry
+<span class="line-number"></span>209593   pid47446  code.test.before github.com/ory/x/popx.NewMigrationBox.(*MigrationBox).findMigrations.func4 return
+<span class="line-number"></span>209594   pid47446  code.test.before github.com/ory/x/popx.NewMigrationBox.(*MigrationBox).findMigrations.func4 entry
+<span class="line-number"></span>[...]
 </code></pre>
 <p>Ok, the first two are the ones we need. Let's time the function duration then with a D script <code>time.d</code>:</p>
 <pre>
@@ -201,13 +201,13 @@ That's the core idea behind DTrace: it exists to answer questions <em>we did not
     <span>Dtrace</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-dtrace"><span class="line-number">0</span>pid$target::*NewMigrationBox:entry { self-&gt;t=timestamp } 
-<span class="line-number">1</span>
-<span class="line-number">2</span>pid$target::*NewMigrationBox:return {
-<span class="line-number">3</span>  this-&gt;duration = (timestamp - self-&gt;t)/1000000;
-<span class="line-number">4</span>
-<span class="line-number">5</span>  @histogram[&quot;NewMigrationBox&quot;] = lquantize(this-&gt;duration, 0, 800, 1);
-<span class="line-number">6</span>}
+  <code class="language-dtrace"><span class="line-number"></span>pid$target::*NewMigrationBox:entry { self-&gt;t=timestamp } 
+<span class="line-number"></span>
+<span class="line-number"></span>pid$target::*NewMigrationBox:return {
+<span class="line-number"></span>  this-&gt;duration = (timestamp - self-&gt;t)/1000000;
+<span class="line-number"></span>
+<span class="line-number"></span>  @histogram[&quot;NewMigrationBox&quot;] = lquantize(this-&gt;duration, 0, 800, 1);
+<span class="line-number"></span>}
 </code></pre>
 <p>Explanation: <code>timestamp</code> is an automatically defined variable that stores the current monotonic time at the nanosecond granularity. When we enter the function, we read the current timestamp and store it in a thread-local variable <code>t</code> (with the <code>self-&gt;t</code> syntax). When we exit the function, we do the same again, compute the difference in terms of milliseconds, store it as a clause-local variable (with <code>this-&gt;duration</code>), and record it in a linear histogram with a minimum of 0 and a maximum of 800 (in milliseconds).</p>
 <p>Due to the M:N concurrency model of Go,  in the general case, multiple goroutines run on the same thread concurrently, which means the thread-local variable <code>self-&gt;t</code> gets overriden by multiple goroutines all the time, and we observe as a result some non-sensical durations (negative or very high). The DTrace histogram is a nice way to see outliers and exclude them. The real fix would be to not use thread-local variables but instead goroutine-local variables... Which does not come out of the box with DTrace.</p>
@@ -219,34 +219,34 @@ That's the core idea behind DTrace: it exists to answer questions <em>we did not
     <span>Shell</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-shell"><span class="line-number">0</span>$ sudo dtrace -s time.d -c ./code.test.before -o /tmp/time.txt
-<span class="line-number">1</span>
-<span class="line-number">2</span>  NewMigrationBox                                   
-<span class="line-number">3</span>           value  ------------- Distribution ------------- count    
-<span class="line-number">4</span>             &lt; 0 |@@@@@@                                   3        
-<span class="line-number">5</span>               0 |                                         0        
-<span class="line-number">6</span>               1 |                                         0        
-<span class="line-number">7</span>               2 |                                         0        
-<span class="line-number">8</span>               3 |                                         0        
-<span class="line-number">9</span>               4 |                                         0        
-<span class="line-number">10</span>               5 |                                         0        
-<span class="line-number">11</span>                 [...]
-<span class="line-number">12</span>             173 |                                         0        
-<span class="line-number">13</span>             174 |                                         0        
-<span class="line-number">14</span>             175 |                                         0        
-<span class="line-number">15</span>             176 |                                         0        
-<span class="line-number">16</span>             177 |@@                                       1        
-<span class="line-number">17</span>             178 |                                         0        
-<span class="line-number">18</span>             179 |                                         0        
-<span class="line-number">19</span>             180 |@@@@@@@@                                 4        
-<span class="line-number">20</span>             181 |@@@@@@@@                                 4        
-<span class="line-number">21</span>             182 |@@@@                                     2        
-<span class="line-number">22</span>             183 |                                         0        
-<span class="line-number">23</span>             184 |                                         0        
-<span class="line-number">24</span>             185 |                                         0        
-<span class="line-number">25</span>             186 |                                         0        
-<span class="line-number">26</span>                 [...]
-<span class="line-number">27</span>          &gt;= 800 |@@@@@@@@@@@@                             6  
+  <code class="language-shell"><span class="line-number"></span>$ sudo dtrace -s time.d -c ./code.test.before -o /tmp/time.txt
+<span class="line-number"></span>
+<span class="line-number"></span>  NewMigrationBox                                   
+<span class="line-number"></span>           value  ------------- Distribution ------------- count    
+<span class="line-number"></span>             &lt; 0 |@@@@@@                                   3        
+<span class="line-number"></span>               0 |                                         0        
+<span class="line-number"></span>               1 |                                         0        
+<span class="line-number"></span>               2 |                                         0        
+<span class="line-number"></span>               3 |                                         0        
+<span class="line-number"></span>               4 |                                         0        
+<span class="line-number"></span>               5 |                                         0        
+<span class="line-number"></span>                 [...]
+<span class="line-number"></span>             173 |                                         0        
+<span class="line-number"></span>             174 |                                         0        
+<span class="line-number"></span>             175 |                                         0        
+<span class="line-number"></span>             176 |                                         0        
+<span class="line-number"></span>             177 |@@                                       1        
+<span class="line-number"></span>             178 |                                         0        
+<span class="line-number"></span>             179 |                                         0        
+<span class="line-number"></span>             180 |@@@@@@@@                                 4        
+<span class="line-number"></span>             181 |@@@@@@@@                                 4        
+<span class="line-number"></span>             182 |@@@@                                     2        
+<span class="line-number"></span>             183 |                                         0        
+<span class="line-number"></span>             184 |                                         0        
+<span class="line-number"></span>             185 |                                         0        
+<span class="line-number"></span>             186 |                                         0        
+<span class="line-number"></span>                 [...]
+<span class="line-number"></span>          &gt;= 800 |@@@@@@@@@@@@                             6  
 </code></pre>
 <p>So the duration is ~180 ms, ignoring impossible values.</p>
 <h2 id="establishing-a-baseline">
@@ -264,10 +264,10 @@ That's the core idea behind DTrace: it exists to answer questions <em>we did not
     <span>Shell</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-shell"><span class="line-number">0</span>hyperfine --shell=none --warmup=5 &quot;find ./persistence/sql/migrations -name '*.sql' -type f&quot;
-<span class="line-number">1</span>Benchmark 1: find ./persistence/sql/migrations -name '*.sql' -type f
-<span class="line-number">2</span>  Time (mean ± σ):     206.6 ms ±   4.8 ms    [User: 2.4 ms, System: 5.0 ms]
-<span class="line-number">3</span>  Range (min … max):   199.5 ms … 214.4 ms    14 runs
+  <code class="language-shell"><span class="line-number"></span>hyperfine --shell=none --warmup=5 &quot;find ./persistence/sql/migrations -name '*.sql' -type f&quot;
+<span class="line-number"></span>Benchmark 1: find ./persistence/sql/migrations -name '*.sql' -type f
+<span class="line-number"></span>  Time (mean ± σ):     206.6 ms ±   4.8 ms    [User: 2.4 ms, System: 5.0 ms]
+<span class="line-number"></span>  Range (min … max):   199.5 ms … 214.4 ms    14 runs
 </code></pre>
 <p>Ok, so 200ms, which is pretty close to our 180ms in Go...</p>
 <p>Wait a minute... Are we doing any I/O in Go at all? Could it be that we <em>embed</em> all the SQL files in our binary at build time ?!</p>
@@ -277,13 +277,13 @@ That's the core idea behind DTrace: it exists to answer questions <em>we did not
     <span>Dtrace</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-dtrace"><span class="line-number">0</span>syscall::open:entry { 
-<span class="line-number">1</span>  self-&gt;filename = copyinstr(arg0);
-<span class="line-number">2</span>
-<span class="line-number">3</span>  if (rindex(self-&gt;filename, &quot;.sql&quot;) == strlen(self-&gt;filename)-4) {
-<span class="line-number">4</span>    printf(&quot;%s\n&quot;, self-&gt;filename)
-<span class="line-number">5</span>  }
-<span class="line-number">6</span>} 
+  <code class="language-dtrace"><span class="line-number"></span>syscall::open:entry { 
+<span class="line-number"></span>  self-&gt;filename = copyinstr(arg0);
+<span class="line-number"></span>
+<span class="line-number"></span>  if (rindex(self-&gt;filename, &quot;.sql&quot;) == strlen(self-&gt;filename)-4) {
+<span class="line-number"></span>    printf(&quot;%s\n&quot;, self-&gt;filename)
+<span class="line-number"></span>  }
+<span class="line-number"></span>} 
 </code></pre>
 <p><code>copyinstr</code> is <a href="https://illumos.org/books/dtrace/chp-user.html#chp-user">required</a> because our D script runs inside the kernel but we are trying to access user-space memory.</p>
 <p>When we run this script on <code>go test -c</code> which builds the test executable, we see that all the SQL files are being opened by the Go compiler and subsequently embedded in the test binary:</p>
@@ -292,14 +292,14 @@ That's the core idea behind DTrace: it exists to answer questions <em>we did not
     <span>Shell</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-shell"><span class="line-number">0</span>$ sudo dtrace -s ~/scratch/sql_files.d -c 'go test -tags=sqlite -c'
-<span class="line-number">1</span>
-<span class="line-number">2</span>CPU     ID                    FUNCTION:NAME
-<span class="line-number">3</span> 10    178                       open:entry /Users/philippe.gaultier/company-code/x/networkx/migrations/sql/20150100000001000000_networks.cockroach.down.sql
-<span class="line-number">4</span>
-<span class="line-number">5</span>  5    178                       open:entry /Users/philippe.gaultier/company-code/x/networkx/migrations/sql/20150100000001000000_networks.postgres.down.sql
-<span class="line-number">6</span>
-<span class="line-number">7</span>[...]
+  <code class="language-shell"><span class="line-number"></span>$ sudo dtrace -s ~/scratch/sql_files.d -c 'go test -tags=sqlite -c'
+<span class="line-number"></span>
+<span class="line-number"></span>CPU     ID                    FUNCTION:NAME
+<span class="line-number"></span> 10    178                       open:entry /Users/philippe.gaultier/company-code/x/networkx/migrations/sql/20150100000001000000_networks.cockroach.down.sql
+<span class="line-number"></span>
+<span class="line-number"></span>  5    178                       open:entry /Users/philippe.gaultier/company-code/x/networkx/migrations/sql/20150100000001000000_networks.postgres.down.sql
+<span class="line-number"></span>
+<span class="line-number"></span>[...]
 </code></pre>
 <p>And if we run the same script on the test binary, we see that no SQL files on disk are being opened.</p>
 <p>Damn, so we are doing purely in-memory work. Alright, so is 180 ms still good in that light? How many files are we dealing with? According to <code>find</code>, ~1.6k. So, you're saying we are spending 180 ms to sort a measly 1.6k items in a linear array? That's <em>nothing</em> for a modern computer! It should be a small number of milliseconds!</p>
@@ -318,11 +318,11 @@ That's the core idea behind DTrace: it exists to answer questions <em>we did not
     <span>Dtrace</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-dtrace"><span class="line-number">0</span>pid$target:code.test.before:*NewMigrationBox:entry { self-&gt;t = 1}
-<span class="line-number">1</span>
-<span class="line-number">2</span>pid$target:code.test.before:*NewMigrationBox:return { exit(0) }
-<span class="line-number">3</span>
-<span class="line-number">4</span>pid$target:code.test.before:sort*: /self-&gt;t != 0/ {}
+  <code class="language-dtrace"><span class="line-number"></span>pid$target:code.test.before:*NewMigrationBox:entry { self-&gt;t = 1}
+<span class="line-number"></span>
+<span class="line-number"></span>pid$target:code.test.before:*NewMigrationBox:return { exit(0) }
+<span class="line-number"></span>
+<span class="line-number"></span>pid$target:code.test.before:sort*: /self-&gt;t != 0/ {}
 </code></pre>
 <p>I have written more specific probes in this script by specifying more parts of the probe (the second part of the probe is the module name, here it is the executable name), to try to reduce noise (by accidentally matching probes we do not care about) and also to help with performance (the more probes are being matched, the more the performance tanks). Since we know that the performance issue is located in the sorting part, we only need to trace that.</p>
 <p>For example if all your company code is under some prefix, like for me, <code>github.com/ory</code>, and you want to see all calls to company code, the probe can be <code>pid$target::github.com?ory*:</code>. The only issue is that the Go stdlib code has no prefix and we want to see it as well...</p>
@@ -333,34 +333,34 @@ That's the core idea behind DTrace: it exists to answer questions <em>we did not
     <span>Shell</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-shell"><span class="line-number">0</span>$ sudo dtrace -s ~/scratch/trace_calls.d -c './code.test.before' -F
-<span class="line-number">1</span>
-<span class="line-number">2</span>CPU FUNCTION                                 
-<span class="line-number">3</span>  7  -&gt; sort.Sort                             
-<span class="line-number">4</span>  7    -&gt; sort.pdqsort                        
-<span class="line-number">5</span>  7      -&gt; sort.insertionSort                
-<span class="line-number">6</span>  7      &lt;- sort.insertionSort                
-<span class="line-number">7</span>  7    &lt;- sort.Sort                           
-<span class="line-number">8</span>  7    -&gt; sort.Sort                           
-<span class="line-number">9</span>  7      -&gt; sort.pdqsort                      
-<span class="line-number">10</span>  7        -&gt; sort.insertionSort              
-<span class="line-number">11</span>  7        &lt;- sort.insertionSort              
-<span class="line-number">12</span>  7      &lt;- sort.Sort                         
-<span class="line-number">13</span>  7      -&gt; sort.Sort                         
-<span class="line-number">14</span>  7        -&gt; sort.pdqsort                    
-<span class="line-number">15</span>  7          -&gt; sort.choosePivot              
-<span class="line-number">16</span>  7            -&gt; sort.median                 
-<span class="line-number">17</span>  7            &lt;- sort.median                 
-<span class="line-number">18</span>  7            -&gt; sort.median                 
-<span class="line-number">19</span>  7            &lt;- sort.median                 
-<span class="line-number">20</span>  7            -&gt; sort.median                 
-<span class="line-number">21</span>  7            &lt;- sort.median                 
-<span class="line-number">22</span>  7            -&gt; sort.median                 
-<span class="line-number">23</span>  7            &lt;- sort.median                 
-<span class="line-number">24</span>  7          &lt;- sort.choosePivot              
-<span class="line-number">25</span>  7          -&gt; sort.partialInsertionSort     
-<span class="line-number">26</span>  7          &lt;- sort.partialInsertionSort 
-<span class="line-number">27</span>[...]
+  <code class="language-shell"><span class="line-number"></span>$ sudo dtrace -s ~/scratch/trace_calls.d -c './code.test.before' -F
+<span class="line-number"></span>
+<span class="line-number"></span>CPU FUNCTION                                 
+<span class="line-number"></span>  7  -&gt; sort.Sort                             
+<span class="line-number"></span>  7    -&gt; sort.pdqsort                        
+<span class="line-number"></span>  7      -&gt; sort.insertionSort                
+<span class="line-number"></span>  7      &lt;- sort.insertionSort                
+<span class="line-number"></span>  7    &lt;- sort.Sort                           
+<span class="line-number"></span>  7    -&gt; sort.Sort                           
+<span class="line-number"></span>  7      -&gt; sort.pdqsort                      
+<span class="line-number"></span>  7        -&gt; sort.insertionSort              
+<span class="line-number"></span>  7        &lt;- sort.insertionSort              
+<span class="line-number"></span>  7      &lt;- sort.Sort                         
+<span class="line-number"></span>  7      -&gt; sort.Sort                         
+<span class="line-number"></span>  7        -&gt; sort.pdqsort                    
+<span class="line-number"></span>  7          -&gt; sort.choosePivot              
+<span class="line-number"></span>  7            -&gt; sort.median                 
+<span class="line-number"></span>  7            &lt;- sort.median                 
+<span class="line-number"></span>  7            -&gt; sort.median                 
+<span class="line-number"></span>  7            &lt;- sort.median                 
+<span class="line-number"></span>  7            -&gt; sort.median                 
+<span class="line-number"></span>  7            &lt;- sort.median                 
+<span class="line-number"></span>  7            -&gt; sort.median                 
+<span class="line-number"></span>  7            &lt;- sort.median                 
+<span class="line-number"></span>  7          &lt;- sort.choosePivot              
+<span class="line-number"></span>  7          -&gt; sort.partialInsertionSort     
+<span class="line-number"></span>  7          &lt;- sort.partialInsertionSort 
+<span class="line-number"></span>[...]
 </code></pre>
 <p>The <code>-&gt;</code> arrow means we enter the function, and <code>&lt;-</code> means we exit it. We see a nice call tree. Also I notice something weird (looking at the full output which is huge): we are calling <code>sort.Sort</code> way too much. It should be once, but we call it much more than that.</p>
 <p>That's the canary in the coal mine and it matches what we see on the CPU profile from the beginning.</p>
@@ -374,13 +374,13 @@ That's the core idea behind DTrace: it exists to answer questions <em>we did not
     <span>Go</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-go"><span class="line-number">0</span>fs.WalkDir(fm.Dir, &quot;.&quot;, func(p string, info fs.DirEntry, err error) error {
-<span class="line-number">1</span>    migrations = append(migrations, migration)
-<span class="line-number">2</span>    mod := sort.Interface(migrations)
-<span class="line-number">3</span>    sort.Sort(mod)
-<span class="line-number">4</span>
-<span class="line-number">5</span>    return nil
-<span class="line-number">6</span>}
+  <code class="language-go"><span class="line-number"></span>fs.WalkDir(fm.Dir, &quot;.&quot;, func(p string, info fs.DirEntry, err error) error {
+<span class="line-number"></span>    migrations = append(migrations, migration)
+<span class="line-number"></span>    mod := sort.Interface(migrations)
+<span class="line-number"></span>    sort.Sort(mod)
+<span class="line-number"></span>
+<span class="line-number"></span>    return nil
+<span class="line-number"></span>}
 </code></pre>
 <p>For the uninitiated: <code>fs.Walkdir</code> recursively traverses a directory and calls the passed function on each entry.</p>
 <p>Aaah... We are sorting the slice of files <em>every time we find a new file</em>. That explains it. The sort has <code>O(n * log(n))</code> complexity and we turned that into <code>O(n² * log(n))</code>. That's 'very very super-linear', as the scientists call it.</p>
@@ -391,11 +391,11 @@ That's the core idea behind DTrace: it exists to answer questions <em>we did not
     <span>Dtrace</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-dtrace"><span class="line-number">0</span>pid$target::*NewMigrationBox:entry { self-&gt;t = 1}
-<span class="line-number">1</span>
-<span class="line-number">2</span>pid$target::*NewMigrationBox:return { self-&gt;t = 0}
-<span class="line-number">3</span>
-<span class="line-number">4</span>pid$target::sort*Len:return /self-&gt;t != 0/ {printf(&quot;%d\n&quot;, uregs[0])}
+  <code class="language-dtrace"><span class="line-number"></span>pid$target::*NewMigrationBox:entry { self-&gt;t = 1}
+<span class="line-number"></span>
+<span class="line-number"></span>pid$target::*NewMigrationBox:return { self-&gt;t = 0}
+<span class="line-number"></span>
+<span class="line-number"></span>pid$target::sort*Len:return /self-&gt;t != 0/ {printf(&quot;%d\n&quot;, uregs[0])}
 </code></pre>
 <p>The variable <code>uregs</code> is an array of user-space registers and the first one contains, in a <code>:return</code> probe, the return value of the function. So here we are simply printing the length of the slice being sorted.</p>
 <p>We see:</p>
@@ -404,26 +404,26 @@ That's the core idea behind DTrace: it exists to answer questions <em>we did not
     <span>Text</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-text"><span class="line-number">0</span>CPU     ID                    FUNCTION:NAME
-<span class="line-number">1</span>  5  52085       sort.(*reverse).Len:return 1
-<span class="line-number">2</span>
-<span class="line-number">3</span>  5  52085       sort.(*reverse).Len:return 2
-<span class="line-number">4</span>
-<span class="line-number">5</span>  5  52085       sort.(*reverse).Len:return 3
-<span class="line-number">6</span>
-<span class="line-number">7</span>  5  52085       sort.(*reverse).Len:return 4
-<span class="line-number">8</span>
-<span class="line-number">9</span>  5  52085       sort.(*reverse).Len:return 5
-<span class="line-number">10</span>
-<span class="line-number">11</span>  [...]
-<span class="line-number">12</span>
-<span class="line-number">13</span> 11  52085       sort.(*reverse).Len:return 1690
-<span class="line-number">14</span>
-<span class="line-number">15</span> 11  52085       sort.(*reverse).Len:return 1691
-<span class="line-number">16</span>
-<span class="line-number">17</span> 11  52085       sort.(*reverse).Len:return 1692
-<span class="line-number">18</span>
-<span class="line-number">19</span> 11  52085       sort.(*reverse).Len:return 1693
+  <code class="language-text"><span class="line-number"></span>CPU     ID                    FUNCTION:NAME
+<span class="line-number"></span>  5  52085       sort.(*reverse).Len:return 1
+<span class="line-number"></span>
+<span class="line-number"></span>  5  52085       sort.(*reverse).Len:return 2
+<span class="line-number"></span>
+<span class="line-number"></span>  5  52085       sort.(*reverse).Len:return 3
+<span class="line-number"></span>
+<span class="line-number"></span>  5  52085       sort.(*reverse).Len:return 4
+<span class="line-number"></span>
+<span class="line-number"></span>  5  52085       sort.(*reverse).Len:return 5
+<span class="line-number"></span>
+<span class="line-number"></span>  [...]
+<span class="line-number"></span>
+<span class="line-number"></span> 11  52085       sort.(*reverse).Len:return 1690
+<span class="line-number"></span>
+<span class="line-number"></span> 11  52085       sort.(*reverse).Len:return 1691
+<span class="line-number"></span>
+<span class="line-number"></span> 11  52085       sort.(*reverse).Len:return 1692
+<span class="line-number"></span>
+<span class="line-number"></span> 11  52085       sort.(*reverse).Len:return 1693
 </code></pre>
 <p>So it's confirmed.</p>
 <p>Remember when I said at the beginning:</p>
@@ -437,13 +437,13 @@ That's the core idea behind DTrace: it exists to answer questions <em>we did not
     <span>Go</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-go"><span class="line-number">0</span>fs.WalkDir(fm.Dir, &quot;.&quot;, func(p string, info fs.DirEntry, err error) error {
-<span class="line-number">1</span>    migrations = append(migrations, migrations)
-<span class="line-number">2</span>    return nil
-<span class="line-number">3</span>}
-<span class="line-number">4</span>
-<span class="line-number">5</span>mod := sort.Interface(migrations)
-<span class="line-number">6</span>sort.Sort(mod)
+  <code class="language-go"><span class="line-number"></span>fs.WalkDir(fm.Dir, &quot;.&quot;, func(p string, info fs.DirEntry, err error) error {
+<span class="line-number"></span>    migrations = append(migrations, migrations)
+<span class="line-number"></span>    return nil
+<span class="line-number"></span>}
+<span class="line-number"></span>
+<span class="line-number"></span>mod := sort.Interface(migrations)
+<span class="line-number"></span>sort.Sort(mod)
 </code></pre>
 <p>The real fix uses <code>slices.SortFunc</code> instead of <code>sort.Sort</code> because the official docs mention the performance of the former is better than the latter. Likely because <code>slices.SortFunc</code> uses compile-time generics whereas <code>sort.Sort</code> uses runtime interfaces. And also we see that the Go compiler inlines the call to <code>slices.SortFunc</code>, which probably helps further.</p>
 <p>With this done, we can measure again the duration of <code>NewMigrationBox</code> (with a lower maximum value for the histogram since we know it got faster):</p>
@@ -452,31 +452,31 @@ That's the core idea behind DTrace: it exists to answer questions <em>we did not
     <span>Shell</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-shell"><span class="line-number">0</span>$ sudo dtrace -s ~/scratch/time.d -c './code.test.after' 
-<span class="line-number">1</span>
-<span class="line-number">2</span>  NewMigrationBox                                   
-<span class="line-number">3</span>           value  ------------- Distribution ------------- count    
-<span class="line-number">4</span>             &lt; 0 |@@@@@@@@                                 4        
-<span class="line-number">5</span>               0 |                                         0        
-<span class="line-number">6</span>               1 |                                         0        
-<span class="line-number">7</span>               2 |                                         0        
-<span class="line-number">8</span>               3 |                                         0        
-<span class="line-number">9</span>               4 |                                         0        
-<span class="line-number">10</span>               5 |                                         0        
-<span class="line-number">11</span>               6 |                                         0        
-<span class="line-number">12</span>               7 |                                         0        
-<span class="line-number">13</span>               8 |                                         0        
-<span class="line-number">14</span>               9 |                                         0        
-<span class="line-number">15</span>              10 |                                         0        
-<span class="line-number">16</span>              11 |                                         0        
-<span class="line-number">17</span>              12 |@@@@@@@@@@@@@@@@@@@@                     10       
-<span class="line-number">18</span>              13 |@@@@@@@@                                 4        
-<span class="line-number">19</span>              14 |                                         0        
-<span class="line-number">20</span>              15 |                                         0        
-<span class="line-number">21</span>              16 |                                         0        
-<span class="line-number">22</span>              17 |                                         0        
-<span class="line-number">23</span>                 [...]
-<span class="line-number">24</span>          &gt;= 100 |@@@@                                     2
+  <code class="language-shell"><span class="line-number"></span>$ sudo dtrace -s ~/scratch/time.d -c './code.test.after' 
+<span class="line-number"></span>
+<span class="line-number"></span>  NewMigrationBox                                   
+<span class="line-number"></span>           value  ------------- Distribution ------------- count    
+<span class="line-number"></span>             &lt; 0 |@@@@@@@@                                 4        
+<span class="line-number"></span>               0 |                                         0        
+<span class="line-number"></span>               1 |                                         0        
+<span class="line-number"></span>               2 |                                         0        
+<span class="line-number"></span>               3 |                                         0        
+<span class="line-number"></span>               4 |                                         0        
+<span class="line-number"></span>               5 |                                         0        
+<span class="line-number"></span>               6 |                                         0        
+<span class="line-number"></span>               7 |                                         0        
+<span class="line-number"></span>               8 |                                         0        
+<span class="line-number"></span>               9 |                                         0        
+<span class="line-number"></span>              10 |                                         0        
+<span class="line-number"></span>              11 |                                         0        
+<span class="line-number"></span>              12 |@@@@@@@@@@@@@@@@@@@@                     10       
+<span class="line-number"></span>              13 |@@@@@@@@                                 4        
+<span class="line-number"></span>              14 |                                         0        
+<span class="line-number"></span>              15 |                                         0        
+<span class="line-number"></span>              16 |                                         0        
+<span class="line-number"></span>              17 |                                         0        
+<span class="line-number"></span>                 [...]
+<span class="line-number"></span>          &gt;= 100 |@@@@                                     2
 </code></pre>
 <h2 id="conclusion">
   <a class="title" href="#conclusion">Conclusion</a>
@@ -514,19 +514,19 @@ That's the core idea behind DTrace: it exists to answer questions <em>we did not
     <span>Dtrace</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-dtrace"><span class="line-number">0</span>pid$target::*NewMigrationBox:entry { 
-<span class="line-number">1</span>  this-&gt;goroutine_id = uregs[R_X28];
-<span class="line-number">2</span>  durations_goroutines[this-&gt;goroutine_id] = timestamp;
-<span class="line-number">3</span>} 
-<span class="line-number">4</span>
-<span class="line-number">5</span>pid$target::*NewMigrationBox:return {
-<span class="line-number">6</span>  this-&gt;goroutine_id = uregs[R_X28];
-<span class="line-number">7</span>  this-&gt;duration = (timestamp - durations_goroutines[this-&gt;goroutine_id]) / 1000000;
-<span class="line-number">8</span>
-<span class="line-number">9</span>  @histogram[&quot;NewMigrationBox&quot;] = lquantize(this-&gt;duration, 0, 100, 1);
-<span class="line-number">10</span>
-<span class="line-number">11</span>  durations_goroutines[this-&gt;goroutine_id] = 0;
-<span class="line-number">12</span>}
+  <code class="language-dtrace"><span class="line-number"></span>pid$target::*NewMigrationBox:entry { 
+<span class="line-number"></span>  this-&gt;goroutine_id = uregs[R_X28];
+<span class="line-number"></span>  durations_goroutines[this-&gt;goroutine_id] = timestamp;
+<span class="line-number"></span>} 
+<span class="line-number"></span>
+<span class="line-number"></span>pid$target::*NewMigrationBox:return {
+<span class="line-number"></span>  this-&gt;goroutine_id = uregs[R_X28];
+<span class="line-number"></span>  this-&gt;duration = (timestamp - durations_goroutines[this-&gt;goroutine_id]) / 1000000;
+<span class="line-number"></span>
+<span class="line-number"></span>  @histogram[&quot;NewMigrationBox&quot;] = lquantize(this-&gt;duration, 0, 100, 1);
+<span class="line-number"></span>
+<span class="line-number"></span>  durations_goroutines[this-&gt;goroutine_id] = 0;
+<span class="line-number"></span>}
 </code></pre>
 <p>At the end, when the duration has been duly recorded in the histogram, we set the value in the map to 0 per the <a href="https://illumos.org/books/dtrace/chp-variables.html#chp-variables-2">documentation</a>:</p>
 <blockquote>
@@ -538,15 +538,15 @@ That's the core idea behind DTrace: it exists to answer questions <em>we did not
     <span>Shell</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-shell"><span class="line-number">0</span>$ sudo dtrace -s time.d -c ./code.test.before -o /tmp/time.txt
-<span class="line-number">1</span>
-<span class="line-number">2</span>  NewMigrationBox                                   
-<span class="line-number">3</span>           value  ------------- Distribution ------------- count    
-<span class="line-number">4</span>              11 |                                         0        
-<span class="line-number">5</span>              12 |@@@@@@@@@@@@@@@@@@@@@@                   11       
-<span class="line-number">6</span>              13 |@@@@@@@@@@@@@@                           7        
-<span class="line-number">7</span>              14 |@@@@                                     2        
-<span class="line-number">8</span>              15 |                                         0      
+  <code class="language-shell"><span class="line-number"></span>$ sudo dtrace -s time.d -c ./code.test.before -o /tmp/time.txt
+<span class="line-number"></span>
+<span class="line-number"></span>  NewMigrationBox                                   
+<span class="line-number"></span>           value  ------------- Distribution ------------- count    
+<span class="line-number"></span>              11 |                                         0        
+<span class="line-number"></span>              12 |@@@@@@@@@@@@@@@@@@@@@@                   11       
+<span class="line-number"></span>              13 |@@@@@@@@@@@@@@                           7        
+<span class="line-number"></span>              14 |@@@@                                     2        
+<span class="line-number"></span>              15 |                                         0      
 </code></pre>
 <p>This approach is:</p>
 <ul>
