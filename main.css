@@ -402,9 +402,14 @@ summary {
   font-weight: initial !important;
 }
 
-/* Red: faded_red / bright_red */
+/* Orange. */
 .hljs-keyword,
-.hljs-selector-tag,
+.hljs-selector-tag {
+  color: light-dark(#d65d0e, #fe8019) !important;
+  font-weight: initial !important;
+}
+
+/* Red: faded_red / bright_red */
 .hljs-deletion {
   color: light-dark(#9d0006, #fb4934) !important;
   font-weight: initial !important;
