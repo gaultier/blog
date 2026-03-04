@@ -2,7 +2,10 @@ use markdown::{
     ParseOptions,
     mdast::{FootnoteDefinition, Node, Text},
 };
-use notify::RecursiveMode;
+use notify::{
+    EventKind, RecursiveMode, Watcher,
+    event::{DataChange, ModifyKind},
+};
 use notify_debouncer_mini::new_debouncer;
 use rouille::{router, try_or_400, websocket};
 use serde::{Deserialize, Serialize};
@@ -10,6 +13,7 @@ use std::{
     borrow::Cow,
     cmp::Ordering,
     collections::{BTreeMap, HashMap},
+    ffi::OsString,
     fs::{self, File},
     path::{Path, PathBuf},
     process::Command,
@@ -1307,95 +1311,141 @@ fn main() {
     if let Some(arg) = arg1
         && arg == "watch"
     {
-        let cache = Arc::new(Mutex::new(cache));
-        rouille::start_server("localhost:8001", move |request| {
-            router!(request,
-                (GET) (/blog) => {
-                     rouille::Response::redirect_302("/blog/index.html")
-                },
-                (GET) (/blog/) => {
-                     rouille::Response::redirect_302("/blog/index.html")
-                },
-                (GET) (/ws) => {
-                    let (response, websocket) = try_or_400!(websocket::start(request, Some("echo")));
-
-                    let cache = cache.clone();
-                    thread::spawn(move || {
-                        // This line will block until the `response` above has been returned.
-                        let ws = websocket.recv().unwrap();
-                        websocket_handling_thread(ws, cache);
-                    });
-                    response
-                },
-                _ => rouille::match_assets(request, "..")
-            )
-        });
-    }
-}
-
-fn websocket_handling_thread(
-    mut websocket: websocket::Websocket,
-    cache: Arc<Mutex<HashMap<String, Article>>>,
-) {
-    println!("🚀 new websocket");
-    let (etx, erx) = std::sync::mpsc::channel();
-
-    let mut debouncer = new_debouncer(Duration::from_millis(100), etx).unwrap();
-
-    debouncer
-        .watcher()
-        .watch(Path::new("."), RecursiveMode::NonRecursive)
-        .unwrap();
-
-    // Block forever, printing out events as they come in
-    for res in erx {
-        match res {
-            Ok(events) => {
-                if let Some(event) = events.into_iter().next() {
-                    let file_path_str =
-                        event.path.file_stem().unwrap_or_default().to_string_lossy();
-                    let path_str = event.path.to_str().unwrap();
-                    dbg!(path_str);
-                    match path_str {
-                        _ if path_str.ends_with("header.html")
-                            || path_str.ends_with("footer.html") =>
-                        {
-                            println!("🔄 header/footer changed, rebuilding & reloading all files");
-                            let mut cache = cache.lock().unwrap();
-                            cache.clear();
-                            generate_all(&mut cache);
-                            websocket.send_text("").unwrap();
+        let (tx, rx) = std::sync::mpsc::channel::<notify::Result<notify::Event>>();
+        let mut watcher = notify::recommended_watcher(tx).unwrap();
+        watcher
+            .watch(Path::new("."), RecursiveMode::NonRecursive)
+            .unwrap();
+        let header: OsString = Path::new("header.html").into();
+        let footer: OsString = Path::new("footer.html").into();
+        let md_ext: OsString = Path::new("md").into();
+        for res in rx {
+            match res {
+                Ok(event) => match event.kind {
+                    EventKind::Any => {}
+                    EventKind::Access(_access_kind) => {}
+                    EventKind::Modify(ModifyKind::Metadata(_)) => {
+                        dbg!(&event);
+                        for path in event.paths {
+                            if path.file_stem() == Some(&header)
+                                || path.file_stem() == Some(&footer)
+                            {
+                                println!(
+                                    "🔄 header/footer changed, rebuilding & reloading all files"
+                                );
+                                // let mut cache = cache.lock().unwrap();
+                                // cache.clear();
+                                // generate_all(&mut cache);
+                                // websocket.send_text("").unwrap();
+                            }
+                            if path_str.ends_with(".js")
+                                || path_str.ends_with(".css")
+                                || path_str.ends_with(".svg")
+                                || path_str.ends_with(".png")
+                                || path_str.ends_with(".webm")
+                                || path_str.ends_with(".mp4")
+                                || path_str.ends_with(".jpeg")
+                                || path_str.ends_with(".ico")
+                                || path_str.ends_with(".gif")
+                            {
+                                println!("🔄 asset changed, reloading all files: {}", path_str);
+                                // websocket.send_text("").unwrap();
+                            }
+                            if path.extension() == Some(&md_ext) {
+                                println!(
+                                    "🔄 md file changed, rebuilding & reloading it: {}",
+                                    path_str
+                                );
+                                // let mut cache = cache.lock().unwrap();
+                                // generate_all(&mut cache);
+                                // websocket.send_text(&file_path_str).unwrap();
+                            }
                         }
-                        _ if path_str.ends_with(".js")
-                            || path_str.ends_with(".css")
-                            || path_str.ends_with(".svg")
-                            || path_str.ends_with(".png")
-                            || path_str.ends_with(".webm")
-                            || path_str.ends_with(".mp4")
-                            || path_str.ends_with(".jpeg")
-                            || path_str.ends_with(".ico")
-                            || path_str.ends_with(".gif") =>
-                        {
-                            println!("🔄 asset changed, reloading all files: {}", path_str);
-                            websocket.send_text("").unwrap();
-                        }
-                        _ if path_str.ends_with(".md") => {
-                            println!(
-                                "🔄 md file changed, rebuilding & reloading it: {}",
-                                path_str
-                            );
-                            let mut cache = cache.lock().unwrap();
-                            generate_all(&mut cache);
-                            websocket.send_text(&file_path_str).unwrap();
-                        }
-                        _ => {}
-                    };
-
-                    return;
-                }
+                    }
+                    EventKind::Modify(_) => {}
+                    EventKind::Remove(_remove_kind) => todo!(),
+                    EventKind::Create(_create_kind) => todo!(),
+                    EventKind::Other => todo!(),
+                },
+                Err(e) => println!("watch error: {:?}", e),
             }
-            Err(e) => eprintln!("watch error: {:?}", e),
         }
+        println!("end of file watch ");
+
+        // let cache = Arc::new(Mutex::new(cache));
+        // rouille::start_server("localhost:8001", move |request| {
+        //     router!(request,
+        //         (GET) (/blog) => {
+        //              rouille::Response::redirect_302("/blog/index.html")
+        //         },
+        //         (GET) (/blog/) => {
+        //              rouille::Response::redirect_302("/blog/index.html")
+        //         },
+        //         (GET) (/ws) => {
+        //             let (response, websocket) = try_or_400!(websocket::start(request, Some("echo")));
+
+        //             let cache = cache.clone();
+        //             thread::spawn(move || {
+        //                 // This line will block until the `response` above has been returned.
+        //                 let ws = websocket.recv().unwrap();
+        //                 websocket_handling_thread(ws, cache);
+        //             });
+        //             response
+        //         },
+        //         _ => rouille::match_assets(request, "..")
+        //     )
+        // });
     }
-    println!("end of file watch & websocket handling");
 }
+
+// fn websocket_handling_thread(
+//     mut websocket: websocket::Websocket,
+//     cache: Arc<Mutex<HashMap<String, Article>>>,
+// ) {
+//     println!("🚀 new websocket");
+
+//     let mut watcher = notify::recommended_watcher(|event: Result<notify::Event, notify::Error>| {
+//         if let Ok(event) = event {
+//             dbg!(&event);
+//             // let file_path_str = event.path.file_stem().unwrap_or_default().to_string_lossy();
+//             // let path_str = event.path.to_str().unwrap();
+//             // match path_str {
+//             //     _ if path_str.ends_with("header.html") || path_str.ends_with("footer.html") => {
+//             //         println!("🔄 header/footer changed, rebuilding & reloading all files");
+//             //         let mut cache = cache.lock().unwrap();
+//             //         cache.clear();
+//             //         generate_all(&mut cache);
+//             //         websocket.send_text("").unwrap();
+//             //     }
+//             //     _ if path_str.ends_with(".js")
+//             //         || path_str.ends_with(".css")
+//             //         || path_str.ends_with(".svg")
+//             //         || path_str.ends_with(".png")
+//             //         || path_str.ends_with(".webm")
+//             //         || path_str.ends_with(".mp4")
+//             //         || path_str.ends_with(".jpeg")
+//             //         || path_str.ends_with(".ico")
+//             //         || path_str.ends_with(".gif") =>
+//             //     {
+//             //         println!("🔄 asset changed, reloading all files: {}", path_str);
+//             //         websocket.send_text("").unwrap();
+//             //     }
+//             //     _ if path_str.ends_with(".md") => {
+//             //         println!(
+//             //             "🔄 md file changed, rebuilding & reloading it: {}",
+//             //             path_str
+//             //         );
+//             //         let mut cache = cache.lock().unwrap();
+//             //         generate_all(&mut cache);
+//             //         websocket.send_text(&file_path_str).unwrap();
+//             //     }
+//             //     _ => {}
+//             // };
+//         }
+//     })
+//     .unwrap();
+//     watcher
+//         .watch(Path::new("."), RecursiveMode::Recursive)
+//         .unwrap();
+//     println!("end of file watch & websocket handling");
+// }

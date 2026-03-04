@@ -389,7 +389,6 @@ summary {
 }
 
 /* Gruvbox colors for code */
-
 .hljs {
   background: light-dark(#fbf1c7, #282828) !important;
   color: light-dark(#282828, #fbf1c7) !important;
