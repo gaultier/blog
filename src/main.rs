@@ -2,24 +2,18 @@ use markdown::{
     ParseOptions,
     mdast::{FootnoteDefinition, Node, Text},
 };
-use notify::{
-    EventKind, RecursiveMode, Watcher,
-    event::{DataChange, ModifyKind},
-};
-use notify_debouncer_mini::new_debouncer;
-use rouille::{router, try_or_400, websocket};
+use notify::{EventKind, RecursiveMode, Watcher, event::ModifyKind};
+//use rouille::{router, try_or_400, websocket};
 use serde::{Deserialize, Serialize};
 use std::{
     borrow::Cow,
     cmp::Ordering,
     collections::{BTreeMap, HashMap},
-    ffi::OsString,
     fs::{self, File},
+    hash::{DefaultHasher, Hash, Hasher},
     path::{Path, PathBuf},
     process::Command,
-    sync::{Arc, Mutex},
-    thread,
-    time::{Duration, Instant},
+    time::Instant,
 };
 
 use std::io::Write;
@@ -85,6 +79,33 @@ type FileIdx = u16;
 struct SearchIndex {
     trigram_to_file_idx: BTreeMap<Trigram, Vec<(FileIdx, u32)>>,
     files: Vec<String>,
+}
+
+type MdContentHash = u64;
+
+struct Cache {
+    md_to_ast: HashMap<MdContentHash, Node>,
+    md_to_article: HashMap<MdContentHash, Article>,
+}
+
+impl Cache {
+    fn new() -> Self {
+        Self {
+            md_to_ast: HashMap::with_capacity(128),
+            md_to_article: HashMap::with_capacity(128),
+        }
+    }
+
+    fn clear(&mut self) {
+        self.md_to_ast.clear();
+        self.md_to_article.clear();
+    }
+
+    fn hash(md_content: &str) -> MdContentHash {
+        let mut hasher = DefaultHasher::new();
+        md_content.hash(&mut hasher);
+        hasher.finish()
+    }
 }
 
 impl SearchIndex {
@@ -871,7 +892,7 @@ fn md_render_article(
     git_stat: GitStat,
     html_header: &[u8],
     html_footer: &[u8],
-    cache: &mut HashMap<String, Article>,
+    cache: &mut Cache,
     search_index: &mut SearchIndex,
 ) -> Article {
     let start = Instant::now();
@@ -882,21 +903,24 @@ fn md_render_article(
     let md_content_bytes_len = md_content_bytes.len();
     let md_content = String::from_utf8(md_content_bytes).unwrap();
 
-    if let Some(article) = cache.get(&md_content) {
-        let res = article.clone();
-        println!(
-            "⚡ cache hit: {} {} us",
-            git_stat.path_from_git_root,
-            Instant::now().duration_since(start).as_micros()
-        );
-        return res;
-    }
     let (md_root_title, tags) = md_parse_metadata(&md_content);
 
     let metadata_delim = "---";
     let metadata_delim_pos = md_content.find(metadata_delim).unwrap();
     let (_, md_content_article) = md_content.split_at(metadata_delim_pos + metadata_delim.len());
 
+    let md_path = PathBuf::from(&git_stat.path_from_git_root);
+    let html_path = md_path.with_extension("html");
+    let hash = Cache::hash(&md_content);
+    if let Some(ast) = cache.md_to_ast.get(&hash) {
+        search_index.ingest_md_ast(&ast, &html_path);
+        //println!(
+        //    "⚡ cache hit: {} {} us",
+        //    &md_path.to_str().unwrap(),
+        //    Instant::now().duration_since(start).as_micros()
+        //);
+        return cache.md_to_article.get(&hash).unwrap().clone();
+    }
     let md_ast = markdown::to_mdast(
         md_content_article,
         &ParseOptions {
@@ -909,10 +933,6 @@ fn md_render_article(
         },
     )
     .unwrap();
-
-    let md_path = PathBuf::from(&git_stat.path_from_git_root);
-    let html_path = md_path.with_extension("html");
-    search_index.ingest_md_ast(&md_ast, &html_path);
 
     md_lint_rec(&md_ast, &md_path);
 
@@ -979,14 +999,15 @@ fn md_render_article(
 
     fs::write(&html_path, html_content).unwrap();
 
-    let res = Article {
+    let article = Article {
         git_stat,
         md_title: md_root_title.to_string(),
         html_path,
         tags: tags.iter().map(|t| t.to_string()).collect(),
     };
 
-    cache.insert(md_content, res.clone());
+    cache.md_to_ast.insert(hash, md_ast);
+    cache.md_to_article.insert(hash, article.clone());
 
     println!(
         "⏳ cache miss: generated {} in {} us",
@@ -994,7 +1015,7 @@ fn md_render_article(
         Instant::now().duration_since(start).as_micros()
     );
 
-    res
+    article
 }
 
 fn md_render_footnote_definitions(content: &mut Vec<u8>, footnote_defs: &[FootnoteDefinition]) {
@@ -1237,7 +1258,7 @@ fn generate_home_page(articles: &mut [Article], html_header: &[u8], html_footer:
     );
 }
 
-fn generate_all(cache: &mut HashMap<String, Article>) {
+fn generate_all(cache: &mut Cache) {
     let start = std::time::Instant::now();
     let html_header = fs::read("header.html").unwrap();
     let html_footer = fs::read("footer.html").unwrap();
@@ -1291,6 +1312,66 @@ fn check_langs() {
     }
 }
 
+fn watch(cache: &mut Cache) {
+    let (tx, rx) = std::sync::mpsc::channel::<notify::Result<notify::Event>>();
+    let mut watcher = notify::recommended_watcher(tx).unwrap();
+    watcher
+        .watch(Path::new("."), RecursiveMode::NonRecursive)
+        .unwrap();
+    for res in rx {
+        match res {
+            Ok(event) => match event.kind {
+                EventKind::Any => {}
+                EventKind::Access(_access_kind) => {}
+                EventKind::Modify(ModifyKind::Data(_)) => {
+                    for path in event.paths {
+                        let stem = path.file_stem().unwrap();
+                        if stem == &"header.html".as_ref() || stem == &"footer.html".as_ref() {
+                            println!(
+                                "🔄 header/footer changed, rebuilding & reloading all files: {}",
+                                stem.to_str().unwrap()
+                            );
+                            cache.clear();
+                            generate_all(cache);
+                            // websocket.send_text("").unwrap();
+                        }
+                        if path.extension() == Some(".js".as_ref())
+                            || path.extension() == Some(".css".as_ref())
+                            || path.extension() == Some(".svg".as_ref())
+                            || path.extension() == Some(".png".as_ref())
+                            || path.extension() == Some(".webm".as_ref())
+                            || path.extension() == Some(".mp4".as_ref())
+                            || path.extension() == Some(".jpeg".as_ref())
+                            || path.extension() == Some(".ico".as_ref())
+                            || path.extension() == Some(".gif".as_ref())
+                        {
+                            println!(
+                                "🔄 asset changed, reloading all files: {}",
+                                stem.to_str().unwrap()
+                            );
+                            // websocket.send_text("").unwrap();
+                        }
+                        if path.extension() == Some("md".as_ref()) {
+                            println!(
+                                "🔄 md file changed, rebuilding & reloading it: {}",
+                                stem.to_str().unwrap()
+                            );
+                            generate_all(cache);
+                            // websocket.send_text(&file_path_str).unwrap();
+                        }
+                    }
+                }
+                EventKind::Modify(_) => {}
+                EventKind::Remove(_remove_kind) => todo!(),
+                EventKind::Create(_create_kind) => todo!(),
+                EventKind::Other => todo!(),
+            },
+            Err(e) => println!("watch error: {:?}", e),
+        }
+    }
+    println!("end of file watch ");
+}
+
 fn main() {
     let mut args = std::env::args().skip(1);
     let arg1 = args.next();
@@ -1307,98 +1388,39 @@ fn main() {
 
     check_langs();
 
-    let mut cache = HashMap::new();
+    let mut cache = Cache::new();
 
     generate_all(&mut cache);
 
     if let Some(arg) = arg1
         && arg == "watch"
     {
-        let (tx, rx) = std::sync::mpsc::channel::<notify::Result<notify::Event>>();
-        let mut watcher = notify::recommended_watcher(tx).unwrap();
-        watcher
-            .watch(Path::new("."), RecursiveMode::NonRecursive)
-            .unwrap();
-        let header: OsString = Path::new("header.html").into();
-        let footer: OsString = Path::new("footer.html").into();
-        let md_ext: OsString = Path::new("md").into();
-        for res in rx {
-            match res {
-                Ok(event) => match event.kind {
-                    EventKind::Any => {}
-                    EventKind::Access(_access_kind) => {}
-                    EventKind::Modify(ModifyKind::Metadata(_)) => {
-                        dbg!(&event);
-                        //for path in event.paths {
-                        //    if path.file_stem() == Some(&header)
-                        //        || path.file_stem() == Some(&footer)
-                        //    {
-                        //        println!(
-                        //            "🔄 header/footer changed, rebuilding & reloading all files"
-                        //        );
-                        //        // let mut cache = cache.lock().unwrap();
-                        //        // cache.clear();
-                        //        // generate_all(&mut cache);
-                        //        // websocket.send_text("").unwrap();
-                        //    }
-                        //    if path_str.ends_with(".js")
-                        //        || path_str.ends_with(".css")
-                        //        || path_str.ends_with(".svg")
-                        //        || path_str.ends_with(".png")
-                        //        || path_str.ends_with(".webm")
-                        //        || path_str.ends_with(".mp4")
-                        //        || path_str.ends_with(".jpeg")
-                        //        || path_str.ends_with(".ico")
-                        //        || path_str.ends_with(".gif")
-                        //    {
-                        //        println!("🔄 asset changed, reloading all files: {}", path_str);
-                        //        // websocket.send_text("").unwrap();
-                        //    }
-                        //    if path.extension() == Some(&md_ext) {
-                        //        println!(
-                        //            "🔄 md file changed, rebuilding & reloading it: {}",
-                        //            path_str
-                        //        );
-                        //        // let mut cache = cache.lock().unwrap();
-                        //        // generate_all(&mut cache);
-                        //        // websocket.send_text(&file_path_str).unwrap();
-                        //    }
-                        //}
-                    }
-                    EventKind::Modify(_) => {}
-                    EventKind::Remove(_remove_kind) => todo!(),
-                    EventKind::Create(_create_kind) => todo!(),
-                    EventKind::Other => todo!(),
-                },
-                Err(e) => println!("watch error: {:?}", e),
-            }
-        }
-        println!("end of file watch ");
-
-        // let cache = Arc::new(Mutex::new(cache));
-        // rouille::start_server("localhost:8001", move |request| {
-        //     router!(request,
-        //         (GET) (/blog) => {
-        //              rouille::Response::redirect_302("/blog/index.html")
-        //         },
-        //         (GET) (/blog/) => {
-        //              rouille::Response::redirect_302("/blog/index.html")
-        //         },
-        //         (GET) (/ws) => {
-        //             let (response, websocket) = try_or_400!(websocket::start(request, Some("echo")));
-
-        //             let cache = cache.clone();
-        //             thread::spawn(move || {
-        //                 // This line will block until the `response` above has been returned.
-        //                 let ws = websocket.recv().unwrap();
-        //                 websocket_handling_thread(ws, cache);
-        //             });
-        //             response
-        //         },
-        //         _ => rouille::match_assets(request, "..")
-        //     )
-        // });
+        watch(&mut cache);
     }
+
+    // let cache = Arc::new(Mutex::new(cache));
+    // rouille::start_server("localhost:8001", move |request| {
+    //     router!(request,
+    //         (GET) (/blog) => {
+    //              rouille::Response::redirect_302("/blog/index.html")
+    //         },
+    //         (GET) (/blog/) => {
+    //              rouille::Response::redirect_302("/blog/index.html")
+    //         },
+    //         (GET) (/ws) => {
+    //             let (response, websocket) = try_or_400!(websocket::start(request, Some("echo")));
+
+    //             let cache = cache.clone();
+    //             thread::spawn(move || {
+    //                 // This line will block until the `response` above has been returned.
+    //                 let ws = websocket.recv().unwrap();
+    //                 websocket_handling_thread(ws, cache);
+    //             });
+    //             response
+    //         },
+    //         _ => rouille::match_assets(request, "..")
+    //     )
+    // });
 }
 
 // fn websocket_handling_thread(
