@@ -1,9 +1,9 @@
+use ascii::AsciiString;
 use markdown::{
     ParseOptions,
     mdast::{FootnoteDefinition, Node, Text},
 };
 use notify::{EventKind, RecursiveMode, Watcher, event::ModifyKind};
-use rouille::{router, try_or_400, websocket};
 use serde::{Deserialize, Serialize};
 use std::{
     borrow::Cow,
@@ -11,11 +11,13 @@ use std::{
     collections::{BTreeMap, HashMap},
     fs::{self, File},
     hash::{DefaultHasher, Hash, Hasher},
+    io::Read,
     path::{Path, PathBuf},
     process::Command,
     thread,
-    time::{Duration, Instant},
+    time::Instant,
 };
+use tiny_http::{Header, Response, Server};
 
 use std::io::Write;
 
@@ -1376,6 +1378,58 @@ fn watch(etx: crossbeam_channel::Sender<()>, cache: &mut Cache) {
     println!("end of file watch ");
 }
 
+fn get_content_type(path: &Path) -> &'static str {
+    let extension = match path.extension() {
+        None => return "text/plain",
+        Some(e) => e,
+    };
+
+    match extension.to_str().unwrap() {
+        "js" => "application/javascript",
+        "gif" => "image/gif",
+        "jpg" => "image/jpeg",
+        "jpeg" => "image/jpeg",
+        "png" => "image/png",
+        "pdf" => "application/pdf",
+        "htm" => "text/html; charset=utf8",
+        "html" => "text/html; charset=utf8",
+        "txt" => "text/plain; charset=utf8",
+        "svg" => "image/svg+xml",
+        "css" => "text/css; charset=utf-8",
+        "mp4" => "video/mp4",
+        _ => "text/plain; charset=utf8",
+    }
+}
+
+struct SseStream {
+    rx: crossbeam_channel::Receiver<()>,
+    buffer: Vec<u8>,
+}
+
+impl Read for SseStream {
+    fn read(&mut self, buf: &mut [u8]) -> std::io::Result<usize> {
+        // If our internal buffer is empty, wait for a new message from the channel
+        if self.buffer.is_empty() {
+            match self.rx.recv() {
+                Ok(_msg) => {
+                    // Format the message according to SSE spec: "data: <content>\n\n"
+                    let msg = "foo";
+                    let formatted = format!("data: {}\n\n", msg);
+                    self.buffer.extend_from_slice(formatted.as_bytes());
+                }
+                Err(_) => return Ok(0), // Channel closed, end the stream
+            }
+        }
+
+        // Copy as much as we can from our buffer to the output buffer
+        let len = std::cmp::min(buf.len(), self.buffer.len());
+        buf[..len].copy_from_slice(&self.buffer[..len]);
+        self.buffer.drain(..len);
+        println!("{:?}", &buf[..len]);
+        Ok(len)
+    }
+}
+
 fn main() {
     let mut args = std::env::args().skip(1);
     let arg1 = args.next();
@@ -1404,35 +1458,52 @@ fn main() {
             watch(etx, &mut cache);
         });
 
-        rouille::start_server("localhost:8001", move |request| {
-            router!(request,
-                (GET) (/blog) => {
-                     rouille::Response::redirect_302("/blog/index.html")
-                },
-                (GET) (/blog/) => {
-                     rouille::Response::redirect_302("/blog/index.html")
-                },
-                (GET) (/ws) => {
-                    let (response, websocket) = try_or_400!(websocket::start(request, Some("echo")));
+        let server = Server::http("0.0.0.0:8001").unwrap();
+        for req in server.incoming_requests() {
+            let u = req.url();
+            println!("req: {} {}", req.method(), u);
 
-                    let erx= erx.clone();
-                    thread::spawn(move || {
-                        // This line will block until the `response` above has been returned.
-                        let mut ws = websocket.recv().unwrap();
-                        println!("ws connection");
-                        loop {
-                            if let Ok(_) = erx.recv() {
-                              println!("ws event");
-                              thread::sleep(Duration::from_millis(200));
-                              ws.send_text("reload").unwrap();
-                              println!("ws event sent");
-                            }
-                        }
-                    });
-                    response
-                },
-                _ => rouille::match_assets(request, "..")
-            )
-        });
+            match u {
+                "/blog/live-reload" => {
+                    let mut stream = SseStream {
+                        rx: erx.clone(),
+                        buffer: "event: ping\ndata: foo\n\n".as_bytes().to_vec(),
+                    };
+                    let response = Response::new(
+                        tiny_http::StatusCode(200),
+                        vec![
+                            Header::from_bytes(&b"Content-Type"[..], &b"text/event-stream"[..])
+                                .unwrap(),
+                            Header::from_bytes(&b"Cache-Control"[..], &b"no-cache"[..]).unwrap(),
+                            Header::from_bytes(&b"X-Accel-Buffering"[..], &b"no"[..]).unwrap(),
+                        ],
+                        &mut stream,
+                        None,
+                        None,
+                    );
+
+                    req.respond(response).unwrap();
+                }
+                _ => {
+                    let u = u.replace("/blog/", "");
+                    let path = Path::new(&u);
+                    let file = fs::File::open(&path);
+                    if file.is_ok() {
+                        let response = tiny_http::Response::from_file(file.unwrap());
+
+                        let response = response.with_header(tiny_http::Header {
+                            field: "Content-Type".parse().unwrap(),
+                            value: AsciiString::from_ascii(get_content_type(&path)).unwrap(),
+                        });
+
+                        let _ = req.respond(response);
+                    } else {
+                        let rep = tiny_http::Response::new_empty(tiny_http::StatusCode(404));
+                        let _ = req.respond(rep);
+                    }
+                }
+            }
+            println!("resp");
+        }
     }
 }
