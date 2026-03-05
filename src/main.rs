@@ -194,16 +194,18 @@ impl SearchIndex {
 
         chars.windows(3).for_each(|w| {
             let trigram: String = w.iter().collect::<String>().trim_ascii().to_string();
-            self.trigram_to_file_idx
-                .entry(trigram)
-                .and_modify(|e| {
-                    if let Some(elem) = e.iter_mut().find(|(fi, _)| *fi == file_idx) {
-                        elem.1 += 1;
-                    } else {
-                        e.push((file_idx, 1));
-                    }
-                })
-                .or_default();
+            if !trigram.is_empty() {
+                self.trigram_to_file_idx
+                    .entry(trigram)
+                    .and_modify(|e| {
+                        if let Some(elem) = e.iter_mut().find(|(fi, _)| *fi == file_idx) {
+                            elem.1 += 1;
+                        } else {
+                            e.push((file_idx, 1));
+                        }
+                    })
+                    .or_default();
+            }
         });
     }
 }
