@@ -1243,6 +1243,8 @@ fn generate_all(cache: &mut HashMap<String, Article>) {
     let html_footer = fs::read("footer.html").unwrap();
 
     let git_stats = git_get_articles_stats();
+    // We need ordering to avoid spurious diffs in the search index,
+    // due to the same file having suddenly a different index.
     assert!(
         git_stats.is_sorted_by(
             |a, b| a.path_from_git_root.cmp(&b.path_from_git_root) != Ordering::Greater
@@ -1263,13 +1265,6 @@ fn generate_all(cache: &mut HashMap<String, Article>) {
     {
         let start = std::time::Instant::now();
         let search_index_file = File::create("search_index.postcard").unwrap();
-        // Sort to avoid spurious diffs (and cache busting in the browser).
-        // FIXME: This does not work yet.
-        search_index
-            .trigram_to_file_idx
-            .values_mut()
-            .for_each(|v| v.sort_by(|a, b| a.0.cmp(&b.0)));
-        search_index.files.sort_by(|a, b| a.cmp(&b));
 
         postcard::to_io(&search_index, search_index_file).unwrap();
         println!(
