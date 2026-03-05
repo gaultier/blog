@@ -4,30 +4,35 @@ import * as scheme from './scheme.min.js';
 import * as x86asm from './x86asm.min.js';
 import * as dockerfile from './dockerfile.min.js';
 
-let socket = new WebSocket("ws://localhost:8001/ws", "echo");
-socket.onopen = (ev) => {
-  console.log("connected", ev);
-  window.addEventListener('beforeunload', () => {
-    console.log('closing', ev);
+function ws_connect() {
+  const socket = new WebSocket("ws://localhost:8001/ws", "echo");
+  socket.onopen = (ev) => {
+    console.log("connected", ev);
+    window.addEventListener('beforeunload', () => {
+      console.log('closing', ev);
+      socket.close();
+    });
+  }
+  socket.onmessage = function(ev) {
+    console.log('reloading', ev);
     socket.close();
-  });
-}
-socket.onmessage = function(ev) {
-  console.log('reloading', ev);
-  socket.close();
-  location.reload();
-}
-socket.onclose = function() {
-  // TODO: Reconnect?
-  console.log('closed');
-}
-socket.onerror = function(ev) {
-  console.log('error', ev);
+    location.reload();
+  }
+  socket.onclose = function() {
+    // TODO: Reconnect?
+    console.log('closed');
+    // Retry.
+    setTimeout(connect, 2000);
+  }
+  socket.onerror = function(ev) {
+    console.log('error', ev);
+  }
 }
 
-// hljs.configure({
-  // ignoreUnescapedHTML: true,
-// });
+if (!location.origin.includes("github")) {
+  ws_connect();
+}
+
 hljs.registerLanguage("cmake", cmake.default);
 hljs.registerLanguage("scheme", scheme.default);
 hljs.registerLanguage("x86asm", x86asm.default);

@@ -14,7 +14,7 @@ use std::{
     path::{Path, PathBuf},
     process::Command,
     thread,
-    time::Instant,
+    time::{Duration, Instant},
 };
 
 use std::io::Write;
@@ -1423,6 +1423,7 @@ fn main() {
                         loop {
                             if let Ok(_) = erx.recv() {
                               println!("ws event");
+                              thread::sleep(Duration::from_millis(200));
                               ws.send_text("reload").unwrap();
                               println!("ws event sent");
                             }
