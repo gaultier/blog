@@ -5,11 +5,17 @@ import * as x86asm from './x86asm.min.js';
 import * as dockerfile from './dockerfile.min.js';
 
 let socket = new WebSocket("ws://localhost:8001/ws", "echo");
-socket.onmessage = function(event) {
-  let html = event.data + '.html';
-  if (event.data ==='' || navigation.currentEntry.url.endsWith(html)){
-    navigation.reload();
-  }
+socket.onopen = (ev) => {
+  console.log("connected", ev);
+  window.addEventListener('beforeunload', () => {
+    console.log('closing', ev);
+    socket.close();
+  });
+}
+socket.onmessage = function(ev) {
+  console.log('reloading', ev);
+  socket.close();
+  location.reload();
 }
 socket.onclose = function() {
   // TODO: Reconnect?

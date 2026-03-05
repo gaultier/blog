@@ -3,7 +3,7 @@ use markdown::{
     mdast::{FootnoteDefinition, Node, Text},
 };
 use notify::{EventKind, RecursiveMode, Watcher, event::ModifyKind};
-//use rouille::{router, try_or_400, websocket};
+use rouille::{router, try_or_400, websocket};
 use serde::{Deserialize, Serialize};
 use std::{
     borrow::Cow,
@@ -13,6 +13,7 @@ use std::{
     hash::{DefaultHasher, Hash, Hasher},
     path::{Path, PathBuf},
     process::Command,
+    thread,
     time::Instant,
 };
 
@@ -933,6 +934,7 @@ fn md_render_article(
         },
     )
     .unwrap();
+    search_index.ingest_md_ast(&md_ast, &html_path);
 
     md_lint_rec(&md_ast, &md_path);
 
@@ -1312,7 +1314,7 @@ fn check_langs() {
     }
 }
 
-fn watch(cache: &mut Cache) {
+fn watch(etx: crossbeam_channel::Sender<()>, cache: &mut Cache) {
     let (tx, rx) = std::sync::mpsc::channel::<notify::Result<notify::Event>>();
     let mut watcher = notify::recommended_watcher(tx).unwrap();
     watcher
@@ -1325,15 +1327,17 @@ fn watch(cache: &mut Cache) {
                 EventKind::Access(_access_kind) => {}
                 EventKind::Modify(ModifyKind::Data(_)) => {
                     for path in event.paths {
-                        let stem = path.file_stem().unwrap();
-                        if stem == &"header.html".as_ref() || stem == &"footer.html".as_ref() {
+                        let file_name = path.file_name().unwrap();
+                        if file_name == &"header.html".as_ref()
+                            || file_name == &"footer.html".as_ref()
+                        {
                             println!(
                                 "🔄 header/footer changed, rebuilding & reloading all files: {}",
-                                stem.to_str().unwrap()
+                                file_name.to_str().unwrap()
                             );
                             cache.clear();
                             generate_all(cache);
-                            // websocket.send_text("").unwrap();
+                            etx.send(()).unwrap();
                         }
                         if path.extension() == Some(".js".as_ref())
                             || path.extension() == Some(".css".as_ref())
@@ -1347,17 +1351,17 @@ fn watch(cache: &mut Cache) {
                         {
                             println!(
                                 "🔄 asset changed, reloading all files: {}",
-                                stem.to_str().unwrap()
+                                file_name.to_str().unwrap()
                             );
-                            // websocket.send_text("").unwrap();
+                            etx.send(()).unwrap();
                         }
                         if path.extension() == Some("md".as_ref()) {
                             println!(
                                 "🔄 md file changed, rebuilding & reloading it: {}",
-                                stem.to_str().unwrap()
+                                file_name.to_str().unwrap()
                             );
                             generate_all(cache);
-                            // websocket.send_text(&file_path_str).unwrap();
+                            etx.send(()).unwrap();
                         }
                     }
                 }
@@ -1395,82 +1399,39 @@ fn main() {
     if let Some(arg) = arg1
         && arg == "watch"
     {
-        watch(&mut cache);
+        let (etx, erx) = crossbeam_channel::unbounded();
+        thread::spawn(move || {
+            watch(etx, &mut cache);
+        });
+
+        rouille::start_server("localhost:8001", move |request| {
+            router!(request,
+                (GET) (/blog) => {
+                     rouille::Response::redirect_302("/blog/index.html")
+                },
+                (GET) (/blog/) => {
+                     rouille::Response::redirect_302("/blog/index.html")
+                },
+                (GET) (/ws) => {
+                    let (response, websocket) = try_or_400!(websocket::start(request, Some("echo")));
+
+                    let erx= erx.clone();
+                    thread::spawn(move || {
+                        // This line will block until the `response` above has been returned.
+                        let mut ws = websocket.recv().unwrap();
+                        println!("ws connection");
+                        loop {
+                            if let Ok(_) = erx.recv() {
+                              println!("ws event");
+                              ws.send_text("reload").unwrap();
+                              println!("ws event sent");
+                            }
+                        }
+                    });
+                    response
+                },
+                _ => rouille::match_assets(request, "..")
+            )
+        });
     }
-
-    // let cache = Arc::new(Mutex::new(cache));
-    // rouille::start_server("localhost:8001", move |request| {
-    //     router!(request,
-    //         (GET) (/blog) => {
-    //              rouille::Response::redirect_302("/blog/index.html")
-    //         },
-    //         (GET) (/blog/) => {
-    //              rouille::Response::redirect_302("/blog/index.html")
-    //         },
-    //         (GET) (/ws) => {
-    //             let (response, websocket) = try_or_400!(websocket::start(request, Some("echo")));
-
-    //             let cache = cache.clone();
-    //             thread::spawn(move || {
-    //                 // This line will block until the `response` above has been returned.
-    //                 let ws = websocket.recv().unwrap();
-    //                 websocket_handling_thread(ws, cache);
-    //             });
-    //             response
-    //         },
-    //         _ => rouille::match_assets(request, "..")
-    //     )
-    // });
 }
-
-// fn websocket_handling_thread(
-//     mut websocket: websocket::Websocket,
-//     cache: Arc<Mutex<HashMap<String, Article>>>,
-// ) {
-//     println!("🚀 new websocket");
-
-//     let mut watcher = notify::recommended_watcher(|event: Result<notify::Event, notify::Error>| {
-//         if let Ok(event) = event {
-//             dbg!(&event);
-//             // let file_path_str = event.path.file_stem().unwrap_or_default().to_string_lossy();
-//             // let path_str = event.path.to_str().unwrap();
-//             // match path_str {
-//             //     _ if path_str.ends_with("header.html") || path_str.ends_with("footer.html") => {
-//             //         println!("🔄 header/footer changed, rebuilding & reloading all files");
-//             //         let mut cache = cache.lock().unwrap();
-//             //         cache.clear();
-//             //         generate_all(&mut cache);
-//             //         websocket.send_text("").unwrap();
-//             //     }
-//             //     _ if path_str.ends_with(".js")
-//             //         || path_str.ends_with(".css")
-//             //         || path_str.ends_with(".svg")
-//             //         || path_str.ends_with(".png")
-//             //         || path_str.ends_with(".webm")
-//             //         || path_str.ends_with(".mp4")
-//             //         || path_str.ends_with(".jpeg")
-//             //         || path_str.ends_with(".ico")
-//             //         || path_str.ends_with(".gif") =>
-//             //     {
-//             //         println!("🔄 asset changed, reloading all files: {}", path_str);
-//             //         websocket.send_text("").unwrap();
-//             //     }
-//             //     _ if path_str.ends_with(".md") => {
-//             //         println!(
-//             //             "🔄 md file changed, rebuilding & reloading it: {}",
-//             //             path_str
-//             //         );
-//             //         let mut cache = cache.lock().unwrap();
-//             //         generate_all(&mut cache);
-//             //         websocket.send_text(&file_path_str).unwrap();
-//             //     }
-//             //     _ => {}
-//             // };
-//         }
-//     })
-//     .unwrap();
-//     watcher
-//         .watch(Path::new("."), RecursiveMode::Recursive)
-//         .unwrap();
-//     println!("end of file watch & websocket handling");
-// }
