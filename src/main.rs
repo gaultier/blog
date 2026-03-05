@@ -370,7 +370,7 @@ fn git_get_articles_stats() -> Vec<GitStat> {
     let output_str = String::from_utf8_lossy(&output.stdout);
     let mut lines = output_str.lines().peekable();
 
-    let mut res: HashMap<String, GitStat> = HashMap::with_capacity(256);
+    let mut res: BTreeMap<String, GitStat> = BTreeMap::new();
 
     loop {
         // End?
@@ -1241,6 +1241,12 @@ fn generate_all(cache: &mut HashMap<String, Article>) {
     let html_footer = fs::read("footer.html").unwrap();
 
     let git_stats = git_get_articles_stats();
+    assert!(
+        git_stats.is_sorted_by(
+            |a, b| a.path_from_git_root.cmp(&b.path_from_git_root) != Ordering::Greater
+        )
+    );
+
     let mut search_index = SearchIndex::new();
     let mut articles: Vec<Article> = git_stats
         .into_iter()
@@ -1326,41 +1332,41 @@ fn main() {
                     EventKind::Access(_access_kind) => {}
                     EventKind::Modify(ModifyKind::Metadata(_)) => {
                         dbg!(&event);
-                        for path in event.paths {
-                            if path.file_stem() == Some(&header)
-                                || path.file_stem() == Some(&footer)
-                            {
-                                println!(
-                                    "🔄 header/footer changed, rebuilding & reloading all files"
-                                );
-                                // let mut cache = cache.lock().unwrap();
-                                // cache.clear();
-                                // generate_all(&mut cache);
-                                // websocket.send_text("").unwrap();
-                            }
-                            if path_str.ends_with(".js")
-                                || path_str.ends_with(".css")
-                                || path_str.ends_with(".svg")
-                                || path_str.ends_with(".png")
-                                || path_str.ends_with(".webm")
-                                || path_str.ends_with(".mp4")
-                                || path_str.ends_with(".jpeg")
-                                || path_str.ends_with(".ico")
-                                || path_str.ends_with(".gif")
-                            {
-                                println!("🔄 asset changed, reloading all files: {}", path_str);
-                                // websocket.send_text("").unwrap();
-                            }
-                            if path.extension() == Some(&md_ext) {
-                                println!(
-                                    "🔄 md file changed, rebuilding & reloading it: {}",
-                                    path_str
-                                );
-                                // let mut cache = cache.lock().unwrap();
-                                // generate_all(&mut cache);
-                                // websocket.send_text(&file_path_str).unwrap();
-                            }
-                        }
+                        //for path in event.paths {
+                        //    if path.file_stem() == Some(&header)
+                        //        || path.file_stem() == Some(&footer)
+                        //    {
+                        //        println!(
+                        //            "🔄 header/footer changed, rebuilding & reloading all files"
+                        //        );
+                        //        // let mut cache = cache.lock().unwrap();
+                        //        // cache.clear();
+                        //        // generate_all(&mut cache);
+                        //        // websocket.send_text("").unwrap();
+                        //    }
+                        //    if path_str.ends_with(".js")
+                        //        || path_str.ends_with(".css")
+                        //        || path_str.ends_with(".svg")
+                        //        || path_str.ends_with(".png")
+                        //        || path_str.ends_with(".webm")
+                        //        || path_str.ends_with(".mp4")
+                        //        || path_str.ends_with(".jpeg")
+                        //        || path_str.ends_with(".ico")
+                        //        || path_str.ends_with(".gif")
+                        //    {
+                        //        println!("🔄 asset changed, reloading all files: {}", path_str);
+                        //        // websocket.send_text("").unwrap();
+                        //    }
+                        //    if path.extension() == Some(&md_ext) {
+                        //        println!(
+                        //            "🔄 md file changed, rebuilding & reloading it: {}",
+                        //            path_str
+                        //        );
+                        //        // let mut cache = cache.lock().unwrap();
+                        //        // generate_all(&mut cache);
+                        //        // websocket.send_text(&file_path_str).unwrap();
+                        //    }
+                        //}
                     }
                     EventKind::Modify(_) => {}
                     EventKind::Remove(_remove_kind) => todo!(),
