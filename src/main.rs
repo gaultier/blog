@@ -981,13 +981,14 @@ fn md_render_article(
     sb.extend(html_header);
     writeln!(sb, r#"{}<div class="article-prelude">"#, "\n").unwrap();
 
-    let (date, _time) = git_stat.creation_date.split_once("T").unwrap();
+    let (creation_date, _time) = git_stat.creation_date.split_once("T").unwrap();
+    let (modification_date, _time) = git_stat.modification_date.split_once("T").unwrap();
     writeln!(
         sb,
         r#"{}
 
-<p class="publication-date">Published on {}.</p>"#,
-        BACK_LINK, date,
+<p class="publication-date">Published on {}. Last modified on {}.</p>"#,
+        BACK_LINK, creation_date, modification_date,
     )
     .unwrap();
     writeln!(sb, r#"</div>"#).unwrap();
