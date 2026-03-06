@@ -212,7 +212,7 @@ async function search_and_display_results(_event) {
   // Sort by score DESC.
   const search_results = [...scores.entries()].filter(([_, score]) => score !== 0).sort((a, b) => b[1] - a[1]);
   if (search_results.length === 0) {
-    dom_search_matches.innerHTML = '<h3>Search results</h3><p>No results found.</p>';
+    dom_search_matches.innerHTML = '<h3>Search results</h3><p>No results found (code snippets are not searched).</p>';
     return;
   }
 
@@ -251,7 +251,7 @@ async function search_and_display_results(_event) {
   await Promise.allSettled(excerptPromises);
   const visibleItems = Array.from(list.children).filter(li => !li.hidden);
   if (visibleItems.length === 0) {
-    list.insertAdjacentHTML('afterend', '<p id="no-results-msg">No results found.</p>');
+    list.insertAdjacentHTML('afterend', '<p id="no-results-msg">No results found (code snippets are not searched).</p>');
   }
 }
 
