@@ -2,6 +2,8 @@ Title: In Rust, `let _ = ...` and `let _unused = ...` are not the same
 Tags: Rust
 ---
 
+*Discussions: [/r/rust](https://old.reddit.com/r/rust/comments/1rmkt2d/in_rust_let_and_let_unused_are_not_the_same/)*
+
 In Rust and some other languages, the compiler or linter warns about unused variables. To silence these warnings we can name the unused variable either `_` or prefix it with `_`:
 
 ```rust
@@ -90,7 +92,11 @@ help: consider binding to an unused variable to avoid immediately dropping the v
 
 The two important parts are: `this lock is not assigned to a binding and is immediately dropped` and `consider binding to an unused variable to avoid immediately dropping the value`.
 
-I was not aware of the difference between `_` and `_unused`. In fact I went through the [Rust reference](https://doc.rust-lang.org/reference/destructors.html) and I did not find anything about this (perhaps I missed it?).
+I was not aware of the difference between `_` and `_unused`. In fact I went through the [Rust reference](https://doc.rust-lang.org/reference/destructors.html) and ~I did not find anything about this (perhaps I missed it?)~ some [kind commenter](https://www.reddit.com/r/rust/comments/1rmkt2d/comment/o90mdow/?utm_source=share&utm_medium=web3x&utm_name=web3xcss&utm_term=1&utm_content=share_button) pointed out the [correct reference](https://doc.rust-lang.org/reference/patterns.html#wildcard-pattern) and explained that in Rust, `_` is actually a [keyword](https://doc.rust-lang.org/reference/keywords.html#r-lex.keywords.strict):
+
+>  You did, though it's not your fault. In order to find it you first would need to have been aware that all variables in Rust are created with patterns; there's no difference* between let PATTERN = x and match x { PATTERN => ... } and fn foo(PATTERN: Type). There's nothing special about let x = expr(); x here is just a very simple pattern consisting of a single identifier.
+>
+>Once you know that, you go looking in the reference and discover that it distinguishes between Identifier Patterns, which introduce new variables into scope, and Wildcard Patterns, which are just the _. You might dig deeper into Identifiers and discover that _ isn't even considered an identifier, but rather a keyword that kind of resembles an identifier, like self. 
 
 This is the code that the compiler generates for `_`, conceptually:
 
@@ -115,9 +121,14 @@ And this is the code for `_unused`:
 Since in this code, dropping the mutex guard releases the mutex that guards the condition variable, this is a big difference in semantics.
 
 
+Another commenter also helpfully gave an ELI5: 
+
+> Think of let _ = … as sugar for drop(…)
+
+
 ## Learnings
 
-The same can happen for all resource-holding variables in Rust (files, sockets, memory allocation, etc): dropping releases the underlying resource (invisibly), and we need to be cognizant of [when the drop happens](/blog/perhaps_rust_needs_defer.html). To do that, we can log inside the `drop` function, set a breakpoint in the debugger, use DTrace, read the assembly, etc.
+The same can happen for all resource-holding variables in Rust (files, sockets, memory allocations, etc): dropping releases the underlying resource (invisibly), and we need to be cognizant of [when the drop happens](/blog/perhaps_rust_needs_defer.html). To do that, we can log inside the `drop` function, set a breakpoint in the debugger, use DTrace, read the assembly, etc.
 
 Sometimes, like in this very case, it is fine that the drop happens immediately, since code executing right after does not use the resource, and that typically helps performance: the critical section is shorter.
 

@@ -98,6 +98,7 @@ Do not edit it by hand.
 </ul>
 </details>
 
+<p><em>Discussions: <a href="https://old.reddit.com/r/rust/comments/1rmkt2d/in_rust_let_and_let_unused_are_not_the_same/">/r/rust</a></em></p>
 <p>In Rust and some other languages, the compiler or linter warns about unused variables. To silence these warnings we can name the unused variable either <code>_</code> or prefix it with <code>_</code>:</p>
 <pre>
   <div class="code-header">
@@ -193,7 +194,11 @@ protect against spurious wakeups.</p>
 <span class="line-number"></span><span class="code-hl">     |</span>
 </code></pre>
 <p>The two important parts are: <code>this lock is not assigned to a binding and is immediately dropped</code> and <code>consider binding to an unused variable to avoid immediately dropping the value</code>.</p>
-<p>I was not aware of the difference between <code>_</code> and <code>_unused</code>. In fact I went through the <a href="https://doc.rust-lang.org/reference/destructors.html">Rust reference</a> and I did not find anything about this (perhaps I missed it?).</p>
+<p>I was not aware of the difference between <code>_</code> and <code>_unused</code>. In fact I went through the <a href="https://doc.rust-lang.org/reference/destructors.html">Rust reference</a> and <del>I did not find anything about this (perhaps I missed it?)</del> some <a href="https://www.reddit.com/r/rust/comments/1rmkt2d/comment/o90mdow/?utm_source=share&amp;utm_medium=web3x&amp;utm_name=web3xcss&amp;utm_term=1&amp;utm_content=share_button">kind commenter</a> pointed out the <a href="https://doc.rust-lang.org/reference/patterns.html#wildcard-pattern">correct reference</a> and explained that in Rust, <code>_</code> is actually a <a href="https://doc.rust-lang.org/reference/keywords.html#r-lex.keywords.strict">keyword</a>:</p>
+<blockquote>
+<p>You did, though it's not your fault. In order to find it you first would need to have been aware that all variables in Rust are created with patterns; there's no difference* between let PATTERN = x and match x { PATTERN =&gt; ... } and fn foo(PATTERN: Type). There's nothing special about let x = expr(); x here is just a very simple pattern consisting of a single identifier.</p>
+<p>Once you know that, you go looking in the reference and discover that it distinguishes between Identifier Patterns, which introduce new variables into scope, and Wildcard Patterns, which are just the _. You might dig deeper into Identifiers and discover that _ isn't even considered an identifier, but rather a keyword that kind of resembles an identifier, like self.</p>
+</blockquote>
 <p>This is the code that the compiler generates for <code>_</code>, conceptually:</p>
 <pre>
   <div class="code-header">
@@ -219,11 +224,15 @@ protect against spurious wakeups.</p>
 <span class="line-number"></span><span class="code-hl">        mutex_guard.release();</span>
 </code></pre>
 <p>Since in this code, dropping the mutex guard releases the mutex that guards the condition variable, this is a big difference in semantics.</p>
+<p>Another commenter also helpfully gave an ELI5:</p>
+<blockquote>
+<p>Think of let _ = … as sugar for drop(…)</p>
+</blockquote>
 <h2 id="learnings">
   <a class="title" href="#learnings">Learnings</a>
   <a class="hash-anchor" href="#learnings" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
-<p>The same can happen for all resource-holding variables in Rust (files, sockets, memory allocation, etc): dropping releases the underlying resource (invisibly), and we need to be cognizant of <a href="/blog/perhaps_rust_needs_defer.html">when the drop happens</a>. To do that, we can log inside the <code>drop</code> function, set a breakpoint in the debugger, use DTrace, read the assembly, etc.</p>
+<p>The same can happen for all resource-holding variables in Rust (files, sockets, memory allocations, etc): dropping releases the underlying resource (invisibly), and we need to be cognizant of <a href="/blog/perhaps_rust_needs_defer.html">when the drop happens</a>. To do that, we can log inside the <code>drop</code> function, set a breakpoint in the debugger, use DTrace, read the assembly, etc.</p>
 <p>Sometimes, like in this very case, it is fine that the drop happens immediately, since code executing right after does not use the resource, and that typically helps performance: the critical section is shorter.</p>
 <p>And finally, thanks to the implementers of the Rust compiler who thought of this lint!</p>
 <h2 id="further-reading">
