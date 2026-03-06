@@ -14,8 +14,9 @@ use std::{
     net::{SocketAddr, TcpListener, TcpStream},
     path::{Path, PathBuf},
     process::Command,
+    sync::mpsc::{Receiver, Sender},
     thread,
-    time::{Duration, Instant},
+    time::Instant,
 };
 
 use std::io::Write;
@@ -1315,13 +1316,13 @@ fn check_langs() {
     }
 }
 
-fn watch(etx: crossbeam_channel::Sender<()>, cache: &mut Cache) {
-    let (tx, rx) = std::sync::mpsc::channel::<notify::Result<notify::Event>>();
-    let mut watcher = notify::recommended_watcher(tx).unwrap();
+fn watch(tx: Sender<()>, cache: &mut Cache) {
+    let (etx, erx) = std::sync::mpsc::channel::<notify::Result<notify::Event>>();
+    let mut watcher = notify::recommended_watcher(etx).unwrap();
     watcher
         .watch(Path::new("."), RecursiveMode::NonRecursive)
         .unwrap();
-    for res in rx {
+    for res in erx {
         match res {
             Ok(event) => match event.kind {
                 EventKind::Any => {}
@@ -1338,7 +1339,7 @@ fn watch(etx: crossbeam_channel::Sender<()>, cache: &mut Cache) {
                             );
                             cache.clear();
                             generate_all(cache);
-                            etx.send(()).unwrap();
+                            tx.send(()).unwrap();
                         }
                         if path.extension() == Some(".js".as_ref())
                             || path.extension() == Some(".css".as_ref())
@@ -1354,7 +1355,7 @@ fn watch(etx: crossbeam_channel::Sender<()>, cache: &mut Cache) {
                                 "🔄 asset changed, reloading all files: {}",
                                 file_name.to_str().unwrap()
                             );
-                            etx.send(()).unwrap();
+                            tx.send(()).unwrap();
                         }
                         if path.extension() == Some("md".as_ref()) {
                             println!(
@@ -1362,7 +1363,7 @@ fn watch(etx: crossbeam_channel::Sender<()>, cache: &mut Cache) {
                                 file_name.to_str().unwrap()
                             );
                             generate_all(cache);
-                            etx.send(()).unwrap();
+                            tx.send(()).unwrap();
                         }
                     }
                 }
@@ -1472,87 +1473,58 @@ fn main() {
     if let Some(arg) = arg1
         && arg == "watch"
     {
-        let (etx, erx) = crossbeam_channel::unbounded();
-        thread::spawn(move || {
-            for _ in 1..50 {
-                etx.send(()).unwrap();
-                std::thread::sleep(Duration::from_secs(1));
-            }
-            //watch(etx, &mut cache);
-        });
+        let (tx, rx) = std::sync::mpsc::channel();
+        watch(tx, &mut cache);
 
-        http_serve(|req, stream| {
+        http_serve( move | req,stream| {
             println!("req: {} {}", req.method.unwrap(), req.path.unwrap());
 
             let mut resp = BufWriter::new(stream);
             match (req.method, req.path) {
                 (Some("GET"), Some("/blog")) => {
-                    writeln!( resp, "HTTP/1.1 200 OK\r\nContent-Type: text/html; charset=UTF-8\r\nConnection: Close\r\n\r\nHello!").unwrap();
+                    writeln!(
+                        resp,
+                        "HTTP/1.1 301\r\nLocation: /blog/index.html\r\nConnection: Close\r\n\r\n"
+                    )
+                    .unwrap();
+                }
+                (Some("GET"), Some("/blog/live-reload")) => {
+                    writeln!(resp, "HTTP/1.1 200\r\nCache-Control: no-cache\r\nContent-Type: text/event-stream\r\n\r\n").unwrap();
+
+
+                    //loop {
+                    //    match rx.recv() {
+                    //        Ok(_) => {
+                    //            writeln!(resp, "event: ping\ndata: foobar\n\n").unwrap();
+                    //            resp.flush().unwrap();
+                    //        }
+                    //        Err(err) => {
+                    //            eprintln!("event error: {:#?}", err);
+                    //            return;
+                    //        }
+                    //    }
+                    //}
                 }
                 _ => {
-                   writeln!( resp, "HTTP/1.1 404\r\nConnection: Close\r\n\r\n").unwrap();
+                    let path = req.path.unwrap().replace("/blog/", "");
+                    let path = Path::new(&path);
+
+                    let content = std::fs::read_to_string(path);
+                    if content.is_err() {
+                        writeln!(resp, "HTTP/1.1 404\r\nConnection: Close\r\n\r\n").unwrap();
+                        return;
+                    }
+
+                    writeln!(
+                        resp,
+                        "HTTP/1.1 200\r\nConnection: Close\r\nContent-Type: {}\r\n\r\n",
+                        get_content_type(path)
+                    )
+                    .unwrap();
+                    resp.write_all(content.unwrap().as_bytes()).unwrap();
                 }
             };
         })
         .unwrap();
-
-        //let server = Server::http("0.0.0.0:8001").unwrap();
-        //for req in server.incoming_requests() {
-        //    let erx = erx.clone();
-        //    std::thread::spawn(move || {
-        //        let u = req.url();
-        //        println!("req: {} {}", req.method(), u);
-        //
-        //        match u {
-        //            "/blog/live-reload" => {
-        //                let mut initial_buffer = Vec::new();
-        //                // Send 1KB of padding as an SSE comment
-        //                for _ in 0..1024 {
-        //                    initial_buffer.extend_from_slice(b": padding\n");
-        //                }
-        //                initial_buffer.extend_from_slice(b"data: connected\n\n");
-        //                let stream = SseStream {
-        //                    rx: erx,
-        //                    buffer: initial_buffer,
-        //                    //buffer: "event: ping\ndata: foo\n\n".as_bytes().to_vec(),
-        //                };
-        //                let response = Response::new(
-        //                    tiny_http::StatusCode(200),
-        //                    vec![
-        //                        Header::from_bytes(&b"Content-Type"[..], &b"text/event-stream"[..])
-        //                            .unwrap(),
-        //                        Header::from_bytes(&b"Cache-Control"[..], &b"no-cache"[..])
-        //                            .unwrap(),
-        //                        Header::from_bytes(&b"X-Accel-Buffering"[..], &b"no"[..]).unwrap(),
-        //                    ],
-        //                    stream,
-        //                    None,
-        //                    None,
-        //                );
-        //
-        //                req.respond(response).unwrap();
-        //            }
-        //            _ => {
-        //                let u = u.replace("/blog/", "");
-        //                let path = Path::new(&u);
-        //                let file = fs::File::open(&path);
-        //                if file.is_ok() {
-        //                    let response = tiny_http::Response::from_file(file.unwrap());
-        //
-        //                    let response = response.with_header(tiny_http::Header {
-        //                        field: "Content-Type".parse().unwrap(),
-        //                        value: AsciiString::from_ascii(get_content_type(&path)).unwrap(),
-        //                    });
-        //
-        //                    let _ = req.respond(response);
-        //                } else {
-        //                    let rep = tiny_http::Response::new_empty(tiny_http::StatusCode(404));
-        //                    let _ = req.respond(rep);
-        //                }
-        //            }
-        //        }
-        //        println!("resp");
-        //    });
-        //}
     }
 }

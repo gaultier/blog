@@ -14,6 +14,7 @@ function sse_connect() {
   // 2. Listen for generic "message" events
   eventSource.onmessage = (event) => {
     console.log("New message:", event.data);
+    location.reload();
   };
 
   // 3. Handle errors (like the server going down)
