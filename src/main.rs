@@ -51,7 +51,7 @@ const STANDARD_LANGS: [&str; 19] = [
     "yaml",
 ];
 
-const CUSTOM_LANGS: [&'static str; 5] = ["awk", "dtrace", "gnuplot", "odin", "toml"];
+const CUSTOM_LANGS: [&str; 5] = ["awk", "dtrace", "gnuplot", "odin", "toml"];
 
 struct Title {
     text: String,
@@ -591,15 +591,12 @@ fn md_to_html(md_content: &str) -> Vec<u8> {
 
     match &md_ast {
         Node::Root(r) if r.children.len() == 1 => {
-            match &r.children[0] {
-                Node::Paragraph(p) => {
-                    for c in &p.children {
-                        md_to_html_rec(&mut sb, &mut footnote_defs, c, &[], false);
-                    }
-                    return sb;
+            if let Node::Paragraph(p) = &r.children[0] {
+                for c in &p.children {
+                    md_to_html_rec(&mut sb, &mut footnote_defs, c, &[], false);
                 }
-                _ => {}
-            };
+                return sb;
+            }
         }
         _ => {}
     };
@@ -955,7 +952,7 @@ fn md_render_article(
     if let Some(ast) = cache.md_to_ast.get(&hash) {
         // There may be a way to incrementally compute the search index but it is easier to
         // recompute it from scratch each time.
-        search_index.ingest_md_ast(&ast, &html_path);
+        search_index.ingest_md_ast(ast, &html_path);
         return cache.md_to_article.get(&hash).unwrap().clone();
     }
     let md_ast = markdown::to_mdast(
