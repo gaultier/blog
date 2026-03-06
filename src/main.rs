@@ -1459,7 +1459,7 @@ fn live_reload(
         let (lock, cvar) = &*mtx_cond;
         let guard = lock.lock().map_err(|_| ())?;
 
-        let _unused = cvar.wait(guard).map_err(|_| ())?;
+        drop(cvar.wait(guard).map_err(|_| ())?);
         write!(resp, "data: foobar\n\n").map_err(|_| ())?;
         resp.flush().map_err(|_| ())?;
         println!("🔃 sse event sent");
