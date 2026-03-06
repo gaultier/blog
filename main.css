@@ -183,14 +183,14 @@ body {
 
   color-scheme: light dark;
   /* Most colors are from gruvbox: https://github.com/morhetz/gruvbox/tree/master . */
-  --color-less-important: #928374;
+  --color-less-important: light-dark(#928374, #ebdbb2);
   --color-banner-bg: #FB8C00;
   --color-main: light-dark(#1d2021, white);
   --color-main-bg: light-dark(white, #1d2021);
   --color-code-bg: light-dark(#fbf1c7, #282828);
 
   /* --color-link: light-dark(#7c6f64, #a89984);*/
-  --color-link: light-dark(#076678, #83a598);
+  --color-link: light-dark(#076678, #fe8019);
   --color-link-hover: #458588;
 
   color: var(--color-main);
