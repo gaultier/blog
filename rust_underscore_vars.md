@@ -77,7 +77,8 @@ I was not aware of the difference between `_` and `_unused`. In fact I went thro
 This is the code that the compiler generates for `_`, conceptually:
 
 ```rust
-        drop(cvar.wait(guard).map_err(|_| ())?);
+        let mutex_guard = cvar.wait(guard).map_err(|_| ())?;
+        mutex_guard.release();
 
         // [...] Rest of the code in the scope.
 ```
@@ -85,12 +86,12 @@ This is the code that the compiler generates for `_`, conceptually:
 And this is the code for `_unused`:
 
 ```rust
-        let _unused = cvar.wait(guard).map_err(|_| ())?;
+        let mutex_guard = cvar.wait(guard).map_err(|_| ())?;
 
         // [...] Rest of the code in the scope.
 
         // At the end of the scope:
-        drop(_unused);
+        mutex_guard.release();
 ```
 
 Since in this code, dropping the mutex guard releases the mutex that guards the condition variable, this is a big difference in semantics.
