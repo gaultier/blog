@@ -43,7 +43,7 @@ fn live_reload(
 For context (although this is not needed for this article), this is the notifying thread:
 
 ```rust
-fn watch(mtx_cond: Arc<(Mutex<()>, Condvar)>) {
+fn watch_file_system(mtx_cond: Arc<(Mutex<()>, Condvar)>) {
     loop {
         // [...]
         // On file changed:
