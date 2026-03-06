@@ -1392,9 +1392,9 @@ fn watch(mtx_cond: Arc<(Mutex<usize>, Condvar)>, cache: &mut Cache) {
                     }
                 }
                 EventKind::Modify(_) => {}
-                EventKind::Remove(_remove_kind) => todo!(),
-                EventKind::Create(_create_kind) => todo!(),
-                EventKind::Other => todo!(),
+                EventKind::Remove(_remove_kind) => {}
+                EventKind::Create(_create_kind) => {}
+                EventKind::Other => {}
             },
             Err(e) => println!("watch error: {:?}", e),
         }
