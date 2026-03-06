@@ -2,7 +2,7 @@ Title: A silly shell pitfall
 Tags: Shell, Go, Rust
 ---
 
-Super short article today!!
+Super short article today.
 
 At [work](https://github.com/ory/sdk) we maintain an OpenAPI (formerly known as Swagger) specification of our APIs. 
 Then we use generators to produce client code in various languages. 

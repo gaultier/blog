@@ -15,8 +15,8 @@ use std::{
     net::{SocketAddr, TcpListener, TcpStream},
     path::{Path, PathBuf},
     process::Command,
-    sync::mpsc::{Receiver, Sender},
-    thread,
+    sync::{Arc, Condvar, Mutex},
+    thread::{self},
     time::Instant,
 };
 
@@ -917,12 +917,9 @@ fn md_render_article(
     let html_path = md_path.with_extension("html");
     let hash = Cache::hash(&md_content);
     if let Some(ast) = cache.md_to_ast.get(&hash) {
+        // There may be a way to incrementally compute the search index but it is easier to
+        // recompute it from scratch each time.
         search_index.ingest_md_ast(&ast, &html_path);
-        //println!(
-        //    "⚡ cache hit: {} {} us",
-        //    &md_path.to_str().unwrap(),
-        //    Instant::now().duration_since(start).as_micros()
-        //);
         return cache.md_to_article.get(&hash).unwrap().clone();
     }
     let md_ast = markdown::to_mdast(
@@ -1317,7 +1314,7 @@ fn check_langs() {
     }
 }
 
-fn watch(tx: Sender<()>, cache: &mut Cache) {
+fn watch(mtx_cond: Arc<(Mutex<usize>, Condvar)>, cache: &mut Cache) {
     let (etx, erx) = std::sync::mpsc::channel::<notify::Result<notify::Event>>();
     let mut watcher = notify::recommended_watcher(etx).unwrap();
     watcher
@@ -1329,6 +1326,8 @@ fn watch(tx: Sender<()>, cache: &mut Cache) {
                 EventKind::Any => {}
                 EventKind::Access(_access_kind) => {}
                 EventKind::Modify(ModifyKind::Data(_)) => {
+                    let (lock, cvar) = &*mtx_cond;
+                    let _unused = lock.lock().unwrap();
                     for path in event.paths {
                         let file_name = path.file_name().unwrap();
                         if file_name == &"header.html".as_ref()
@@ -1340,7 +1339,6 @@ fn watch(tx: Sender<()>, cache: &mut Cache) {
                             );
                             cache.clear();
                             generate_all(cache);
-                            tx.send(()).unwrap();
                         }
                         if path.extension() == Some(".js".as_ref())
                             || path.extension() == Some(".css".as_ref())
@@ -1356,7 +1354,8 @@ fn watch(tx: Sender<()>, cache: &mut Cache) {
                                 "🔄 asset changed, reloading all files: {}",
                                 file_name.to_str().unwrap()
                             );
-                            tx.send(()).unwrap();
+
+                            cvar.notify_all();
                         }
                         if path.extension() == Some("md".as_ref()) {
                             println!(
@@ -1364,7 +1363,8 @@ fn watch(tx: Sender<()>, cache: &mut Cache) {
                                 file_name.to_str().unwrap()
                             );
                             generate_all(cache);
-                            tx.send(()).unwrap();
+
+                            cvar.notify_all();
                         }
                     }
                 }
@@ -1439,15 +1439,32 @@ where
                 let mut req = httparse::Request::new(&mut headers);
                 let req_parsed = req.parse(&req_bytes).unwrap();
                 if !req_parsed.is_partial() {
-                    println!(
-                        "http: read full req: {}",
-                        String::from_utf8_lossy(&req_bytes)
-                    );
                     handler(req, stream);
                     return;
                 }
             }
         });
+    }
+}
+
+fn live_reload(
+    mut resp: BufWriter<TcpStream>,
+    mtx_cond: Arc<(Mutex<usize>, Condvar)>,
+) -> Result<(), ()> {
+    writeln!(
+        resp,
+        "HTTP/1.1 200\r\nCache-Control: no-cache\r\nContent-Type: text/event-stream\r\n\r\n"
+    )
+    .map_err(|_| ())?;
+
+    loop {
+        let (lock, cvar) = &*mtx_cond;
+        let guard = lock.lock().map_err(|_| ())?;
+
+        let _unused = cvar.wait(guard).map_err(|_| ())?;
+        writeln!(resp, "data: foobar\n\n").map_err(|_| ())?;
+        resp.flush().map_err(|_| ())?;
+        println!("🔃 sse event sent");
     }
 }
 
@@ -1474,37 +1491,24 @@ fn main() {
     if let Some(arg) = arg1
         && arg == "watch"
     {
-        let (tx, rx) = std::sync::mpsc::channel();
-        watch(tx, &mut cache);
+        let mtx_cond = Arc::new((Mutex::new(0), Condvar::new()));
+        let mtx_cond2 = Arc::clone(&mtx_cond);
+        thread::spawn(move || {
+            watch(mtx_cond2, &mut cache);
+        });
 
-        http_serve( move | req,stream| {
-            println!("req: {} {}", req.method.unwrap(), req.path.unwrap());
-
+        http_serve(move |req, stream| {
             let mut resp = BufWriter::new(stream);
-            match (req.method, req.path) {
-                (Some("GET"), Some("/blog")) => {
+            match (req.method.unwrap(), req.path.unwrap()) {
+                ("GET", "/blog") => {
                     writeln!(
                         resp,
                         "HTTP/1.1 301\r\nLocation: /blog/index.html\r\nConnection: Close\r\n\r\n"
                     )
                     .unwrap();
                 }
-                (Some("GET"), Some("/blog/live-reload")) => {
-                    writeln!(resp, "HTTP/1.1 200\r\nCache-Control: no-cache\r\nContent-Type: text/event-stream\r\n\r\n").unwrap();
-
-
-                    //loop {
-                    //    match rx.recv() {
-                    //        Ok(_) => {
-                    //            writeln!(resp, "event: ping\ndata: foobar\n\n").unwrap();
-                    //            resp.flush().unwrap();
-                    //        }
-                    //        Err(err) => {
-                    //            eprintln!("event error: {:#?}", err);
-                    //            return;
-                    //        }
-                    //    }
-                    //}
+                ("GET", "/blog/live-reload") => {
+                    let _ = live_reload(resp, mtx_cond.clone());
                 }
                 _ => {
                     let path = req.path.unwrap().replace("/blog/", "");
