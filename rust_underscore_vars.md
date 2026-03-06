@@ -120,3 +120,7 @@ Since in this code, dropping the mutex guard releases the mutex that guards the 
 The same can happen for all resource-holding variables in Rust (files, sockets, memory allocation, etc): dropping releases the underlying resource (invisibly), and we need to be cognizant of [when the drop happens](/blog/perhaps_rust_needs_defer.html). To do that, we can log inside the `drop` function, set a breakpoint in the debugger, use DTrace, read the assembly, etc.
 
 Sometimes, like in this very case, it is fine that the drop happens immediately, since code executing right after does not use the resource, and that typically helps performance: the critical section is shorter.
+
+## Further reading
+
+This is the implementation for the lint, which has a longer explanation: [https://doc.rust-lang.org/stable/nightly-rustc/src/rustc_lint/let_underscore.rs.html](https://doc.rust-lang.org/stable/nightly-rustc/src/rustc_lint/let_underscore.rs.html).

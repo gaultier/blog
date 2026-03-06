@@ -91,6 +91,10 @@ Do not edit it by hand.
   <li>
     <a href="#learnings">Learnings</a>
 </li>
+
+  <li>
+    <a href="#further-reading">Further reading</a>
+</li>
 </ul>
 </details>
 
@@ -221,6 +225,11 @@ protect against spurious wakeups.</p>
 </h2>
 <p>The same can happen for all resource-holding variables in Rust (files, sockets, memory allocation, etc): dropping releases the underlying resource (invisibly), and we need to be cognizant of <a href="/blog/perhaps_rust_needs_defer.html">when the drop happens</a>. To do that, we can log inside the <code>drop</code> function, set a breakpoint in the debugger, use DTrace, read the assembly, etc.</p>
 <p>Sometimes, like in this very case, it is fine that the drop happens immediately, since code executing right after does not use the resource, and that typically helps performance: the critical section is shorter.</p>
+<h2 id="further-reading">
+  <a class="title" href="#further-reading">Further reading</a>
+  <a class="hash-anchor" href="#further-reading" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+</h2>
+<p>This is the implementation for the lint, which has a longer explanation: <a href="https://doc.rust-lang.org/stable/nightly-rustc/src/rustc_lint/let_underscore.rs.html">https://doc.rust-lang.org/stable/nightly-rustc/src/rustc_lint/let_underscore.rs.html</a>.</p>
 <p><a href="/blog"> ⏴ Back to all articles</a></p>
 
 <blockquote id="donate">
