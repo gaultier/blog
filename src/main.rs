@@ -589,17 +589,15 @@ fn md_to_html(md_content: &str) -> Vec<u8> {
 
     let mut footnote_defs = Vec::new();
 
-    match &md_ast {
-        Node::Root(r) if r.children.len() == 1 => {
-            if let Node::Paragraph(p) = &r.children[0] {
-                for c in &p.children {
-                    md_to_html_rec(&mut sb, &mut footnote_defs, c, &[], false);
-                }
-                return sb;
-            }
+    if let Node::Root(r) = &md_ast
+        && r.children.len() == 1
+        && let Node::Paragraph(p) = &r.children[0]
+    {
+        for c in &p.children {
+            md_to_html_rec(&mut sb, &mut footnote_defs, c, &[], false);
         }
-        _ => {}
-    };
+        return sb;
+    }
     md_to_html_rec(&mut sb, &mut footnote_defs, &md_ast, &[], false);
 
     sb
