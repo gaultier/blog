@@ -121,6 +121,8 @@ The same can happen for all resource-holding variables in Rust (files, sockets, 
 
 Sometimes, like in this very case, it is fine that the drop happens immediately, since code executing right after does not use the resource, and that typically helps performance: the critical section is shorter.
 
+And finally, thanks to the implementers of the Rust compiler who thought of this lint!
+
 ## Further reading
 
 This is the implementation for the lint, which has a longer explanation: [https://doc.rust-lang.org/stable/nightly-rustc/src/rustc_lint/let_underscore.rs.html](https://doc.rust-lang.org/stable/nightly-rustc/src/rustc_lint/let_underscore.rs.html).
