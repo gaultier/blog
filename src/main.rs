@@ -218,8 +218,17 @@ impl SearchIndex {
         let chars: Vec<char> = text.to_lowercase().chars().collect();
 
         chars.windows(3).for_each(|w| {
-            let trigram: String = w.iter().collect::<String>().trim_ascii().to_string();
-            if !trigram.is_empty() {
+            let trigram: String = w
+                .iter()
+                .map(|c| {
+                    if c.is_alphanumeric() || c.is_ascii_punctuation() {
+                        *c
+                    } else {
+                        ' '
+                    }
+                })
+                .collect::<String>();
+            if trigram != "   " {
                 self.trigram_to_file_idx
                     .entry(trigram)
                     .and_modify(|e| {
