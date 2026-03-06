@@ -1,8 +1,8 @@
-Title: In Rust, `let _ = ...` and `let _unused = ...` is not the same
+Title: In Rust, `let _ = ...` and `let _unused = ...` are not the same
 Tags: Rust
 ---
 
-Simple TIL for me. In Rust and some other languages, the compiler or linter warns about unused variables. To silence these warnings we can name the unused variable either `_` or prefix it with `_`:
+In Rust and some other languages, the compiler or linter warns about unused variables. To silence these warnings we can name the unused variable either `_` or prefix it with `_`:
 
 ```rust
 let _ = foo();
@@ -13,7 +13,7 @@ And for the longest time I thought these were the same. But they're not.
 
 ## Context
 
-I realized it when writing code for this very blog, to implement live-reloading: one thread watches the file system, and when a change is noticed, it signals another thread, which sends an event to the browser, to tell it to reload the page:
+I realized it when writing code for this very blog, to implement live-reloading: one thread watches the file system, and when a change is noticed, it signals another thread, which sends an event to the browser, to reload the page:
 
 ```rust
 fn live_reload(
@@ -38,7 +38,7 @@ fn live_reload(
 }
 ```
 
-Condition variables were made for this: the waiting thread has nothing to do when no file is changed, and we want it to remain idle, without consuming any CPU time.
+[Condition variables](https://linux.die.net/man/3/pthread_cond_wait) were made for this: the waiting thread has nothing to do until a file is changed, and it should wait patiently without consuming any CPU cycles.
 
 For context (although this is not needed for this article), this is the notifying thread:
 
@@ -54,7 +54,7 @@ fn watch(mtx_cond: Arc<(Mutex<usize>, Condvar)>) {
 }
 ```
 
-Note that this code technically suffers from possible spurious wake-ups by the OS as pointed out by the Rust docs:
+Note that this code technically suffers from possible spurious wake-ups by the OS as pointed out by the [Rust docs](https://doc.rust-lang.org/std/sync/struct.Condvar.html):
 
 > Note that this function is susceptible to spurious wakeups. Condition
 > variables normally have a boolean predicate associated with them, and
