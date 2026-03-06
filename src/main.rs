@@ -238,7 +238,7 @@ impl SearchIndex {
                             e.push((file_idx, 1));
                         }
                     })
-                    .or_default();
+                    .or_insert_with(|| vec![(file_idx, 1)]);
             }
         });
     }
