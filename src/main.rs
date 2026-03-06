@@ -1334,7 +1334,7 @@ fn watch(mtx_cond: Arc<(Mutex<usize>, Condvar)>, cache: &mut Cache) {
                             || file_name == &"footer.html".as_ref()
                         {
                             println!(
-                                "🔄 header/footer changed, rebuilding & reloading all files: {}",
+                                "🔄 header/footer changed, rebuilding ading all files: {}",
                                 file_name.to_str().unwrap()
                             );
                             cache.clear();
@@ -1350,16 +1350,13 @@ fn watch(mtx_cond: Arc<(Mutex<usize>, Condvar)>, cache: &mut Cache) {
                             || path.extension() == Some(".ico".as_ref())
                             || path.extension() == Some(".gif".as_ref())
                         {
-                            println!(
-                                "🔄 asset changed, reloading all files: {}",
-                                file_name.to_str().unwrap()
-                            );
+                            println!("🔄 asset changed: {}", file_name.to_str().unwrap());
 
                             cvar.notify_all();
                         }
                         if path.extension() == Some("md".as_ref()) {
                             println!(
-                                "🔄 md file changed, rebuilding & reloading it: {}",
+                                "🔄 md file changed, rebuilding: {}",
                                 file_name.to_str().unwrap()
                             );
                             generate_all(cache);
