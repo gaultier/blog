@@ -43,7 +43,6 @@
 ## Blog implementation
 
 - [ ] gen: check that for foo.md in Git, foo.html is also in Git 
-- gen: plain text <title> for better SEO
 - [ ] gen: background job for `git gc --aggressive --prune=now`
 - [ ] gen: link checker
 - [ ] browser: search with `/` shortcut and appears on the side
