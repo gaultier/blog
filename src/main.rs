@@ -987,7 +987,6 @@ fn md_render_article(
     md_render_toc(&mut html_content, &md_titles);
 
     let mut footnote_defs = Vec::with_capacity(8);
-    dbg!(&md_ast);
     md_to_html_rec(
         &mut html_content,
         &mut footnote_defs,

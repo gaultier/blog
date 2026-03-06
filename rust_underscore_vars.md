@@ -74,8 +74,27 @@ The two important parts are: `this lock is not assigned to a binding and is imme
 
 I was not aware of the difference between `_` and `_unused`. In fact I went through the [Rust reference](https://doc.rust-lang.org/reference/destructors.html) and I did not find anything about this.
 
+This is the code that the compiler generates for `_`, conceptually:
+
+```rust
+        drop(cvar.wait(guard).map_err(|_| ())?);
+
+        // [...] Rest of the code in the scope.
+```
+
+And this is the code for `_unused`:
+
+```rust
+        let _unused = cvar.wait(guard).map_err(|_| ())?;
+
+        // [...] Rest of the code in the scope.
+
+        // At the end of the scope:
+        drop(_unused);
+```
+
 Since in this code, dropping the mutex guard releases the mutex that guards the condition variable, this is a big difference in semantics.
 
-The same can happen for all resource-holding variables (files, sockets, memory allocation, etc): dropping releases the underlying resource (invisibly), and we need to be cognizant of when the drop happens. 
+The same can happen for all resource-holding variables (files, sockets, memory allocation, etc): dropping releases the underlying resource (invisibly), and we need to be cognizant of when the drop happens. To do that, we can log inside the `drop` function, set a breakpoint in the debugger, use DTrace, read the assembly, etc.
 
-Sometimes, like in our case, this is fine that the drop happens immediately, since code executing right after does not use the resource, and that helps performance: the critical section is shorter.
+Sometimes, like in our case, this is fine that the drop happens immediately, since code executing right after does not use the resource, and that typically helps performance: the critical section is shorter.
