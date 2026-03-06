@@ -9,7 +9,7 @@ use std::{
     borrow::Cow,
     cmp::Ordering,
     collections::{BTreeMap, HashMap},
-    fs::{self, File},
+    fs::{self},
     hash::{BuildHasherDefault, DefaultHasher, Hash, Hasher},
     io::{self, BufWriter, Read},
     net::{SocketAddr, TcpListener, TcpStream},
@@ -1314,12 +1314,18 @@ fn generate_all(cache: &mut Cache) {
 
     {
         let start = std::time::Instant::now();
-        let search_index_file = File::create("search_index.postcard").unwrap();
-
-        postcard::to_io(&search_index, search_index_file).unwrap();
+        let v: Vec<u8> = postcard::to_stdvec(&search_index).unwrap();
         println!(
-            "🔍 marshalled search index (count:{}) in {} ms",
+            "🔍 marshalled search index to bytes (count:{}, bytes:{}) in {} ms",
             search_index.trigram_to_file_idx.len(),
+            v.len(),
+            Instant::now().duration_since(start).as_millis()
+        );
+        fs::write("search_index.postcard", &v).unwrap();
+        println!(
+            "🔍 wrote search index bytes (count:{}, bytes:{}) in {} ms",
+            search_index.trigram_to_file_idx.len(),
+            v.len(),
             Instant::now().duration_since(start).as_millis()
         );
     }
