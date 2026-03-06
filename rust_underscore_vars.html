@@ -226,7 +226,7 @@ protect against spurious wakeups.</p>
 <p>Since in this code, dropping the mutex guard releases the mutex that guards the condition variable, this is a big difference in semantics.</p>
 <p>Another commenter also helpfully gave an ELI5:</p>
 <blockquote>
-<p>Think of let _ = … as sugar for drop(…)</p>
+<p>Think of <code>let _ = …</code> as sugar for <code>drop(…)</code></p>
 </blockquote>
 <h2 id="learnings">
   <a class="title" href="#learnings">Learnings</a>

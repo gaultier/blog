@@ -2,7 +2,7 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
 <title>Philippe Gaultier's blog</title>
 <link href="https://gaultier.github.io/blog"/>
-<updated>2026-03-06T22:24:33+01:00</updated>
+<updated>2026-03-06T22:28:07+01:00</updated>
 <author>
   <name>Philippe Gaultier</name>
 </author>
@@ -381,7 +381,7 @@
 <title>In Rust, &lt;code&gt;let _ = ...&lt;/code&gt; and &lt;code&gt;let _unused = ...&lt;/code&gt; are not the same</title>
 <link href="https://gaultier.github.io/blog/rust_underscore_vars.html"/>
 <id>urn:uuid:3d764e18-e66a-52a6-86e6-cd20dad3b30a</id>
-<updated>2026-03-06T22:24:33+01:00</updated>
+<updated>2026-03-06T22:28:07+01:00</updated>
 <published>2026-03-06T15:14:07+01:00</published>
 </entry>
     </feed>

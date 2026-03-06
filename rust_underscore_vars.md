@@ -123,7 +123,7 @@ Since in this code, dropping the mutex guard releases the mutex that guards the 
 
 Another commenter also helpfully gave an ELI5: 
 
-> Think of let _ = … as sugar for drop(…)
+> Think of `let _ = …` as sugar for `drop(…)`
 
 
 ## Learnings
