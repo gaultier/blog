@@ -21,7 +21,6 @@
 - [ ] Banjo chords
 - [ ] Dtrace VM
 - [ ] From BIOS to bootloader to kernel to userspace
-- [ ] A faster HTTP parser than NodeJS's one
 - [ ] SHA1 multi-block hash
 - [ ] How CGO calls are implemented in assembly
 - [ ] Blog search implementation
