@@ -2,6 +2,7 @@ use markdown::{
     ParseOptions,
     mdast::{FootnoteDefinition, Node, Text},
 };
+use nohash_hasher::NoHashHasher;
 use notify::{EventKind, RecursiveMode, Watcher, event::ModifyKind};
 use serde::{Deserialize, Serialize};
 use std::{
@@ -9,7 +10,7 @@ use std::{
     cmp::Ordering,
     collections::{BTreeMap, HashMap},
     fs::{self, File},
-    hash::{DefaultHasher, Hash, Hasher},
+    hash::{BuildHasherDefault, DefaultHasher, Hash, Hasher},
     io::{self, BufWriter, Read},
     net::{SocketAddr, TcpListener, TcpStream},
     path::{Path, PathBuf},
@@ -87,15 +88,15 @@ struct SearchIndex {
 type MdContentHash = u64;
 
 struct Cache {
-    md_to_ast: HashMap<MdContentHash, Node>,
-    md_to_article: HashMap<MdContentHash, Article>,
+    md_to_ast: HashMap<MdContentHash, Node, BuildHasherDefault<NoHashHasher<MdContentHash>>>,
+    md_to_article: HashMap<MdContentHash, Article, BuildHasherDefault<NoHashHasher<MdContentHash>>>,
 }
 
 impl Cache {
     fn new() -> Self {
         Self {
-            md_to_ast: HashMap::with_capacity(128),
-            md_to_article: HashMap::with_capacity(128),
+            md_to_ast: HashMap::default(),
+            md_to_article: HashMap::default(),
         }
     }
 
