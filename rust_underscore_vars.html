@@ -189,7 +189,7 @@ protect against spurious wakeups.</p>
 <span class="line-number"></span><span class="code-hl">     |</span>
 </code></pre>
 <p>The two important parts are: <code>this lock is not assigned to a binding and is immediately dropped</code> and <code>consider binding to an unused variable to avoid immediately dropping the value</code>.</p>
-<p>I was not aware of the difference between <code>_</code> and <code>_unused</code>. In fact I went through the <a href="https://doc.rust-lang.org/reference/destructors.html">Rust reference</a> and I did not find anything about this.</p>
+<p>I was not aware of the difference between <code>_</code> and <code>_unused</code>. In fact I went through the <a href="https://doc.rust-lang.org/reference/destructors.html">Rust reference</a> and I did not find anything about this (perhaps I missed it?).</p>
 <p>This is the code that the compiler generates for <code>_</code>, conceptually:</p>
 <pre>
   <div class="code-header">

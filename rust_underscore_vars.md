@@ -90,7 +90,7 @@ help: consider binding to an unused variable to avoid immediately dropping the v
 
 The two important parts are: `this lock is not assigned to a binding and is immediately dropped` and `consider binding to an unused variable to avoid immediately dropping the value`.
 
-I was not aware of the difference between `_` and `_unused`. In fact I went through the [Rust reference](https://doc.rust-lang.org/reference/destructors.html) and I did not find anything about this.
+I was not aware of the difference between `_` and `_unused`. In fact I went through the [Rust reference](https://doc.rust-lang.org/reference/destructors.html) and I did not find anything about this (perhaps I missed it?).
 
 This is the code that the compiler generates for `_`, conceptually:
 
