@@ -1,4 +1,3 @@
-use ascii::AsciiString;
 use markdown::{
     ParseOptions,
     mdast::{FootnoteDefinition, Node, Text},
@@ -11,13 +10,13 @@ use std::{
     collections::{BTreeMap, HashMap},
     fs::{self, File},
     hash::{DefaultHasher, Hash, Hasher},
-    io::Read,
+    io::{self, BufWriter, Read},
+    net::{SocketAddr, TcpListener, TcpStream},
     path::{Path, PathBuf},
     process::Command,
     thread,
     time::{Duration, Instant},
 };
-use tiny_http::{Header, Response, Server};
 
 use std::io::Write;
 
@@ -1401,32 +1400,52 @@ fn get_content_type(path: &Path) -> &'static str {
     }
 }
 
-struct SseStream {
-    rx: crossbeam_channel::Receiver<()>,
-    buffer: Vec<u8>,
-}
+fn http_serve<F>(handler: F) -> io::Result<()>
+where
+    F: Fn(httparse::Request<'_, '_>, TcpStream) + Send + Sync + Clone + 'static,
+{
+    let addr: SocketAddr = "127.0.0.1:8001".parse().unwrap();
 
-impl Read for SseStream {
-    fn read(&mut self, buf: &mut [u8]) -> std::io::Result<usize> {
-        // If our internal buffer is empty, wait for a new message from the channel
-        if self.buffer.is_empty() {
-            match self.rx.recv() {
-                Ok(_msg) => {
-                    // Format the message according to SSE spec: "data: <content>\n\n"
-                    let msg = "foo";
-                    let formatted = format!("data: {}\n\n", msg);
-                    self.buffer.extend_from_slice(formatted.as_bytes());
+    let listener = TcpListener::bind(addr)?;
+    println!("Listening on http://{}", addr);
+
+    loop {
+        let (mut stream, _) = listener.accept()?;
+
+        let handler = handler.clone();
+        thread::spawn(move || {
+            let mut req_bytes: Vec<u8> = Vec::with_capacity(10 * 1024); // 10 KiB.
+            loop {
+                let cap = req_bytes.capacity();
+                if cap == 0 {
+                    eprintln!("http: no more cap");
+                    return;
                 }
-                Err(_) => return Ok(0), // Channel closed, end the stream
-            }
-        }
 
-        // Copy as much as we can from our buffer to the output buffer
-        let len = std::cmp::min(buf.len(), self.buffer.len());
-        buf[..len].copy_from_slice(&self.buffer[..len]);
-        self.buffer.drain(..len);
-        println!("{:?}", &buf[..len]);
-        Ok(len)
+                let old_len = req_bytes.len();
+                let buf: &mut [u8] = unsafe { std::mem::transmute(req_bytes.spare_capacity_mut()) };
+                let read_count = stream.read(buf).unwrap();
+                if read_count == 0 {
+                    eprintln!("http: read 0");
+                    return;
+                }
+                unsafe {
+                    req_bytes.set_len(old_len + read_count);
+                }
+
+                let mut headers = [httparse::EMPTY_HEADER; 1024];
+                let mut req = httparse::Request::new(&mut headers);
+                let req_parsed = req.parse(&req_bytes).unwrap();
+                if !req_parsed.is_partial() {
+                    println!(
+                        "http: read full req: {}",
+                        String::from_utf8_lossy(&req_bytes)
+                    );
+                    handler(req, stream);
+                    return;
+                }
+            }
+        });
     }
 }
 
@@ -1462,63 +1481,78 @@ fn main() {
             //watch(etx, &mut cache);
         });
 
-        let server = Server::http("0.0.0.0:8001").unwrap();
-        for req in server.incoming_requests() {
-            let erx = erx.clone();
-            std::thread::spawn(move || {
-                let u = req.url();
-                println!("req: {} {}", req.method(), u);
+        http_serve(|req, stream| {
+            println!("req: {} {}", req.method.unwrap(), req.path.unwrap());
 
-                match u {
-                    "/blog/live-reload" => {
-                        let mut initial_buffer = Vec::new();
-                        // Send 1KB of padding as an SSE comment
-                        for _ in 0..1024 {
-                            initial_buffer.extend_from_slice(b": padding\n");
-                        }
-                        initial_buffer.extend_from_slice(b"data: connected\n\n");
-                        let stream = SseStream {
-                            rx: erx,
-                            buffer: initial_buffer,
-                            //buffer: "event: ping\ndata: foo\n\n".as_bytes().to_vec(),
-                        };
-                        let response = Response::new(
-                            tiny_http::StatusCode(200),
-                            vec![
-                                Header::from_bytes(&b"Content-Type"[..], &b"text/event-stream"[..])
-                                    .unwrap(),
-                                Header::from_bytes(&b"Cache-Control"[..], &b"no-cache"[..])
-                                    .unwrap(),
-                                Header::from_bytes(&b"X-Accel-Buffering"[..], &b"no"[..]).unwrap(),
-                            ],
-                            stream,
-                            None,
-                            None,
-                        );
-
-                        req.respond(response).unwrap();
-                    }
-                    _ => {
-                        let u = u.replace("/blog/", "");
-                        let path = Path::new(&u);
-                        let file = fs::File::open(&path);
-                        if file.is_ok() {
-                            let response = tiny_http::Response::from_file(file.unwrap());
-
-                            let response = response.with_header(tiny_http::Header {
-                                field: "Content-Type".parse().unwrap(),
-                                value: AsciiString::from_ascii(get_content_type(&path)).unwrap(),
-                            });
-
-                            let _ = req.respond(response);
-                        } else {
-                            let rep = tiny_http::Response::new_empty(tiny_http::StatusCode(404));
-                            let _ = req.respond(rep);
-                        }
-                    }
+            let mut resp = BufWriter::new(stream);
+            match (req.method, req.path) {
+                (Some("GET"), Some("/blog")) => {
+                    writeln!( resp, "HTTP/1.1 200 OK\r\nContent-Type: text/html; charset=UTF-8\r\nConnection: Close\r\n\r\nHello!").unwrap();
                 }
-                println!("resp");
-            });
-        }
+                _ => {
+                   writeln!( resp, "HTTP/1.1 404\r\nConnection: Close\r\n\r\n").unwrap();
+                }
+            };
+        })
+        .unwrap();
+
+        //let server = Server::http("0.0.0.0:8001").unwrap();
+        //for req in server.incoming_requests() {
+        //    let erx = erx.clone();
+        //    std::thread::spawn(move || {
+        //        let u = req.url();
+        //        println!("req: {} {}", req.method(), u);
+        //
+        //        match u {
+        //            "/blog/live-reload" => {
+        //                let mut initial_buffer = Vec::new();
+        //                // Send 1KB of padding as an SSE comment
+        //                for _ in 0..1024 {
+        //                    initial_buffer.extend_from_slice(b": padding\n");
+        //                }
+        //                initial_buffer.extend_from_slice(b"data: connected\n\n");
+        //                let stream = SseStream {
+        //                    rx: erx,
+        //                    buffer: initial_buffer,
+        //                    //buffer: "event: ping\ndata: foo\n\n".as_bytes().to_vec(),
+        //                };
+        //                let response = Response::new(
+        //                    tiny_http::StatusCode(200),
+        //                    vec![
+        //                        Header::from_bytes(&b"Content-Type"[..], &b"text/event-stream"[..])
+        //                            .unwrap(),
+        //                        Header::from_bytes(&b"Cache-Control"[..], &b"no-cache"[..])
+        //                            .unwrap(),
+        //                        Header::from_bytes(&b"X-Accel-Buffering"[..], &b"no"[..]).unwrap(),
+        //                    ],
+        //                    stream,
+        //                    None,
+        //                    None,
+        //                );
+        //
+        //                req.respond(response).unwrap();
+        //            }
+        //            _ => {
+        //                let u = u.replace("/blog/", "");
+        //                let path = Path::new(&u);
+        //                let file = fs::File::open(&path);
+        //                if file.is_ok() {
+        //                    let response = tiny_http::Response::from_file(file.unwrap());
+        //
+        //                    let response = response.with_header(tiny_http::Header {
+        //                        field: "Content-Type".parse().unwrap(),
+        //                        value: AsciiString::from_ascii(get_content_type(&path)).unwrap(),
+        //                    });
+        //
+        //                    let _ = req.respond(response);
+        //                } else {
+        //                    let rep = tiny_http::Response::new_empty(tiny_http::StatusCode(404));
+        //                    let _ = req.respond(rep);
+        //                }
+        //            }
+        //        }
+        //        println!("resp");
+        //    });
+        //}
     }
 }
