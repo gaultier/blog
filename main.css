@@ -397,7 +397,7 @@ summary {
 /* Gray. */
 .hljs-comment,
 .hljs-quote {
-  color: light-dark(#928374, #928374) !important;
+  color: light-dark(#928374, #bdae93) !important;
   font-weight: initial !important;
 }
 
