@@ -139,7 +139,7 @@ Do not edit it by hand.
 <span class="line-number"></span><span class="code-hl">    }</span>
 <span class="line-number"></span><span class="code-hl">}</span>
 </code></pre>
-<p><a href="https://linux.die.net/man/3/pthread_cond_wait">Condition variables</a> were made for this: the waiting thread has nothing to do until a file is changed, and it should wait patiently without consuming any CPU cycles.</p>
+<p><a href="https://linux.die.net/man/3/pthread_cond_wait">Condition variables</a> were made for this: the waiting thread has nothing to do until a file is changed, and it should wait patiently without consuming any CPU cycles. Condition variables must be protected by a mutex since they, by definition, are shared between threads.</p>
 <p>For context (although this is not needed for this article), this is the notifying thread:</p>
 <pre>
   <div class="code-header">

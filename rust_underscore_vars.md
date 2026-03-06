@@ -38,7 +38,7 @@ fn live_reload(
 }
 ```
 
-[Condition variables](https://linux.die.net/man/3/pthread_cond_wait) were made for this: the waiting thread has nothing to do until a file is changed, and it should wait patiently without consuming any CPU cycles.
+[Condition variables](https://linux.die.net/man/3/pthread_cond_wait) were made for this: the waiting thread has nothing to do until a file is changed, and it should wait patiently without consuming any CPU cycles. Condition variables must be protected by a mutex since they, by definition, are shared between threads.
 
 For context (although this is not needed for this article), this is the notifying thread:
 
