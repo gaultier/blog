@@ -1387,6 +1387,7 @@ fn get_content_type(path: &Path) -> &'static str {
         "gif" => "image/gif",
         "jpg" => "image/jpeg",
         "jpeg" => "image/jpeg",
+        "ico" => "image/vnd.microsoft.icon",
         "png" => "image/png",
         "pdf" => "application/pdf",
         "htm" => "text/html; charset=utf8",
@@ -1448,7 +1449,7 @@ fn live_reload(
     mut resp: BufWriter<TcpStream>,
     mtx_cond: Arc<(Mutex<usize>, Condvar)>,
 ) -> Result<(), ()> {
-    writeln!(
+    write!(
         resp,
         "HTTP/1.1 200\r\nCache-Control: no-cache\r\nContent-Type: text/event-stream\r\n\r\n"
     )
@@ -1459,7 +1460,7 @@ fn live_reload(
         let guard = lock.lock().map_err(|_| ())?;
 
         let _unused = cvar.wait(guard).map_err(|_| ())?;
-        writeln!(resp, "data: foobar\n\n").map_err(|_| ())?;
+        write!(resp, "data: foobar\n\n").map_err(|_| ())?;
         resp.flush().map_err(|_| ())?;
         println!("🔃 sse event sent");
     }
@@ -1498,7 +1499,7 @@ fn main() {
             let mut resp = BufWriter::new(stream);
             match (req.method.unwrap(), req.path.unwrap()) {
                 ("GET", "/blog") => {
-                    writeln!(
+                    write!(
                         resp,
                         "HTTP/1.1 301\r\nLocation: /blog/index.html\r\nConnection: Close\r\n\r\n"
                     )
@@ -1508,22 +1509,29 @@ fn main() {
                     let _ = live_reload(resp, mtx_cond.clone());
                 }
                 _ => {
-                    let path = req.path.unwrap().replace("/blog/", "");
-                    let path = Path::new(&path);
+                    let path_str = req.path.unwrap().replace("/blog/", "");
+                    let path = Path::new(&path_str);
 
-                    let content = std::fs::read_to_string(path);
+                    let content = std::fs::read(path);
                     if content.is_err() {
-                        writeln!(resp, "HTTP/1.1 404\r\nConnection: Close\r\n\r\n").unwrap();
+                        eprintln!(
+                            "file not found: url_path={} path_str={}",
+                            req.path.unwrap(),
+                            &path_str
+                        );
+                        write!(resp, "HTTP/1.1 404\r\nConnection: Close\r\n\r\n").unwrap();
                         return;
                     }
+                    let content = content.unwrap();
 
-                    writeln!(
+                    write!(
                         resp,
-                        "HTTP/1.1 200\r\nConnection: Close\r\nContent-Type: {}\r\n\r\n",
+                        "HTTP/1.1 200\r\nContent-Length: {}\r\nContent-Type: {}\r\n\r\n",
+                        content.len(),
                         get_content_type(path)
                     )
                     .unwrap();
-                    resp.write_all(content.unwrap().as_bytes()).unwrap();
+                    resp.write_all(&content).unwrap();
                 }
             };
         })
