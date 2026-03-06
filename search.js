@@ -109,8 +109,7 @@ async function getExcerpt(url, needle) {
   });
   const text = root.textContent.trim();
   const lowerText = text.toLowerCase();
-  const lowerNeedle = needle.toLowerCase();
-  const index = lowerText.indexOf(lowerNeedle);
+  const index = lowerText.indexOf(needle);
   if (index === -1) {
      return '';
    }
@@ -118,16 +117,14 @@ async function getExcerpt(url, needle) {
   const start = Math.max(0, index - sizeAround);
   const end = Math.min(text.length, index + sizeAround);
     
-  // Simple bolding of the match
-  let snippet = text.slice(start, end);
-  const regex = new RegExp(`(${needle})`, 'gi');
-  snippet = snippet.replace(regex, '<strong>$1</strong>');
-
-  return `...${snippet}...`; 
+  // Simple bolding of all matches.
+  const snippet = text.slice(start, end);
+  const escapedNeedle = needle.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const regex = new RegExp(`(${escapedNeedle})`, 'gi');
+  return '...' + snippet.replace(regex, '<strong>$1</strong>') + '...';
 }
 
 function search_text(needle) {
-  needle = needle.toLowerCase();
   console.time("search_text");
 
   const file_scores = new Map();
@@ -199,7 +196,7 @@ dom_input.addEventListener('focus', loadSearchIndex);
 dom_input.addEventListener('click', loadSearchIndex);
 
 async function search_and_display_results(_event) {
-  const needle = dom_input.value;
+  const needle = dom_input.value.toLowerCase();
   dom_search_matches.innerHTML = '';
   
   if (needle.length < 3) {
@@ -243,7 +240,8 @@ async function search_and_display_results(_event) {
               <p><small>${excerpt}</small></p>
           `;
         }
-    }).catch(() => {
+    }).catch(e => {
+        console.error(e);
         li.innerHTML = `<a href="${file}">${file}</a> (Score: ${score.toFixed(2)})`;
     });
 
