@@ -1340,7 +1340,7 @@ fn check_langs() {
     }
 }
 
-fn watch(mtx_cond: Arc<(Mutex<usize>, Condvar)>, cache: &mut Cache) {
+fn watch(mtx_cond: Arc<(Mutex<()>, Condvar)>, cache: &mut Cache) {
     let (etx, erx) = std::sync::mpsc::channel::<notify::Result<notify::Event>>();
     let mut watcher = notify::recommended_watcher(etx).unwrap();
     watcher
@@ -1473,7 +1473,7 @@ where
 
 fn live_reload(
     mut resp: BufWriter<TcpStream>,
-    mtx_cond: Arc<(Mutex<usize>, Condvar)>,
+    mtx_cond: Arc<(Mutex<()>, Condvar)>,
 ) -> Result<(), ()> {
     write!(
         resp,
@@ -1515,7 +1515,7 @@ fn main() {
     if let Some(arg) = arg1
         && arg == "watch"
     {
-        let mtx_cond = Arc::new((Mutex::new(0), Condvar::new()));
+        let mtx_cond = Arc::new((Mutex::new(()), Condvar::new()));
         let mtx_cond2 = Arc::clone(&mtx_cond);
         thread::spawn(move || {
             watch(mtx_cond2, &mut cache);

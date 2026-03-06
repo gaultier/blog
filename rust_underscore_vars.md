@@ -18,7 +18,7 @@ I realized it when writing code for this very blog, to implement live-reloading:
 ```rust
 fn live_reload(
     mut resp: BufWriter<TcpStream>,
-    mtx_cond: Arc<(Mutex<usize>, Condvar)>,
+    mtx_cond: Arc<(Mutex<()>, Condvar)>,
 ) -> Result<(), ()> {
     write!(
         resp,
@@ -43,7 +43,7 @@ fn live_reload(
 For context (although this is not needed for this article), this is the notifying thread:
 
 ```rust
-fn watch(mtx_cond: Arc<(Mutex<usize>, Condvar)>) {
+fn watch(mtx_cond: Arc<(Mutex<()>, Condvar)>) {
     loop {
         // [...]
         // On file changed:
