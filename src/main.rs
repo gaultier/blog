@@ -8,7 +8,7 @@ use serde::{Deserialize, Serialize};
 use std::{
     borrow::Cow,
     cmp::Ordering,
-    collections::{BTreeMap, HashMap},
+    collections::{BTreeMap, BTreeSet, HashMap},
     fs::{self},
     hash::{BuildHasherDefault, DefaultHasher, Hash, Hasher},
     io::{self, BufWriter, Read},
@@ -552,6 +552,95 @@ fn md_collect_titles(
     }
 }
 
+fn md_collect_links(node: &Node, links: &mut BTreeSet<String>) {
+    match node {
+        Node::Root(x) => {
+            for child in &x.children {
+                md_collect_links(child, links);
+            }
+        }
+        Node::Blockquote(x) => {
+            for child in &x.children {
+                md_collect_links(child, links);
+            }
+        }
+        Node::FootnoteDefinition(_) => {}
+        Node::MdxJsxFlowElement(_) => {}
+        Node::List(x) => {
+            for child in &x.children {
+                md_collect_links(child, links);
+            }
+        }
+        Node::MdxjsEsm(_) => {}
+        Node::Toml(_) => {}
+        Node::Yaml(_) => {}
+        Node::Break(_) => {}
+        Node::InlineCode(_) => {}
+        Node::InlineMath(_inline_math) => todo!(),
+        Node::Delete(x) => {
+            for child in &x.children {
+                md_collect_links(child, links);
+            }
+        }
+        Node::Emphasis(x) => {
+            for child in &x.children {
+                md_collect_links(child, links);
+            }
+        }
+        Node::MdxTextExpression(_) => {}
+        Node::FootnoteReference(_) => {}
+        Node::Html(_) => {}
+        Node::Image(_) => {}
+        Node::ImageReference(_) => {}
+        Node::MdxJsxTextElement(_) => {}
+        Node::Link(link) => {
+            links.insert(link.url.to_owned());
+        }
+        Node::LinkReference(_) => {}
+        Node::Strong(x) => {
+            for child in &x.children {
+                md_collect_links(child, links);
+            }
+        }
+        Node::Text(_) => {}
+        Node::Code(_) => {}
+        Node::Math(_) => {}
+        Node::MdxFlowExpression(_) => {}
+        Node::Heading(x) => {
+            for child in &x.children {
+                md_collect_links(child, links);
+            }
+        }
+        Node::Table(x) => {
+            for child in &x.children {
+                md_collect_links(child, links);
+            }
+        }
+        Node::ThematicBreak(_) => {}
+        Node::TableRow(x) => {
+            for child in &x.children {
+                md_collect_links(child, links);
+            }
+        }
+        Node::TableCell(x) => {
+            for child in &x.children {
+                md_collect_links(child, links);
+            }
+        }
+        Node::ListItem(x) => {
+            for child in &x.children {
+                md_collect_links(child, links);
+            }
+        }
+        Node::Definition(_) => {}
+        Node::Paragraph(x) => {
+            for child in &x.children {
+                md_collect_links(child, links);
+            }
+        }
+    }
+}
+
 fn md_parse_metadata(md_content: &str) -> (&str, Vec<&str>) {
     let title_line = md_content.lines().next().unwrap();
     let title = title_line.strip_prefix("Title: ").unwrap().trim_ascii();
@@ -938,6 +1027,7 @@ fn md_render_article(
     html_footer: &[u8],
     cache: &mut Cache,
     search_index: &mut SearchIndex,
+    outgoing_links: &mut BTreeSet<String>,
 ) -> Article {
     let start = Instant::now();
     assert!(!html_header.is_empty());
@@ -975,6 +1065,7 @@ fn md_render_article(
     )
     .unwrap();
     search_index.ingest_md_ast(&md_ast, &html_path);
+    md_collect_links(&md_ast, outgoing_links);
 
     md_lint_rec(&md_ast, &md_path);
 
@@ -1310,6 +1401,8 @@ fn generate_all(cache: &mut Cache) {
         )
     );
 
+    let mut outgoing_links = BTreeSet::<String>::new();
+
     let mut search_index = SearchIndex::new();
     let mut articles: Vec<Article> = git_stats
         .into_iter()
@@ -1318,8 +1411,42 @@ fn generate_all(cache: &mut Cache) {
                 && gs.path_from_git_root != "todo.md"
                 && gs.path_from_git_root != "index.md"
         })
-        .map(|gs| md_render_article(gs, &html_header, &html_footer, cache, &mut search_index))
+        .map(|gs| {
+            md_render_article(
+                gs,
+                &html_header,
+                &html_footer,
+                cache,
+                &mut search_index,
+                &mut outgoing_links,
+            )
+        })
         .collect();
+
+    let mut invalid_links = false;
+
+    for link in &outgoing_links {
+        // TODO: external links.
+        if !link.starts_with("/") {
+            continue;
+        }
+
+        if !link.starts_with("/blog/") {
+            invalid_links = true;
+            eprintln!("wrong internal link, must start with '/blog': {}", link);
+        }
+        if link.ends_with(".md") {
+            invalid_links = true;
+            eprintln!("wrong internal link, must not end with '.md': {}", link);
+        }
+
+        if link.contains("gaultier.github.io") {
+            invalid_links = true;
+            eprintln!("wrong internal link, points to public blog: {}", link);
+        }
+    }
+
+    assert!(!invalid_links);
 
     {
         let start = std::time::Instant::now();

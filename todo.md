@@ -43,7 +43,6 @@
 
 - [ ] gen: check that for foo.md in Git, foo.html is also in Git 
 - [ ] gen: background job for `git gc --aggressive --prune=now`
-- [ ] gen: link checker
 - [ ] browser: search with `/` shortcut and appears on the side
 - [ ] browser: search shows the full title path to the match e.g. 'my_article: foo/bar/baz'
 - [ ] gen: Articles excerpt on the home page?
