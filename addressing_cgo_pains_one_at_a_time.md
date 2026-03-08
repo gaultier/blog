@@ -363,7 +363,7 @@ $ go test ./app/
 use of cgo in test app_test.go not supported
 ```
 
-Ah... yeah this is a [known limitation](https://go.dev/wiki/cgo): `_test.go files can’t use cgo.`. 
+Ah... yeah this is a [known limitation](https://go.dev/wiki/cgo): `_test.go files can't use cgo.`. 
 
 Solution: wrap the C function in a Go one.
 

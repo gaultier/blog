@@ -40,7 +40,7 @@ You thought I was going to compare the different sanitizers, compile flags, or b
 
 Software engineering needs to be a sustainable practice, not something you burn out of after a few months or years. We cannot do this after hours, on a death march, or even, alone! We need to convince people to support this effort, have them understand what we are doing, and why. And that encompasses everyone: your boss, your coworkers, even non-technical folks. And who knows, maybe you'll go on vacation and return to see that people are continuing this effort when you're out of office.
 
-All of this only means: explain in layman terms the problem with a few simple facts, the proposed solution, and a timebox. Simple right? For example (to quote South Park: *All characters and events in this show—even those based on real people—are entirely fictional*):
+All of this only means: explain in layman terms the problem with a few simple facts, the proposed solution, and a timebox. Simple right? For example (to quote South Park: *All characters and events in this show - even those based on real people - are entirely fictional*):
 
 - Hey boss, the last hire took 3 weeks to get the code building on his machine and make his first contribution. Wouldn't it be nice if, with minimal effort, we could make that a few minutes?
 - Hey boss, I put quickly together a simple fuzzing setup ('inputting random data in the app like a monkey and seeing what happens'), and it manages to crash the app 253 times within a few seconds. I wonder what would happen if people try to do that in production with our app?

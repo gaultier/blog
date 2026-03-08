@@ -302,7 +302,7 @@ Do not edit it by hand.
 <p>Note the irony that we do not need to have a third-party dependency on the <code>libc</code> crate to allocate with <code>malloc</code> (being called under the hood), but we do need it, in order to deallocate the memory with <code>free</code>. Perhaps it's by design. Anyway. Where was I.</p>
 <p>The docs for <code>Vec</code> indeed state:</p>
 <blockquote>
-<p>In general, Vec’s allocation details are very subtle — if you intend to allocate memory using a Vec and use it for something else (either to pass to unsafe code, or to build your own memory-backed collection), be sure to deallocate this memory by using from_raw_parts to recover the Vec and then dropping it.</p>
+<p>In general, Vec's allocation details are very subtle - if you intend to allocate memory using a Vec and use it for something else (either to pass to unsafe code, or to build your own memory-backed collection), be sure to deallocate this memory by using from_raw_parts to recover the Vec and then dropping it.</p>
 </blockquote>
 <p>But a few sentences later it also says:</p>
 <blockquote>

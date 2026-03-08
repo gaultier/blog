@@ -76,7 +76,7 @@ void cache_insert(const uint8_t *key, struct ByteSliceView value, [...]);
 
 The value of interest is `value.len`. So initially I tried to access it in `bpftrace` using `arg1.len`, however it did not work. Here is an excerpt from the documentation:
 
-> Function arguments are available through the argN for register args. Arguments passed on stack are available using the stack pointer, e.g. $stack_arg0 = (int64)reg("sp") + 16. Whether arguments passed on stack or in a register depends on the architecture and the number or arguments used, e.g. on x86_64 the first 6 non-floating point arguments are passed in registers and all following arguments are passed on the stack. Note that floating point arguments are typically passed in special registers which don’t count as argN arguments which can cause confusion
+> Function arguments are available through the argN for register args. Arguments passed on stack are available using the stack pointer, e.g. $stack_arg0 = (int64)reg("sp") + 16. Whether arguments passed on stack or in a register depends on the architecture and the number or arguments used, e.g. on x86_64 the first 6 non-floating point arguments are passed in registers and all following arguments are passed on the stack. Note that floating point arguments are typically passed in special registers which don't count as argN arguments which can cause confusion
 
 So, it's a mess ...
 

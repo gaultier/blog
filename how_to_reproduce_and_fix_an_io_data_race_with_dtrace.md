@@ -253,7 +253,7 @@ For example: `system("sleep 10")`.
 
 However this did nothing, because this action happens asynchronously, as noted by the [docs](https://illumos.org/books/dtrace/chp-actsub.html#chp-actsub-4):
 
-> The execution of the specified command does not occur in the context of the firing probe – it occurs when the buffer containing the details of the system action are processed at user-level. How and when this processing occurs depends on the buffering policy, described in Buffers and Buffering. 
+> The execution of the specified command does not occur in the context of the firing probe - it occurs when the buffer containing the details of the system action are processed at user-level. How and when this processing occurs depends on the buffering policy, described in Buffers and Buffering. 
 
 Alright, let's try something else, maybe `chill`?
 

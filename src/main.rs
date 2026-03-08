@@ -118,7 +118,7 @@ impl From<Vec<Article>> for SearchIndex {
         let mut res = Self::new();
         for a in value {
             res.files.push(a.html_path.to_string_lossy().to_string());
-            let file_idx: FileIdx = res.files.len().try_into().unwrap();
+            let file_idx: FileIdx = (res.files.len() - 1).try_into().unwrap();
 
             for (trigram, count) in a.trigrams {
                 res.trigram_to_file_idx
@@ -1353,6 +1353,7 @@ fn generate_all(cache: &mut Cache) {
     let articles_count = articles.len();
     {
         let search_index = SearchIndex::from(articles);
+        dbg!(&search_index.files[25]);
         let start = std::time::Instant::now();
         let v: Vec<u8> = postcard::to_stdvec(&search_index).unwrap();
         println!(

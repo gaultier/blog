@@ -352,7 +352,7 @@ Do not edit it by hand.
 <p>For example: <code>system(&quot;sleep 10&quot;)</code>.</p>
 <p>However this did nothing, because this action happens asynchronously, as noted by the <a href="https://illumos.org/books/dtrace/chp-actsub.html#chp-actsub-4">docs</a>:</p>
 <blockquote>
-<p>The execution of the specified command does not occur in the context of the firing probe – it occurs when the buffer containing the details of the system action are processed at user-level. How and when this processing occurs depends on the buffering policy, described in Buffers and Buffering.</p>
+<p>The execution of the specified command does not occur in the context of the firing probe - it occurs when the buffer containing the details of the system action are processed at user-level. How and when this processing occurs depends on the buffering policy, described in Buffers and Buffering.</p>
 </blockquote>
 <p>Alright, let's try something else, maybe <code>chill</code>?</p>
 <blockquote>

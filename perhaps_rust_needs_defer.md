@@ -178,7 +178,7 @@ Note the irony that we do not need to have a third-party dependency on the `libc
 
 The docs for `Vec` indeed state:
 
-> In general, Vec’s allocation details are very subtle — if you intend to allocate memory using a Vec and use it for something else (either to pass to unsafe code, or to build your own memory-backed collection), be sure to deallocate this memory by using from_raw_parts to recover the Vec and then dropping it.
+> In general, Vec's allocation details are very subtle - if you intend to allocate memory using a Vec and use it for something else (either to pass to unsafe code, or to build your own memory-backed collection), be sure to deallocate this memory by using from_raw_parts to recover the Vec and then dropping it.
 
 But a few sentences later it also says:
 

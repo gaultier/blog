@@ -509,7 +509,7 @@ must not be modified as long as the returned string value exists.</p>
   <code class="language-shell"><span class="line-number"></span><span class="code-hl">$ go test ./app/</span>
 <span class="line-number"></span><span class="code-hl">use of cgo in test app_test.go not supported</span>
 </code></pre>
-<p>Ah... yeah this is a <a href="https://go.dev/wiki/cgo">known limitation</a>: <code>_test.go files can’t use cgo.</code>.</p>
+<p>Ah... yeah this is a <a href="https://go.dev/wiki/cgo">known limitation</a>: <code>_test.go files can't use cgo.</code>.</p>
 <p>Solution: wrap the C function in a Go one.</p>
 <pre>
   <div class="code-header">
