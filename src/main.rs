@@ -2,7 +2,6 @@ use markdown::{
     ParseOptions,
     mdast::{FootnoteDefinition, Node, Text},
 };
-use nohash_hasher::NoHashHasher;
 use notify::{EventKind, RecursiveMode, Watcher, event::ModifyKind};
 use serde::{Deserialize, Serialize};
 use std::{
@@ -10,7 +9,7 @@ use std::{
     cmp::Ordering,
     collections::{BTreeMap, HashMap},
     fs::{self},
-    hash::{BuildHasherDefault, DefaultHasher, Hash, Hasher},
+    hash::{DefaultHasher, Hash, Hasher},
     io::{self, BufWriter, Read},
     net::{SocketAddr, TcpListener, TcpStream},
     path::{Path, PathBuf},
@@ -89,24 +88,21 @@ struct SearchIndex {
 type MdContentHash = u64;
 
 struct Cache {
-    md_to_ast: HashMap<MdContentHash, Node, BuildHasherDefault<NoHashHasher<MdContentHash>>>,
-    md_to_article: HashMap<MdContentHash, Article, BuildHasherDefault<NoHashHasher<MdContentHash>>>,
+    md_to_article: HashMap<String, (MdContentHash, Article)>,
 }
 
 impl Cache {
     fn new() -> Self {
         Self {
-            md_to_ast: HashMap::default(),
             md_to_article: HashMap::default(),
         }
     }
 
     fn clear(&mut self) {
-        self.md_to_ast.clear();
         self.md_to_article.clear();
     }
 
-    fn hash(md_content: &str) -> MdContentHash {
+    fn hash(md_content: &[u8]) -> MdContentHash {
         let mut hasher = DefaultHasher::new();
         md_content.hash(&mut hasher);
         hasher.finish()
@@ -971,6 +967,13 @@ fn md_render_article(
     assert!(!html_footer.is_empty());
 
     let md_content_bytes = fs::read(&git_stat.path_from_git_root).unwrap();
+    let next_hash = Cache::hash(&md_content_bytes);
+    if let Some((prev_hash, article)) = cache.md_to_article.get(&git_stat.path_from_git_root)
+        && *prev_hash == next_hash
+    {
+        println!("cache hit: {}", &git_stat.path_from_git_root);
+        return article.clone();
+    }
     let md_content_bytes_len = md_content_bytes.len();
     let md_content = String::from_utf8(md_content_bytes).unwrap();
 
@@ -982,12 +985,6 @@ fn md_render_article(
 
     let md_path = PathBuf::from(&git_stat.path_from_git_root);
     let html_path = md_path.with_extension("html");
-    let hash = Cache::hash(&md_content);
-    if let Some(ast) = cache.md_to_ast.get(&hash) {
-        // There may be a way to incrementally compute the search index but it is easier to
-        // recompute it from scratch each time.
-        return cache.md_to_article.get(&hash).unwrap().clone();
-    }
     let md_ast = markdown::to_mdast(
         md_content_article,
         &ParseOptions {
@@ -1063,6 +1060,7 @@ fn md_render_article(
 
     fs::write(&html_path, sb).unwrap();
 
+    let md_path = git_stat.path_from_git_root.clone();
     let article = Article {
         git_stat,
         html_title: html_root_title,
@@ -1071,12 +1069,13 @@ fn md_render_article(
         trigrams,
     };
 
-    cache.md_to_ast.insert(hash, md_ast);
-    cache.md_to_article.insert(hash, article.clone());
+    cache
+        .md_to_article
+        .insert(md_path, (next_hash, article.clone()));
 
     println!(
         "⏳ cache miss: generated {} in {} us",
-        &md_path.to_str().unwrap(),
+        &article.git_stat.path_from_git_root,
         Instant::now().duration_since(start).as_micros()
     );
 
@@ -1429,6 +1428,7 @@ fn watch(mtx_cond: Arc<(Mutex<()>, Condvar)>, cache: &mut Cache) {
                                 "🔄 md file changed, rebuilding: {}",
                                 file_name.to_str().unwrap()
                             );
+                            cache.md_to_article.remove_entry(path.to_str().unwrap());
                             generate_all(cache);
 
                             cvar.notify_all();
