@@ -73,6 +73,7 @@ struct Article {
     html_title: String,
     html_path: PathBuf,
     tags: Vec<String>,
+    trigrams: BTreeMap<Trigram, u32>,
 }
 
 type Trigram = String;
@@ -112,6 +113,25 @@ impl Cache {
     }
 }
 
+impl From<Vec<Article>> for SearchIndex {
+    fn from(value: Vec<Article>) -> Self {
+        let mut res = Self::new();
+        for a in value {
+            res.files.push(a.html_path.to_string_lossy().to_string());
+            let file_idx: FileIdx = res.files.len().try_into().unwrap();
+
+            for (trigram, count) in a.trigrams {
+                res.trigram_to_file_idx
+                    .entry(trigram)
+                    .and_modify(|e| e.push((file_idx, count)))
+                    .or_default();
+            }
+        }
+
+        res
+    }
+}
+
 impl SearchIndex {
     fn new() -> Self {
         Self {
@@ -120,28 +140,29 @@ impl SearchIndex {
         }
     }
 
-    fn ingest_md_ast(&mut self, md_ast: &Node, html_path: &Path) {
-        self.files.push(html_path.to_str().unwrap().to_string());
-        self.ingest_md_ast_rec(md_ast, FileIdx::try_from(self.files.len() - 1).unwrap());
+    fn ingest_md_ast(md_ast: &Node) -> BTreeMap<Trigram, u32> {
+        let mut res = BTreeMap::new();
+        SearchIndex::ingest_md_ast_rec(md_ast, &mut res);
+        res
     }
 
-    fn ingest_md_ast_rec(&mut self, node: &Node, file_idx: FileIdx) {
+    fn ingest_md_ast_rec(node: &Node, trigrams: &mut BTreeMap<Trigram, u32>) {
         match node {
             Node::Root(x) => {
                 for child in &x.children {
-                    self.ingest_md_ast_rec(child, file_idx);
+                    SearchIndex::ingest_md_ast_rec(child, trigrams);
                 }
             }
             Node::Blockquote(x) => {
                 for child in &x.children {
-                    self.ingest_md_ast_rec(child, file_idx);
+                    SearchIndex::ingest_md_ast_rec(child, trigrams);
                 }
             }
             Node::FootnoteDefinition(_) => {}
             Node::MdxJsxFlowElement(_) => {}
             Node::List(x) => {
                 for child in &x.children {
-                    self.ingest_md_ast_rec(child, file_idx);
+                    SearchIndex::ingest_md_ast_rec(child, trigrams);
                 }
             }
             Node::MdxjsEsm(_) => {}
@@ -152,12 +173,12 @@ impl SearchIndex {
             Node::InlineMath(_inline_math) => todo!(),
             Node::Delete(x) => {
                 for child in &x.children {
-                    self.ingest_md_ast_rec(child, file_idx);
+                    SearchIndex::ingest_md_ast_rec(child, trigrams);
                 }
             }
             Node::Emphasis(x) => {
                 for child in &x.children {
-                    self.ingest_md_ast_rec(child, file_idx);
+                    SearchIndex::ingest_md_ast_rec(child, trigrams);
                 }
             }
             Node::MdxTextExpression(_) => {}
@@ -170,51 +191,51 @@ impl SearchIndex {
             Node::LinkReference(_) => {}
             Node::Strong(x) => {
                 for child in &x.children {
-                    self.ingest_md_ast_rec(child, file_idx);
+                    SearchIndex::ingest_md_ast_rec(child, trigrams);
                 }
             }
             Node::Text(text) => {
-                self.ingest_text(&text.value, file_idx);
+                SearchIndex::ingest_text(&text.value, trigrams);
             }
             Node::Code(_) => {}
             Node::Math(_) => {}
             Node::MdxFlowExpression(_) => {}
             Node::Heading(x) => {
                 for child in &x.children {
-                    self.ingest_md_ast_rec(child, file_idx);
+                    SearchIndex::ingest_md_ast_rec(child, trigrams);
                 }
             }
             Node::Table(x) => {
                 for child in &x.children {
-                    self.ingest_md_ast_rec(child, file_idx);
+                    SearchIndex::ingest_md_ast_rec(child, trigrams);
                 }
             }
             Node::ThematicBreak(_) => {}
             Node::TableRow(x) => {
                 for child in &x.children {
-                    self.ingest_md_ast_rec(child, file_idx);
+                    SearchIndex::ingest_md_ast_rec(child, trigrams);
                 }
             }
             Node::TableCell(x) => {
                 for child in &x.children {
-                    self.ingest_md_ast_rec(child, file_idx);
+                    SearchIndex::ingest_md_ast_rec(child, trigrams);
                 }
             }
             Node::ListItem(x) => {
                 for child in &x.children {
-                    self.ingest_md_ast_rec(child, file_idx);
+                    SearchIndex::ingest_md_ast_rec(child, trigrams);
                 }
             }
             Node::Definition(_) => {}
             Node::Paragraph(x) => {
                 for child in &x.children {
-                    self.ingest_md_ast_rec(child, file_idx);
+                    SearchIndex::ingest_md_ast_rec(child, trigrams);
                 }
             }
         }
     }
 
-    fn ingest_text(&mut self, text: &str, file_idx: FileIdx) {
+    fn ingest_text(text: &str, trigrams: &mut BTreeMap<Trigram, u32>) {
         let chars: Vec<char> = text.to_lowercase().chars().collect();
 
         chars.windows(3).for_each(|w| {
@@ -229,16 +250,7 @@ impl SearchIndex {
                 })
                 .collect::<String>();
             if trigram != "   " {
-                self.trigram_to_file_idx
-                    .entry(trigram)
-                    .and_modify(|e| {
-                        if let Some(elem) = e.iter_mut().find(|(fi, _)| *fi == file_idx) {
-                            elem.1 += 1;
-                        } else {
-                            e.push((file_idx, 1));
-                        }
-                    })
-                    .or_insert_with(|| vec![(file_idx, 1)]);
+                trigrams.entry(trigram).and_modify(|e| *e += 1).or_insert(1);
             }
         });
     }
@@ -953,7 +965,6 @@ fn md_render_article(
     html_header: &[u8],
     html_footer: &[u8],
     cache: &mut Cache,
-    search_index: &mut SearchIndex,
 ) -> Article {
     let start = Instant::now();
     assert!(!html_header.is_empty());
@@ -975,7 +986,6 @@ fn md_render_article(
     if let Some(ast) = cache.md_to_ast.get(&hash) {
         // There may be a way to incrementally compute the search index but it is easier to
         // recompute it from scratch each time.
-        search_index.ingest_md_ast(ast, &html_path);
         return cache.md_to_article.get(&hash).unwrap().clone();
     }
     let md_ast = markdown::to_mdast(
@@ -990,7 +1000,7 @@ fn md_render_article(
         },
     )
     .unwrap();
-    search_index.ingest_md_ast(&md_ast, &html_path);
+    let trigrams = SearchIndex::ingest_md_ast(&md_ast);
 
     md_lint_rec(&md_ast, &md_path);
 
@@ -1058,6 +1068,7 @@ fn md_render_article(
         html_title: html_root_title,
         html_path,
         tags: tags.iter().map(|t| t.to_string()).collect(),
+        trigrams,
     };
 
     cache.md_to_ast.insert(hash, md_ast);
@@ -1326,7 +1337,6 @@ fn generate_all(cache: &mut Cache) {
         )
     );
 
-    let mut search_index = SearchIndex::new();
     let mut articles: Vec<Article> = git_stats
         .into_iter()
         .filter(|gs| {
@@ -1334,10 +1344,15 @@ fn generate_all(cache: &mut Cache) {
                 && gs.path_from_git_root != "todo.md"
                 && gs.path_from_git_root != "index.md"
         })
-        .map(|gs| md_render_article(gs, &html_header, &html_footer, cache, &mut search_index))
+        .map(|gs| md_render_article(gs, &html_header, &html_footer, cache))
         .collect();
 
+    generate_home_page(&mut articles, &html_header, &html_footer);
+    generate_tags_page(&articles, &html_header, &html_footer);
+    generate_rss(&mut articles);
+    let articles_count = articles.len();
     {
+        let search_index = SearchIndex::from(articles);
         let start = std::time::Instant::now();
         let v: Vec<u8> = postcard::to_stdvec(&search_index).unwrap();
         println!(
@@ -1354,13 +1369,10 @@ fn generate_all(cache: &mut Cache) {
             Instant::now().duration_since(start).as_millis()
         );
     }
-    generate_home_page(&mut articles, &html_header, &html_footer);
-    generate_tags_page(&articles, &html_header, &html_footer);
-    generate_rss(&mut articles);
 
     println!(
         "⚙️ generated {} articles in {} ms",
-        articles.len(),
+        articles_count,
         Instant::now().duration_since(start).as_millis()
     );
 }
