@@ -1388,8 +1388,8 @@ fn watch(mtx_cond: Arc<(Mutex<()>, Condvar)>, cache: &mut Cache) {
                     let _unused = lock.lock().unwrap();
                     for path in event.paths {
                         let file_name = path.file_name().unwrap();
-                        if file_name == &"header.html".as_ref()
-                            || file_name == &"footer.html".as_ref()
+                        if file_name == AsRef::<Path>::as_ref("header.html")
+                            || file_name == AsRef::<Path>::as_ref("footer.html")
                         {
                             println!(
                                 "🔄 header/footer changed, rebuilding ading all files: {}",
