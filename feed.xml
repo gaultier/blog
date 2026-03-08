@@ -109,7 +109,7 @@
 <title>You&#39;ve just inherited a legacy C++ codebase, now what?</title>
 <link href="https://gaultier.github.io/blog/you_inherited_a_legacy_cpp_codebase_now_what.html"/>
 <id>urn:uuid:b9c26cf9-cb85-5ca9-b52f-5cdd535a3b84</id>
-<updated>2025-07-07T21:09:49+02:00</updated>
+<updated>2026-03-08T17:21:06+01:00</updated>
 <published>2024-02-29T09:30:30+01:00</published>
 </entry>
     
@@ -189,7 +189,7 @@
 <title>Perhaps Rust needs &amp;quot;defer&amp;quot;</title>
 <link href="https://gaultier.github.io/blog/perhaps_rust_needs_defer.html"/>
 <id>urn:uuid:55eb4918-5851-5a25-80d5-d350aad8971b</id>
-<updated>2025-07-09T09:11:09+02:00</updated>
+<updated>2026-03-08T17:21:06+01:00</updated>
 <published>2024-11-06T08:33:45+01:00</published>
 </entry>
     
@@ -221,7 +221,7 @@
 <title>Addressing CGO pains, one at a time</title>
 <link href="https://gaultier.github.io/blog/addressing_cgo_pains_one_at_a_time.html"/>
 <id>urn:uuid:07006a7b-7a02-50db-aa27-568407c1f588</id>
-<updated>2026-03-04T17:13:39+01:00</updated>
+<updated>2026-03-08T17:21:06+01:00</updated>
 <published>2025-02-14T13:14:11+01:00</published>
 </entry>
     
@@ -253,7 +253,7 @@
 <title>Tip of the day #6: Use Bpftrace to estimate how much memory an in-memory cache will use</title>
 <link href="https://gaultier.github.io/blog/tip_of_the_day_6.html"/>
 <id>urn:uuid:1364b66b-c20b-5130-a782-2c785188ed89</id>
-<updated>2026-03-04T16:24:07+01:00</updated>
+<updated>2026-03-08T17:21:06+01:00</updated>
 <published>2025-03-12T13:35:23+01:00</published>
 </entry>
     
@@ -333,7 +333,7 @@
 <title>How to reproduce and fix an I/O data race with Go and DTrace</title>
 <link href="https://gaultier.github.io/blog/how_to_reproduce_and_fix_an_io_data_race_with_dtrace.html"/>
 <id>urn:uuid:8d5cd0cd-5a6d-5e55-80e9-63cd36488f07</id>
-<updated>2026-03-04T16:24:07+01:00</updated>
+<updated>2026-03-08T17:21:06+01:00</updated>
 <published>2025-10-01T16:47:19+02:00</published>
 </entry>
     

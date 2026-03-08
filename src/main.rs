@@ -1352,9 +1352,8 @@ fn generate_all(cache: &mut Cache) {
     generate_rss(&mut articles);
     let articles_count = articles.len();
     {
-        let search_index = SearchIndex::from(articles);
-        dbg!(&search_index.files[25]);
         let start = std::time::Instant::now();
+        let search_index = SearchIndex::from(articles);
         let v: Vec<u8> = postcard::to_stdvec(&search_index).unwrap();
         println!(
             "🔍 marshalled search index to bytes (count:{}, bytes:{}) in {} ms",
