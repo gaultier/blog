@@ -23,7 +23,6 @@
 - [ ] From BIOS to bootloader to kernel to userspace
 - [ ] SHA1 multi-block hash
 - [ ] How CGO calls are implemented in assembly
-- [ ] Blog search implementation
 - [ ] Weird and surprising things about x64 assembly
   + non symetric mnemonics (`cmp 1, rax` vs `cmp rax, 1`)
   + some different mnemonics encode to the same bytes (`jne`, `jz`)
