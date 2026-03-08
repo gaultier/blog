@@ -2,7 +2,7 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
 <title>Philippe Gaultier's blog</title>
 <link href="https://gaultier.github.io/blog"/>
-<updated>2026-03-06T22:28:50+01:00</updated>
+<updated>2026-03-08T17:52:42+01:00</updated>
 <author>
   <name>Philippe Gaultier</name>
 </author>
@@ -383,5 +383,13 @@
 <id>urn:uuid:3d764e18-e66a-52a6-86e6-cd20dad3b30a</id>
 <updated>2026-03-06T22:28:50+01:00</updated>
 <published>2026-03-06T15:14:07+01:00</published>
+</entry>
+    
+<entry>
+<title>How this blog is made</title>
+<link href="https://gaultier.github.io/blog/how_this_blog_is_made.html"/>
+<id>urn:uuid:e67bcf9d-f7a4-5186-8bc7-699bafe73c5e</id>
+<updated>2026-03-08T17:52:42+01:00</updated>
+<published>2026-03-08T17:52:42+01:00</published>
 </entry>
     </feed>
