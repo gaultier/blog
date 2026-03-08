@@ -124,7 +124,7 @@ impl From<Vec<Article>> for SearchIndex {
                 res.trigram_to_file_idx
                     .entry(trigram)
                     .and_modify(|e| e.push((file_idx, count)))
-                    .or_default();
+                    .or_insert_with(|| vec![(file_idx, count)]);
             }
         }
 
