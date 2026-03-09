@@ -256,7 +256,7 @@ Do not edit it by hand.
   <a class="title" href="#generate-the-table-of-content">Generate the table of content</a>
   <a class="hash-anchor" href="#generate-the-table-of-content" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
-<p>This also relies on the AST: we collect all title elements, including their depth and text content. Then, we insert at the beginning of the article the table of contents.</p>
+<p>This also relies on the AST: I collect all title elements, including their depth and text content. Then, I insert at the beginning of the article the table of contents.</p>
 <p>These titles:</p>
 <pre>
   <div class="code-header">
@@ -399,7 +399,7 @@ Do not edit it by hand.
 <p>As previously mentioned this is where doing static syntax highlighting could take place.</p>
 <p>The only things to watch for are:</p>
 <ul>
-<li>Escape special HTML chars (we do not have to be super defensive since this is our content, not arbitrary user generated content)</li>
+<li>Escape special HTML chars (no need to be super defensive since this is our content, not arbitrary user generated content)</li>
 <li>Footnotes need to be collected to list them at the end in the HTML.</li>
 </ul>
 <p>Here's an excerpt:</p>
@@ -444,7 +444,7 @@ Do not edit it by hand.
   <a class="title" href="#generate-the-rss-feed">Generate the RSS feed</a>
   <a class="hash-anchor" href="#generate-the-rss-feed" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
-<p>I have written about it <a href="/blog/feed.html">before</a>. This is very simple, we just generate a XML file listing all articles including the creation and modification date. I use <a href="https://en.wikipedia.org/wiki/Universally_unique_identifier">UUID v5</a> to assign an id to each article because it's a good fit: the blog itself has a UUID which is the namespace, and the UUID for each article is <code>sha1(blog_namespace + article_file_path)</code>.</p>
+<p>I have written about it <a href="/blog/feed.html">before</a>. This is very simple, I just generate a XML file listing all articles including the creation and modification date. I use <a href="https://en.wikipedia.org/wiki/Universally_unique_identifier">UUID v5</a> to assign an id to each article because it's a good fit: the blog itself has a UUID which is the namespace, and the UUID for each article is <code>sha1(blog_namespace + article_file_path)</code>.</p>
 <p>I save the XML in the file <code>feed.xml</code> and mention this XML in the HTML in the <code>&lt;head&gt;</code> element:</p>
 <pre>
   <div class="code-header">
@@ -619,12 +619,12 @@ Do not edit it by hand.
 </code></pre>
 <p>Technically I could use the <a href="https://docs.rs/nohash-hasher/0.2.0/nohash_hasher/">nohash</a> crate to optimize a bit, since the key in the map is already a hash, no need to hash it a second time. But I don't bother for now.</p>
 <p>I never clear the cache, because my computer has so much memory. This has one advantage: if I undo a change when writing an article, and the work had already finish, I will hit the existing cache entry again.</p>
-<p>Skipping all this work is fine for one reason only: generating the HTML for an article is a pure function with immutable arguments. If it mutated a variable (for example a search index), we could not easily skip this work.</p>
+<p>Skipping all this work is fine for one reason only: generating the HTML for an article is a pure function with immutable arguments. If it mutated a variable (for example a search index), I could not easily skip this work.</p>
 <p>This was an interesting lesson for me: no shared mutable variables (except the cache) makes parallel and incremental computations possible.</p>
 <p>Right now I do not (yet) generate the HTML for each article in parallel, because it's already plenty fast, but conceptually I could, since each article is fully independent from the others (again, except for the cache).</p>
 <p>Caching is I think a spectrum, some operations are so cheap and fast that caching them is not worth it. It can be taken to the extreme: <a href="https://salsa-rs.github.io/salsa/reference/algorithm.html#the-red-green-algorithm">Salsa</a>, <a href="https://buck.build/concept/what_makes_buck_so_fast.html">Buck</a>. In my experience, there is usually one main expensive operation in the system (in my case: Markdown parsing), and adding a cache in front of that is generally sufficient.</p>
 <p>Finally, caching should not be a band-aid for general slowness. If some operation is unnecessarily slow, try to optimize it first, and ensure it is really needed. For example, I initially had the search index encoded as JSON, and it took ~600 ms to build and marshal it. I optimized it to only take ~10 ms. In the end, I realized I don't need a search index at all and removed all of this code. Do less, go faster.</p>
-<p>This suprised me: in most cases, we deal with data that's just not that big, and linear operations (array, linear scan), are often just fast enough, especially with SIMD and the CPU prefetcher.</p>
+<p>This suprised me: in most cases, we all deal with data that's just not that big, and linear operations (array, linear scan), are often just fast enough, especially with SIMD and the CPU prefetcher.</p>
 <h2 id="light-dark-mode">
   <a class="title" href="#light-dark-mode">Light &amp; Dark mode</a>
   <a class="hash-anchor" href="#light-dark-mode" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
@@ -660,7 +660,7 @@ Do not edit it by hand.
 <span class="line-number"></span><span class="code-hl">}</span>
 </code></pre>
 <p>The first argument is the color in light mode, and the second argument the color in dark mode.</p>
-<p>The browser detects the current mode if the OS supports that concept and sets the value for our page automatically. Then, it picks the right CSS color that was provided with <code>light-dark()</code>.</p>
+<p>The browser detects the current mode if the OS supports that concept and sets the value for the page automatically. Then, it picks the right CSS color that was provided with <code>light-dark()</code>.</p>
 <p>Light or dark mode can also be set manually (for example when the user clicks the light/dark mode button):</p>
 <pre>
   <div class="code-header">

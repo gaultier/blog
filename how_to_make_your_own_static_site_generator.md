@@ -110,7 +110,7 @@ Other lints that could be also easily implemented based on walking the AST:
 
 ## Generate the table of content
 
-This also relies on the AST: we collect all title elements, including their depth and text content. Then, we insert at the beginning of the article the table of contents. 
+This also relies on the AST: I collect all title elements, including their depth and text content. Then, I insert at the beginning of the article the table of contents. 
 
 These titles:
 
@@ -253,7 +253,7 @@ As previously mentioned this is where doing static syntax highlighting could tak
 
 The only things to watch for are:
 
-- Escape special HTML chars (we do not have to be super defensive since this is our content, not arbitrary user generated content)
+- Escape special HTML chars (no need to be super defensive since this is our content, not arbitrary user generated content)
 - Footnotes need to be collected to list them at the end in the HTML.
 
 Here's an excerpt:
@@ -294,7 +294,7 @@ fn md_to_html_rec(
 
 ## Generate the RSS feed
 
-I have written about it [before](/blog/feed.html). This is very simple, we just generate a XML file listing all articles including the creation and modification date. I use [UUID v5](https://en.wikipedia.org/wiki/Universally_unique_identifier) to assign an id to each article because it's a good fit: the blog itself has a UUID which is the namespace, and the UUID for each article is `sha1(blog_namespace + article_file_path)`.
+I have written about it [before](/blog/feed.html). This is very simple, I just generate a XML file listing all articles including the creation and modification date. I use [UUID v5](https://en.wikipedia.org/wiki/Universally_unique_identifier) to assign an id to each article because it's a good fit: the blog itself has a UUID which is the namespace, and the UUID for each article is `sha1(blog_namespace + article_file_path)`.
 
 
 I save the XML in the file `feed.xml` and mention this XML in the HTML in the `<head>` element:
@@ -475,7 +475,7 @@ Technically I could use the [nohash](https://docs.rs/nohash-hasher/0.2.0/nohash_
  
 I never clear the cache, because my computer has so much memory. This has one advantage: if I undo a change when writing an article, and the work had already finish, I will hit the existing cache entry again.
 
-Skipping all this work is fine for one reason only: generating the HTML for an article is a pure function with immutable arguments. If it mutated a variable (for example a search index), we could not easily skip this work.
+Skipping all this work is fine for one reason only: generating the HTML for an article is a pure function with immutable arguments. If it mutated a variable (for example a search index), I could not easily skip this work.
 
 
 This was an interesting lesson for me: no shared mutable variables (except the cache) makes parallel and incremental computations possible.
@@ -488,7 +488,7 @@ Caching is I think a spectrum, some operations are so cheap and fast that cachin
 Finally, caching should not be a band-aid for general slowness. If some operation is unnecessarily slow, try to optimize it first, and ensure it is really needed. For example, I initially had the search index encoded as JSON, and it took ~600 ms to build and marshal it. I optimized it to only take ~10 ms. In the end, I realized I don't need a search index at all and removed all of this code. Do less, go faster.
 
 
-This suprised me: in most cases, we deal with data that's just not that big, and linear operations (array, linear scan), are often just fast enough, especially with SIMD and the CPU prefetcher.
+This suprised me: in most cases, we all deal with data that's just not that big, and linear operations (array, linear scan), are often just fast enough, especially with SIMD and the CPU prefetcher.
 
 
 ## Light & Dark mode
@@ -520,7 +520,7 @@ div {
 
 The first argument is the color in light mode, and the second argument the color in dark mode.
 
-The browser detects the current mode if the OS supports that concept and sets the value for our page automatically. Then, it picks the right CSS color that was provided with `light-dark()`.
+The browser detects the current mode if the OS supports that concept and sets the value for the page automatically. Then, it picks the right CSS color that was provided with `light-dark()`.
 
 Light or dark mode can also be set manually (for example when the user clicks the light/dark mode button):
 
