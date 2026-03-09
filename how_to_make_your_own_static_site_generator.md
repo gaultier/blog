@@ -60,7 +60,7 @@ Once in a while, cleaning up is a good idea to improve Git's performance:
 $ git gc --aggressive --prune=now
 ```
 
-I am considering adding this command as a cron job or as a background job in my generator.
+I am considering adding this command as a cron job on my computer, or as a background job in my generator.
 
 ## Parsing
 
