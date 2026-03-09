@@ -28,13 +28,14 @@ const FEED_UUID: [u8; 16] = [
     0x9c, 0x06, 0x5c, 0x53, 0x31, 0xbc, 0x40, 0x49, 0xa7, 0x95, 0x93, 0x68, 0x02, 0xa6, 0xb1, 0xdf,
 ];
 
-const STANDARD_LANGS: [&str; 19] = [
+const STANDARD_LANGS: [&str; 20] = [
     "c",
     "cmake",
     "cpp",
     "diff",
     "dockerfile",
     "go",
+    "html",
     "javascript",
     "json",
     "kotlin",
@@ -971,7 +972,6 @@ fn md_render_article(
     if let Some((prev_hash, article)) = cache.md_to_article.get(&git_stat.path_from_git_root)
         && *prev_hash == next_hash
     {
-        println!("cache hit: {}", &git_stat.path_from_git_root);
         return article.clone();
     }
     let md_content_bytes_len = md_content_bytes.len();
@@ -1354,12 +1354,6 @@ fn generate_all(cache: &mut Cache) {
         let start = std::time::Instant::now();
         let search_index = SearchIndex::from(articles);
         let v: Vec<u8> = postcard::to_stdvec(&search_index).unwrap();
-        println!(
-            "🔍 marshalled search index to bytes (count:{}, bytes:{}) in {} ms",
-            search_index.trigram_to_file_idx.len(),
-            v.len(),
-            Instant::now().duration_since(start).as_millis()
-        );
         fs::write("search_index.postcard", &v).unwrap();
         println!(
             "🔍 wrote search index bytes (count:{}, bytes:{}) in {} ms",

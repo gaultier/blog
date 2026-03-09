@@ -87,6 +87,40 @@ Do not edit it by hand.
   <li>
     <a href="#parse-the-article">Parse the article</a>
 </li>
+
+  <li>
+    <a href="#lint-the-article-content">Lint the article content</a>
+</li>
+
+  <li>
+    <a href="#generate-the-table-of-content">Generate the table of content</a>
+</li>
+
+  <li>
+    <a href="#generate-the-html">Generate the HTML</a>
+</li>
+
+  <li>
+    <a href="#generate-the-rss-feed">Generate the RSS feed</a>
+</li>
+
+  <li>
+    <a href="#generate-the-home-page">Generate the home page</a>
+</li>
+
+  <li>
+    <a href="#search">Search</a>
+</li>
+
+  <li>
+    <a href="#live-reloading">Live reloading</a>
+<ul>
+
+  <li>
+    <a href="#caching">Caching</a>
+</li>
+</ul>
+</li>
 </ul>
 </details>
 
@@ -125,12 +159,18 @@ Do not edit it by hand.
 </h2>
 <p>Chances are, you are authoring content in markdown or similar, which then must be converted to HTML. Even if you <em>are</em> written HTML directly, this content needs to be post-processed quite a bit and thus must be parsed in the first place. No one wants to wrangle strings; structured data is the way to do.</p>
 <p>I recommend using a library to parse the article, for example markdown, and this library <em>must</em> give you the Abstract Syntax Tree (AST) for it. Since rich text is hierarchical, it is indeed a tree.  Think of a hyperlink in a table cell, or a bold text in a list element. These are trees.</p>
-<p>Another reason to work on the AST is that you have total control on the HTML generation.</p>
+<p>Another reason to work on the AST is that you have total control on the HTML generation, including for code blocks. This opens the door to syntax highlighting at generation time.</p>
+<p>Currently, I implement syntax highlighting with JavaScript at runtime, but I may change this in the future. At least I have the possibility.</p>
+<h2 id="lint-the-article-content">
+  <a class="title" href="#lint-the-article-content">Lint the article content</a>
+  <a class="hash-anchor" href="#lint-the-article-content" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+</h2>
 <p>Finally, the linting step is much easier to implement on the AST. Here are a few examples of lints I have implemented:</p>
 <ul>
 <li>Detect dead links</li>
 <li>Code snippets without an explicit language declared, or an unknown language (this matters for syntax highlighting, e.g. <code>c++</code> was used but the canonical name is <code>cpp</code>)</li>
 <li>Style: Prefer <code>1 KiB</code> over other variants e.g. <code>1 kb</code>, <code>1 KB</code>, <code>1 K</code>, etc</li>
+<li>Titles that skip a level, for example <code>h2 -&gt; h4</code>. This is subjective, perhaps some people like to have this ability - I don't, so I prevent it.</li>
 </ul>
 <p>Other lints that could be also easily implemented based on walking the AST:</p>
 <ul>
@@ -138,6 +178,210 @@ Do not edit it by hand.
 <li>Inline code elements whose content exceeds a certain length; these should be use the syntax for a multiline code block</li>
 </ul>
 <p>Furthermore, we'll see in the section about search, that having the AST is great to only index text and skip code blocks, inline HTML, etc when building the search index.</p>
+<h2 id="generate-the-table-of-content">
+  <a class="title" href="#generate-the-table-of-content">Generate the table of content</a>
+  <a class="hash-anchor" href="#generate-the-table-of-content" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+</h2>
+<p>This also relies on the AST: we collect all title elements, including their depth and text content. Then, we insert at the beginning of the article the table of contents.</p>
+<p>This code is quite short and uninteresting, so not much to add here.</p>
+<h2 id="generate-the-html">
+  <a class="title" href="#generate-the-html">Generate the HTML</a>
+  <a class="hash-anchor" href="#generate-the-html" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+</h2>
+<p>We walk the AST and mechanically generate the appropriate HTML for each markdown element.</p>
+<p>We have total freedom here, and can add our own CSS classes, ids, data attributes, etc.</p>
+<p>It is also straightforward to adapt this code to generate other formats, e.g. Latex (if you enjoy pain), etc.</p>
+<p>As previously mentioned this is where doing static syntax highligting could take place.</p>
+<h2 id="generate-the-rss-feed">
+  <a class="title" href="#generate-the-rss-feed">Generate the RSS feed</a>
+  <a class="hash-anchor" href="#generate-the-rss-feed" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+</h2>
+<p>I have written about it <a href="/blog/feed.html">before</a>. This is very simple, we just generate a XML file listing all articles including the creation and modification date. I use UUID v5 to assign an id to each article because it's a good fit: the blog itself has a UUID which is the namespace, and each article has a UUID v5 based on this namespace.</p>
+<p>We save the XML in the file <code>feed.xml</code> and mention this XML in the HTML in the <code>&lt;head&gt;</code> element:</p>
+<pre>
+  <div class="code-header">
+    <span>Html</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-html"><span class="line-number"></span><span class="code-hl">&lt;link type=&quot;application/atom+xml&quot; href=&quot;/blog/feed.xml&quot; rel=&quot;self&quot;&gt;</span>
+</code></pre>
+<h2 id="generate-the-home-page">
+  <a class="title" href="#generate-the-home-page">Generate the home page</a>
+  <a class="hash-anchor" href="#generate-the-home-page" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+</h2>
+<p>This is the <code>index.html</code>, typically. It generally lists all articles (in my case), or only the recent ones, or the most read. Not much to add here.</p>
+<h2 id="search">
+  <a class="title" href="#search">Search</a>
+  <a class="hash-anchor" href="#search" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+</h2>
+<p>To implement the search function which is purely client side, an efficient way is to build a search index. I chose to collect all trigrams (group of 3 characters) present in each article.</p>
+<p>This information is saved to a file in a compact manner (this is the search index).</p>
+<p>When someone types in the search box, the search index is fetched if it's not already present. This way, users who never use the search feature do not pay the price for it. The browser caches subsequent fetches. The search index lists how many times a certain trigram occurs in a certain file. Conceptually:</p>
+<pre>
+  <div class="code-header">
+    <span>Json</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-json"><span class="line-number"></span><span class="code-hl">{</span>
+<span class="line-number"></span><span class="code-hl">    &quot;cat&quot;: [[&quot;foo.html&quot;, 3], [&quot;bar.html&quot;, 4]],</span>
+<span class="line-number"></span><span class="code-hl">    &quot;fox&quot;: [[&quot;bar.html&quot;, 1]]</span>
+<span class="line-number"></span><span class="code-hl">}</span>
+</code></pre>
+<p>Here, <code>cat</code> occurs 3 times in <code>foo.html</code>.</p>
+<p>This JSON format was my first stab at it but it had two big, related issues: Encoding took too long, and the size was too big. JSON has a bad signal-to-noise ratio for small strings. In this example, almost half of the characters do not carry meaning for the search index, they are just separators between JSON tokens.</p>
+<p>This is why I switched to a different encoding: <a href="https://postcard.jamesmunns.com/wire-format">postcard</a>. The search index went from 600 ms encoding time and 600 KiB size to 10 ms and 200 KiB.</p>
+<p>The Javascript in the browser now needs to manually decode it, but it's very little code because the format is simple.</p>
+<p>The way the search index is then used in the browser is to quickly find files with matches. For each trigram in the search text, the corresponding trigram is inspected in the search index, to know which files contain it. The results of the search is a <code>Map&lt;file name, search score&gt;</code>. The score is is higher for files with more matches. This way, the UI can show the 'best' match first.</p>
+<pre>
+  <div class="code-header">
+    <span>Javascript</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-javascript"><span class="line-number"></span><span class="code-hl">function search_text(needle) {</span>
+<span class="line-number"></span><span class="code-hl">  const file_scores = new Map();</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  // For each trigram in search text.</span>
+<span class="line-number"></span><span class="code-hl">  for (let i = 0; i &lt;= needle.length - 3; i++) {</span>
+<span class="line-number"></span><span class="code-hl">    const trigram = needle[i] + needle[i+1] + needle[i+2];</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">    const match = search_index.trigram_to_file_idx.get(trigram);</span>
+<span class="line-number"></span><span class="code-hl">    if (match === undefined) {</span>
+<span class="line-number"></span><span class="code-hl">      // This trigram does not exist in the search index, continue.</span>
+<span class="line-number"></span><span class="code-hl">      continue;</span>
+<span class="line-number"></span><span class="code-hl">    }</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">    const docs_with_this_trigram = match.length;</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">    for (const m of match) {</span>
+<span class="line-number"></span><span class="code-hl">      const [file, count] = m;</span>
+<span class="line-number"></span><span class="code-hl">      const score = file_scores.get(file) || 0;</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">      // Record the file with the match along with a score.</span>
+<span class="line-number"></span><span class="code-hl">      // Different trigrams for the same file increase its score.</span>
+<span class="line-number"></span><span class="code-hl">      file_scores.set(file, score + count * (1/docs_with_this_trigram) );</span>
+<span class="line-number"></span><span class="code-hl">    }</span>
+<span class="line-number"></span><span class="code-hl">  }</span>
+<span class="line-number"></span><span class="code-hl">  </span>
+<span class="line-number"></span><span class="code-hl">  return file_scores;</span>
+<span class="line-number"></span><span class="code-hl">}</span>
+</code></pre>
+<p>I experimented a bit with how the search score is computed. I think this way strikes a balance between simplicity and accuracy.</p>
+<p>Finally, the JavaScript fetches the HTML for each article that has a match, to show an excerpt of the text surrounding the match. These queries are done in parallel for performance, and should get cached by the browser after the first time.</p>
+<p>I have heard about <a href="https://tigerbeetle.com/blog/2025-02-27-why-we-designed-tigerbeetles-docs-from-scratch/#simple-is-beautiful">people</a> using a Service Worker to always fetch all articles in the background so that they know for sure that the content of each article is always there. This is just eager vs. lazy loading, both work.</p>
+<p>The advantage of fetching all content in advance is that now, a search index is not necessary anymore. Technically, for the amount of text my blog has, a search index is not required, but I always wanted to learn how a search index works and this was the perfect opportunity.</p>
+<h2 id="live-reloading">
+  <a class="title" href="#live-reloading">Live reloading</a>
+  <a class="hash-anchor" href="#live-reloading" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+</h2>
+<p>I always wanted to add live-reloading to have a nicer writing experience, which I'm convinced helps write more and better articles. The goal was to have the whole cycle take under 100 ms. Currently it takes ~70 ms which is great.</p>
+<p>The way it works is:</p>
+<ol>
+<li>At start-up, all articles are generated. This takes ~180 ms.</li>
+<li>An HTTP server is started. It serves static files and also has a <code>/live-reload</code> endpoint. It uses <a href="https://developer.mozilla.org/en-US/docs/Web/API/Server-sent_events/Using_server-sent_events">server-sent events (SSE)</a> to tell the client: hey, a file changed, reload the page.</li>
+<li>A thread is spawned to watch the file system for changes. When a relevant file is changed, an 'event' is broadcast to all listening threads (the SSE serving threads) with <code>cvar.notify_all()</code>. While no file is changed, the thread watching the file system is idle since it is blocked on a system call (<code>kqueue</code>, <code>inotify</code>, etc), and the SSE threads are also idle, waiting on the condition variable with <code>cvar.wait()</code>. That means 0% CPU consumption.</li>
+</ol>
+<p>The whole code for it is ~ 100 lines of code. It would be even less if I found a library that correctly handles SSE. I implement SSE by hand, and since the format is super simple (newline delimited text events), it's not much work at all:</p>
+<pre>
+  <div class="code-header">
+    <span>Rust</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-rust"><span class="line-number"></span><span class="code-hl">fn live_reload(</span>
+<span class="line-number"></span><span class="code-hl">    mut resp: BufWriter&lt;TcpStream&gt;,</span>
+<span class="line-number"></span><span class="code-hl">    mtx_cond: Arc&lt;(Mutex&lt;()&gt;, Condvar)&gt;,</span>
+<span class="line-number"></span><span class="code-hl">) -&gt; Result&lt;(), ()&gt; {</span>
+<span class="line-number"></span><span class="code-hl">    write!(</span>
+<span class="line-number"></span><span class="code-hl">        resp,</span>
+<span class="line-number"></span><span class="code-hl">        &quot;HTTP/1.1 200\r\nCache-Control: no-cache\r\nContent-Type: text/event-stream\r\n\r\n&quot;</span>
+<span class="line-number"></span><span class="code-hl">    )</span>
+<span class="line-number"></span><span class="code-hl">    .map_err(|_| ())?;</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">    loop {</span>
+<span class="line-number"></span><span class="code-hl">        let (lock, cvar) = &amp;*mtx_cond;</span>
+<span class="line-number"></span><span class="code-hl">        let guard = lock.lock().map_err(|_| ())?;</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">        drop(cvar.wait(guard).map_err(|_| ())?);</span>
+<span class="line-number"></span><span class="code-hl">        write!(resp, &quot;data: foobar\n\n&quot;).map_err(|_| ())?;</span>
+<span class="line-number"></span><span class="code-hl">        resp.flush().map_err(|_| ())?;</span>
+<span class="line-number"></span><span class="code-hl">        println!(&quot;🔃 sse event sent&quot;);</span>
+<span class="line-number"></span><span class="code-hl">    }</span>
+<span class="line-number"></span><span class="code-hl">}</span>
+</code></pre>
+<p>And the JavaScript side is also very short:</p>
+<pre>
+  <div class="code-header">
+    <span>Javascript</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-javascript"><span class="line-number"></span><span class="code-hl">function sse_connect() {</span>
+<span class="line-number"></span><span class="code-hl">  const eventSource = new EventSource('/blog/live-reload');</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  eventSource.onopen = (_event) =&gt; {</span>
+<span class="line-number"></span><span class="code-hl">    console.log(&quot;connected&quot;);</span>
+<span class="line-number"></span><span class="code-hl">  }</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  eventSource.onmessage = (event) =&gt; {</span>
+<span class="line-number"></span><span class="code-hl">    console.log(&quot;New message:&quot;, event.data);</span>
+<span class="line-number"></span><span class="code-hl">    location.reload();</span>
+<span class="line-number"></span><span class="code-hl">  };</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  eventSource.onerror = (err) =&gt; {</span>
+<span class="line-number"></span><span class="code-hl">    console.error(&quot;EventSource failed:&quot;, err);</span>
+<span class="line-number"></span><span class="code-hl">    // The browser will automatically attempt to reconnect </span>
+<span class="line-number"></span><span class="code-hl">    // after a short delay unless `eventSource.close()` is called.</span>
+<span class="line-number"></span><span class="code-hl">  };</span>
+<span class="line-number"></span><span class="code-hl">}</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">if (!location.origin.includes(&quot;github&quot;)) {</span>
+<span class="line-number"></span><span class="code-hl">  sse_connect();</span>
+<span class="line-number"></span><span class="code-hl">}</span>
+</code></pre>
+<p>The last two lines mean: We only try to live-reload locally, not when the page is served from Github pages.</p>
+<p>This works beautifully. A prior version used WebSockets and that proved to be a headache compared to SSE. If the flow of events is strictly unidirectional, from the server to the client, SSE is much simpler.</p>
+<h3 id="caching">
+  <a class="title" href="#caching">Caching</a>
+  <a class="hash-anchor" href="#caching" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+</h3>
+<p>To avoid regenerating files that have not changed, I added a cache which is just a <code>Map&lt;file path, (hash of markdown content, generated output)&gt;</code>.</p>
+<p>If a file has changed, the entry for it is removed from the cache. If a file that impacts all articles changes, e.g. <code>header.html</code> and <code>footer.html</code>, the entire cache is cleared and all articles are re-generated.</p>
+<p>To make this work efficiently, generating one article should ideally be a pure function that takes in immutable arguments, and outputs the generated HTML (and metadata such as <code>created_at</code>, <code>modified_at</code>). This way, the first thing I do when handling an article is check the cache. If it's a cache hit, I just return the value from the cache.</p>
+<p>The only thing I had to tweak was building the search index. Initially, generating an article would also add entries in the search index in a mutable way.</p>
+<p>Before:</p>
+<pre>
+  <div class="code-header">
+    <span>Json</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-json"><span class="line-number"></span><span class="code-hl">{</span>
+<span class="line-number"></span><span class="code-hl">    &quot;cat&quot;: [[&quot;foo.html&quot;, 3]]</span>
+<span class="line-number"></span><span class="code-hl">}</span>
+</code></pre>
+<p>After handling <code>bar.html</code>:</p>
+<pre>
+  <div class="code-header">
+    <span>Json</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-json"><span class="line-number"></span><span class="code-hl">{</span>
+<span class="line-number"></span><span class="code-hl">    &quot;cat&quot;: [[&quot;foo.html&quot;, 3], [&quot;bar.html&quot;, 4]],</span>
+<span class="line-number"></span><span class="code-hl">    &quot;fox&quot;: [[&quot;bar.html&quot;, 1]],</span>
+<span class="line-number"></span><span class="code-hl">}</span>
+</code></pre>
+<p>Now, imagine that I edit the text in <code>bar.html</code>. Since <code>bar.html</code> could appear in every entry of the search index, every entry is possibly stale, and we have to scan all articles again, to rebuild the search index from scratch. We ideally want to build the search index incrementally, only scanning the file that changes.</p>
+<p>So I changed the approach so that each article tracks which trigrams are present in the content, e.g. for <code>bar.html</code>:</p>
+<pre>
+  <div class="code-header">
+    <span>Json</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-json"><span class="line-number"></span><span class="code-hl">// bar.html</span>
+<span class="line-number"></span><span class="code-hl">[&quot;cat&quot;, &quot;fox&quot;]</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">// foo.html</span>
+<span class="line-number"></span><span class="code-hl">[&quot;cat&quot;]</span>
+</code></pre>
+<p>This way each article is completely independent, and the final search index is the result of merging together the trigrams for each article. The final search index is the same.</p>
+<p>This was an interesting lesson for me: no shared mutable variables (except from the cache) makes parallel and incremental computations possible.</p>
 <p><a href="/blog"> ⏴ Back to all articles</a></p>
 
 <blockquote id="donate">
