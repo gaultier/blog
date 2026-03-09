@@ -216,6 +216,8 @@ fn md_render_toc(content: &mut Vec<u8>, titles: &[Title]) {
 
 ```
 
+If the same title appears multiple times (in different sections), a counter (`1`, `2`, etc) is appended to the link so that each link is unique on the page. This [article](/blog/making_my_debug_build_run_100_times_faster.html) is a good example.
+
 ## Generate the HTML
 
 I walk the AST and mechanically generate the appropriate HTML for each markdown element. 
