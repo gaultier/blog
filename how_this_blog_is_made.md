@@ -189,6 +189,35 @@ We save the XML in the file `feed.xml` and mention this XML in the HTML in the `
 <link type="application/atom+xml" href="/blog/feed.xml" rel="self">
 ```
 
+
+## Line numbers in code snippets
+
+Line numbers in code snippets are done entirely in CSS. Each line of the code snippet is preceded with an empty span with the CSS class `line-number`.
+
+Then, I let the browser compute the right line number:
+
+```css
+.line-number {
+  user-select: none;
+}
+
+.line-number::before {
+  counter-increment: line-count;
+  content: counter(line-count);
+}
+```
+
+Thanks to `user-select: none`, copy-pasting code works out of the box: the line numbers will not be parts of the selection.
+
+And to gain a bit of space, line numbers are not displayed on small screens:
+
+```css
+@media only screen and (max-width: 650px) {
+  .line-number { display: none; }
+}
+```
+
+
 ## Generate the home page
 
 This is the `index.html`, typically. It generally lists all articles (in my case), or only the recent ones, or the most read. The only thing worth mentioning is that in my case, each article has manually defined tags, such as `Go`, `Rust`, etc. So this page shows the tags for each article, and there is also a [page](/blog/articles-by-tag.html) showing articles by tags. 
@@ -294,4 +323,4 @@ This suprised me: in many cases, we deal with data that's just not that big, and
 
 If you use an existing static site generator and you're satisfied, then great! If you're not, I hope I have shown that writing your own is not much work at all. All of it is ~1.5 kLoC. And it's a great way to experiment and learn new things, for example SSE. 
 
-At work I sometimes have to use *very* slow site generators, that take *minutes* to build, and I am left really confused. Modern computers can do a *lot* in just 1 second. 
+At work I sometimes have to use *very* slow site generators, that take *minutes* to build, and I am left really confused. Modern computers can do a *lot* in just 1 second!
