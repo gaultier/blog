@@ -134,7 +134,9 @@ Do not edit it by hand.
 </ul>
 </details>
 
-<p>I developed my own static site generator for this blog. Initially it was just a Makefile. Over the years I evolved it quite a bit. This is my lessons learned.</p>
+<p>I developed my own static site generator for this blog. Initially it was just a Makefile. Over the years I evolved it quite a bit.</p>
+<p>At some point it took several seconds. Now it takes ~120 ms for a clean build and ~50 ms for an incremental build.</p>
+<p>This is my lessons learned.</p>
 <p>At the core, a static site generator typically must perform these steps:</p>
 <pre>
   <div class="code-header">
@@ -160,7 +162,14 @@ Do not edit it by hand.
   <a class="hash-anchor" href="#list-all-articles" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>I wrote about it <a href="/blog/making_my_static_blog_generator_11_times_faster.html">before</a>. The easiest way is to list files on the file system, but if you want accurate 'created' and 'last modified' dates for each article, you probably will have to query <code>git</code> (short of using a full-on database).</p>
-<p>The lesson learned here is that for performance, avoid the N+1 query trap: do one command for all articles, instead of one for each.</p>
+<p>The lesson learned here is that for performance, avoid the N+1 query trap: do one command for all articles, instead of one for each:</p>
+<pre>
+  <div class="code-header">
+    <span>Shell</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-shell"><span class="line-number"></span><span class="code-hl">$ git log --format='%aI' --name-status --no-merges --diff-filter=AMDR --reverse '*.md'</span>
+</code></pre>
 <h2 id="parsing">
   <a class="title" href="#parsing">Parsing</a>
   <a class="hash-anchor" href="#parsing" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
@@ -211,6 +220,56 @@ Do not edit it by hand.
   <a class="hash-anchor" href="#generate-the-table-of-content" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>This also relies on the AST: we collect all title elements, including their depth and text content. Then, we insert at the beginning of the article the table of contents.</p>
+<p>These titles:</p>
+<pre>
+  <div class="code-header">
+    <span>Markdown</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-markdown"><span class="line-number"></span><span class="code-hl">## Foo</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">### Bar</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">## Baz</span>
+</code></pre>
+<p>Get collected into this array, conceptually:</p>
+<pre>
+  <div class="code-header">
+    <span>Json</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-json"><span class="line-number"></span><span class="code-hl">[</span>
+<span class="line-number"></span><span class="code-hl">  {</span>
+<span class="line-number"></span><span class="code-hl">    &quot;title&quot;: &quot;Foo&quot;,</span>
+<span class="line-number"></span><span class="code-hl">    &quot;depth&quot;: 2</span>
+<span class="line-number"></span><span class="code-hl">  },</span>
+<span class="line-number"></span><span class="code-hl">  {</span>
+<span class="line-number"></span><span class="code-hl">    &quot;title&quot;: &quot;Bar&quot;,</span>
+<span class="line-number"></span><span class="code-hl">    &quot;depth&quot;: 3</span>
+<span class="line-number"></span><span class="code-hl">  },</span>
+<span class="line-number"></span><span class="code-hl">  {</span>
+<span class="line-number"></span><span class="code-hl">    &quot;title&quot;: &quot;Baz&quot;,</span>
+<span class="line-number"></span><span class="code-hl">    &quot;depth&quot;: 2</span>
+<span class="line-number"></span><span class="code-hl">  }</span>
+<span class="line-number"></span><span class="code-hl">]</span>
+</code></pre>
+<p>And that gets turned into this HTML, which is just nested lists:</p>
+<pre>
+  <div class="code-header">
+    <span>Html</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-html"><span class="line-number"></span><span class="code-hl">&lt;ul&gt;</span>
+<span class="line-number"></span><span class="code-hl">  &lt;li&gt;</span>
+<span class="line-number"></span><span class="code-hl">    Foo</span>
+<span class="line-number"></span><span class="code-hl">    &lt;ul&gt;</span>
+<span class="line-number"></span><span class="code-hl">        &lt;li&gt;Bar&lt;/li&gt;</span>
+<span class="line-number"></span><span class="code-hl">    &lt;/ul&gt;</span>
+<span class="line-number"></span><span class="code-hl">  &lt;/li&gt;</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  &lt;li&gt;Baz&lt;/li&gt;</span>
+<span class="line-number"></span><span class="code-hl">&lt;/ul&gt;</span>
+</code></pre>
 <p>The only interesting thing about this code is that it performs a linear scan of all titles in the article, which are stored in a flat array. In the past I used to build a tree of the titles, but it's unnecessary, slower, allocates more, and honestly not really more readable:</p>
 <pre>
   <div class="code-header">
@@ -369,7 +428,8 @@ Do not edit it by hand.
   <a class="hash-anchor" href="#search" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>To implement the search function which is purely client side, I used to have a search index with trigrams. However I realized that at my scale, a linear search is just fast enough (&lt; 1ms), and it is not much data to transfer (3 MiB uncompressed for all articles, Github pages applies gzip compression automatically with a 2-10x compression ratio).</p>
-<p>When someone types in the search box for the first time, the content for each article is fetched in parallel. This way, users who never use the search feature do not pay the price for it. The browser caches future fetches.</p>
+<p>When someone types in the search box for the first time, the HTML content for each article is fetched in parallel. This way, users who never use the search feature do not pay the price for it. The browser caches future fetches.</p>
+<p>To avoid searching for irrelevant content, I ignore some DOM elements, e.g. the header, footer, code snippets, etc.</p>
 <p>When a user types in the search box, the content of all articles is linearly searched with <code>indexOf()</code>. Since this very likely is implemented with SIMD, it is lightning fast. Then, for each match, the link to the article, as well as surrounding text, is shown.</p>
 <h2 id="drafts">
   <a class="title" href="#drafts">Drafts</a>
@@ -383,7 +443,7 @@ Do not edit it by hand.
   <a class="title" href="#live-reloading">Live reloading</a>
   <a class="hash-anchor" href="#live-reloading" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
-<p>I always wanted to add live-reloading to have a nicer writing experience, which I'm convinced helps write more and better articles. The goal was to have the whole cycle take under 100 ms. Currently it takes ~50 ms which is great.</p>
+<p>I always wanted to add live-reloading to have a nicer writing experience, which I'm convinced helps write more and better articles. The goal was to have the whole cycle take under 100 ms. Currently it takes ~50 ms which is great. Nearly all of this time is taken by git to get the list of articles including the 'created at' and 'modified at' dates. Not much to do here, I guess.</p>
 <p>The way it works is, in the same process:</p>
 <ol>
 <li>At start-up, all articles are generated. This takes ~120 ms on my machine.</li>
@@ -504,6 +564,7 @@ Do not edit it by hand.
 </h2>
 <p>If you use an existing static site generator and you're satisfied, then great! If you're not, I hope I have shown that writing your own is not much work at all. All of it is ~1.5 kLoC. And it's a great way to experiment and learn new things, for example SSE.</p>
 <p>At work I sometimes have to use <em>very</em> slow site generators, that take <em>minutes</em> to build, and I am left really confused. Modern computers can do a <em>lot</em> in just 1 second!</p>
+<p>Something else that stroke me is how similar a static site generator is to a compiler: AST parsing, caching, linting, etc.</p>
 <p><a href="/blog"> ⏴ Back to all articles</a></p>
 
 <blockquote id="donate">

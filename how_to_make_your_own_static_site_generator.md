@@ -2,7 +2,11 @@ Title: How to make your own static site generator
 Tags: Blog
 ---
 
-I developed my own static site generator for this blog. Initially it was just a Makefile. Over the years I evolved it quite a bit. This is my lessons learned.
+I developed my own static site generator for this blog. Initially it was just a Makefile. Over the years I evolved it quite a bit. 
+
+At some point it took several seconds. Now it takes ~120 ms for a clean build and ~50 ms for an incremental build.
+
+This is my lessons learned.
 
 
 
@@ -29,7 +33,11 @@ generate home page
 I wrote about it [before](/blog/making_my_static_blog_generator_11_times_faster.html). The easiest way is to list files on the file system, but if you want accurate 'created' and 'last modified' dates for each article, you probably will have to query `git` (short of using a full-on database).
 
 
-The lesson learned here is that for performance, avoid the N+1 query trap: do one command for all articles, instead of one for each.
+The lesson learned here is that for performance, avoid the N+1 query trap: do one command for all articles, instead of one for each:
+
+```shell
+$ git log --format='%aI' --name-status --no-merges --diff-filter=AMDR --reverse '*.md'
+```
 
 ## Parsing
 
@@ -72,6 +80,51 @@ If the content is huge, a search index might be required to be built. Having the
 ## Generate the table of content
 
 This also relies on the AST: we collect all title elements, including their depth and text content. Then, we insert at the beginning of the article the table of contents. 
+
+These titles:
+
+```markdown
+## Foo
+
+### Bar
+
+## Baz
+```
+
+Get collected into this array, conceptually:
+
+```json
+[
+  {
+    "title": "Foo",
+    "depth": 2
+  },
+  {
+    "title": "Bar",
+    "depth": 3
+  },
+  {
+    "title": "Baz",
+    "depth": 2
+  }
+]
+```
+
+And that gets turned into this HTML, which is just nested lists:
+
+```html
+<ul>
+  <li>
+    Foo
+    <ul>
+        <li>Bar</li>
+    </ul>
+  </li>
+
+  <li>Baz</li>
+</ul>
+```
+
 
 The only interesting thing about this code is that it performs a linear scan of all titles in the article, which are stored in a flat array. In the past I used to build a tree of the titles, but it's unnecessary, slower, allocates more, and honestly not really more readable:
 
@@ -226,9 +279,12 @@ This is the `index.html`, typically. It generally lists all articles (in my case
 
 To implement the search function which is purely client side, I used to have a search index with trigrams. However I realized that at my scale, a linear search is just fast enough (< 1ms), and it is not much data to transfer (3 MiB uncompressed for all articles, Github pages applies gzip compression automatically with a 2-10x compression ratio).
 
-When someone types in the search box for the first time, the content for each article is fetched in parallel. This way, users who never use the search feature do not pay the price for it. The browser caches future fetches. 
+When someone types in the search box for the first time, the HTML content for each article is fetched in parallel. This way, users who never use the search feature do not pay the price for it. The browser caches future fetches. 
+
+To avoid searching for irrelevant content, I ignore some DOM elements, e.g. the header, footer, code snippets, etc.
 
 When a user types in the search box, the content of all articles is linearly searched with `indexOf()`. Since this very likely is implemented with SIMD, it is lightning fast. Then, for each match, the link to the article, as well as surrounding text, is shown.
+
 
 
 ## Drafts
@@ -244,7 +300,7 @@ I think that's just the easiest way to do it, the site generator does not need t
 ## Live reloading
 
 
-I always wanted to add live-reloading to have a nicer writing experience, which I'm convinced helps write more and better articles. The goal was to have the whole cycle take under 100 ms. Currently it takes ~50 ms which is great. 
+I always wanted to add live-reloading to have a nicer writing experience, which I'm convinced helps write more and better articles. The goal was to have the whole cycle take under 100 ms. Currently it takes ~50 ms which is great. Nearly all of this time is taken by git to get the list of articles including the 'created at' and 'modified at' dates. Not much to do here, I guess.
 
 The way it works is, in the same process:
 
@@ -375,3 +431,6 @@ This suprised me: in many cases, we deal with data that's just not that big, and
 If you use an existing static site generator and you're satisfied, then great! If you're not, I hope I have shown that writing your own is not much work at all. All of it is ~1.5 kLoC. And it's a great way to experiment and learn new things, for example SSE. 
 
 At work I sometimes have to use *very* slow site generators, that take *minutes* to build, and I am left really confused. Modern computers can do a *lot* in just 1 second!
+
+
+Something else that stroke me is how similar a static site generator is to a compiler: AST parsing, caching, linting, etc.
