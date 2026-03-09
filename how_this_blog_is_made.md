@@ -30,41 +30,111 @@ generate home page
 I wrote about it [before](/blog/making_my_static_blog_generator_11_times_faster.html). The easiest way is to list files on the file system, but if you want accurate 'created' and 'last modified' dates for each article, you probably will have to query `git` (short of using a full-on database).
 
 
-The lesson learned here is that for performance, avoid the N+1 query trap by doing one command for all articles instead of one for each.
+The lesson learned here is that for performance, avoid the N+1 query trap: do one command for all articles, instead of one for each.
 
-## Parse the article
+## Parsing
 
-Chances are, you are authoring content in markdown or similar, which then must be converted to HTML. Even if you *are* written HTML directly, this content needs to be post-processed quite a bit and thus must be parsed in the first place. No one wants to wrangle strings; structured data is the way to do.
+Chances are, you are authoring content in markdown or similar, which then must be converted to HTML. Even if you *are* writing HTML directly, this content needs to be post-processed quite a bit and thus must be parsed in the first place. No one wants to wrangle strings; structured data is the way to go.
 
-I recommend using a library to parse the article, for example markdown, and this library *must* give you the Abstract Syntax Tree (AST) for it. Since rich text is hierarchical, it is indeed a tree.  Think of a hyperlink in a table cell, or a bold text in a list element. These are trees.
+I recommend using a library (or write your own) to parse the article, for example markdown, and this library *must* return Abstract Syntax Tree (AST). Since rich text is hierarchical, it is indeed best represented as a tree.  Think of a hyperlink in a table cell, or a bold text in a list element. These are trees.
 
 Another reason to work on the AST is that you have total control on the HTML generation, including for code blocks. This opens the door to syntax highlighting at generation time. 
 
-Currently, I implement syntax highlighting with JavaScript at runtime, but I may change this in the future. At least I have the possibility.
+Currently, I implement syntax highlighting with JavaScript at runtime, but I may change this in the future. At least I have the ability to do it at build time.
 
 
-## Lint the article content
+## Linting
 
-Finally, the linting step is much easier to implement on the AST. Here are a few examples of lints I have implemented: 
+The linting step is much easier to implement on the AST. Here are a few examples of lints I have implemented: 
 
-- Detect dead links
-- Code snippets without an explicit language declared, or an unknown language (this matters for syntax highlighting, e.g. `c++` was used but the canonical name is `cpp`)
+- Detect invalid links, e.g. linking to a markdown article, where it should be pointing to the HTML version for it.
+- Code snippets without an explicit language declared, or an unknown language (this matters for syntax highlighting, e.g. `c++` was used but the canonical name is `cpp`). E.g. this is invalid:
+    ```markdown
+       ```
+        foo := bar()
+       ```
+    ```
+    And this is valid:
+    ```markdown
+       ```go
+        foo := bar()
+       ```
+    ```
 - Style: Prefer `1 KiB` over other variants e.g. `1 kb`, `1 KB`, `1 K`, etc
-- Titles that skip a level, for example `h2 -> h4`. This is subjective, perhaps some people like to have this ability - I don't, so I prevent it.
+- Forbid titles that skip a level, for example `h2 -> h4`. This is subjective, perhaps some people like to have this ability - I don't, so I prevent it.
 
 Other lints that could be also easily implemented based on walking the AST:
 
 - Forbid lists with only one element
 - Inline code elements whose content exceeds a certain length; these should be use the syntax for a multiline code block
 
-Furthermore, if the content is huge, a search index might be needed to be built. Having the AST is great to only index text and skip code blocks, inline HTML, etc when building the index.
-
+If the content is huge, a search index might be required to be built. Having the AST is great to only index text and skip code blocks, inline HTML, etc when building the index.
 
 ## Generate the table of content
 
 This also relies on the AST: we collect all title elements, including their depth and text content. Then, we insert at the beginning of the article the table of contents. 
 
-This code is quite short and uninteresting, so not much to add here.
+The only interesting thing about this code is that it performs a linear scan of all titles in the article, which are stored in a flat array. In the past I used to build a tree of the titles, but it's unnecessary, slower, allocates more, and honestly not really more readable:
+
+
+```rust
+struct Title {
+    text: String,
+    depth: u8,
+    start_md_offset: usize,
+    slug: String,
+}
+
+fn md_render_toc(content: &mut Vec<u8>, titles: &[Title]) {
+    if titles.is_empty() {
+        return;
+    }
+
+    writeln!(
+        content,
+        r#"  <details class="toc"><summary>Table of contents</summary>
+<ul>"#
+    )
+    .unwrap();
+
+    let mut current_depth = titles[0].depth;
+
+    for (i, title) in titles.iter().enumerate() {
+        if title.depth > current_depth {
+            for _ in 0..(title.depth - current_depth) {
+                writeln!(content, "<ul>").unwrap();
+            }
+        } else if title.depth < current_depth {
+            // Close the current <li>, then close the <ul> levels, then close the parent <li>.
+            for _ in 0..(current_depth - title.depth) {
+                writeln!(content, "</li>\n</ul>").unwrap();
+            }
+            writeln!(content, "</li>").unwrap(); // Close the <li> of the previous same-level item.
+        } else if i > 0 {
+            // Same level: just close the previous item.
+            writeln!(content, "</li>").unwrap();
+        }
+        current_depth = title.depth;
+
+        writeln!(
+            content,
+            r##"
+  <li>
+    <a href="#{}">{}</a>"##,
+            title.slug, &title.text,
+        )
+        .unwrap();
+    }
+
+    // Final cleanup: close all remaining open tags.
+    let base_depth = titles[0].depth;
+    for _ in 0..=(current_depth - base_depth) {
+        writeln!(content, "</li>\n</ul>").unwrap();
+    }
+    writeln!(content, "</details>\n").unwrap();
+}
+
+```
 
 ## Generate the HTML
 
@@ -76,9 +146,50 @@ It is also straightforward to adapt this code to generate other formats, e.g. La
 
 As previously mentioned this is where doing static syntax highligting could take place.
 
+The only things to watch for are:
+
+- Escape special HTML chars (we do not have to be super defensive since this is our content, not arbitrary user generated content)
+- Footnotes need to be collected to list them at the end in the HTML.
+
+Here's an excerpt:
+
+```rust
+fn md_to_html_rec(
+    content: &mut Vec<u8>,
+    footnote_defs: &mut Vec<FootnoteDefinition>,
+    node: &Node,
+    titles: &[Title],
+    inside_thead: bool,
+) {
+    match node {
+        Node::InlineCode(inline_code) => {
+            let sanitized = text_sanitize_for_html(&inline_code.value, false);
+            write!(content, "<code>{}</code>", sanitized).unwrap();
+        }
+        Node::Delete(delete) => {
+            write!(content, "<del>").unwrap();
+            for child in &delete.children {
+                md_to_html_rec(content, footnote_defs, child, titles, false);
+            }
+            write!(content, "</del>").unwrap();
+        }
+        Node::Image(image) => {
+            write!(
+                content,
+                r#"<img src="{}" alt="{}" />"#,
+                image.url, image.alt
+            )
+            .unwrap();
+        }
+
+        // [...]
+    }
+}
+```
+
 ## Generate the RSS feed
 
-I have written about it [before](/blog/feed.html). This is very simple, we just generate a XML file listing all articles including the creation and modification date. I use UUID v5 to assign an id to each article because it's a good fit: the blog itself has a UUID which is the namespace, and each article has a UUID v5 based on this namespace.
+I have written about it [before](/blog/feed.html). This is very simple, we just generate a XML file listing all articles including the creation and modification date. I use [UUID v5](https://en.wikipedia.org/wiki/Universally_unique_identifier_ to assign an id to each article because it's a good fit: the blog itself has a UUID which is the namespace, and the UUID for each article is `sha1(blog_namespace + article_file_path)`.
 
 
 We save the XML in the file `feed.xml` and mention this XML in the HTML in the `<head>` element:
@@ -89,12 +200,25 @@ We save the XML in the file `feed.xml` and mention this XML in the HTML in the `
 
 ## Generate the home page
 
-This is the `index.html`, typically. It generally lists all articles (in my case), or only the recent ones, or the most read. Not much to add here.
+This is the `index.html`, typically. It generally lists all articles (in my case), or only the recent ones, or the most read. The only thing worth mentioning is that in my case, each article has manually defined tags, such as `Go`, `Rust`, etc. So this page shows the tags for each article, and there is also a [page](/blog/articles-by-tag.html) showing articles by tags. That page is built with a simple map:
+
+```rust
+    let mut tag_to_articles = BTreeMap::new();
+
+    for article in articles {
+        for tag in &article.tags {
+            tag_to_articles
+                .entry(tag.clone())
+                .or_insert_with(Vec::new)
+                .push(article);
+        }
+    }
+```
 
 ## Search
 
 
-To implement the search function which is purely client side, I used to have a search index with trigrams. However I realized that at my scale, a linear search is just fast enough (< 1ms), and it is not much data to transfer (3 MiB uncompressed for all articles).
+To implement the search function which is purely client side, I used to have a search index with trigrams. However I realized that at my scale, a linear search is just fast enough (< 1ms), and it is not much data to transfer (3 MiB uncompressed for all articles, Github pages applies gzip compression automatically with a 2-10x compression ratio).
 
 When someone types in the search box for the first time, the content for each article is fetched in parallel. This way, users who never use the search feature do not pay the price for it. The browser caches future fetches. 
 
@@ -106,13 +230,13 @@ When a user types in the search box, the content of all articles is linearly sea
 
 I always wanted to add live-reloading to have a nicer writing experience, which I'm convinced helps write more and better articles. The goal was to have the whole cycle take under 100 ms. Currently it takes ~70 ms which is great. 
 
-The way it works is:
+The way it works is, in the same process:
 
-1. At start-up, all articles are generated. This takes ~180 ms.
+1. At start-up, all articles are generated. This takes ~120 ms on my machine.
 1. An HTTP server is started. It serves static files and also has a `/live-reload` endpoint. It uses [server-sent events (SSE)](https://developer.mozilla.org/en-US/docs/Web/API/Server-sent_events/Using_server-sent_events) to tell the client: hey, a file changed, reload the page.
-1. A thread is spawned to watch the file system for changes. When a relevant file is changed, an 'event' is broadcast to all listening threads (the SSE serving threads) with `cvar.notify_all()`. While no file is changed, the thread watching the file system is idle since it is blocked on a system call (`kqueue`, `inotify`, etc), and the SSE threads are also idle, waiting on the condition variable with `cvar.wait()`. That means 0% CPU consumption.
+1. A thread is spawned to watch the file system for changes. When a relevant file is changed, an 'event' is broadcast to all listening threads (the SSE serving threads) with `cvar.notify_all()`. While no file is changed, the thread watching the file system is idle since it is blocked on a system call (`kqueue`, `inotify`, etc), and the SSE threads are also idle, waiting on the condition variable with `cvar.wait()`. That means 0% CPU consumption until a file is changed.
 
-The whole code for it is ~ 100 lines of code. It would be even less if I found a library that correctly handles SSE. I implement SSE by hand, and since the format is super simple (newline delimited text events), it's not much work at all:
+The whole code for it is ~100 lines of code. It would be even less if I found a small HTTP server library that correctly handles SSE, without having to use tokio, etc. I implement SSE by hand, and since the format is super simple (newline delimited text events), it's not much work at all:
 
 ```rust
 fn live_reload(
@@ -168,16 +292,26 @@ The last two lines mean: We only try to live-reload locally, not when the page i
 
 This works beautifully. A prior version used WebSockets and that proved to be a headache compared to SSE. If the flow of events is strictly unidirectional, from the server to the client, SSE is much simpler. 
 
-### Caching
+### Caching and performance
 
 To avoid regenerating files that have not changed, I added a cache which is just a `Map<file path, (hash of markdown content, generated output)>`. 
 
-If a file has changed, the entry for it is removed from the cache. If a file that impacts all articles changes, e.g. `header.html` and `footer.html`, the entire cache is cleared and all articles are re-generated.
+If a file has changed, the entry for it is removed from the cache, which is why the key is the file path. If a file that impacts all articles changes, e.g. `header.html` and `footer.html`, the entire cache is cleared and all articles are re-generated.
 
 To make this work efficiently, generating one article should ideally be a pure function that takes in immutable arguments, and outputs the generated HTML (and metadata such as `created_at`, `modified_at`). Thus, the first thing I do when handling an article is check the cache. If it's a cache hit, I just return the value from the cache. 
 
-This way each article is completely independent.
+This way, each article is completely independent.
 
 This was an interesting lesson for me: no shared mutable variables (except from the cache) makes parallel and incremental computations possible.
 
 
+Caching is I think a spectrum, some operations are so cheap and fast that caching them is not worth it. It can be taken to the extreme: [Salsa](https://salsa-rs.github.io/salsa/reference/algorithm.html#the-red-green-algorithm), [Buck](https://buck.build/concept/what_makes_buck_so_fast.html). In my experience, there is usually one main expensive operation, and adding a cache in front of that, which is just a map, is generally sufficient.
+
+Finally, caching should not be a band-aid for general slowness. If some operation is unnecessarily slow, try to optimize it first, and ensure it is really needed. For example, I initially had the search index encoded as JSON, and it took ~600 ms to build and marshal it. I optimized it to only take ~10 ms. In the end, I realized I don't need a search index at all and removed all of this code. Do less, go faster.
+
+
+This suprised me: in many cases, we deal with data that's just not that big, and linear operations (array, linear scan), are often just fast enough, especially with SIMD and the prefetcher.
+
+## Conclusion
+
+If you use an existing static site generator and you're satisfied, then great! If you're not, I hope I have shown that writing your own is not much work at all. All of it is ~1.5 kLoC. And it's a great way to experiment and learn new things.

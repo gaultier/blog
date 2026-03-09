@@ -794,7 +794,7 @@ fn md_render_toc(content: &mut Vec<u8>, titles: &[Title]) {
         .unwrap();
     }
 
-    // 3. Final Cleanup: Close all remaining open tags.
+    // Final cleanup: close all remaining open tags.
     let base_depth = titles[0].depth;
     for _ in 0..=(current_depth - base_depth) {
         writeln!(content, "</li>\n</ul>").unwrap();
