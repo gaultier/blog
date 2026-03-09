@@ -19,7 +19,6 @@ for each article:
     lint content
     generate table of content 
     generate html
-    save html file
 
 generate rss feed
 generate home page
