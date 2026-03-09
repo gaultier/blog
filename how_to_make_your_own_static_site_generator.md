@@ -269,7 +269,7 @@ fn md_to_html_rec(
 
 ## Generate the RSS feed
 
-I have written about it [before](/blog/feed.html). This is very simple, we just generate a XML file listing all articles including the creation and modification date. I use [UUID v5](https://en.wikipedia.org/wiki/Universally_unique_identifier_ to assign an id to each article because it's a good fit: the blog itself has a UUID which is the namespace, and the UUID for each article is `sha1(blog_namespace + article_file_path)`.
+I have written about it [before](/blog/feed.html). This is very simple, we just generate a XML file listing all articles including the creation and modification date. I use [UUID v5](https://en.wikipedia.org/wiki/Universally_unique_identifier) to assign an id to each article because it's a good fit: the blog itself has a UUID which is the namespace, and the UUID for each article is `sha1(blog_namespace + article_file_path)`.
 
 
 I save the XML in the file `feed.xml` and mention this XML in the HTML in the `<head>` element:
@@ -316,7 +316,7 @@ This is the `index.html`, typically. It generally lists all articles (in my case
 
 To implement the search function which is purely client side, I used to have a search index with trigrams. However I realized that at my scale, a linear search is just fast enough (< 1ms), and it is not much data to transfer (3 MiB uncompressed for all articles, Github pages applies gzip compression automatically with a 2-10x compression ratio).
 
-When someone types in the search box for the first time, the HTML content for each article is fetched in parallel. This way, users who never use the search feature do not pay the price for it. The browser caches future fetches. 
+When someone types in the search box for the first time, the HTML content for each article is fetched in parallel. This way, users who never use the search feature do not pay the price for it. The browser caches future fetches. If a loyal reader already has read all articles, then they are already cached in their browser and the fetch is a no-op.
 
 To avoid searching for irrelevant content, I ignore some DOM elements, e.g. the header, footer, code snippets, etc.
 
@@ -446,6 +446,8 @@ fn md_render_article(
 }
 ```
 
+Technically I could use the [nohash](https://docs.rs/nohash-hasher/0.2.0/nohash_hasher/) crate to optimize a bit, since the key in the map is already a hash, no need to hash it a second time. But I don't bother for now.
+ 
 I never clear the cache, because my computer has so much memory. This has one advantage: if I undo a change when writing an article, and the work had already finish, I will hit the existing cache entry again.
 
 Skipping all this work is fine for one reason only: generating the HTML for an article is a pure function with immutable arguments. If it mutated a variable (for example a search index), we could not easily skip this work.
@@ -485,9 +487,9 @@ div {
 
 The first argument is the color in light mode, and the second argument the color in dark mode.
 
-The browser detects the current mode if the OS supports that concept and sets the value for our page automatically. 
+The browser detects the current mode if the OS supports that concept and sets the value for our page automatically. Then, it picks the right CSS color that was provided with `light-dark()`.
 
-Light or dark mode can also be set (for example when the user clicks the light/dark mode button):
+Light or dark mode can also be set manually (for example when the user clicks the light/dark mode button):
 
 ```javascript
 console.log(document.body.style.colorScheme);
@@ -509,4 +511,4 @@ Otherwise, I hope I have shown that writing your own is not much work at all. Al
 At work I sometimes have to use *very* slow site generators, that take *minutes* to build, and I am left really confused. Modern computers can do a *lot* in just 1 second!
 
 
-Something else that stroke me is how similar a static site generator is to a compiler: AST parsing, caching, linting, etc.
+Something else that stroke me is how similar a static site generator is to a compiler: AST parsing, caching, linting, generate the output by walking the AST, etc.
