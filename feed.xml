@@ -2,7 +2,7 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
 <title>Philippe Gaultier's blog</title>
 <link href="https://gaultier.github.io/blog"/>
-<updated>2026-03-09T13:02:00+01:00</updated>
+<updated>2026-03-09T16:05:54+01:00</updated>
 <author>
   <name>Philippe Gaultier</name>
 </author>
@@ -387,9 +387,9 @@
     
 <entry>
 <title>How to make your own static site generator</title>
-<link href="https://gaultier.github.io/blog/how_this_blog_is_made.html"/>
-<id>urn:uuid:e67bcf9d-f7a4-5186-8bc7-699bafe73c5e</id>
-<updated>2026-03-09T13:02:00+01:00</updated>
-<published>2026-03-08T17:52:42+01:00</published>
+<link href="https://gaultier.github.io/blog/how_to_make_your_own_static_site_generator.html"/>
+<id>urn:uuid:11e1f1d7-6105-5048-967d-7f57942f6260</id>
+<updated>2026-03-09T16:05:54+01:00</updated>
+<published>2026-03-09T16:05:54+01:00</published>
 </entry>
     </feed>
