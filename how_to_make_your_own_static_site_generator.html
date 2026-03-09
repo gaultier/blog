@@ -157,12 +157,25 @@ Do not edit it by hand.
 <span class="line-number"></span><span class="code-hl">generate rss feed</span>
 <span class="line-number"></span><span class="code-hl">generate home page</span>
 </code></pre>
+<p>The first version was this 3 lines Makefile:</p>
+<pre>
+  <div class="code-header">
+    <span>Makefile</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-makefile"><span class="line-number"></span><span class="code-hl">%.html: %.md header.html footer.html</span>
+<span class="line-number"></span><span class="code-hl">        cat header.html &gt;&gt; $@</span>
+<span class="line-number"></span><span class="code-hl">        pandoc --toc $&lt; &gt;&gt; $@</span>
+<span class="line-number"></span><span class="code-hl">        cat footer.html &gt;&gt; $@</span>
+</code></pre>
+<p>It did not have a RSS feed, and the home page listing articles was manually kept in sync.</p>
+<p>Now, it can do a bit more!</p>
 <h2 id="list-all-articles">
   <a class="title" href="#list-all-articles">List all articles</a>
   <a class="hash-anchor" href="#list-all-articles" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>I wrote about it <a href="/blog/making_my_static_blog_generator_11_times_faster.html">before</a>. The easiest way is to list files on the file system, but if you want accurate 'created' and 'last modified' dates for each article, you probably will have to query <code>git</code> (short of using a full-on database).</p>
-<p>The lesson learned here is that for performance, avoid the N+1 query trap: do one command for all articles, instead of one for each:</p>
+<p>The lesson learned here is that for performance, avoid the N+1 query trap. Do one command for all articles, instead of one for each:</p>
 <pre>
   <div class="code-header">
     <span>Shell</span>
@@ -185,13 +198,22 @@ Do not edit it by hand.
 <p>The linting step is much easier to implement on the AST. Here are a few examples of lints I have implemented:</p>
 <ul>
 <li>Detect invalid links, e.g. linking to a markdown article, where it should be pointing to the HTML version for it.</li>
-<li><p>Code snippets without an explicit language declared, or an unknown language (this matters for syntax highlighting, e.g. <code>c++</code> was used but the canonical name is <code>cpp</code>). E.g. this is invalid:</p>
+<li><p>Code snippets without an explicit language declared, or an unknown language (this matters for syntax highlighting, e.g. <code>c++</code> was used but the canonical name is <code>cpp</code>). E.g. these are invalid:</p>
 <pre>
   <div class="code-header">
     <span>Markdown</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
   <code class="language-markdown"><span class="line-number"></span><span class="code-hl">   ```</span>
+<span class="line-number"></span><span class="code-hl">    foo := bar()</span>
+<span class="line-number"></span><span class="code-hl">   ```</span>
+</code></pre>
+<pre>
+  <div class="code-header">
+    <span>Markdown</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-markdown"><span class="line-number"></span><span class="code-hl">   ```g0</span>
 <span class="line-number"></span><span class="code-hl">    foo := bar()</span>
 <span class="line-number"></span><span class="code-hl">   ```</span>
 </code></pre>
@@ -253,7 +275,7 @@ Do not edit it by hand.
 <span class="line-number"></span><span class="code-hl">  }</span>
 <span class="line-number"></span><span class="code-hl">]</span>
 </code></pre>
-<p>And that gets turned into this HTML, which is just nested lists:</p>
+<p>And that gets turned into this HTML, which is just nested lists with links:</p>
 <pre>
   <div class="code-header">
     <span>Html</span>
@@ -261,13 +283,17 @@ Do not edit it by hand.
   </div>
   <code class="language-html"><span class="line-number"></span><span class="code-hl">&lt;ul&gt;</span>
 <span class="line-number"></span><span class="code-hl">  &lt;li&gt;</span>
-<span class="line-number"></span><span class="code-hl">    Foo</span>
+<span class="line-number"></span><span class="code-hl">      &lt;a href=&quot;/Foo&quot;&gt;Foo&lt;/a&gt;</span>
 <span class="line-number"></span><span class="code-hl">    &lt;ul&gt;</span>
-<span class="line-number"></span><span class="code-hl">        &lt;li&gt;Bar&lt;/li&gt;</span>
+<span class="line-number"></span><span class="code-hl">        &lt;li&gt;</span>
+<span class="line-number"></span><span class="code-hl">            &lt;a href=&quot;/Bar&quot;&gt;Bar&lt;/a&gt;</span>
+<span class="line-number"></span><span class="code-hl">        &lt;/li&gt;</span>
 <span class="line-number"></span><span class="code-hl">    &lt;/ul&gt;</span>
 <span class="line-number"></span><span class="code-hl">  &lt;/li&gt;</span>
 <span class="line-number"></span><span class="code-hl"></span>
-<span class="line-number"></span><span class="code-hl">  &lt;li&gt;Baz&lt;/li&gt;</span>
+<span class="line-number"></span><span class="code-hl">  &lt;li&gt;</span>
+<span class="line-number"></span><span class="code-hl">      &lt;a href=&quot;/Baz&quot;&gt;Baz&lt;/a&gt;</span>
+<span class="line-number"></span><span class="code-hl">  &lt;/li&gt;</span>
 <span class="line-number"></span><span class="code-hl">&lt;/ul&gt;</span>
 </code></pre>
 <p>The only interesting thing about this code is that it performs a linear scan of all titles in the article, which are stored in a flat array. In the past I used to build a tree of the titles, but it's unnecessary, slower, allocates more, and honestly not really more readable:</p>
@@ -416,7 +442,7 @@ Do not edit it by hand.
 <span class="line-number"></span><span class="code-hl">  content: counter(line-count);</span>
 <span class="line-number"></span><span class="code-hl">}</span>
 </code></pre>
-<p>Thanks to <code>user-select: none</code>, copy-pasting code works out of the box: the line numbers will not be parts of the selection.</p>
+<p>Thanks to <code>user-select: none</code>, copy-pasting code works out of the box: the line numbers will not be part of the selection.</p>
 <p>And to gain a bit of space, line numbers are not displayed on small screens:</p>
 <pre>
   <div class="code-header">
@@ -459,7 +485,7 @@ Do not edit it by hand.
 <li>An HTTP server is started. It serves static files and also has a <code>/live-reload</code> endpoint. It uses <a href="https://developer.mozilla.org/en-US/docs/Web/API/Server-sent_events/Using_server-sent_events">server-sent events (SSE)</a> to tell the client: hey, a file changed, reload the page.</li>
 <li>A thread is spawned to watch the file system for changes. When a relevant file is changed, an 'event' is broadcast to all listening threads (the SSE serving threads) with <code>cvar.notify_all()</code>. While no file is changed, the thread watching the file system is idle since it is blocked on a system call (<code>kqueue</code>, <code>inotify</code>, etc), and the SSE threads are also idle, waiting on the condition variable with <code>cvar.wait()</code>. That means 0% CPU consumption until a file is changed.</li>
 </ol>
-<p>The whole code for it is ~100 lines of code. It would be even less if I found a small HTTP server library that correctly handles SSE, without having to use tokio, etc. I implement SSE by hand, and since the format is super simple (newline delimited text events), it's not much work at all:</p>
+<p>The whole code for it is ~100 lines of code. It would be even less if I found a small HTTP server library that correctly handles SSE, without having to use complex asynchronous code. I implement SSE by hand, and since the format is super simple (newline delimited text events), it's not much work at all:</p>
 <pre>
   <div class="code-header">
     <span>Rust</span>
@@ -560,13 +586,13 @@ Do not edit it by hand.
 <span class="line-number"></span><span class="code-hl">    article</span>
 <span class="line-number"></span><span class="code-hl">}</span>
 </code></pre>
-<p>I never clear the cache, because my computer has so much memory. This has one advantage: if I undo a change when writing an article, and the generation had already finish, I will hit the cache entry again.</p>
+<p>I never clear the cache, because my computer has so much memory. This has one advantage: if I undo a change when writing an article, and the work had already finish, I will hit the existing cache entry again.</p>
 <p>Skipping all this work is fine for one reason only: generating the HTML for an article is a pure function with immutable arguments. If it mutated a variable (for example a search index), we could not easily skip this work.</p>
 <p>This was an interesting lesson for me: no shared mutable variables (except from the cache) makes parallel and incremental computations possible.</p>
 <p>Right now I do not (yet) generate the HTML for each article in parallel, because it's already plenty fast, but conceptually I could, since each article is fully independent from the others.</p>
-<p>Caching is I think a spectrum, some operations are so cheap and fast that caching them is not worth it. It can be taken to the extreme: <a href="https://salsa-rs.github.io/salsa/reference/algorithm.html#the-red-green-algorithm">Salsa</a>, <a href="https://buck.build/concept/what_makes_buck_so_fast.html">Buck</a>. In my experience, there is usually one main expensive operation, and adding a cache in front of that, which is just a map, is generally sufficient.</p>
+<p>Caching is I think a spectrum, some operations are so cheap and fast that caching them is not worth it. It can be taken to the extreme: <a href="https://salsa-rs.github.io/salsa/reference/algorithm.html#the-red-green-algorithm">Salsa</a>, <a href="https://buck.build/concept/what_makes_buck_so_fast.html">Buck</a>. In my experience, there is usually one main expensive operation in the system, and adding a cache in front of that, which is just a map, is generally sufficient.</p>
 <p>Finally, caching should not be a band-aid for general slowness. If some operation is unnecessarily slow, try to optimize it first, and ensure it is really needed. For example, I initially had the search index encoded as JSON, and it took ~600 ms to build and marshal it. I optimized it to only take ~10 ms. In the end, I realized I don't need a search index at all and removed all of this code. Do less, go faster.</p>
-<p>This suprised me: in many cases, we deal with data that's just not that big, and linear operations (array, linear scan), are often just fast enough, especially with SIMD and the prefetcher.</p>
+<p>This suprised me: in many cases, we deal with data that's just not that big, and linear operations (array, linear scan), are often just fast enough, especially with SIMD and the CPU prefetcher.</p>
 <h2 id="conclusion">
   <a class="title" href="#conclusion">Conclusion</a>
   <a class="hash-anchor" href="#conclusion" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>

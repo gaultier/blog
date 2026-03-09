@@ -28,12 +28,26 @@ generate rss feed
 generate home page
 ```
 
+The first version was this 3 lines Makefile:
+
+
+```makefile
+%.html: %.md header.html footer.html
+        cat header.html >> $@
+        pandoc --toc $< >> $@
+        cat footer.html >> $@
+```
+
+It did not have a RSS feed, and the home page listing articles was manually kept in sync.
+
+Now, it can do a bit more!
+
 ## List all articles
 
 I wrote about it [before](/blog/making_my_static_blog_generator_11_times_faster.html). The easiest way is to list files on the file system, but if you want accurate 'created' and 'last modified' dates for each article, you probably will have to query `git` (short of using a full-on database).
 
 
-The lesson learned here is that for performance, avoid the N+1 query trap: do one command for all articles, instead of one for each:
+The lesson learned here is that for performance, avoid the N+1 query trap. Do one command for all articles, instead of one for each:
 
 ```shell
 $ git log --format='%aI' --name-status --no-merges --diff-filter=AMDR --reverse '*.md'
@@ -55,9 +69,14 @@ Currently, I implement syntax highlighting with JavaScript at runtime, but I may
 The linting step is much easier to implement on the AST. Here are a few examples of lints I have implemented: 
 
 - Detect invalid links, e.g. linking to a markdown article, where it should be pointing to the HTML version for it.
-- Code snippets without an explicit language declared, or an unknown language (this matters for syntax highlighting, e.g. `c++` was used but the canonical name is `cpp`). E.g. this is invalid:
+- Code snippets without an explicit language declared, or an unknown language (this matters for syntax highlighting, e.g. `c++` was used but the canonical name is `cpp`). E.g. these are invalid:
     ```markdown
        ```
+        foo := bar()
+       ```
+    ```
+    ```markdown
+       ```g0
         foo := bar()
        ```
     ```
@@ -110,20 +129,26 @@ Get collected into this array, conceptually:
 ]
 ```
 
-And that gets turned into this HTML, which is just nested lists:
+And that gets turned into this HTML, which is just nested lists with links:
 
 ```html
 <ul>
   <li>
-    Foo
+      <a href="/Foo">Foo</a>
     <ul>
-        <li>Bar</li>
+        <li>
+            <a href="/Bar">Bar</a>
+        </li>
     </ul>
   </li>
 
-  <li>Baz</li>
+  <li>
+      <a href="/Baz">Baz</a>
+  </li>
 </ul>
 ```
+
+
 
 
 The only interesting thing about this code is that it performs a linear scan of all titles in the article, which are stored in a flat array. In the past I used to build a tree of the titles, but it's unnecessary, slower, allocates more, and honestly not really more readable:
@@ -268,7 +293,7 @@ Then, I let the browser compute the right line number:
 }
 ```
 
-Thanks to `user-select: none`, copy-pasting code works out of the box: the line numbers will not be parts of the selection.
+Thanks to `user-select: none`, copy-pasting code works out of the box: the line numbers will not be part of the selection.
 
 And to gain a bit of space, line numbers are not displayed on small screens:
 
@@ -317,7 +342,7 @@ The way it works is, in the same process:
 1. An HTTP server is started. It serves static files and also has a `/live-reload` endpoint. It uses [server-sent events (SSE)](https://developer.mozilla.org/en-US/docs/Web/API/Server-sent_events/Using_server-sent_events) to tell the client: hey, a file changed, reload the page.
 1. A thread is spawned to watch the file system for changes. When a relevant file is changed, an 'event' is broadcast to all listening threads (the SSE serving threads) with `cvar.notify_all()`. While no file is changed, the thread watching the file system is idle since it is blocked on a system call (`kqueue`, `inotify`, etc), and the SSE threads are also idle, waiting on the condition variable with `cvar.wait()`. That means 0% CPU consumption until a file is changed.
 
-The whole code for it is ~100 lines of code. It would be even less if I found a small HTTP server library that correctly handles SSE, without having to use tokio, etc. I implement SSE by hand, and since the format is super simple (newline delimited text events), it's not much work at all:
+The whole code for it is ~100 lines of code. It would be even less if I found a small HTTP server library that correctly handles SSE, without having to use complex asynchronous code. I implement SSE by hand, and since the format is super simple (newline delimited text events), it's not much work at all:
 
 ```rust
 fn live_reload(
@@ -418,7 +443,7 @@ fn md_render_article(
 }
 ```
 
-I never clear the cache, because my computer has so much memory. This has one advantage: if I undo a change when writing an article, and the generation had already finish, I will hit the cache entry again.
+I never clear the cache, because my computer has so much memory. This has one advantage: if I undo a change when writing an article, and the work had already finish, I will hit the existing cache entry again.
 
 Skipping all this work is fine for one reason only: generating the HTML for an article is a pure function with immutable arguments. If it mutated a variable (for example a search index), we could not easily skip this work.
 
@@ -428,12 +453,12 @@ This was an interesting lesson for me: no shared mutable variables (except from 
 Right now I do not (yet) generate the HTML for each article in parallel, because it's already plenty fast, but conceptually I could, since each article is fully independent from the others. 
 
 
-Caching is I think a spectrum, some operations are so cheap and fast that caching them is not worth it. It can be taken to the extreme: [Salsa](https://salsa-rs.github.io/salsa/reference/algorithm.html#the-red-green-algorithm), [Buck](https://buck.build/concept/what_makes_buck_so_fast.html). In my experience, there is usually one main expensive operation, and adding a cache in front of that, which is just a map, is generally sufficient.
+Caching is I think a spectrum, some operations are so cheap and fast that caching them is not worth it. It can be taken to the extreme: [Salsa](https://salsa-rs.github.io/salsa/reference/algorithm.html#the-red-green-algorithm), [Buck](https://buck.build/concept/what_makes_buck_so_fast.html). In my experience, there is usually one main expensive operation in the system, and adding a cache in front of that, which is just a map, is generally sufficient.
 
 Finally, caching should not be a band-aid for general slowness. If some operation is unnecessarily slow, try to optimize it first, and ensure it is really needed. For example, I initially had the search index encoded as JSON, and it took ~600 ms to build and marshal it. I optimized it to only take ~10 ms. In the end, I realized I don't need a search index at all and removed all of this code. Do less, go faster.
 
 
-This suprised me: in many cases, we deal with data that's just not that big, and linear operations (array, linear scan), are often just fast enough, especially with SIMD and the prefetcher.
+This suprised me: in many cases, we deal with data that's just not that big, and linear operations (array, linear scan), are often just fast enough, especially with SIMD and the CPU prefetcher.
 
 ## Conclusion
 
