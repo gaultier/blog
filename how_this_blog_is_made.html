@@ -220,16 +220,7 @@ Do not edit it by hand.
 <span class="line-number"></span><span class="code-hl">}</span>
 <span class="line-number"></span><span class="code-hl"></span>
 <span class="line-number"></span><span class="code-hl">fn md_render_toc(content: &amp;mut Vec&lt;u8&gt;, titles: &amp;[Title]) {</span>
-<span class="line-number"></span><span class="code-hl">    if titles.is_empty() {</span>
-<span class="line-number"></span><span class="code-hl">        return;</span>
-<span class="line-number"></span><span class="code-hl">    }</span>
-<span class="line-number"></span><span class="code-hl"></span>
-<span class="line-number"></span><span class="code-hl">    writeln!(</span>
-<span class="line-number"></span><span class="code-hl">        content,</span>
-<span class="line-number"></span><span class="code-hl">        r#&quot;  &lt;details class=&quot;toc&quot;&gt;&lt;summary&gt;Table of contents&lt;/summary&gt;</span>
-<span class="line-number"></span><span class="code-hl">&lt;ul&gt;&quot;#</span>
-<span class="line-number"></span><span class="code-hl">    )</span>
-<span class="line-number"></span><span class="code-hl">    .unwrap();</span>
+<span class="line-number"></span><span class="code-hl">    // [...]</span>
 <span class="line-number"></span><span class="code-hl"></span>
 <span class="line-number"></span><span class="code-hl">    let mut current_depth = titles[0].depth;</span>
 <span class="line-number"></span><span class="code-hl"></span>
@@ -265,7 +256,7 @@ Do not edit it by hand.
 <span class="line-number"></span><span class="code-hl">    for _ in 0..=(current_depth - base_depth) {</span>
 <span class="line-number"></span><span class="code-hl">        writeln!(content, &quot;&lt;/li&gt;\n&lt;/ul&gt;&quot;).unwrap();</span>
 <span class="line-number"></span><span class="code-hl">    }</span>
-<span class="line-number"></span><span class="code-hl">    writeln!(content, &quot;&lt;/details&gt;\n&quot;).unwrap();</span>
+<span class="line-number"></span><span class="code-hl">    // [...]</span>
 <span class="line-number"></span><span class="code-hl">}</span>
 </code></pre>
 <h2 id="generate-the-html">
@@ -274,7 +265,7 @@ Do not edit it by hand.
 </h2>
 <p>We walk the AST and mechanically generate the appropriate HTML for each markdown element.</p>
 <p>We have total freedom here, and can add our own CSS classes, ids, data attributes, etc.</p>
-<p>It is also straightforward to adapt this code to generate other formats, e.g. Latex (if you enjoy pain), etc.</p>
+<p>It is also straightforward to adapt this code to generate other formats, e.g. Latex (if you enjoy that kind of thing), etc.</p>
 <p>As previously mentioned this is where doing static syntax highlighting could take place.</p>
 <p>The only things to watch for are:</p>
 <ul>
@@ -336,23 +327,7 @@ Do not edit it by hand.
   <a class="title" href="#generate-the-home-page">Generate the home page</a>
   <a class="hash-anchor" href="#generate-the-home-page" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
-<p>This is the <code>index.html</code>, typically. It generally lists all articles (in my case), or only the recent ones, or the most read. The only thing worth mentioning is that in my case, each article has manually defined tags, such as <code>Go</code>, <code>Rust</code>, etc. So this page shows the tags for each article, and there is also a <a href="/blog/articles-by-tag.html">page</a> showing articles by tags. That page is built with a simple map:</p>
-<pre>
-  <div class="code-header">
-    <span>Rust</span>
-    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
-  </div>
-  <code class="language-rust"><span class="line-number"></span><span class="code-hl">    let mut tag_to_articles = BTreeMap::new();</span>
-<span class="line-number"></span><span class="code-hl"></span>
-<span class="line-number"></span><span class="code-hl">    for article in articles {</span>
-<span class="line-number"></span><span class="code-hl">        for tag in &amp;article.tags {</span>
-<span class="line-number"></span><span class="code-hl">            tag_to_articles</span>
-<span class="line-number"></span><span class="code-hl">                .entry(tag.clone())</span>
-<span class="line-number"></span><span class="code-hl">                .or_insert_with(Vec::new)</span>
-<span class="line-number"></span><span class="code-hl">                .push(article);</span>
-<span class="line-number"></span><span class="code-hl">        }</span>
-<span class="line-number"></span><span class="code-hl">    }</span>
-</code></pre>
+<p>This is the <code>index.html</code>, typically. It generally lists all articles (in my case), or only the recent ones, or the most read. The only thing worth mentioning is that in my case, each article has manually defined tags, such as <code>Go</code>, <code>Rust</code>, etc. So this page shows the tags for each article, and there is also a <a href="/blog/articles-by-tag.html">page</a> showing articles by tags.</p>
 <h2 id="search">
   <a class="title" href="#search">Search</a>
   <a class="hash-anchor" href="#search" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
@@ -364,7 +339,7 @@ Do not edit it by hand.
   <a class="title" href="#live-reloading">Live reloading</a>
   <a class="hash-anchor" href="#live-reloading" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
-<p>I always wanted to add live-reloading to have a nicer writing experience, which I'm convinced helps write more and better articles. The goal was to have the whole cycle take under 100 ms. Currently it takes ~70 ms which is great.</p>
+<p>I always wanted to add live-reloading to have a nicer writing experience, which I'm convinced helps write more and better articles. The goal was to have the whole cycle take under 100 ms. Currently it takes ~50 ms which is great.</p>
 <p>The way it works is, in the same process:</p>
 <ol>
 <li>At start-up, all articles are generated. This takes ~120 ms on my machine.</li>

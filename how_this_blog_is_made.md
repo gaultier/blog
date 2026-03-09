@@ -86,16 +86,7 @@ struct Title {
 }
 
 fn md_render_toc(content: &mut Vec<u8>, titles: &[Title]) {
-    if titles.is_empty() {
-        return;
-    }
-
-    writeln!(
-        content,
-        r#"  <details class="toc"><summary>Table of contents</summary>
-<ul>"#
-    )
-    .unwrap();
+    // [...]
 
     let mut current_depth = titles[0].depth;
 
@@ -131,7 +122,7 @@ fn md_render_toc(content: &mut Vec<u8>, titles: &[Title]) {
     for _ in 0..=(current_depth - base_depth) {
         writeln!(content, "</li>\n</ul>").unwrap();
     }
-    writeln!(content, "</details>\n").unwrap();
+    // [...]
 }
 
 ```
@@ -142,7 +133,7 @@ We walk the AST and mechanically generate the appropriate HTML for each markdown
 
 We have total freedom here, and can add our own CSS classes, ids, data attributes, etc.
 
-It is also straightforward to adapt this code to generate other formats, e.g. Latex (if you enjoy pain), etc.
+It is also straightforward to adapt this code to generate other formats, e.g. Latex (if you enjoy that kind of thing), etc.
 
 As previously mentioned this is where doing static syntax highlighting could take place.
 
@@ -200,20 +191,7 @@ We save the XML in the file `feed.xml` and mention this XML in the HTML in the `
 
 ## Generate the home page
 
-This is the `index.html`, typically. It generally lists all articles (in my case), or only the recent ones, or the most read. The only thing worth mentioning is that in my case, each article has manually defined tags, such as `Go`, `Rust`, etc. So this page shows the tags for each article, and there is also a [page](/blog/articles-by-tag.html) showing articles by tags. That page is built with a simple map:
-
-```rust
-    let mut tag_to_articles = BTreeMap::new();
-
-    for article in articles {
-        for tag in &article.tags {
-            tag_to_articles
-                .entry(tag.clone())
-                .or_insert_with(Vec::new)
-                .push(article);
-        }
-    }
-```
+This is the `index.html`, typically. It generally lists all articles (in my case), or only the recent ones, or the most read. The only thing worth mentioning is that in my case, each article has manually defined tags, such as `Go`, `Rust`, etc. So this page shows the tags for each article, and there is also a [page](/blog/articles-by-tag.html) showing articles by tags. 
 
 ## Search
 
@@ -228,7 +206,7 @@ When a user types in the search box, the content of all articles is linearly sea
 ## Live reloading
 
 
-I always wanted to add live-reloading to have a nicer writing experience, which I'm convinced helps write more and better articles. The goal was to have the whole cycle take under 100 ms. Currently it takes ~70 ms which is great. 
+I always wanted to add live-reloading to have a nicer writing experience, which I'm convinced helps write more and better articles. The goal was to have the whole cycle take under 100 ms. Currently it takes ~50 ms which is great. 
 
 The way it works is, in the same process:
 
