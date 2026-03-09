@@ -129,6 +129,10 @@ Do not edit it by hand.
 </li>
 
   <li>
+    <a href="#light-dark-mode">Light & Dark mode</a>
+</li>
+
+  <li>
     <a href="#conclusion">Conclusion</a>
 </li>
 </ul>
@@ -593,6 +597,45 @@ Do not edit it by hand.
 <p>Caching is I think a spectrum, some operations are so cheap and fast that caching them is not worth it. It can be taken to the extreme: <a href="https://salsa-rs.github.io/salsa/reference/algorithm.html#the-red-green-algorithm">Salsa</a>, <a href="https://buck.build/concept/what_makes_buck_so_fast.html">Buck</a>. In my experience, there is usually one main expensive operation in the system (in my case: Markdown parsing), and adding a cache in front of that is generally sufficient.</p>
 <p>Finally, caching should not be a band-aid for general slowness. If some operation is unnecessarily slow, try to optimize it first, and ensure it is really needed. For example, I initially had the search index encoded as JSON, and it took ~600 ms to build and marshal it. I optimized it to only take ~10 ms. In the end, I realized I don't need a search index at all and removed all of this code. Do less, go faster.</p>
 <p>This suprised me: in most cases, we deal with data that's just not that big, and linear operations (array, linear scan), are often just fast enough, especially with SIMD and the CPU prefetcher.</p>
+<h2 id="light-dark-mode">
+  <a class="title" href="#light-dark-mode">Light &amp; Dark mode</a>
+  <a class="hash-anchor" href="#light-dark-mode" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+</h2>
+<p>Modern CSS has proper support for light and dark mode with the <a href="https://developer.mozilla.org/en-US/docs/Web/CSS/Reference/Values/color_value/light-dark">light-dark()</a> function.</p>
+<p>This is enabled with:</p>
+<pre>
+  <div class="code-header">
+    <span>Javascript</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-javascript"><span class="line-number"></span><span class="code-hl">document.body.style['color-scheme'] = 'light dark';</span>
+</code></pre>
+<p>And used like this:</p>
+<pre>
+  <div class="code-header">
+    <span>Css</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-css"><span class="line-number"></span><span class="code-hl">div {</span>
+<span class="line-number"></span><span class="code-hl">  background: light-dark(#fbf1c7, #282828);</span>
+<span class="line-number"></span><span class="code-hl">  color: light-dark(#282828, #fbf1c7);</span>
+<span class="line-number"></span><span class="code-hl">}</span>
+</code></pre>
+<p>The first argument is the color in light mode, and the second argument the color in dark mode.</p>
+<p>The browser detects the current mode if the OS supports that concept and sets the value for our page automatically.</p>
+<p>Light or dark mode can also be set (for example when the user clicks the light/dark mode button):</p>
+<pre>
+  <div class="code-header">
+    <span>Javascript</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-javascript"><span class="line-number"></span><span class="code-hl">console.log(document.body.style.colorScheme);</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">document.body.style.colorScheme = 'light';</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">document.body.style.colorScheme = 'dark';</span>
+</code></pre>
+<p>Easy!</p>
 <h2 id="conclusion">
   <a class="title" href="#conclusion">Conclusion</a>
   <a class="hash-anchor" href="#conclusion" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>

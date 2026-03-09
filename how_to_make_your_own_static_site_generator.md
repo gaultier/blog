@@ -460,6 +460,43 @@ Finally, caching should not be a band-aid for general slowness. If some operatio
 
 This suprised me: in most cases, we deal with data that's just not that big, and linear operations (array, linear scan), are often just fast enough, especially with SIMD and the CPU prefetcher.
 
+
+## Light & Dark mode
+
+Modern CSS has proper support for light and dark mode with the [light-dark()](https://developer.mozilla.org/en-US/docs/Web/CSS/Reference/Values/color_value/light-dark) function.
+
+This is enabled with:
+
+```javascript
+document.body.style['color-scheme'] = 'light dark';
+```
+
+And used like this:
+
+```css
+div {
+  background: light-dark(#fbf1c7, #282828);
+  color: light-dark(#282828, #fbf1c7);
+}
+```
+
+The first argument is the color in light mode, and the second argument the color in dark mode.
+
+The browser detects the current mode if the OS supports that concept and sets the value for our page automatically. 
+
+Light or dark mode can also be set (for example when the user clicks the light/dark mode button):
+
+```javascript
+console.log(document.body.style.colorScheme);
+
+document.body.style.colorScheme = 'light';
+
+document.body.style.colorScheme = 'dark';
+```
+
+Easy!
+
+
 ## Conclusion
 
 If you use an existing static site generator and you're satisfied, then great!
