@@ -2,7 +2,7 @@ Title: How to make your own static site generator for your blog
 Tags: Blog
 ---
 
-I developed my own static site generator for this blog. Over the years I evolved it quite a bit. This is my lessons learned.
+I developed my own static site generator for this blog. Initially it was just a Makefile. Over the years I evolved it quite a bit. This is my lessons learned.
 
 
 
@@ -144,7 +144,7 @@ We have total freedom here, and can add our own CSS classes, ids, data attribute
 
 It is also straightforward to adapt this code to generate other formats, e.g. Latex (if you enjoy pain), etc.
 
-As previously mentioned this is where doing static syntax highligting could take place.
+As previously mentioned this is where doing static syntax highlighting could take place.
 
 The only things to watch for are:
 
@@ -314,4 +314,6 @@ This suprised me: in many cases, we deal with data that's just not that big, and
 
 ## Conclusion
 
-If you use an existing static site generator and you're satisfied, then great! If you're not, I hope I have shown that writing your own is not much work at all. All of it is ~1.5 kLoC. And it's a great way to experiment and learn new things.
+If you use an existing static site generator and you're satisfied, then great! If you're not, I hope I have shown that writing your own is not much work at all. All of it is ~1.5 kLoC. And it's a great way to experiment and learn new things, for example SSE. 
+
+At work I sometimes have to use *very* slow site generators, that take *minutes* to build, and I am left really confused. Modern computers can do a *lot* in just 1 second. 
