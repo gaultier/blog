@@ -798,7 +798,7 @@ fn md_render_article(
     assert!(!html_footer.is_empty());
 
     let md_content_bytes = fs::read(&git_stat.path_from_git_root).unwrap();
-    let hash = hash_article_inputs(&html_header, &html_footer, &md_content_bytes);
+    let hash = hash_article_inputs(html_header, html_footer, &md_content_bytes);
     if let Some(article) = cache.get(&hash) {
         return article.clone();
     }
