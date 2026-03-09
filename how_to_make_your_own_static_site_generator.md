@@ -231,6 +231,16 @@ When someone types in the search box for the first time, the content for each ar
 When a user types in the search box, the content of all articles is linearly searched with `indexOf()`. Since this very likely is implemented with SIMD, it is lightning fast. Then, for each match, the link to the article, as well as surrounding text, is shown.
 
 
+## Drafts
+
+Some site generators have a `drafts` folder, or some metadata field at the beginning of the article e.g. `Draft: true`, to write an article that is not yet publicly accessible.
+
+I just create a new Git branch when I want to write a new article. The new article is created and written as any other article. 
+
+Whenever the branch is merged, the article will appear on Github pages, which uses the files on the master branch. 
+
+I think that's just the easiest way to do it, the site generator does not need to model drafts in any way. 
+
 ## Live reloading
 
 
@@ -298,17 +308,27 @@ The last two lines mean: We only try to live-reload locally, not when the page i
 
 This works beautifully. A prior version used WebSockets and that proved to be a headache compared to SSE. If the flow of events is strictly unidirectional, from the server to the client, SSE is much simpler. 
 
-### Caching and performance
+
+`location.reload()` is a bit heavy-handed since it reloads the page completely. The nice thing is that every asset is reloaded including CSS, images, etc. However there is a visible flash when the page is being re-rendered. 
+
+A more advanced live reloading approach, which is also more work, is to tell the browser what changed exactly. If an asset file changed, reload the page. If the content changed, send the new content to the browser, and replace it in the DOM. This can be taken to the extreme by doing precise diffing and only replacing, say, the one character that changed.
+
+Perhaps I'll consider doing that in the future.
+
+## Caching and performance
 
 To avoid regenerating files that have not changed, I added a cache which is just a `Map<file path, (hash of markdown content, generated output)>`. 
 
+In the case of a cache miss, when the work for an article is done, the output is stored in the cache. 
+
 If a file has changed, the entry for it is removed from the cache, which is why the key is the file path. If a file that impacts all articles changes, e.g. `header.html` and `footer.html`, the entire cache is cleared and all articles are re-generated.
 
-To make this work efficiently, generating one article should ideally be a pure function that takes in immutable arguments, and outputs the generated HTML (and metadata such as `created_at`, `modified_at`). Thus, the first thing I do when handling an article is check the cache. If it's a cache hit, I just return the value from the cache. 
+Skipping all this work is fine for one reason only: generating the HTML for an article is a pure function with immutable arguments. If it mutated a variable (for example a search index), we could not easily skip this work.
 
-This way, each article is completely independent.
 
 This was an interesting lesson for me: no shared mutable variables (except from the cache) makes parallel and incremental computations possible.
+
+Right now I do not (yet) generate the HTML for each article in parallel, because it's already plenty fast, but conceptually I could, since each article is fully independent from the others. 
 
 
 Caching is I think a spectrum, some operations are so cheap and fast that caching them is not worth it. It can be taken to the extreme: [Salsa](https://salsa-rs.github.io/salsa/reference/algorithm.html#the-red-green-algorithm), [Buck](https://buck.build/concept/what_makes_buck_so_fast.html). In my experience, there is usually one main expensive operation, and adding a cache in front of that, which is just a map, is generally sufficient.

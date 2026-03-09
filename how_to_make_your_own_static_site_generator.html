@@ -117,13 +117,15 @@ Do not edit it by hand.
 </li>
 
   <li>
+    <a href="#drafts">Drafts</a>
+</li>
+
+  <li>
     <a href="#live-reloading">Live reloading</a>
-<ul>
+</li>
 
   <li>
     <a href="#caching-and-performance">Caching and performance</a>
-</li>
-</ul>
 </li>
 
   <li>
@@ -369,6 +371,14 @@ Do not edit it by hand.
 <p>To implement the search function which is purely client side, I used to have a search index with trigrams. However I realized that at my scale, a linear search is just fast enough (&lt; 1ms), and it is not much data to transfer (3 MiB uncompressed for all articles, Github pages applies gzip compression automatically with a 2-10x compression ratio).</p>
 <p>When someone types in the search box for the first time, the content for each article is fetched in parallel. This way, users who never use the search feature do not pay the price for it. The browser caches future fetches.</p>
 <p>When a user types in the search box, the content of all articles is linearly searched with <code>indexOf()</code>. Since this very likely is implemented with SIMD, it is lightning fast. Then, for each match, the link to the article, as well as surrounding text, is shown.</p>
+<h2 id="drafts">
+  <a class="title" href="#drafts">Drafts</a>
+  <a class="hash-anchor" href="#drafts" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+</h2>
+<p>Some site generators have a <code>drafts</code> folder, or some metadata field at the beginning of the article e.g. <code>Draft: true</code>, to write an article that is not yet publicly accessible.</p>
+<p>I just create a new Git branch when I want to write a new article. The new article is created and written as any other article.</p>
+<p>Whenever the branch is merged, the article will appear on Github pages, which uses the files on the master branch.</p>
+<p>I think that's just the easiest way to do it, the site generator does not need to model drafts in any way.</p>
 <h2 id="live-reloading">
   <a class="title" href="#live-reloading">Live reloading</a>
   <a class="hash-anchor" href="#live-reloading" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
@@ -438,15 +448,19 @@ Do not edit it by hand.
 </code></pre>
 <p>The last two lines mean: We only try to live-reload locally, not when the page is served from Github pages.</p>
 <p>This works beautifully. A prior version used WebSockets and that proved to be a headache compared to SSE. If the flow of events is strictly unidirectional, from the server to the client, SSE is much simpler.</p>
-<h3 id="caching-and-performance">
+<p><code>location.reload()</code> is a bit heavy-handed since it reloads the page completely. The nice thing is that every asset is reloaded including CSS, images, etc. However there is a visible flash when the page is being re-rendered.</p>
+<p>A more advanced live reloading approach, which is also more work, is to tell the browser what changed exactly. If an asset file changed, reload the page. If the content changed, send the new content to the browser, and replace it in the DOM. This can be taken to the extreme by doing precise diffing and only replacing, say, the one character that changed.</p>
+<p>Perhaps I'll consider doing that in the future.</p>
+<h2 id="caching-and-performance">
   <a class="title" href="#caching-and-performance">Caching and performance</a>
   <a class="hash-anchor" href="#caching-and-performance" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
-</h3>
+</h2>
 <p>To avoid regenerating files that have not changed, I added a cache which is just a <code>Map&lt;file path, (hash of markdown content, generated output)&gt;</code>.</p>
+<p>In the case of a cache miss, when the work for an article is done, the output is stored in the cache.</p>
 <p>If a file has changed, the entry for it is removed from the cache, which is why the key is the file path. If a file that impacts all articles changes, e.g. <code>header.html</code> and <code>footer.html</code>, the entire cache is cleared and all articles are re-generated.</p>
-<p>To make this work efficiently, generating one article should ideally be a pure function that takes in immutable arguments, and outputs the generated HTML (and metadata such as <code>created_at</code>, <code>modified_at</code>). Thus, the first thing I do when handling an article is check the cache. If it's a cache hit, I just return the value from the cache.</p>
-<p>This way, each article is completely independent.</p>
+<p>Skipping all this work is fine for one reason only: generating the HTML for an article is a pure function with immutable arguments. If it mutated a variable (for example a search index), we could not easily skip this work.</p>
 <p>This was an interesting lesson for me: no shared mutable variables (except from the cache) makes parallel and incremental computations possible.</p>
+<p>Right now I do not (yet) generate the HTML for each article in parallel, because it's already plenty fast, but conceptually I could, since each article is fully independent from the others.</p>
 <p>Caching is I think a spectrum, some operations are so cheap and fast that caching them is not worth it. It can be taken to the extreme: <a href="https://salsa-rs.github.io/salsa/reference/algorithm.html#the-red-green-algorithm">Salsa</a>, <a href="https://buck.build/concept/what_makes_buck_so_fast.html">Buck</a>. In my experience, there is usually one main expensive operation, and adding a cache in front of that, which is just a map, is generally sufficient.</p>
 <p>Finally, caching should not be a band-aid for general slowness. If some operation is unnecessarily slow, try to optimize it first, and ensure it is really needed. For example, I initially had the search index encoded as JSON, and it took ~600 ms to build and marshal it. I optimized it to only take ~10 ms. In the end, I realized I don't need a search index at all and removed all of this code. Do less, go faster.</p>
 <p>This suprised me: in many cases, we deal with data that's just not that big, and linear operations (array, linear scan), are often just fast enough, especially with SIMD and the prefetcher.</p>
