@@ -344,7 +344,7 @@ fn md_render_article(
         return article.clone();
     }
 
-    // [...] do the work.
+    // [...] Do the work.
 
 
     cache.insert(hash, article.clone());
@@ -353,7 +353,7 @@ fn md_render_article(
 }
 ```
 
-I never clear the cache, because my computer has so much memory.
+I never clear the cache, because my computer has so much memory. This has one advantage: if I undo a change when writing an article, and the generation had already finish, I will hit the cache entry again.
 
 Skipping all this work is fine for one reason only: generating the HTML for an article is a pure function with immutable arguments. If it mutated a variable (for example a search index), we could not easily skip this work.
 

@@ -483,7 +483,7 @@ Do not edit it by hand.
 <span class="line-number"></span><span class="code-hl">        return article.clone();</span>
 <span class="line-number"></span><span class="code-hl">    }</span>
 <span class="line-number"></span><span class="code-hl"></span>
-<span class="line-number"></span><span class="code-hl">    // [...] do the work.</span>
+<span class="line-number"></span><span class="code-hl">    // [...] Do the work.</span>
 <span class="line-number"></span><span class="code-hl"></span>
 <span class="line-number"></span><span class="code-hl"></span>
 <span class="line-number"></span><span class="code-hl">    cache.insert(hash, article.clone());</span>
@@ -491,7 +491,7 @@ Do not edit it by hand.
 <span class="line-number"></span><span class="code-hl">    article</span>
 <span class="line-number"></span><span class="code-hl">}</span>
 </code></pre>
-<p>I never clear the cache, because my computer has so much memory.</p>
+<p>I never clear the cache, because my computer has so much memory. This has one advantage: if I undo a change when writing an article, and the generation had already finish, I will hit the cache entry again.</p>
 <p>Skipping all this work is fine for one reason only: generating the HTML for an article is a pure function with immutable arguments. If it mutated a variable (for example a search index), we could not easily skip this work.</p>
 <p>This was an interesting lesson for me: no shared mutable variables (except from the cache) makes parallel and incremental computations possible.</p>
 <p>Right now I do not (yet) generate the HTML for each article in parallel, because it's already plenty fast, but conceptually I could, since each article is fully independent from the others.</p>
