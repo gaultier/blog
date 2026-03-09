@@ -434,6 +434,7 @@ summary {
 .hljs-built_in,
 .hljs-class,
 .hljs-title,
+.hljs-section,
 .hljs-title.class_ {
   color: light-dark(#b57614, #fabd2f) !important;
   font-weight: initial !important;

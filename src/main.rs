@@ -1204,15 +1204,15 @@ fn watch(mtx_cond: Arc<(Mutex<()>, Condvar)>, cache: &mut HashMap<u64, Article>)
                             generate_all(cache);
                             cvar.notify_all();
                         }
-                        if path.extension() == Some(".js".as_ref())
-                            || path.extension() == Some(".css".as_ref())
-                            || path.extension() == Some(".svg".as_ref())
-                            || path.extension() == Some(".png".as_ref())
-                            || path.extension() == Some(".webm".as_ref())
-                            || path.extension() == Some(".mp4".as_ref())
-                            || path.extension() == Some(".jpeg".as_ref())
-                            || path.extension() == Some(".ico".as_ref())
-                            || path.extension() == Some(".gif".as_ref())
+                        if path.extension() == Some("js".as_ref())
+                            || path.extension() == Some("css".as_ref())
+                            || path.extension() == Some("svg".as_ref())
+                            || path.extension() == Some("png".as_ref())
+                            || path.extension() == Some("webm".as_ref())
+                            || path.extension() == Some("mp4".as_ref())
+                            || path.extension() == Some("jpeg".as_ref())
+                            || path.extension() == Some("ico".as_ref())
+                            || path.extension() == Some("gif".as_ref())
                         {
                             println!("🔄 asset changed: {}", file_name.to_str().unwrap());
 
