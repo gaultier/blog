@@ -1,4 +1,4 @@
-Title: How to make your own static site generator for your blog
+Title: How to make your own static site generator
 Tags: Blog
 ---
 
