@@ -108,6 +108,11 @@ p {
   margin-inline: auto;
 }
 
+.search-match {
+  background-color: var(--color-banner-bg);
+  color: var(--color-main);
+}
+
 .articles > ul {
   list-style: none;
   width: 100%;
