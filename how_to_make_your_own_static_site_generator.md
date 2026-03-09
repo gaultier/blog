@@ -497,6 +497,14 @@ Modern CSS has proper support for light and dark mode with the [light-dark()](ht
 
 This is enabled with:
 
+```css
+body {
+  color-scheme: light dark;
+}
+```
+
+or
+
 ```javascript
 document.body.style['color-scheme'] = 'light dark';
 ```
