@@ -2,7 +2,7 @@ Title: How to make your own static site generator
 Tags: Blog
 ---
 
-I developed my [own](https://github.com/gaultier/blog/blob/master/src/main.rs) static site generator for this blog. Initially it was just a Makefile. Over the years I evolved it quite a bit. 
+I developed my [own](https://github.com/gaultier/blog/blob/master/src/main.rs) static site generator for this blog. Initially it was just a Makefile. Over the years it evolved quite a bit. 
 
 At some point it took several seconds. Now it takes ~120 ms for a clean build and ~50 ms for an incremental build.
 
@@ -63,13 +63,14 @@ Another reason to work on the AST is that you have total control on the HTML gen
 
 Currently, I implement syntax highlighting with JavaScript at runtime, but I may change this in the future. At least I have the ability to do it at build time.
 
+If the content is huge, a search index might be required to be built. Having the AST is great to only index text and skip code blocks, inline HTML, etc.
 
 ## Linting
 
 The linting step is much easier to implement on the AST. Here are a few examples of lints I have implemented: 
 
 - Detect invalid links, e.g. linking to a markdown article, where it should be pointing to the HTML version for it.
-- Code snippets without an explicit language declared, or an unknown language (this matters for syntax highlighting, e.g. `c++` was used but the canonical name is `cpp`). E.g. these are invalid:
+- Code snippets without an explicit language declared, or an unknown language (this matters for syntax highlighting). E.g. these are invalid:
     ```markdown
        ```
         foo := bar()
@@ -89,12 +90,14 @@ The linting step is much easier to implement on the AST. Here are a few examples
 - Style: Prefer `1 KiB` over other variants e.g. `1 kb`, `1 KB`, `1 K`, etc
 - Forbid titles that skip a level, for example `h2 -> h4`. This is subjective, perhaps some people like to have this ability - I don't, so I prevent it.
 
+
 Other lints that could be also easily implemented based on walking the AST:
 
 - Forbid lists with only one element
 - Inline code elements whose content exceeds a certain length; these should be use the syntax for a multiline code block
+- Forbid images without an `alt` attribute for accessibility
+- Forbid media (images, audio, video) without fallback format(s)
 
-If the content is huge, a search index might be required to be built. Having the AST is great to only index text and skip code blocks, inline HTML, etc when building the index.
 
 ## Generate the table of content
 
