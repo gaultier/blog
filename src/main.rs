@@ -75,28 +75,12 @@ struct Article {
     tags: Vec<String>,
 }
 
-type MdContentHash = u64;
-
-struct Cache {
-    md_to_article: HashMap<String, (MdContentHash, Article)>,
-}
-
-impl Cache {
-    fn new() -> Self {
-        Self {
-            md_to_article: HashMap::default(),
-        }
-    }
-
-    fn clear(&mut self) {
-        self.md_to_article.clear();
-    }
-
-    fn hash(md_content: &[u8]) -> MdContentHash {
-        let mut hasher = DefaultHasher::new();
-        md_content.hash(&mut hasher);
-        hasher.finish()
-    }
+fn hash_article_inputs(html_header: &[u8], html_footer: &[u8], md_content: &[u8]) -> u64 {
+    let mut hasher = DefaultHasher::new();
+    html_header.hash(&mut hasher);
+    html_footer.hash(&mut hasher);
+    md_content.hash(&mut hasher);
+    hasher.finish()
 }
 
 fn md_lint_rec(node: &Node, md_path: &Path) {
@@ -807,17 +791,15 @@ fn md_render_article(
     git_stat: GitStat,
     html_header: &[u8],
     html_footer: &[u8],
-    cache: &mut Cache,
+    cache: &mut HashMap<u64, Article>,
 ) -> Article {
     let start = Instant::now();
     assert!(!html_header.is_empty());
     assert!(!html_footer.is_empty());
 
     let md_content_bytes = fs::read(&git_stat.path_from_git_root).unwrap();
-    let next_hash = Cache::hash(&md_content_bytes);
-    if let Some((prev_hash, article)) = cache.md_to_article.get(&git_stat.path_from_git_root)
-        && *prev_hash == next_hash
-    {
+    let hash = hash_article_inputs(&html_header, &html_footer, &md_content_bytes);
+    if let Some(article) = cache.get(&hash) {
         return article.clone();
     }
     let md_content_bytes_len = md_content_bytes.len();
@@ -905,7 +887,6 @@ fn md_render_article(
 
     fs::write(&html_path, sb).unwrap();
 
-    let md_path = git_stat.path_from_git_root.clone();
     let article = Article {
         git_stat,
         html_title: html_root_title,
@@ -913,9 +894,7 @@ fn md_render_article(
         tags: tags.iter().map(|t| t.to_string()).collect(),
     };
 
-    cache
-        .md_to_article
-        .insert(md_path, (next_hash, article.clone()));
+    cache.insert(hash, article.clone());
 
     println!(
         "⏳ cache miss: generated {} in {} us",
@@ -1166,7 +1145,7 @@ fn generate_home_page(articles: &mut [Article], html_header: &[u8], html_footer:
     );
 }
 
-fn generate_all(cache: &mut Cache) {
+fn generate_all(cache: &mut HashMap<u64, Article>) {
     let start = std::time::Instant::now();
     let html_header = fs::read("header.html").unwrap();
     let html_footer = fs::read("footer.html").unwrap();
@@ -1202,7 +1181,7 @@ fn check_langs() {
     }
 }
 
-fn watch(mtx_cond: Arc<(Mutex<()>, Condvar)>, cache: &mut Cache) {
+fn watch(mtx_cond: Arc<(Mutex<()>, Condvar)>, cache: &mut HashMap<u64, Article>) {
     let (etx, erx) = std::sync::mpsc::channel::<notify::Result<notify::Event>>();
     let mut watcher = notify::recommended_watcher(etx).unwrap();
     watcher
@@ -1221,12 +1200,9 @@ fn watch(mtx_cond: Arc<(Mutex<()>, Condvar)>, cache: &mut Cache) {
                         if file_name == AsRef::<Path>::as_ref("header.html")
                             || file_name == AsRef::<Path>::as_ref("footer.html")
                         {
-                            println!(
-                                "🔄 header/footer changed, rebuilding ading all files: {}",
-                                file_name.to_str().unwrap()
-                            );
-                            cache.clear();
+                            println!("🔄 header/footer changed: {}", file_name.to_str().unwrap());
                             generate_all(cache);
+                            cvar.notify_all();
                         }
                         if path.extension() == Some(".js".as_ref())
                             || path.extension() == Some(".css".as_ref())
@@ -1243,11 +1219,7 @@ fn watch(mtx_cond: Arc<(Mutex<()>, Condvar)>, cache: &mut Cache) {
                             cvar.notify_all();
                         }
                         if path.extension() == Some("md".as_ref()) {
-                            println!(
-                                "🔄 md file changed, rebuilding: {}",
-                                file_name.to_str().unwrap()
-                            );
-                            cache.md_to_article.remove_entry(path.to_str().unwrap());
+                            println!("🔄 md file changed: {}", file_name.to_str().unwrap());
                             generate_all(cache);
 
                             cvar.notify_all();
@@ -1361,7 +1333,7 @@ fn main() {
 
     check_langs();
 
-    let mut cache = Cache::new();
+    let mut cache = HashMap::with_capacity(128);
 
     generate_all(&mut cache);
 

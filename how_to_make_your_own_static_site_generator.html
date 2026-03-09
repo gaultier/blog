@@ -455,9 +455,43 @@ Do not edit it by hand.
   <a class="title" href="#caching-and-performance">Caching and performance</a>
   <a class="hash-anchor" href="#caching-and-performance" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
-<p>To avoid regenerating files that have not changed, I added a cache which is just a <code>Map&lt;file path, (hash of markdown content, generated output)&gt;</code>.</p>
+<p>To avoid regenerating files that have not changed, I added a cache which is just a <code>Map&lt;hash of inputs, generated output&gt;</code>.</p>
 <p>In the case of a cache miss, when the work for an article is done, the output is stored in the cache.</p>
-<p>If a file has changed, the entry for it is removed from the cache, which is why the key is the file path. If a file that impacts all articles changes, e.g. <code>header.html</code> and <code>footer.html</code>, the entire cache is cleared and all articles are re-generated.</p>
+<p>If an input changed, then the hash is different, it's a cache miss, and the article will be regenerated. If the content for one article changed, only this article will have to be regenerated. If <code>header.html</code> or <code>footer.html</code> changed, then all articles will be regenerated, automatically.</p>
+<pre>
+  <div class="code-header">
+    <span>Rust</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-rust"><span class="line-number"></span><span class="code-hl">fn hash_article_inputs(html_header: &amp;[u8], html_footer: &amp;[u8], md_content: &amp;[u8]) -&gt; u64 {</span>
+<span class="line-number"></span><span class="code-hl">    let mut hasher = DefaultHasher::new();</span>
+<span class="line-number"></span><span class="code-hl">    html_header.hash(&amp;mut hasher);</span>
+<span class="line-number"></span><span class="code-hl">    html_footer.hash(&amp;mut hasher);</span>
+<span class="line-number"></span><span class="code-hl">    md_content.hash(&amp;mut hasher);</span>
+<span class="line-number"></span><span class="code-hl">    hasher.finish()</span>
+<span class="line-number"></span><span class="code-hl">}</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">fn md_render_article(</span>
+<span class="line-number"></span><span class="code-hl">    git_stat: GitStat,</span>
+<span class="line-number"></span><span class="code-hl">    html_header: &amp;[u8],</span>
+<span class="line-number"></span><span class="code-hl">    html_footer: &amp;[u8],</span>
+<span class="line-number"></span><span class="code-hl">    cache: &amp;mut HashMap&lt;u64, Article&gt;,</span>
+<span class="line-number"></span><span class="code-hl">) -&gt; Article {</span>
+<span class="line-number"></span><span class="code-hl">    let md_content_bytes = fs::read(&amp;git_stat.path_from_git_root).unwrap();</span>
+<span class="line-number"></span><span class="code-hl">    let hash = Cache::hash(&amp;html_header, &amp;html_footer, &amp;md_content_bytes);</span>
+<span class="line-number"></span><span class="code-hl">    if let Some(article) = cache.get(&amp;hash) {</span>
+<span class="line-number"></span><span class="code-hl">        return article.clone();</span>
+<span class="line-number"></span><span class="code-hl">    }</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">    // [...] do the work.</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">    cache.insert(hash, article.clone());</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">    article</span>
+<span class="line-number"></span><span class="code-hl">}</span>
+</code></pre>
+<p>I never clear the cache, because my computer has so much memory.</p>
 <p>Skipping all this work is fine for one reason only: generating the HTML for an article is a pure function with immutable arguments. If it mutated a variable (for example a search index), we could not easily skip this work.</p>
 <p>This was an interesting lesson for me: no shared mutable variables (except from the cache) makes parallel and incremental computations possible.</p>
 <p>Right now I do not (yet) generate the HTML for each article in parallel, because it's already plenty fast, but conceptually I could, since each article is fully independent from the others.</p>

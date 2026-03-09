@@ -317,11 +317,43 @@ Perhaps I'll consider doing that in the future.
 
 ## Caching and performance
 
-To avoid regenerating files that have not changed, I added a cache which is just a `Map<file path, (hash of markdown content, generated output)>`. 
+To avoid regenerating files that have not changed, I added a cache which is just a `Map<hash of inputs, generated output>`. 
 
 In the case of a cache miss, when the work for an article is done, the output is stored in the cache. 
 
-If a file has changed, the entry for it is removed from the cache, which is why the key is the file path. If a file that impacts all articles changes, e.g. `header.html` and `footer.html`, the entire cache is cleared and all articles are re-generated.
+If an input changed, then the hash is different, it's a cache miss, and the article will be regenerated. If the content for one article changed, only this article will have to be regenerated. If `header.html` or `footer.html` changed, then all articles will be regenerated, automatically.
+
+```rust
+fn hash_article_inputs(html_header: &[u8], html_footer: &[u8], md_content: &[u8]) -> u64 {
+    let mut hasher = DefaultHasher::new();
+    html_header.hash(&mut hasher);
+    html_footer.hash(&mut hasher);
+    md_content.hash(&mut hasher);
+    hasher.finish()
+}
+
+fn md_render_article(
+    git_stat: GitStat,
+    html_header: &[u8],
+    html_footer: &[u8],
+    cache: &mut HashMap<u64, Article>,
+) -> Article {
+    let md_content_bytes = fs::read(&git_stat.path_from_git_root).unwrap();
+    let hash = Cache::hash(&html_header, &html_footer, &md_content_bytes);
+    if let Some(article) = cache.get(&hash) {
+        return article.clone();
+    }
+
+    // [...] do the work.
+
+
+    cache.insert(hash, article.clone());
+
+    article
+}
+```
+
+I never clear the cache, because my computer has so much memory.
 
 Skipping all this work is fine for one reason only: generating the HTML for an article is a pure function with immutable arguments. If it mutated a variable (for example a search index), we could not easily skip this work.
 
