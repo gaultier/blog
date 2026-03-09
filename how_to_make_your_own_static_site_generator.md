@@ -53,6 +53,15 @@ $ git log --format='%aI' --name-status --no-merges --diff-filter=AMDR --reverse 
 
 The output of that one command is large, but it contains everything needed, and the overhead of process spawning is surpringly big, so spawning N processes is to be avoided at all costs.
 
+
+Once in a while, cleaning up is a good idea to improve Git's performance:
+
+```shell
+$ git gc --aggressive --prune=now
+```
+
+I am considering adding this command as a cron job or as a background job in my generator.
+
 ## Parsing
 
 Chances are, you are authoring content in markdown or similar, which then must be converted to HTML. Even if you *are* writing HTML directly, this content needs to be post-processed quite a bit and thus must be parsed in the first place. No one wants to wrangle strings; structured data is the way to go.
