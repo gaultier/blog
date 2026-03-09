@@ -2,7 +2,7 @@ Title: How to make your own static site generator
 Tags: Blog
 ---
 
-I developed my own static site generator for this blog. Initially it was just a Makefile. Over the years I evolved it quite a bit. 
+I developed my [own](https://github.com/gaultier/blog/blob/master/src/main.rs) static site generator for this blog. Initially it was just a Makefile. Over the years I evolved it quite a bit. 
 
 At some point it took several seconds. Now it takes ~120 ms for a clean build and ~50 ms for an incremental build.
 
@@ -38,13 +38,11 @@ The first version was this 3 lines Makefile:
         cat footer.html >> $@
 ```
 
-It did not have a RSS feed, and the home page listing articles was manually kept in sync.
-
-Now, it can do a bit more!
+It did not have a RSS feed, no search, no tags, no linting, the home page listing articles was manually kept in sync, and it was slower than my current custom-grown generator!
 
 ## List all articles
 
-I wrote about it [before](/blog/making_my_static_blog_generator_11_times_faster.html). The easiest way is to list files on the file system, but if you want accurate 'created' and 'last modified' dates for each article, you probably will have to query `git` (short of using a full-on database).
+I wrote about it [before](/blog/making_my_static_blog_generator_11_times_faster.html). The easiest way is to list files on the file system, but if you want accurate 'created' and 'last modified' dates for each article, especially when working from multiple computers, you probably will have to query `git` (short of using a full-on database).
 
 
 The lesson learned here is that for performance, avoid the N+1 query trap. Do one command for all articles, instead of one for each:
@@ -52,6 +50,8 @@ The lesson learned here is that for performance, avoid the N+1 query trap. Do on
 ```shell
 $ git log --format='%aI' --name-status --no-merges --diff-filter=AMDR --reverse '*.md'
 ```
+
+The output of that one command is large, but it contains everything needed, and the overhead of process spawning is surpringly big, so spawning N processes is to be avoided at all costs.
 
 ## Parsing
 
@@ -269,7 +269,7 @@ fn md_to_html_rec(
 I have written about it [before](/blog/feed.html). This is very simple, we just generate a XML file listing all articles including the creation and modification date. I use [UUID v5](https://en.wikipedia.org/wiki/Universally_unique_identifier_ to assign an id to each article because it's a good fit: the blog itself has a UUID which is the namespace, and the UUID for each article is `sha1(blog_namespace + article_file_path)`.
 
 
-I the XML in the file `feed.xml` and mention this XML in the HTML in the `<head>` element:
+I save the XML in the file `feed.xml` and mention this XML in the HTML in the `<head>` element:
 
 ```html
 <link type="application/atom+xml" href="/blog/feed.xml" rel="self">
@@ -317,7 +317,7 @@ When someone types in the search box for the first time, the HTML content for ea
 
 To avoid searching for irrelevant content, I ignore some DOM elements, e.g. the header, footer, code snippets, etc.
 
-When a user types in the search box, the content of all articles is linearly searched with `indexOf()`. Since this very likely is implemented with SIMD, it is lightning fast. Then, for each match, the link to the article, as well as surrounding text, is shown.
+When a user types in the search box, the content of all articles is linearly searched with `indexOf()`. Since this function is very likely implemented with SIMD, it is lightning fast. Then, for each match, the link to the article, as well as surrounding text, is shown.
 
 
 
@@ -334,13 +334,13 @@ I think that's just the easiest way to do it, the site generator does not need t
 ## Live reloading
 
 
-I always wanted to add live-reloading to have a nicer writing experience, which I'm convinced helps write more and better articles. The goal was to have the whole cycle take under 100 ms. Currently it takes ~50 ms which is great. Nearly all of this time is taken by git to get the list of articles including the 'created at' and 'modified at' dates. Not much to do here, I guess.
+I always wanted to add live-reloading to have a nicer writing experience, which I'm convinced helps write more and better articles. The goal was to have the whole cycle take under 100 ms. Currently it takes ~50 ms which is great. Nearly all of this time is taken by Git to get the list of articles including the 'created at' and 'modified at' dates. Not much to optimize here, short of doing a manual `stat(2)` call to circumvent Git.
 
 The way it works is, in the same process:
 
-1. At start-up, all articles are generated. This takes ~120 ms on my machine.
+1. At start-up, all articles are generated. This is a clean build (because the cache is not stored on disk and only exists in memory, it is empty at start-up) and takes ~120 ms on my machine.
 1. An HTTP server is started. It serves static files and also has a `/live-reload` endpoint. It uses [server-sent events (SSE)](https://developer.mozilla.org/en-US/docs/Web/API/Server-sent_events/Using_server-sent_events) to tell the client: hey, a file changed, reload the page.
-1. A thread is spawned to watch the file system for changes. When a relevant file is changed, an 'event' is broadcast to all listening threads (the SSE serving threads) with `cvar.notify_all()`. While no file is changed, the thread watching the file system is idle since it is blocked on a system call (`kqueue`, `inotify`, etc), and the SSE threads are also idle, waiting on the condition variable with `cvar.wait()`. That means 0% CPU consumption until a file is changed.
+1. A thread is spawned to watch the file system for changes. When a relevant file is changed, an event is broadcast to all listening threads (the SSE serving threads) with `cvar.notify_all()`. While no file is changed, the thread watching the file system is idle since it is blocked on a system call (`kqueue`, `inotify`, etc), and the SSE threads are also idle, waiting on the condition variable with `cvar.wait()`. That means 0% CPU consumption until a file is changed.
 
 The whole code for it is ~100 lines of code. It would be even less if I found a small HTTP server library that correctly handles SSE, without having to use complex asynchronous code. I implement SSE by hand, and since the format is super simple (newline delimited text events), it's not much work at all:
 
@@ -448,21 +448,23 @@ I never clear the cache, because my computer has so much memory. This has one ad
 Skipping all this work is fine for one reason only: generating the HTML for an article is a pure function with immutable arguments. If it mutated a variable (for example a search index), we could not easily skip this work.
 
 
-This was an interesting lesson for me: no shared mutable variables (except from the cache) makes parallel and incremental computations possible.
+This was an interesting lesson for me: no shared mutable variables (except the cache) makes parallel and incremental computations possible.
 
-Right now I do not (yet) generate the HTML for each article in parallel, because it's already plenty fast, but conceptually I could, since each article is fully independent from the others. 
+Right now I do not (yet) generate the HTML for each article in parallel, because it's already plenty fast, but conceptually I could, since each article is fully independent from the others (again, except for the cache). 
 
 
-Caching is I think a spectrum, some operations are so cheap and fast that caching them is not worth it. It can be taken to the extreme: [Salsa](https://salsa-rs.github.io/salsa/reference/algorithm.html#the-red-green-algorithm), [Buck](https://buck.build/concept/what_makes_buck_so_fast.html). In my experience, there is usually one main expensive operation in the system, and adding a cache in front of that, which is just a map, is generally sufficient.
+Caching is I think a spectrum, some operations are so cheap and fast that caching them is not worth it. It can be taken to the extreme: [Salsa](https://salsa-rs.github.io/salsa/reference/algorithm.html#the-red-green-algorithm), [Buck](https://buck.build/concept/what_makes_buck_so_fast.html). In my experience, there is usually one main expensive operation in the system (in my case: Markdown parsing), and adding a cache in front of that is generally sufficient.
 
 Finally, caching should not be a band-aid for general slowness. If some operation is unnecessarily slow, try to optimize it first, and ensure it is really needed. For example, I initially had the search index encoded as JSON, and it took ~600 ms to build and marshal it. I optimized it to only take ~10 ms. In the end, I realized I don't need a search index at all and removed all of this code. Do less, go faster.
 
 
-This suprised me: in many cases, we deal with data that's just not that big, and linear operations (array, linear scan), are often just fast enough, especially with SIMD and the CPU prefetcher.
+This suprised me: in most cases, we deal with data that's just not that big, and linear operations (array, linear scan), are often just fast enough, especially with SIMD and the CPU prefetcher.
 
 ## Conclusion
 
-If you use an existing static site generator and you're satisfied, then great! If you're not, I hope I have shown that writing your own is not much work at all. All of it is ~1.5 kLoC. And it's a great way to experiment and learn new things, for example SSE. 
+If you use an existing static site generator and you're satisfied, then great!
+
+Otherwise, I hope I have shown that writing your own is not much work at all. All of it is ~1.5 kLoC. And it's a great way to experiment and learn new things, for example SSE, search index, etc. 
 
 At work I sometimes have to use *very* slow site generators, that take *minutes* to build, and I am left really confused. Modern computers can do a *lot* in just 1 second!
 
