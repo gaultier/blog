@@ -138,7 +138,16 @@ struct Title {
 }
 
 fn md_render_toc(content: &mut Vec<u8>, titles: &[Title]) {
-    // [...]
+    if titles.is_empty() {
+        return;
+    }
+
+    writeln!(
+        content,
+        r#"  <details class="toc"><summary>Table of contents</summary>
+<ul>"#
+    )
+    .unwrap();
 
     let mut current_depth = titles[0].depth;
 
@@ -174,16 +183,16 @@ fn md_render_toc(content: &mut Vec<u8>, titles: &[Title]) {
     for _ in 0..=(current_depth - base_depth) {
         writeln!(content, "</li>\n</ul>").unwrap();
     }
-    // [...]
+    writeln!(content, "</details>\n").unwrap();
 }
 
 ```
 
 ## Generate the HTML
 
-We walk the AST and mechanically generate the appropriate HTML for each markdown element. 
+I walk the AST and mechanically generate the appropriate HTML for each markdown element. 
 
-We have total freedom here, and can add our own CSS classes, ids, data attributes, etc.
+I have total freedom here, and can add our own CSS classes, ids, data attributes, etc.
 
 It is also straightforward to adapt this code to generate other formats, e.g. Latex (if you enjoy that kind of thing), etc.
 
@@ -235,7 +244,7 @@ fn md_to_html_rec(
 I have written about it [before](/blog/feed.html). This is very simple, we just generate a XML file listing all articles including the creation and modification date. I use [UUID v5](https://en.wikipedia.org/wiki/Universally_unique_identifier_ to assign an id to each article because it's a good fit: the blog itself has a UUID which is the namespace, and the UUID for each article is `sha1(blog_namespace + article_file_path)`.
 
 
-We save the XML in the file `feed.xml` and mention this XML in the HTML in the `<head>` element:
+I the XML in the file `feed.xml` and mention this XML in the HTML in the `<head>` element:
 
 ```html
 <link type="application/atom+xml" href="/blog/feed.xml" rel="self">
@@ -360,7 +369,7 @@ if (!location.origin.includes("github")) {
 }
 ```
 
-The last two lines mean: We only try to live-reload locally, not when the page is served from Github pages.
+The last two lines mean: I only try to live-reload locally, not when the page is served from Github pages.
 
 This works beautifully. A prior version used WebSockets and that proved to be a headache compared to SSE. If the flow of events is strictly unidirectional, from the server to the client, SSE is much simpler. 
 

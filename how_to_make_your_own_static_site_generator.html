@@ -284,7 +284,16 @@ Do not edit it by hand.
 <span class="line-number"></span><span class="code-hl">}</span>
 <span class="line-number"></span><span class="code-hl"></span>
 <span class="line-number"></span><span class="code-hl">fn md_render_toc(content: &amp;mut Vec&lt;u8&gt;, titles: &amp;[Title]) {</span>
-<span class="line-number"></span><span class="code-hl">    // [...]</span>
+<span class="line-number"></span><span class="code-hl">    if titles.is_empty() {</span>
+<span class="line-number"></span><span class="code-hl">        return;</span>
+<span class="line-number"></span><span class="code-hl">    }</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">    writeln!(</span>
+<span class="line-number"></span><span class="code-hl">        content,</span>
+<span class="line-number"></span><span class="code-hl">        r#&quot;  &lt;details class=&quot;toc&quot;&gt;&lt;summary&gt;Table of contents&lt;/summary&gt;</span>
+<span class="line-number"></span><span class="code-hl">&lt;ul&gt;&quot;#</span>
+<span class="line-number"></span><span class="code-hl">    )</span>
+<span class="line-number"></span><span class="code-hl">    .unwrap();</span>
 <span class="line-number"></span><span class="code-hl"></span>
 <span class="line-number"></span><span class="code-hl">    let mut current_depth = titles[0].depth;</span>
 <span class="line-number"></span><span class="code-hl"></span>
@@ -320,15 +329,15 @@ Do not edit it by hand.
 <span class="line-number"></span><span class="code-hl">    for _ in 0..=(current_depth - base_depth) {</span>
 <span class="line-number"></span><span class="code-hl">        writeln!(content, &quot;&lt;/li&gt;\n&lt;/ul&gt;&quot;).unwrap();</span>
 <span class="line-number"></span><span class="code-hl">    }</span>
-<span class="line-number"></span><span class="code-hl">    // [...]</span>
+<span class="line-number"></span><span class="code-hl">    writeln!(content, &quot;&lt;/details&gt;\n&quot;).unwrap();</span>
 <span class="line-number"></span><span class="code-hl">}</span>
 </code></pre>
 <h2 id="generate-the-html">
   <a class="title" href="#generate-the-html">Generate the HTML</a>
   <a class="hash-anchor" href="#generate-the-html" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
-<p>We walk the AST and mechanically generate the appropriate HTML for each markdown element.</p>
-<p>We have total freedom here, and can add our own CSS classes, ids, data attributes, etc.</p>
+<p>I walk the AST and mechanically generate the appropriate HTML for each markdown element.</p>
+<p>I have total freedom here, and can add our own CSS classes, ids, data attributes, etc.</p>
 <p>It is also straightforward to adapt this code to generate other formats, e.g. Latex (if you enjoy that kind of thing), etc.</p>
 <p>As previously mentioned this is where doing static syntax highlighting could take place.</p>
 <p>The only things to watch for are:</p>
@@ -379,7 +388,7 @@ Do not edit it by hand.
   <a class="hash-anchor" href="#generate-the-rss-feed" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>I have written about it <a href="/blog/feed.html">before</a>. This is very simple, we just generate a XML file listing all articles including the creation and modification date. I use [UUID v5](https://en.wikipedia.org/wiki/Universally_unique_identifier_ to assign an id to each article because it's a good fit: the blog itself has a UUID which is the namespace, and the UUID for each article is <code>sha1(blog_namespace + article_file_path)</code>.</p>
-<p>We save the XML in the file <code>feed.xml</code> and mention this XML in the HTML in the <code>&lt;head&gt;</code> element:</p>
+<p>I the XML in the file <code>feed.xml</code> and mention this XML in the HTML in the <code>&lt;head&gt;</code> element:</p>
 <pre>
   <div class="code-header">
     <span>Html</span>
@@ -506,7 +515,7 @@ Do not edit it by hand.
 <span class="line-number"></span><span class="code-hl">  sse_connect();</span>
 <span class="line-number"></span><span class="code-hl">}</span>
 </code></pre>
-<p>The last two lines mean: We only try to live-reload locally, not when the page is served from Github pages.</p>
+<p>The last two lines mean: I only try to live-reload locally, not when the page is served from Github pages.</p>
 <p>This works beautifully. A prior version used WebSockets and that proved to be a headache compared to SSE. If the flow of events is strictly unidirectional, from the server to the client, SSE is much simpler.</p>
 <p><code>location.reload()</code> is a bit heavy-handed since it reloads the page completely. The nice thing is that every asset is reloaded including CSS, images, etc. However there is a visible flash when the page is being re-rendered.</p>
 <p>A more advanced live reloading approach, which is also more work, is to tell the browser what changed exactly. If an asset file changed, reload the page. If the content changed, send the new content to the browser, and replace it in the DOM. This can be taken to the extreme by doing precise diffing and only replacing, say, the one character that changed.</p>
