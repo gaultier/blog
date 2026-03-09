@@ -3,7 +3,6 @@ use markdown::{
     mdast::{FootnoteDefinition, Node, Text},
 };
 use notify::{EventKind, RecursiveMode, Watcher, event::ModifyKind};
-use serde::{Deserialize, Serialize};
 use std::{
     borrow::Cow,
     cmp::Ordering,
@@ -72,17 +71,6 @@ struct Article {
     html_title: String,
     html_path: PathBuf,
     tags: Vec<String>,
-    trigrams: BTreeMap<Trigram, u32>,
-}
-
-type Trigram = String;
-
-type FileIdx = u16;
-
-#[derive(Debug, Serialize, Deserialize)]
-struct SearchIndex {
-    trigram_to_file_idx: BTreeMap<Trigram, Vec<(FileIdx, u32)>>,
-    files: Vec<String>,
 }
 
 type MdContentHash = u64;
@@ -106,149 +94,6 @@ impl Cache {
         let mut hasher = DefaultHasher::new();
         md_content.hash(&mut hasher);
         hasher.finish()
-    }
-}
-
-impl From<Vec<Article>> for SearchIndex {
-    fn from(value: Vec<Article>) -> Self {
-        let mut res = Self::new();
-        for a in value {
-            res.files.push(a.html_path.to_string_lossy().to_string());
-            let file_idx: FileIdx = (res.files.len() - 1).try_into().unwrap();
-
-            for (trigram, count) in a.trigrams {
-                res.trigram_to_file_idx
-                    .entry(trigram)
-                    .and_modify(|e| e.push((file_idx, count)))
-                    .or_insert_with(|| vec![(file_idx, count)]);
-            }
-        }
-
-        res
-    }
-}
-
-impl SearchIndex {
-    fn new() -> Self {
-        Self {
-            trigram_to_file_idx: BTreeMap::new(),
-            files: Vec::with_capacity(128),
-        }
-    }
-
-    fn ingest_md_ast(md_ast: &Node) -> BTreeMap<Trigram, u32> {
-        let mut res = BTreeMap::new();
-        SearchIndex::ingest_md_ast_rec(md_ast, &mut res);
-        res
-    }
-
-    fn ingest_md_ast_rec(node: &Node, trigrams: &mut BTreeMap<Trigram, u32>) {
-        match node {
-            Node::Root(x) => {
-                for child in &x.children {
-                    SearchIndex::ingest_md_ast_rec(child, trigrams);
-                }
-            }
-            Node::Blockquote(x) => {
-                for child in &x.children {
-                    SearchIndex::ingest_md_ast_rec(child, trigrams);
-                }
-            }
-            Node::FootnoteDefinition(_) => {}
-            Node::MdxJsxFlowElement(_) => {}
-            Node::List(x) => {
-                for child in &x.children {
-                    SearchIndex::ingest_md_ast_rec(child, trigrams);
-                }
-            }
-            Node::MdxjsEsm(_) => {}
-            Node::Toml(_) => {}
-            Node::Yaml(_) => {}
-            Node::Break(_) => {}
-            Node::InlineCode(_) => {}
-            Node::InlineMath(_inline_math) => todo!(),
-            Node::Delete(x) => {
-                for child in &x.children {
-                    SearchIndex::ingest_md_ast_rec(child, trigrams);
-                }
-            }
-            Node::Emphasis(x) => {
-                for child in &x.children {
-                    SearchIndex::ingest_md_ast_rec(child, trigrams);
-                }
-            }
-            Node::MdxTextExpression(_) => {}
-            Node::FootnoteReference(_) => {}
-            Node::Html(_) => {}
-            Node::Image(_) => {}
-            Node::ImageReference(_) => {}
-            Node::MdxJsxTextElement(_) => {}
-            Node::Link(_) => {}
-            Node::LinkReference(_) => {}
-            Node::Strong(x) => {
-                for child in &x.children {
-                    SearchIndex::ingest_md_ast_rec(child, trigrams);
-                }
-            }
-            Node::Text(text) => {
-                SearchIndex::ingest_text(&text.value, trigrams);
-            }
-            Node::Code(_) => {}
-            Node::Math(_) => {}
-            Node::MdxFlowExpression(_) => {}
-            Node::Heading(x) => {
-                for child in &x.children {
-                    SearchIndex::ingest_md_ast_rec(child, trigrams);
-                }
-            }
-            Node::Table(x) => {
-                for child in &x.children {
-                    SearchIndex::ingest_md_ast_rec(child, trigrams);
-                }
-            }
-            Node::ThematicBreak(_) => {}
-            Node::TableRow(x) => {
-                for child in &x.children {
-                    SearchIndex::ingest_md_ast_rec(child, trigrams);
-                }
-            }
-            Node::TableCell(x) => {
-                for child in &x.children {
-                    SearchIndex::ingest_md_ast_rec(child, trigrams);
-                }
-            }
-            Node::ListItem(x) => {
-                for child in &x.children {
-                    SearchIndex::ingest_md_ast_rec(child, trigrams);
-                }
-            }
-            Node::Definition(_) => {}
-            Node::Paragraph(x) => {
-                for child in &x.children {
-                    SearchIndex::ingest_md_ast_rec(child, trigrams);
-                }
-            }
-        }
-    }
-
-    fn ingest_text(text: &str, trigrams: &mut BTreeMap<Trigram, u32>) {
-        let chars: Vec<char> = text.to_lowercase().chars().collect();
-
-        chars.windows(3).for_each(|w| {
-            let trigram: String = w
-                .iter()
-                .map(|c| {
-                    if c.is_alphanumeric() || c.is_ascii_punctuation() {
-                        *c
-                    } else {
-                        ' '
-                    }
-                })
-                .collect::<String>();
-            if trigram != "   " {
-                trigrams.entry(trigram).and_modify(|e| *e += 1).or_insert(1);
-            }
-        });
     }
 }
 
@@ -997,7 +842,6 @@ fn md_render_article(
         },
     )
     .unwrap();
-    let trigrams = SearchIndex::ingest_md_ast(&md_ast);
 
     md_lint_rec(&md_ast, &md_path);
 
@@ -1066,7 +910,6 @@ fn md_render_article(
         html_title: html_root_title,
         html_path,
         tags: tags.iter().map(|t| t.to_string()).collect(),
-        trigrams,
     };
 
     cache
@@ -1328,13 +1171,6 @@ fn generate_all(cache: &mut Cache) {
     let html_footer = fs::read("footer.html").unwrap();
 
     let git_stats = git_get_articles_stats();
-    // We need ordering to avoid spurious diffs in the search index,
-    // due to the same file having suddenly a different index.
-    assert!(
-        git_stats.is_sorted_by(
-            |a, b| a.path_from_git_root.cmp(&b.path_from_git_root) != Ordering::Greater
-        )
-    );
 
     let mut articles: Vec<Article> = git_stats
         .into_iter()
@@ -1350,24 +1186,6 @@ fn generate_all(cache: &mut Cache) {
     generate_tags_page(&articles, &html_header, &html_footer);
     generate_rss(&mut articles);
     let articles_count = articles.len();
-    {
-        let start = std::time::Instant::now();
-        let search_index = SearchIndex::from(articles);
-        let v: Vec<u8> = postcard::to_stdvec(&search_index).unwrap();
-        println!(
-            "🔍 marshalled search index to bytes (count:{}, bytes:{}) in {} ms",
-            search_index.trigram_to_file_idx.len(),
-            v.len(),
-            Instant::now().duration_since(start).as_millis()
-        );
-        fs::write("search_index.postcard", &v).unwrap();
-        println!(
-            "🔍 wrote search index bytes (count:{}, bytes:{}) in {} ms",
-            search_index.trigram_to_file_idx.len(),
-            v.len(),
-            Instant::now().duration_since(start).as_millis()
-        );
-    }
 
     println!(
         "⚙️ generated {} articles in {} ms",
@@ -1539,16 +1357,6 @@ fn live_reload(
 fn main() {
     let mut args = std::env::args().skip(1);
     let arg1 = args.next();
-
-    if let Some(arg) = &arg1
-        && arg == "postcard_deserialize"
-    {
-        let arg2 = args.next().unwrap();
-        let search_index_data = std::fs::read(&arg2).unwrap();
-        let search_index: SearchIndex = postcard::from_bytes(&search_index_data).unwrap();
-        println!("{:#?}", search_index);
-        return;
-    }
 
     check_langs();
 
