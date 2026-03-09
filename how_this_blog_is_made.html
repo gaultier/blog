@@ -71,7 +71,7 @@ Do not edit it by hand.
 <div class="article-prelude">
 <p><a href="/blog"> ⏴ Back to all articles</a></p>
 
-<p class="publication-date">Published on 2026-03-08. Last modified on 2026-03-08.</p>
+<p class="publication-date">Published on 2026-03-08. Last modified on 2026-03-09.</p>
 </div>
 <div class="article-title">
   <h1>How to make your own static site generator for your blog</h1>
@@ -145,7 +145,6 @@ Do not edit it by hand.
 <span class="line-number"></span><span class="code-hl"></span>
 <span class="line-number"></span><span class="code-hl">generate rss feed</span>
 <span class="line-number"></span><span class="code-hl">generate home page</span>
-<span class="line-number"></span><span class="code-hl">generate search index</span>
 </code></pre>
 <h2 id="list-all-articles">
   <a class="title" href="#list-all-articles">List all articles</a>
@@ -177,7 +176,7 @@ Do not edit it by hand.
 <li>Forbid lists with only one element</li>
 <li>Inline code elements whose content exceeds a certain length; these should be use the syntax for a multiline code block</li>
 </ul>
-<p>Furthermore, we'll see in the section about search, that having the AST is great to only index text and skip code blocks, inline HTML, etc when building the search index.</p>
+<p>Furthermore, if the content is huge, a search index might be needed to be built. Having the AST is great to only index text and skip code blocks, inline HTML, etc when building the index.</p>
 <h2 id="generate-the-table-of-content">
   <a class="title" href="#generate-the-table-of-content">Generate the table of content</a>
   <a class="hash-anchor" href="#generate-the-table-of-content" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
@@ -214,61 +213,9 @@ Do not edit it by hand.
   <a class="title" href="#search">Search</a>
   <a class="hash-anchor" href="#search" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
-<p>To implement the search function which is purely client side, an efficient way is to build a search index. I chose to collect all trigrams (group of 3 characters) present in each article.</p>
-<p>This information is saved to a file in a compact manner (this is the search index).</p>
-<p>When someone types in the search box, the search index is fetched if it's not already present. This way, users who never use the search feature do not pay the price for it. The browser caches subsequent fetches. The search index lists how many times a certain trigram occurs in a certain file. Conceptually:</p>
-<pre>
-  <div class="code-header">
-    <span>Json</span>
-    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
-  </div>
-  <code class="language-json"><span class="line-number"></span><span class="code-hl">{</span>
-<span class="line-number"></span><span class="code-hl">    &quot;cat&quot;: [[&quot;foo.html&quot;, 3], [&quot;bar.html&quot;, 4]],</span>
-<span class="line-number"></span><span class="code-hl">    &quot;fox&quot;: [[&quot;bar.html&quot;, 1]]</span>
-<span class="line-number"></span><span class="code-hl">}</span>
-</code></pre>
-<p>Here, <code>cat</code> occurs 3 times in <code>foo.html</code>.</p>
-<p>This JSON format was my first stab at it but it had two big, related issues: Encoding took too long, and the size was too big. JSON has a bad signal-to-noise ratio for small strings. In this example, almost half of the characters do not carry meaning for the search index, they are just separators between JSON tokens.</p>
-<p>This is why I switched to a different encoding: <a href="https://postcard.jamesmunns.com/wire-format">postcard</a>. The search index went from 600 ms encoding time and 600 KiB size to 10 ms and 200 KiB.</p>
-<p>The Javascript in the browser now needs to manually decode it, but it's very little code because the format is simple.</p>
-<p>The way the search index is then used in the browser is to quickly find files with matches. For each trigram in the search text, the corresponding trigram is inspected in the search index, to know which files contain it. The results of the search is a <code>Map&lt;file name, search score&gt;</code>. The score is is higher for files with more matches. This way, the UI can show the 'best' match first.</p>
-<pre>
-  <div class="code-header">
-    <span>Javascript</span>
-    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
-  </div>
-  <code class="language-javascript"><span class="line-number"></span><span class="code-hl">function search_text(needle) {</span>
-<span class="line-number"></span><span class="code-hl">  const file_scores = new Map();</span>
-<span class="line-number"></span><span class="code-hl"></span>
-<span class="line-number"></span><span class="code-hl">  // For each trigram in search text.</span>
-<span class="line-number"></span><span class="code-hl">  for (let i = 0; i &lt;= needle.length - 3; i++) {</span>
-<span class="line-number"></span><span class="code-hl">    const trigram = needle[i] + needle[i+1] + needle[i+2];</span>
-<span class="line-number"></span><span class="code-hl"></span>
-<span class="line-number"></span><span class="code-hl">    const match = search_index.trigram_to_file_idx.get(trigram);</span>
-<span class="line-number"></span><span class="code-hl">    if (match === undefined) {</span>
-<span class="line-number"></span><span class="code-hl">      // This trigram does not exist in the search index, continue.</span>
-<span class="line-number"></span><span class="code-hl">      continue;</span>
-<span class="line-number"></span><span class="code-hl">    }</span>
-<span class="line-number"></span><span class="code-hl"></span>
-<span class="line-number"></span><span class="code-hl">    const docs_with_this_trigram = match.length;</span>
-<span class="line-number"></span><span class="code-hl"></span>
-<span class="line-number"></span><span class="code-hl">    for (const m of match) {</span>
-<span class="line-number"></span><span class="code-hl">      const [file, count] = m;</span>
-<span class="line-number"></span><span class="code-hl">      const score = file_scores.get(file) || 0;</span>
-<span class="line-number"></span><span class="code-hl"></span>
-<span class="line-number"></span><span class="code-hl">      // Record the file with the match along with a score.</span>
-<span class="line-number"></span><span class="code-hl">      // Different trigrams for the same file increase its score.</span>
-<span class="line-number"></span><span class="code-hl">      file_scores.set(file, score + count * (1/docs_with_this_trigram) );</span>
-<span class="line-number"></span><span class="code-hl">    }</span>
-<span class="line-number"></span><span class="code-hl">  }</span>
-<span class="line-number"></span><span class="code-hl">  </span>
-<span class="line-number"></span><span class="code-hl">  return file_scores;</span>
-<span class="line-number"></span><span class="code-hl">}</span>
-</code></pre>
-<p>I experimented a bit with how the search score is computed. I think this way strikes a balance between simplicity and accuracy.</p>
-<p>Finally, the JavaScript fetches the HTML for each article that has a match, to show an excerpt of the text surrounding the match. These queries are done in parallel for performance, and should get cached by the browser after the first time.</p>
-<p>I have heard about <a href="https://tigerbeetle.com/blog/2025-02-27-why-we-designed-tigerbeetles-docs-from-scratch/#simple-is-beautiful">people</a> using a Service Worker to always fetch all articles in the background so that they know for sure that the content of each article is always there. This is just eager vs. lazy loading, both work.</p>
-<p>The advantage of fetching all content in advance is that now, a search index is not necessary anymore. Technically, for the amount of text my blog has, a search index is not required, but I always wanted to learn how a search index works and this was the perfect opportunity.</p>
+<p>To implement the search function which is purely client side, I used to have a search index with trigrams. However I realized that at my scale, a linear search is just fast enough (&lt; 1ms), and it is not much data to transfer (3 MiB uncompressed for all articles).</p>
+<p>When someone types in the search box for the first time, the content for each article is fetched in parallel. This way, users who never use the search feature do not pay the price for it. The browser caches future fetches.</p>
+<p>When a user types in the search box, the content of all articles is linearly searched with <code>indexOf()</code>. Since this very likely is implemented with SIMD, it is lightning fast. Then, for each match, the link to the article, as well as surrounding text, is shown.</p>
 <h2 id="live-reloading">
   <a class="title" href="#live-reloading">Live reloading</a>
   <a class="hash-anchor" href="#live-reloading" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
@@ -344,43 +291,8 @@ Do not edit it by hand.
 </h3>
 <p>To avoid regenerating files that have not changed, I added a cache which is just a <code>Map&lt;file path, (hash of markdown content, generated output)&gt;</code>.</p>
 <p>If a file has changed, the entry for it is removed from the cache. If a file that impacts all articles changes, e.g. <code>header.html</code> and <code>footer.html</code>, the entire cache is cleared and all articles are re-generated.</p>
-<p>To make this work efficiently, generating one article should ideally be a pure function that takes in immutable arguments, and outputs the generated HTML (and metadata such as <code>created_at</code>, <code>modified_at</code>). This way, the first thing I do when handling an article is check the cache. If it's a cache hit, I just return the value from the cache.</p>
-<p>The only thing I had to tweak was building the search index. Initially, generating an article would also add entries in the search index in a mutable way.</p>
-<p>Before:</p>
-<pre>
-  <div class="code-header">
-    <span>Json</span>
-    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
-  </div>
-  <code class="language-json"><span class="line-number"></span><span class="code-hl">{</span>
-<span class="line-number"></span><span class="code-hl">    &quot;cat&quot;: [[&quot;foo.html&quot;, 3]]</span>
-<span class="line-number"></span><span class="code-hl">}</span>
-</code></pre>
-<p>After handling <code>bar.html</code>:</p>
-<pre>
-  <div class="code-header">
-    <span>Json</span>
-    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
-  </div>
-  <code class="language-json"><span class="line-number"></span><span class="code-hl">{</span>
-<span class="line-number"></span><span class="code-hl">    &quot;cat&quot;: [[&quot;foo.html&quot;, 3], [&quot;bar.html&quot;, 4]],</span>
-<span class="line-number"></span><span class="code-hl">    &quot;fox&quot;: [[&quot;bar.html&quot;, 1]],</span>
-<span class="line-number"></span><span class="code-hl">}</span>
-</code></pre>
-<p>Now, imagine that I edit the text in <code>bar.html</code>. Since <code>bar.html</code> could appear in every entry of the search index, every entry is possibly stale, and we have to scan all articles again, to rebuild the search index from scratch. We ideally want to build the search index incrementally, only scanning the file that changes.</p>
-<p>So I changed the approach so that each article tracks which trigrams are present in the content, e.g. for <code>bar.html</code>:</p>
-<pre>
-  <div class="code-header">
-    <span>Json</span>
-    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
-  </div>
-  <code class="language-json"><span class="line-number"></span><span class="code-hl">// bar.html</span>
-<span class="line-number"></span><span class="code-hl">[&quot;cat&quot;, &quot;fox&quot;]</span>
-<span class="line-number"></span><span class="code-hl"></span>
-<span class="line-number"></span><span class="code-hl">// foo.html</span>
-<span class="line-number"></span><span class="code-hl">[&quot;cat&quot;]</span>
-</code></pre>
-<p>This way each article is completely independent, and the final search index is the result of merging together the trigrams for each article. The final search index is the same.</p>
+<p>To make this work efficiently, generating one article should ideally be a pure function that takes in immutable arguments, and outputs the generated HTML (and metadata such as <code>created_at</code>, <code>modified_at</code>). Thus, the first thing I do when handling an article is check the cache. If it's a cache hit, I just return the value from the cache.</p>
+<p>This way each article is completely independent.</p>
 <p>This was an interesting lesson for me: no shared mutable variables (except from the cache) makes parallel and incremental computations possible.</p>
 <p><a href="/blog"> ⏴ Back to all articles</a></p>
 

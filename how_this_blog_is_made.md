@@ -23,7 +23,6 @@ for each article:
 
 generate rss feed
 generate home page
-generate search index
 ```
 
 ## List all articles
@@ -58,7 +57,7 @@ Other lints that could be also easily implemented based on walking the AST:
 - Forbid lists with only one element
 - Inline code elements whose content exceeds a certain length; these should be use the syntax for a multiline code block
 
-Furthermore, we'll see in the section about search, that having the AST is great to only index text and skip code blocks, inline HTML, etc when building the search index.
+Furthermore, if the content is huge, a search index might be needed to be built. Having the AST is great to only index text and skip code blocks, inline HTML, etc when building the index.
 
 
 ## Generate the table of content
@@ -95,67 +94,12 @@ This is the `index.html`, typically. It generally lists all articles (in my case
 ## Search
 
 
-To implement the search function which is purely client side, an efficient way is to build a search index. I chose to collect all trigrams (group of 3 characters) present in each article.
+To implement the search function which is purely client side, I used to have a search index with trigrams. However I realized that at my scale, a linear search is just fast enough (< 1ms), and it is not much data to transfer (3 MiB uncompressed for all articles).
 
-This information is saved to a file in a compact manner (this is the search index). 
+When someone types in the search box for the first time, the content for each article is fetched in parallel. This way, users who never use the search feature do not pay the price for it. The browser caches future fetches. 
 
-When someone types in the search box, the search index is fetched if it's not already present. This way, users who never use the search feature do not pay the price for it. The browser caches subsequent fetches. The search index lists how many times a certain trigram occurs in a certain file. Conceptually:
+When a user types in the search box, the content of all articles is linearly searched with `indexOf()`. Since this very likely is implemented with SIMD, it is lightning fast. Then, for each match, the link to the article, as well as surrounding text, is shown.
 
-```json
-{
-    "cat": [["foo.html", 3], ["bar.html", 4]],
-    "fox": [["bar.html", 1]]
-}
-```
-
-Here, `cat` occurs 3 times in `foo.html`.
-
-This JSON format was my first stab at it but it had two big, related issues: Encoding took too long, and the size was too big. JSON has a bad signal-to-noise ratio for small strings. In this example, almost half of the characters do not carry meaning for the search index, they are just separators between JSON tokens.
-
-This is why I switched to a different encoding: [postcard](https://postcard.jamesmunns.com/wire-format). The search index went from 600 ms encoding time and 600 KiB size to 10 ms and 200 KiB.
-
-The Javascript in the browser now needs to manually decode it, but it's very little code because the format is simple.
-
-
-The way the search index is then used in the browser is to quickly find files with matches. For each trigram in the search text, the corresponding trigram is inspected in the search index, to know which files contain it. The results of the search is a `Map<file name, search score>`. The score is is higher for files with more matches. This way, the UI can show the 'best' match first.
-
-```javascript
-function search_text(needle) {
-  const file_scores = new Map();
-
-  // For each trigram in search text.
-  for (let i = 0; i <= needle.length - 3; i++) {
-    const trigram = needle[i] + needle[i+1] + needle[i+2];
-
-    const match = search_index.trigram_to_file_idx.get(trigram);
-    if (match === undefined) {
-      // This trigram does not exist in the search index, continue.
-      continue;
-    }
-
-    const docs_with_this_trigram = match.length;
-
-    for (const m of match) {
-      const [file, count] = m;
-      const score = file_scores.get(file) || 0;
-
-      // Record the file with the match along with a score.
-      // Different trigrams for the same file increase its score.
-      file_scores.set(file, score + count * (1/docs_with_this_trigram) );
-    }
-  }
-  
-  return file_scores;
-}
-```
-
-I experimented a bit with how the search score is computed. I think this way strikes a balance between simplicity and accuracy.
-
-Finally, the JavaScript fetches the HTML for each article that has a match, to show an excerpt of the text surrounding the match. These queries are done in parallel for performance, and should get cached by the browser after the first time. 
-
-I have heard about [people](https://tigerbeetle.com/blog/2025-02-27-why-we-designed-tigerbeetles-docs-from-scratch/#simple-is-beautiful) using a Service Worker to always fetch all articles in the background so that they know for sure that the content of each article is always there. This is just eager vs. lazy loading, both work. 
-
-The advantage of fetching all content in advance is that now, a search index is not necessary anymore. Technically, for the amount of text my blog has, a search index is not required, but I always wanted to learn how a search index works and this was the perfect opportunity.
 
 ## Live reloading
 
@@ -230,42 +174,9 @@ To avoid regenerating files that have not changed, I added a cache which is just
 
 If a file has changed, the entry for it is removed from the cache. If a file that impacts all articles changes, e.g. `header.html` and `footer.html`, the entire cache is cleared and all articles are re-generated.
 
-To make this work efficiently, generating one article should ideally be a pure function that takes in immutable arguments, and outputs the generated HTML (and metadata such as `created_at`, `modified_at`). This way, the first thing I do when handling an article is check the cache. If it's a cache hit, I just return the value from the cache. 
+To make this work efficiently, generating one article should ideally be a pure function that takes in immutable arguments, and outputs the generated HTML (and metadata such as `created_at`, `modified_at`). Thus, the first thing I do when handling an article is check the cache. If it's a cache hit, I just return the value from the cache. 
 
-The only thing I had to tweak was building the search index. Initially, generating an article would also add entries in the search index in a mutable way. 
-
-Before:
-
-
-```json
-{
-    "cat": [["foo.html", 3]]
-}
-```
-
-After handling `bar.html`:
-
-```json
-{
-    "cat": [["foo.html", 3], ["bar.html", 4]],
-    "fox": [["bar.html", 1]],
-}
-```
-
-Now, imagine that I edit the text in `bar.html`. Since `bar.html` could appear in every entry of the search index, every entry is possibly stale, and we have to scan all articles again, to rebuild the search index from scratch. We ideally want to build the search index incrementally, only scanning the file that changes.
-
-
-So I changed the approach so that each article tracks which trigrams are present in the content, e.g. for `bar.html`:
-
-```json
-// bar.html
-["cat", "fox"]
-
-// foo.html
-["cat"]
-```
-
-This way each article is completely independent, and the final search index is the result of merging together the trigrams for each article. The final search index is the same.
+This way each article is completely independent.
 
 This was an interesting lesson for me: no shared mutable variables (except from the cache) makes parallel and incremental computations possible.
 
