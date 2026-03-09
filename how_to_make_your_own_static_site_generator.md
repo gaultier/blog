@@ -28,7 +28,7 @@ generate rss feed
 generate home page
 ```
 
-The first version was this 3 lines Makefile:
+The first version was this Makefile:
 
 
 ```makefile
