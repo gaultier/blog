@@ -123,6 +123,8 @@ dom_input.addEventListener("focus", load_search_content);
 dom_input.addEventListener("click", load_search_content);
 
 async function search_and_display_results(_event) {
+  const start = performance.now();
+
   const needle = dom_input.value.toLowerCase();
   dom_search_matches.innerHTML = "";
 
@@ -160,6 +162,11 @@ async function search_and_display_results(_event) {
       '<p id="no-results-msg">No results found (code snippets are not searched).</p>',
     );
   }
+
+
+  const end = performance.now();
+  const duration = end - start;
+  console.log(`search: ${duration.toFixed(4)} ms`);
 }
 
 dom_input.oninput = search_and_display_results;
