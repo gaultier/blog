@@ -10,7 +10,7 @@ This is my lessons learned.
 
 
 
-At the core, a static site generator typically must perform these steps:
+At its core, a static site generator typically must perform these steps:
 
 ```plaintext
 read header.html
