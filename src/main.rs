@@ -248,6 +248,10 @@ fn git_get_articles_stats() -> Vec<GitStat> {
         .unwrap();
     assert_eq!(Some(0), output.status.code());
     assert!(output.stderr.is_empty());
+    println!(
+        "git invocation: {} ms",
+        Instant::now().duration_since(start).as_millis()
+    );
 
     // Sample git output:
     // 2024-10-31T16:09:02+01:00

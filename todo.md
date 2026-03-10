@@ -2,6 +2,8 @@
 
 - [ ] A tale of two APIs: Device Attestation on iOS and Android
 - [ ] Catch data races with DTrace?
+    + Cannot use function offset probes on ARM64 (need fasttrap support)
+    + Might work on x64
 - [ ] a weird advantage of using TLA+ (using TLA+ generated traces as input for the real program)
 - [ ] compiler architecture and implementation with live playground
 - [ ] For a few data races more
