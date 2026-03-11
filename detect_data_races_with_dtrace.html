@@ -77,12 +77,230 @@ Do not edit it by hand.
   <h1>Detect data races with DTrace in any language</h1>
 <div class="tags"> <a href="/blog/articles-by-tag.html#dtrace" class="tag">DTrace</a> <a href="/blog/articles-by-tag.html#concurrency" class="tag">Concurrency</a> </div>
 </div>
+  <details class="toc"><summary>Table of contents</summary>
+<ul>
+
+  <li>
+    <a href="#the-theory">The theory</a>
+</li>
+
+  <li>
+    <a href="#in-practice">In practice</a>
+</li>
+
+  <li>
+    <a href="#example">Example</a>
+</li>
+</ul>
+</details>
+
 <p>A data race is concurrent access to shared data in a way that does not respect the rules of the programming language. Some languages are stricter or looser when they establish how that can happen, but they all forbid <em>some</em> kinds of concurrent (unsynchronized) accesses, typically write-write or read-write.</p>
-<p>For example <a href="https://go.dev/ref/mem#model">Go's memory model</a> defines a data race as:</p>
+<h2 id="the-theory">
+  <a class="title" href="#the-theory">The theory</a>
+  <a class="hash-anchor" href="#the-theory" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+</h2>
+<p>For example <a href="https://go.dev/ref/mem#model">Go's memory model</a> defines a data race in terms of 'happens-before' and 'synchronized before':</p>
 <blockquote>
+<p>A read-write data race on memory location x consists of a read-like memory operation r on x and a write-like memory operation w on x, at least one of which is non-synchronizing, which are unordered by happens before (that is, neither r happens before w nor w happens before r).</p>
+<p>A write-write data race on memory location x consists of two write-like memory operations w and w' on x, at least one of which is non-synchronizing, which are unordered by happens before.</p>
+<p>Note that if there are no read-write or write-write data races on memory location x, then any read r on x has only one possible W(r): the single w that immediately precedes it in the happens before order.</p>
 <p>More generally, it can be shown that any Go program that is data-race-free, meaning it has no program executions with read-write or write-write data races, can only have outcomes explained by some sequentially consistent interleaving of the goroutine executions. (The proof is the same as Section 7 of Boehm and Adve's paper cited above.) This property is called DRF-SC.</p>
 <p>The intent of the formal definition is to match the DRF-SC guarantee provided to race-free programs by other languages, including C, C++, Java, JavaScript, Rust, and Swift.</p>
 </blockquote>
+<h2 id="in-practice">
+  <a class="title" href="#in-practice">In practice</a>
+  <a class="hash-anchor" href="#in-practice" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+</h2>
+<p>This is great to have formally defined, but it's not very actionable. Many programming languages do not have enough compile time guarantees to avoid data races at compile time, and thus provide a runtime race detector: Go, C and C++ with Thread Sanitizer, etc.</p>
+<p>Typically these can detect some data races but not all, and incur a big performance penalty (I have experienced x5 to x20 slow-downs in real production code).</p>
+<p>Also, these cannot be used in some contexts. What can we do then?</p>
+<p>What if we could somehow use DTrace to observe our program and detect, like a runtime race detector, invalid accesses? It does not have to catch <em>all</em> races, <em>some</em> would be already nice. Even a crude approach could be helpful.</p>
+<p>So let's simplify things first: we'll exclude atomics for now. Since synchronized operations are safe, and mutexes do synchronize:</p>
+<blockquote>
+<p>For any sync.Mutex or sync.RWMutex variable l and n &lt; m, call n of l.Unlock() is synchronized before call m of l.Lock() returns.</p>
+</blockquote>
+<p>These lock and unlock operations create a 'critical', or 'exclusive', section. If two or more threads access concurrently this section without synchronization (i.e. without mutex), and this section does a write, then we have a data race.</p>
+<p>So here is the idea:</p>
+<ul>
+<li>We suspect a data structure to be racy</li>
+<li>We observe with DTrace functions that mutate ('write') this data structure. DTrace can also observe arbitrary locations in the program with <a href="https://illumos.org/books/dtrace/chp-user.html#chp-user">function offset probes (33.6.2. Tracing Arbitrary Instructions)</a> or statically defined probes, but simply tracing functions is enough to demonstrate the point here.</li>
+<li>When entering such a function, we record the thread id in a global map, where the key is the location, and the value is the thread id.</li>
+<li>When exiting such a function, we clear the entry in the map.</li>
+<li>If we enter such a function and we see from the global map that another thread is already running this function, this means that we have a concurrent access to the data structure in a write-write or read-write fashion. This is a data race and we report it.</li>
+</ul>
+<h2 id="example">
+  <a class="title" href="#example">Example</a>
+  <a class="hash-anchor" href="#example" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+</h2>
+<p>I fixed recently a data race in Go at work. I have reproduced it in C for simplicity, because Go inlines quite heavily and some functions, e.g. <code>append()</code>, <code>len()</code>, are actually builtin, it's hard to trace them.</p>
+<p>The program appends data to a growable byte array in a thread, and reads the length of this byte array in another thread, without synchronization. Text book data race, but this kind of thing happens in production code when the compiler does not protect us from ourselves:</p>
+<pre>
+  <div class="code-header">
+    <span>C</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-c"><span class="line-number"></span><span class="code-hl">#include &lt;assert.h&gt;</span>
+<span class="line-number"></span><span class="code-hl">#include &lt;pthread.h&gt;</span>
+<span class="line-number"></span><span class="code-hl">#include &lt;stdio.h&gt;</span>
+<span class="line-number"></span><span class="code-hl">#include &lt;stdlib.h&gt;</span>
+<span class="line-number"></span><span class="code-hl">#include &lt;time.h&gt;</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">#define DATA_LEN (1 &lt;&lt; 20)</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">typedef struct {</span>
+<span class="line-number"></span><span class="code-hl">  uint8_t *data;</span>
+<span class="line-number"></span><span class="code-hl">  size_t len, cap;</span>
+<span class="line-number"></span><span class="code-hl">} ByteArray;</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">size_t byte_array_get_len(const ByteArray *b) { return b-&gt;len; }</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">size_t byte_array_get_cap(const ByteArray *b) { return b-&gt;cap; }</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">void byte_array_set_len(ByteArray *b, size_t len) { b-&gt;len = len; }</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">void byte_array_set_cap(ByteArray *b, size_t cap) { b-&gt;cap = cap; }</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">void byte_array_ensure_cap_at_least(ByteArray *b, size_t cap) {</span>
+<span class="line-number"></span><span class="code-hl">  size_t current_cap = byte_array_get_cap(b);</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  if (current_cap &gt;= cap) {</span>
+<span class="line-number"></span><span class="code-hl">    return;</span>
+<span class="line-number"></span><span class="code-hl">  }</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  byte_array_set_cap(b, current_cap &lt; 8 ? 8 : current_cap * 2);</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  b-&gt;data = realloc(b-&gt;data, b-&gt;cap);</span>
+<span class="line-number"></span><span class="code-hl">}</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">void byte_array_push(ByteArray *b, uint8_t elem) {</span>
+<span class="line-number"></span><span class="code-hl">  const size_t len = byte_array_get_len(b);</span>
+<span class="line-number"></span><span class="code-hl">  byte_array_ensure_cap_at_least(b, len + 1);</span>
+<span class="line-number"></span><span class="code-hl">  b-&gt;data[len] = elem;</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  byte_array_set_len(b, len + 1);</span>
+<span class="line-number"></span><span class="code-hl">}</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">typedef struct {</span>
+<span class="line-number"></span><span class="code-hl">  ByteArray b;</span>
+<span class="line-number"></span><span class="code-hl">  pthread_mutex_t mtx;</span>
+<span class="line-number"></span><span class="code-hl">} Work;</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">void *async_push(void *any) {</span>
+<span class="line-number"></span><span class="code-hl">  Work *work = any;</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  for (size_t i = 0; i &lt; DATA_LEN; i++) {</span>
+<span class="line-number"></span><span class="code-hl">    byte_array_push(&amp;work-&gt;b, (uint8_t)i);</span>
+<span class="line-number"></span><span class="code-hl">  }</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  return NULL;</span>
+<span class="line-number"></span><span class="code-hl">}</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">int main() {</span>
+<span class="line-number"></span><span class="code-hl">  Work work = {.b = {0}, .mtx = PTHREAD_MUTEX_INITIALIZER};</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  pthread_t thread_push = {0};</span>
+<span class="line-number"></span><span class="code-hl">  pthread_create(&amp;thread_push, NULL, async_push, &amp;work);</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  for (;;) {</span>
+<span class="line-number"></span><span class="code-hl">    const size_t len = byte_array_get_len(&amp;work.b);</span>
+<span class="line-number"></span><span class="code-hl">    if (len == DATA_LEN) {</span>
+<span class="line-number"></span><span class="code-hl">      break;</span>
+<span class="line-number"></span><span class="code-hl">    }</span>
+<span class="line-number"></span><span class="code-hl">  }</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  pthread_join(thread_push, NULL);</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  assert(byte_array_get_len(&amp;work.b) == DATA_LEN);</span>
+<span class="line-number"></span><span class="code-hl">}</span>
+</code></pre>
+<p>Now we run it with Thread Sanitizer:</p>
+<pre>
+  <div class="code-header">
+    <span>Shell</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-shell"><span class="line-number"></span><span class="code-hl">$ clang blog1.c -g -o blog1 -fsanitize=thread</span>
+<span class="line-number"></span><span class="code-hl">$ ./blog1</span>
+</code></pre>
+<p>And it appears to run just fine, no warning whatsoever.</p>
+<p>Alright, now let's implement our idea in DTrace:</p>
+<pre>
+  <div class="code-header">
+    <span>Dtrace</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-dtrace"><span class="line-number"></span><span class="code-hl">#pragma D option dynvarsize=16m</span>
+<span class="line-number"></span><span class="code-hl">#pragma D option cleanrate=100hz</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">typedef enum {AccessRead=1, AccessWrite=2} Access;</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">size_t /* tid || access */ concurrent[int /* pc */];</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">int func_access[string];</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">BEGIN {</span>
+<span class="line-number"></span><span class="code-hl">  func_access[&quot;byte_array_get_len&quot;] = AccessRead;</span>
+<span class="line-number"></span><span class="code-hl">  func_access[&quot;byte_array_set_len&quot;] = AccessWrite;</span>
+<span class="line-number"></span><span class="code-hl">}</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">pid$target::byte_array_?et_len:entry {</span>
+<span class="line-number"></span><span class="code-hl">  self-&gt;data = arg0;</span>
+<span class="line-number"></span><span class="code-hl">  this-&gt;theirs = concurrent[arg0];</span>
+<span class="line-number"></span><span class="code-hl">  this-&gt;their_tid = this-&gt;theirs &amp; ((size_t)1UL &lt;&lt; 62);</span>
+<span class="line-number"></span><span class="code-hl">  this-&gt;their_access = this-&gt;theirs &gt;&gt; 62;</span>
+<span class="line-number"></span><span class="code-hl">  this-&gt;my_access = func_access[probefunc];</span>
+<span class="line-number"></span><span class="code-hl">  //printf(&quot;[D001] arg0=%p theirs=%d their_access=%d their_tid=%d my_access=%d\n&quot;, self-&gt;data, this-&gt;theirs, this-&gt;their_access, this-&gt;their_tid, this-&gt;my_access);</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  if (this-&gt;their_tid !=0 &amp;&amp; </span>
+<span class="line-number"></span><span class="code-hl">      this-&gt;their_tid != tid &amp;&amp; </span>
+<span class="line-number"></span><span class="code-hl">      ((this-&gt;my_access == AccessRead &amp;&amp; this-&gt;their_access == AccessWrite) || </span>
+<span class="line-number"></span><span class="code-hl">       (this-&gt;my_access == AccessWrite &amp;&amp; this-&gt;their_access == AccessRead) || </span>
+<span class="line-number"></span><span class="code-hl">       (this-&gt;my_access == AccessWrite &amp;&amp; this-&gt;their_access == AccessWrite) </span>
+<span class="line-number"></span><span class="code-hl">       )) {</span>
+<span class="line-number"></span><span class="code-hl">    printf(&quot;WARN: data race:(%d, %d) my_access:%d their_access:%d\n&quot;, this-&gt;their_tid, tid, this-&gt;my_access, this-&gt;their_access);</span>
+<span class="line-number"></span><span class="code-hl">    ustack();</span>
+<span class="line-number"></span><span class="code-hl">  }</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  this-&gt;new = ((size_t)this-&gt;my_access &lt;&lt; 62) | (size_t)tid;</span>
+<span class="line-number"></span><span class="code-hl">  //printf(&quot;[D002] %d %d %d&quot;, this-&gt;new, this-&gt;my_access, tid);</span>
+<span class="line-number"></span><span class="code-hl">  concurrent[self-&gt;data]= (((size_t)this-&gt;my_access) &lt;&lt; 62) | (size_t)tid;</span>
+<span class="line-number"></span><span class="code-hl">}</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">pid$target::byte_array_?et_len:return /self-&gt;data != 0/ {</span>
+<span class="line-number"></span><span class="code-hl">  //printf(&quot;[D003] data=%p %d\n&quot;,self-&gt;data, concurrent[self-&gt;data]);</span>
+<span class="line-number"></span><span class="code-hl">  concurrent[self-&gt;data] = 0;</span>
+<span class="line-number"></span><span class="code-hl">  self-&gt;data = 0;</span>
+<span class="line-number"></span><span class="code-hl">}</span>
+</code></pre>
+<p>We observe here all 'methods' of <code>byte_array</code>. This is heavy-handed and might cause false positives, for example if two threads are concurrently calling <code>byte_array_get_len</code>, this is a read-read case and not a data race. But this is simple.</p>
+<p>When we detect a data race, we print the id of the two colliding threads and the call stack of the current thread. Note that we do not print the call stack of the other thread, but chances are, if thread A has a race with thread B, we'll alternate detecting the race inside thread A, and inside thread B, so we'll have both call stacks.</p>
+<p>Now let's run our D script. We see a ton of these messages:</p>
+<pre>
+  <div class="code-header">
+    <span>Shell</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-shell"><span class="line-number"></span><span class="code-hl">$ sudo dtrace -s ./blog.d -c ./blog1</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">[...]</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  4  16760         byte_array_get_len:entry WARN: data race:(246345030, 246344951)</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">              blog1`byte_array_get_len</span>
+<span class="line-number"></span><span class="code-hl">              blog1`main+0x78</span>
+<span class="line-number"></span><span class="code-hl">              dyld`start+0x1c10</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  7  16760         byte_array_get_len:entry WARN: data race:(246344951, 246345030)</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">              blog1`byte_array_get_len</span>
+<span class="line-number"></span><span class="code-hl">              blog1`byte_array_push+0x30</span>
+<span class="line-number"></span><span class="code-hl">              blog1`async_push+0x40</span>
+<span class="line-number"></span><span class="code-hl">              libsystem_pthread.dylib`_pthread_start+0x88</span>
+<span class="line-number"></span><span class="code-hl">              libsystem_pthread.dylib`thread_start+0x8</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">[...]</span>
+</code></pre>
+<p>Indeed, the main thread has a data race when calling <code>byte_array_get_len</code> with</p>
 <p><a href="/blog"> ⏴ Back to all articles</a></p>
 
 <em id="donate">
