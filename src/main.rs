@@ -73,6 +73,7 @@ struct Article {
     html_title: String,
     html_path: PathBuf,
     tags: Vec<String>,
+    html_output: Vec<u8>,
 }
 
 fn hash_article_inputs(html_header: &[u8], html_footer: &[u8], md_content: &[u8]) -> u64 {
@@ -803,6 +804,7 @@ fn md_render_article(
 
     let md_content_bytes = fs::read(&git_stat.path_from_git_root).unwrap();
     let hash = hash_article_inputs(html_header, html_footer, &md_content_bytes);
+    dbg!(&git_stat.path_from_git_root, hash);
     if let Some(article) = cache.get(&hash) {
         return article.clone();
     }
@@ -889,13 +891,12 @@ fn md_render_article(
     writeln!(sb, "{}", BACK_LINK).unwrap();
     sb.extend(html_footer);
 
-    fs::write(&html_path, sb).unwrap();
-
     let article = Article {
         git_stat,
         html_title: html_root_title,
         html_path,
         tags: tags.iter().map(|t| t.to_string()).collect(),
+        html_output: sb,
     };
 
     cache.insert(hash, article.clone());
@@ -1165,6 +1166,9 @@ fn generate_all(cache: &mut HashMap<u64, Article>) {
         })
         .map(|gs| md_render_article(gs, &html_header, &html_footer, cache))
         .collect();
+    for a in &articles {
+        fs::write(&a.html_path, &a.html_output).unwrap();
+    }
 
     generate_home_page(&mut articles, &html_header, &html_footer);
     generate_tags_page(&articles, &html_header, &html_footer);
