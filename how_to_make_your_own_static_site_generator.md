@@ -442,6 +442,15 @@ In the case of a cache miss, when the work for an article is done, the output is
 If an input changed, then the hash is different, it's a cache miss, and the article will be regenerated. If the content for one article changed, only this article will have to be regenerated. If `header.html` or `footer.html` changed, then all articles will be regenerated, automatically.
 
 ```rust
+#[derive(Clone)]
+struct Article {
+    git_stat: GitStat,
+    html_title: String,
+    html_path: PathBuf,
+    tags: Vec<String>,
+    html_output: Vec<u8>,
+}
+
 fn hash_article_inputs(html_header: &[u8], html_footer: &[u8], md_content: &[u8]) -> u64 {
     let mut hasher = DefaultHasher::new();
     html_header.hash(&mut hasher);
@@ -462,9 +471,16 @@ fn md_render_article(
         return article.clone();
     }
 
-    // [...] Do the work.
+    // [...] Do the work, write the HTML to the byte array `sb`.
 
 
+    let article = Article {
+        git_stat,
+        html_title: html_root_title,
+        html_path,
+        tags: tags.iter().map(|t| t.to_string()).collect(),
+        html_output: sb,
+    };
     cache.insert(hash, article.clone());
 
     article
@@ -473,7 +489,7 @@ fn md_render_article(
 
 Technically I could use the [nohash](https://docs.rs/nohash-hasher/0.2.0/nohash_hasher/) crate to optimize a bit, since the key in the map is already a hash, no need to hash it a second time. But I don't bother for now.
  
-I never clear the cache, because my computer has so much memory. This has one advantage: if I undo a change when writing an article, and the work had already finish, I will hit the existing cache entry again.
+I never clear the cache, because my computer has so much memory. This has one advantage: if I undo a change when writing an article, and the work had already finished, I will hit the existing cache entry again. Crucially, all HTML files are written to disk every time, wether it was a cache hit or not. This is required to avoid the cache and the disk going out-of-sync.
 
 Skipping all this work is fine for one reason only: generating the HTML for an article is a pure function with immutable arguments. If it mutated a variable (for example a search index), I could not easily skip this work.
 
