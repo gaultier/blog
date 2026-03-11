@@ -77,10 +77,15 @@ Do not edit it by hand.
   <h1>Detect data races with DTrace in any language</h1>
 <div class="tags"> <a href="/blog/articles-by-tag.html#dtrace" class="tag">DTrace</a> <a href="/blog/articles-by-tag.html#concurrency" class="tag">Concurrency</a> </div>
 </div>
-<p>A data race is concurrent access to shared data in a way that does not respect the rules of the programming language. Some languages are stricter or looser when they establish how that can happen, but they all forbid <em>some</em> kinds of (unsynchronized) accesses, typically write-write or read-write.</p>
+<p>A data race is concurrent access to shared data in a way that does not respect the rules of the programming language. Some languages are stricter or looser when they establish how that can happen, but they all forbid <em>some</em> kinds of concurrent (unsynchronized) accesses, typically write-write or read-write.</p>
+<p>For example <a href="https://go.dev/ref/mem#model">Go's memory model</a> defines a data race as:</p>
+<blockquote>
+<p>More generally, it can be shown that any Go program that is data-race-free, meaning it has no program executions with read-write or write-write data races, can only have outcomes explained by some sequentially consistent interleaving of the goroutine executions. (The proof is the same as Section 7 of Boehm and Adve's paper cited above.) This property is called DRF-SC.</p>
+<p>The intent of the formal definition is to match the DRF-SC guarantee provided to race-free programs by other languages, including C, C++, Java, JavaScript, Rust, and Swift.</p>
+</blockquote>
 <p><a href="/blog"> ⏴ Back to all articles</a></p>
 
-<blockquote id="donate">
+<em id="donate">
   <p>If you enjoy what you're reading, you want to support me, and can afford it: <a href="https://paypal.me/philigaultier?country.x=DE&locale.x=en_US">Support me</a>. That allows me to write more cool articles!</p>
 
   <p>
@@ -88,7 +93,7 @@ Do not edit it by hand.
     If you find a problem, please open a Github issue.
     The content of this blog as well as the code snippets are under the <a href="https://en.wikipedia.org/wiki/BSD_licenses#3-clause_license_(%22BSD_License_2.0%22,_%22Revised_BSD_License%22,_%22New_BSD_License%22,_or_%22Modified_BSD_License%22)">BSD-3 License</a> which I also usually use for all my personal projects. It's basically free for every use but you have to mention me as the original author.
   </p>
-</blockquote>
+</em>
 
 </div>
 </body>
