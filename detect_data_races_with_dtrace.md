@@ -148,7 +148,7 @@ Alright, now let's implement our idea in DTrace:
 
 typedef enum {AccessRead=1, AccessWrite=2} Access;
 
-size_t /* tid || access */ concurrent[int /* pc */];
+size_t /* tid || access */ concurrent[int /* data ptr */];
 
 int func_access[string];
 
