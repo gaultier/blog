@@ -163,7 +163,6 @@ pid$target::byte_array_?et_len:entry {
   this->their_tid = this->theirs & ((size_t)1UL << 62);
   this->their_access = this->theirs >> 62;
   this->my_access = func_access[probefunc];
-  //printf("[D001] arg0=%p theirs=%d their_access=%d their_tid=%d my_access=%d\n", self->data, this->theirs, this->their_access, this->their_tid, this->my_access);
 
   if (this->their_tid !=0 && 
       this->their_tid != tid && 
@@ -176,12 +175,10 @@ pid$target::byte_array_?et_len:entry {
   }
 
   this->new = ((size_t)this->my_access << 62) | (size_t)tid;
-  //printf("[D002] %d %d %d", this->new, this->my_access, tid);
   concurrent[self->data]= (((size_t)this->my_access) << 62) | (size_t)tid;
 }
 
 pid$target::byte_array_?et_len:return /self->data != 0/ {
-  //printf("[D003] data=%p %d\n",self->data, concurrent[self->data]);
   concurrent[self->data] = 0;
   self->data = 0;
 }

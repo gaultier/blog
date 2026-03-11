@@ -249,7 +249,6 @@ Do not edit it by hand.
 <span class="line-number"></span><span class="code-hl">  this-&gt;their_tid = this-&gt;theirs &amp; ((size_t)1UL &lt;&lt; 62);</span>
 <span class="line-number"></span><span class="code-hl">  this-&gt;their_access = this-&gt;theirs &gt;&gt; 62;</span>
 <span class="line-number"></span><span class="code-hl">  this-&gt;my_access = func_access[probefunc];</span>
-<span class="line-number"></span><span class="code-hl">  //printf(&quot;[D001] arg0=%p theirs=%d their_access=%d their_tid=%d my_access=%d\n&quot;, self-&gt;data, this-&gt;theirs, this-&gt;their_access, this-&gt;their_tid, this-&gt;my_access);</span>
 <span class="line-number"></span><span class="code-hl"></span>
 <span class="line-number"></span><span class="code-hl">  if (this-&gt;their_tid !=0 &amp;&amp; </span>
 <span class="line-number"></span><span class="code-hl">      this-&gt;their_tid != tid &amp;&amp; </span>
@@ -262,12 +261,10 @@ Do not edit it by hand.
 <span class="line-number"></span><span class="code-hl">  }</span>
 <span class="line-number"></span><span class="code-hl"></span>
 <span class="line-number"></span><span class="code-hl">  this-&gt;new = ((size_t)this-&gt;my_access &lt;&lt; 62) | (size_t)tid;</span>
-<span class="line-number"></span><span class="code-hl">  //printf(&quot;[D002] %d %d %d&quot;, this-&gt;new, this-&gt;my_access, tid);</span>
 <span class="line-number"></span><span class="code-hl">  concurrent[self-&gt;data]= (((size_t)this-&gt;my_access) &lt;&lt; 62) | (size_t)tid;</span>
 <span class="line-number"></span><span class="code-hl">}</span>
 <span class="line-number"></span><span class="code-hl"></span>
 <span class="line-number"></span><span class="code-hl">pid$target::byte_array_?et_len:return /self-&gt;data != 0/ {</span>
-<span class="line-number"></span><span class="code-hl">  //printf(&quot;[D003] data=%p %d\n&quot;,self-&gt;data, concurrent[self-&gt;data]);</span>
 <span class="line-number"></span><span class="code-hl">  concurrent[self-&gt;data] = 0;</span>
 <span class="line-number"></span><span class="code-hl">  self-&gt;data = 0;</span>
 <span class="line-number"></span><span class="code-hl">}</span>
