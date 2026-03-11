@@ -2,7 +2,7 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
 <title>Philippe Gaultier's blog</title>
 <link href="https://gaultier.github.io/blog"/>
-<updated>2026-03-09T18:13:50+01:00</updated>
+<updated>2026-03-11T13:35:11+01:00</updated>
 <author>
   <name>Philippe Gaultier</name>
 </author>
@@ -391,5 +391,13 @@
 <id>urn:uuid:11e1f1d7-6105-5048-967d-7f57942f6260</id>
 <updated>2026-03-09T18:13:50+01:00</updated>
 <published>2026-03-09T16:05:54+01:00</published>
+</entry>
+    
+<entry>
+<title>Detect data races with DTrace in any language</title>
+<link href="https://gaultier.github.io/blog/detect_data_races_with_dtrace.html"/>
+<id>urn:uuid:413e821b-8449-5c1c-85d6-578aa3fe3f74</id>
+<updated>2026-03-11T13:35:11+01:00</updated>
+<published>2026-03-11T13:35:11+01:00</published>
 </entry>
     </feed>
