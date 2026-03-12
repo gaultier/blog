@@ -1,3 +1,4 @@
+use anyhow::{Context, anyhow, bail};
 use markdown::{
     ParseOptions,
     mdast::{FootnoteDefinition, Node, Text},
@@ -84,150 +85,145 @@ fn hash_article_inputs(html_header: &[u8], html_footer: &[u8], md_content: &[u8]
     hasher.finish()
 }
 
-fn md_lint_rec(node: &Node, md_path: &Path) {
+fn md_lint_rec(node: &Node, md_path: &Path) -> anyhow::Result<()> {
     match node {
         Node::Root(x) => {
             for child in &x.children {
-                md_lint_rec(child, md_path);
+                md_lint_rec(child, md_path)?;
             }
+            Ok(())
         }
         Node::Blockquote(x) => {
             for child in &x.children {
-                md_lint_rec(child, md_path);
+                md_lint_rec(child, md_path)?;
             }
+            Ok(())
         }
-        Node::FootnoteDefinition(_) => {}
-        Node::MdxJsxFlowElement(_) => {}
+        Node::FootnoteDefinition(_) | Node::MdxJsxFlowElement(_) => Ok(()),
         Node::List(x) => {
             for child in &x.children {
-                md_lint_rec(child, md_path);
+                md_lint_rec(child, md_path)?;
             }
+            Ok(())
         }
-        Node::MdxjsEsm(_) => {}
-        Node::Toml(_) => {}
-        Node::Yaml(_) => {}
-        Node::Break(_) => {}
-        Node::InlineCode(_) => {}
-        Node::InlineMath(_inline_math) => todo!(),
+        Node::InlineMath(_)
+        | Node::MdxjsEsm(_)
+        | Node::Toml(_)
+        | Node::Yaml(_)
+        | Node::Break(_)
+        | Node::InlineCode(_) => Ok(()),
         Node::Delete(x) => {
             for child in &x.children {
-                md_lint_rec(child, md_path);
+                md_lint_rec(child, md_path)?;
             }
+            Ok(())
         }
         Node::Emphasis(x) => {
             for child in &x.children {
-                md_lint_rec(child, md_path);
+                md_lint_rec(child, md_path)?;
             }
+            Ok(())
         }
-        Node::MdxTextExpression(_) => {}
-        Node::FootnoteReference(_) => {}
-        Node::Html(_) => {}
-        Node::Image(_) => {}
-        Node::ImageReference(_) => {}
-        Node::MdxJsxTextElement(_) => {}
+        Node::MdxTextExpression(_)
+        | Node::FootnoteReference(_)
+        | Node::Html(_)
+        | Node::Image(_)
+        | Node::ImageReference(_)
+        | Node::MdxJsxTextElement(_) => Ok(()),
+
         Node::Link(link) => {
             // TODO: external links.
             if !link.url.starts_with("/") {
-                return;
+                return Ok(());
             }
 
             if !link.url.starts_with("/blog/") {
-                panic!("wrong internal link, must start with '/blog': {}", link.url);
+                bail!("wrong internal link, must start with '/blog': {}", link.url);
             }
             if link.url.ends_with(".md") {
-                panic!("wrong internal link, must not end with '.md': {}", link.url);
+                bail!("wrong internal link, must not end with '.md': {}", link.url);
             }
 
             if link.url.contains("gaultier.github.io") {
-                panic!("wrong internal link, points to public blog: {}", link.url);
+                bail!("wrong internal link, points to public blog: {}", link.url);
             }
+            Ok(())
         }
-        Node::LinkReference(_) => {}
+        Node::LinkReference(_) => Ok(()),
         Node::Strong(x) => {
             for child in &x.children {
-                md_lint_rec(child, md_path);
+                md_lint_rec(child, md_path)?;
             }
+            Ok(())
         }
         Node::Text(text) => {
             // Check that `DTrace` has the correct case.
-            assert!(
-                !(text.value.contains(" dtrace")
-                    || text.value.contains(" dTrace")
-                    || text.value.contains(" Dtrace")),
-                "incorrect casing for DTrace: file={} position={:?}",
-                md_path.to_str().unwrap(),
-                text.position
-            );
-
-            // Prevent `Kib` and `Kb`.
-            assert!(
-                !text.value.contains("Kib"),
-                "incorrect use of Kib: file={} position={:?}",
-                md_path.to_str().unwrap(),
-                text.position
-            );
-            assert!(
-                !text.value.contains("Kb"),
-                "incorrect use of Kb: file={} position={:?}",
-                md_path.to_str().unwrap(),
-                text.position
-            );
-            assert!(
-                !text.value.contains("KB"),
-                "incorrect use of KB: file={} position={:?}",
-                md_path.to_str().unwrap(),
-                text.position
-            );
+            let incorrect = ["dtrace", "dTrace", "Dtrace", "Kib", "kb", "KB", "Kb"];
+            for inc in incorrect {
+                if let Some(_pos) = text.value.find(inc) {
+                    bail!(
+                        "incorrect casing for DTrace: file={:?} position={:?} excerpt:{}",
+                        md_path.to_str(),
+                        text.position,
+                        inc
+                    );
+                }
+            }
+            Ok(())
         }
         Node::Code(code) => {
-            assert!(
-                code.lang.is_some(),
-                "missing language for code block: file={} position={:?}",
-                md_path.to_str().unwrap(),
-                code.position
-            );
+            if !code.lang.is_some() {
+                bail!(
+                    "missing language for code block: file={:?} position={:?}",
+                    md_path.to_str(),
+                    code.position
+                );
+            }
 
             let lang = code.lang.as_ref().unwrap().as_str();
-            assert!(
-                STANDARD_LANGS.contains(&lang) || CUSTOM_LANGS.contains(&lang),
-                "unknown lang: {} position={:?}",
-                lang,
-                code.position
-            );
+            if !(STANDARD_LANGS.contains(&lang) || CUSTOM_LANGS.contains(&lang)) {
+                bail!("unknown lang: {} position={:?}", lang, code.position);
+            }
+            Ok(())
         }
-        Node::Math(_) => {}
-        Node::MdxFlowExpression(_) => {}
+        Node::Math(_) | Node::MdxFlowExpression(_) => Ok(()),
         Node::Heading(x) => {
             for child in &x.children {
-                md_lint_rec(child, md_path);
+                md_lint_rec(child, md_path)?;
             }
+            Ok(())
         }
         Node::Table(x) => {
             for child in &x.children {
-                md_lint_rec(child, md_path);
+                md_lint_rec(child, md_path)?;
             }
+            Ok(())
         }
-        Node::ThematicBreak(_) => {}
+        Node::ThematicBreak(_) => Ok(()),
         Node::TableRow(x) => {
             for child in &x.children {
-                md_lint_rec(child, md_path);
+                md_lint_rec(child, md_path)?;
             }
+            Ok(())
         }
         Node::TableCell(x) => {
             for child in &x.children {
-                md_lint_rec(child, md_path);
+                md_lint_rec(child, md_path)?;
             }
+            Ok(())
         }
         Node::ListItem(x) => {
             for child in &x.children {
-                md_lint_rec(child, md_path);
+                md_lint_rec(child, md_path)?;
             }
+            Ok(())
         }
-        Node::Definition(_) => {}
+        Node::Definition(_) => Ok(()),
         Node::Paragraph(x) => {
             for child in &x.children {
-                md_lint_rec(child, md_path);
+                md_lint_rec(child, md_path)?;
             }
+            Ok(())
         }
     }
 }
@@ -797,29 +793,39 @@ fn md_render_article(
     html_header: &[u8],
     html_footer: &[u8],
     cache: &mut HashMap<u64, Article>,
-) -> Article {
+) -> anyhow::Result<Article> {
     let start = Instant::now();
     assert!(!html_header.is_empty());
     assert!(!html_footer.is_empty());
 
-    let md_content_bytes = fs::read(&git_stat.path_from_git_root).unwrap();
+    let md_content_bytes = fs::read(&git_stat.path_from_git_root)
+        .with_context(|| format!("failed to read file: {}", &git_stat.path_from_git_root))?;
     let hash = hash_article_inputs(html_header, html_footer, &md_content_bytes);
-    dbg!(&git_stat.path_from_git_root, hash);
     if let Some(article) = cache.get(&hash) {
-        return article.clone();
+        return Ok(article.clone());
     }
     let md_content_bytes_len = md_content_bytes.len();
-    let md_content = String::from_utf8(md_content_bytes).unwrap();
+    let md_content = String::from_utf8(md_content_bytes).with_context(|| {
+        format!(
+            "failed to validate utf8: path={}",
+            &git_stat.path_from_git_root
+        )
+    })?;
 
     let (md_root_title, tags) = md_parse_metadata(&md_content);
 
     let metadata_delim = "---";
-    let metadata_delim_pos = md_content.find(metadata_delim).unwrap();
+    let metadata_delim_pos = md_content.find(metadata_delim).ok_or_else(|| {
+        anyhow!(
+            "no metadata delimiter found: path={}",
+            &git_stat.path_from_git_root
+        )
+    })?;
     let (_, md_content_article) = md_content.split_at(metadata_delim_pos + metadata_delim.len());
 
     let md_path = PathBuf::from(&git_stat.path_from_git_root);
     let html_path = md_path.with_extension("html");
-    let md_ast = markdown::to_mdast(
+    let md_ast = match markdown::to_mdast(
         md_content_article,
         &ParseOptions {
             constructs: markdown::Constructs {
@@ -829,54 +835,77 @@ fn md_render_article(
             gfm_strikethrough_single_tilde: true,
             ..Default::default()
         },
-    )
-    .unwrap();
+    ) {
+        Ok(x) => x,
+        Err(err) => bail!(
+            "failed to parse markdown: path={} err={:?}",
+            &git_stat.path_from_git_root,
+            err
+        ),
+    };
 
-    md_lint_rec(&md_ast, &md_path);
+    md_lint_rec(&md_ast, &md_path)?;
 
     let mut sb: Vec<u8> = Vec::with_capacity(md_content_bytes_len * 8);
-    let html_root_title = String::from_utf8(md_to_html(md_root_title)).unwrap();
+    let html_root_title = String::from_utf8(md_to_html(md_root_title)).with_context(|| {
+        format!(
+            "failed to validate utf8 for root title: path={}",
+            &git_stat.path_from_git_root
+        )
+    })?;
+
     writeln!(
         sb,
         "{}
 <!DOCTYPE html>\n<html>\n<head>\n<title>{}</title>",
         AUTOGENERATED_COMMENT, &md_root_title,
-    )
-    .unwrap();
+    )?;
     sb.extend(html_header);
-    writeln!(sb, r#"{}<div class="article-prelude">"#, "\n").unwrap();
+    writeln!(sb, r#"{}<div class="article-prelude">"#, "\n")?;
 
-    let (creation_date, _time) = git_stat.creation_date.split_once("T").unwrap();
-    let (modification_date, _time) = git_stat.modification_date.split_once("T").unwrap();
+    let (creation_date, _time) = git_stat.creation_date.split_once("T").with_context(|| {
+        format!(
+            "failed to parse creation date: path={} date={}",
+            &git_stat.path_from_git_root, &git_stat.creation_date,
+        )
+    })?;
+
+    let (modification_date, _time) =
+        git_stat
+            .modification_date
+            .split_once("T")
+            .with_context(|| {
+                format!(
+                    "failed to parse modification date: path={} date={}",
+                    &git_stat.path_from_git_root, &git_stat.modification_date,
+                )
+            })?;
     writeln!(
         sb,
         r#"{}
 
 <p class="publication-date">Published on {}. Last modified on {}.</p>"#,
         BACK_LINK, creation_date, modification_date,
-    )
-    .unwrap();
-    writeln!(sb, r#"</div>"#).unwrap();
+    )?;
+    writeln!(sb, r#"</div>"#)?;
     writeln!(
         sb,
         r#"<div class="article-title">
   <h1>{}</h1>"#,
         &html_root_title,
-    )
-    .unwrap();
+    )?;
 
-    write!(sb, r#"<div class="tags"> "#).unwrap();
+    write!(sb, r#"<div class="tags"> "#)?;
     for tag in &tags {
         let id = html_slug(tag);
         write!(
             sb,
             r#"<a href="/blog/articles-by-tag.html#{}" class="tag">{}</a> "#,
             id, tag
-        )
-        .unwrap();
+        )?;
     }
-    writeln!(sb, r#"</div>"#).unwrap();
-    writeln!(sb, r#"</div>"#).unwrap();
+    writeln!(sb, r#"</div>"#)?;
+    writeln!(sb, r#"</div>"#)?;
 
     let mut md_titles = Vec::with_capacity(12);
     let mut title_to_counter: BTreeMap<String, u8> = BTreeMap::new();
@@ -888,7 +917,7 @@ fn md_render_article(
     md_to_html_rec(&mut sb, &mut footnote_defs, &md_ast, &md_titles, false);
     md_render_footnote_definitions(&mut sb, &footnote_defs);
 
-    writeln!(sb, "{}", BACK_LINK).unwrap();
+    writeln!(sb, "{}", BACK_LINK)?;
     sb.extend(html_footer);
 
     let article = Article {
@@ -907,7 +936,7 @@ fn md_render_article(
         Instant::now().duration_since(start).as_micros()
     );
 
-    article
+    Ok(article)
 }
 
 fn md_render_footnote_definitions(content: &mut Vec<u8>, footnote_defs: &[FootnoteDefinition]) {
@@ -1157,15 +1186,24 @@ fn generate_all(cache: &mut HashMap<u64, Article>) {
 
     let git_stats = git_get_articles_stats();
 
-    let mut articles: Vec<Article> = git_stats
-        .into_iter()
-        .filter(|gs| {
-            gs.path_from_git_root != "README.md"
-                && gs.path_from_git_root != "todo.md"
-                && gs.path_from_git_root != "index.md"
-        })
-        .map(|gs| md_render_article(gs, &html_header, &html_footer, cache))
-        .collect();
+    let mut articles: Vec<Article> = Vec::with_capacity(git_stats.len());
+    for gs in git_stats {
+        if gs.path_from_git_root == "README.md"
+            || gs.path_from_git_root == "todo.md"
+            || gs.path_from_git_root == "index.md"
+        {
+            continue;
+        }
+
+        match md_render_article(gs, &html_header, &html_footer, cache) {
+            Ok(a) => {
+                articles.push(a);
+            }
+            Err(err) => {
+                eprintln!("err: failed to render article: err={:?}", err);
+            }
+        }
+    }
     for a in &articles {
         fs::write(&a.html_path, &a.html_output).unwrap();
     }

@@ -4,6 +4,7 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+anyhow = "1.0.102"
 # Live-reload HTTP server.
 httparse = "1.10.1"
 # Parse .md files.
@@ -12,3 +13,6 @@ markdown = "1.0.0"
 notify = "8.2.0"
 # RSS feed.
 uuid = {version="1.21.0", features=["v5"]}
+
+[profile.release]
+panic = "abort"
