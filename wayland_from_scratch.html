@@ -285,8 +285,11 @@ The same goes for extension protocols: they simply are one XML file that is turn
 </ul>
 <p>The object id in this case is <code>1</code>, which is the singleton <code>wl_display</code> that already exists.
 The method is: <code>get_registry(u32 new_id)</code> whose opcode we listed before.
-The sole argument takes 4 bytes and is this incremental number we keep track of client-side.
-It does not necessarily have to be incremental, but that's what <code>libwayland</code> does and also it's the easiest.</p>
+The sole argument takes 4 bytes and is this incremental number we keep track of client-side.</p>
+<p><del>It does not necessarily have to be incremental, but that's what <code>libwayland</code> does and also it's the easiest.</del> Actually it must be sequential, as pointed out by a sharp reader, per the <a href="https://wayland.freedesktop.org/docs/html/ch04.html#sect-Protocol-Creating-Objects">spec</a>:</p>
+<blockquote>
+<p>Each object has a unique ID. The IDs are allocated by the entity creating the object (either client or server). IDs allocated by the client are in the range [1, 0xfeffffff] while IDs allocated by the server are in the range [0xff000000, 0xffffffff]. The 0 ID is reserved to represent a null or non-existent object. For efficiency purposes, the IDs are densely packed in the sense that the ID N will not be used until N-1 has been used. This ordering is not merely a guideline, but a strict requirement, and there are implementations of the protocol that rigorously enforce this rule, including the ubiquitous libwayland.</p>
+</blockquote>
 <p>For convenience and efficiency, we always craft the message on the stack and do not allocate dynamic memory.</p>
 <p>We first introduce a few utility functions to read and write parts of messages:</p>
 <pre>
