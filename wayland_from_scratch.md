@@ -162,7 +162,10 @@ This is coincidentally our first message we send, so let's briefly go over the s
 The object id in this case is `1`, which is the singleton `wl_display` that already exists.
 The method is: `get_registry(u32 new_id)` whose opcode we listed before.
 The sole argument takes 4 bytes and is this incremental number we keep track of client-side.
-It does not necessarily have to be incremental, but that's what `libwayland` does and also it's the easiest. 
+
+~It does not necessarily have to be incremental, but that's what `libwayland` does and also it's the easiest.~ Actually it must be sequential, as pointed out by a sharp reader, per the [spec](https://wayland.freedesktop.org/docs/html/ch04.html#sect-Protocol-Creating-Objects):
+
+> Each object has a unique ID. The IDs are allocated by the entity creating the object (either client or server). IDs allocated by the client are in the range [1, 0xfeffffff] while IDs allocated by the server are in the range [0xff000000, 0xffffffff]. The 0 ID is reserved to represent a null or non-existent object. For efficiency purposes, the IDs are densely packed in the sense that the ID N will not be used until N-1 has been used. This ordering is not merely a guideline, but a strict requirement, and there are implementations of the protocol that rigorously enforce this rule, including the ubiquitous libwayland. 
 
 For convenience and efficiency, we always craft the message on the stack and do not allocate dynamic memory.
 
