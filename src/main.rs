@@ -293,7 +293,7 @@ fn git_get_articles_stats() -> anyhow::Result<Vec<GitStat>> {
                     break;
                 }
                 Some(line) if *line == "" || line.starts_with("'20") => break,
-                Some(_) => lines.next().unwrap(),
+                Some(_) => lines.next().unwrap(), // Safe due to `peek()`.
             };
 
             let mut split = line.splitn(3, '\t');
@@ -394,7 +394,12 @@ fn md_collect_titles(
             titles.push(Title {
                 text: content,
                 depth,
-                start_md_offset: heading.position.as_ref().unwrap().start.offset,
+                start_md_offset: heading
+                    .position
+                    .as_ref()
+                    .ok_or(anyhow!("heading has no position"))?
+                    .start
+                    .offset,
                 slug,
             });
         }
@@ -513,7 +518,7 @@ fn capitalize_first(s: &str) -> Cow<'_, str> {
     }
 
     let mut chars = s.chars();
-    let c = chars.next().unwrap();
+    let c = chars.next().unwrap(); // Safe due to `is_empty()` check.
     if c.is_uppercase() {
         Cow::Borrowed(s)
     } else {
@@ -590,7 +595,10 @@ fn md_to_html_rec(
                 r##"<sup class="footnote-ref"><a href="#fn-{}" id="fnref-{}" data-footnote-ref>{}</a></sup>"##,
                 &footnote_reference.identifier,
                 footnote_reference.identifier,
-                footnote_reference.label.as_ref().unwrap(),
+                footnote_reference
+                    .label
+                    .as_ref()
+                    .ok_or(anyhow!("footnote reference has no label"))?,
             )?;
         }
         Node::Html(html) => {
@@ -630,7 +638,7 @@ fn md_to_html_rec(
         }
         Node::Code(code) => {
             let sanitized = text_sanitize_for_html(&code.value, false);
-            let lang = code.lang.as_ref().unwrap();
+            let lang = code.lang.as_ref().unwrap(); // Safe due to `md_lint_rec` checking that.
             write!(
                 content,
                 r#"<pre>
@@ -659,7 +667,7 @@ fn md_to_html_rec(
             let title = titles
                 .iter()
                 .find(|t| t.start_md_offset == heading.position.as_ref().unwrap().start.offset)
-                .unwrap();
+                .ok_or(anyhow!("failed to find title"))?;
 
             writeln!(content, r#"<h{} id="{}">"#, heading.depth, title.slug)?;
             write!(content, r##"  <a class="title" href="#{}">"##, title.slug)?;
@@ -1093,7 +1101,10 @@ fn generate_article_rss(
     "#,
         text_sanitize_for_html(&article.html_title, true),
         BASE_URL,
-        article.html_path.to_str().unwrap(),
+        article
+            .html_path
+            .to_str()
+            .ok_or(anyhow!("failed to convert path to str"))?,
         &article_uuid,
         article.git_stat.modification_date,
         article.git_stat.creation_date,
@@ -1254,7 +1265,8 @@ fn generate_all(cache: &mut HashMap<u64, Article>) -> anyhow::Result<()> {
         }
     }
     for a in &articles {
-        fs::write(&a.html_path, &a.html_output).unwrap();
+        fs::write(&a.html_path, &a.html_output)
+            .with_context(|| format!("failed to write {:?}", &a.html_path))?;
     }
 
     generate_home_page(&mut articles, &html_header, &html_footer)?;
