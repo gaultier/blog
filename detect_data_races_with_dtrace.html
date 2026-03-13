@@ -71,7 +71,7 @@ Do not edit it by hand.
 <div class="article-prelude">
 <p><a href="/blog"> ⏴ Back to all articles</a></p>
 
-<p class="publication-date">Published on 2026-03-11. Last modified on 2026-03-11.</p>
+<p class="publication-date">Published on 2026-03-11. Last modified on 2026-03-13.</p>
 </div>
 <div class="article-title">
   <h1>Detect data races with DTrace in any language</h1>
@@ -90,6 +90,26 @@ Do not edit it by hand.
 
   <li>
     <a href="#example">Example</a>
+</li>
+
+  <li>
+    <a href="#threadsanitizer">ThreadSanitizer</a>
+</li>
+
+  <li>
+    <a href="#the-dtrace-race-detector">The DTrace race detector</a>
+</li>
+
+  <li>
+    <a href="#improvements">Improvements</a>
+</li>
+
+  <li>
+    <a href="#conclusion">Conclusion</a>
+</li>
+
+  <li>
+    <a href="#addendum-the-full-code">Addendum: The full code</a>
 </li>
 </ul>
 </details>
@@ -112,22 +132,18 @@ Do not edit it by hand.
   <a class="hash-anchor" href="#in-practice" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>This is great to have formally defined, but it's not very actionable. Many programming languages do not have enough compile time guarantees to avoid data races at compile time, and thus provide a runtime race detector: Go, C and C++ with Thread Sanitizer, etc.</p>
-<p>Typically these can detect some data races but not all, and incur a big performance penalty (I have experienced x5 to x20 slow-downs in real production code).</p>
-<p>Also, these cannot be used in some contexts. What can we do then?</p>
+<p>Typically these can detect some data races but not all, and incur a big performance penalty (I have experienced x5 to x20 slow-downs in real production code). Also, they typically require that <em>all</em> the code in the program is compiled with this detector enabled, which is sometimes very time-consuming, or not possible at all.</p>
+<p>What can we do then?</p>
 <p>What if we could somehow use DTrace to observe our program and detect, like a runtime race detector, invalid accesses? It does not have to catch <em>all</em> races, <em>some</em> would be already nice. Even a crude approach could be helpful.</p>
-<p>So let's simplify things first: we'll exclude atomics for now. Since synchronized operations are safe, and mutexes do synchronize:</p>
-<blockquote>
-<p>For any sync.Mutex or sync.RWMutex variable l and n &lt; m, call n of l.Unlock() is synchronized before call m of l.Lock() returns.</p>
-</blockquote>
-<p>These lock and unlock operations create a 'critical', or 'exclusive', section. If two or more threads access concurrently this section without synchronization (i.e. without mutex), and this section does a write, then we have a data race.</p>
 <p>So here is the idea:</p>
 <ul>
 <li>We suspect a data structure to be racy</li>
-<li>We observe with DTrace functions that mutate ('write') this data structure. DTrace can also observe arbitrary locations in the program with <a href="https://illumos.org/books/dtrace/chp-user.html#chp-user">function offset probes (33.6.2. Tracing Arbitrary Instructions)</a> or statically defined probes, but simply tracing functions is enough to demonstrate the point here.</li>
-<li>When entering such a function, we record the thread id in a global map, where the key is the location, and the value is the thread id.</li>
+<li>We observe with DTrace functions that read and write this data structure. DTrace can also observe arbitrary locations in the program with <a href="https://illumos.org/books/dtrace/chp-user.html#chp-user">function offset probes (33.6.2. Tracing Arbitrary Instructions)</a> or statically defined probes, but simply tracing functions is enough to demonstrate the point here.</li>
+<li>When entering such a function, we record in a global map the thread id and the kind of access (read/write). The key in this map is the memory address being accessed.</li>
 <li>When exiting such a function, we clear the entry in the map.</li>
-<li>If we enter such a function and we see from the global map that another thread is already running this function, this means that we have a concurrent access to the data structure in a write-write or read-write fashion. This is a data race and we report it.</li>
+<li>If we enter such a function and we see from the global map that another thread is already running this function, this means that we have a concurrent access to the data structure. If at least one of them is a write (read-read is fine), this is a potential data race.</li>
 </ul>
+<p>This can be refined further as we'll see but it's good enough for now, and that's essentially what Thread Sanitizer does.</p>
 <h2 id="example">
   <a class="title" href="#example">Example</a>
   <a class="hash-anchor" href="#example" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
@@ -210,9 +226,16 @@ Do not edit it by hand.
 <ul>
 <li>I use getters and setters for one reason only: to make it easy to observe read and write operations in DTrace. If you hate getters and setters, the same can be achieved with DTrace static probes.</li>
 <li>The main thread polls very aggressively watching the length of the growable array. It's effectively a spin-lock, that unlocks when the length has reached the target value. In real code there would be a <code>nanosleep()</code> call in each loop ieration, or a proper synchronization mechanism e.g. a condition variable or simply a call to <code>pthread_join</code>. But I have seen plenty code like this in the wild.</li>
-<li>The obvious data race is on the <code>len</code> field of the byte array. It's likely benign in unoptimized mode, because the consequence in the current code is that we'll either do a few extra loop iterations or the assert at the end will fail. However the compiler is free to re-order the code since there are no explicit data dependencies and that's where the fun begins. Don't be this guy that says 'well, it's a data race, but it isn't actually that bad, so let's not fix it...'. It's a matter of <em>when</em>, not <em>if</em>, it's going to explode in your hand.</li>
+<li>The obvious data race is on the <code>len</code> field of the byte array. It's likely benign in unoptimized mode, because the consequence in the current code is that we'll either do a few extra loop iterations or the assert at the end will fail.</li>
+<li>However the compiler is free to re-order the code since there are no explicit data dependencies and that's where the fun begins. Don't be this guy that says 'well, it's a data race, but it isn't actually that bad, so let's not fix it...'. It's a matter of <em>when</em>, not <em>if</em>, it's going to explode in your hand.</li>
+<li>In fact when compiling this program in release mode it never terminates.</li>
+<li>I did not even talk about CPU caches, and how the lack of explicit synchronization primitives is interpreted by the CPU as: let's cache these values aggressively! Which means we'll likely have stale reads.</li>
+<li>The moment someone modifies the program, for example to print the last element of the array inside the loop on the main thread, we'll likely get a segfault, because <code>byte_array_push</code> modifies the fields of the <code>ByteArray</code> structure, which have to always be consistent with each other: <code>data</code>, <code>len</code>, and <code>cap</code>.  Since there is no synchronization primitive to ensure that, the other threads can see the structure in an inconsistent, half-updated state. That's the reason why we cannot simply make <code>len</code> an atomic. This issue of inconsistent state is even clearer if one thread does a lot of <code>byte_array_push()</code> and another <code>byte_array_pop()</code>: the program will very quickly explode because it tried to access a value out of bounds in the array, for example.</li>
 </ul>
-<hr />
+<h2 id="threadsanitizer">
+  <a class="title" href="#threadsanitizer">ThreadSanitizer</a>
+  <a class="hash-anchor" href="#threadsanitizer" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+</h2>
 <p>Now we run it with Thread Sanitizer:</p>
 <pre>
   <div class="code-header">
@@ -222,7 +245,38 @@ Do not edit it by hand.
   <code class="language-shell"><span class="line-number"></span><span class="code-hl">$ clang blog1.c -g -o blog1 -fsanitize=thread</span>
 <span class="line-number"></span><span class="code-hl">$ ./blog1</span>
 </code></pre>
-<p>And it appears to run just fine, no warning whatsoever.</p>
+<p>And it appears to run just fine, no warning whatsoever (actually a warning complains that we never call <code>pthread_join</code> but that's ok).</p>
+<p>If you get lucky, you'll see one warning:</p>
+<pre>
+  <div class="code-header">
+    <span>Plaintext</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-plaintext"><span class="line-number"></span><span class="code-hl">==================</span>
+<span class="line-number"></span><span class="code-hl">WARNING: ThreadSanitizer: data race (pid=2145)</span>
+<span class="line-number"></span><span class="code-hl">  Read of size 8 at 0x00016d946f08 by main thread:</span>
+<span class="line-number"></span><span class="code-hl">    #0 byte_array_get_len blog1.c:14 (blog1:arm64+0x100000610)</span>
+<span class="line-number"></span><span class="code-hl">    #1 main blog1.c:59 (blog1:arm64+0x1000009fc)</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  Previous write of size 8 at 0x00016d946f08 by thread T1:</span>
+<span class="line-number"></span><span class="code-hl">    #0 byte_array_set_len blog1.c:18 (blog1:arm64+0x1000006dc)</span>
+<span class="line-number"></span><span class="code-hl">    #1 byte_array_push blog1.c:39 (blog1:arm64+0x100000904)</span>
+<span class="line-number"></span><span class="code-hl">    #2 async_push blog1.c:46 (blog1:arm64+0x100000970)</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  Location is stack of main thread.</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  Thread T1 (tid=272869675, running) created by main thread at:</span>
+<span class="line-number"></span><span class="code-hl">    #0 pthread_create &lt;null&gt; (libclang_rt.tsan_osx_dynamic.dylib:arm64+0x31ac0)</span>
+<span class="line-number"></span><span class="code-hl">    #1 main blog1.c:56 (blog1:arm64+0x1000009f0)</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">SUMMARY: ThreadSanitizer: data race blog1.c:14 in byte_array_get_len</span>
+<span class="line-number"></span><span class="code-hl">==================</span>
+</code></pre>
+<p>But this was very rare in my testing.</p>
+<h2 id="the-dtrace-race-detector">
+  <a class="title" href="#the-dtrace-race-detector">The DTrace race detector</a>
+  <a class="hash-anchor" href="#the-dtrace-race-detector" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+</h2>
 <p>Alright, now let's implement our idea in DTrace:</p>
 <pre>
   <div class="code-header">
@@ -245,47 +299,42 @@ Do not edit it by hand.
 <span class="line-number"></span><span class="code-hl">int func_access[string];</span>
 <span class="line-number"></span><span class="code-hl"></span>
 <span class="line-number"></span><span class="code-hl">BEGIN {</span>
+<span class="line-number"></span><span class="code-hl">  // Record which kind of access each function does.</span>
 <span class="line-number"></span><span class="code-hl">  func_access[&quot;byte_array_get_len&quot;] = AccessKindRead;</span>
 <span class="line-number"></span><span class="code-hl">  func_access[&quot;byte_array_set_len&quot;] = AccessKindWrite;</span>
 <span class="line-number"></span><span class="code-hl">}</span>
 <span class="line-number"></span><span class="code-hl"></span>
-<span class="line-number"></span><span class="code-hl">pid$target::pthread_rwlock_*:entry {</span>
-<span class="line-number"></span><span class="code-hl">  self-&gt;lock = arg0;</span>
-<span class="line-number"></span><span class="code-hl">  printf(&quot;ts=%d tid=%d lock=%p\n&quot;, timestamp, tid, arg0);</span>
-<span class="line-number"></span><span class="code-hl">}</span>
-<span class="line-number"></span><span class="code-hl"></span>
-<span class="line-number"></span><span class="code-hl">pid$target::pthread_rwlock_*:return {</span>
-<span class="line-number"></span><span class="code-hl">  printf(&quot;ts=%d tid=%d lock=%p\n&quot;, timestamp, tid, self-&gt;lock);</span>
-<span class="line-number"></span><span class="code-hl">}</span>
-<span class="line-number"></span><span class="code-hl"></span>
-<span class="line-number"></span><span class="code-hl"></span>
 <span class="line-number"></span><span class="code-hl">pid$target::byte_array_?et_len:entry {</span>
+<span class="line-number"></span><span class="code-hl">  // `arg0` is the pointer to the `ByteArray` structure,</span>
+<span class="line-number"></span><span class="code-hl">  // and `len` is at offset `8` in the `ByteArray` structure.</span>
+<span class="line-number"></span><span class="code-hl">  // So this gets the value of `byte_array-&gt;len`.</span>
 <span class="line-number"></span><span class="code-hl">  self-&gt;mem_ptr = arg0 + 8;</span>
 <span class="line-number"></span><span class="code-hl">  this-&gt;theirs = accesses[self-&gt;mem_ptr];</span>
 <span class="line-number"></span><span class="code-hl">  this-&gt;my_access_kind = func_access[probefunc];</span>
 <span class="line-number"></span><span class="code-hl">  this-&gt;now = timestamp;</span>
 <span class="line-number"></span><span class="code-hl"></span>
-<span class="line-number"></span><span class="code-hl"></span>
-<span class="line-number"></span><span class="code-hl">  if (this-&gt;theirs.tid !=0 &amp;&amp; </span>
-<span class="line-number"></span><span class="code-hl">      this-&gt;theirs.tid != tid &amp;&amp; </span>
-<span class="line-number"></span><span class="code-hl">      (this-&gt;my_access_kind == AccessKindWrite || this-&gt;theirs.kind == AccessKindWrite)) {</span>
+<span class="line-number"></span><span class="code-hl">  if (this-&gt;theirs.tid !=0 &amp;&amp;  // 'if a thread is concurrently accessing the same memory...'</span>
+<span class="line-number"></span><span class="code-hl">      this-&gt;theirs.tid != tid &amp;&amp;  // 'and this is another thread as the current one...'</span>
+<span class="line-number"></span><span class="code-hl">      (this-&gt;my_access_kind == AccessKindWrite || this-&gt;theirs.kind == AccessKindWrite)) { // 'and at least one access is a write...'</span>
 <span class="line-number"></span><span class="code-hl">    printf(&quot;possible data race: my_access_kind:%d my_tid=%d my_ts=%d their_access_kind:%d their_tid=%d their_ts=%d mem_ptr=%p\n&quot;, this-&gt;my_access_kind, tid, this-&gt;now, this-&gt;theirs.kind, this-&gt;theirs.tid, this-&gt;theirs.ts, self-&gt;mem_ptr);</span>
 <span class="line-number"></span><span class="code-hl">    ustack();</span>
 <span class="line-number"></span><span class="code-hl">  }</span>
 <span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  // Update the map with the current access.</span>
 <span class="line-number"></span><span class="code-hl">  accesses[self-&gt;mem_ptr].kind = this-&gt;my_access_kind;</span>
 <span class="line-number"></span><span class="code-hl">  accesses[self-&gt;mem_ptr].tid = tid;</span>
 <span class="line-number"></span><span class="code-hl">  accesses[self-&gt;mem_ptr].ts = this-&gt;now;</span>
 <span class="line-number"></span><span class="code-hl">}</span>
 <span class="line-number"></span><span class="code-hl"></span>
 <span class="line-number"></span><span class="code-hl">pid$target::byte_array_?et_len:return /self-&gt;mem_ptr != 0/ {</span>
+<span class="line-number"></span><span class="code-hl">  // Clear the map since the access is done.</span>
 <span class="line-number"></span><span class="code-hl">  accesses[self-&gt;mem_ptr].kind = 0;</span>
 <span class="line-number"></span><span class="code-hl">  accesses[self-&gt;mem_ptr].tid = 0;</span>
 <span class="line-number"></span><span class="code-hl">  accesses[self-&gt;mem_ptr].ts = 0;</span>
 <span class="line-number"></span><span class="code-hl">  self-&gt;mem_ptr = 0;</span>
 <span class="line-number"></span><span class="code-hl">}</span>
 </code></pre>
-<p>We observe here all 'methods' of <code>byte_array</code>. This is heavy-handed and might cause false positives, for example if two threads are concurrently calling <code>byte_array_get_len</code>, this is a read-read case and not a data race. But this is simple.</p>
+<p>We only observe here the get and setter for <code>len</code> to demonstrate, but of course this can be done for all methods.</p>
 <p>When we detect a data race, we print the id of the two colliding threads and the call stack of the current thread. Note that we do not print the call stack of the other thread, but chances are, if thread A has a race with thread B, we'll alternate detecting the race inside thread A, and inside thread B, so we'll have both call stacks.</p>
 <p>Now let's run our D script. We see a ton of these messages:</p>
 <pre>
@@ -297,23 +346,280 @@ Do not edit it by hand.
 <span class="line-number"></span><span class="code-hl"></span>
 <span class="line-number"></span><span class="code-hl">[...]</span>
 <span class="line-number"></span><span class="code-hl"></span>
-<span class="line-number"></span><span class="code-hl">  4  16760         byte_array_get_len:entry WARN: data race:(246345030, 246344951)</span>
+<span class="line-number"></span><span class="code-hl"> 11 242002         byte_array_get_len:entry possible data race: my_access_kind:1 my_tid=273369021 my_ts=1447848961324000 their_access_kind:2 their_tid=273369096 their_ts=-1694029743 mem_ptr=16bd5f118</span>
 <span class="line-number"></span><span class="code-hl"></span>
 <span class="line-number"></span><span class="code-hl">              blog1`byte_array_get_len</span>
-<span class="line-number"></span><span class="code-hl">              blog1`main+0x78</span>
+<span class="line-number"></span><span class="code-hl">              blog1`main+0x44</span>
 <span class="line-number"></span><span class="code-hl">              dyld`start+0x1c10</span>
 <span class="line-number"></span><span class="code-hl"></span>
-<span class="line-number"></span><span class="code-hl">  7  16760         byte_array_get_len:entry WARN: data race:(246344951, 246345030)</span>
+<span class="line-number"></span><span class="code-hl"> 12 242003         byte_array_set_len:entry possible data race: my_access_kind:2 my_tid=273369096 my_ts=1447848963598000 their_access_kind:1 their_tid=273369021 their_ts=-1691755409 mem_ptr=16bd5f118</span>
 <span class="line-number"></span><span class="code-hl"></span>
-<span class="line-number"></span><span class="code-hl">              blog1`byte_array_get_len</span>
-<span class="line-number"></span><span class="code-hl">              blog1`byte_array_push+0x30</span>
+<span class="line-number"></span><span class="code-hl">              blog1`byte_array_set_len</span>
+<span class="line-number"></span><span class="code-hl">              blog1`byte_array_push+0x58</span>
 <span class="line-number"></span><span class="code-hl">              blog1`async_push+0x40</span>
 <span class="line-number"></span><span class="code-hl">              libsystem_pthread.dylib`_pthread_start+0x88</span>
 <span class="line-number"></span><span class="code-hl">              libsystem_pthread.dylib`thread_start+0x8</span>
-<span class="line-number"></span><span class="code-hl"></span>
 <span class="line-number"></span><span class="code-hl">[...]</span>
 </code></pre>
-<p>Indeed, the main thread has a data race when calling <code>byte_array_get_len</code> with</p>
+<p>Indeed, the main thread has a data race when calling <code>byte_array_get_len</code> with the other thread which calls <code>byte_array_set_len</code>, as expected.</p>
+<p>Now let's fix the program crudely with a mutex:</p>
+<pre>
+  <div class="code-header">
+    <span>Diff</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-diff"><span class="line-number"></span><span class="code-hl">--- blog1.c	2026-03-13 16:39:18</span>
+<span class="line-number"></span><span class="code-hl">+++ blog_mtx.c	2026-03-13 16:38:48</span>
+<span class="line-number"></span><span class="code-hl">@@ -9,6 +9,7 @@</span>
+<span class="line-number"></span><span class="code-hl"> typedef struct {</span>
+<span class="line-number"></span><span class="code-hl">   uint8_t *data;</span>
+<span class="line-number"></span><span class="code-hl">   size_t len, cap;</span>
+<span class="line-number"></span><span class="code-hl">+  pthread_mutex_t mtx;</span>
+<span class="line-number"></span><span class="code-hl"> } ByteArray;</span>
+<span class="line-number"></span><span class="code-hl"> </span>
+<span class="line-number"></span><span class="code-hl"> size_t byte_array_get_len(ByteArray *b) { return b-&gt;len; }</span>
+<span class="line-number"></span><span class="code-hl">@@ -32,11 +33,14 @@</span>
+<span class="line-number"></span><span class="code-hl"> }</span>
+<span class="line-number"></span><span class="code-hl"> </span>
+<span class="line-number"></span><span class="code-hl"> void byte_array_push(ByteArray *b, uint8_t elem) {</span>
+<span class="line-number"></span><span class="code-hl">+  pthread_mutex_lock(&amp;b-&gt;mtx);</span>
+<span class="line-number"></span><span class="code-hl">+</span>
+<span class="line-number"></span><span class="code-hl">   const size_t len = byte_array_get_len(b);</span>
+<span class="line-number"></span><span class="code-hl">   byte_array_ensure_cap_at_least(b, len + 1);</span>
+<span class="line-number"></span><span class="code-hl">   b-&gt;data[len] = elem;</span>
+<span class="line-number"></span><span class="code-hl"> </span>
+<span class="line-number"></span><span class="code-hl">   byte_array_set_len(b, len + 1);</span>
+<span class="line-number"></span><span class="code-hl">+  pthread_mutex_unlock(&amp;b-&gt;mtx);</span>
+<span class="line-number"></span><span class="code-hl"> }</span>
+<span class="line-number"></span><span class="code-hl"> </span>
+<span class="line-number"></span><span class="code-hl"> void *async_push(void *any) {</span>
+<span class="line-number"></span><span class="code-hl">@@ -50,13 +54,15 @@</span>
+<span class="line-number"></span><span class="code-hl"> }</span>
+<span class="line-number"></span><span class="code-hl"> </span>
+<span class="line-number"></span><span class="code-hl"> int main() {</span>
+<span class="line-number"></span><span class="code-hl">-  ByteArray byte_array = {0};</span>
+<span class="line-number"></span><span class="code-hl">+  ByteArray byte_array = {.mtx = PTHREAD_MUTEX_INITIALIZER};</span>
+<span class="line-number"></span><span class="code-hl"> </span>
+<span class="line-number"></span><span class="code-hl">   pthread_t thread_push = {0};</span>
+<span class="line-number"></span><span class="code-hl">   pthread_create(&amp;thread_push, NULL, async_push, &amp;byte_array);</span>
+<span class="line-number"></span><span class="code-hl"> </span>
+<span class="line-number"></span><span class="code-hl">   for (;;) {</span>
+<span class="line-number"></span><span class="code-hl">+    pthread_mutex_lock(&amp;byte_array.mtx);</span>
+<span class="line-number"></span><span class="code-hl">     const size_t len = byte_array_get_len(&amp;byte_array);</span>
+<span class="line-number"></span><span class="code-hl">+    pthread_mutex_unlock(&amp;byte_array.mtx);</span>
+<span class="line-number"></span><span class="code-hl">     if (len == DATA_LEN) {</span>
+<span class="line-number"></span><span class="code-hl">       break;</span>
+<span class="line-number"></span><span class="code-hl">     }</span>
+</code></pre>
+<p>And now our D script shows no warning of potential data races. Yay!</p>
+<h2 id="improvements">
+  <a class="title" href="#improvements">Improvements</a>
+  <a class="hash-anchor" href="#improvements" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+</h2>
+<p>Now you might be thinking: wait a minute, how do we know that the D script is actually working? It is tracking concurrent accesses, but fix with the mutex actually creates a critical section, or 'exclusive' section, where only one thread has access at any point to the data structure. As such, there are no concurrent accesses.</p>
+<p>Let's check the correctness by applying a smarter, possibly more performant fix of the data race using a RW lock:</p>
+<pre>
+  <div class="code-header">
+    <span>Diff</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-diff"><span class="line-number"></span><span class="code-hl">--- blog1.c	2026-03-13 16:39:18</span>
+<span class="line-number"></span><span class="code-hl">+++ blog_rwlock.c	2026-03-13 16:38:58</span>
+<span class="line-number"></span><span class="code-hl">@@ -9,6 +9,7 @@</span>
+<span class="line-number"></span><span class="code-hl"> typedef struct {</span>
+<span class="line-number"></span><span class="code-hl">   uint8_t *data;</span>
+<span class="line-number"></span><span class="code-hl">   size_t len, cap;</span>
+<span class="line-number"></span><span class="code-hl">+  pthread_rwlock_t rw_lock;</span>
+<span class="line-number"></span><span class="code-hl"> } ByteArray;</span>
+<span class="line-number"></span><span class="code-hl"> </span>
+<span class="line-number"></span><span class="code-hl"> size_t byte_array_get_len(ByteArray *b) { return b-&gt;len; }</span>
+<span class="line-number"></span><span class="code-hl">@@ -32,11 +33,15 @@</span>
+<span class="line-number"></span><span class="code-hl"> }</span>
+<span class="line-number"></span><span class="code-hl"> </span>
+<span class="line-number"></span><span class="code-hl"> void byte_array_push(ByteArray *b, uint8_t elem) {</span>
+<span class="line-number"></span><span class="code-hl">+  pthread_rwlock_wrlock(&amp;b-&gt;rw_lock);</span>
+<span class="line-number"></span><span class="code-hl">+</span>
+<span class="line-number"></span><span class="code-hl">   const size_t len = byte_array_get_len(b);</span>
+<span class="line-number"></span><span class="code-hl">   byte_array_ensure_cap_at_least(b, len + 1);</span>
+<span class="line-number"></span><span class="code-hl">   b-&gt;data[len] = elem;</span>
+<span class="line-number"></span><span class="code-hl"> </span>
+<span class="line-number"></span><span class="code-hl">   byte_array_set_len(b, len + 1);</span>
+<span class="line-number"></span><span class="code-hl">+</span>
+<span class="line-number"></span><span class="code-hl">+  pthread_rwlock_unlock(&amp;b-&gt;rw_lock);</span>
+<span class="line-number"></span><span class="code-hl"> }</span>
+<span class="line-number"></span><span class="code-hl"> </span>
+<span class="line-number"></span><span class="code-hl"> void *async_push(void *any) {</span>
+<span class="line-number"></span><span class="code-hl">@@ -50,13 +55,15 @@</span>
+<span class="line-number"></span><span class="code-hl"> }</span>
+<span class="line-number"></span><span class="code-hl"> </span>
+<span class="line-number"></span><span class="code-hl"> int main() {</span>
+<span class="line-number"></span><span class="code-hl">-  ByteArray byte_array = {0};</span>
+<span class="line-number"></span><span class="code-hl">+  ByteArray byte_array = {.rw_lock = PTHREAD_RWLOCK_INITIALIZER};</span>
+<span class="line-number"></span><span class="code-hl"> </span>
+<span class="line-number"></span><span class="code-hl">   pthread_t thread_push = {0};</span>
+<span class="line-number"></span><span class="code-hl">   pthread_create(&amp;thread_push, NULL, async_push, &amp;byte_array);</span>
+<span class="line-number"></span><span class="code-hl"> </span>
+<span class="line-number"></span><span class="code-hl">   for (;;) {</span>
+<span class="line-number"></span><span class="code-hl">+    pthread_rwlock_rdlock(&amp;byte_array.rw_lock);</span>
+<span class="line-number"></span><span class="code-hl">     const size_t len = byte_array_get_len(&amp;byte_array);</span>
+<span class="line-number"></span><span class="code-hl">+    pthread_rwlock_unlock(&amp;byte_array.rw_lock);</span>
+<span class="line-number"></span><span class="code-hl">     if (len == DATA_LEN) {</span>
+<span class="line-number"></span><span class="code-hl">       break;</span>
+<span class="line-number"></span><span class="code-hl">     }</span>
+</code></pre>
+<p>This allows for N concurrent reader or one concurrent writer. This means that we now can have multiple concurrent threads reading the same address in memory.</p>
+<p>To take full advantage of this, we spawn another thread that also reads in a loop the length:</p>
+<pre>
+  <div class="code-header">
+    <span>Diff</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-diff"><span class="line-number"></span><span class="code-hl">diff --git a/blog_rwlock b/blog_rwlock</span>
+<span class="line-number"></span><span class="code-hl">index 8e7a442..b5c8920 100755</span>
+<span class="line-number"></span><span class="code-hl">Binary files a/blog_rwlock and b/blog_rwlock differ</span>
+<span class="line-number"></span><span class="code-hl">diff --git a/blog_rwlock.c b/blog_rwlock.c</span>
+<span class="line-number"></span><span class="code-hl">index a402298..271acf5 100644</span>
+<span class="line-number"></span><span class="code-hl">--- a/blog_rwlock.c</span>
+<span class="line-number"></span><span class="code-hl">+++ b/blog_rwlock.c</span>
+<span class="line-number"></span><span class="code-hl">@@ -54,12 +54,29 @@ void *async_push(void *any) {</span>
+<span class="line-number"></span><span class="code-hl">   return NULL;</span>
+<span class="line-number"></span><span class="code-hl"> }</span>
+<span class="line-number"></span><span class="code-hl"> </span>
+<span class="line-number"></span><span class="code-hl">+void *async_read(void *any) {</span>
+<span class="line-number"></span><span class="code-hl">+  ByteArray *b = any;</span>
+<span class="line-number"></span><span class="code-hl">+</span>
+<span class="line-number"></span><span class="code-hl">+  for (;;) {</span>
+<span class="line-number"></span><span class="code-hl">+    pthread_rwlock_rdlock(&amp;b-&gt;rw_lock);</span>
+<span class="line-number"></span><span class="code-hl">+    const size_t len = byte_array_get_len(b);</span>
+<span class="line-number"></span><span class="code-hl">+    pthread_rwlock_unlock(&amp;b-&gt;rw_lock);</span>
+<span class="line-number"></span><span class="code-hl">+    if (len == DATA_LEN) {</span>
+<span class="line-number"></span><span class="code-hl">+      break;</span>
+<span class="line-number"></span><span class="code-hl">+    }</span>
+<span class="line-number"></span><span class="code-hl">+  }</span>
+<span class="line-number"></span><span class="code-hl">+  return NULL;</span>
+<span class="line-number"></span><span class="code-hl">+}</span>
+<span class="line-number"></span><span class="code-hl">+</span>
+<span class="line-number"></span><span class="code-hl"> int main() {</span>
+<span class="line-number"></span><span class="code-hl">   ByteArray byte_array = {.rw_lock = PTHREAD_RWLOCK_INITIALIZER};</span>
+<span class="line-number"></span><span class="code-hl"> </span>
+<span class="line-number"></span><span class="code-hl">   pthread_t thread_push = {0};</span>
+<span class="line-number"></span><span class="code-hl">   pthread_create(&amp;thread_push, NULL, async_push, &amp;byte_array);</span>
+<span class="line-number"></span><span class="code-hl"> </span>
+<span class="line-number"></span><span class="code-hl">+  pthread_t thread_read = {0};</span>
+<span class="line-number"></span><span class="code-hl">+  pthread_create(&amp;thread_read, NULL, async_read, &amp;byte_array);</span>
+<span class="line-number"></span><span class="code-hl">+</span>
+<span class="line-number"></span><span class="code-hl">   for (;;) {</span>
+<span class="line-number"></span><span class="code-hl">     pthread_rwlock_rdlock(&amp;byte_array.rw_lock);</span>
+<span class="line-number"></span><span class="code-hl">     const size_t len = byte_array_get_len(&amp;byte_array);</span>
+</code></pre>
+<p>Let's re-run our D script:</p>
+<pre>
+  <div class="code-header">
+    <span>Shell</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-shell"><span class="line-number"></span><span class="code-hl">$ sudo dtrace -s ./blog.d -c ./blog_rwlock</span>
+</code></pre>
+<p>And... no warnings, as expected. Terrific!</p>
+<p>This is the clause that does all the heavy lifting:</p>
+<pre>
+  <div class="code-header">
+    <span>Dtrace</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-dtrace"><span class="line-number"></span><span class="code-hl">      (this-&gt;my_access_kind == AccessKindWrite || this-&gt;theirs.kind == AccessKindWrite)) { // 'and at least one access is a write...'</span>
+</code></pre>
+<p>And N concurrent readers are fine. In fact, if we comment out this condition, we see indeed that we have two concurrent readers and lots of false positives get printed:</p>
+<pre>
+  <div class="code-header">
+    <span>Plaintext</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-plaintext"><span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl"> 13   6893         byte_array_get_len:entry possible data race: my_access_kind:1 my_tid=274158070 my_ts=1449489633975000 their_access_kind:1 their_tid=274158134 their_ts=0 mem_ptr=16eed3030</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">              blog_rwlock`byte_array_get_len</span>
+<span class="line-number"></span><span class="code-hl">              blog_rwlock`main+0x9c</span>
+<span class="line-number"></span><span class="code-hl">              dyld`start+0x1c10</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl"> 11   6893         byte_array_get_len:entry possible data race: my_access_kind:1 my_tid=274158134 my_ts=1449489634196625 their_access_kind:1 their_tid=274158070 their_ts=-1698664731 mem_ptr=16eed3030</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">              blog_rwlock`byte_array_get_len</span>
+<span class="line-number"></span><span class="code-hl">              blog_rwlock`async_read+0x30</span>
+<span class="line-number"></span><span class="code-hl">              libsystem_pthread.dylib`_pthread_start+0x88</span>
+<span class="line-number"></span><span class="code-hl">              libsystem_pthread.dylib`thread_start+0x8</span>
+</code></pre>
+<h2 id="conclusion">
+  <a class="title" href="#conclusion">Conclusion</a>
+  <a class="hash-anchor" href="#conclusion" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+</h2>
+<p>Thread Sanitizer does a lot more than what we have covered, because it understands all the synchronization primitives: condition variables, atomics, etc. It tracks 'happens before' relationships between threads that call these primitives. We do not do that in our crude D script, even though we could, with a good amount of post-procssing to eliminate false positives.</p>
+<p>Another major difference is that Thread Sanitizer is general purpose and tries to track all memory accesses, whereas our DTrace approach selectively tracks a few memory accesses.</p>
+<p>Even though, I think this is already a pretty good approach, in the spirit of '20% of the work gets you 80% of the way there'. The main appeal is that it avoids having to rebuild the whole program with different flags which can be very time consuming, or sometimes not feasible at all.</p>
+<p>Finally, remember that neither our DTrace approach nor Thread Sanitizer guarantee that <em>all</em> data races will be caught, since these are runtime detectors, and also because they operate with limited amounts of memory: they cannot remember <em>all</em> memory accesses in the program, they only do a best effort to remember most of them.</p>
+<h2 id="addendum-the-full-code">
+  <a class="title" href="#addendum-the-full-code">Addendum: The full code</a>
+  <a class="hash-anchor" href="#addendum-the-full-code" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+</h2>
+<details>
+  <summary>The full code</summary>
+<pre>
+  <div class="code-header">
+    <span>Dtrace</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-dtrace"><span class="line-number"></span><span class="code-hl">#pragma D option dynvarsize=16m</span>
+<span class="line-number"></span><span class="code-hl">#pragma D option cleanrate=100hz</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">typedef enum {AccessKindRead=1, AccessKindWrite=2} AccessKind;</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">typedef struct {</span>
+<span class="line-number"></span><span class="code-hl">  AccessKind kind;</span>
+<span class="line-number"></span><span class="code-hl">  size_t tid;</span>
+<span class="line-number"></span><span class="code-hl">  int ts;</span>
+<span class="line-number"></span><span class="code-hl">} Access;</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">Access accesses[uintptr_t /* data ptr */];</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">int func_access[string];</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">BEGIN {</span>
+<span class="line-number"></span><span class="code-hl">  // Record which kind of access each function does.</span>
+<span class="line-number"></span><span class="code-hl">  func_access[&quot;byte_array_get_len&quot;] = AccessKindRead;</span>
+<span class="line-number"></span><span class="code-hl">  func_access[&quot;byte_array_set_len&quot;] = AccessKindWrite;</span>
+<span class="line-number"></span><span class="code-hl">}</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">pid$target::byte_array_?et_len:entry {</span>
+<span class="line-number"></span><span class="code-hl">  // `arg0` is the pointer to the `ByteArray` structure,</span>
+<span class="line-number"></span><span class="code-hl">  // and `len` is at offset `8` in the `ByteArray` structure.</span>
+<span class="line-number"></span><span class="code-hl">  // So this gets the value of `byte_array-&gt;len`.</span>
+<span class="line-number"></span><span class="code-hl">  self-&gt;mem_ptr = arg0 + 8;</span>
+<span class="line-number"></span><span class="code-hl">  this-&gt;theirs = accesses[self-&gt;mem_ptr];</span>
+<span class="line-number"></span><span class="code-hl">  this-&gt;my_access_kind = func_access[probefunc];</span>
+<span class="line-number"></span><span class="code-hl">  this-&gt;now = timestamp;</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  if (this-&gt;theirs.tid !=0 &amp;&amp;  // 'if a thread is concurrently accessing the same memory...'</span>
+<span class="line-number"></span><span class="code-hl">      this-&gt;theirs.tid != tid &amp;&amp;  // 'and this is another thread as the current one...'</span>
+<span class="line-number"></span><span class="code-hl">      (this-&gt;my_access_kind == AccessKindWrite || this-&gt;theirs.kind == AccessKindWrite)) { // 'and at least one access is a write...'</span>
+<span class="line-number"></span><span class="code-hl">    printf(&quot;possible data race: my_access_kind:%d my_tid=%d my_ts=%d their_access_kind:%d their_tid=%d their_ts=%d mem_ptr=%p\n&quot;, this-&gt;my_access_kind, tid, this-&gt;now, this-&gt;theirs.kind, this-&gt;theirs.tid, this-&gt;theirs.ts, self-&gt;mem_ptr);</span>
+<span class="line-number"></span><span class="code-hl">    ustack();</span>
+<span class="line-number"></span><span class="code-hl">  }</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  // Update the map with the current access.</span>
+<span class="line-number"></span><span class="code-hl">  accesses[self-&gt;mem_ptr].kind = this-&gt;my_access_kind;</span>
+<span class="line-number"></span><span class="code-hl">  accesses[self-&gt;mem_ptr].tid = tid;</span>
+<span class="line-number"></span><span class="code-hl">  accesses[self-&gt;mem_ptr].ts = this-&gt;now;</span>
+<span class="line-number"></span><span class="code-hl">}</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">pid$target::byte_array_?et_len:return /self-&gt;mem_ptr != 0/ {</span>
+<span class="line-number"></span><span class="code-hl">  // Clear the map since the access is done.</span>
+<span class="line-number"></span><span class="code-hl">  accesses[self-&gt;mem_ptr].kind = 0;</span>
+<span class="line-number"></span><span class="code-hl">  accesses[self-&gt;mem_ptr].tid = 0;</span>
+<span class="line-number"></span><span class="code-hl">  accesses[self-&gt;mem_ptr].ts = 0;</span>
+<span class="line-number"></span><span class="code-hl">  self-&gt;mem_ptr = 0;</span>
+<span class="line-number"></span><span class="code-hl">}</span>
+</code></pre>
+</details
 <p><a href="/blog"> ⏴ Back to all articles</a></p>
 
 <div id="donate">
