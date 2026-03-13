@@ -277,14 +277,13 @@ fn git_get_articles_stats() -> anyhow::Result<Vec<GitStat>> {
             Some(line) => line,
         };
 
-        let date_trimmed = line.trim_matches('\'').trim_ascii();
+        let date_trimmed = line.trim_matches('\'');
         assert!(!date_trimmed.is_empty());
 
         let empty = lines
             .next()
-            .ok_or(anyhow!("expected empty line in git log entry, after date"))?
-            .trim_ascii();
-        assert!(empty.is_empty());
+            .ok_or(anyhow!("expected empty line in git log entry, after date"))?;
+        assert!(empty == "");
 
         // Files.
         loop {
@@ -293,11 +292,11 @@ fn git_get_articles_stats() -> anyhow::Result<Vec<GitStat>> {
                 None => {
                     break;
                 }
-                Some(line) if line.trim_ascii().is_empty() || line.starts_with("'20") => break,
+                Some(line) if *line == "" || line.starts_with("'20") => break,
                 Some(_) => lines.next().unwrap(),
             };
 
-            let mut split = line.trim_ascii().splitn(3, '\t');
+            let mut split = line.splitn(3, '\t');
             match (split.next(), split.next(), split.next()) {
                 (Some("D"), Some(path), None) => {
                     assert!(!path.is_empty());
