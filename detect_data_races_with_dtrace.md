@@ -68,9 +68,9 @@ typedef struct {
   size_t len, cap;
 } ByteArray;
 
-size_t byte_array_get_len(const ByteArray *b) { return b->len; }
+size_t byte_array_get_len(ByteArray *b) { return b->len; }
 
-size_t byte_array_get_cap(const ByteArray *b) { return b->cap; }
+size_t byte_array_get_cap(ByteArray *b) { return b->cap; }
 
 void byte_array_set_len(ByteArray *b, size_t len) { b->len = len; }
 
@@ -96,39 +96,41 @@ void byte_array_push(ByteArray *b, uint8_t elem) {
   byte_array_set_len(b, len + 1);
 }
 
-typedef struct {
-  ByteArray b;
-  pthread_mutex_t mtx;
-} Work;
-
 void *async_push(void *any) {
-  Work *work = any;
+  ByteArray *b = any;
 
   for (size_t i = 0; i < DATA_LEN; i++) {
-    byte_array_push(&work->b, (uint8_t)i);
+    byte_array_push(b, (uint8_t)i);
   }
 
   return NULL;
 }
 
 int main() {
-  Work work = {.b = {0}, .mtx = PTHREAD_MUTEX_INITIALIZER};
+  ByteArray byte_array = {0};
 
   pthread_t thread_push = {0};
-  pthread_create(&thread_push, NULL, async_push, &work);
+  pthread_create(&thread_push, NULL, async_push, &byte_array);
 
   for (;;) {
-    const size_t len = byte_array_get_len(&work.b);
+    const size_t len = byte_array_get_len(&byte_array);
     if (len == DATA_LEN) {
       break;
     }
   }
 
-  pthread_join(thread_push, NULL);
-
-  assert(byte_array_get_len(&work.b) == DATA_LEN);
+  assert(byte_array_get_len(&byte_array) == DATA_LEN);
 }
 ```
+
+A few notes about this code:
+
+- I use getters and setters for one reason only: to make it easy to observe read and write operations in DTrace. If you hate getters and setters, the same can be achieved with DTrace static probes.
+- The main thread polls very aggressively watching the length of the growable array. It's effectively a spin-lock, that unlocks when the length has reached the target value. In real code there would be a `nanosleep()` call in each loop ieration, or a proper synchronization mechanism e.g. a condition variable or simply a call to `pthread_join`. But I have seen plenty code like this in the wild.
+- The obvious data race is on the `len` field of the byte array. It's likely benign in unoptimized mode, because the consequence in the current code is that we'll either do a few extra loop iterations or the assert at the end will fail. However the compiler is free to re-order the code since there are no explicit data dependencies and that's where the fun begins. Don't be this guy that says 'well, it's a data race, but it isn't actually that bad, so let's not fix it...'. It's a matter of *when*, not *if*, it's going to explode in your hand.
+
+
+---
 
 Now we run it with Thread Sanitizer:
 
@@ -146,41 +148,57 @@ Alright, now let's implement our idea in DTrace:
 #pragma D option dynvarsize=16m
 #pragma D option cleanrate=100hz
 
-typedef enum {AccessRead=1, AccessWrite=2} Access;
+typedef enum {AccessKindRead=1, AccessKindWrite=2} AccessKind;
 
-size_t /* tid || access */ concurrent[int /* data ptr */];
+typedef struct {
+  AccessKind kind;
+  size_t tid;
+  int ts;
+} Access;
+
+Access accesses[uintptr_t /* data ptr */];
 
 int func_access[string];
 
 BEGIN {
-  func_access["byte_array_get_len"] = AccessRead;
-  func_access["byte_array_set_len"] = AccessWrite;
+  func_access["byte_array_get_len"] = AccessKindRead;
+  func_access["byte_array_set_len"] = AccessKindWrite;
 }
 
-pid$target::byte_array_?et_len:entry {
-  self->data = arg0;
-  this->theirs = concurrent[arg0];
-  this->their_tid = this->theirs & ((size_t)1UL << 62);
-  this->their_access = this->theirs >> 62;
-  this->my_access = func_access[probefunc];
+pid$target::pthread_rwlock_*:entry {
+  self->lock = arg0;
+  printf("ts=%d tid=%d lock=%p\n", timestamp, tid, arg0);
+}
 
-  if (this->their_tid !=0 && 
-      this->their_tid != tid && 
-      ((this->my_access == AccessRead && this->their_access == AccessWrite) || 
-       (this->my_access == AccessWrite && this->their_access == AccessRead) || 
-       (this->my_access == AccessWrite && this->their_access == AccessWrite) 
-       )) {
-    printf("WARN: data race:(%d, %d) my_access:%d their_access:%d\n", this->their_tid, tid, this->my_access, this->their_access);
+pid$target::pthread_rwlock_*:return {
+  printf("ts=%d tid=%d lock=%p\n", timestamp, tid, self->lock);
+}
+
+
+pid$target::byte_array_?et_len:entry {
+  self->mem_ptr = arg0 + 8;
+  this->theirs = accesses[self->mem_ptr];
+  this->my_access_kind = func_access[probefunc];
+  this->now = timestamp;
+
+
+  if (this->theirs.tid !=0 && 
+      this->theirs.tid != tid && 
+      (this->my_access_kind == AccessKindWrite || this->theirs.kind == AccessKindWrite)) {
+    printf("possible data race: my_access_kind:%d my_tid=%d my_ts=%d their_access_kind:%d their_tid=%d their_ts=%d mem_ptr=%p\n", this->my_access_kind, tid, this->now, this->theirs.kind, this->theirs.tid, this->theirs.ts, self->mem_ptr);
     ustack();
   }
 
-  this->new = ((size_t)this->my_access << 62) | (size_t)tid;
-  concurrent[self->data]= (((size_t)this->my_access) << 62) | (size_t)tid;
+  accesses[self->mem_ptr].kind = this->my_access_kind;
+  accesses[self->mem_ptr].tid = tid;
+  accesses[self->mem_ptr].ts = this->now;
 }
 
-pid$target::byte_array_?et_len:return /self->data != 0/ {
-  concurrent[self->data] = 0;
-  self->data = 0;
+pid$target::byte_array_?et_len:return /self->mem_ptr != 0/ {
+  accesses[self->mem_ptr].kind = 0;
+  accesses[self->mem_ptr].tid = 0;
+  accesses[self->mem_ptr].ts = 0;
+  self->mem_ptr = 0;
 }
 ```
 

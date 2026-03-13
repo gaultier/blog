@@ -152,9 +152,9 @@ Do not edit it by hand.
 <span class="line-number"></span><span class="code-hl">  size_t len, cap;</span>
 <span class="line-number"></span><span class="code-hl">} ByteArray;</span>
 <span class="line-number"></span><span class="code-hl"></span>
-<span class="line-number"></span><span class="code-hl">size_t byte_array_get_len(const ByteArray *b) { return b-&gt;len; }</span>
+<span class="line-number"></span><span class="code-hl">size_t byte_array_get_len(ByteArray *b) { return b-&gt;len; }</span>
 <span class="line-number"></span><span class="code-hl"></span>
-<span class="line-number"></span><span class="code-hl">size_t byte_array_get_cap(const ByteArray *b) { return b-&gt;cap; }</span>
+<span class="line-number"></span><span class="code-hl">size_t byte_array_get_cap(ByteArray *b) { return b-&gt;cap; }</span>
 <span class="line-number"></span><span class="code-hl"></span>
 <span class="line-number"></span><span class="code-hl">void byte_array_set_len(ByteArray *b, size_t len) { b-&gt;len = len; }</span>
 <span class="line-number"></span><span class="code-hl"></span>
@@ -180,39 +180,39 @@ Do not edit it by hand.
 <span class="line-number"></span><span class="code-hl">  byte_array_set_len(b, len + 1);</span>
 <span class="line-number"></span><span class="code-hl">}</span>
 <span class="line-number"></span><span class="code-hl"></span>
-<span class="line-number"></span><span class="code-hl">typedef struct {</span>
-<span class="line-number"></span><span class="code-hl">  ByteArray b;</span>
-<span class="line-number"></span><span class="code-hl">  pthread_mutex_t mtx;</span>
-<span class="line-number"></span><span class="code-hl">} Work;</span>
-<span class="line-number"></span><span class="code-hl"></span>
 <span class="line-number"></span><span class="code-hl">void *async_push(void *any) {</span>
-<span class="line-number"></span><span class="code-hl">  Work *work = any;</span>
+<span class="line-number"></span><span class="code-hl">  ByteArray *b = any;</span>
 <span class="line-number"></span><span class="code-hl"></span>
 <span class="line-number"></span><span class="code-hl">  for (size_t i = 0; i &lt; DATA_LEN; i++) {</span>
-<span class="line-number"></span><span class="code-hl">    byte_array_push(&amp;work-&gt;b, (uint8_t)i);</span>
+<span class="line-number"></span><span class="code-hl">    byte_array_push(b, (uint8_t)i);</span>
 <span class="line-number"></span><span class="code-hl">  }</span>
 <span class="line-number"></span><span class="code-hl"></span>
 <span class="line-number"></span><span class="code-hl">  return NULL;</span>
 <span class="line-number"></span><span class="code-hl">}</span>
 <span class="line-number"></span><span class="code-hl"></span>
 <span class="line-number"></span><span class="code-hl">int main() {</span>
-<span class="line-number"></span><span class="code-hl">  Work work = {.b = {0}, .mtx = PTHREAD_MUTEX_INITIALIZER};</span>
+<span class="line-number"></span><span class="code-hl">  ByteArray byte_array = {0};</span>
 <span class="line-number"></span><span class="code-hl"></span>
 <span class="line-number"></span><span class="code-hl">  pthread_t thread_push = {0};</span>
-<span class="line-number"></span><span class="code-hl">  pthread_create(&amp;thread_push, NULL, async_push, &amp;work);</span>
+<span class="line-number"></span><span class="code-hl">  pthread_create(&amp;thread_push, NULL, async_push, &amp;byte_array);</span>
 <span class="line-number"></span><span class="code-hl"></span>
 <span class="line-number"></span><span class="code-hl">  for (;;) {</span>
-<span class="line-number"></span><span class="code-hl">    const size_t len = byte_array_get_len(&amp;work.b);</span>
+<span class="line-number"></span><span class="code-hl">    const size_t len = byte_array_get_len(&amp;byte_array);</span>
 <span class="line-number"></span><span class="code-hl">    if (len == DATA_LEN) {</span>
 <span class="line-number"></span><span class="code-hl">      break;</span>
 <span class="line-number"></span><span class="code-hl">    }</span>
 <span class="line-number"></span><span class="code-hl">  }</span>
 <span class="line-number"></span><span class="code-hl"></span>
-<span class="line-number"></span><span class="code-hl">  pthread_join(thread_push, NULL);</span>
-<span class="line-number"></span><span class="code-hl"></span>
-<span class="line-number"></span><span class="code-hl">  assert(byte_array_get_len(&amp;work.b) == DATA_LEN);</span>
+<span class="line-number"></span><span class="code-hl">  assert(byte_array_get_len(&amp;byte_array) == DATA_LEN);</span>
 <span class="line-number"></span><span class="code-hl">}</span>
 </code></pre>
+<p>A few notes about this code:</p>
+<ul>
+<li>I use getters and setters for one reason only: to make it easy to observe read and write operations in DTrace. If you hate getters and setters, the same can be achieved with DTrace static probes.</li>
+<li>The main thread polls very aggressively watching the length of the growable array. It's effectively a spin-lock, that unlocks when the length has reached the target value. In real code there would be a <code>nanosleep()</code> call in each loop ieration, or a proper synchronization mechanism e.g. a condition variable or simply a call to <code>pthread_join</code>. But I have seen plenty code like this in the wild.</li>
+<li>The obvious data race is on the <code>len</code> field of the byte array. It's likely benign in unoptimized mode, because the consequence in the current code is that we'll either do a few extra loop iterations or the assert at the end will fail. However the compiler is free to re-order the code since there are no explicit data dependencies and that's where the fun begins. Don't be this guy that says 'well, it's a data race, but it isn't actually that bad, so let's not fix it...'. It's a matter of <em>when</em>, not <em>if</em>, it's going to explode in your hand.</li>
+</ul>
+<hr />
 <p>Now we run it with Thread Sanitizer:</p>
 <pre>
   <div class="code-header">
@@ -232,41 +232,57 @@ Do not edit it by hand.
   <code class="language-dtrace"><span class="line-number"></span><span class="code-hl">#pragma D option dynvarsize=16m</span>
 <span class="line-number"></span><span class="code-hl">#pragma D option cleanrate=100hz</span>
 <span class="line-number"></span><span class="code-hl"></span>
-<span class="line-number"></span><span class="code-hl">typedef enum {AccessRead=1, AccessWrite=2} Access;</span>
+<span class="line-number"></span><span class="code-hl">typedef enum {AccessKindRead=1, AccessKindWrite=2} AccessKind;</span>
 <span class="line-number"></span><span class="code-hl"></span>
-<span class="line-number"></span><span class="code-hl">size_t /* tid || access */ concurrent[int /* data ptr */];</span>
+<span class="line-number"></span><span class="code-hl">typedef struct {</span>
+<span class="line-number"></span><span class="code-hl">  AccessKind kind;</span>
+<span class="line-number"></span><span class="code-hl">  size_t tid;</span>
+<span class="line-number"></span><span class="code-hl">  int ts;</span>
+<span class="line-number"></span><span class="code-hl">} Access;</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">Access accesses[uintptr_t /* data ptr */];</span>
 <span class="line-number"></span><span class="code-hl"></span>
 <span class="line-number"></span><span class="code-hl">int func_access[string];</span>
 <span class="line-number"></span><span class="code-hl"></span>
 <span class="line-number"></span><span class="code-hl">BEGIN {</span>
-<span class="line-number"></span><span class="code-hl">  func_access[&quot;byte_array_get_len&quot;] = AccessRead;</span>
-<span class="line-number"></span><span class="code-hl">  func_access[&quot;byte_array_set_len&quot;] = AccessWrite;</span>
+<span class="line-number"></span><span class="code-hl">  func_access[&quot;byte_array_get_len&quot;] = AccessKindRead;</span>
+<span class="line-number"></span><span class="code-hl">  func_access[&quot;byte_array_set_len&quot;] = AccessKindWrite;</span>
 <span class="line-number"></span><span class="code-hl">}</span>
 <span class="line-number"></span><span class="code-hl"></span>
-<span class="line-number"></span><span class="code-hl">pid$target::byte_array_?et_len:entry {</span>
-<span class="line-number"></span><span class="code-hl">  self-&gt;data = arg0;</span>
-<span class="line-number"></span><span class="code-hl">  this-&gt;theirs = concurrent[arg0];</span>
-<span class="line-number"></span><span class="code-hl">  this-&gt;their_tid = this-&gt;theirs &amp; ((size_t)1UL &lt;&lt; 62);</span>
-<span class="line-number"></span><span class="code-hl">  this-&gt;their_access = this-&gt;theirs &gt;&gt; 62;</span>
-<span class="line-number"></span><span class="code-hl">  this-&gt;my_access = func_access[probefunc];</span>
+<span class="line-number"></span><span class="code-hl">pid$target::pthread_rwlock_*:entry {</span>
+<span class="line-number"></span><span class="code-hl">  self-&gt;lock = arg0;</span>
+<span class="line-number"></span><span class="code-hl">  printf(&quot;ts=%d tid=%d lock=%p\n&quot;, timestamp, tid, arg0);</span>
+<span class="line-number"></span><span class="code-hl">}</span>
 <span class="line-number"></span><span class="code-hl"></span>
-<span class="line-number"></span><span class="code-hl">  if (this-&gt;their_tid !=0 &amp;&amp; </span>
-<span class="line-number"></span><span class="code-hl">      this-&gt;their_tid != tid &amp;&amp; </span>
-<span class="line-number"></span><span class="code-hl">      ((this-&gt;my_access == AccessRead &amp;&amp; this-&gt;their_access == AccessWrite) || </span>
-<span class="line-number"></span><span class="code-hl">       (this-&gt;my_access == AccessWrite &amp;&amp; this-&gt;their_access == AccessRead) || </span>
-<span class="line-number"></span><span class="code-hl">       (this-&gt;my_access == AccessWrite &amp;&amp; this-&gt;their_access == AccessWrite) </span>
-<span class="line-number"></span><span class="code-hl">       )) {</span>
-<span class="line-number"></span><span class="code-hl">    printf(&quot;WARN: data race:(%d, %d) my_access:%d their_access:%d\n&quot;, this-&gt;their_tid, tid, this-&gt;my_access, this-&gt;their_access);</span>
+<span class="line-number"></span><span class="code-hl">pid$target::pthread_rwlock_*:return {</span>
+<span class="line-number"></span><span class="code-hl">  printf(&quot;ts=%d tid=%d lock=%p\n&quot;, timestamp, tid, self-&gt;lock);</span>
+<span class="line-number"></span><span class="code-hl">}</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">pid$target::byte_array_?et_len:entry {</span>
+<span class="line-number"></span><span class="code-hl">  self-&gt;mem_ptr = arg0 + 8;</span>
+<span class="line-number"></span><span class="code-hl">  this-&gt;theirs = accesses[self-&gt;mem_ptr];</span>
+<span class="line-number"></span><span class="code-hl">  this-&gt;my_access_kind = func_access[probefunc];</span>
+<span class="line-number"></span><span class="code-hl">  this-&gt;now = timestamp;</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  if (this-&gt;theirs.tid !=0 &amp;&amp; </span>
+<span class="line-number"></span><span class="code-hl">      this-&gt;theirs.tid != tid &amp;&amp; </span>
+<span class="line-number"></span><span class="code-hl">      (this-&gt;my_access_kind == AccessKindWrite || this-&gt;theirs.kind == AccessKindWrite)) {</span>
+<span class="line-number"></span><span class="code-hl">    printf(&quot;possible data race: my_access_kind:%d my_tid=%d my_ts=%d their_access_kind:%d their_tid=%d their_ts=%d mem_ptr=%p\n&quot;, this-&gt;my_access_kind, tid, this-&gt;now, this-&gt;theirs.kind, this-&gt;theirs.tid, this-&gt;theirs.ts, self-&gt;mem_ptr);</span>
 <span class="line-number"></span><span class="code-hl">    ustack();</span>
 <span class="line-number"></span><span class="code-hl">  }</span>
 <span class="line-number"></span><span class="code-hl"></span>
-<span class="line-number"></span><span class="code-hl">  this-&gt;new = ((size_t)this-&gt;my_access &lt;&lt; 62) | (size_t)tid;</span>
-<span class="line-number"></span><span class="code-hl">  concurrent[self-&gt;data]= (((size_t)this-&gt;my_access) &lt;&lt; 62) | (size_t)tid;</span>
+<span class="line-number"></span><span class="code-hl">  accesses[self-&gt;mem_ptr].kind = this-&gt;my_access_kind;</span>
+<span class="line-number"></span><span class="code-hl">  accesses[self-&gt;mem_ptr].tid = tid;</span>
+<span class="line-number"></span><span class="code-hl">  accesses[self-&gt;mem_ptr].ts = this-&gt;now;</span>
 <span class="line-number"></span><span class="code-hl">}</span>
 <span class="line-number"></span><span class="code-hl"></span>
-<span class="line-number"></span><span class="code-hl">pid$target::byte_array_?et_len:return /self-&gt;data != 0/ {</span>
-<span class="line-number"></span><span class="code-hl">  concurrent[self-&gt;data] = 0;</span>
-<span class="line-number"></span><span class="code-hl">  self-&gt;data = 0;</span>
+<span class="line-number"></span><span class="code-hl">pid$target::byte_array_?et_len:return /self-&gt;mem_ptr != 0/ {</span>
+<span class="line-number"></span><span class="code-hl">  accesses[self-&gt;mem_ptr].kind = 0;</span>
+<span class="line-number"></span><span class="code-hl">  accesses[self-&gt;mem_ptr].tid = 0;</span>
+<span class="line-number"></span><span class="code-hl">  accesses[self-&gt;mem_ptr].ts = 0;</span>
+<span class="line-number"></span><span class="code-hl">  self-&gt;mem_ptr = 0;</span>
 <span class="line-number"></span><span class="code-hl">}</span>
 </code></pre>
 <p>We observe here all 'methods' of <code>byte_array</code>. This is heavy-handed and might cause false positives, for example if two threads are concurrently calling <code>byte_array_get_len</code>, this is a read-read case and not a data race. But this is simple.</p>
