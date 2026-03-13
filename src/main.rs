@@ -283,7 +283,7 @@ fn git_get_articles_stats() -> anyhow::Result<Vec<GitStat>> {
         let empty = lines
             .next()
             .ok_or(anyhow!("expected empty line in git log entry, after date"))?;
-        assert!(empty == "");
+        assert!(empty.is_empty());
 
         // Files.
         loop {
@@ -292,7 +292,7 @@ fn git_get_articles_stats() -> anyhow::Result<Vec<GitStat>> {
                 None => {
                     break;
                 }
-                Some(line) if *line == "" || line.starts_with("'20") => break,
+                Some(line) if line.is_empty() || line.starts_with("'20") => break,
                 Some(_) => lines.next().unwrap(), // Safe due to `peek()`.
             };
 
