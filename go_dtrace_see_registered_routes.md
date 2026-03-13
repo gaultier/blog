@@ -2,6 +2,9 @@ Title: What HTTP routes does your application provide?
 Tags: Go, DTrace
 ---
 
+
+*For a gentle introduction to DTrace especially in conjunction with Go, see my past article: [An optimization and debugging story with Go and DTrace](/blog/an_optimization_and_debugging_story_go_dtrace.html), or my other [DTrace articles](/blog/articles-by-tag.html#dtrace).*
+
 Quick one today. I have a [Go HTTP application](https://github.com/ory/kratos) that has many HTTP routes. These routes get dynamically registered at startup based on feature flags, configuration, whether an enterprise license was found, etc. So it's hard to know what routes exist. 
 
 Since this application uses the Go HTTP router from the standard library, this question is quickly answered by DTrace. The two Go functions of interest are located in the `net/http` package:

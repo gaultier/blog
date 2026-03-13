@@ -114,6 +114,7 @@ Do not edit it by hand.
 </ul>
 </details>
 
+<p><em>For a gentle introduction to DTrace especially in conjunction with Go, see my past article: <a href="/blog/an_optimization_and_debugging_story_go_dtrace.html">An optimization and debugging story with Go and DTrace</a>, or my other <a href="/blog/articles-by-tag.html#dtrace">DTrace articles</a>.</em></p>
 <p>A data race is concurrent access to shared data in a way that does not respect the rules of the programming language. Some languages are stricter or looser when they establish how that can happen, but they all forbid <em>some</em> kinds of concurrent (unsynchronized) accesses, typically write-write or read-write.</p>
 <h2 id="the-theory">
   <a class="title" href="#the-theory">The theory</a>
@@ -556,7 +557,7 @@ Do not edit it by hand.
 <p>Thread Sanitizer does a lot more than what we have covered, because it understands all the synchronization primitives: condition variables, atomics, etc. It tracks 'happens before' relationships between threads that call these primitives. We do not do that in our crude D script, even though we could, with a good amount of post-procssing to eliminate false positives.</p>
 <p>Another major difference is that Thread Sanitizer is general purpose and tries to track all memory accesses, whereas our DTrace approach selectively tracks a few memory accesses.</p>
 <p>Even though, I think this is already a pretty good approach, in the spirit of '20% of the work gets you 80% of the way there'. The main appeal is that it avoids having to rebuild the whole program with different flags which can be very time consuming, or sometimes not feasible at all.</p>
-<p>Finally, remember that neither our DTrace approach nor Thread Sanitizer guarantee that <em>all</em> data races will be caught, since these are runtime detectors, and also because they operate with limited amounts of memory: they cannot remember <em>all</em> memory accesses in the program, they only do a best effort to remember most of them.</p>
+<p>Finally, remember that neither our DTrace approach nor Thread Sanitizer guarantee that <em>all</em> data races will be caught, since these are runtime detectors that only see the code paths actually taken when observing this particular run of the program, and also because they operate with limited amounts of memory: they cannot remember <em>all</em> memory accesses in the program, they only do a best effort to remember most of them. They do not prove the absence of bugs, only their presence.</p>
 <h2 id="addendum-the-full-code">
   <a class="title" href="#addendum-the-full-code">Addendum: The full code</a>
   <a class="hash-anchor" href="#addendum-the-full-code" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>

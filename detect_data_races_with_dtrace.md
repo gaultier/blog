@@ -2,6 +2,8 @@ Title: Detect data races with DTrace in any language
 Tags: DTrace, Concurrency
 ---
 
+*For a gentle introduction to DTrace especially in conjunction with Go, see my past article: [An optimization and debugging story with Go and DTrace](/blog/an_optimization_and_debugging_story_go_dtrace.html), or my other [DTrace articles](/blog/articles-by-tag.html#dtrace).*
+
 A data race is concurrent access to shared data in a way that does not respect the rules of the programming language. Some languages are stricter or looser when they establish how that can happen, but they all forbid *some* kinds of concurrent (unsynchronized) accesses, typically write-write or read-write.
 
 ## The theory
@@ -446,7 +448,7 @@ Another major difference is that Thread Sanitizer is general purpose and tries t
 
 Even though, I think this is already a pretty good approach, in the spirit of '20% of the work gets you 80% of the way there'. The main appeal is that it avoids having to rebuild the whole program with different flags which can be very time consuming, or sometimes not feasible at all.
 
-Finally, remember that neither our DTrace approach nor Thread Sanitizer guarantee that *all* data races will be caught, since these are runtime detectors, and also because they operate with limited amounts of memory: they cannot remember *all* memory accesses in the program, they only do a best effort to remember most of them.
+Finally, remember that neither our DTrace approach nor Thread Sanitizer guarantee that *all* data races will be caught, since these are runtime detectors that only see the code paths actually taken when observing this particular run of the program, and also because they operate with limited amounts of memory: they cannot remember *all* memory accesses in the program, they only do a best effort to remember most of them. They do not prove the absence of bugs, only their presence.
 
 
 ## Addendum: The full code
