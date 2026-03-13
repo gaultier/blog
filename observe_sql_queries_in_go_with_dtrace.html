@@ -71,7 +71,7 @@ Do not edit it by hand.
 <div class="article-prelude">
 <p><a href="/blog"> ⏴ Back to all articles</a></p>
 
-<p class="publication-date">Published on 2025-09-11. Last modified on 2026-03-04.</p>
+<p class="publication-date">Published on 2025-09-11. Last modified on 2026-03-13.</p>
 </div>
 <div class="article-title">
   <h1>Observe live SQL queries in Go with DTrace</h1>
@@ -176,7 +176,7 @@ Do not edit it by hand.
 <span class="line-number"></span><span class="code-hl">  printf(&quot;%s\n&quot;, this-&gt;query);</span>
 <span class="line-number"></span><span class="code-hl">}</span>
 </code></pre>
-<p>An important note: since the string is quite long, we should pass to the DTrace command <code>-x strsize=16K</code> or use the pragma <code>#pragma D option strsize=16K</code> to allocate more memory for temporary strings. Otherwise DTrace will truncate our string.</p>
+<p>An important note: since the string is quite long, we should pass to the DTrace command <code>-x strsize=16K</code> or use the pragma <code>#pragma D option strsize=16K</code> in a D script to allocate more memory for temporary strings. Otherwise DTrace will truncate our string.</p>
 <p>We see something like this:</p>
 <pre>
   <div class="code-header">

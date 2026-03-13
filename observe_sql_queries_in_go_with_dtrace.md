@@ -65,7 +65,7 @@ pid$target::database?sql.*.QueryContext:entry {
 }
 ```
 
-An important note: since the string is quite long, we should pass to the DTrace command `-x strsize=16K` or use the pragma `#pragma D option strsize=16K` to allocate more memory for temporary strings. Otherwise DTrace will truncate our string.
+An important note: since the string is quite long, we should pass to the DTrace command `-x strsize=16K` or use the pragma `#pragma D option strsize=16K` in a D script to allocate more memory for temporary strings. Otherwise DTrace will truncate our string.
 
 We see something like this:
 
