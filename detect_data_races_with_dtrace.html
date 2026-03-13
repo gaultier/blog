@@ -149,7 +149,8 @@ Do not edit it by hand.
   <a class="title" href="#example">Example</a>
   <a class="hash-anchor" href="#example" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
-<p>I fixed recently a data race in Go at work. I have reproduced it in C for simplicity, because Go inlines quite heavily and some functions, e.g. <code>append()</code>, <code>len()</code>, are actually builtin, it's hard to trace them.</p>
+<p>I fixed recently a data race in Go at work. I have reproduced it in C for simplicity, because Go inlines function calls quite heavily and some functions, e.g. <code>append()</code>, <code>len()</code>, are not real functions but in fact builtin, it's hard to trace them.</p>
+<p>In theory DTrace can trace arbitrary instructions and static probes, but in Go static probes are annoying to declare since that needs CGO, and on ARM64 macOS (my current laptop) tracing arbitratry instructions does not work.</p>
 <p>The program appends data to a growable byte array in a thread, and reads the length of this byte array in another thread, without synchronization. Text book data race, but this kind of thing happens in production code when the compiler does not protect us from ourselves:</p>
 <pre>
   <div class="code-header">

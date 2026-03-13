@@ -49,7 +49,9 @@ This can be refined further as we'll see but it's good enough for now, and that'
 ## Example
 
 
-I fixed recently a data race in Go at work. I have reproduced it in C for simplicity, because Go inlines quite heavily and some functions, e.g. `append()`, `len()`, are actually builtin, it's hard to trace them.
+I fixed recently a data race in Go at work. I have reproduced it in C for simplicity, because Go inlines function calls quite heavily and some functions, e.g. `append()`, `len()`, are not real functions but in fact builtin, it's hard to trace them.
+
+In theory DTrace can trace arbitrary instructions and static probes, but in Go static probes are annoying to declare since that needs CGO, and on ARM64 macOS (my current laptop) tracing arbitratry instructions does not work.
 
 The program appends data to a growable byte array in a thread, and reads the length of this byte array in another thread, without synchronization. Text book data race, but this kind of thing happens in production code when the compiler does not protect us from ourselves:
 
