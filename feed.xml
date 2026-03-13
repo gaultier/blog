@@ -61,7 +61,7 @@
 <title>Learn Wayland by writing a GUI from scratch</title>
 <link href="https://gaultier.github.io/blog/wayland_from_scratch.html"/>
 <id>urn:uuid:6b96e587-14ff-53a9-a142-d20e9c53d970</id>
-<updated>2025-07-08T09:39:17+02:00</updated>
+<updated>2026-03-12T08:32:22+01:00</updated>
 <published>2023-10-12T13:19:53+02:00</published>
 </entry>
     
@@ -309,7 +309,7 @@
 <title>Observe live SQL queries in Go with DTrace</title>
 <link href="https://gaultier.github.io/blog/observe_sql_queries_in_go_with_dtrace.html"/>
 <id>urn:uuid:e0b0bae7-993a-5691-9efe-b7615415b944</id>
-<updated>2026-03-13T14:37:47+01:00</updated>
+<updated>2026-03-13T14:39:33+01:00</updated>
 <published>2025-09-11T11:37:44+02:00</published>
 </entry>
     
