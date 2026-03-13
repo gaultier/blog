@@ -71,7 +71,7 @@ Do not edit it by hand.
 <div class="article-prelude">
 <p><a href="/blog"> ⏴ Back to all articles</a></p>
 
-<p class="publication-date">Published on 2025-09-11. Last modified on 2026-03-04.</p>
+<p class="publication-date">Published on 2025-09-11. Last modified on 2026-03-13.</p>
 </div>
 <div class="article-title">
   <h1>Observe live SQL queries in Go with DTrace</h1>
@@ -163,19 +163,20 @@ Do not edit it by hand.
 <li>Remaining arguments (<code>args ...any</code>) are variadic, and Go passes them to the function as a slice (i.e. <code>[]any</code>), which is a pointer, a length, and a capacity: <code>arg5</code>, <code>arg6</code>, <code>arg7</code>. Here we observe that there are <code>4</code> query arguments. We'll come back to them later.</li>
 <li>Unused registers for passing function arguments are here <code>arg8</code> and <code>arg9</code>, they should be ignored.</li>
 </ul>
-<p>So let's for now only print the query string:</p>
+<p>So let's for now only print the query string, and while we're at it, handle both <code>ExecContext</code> (SQL commands) and <code>QueryContext</code> (SQL queries):</p>
 <pre>
   <div class="code-header">
     <span>Dtrace</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-dtrace"><span class="line-number"></span><span class="code-hl">pid$target::database?sql.*.QueryContext:entry {</span>
+  <code class="language-dtrace"><span class="line-number"></span><span class="code-hl">pid$target::database?sql.*.ExecContext:entry,</span>
+<span class="line-number"></span><span class="code-hl">pid$target::database?sql.*.QueryContext:entry {</span>
 <span class="line-number"></span><span class="code-hl">  this-&gt;query = stringof(copyin(arg3, arg4)); </span>
 <span class="line-number"></span><span class="code-hl"></span>
 <span class="line-number"></span><span class="code-hl">  printf(&quot;%s\n&quot;, this-&gt;query);</span>
 <span class="line-number"></span><span class="code-hl">}</span>
 </code></pre>
-<p>An important note: since the string is quite long, we should pass to the DTrace command <code>-x strsize=16K</code> or use the pragma <code>#pragma D option strsize=16K</code> to allocate more memory for temporary strings. Otherwise DTrace will truncate our string.</p>
+<p>An important note: since the string is quite long, we should pass to the DTrace command <code>-x strsize=16K</code> or use the pragma <code>#pragma D option strsize=16K</code> in a D script to allocate more memory for temporary strings. Otherwise DTrace will truncate our string.</p>
 <p>We see something like this:</p>
 <pre>
   <div class="code-header">
@@ -575,7 +576,6 @@ The only challenge is to remember to use <code>copyin</code>, since our DTrace s
 <span class="line-number"></span><span class="code-hl">str3=00000000-0000-0000-0000-000000000000</span>
 </code></pre>
 <p>With relatively little work (under 90 lines of DTrace including defining all types), we can inspect live SQL queries in our Go programs.</p>
-<p>Furthermore, we have focused on the Go function <code>QueryContext</code> in this article, but the exact same can be done for <code>ExecContext</code>.</p>
 <p>Printing each remaining Go type is left as an exercise to the reader but should be very similar.</p>
 <p>More importantly, this technique to print Go variadic function arguments of type <code>any</code> can be applied everywhere, not just in the context of SQL queries.</p>
 <p>This is a bit unfortunate that the Go team and community never took an interest in adding static DTrace probes in key places in the Go runtime and standard library, like numerous other programming languages have done. That forces us to do gymnastics to get the information we need.</p>

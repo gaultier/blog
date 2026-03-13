@@ -54,9 +54,10 @@ We can infer that:
 - Unused registers for passing function arguments are here `arg8` and `arg9`, they should be ignored.
 
 
-So let's for now only print the query string:
+So let's for now only print the query string, and while we're at it, handle both `ExecContext` (SQL commands) and `QueryContext` (SQL queries):
 
 ```dtrace
+pid$target::database?sql.*.ExecContext:entry,
 pid$target::database?sql.*.QueryContext:entry {
   this->query = stringof(copyin(arg3, arg4)); 
 
@@ -64,7 +65,7 @@ pid$target::database?sql.*.QueryContext:entry {
 }
 ```
 
-An important note: since the string is quite long, we should pass to the DTrace command `-x strsize=16K` or use the pragma `#pragma D option strsize=16K` to allocate more memory for temporary strings. Otherwise DTrace will truncate our string.
+An important note: since the string is quite long, we should pass to the DTrace command `-x strsize=16K` or use the pragma `#pragma D option strsize=16K` in a D script to allocate more memory for temporary strings. Otherwise DTrace will truncate our string.
 
 We see something like this:
 
@@ -433,8 +434,6 @@ str3=00000000-0000-0000-0000-000000000000
 
 
 With relatively little work (under 90 lines of DTrace including defining all types), we can inspect live SQL queries in our Go programs.
-
-Furthermore, we have focused on the Go function `QueryContext` in this article, but the exact same can be done for `ExecContext`.
 
 Printing each remaining Go type is left as an exercise to the reader but should be very similar. 
 
