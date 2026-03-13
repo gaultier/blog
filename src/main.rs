@@ -300,7 +300,10 @@ fn git_get_articles_stats() -> anyhow::Result<Vec<GitStat>> {
             match (split.next(), split.next(), split.next()) {
                 (Some("D"), Some(path), None) => {
                     assert!(!path.is_empty());
-                    res.remove(path).unwrap();
+                    res.remove(path).ok_or(anyhow!(
+                        "expected path in delete action in git log to already be known: {}",
+                        path
+                    ))?;
                 }
                 (Some("A"), Some(path), None) => {
                     assert!(!path.is_empty());
@@ -312,7 +315,10 @@ fn git_get_articles_stats() -> anyhow::Result<Vec<GitStat>> {
                     res.insert(path.to_owned(), git_stat);
                 }
                 (Some("M"), Some(path), None) => {
-                    let entry = res.get_mut(path).unwrap();
+                    let entry = res.get_mut(path).ok_or(anyhow!(
+                        "expected path in modified action in git log to already be known: {}",
+                        path
+                    ))?;
                     assert_ne!(
                         entry.modification_date.as_str().cmp(date_trimmed),
                         Ordering::Greater
@@ -355,18 +361,21 @@ fn md_collect_titles(
     node: &Node,
     title_to_counter: &mut BTreeMap<String, u8>,
     titles: &mut Vec<Title>,
-) {
+) -> anyhow::Result<()> {
     match node {
         Node::Root(root) => {
             for child in &root.children {
-                md_collect_titles(child, title_to_counter, titles);
+                md_collect_titles(child, title_to_counter, titles)?;
             }
         }
         Node::Heading(heading) => {
             let depth = heading.depth;
             // TODO: Handle markdown title!
             assert_eq!(1, heading.children.len());
-            let child = heading.children.first().unwrap();
+            let child = heading
+                .children
+                .first()
+                .ok_or(anyhow!("heading has no children"))?;
             let content = match child {
                 Node::Text(Text { value, .. }) => value.clone(),
                 other => panic!("unexpected value: {:#?}", other),
@@ -391,22 +400,36 @@ fn md_collect_titles(
         }
         Node::Paragraph(paragraph) => {
             for child in &paragraph.children {
-                md_collect_titles(child, title_to_counter, titles);
+                md_collect_titles(child, title_to_counter, titles)?;
             }
         }
         _ => {}
     }
+    Ok(())
 }
 
-fn md_parse_metadata(md_content: &str) -> (&str, Vec<&str>) {
-    let title_line = md_content.lines().next().unwrap();
-    let title = title_line.strip_prefix("Title: ").unwrap().trim_ascii();
+fn md_parse_metadata(md_content: &str) -> anyhow::Result<(&str, Vec<&str>)> {
+    let title_line = md_content
+        .lines()
+        .next()
+        .ok_or(anyhow!("missing title line in article metadata"))?;
+    let title = title_line
+        .strip_prefix("Title: ")
+        .ok_or(anyhow!(
+            "missing `Title: ` in title line in article metadata"
+        ))?
+        .trim_ascii();
 
-    let tags_line = md_content.lines().nth(1).unwrap();
-    let tags_str = tags_line.strip_prefix("Tags: ").unwrap();
+    let tags_line = md_content
+        .lines()
+        .nth(1)
+        .ok_or(anyhow!("missing tags line in article metadata"))?;
+    let tags_str = tags_line
+        .strip_prefix("Tags: ")
+        .ok_or(anyhow!("missing `Tags: ` in tags line in article metadata"))?;
     let tags: Vec<&str> = tags_str.split(", ").map(|s| s.trim_ascii()).collect();
 
-    (title, tags)
+    Ok((title, tags))
 }
 
 fn html_slug(s: &str) -> String {
@@ -427,7 +450,7 @@ fn html_slug(s: &str) -> String {
     res.trim_matches(|c| c == '-').to_owned()
 }
 
-fn md_to_html(md_content: &str) -> Vec<u8> {
+fn md_to_html(md_content: &str) -> anyhow::Result<Vec<u8>> {
     let mut sb = Vec::with_capacity(md_content.len());
     let md_ast = markdown::to_mdast(
         md_content,
@@ -440,7 +463,7 @@ fn md_to_html(md_content: &str) -> Vec<u8> {
             ..Default::default()
         },
     )
-    .unwrap();
+    .map_err(|err| anyhow!("failed to parse markdown: {:?}", err))?;
 
     let mut footnote_defs = Vec::new();
 
@@ -449,16 +472,16 @@ fn md_to_html(md_content: &str) -> Vec<u8> {
         && let Node::Paragraph(p) = &r.children[0]
     {
         for c in &p.children {
-            md_to_html_rec(&mut sb, &mut footnote_defs, c, &[], false);
+            md_to_html_rec(&mut sb, &mut footnote_defs, c, &[], false)?;
         }
-        return sb;
+        return Ok(sb);
     }
-    md_to_html_rec(&mut sb, &mut footnote_defs, &md_ast, &[], false);
+    md_to_html_rec(&mut sb, &mut footnote_defs, &md_ast, &[], false)?;
 
-    sb
+    Ok(sb)
 }
 
-fn md_html_append(md_content: &str, html_content: &mut Vec<u8>) {
+fn md_html_append(md_content: &str, html_content: &mut Vec<u8>) -> anyhow::Result<()> {
     let mut footnote_defs = Vec::new();
 
     let md_ast = markdown::to_mdast(
@@ -472,17 +495,23 @@ fn md_html_append(md_content: &str, html_content: &mut Vec<u8>) {
             ..Default::default()
         },
     )
-    .unwrap();
+    .map_err(|err| anyhow!("failed to parse markdown: {:?}", err))?;
 
     let mut md_titles = Vec::with_capacity(12);
     let mut title_to_counter: BTreeMap<String, u8> = BTreeMap::new();
-    md_collect_titles(&md_ast, &mut title_to_counter, &mut md_titles);
+    md_collect_titles(&md_ast, &mut title_to_counter, &mut md_titles)?;
 
-    md_to_html_rec(html_content, &mut footnote_defs, &md_ast, &md_titles, false);
-    md_render_footnote_definitions(html_content, &footnote_defs);
+    md_to_html_rec(html_content, &mut footnote_defs, &md_ast, &md_titles, false)?;
+    md_render_footnote_definitions(html_content, &footnote_defs)?;
+
+    Ok(())
 }
 
 fn capitalize_first(s: &str) -> Cow<'_, str> {
+    if s.is_empty() {
+        return Cow::Borrowed(s);
+    }
+
     let mut chars = s.chars();
     let c = chars.next().unwrap();
     if c.is_uppercase() {
@@ -498,20 +527,20 @@ fn md_to_html_rec(
     node: &Node,
     titles: &[Title],
     inside_thead: bool,
-) {
+) -> anyhow::Result<()> {
     match node {
         Node::Root(root) => {
             for child in &root.children {
-                md_to_html_rec(content, footnote_defs, child, titles, false);
+                md_to_html_rec(content, footnote_defs, child, titles, false)?;
             }
         }
         Node::Blockquote(blockquote) => {
-            writeln!(content, "<blockquote>").unwrap();
+            writeln!(content, "<blockquote>")?;
 
             for child in &blockquote.children {
-                md_to_html_rec(content, footnote_defs, child, titles, false);
+                md_to_html_rec(content, footnote_defs, child, titles, false)?;
             }
-            writeln!(content, "</blockquote>").unwrap();
+            writeln!(content, "</blockquote>")?;
         }
         Node::FootnoteDefinition(footnote_definition) => {
             footnote_defs.push(footnote_definition.clone());
@@ -522,14 +551,14 @@ fn md_to_html_rec(
             if let Some(start) = list.start
                 && start > 1
             {
-                writeln!(content, r#"<{} start="{}">"#, tag, start).unwrap();
+                writeln!(content, r#"<{} start="{}">"#, tag, start)?;
             } else {
-                writeln!(content, r#"<{}>"#, tag).unwrap();
+                writeln!(content, r#"<{}>"#, tag)?;
             }
             for child in &list.children {
-                md_to_html_rec(content, footnote_defs, child, titles, false);
+                md_to_html_rec(content, footnote_defs, child, titles, false)?;
             }
-            writeln!(content, "</{}>", tag).unwrap();
+            writeln!(content, "</{}>", tag)?;
         }
         Node::MdxjsEsm(_mdxjs_esm) => todo!(),
         Node::Toml(_toml) => todo!(),
@@ -537,22 +566,22 @@ fn md_to_html_rec(
         Node::Break(_) => todo!(),
         Node::InlineCode(inline_code) => {
             let sanitized = text_sanitize_for_html(&inline_code.value, false);
-            write!(content, "<code>{}</code>", sanitized).unwrap();
+            write!(content, "<code>{}</code>", sanitized)?;
         }
         Node::InlineMath(_inline_math) => todo!(),
         Node::Delete(delete) => {
-            write!(content, "<del>").unwrap();
+            write!(content, "<del>")?;
             for child in &delete.children {
-                md_to_html_rec(content, footnote_defs, child, titles, false);
+                md_to_html_rec(content, footnote_defs, child, titles, false)?;
             }
-            write!(content, "</del>").unwrap();
+            write!(content, "</del>")?;
         }
         Node::Emphasis(emphasis) => {
-            write!(content, "<em>").unwrap();
+            write!(content, "<em>")?;
             for child in &emphasis.children {
-                md_to_html_rec(content, footnote_defs, child, titles, false);
+                md_to_html_rec(content, footnote_defs, child, titles, false)?;
             }
-            write!(content, "</em>").unwrap();
+            write!(content, "</em>")?;
         }
         Node::MdxTextExpression(_mdx_text_expression) => todo!(),
         Node::FootnoteReference(footnote_reference) => {
@@ -562,19 +591,17 @@ fn md_to_html_rec(
                 &footnote_reference.identifier,
                 footnote_reference.identifier,
                 footnote_reference.label.as_ref().unwrap(),
-            )
-            .unwrap();
+            )?;
         }
         Node::Html(html) => {
-            writeln!(content, "{}", html.value).unwrap();
+            writeln!(content, "{}", html.value)?;
         }
         Node::Image(image) => {
             write!(
                 content,
                 r#"<img src="{}" alt="{}" />"#,
                 image.url, image.alt
-            )
-            .unwrap();
+            )?;
         }
         Node::ImageReference(_image_reference) => todo!(),
         Node::MdxJsxTextElement(_mdx_jsx_text_element) => todo!(),
@@ -583,24 +610,23 @@ fn md_to_html_rec(
                 content,
                 r#"<a href="{}">"#,
                 text_sanitize_for_html(&link.url, false)
-            )
-            .unwrap();
+            )?;
             for child in &link.children {
-                md_to_html_rec(content, footnote_defs, child, titles, false);
+                md_to_html_rec(content, footnote_defs, child, titles, false)?;
             }
-            write!(content, r#"</a>"#).unwrap();
+            write!(content, r#"</a>"#)?;
         }
         Node::LinkReference(_link_reference) => todo!(),
         Node::Strong(strong) => {
-            write!(content, "<strong>").unwrap();
+            write!(content, "<strong>")?;
             for child in &strong.children {
-                md_to_html_rec(content, footnote_defs, child, titles, false);
+                md_to_html_rec(content, footnote_defs, child, titles, false)?;
             }
-            write!(content, "</strong>").unwrap();
+            write!(content, "</strong>")?;
         }
         Node::Text(text) => {
             let sanitized = text_sanitize_for_html(&text.value, false);
-            write!(content, "{}", sanitized).unwrap();
+            write!(content, "{}", sanitized)?;
         }
         Node::Code(code) => {
             let sanitized = text_sanitize_for_html(&code.value, false);
@@ -615,18 +641,16 @@ fn md_to_html_rec(
   <code class="language-{}">"#,
                 capitalize_first(lang),
                 lang,
-            )
-            .unwrap();
+            )?;
 
             for line in sanitized.lines() {
                 writeln!(
                     content,
                     r#"<span class="line-number"></span><span class="code-hl">{}</span>"#,
                     line
-                )
-                .unwrap();
+                )?;
             }
-            writeln!(content, "</code></pre>").unwrap();
+            writeln!(content, "</code></pre>")?;
         }
         Node::Math(_math) => todo!(),
         Node::MdxFlowExpression(_mdx_flow_expression) => todo!(),
@@ -637,50 +661,54 @@ fn md_to_html_rec(
                 .find(|t| t.start_md_offset == heading.position.as_ref().unwrap().start.offset)
                 .unwrap();
 
-            writeln!(content, r#"<h{} id="{}">"#, heading.depth, title.slug).unwrap();
-            write!(content, r##"  <a class="title" href="#{}">"##, title.slug).unwrap();
+            writeln!(content, r#"<h{} id="{}">"#, heading.depth, title.slug)?;
+            write!(content, r##"  <a class="title" href="#{}">"##, title.slug)?;
             for child in &heading.children {
-                md_to_html_rec(content, footnote_defs, child, titles, false);
+                md_to_html_rec(content, footnote_defs, child, titles, false)?;
             }
-            writeln!(content, "</a>").unwrap();
-            writeln!(content, r##"  <a class="hash-anchor" href="#{}" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>"##, title.slug).unwrap();
-            writeln!(content, "</h{}>", heading.depth).unwrap();
+            writeln!(content, "</a>")?;
+            writeln!(
+                content,
+                r##"  <a class="hash-anchor" href="#{}" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>"##,
+                title.slug
+            )?;
+            writeln!(content, "</h{}>", heading.depth)?;
         }
         Node::Table(table) => {
-            writeln!(content, "<table>").unwrap();
-            let (thead, tbdody) = table.children.split_first().unwrap();
-            writeln!(content, "<thead>").unwrap();
-            md_to_html_rec(content, footnote_defs, thead, titles, true);
-            writeln!(content, "</thead>").unwrap();
+            writeln!(content, "<table>")?;
+            let (thead, tbdody) = table.children.split_first().ok_or(anyhow!("expected table element to have thead and tbody as first two children, but it did not"))?;
+            writeln!(content, "<thead>")?;
+            md_to_html_rec(content, footnote_defs, thead, titles, true)?;
+            writeln!(content, "</thead>")?;
 
-            writeln!(content, "<tbody>").unwrap();
+            writeln!(content, "<tbody>")?;
             for child in tbdody {
-                md_to_html_rec(content, footnote_defs, child, titles, false);
+                md_to_html_rec(content, footnote_defs, child, titles, false)?;
             }
-            writeln!(content, "</tbody>").unwrap();
+            writeln!(content, "</tbody>")?;
 
-            writeln!(content, "</table>\n\n").unwrap();
+            writeln!(content, "</table>\n\n")?;
         }
         Node::ThematicBreak(_) => {
-            writeln!(content, "<hr />").unwrap();
+            writeln!(content, "<hr />")?;
         }
         Node::TableRow(table_row) => {
-            writeln!(content, "<tr>").unwrap();
+            writeln!(content, "<tr>")?;
             for child in &table_row.children {
-                md_to_html_rec(content, footnote_defs, child, titles, inside_thead);
+                md_to_html_rec(content, footnote_defs, child, titles, inside_thead)?;
             }
-            writeln!(content, "</tr>").unwrap();
+            writeln!(content, "</tr>")?;
         }
         Node::TableCell(table_cell) => {
             let tag = if inside_thead { "th" } else { "td" };
-            write!(content, "<{}>", tag).unwrap();
+            write!(content, "<{}>", tag)?;
             for child in &table_cell.children {
-                md_to_html_rec(content, footnote_defs, child, titles, false);
+                md_to_html_rec(content, footnote_defs, child, titles, false)?;
             }
-            writeln!(content, "</{}>", tag).unwrap();
+            writeln!(content, "</{}>", tag)?;
         }
         Node::ListItem(list_item) => {
-            write!(content, "<li>").unwrap();
+            write!(content, "<li>")?;
             let children = if list_item.children.len() == 1
                 && let Node::Paragraph(p) = &list_item.children[0]
             {
@@ -689,19 +717,20 @@ fn md_to_html_rec(
                 &list_item.children
             };
             for child in children {
-                md_to_html_rec(content, footnote_defs, child, titles, false);
+                md_to_html_rec(content, footnote_defs, child, titles, false)?;
             }
-            writeln!(content, "</li>").unwrap();
+            writeln!(content, "</li>")?;
         }
         Node::Definition(_definition) => todo!(),
         Node::Paragraph(paragraph) => {
-            write!(content, "<p>").unwrap();
+            write!(content, "<p>")?;
             for child in &paragraph.children {
-                md_to_html_rec(content, footnote_defs, child, titles, false);
+                md_to_html_rec(content, footnote_defs, child, titles, false)?;
             }
-            writeln!(content, "</p>").unwrap();
+            writeln!(content, "</p>")?;
         }
     }
+    Ok(())
 }
 
 fn text_sanitize_for_html(s: &str, sanitize_single_quote: bool) -> Cow<'_, str> {
@@ -729,34 +758,33 @@ fn text_sanitize_for_html(s: &str, sanitize_single_quote: bool) -> Cow<'_, str> 
     }
 }
 
-fn md_render_toc(content: &mut Vec<u8>, titles: &[Title]) {
+fn md_render_toc(content: &mut Vec<u8>, titles: &[Title]) -> anyhow::Result<()> {
     if titles.is_empty() {
-        return;
+        return Ok(());
     }
 
     writeln!(
         content,
         r#"  <details class="toc"><summary>Table of contents</summary>
 <ul>"#
-    )
-    .unwrap();
+    )?;
 
     let mut current_depth = titles[0].depth;
 
     for (i, title) in titles.iter().enumerate() {
         if title.depth > current_depth {
             for _ in 0..(title.depth - current_depth) {
-                writeln!(content, "<ul>").unwrap();
+                writeln!(content, "<ul>")?;
             }
         } else if title.depth < current_depth {
             // Close the current <li>, then close the <ul> levels, then close the parent <li>.
             for _ in 0..(current_depth - title.depth) {
-                writeln!(content, "</li>\n</ul>").unwrap();
+                writeln!(content, "</li>\n</ul>")?;
             }
-            writeln!(content, "</li>").unwrap(); // Close the <li> of the previous same-level item.
+            writeln!(content, "</li>")?; // Close the <li> of the previous same-level item.
         } else if i > 0 {
             // Same level: just close the previous item.
-            writeln!(content, "</li>").unwrap();
+            writeln!(content, "</li>")?;
         }
         current_depth = title.depth;
 
@@ -766,16 +794,17 @@ fn md_render_toc(content: &mut Vec<u8>, titles: &[Title]) {
   <li>
     <a href="#{}">{}</a>"##,
             title.slug, &title.text,
-        )
-        .unwrap();
+        )?;
     }
 
     // Final cleanup: close all remaining open tags.
     let base_depth = titles[0].depth;
     for _ in 0..=(current_depth - base_depth) {
-        writeln!(content, "</li>\n</ul>").unwrap();
+        writeln!(content, "</li>\n</ul>")?;
     }
-    writeln!(content, "</details>\n").unwrap();
+    writeln!(content, "</details>\n")?;
+
+    Ok(())
 }
 
 fn md_render_article(
@@ -802,7 +831,7 @@ fn md_render_article(
         )
     })?;
 
-    let (md_root_title, tags) = md_parse_metadata(&md_content);
+    let (md_root_title, tags) = md_parse_metadata(&md_content)?;
 
     let metadata_delim = "---";
     let metadata_delim_pos = md_content.find(metadata_delim).ok_or_else(|| {
@@ -837,7 +866,7 @@ fn md_render_article(
     md_lint_rec(&md_ast, &md_path)?;
 
     let mut sb: Vec<u8> = Vec::with_capacity(md_content_bytes_len * 8);
-    let html_root_title = String::from_utf8(md_to_html(md_root_title)).with_context(|| {
+    let html_root_title = String::from_utf8(md_to_html(md_root_title)?).with_context(|| {
         format!(
             "failed to validate utf8 for root title: path={}",
             &git_stat.path_from_git_root
@@ -899,13 +928,13 @@ fn md_render_article(
 
     let mut md_titles = Vec::with_capacity(12);
     let mut title_to_counter: BTreeMap<String, u8> = BTreeMap::new();
-    md_collect_titles(&md_ast, &mut title_to_counter, &mut md_titles);
+    md_collect_titles(&md_ast, &mut title_to_counter, &mut md_titles)?;
 
-    md_render_toc(&mut sb, &md_titles);
+    md_render_toc(&mut sb, &md_titles)?;
 
     let mut footnote_defs = Vec::with_capacity(8);
-    md_to_html_rec(&mut sb, &mut footnote_defs, &md_ast, &md_titles, false);
-    md_render_footnote_definitions(&mut sb, &footnote_defs);
+    md_to_html_rec(&mut sb, &mut footnote_defs, &md_ast, &md_titles, false)?;
+    md_render_footnote_definitions(&mut sb, &footnote_defs)?;
 
     writeln!(sb, "{}", BACK_LINK)?;
     sb.extend(html_footer);
@@ -929,20 +958,22 @@ fn md_render_article(
     Ok(article)
 }
 
-fn md_render_footnote_definitions(content: &mut Vec<u8>, footnote_defs: &[FootnoteDefinition]) {
+fn md_render_footnote_definitions(
+    content: &mut Vec<u8>,
+    footnote_defs: &[FootnoteDefinition],
+) -> anyhow::Result<()> {
     if footnote_defs.is_empty() {
-        return;
+        return Ok(());
     }
 
     writeln!(
         content,
         r#"<section class="footnotes" data-footnotes>
 <ol>"#
-    )
-    .unwrap();
+    )?;
 
     for def in footnote_defs {
-        writeln!(content, r#"<li id="fn-{}">"#, def.identifier).unwrap();
+        writeln!(content, r#"<li id="fn-{}">"#, def.identifier)?;
 
         assert_eq!(1, def.children.len());
         let child = &def.children[0];
@@ -950,29 +981,36 @@ fn md_render_footnote_definitions(content: &mut Vec<u8>, footnote_defs: &[Footno
             Node::Paragraph(p) => &p.children,
             other => panic!("unexpected footnote definition: {:#?}", other),
         };
-        writeln!(content, r#"<p>"#).unwrap();
+        writeln!(content, r#"<p>"#)?;
         for child in children {
-            md_to_html_rec(content, &mut vec![], child, &[], false);
+            md_to_html_rec(content, &mut vec![], child, &[], false)?;
         }
 
-        writeln!(content, r##"<a href="#fnref-{}" class="footnote-backref" data-footnote-backref data-footnote-backref-idx="{}" aria-label="Back to reference {}">↩</a>"##, &def.identifier, &def.identifier, &def.identifier).unwrap();
+        writeln!(
+            content,
+            r##"<a href="#fnref-{}" class="footnote-backref" data-footnote-backref data-footnote-backref-idx="{}" aria-label="Back to reference {}">↩</a>"##,
+            &def.identifier, &def.identifier, &def.identifier
+        )?;
 
         writeln!(
             content,
             r#"</p>
 </li>"#
-        )
-        .unwrap();
+        )?;
     }
     writeln!(
         content,
         r#"</ol>
 </section>"#
-    )
-    .unwrap();
+    )?;
+    Ok(())
 }
 
-fn generate_tags_page(articles: &[Article], html_header: &[u8], html_footer: &[u8]) {
+fn generate_tags_page(
+    articles: &[Article],
+    html_header: &[u8],
+    html_footer: &[u8],
+) -> anyhow::Result<()> {
     let start = Instant::now();
 
     let mut tag_to_articles = BTreeMap::new();
@@ -990,12 +1028,11 @@ fn generate_tags_page(articles: &[Article], html_header: &[u8], html_footer: &[u
     writeln!(
         sb,
         "<!DOCTYPE html>\n<html>\n<head>\n<title>Articles by tag</title>",
-    )
-    .unwrap();
+    )?;
     sb.extend(html_header);
     sb.extend(BACK_LINK.as_bytes());
 
-    writeln!(sb, "\n<h1>Articles by tag</h1>\n<ul>",).unwrap();
+    writeln!(sb, "\n<h1>Articles by tag</h1>\n<ul>",)?;
 
     for (tag, articles) in &mut tag_to_articles {
         articles.sort_by(|a, b| a.git_stat.creation_date.cmp(&b.git_stat.creation_date));
@@ -1005,35 +1042,42 @@ fn generate_tags_page(articles: &[Article], html_header: &[u8], html_footer: &[u
             "<li id=\"{}\"><span class=\"tag\">{}</span><ul>",
             html_slug(tag),
             tag
-        )
-        .unwrap();
+        )?;
 
         for a in articles {
             sb.extend(b"<li>\n");
-            let (date, _time) = a.git_stat.creation_date.split_once("T").unwrap();
-            writeln!(sb, "  <span class=\"date\">{}</span>", date).unwrap();
+            let (date, _time) = a
+                .git_stat
+                .creation_date
+                .split_once("T")
+                .ok_or(anyhow!("failed to parse date"))?;
+            writeln!(sb, "  <span class=\"date\">{}</span>", date)?;
             writeln!(
                 sb,
                 "  <a href=\"{}\">{}</a>\n</li>",
                 &a.html_path.to_string_lossy(),
                 &a.html_title
-            )
-            .unwrap();
+            )?;
         }
-        writeln!(sb, "</ul></li>",).unwrap();
+        writeln!(sb, "</ul></li>",)?;
     }
-    writeln!(sb, "</ul>",).unwrap();
+    writeln!(sb, "</ul>",)?;
 
     sb.extend(html_footer);
-    fs::write("articles-by-tag.html", sb).unwrap();
+    fs::write("articles-by-tag.html", sb).context("failed to write articles-by-tag.html")?;
 
     println!(
         "⚙️ generated articles-by-tag.html: {} us",
         Instant::now().duration_since(start).as_micros()
     );
+    Ok(())
 }
 
-fn generate_article_rss(sb: &mut Vec<u8>, base_uuid: &uuid::Uuid, article: &Article) {
+fn generate_article_rss(
+    sb: &mut Vec<u8>,
+    base_uuid: &uuid::Uuid,
+    article: &Article,
+) -> anyhow::Result<()> {
     let article_uuid =
         uuid::Uuid::new_v5(base_uuid, article.html_path.to_string_lossy().as_bytes());
     write!(
@@ -1053,11 +1097,12 @@ fn generate_article_rss(sb: &mut Vec<u8>, base_uuid: &uuid::Uuid, article: &Arti
         &article_uuid,
         article.git_stat.modification_date,
         article.git_stat.creation_date,
-    )
-    .unwrap();
+    )?;
+
+    Ok(())
 }
 
-fn generate_rss(articles: &mut [Article]) {
+fn generate_rss(articles: &mut [Article]) -> anyhow::Result<()> {
     let start = Instant::now();
 
     articles.sort_by(|a, b| {
@@ -1070,6 +1115,13 @@ fn generate_rss(articles: &mut [Article]) {
     let mut sb = Vec::with_capacity(32000);
     let blog_uuid = uuid::Builder::from_bytes(FEED_UUID).into_uuid();
 
+    let last_modification_date = articles
+        .last()
+        .as_ref()
+        .ok_or(anyhow!("no last article"))?
+        .git_stat
+        .modification_date
+        .as_str();
     writeln!(
         sb,
         r#"<?xml version="1.0" encoding="utf-8"?>
@@ -1082,26 +1134,29 @@ fn generate_rss(articles: &mut [Article]) {
 </author>
 <id>urn:uuid:{}</id>
 "#,
-        BASE_URL,
-        &articles.last().as_ref().unwrap().git_stat.modification_date,
-        blog_uuid,
-    )
-    .unwrap();
+        BASE_URL, last_modification_date, blog_uuid,
+    )?;
 
     for a in articles {
-        generate_article_rss(&mut sb, &blog_uuid, a);
+        generate_article_rss(&mut sb, &blog_uuid, a)?;
     }
 
     sb.extend(b"</feed>");
-    fs::write("feed.xml", sb).unwrap();
+    fs::write("feed.xml", sb).context("failed to write feed.xml")?;
 
     println!(
         "⚙️ generated feed.xml: {} us",
         Instant::now().duration_since(start).as_micros()
     );
+
+    Ok(())
 }
 
-fn generate_home_page(articles: &mut [Article], html_header: &[u8], html_footer: &[u8]) {
+fn generate_home_page(
+    articles: &mut [Article],
+    html_header: &[u8],
+    html_footer: &[u8],
+) -> anyhow::Result<()> {
     let start = Instant::now();
 
     articles.sort_by(|a, b| {
@@ -1129,7 +1184,11 @@ fn generate_home_page(articles: &mut [Article], html_header: &[u8], html_footer:
         sb.extend(b"\n  <li>\n    <div class=\"home-link\">\n");
         sb.extend(b"      <span class=\"date\">");
         // Assuming a helper for date formatting
-        let (date, _time) = a.git_stat.creation_date.split_once("T").unwrap();
+        let (date, _time) = a
+            .git_stat
+            .creation_date
+            .split_once("T")
+            .ok_or(anyhow!("failed to parse data"))?;
         sb.extend(date.as_bytes());
         sb.extend(b"</span>\n");
 
@@ -1138,8 +1197,7 @@ fn generate_home_page(articles: &mut [Article], html_header: &[u8], html_footer:
             "      <a href=\"/blog/{}\">{}</a>",
             &a.html_path.to_string_lossy(),
             &a.html_title
-        )
-        .unwrap();
+        )?;
 
         sb.extend(b"    </div>\n<div class=\"tags\">\n");
 
@@ -1149,30 +1207,31 @@ fn generate_home_page(articles: &mut [Article], html_header: &[u8], html_footer:
                 sb,
                 " <a href=\"/blog/articles-by-tag.html#{}\" class=\"tag\">{}</a>",
                 slug, tag
-            )
-            .unwrap();
+            )?;
         }
         sb.extend(b"</div></li>");
     }
 
     sb.extend(b"  </ul>\n</div>\n");
 
-    let markdown_content = fs::read_to_string("index.md").unwrap();
-    md_html_append(&markdown_content, &mut sb);
+    let markdown_content = fs::read_to_string("index.md").context("failed to read index.md")?;
+    md_html_append(&markdown_content, &mut sb)?;
 
     sb.extend(html_footer);
-    fs::write("index.html", sb).unwrap();
+    fs::write("index.html", sb).context("failed to write index.html")?;
 
     println!(
         "⚙️ generated index.html: {} us",
         Instant::now().duration_since(start).as_micros()
     );
+
+    Ok(())
 }
 
 fn generate_all(cache: &mut HashMap<u64, Article>) -> anyhow::Result<()> {
     let start = std::time::Instant::now();
-    let html_header = fs::read("header.html").unwrap();
-    let html_footer = fs::read("footer.html").unwrap();
+    let html_header = fs::read("header.html").context("failed to read header.html")?;
+    let html_footer = fs::read("footer.html").context("failed to read footer.html")?;
 
     let git_stats = git_get_articles_stats()?;
 
@@ -1198,9 +1257,9 @@ fn generate_all(cache: &mut HashMap<u64, Article>) -> anyhow::Result<()> {
         fs::write(&a.html_path, &a.html_output).unwrap();
     }
 
-    generate_home_page(&mut articles, &html_header, &html_footer);
-    generate_tags_page(&articles, &html_header, &html_footer);
-    generate_rss(&mut articles);
+    generate_home_page(&mut articles, &html_header, &html_footer)?;
+    generate_tags_page(&articles, &html_header, &html_footer)?;
+    generate_rss(&mut articles)?;
     let articles_count = articles.len();
 
     println!(
