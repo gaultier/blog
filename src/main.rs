@@ -293,18 +293,11 @@ fn git_get_articles_stats() -> anyhow::Result<Vec<GitStat>> {
                 None => {
                     break;
                 }
-                Some(line) => line,
+                Some(line) if line.trim_ascii().is_empty() || line.starts_with("'20") => break,
+                Some(_) => lines.next().unwrap(),
             };
 
-            if line.trim_ascii().is_empty() {
-                break;
-            }
-            // Start of a new commit?
-            if line.starts_with("'20") {
-                break;
-            }
-
-            let mut split = line.splitn(3, " ");
+            let mut split = line.trim_ascii().splitn(3, '\t');
             match (split.next(), split.next(), split.next()) {
                 (Some("D"), Some(path), None) => {
                     assert!(!path.is_empty());
@@ -319,7 +312,7 @@ fn git_get_articles_stats() -> anyhow::Result<Vec<GitStat>> {
                     };
                     res.insert(path.to_owned(), git_stat);
                 }
-                (Some("C"), Some(path), None) => {
+                (Some("M"), Some(path), None) => {
                     let entry = res.get_mut(path).unwrap();
                     assert_ne!(
                         entry.modification_date.as_str().cmp(date_trimmed),
@@ -328,7 +321,7 @@ fn git_get_articles_stats() -> anyhow::Result<Vec<GitStat>> {
                     // Update the modification date.
                     entry.modification_date = date_trimmed.to_owned();
                 }
-                (Some("R"), Some(path_old), Some(path_new)) => {
+                (Some(action), Some(path_old), Some(path_new)) if action.starts_with("R") => {
                     assert!(!path_old.is_empty());
                     assert!(!path_new.is_empty());
 
@@ -341,7 +334,7 @@ fn git_get_articles_stats() -> anyhow::Result<Vec<GitStat>> {
                     res.insert(path_new.to_owned(), git_stat);
                 }
                 _ => {
-                    bail!("invalid combination in git log entry: {}", line);
+                    bail!("invalid combination in git log entry: `{}`", line);
                 }
             }
         }
