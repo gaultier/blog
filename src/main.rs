@@ -172,17 +172,21 @@ fn md_lint_rec(node: &Node, md_path: &Path) -> anyhow::Result<()> {
             Ok(())
         }
         Node::Code(code) => {
-            if !code.lang.is_some() {
-                bail!(
-                    "missing language for code block: file={:?} position={:?}",
-                    md_path.to_str(),
-                    code.position
-                );
-            }
-
-            let lang = code.lang.as_ref().unwrap().as_str();
-            if !(STANDARD_LANGS.contains(&lang) || CUSTOM_LANGS.contains(&lang)) {
-                bail!("unknown lang: {} position={:?}", lang, code.position);
+            match &code.lang {
+                None => {
+                    bail!(
+                        "missing language for code block: file={:?} position={:?}",
+                        md_path.to_str(),
+                        code.position
+                    );
+                }
+                Some(lang) => {
+                    if !(STANDARD_LANGS.contains(&lang.as_str())
+                        || CUSTOM_LANGS.contains(&lang.as_str()))
+                    {
+                        bail!("unknown lang: {} position={:?}", lang, code.position);
+                    }
+                }
             }
             Ok(())
         }
@@ -228,7 +232,7 @@ fn md_lint_rec(node: &Node, md_path: &Path) -> anyhow::Result<()> {
     }
 }
 
-fn git_get_articles_stats() -> Vec<GitStat> {
+fn git_get_articles_stats() -> anyhow::Result<Vec<GitStat>> {
     let start = Instant::now();
 
     let output = Command::new("git")
@@ -242,7 +246,7 @@ fn git_get_articles_stats() -> Vec<GitStat> {
             "*.md",
         ])
         .output()
-        .unwrap();
+        .context("failed to get git stats")?;
     assert_eq!(Some(0), output.status.code());
     assert!(output.stderr.is_empty());
     println!(
@@ -266,77 +270,57 @@ fn git_get_articles_stats() -> Vec<GitStat> {
 
     loop {
         // End?
-        let line = lines.next();
-        if line.is_none() {
-            break;
-        }
+        let line = match lines.next() {
+            None => {
+                break;
+            }
+            Some(line) => line,
+        };
 
-        let date_trimmed = line.unwrap().trim_matches('\'').trim_ascii();
+        let date_trimmed = line.trim_matches('\'').trim_ascii();
         assert!(!date_trimmed.is_empty());
 
-        let empty = lines.next().unwrap().trim_ascii();
+        let empty = lines
+            .next()
+            .ok_or(anyhow!("expected empty line in git log entry, after date"))?
+            .trim_ascii();
         assert!(empty.is_empty());
 
         // Files.
         loop {
             // End?
-            {
-                let line = lines.peek();
-                if line.is_none() {
+            let line = match lines.peek() {
+                None => {
                     break;
                 }
-                let line = line.unwrap();
+                Some(line) => line,
+            };
 
-                if line.trim_ascii().is_empty() {
-                    break;
-                }
-                // Start of a new commit?
-                if line.starts_with("'20") {
-                    break;
-                }
+            if line.trim_ascii().is_empty() {
+                break;
+            }
+            // Start of a new commit?
+            if line.starts_with("'20") {
+                break;
             }
 
-            let line = lines.next().unwrap();
-
-            let path_trimmed = line.trim_ascii();
-            assert!(!path_trimmed.is_empty());
-            let mut path_split = path_trimmed.split_ascii_whitespace();
-            let action = path_split.next().unwrap().chars().next().unwrap();
-            assert!(action == 'A' || action == 'M' || action == 'R' || action == 'D');
-
-            let path_old = path_split.next().unwrap();
-            assert!(!path_old.is_empty());
-
-            let path_new = path_split.next();
-            if action == 'R' {
-                assert!(path_new.is_some());
-            } else {
-                assert!(path_new.is_none());
-            }
-
-            match action {
-                'D' => {
-                    res.remove(path_old).unwrap();
+            let mut split = line.splitn(3, " ");
+            match (split.next(), split.next(), split.next()) {
+                (Some("D"), Some(path), None) => {
+                    assert!(!path.is_empty());
+                    res.remove(path).unwrap();
                 }
-                'R' => {
+                (Some("A"), Some(path), None) => {
+                    assert!(!path.is_empty());
                     let git_stat = GitStat {
                         creation_date: date_trimmed.to_owned(),
                         modification_date: date_trimmed.to_owned(),
-                        path_from_git_root: path_new.unwrap().to_owned(),
+                        path_from_git_root: path.to_owned(),
                     };
-                    res.remove(path_old);
-                    res.insert(path_new.unwrap().to_owned(), git_stat);
+                    res.insert(path.to_owned(), git_stat);
                 }
-                'A' => {
-                    let git_stat = GitStat {
-                        creation_date: date_trimmed.to_owned(),
-                        modification_date: date_trimmed.to_owned(),
-                        path_from_git_root: path_old.to_owned(),
-                    };
-                    res.insert(path_old.to_owned(), git_stat);
-                }
-                'M' => {
-                    let entry = res.get_mut(path_old).unwrap();
+                (Some("C"), Some(path), None) => {
+                    let entry = res.get_mut(path).unwrap();
                     assert_ne!(
                         entry.modification_date.as_str().cmp(date_trimmed),
                         Ordering::Greater
@@ -344,7 +328,21 @@ fn git_get_articles_stats() -> Vec<GitStat> {
                     // Update the modification date.
                     entry.modification_date = date_trimmed.to_owned();
                 }
-                _ => unreachable!(),
+                (Some("R"), Some(path_old), Some(path_new)) => {
+                    assert!(!path_old.is_empty());
+                    assert!(!path_new.is_empty());
+
+                    let git_stat = GitStat {
+                        creation_date: date_trimmed.to_owned(),
+                        modification_date: date_trimmed.to_owned(),
+                        path_from_git_root: path_new.to_owned(),
+                    };
+                    res.remove(path_old);
+                    res.insert(path_new.to_owned(), git_stat);
+                }
+                _ => {
+                    bail!("invalid combination in git log entry: {}", line);
+                }
             }
         }
     }
@@ -357,7 +355,7 @@ fn git_get_articles_stats() -> Vec<GitStat> {
         Instant::now().duration_since(start).as_millis()
     );
 
-    res
+    Ok(res)
 }
 
 // TODO: Return Rc<String> or Cow<str>?
@@ -1179,12 +1177,12 @@ fn generate_home_page(articles: &mut [Article], html_header: &[u8], html_footer:
     );
 }
 
-fn generate_all(cache: &mut HashMap<u64, Article>) {
+fn generate_all(cache: &mut HashMap<u64, Article>) -> anyhow::Result<()> {
     let start = std::time::Instant::now();
     let html_header = fs::read("header.html").unwrap();
     let html_footer = fs::read("footer.html").unwrap();
 
-    let git_stats = git_get_articles_stats();
+    let git_stats = git_get_articles_stats()?;
 
     let mut articles: Vec<Article> = Vec::with_capacity(git_stats.len());
     for gs in git_stats {
@@ -1218,6 +1216,7 @@ fn generate_all(cache: &mut HashMap<u64, Article>) {
         articles_count,
         Instant::now().duration_since(start).as_millis()
     );
+    Ok(())
 }
 
 fn check_langs() {
@@ -1247,7 +1246,9 @@ fn watch(mtx_cond: Arc<(Mutex<()>, Condvar)>, cache: &mut HashMap<u64, Article>)
                             || file_name == AsRef::<Path>::as_ref("footer.html")
                         {
                             println!("🔄 header/footer changed: {}", file_name.to_str().unwrap());
-                            generate_all(cache);
+                            if let Err(err) = generate_all(cache) {
+                                eprintln!("err: {}", err);
+                            }
                             cvar.notify_all();
                         }
                         if path.extension() == Some("js".as_ref())
@@ -1266,7 +1267,9 @@ fn watch(mtx_cond: Arc<(Mutex<()>, Condvar)>, cache: &mut HashMap<u64, Article>)
                         }
                         if path.extension() == Some("md".as_ref()) {
                             println!("🔄 md file changed: {}", file_name.to_str().unwrap());
-                            generate_all(cache);
+                            if let Err(err) = generate_all(cache) {
+                                eprintln!("err: {}", err);
+                            }
 
                             cvar.notify_all();
                         }
@@ -1381,7 +1384,9 @@ fn main() {
 
     let mut cache = HashMap::with_capacity(128);
 
-    generate_all(&mut cache);
+    if let Err(err) = generate_all(&mut cache) {
+        eprintln!("err: {}", err);
+    }
 
     if let Some(arg) = arg1
         && arg == "watch"
