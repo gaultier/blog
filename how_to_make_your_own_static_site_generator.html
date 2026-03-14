@@ -544,36 +544,16 @@ Do not edit it by hand.
 <span class="line-number"></span><span class="code-hl">    }</span>
 <span class="line-number"></span><span class="code-hl">}</span>
 </code></pre>
-<p>And the JavaScript side is also very short:</p>
+<p>And the JavaScript side is also very short (this used to be longer but a friendly commenter posted a much shorter version!):</p>
 <pre>
   <div class="code-header">
     <span>Javascript</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-javascript"><span class="line-number"></span><span class="code-hl">function sse_connect() {</span>
-<span class="line-number"></span><span class="code-hl">  const eventSource = new EventSource('/blog/live-reload');</span>
-<span class="line-number"></span><span class="code-hl"></span>
-<span class="line-number"></span><span class="code-hl">  eventSource.onopen = (_event) =&gt; {</span>
-<span class="line-number"></span><span class="code-hl">    console.log(&quot;connected&quot;);</span>
-<span class="line-number"></span><span class="code-hl">  }</span>
-<span class="line-number"></span><span class="code-hl"></span>
-<span class="line-number"></span><span class="code-hl">  eventSource.onmessage = (event) =&gt; {</span>
-<span class="line-number"></span><span class="code-hl">    console.log(&quot;New message:&quot;, event.data);</span>
-<span class="line-number"></span><span class="code-hl">    location.reload();</span>
-<span class="line-number"></span><span class="code-hl">  };</span>
-<span class="line-number"></span><span class="code-hl"></span>
-<span class="line-number"></span><span class="code-hl">  eventSource.onerror = (err) =&gt; {</span>
-<span class="line-number"></span><span class="code-hl">    console.error(&quot;EventSource failed:&quot;, err);</span>
-<span class="line-number"></span><span class="code-hl">    // The browser will automatically attempt to reconnect </span>
-<span class="line-number"></span><span class="code-hl">    // after a short delay unless `eventSource.close()` is called.</span>
-<span class="line-number"></span><span class="code-hl">  };</span>
-<span class="line-number"></span><span class="code-hl">}</span>
-<span class="line-number"></span><span class="code-hl"></span>
-<span class="line-number"></span><span class="code-hl">if (!location.origin.includes(&quot;github&quot;)) {</span>
-<span class="line-number"></span><span class="code-hl">  sse_connect();</span>
-<span class="line-number"></span><span class="code-hl">}</span>
+  <code class="language-javascript"><span class="line-number"></span><span class="code-hl">location.origin.includes(&quot;github&quot;) || (new EventSource(&quot;/blog/live-reload&quot;).onmessage = () =&gt; location.reload());</span>
 </code></pre>
-<p>The last two lines mean: I only try to live-reload locally, not when the page is served from Github pages.</p>
+<p>The check means: I only try to live-reload locally, not when the page is served from Github pages.</p>
+<p>SSE has a big advantage: The browser tries to reconnect automatically if the network connection goes away.</p>
 <p>This works beautifully. A prior version used WebSockets and that proved to be a headache compared to SSE. If the flow of events is strictly unidirectional, from the server to the client, SSE is much simpler.</p>
 <p><code>location.reload()</code> is a bit heavy-handed since it reloads the page completely. The nice thing is that every asset is reloaded including CSS, images, etc. However there is a visible flash when the page is being re-rendered.</p>
 <p>A more advanced live reloading approach, which is also more work, is to tell the browser what changed exactly. If an asset file changed, reload the page. If the content changed, send the new content to the browser, and replace it in the DOM. This can be taken to the extreme by doing precise diffing and only replacing, say, the one character that changed.</p>

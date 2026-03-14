@@ -397,34 +397,15 @@ fn live_reload(
 }
 ```
 
-And the JavaScript side is also very short:
+And the JavaScript side is also very short (this used to be longer but a friendly commenter posted a much shorter version!):
 
 ```javascript
-function sse_connect() {
-  const eventSource = new EventSource('/blog/live-reload');
-
-  eventSource.onopen = (_event) => {
-    console.log("connected");
-  }
-
-  eventSource.onmessage = (event) => {
-    console.log("New message:", event.data);
-    location.reload();
-  };
-
-  eventSource.onerror = (err) => {
-    console.error("EventSource failed:", err);
-    // The browser will automatically attempt to reconnect 
-    // after a short delay unless `eventSource.close()` is called.
-  };
-}
-
-if (!location.origin.includes("github")) {
-  sse_connect();
-}
+location.origin.includes("github") || (new EventSource("/blog/live-reload").onmessage = () => location.reload());
 ```
 
-The last two lines mean: I only try to live-reload locally, not when the page is served from Github pages.
+The check means: I only try to live-reload locally, not when the page is served from Github pages.
+
+SSE has a big advantage: The browser tries to reconnect automatically if the network connection goes away.
 
 This works beautifully. A prior version used WebSockets and that proved to be a headache compared to SSE. If the flow of events is strictly unidirectional, from the server to the client, SSE is much simpler. 
 
