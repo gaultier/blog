@@ -71,7 +71,7 @@ Do not edit it by hand.
 <div class="article-prelude">
 <p><a href="/blog"> ⏴ Back to all articles</a></p>
 
-<p class="publication-date">Published on 2026-03-09. Last modified on 2026-03-11.</p>
+<p class="publication-date">Published on 2026-03-09. Last modified on 2026-03-14.</p>
 </div>
 <div class="article-title">
   <h1>How to make your own static site generator</h1>
@@ -101,7 +101,7 @@ Do not edit it by hand.
 </li>
 
   <li>
-    <a href="#generate-the-rss-feed">Generate the RSS feed</a>
+    <a href="#generate-the-rss-atom-feed">Generate the RSS/Atom feed</a>
 </li>
 
   <li>
@@ -173,7 +173,7 @@ Do not edit it by hand.
 <span class="line-number"></span><span class="code-hl">        pandoc --toc $&lt; &gt;&gt; $@</span>
 <span class="line-number"></span><span class="code-hl">        cat footer.html &gt;&gt; $@</span>
 </code></pre>
-<p>It did not have a RSS feed, no search, no tags, no linting, the home page listing articles was manually kept in sync, and it was slower than my current custom-grown generator!</p>
+<p>It did not have a RSS/Atom feed, no search, no tags, no linting, the home page listing articles was manually kept in sync, and it was slower than my current custom-grown generator!</p>
 <h2 id="list-all-articles">
   <a class="title" href="#list-all-articles">List all articles</a>
   <a class="hash-anchor" href="#list-all-articles" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
@@ -441,9 +441,9 @@ Do not edit it by hand.
 <span class="line-number"></span><span class="code-hl">    }</span>
 <span class="line-number"></span><span class="code-hl">}</span>
 </code></pre>
-<h2 id="generate-the-rss-feed">
-  <a class="title" href="#generate-the-rss-feed">Generate the RSS feed</a>
-  <a class="hash-anchor" href="#generate-the-rss-feed" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+<h2 id="generate-the-rss-atom-feed">
+  <a class="title" href="#generate-the-rss-atom-feed">Generate the RSS/Atom feed</a>
+  <a class="hash-anchor" href="#generate-the-rss-atom-feed" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>I have written about it <a href="/blog/feed.html">before</a>. This is very simple, I just generate a XML file listing all articles including the creation and modification date. I use <a href="https://en.wikipedia.org/wiki/Universally_unique_identifier">UUID v5</a> to assign an id to each article because it's a good fit: the blog itself has a UUID which is the namespace, and the UUID for each article is <code>sha1(blog_namespace + article_file_path)</code>.</p>
 <p>I save the XML in the file <code>feed.xml</code> and mention this XML in the HTML in the <code>&lt;head&gt;</code> element:</p>

@@ -40,7 +40,7 @@ The first version was this Makefile:
         cat footer.html >> $@
 ```
 
-It did not have a RSS feed, no search, no tags, no linting, the home page listing articles was manually kept in sync, and it was slower than my current custom-grown generator!
+It did not have a RSS/Atom feed, no search, no tags, no linting, the home page listing articles was manually kept in sync, and it was slower than my current custom-grown generator!
 
 ## List all articles
 
@@ -294,7 +294,7 @@ fn md_to_html_rec(
 }
 ```
 
-## Generate the RSS feed
+## Generate the RSS/Atom feed
 
 I have written about it [before](/blog/feed.html). This is very simple, I just generate a XML file listing all articles including the creation and modification date. I use [UUID v5](https://en.wikipedia.org/wiki/Universally_unique_identifier) to assign an id to each article because it's a good fit: the blog itself has a UUID which is the namespace, and the UUID for each article is `sha1(blog_namespace + article_file_path)`.
 
