@@ -472,7 +472,7 @@ fn md_render_article(
 
 Technically I could use the [nohash](https://docs.rs/nohash-hasher/0.2.0/nohash_hasher/) crate to optimize a bit, since the key in the map is already a hash, no need to hash it a second time. But I don't bother for now.
  
-I never clear the cache, because my computer has so much memory. This has one advantage: if I undo a change when writing an article, and the work had already finished, I will hit the existing cache entry again. Crucially, all HTML files are written to disk every time, wether it was a cache hit or not. This is required to avoid the cache and the disk going out-of-sync.
+I never clear the cache, because my computer has so much memory. This has one advantage: if I undo a change when writing an article, and the work had already finished, I will hit the existing cache entry again. Crucially, all HTML files are written to disk every time, whether it was a cache hit or not. This is required to avoid the cache and the disk going out-of-sync.
 
 Skipping all this work is fine for one reason only: generating the HTML for an article is a pure function with immutable arguments. If it mutated a variable (for example a search index), I could not easily skip this work.
 
