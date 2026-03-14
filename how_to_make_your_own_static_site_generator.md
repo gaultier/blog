@@ -2,6 +2,8 @@ Title: How to make your own static site generator
 Tags: Blog
 ---
 
+*Discussions: [lobsters](https://lobste.rs/s/qnnok5/how_make_your_own_static_site_generator) .*
+
 I developed my [own](https://github.com/gaultier/blog/blob/master/src/main.rs) static site generator for this blog. Initially it was just a Makefile. Over the years it evolved quite a bit. 
 
 At some point it took several seconds. Now it takes ~120 ms for a clean build and ~50 ms for an incremental build.
