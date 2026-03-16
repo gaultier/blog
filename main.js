@@ -4,30 +4,7 @@ import * as scheme from './scheme.min.js';
 import * as x86asm from './x86asm.min.js';
 import * as dockerfile from './dockerfile.min.js';
 
-function sse_connect() {
-  const eventSource = new EventSource('/blog/live-reload');
-
-  eventSource.onopen = (_event) => {
-    console.log("connected");
-  }
-
-  // 2. Listen for generic "message" events
-  eventSource.onmessage = (event) => {
-    console.log("New message:", event.data);
-    location.reload();
-  };
-
-  // 3. Handle errors (like the server going down)
-  eventSource.onerror = (err) => {
-    console.error("EventSource failed:", err);
-    // The browser will automatically attempt to reconnect 
-    // after a short delay unless you call eventSource.close()
-  };
-}
-
-if (!location.origin.includes("github")) {
-  sse_connect();
-}
+location.origin.includes("github") || (new EventSource("/blog/live-reload").onmessage = () => location.reload());
 
 hljs.registerLanguage("cmake", cmake.default);
 hljs.registerLanguage("scheme", scheme.default);

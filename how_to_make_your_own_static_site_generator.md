@@ -2,6 +2,8 @@ Title: How to make your own static site generator
 Tags: Blog
 ---
 
+*Discussions: [lobsters](https://lobste.rs/s/qnnok5/how_make_your_own_static_site_generator) .*
+
 I developed my [own](https://github.com/gaultier/blog/blob/master/src/main.rs) static site generator for this blog. Initially it was just a Makefile. Over the years it evolved quite a bit. 
 
 At some point it took several seconds. Now it takes ~120 ms for a clean build and ~50 ms for an incremental build.
@@ -38,7 +40,7 @@ The first version was this Makefile:
         cat footer.html >> $@
 ```
 
-It did not have a RSS feed, no search, no tags, no linting, the home page listing articles was manually kept in sync, and it was slower than my current custom-grown generator!
+It did not have a RSS/Atom feed, no search, no tags, no linting, the home page listing articles was manually kept in sync, and it was slower than my current custom-grown generator!
 
 ## List all articles
 
@@ -292,7 +294,7 @@ fn md_to_html_rec(
 }
 ```
 
-## Generate the RSS feed
+## Generate the RSS/Atom feed
 
 I have written about it [before](/blog/feed.html). This is very simple, I just generate a XML file listing all articles including the creation and modification date. I use [UUID v5](https://en.wikipedia.org/wiki/Universally_unique_identifier) to assign an id to each article because it's a good fit: the blog itself has a UUID which is the namespace, and the UUID for each article is `sha1(blog_namespace + article_file_path)`.
 
@@ -395,34 +397,15 @@ fn live_reload(
 }
 ```
 
-And the JavaScript side is also very short:
+And the JavaScript side is also very short (this used to be longer but a friendly commenter posted a much shorter version!):
 
 ```javascript
-function sse_connect() {
-  const eventSource = new EventSource('/blog/live-reload');
-
-  eventSource.onopen = (_event) => {
-    console.log("connected");
-  }
-
-  eventSource.onmessage = (event) => {
-    console.log("New message:", event.data);
-    location.reload();
-  };
-
-  eventSource.onerror = (err) => {
-    console.error("EventSource failed:", err);
-    // The browser will automatically attempt to reconnect 
-    // after a short delay unless `eventSource.close()` is called.
-  };
-}
-
-if (!location.origin.includes("github")) {
-  sse_connect();
-}
+location.origin.includes("github") || (new EventSource("/blog/live-reload").onmessage = () => location.reload());
 ```
 
-The last two lines mean: I only try to live-reload locally, not when the page is served from Github pages.
+The check means: I only try to live-reload locally, not when the page is served from Github pages.
+
+SSE has a big advantage: The browser tries to reconnect automatically if the network connection goes away.
 
 This works beautifully. A prior version used WebSockets and that proved to be a headache compared to SSE. If the flow of events is strictly unidirectional, from the server to the client, SSE is much simpler. 
 
@@ -489,7 +472,7 @@ fn md_render_article(
 
 Technically I could use the [nohash](https://docs.rs/nohash-hasher/0.2.0/nohash_hasher/) crate to optimize a bit, since the key in the map is already a hash, no need to hash it a second time. But I don't bother for now.
  
-I never clear the cache, because my computer has so much memory. This has one advantage: if I undo a change when writing an article, and the work had already finished, I will hit the existing cache entry again. Crucially, all HTML files are written to disk every time, wether it was a cache hit or not. This is required to avoid the cache and the disk going out-of-sync.
+I never clear the cache, because my computer has so much memory. This has one advantage: if I undo a change when writing an article, and the work had already finished, I will hit the existing cache entry again. Crucially, all HTML files are written to disk every time, whether it was a cache hit or not. This is required to avoid the cache and the disk going out-of-sync.
 
 Skipping all this work is fine for one reason only: generating the HTML for an article is a pure function with immutable arguments. If it mutated a variable (for example a search index), I could not easily skip this work.
 
