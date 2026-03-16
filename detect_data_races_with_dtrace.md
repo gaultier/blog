@@ -4,11 +4,17 @@ Tags: DTrace, Concurrency
 
 *For a gentle introduction to DTrace especially in conjunction with Go, see my past article: [An optimization and debugging story with Go and DTrace](/blog/an_optimization_and_debugging_story_go_dtrace.html), or my other [DTrace articles](/blog/articles-by-tag.html#dtrace).*
 
-A data race is concurrent access to shared data in a way that does not respect the rules of the programming language. Some languages are stricter or looser when they establish how that can happen, but they all forbid *some* kinds of concurrent (unsynchronized) accesses, typically write-write or read-write.
+A data race is a concurrent access to shared data in a way that does not respect the rules of the programming language. Some languages are stricter or looser when they establish how that can happen, but they all forbid *some* kinds of concurrent (unsynchronized) accesses, typically write-write or read-write. 
+
+The symptoms are bizarre and very painful to diagnose: stale reads, inconsistent data, 'impossible' code path taken, crashes, etc. 
+
+Since some compilers are very aggressive at re-ordering and optimizing code in the absence of explicit data dependencies, the compiled program can be very diffrent from what the code looks like.
+
+This is exacerbated by another actor: the CPU. On a typical machine, there are multiple CPUs, some on the same die and some on different dies, and they all have to coordinate to access the same memory. They also share a cache which has to be kept in sync with the real data. A data race will typically result in an out-of-date cache.
 
 ## The theory
 
-For example [Go's memory model](https://go.dev/ref/mem#model) defines a data race in terms of 'happens-before' and 'synchronized before':
+[Go's memory model](https://go.dev/ref/mem#model) defines a data race in terms of 'happens-before' and 'synchronized before':
 
 
 >  A read-write data race on memory location x consists of a read-like memory operation r on x and a write-like memory operation w on x, at least one of which is non-synchronizing, which are unordered by happens before (that is, neither r happens before w nor w happens before r).
@@ -23,11 +29,24 @@ For example [Go's memory model](https://go.dev/ref/mem#model) defines a data rac
 
 
 
+[C's standard](https://www.open-std.org/jtc1/sc22/wg14/www/docs/n3220.pdf) uses similar language, section '5.1.2.5 Multi-threaded executions and data races':
+
+> [...] Two expression evaluations conflict if one of them modifies a memory location and the other one reads or modifies the same memory location.
+> 
+> [...] The library defines atomic operations (7.17) and operations on mutexes (7.28.4) that are specially
+> identified as synchronization operations. These operations play a special role in making assignments
+> in one thread visible to another. A synchronization operation on one or more memory locations is
+> one of an acquire operation, a release operation, both an acquire and release operation, or a consume
+> operation. A synchronization operation without an associated memory location is a fence and can
+> be either an acquire fence, a release fence, or both an acquire and release fence. In addition, there
+> are relaxed atomic operations, which are not synchronization operations, and atomic read-modify-write
+> operations, which have special characteristics.
+
 ## In practice
 
 This is great to have formally defined, but it's not very actionable. Many programming languages do not have enough compile time guarantees to avoid data races at compile time, and thus provide a runtime race detector: Go, C and C++ with Thread Sanitizer, etc.
 
-Typically these can detect some data races but not all, and incur a big performance penalty (I have experienced x5 to x20 slow-downs in real production code). Also, they typically require that *all* the code in the program is compiled with this detector enabled, which is sometimes very time-consuming, or not possible at all.
+Typically these can detect some data races but not all, and incur a big performance penalty (I have experienced x5 to x20 slow-downs in real production code). Also, they typically require that *all* the code in the program is compiled with this detector enabled, which is sometimes very time-consuming, or not possible at all (some projects use closed-source libraries). Additionally there is the case of new emerging programming languages which do not have yet a race detector implemented.
 
 What can we do then?
 
@@ -36,24 +55,24 @@ What if we could somehow use DTrace to observe our program and detect, like a ru
 
 So here is the idea:
 
-- We suspect a data structure to be racy
-- We observe with DTrace functions that read and write this data structure. DTrace can also observe arbitrary locations in the program with [function offset probes (33.6.2. Tracing Arbitrary Instructions)](https://illumos.org/books/dtrace/chp-user.html#chp-user) or statically defined probes, but simply tracing functions is enough to demonstrate the point here.
+- We suspect a data structure or specific code location to be racy
+- Using DTrace, we observe functions that read and write this data structure. DTrace can also observe arbitrary locations in the program with [function offset probes (33.6.2. Tracing Arbitrary Instructions)](https://illumos.org/books/dtrace/chp-user.html#chp-user) or statically defined probes, but simply tracing functions is enough to demonstrate the point here.
 - When entering such a function, we record in a global map the thread id and the kind of access (read/write). The key in this map is the memory address being accessed.
-- When exiting such a function, we clear the entry in the map. 
-- If we enter such a function and we see from the global map that another thread is already running this function, this means that we have a concurrent access to the data structure. If at least one of them is a write (read-read is fine), this is a potential data race.
+- When exiting such a function, we clear the entry in the map, because the access has ended. 
+- When start to access a piece of memory, we check the global map of accesses. If we see that another thread is already accessing the same memory address, this means that we have a concurrent access to the data structure. If at least one of them is a write (read-read is fine), this is a potential data race.
 
-This can be refined further as we'll see but it's good enough for now, and that's essentially what Thread Sanitizer does.
+This can be refined further as we'll see but it's good enough for now, and that's the basis of what Thread Sanitizer does.
 
 
 
 ## Example
 
 
-I fixed recently a data race in Go at work. I have reproduced it in C for simplicity, because Go inlines function calls quite heavily and some functions, e.g. `append()`, `len()`, are not real functions but in fact builtin, it's hard to trace them.
+I [fixed](https://github.com/ory/kratos/commit/66739820c9d45ad4bc465b2ce3e10311967e29e4) recently a data race in Go at work. I have reproduced it in C for simplicity, because Go inlines function calls quite heavily and some functions, e.g. `append()`, `len()`, are not real functions but in fact builtin, it's hard to trace them.
 
 In theory DTrace can trace arbitrary instructions and static probes, but in Go static probes are annoying to declare since that needs CGO, and on ARM64 macOS (my current laptop) tracing arbitratry instructions does not work.
 
-The program appends data to a growable byte array in a thread, and reads the length of this byte array in another thread, without synchronization. Text book data race, but this kind of thing happens in production code when the compiler does not protect us from ourselves:
+The program appends data to a growable byte array in a thread, and reads the length of this byte array in another thread, without synchronization, until an expected value is reached. Text book read-write data race, but this kind of thing happens in production code when the compiler does not protect us from ourselves:
 
 ```c
 #include <assert.h>
@@ -127,12 +146,12 @@ int main() {
 A few notes about this code:
 
 - I use getters and setters for one reason only: to make it easy to observe read and write operations in DTrace. If you hate getters and setters, the same can be achieved with DTrace static probes.
-- The main thread polls very aggressively watching the length of the growable array. It's effectively a spin-lock, that unlocks when the length has reached the target value. In real code there would be a `nanosleep()` call in each loop ieration, or a proper synchronization mechanism e.g. a condition variable or simply a call to `pthread_join`. But I have seen plenty code like this in the wild.
+- The main thread polls very aggressively watching the length of the growable array. It's effectively a spin-lock, that unlocks when the length has reached the target value. In real code there would be a `nanosleep()` call in each loop iteration (that's what the Go production code did), or a proper synchronization mechanism e.g. a condition variable or simply a call to `pthread_join` (but Go does not have a way to wait on a goroutine 'id').
 - The obvious data race is on the `len` field of the byte array. It's likely benign in unoptimized mode, because the consequence in the current code is that we'll either do a few extra loop iterations or the assert at the end will fail. 
 - However the compiler is free to re-order the code since there are no explicit data dependencies and that's where the fun begins. Don't be this guy that says 'well, it's a data race, but it isn't actually that bad, so let's not fix it...'. It's a matter of *when*, not *if*, it's going to explode in your hand.
-- In fact when compiling this program in release mode it never terminates.
-- I did not even talk about CPU caches, and how the lack of explicit synchronization primitives is interpreted by the CPU as: let's cache these values aggressively! Which means we'll likely have stale reads.
+- In fact when compiling this program in release mode it never terminates. That's because data races are undefined behavior and the compiler is free to do whatever it wants.
 - The moment someone modifies the program, for example to print the last element of the array inside the loop on the main thread, we'll likely get a segfault, because `byte_array_push` modifies the fields of the `ByteArray` structure, which have to always be consistent with each other: `data`, `len`, and `cap`.  Since there is no synchronization primitive to ensure that, the other threads can see the structure in an inconsistent, half-updated state. That's the reason why we cannot simply make `len` an atomic. This issue of inconsistent state is even clearer if one thread does a lot of `byte_array_push()` and another `byte_array_pop()`: the program will very quickly explode because it tried to access a value out of bounds in the array, for example.
+- There is another big issue with this code: since the thread pushing values to the growable array uses `realloc()`, the `data` field, which holds all the array elements, may change each time a new element is added: the allocator may decide to allocate a bigger piece of memory, return the address, and free the old piece of memory. Since the main thread has no synchronization with the other thread, if it decides to, for example, print the first element of the array, even if `len` has the latest value and is greater than zero, it may well be that `data` has a stale value and points to the old memory. That's a use-after-free bug, and a potential security vulnerability.
 
 
 
@@ -147,7 +166,7 @@ $ ./blog1
 
 And it appears to run just fine, no warning whatsoever (actually a warning complains that we never call `pthread_join` but that's ok).
 
-If you get lucky, you'll see one warning:
+If you get lucky, you'll see one diagnostic:
 
 ```plaintext
 ==================
@@ -201,12 +220,14 @@ BEGIN {
   func_access["byte_array_set_len"] = AccessKindWrite;
 }
 
+// Watch `byte_array_get_len` and `byte_array_set_len`.
 pid$target::byte_array_?et_len:entry {
   // `arg0` is the pointer to the `ByteArray` structure,
   // and `len` is at offset `8` in the `ByteArray` structure.
   // So this gets the value of `byte_array->len`.
   self->mem_ptr = arg0 + 8;
   this->theirs = accesses[self->mem_ptr];
+  // Get the access kind based on the function: `byte_array_get_len` is a read and `byte_array_set_len` is a write.
   this->my_access_kind = func_access[probefunc];
   this->now = timestamp;
 
@@ -232,9 +253,13 @@ pid$target::byte_array_?et_len:return /self->mem_ptr != 0/ {
 }
 ```
 
-We only observe here the get and setter for `len` to demonstrate, but of course this can be done for all methods.
+A few notes about this D script:
 
-When we detect a data race, we print the id of the two colliding threads and the call stack of the current thread. Note that we do not print the call stack of the other thread, but chances are, if thread A has a race with thread B, we'll alternate detecting the race inside thread A, and inside thread B, so we'll have both call stacks.
+- We only observe here the getter and setter for `len` to demonstrate, but of course this can be done for all methods.
+- The check `this->theirs.tid != tid` is important, because without this check, if a single thread calls a recursive function, we would think this is a data race, but it's not.
+- When we detect a data race, we print the id of the two colliding threads and the call stack of the current thread. Note that we do not print the call stack of the other thread, but chances are, if thread A has a race with thread B, we'll alternate detecting the race inside thread A, and inside thread B, so we'll have both call stacks.
+
+---
 
 Now let's run our D script. We see a ton of these messages:
 
