@@ -82,6 +82,12 @@ Do not edit it by hand.
 
   <li>
     <a href="#level-1-see-the-sql-query-without-arguments">Level 1: See the SQL query, without arguments</a>
+<ul>
+
+  <li>
+    <a href="#null-terminated-strings">Null terminated strings</a>
+</li>
+</ul>
 </li>
 
   <li>
@@ -185,7 +191,38 @@ Do not edit it by hand.
   </div>
   <code class="language-sql"><span class="line-number"></span><span class="code-hl">SELECT courier_messages.body, courier_messages.channel, courier_messages.created_at, courier_messages.id, courier_messages.nid, courier_messages.recipient, courier_messages.send_count, courier_messages.status, courier_messages.subject, courier_messages.template_data, courier_messages.template_type, courier_messages.type, courier_messages.updated_at FROM courier_messages AS courier_messages WHERE nid=? AND (&quot;courier_messages&quot;.&quot;created_at&quot; &lt; ? OR (&quot;courier_messages&quot;.&quot;created_at&quot; = ? AND &quot;courier_messages&quot;.&quot;id&quot; &gt; ?)) ORDER BY &quot;courier_messages&quot;.&quot;created_at&quot; DESC, &quot;courier_messages&quot;.&quot;id&quot; ASC LIMIT 11</span>
 </code></pre>
-<p>Which is already very useful in my opinion. But wouldn't it be nice to also see which arguments were passed to the query?</p>
+<p>Which is already very useful in my opinion.</p>
+<h3 id="null-terminated-strings">
+  <a class="title" href="#null-terminated-strings">Null terminated strings</a>
+  <a class="hash-anchor" href="#null-terminated-strings" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+</h3>
+<p>Now, there is a gotcha: DTrace uses, just like C, null-terminated strings, whereas Go does not. So we might see something like this:</p>
+<pre>
+  <div class="code-header">
+    <span>Plaintext</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-plaintext"><span class="line-number"></span><span class="code-hl">  8  11450 database/sql.(*DB).QueryContext:entry SELECT version FROM schema_migration WHERE version IN (?, ?)S (?)ion WHERE version IN (?, ?)S (?)ion WHERE version IN (?, ?)S (?)ion WHERE version IN (?, ?)</span>
+</code></pre>
+<p>DTrace goes past the real string boundary and starts reading other memory e.g. strings from our process, until it finds a random null byte and stops.</p>
+<p>We can fix it pretty simply by allocating a slightly larger buffer and putting the null byte at the end ourselves:</p>
+<pre>
+  <div class="code-header">
+    <span>Dtrace</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-dtrace"><span class="line-number"></span><span class="code-hl">pid$target::database?sql.*.ExecContext:entry,</span>
+<span class="line-number"></span><span class="code-hl">pid$target::database?sql.*.QueryContext:entry {</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  this-&gt;query =(char*) alloca(arg4 + 1);</span>
+<span class="line-number"></span><span class="code-hl">  this-&gt;query[arg4] = 0;</span>
+<span class="line-number"></span><span class="code-hl">  copyinto(arg3,(int) arg4, (void*)this-&gt;query);</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  printf(&quot;%s\n&quot;, stringof(this-&gt;query));</span>
+<span class="line-number"></span><span class="code-hl">}</span>
+</code></pre>
+<p>A bit annoying to have to do it manually, I wish there was a DTrace function for that, but fine.</p>
+<p>Ok so we see the queries now. Wouldn't it be nice to also see which arguments were passed to the query?</p>
 <h2 id="level-2-see-string-query-arguments">
   <a class="title" href="#level-2-see-string-query-arguments">Level 2: See string query arguments</a>
   <a class="hash-anchor" href="#level-2-see-string-query-arguments" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>

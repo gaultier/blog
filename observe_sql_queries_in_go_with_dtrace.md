@@ -73,7 +73,39 @@ We see something like this:
 SELECT courier_messages.body, courier_messages.channel, courier_messages.created_at, courier_messages.id, courier_messages.nid, courier_messages.recipient, courier_messages.send_count, courier_messages.status, courier_messages.subject, courier_messages.template_data, courier_messages.template_type, courier_messages.type, courier_messages.updated_at FROM courier_messages AS courier_messages WHERE nid=? AND ("courier_messages"."created_at" < ? OR ("courier_messages"."created_at" = ? AND "courier_messages"."id" > ?)) ORDER BY "courier_messages"."created_at" DESC, "courier_messages"."id" ASC LIMIT 11
 ```
 
-Which is already very useful in my opinion. But wouldn't it be nice to also see which arguments were passed to the query?
+Which is already very useful in my opinion.
+
+
+### Null terminated strings
+
+Now, there is a gotcha: DTrace uses, just like C, null-terminated strings, whereas Go does not. So we might see something like this:
+
+```plaintext
+  8  11450 database/sql.(*DB).QueryContext:entry SELECT version FROM schema_migration WHERE version IN (?, ?)S (?)ion WHERE version IN (?, ?)S (?)ion WHERE version IN (?, ?)S (?)ion WHERE version IN (?, ?)
+```
+
+DTrace goes past the real string boundary and starts reading other memory e.g. strings from our process, until it finds a random null byte and stops.
+
+We can fix it pretty simply by allocating a slightly larger buffer and putting the null byte at the end ourselves:
+
+```dtrace
+pid$target::database?sql.*.ExecContext:entry,
+pid$target::database?sql.*.QueryContext:entry {
+
+  this->query =(char*) alloca(arg4 + 1);
+  this->query[arg4] = 0;
+  copyinto(arg3,(int) arg4, (void*)this->query);
+
+  printf("%s\n", stringof(this->query));
+}
+```
+
+
+A bit annoying to have to do it manually, I wish there was a DTrace function for that, but fine.
+
+
+
+Ok so we see the queries now. Wouldn't it be nice to also see which arguments were passed to the query?
 
 ## Level 2: See string query arguments
 
