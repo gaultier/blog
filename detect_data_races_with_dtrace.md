@@ -285,7 +285,7 @@ $ sudo dtrace -s ./blog.d -c ./blog1
 ```
 
 
-Indeed, the main thread has a data race when calling `byte_array_get_len` with the other thread which calls `byte_array_set_len`, as expected.
+Indeed, the main thread has a data race when calling `byte_array_get_len` with the other thread which calls `byte_array_set_len`, as expected. We even see that it is a read-write data races, from the printed accesses.
 
 Now let's fix the program crudely with a mutex:
 
@@ -337,10 +337,12 @@ Now let's fix the program crudely with a mutex:
 
 And now our D script shows no warning of potential data races. Yay!
 
+There are many ways to fix this race, this one might not be the best since it will cause a lot of lock contention, so let's try another approach.
+
 ## Improvements
 
 
-Now you might be thinking: wait a minute, how do we know that the D script is actually working? It is tracking concurrent accesses, but fix with the mutex actually creates a critical section, or 'exclusive' section, where only one thread has access at any point to the data structure. As such, there are no concurrent accesses.
+Now you might be thinking: wait a minute, how do we know that the D script is actually working? It seems to track concurrent accesses, but the fix with the mutex actually creates a critical section, or 'exclusive' section, where only one thread has access at any point to the data structure. As such, there are no concurrent accesses.
 
 Let's check the correctness by applying a smarter, possibly more performant fix of the data race using a RW lock:
 
@@ -390,9 +392,9 @@ Let's check the correctness by applying a smarter, possibly more performant fix 
      }
 ```
 
-This allows for N concurrent reader or one concurrent writer. This means that we now can have multiple concurrent threads reading the same address in memory. 
+The code is very similar in its structure to the mutex version, but this now allows for N concurrent reader or one concurrent writer. It means that we now can have multiple concurrent threads reading the same address in memory. 
 
-To take full advantage of this, we spawn another thread that also reads in a loop the length:
+To take full advantage of this, we spawn another thread that also reads the length in a loop:
 
 ```diff
 diff --git a/blog_rwlock b/blog_rwlock
@@ -469,7 +471,7 @@ And N concurrent readers are fine. In fact, if we comment out this condition, we
 
 ## Conclusion
 
-Thread Sanitizer does a lot more than what we have covered, because it understands all the synchronization primitives: condition variables, atomics, etc. It tracks 'happens before' relationships between threads that call these primitives. We do not do that in our crude D script, even though we could, with a good amount of post-procssing to eliminate false positives.
+Thread Sanitizer does a lot more than what we have covered, because it understands all the synchronization primitives: condition variables, atomics, etc. It tracks 'happens before' relationships between threads that call these primitives. We do not do that in our crude D script, even though we perhaps could, with a good amount of post-procssing to eliminate false positives.
 
 Another major difference is that Thread Sanitizer is general purpose and tries to track all memory accesses, whereas our DTrace approach selectively tracks a few memory accesses.
 
@@ -477,13 +479,14 @@ Even though, I think this is already a pretty good approach, in the spirit of '2
 
 Finally, remember that neither our DTrace approach nor Thread Sanitizer guarantee that *all* data races will be caught, since these are runtime detectors that only see the code paths actually taken when observing this particular run of the program, and also because they operate with limited amounts of memory: they cannot remember *all* memory accesses in the program, they only do a best effort to remember most of them. They do not prove the absence of bugs, only their presence.
 
+In fact, while writing this article and the accompanying test programs, Thread Sanitizer very rarely flagged the glaring data races. That was motivating, as well as terrifying. 
 
 ## Addendum: The full code
 
 
 
 <details>
-  <summary>The full code</summary>
+  <summary>The D script</summary>
 
 ```dtrace
 #pragma D option dynvarsize=16m
@@ -537,5 +540,258 @@ pid$target::byte_array_?et_len:return /self->mem_ptr != 0/ {
   self->mem_ptr = 0;
 }
 ```
+</details>
 
-</details
+<details>
+  <summary>The racy C program</summary>
+
+```c
+#include <assert.h>
+#include <pthread.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
+
+#define DATA_LEN (1 << 20)
+
+typedef struct {
+  uint8_t *data;
+  size_t len, cap;
+} ByteArray;
+
+size_t byte_array_get_len(ByteArray *b) { return b->len; }
+
+size_t byte_array_get_cap(ByteArray *b) { return b->cap; }
+
+void byte_array_set_len(ByteArray *b, size_t len) { b->len = len; }
+
+void byte_array_set_cap(ByteArray *b, size_t cap) { b->cap = cap; }
+
+void byte_array_ensure_cap_at_least(ByteArray *b, size_t cap) {
+  size_t current_cap = byte_array_get_cap(b);
+
+  if (current_cap >= cap) {
+    return;
+  }
+
+  byte_array_set_cap(b, current_cap < 8 ? 8 : current_cap * 2);
+
+  b->data = realloc(b->data, b->cap);
+}
+
+void byte_array_push(ByteArray *b, uint8_t elem) {
+  const size_t len = byte_array_get_len(b);
+  byte_array_ensure_cap_at_least(b, len + 1);
+  b->data[len] = elem;
+
+  byte_array_set_len(b, len + 1);
+}
+
+void *async_push(void *any) {
+  ByteArray *b = any;
+
+  for (size_t i = 0; i < DATA_LEN; i++) {
+    byte_array_push(b, (uint8_t)i);
+  }
+
+  return NULL;
+}
+
+int main() {
+  ByteArray byte_array = {0};
+
+  pthread_t thread_push = {0};
+  pthread_create(&thread_push, NULL, async_push, &byte_array);
+
+  for (;;) {
+    const size_t len = byte_array_get_len(&byte_array);
+    if (len == DATA_LEN) {
+      break;
+    }
+  }
+
+  assert(byte_array_get_len(&byte_array) == DATA_LEN);
+}
+```
+
+</details>
+
+
+<details>
+  <summary>The C program fixed with a mutex</summary>
+
+```c
+#include <assert.h>
+#include <pthread.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
+
+#define DATA_LEN (1 << 20)
+
+typedef struct {
+  uint8_t *data;
+  size_t len, cap;
+  pthread_mutex_t mtx;
+} ByteArray;
+
+size_t byte_array_get_len(ByteArray *b) { return b->len; }
+
+size_t byte_array_get_cap(ByteArray *b) { return b->cap; }
+
+void byte_array_set_len(ByteArray *b, size_t len) { b->len = len; }
+
+void byte_array_set_cap(ByteArray *b, size_t cap) { b->cap = cap; }
+
+void byte_array_ensure_cap_at_least(ByteArray *b, size_t cap) {
+  size_t current_cap = byte_array_get_cap(b);
+
+  if (current_cap >= cap) {
+    return;
+  }
+
+  byte_array_set_cap(b, current_cap < 8 ? 8 : current_cap * 2);
+
+  b->data = realloc(b->data, b->cap);
+}
+
+void byte_array_push(ByteArray *b, uint8_t elem) {
+  pthread_mutex_lock(&b->mtx);
+
+  const size_t len = byte_array_get_len(b);
+  byte_array_ensure_cap_at_least(b, len + 1);
+  b->data[len] = elem;
+
+  byte_array_set_len(b, len + 1);
+  pthread_mutex_unlock(&b->mtx);
+}
+
+void *async_push(void *any) {
+  ByteArray *b = any;
+
+  for (size_t i = 0; i < DATA_LEN; i++) {
+    byte_array_push(b, (uint8_t)i);
+  }
+
+  return NULL;
+}
+
+int main() {
+  ByteArray byte_array = {.mtx = PTHREAD_MUTEX_INITIALIZER};
+
+  pthread_t thread_push = {0};
+  pthread_create(&thread_push, NULL, async_push, &byte_array);
+
+  for (;;) {
+    pthread_mutex_lock(&byte_array.mtx);
+    const size_t len = byte_array_get_len(&byte_array);
+    pthread_mutex_unlock(&byte_array.mtx);
+    if (len == DATA_LEN) {
+      break;
+    }
+  }
+
+  assert(byte_array_get_len(&byte_array) == DATA_LEN);
+}
+```
+
+</details>
+
+
+<details>
+  <summary>The C program fixed with a RW lock</summary>
+
+```c
+#include <assert.h>
+#include <pthread.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
+
+#define DATA_LEN (1 << 20)
+
+typedef struct {
+  uint8_t *data;
+  size_t len, cap;
+  pthread_rwlock_t rw_lock;
+} ByteArray;
+
+size_t byte_array_get_len(ByteArray *b) { return b->len; }
+
+size_t byte_array_get_cap(ByteArray *b) { return b->cap; }
+
+void byte_array_set_len(ByteArray *b, size_t len) { b->len = len; }
+
+void byte_array_set_cap(ByteArray *b, size_t cap) { b->cap = cap; }
+
+void byte_array_ensure_cap_at_least(ByteArray *b, size_t cap) {
+  size_t current_cap = byte_array_get_cap(b);
+
+  if (current_cap >= cap) {
+    return;
+  }
+
+  byte_array_set_cap(b, current_cap < 8 ? 8 : current_cap * 2);
+
+  b->data = realloc(b->data, b->cap);
+}
+
+void byte_array_push(ByteArray *b, uint8_t elem) {
+  pthread_rwlock_wrlock(&b->rw_lock);
+
+  const size_t len = byte_array_get_len(b);
+  byte_array_ensure_cap_at_least(b, len + 1);
+  b->data[len] = elem;
+
+  byte_array_set_len(b, len + 1);
+
+  pthread_rwlock_unlock(&b->rw_lock);
+}
+
+void *async_push(void *any) {
+  ByteArray *b = any;
+
+  for (size_t i = 0; i < DATA_LEN; i++) {
+    byte_array_push(b, (uint8_t)i);
+  }
+
+  return NULL;
+}
+
+void *async_read(void *any) {
+  ByteArray *b = any;
+
+  for (;;) {
+    pthread_rwlock_rdlock(&b->rw_lock);
+    const size_t len = byte_array_get_len(b);
+    pthread_rwlock_unlock(&b->rw_lock);
+    if (len == DATA_LEN) {
+      break;
+    }
+  }
+  return NULL;
+}
+
+int main() {
+  ByteArray byte_array = {.rw_lock = PTHREAD_RWLOCK_INITIALIZER};
+
+  pthread_t thread_push = {0};
+  pthread_create(&thread_push, NULL, async_push, &byte_array);
+
+  pthread_t thread_read = {0};
+  pthread_create(&thread_read, NULL, async_read, &byte_array);
+
+  for (;;) {
+    pthread_rwlock_rdlock(&byte_array.rw_lock);
+    const size_t len = byte_array_get_len(&byte_array);
+    pthread_rwlock_unlock(&byte_array.rw_lock);
+    if (len == DATA_LEN) {
+      break;
+    }
+  }
+
+  assert(byte_array_get_len(&byte_array) == DATA_LEN);
+}
+```
+
+</details>

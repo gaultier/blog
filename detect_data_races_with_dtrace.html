@@ -71,7 +71,7 @@ Do not edit it by hand.
 <div class="article-prelude">
 <p><a href="/blog"> ⏴ Back to all articles</a></p>
 
-<p class="publication-date">Published on 2026-03-11. Last modified on 2026-03-13.</p>
+<p class="publication-date">Published on 2026-03-11. Last modified on 2026-03-16.</p>
 </div>
 <div class="article-title">
   <h1>Detect data races with DTrace in any language</h1>
@@ -385,7 +385,7 @@ operations, which have special characteristics.</p>
 <span class="line-number"></span><span class="code-hl">              libsystem_pthread.dylib`thread_start+0x8</span>
 <span class="line-number"></span><span class="code-hl">[...]</span>
 </code></pre>
-<p>Indeed, the main thread has a data race when calling <code>byte_array_get_len</code> with the other thread which calls <code>byte_array_set_len</code>, as expected.</p>
+<p>Indeed, the main thread has a data race when calling <code>byte_array_get_len</code> with the other thread which calls <code>byte_array_set_len</code>, as expected. We even see that it is a read-write data races, from the printed accesses.</p>
 <p>Now let's fix the program crudely with a mutex:</p>
 <pre>
   <div class="code-header">
@@ -436,11 +436,12 @@ operations, which have special characteristics.</p>
 <span class="line-number"></span><span class="code-hl">     }</span>
 </code></pre>
 <p>And now our D script shows no warning of potential data races. Yay!</p>
+<p>There are many ways to fix this race, this one might not be the best since it will cause a lot of lock contention, so let's try another approach.</p>
 <h2 id="improvements">
   <a class="title" href="#improvements">Improvements</a>
   <a class="hash-anchor" href="#improvements" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
-<p>Now you might be thinking: wait a minute, how do we know that the D script is actually working? It is tracking concurrent accesses, but fix with the mutex actually creates a critical section, or 'exclusive' section, where only one thread has access at any point to the data structure. As such, there are no concurrent accesses.</p>
+<p>Now you might be thinking: wait a minute, how do we know that the D script is actually working? It seems to track concurrent accesses, but the fix with the mutex actually creates a critical section, or 'exclusive' section, where only one thread has access at any point to the data structure. As such, there are no concurrent accesses.</p>
 <p>Let's check the correctness by applying a smarter, possibly more performant fix of the data race using a RW lock:</p>
 <pre>
   <div class="code-header">
@@ -491,8 +492,8 @@ operations, which have special characteristics.</p>
 <span class="line-number"></span><span class="code-hl">       break;</span>
 <span class="line-number"></span><span class="code-hl">     }</span>
 </code></pre>
-<p>This allows for N concurrent reader or one concurrent writer. This means that we now can have multiple concurrent threads reading the same address in memory.</p>
-<p>To take full advantage of this, we spawn another thread that also reads in a loop the length:</p>
+<p>The code is very similar in its structure to the mutex version, but this now allows for N concurrent reader or one concurrent writer. It means that we now can have multiple concurrent threads reading the same address in memory.</p>
+<p>To take full advantage of this, we spawn another thread that also reads the length in a loop:</p>
 <pre>
   <div class="code-header">
     <span>Diff</span>
@@ -577,16 +578,17 @@ operations, which have special characteristics.</p>
   <a class="title" href="#conclusion">Conclusion</a>
   <a class="hash-anchor" href="#conclusion" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
-<p>Thread Sanitizer does a lot more than what we have covered, because it understands all the synchronization primitives: condition variables, atomics, etc. It tracks 'happens before' relationships between threads that call these primitives. We do not do that in our crude D script, even though we could, with a good amount of post-procssing to eliminate false positives.</p>
+<p>Thread Sanitizer does a lot more than what we have covered, because it understands all the synchronization primitives: condition variables, atomics, etc. It tracks 'happens before' relationships between threads that call these primitives. We do not do that in our crude D script, even though we perhaps could, with a good amount of post-procssing to eliminate false positives.</p>
 <p>Another major difference is that Thread Sanitizer is general purpose and tries to track all memory accesses, whereas our DTrace approach selectively tracks a few memory accesses.</p>
 <p>Even though, I think this is already a pretty good approach, in the spirit of '20% of the work gets you 80% of the way there'. The main appeal is that it avoids having to rebuild the whole program with different flags which can be very time consuming, or sometimes not feasible at all.</p>
 <p>Finally, remember that neither our DTrace approach nor Thread Sanitizer guarantee that <em>all</em> data races will be caught, since these are runtime detectors that only see the code paths actually taken when observing this particular run of the program, and also because they operate with limited amounts of memory: they cannot remember <em>all</em> memory accesses in the program, they only do a best effort to remember most of them. They do not prove the absence of bugs, only their presence.</p>
+<p>In fact, while writing this article and the accompanying test programs, Thread Sanitizer very rarely flagged the glaring data races. That was motivating, as well as terrifying.</p>
 <h2 id="addendum-the-full-code">
   <a class="title" href="#addendum-the-full-code">Addendum: The full code</a>
   <a class="hash-anchor" href="#addendum-the-full-code" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <details>
-  <summary>The full code</summary>
+  <summary>The D script</summary>
 <pre>
   <div class="code-header">
     <span>Dtrace</span>
@@ -643,7 +645,262 @@ operations, which have special characteristics.</p>
 <span class="line-number"></span><span class="code-hl">  self-&gt;mem_ptr = 0;</span>
 <span class="line-number"></span><span class="code-hl">}</span>
 </code></pre>
-</details
+</details>
+<details>
+  <summary>The racy C program</summary>
+<pre>
+  <div class="code-header">
+    <span>C</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-c"><span class="line-number"></span><span class="code-hl">#include &lt;assert.h&gt;</span>
+<span class="line-number"></span><span class="code-hl">#include &lt;pthread.h&gt;</span>
+<span class="line-number"></span><span class="code-hl">#include &lt;stdio.h&gt;</span>
+<span class="line-number"></span><span class="code-hl">#include &lt;stdlib.h&gt;</span>
+<span class="line-number"></span><span class="code-hl">#include &lt;time.h&gt;</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">#define DATA_LEN (1 &lt;&lt; 20)</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">typedef struct {</span>
+<span class="line-number"></span><span class="code-hl">  uint8_t *data;</span>
+<span class="line-number"></span><span class="code-hl">  size_t len, cap;</span>
+<span class="line-number"></span><span class="code-hl">} ByteArray;</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">size_t byte_array_get_len(ByteArray *b) { return b-&gt;len; }</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">size_t byte_array_get_cap(ByteArray *b) { return b-&gt;cap; }</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">void byte_array_set_len(ByteArray *b, size_t len) { b-&gt;len = len; }</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">void byte_array_set_cap(ByteArray *b, size_t cap) { b-&gt;cap = cap; }</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">void byte_array_ensure_cap_at_least(ByteArray *b, size_t cap) {</span>
+<span class="line-number"></span><span class="code-hl">  size_t current_cap = byte_array_get_cap(b);</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  if (current_cap &gt;= cap) {</span>
+<span class="line-number"></span><span class="code-hl">    return;</span>
+<span class="line-number"></span><span class="code-hl">  }</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  byte_array_set_cap(b, current_cap &lt; 8 ? 8 : current_cap * 2);</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  b-&gt;data = realloc(b-&gt;data, b-&gt;cap);</span>
+<span class="line-number"></span><span class="code-hl">}</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">void byte_array_push(ByteArray *b, uint8_t elem) {</span>
+<span class="line-number"></span><span class="code-hl">  const size_t len = byte_array_get_len(b);</span>
+<span class="line-number"></span><span class="code-hl">  byte_array_ensure_cap_at_least(b, len + 1);</span>
+<span class="line-number"></span><span class="code-hl">  b-&gt;data[len] = elem;</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  byte_array_set_len(b, len + 1);</span>
+<span class="line-number"></span><span class="code-hl">}</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">void *async_push(void *any) {</span>
+<span class="line-number"></span><span class="code-hl">  ByteArray *b = any;</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  for (size_t i = 0; i &lt; DATA_LEN; i++) {</span>
+<span class="line-number"></span><span class="code-hl">    byte_array_push(b, (uint8_t)i);</span>
+<span class="line-number"></span><span class="code-hl">  }</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  return NULL;</span>
+<span class="line-number"></span><span class="code-hl">}</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">int main() {</span>
+<span class="line-number"></span><span class="code-hl">  ByteArray byte_array = {0};</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  pthread_t thread_push = {0};</span>
+<span class="line-number"></span><span class="code-hl">  pthread_create(&amp;thread_push, NULL, async_push, &amp;byte_array);</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  for (;;) {</span>
+<span class="line-number"></span><span class="code-hl">    const size_t len = byte_array_get_len(&amp;byte_array);</span>
+<span class="line-number"></span><span class="code-hl">    if (len == DATA_LEN) {</span>
+<span class="line-number"></span><span class="code-hl">      break;</span>
+<span class="line-number"></span><span class="code-hl">    }</span>
+<span class="line-number"></span><span class="code-hl">  }</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  assert(byte_array_get_len(&amp;byte_array) == DATA_LEN);</span>
+<span class="line-number"></span><span class="code-hl">}</span>
+</code></pre>
+</details>
+<details>
+  <summary>The C program fixed with a mutex</summary>
+<pre>
+  <div class="code-header">
+    <span>C</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-c"><span class="line-number"></span><span class="code-hl">#include &lt;assert.h&gt;</span>
+<span class="line-number"></span><span class="code-hl">#include &lt;pthread.h&gt;</span>
+<span class="line-number"></span><span class="code-hl">#include &lt;stdio.h&gt;</span>
+<span class="line-number"></span><span class="code-hl">#include &lt;stdlib.h&gt;</span>
+<span class="line-number"></span><span class="code-hl">#include &lt;time.h&gt;</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">#define DATA_LEN (1 &lt;&lt; 20)</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">typedef struct {</span>
+<span class="line-number"></span><span class="code-hl">  uint8_t *data;</span>
+<span class="line-number"></span><span class="code-hl">  size_t len, cap;</span>
+<span class="line-number"></span><span class="code-hl">  pthread_mutex_t mtx;</span>
+<span class="line-number"></span><span class="code-hl">} ByteArray;</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">size_t byte_array_get_len(ByteArray *b) { return b-&gt;len; }</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">size_t byte_array_get_cap(ByteArray *b) { return b-&gt;cap; }</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">void byte_array_set_len(ByteArray *b, size_t len) { b-&gt;len = len; }</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">void byte_array_set_cap(ByteArray *b, size_t cap) { b-&gt;cap = cap; }</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">void byte_array_ensure_cap_at_least(ByteArray *b, size_t cap) {</span>
+<span class="line-number"></span><span class="code-hl">  size_t current_cap = byte_array_get_cap(b);</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  if (current_cap &gt;= cap) {</span>
+<span class="line-number"></span><span class="code-hl">    return;</span>
+<span class="line-number"></span><span class="code-hl">  }</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  byte_array_set_cap(b, current_cap &lt; 8 ? 8 : current_cap * 2);</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  b-&gt;data = realloc(b-&gt;data, b-&gt;cap);</span>
+<span class="line-number"></span><span class="code-hl">}</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">void byte_array_push(ByteArray *b, uint8_t elem) {</span>
+<span class="line-number"></span><span class="code-hl">  pthread_mutex_lock(&amp;b-&gt;mtx);</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  const size_t len = byte_array_get_len(b);</span>
+<span class="line-number"></span><span class="code-hl">  byte_array_ensure_cap_at_least(b, len + 1);</span>
+<span class="line-number"></span><span class="code-hl">  b-&gt;data[len] = elem;</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  byte_array_set_len(b, len + 1);</span>
+<span class="line-number"></span><span class="code-hl">  pthread_mutex_unlock(&amp;b-&gt;mtx);</span>
+<span class="line-number"></span><span class="code-hl">}</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">void *async_push(void *any) {</span>
+<span class="line-number"></span><span class="code-hl">  ByteArray *b = any;</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  for (size_t i = 0; i &lt; DATA_LEN; i++) {</span>
+<span class="line-number"></span><span class="code-hl">    byte_array_push(b, (uint8_t)i);</span>
+<span class="line-number"></span><span class="code-hl">  }</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  return NULL;</span>
+<span class="line-number"></span><span class="code-hl">}</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">int main() {</span>
+<span class="line-number"></span><span class="code-hl">  ByteArray byte_array = {.mtx = PTHREAD_MUTEX_INITIALIZER};</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  pthread_t thread_push = {0};</span>
+<span class="line-number"></span><span class="code-hl">  pthread_create(&amp;thread_push, NULL, async_push, &amp;byte_array);</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  for (;;) {</span>
+<span class="line-number"></span><span class="code-hl">    pthread_mutex_lock(&amp;byte_array.mtx);</span>
+<span class="line-number"></span><span class="code-hl">    const size_t len = byte_array_get_len(&amp;byte_array);</span>
+<span class="line-number"></span><span class="code-hl">    pthread_mutex_unlock(&amp;byte_array.mtx);</span>
+<span class="line-number"></span><span class="code-hl">    if (len == DATA_LEN) {</span>
+<span class="line-number"></span><span class="code-hl">      break;</span>
+<span class="line-number"></span><span class="code-hl">    }</span>
+<span class="line-number"></span><span class="code-hl">  }</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  assert(byte_array_get_len(&amp;byte_array) == DATA_LEN);</span>
+<span class="line-number"></span><span class="code-hl">}</span>
+</code></pre>
+</details>
+<details>
+  <summary>The C program fixed with a RW lock</summary>
+<pre>
+  <div class="code-header">
+    <span>C</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-c"><span class="line-number"></span><span class="code-hl">#include &lt;assert.h&gt;</span>
+<span class="line-number"></span><span class="code-hl">#include &lt;pthread.h&gt;</span>
+<span class="line-number"></span><span class="code-hl">#include &lt;stdio.h&gt;</span>
+<span class="line-number"></span><span class="code-hl">#include &lt;stdlib.h&gt;</span>
+<span class="line-number"></span><span class="code-hl">#include &lt;time.h&gt;</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">#define DATA_LEN (1 &lt;&lt; 20)</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">typedef struct {</span>
+<span class="line-number"></span><span class="code-hl">  uint8_t *data;</span>
+<span class="line-number"></span><span class="code-hl">  size_t len, cap;</span>
+<span class="line-number"></span><span class="code-hl">  pthread_rwlock_t rw_lock;</span>
+<span class="line-number"></span><span class="code-hl">} ByteArray;</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">size_t byte_array_get_len(ByteArray *b) { return b-&gt;len; }</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">size_t byte_array_get_cap(ByteArray *b) { return b-&gt;cap; }</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">void byte_array_set_len(ByteArray *b, size_t len) { b-&gt;len = len; }</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">void byte_array_set_cap(ByteArray *b, size_t cap) { b-&gt;cap = cap; }</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">void byte_array_ensure_cap_at_least(ByteArray *b, size_t cap) {</span>
+<span class="line-number"></span><span class="code-hl">  size_t current_cap = byte_array_get_cap(b);</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  if (current_cap &gt;= cap) {</span>
+<span class="line-number"></span><span class="code-hl">    return;</span>
+<span class="line-number"></span><span class="code-hl">  }</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  byte_array_set_cap(b, current_cap &lt; 8 ? 8 : current_cap * 2);</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  b-&gt;data = realloc(b-&gt;data, b-&gt;cap);</span>
+<span class="line-number"></span><span class="code-hl">}</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">void byte_array_push(ByteArray *b, uint8_t elem) {</span>
+<span class="line-number"></span><span class="code-hl">  pthread_rwlock_wrlock(&amp;b-&gt;rw_lock);</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  const size_t len = byte_array_get_len(b);</span>
+<span class="line-number"></span><span class="code-hl">  byte_array_ensure_cap_at_least(b, len + 1);</span>
+<span class="line-number"></span><span class="code-hl">  b-&gt;data[len] = elem;</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  byte_array_set_len(b, len + 1);</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  pthread_rwlock_unlock(&amp;b-&gt;rw_lock);</span>
+<span class="line-number"></span><span class="code-hl">}</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">void *async_push(void *any) {</span>
+<span class="line-number"></span><span class="code-hl">  ByteArray *b = any;</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  for (size_t i = 0; i &lt; DATA_LEN; i++) {</span>
+<span class="line-number"></span><span class="code-hl">    byte_array_push(b, (uint8_t)i);</span>
+<span class="line-number"></span><span class="code-hl">  }</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  return NULL;</span>
+<span class="line-number"></span><span class="code-hl">}</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">void *async_read(void *any) {</span>
+<span class="line-number"></span><span class="code-hl">  ByteArray *b = any;</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  for (;;) {</span>
+<span class="line-number"></span><span class="code-hl">    pthread_rwlock_rdlock(&amp;b-&gt;rw_lock);</span>
+<span class="line-number"></span><span class="code-hl">    const size_t len = byte_array_get_len(b);</span>
+<span class="line-number"></span><span class="code-hl">    pthread_rwlock_unlock(&amp;b-&gt;rw_lock);</span>
+<span class="line-number"></span><span class="code-hl">    if (len == DATA_LEN) {</span>
+<span class="line-number"></span><span class="code-hl">      break;</span>
+<span class="line-number"></span><span class="code-hl">    }</span>
+<span class="line-number"></span><span class="code-hl">  }</span>
+<span class="line-number"></span><span class="code-hl">  return NULL;</span>
+<span class="line-number"></span><span class="code-hl">}</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">int main() {</span>
+<span class="line-number"></span><span class="code-hl">  ByteArray byte_array = {.rw_lock = PTHREAD_RWLOCK_INITIALIZER};</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  pthread_t thread_push = {0};</span>
+<span class="line-number"></span><span class="code-hl">  pthread_create(&amp;thread_push, NULL, async_push, &amp;byte_array);</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  pthread_t thread_read = {0};</span>
+<span class="line-number"></span><span class="code-hl">  pthread_create(&amp;thread_read, NULL, async_read, &amp;byte_array);</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  for (;;) {</span>
+<span class="line-number"></span><span class="code-hl">    pthread_rwlock_rdlock(&amp;byte_array.rw_lock);</span>
+<span class="line-number"></span><span class="code-hl">    const size_t len = byte_array_get_len(&amp;byte_array);</span>
+<span class="line-number"></span><span class="code-hl">    pthread_rwlock_unlock(&amp;byte_array.rw_lock);</span>
+<span class="line-number"></span><span class="code-hl">    if (len == DATA_LEN) {</span>
+<span class="line-number"></span><span class="code-hl">      break;</span>
+<span class="line-number"></span><span class="code-hl">    }</span>
+<span class="line-number"></span><span class="code-hl">  }</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  assert(byte_array_get_len(&amp;byte_array) == DATA_LEN);</span>
+<span class="line-number"></span><span class="code-hl">}</span>
+</code></pre>
+</details>
 <p><a href="/blog"> ⏴ Back to all articles</a></p>
 
 <div id="donate">
