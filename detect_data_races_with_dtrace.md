@@ -68,7 +68,7 @@ This can be refined further as we'll see but it's good enough for now, and that'
 ## Example
 
 
-I recently [fixed](https://github.com/ory/kratos/commit/66739820c9d45ad4bc465b2ce3e10311967e29e4) a data race in Go at work. Since it is an open-source project I can share my work which is great! I have reproduced this race in C for simplicity, because Go inlines function calls quite heavily and some functions, e.g. `append()`, `len()`, are not real functions but in fact builtin, it's hard to trace them.
+I recently [fixed](https://github.com/ory/kratos/commit/66739820c9d45ad4bc465b2ce3e10311967e29e4) a data race in Go at work. Since it is an open-source project I can share my work which is great! I have reproduced this race in C for simplicity, because Go inlines function calls quite heavily and some functions, e.g. `append()`, `len()`, are not real functions but in fact builtin, it's hard to trace them. Also, C is a lingua franca and since there is no runtime (garbage collector, scheduler) to speak of, I find it easier to understand what's going on.
 
 In theory DTrace can trace arbitrary instructions and static probes, but in Go static probes are annoying to declare since that needs CGO, and on ARM64 macOS (my current laptop) tracing arbitrary instructions does not work.
 
@@ -504,8 +504,8 @@ Commentary:
 
 - When there are races, DTrace performs really badly because it reports all races it sees, which is however great for the DevUX. If we make DTrace also report timestamps and the call stack, the runtime goes to 7.5s.
 - DTrace has many tunables so it's possible that we can make it much faster this way.
-- The racy program in release mode never terminates because the compiler does whatever it wants in the presence of undefined behavior.
-- In the absence of data races, DTrace performs really well compared to TSan, we only see a ~3-4x slowdown, compared to a 16x slowdown with TSan.
+- The racy program in release mode never terminates because as previously mentioned, the compiler does whatever it wants in the presence of undefined behavior, and in this case, generates an infinite loop.
+- In the absence of data races, DTrace performs really well compared to TSan, we only see a ~3-4x slowdown, compared to a 16x slowdown with TSan. This of course depends on how many probes fire, and how much our script prints.
 - RW lock performs horribly compared to the mutex version. I just profiled it real quick and saw that the benchmark is dominated by `pthread_rwlock_lock_slow`. I think we are simply in the worst case scenario for a RW lock where there is 1 reader and 1 writer, and a RW lock optimizes for the cases of N readers most of the time, and 1 writer coming in from time to time. A typical implementation does a simple atomic increment where there are only readers, which is very fast, and acquires a mutex lock when there is one writer in the mix.
 
 ## Conclusion
