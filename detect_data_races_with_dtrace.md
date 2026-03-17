@@ -149,7 +149,20 @@ A few notes about this code:
 - The main thread polls very aggressively watching the length of the growable array. It's effectively a spin-lock, that unlocks when the length has reached the target value. In real code there would be a `nanosleep()` call in each loop iteration (that's what the Go production code did), or a proper synchronization mechanism e.g. a condition variable or simply a call to `pthread_join` (but Go does not have a way to wait on a goroutine 'id').
 - The obvious data race is on the `len` field of the byte array. It's likely benign in unoptimized mode, because the consequence in the current code is that we'll either do a few extra loop iterations or the assert at the end will fail. 
 - However the compiler is free to re-order the code since there are no explicit data dependencies and that's where the fun begins. Don't be this guy that says 'well, it's a data race, but it isn't actually that bad, so let's not fix it...'. It's a matter of *when*, not *if*, it's going to explode in your hand.
-- In fact when compiling this program in release mode it never terminates. That's because data races are undefined behavior and the compiler is free to do whatever it wants.
+- In fact when compiling this program in release mode it never terminates. That's because data races are undefined behavior and the compiler is free to do whatever it wants. One possible explanation is that the compiler assumes that no other thread modifies `len` and thus `len` is a constant, and the check can be hoisted out of the loop. When we look at the generated assembly, we see that the compiler indeed turned our for-loop into an infinite loop e.g.:
+  ```c
+  for (;;) {
+    const size_t len = byte_array_get_len(&byte_array);
+    if (len == DATA_LEN) {
+      break;
+    }
+  }
+  ```
+  became: 
+  ```c
+  for(;;) {
+  }
+  ```
 - The moment someone modifies the program, for example to print the last element of the array inside the loop on the main thread, we'll likely get a segfault, because `byte_array_push` modifies the fields of the `ByteArray` structure, which have to always be consistent with each other: `data`, `len`, and `cap`.  Since there is no synchronization primitive to ensure that, the other threads can see the structure in an inconsistent, half-updated state. That's the reason why we cannot simply make `len` an atomic. This issue of inconsistent state is even clearer if one thread does a lot of `byte_array_push()` and another `byte_array_pop()`: the program will very quickly explode because it tried to access a value out of bounds in the array, for example.
 - There is another big issue with this code: since the thread pushing values to the growable array uses `realloc()`, the `data` field, which holds all the array elements, may change each time a new element is added: the allocator may decide to allocate a bigger piece of memory, return the address, and free the old piece of memory. Since the main thread has no synchronization with the other thread, if it decides to, for example, print the first element of the array, even if `len` has the latest value and is greater than zero, it may well be that `data` has a stale value and points to the old memory. That's a use-after-free bug, and a potential security vulnerability.
 
@@ -223,7 +236,7 @@ BEGIN {
 // Watch `byte_array_get_len` and `byte_array_set_len`.
 pid$target::byte_array_?et_len:entry {
   // `arg0` is the pointer to the `ByteArray` structure,
-  // and `len` is at offset `8` in the `ByteArray` structure.
+  // and `len` is at offset `8` in the `ByteArray` structure (on 64 bits systems).
   // So this gets the value of `byte_array->len`.
   self->mem_ptr = arg0 + 8;
   this->theirs = accesses[self->mem_ptr];
