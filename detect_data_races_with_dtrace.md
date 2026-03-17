@@ -468,6 +468,28 @@ And N concurrent readers are fine. In fact, if we comment out this condition, we
               libsystem_pthread.dylib`thread_start+0x8
 ```
 
+## Benchmarks
+
+|                                     | Runtime | Runtime with Thread Sanitizer | Runtime with DTrace race detector |
+|-------------------------------------|---------|-------------------------------|-----------------------------------|
+| Racy program, debug mode            | 6.3 ms  | 275.8 ms                      | 7.05 s                            |
+| Racy program, release mode          | DNF     | DNF                           | DNF                               |
+| Program with mutex, release mode    | 44.5 ms | 714 ms                        | 156 ms                            |
+| Program with RW lock, release mode  | 4.3 s   | 4.9   s                       | 4.2 s                             |
+
+- 'Release mode' means `clang -O2`
+- My machine is a macOS M4 Pro
+- The RW lock program has one writer thread and one reader thread to compare apples to apples
+- For the DTrace column, the time is measured using `timestamp` in the `BEGIN` and `END` probes
+- For the other columns, `hyperfine './cmd' --shell=none --warmup=3 -i` is used
+
+
+Commentary:
+
+- When there are races, DTrace performs really badly because it reports all races it sees, which is however great for the DevUX
+- The racy program in release mode never terminates because the compiler does whatever it wants in the presence of undefined behavior
+- In the absence of data races, DTrace performs really well compared to TSan, we only see a ~3-4x slowdown, compared to a 16x slowdown with TSan
+- RW lock performs horribly compared to the mutex version for some reason, but I did not investigate why. I just see that the benchmark is dominated by `pthread_rwlock_lock_slow`. I think we are simply in the worst case scenario for a RW lock where there is 1 reader and 1 writer, and RW lock optimizes for the cases of N readers and 1 writer from time to time.
 
 ## Conclusion
 

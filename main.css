@@ -284,8 +284,8 @@ td, th {
 }
 
 th {
-  color: var(--color-main);
-  background: var(--color-less-important);
+  color: var(--color-main-bg);
+  background-color: var(--color-less-important);
 }
 
 h1 {
